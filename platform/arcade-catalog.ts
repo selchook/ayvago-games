@@ -9,7 +9,7 @@ import type { CatalogStatus, SeedGame } from './seed-catalog';
 export const ARCADE_ORIGIN = 'https://ayvago-games.vercel.app';
 
 // 'coming_soon' until the origin is deployed and checked (docs/setup/phase-2.md, slice 2.6).
-export const ARCADE_STATUS: CatalogStatus = 'coming_soon';
+export const ARCADE_STATUS: CatalogStatus = 'live';
 
 const ARCADE_ADDED_AT = '2026-10-27';
 
