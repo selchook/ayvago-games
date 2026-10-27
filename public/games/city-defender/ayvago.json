@@ -9,13 +9,16 @@
     "en": "Blow incoming missiles out of the sky and keep your six cities standing. Every wave is faster and bigger!",
     "tr": "Gökten yağan füzeleri havada patlat, altı şehri ayakta tut. Her dalga daha hızlı ve daha kalabalık!"
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
     "action",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "city",
-    "defender"
+    "defender",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/city-defender/",
   "orientation": "portrait",

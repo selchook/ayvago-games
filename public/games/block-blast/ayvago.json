@@ -10,8 +10,11 @@
     "tr": "Üç parçayı 8x8 tahtaya yerleştir, dolan satır ve sütunları patlat. Kombo yap, parçalar sığmayana kadar puan topla!"
   },
   "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "casual"
+  ],
   "tags": [
-    "casual",
     "block",
     "blast",
     "retro"

@@ -31,7 +31,11 @@ const FONTS = `
 @font-face { font-family: PX; font-weight: 700; src: url(data:font/woff2;base64,${font('pixelify-sans', 'pixelify-sans-latin-ext-700-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }`;
 const mark = readFileSync(join(root, 'public', 'assets', 'ayvago', 'boot_mark.png')).toString('base64');
 
-const CATEGORY = { retro_action: 'RETRO ACTION', casual: 'CASUAL', puzzle: 'PUZZLE', board: 'BOARD' };
+// Primary platform category (the game's first genre) shown as a chip on the cover.
+const CATEGORY = {
+  arcade: 'ARCADE', action: 'ACTION', casual: 'CASUAL', puzzle: 'PUZZLE', retro: 'RETRO',
+  sports: 'SPORTS', strategy: 'STRATEGY', card: 'CARD', word: 'WORD',
+};
 
 function coverHtml(m, menu, play) {
   const land = m.orientation === 'landscape';

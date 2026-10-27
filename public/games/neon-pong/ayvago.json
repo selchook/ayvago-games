@@ -9,13 +9,16 @@
     "en": "Vertical Pong in neon! Be first to 7 against a smarter opponent every round.",
     "tr": "Neon ışıklı dikey Pong! Her turda daha akıllı bir rakibe karşı 7 sayıya ilk ulaşan sen ol."
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
     "sports",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "neon",
-    "pong"
+    "pong",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/neon-pong/",
   "orientation": "portrait",

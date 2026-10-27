@@ -1,6 +1,6 @@
 // Vendored verbatim from selchook/ayvago packages/shared/src (do not edit; re-copy on schema changes).
 import { z } from 'zod';
-import { GAME_CATEGORIES } from './categories';
+import { GAME_CATEGORIES, type GameCategory } from './categories';
 import type { Locale } from './locales';
 
 // Schema for ayvago.json, the manifest every game serves from its own origin.
@@ -61,7 +61,10 @@ export const gameManifestSchema = z
     id: z.string().regex(/^[a-z0-9]{3,32}$/, 'id must be 3-32 lowercase letters or digits'),
     title: localizedText,
     description: localizedText,
+    // Primary category (icon, breadcrumb); "categories" lists every category the game is shown
+    // under, primary included. Without it the game is listed under its primary category only.
     category: z.enum(GAME_CATEGORIES),
+    categories: z.array(z.enum(GAME_CATEGORIES)).min(1).max(GAME_CATEGORIES.length).optional(),
     tags: z
       .array(z.string().regex(/^[a-z0-9-]{2,24}$/))
       .max(10)
@@ -94,6 +97,10 @@ export const gameManifestSchema = z
   .refine((m) => m.players.max >= m.players.min, {
     message: 'players.max must be >= players.min',
     path: ['players', 'max'],
+  })
+  .refine((m) => !m.categories || m.categories.includes(m.category), {
+    message: 'categories must include the primary category',
+    path: ['categories'],
   });
 
 export type LocalizedText = z.infer<typeof localizedText>;
@@ -113,6 +120,14 @@ export function parseGameManifest(input: unknown): ManifestResult {
       message: issue.message,
     })),
   };
+}
+
+// Every category a game is listed under, primary first.
+export function gameCategories(
+  manifest: Pick<GameManifest, 'category' | 'categories'>,
+): GameCategory[] {
+  const rest = (manifest.categories ?? []).filter((c) => c !== manifest.category);
+  return [manifest.category, ...rest];
 }
 
 // Resolves an asset reference from the manifest against the game's entry URL.

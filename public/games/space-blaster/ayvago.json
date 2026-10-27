@@ -9,13 +9,16 @@
     "en": "Blast waves of enemy fleets and meteors, grab power-ups and survive.",
     "tr": "Dalga dalga gelen düşman filolarını ve göktaşlarını patlat, güçlendirmeleri topla."
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
     "action",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "space",
-    "blaster"
+    "blaster",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/space-blaster/",
   "orientation": "portrait",

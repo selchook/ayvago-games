@@ -9,12 +9,16 @@
     "en": "Watch the coloured pads play a tune and repeat it in the same order. Every round the sequence grows and speeds up!",
     "tr": "Renkli düğmelerin çaldığı melodiyi izle ve aynı sırayla tekrarla. Her turda dizi uzar, tempo artar!"
   },
-  "category": "puzzle",
-  "tags": [
+  "category": "casual",
+  "categories": [
     "casual",
-    "retro",
+    "puzzle",
+    "retro"
+  ],
+  "tags": [
     "simon",
-    "says"
+    "says",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/simon-says/",
   "orientation": "portrait",

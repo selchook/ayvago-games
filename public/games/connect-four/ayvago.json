@@ -9,11 +9,13 @@
     "en": "Drop your chips and line up four! The AI opponent gets smarter with every win.",
     "tr": "Pulları düşür, dördünü yan yana diz! Her galibiyette rakip yapay zekâ biraz daha akıllanır."
   },
-  "category": "board",
-  "tags": [
+  "category": "strategy",
+  "categories": [
     "strategy",
     "puzzle",
-    "casual",
+    "casual"
+  ],
+  "tags": [
     "connect",
     "four",
     "retro"

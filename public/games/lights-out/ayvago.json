@@ -10,10 +10,14 @@
     "tr": "Bir lambaya dokunmak onu ve dört komşusunu açıp kapatır. Hamlelerin bitmeden tüm ışıkları söndür; tahtalar her bölümde büyür."
   },
   "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "retro"
+  ],
   "tags": [
-    "retro",
     "lights",
-    "out"
+    "out",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/lights-out/",
   "orientation": "portrait",

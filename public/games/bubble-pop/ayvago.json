@@ -10,9 +10,12 @@
     "tr": "Renkli balonları nişan alıp fırlat, aynı renkten üç ya da daha fazlasını birleştirip patlat. Tavan alçalmadan tahtayı temizle!"
   },
   "category": "puzzle",
-  "tags": [
+  "categories": [
+    "puzzle",
     "casual",
-    "arcade",
+    "arcade"
+  ],
+  "tags": [
     "bubble",
     "pop",
     "retro"

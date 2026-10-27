@@ -9,13 +9,16 @@
     "en": "Destroy waves of enemy tanks, blow up crates and grab power-ups in a top-down arena.",
     "tr": "Arenaya dalga dalga gelen düşman tanklarını yok et, sandıkları patlat, güçlendirmeleri kap."
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "action",
+  "categories": [
     "action",
     "arcade",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "tank",
-    "arena"
+    "arena",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/tank-arena/",
   "orientation": "landscape",

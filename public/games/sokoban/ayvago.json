@@ -10,10 +10,14 @@
     "tr": "Klasik Sokoban: 20 el yapımı bölümde tüm kutuları hedeflere it. Az hamle, çok yıldız!"
   },
   "category": "puzzle",
-  "tags": [
+  "categories": [
+    "puzzle",
     "retro",
-    "strategy",
-    "sokoban"
+    "strategy"
+  ],
+  "tags": [
+    "sokoban",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/sokoban/",
   "orientation": "portrait",

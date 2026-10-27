@@ -9,10 +9,12 @@
     "en": "Bounce the bunny up into the sky: ride springs, blast off with a jetpack and dodge breaking platforms and monsters.",
     "tr": "Tavşanı bulutların üstüne zıplat: yaylarla uç, jet sırt çantasıyla fırla, kırılan platformlardan ve yaratıklardan sakın."
   },
-  "category": "casual",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
-    "casual",
+    "casual"
+  ],
+  "tags": [
     "sky",
     "jumper",
     "retro"

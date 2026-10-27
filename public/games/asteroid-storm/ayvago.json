@@ -9,13 +9,16 @@
     "en": "Rotate, thrust and shoot the rocks to pieces. Big rocks split apart and UFOs bring bonus points.",
     "tr": "Gemini döndür, itki ver ve göktaşlarını parçala. Büyük kayalar bölünür, UFO'lar bonus puan getirir."
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
     "action",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "asteroid",
-    "storm"
+    "storm",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/asteroid-storm/",
   "orientation": "portrait",

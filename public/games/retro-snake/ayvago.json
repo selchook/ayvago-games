@@ -9,11 +9,14 @@
     "en": "Classic snake: eat fruit, grow longer and faster. Grab the timed bonus food and don't bite yourself!",
     "tr": "Klasik yılan oyunu: meyveleri ye, uza ve hızlan. Süreli bonus yemekleri kaçırma, kendine çarpma!"
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
     "retro",
-    "casual",
+    "casual"
+  ],
+  "tags": [
+    "retro",
     "snake"
   ],
   "entry": "https://ayvago-games.vercel.app/games/retro-snake/",

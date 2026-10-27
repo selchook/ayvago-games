@@ -9,11 +9,13 @@
     "en": "Win the cup on penalties! Curl shots past the keeper, then dive to save theirs. Three knockout matches from quarter-final to final.",
     "tr": "Penaltı atışlarıyla kupaya! Falsolu şutlarla kaleciyi avlat, sıra sende olunca kaleyi koru. Çeyrek finalden finale üç maç."
   },
-  "category": "casual",
-  "tags": [
+  "category": "sports",
+  "categories": [
     "sports",
     "arcade",
-    "casual",
+    "casual"
+  ],
+  "tags": [
     "penalty",
     "kick",
     "retro"

@@ -10,8 +10,11 @@
     "tr": "Mücevherlerin yerini değiştir, 3 veya daha fazlasını eşle, zincirleme patlamalar ve özel taşlarla hedef puana ulaş."
   },
   "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "casual"
+  ],
   "tags": [
-    "casual",
     "gem",
     "match",
     "retro"

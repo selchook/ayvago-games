@@ -25,18 +25,14 @@ if (args.includes('--require-smoke')) {
   passing = new Set(report.filter((r) => r.ok).map((r) => r.slug));
 }
 
-// Platform categories: retro_action | casual | puzzle | board
+// Platform categories are the same genres as game.json: the first genre is the primary category
+// (icon, breadcrumb) and the game is listed under all of them.
 function category(m) {
-  if (m.platform?.category) return m.platform.category;
-  const g = new Set(m.genres);
-  if (g.has('card') || ['connect-four', 'reversi', 'solitaire'].includes(m.id)) return 'board';
-  if (g.has('puzzle') || g.has('word')) return 'puzzle';
-  if (g.has('action') || g.has('arcade')) return 'retro_action';
-  return 'casual';
+  return m.genres[0];
 }
 
 function tags(m) {
-  const out = new Set(m.genres.filter((g) => g !== 'puzzle' || category(m) !== 'puzzle'));
+  const out = new Set();
   for (const part of m.id.split('-')) if (part.length >= 3) out.add(part);
   out.add('retro');
   return [...out].filter((t) => /^[a-z0-9-]{2,24}$/.test(t)).slice(0, 10);
@@ -63,6 +59,7 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
     title: { en: m.title.en, tr: m.title.tr },
     description: { en: m.description.en, tr: m.description.tr },
     category: category(m),
+    categories: m.genres,
     tags: tags(m),
     entry: `${ORIGIN}/games/${slug}/`,
     orientation: m.orientation,
@@ -87,7 +84,7 @@ const featuredSlugs = new Set(
   games.filter(({ slug }) => JSON.parse(readFileSync(join(root, 'games', slug, 'game.json'), 'utf8')).platform?.featured).map((g) => g.slug),
 );
 const entries = games.map(({ slug, manifest: m }) => {
-  const e = { slug, title: m.title, description: m.description, category: m.category, tags: m.tags, orientation: m.orientation, input: m.input };
+  const e = { slug, title: m.title, description: m.description, category: m.category, categories: m.categories, tags: m.tags, orientation: m.orientation, input: m.input };
   if (m.ageRating !== '3+') e.ageRating = m.ageRating;
   if (JSON.stringify(m.scoring) !== DEFAULT_TEXT) e.scoring = m.scoring;
   if (m.version !== '1.0.0') e.version = m.version;
@@ -114,7 +111,7 @@ const ARCADE_SCORING: GameManifestInput['scoring'] = ${JSON.stringify(DEFAULT_SC
 
 type ArcadeEntry = Pick<
   GameManifestInput,
-  'title' | 'description' | 'category' | 'tags' | 'orientation' | 'input'
+  'title' | 'description' | 'category' | 'categories' | 'tags' | 'orientation' | 'input'
 > &
   Partial<Pick<GameManifestInput, 'ageRating' | 'scoring' | 'version'>> & {
     slug: string;

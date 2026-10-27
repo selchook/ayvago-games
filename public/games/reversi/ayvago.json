@@ -9,10 +9,12 @@
     "en": "Classic Othello: trap the rival's discs to flip them to your colour. The AI grows stronger with every win.",
     "tr": "Klasik Othello: rakibin taşlarını sıkıştırıp kendi rengine çevir. Her galibiyette yapay zekâ güçlenir."
   },
-  "category": "board",
-  "tags": [
+  "category": "strategy",
+  "categories": [
     "strategy",
-    "puzzle",
+    "puzzle"
+  ],
+  "tags": [
     "reversi",
     "retro"
   ],

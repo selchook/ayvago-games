@@ -9,13 +9,16 @@
     "en": "Hold out against zombie waves from every side and upgrade your gun after each wave.",
     "tr": "Dört bir yandan gelen zombi dalgalarına karşı dayan, her dalgadan sonra silahını güçlendir."
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "action",
+  "categories": [
     "action",
     "arcade",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "zombie",
-    "survivor"
+    "survivor",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/zombie-survivor/",
   "orientation": "landscape",

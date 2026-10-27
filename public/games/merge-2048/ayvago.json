@@ -10,8 +10,11 @@
     "tr": "Aynı sayıları birleştirerek 2048 karesine ulaş. 3 geri alma hakkın var; 2048'den sonra da devam edebilirsin."
   },
   "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "casual"
+  ],
   "tags": [
-    "casual",
     "merge",
     "2048",
     "retro"

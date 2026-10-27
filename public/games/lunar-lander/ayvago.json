@@ -9,13 +9,16 @@
     "en": "Steer the module with thrust and rotation and land softly on a marked pad before your fuel runs out. Narrow pads, big points!",
     "tr": "Modülü itki ve dönüşle yönet, yakıtın bitmeden işaretli pistlerden birine yumuşak iniş yap. Dar pist, büyük puan!"
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
     "casual",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "lunar",
-    "lander"
+    "lander",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/lunar-lander/",
   "orientation": "portrait",

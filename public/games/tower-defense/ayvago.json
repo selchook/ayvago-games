@@ -9,13 +9,16 @@
     "en": "Guard the road with turrets, cannons and missile towers. Stop 15 waves of soldiers, tanks and planes.",
     "tr": "Yolu taret, top ve füze kuleleriyle savun. 15 dalga asker, tank ve uçağı durdur."
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "strategy",
+  "categories": [
     "strategy",
     "action",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "tower",
-    "defense"
+    "defense",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/tower-defense/",
   "orientation": "landscape",

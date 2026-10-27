@@ -7,6 +7,5 @@
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
   "version": "1.0.0",
-  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
-  "platform": { "category": "casual" }
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }

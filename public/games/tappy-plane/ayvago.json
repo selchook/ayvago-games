@@ -9,13 +9,16 @@
     "en": "Flap your little plane through rocky gaps, grab stars and earn bronze, silver and gold medals.",
     "tr": "Küçük uçağını kayalık geçitlerden geçir, yıldız topla ve bronz, gümüş, altın madalyaları kazan."
   },
-  "category": "casual",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
     "casual",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "tappy",
-    "plane"
+    "plane",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/tappy-plane/",
   "orientation": "portrait",

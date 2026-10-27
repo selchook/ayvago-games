@@ -9,13 +9,16 @@
     "en": "Shoot the marching alien fleet from behind your bunkers. Catch the mystery UFO — the fewer aliens left, the faster they come!",
     "tr": "Adım adım yaklaşan uzaylı filosunu sığınakların arkasından vur. Gizemli UFO'yu yakala, filo azaldıkça hızlanır!"
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
     "action",
-    "retro",
+    "retro"
+  ],
+  "tags": [
     "alien",
-    "invaders"
+    "invaders",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/alien-invaders/",
   "orientation": "portrait",

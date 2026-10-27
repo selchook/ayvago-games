@@ -9,13 +9,16 @@
     "en": "Bounce the ball, smash every brick and clear 10 levels. Grab wide, multiball and slow power-ups!",
     "tr": "Topu sektir, tuğlaları kır ve 10 bölümü bitir. Genişletme, çoklu top ve yavaşlatma güçlerini kap!"
   },
-  "category": "retro_action",
-  "tags": [
+  "category": "arcade",
+  "categories": [
     "arcade",
     "retro",
-    "casual",
+    "casual"
+  ],
+  "tags": [
     "brick",
-    "breaker"
+    "breaker",
+    "retro"
   ],
   "entry": "https://ayvago-games.vercel.app/games/brick-breaker/",
   "orientation": "portrait",

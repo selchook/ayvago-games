@@ -9,11 +9,13 @@
     "en": "Classic Klondike patience: build every suit from Ace to King. Tap a card and it jumps to the best spot.",
     "tr": "Klasik Klondike kâğıt falı: tüm kartları türlerine göre As'tan Papaz'a diz. Dokun, kart kendi yerine gitsin."
   },
-  "category": "board",
-  "tags": [
+  "category": "card",
+  "categories": [
     "card",
     "puzzle",
-    "casual",
+    "casual"
+  ],
+  "tags": [
     "solitaire",
     "retro"
   ],
