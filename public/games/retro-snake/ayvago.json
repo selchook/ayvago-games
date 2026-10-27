@@ -50,7 +50,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/retro-snake/ayvago/icon-512.png",
-    "cover": "/games/retro-snake/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/retro-snake/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/retro-snake/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

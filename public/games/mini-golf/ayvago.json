@@ -51,7 +51,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/mini-golf/ayvago/icon-512.png",
-    "cover": "/games/mini-golf/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/mini-golf/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/mini-golf/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

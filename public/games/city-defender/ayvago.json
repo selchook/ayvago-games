@@ -51,7 +51,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/city-defender/ayvago/icon-512.png",
-    "cover": "/games/city-defender/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/city-defender/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/city-defender/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

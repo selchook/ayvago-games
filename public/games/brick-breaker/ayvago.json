@@ -51,7 +51,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/brick-breaker/ayvago/icon-512.png",
-    "cover": "/games/brick-breaker/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/brick-breaker/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/brick-breaker/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

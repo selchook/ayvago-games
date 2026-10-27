@@ -39,6 +39,7 @@ for (const slug of readdirSync(dir).sort()) {
     const cover = join(root, 'public', m.assets.cover);
     if (!existsSync(icon)) problems.push('icon missing');
     else if (pngSize(icon).join('x') !== '512x512') problems.push(`icon is ${pngSize(icon).join('x')}`);
+    if (m.assets.screenshot && !existsSync(join(root, 'public', m.assets.screenshot))) problems.push('screenshot missing');
     if (!existsSync(cover)) problems.push('cover missing');
     else if (jpgSize(cover).join('x') !== '1920x1080') problems.push(`cover is ${jpgSize(cover).join('x')}`);
   }

@@ -50,7 +50,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/solitaire/ayvago/icon-512.png",
-    "cover": "/games/solitaire/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/solitaire/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/solitaire/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

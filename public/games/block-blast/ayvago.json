@@ -50,7 +50,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/block-blast/ayvago/icon-512.png",
-    "cover": "/games/block-blast/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/block-blast/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/block-blast/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

@@ -50,7 +50,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/sokoban/ayvago/icon-512.png",
-    "cover": "/games/sokoban/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/sokoban/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/sokoban/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

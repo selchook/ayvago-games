@@ -50,7 +50,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/lights-out/ayvago/icon-512.png",
-    "cover": "/games/lights-out/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/lights-out/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/lights-out/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

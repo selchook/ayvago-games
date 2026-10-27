@@ -51,7 +51,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/connect-four/ayvago/icon-512.png",
-    "cover": "/games/connect-four/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/connect-four/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/connect-four/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

@@ -1,6 +1,7 @@
 // Store art for the Ayvago platform catalog, made from the games themselves:
 //   public/games/<slug>/ayvago/cover-1920x1080.jpg   catalog / game page cover
 //   public/games/<slug>/ayvago/icon-512.png          square icon
+//   public/games/<slug>/ayvago/screenshot.jpg        in-game frame (platform Arcade theme tiles)
 //   public/thumbs/<slug>.png                         thumbnail for this repo's own portal
 // Each game is opened (no intro), its menu and a few seconds of play are captured, then the
 // captures are composed on a branded HTML template and rendered by Chromium.
@@ -32,6 +33,15 @@ const FONTS = `
 const mark = readFileSync(join(root, 'public', 'assets', 'ayvago', 'boot_mark.png')).toString('base64');
 
 // Primary platform category (the game's first genre) shown as a chip on the cover.
+/** Renders the captured frame at 540×960 (960×540 landscape) as a compact JPEG. */
+async function renderScreenshot(browser, b64, land, path) {
+  const [w, h] = land ? [960, 540] : [540, 960];
+  const page = await browser.newPage({ viewport: { width: w, height: h } });
+  await page.setContent(`<body style="margin:0"><img src="data:image/png;base64,${b64}" style="width:${w}px;height:${h}px;display:block">`);
+  await page.screenshot({ path, type: 'jpeg', quality: 82 });
+  await page.close();
+}
+
 const CATEGORY = {
   arcade: 'ARCADE', action: 'ACTION', casual: 'CASUAL', puzzle: 'PUZZLE', retro: 'RETRO',
   sports: 'SPORTS', strategy: 'STRATEGY', card: 'CARD', word: 'WORD',
@@ -120,6 +130,8 @@ for (const slug of slugs) {
     mkdirSync(out, { recursive: true });
     mkdirSync(join(root, 'public', 'thumbs'), { recursive: true });
     await canvas.screenshot({ path: join(root, 'public', 'thumbs', `${slug}.png`), scale: 'css' });
+    // Light in-game screenshot for the platform's Arcade theme tiles (manifest assets.screenshot).
+    await renderScreenshot(browser, play, land, join(out, 'screenshot.jpg'));
 
     const art = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
     await art.setContent(coverHtml(m, menu, play));

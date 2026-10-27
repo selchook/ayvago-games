@@ -69,7 +69,11 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
     ads: { rewarded: [], interstitial: [] },
     ageRating: m.platform?.ageRating ?? '3+',
     sdkVersion: 2,
-    assets: { icon: `/games/${slug}/ayvago/icon-512.png`, cover: `/games/${slug}/ayvago/cover-1920x1080.jpg` },
+    assets: {
+      icon: `/games/${slug}/ayvago/icon-512.png`,
+      cover: `/games/${slug}/ayvago/cover-1920x1080.jpg`,
+      screenshot: `/games/${slug}/ayvago/screenshot.jpg`,
+    },
     version: /^\d+\.\d+\.\d+$/.test(m.version) ? m.version : '1.0.0',
   };
   const dir = join(root, 'public', 'games', slug);
@@ -137,6 +141,7 @@ function arcadeGame({ slug, featured, ageRating, scoring, version, ...text }: Ar
       assets: {
         icon: \`/games/\${slug}/ayvago/icon-512.png\`,
         cover: \`/games/\${slug}/ayvago/cover-1920x1080.jpg\`,
+        screenshot: \`/games/\${slug}/ayvago/screenshot.jpg\`,
       },
       version: version ?? '1.0.0',
     },

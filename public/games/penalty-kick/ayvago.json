@@ -51,7 +51,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/penalty-kick/ayvago/icon-512.png",
-    "cover": "/games/penalty-kick/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/penalty-kick/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/penalty-kick/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

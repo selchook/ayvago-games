@@ -59,6 +59,7 @@ function arcadeGame({
       assets: {
         icon: `/games/${slug}/ayvago/icon-512.png`,
         cover: `/games/${slug}/ayvago/cover-1920x1080.jpg`,
+        screenshot: `/games/${slug}/ayvago/screenshot.jpg`,
       },
       version: version ?? '1.0.0',
     },

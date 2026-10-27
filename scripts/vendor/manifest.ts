@@ -89,6 +89,8 @@ export const gameManifestSchema = z
       icon: assetRef,
       cover: assetRef,
       preview: assetRef.optional(),
+      // An in-game screenshot in the game's orientation; the Arcade theme's tiles show it.
+      screenshot: assetRef.optional(),
     }),
     version: z.string().regex(/^\d+\.\d+\.\d+$/, 'version must be semver (x.y.z)'),
     // Enables ?ayvagoTest=... hooks used by the automated harness; ignored in production.

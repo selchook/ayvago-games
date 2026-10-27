@@ -51,7 +51,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/zombie-survivor/ayvago/icon-512.png",
-    "cover": "/games/zombie-survivor/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/zombie-survivor/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/zombie-survivor/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

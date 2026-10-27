@@ -51,7 +51,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/alien-invaders/ayvago/icon-512.png",
-    "cover": "/games/alien-invaders/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/alien-invaders/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/alien-invaders/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

@@ -50,7 +50,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/merge-2048/ayvago/icon-512.png",
-    "cover": "/games/merge-2048/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/merge-2048/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/merge-2048/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

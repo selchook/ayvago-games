@@ -51,7 +51,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/hoop-shot/ayvago/icon-512.png",
-    "cover": "/games/hoop-shot/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/hoop-shot/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/hoop-shot/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }

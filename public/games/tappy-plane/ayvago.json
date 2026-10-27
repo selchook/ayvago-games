@@ -51,7 +51,8 @@
   "sdkVersion": 2,
   "assets": {
     "icon": "/games/tappy-plane/ayvago/icon-512.png",
-    "cover": "/games/tappy-plane/ayvago/cover-1920x1080.jpg"
+    "cover": "/games/tappy-plane/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/tappy-plane/ayvago/screenshot.jpg"
   },
   "version": "1.0.0"
 }
