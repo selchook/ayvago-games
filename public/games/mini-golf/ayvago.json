@@ -9,10 +9,11 @@
     "en": "A nine-hole mini golf course: bank off walls, avoid water, ride the bumpers and slip past moving blocks. Finish under par!",
     "tr": "Dokuz delikli mini golf parkuru: duvarlardan sektir, sudan kaçın, tamponlarla oyna ve hareketli engellerin arasından geç. Pardan az vuruşla bitir!"
   },
-  "category": "puzzle",
+  "category": "casual",
   "tags": [
     "sports",
     "casual",
+    "puzzle",
     "mini",
     "golf",
     "retro"

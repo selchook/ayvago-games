@@ -83,11 +83,15 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
 
 // Only what differs per game goes into the catalog; arcadeGame() fills the shared defaults.
 const DEFAULT_TEXT = JSON.stringify(DEFAULT_SCORING);
+const featuredSlugs = new Set(
+  games.filter(({ slug }) => JSON.parse(readFileSync(join(root, 'games', slug, 'game.json'), 'utf8')).platform?.featured).map((g) => g.slug),
+);
 const entries = games.map(({ slug, manifest: m }) => {
   const e = { slug, title: m.title, description: m.description, category: m.category, tags: m.tags, orientation: m.orientation, input: m.input };
   if (m.ageRating !== '3+') e.ageRating = m.ageRating;
   if (JSON.stringify(m.scoring) !== DEFAULT_TEXT) e.scoring = m.scoring;
   if (m.version !== '1.0.0') e.version = m.version;
+  if (featuredSlugs.has(slug)) e.featured = true;
   return e;
 });
 const catalogTs = `import type { GameManifestInput } from './manifest';
@@ -112,14 +116,18 @@ type ArcadeEntry = Pick<
   GameManifestInput,
   'title' | 'description' | 'category' | 'tags' | 'orientation' | 'input'
 > &
-  Partial<Pick<GameManifestInput, 'ageRating' | 'scoring' | 'version'>> & { slug: string };
+  Partial<Pick<GameManifestInput, 'ageRating' | 'scoring' | 'version'>> & {
+    slug: string;
+    featured?: boolean;
+  };
 
-function arcadeGame({ slug, ageRating, scoring, version, ...text }: ArcadeEntry): SeedGame {
+function arcadeGame({ slug, featured, ageRating, scoring, version, ...text }: ArcadeEntry): SeedGame {
   return {
     slug,
     repo: '${REPO}',
     status: ARCADE_STATUS,
     addedAt: ARCADE_ADDED_AT,
+    ...(featured ? { featured } : {}),
     manifest: {
       id: slug.replace(/-/g, ''),
       ...text,

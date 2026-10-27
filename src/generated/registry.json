@@ -119,6 +119,9 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "platform": {
+        "featured": true
+      },
       "thumb": "thumbs/brick-breaker.png"
     },
     {
@@ -240,6 +243,9 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "platform": {
+        "featured": true
+      },
       "thumb": "thumbs/gem-match.png"
     },
     {
@@ -270,6 +276,9 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "platform": {
+        "category": "casual"
+      },
       "thumb": "thumbs/hoop-shot.png"
     },
     {
@@ -388,6 +397,9 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "platform": {
+        "category": "casual"
+      },
       "thumb": "thumbs/mini-golf.png"
     },
     {
@@ -449,6 +461,9 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "platform": {
+        "category": "casual"
+      },
       "thumb": "thumbs/penalty-kick.png"
     },
     {
@@ -567,6 +582,9 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "platform": {
+        "category": "casual"
+      },
       "thumb": "thumbs/sky-jumper.png"
     },
     {
@@ -658,6 +676,9 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "platform": {
+        "featured": true
+      },
       "thumb": "thumbs/space-blaster.png"
     },
     {
@@ -719,6 +740,9 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "platform": {
+        "category": "casual"
+      },
       "thumb": "thumbs/tappy-plane.png"
     },
     {

@@ -28,14 +28,25 @@ type ArcadeEntry = Pick<
   GameManifestInput,
   'title' | 'description' | 'category' | 'tags' | 'orientation' | 'input'
 > &
-  Partial<Pick<GameManifestInput, 'ageRating' | 'scoring' | 'version'>> & { slug: string };
+  Partial<Pick<GameManifestInput, 'ageRating' | 'scoring' | 'version'>> & {
+    slug: string;
+    featured?: boolean;
+  };
 
-function arcadeGame({ slug, ageRating, scoring, version, ...text }: ArcadeEntry): SeedGame {
+function arcadeGame({
+  slug,
+  featured,
+  ageRating,
+  scoring,
+  version,
+  ...text
+}: ArcadeEntry): SeedGame {
   return {
     slug,
     repo: 'selchook/ayvago-games',
     status: ARCADE_STATUS,
     addedAt: ARCADE_ADDED_AT,
+    ...(featured ? { featured } : {}),
     manifest: {
       id: slug.replace(/-/g, ''),
       ...text,
@@ -102,6 +113,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['arcade', 'retro', 'casual', 'brick', 'breaker'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    featured: true,
   }),
   arcadeGame({
     slug: 'bubble-pop',
@@ -150,6 +162,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['casual', 'gem', 'match', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    featured: true,
   }),
   arcadeGame({
     slug: 'hoop-shot',
@@ -158,7 +171,7 @@ export const ARCADE_GAMES: SeedGame[] = [
       en: 'Flick the ball through a moving hoop! Build streaks, earn extra time and sink buzzer beaters for a high score.',
       tr: 'Topu fırlat, hareketli potadan geçir! Seri yap, süre kazan, son saniye basketleriyle rekor kır.',
     },
-    category: 'retro_action',
+    category: 'casual',
     tags: ['sports', 'arcade', 'casual', 'hoop', 'shot', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
@@ -206,8 +219,8 @@ export const ARCADE_GAMES: SeedGame[] = [
       en: 'A nine-hole mini golf course: bank off walls, avoid water, ride the bumpers and slip past moving blocks. Finish under par!',
       tr: 'Dokuz delikli mini golf parkuru: duvarlardan sektir, sudan kaçın, tamponlarla oyna ve hareketli engellerin arasından geç. Pardan az vuruşla bitir!',
     },
-    category: 'puzzle',
-    tags: ['sports', 'casual', 'mini', 'golf', 'retro'],
+    category: 'casual',
+    tags: ['sports', 'casual', 'puzzle', 'mini', 'golf', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
   }),
@@ -230,7 +243,7 @@ export const ARCADE_GAMES: SeedGame[] = [
       en: 'Win the cup on penalties! Curl shots past the keeper, then dive to save theirs. Three knockout matches from quarter-final to final.',
       tr: 'Penaltı atışlarıyla kupaya! Falsolu şutlarla kaleciyi avlat, sıra sende olunca kaleyi koru. Çeyrek finalden finale üç maç.',
     },
-    category: 'retro_action',
+    category: 'casual',
     tags: ['sports', 'arcade', 'casual', 'penalty', 'kick', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
@@ -278,7 +291,7 @@ export const ARCADE_GAMES: SeedGame[] = [
       en: 'Bounce the bunny up into the sky: ride springs, blast off with a jetpack and dodge breaking platforms and monsters.',
       tr: 'Tavşanı bulutların üstüne zıplat: yaylarla uç, jet sırt çantasıyla fırla, kırılan platformlardan ve yaratıklardan sakın.',
     },
-    category: 'retro_action',
+    category: 'casual',
     tags: ['arcade', 'casual', 'sky', 'jumper', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
@@ -318,6 +331,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['arcade', 'action', 'retro', 'space', 'blaster'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    featured: true,
   }),
   arcadeGame({
     slug: 'tank-arena',
@@ -338,7 +352,7 @@ export const ARCADE_GAMES: SeedGame[] = [
       en: 'Flap your little plane through rocky gaps, grab stars and earn bronze, silver and gold medals.',
       tr: 'Küçük uçağını kayalık geçitlerden geçir, yıldız topla ve bronz, gümüş, altın madalyaları kazan.',
     },
-    category: 'retro_action',
+    category: 'casual',
     tags: ['arcade', 'casual', 'retro', 'tappy', 'plane'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
