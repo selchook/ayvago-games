@@ -1,0 +1,11 @@
+{
+  "id": "gem-match",
+  "title": { "tr": "Mücevher Eşle", "en": "Gem Match" },
+  "description": { "tr": "Mücevherlerin yerini değiştir, 3 veya daha fazlasını eşle, zincirleme patlamalar ve özel taşlarla hedef puana ulaş.", "en": "Swap gems to match 3 or more, trigger cascades and special gems, and hit the target score before your moves run out." },
+  "howTo": { "tr": "Bir taşı komşusuna kaydır ya da iki taşa sırayla dokun. Klavye: oklarla gez, Boşluk ile seç, okla değiştir. 4'lü eşleşme: çizgi, L/T: bomba, 5'li: gökkuşağı.", "en": "Swipe a gem onto a neighbour or tap two gems. Keyboard: arrows to move, Space to pick, arrow to swap. Match 4: line, L/T: bomb, 5: rainbow." },
+  "genres": ["puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

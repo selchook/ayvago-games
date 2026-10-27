@@ -1,0 +1,55 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "hoopshot",
+  "title": {
+    "en": "Hoop Shot",
+    "tr": "Basket Atışı"
+  },
+  "description": {
+    "en": "Flick the ball through a moving hoop! Build streaks, earn extra time and sink buzzer beaters for a high score.",
+    "tr": "Topu fırlat, hareketli potadan geçir! Seri yap, süre kazan, son saniye basketleriyle rekor kır."
+  },
+  "category": "retro_action",
+  "tags": [
+    "sports",
+    "arcade",
+    "casual",
+    "hoop",
+    "shot",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/hoop-shot/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/hoop-shot/ayvago/icon-512.png",
+    "cover": "/games/hoop-shot/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

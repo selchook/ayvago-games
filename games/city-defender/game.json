@@ -1,0 +1,11 @@
+{
+  "id": "city-defender",
+  "title": { "tr": "Şehir Savunması", "en": "City Defender" },
+  "description": { "tr": "Gökten yağan füzeleri havada patlat, altı şehri ayakta tut. Her dalga daha hızlı ve daha kalabalık!", "en": "Blow incoming missiles out of the sky and keep your six cities standing. Every wave is faster and bigger!" },
+  "howTo": { "tr": "Patlatmak istediğin yere dokun ya da tıkla. Klavye: oklarla nişangahı taşı, Boşluk ile ateş et.", "en": "Tap or click where you want an interceptor to explode. Keyboard: move the crosshair with the arrows, fire with Space." },
+  "genres": ["arcade", "action", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

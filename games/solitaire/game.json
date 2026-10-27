@@ -1,0 +1,11 @@
+{
+  "id": "solitaire",
+  "title": { "tr": "Solitaire", "en": "Solitaire" },
+  "description": { "tr": "Klasik Klondike kâğıt falı: tüm kartları türlerine göre As'tan Papaz'a diz. Dokun, kart kendi yerine gitsin.", "en": "Classic Klondike patience: build every suit from Ace to King. Tap a card and it jumps to the best spot." },
+  "howTo": { "tr": "Karta dokun ya da sürükle; desteye dokunup kart çek. Klavye: oklar seç, Enter oyna, Boşluk kart çek, X geri al.", "en": "Tap or drag cards; tap the deck to draw. Keys: arrows select, Enter plays, Space draws, X undoes." },
+  "genres": ["card", "puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

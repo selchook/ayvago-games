@@ -1,0 +1,10 @@
+onebit/tilemap/tileset_colored.tsx
+onebit/tilemap/tileset_legacy.png 543x543
+onebit/tilesheet/colored.png 815x373
+onebit/tilesheet/colored_packed.png 768x352
+onebit/tilesheet/colored_transparent.png 815x373
+onebit/tilesheet/colored_transparent_packed.png 768x352
+onebit/tilesheet/monochrome.png 815x373
+onebit/tilesheet/monochrome_packed.png 768x352
+onebit/tilesheet/monochrome_transparent.png 815x373
+onebit/tilesheet/monochrome_transparent_packed.png 768x352

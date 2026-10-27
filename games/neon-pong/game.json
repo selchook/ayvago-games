@@ -1,0 +1,11 @@
+{
+  "id": "neon-pong",
+  "title": { "tr": "Neon Pong", "en": "Neon Pong" },
+  "description": { "tr": "Neon ışıklı dikey Pong! Her turda daha akıllı bir rakibe karşı 7 sayıya ilk ulaşan sen ol.", "en": "Vertical Pong in neon! Be first to 7 against a smarter opponent every round." },
+  "howTo": { "tr": "Raketini parmağınla ya da ok tuşlarıyla kaydır. Topa hareket hâlindeyken vurursan falso verirsin.", "en": "Slide your paddle with your finger or the arrow keys. Hit the ball while moving to add spin." },
+  "genres": ["arcade", "sports", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

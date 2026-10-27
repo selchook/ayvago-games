@@ -1,0 +1,11 @@
+{
+  "id": "tower-defense",
+  "title": { "tr": "Kule Savunması", "en": "Tower Defense" },
+  "description": { "tr": "Yolu taret, top ve füze kuleleriyle savun. 15 dalga asker, tank ve uçağı durdur.", "en": "Guard the road with turrets, cannons and missile towers. Stop 15 waves of soldiers, tanks and planes." },
+  "howTo": { "tr": "Sağdan kule seç, çimene dokunarak kur; kuleye dokunup geliştir veya sat. Klavye: oklar, Boşluk kur, 1-3 kule, N dalga.", "en": "Pick a tower on the right and tap grass to build; tap a tower to upgrade or sell. Keys: arrows, Space build, 1-3 tower, N wave." },
+  "genres": ["strategy", "action", "retro"],
+  "orientation": "landscape",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

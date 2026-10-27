@@ -1,0 +1,11 @@
+{
+  "id": "block-blast",
+  "title": { "tr": "Blok Patlat", "en": "Block Blast" },
+  "description": { "tr": "Üç parçayı 8x8 tahtaya yerleştir, dolan satır ve sütunları patlat. Kombo yap, parçalar sığmayana kadar puan topla!", "en": "Fit three pieces onto the 8x8 board and blast full rows and columns. Chain combos and score until nothing fits!" },
+  "howTo": { "tr": "Parçayı sürükleyip tahtaya bırak. Klavye: X ile parça seç, oklarla taşı, Boşluk ile yerleştir.", "en": "Drag a piece onto the board. Keyboard: X picks a piece, arrows move it, Space places it." },
+  "genres": ["puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

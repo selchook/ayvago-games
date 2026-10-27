@@ -1,0 +1,53 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "gemmatch",
+  "title": {
+    "en": "Gem Match",
+    "tr": "Mücevher Eşle"
+  },
+  "description": {
+    "en": "Swap gems to match 3 or more, trigger cascades and special gems, and hit the target score before your moves run out.",
+    "tr": "Mücevherlerin yerini değiştir, 3 veya daha fazlasını eşle, zincirleme patlamalar ve özel taşlarla hedef puana ulaş."
+  },
+  "category": "puzzle",
+  "tags": [
+    "casual",
+    "gem",
+    "match",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/gem-match/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/gem-match/ayvago/icon-512.png",
+    "cover": "/games/gem-match/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

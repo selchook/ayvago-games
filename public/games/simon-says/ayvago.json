@@ -1,0 +1,53 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "simonsays",
+  "title": {
+    "en": "Simon Says",
+    "tr": "Simon Der Ki"
+  },
+  "description": {
+    "en": "Watch the coloured pads play a tune and repeat it in the same order. Every round the sequence grows and speeds up!",
+    "tr": "Renkli düğmelerin çaldığı melodiyi izle ve aynı sırayla tekrarla. Her turda dizi uzar, tempo artar!"
+  },
+  "category": "puzzle",
+  "tags": [
+    "casual",
+    "retro",
+    "simon",
+    "says"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/simon-says/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/simon-says/ayvago/icon-512.png",
+    "cover": "/games/simon-says/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

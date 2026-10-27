@@ -1,0 +1,787 @@
+{
+  "count": 26,
+  "games": [
+    {
+      "id": "alien-invaders",
+      "title": {
+        "tr": "Uzaylı İstilası",
+        "en": "Alien Invaders"
+      },
+      "description": {
+        "tr": "Adım adım yaklaşan uzaylı filosunu sığınakların arkasından vur. Gizemli UFO'yu yakala, filo azaldıkça hızlanır!",
+        "en": "Shoot the marching alien fleet from behind your bunkers. Catch the mystery UFO — the fewer aliens left, the faster they come!"
+      },
+      "howTo": {
+        "tr": "Ok tuşlarıyla kay, Boşluk ile ateş et. Dokunmatik: ekrana basılı tut, gemi parmağını izler ve otomatik ateş eder.",
+        "en": "Move with the arrow keys and fire with Space. Touch: hold the screen, the ship follows your finger and fires automatically."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/alien-invaders.png"
+    },
+    {
+      "id": "asteroid-storm",
+      "title": {
+        "tr": "Göktaşı Fırtınası",
+        "en": "Asteroid Storm"
+      },
+      "description": {
+        "tr": "Gemini döndür, itki ver ve göktaşlarını parçala. Büyük kayalar bölünür, UFO'lar bonus puan getirir.",
+        "en": "Rotate, thrust and shoot the rocks to pieces. Big rocks split apart and UFOs bring bonus points."
+      },
+      "howTo": {
+        "tr": "Ok tuşları: dön ve itki ver, Boşluk: ateş, X: hiperuzay. Dokunmatik: joystick ile yönlen, A ateş, B hiperuzay.",
+        "en": "Arrows: rotate and thrust, Space: fire, X: hyperspace. Touch: steer with the joystick, A fires, B hyperspace."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/asteroid-storm.png"
+    },
+    {
+      "id": "block-blast",
+      "title": {
+        "tr": "Blok Patlat",
+        "en": "Block Blast"
+      },
+      "description": {
+        "tr": "Üç parçayı 8x8 tahtaya yerleştir, dolan satır ve sütunları patlat. Kombo yap, parçalar sığmayana kadar puan topla!",
+        "en": "Fit three pieces onto the 8x8 board and blast full rows and columns. Chain combos and score until nothing fits!"
+      },
+      "howTo": {
+        "tr": "Parçayı sürükleyip tahtaya bırak. Klavye: X ile parça seç, oklarla taşı, Boşluk ile yerleştir.",
+        "en": "Drag a piece onto the board. Keyboard: X picks a piece, arrows move it, Space places it."
+      },
+      "genres": [
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/block-blast.png"
+    },
+    {
+      "id": "brick-breaker",
+      "title": {
+        "tr": "Tuğla Kırıcı",
+        "en": "Brick Breaker"
+      },
+      "description": {
+        "tr": "Topu sektir, tuğlaları kır ve 10 bölümü bitir. Genişletme, çoklu top ve yavaşlatma güçlerini kap!",
+        "en": "Bounce the ball, smash every brick and clear 10 levels. Grab wide, multiball and slow power-ups!"
+      },
+      "howTo": {
+        "tr": "Raketi parmağınla ya da ok tuşlarıyla kaydır. Topu fırlatmak için dokun ya da BOŞLUK'a bas.",
+        "en": "Slide the paddle with your finger or the arrow keys. Tap or press SPACE to launch the ball."
+      },
+      "genres": [
+        "arcade",
+        "retro",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/brick-breaker.png"
+    },
+    {
+      "id": "bubble-pop",
+      "title": {
+        "tr": "Balon Patlat",
+        "en": "Bubble Pop"
+      },
+      "description": {
+        "tr": "Renkli balonları nişan alıp fırlat, aynı renkten üç ya da daha fazlasını birleştirip patlat. Tavan alçalmadan tahtayı temizle!",
+        "en": "Aim and shoot colourful bubbles, match three or more of the same colour to pop them. Clear the board before the ceiling comes down!"
+      },
+      "howTo": {
+        "tr": "Nişan almak için sürükle, bırakınca fırlat. Klavye: ok tuşlarıyla nişan al, Boşluk ile fırlat, X ile balonu değiştir.",
+        "en": "Drag to aim and release to shoot. Keyboard: arrows aim, Space shoots, X swaps the bubble."
+      },
+      "genres": [
+        "puzzle",
+        "casual",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/bubble-pop.png"
+    },
+    {
+      "id": "city-defender",
+      "title": {
+        "tr": "Şehir Savunması",
+        "en": "City Defender"
+      },
+      "description": {
+        "tr": "Gökten yağan füzeleri havada patlat, altı şehri ayakta tut. Her dalga daha hızlı ve daha kalabalık!",
+        "en": "Blow incoming missiles out of the sky and keep your six cities standing. Every wave is faster and bigger!"
+      },
+      "howTo": {
+        "tr": "Patlatmak istediğin yere dokun ya da tıkla. Klavye: oklarla nişangahı taşı, Boşluk ile ateş et.",
+        "en": "Tap or click where you want an interceptor to explode. Keyboard: move the crosshair with the arrows, fire with Space."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/city-defender.png"
+    },
+    {
+      "id": "connect-four",
+      "title": {
+        "tr": "Dört Bağla",
+        "en": "Connect Four"
+      },
+      "description": {
+        "tr": "Pulları düşür, dördünü yan yana diz! Her galibiyette rakip yapay zekâ biraz daha akıllanır.",
+        "en": "Drop your chips and line up four! The AI opponent gets smarter with every win."
+      },
+      "howTo": {
+        "tr": "Bir sütuna dokunarak pul bırak ya da ok tuşlarıyla seçip Boşluk'a bas. Yatay, dikey veya çapraz dört pul diz.",
+        "en": "Tap a column to drop a chip, or pick one with the arrow keys and press Space. Line up four in a row, column or diagonal."
+      },
+      "genres": [
+        "strategy",
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/connect-four.png"
+    },
+    {
+      "id": "gem-match",
+      "title": {
+        "tr": "Mücevher Eşle",
+        "en": "Gem Match"
+      },
+      "description": {
+        "tr": "Mücevherlerin yerini değiştir, 3 veya daha fazlasını eşle, zincirleme patlamalar ve özel taşlarla hedef puana ulaş.",
+        "en": "Swap gems to match 3 or more, trigger cascades and special gems, and hit the target score before your moves run out."
+      },
+      "howTo": {
+        "tr": "Bir taşı komşusuna kaydır ya da iki taşa sırayla dokun. Klavye: oklarla gez, Boşluk ile seç, okla değiştir. 4'lü eşleşme: çizgi, L/T: bomba, 5'li: gökkuşağı.",
+        "en": "Swipe a gem onto a neighbour or tap two gems. Keyboard: arrows to move, Space to pick, arrow to swap. Match 4: line, L/T: bomb, 5: rainbow."
+      },
+      "genres": [
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/gem-match.png"
+    },
+    {
+      "id": "hoop-shot",
+      "title": {
+        "tr": "Basket Atışı",
+        "en": "Hoop Shot"
+      },
+      "description": {
+        "tr": "Topu fırlat, hareketli potadan geçir! Seri yap, süre kazan, son saniye basketleriyle rekor kır.",
+        "en": "Flick the ball through a moving hoop! Build streaks, earn extra time and sink buzzer beaters for a high score."
+      },
+      "howTo": {
+        "tr": "Yukarı kaydırıp bırak ya da ←→ ile yön, ↑↓ ile güç seç, Boşluk ile at. Her basket süre kazandırır.",
+        "en": "Swipe up and release, or aim with ←→, set power with ↑↓ and shoot with Space. Every basket adds time."
+      },
+      "genres": [
+        "sports",
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/hoop-shot.png"
+    },
+    {
+      "id": "lights-out",
+      "title": {
+        "tr": "Işıkları Söndür",
+        "en": "Lights Out"
+      },
+      "description": {
+        "tr": "Bir lambaya dokunmak onu ve dört komşusunu açıp kapatır. Hamlelerin bitmeden tüm ışıkları söndür; tahtalar her bölümde büyür.",
+        "en": "Tapping a light toggles it and its four neighbours. Switch every light off before you run out of moves; boards grow every level."
+      },
+      "howTo": {
+        "tr": "Lambaya dokun. Klavye: oklarla seç, Boşluk ile bas. İpucu düğmesi ya da X tuşu bir hamle gösterir.",
+        "en": "Tap a light. Keyboard: arrows select, Space presses. The hint button or X shows a move."
+      },
+      "genres": [
+        "puzzle",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/lights-out.png"
+    },
+    {
+      "id": "lunar-lander",
+      "title": {
+        "tr": "Ay İnişi",
+        "en": "Lunar Lander"
+      },
+      "description": {
+        "tr": "Modülü itki ve dönüşle yönet, yakıtın bitmeden işaretli pistlerden birine yumuşak iniş yap. Dar pist, büyük puan!",
+        "en": "Steer the module with thrust and rotation and land softly on a marked pad before your fuel runs out. Narrow pads, big points!"
+      },
+      "howTo": {
+        "tr": "Sol/Sağ: dön, Yukarı ya da Boşluk: itki. Dokunmatik: soldaki oklarla dön, sağdaki düğmeyle itki ver. Yavaş ve dik in!",
+        "en": "Left/Right: rotate, Up or Space: thrust. Touch: rotate with the left arrows, thrust with the right button. Land slow and upright!"
+      },
+      "genres": [
+        "arcade",
+        "casual",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/lunar-lander.png"
+    },
+    {
+      "id": "merge-2048",
+      "title": {
+        "tr": "2048",
+        "en": "Merge 2048"
+      },
+      "description": {
+        "tr": "Aynı sayıları birleştirerek 2048 karesine ulaş. 3 geri alma hakkın var; 2048'den sonra da devam edebilirsin.",
+        "en": "Slide and merge equal numbers to reach the 2048 tile. You get 3 undos, and you can keep going after 2048."
+      },
+      "howTo": {
+        "tr": "Kaydırarak ya da ok tuşlarıyla tüm kareleri it; aynı sayılar birleşir. Geri düğmesi ya da Z: son hamleyi geri al.",
+        "en": "Swipe or press the arrow keys to slide all tiles; equal numbers merge. Undo button or Z: take back the last move."
+      },
+      "genres": [
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/merge-2048.png"
+    },
+    {
+      "id": "mini-golf",
+      "title": {
+        "tr": "Mini Golf",
+        "en": "Mini Golf"
+      },
+      "description": {
+        "tr": "Dokuz delikli mini golf parkuru: duvarlardan sektir, sudan kaçın, tamponlarla oyna ve hareketli engellerin arasından geç. Pardan az vuruşla bitir!",
+        "en": "A nine-hole mini golf course: bank off walls, avoid water, ride the bumpers and slip past moving blocks. Finish under par!"
+      },
+      "howTo": {
+        "tr": "Parmağını geri çekip bırakarak vur; ne kadar çekersen o kadar güçlü. Klavye: ←→ yön, ↑↓ güç, Boşluk vuruş.",
+        "en": "Drag back and release to putt; the further you pull, the harder the shot. Keys: ←→ aim, ↑↓ power, Space to putt."
+      },
+      "genres": [
+        "sports",
+        "casual",
+        "puzzle"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/mini-golf.png"
+    },
+    {
+      "id": "neon-pong",
+      "title": {
+        "tr": "Neon Pong",
+        "en": "Neon Pong"
+      },
+      "description": {
+        "tr": "Neon ışıklı dikey Pong! Her turda daha akıllı bir rakibe karşı 7 sayıya ilk ulaşan sen ol.",
+        "en": "Vertical Pong in neon! Be first to 7 against a smarter opponent every round."
+      },
+      "howTo": {
+        "tr": "Raketini parmağınla ya da ok tuşlarıyla kaydır. Topa hareket hâlindeyken vurursan falso verirsin.",
+        "en": "Slide your paddle with your finger or the arrow keys. Hit the ball while moving to add spin."
+      },
+      "genres": [
+        "arcade",
+        "sports",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/neon-pong.png"
+    },
+    {
+      "id": "penalty-kick",
+      "title": {
+        "tr": "Penaltı Atışı",
+        "en": "Penalty Kick"
+      },
+      "description": {
+        "tr": "Penaltı atışlarıyla kupaya! Falsolu şutlarla kaleciyi avlat, sıra sende olunca kaleyi koru. Çeyrek finalden finale üç maç.",
+        "en": "Win the cup on penalties! Curl shots past the keeper, then dive to save theirs. Three knockout matches from quarter-final to final."
+      },
+      "howTo": {
+        "tr": "Şut: kaleye doğru kaydır, kavisli kaydırma falso verir. Kalecide dokunduğun yere atla. Klavye: oklar nişan/kaleci, Boşluk şut, X falso.",
+        "en": "Shoot: swipe toward the goal; a curved swipe adds curl. As keeper, tap where to dive. Keys: arrows aim/move, Space shoots, X sets curl."
+      },
+      "genres": [
+        "sports",
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/penalty-kick.png"
+    },
+    {
+      "id": "retro-snake",
+      "title": {
+        "tr": "Retro Yılan",
+        "en": "Retro Snake"
+      },
+      "description": {
+        "tr": "Klasik yılan oyunu: meyveleri ye, uza ve hızlan. Süreli bonus yemekleri kaçırma, kendine çarpma!",
+        "en": "Classic snake: eat fruit, grow longer and faster. Grab the timed bonus food and don't bite yourself!"
+      },
+      "howTo": {
+        "tr": "Kaydırarak, yılanın yanına dokunarak ya da ok tuşlarıyla yön ver. Duvarlı modda kenarlar öldürür ama puan iki kat.",
+        "en": "Swipe, tap beside the snake or use the arrow keys to steer. In walls mode the edges kill, but points are doubled."
+      },
+      "genres": [
+        "arcade",
+        "retro",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/retro-snake.png"
+    },
+    {
+      "id": "reversi",
+      "title": {
+        "tr": "Reversi",
+        "en": "Reversi"
+      },
+      "description": {
+        "tr": "Klasik Othello: rakibin taşlarını sıkıştırıp kendi rengine çevir. Her galibiyette yapay zekâ güçlenir.",
+        "en": "Classic Othello: trap the rival's discs to flip them to your colour. The AI grows stronger with every win."
+      },
+      "howTo": {
+        "tr": "Noktalı karelerden birine dokun ya da ok tuşlarıyla seçip Boşluk'a bas. Tahtayı kapatınca en çok taşı olan kazanır.",
+        "en": "Tap a dotted square, or move with the arrow keys and press Space. When the board fills up, most discs wins."
+      },
+      "genres": [
+        "strategy",
+        "puzzle"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/reversi.png"
+    },
+    {
+      "id": "simon-says",
+      "title": {
+        "tr": "Simon Der Ki",
+        "en": "Simon Says"
+      },
+      "description": {
+        "tr": "Renkli düğmelerin çaldığı melodiyi izle ve aynı sırayla tekrarla. Her turda dizi uzar, tempo artar!",
+        "en": "Watch the coloured pads play a tune and repeat it in the same order. Every round the sequence grows and speeds up!"
+      },
+      "howTo": {
+        "tr": "Diziyi izle, sonra renklere dokun ya da ok tuşlarına (↑ yeşil, → kırmızı, ↓ mavi, ← sarı) bas. 3 hata hakkın var.",
+        "en": "Watch the sequence, then tap the pads or press the arrows (↑ green, → red, ↓ blue, ← yellow). You can make 3 mistakes."
+      },
+      "genres": [
+        "casual",
+        "puzzle",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/simon-says.png"
+    },
+    {
+      "id": "sky-jumper",
+      "title": {
+        "tr": "Gök Zıplayıcı",
+        "en": "Sky Jumper"
+      },
+      "description": {
+        "tr": "Tavşanı bulutların üstüne zıplat: yaylarla uç, jet sırt çantasıyla fırla, kırılan platformlardan ve yaratıklardan sakın.",
+        "en": "Bounce the bunny up into the sky: ride springs, blast off with a jetpack and dodge breaking platforms and monsters."
+      },
+      "howTo": {
+        "tr": "Ekranın soluna/sağına dokun ya da sol/sağ ok tuşlarıyla yönlendir. Zıplama otomatik; düşmanların üstüne basabilirsin!",
+        "en": "Touch the left/right side or use the left/right arrow keys to steer. Jumping is automatic; you can stomp on enemies!"
+      },
+      "genres": [
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/sky-jumper.png"
+    },
+    {
+      "id": "sokoban",
+      "title": {
+        "tr": "Kutu İtici",
+        "en": "Box Pusher"
+      },
+      "description": {
+        "tr": "Klasik Sokoban: 20 el yapımı bölümde tüm kutuları hedeflere it. Az hamle, çok yıldız!",
+        "en": "Classic Sokoban: push every crate onto a target across 20 handmade levels. Fewer moves, more stars!"
+      },
+      "howTo": {
+        "tr": "Ok tuşları, kaydırma ya da yön düğmeleriyle yürü; kutuları it. Bir kareye dokunarak oraya yürü. Z/geri: hamleyi geri al, R: bölümü yeniden başlat.",
+        "en": "Walk with the arrow keys, swipes or the D-pad and push the crates. Tap a tile to walk there. Z/undo button: undo, R: restart the level."
+      },
+      "genres": [
+        "puzzle",
+        "retro",
+        "strategy"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/sokoban.png"
+    },
+    {
+      "id": "solitaire",
+      "title": {
+        "tr": "Solitaire",
+        "en": "Solitaire"
+      },
+      "description": {
+        "tr": "Klasik Klondike kâğıt falı: tüm kartları türlerine göre As'tan Papaz'a diz. Dokun, kart kendi yerine gitsin.",
+        "en": "Classic Klondike patience: build every suit from Ace to King. Tap a card and it jumps to the best spot."
+      },
+      "howTo": {
+        "tr": "Karta dokun ya da sürükle; desteye dokunup kart çek. Klavye: oklar seç, Enter oyna, Boşluk kart çek, X geri al.",
+        "en": "Tap or drag cards; tap the deck to draw. Keys: arrows select, Enter plays, Space draws, X undoes."
+      },
+      "genres": [
+        "card",
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/solitaire.png"
+    },
+    {
+      "id": "space-blaster",
+      "title": {
+        "tr": "Uzay Avcısı",
+        "en": "Space Blaster"
+      },
+      "description": {
+        "tr": "Dalga dalga gelen düşman filolarını ve göktaşlarını patlat, güçlendirmeleri topla.",
+        "en": "Blast waves of enemy fleets and meteors, grab power-ups and survive."
+      },
+      "howTo": {
+        "tr": "Gemiyi sürükle ya da ok tuşlarıyla yönet. Ateş otomatik. Yıldırım: çift atış, kalkan: koruma.",
+        "en": "Drag the ship or use the arrow keys. Firing is automatic. Bolt: double shot, shield: protection."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/space-blaster.png"
+    },
+    {
+      "id": "tank-arena",
+      "title": {
+        "tr": "Tank Arenası",
+        "en": "Tank Arena"
+      },
+      "description": {
+        "tr": "Arenaya dalga dalga gelen düşman tanklarını yok et, sandıkları patlat, güçlendirmeleri kap.",
+        "en": "Destroy waves of enemy tanks, blow up crates and grab power-ups in a top-down arena."
+      },
+      "howTo": {
+        "tr": "Joystick ya da ok/WASD ile sür. A, Boşluk ya da dokunma/tıklama ile ateş et; namlu en yakın düşmana kilitlenir.",
+        "en": "Drive with the joystick or arrows/WASD. Fire with A, Space or a tap/click; the turret locks onto the nearest enemy."
+      },
+      "genres": [
+        "action",
+        "arcade",
+        "retro"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/tank-arena.png"
+    },
+    {
+      "id": "tappy-plane",
+      "title": {
+        "tr": "Pıt Pıt Uçak",
+        "en": "Tappy Plane"
+      },
+      "description": {
+        "tr": "Küçük uçağını kayalık geçitlerden geçir, yıldız topla ve bronz, gümüş, altın madalyaları kazan.",
+        "en": "Flap your little plane through rocky gaps, grab stars and earn bronze, silver and gold medals."
+      },
+      "howTo": {
+        "tr": "Yükselmek için ekrana dokun ya da Boşluk / Yukarı tuşuna bas. Kayalara ve yere çarpma!",
+        "en": "Tap the screen or press Space / Up to flap. Don't hit the rocks or the ground!"
+      },
+      "genres": [
+        "arcade",
+        "casual",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/tappy-plane.png"
+    },
+    {
+      "id": "tower-defense",
+      "title": {
+        "tr": "Kule Savunması",
+        "en": "Tower Defense"
+      },
+      "description": {
+        "tr": "Yolu taret, top ve füze kuleleriyle savun. 15 dalga asker, tank ve uçağı durdur.",
+        "en": "Guard the road with turrets, cannons and missile towers. Stop 15 waves of soldiers, tanks and planes."
+      },
+      "howTo": {
+        "tr": "Sağdan kule seç, çimene dokunarak kur; kuleye dokunup geliştir veya sat. Klavye: oklar, Boşluk kur, 1-3 kule, N dalga.",
+        "en": "Pick a tower on the right and tap grass to build; tap a tower to upgrade or sell. Keys: arrows, Space build, 1-3 tower, N wave."
+      },
+      "genres": [
+        "strategy",
+        "action",
+        "retro"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/tower-defense.png"
+    },
+    {
+      "id": "zombie-survivor",
+      "title": {
+        "tr": "Zombi Hayatta Kalma",
+        "en": "Zombie Survivor"
+      },
+      "description": {
+        "tr": "Dört bir yandan gelen zombi dalgalarına karşı dayan, her dalgadan sonra silahını güçlendir.",
+        "en": "Hold out against zombie waves from every side and upgrade your gun after each wave."
+      },
+      "howTo": {
+        "tr": "Sol joystick ya da WASD/oklar ile kaç; ateş otomatik. Sağ tarafa dokun, sürükle ya da fareyle nişan al. B/X: otomatik nişan aç-kapa.",
+        "en": "Run with the left joystick or WASD/arrows; firing is automatic. Touch/drag the right side or use the mouse to aim. B/X: toggle auto-aim."
+      },
+      "genres": [
+        "action",
+        "arcade",
+        "retro"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "thumb": "thumbs/zombie-survivor.png"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "solitaire",
+  "title": {
+    "en": "Solitaire",
+    "tr": "Solitaire"
+  },
+  "description": {
+    "en": "Classic Klondike patience: build every suit from Ace to King. Tap a card and it jumps to the best spot.",
+    "tr": "Klasik Klondike kâğıt falı: tüm kartları türlerine göre As'tan Papaz'a diz. Dokun, kart kendi yerine gitsin."
+  },
+  "category": "board",
+  "tags": [
+    "card",
+    "puzzle",
+    "casual",
+    "solitaire",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/solitaire/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/solitaire/ayvago/icon-512.png",
+    "cover": "/games/solitaire/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

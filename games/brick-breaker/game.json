@@ -1,0 +1,11 @@
+{
+  "id": "brick-breaker",
+  "title": { "tr": "Tuğla Kırıcı", "en": "Brick Breaker" },
+  "description": { "tr": "Topu sektir, tuğlaları kır ve 10 bölümü bitir. Genişletme, çoklu top ve yavaşlatma güçlerini kap!", "en": "Bounce the ball, smash every brick and clear 10 levels. Grab wide, multiball and slow power-ups!" },
+  "howTo": { "tr": "Raketi parmağınla ya da ok tuşlarıyla kaydır. Topu fırlatmak için dokun ya da BOŞLUK'a bas.", "en": "Slide the paddle with your finger or the arrow keys. Tap or press SPACE to launch the ball." },
+  "genres": ["arcade", "retro", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

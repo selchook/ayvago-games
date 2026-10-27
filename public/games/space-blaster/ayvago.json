@@ -1,0 +1,54 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "spaceblaster",
+  "title": {
+    "en": "Space Blaster",
+    "tr": "Uzay Avcısı"
+  },
+  "description": {
+    "en": "Blast waves of enemy fleets and meteors, grab power-ups and survive.",
+    "tr": "Dalga dalga gelen düşman filolarını ve göktaşlarını patlat, güçlendirmeleri topla."
+  },
+  "category": "retro_action",
+  "tags": [
+    "arcade",
+    "action",
+    "retro",
+    "space",
+    "blaster"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/space-blaster/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/space-blaster/ayvago/icon-512.png",
+    "cover": "/games/space-blaster/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "tank-arena",
+  "title": { "tr": "Tank Arenası", "en": "Tank Arena" },
+  "description": { "tr": "Arenaya dalga dalga gelen düşman tanklarını yok et, sandıkları patlat, güçlendirmeleri kap.", "en": "Destroy waves of enemy tanks, blow up crates and grab power-ups in a top-down arena." },
+  "howTo": { "tr": "Joystick ya da ok/WASD ile sür. A, Boşluk ya da dokunma/tıklama ile ateş et; namlu en yakın düşmana kilitlenir.", "en": "Drive with the joystick or arrows/WASD. Fire with A, Space or a tap/click; the turret locks onto the nearest enemy." },
+  "genres": ["action", "arcade", "retro"],
+  "orientation": "landscape",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

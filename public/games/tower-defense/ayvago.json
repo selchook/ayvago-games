@@ -1,0 +1,54 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "towerdefense",
+  "title": {
+    "en": "Tower Defense",
+    "tr": "Kule Savunması"
+  },
+  "description": {
+    "en": "Guard the road with turrets, cannons and missile towers. Stop 15 waves of soldiers, tanks and planes.",
+    "tr": "Yolu taret, top ve füze kuleleriyle savun. 15 dalga asker, tank ve uçağı durdur."
+  },
+  "category": "retro_action",
+  "tags": [
+    "strategy",
+    "action",
+    "retro",
+    "tower",
+    "defense"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/tower-defense/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/tower-defense/ayvago/icon-512.png",
+    "cover": "/games/tower-defense/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

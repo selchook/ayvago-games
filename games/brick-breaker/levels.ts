@@ -1,0 +1,113 @@
+// brick colours: key -> [plain 188x88 tile, outlined 208x108 tile]
+export const BRICK_COLORS: Record<string, { plain: string; framed: string; tint: number }> = {
+  r: { plain: 'tiles_red/tilered_02', framed: 'tiles_red/tilered_26', tint: 0xe0474c },
+  o: { plain: 'tiles_orange/tileorange_01', framed: 'tiles_orange/tileorange_25', tint: 0xf08a24 },
+  y: { plain: 'tiles_yellow/tileyellow_02', framed: 'tiles_yellow/tileyellow_26', tint: 0xffd23f },
+  g: { plain: 'tiles_green/tilegreen_02', framed: 'tiles_green/tilegreen_26', tint: 0x86c232 },
+  b: { plain: 'tiles_blue/tileblue_02', framed: 'tiles_blue/tileblue_26', tint: 0x2aa7e0 },
+  p: { plain: 'tiles_pink/tilepink_02', framed: 'tiles_pink/tilepink_26', tint: 0xff8fc8 },
+  k: { plain: 'tiles_black/tileblack_02', framed: 'tiles_black/tileblack_26', tint: 0x6b6b6b },
+};
+
+
+/**
+ * Level layouts, 10 columns each.
+ * '.' empty · r o y g b p = 1-hit brick · R O Y G B P = 2-hit · K = 3-hit armour · # = steel (unbreakable).
+ */
+export const LEVELS: string[][] = [
+  [
+    '..........',
+    '.rrrrrrrr.',
+    '.oooooooo.',
+    '.yyyyyyyy.',
+    '.gggggggg.',
+    '.bbbbbbbb.',
+  ],
+  [
+    '....pp....',
+    '...pPPp...',
+    '..bbBBbb..',
+    '.ggGggGgg.',
+    'yyyyYYyyyy',
+    'oooooooooo',
+  ],
+  [
+    'r.r.r.r.r.',
+    '.o.o.o.o.o',
+    'y.y.y.y.y.',
+    '.G.G.G.G.G',
+    'b.b.b.b.b.',
+    '.p.p.p.p.p',
+    '##......##',
+  ],
+  [
+    '..g....g..',
+    '...g..g...',
+    '..GGGGGG..',
+    '.GGyGGyGG.',
+    'GGGGGGGGGG',
+    'G.GGGGGG.G',
+    'G.G....G.G',
+    '...GG.GG..',
+  ],
+  [
+    '.RR....RR.',
+    'RrrR..RrrR',
+    'RrrrRRrrrR',
+    'RrrrrrrrrR',
+    '.RrrrrrrR.',
+    '..RrrrrR..',
+    '...RrrR...',
+    '....RR....',
+  ],
+  [
+    'yyyyyyyyyy',
+    'YYYYYYYYYY',
+    '###....###',
+    'oooooooooo',
+    'OOOOOOOOOO',
+    '....##....',
+    'pppppppppp',
+  ],
+  [
+    '....KK....',
+    '...KBBK...',
+    '..KBbbBK..',
+    '.KBbggbBK.',
+    'KBbgyygbBK',
+    '.KBbggbBK.',
+    '..KBbbBK..',
+    '...KBBK...',
+    '....KK....',
+  ],
+  [
+    'K.K.K.K.K.',
+    'RrOoYyGgBb',
+    'RrOoYyGgBb',
+    '#.#.#.#.#.',
+    'pPpPpPpPpP',
+    'PpPpPpPpPp',
+  ],
+  [
+    '#KKKKKKKK#',
+    '#RRRRRRRR#',
+    '#rrrrrrrr#',
+    '#OOOOOOOO#',
+    '#oooooooo#',
+    '#YYYYYYYY#',
+    '#........#',
+    '###....###',
+  ],
+  [
+    'KKKKKKKKKK',
+    'KBBBBBBBBK',
+    'KBggggggBK',
+    'KBgYYYYgBK',
+    'KBgYrrYgBK',
+    'KBgYYYYgBK',
+    'KBggggggBK',
+    'KBBBBBBBBK',
+    'KKKKKKKKKK',
+    '#...##...#',
+  ],
+];

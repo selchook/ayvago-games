@@ -1,0 +1,52 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "lightsout",
+  "title": {
+    "en": "Lights Out",
+    "tr": "Işıkları Söndür"
+  },
+  "description": {
+    "en": "Tapping a light toggles it and its four neighbours. Switch every light off before you run out of moves; boards grow every level.",
+    "tr": "Bir lambaya dokunmak onu ve dört komşusunu açıp kapatır. Hamlelerin bitmeden tüm ışıkları söndür; tahtalar her bölümde büyür."
+  },
+  "category": "puzzle",
+  "tags": [
+    "retro",
+    "lights",
+    "out"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/lights-out/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/lights-out/ayvago/icon-512.png",
+    "cover": "/games/lights-out/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

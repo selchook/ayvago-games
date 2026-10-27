@@ -1,0 +1,11 @@
+{
+  "id": "merge-2048",
+  "title": { "tr": "2048", "en": "Merge 2048" },
+  "description": { "tr": "Aynı sayıları birleştirerek 2048 karesine ulaş. 3 geri alma hakkın var; 2048'den sonra da devam edebilirsin.", "en": "Slide and merge equal numbers to reach the 2048 tile. You get 3 undos, and you can keep going after 2048." },
+  "howTo": { "tr": "Kaydırarak ya da ok tuşlarıyla tüm kareleri it; aynı sayılar birleşir. Geri düğmesi ya da Z: son hamleyi geri al.", "en": "Swipe or press the arrow keys to slide all tiles; equal numbers merge. Undo button or Z: take back the last move." },
+  "genres": ["puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl"]
+}

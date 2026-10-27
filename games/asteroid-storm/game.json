@@ -1,0 +1,11 @@
+{
+  "id": "asteroid-storm",
+  "title": { "tr": "Göktaşı Fırtınası", "en": "Asteroid Storm" },
+  "description": { "tr": "Gemini döndür, itki ver ve göktaşlarını parçala. Büyük kayalar bölünür, UFO'lar bonus puan getirir.", "en": "Rotate, thrust and shoot the rocks to pieces. Big rocks split apart and UFOs bring bonus points." },
+  "howTo": { "tr": "Ok tuşları: dön ve itki ver, Boşluk: ateş, X: hiperuzay. Dokunmatik: joystick ile yönlen, A ateş, B hiperuzay.", "en": "Arrows: rotate and thrust, Space: fire, X: hyperspace. Touch: steer with the joystick, A fires, B hyperspace." },
+  "genres": ["arcade", "action", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

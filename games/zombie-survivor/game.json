@@ -1,0 +1,11 @@
+{
+  "id": "zombie-survivor",
+  "title": { "tr": "Zombi Hayatta Kalma", "en": "Zombie Survivor" },
+  "description": { "tr": "Dört bir yandan gelen zombi dalgalarına karşı dayan, her dalgadan sonra silahını güçlendir.", "en": "Hold out against zombie waves from every side and upgrade your gun after each wave." },
+  "howTo": { "tr": "Sol joystick ya da WASD/oklar ile kaç; ateş otomatik. Sağ tarafa dokun, sürükle ya da fareyle nişan al. B/X: otomatik nişan aç-kapa.", "en": "Run with the left joystick or WASD/arrows; firing is automatic. Touch/drag the right side or use the mouse to aim. B/X: toggle auto-aim." },
+  "genres": ["action", "arcade", "retro"],
+  "orientation": "landscape",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

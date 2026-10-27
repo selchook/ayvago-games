@@ -1,0 +1,11 @@
+{
+  "id": "sky-jumper",
+  "title": { "tr": "Gök Zıplayıcı", "en": "Sky Jumper" },
+  "description": { "tr": "Tavşanı bulutların üstüne zıplat: yaylarla uç, jet sırt çantasıyla fırla, kırılan platformlardan ve yaratıklardan sakın.", "en": "Bounce the bunny up into the sky: ride springs, blast off with a jetpack and dodge breaking platforms and monsters." },
+  "howTo": { "tr": "Ekranın soluna/sağına dokun ya da sol/sağ ok tuşlarıyla yönlendir. Zıplama otomatik; düşmanların üstüne basabilirsin!", "en": "Touch the left/right side or use the left/right arrow keys to steer. Jumping is automatic; you can stomp on enemies!" },
+  "genres": ["arcade", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

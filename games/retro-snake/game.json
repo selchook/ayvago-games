@@ -1,0 +1,11 @@
+{
+  "id": "retro-snake",
+  "title": { "tr": "Retro Yılan", "en": "Retro Snake" },
+  "description": { "tr": "Klasik yılan oyunu: meyveleri ye, uza ve hızlan. Süreli bonus yemekleri kaçırma, kendine çarpma!", "en": "Classic snake: eat fruit, grow longer and faster. Grab the timed bonus food and don't bite yourself!" },
+  "howTo": { "tr": "Kaydırarak, yılanın yanına dokunarak ya da ok tuşlarıyla yön ver. Duvarlı modda kenarlar öldürür ama puan iki kat.", "en": "Swipe, tap beside the snake or use the arrow keys to steer. In walls mode the edges kill, but points are doubled." },
+  "genres": ["arcade", "retro", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

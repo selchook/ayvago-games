@@ -1,0 +1,11 @@
+{
+  "id": "lights-out",
+  "title": { "tr": "Işıkları Söndür", "en": "Lights Out" },
+  "description": { "tr": "Bir lambaya dokunmak onu ve dört komşusunu açıp kapatır. Hamlelerin bitmeden tüm ışıkları söndür; tahtalar her bölümde büyür.", "en": "Tapping a light toggles it and its four neighbours. Switch every light off before you run out of moves; boards grow every level." },
+  "howTo": { "tr": "Lambaya dokun. Klavye: oklarla seç, Boşluk ile bas. İpucu düğmesi ya da X tuşu bir hamle gösterir.", "en": "Tap a light. Keyboard: arrows select, Space presses. The hint button or X shows a move." },
+  "genres": ["puzzle", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl"]
+}

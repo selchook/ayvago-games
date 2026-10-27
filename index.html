@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#201e1d" />
+    <link rel="icon" href="./assets/ayvago/favicon.png" />
+    <title>Ayvago Games</title>
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="./" aria-label="Ayvago Games">
+        <span class="logo"><img src="./assets/ayvago/boot_seed.png" alt="" /></span>
+        <span class="word">AYVAGO</span><span class="games">GAMES</span>
+      </a>
+      <button id="lang" class="chip" type="button">EN</button>
+    </header>
+    <main>
+      <section class="hero">
+        <h1 id="hero-title"></h1>
+        <p id="hero-sub"></p>
+      </section>
+      <nav id="filters" class="filters" aria-label="genres"></nav>
+      <input id="search" class="search" type="search" autocomplete="off" />
+      <section id="grid" class="grid"></section>
+    </main>
+    <footer class="foot"><span id="count"></span> · Art & audio: Kenney (CC0)</footer>
+    <script type="module" src="./portal/main.ts"></script>
+  </body>
+</html>

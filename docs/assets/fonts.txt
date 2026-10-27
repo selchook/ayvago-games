@@ -1,0 +1,11 @@
+fonts/fonts/kenney_blocks.ttf
+fonts/fonts/kenney_future.ttf
+fonts/fonts/kenney_future_narrow.ttf
+fonts/fonts/kenney_high.ttf
+fonts/fonts/kenney_high_square.ttf
+fonts/fonts/kenney_mini.ttf
+fonts/fonts/kenney_mini_square.ttf
+fonts/fonts/kenney_pixel.ttf
+fonts/fonts/kenney_pixel_square.ttf
+fonts/fonts/kenney_rocket.ttf
+fonts/fonts/kenney_rocket_square.ttf

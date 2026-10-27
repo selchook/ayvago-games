@@ -1,0 +1,11 @@
+{
+  "id": "tappy-plane",
+  "title": { "tr": "Pıt Pıt Uçak", "en": "Tappy Plane" },
+  "description": { "tr": "Küçük uçağını kayalık geçitlerden geçir, yıldız topla ve bronz, gümüş, altın madalyaları kazan.", "en": "Flap your little plane through rocky gaps, grab stars and earn bronze, silver and gold medals." },
+  "howTo": { "tr": "Yükselmek için ekrana dokun ya da Boşluk / Yukarı tuşuna bas. Kayalara ve yere çarpma!", "en": "Tap the screen or press Space / Up to flap. Don't hit the rocks or the ground!" },
+  "genres": ["arcade", "casual", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "simon-says",
+  "title": { "tr": "Simon Der Ki", "en": "Simon Says" },
+  "description": { "tr": "Renkli düğmelerin çaldığı melodiyi izle ve aynı sırayla tekrarla. Her turda dizi uzar, tempo artar!", "en": "Watch the coloured pads play a tune and repeat it in the same order. Every round the sequence grows and speeds up!" },
+  "howTo": { "tr": "Diziyi izle, sonra renklere dokun ya da ok tuşlarına (↑ yeşil, → kırmızı, ↓ mavi, ← sarı) bas. 3 hata hakkın var.", "en": "Watch the sequence, then tap the pads or press the arrows (↑ green, → red, ↓ blue, ← yellow). You can make 3 mistakes." },
+  "genres": ["casual", "puzzle", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl"]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "bubble-pop",
+  "title": { "tr": "Balon Patlat", "en": "Bubble Pop" },
+  "description": { "tr": "Renkli balonları nişan alıp fırlat, aynı renkten üç ya da daha fazlasını birleştirip patlat. Tavan alçalmadan tahtayı temizle!", "en": "Aim and shoot colourful bubbles, match three or more of the same colour to pop them. Clear the board before the ceiling comes down!" },
+  "howTo": { "tr": "Nişan almak için sürükle, bırakınca fırlat. Klavye: ok tuşlarıyla nişan al, Boşluk ile fırlat, X ile balonu değiştir.", "en": "Drag to aim and release to shoot. Keyboard: arrows aim, Space shoots, X swaps the bubble." },
+  "genres": ["puzzle", "casual", "arcade"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

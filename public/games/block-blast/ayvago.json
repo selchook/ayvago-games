@@ -1,0 +1,53 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "blockblast",
+  "title": {
+    "en": "Block Blast",
+    "tr": "Blok Patlat"
+  },
+  "description": {
+    "en": "Fit three pieces onto the 8x8 board and blast full rows and columns. Chain combos and score until nothing fits!",
+    "tr": "Üç parçayı 8x8 tahtaya yerleştir, dolan satır ve sütunları patlat. Kombo yap, parçalar sığmayana kadar puan topla!"
+  },
+  "category": "puzzle",
+  "tags": [
+    "casual",
+    "block",
+    "blast",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/block-blast/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/block-blast/ayvago/icon-512.png",
+    "cover": "/games/block-blast/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

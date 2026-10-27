@@ -1,0 +1,53 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "retrosnake",
+  "title": {
+    "en": "Retro Snake",
+    "tr": "Retro Yılan"
+  },
+  "description": {
+    "en": "Classic snake: eat fruit, grow longer and faster. Grab the timed bonus food and don't bite yourself!",
+    "tr": "Klasik yılan oyunu: meyveleri ye, uza ve hızlan. Süreli bonus yemekleri kaçırma, kendine çarpma!"
+  },
+  "category": "retro_action",
+  "tags": [
+    "arcade",
+    "retro",
+    "casual",
+    "snake"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/retro-snake/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/retro-snake/ayvago/icon-512.png",
+    "cover": "/games/retro-snake/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

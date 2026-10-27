@@ -1,0 +1,54 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "neonpong",
+  "title": {
+    "en": "Neon Pong",
+    "tr": "Neon Pong"
+  },
+  "description": {
+    "en": "Vertical Pong in neon! Be first to 7 against a smarter opponent every round.",
+    "tr": "Neon ışıklı dikey Pong! Her turda daha akıllı bir rakibe karşı 7 sayıya ilk ulaşan sen ol."
+  },
+  "category": "retro_action",
+  "tags": [
+    "arcade",
+    "sports",
+    "retro",
+    "neon",
+    "pong"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/neon-pong/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/neon-pong/ayvago/icon-512.png",
+    "cover": "/games/neon-pong/ayvago/cover-1920x1080.jpg"
+  },
+  "version": "1.0.0"
+}

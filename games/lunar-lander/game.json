@@ -1,0 +1,11 @@
+{
+  "id": "lunar-lander",
+  "title": { "tr": "Ay İnişi", "en": "Lunar Lander" },
+  "description": { "tr": "Modülü itki ve dönüşle yönet, yakıtın bitmeden işaretli pistlerden birine yumuşak iniş yap. Dar pist, büyük puan!", "en": "Steer the module with thrust and rotation and land softly on a marked pad before your fuel runs out. Narrow pads, big points!" },
+  "howTo": { "tr": "Sol/Sağ: dön, Yukarı ya da Boşluk: itki. Dokunmatik: soldaki oklarla dön, sağdaki düğmeyle itki ver. Yavaş ve dik in!", "en": "Left/Right: rotate, Up or Space: thrust. Touch: rotate with the left arrows, thrust with the right button. Land slow and upright!" },
+  "genres": ["arcade", "casual", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

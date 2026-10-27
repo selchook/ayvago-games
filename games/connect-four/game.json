@@ -1,0 +1,11 @@
+{
+  "id": "connect-four",
+  "title": { "tr": "Dört Bağla", "en": "Connect Four" },
+  "description": { "tr": "Pulları düşür, dördünü yan yana diz! Her galibiyette rakip yapay zekâ biraz daha akıllanır.", "en": "Drop your chips and line up four! The AI opponent gets smarter with every win." },
+  "howTo": { "tr": "Bir sütuna dokunarak pul bırak ya da ok tuşlarıyla seçip Boşluk'a bas. Yatay, dikey veya çapraz dört pul diz.", "en": "Tap a column to drop a chip, or pick one with the arrow keys and press Space. Line up four in a row, column or diagonal." },
+  "genres": ["strategy", "puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

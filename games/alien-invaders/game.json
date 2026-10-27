@@ -1,0 +1,11 @@
+{
+  "id": "alien-invaders",
+  "title": { "tr": "Uzaylı İstilası", "en": "Alien Invaders" },
+  "description": { "tr": "Adım adım yaklaşan uzaylı filosunu sığınakların arkasından vur. Gizemli UFO'yu yakala, filo azaldıkça hızlanır!", "en": "Shoot the marching alien fleet from behind your bunkers. Catch the mystery UFO — the fewer aliens left, the faster they come!" },
+  "howTo": { "tr": "Ok tuşlarıyla kay, Boşluk ile ateş et. Dokunmatik: ekrana basılı tut, gemi parmağını izler ve otomatik ateş eder.", "en": "Move with the arrow keys and fire with Space. Touch: hold the screen, the ship follows your finger and fires automatically." },
+  "genres": ["arcade", "action", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

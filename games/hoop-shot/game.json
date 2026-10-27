@@ -1,0 +1,11 @@
+{
+  "id": "hoop-shot",
+  "title": { "tr": "Basket Atışı", "en": "Hoop Shot" },
+  "description": { "tr": "Topu fırlat, hareketli potadan geçir! Seri yap, süre kazan, son saniye basketleriyle rekor kır.", "en": "Flick the ball through a moving hoop! Build streaks, earn extra time and sink buzzer beaters for a high score." },
+  "howTo": { "tr": "Yukarı kaydırıp bırak ya da ←→ ile yön, ↑↓ ile güç seç, Boşluk ile at. Her basket süre kazandırır.", "en": "Swipe up and release, or aim with ←→, set power with ↑↓ and shoot with Space. Every basket adds time." },
+  "genres": ["sports", "arcade", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

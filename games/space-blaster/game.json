@@ -1,0 +1,11 @@
+{
+  "id": "space-blaster",
+  "title": { "tr": "Uzay Avcısı", "en": "Space Blaster" },
+  "description": { "tr": "Dalga dalga gelen düşman filolarını ve göktaşlarını patlat, güçlendirmeleri topla.", "en": "Blast waves of enemy fleets and meteors, grab power-ups and survive." },
+  "howTo": { "tr": "Gemiyi sürükle ya da ok tuşlarıyla yönet. Ateş otomatik. Yıldırım: çift atış, kalkan: koruma.", "en": "Drag the ship or use the arrow keys. Firing is automatic. Bolt: double shot, shield: protection." },
+  "genres": ["arcade", "action", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

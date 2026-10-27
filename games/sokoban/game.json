@@ -1,0 +1,11 @@
+{
+  "id": "sokoban",
+  "title": { "tr": "Kutu İtici", "en": "Box Pusher" },
+  "description": { "tr": "Klasik Sokoban: 20 el yapımı bölümde tüm kutuları hedeflere it. Az hamle, çok yıldız!", "en": "Classic Sokoban: push every crate onto a target across 20 handmade levels. Fewer moves, more stars!" },
+  "howTo": { "tr": "Ok tuşları, kaydırma ya da yön düğmeleriyle yürü; kutuları it. Bir kareye dokunarak oraya yürü. Z/geri: hamleyi geri al, R: bölümü yeniden başlat.", "en": "Walk with the arrow keys, swipes or the D-pad and push the crates. Tap a tile to walk there. Z/undo button: undo, R: restart the level." },
+  "genres": ["puzzle", "retro", "strategy"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

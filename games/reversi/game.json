@@ -1,0 +1,11 @@
+{
+  "id": "reversi",
+  "title": { "tr": "Reversi", "en": "Reversi" },
+  "description": { "tr": "Klasik Othello: rakibin taşlarını sıkıştırıp kendi rengine çevir. Her galibiyette yapay zekâ güçlenir.", "en": "Classic Othello: trap the rival's discs to flip them to your colour. The AI grows stronger with every win." },
+  "howTo": { "tr": "Noktalı karelerden birine dokun ya da ok tuşlarıyla seçip Boşluk'a bas. Tahtayı kapatınca en çok taşı olan kazanır.", "en": "Tap a dotted square, or move with the arrow keys and press Space. When the board fills up, most discs wins." },
+  "genres": ["strategy", "puzzle"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

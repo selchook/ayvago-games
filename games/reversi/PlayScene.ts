@@ -1,0 +1,269 @@
+import Phaser from 'phaser';
+import { ArcadeScene, burst, shake, flash, txt, t, rng } from '@core';
+import { Brain, N, flips, legalMoves, count } from './ai';
+
+const CELL = 82;
+const BX = (720 - N * CELL) / 2;
+const BY = 290;
+const DISC = 70;
+// [search depth, random-move chance] per level
+const LEVELS: Array<[number, number]> = [[1, 0.4], [2, 0.15], [3, 0], [4, 0], [5, 0], [7, 0]];
+
+type State = 'player' | 'ai' | 'busy';
+
+export class PlayScene extends ArcadeScene {
+  private board: number[] = [];
+  private discs: Array<Phaser.GameObjects.Image | null> = [];
+  private hints: Phaser.GameObjects.Arc[] = [];
+  private cursor!: Phaser.GameObjects.Rectangle;
+  private cur = 19;
+  private state: State = 'busy';
+  private status!: Phaser.GameObjects.Text;
+  private info!: Phaser.GameObjects.Text;
+  private banner!: Phaser.GameObjects.Text;
+  private countB!: Phaser.GameObjects.Text;
+  private countW!: Phaser.GameObjects.Text;
+  private level = 0;
+  private lives = 2;
+  private streak = 0;
+  private round = 0;
+
+  createGame(): void {
+    const { width } = this.scale;
+    this.board = new Array(64).fill(0);
+    this.discs = new Array(64).fill(null);
+    this.hints = [];
+    this.state = 'busy'; this.cur = 19;
+    this.level = 0; this.lives = 2; this.streak = 0; this.round = 0;
+    this.cameras.main.setBackgroundColor('#0d2418');
+
+    // wooden frame + felt + grid
+    const g = this.add.graphics();
+    const S = N * CELL;
+    g.fillStyle(0x000000, 0.4).fillRoundedRect(BX - 22, BY - 14, S + 44, S + 44, 18);
+    g.fillStyle(0x7a4a22).fillRoundedRect(BX - 22, BY - 22, S + 44, S + 44, 18);
+    g.lineStyle(4, 0x4a2a10).strokeRoundedRect(BX - 22, BY - 22, S + 44, S + 44, 18);
+    g.fillStyle(0x1f8a4c).fillRect(BX, BY, S, S);
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if ((i + j) % 2) g.fillStyle(0x1c8046).fillRect(BX + i * CELL, BY + j * CELL, CELL, CELL);
+    g.lineStyle(3, 0x0f5a2e);
+    for (let i = 0; i <= N; i++) {
+      g.lineBetween(BX + i * CELL, BY, BX + i * CELL, BY + S);
+      g.lineBetween(BX, BY + i * CELL, BX + S, BY + i * CELL);
+    }
+    g.fillStyle(0x0f5a2e);
+    for (const [cx, cy] of [[2, 2], [6, 2], [2, 6], [6, 6]]) g.fillCircle(BX + cx * CELL, BY + cy * CELL, 6);
+
+    this.cursor = this.add.rectangle(0, 0, CELL - 6, CELL - 6).setStrokeStyle(5, 0xffd23f).setDepth(15);
+    this.tweens.add({ targets: this.cursor, alpha: 0.4, duration: 450, yoyo: true, repeat: -1 });
+
+    this.status = txt(this, width / 2, 140, '', { title: true, size: 26, color: '#ffd23f' });
+    this.info = txt(this, width / 2, 196, '', { size: 30, color: '#3ee6ff' });
+    this.banner = txt(this, width / 2, BY + S / 2, '', { title: true, size: 50, strokeThickness: 10 }).setDepth(40).setVisible(false);
+
+    // disc counters
+    const py = BY + S + 100;
+    this.add.rectangle(width / 2, py, S, 110, 0x000000, 0.35).setStrokeStyle(3, 0x2f6a46);
+    this.add.image(BX + 60, py, 'disc-b').setDisplaySize(64, 64);
+    txt(this, BX + 110, py - 20, t('you'), { title: true, size: 16, color: '#aaaaaa' }).setOrigin(0, 0.5);
+    this.countB = txt(this, BX + 110, py + 18, '2', { title: true, size: 30 }).setOrigin(0, 0.5);
+    this.add.image(BX + S - 60, py, 'disc-w').setDisplaySize(64, 64);
+    txt(this, BX + S - 110, py - 20, t('cpu'), { title: true, size: 16, color: '#aaaaaa' }).setOrigin(1, 0.5);
+    this.countW = txt(this, BX + S - 110, py + 18, '2', { title: true, size: 30 }).setOrigin(1, 0.5);
+    txt(this, width / 2, py + 105, t('keysHint'), { size: 24, color: '#7fae90' });
+
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      const c = Math.floor((p.x - BX) / CELL), r = Math.floor((p.y - BY) / CELL);
+      if (c < 0 || c >= N || r < 0 || r >= N) return;
+      this.cur = r * N + c; this.placeCursor();
+      this.playerMove(this.cur);
+    });
+    const kb = this.input.keyboard;
+    const mv = (dx: number, dy: number) => {
+      const c = Phaser.Math.Wrap((this.cur % N) + dx, 0, N), r = Phaser.Math.Wrap(Math.floor(this.cur / N) + dy, 0, N);
+      this.cur = r * N + c; this.placeCursor();
+      this.sfx('move', { volume: 0.35 });
+    };
+    kb?.on('keydown-LEFT', () => mv(-1, 0)); kb?.on('keydown-A', () => mv(-1, 0));
+    kb?.on('keydown-RIGHT', () => mv(1, 0)); kb?.on('keydown-D', () => mv(1, 0));
+    kb?.on('keydown-UP', () => mv(0, -1)); kb?.on('keydown-W', () => mv(0, -1));
+    kb?.on('keydown-DOWN', () => mv(0, 1)); kb?.on('keydown-S', () => mv(0, 1));
+    for (const k of ['SPACE', 'ENTER', 'Z']) kb?.on(`keydown-${k}`, () => this.playerMove(this.cur));
+
+    this.updateHud();
+    this.startRound();
+  }
+
+  private cx(i: number): number { return BX + (i % N) * CELL + CELL / 2; }
+  private cy(i: number): number { return BY + Math.floor(i / N) * CELL + CELL / 2; }
+
+  private placeCursor(): void {
+    this.cursor.setPosition(this.cx(this.cur), this.cy(this.cur));
+  }
+
+  private updateHud(): void {
+    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setCenter(`${t('level')} ${this.level + 1}`);
+    this.info.setText(`${t('rival', { name: t('d' + this.level) })}   ${t('streak', { n: this.streak })}`);
+    this.countB.setText(String(count(this.board, 1)));
+    this.countW.setText(String(count(this.board, 2)));
+  }
+
+  private putDisc(i: number, p: number, animate: boolean): void {
+    this.board[i] = p;
+    const d = this.add.image(this.cx(i), this.cy(i), p === 1 ? 'disc-b' : 'disc-w').setDisplaySize(DISC, DISC).setDepth(10);
+    this.discs[i] = d;
+    if (animate) {
+      const s = d.scale;
+      d.setScale(s * 1.6).setAlpha(0);
+      this.tweens.add({ targets: d, scale: s, alpha: 1, duration: 200, ease: 'Quad.easeIn' });
+    }
+  }
+
+  private startRound(): void {
+    this.round++;
+    this.discs.forEach((d) => d?.destroy());
+    this.board.fill(0); this.discs.fill(null);
+    this.putDisc(27, 2, true); this.putDisc(28, 1, true); this.putDisc(35, 1, true); this.putDisc(36, 2, true);
+    this.updateHud();
+    this.time.delayedCall(300, () => this.nextTurn(this.round % 2 === 1 ? 1 : 2, false));
+  }
+
+  private showHints(on: boolean): void {
+    this.hints.forEach((h) => h.destroy());
+    this.hints = [];
+    if (!on) return;
+    for (const m of legalMoves(this.board, 1)) {
+      const h = this.add.circle(this.cx(m), this.cy(m), 11, 0x000000, 0.35).setDepth(5);
+      this.tweens.add({ targets: h, scale: 1.3, duration: 500, yoyo: true, repeat: -1 });
+      this.hints.push(h);
+    }
+  }
+
+  /** Sets up a turn for p, handling passes and the end of the round. */
+  private nextTurn(p: number, prevPassed: boolean): void {
+    if (this.isOver) return;
+    const moves = legalMoves(this.board, p);
+    if (!moves.length) {
+      if (prevPassed || !legalMoves(this.board, 3 - p).length) return this.finishRound();
+      this.state = 'busy';
+      this.showBanner(t('pass'), '#ffd23f');
+      this.sfx('pass');
+      this.time.delayedCall(1100, () => { this.hideBanner(); this.nextTurn(3 - p, true); });
+      return;
+    }
+    if (p === 1) {
+      this.state = 'player';
+      this.status.setText(t('yourTurn')).setColor('#f3f2f2');
+      this.showHints(true);
+      this.cursor.setVisible(true);
+      if (!moves.includes(this.cur)) { this.cur = moves[0]; }
+      this.placeCursor();
+    } else {
+      this.state = 'ai';
+      this.status.setText(t('aiTurn')).setColor('#ffd23f');
+      this.showHints(false);
+      this.cursor.setVisible(false);
+      this.time.delayedCall(rng.int(400, 700), () => this.aiMove());
+    }
+  }
+
+  private playerMove(i: number): void {
+    if (this.state !== 'player' || this.isOver) return;
+    const f = flips(this.board, i, 1);
+    if (!f.length) {
+      this.sfx('error', { volume: 0.5 });
+      this.tweens.add({ targets: this.cursor, angle: 8, duration: 50, yoyo: true, repeat: 2 });
+      return;
+    }
+    this.play(i, 1, f);
+    this.addScore(f.length * 2, this.cx(i), this.cy(i) - 40);
+  }
+
+  private aiMove(): void {
+    if (this.isOver || this.state !== 'ai') return;
+    const [depth, rnd] = LEVELS[this.level];
+    const m = new Brain().choose(this.board, 2, depth, rnd, 80);
+    if (m < 0) return this.nextTurn(1, true);
+    this.play(m, 2, flips(this.board, m, 2));
+  }
+
+  private play(i: number, p: number, f: number[]): void {
+    this.state = 'busy';
+    this.showHints(false);
+    this.cursor.setVisible(false);
+    this.putDisc(i, p, true);
+    this.sfx(rng.chance(0.5) ? 'place' : 'place2', { volume: 0.7 });
+    let maxDelay = 0;
+    for (const j of f) {
+      this.board[j] = p;
+      const d = this.discs[j]!;
+      const dist = Math.max(Math.abs((j % N) - (i % N)), Math.abs(Math.floor(j / N) - Math.floor(i / N)));
+      const delay = 120 + dist * 90, sx = d.scaleX;
+      maxDelay = Math.max(maxDelay, delay);
+      this.tweens.add({
+        targets: d, scaleX: 0, duration: 110, delay, ease: 'Quad.easeIn',
+        onComplete: () => {
+          d.setTexture(p === 1 ? 'disc-b' : 'disc-w');
+          this.tweens.add({ targets: d, scaleX: sx, duration: 110, ease: 'Quad.easeOut' });
+          this.sfx('flip', { volume: 0.25 });
+          burst(this, d.x, d.y, p === 1 ? [0x333333, 0xffffff] : [0xffffff, 0xcccccc], 5, 120);
+        },
+      });
+    }
+    if (f.length >= 5) shake(this, 0.006, 160);
+    this.time.delayedCall(maxDelay + 280, () => {
+      this.updateHud();
+      this.nextTurn(3 - p, false);
+    });
+  }
+
+  private showBanner(s: string, color: string): void {
+    this.banner.setText(s).setColor(color).setVisible(true).setAlpha(1).setScale(0.3);
+    this.tweens.add({ targets: this.banner, scale: 1, duration: 380, ease: 'Back.easeOut' });
+  }
+
+  private hideBanner(): void {
+    this.tweens.add({ targets: this.banner, alpha: 0, duration: 220, onComplete: () => this.banner.setVisible(false) });
+  }
+
+  private finishRound(): void {
+    this.state = 'busy';
+    this.showHints(false);
+    this.cursor.setVisible(false);
+    this.status.setText('');
+    const b = count(this.board, 1), w = count(this.board, 2);
+    const cx = this.scale.width / 2;
+    if (b > w) {
+      this.streak++;
+      this.addScore(150 * (this.level + 1) + (b - w) * 10 + this.streak * 50, cx, BY - 10);
+      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.showBanner(t('roundWin'), '#5dff7a');
+      this.sfx('win'); flash(this, 0x5dff7a, 150);
+      for (let k = 0; k < 6; k++) this.time.delayedCall(k * 120, () => burst(this, rng.int(BX, BX + N * CELL), rng.int(BY, BY + N * CELL), [0xffd23f, 0xffffff, 0x5dff7a], 20, 300));
+    } else if (w > b) {
+      this.lives--; this.streak = 0;
+      this.showBanner(t('roundLose'), '#ec3013');
+      this.sfx('lose'); flash(this, 0xec3013, 200); shake(this, 0.02, 350);
+    } else {
+      this.addScore(50, cx, BY - 10);
+      this.showBanner(t('roundDraw'), '#3ee6ff');
+      this.sfx('pass');
+    }
+    this.updateHud();
+    if (this.lives <= 0) { this.endGame({ delay: 1800 }); return; }
+    this.time.delayedCall(2000, () => {
+      if (this.isOver) return;
+      this.hideBanner();
+      this.sfx('clear', { volume: 0.6 });
+      this.discs.forEach((d) => {
+        if (!d) return;
+        this.tweens.add({ targets: d, scale: 0, angle: 180, duration: 300, delay: rng.int(0, 250) });
+      });
+      this.time.delayedCall(650, () => { if (!this.isOver) this.startRound(); });
+    });
+  }
+
+  updateGame(): void {
+    /* turn-based: driven by input, timers and tweens */
+  }
+}
