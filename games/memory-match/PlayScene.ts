@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, popup, txt, t, rng } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng, net } from '@core';
 
 export const ANIMALS = [
   'bear', 'buffalo', 'chick', 'chicken', 'cow', 'crocodile', 'dog', 'duck', 'elephant', 'frog',
@@ -12,6 +12,19 @@ const AREA_TOP = 170;
 const AREA_BOTTOM = 1170;
 const TW = 120;
 const TH = 156;
+/** Online match board: 4×6 = 12 pairs, the same deck on both screens (seeded). */
+const ONLINE_GRID: [number, number] = [4, 6];
+
+/** Online flip message: card index + flip number (guards against stale messages after a rematch). */
+interface FlipMsg { i: number; n: number }
+
+function seededShuffle<T>(arr: T[], rand: () => number): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 /** Card back / face textures, drawn once. */
 export function makeCardTextures(scene: Phaser.Scene): void {
@@ -78,12 +91,21 @@ export class PlayScene extends ArcadeScene {
   private timeText!: Phaser.GameObjects.Text;
   private infoText!: Phaser.GameObjects.Text;
   private banner: Phaser.GameObjects.GameObject[] = [];
+  // online two-player state (net.active)
+  private online = false;
+  private turn: 0 | 1 = 0;            // seat whose turn it is (host starts)
+  private pairsBy: [number, number] = [0, 0];
+  private flipNo = 0;
+  private turnText!: Phaser.GameObjects.Text;
 
   createGame(): void {
     makeCardTextures(this);
     this.level = 1; this.cards = []; this.open = []; this.pendingBack = []; this.backTimer = undefined;
     this.moves = 0; this.matched = 0; this.combo = 0; this.cursor = 0; this.showCursor = false; this.banner = [];
     this.lastTick = 0;
+    this.online = net.active;
+    this.turn = 0; this.pairsBy = [0, 0]; this.flipNo = 0;
+    this.useHud = !this.online;
 
     this.barBg = this.add.rectangle(60, 112, 440, 26, 0x000000, 0.6).setOrigin(0, 0.5).setStrokeStyle(4, 0xffffff, 0.8);
     this.bar = this.add.rectangle(64, 112, 432, 18, 0x5dff7a).setOrigin(0, 0.5);
@@ -91,6 +113,14 @@ export class PlayScene extends ArcadeScene {
     this.infoText = txt(this, 360, 1215, '', { title: true, size: 20, color: '#3ee6ff' });
     this.cursorBox = this.add.rectangle(0, 0, 10, 10).setStrokeStyle(6, 0xffd23f).setDepth(20).setVisible(false);
     this.tweens.add({ targets: this.cursorBox, alpha: 0.4, duration: 400, yoyo: true, repeat: -1 });
+
+    this.turnText = txt(this, 360, 70, '', { title: true, size: 30, color: '#ffd23f' }).setVisible(this.online);
+    if (this.online) {
+      // no clock online: the top bar shows whose turn it is and the pair count instead
+      this.barBg.setVisible(false); this.bar.setVisible(false); this.timeText.setVisible(false);
+      this.infoText.setPosition(360, 128).setFontSize(24);
+      net.onScene(this, 'flip', (d: FlipMsg) => this.remoteFlip(d));
+    }
 
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.onKey(e));
     this.buildLevel();
@@ -102,7 +132,7 @@ export class PlayScene extends ArcadeScene {
     this.banner = [];
     this.cards = []; this.open = []; this.pendingBack = []; this.backTimer?.remove(); this.backTimer = undefined;
     this.moves = 0; this.matched = 0; this.combo = 0;
-    const [cols, rows] = GRIDS[Math.min(this.level - 1, GRIDS.length - 1)];
+    const [cols, rows] = this.online ? ONLINE_GRID : GRIDS[Math.min(this.level - 1, GRIDS.length - 1)];
     this.cols = cols; this.rows = rows;
     const pairs = (cols * rows) / 2;
     const perPair = Math.max(2.6, 5.5 - 0.35 * (this.level - 1));
@@ -116,8 +146,15 @@ export class PlayScene extends ArcadeScene {
     const x0 = 360 - (cellW * cols) / 2 + cellW / 2;
     const y0 = (AREA_TOP + AREA_BOTTOM) / 2 - (cellH * rows) / 2 + cellH / 2;
 
-    const animals = rng.shuffle([...ANIMALS]).slice(0, pairs);
-    const deck = rng.shuffle([...animals, ...animals]);
+    let deck: string[];
+    if (this.online) {
+      const rand = rng.seeded(net.seed);
+      const animals = seededShuffle([...ANIMALS], rand).slice(0, pairs);
+      deck = seededShuffle([...animals, ...animals], rand);
+    } else {
+      const animals = rng.shuffle([...ANIMALS]).slice(0, pairs);
+      deck = rng.shuffle([...animals, ...animals]);
+    }
     deck.forEach((a, i) => {
       const x = x0 + (i % cols) * cellW, y = y0 + Math.floor(i / cols) * cellH;
       const c = this.add.container(360, 1400).setDepth(5);
@@ -136,6 +173,19 @@ export class PlayScene extends ArcadeScene {
     this.sfx('shuffle', { volume: 0.6 });
     this.cursor = 0;
     this.updateHud();
+
+    if (this.online) {
+      // online: no memorize peek; play starts once the cards are dealt
+      this.phase = 'preview';
+      this.infoText.setText('');
+      this.time.delayedCall(deck.length * 25 + 400, () => {
+        if (this.phase !== 'preview') return;
+        this.phase = 'play';
+        this.updateHud();
+        this.announceTurn();
+      });
+      return;
+    }
 
     // memorize preview: every face shows briefly, then the clock starts
     this.phase = 'preview';
@@ -181,8 +231,30 @@ export class PlayScene extends ArcadeScene {
 
   private tap(card: Card): void {
     if (this.phase !== 'play' || card.done || card.up) return;
+    if (this.online && this.turn !== net.seat) {
+      this.sfx('miss', { volume: 0.2 });
+      this.tweens.add({ targets: this.turnText, scale: { from: 1.2, to: 1 }, duration: 200 });
+      return;
+    }
     if (this.pendingBack.length) this.flipBackNow();
     if (this.open.length >= 2) return;
+    if (this.online) net.send('flip', { i: this.cards.indexOf(card), n: this.flipNo } satisfies FlipMsg);
+    this.reveal(card);
+  }
+
+  /** Online: the opponent flipped a card on their screen. */
+  private remoteFlip(d: FlipMsg): void {
+    if (!d || typeof d.i !== 'number' || this.isOver || this.phase === 'between' || this.phase === 'over') return;
+    const card = this.cards[d.i];
+    if (d.n !== this.flipNo || !card || card.done || this.turn === net.seat) return;
+    if (this.pendingBack.length) this.flipBackNow();
+    if (card.up) return;
+    if (this.phase === 'preview') { this.phase = 'play'; this.updateHud(); }
+    this.reveal(card);
+  }
+
+  private reveal(card: Card): void {
+    this.flipNo++;
     this.flip(card, true);
     this.open.push(card);
     if (this.open.length === 2) {
@@ -191,6 +263,11 @@ export class PlayScene extends ArcadeScene {
       this.open = [];
       if (a.animal === b.animal) this.match(a, b);
       else this.miss(a, b);
+      if (this.online) {
+        // a pair keeps the turn; a miss passes it
+        if (a.animal === b.animal) this.pairsBy[this.turn]++;
+        else { this.turn = this.turn === 0 ? 1 : 0; this.announceTurn(); }
+      }
       this.updateHud();
     }
   }
@@ -202,15 +279,16 @@ export class PlayScene extends ArcadeScene {
     const pts = 50 * this.combo;
     const finished = this.matched * 2 === this.cards.length;
     if (finished) this.phase = 'between';
+    const mine = !this.online || this.turn === net.seat;
     this.time.delayedCall(220, () => {
       this.sfx('match', { volume: 0.55, detune: Math.min(600, (this.combo - 1) * 100) });
       for (const c of [a, b]) {
         this.tweens.add({ targets: c.c, scale: 1.18, duration: 140, yoyo: true, ease: 'Quad.easeOut', onComplete: () => c.face.setTint(0xc8ffd0) });
         burst(this, c.c.x, c.c.y, [0x5dff7a, 0xffd23f, 0xffffff], 18, 260);
       }
-      this.addScore(pts, (a.c.x + b.c.x) / 2, (a.c.y + b.c.y) / 2);
+      if (mine) this.addScore(pts, (a.c.x + b.c.x) / 2, (a.c.y + b.c.y) / 2);
       if (this.combo >= 3) popup(this, 360, 150, `${t('combo')} x${this.combo}`, '#ff4fa3', 26);
-      if (finished) this.time.delayedCall(250, () => this.levelClear());
+      if (finished) this.time.delayedCall(250, () => (this.online ? this.onlineEnd() : this.levelClear()));
     });
   }
 
@@ -237,6 +315,35 @@ export class PlayScene extends ArcadeScene {
       if (!c.done) this.flip(c, false);
     }
     this.pendingBack = [];
+  }
+
+  private announceTurn(): void {
+    if (!this.online || this.phase !== 'play') return;
+    const mine = this.turn === net.seat;
+    if (!mine) { this.showCursor = false; this.cursorBox.setVisible(false); }
+    this.turnText.setText(mine ? t('yourTurn') : t('theirTurn')).setColor(mine ? '#5dff7a' : '#ff8a7a');
+    this.tweens.add({ targets: this.turnText, scale: { from: 1.3, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+  }
+
+  /** Online: every pair is found; both screens counted the same pairs. */
+  private onlineEnd(): void {
+    this.phase = 'between';
+    this.cursorBox.setVisible(false);
+    const me = this.pairsBy[net.seat], them = this.pairsBy[net.seat === 0 ? 1 : 0];
+    const win = me > them, title = win ? t('youWin') : me < them ? t('youLose') : t('draw');
+    this.turnText.setText('');
+    this.sfx(win ? 'clear' : 'miss', { volume: 0.6 });
+    softFlash(this, win ? 0x5dff7a : me < them ? 0xec3013 : 0xffd23f);
+    if (!win) shake(this, 0.01, 250);
+    this.cards.forEach((c, k) => this.tweens.add({ targets: c.c, angle: 360, duration: 500, delay: k * 18, ease: 'Cubic.easeOut' }));
+    const panel = this.add.rectangle(360, 640, 600, 300, 0x0b1424, 0.92).setStrokeStyle(6, 0xffd23f).setDepth(40).setScale(0);
+    this.tweens.add({ targets: panel, scale: 1, duration: 300, ease: 'Back.easeOut' });
+    const head = txt(this, 360, 560, title, { title: true, size: 36, color: win ? '#5dff7a' : me < them ? '#ec3013' : '#ffd23f' }).setDepth(41);
+    const lines = txt(this, 360, 680, `${t('you')}: ${me} ${t('pairs')}
+${clip(net.peerName || t('opponent'), 12)}: ${them} ${t('pairs')}`, { size: 34 }).setDepth(41);
+    this.banner.push(panel, head, lines);
+    if (win) burst(this, 360, 560, [0xffd23f, 0x5dff7a, 0xffffff], 40, 380);
+    this.endGame({ win, title, delay: 2200 });
   }
 
   private levelClear(): void {
@@ -294,6 +401,7 @@ export class PlayScene extends ArcadeScene {
 
   private onKey(e: KeyboardEvent): void {
     if (this.phase !== 'play') return;
+    if (this.online && this.turn !== net.seat) return;
     let r = Math.floor(this.cursor / this.cols), c = this.cursor % this.cols;
     switch (e.code) {
       case 'ArrowLeft': case 'KeyA': c = (c + this.cols - 1) % this.cols; break;
@@ -318,7 +426,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   updateGame(_time: number, delta: number): void {
-    if (this.phase !== 'play') return;
+    if (this.phase !== 'play' || this.online) return;
     this.timeLeft -= delta / 1000;
     if (this.timeLeft <= 10 && Math.ceil(this.timeLeft) !== this.lastTick && this.timeLeft > 0) {
       this.lastTick = Math.ceil(this.timeLeft);
@@ -330,6 +438,11 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
+    if (this.online) {
+      const peer = clip(net.peerName || t('opponent'), 10);
+      this.infoText.setText(`${t('pairs')}   ${t('you')} ${this.pairsBy[net.seat]}  ·  ${peer} ${this.pairsBy[net.seat === 0 ? 1 : 0]}`);
+      return;
+    }
     this.hud.setCenter(`${t('level')} ${this.level}`);
     const f = Phaser.Math.Clamp(this.timeLeft / this.timeMax, 0, 1);
     this.bar.width = 432 * f;
@@ -344,4 +457,8 @@ function softFlash(scene: Phaser.Scene, color: number, alpha = 0.35, ms = 220): 
   const { width, height } = scene.scale;
   const r = scene.add.rectangle(0, 0, width, height, color, alpha).setOrigin(0).setDepth(7000);
   scene.tweens.add({ targets: r, alpha: 0, duration: ms, onComplete: () => r.destroy() });
+}
+
+function clip(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }

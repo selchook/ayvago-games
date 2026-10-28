@@ -2,10 +2,11 @@
   "id": "penalty-kick",
   "title": { "tr": "Penaltı Atışı", "en": "Penalty Kick" },
   "description": { "tr": "Penaltı atışlarıyla kupaya! Falsolu şutlarla kaleciyi avlat, sıra sende olunca kaleyi koru. Çeyrek finalden finale üç maç.", "en": "Win the cup on penalties! Curl shots past the keeper, then dive to save theirs. Three knockout matches from quarter-final to final." },
-  "howTo": { "tr": "Şut: kaleye doğru kaydır, kavisli kaydırma falso verir. Kalecide dokunduğun yere atla. Klavye: oklar nişan/kaleci, Boşluk şut, X falso.", "en": "Shoot: swipe toward the goal; a curved swipe adds curl. As keeper, tap where to dive. Keys: arrows aim/move, Space shoots, X sets curl." },
+  "howTo": { "tr": "Şut: kaleye doğru kaydır, kavisli kaydırma falso verir. Kalecide dokunduğun yere atla. Klavye: oklar nişan/kaleci, Boşluk şut, X falso. Çevrimiçi: sırayla 5'er penaltı.", "en": "Shoot: swipe toward the goal; a curved swipe adds curl. As keeper, tap where to dive. Keys: arrows aim/move, Space shoots, X sets curl. Online: take turns, 5 kicks each." },
   "genres": ["sports", "arcade", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
+  "multiplayer": true,
   "version": "1.0.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }

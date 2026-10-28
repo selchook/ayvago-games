@@ -32,12 +32,15 @@ type ArcadeEntry = Pick<
     slug: string;
     addedAt?: string;
     featured?: boolean;
+    /** Online two-player matches (rooms with an invite link). */
+    multiplayer?: boolean;
   };
 
 function arcadeGame({
   slug,
   addedAt,
   featured,
+  multiplayer,
   ageRating,
   scoring,
   version,
@@ -53,7 +56,7 @@ function arcadeGame({
       id: slug.replace(/-/g, ''),
       ...text,
       entry: `${ARCADE_ORIGIN}/games/${slug}/`,
-      players: { min: 1, max: 1 },
+      players: { min: 1, max: multiplayer ? 2 : 1 },
       scoring: scoring ?? ARCADE_SCORING,
       ads: { rewarded: [], interstitial: [] },
       ageRating: ageRating ?? '3+',
@@ -82,6 +85,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-28',
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'alien-invaders',
@@ -163,6 +167,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-28',
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'brick-breaker',
@@ -272,6 +277,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['connect', 'four', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'dungeon-dash',
@@ -395,6 +401,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-28',
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'merge-2048',
@@ -435,6 +442,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['mini', 'golf', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'neon-pong',
@@ -448,6 +456,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['neon', 'pong', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'nonogram',
@@ -475,6 +484,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['penalty', 'kick', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'pipe-flow',
@@ -557,6 +567,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['reversi', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'road-crosser',

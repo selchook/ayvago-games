@@ -35,7 +35,7 @@ launch({
   },
   scenes: [PlayScene],
   strings: {
-    tr: { round: 'TUR', you: 'SEN', cpu: 'RAKİP', youPoint: 'SAYI!', cpuPoint: 'KAÇTI!', matchWon: 'MAÇI KAZANDIN!', rally: 'RALLİ', spin: 'FALSO!', champion: 'ŞAMPİYON!' },
-    en: { round: 'ROUND', you: 'YOU', cpu: 'CPU', youPoint: 'POINT!', cpuPoint: 'MISSED!', matchWon: 'MATCH WON!', rally: 'RALLY', spin: 'SPIN!', champion: 'CHAMPION!' },
+    tr: { round: 'TUR', you: 'SEN', cpu: 'RAKİP', youPoint: 'SAYI!', cpuPoint: 'KAÇTI!', matchWon: 'MAÇI KAZANDIN!', rally: 'RALLİ', spin: 'FALSO!', champion: 'ŞAMPİYON!', firstTo: 'İLK 7' },
+    en: { round: 'ROUND', you: 'YOU', cpu: 'CPU', youPoint: 'POINT!', cpuPoint: 'MISSED!', matchWon: 'MATCH WON!', rally: 'RALLY', spin: 'SPIN!', champion: 'CHAMPION!', firstTo: 'FIRST TO 7' },
   },
 });

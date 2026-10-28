@@ -5,6 +5,7 @@ import '@fontsource/pixelify-sans/700.css';
 import { playAyvagoIntro } from './intro';
 import { registerStrings, loc, getLang, setLang } from './i18n';
 import { sdk } from './sdk';
+import { wireNet } from './net';
 import { isMuted, isSilenced, setHostMuted } from './audio';
 import type { PlatformAdapter } from './ayvago/adapter';
 import { GameDefinition, setCurrentGame, gameSize } from './registry';
@@ -59,6 +60,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   setIntroPromise(intro);
   const [adapter] = await Promise.all([platform, fontsReady()]);
   if (adapter.name === 'ayvago') setLang(adapter.locale.toLowerCase().startsWith('tr') ? 'tr' : 'en');
+  wireNet();
   document.documentElement.lang = getLang();
   document.title = `${loc(def.meta.title)} · Ayvago Games`;
 

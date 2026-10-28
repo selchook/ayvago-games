@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, txt, t, rng } from '@core';
+import { ArcadeScene, burst, shake, flash, txt, t, rng, net } from '@core';
 import { Brain, N, flips, legalMoves, count } from './ai';
 
 const CELL = 82;
@@ -10,6 +10,8 @@ const DISC = 70;
 const LEVELS: Array<[number, number]> = [[1, 0.4], [2, 0.15], [3, 0], [4, 0], [5, 0], [7, 0]];
 
 type State = 'player' | 'ai' | 'busy';
+/** Online move message: square + move number (guards against stale messages after a rematch). */
+interface MoveMsg { i: number; n: number }
 
 export class PlayScene extends ArcadeScene {
   private board: number[] = [];
@@ -27,6 +29,11 @@ export class PlayScene extends ArcadeScene {
   private lives = 2;
   private streak = 0;
   private round = 0;
+  // online two-player state (net.active): host = black (1) and starts, guest = white (2)
+  private online = false;
+  private mine = 1;
+  private moveNo = 0;
+  private inbox: MoveMsg[] = [];
 
   createGame(): void {
     const { width } = this.scale;
@@ -35,6 +42,10 @@ export class PlayScene extends ArcadeScene {
     this.hints = [];
     this.state = 'busy'; this.cur = 19;
     this.level = 0; this.lives = 2; this.streak = 0; this.round = 0;
+    this.online = net.active;
+    this.mine = this.online && net.seat === 1 ? 2 : 1;
+    this.moveNo = 0; this.inbox = [];
+    this.useHud = !this.online;
     this.cameras.main.setBackgroundColor('#0d2418');
 
     // wooden frame + felt + grid
@@ -64,10 +75,13 @@ export class PlayScene extends ArcadeScene {
     const py = BY + S + 100;
     this.add.rectangle(width / 2, py, S, 110, 0x000000, 0.35).setStrokeStyle(3, 0x2f6a46);
     this.add.image(BX + 60, py, 'disc-b').setDisplaySize(64, 64);
-    txt(this, BX + 110, py - 20, t('you'), { title: true, size: 16, color: '#aaaaaa' }).setOrigin(0, 0.5);
+    const peer = clip(net.peerName || t('opponent'), 10);
+    const blackName = !this.online || this.mine === 1 ? t('you') : peer;
+    const whiteName = !this.online ? t('cpu') : this.mine === 2 ? t('you') : peer;
+    txt(this, BX + 110, py - 20, blackName, { title: true, size: 16, color: '#aaaaaa' }).setOrigin(0, 0.5);
     this.countB = txt(this, BX + 110, py + 18, '2', { title: true, size: 30 }).setOrigin(0, 0.5);
     this.add.image(BX + S - 60, py, 'disc-w').setDisplaySize(64, 64);
-    txt(this, BX + S - 110, py - 20, t('cpu'), { title: true, size: 16, color: '#aaaaaa' }).setOrigin(1, 0.5);
+    txt(this, BX + S - 110, py - 20, whiteName, { title: true, size: 16, color: '#aaaaaa' }).setOrigin(1, 0.5);
     this.countW = txt(this, BX + S - 110, py + 18, '2', { title: true, size: 30 }).setOrigin(1, 0.5);
     txt(this, width / 2, py + 105, t('keysHint'), { size: 24, color: '#7fae90' });
 
@@ -89,8 +103,28 @@ export class PlayScene extends ArcadeScene {
     kb?.on('keydown-DOWN', () => mv(0, 1)); kb?.on('keydown-S', () => mv(0, 1));
     for (const k of ['SPACE', 'ENTER', 'Z']) kb?.on(`keydown-${k}`, () => this.playerMove(this.cur));
 
+    if (this.online) {
+      net.onScene(this, 'move', (d: MoveMsg) => {
+        if (!d || typeof d.i !== 'number') return;
+        this.inbox.push(d);
+        this.takeRemote();
+      });
+    }
+
     this.updateHud();
     this.startRound();
+  }
+
+  /** Online: applies the opponent's queued move once it is their turn here too. */
+  private takeRemote(): void {
+    const opp = 3 - this.mine;
+    while (this.state === 'ai' && !this.isOver && this.inbox.length) {
+      const d = this.inbox.shift()!;
+      if (d.n !== this.moveNo || d.i < 0 || d.i >= N * N) continue;
+      const f = flips(this.board, d.i, opp);
+      if (!f.length) continue;
+      this.play(d.i, opp, f);
+    }
   }
 
   private cx(i: number): number { return BX + (i % N) * CELL + CELL / 2; }
@@ -103,7 +137,8 @@ export class PlayScene extends ArcadeScene {
   private updateHud(): void {
     this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
     this.hud.setCenter(`${t('level')} ${this.level + 1}`);
-    this.info.setText(`${t('rival', { name: t('d' + this.level) })}   ${t('streak', { n: this.streak })}`);
+    if (this.online) this.info.setText(t('vs', { name: net.peerName || t('opponent') }));
+    else this.info.setText(`${t('rival', { name: t('d' + this.level) })}   ${t('streak', { n: this.streak })}`);
     this.countB.setText(String(count(this.board, 1)));
     this.countW.setText(String(count(this.board, 2)));
   }
@@ -125,14 +160,15 @@ export class PlayScene extends ArcadeScene {
     this.board.fill(0); this.discs.fill(null);
     this.putDisc(27, 2, true); this.putDisc(28, 1, true); this.putDisc(35, 1, true); this.putDisc(36, 2, true);
     this.updateHud();
-    this.time.delayedCall(300, () => this.nextTurn(this.round % 2 === 1 ? 1 : 2, false));
+    // online: black (the host) always starts; solo: the player starts odd rounds
+    this.time.delayedCall(300, () => this.nextTurn(this.online ? 1 : this.round % 2 === 1 ? 1 : 2, false));
   }
 
   private showHints(on: boolean): void {
     this.hints.forEach((h) => h.destroy());
     this.hints = [];
     if (!on) return;
-    for (const m of legalMoves(this.board, 1)) {
+    for (const m of legalMoves(this.board, this.mine)) {
       const h = this.add.circle(this.cx(m), this.cy(m), 11, 0x000000, 0.35).setDepth(5);
       this.tweens.add({ targets: h, scale: 1.3, duration: 500, yoyo: true, repeat: -1 });
       this.hints.push(h);
@@ -151,31 +187,44 @@ export class PlayScene extends ArcadeScene {
       this.time.delayedCall(1100, () => { this.hideBanner(); this.nextTurn(3 - p, true); });
       return;
     }
-    if (p === 1) {
+    if (p === this.mine) {
       this.state = 'player';
-      this.status.setText(t('yourTurn')).setColor('#f3f2f2');
+      this.status.setText(this.online ? t('netMine') : t('yourTurn')).setColor('#f3f2f2');
+      if (this.online) this.tweens.add({ targets: this.status, scale: { from: 1.25, to: 1 }, duration: 260, ease: 'Back.easeOut' });
       this.showHints(true);
       this.cursor.setVisible(true);
       if (!moves.includes(this.cur)) { this.cur = moves[0]; }
       this.placeCursor();
     } else {
       this.state = 'ai';
-      this.status.setText(t('aiTurn')).setColor('#ffd23f');
+      this.status.setText(this.online ? t('netTheirs') : t('aiTurn')).setColor(this.online ? '#8fb8a0' : '#ffd23f');
       this.showHints(false);
       this.cursor.setVisible(false);
-      this.time.delayedCall(rng.int(400, 700), () => this.aiMove());
+      if (this.online) this.takeRemote();
+      else this.time.delayedCall(rng.int(400, 700), () => this.aiMove());
     }
   }
 
   private playerMove(i: number): void {
     if (this.state !== 'player' || this.isOver) return;
-    const f = flips(this.board, i, 1);
+    const f = flips(this.board, i, this.mine);
+    if (!f.length && this.online) {
+      // online assist: jump to the nearest legal square; a second tap / Space plays it
+      const moves = legalMoves(this.board, this.mine);
+      const dist = (m: number) => Math.hypot((m % N) - (i % N), Math.floor(m / N) - Math.floor(i / N));
+      this.cur = moves.reduce((best, m) => (dist(m) < dist(best) ? m : best), moves[0]);
+      this.placeCursor();
+      this.sfx('move', { volume: 0.4 });
+      this.tweens.add({ targets: this.cursor, scale: { from: 1.3, to: 1 }, duration: 160, ease: 'Back.easeOut' });
+      return;
+    }
     if (!f.length) {
       this.sfx('error', { volume: 0.5 });
       this.tweens.add({ targets: this.cursor, angle: 8, duration: 50, yoyo: true, repeat: 2 });
       return;
     }
-    this.play(i, 1, f);
+    if (this.online) net.send('move', { i, n: this.moveNo } satisfies MoveMsg);
+    this.play(i, this.mine, f);
     this.addScore(f.length * 2, this.cx(i), this.cy(i) - 40);
   }
 
@@ -189,6 +238,8 @@ export class PlayScene extends ArcadeScene {
 
   private play(i: number, p: number, f: number[]): void {
     this.state = 'busy';
+    this.moveNo++;
+    if (this.online && p === this.mine) this.status.setText(t('netTheirs')).setColor('#8fb8a0');
     this.showHints(false);
     this.cursor.setVisible(false);
     this.putDisc(i, p, true);
@@ -231,6 +282,7 @@ export class PlayScene extends ArcadeScene {
     this.showHints(false);
     this.cursor.setVisible(false);
     this.status.setText('');
+    if (this.online) return this.finishOnline();
     const b = count(this.board, 1), w = count(this.board, 2);
     const cx = this.scale.width / 2;
     if (b > w) {
@@ -263,7 +315,31 @@ export class PlayScene extends ArcadeScene {
     });
   }
 
+  /** Online result: both screens run the same rules on the same moves, so both agree here. */
+  private finishOnline(): void {
+    const me = count(this.board, this.mine), them = count(this.board, 3 - this.mine);
+    const win = me > them;
+    this.setScore(me);
+    this.updateHud();
+    if (win) {
+      this.showBanner(t('roundWin'), '#5dff7a');
+      this.sfx('win'); flash(this, 0x5dff7a, 150);
+      for (let k = 0; k < 6; k++) this.time.delayedCall(k * 120, () => burst(this, rng.int(BX, BX + N * CELL), rng.int(BY, BY + N * CELL), [0xffd23f, 0xffffff, 0x5dff7a], 20, 300));
+    } else if (them > me) {
+      this.showBanner(t('roundLose'), '#ec3013');
+      this.sfx('lose'); flash(this, 0xec3013, 200); shake(this, 0.02, 350);
+    } else {
+      this.showBanner(t('roundDraw'), '#3ee6ff');
+      this.sfx('pass');
+    }
+    this.endGame({ win, title: win ? t('youWin') : them > me ? t('youLose') : t('draw'), delay: 2000 });
+  }
+
   updateGame(): void {
     /* turn-based: driven by input, timers and tweens */
   }
+}
+
+function clip(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }

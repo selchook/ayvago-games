@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, txt, t, rng } from '@core';
+import { ArcadeScene, burst, shake, flash, txt, t, rng, net } from '@core';
 import { Brain, COLS, ROWS, winLine } from './ai';
 
 const CELL = 96;
@@ -11,6 +11,8 @@ const AI_TINT = 0xffd23f;
 const LEVELS: Array<[number, number]> = [[1, 0.45], [2, 0.25], [3, 0.12], [4, 0.05], [5, 0], [6, 0], [9, 0]];
 
 type State = 'player' | 'ai' | 'busy';
+/** Online move message: column + move number (guards against stale messages after a rematch). */
+interface DropMsg { c: number; n: number }
 
 export class PlayScene extends ArcadeScene {
   private cells: number[] = [];
@@ -27,6 +29,11 @@ export class PlayScene extends ArcadeScene {
   private streak = 0;
   private round = 0;
   private playerMoves = 0;
+  // online two-player state (net.active): host = red (1) and starts, guest = yellow (2)
+  private online = false;
+  private mine = 1;
+  private moveNo = 0;
+  private inbox: DropMsg[] = [];
 
   createGame(): void {
     const { width } = this.scale;
@@ -34,6 +41,10 @@ export class PlayScene extends ArcadeScene {
     this.chips = new Array(COLS * ROWS).fill(null);
     this.state = 'busy'; this.hoverCol = 3;
     this.level = 0; this.lives = 3; this.streak = 0; this.round = 0; this.playerMoves = 0;
+    this.online = net.active;
+    this.mine = this.online && net.seat === 1 ? 2 : 1;
+    this.moveNo = 0; this.inbox = [];
+    this.useHud = !this.online;
 
     this.cameras.main.setBackgroundColor('#101a3a');
     this.makeBoardTexture();
@@ -43,7 +54,8 @@ export class PlayScene extends ArcadeScene {
     this.add.image(width / 2, BY + ROWS * CELL / 2, 'c4-board').setDepth(20);
     this.add.rectangle(width / 2, BY + ROWS * CELL + 30, COLS * CELL + 36, 26, 0x1d3fa8).setStrokeStyle(4, 0x0b1f66).setDepth(21);
 
-    this.hover = this.add.image(0, BY - 62, 'chip-p').setDisplaySize(CHIP, CHIP).setDepth(25);
+    this.hover = this.add.image(0, BY - 62, this.mine === 1 ? 'chip-p' : 'chip-ai').setDisplaySize(CHIP, CHIP).setDepth(25);
+    if (this.mine === 2) this.hover.setTint(AI_TINT);
     this.tweens.add({ targets: this.hover, y: BY - 72, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     this.status = txt(this, width / 2, 150, '', { title: true, size: 26, color: '#ffd23f' }).setDepth(30);
@@ -52,10 +64,14 @@ export class PlayScene extends ArcadeScene {
 
     // legend
     const ly = BY + ROWS * CELL + 110;
-    this.add.image(width / 2 - 200, ly, 'chip-p').setDisplaySize(56, 56);
-    txt(this, width / 2 - 130, ly, t('you'), { title: true, size: 20 }).setOrigin(0, 0.5);
-    this.add.image(width / 2 + 90, ly, 'chip-ai').setDisplaySize(56, 56).setTint(AI_TINT);
-    txt(this, width / 2 + 160, ly, t('cpu'), { title: true, size: 20 }).setOrigin(0, 0.5);
+    const peer = clip(net.peerName || t('opponent'), 9);
+    const redName = !this.online ? t('you') : this.mine === 1 ? t('you') : peer;
+    const yellowName = !this.online ? t('cpu') : this.mine === 2 ? t('you') : peer;
+    const [x1, x2] = this.online ? [-250, 40] : [-200, 90];   // online names can be longer
+    this.add.image(width / 2 + x1, ly, 'chip-p').setDisplaySize(56, 56);
+    txt(this, width / 2 + x1 + (this.online ? 44 : 70), ly, redName, { title: true, size: 20 }).setOrigin(0, 0.5);
+    this.add.image(width / 2 + x2, ly, 'chip-ai').setDisplaySize(56, 56).setTint(AI_TINT);
+    txt(this, width / 2 + x2 + (this.online ? 44 : 70), ly, yellowName, { title: true, size: 20 }).setOrigin(0, 0.5);
     txt(this, width / 2, ly + 90, t('keysHint'), { size: 24, color: '#8890b8' });
 
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
@@ -84,8 +100,26 @@ export class PlayScene extends ArcadeScene {
       this.hoverCol = i; this.placeHover(); this.playerDrop();
     }));
 
+    if (this.online) {
+      net.onScene(this, 'drop', (d: DropMsg) => {
+        if (!d || typeof d.c !== 'number') return;
+        this.inbox.push(d);
+        this.takeRemote();
+      });
+    }
+
     this.updateHud();
     this.startRound();
+  }
+
+  /** Online: applies the opponent's queued move once it is their turn here too. */
+  private takeRemote(): void {
+    while (this.state === 'ai' && !this.isOver && this.inbox.length) {
+      const d = this.inbox.shift()!;
+      if (d.n !== this.moveNo || d.c < 0 || d.c >= COLS || this.height(d.c) >= ROWS) continue;
+      this.hoverCol = d.c;
+      this.drop(d.c, 3 - this.mine);
+    }
   }
 
   private makeBoardTexture(): void {
@@ -129,6 +163,10 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
+    if (this.online) {
+      this.info.setText(t('vs', { name: net.peerName || t('opponent') }));
+      return;
+    }
     this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
     this.hud.setCenter(`${t('level')} ${this.level + 1}`);
     this.info.setText(`${t('rival', { name: t('d' + Math.min(this.level, LEVELS.length - 1)) })}   ${t('streak', { n: this.streak })}`);
@@ -139,6 +177,13 @@ export class PlayScene extends ArcadeScene {
     const mine = s === 'player';
     this.hover.setVisible(mine);
     this.colGlow.setVisible(mine);
+    if (this.online) {
+      this.status.setText(mine ? t('netMine') : s === 'ai' ? t('netTheirs') : '');
+      this.status.setColor(mine ? (this.mine === 1 ? '#ff5a4a' : '#ffd23f') : '#8890b8');
+      if (mine) this.tweens.add({ targets: this.status, scale: { from: 1.25, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+      if (s === 'ai') this.takeRemote();
+      return;
+    }
     this.status.setText(mine ? t('yourTurn') : s === 'ai' ? t('aiTurn') : '');
     this.status.setColor(mine ? '#ff5a4a' : '#ffd23f');
     if (s === 'ai') this.time.delayedCall(rng.int(350, 650), () => this.aiMove());
@@ -148,7 +193,8 @@ export class PlayScene extends ArcadeScene {
     this.round++;
     this.playerMoves = 0;
     this.placeHover();
-    this.setTurn(this.round % 2 === 1 ? 'player' : 'ai');
+    if (this.online) this.setTurn(this.mine === 1 ? 'player' : 'ai');   // red (host) starts
+    else this.setTurn(this.round % 2 === 1 ? 'player' : 'ai');
   }
 
   private playerDrop(): void {
@@ -159,7 +205,8 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     this.playerMoves++;
-    this.drop(this.hoverCol, 1);
+    if (this.online) net.send('drop', { c: this.hoverCol, n: this.moveNo } satisfies DropMsg);
+    this.drop(this.hoverCol, this.mine);
   }
 
   private aiMove(): void {
@@ -175,7 +222,9 @@ export class PlayScene extends ArcadeScene {
     const r = this.height(col);
     const idx = col * ROWS + r;
     this.cells[idx] = who;
+    this.moveNo++;
     this.state = 'busy';
+    if (this.online && who === this.mine) this.status.setText(t('netTheirs')).setColor('#8890b8');
     this.hover.setVisible(false); this.colGlow.setVisible(false);
     const chip = this.add.image(this.cellX(col), BY - 62, who === 1 ? 'chip-p' : 'chip-ai').setDisplaySize(CHIP, CHIP).setDepth(10);
     if (who === 2) chip.setTint(AI_TINT);
@@ -188,6 +237,11 @@ export class PlayScene extends ArcadeScene {
         burst(this, chip.x, ty + CHIP / 2 - 6, who === 1 ? 0xec3013 : AI_TINT, 6, 120);
         if (this.isOver) return;
         const line = winLine(this.cells, idx);
+        if (this.online) {
+          if (line) return this.finishOnline(who, line);
+          if (this.cells.every((v) => v !== 0)) return this.finishOnline(0, null);
+          return this.setTurn(who === this.mine ? 'ai' : 'player');
+        }
         if (line) return this.finishRound(who, line);
         if (this.cells.every((v) => v !== 0)) return this.finishRound(0, null);
         this.setTurn(who === 1 ? 'ai' : 'player');
@@ -234,6 +288,39 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(1800, () => this.clearBoard());
   }
 
+  /** Online result: both screens run the same rules, so both reach the same verdict here. */
+  private finishOnline(winner: number, line: number[] | null): void {
+    this.state = 'busy';
+    this.status.setText('');
+    this.hover.setVisible(false); this.colGlow.setVisible(false);
+    if (line) {
+      for (const i of line) {
+        const c = this.chips[i]!;
+        c.setDepth(30);
+        this.tweens.add({ targets: c, scale: c.scale * 1.18, duration: 220, yoyo: true, repeat: 3 });
+        burst(this, c.x, c.y, winner === 1 ? [0xec3013, 0xffffff, 0xffd23f] : [AI_TINT, 0xffffff], 14, 260);
+      }
+      shake(this, 0.012, 300);
+    }
+    let msg: string, color: string, title: string;
+    const win = winner === this.mine;
+    if (winner === 0) {
+      msg = t('roundDraw'); color = '#3ee6ff'; title = t('draw');
+      this.setScore(25);
+      this.sfx('draw');
+    } else if (win) {
+      msg = t('roundWin'); color = '#5dff7a'; title = t('youWin');
+      this.setScore(100 + Math.max(0, 22 - this.playerMoves) * 10);
+      this.sfx('win'); flash(this, 0x5dff7a, 150);
+    } else {
+      msg = t('roundLose'); color = '#ec3013'; title = t('youLose');
+      this.sfx('lose'); flash(this, 0xec3013, 200); shake(this, 0.02, 350);
+    }
+    this.banner.setText(msg).setColor(color).setVisible(true).setScale(0.3).setAlpha(1);
+    this.tweens.add({ targets: this.banner, scale: 1, duration: 400, ease: 'Back.easeOut' });
+    this.endGame({ win, title, delay: 1800 });
+  }
+
   private clearBoard(): void {
     if (this.isOver) return;
     this.tweens.add({ targets: this.banner, alpha: 0, duration: 250, onComplete: () => this.banner.setVisible(false) });
@@ -253,4 +340,8 @@ export class PlayScene extends ArcadeScene {
   updateGame(): void {
     /* turn-based: everything runs from input events and tweens */
   }
+}
+
+function clip(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }

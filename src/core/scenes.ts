@@ -6,6 +6,7 @@ import { getBest, submitBest } from './storage';
 import { isMuted, isSilenced, setMuted, playSfx } from './audio';
 import { addCrt, burst } from './fx';
 import { sdk } from './sdk';
+import { net } from './net';
 import { currentGame } from './registry';
 import { kenney, loadSfx } from './assets';
 
@@ -62,6 +63,10 @@ export class MenuScene extends Phaser.Scene {
     const land = meta.orientation === 'landscape';
     this.cameras.main.setBackgroundColor(def.background ?? '#0e0d12');
     def.menuDecor?.(this);
+    if (net.active) {
+      this.onlineMenu();
+      return;
+    }
 
     const title = txt(this, width / 2, height * (land ? 0.2 : 0.22), upper(loc(meta.title)), {
       title: true, size: land ? 56 : 52, color: '#ffd23f', wrap: width - 80, strokeThickness: 10,
@@ -96,6 +101,48 @@ export class MenuScene extends Phaser.Scene {
     kb?.once('keydown-SPACE', () => this.startGame());
   }
 
+  /**
+   * Online match: the host starts each round (and so picks the shared seed); the guest waits
+   * for the host's "__start" message. The platform has already connected both players.
+   */
+  private onlineMenu(): void {
+    const def = currentGame();
+    const { width, height } = this.scale;
+    const land = def.meta.orientation === 'landscape';
+    const title = txt(this, width / 2, height * (land ? 0.18 : 0.2), upper(loc(def.meta.title)), {
+      title: true, size: land ? 52 : 48, color: '#ffd23f', wrap: width - 80, strokeThickness: 10,
+    });
+    this.tweens.add({ targets: title, y: title.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    txt(this, width / 2, height * (land ? 0.33 : 0.32), t('online'), { title: true, size: 26, color: '#3ee6ff' });
+    if (net.peerName) txt(this, width / 2, height * (land ? 0.41 : 0.38), t('vs', { name: net.peerName }), { size: 34, color: '#f3f2f2' });
+
+    if (net.isHost) {
+      const play = new Button(this, width / 2, height * (land ? 0.56 : 0.52), t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
+      this.tweens.add({ targets: play, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      const kb = this.input.keyboard;
+      kb?.once('keydown-ENTER', () => this.startGame());
+      kb?.once('keydown-SPACE', () => this.startGame());
+    } else {
+      const wait = txt(this, width / 2, height * (land ? 0.56 : 0.52), t('waitHost'), { size: 32, color: '#f3f2f2', wrap: width - 120 });
+      this.tweens.add({ targets: wait, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
+      const begin = (d: { seed?: number } | undefined) => {
+        net.setSeed(d?.seed ?? 0);
+        this.scene.start('Play');
+      };
+      net.onScene(this, '__start', begin);
+      const early = net.takePendingStart();
+      if (early) this.time.delayedCall(0, () => begin(early));
+    }
+    const howY = height * (land ? 0.7 : 0.66);
+    txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
+    txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: 26, wrap: width - (land ? 360 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+    const snd = iconButton(this, 60, height - 60, isMuted() ? 'icon-audiooff' : 'icon-audioon', () => {
+      setMuted(this.game, !isMuted());
+      (snd.getData('icon') as Phaser.GameObjects.Image).setTexture(isMuted() ? 'icon-audiooff' : 'icon-audioon');
+    });
+    if (def.crt !== false) addCrt(this);
+  }
+
   private languageToggle(width: number, height: number): void {
     const langBtn = this.add.container(width - 70, height - 60);
     const lb = this.add.rectangle(0, 0, 100, 72, 0x000000, 0.45).setStrokeStyle(4, 0xffffff, 0.8);
@@ -111,8 +158,20 @@ export class MenuScene extends Phaser.Scene {
   private startGame(): void {
     if (!this.scene.isActive()) return;
     playSfx(this, 'ui-select');
-    this.scene.start('Play');
+    if (net.active) startOnlineRound(this);
+    else this.scene.start('Play');
   }
+}
+
+/** Host only: picks a fresh shared seed, tells the guest and starts the round on both sides. */
+export function startOnlineRound(scene: Phaser.Scene): void {
+  const seed = Math.floor(Math.random() * 2 ** 31);
+  net.setSeed(seed);
+  net.send('__start', { seed });
+  scene.scene.stop('GameOver');
+  const play = scene.scene.get('Play');
+  if (play.scene.isActive() || play.scene.isPaused()) play.scene.restart();
+  else scene.scene.start('Play');
 }
 
 export class PauseScene extends Phaser.Scene {
@@ -166,6 +225,10 @@ export class GameOverScene extends Phaser.Scene {
     const def = currentGame();
     const { width, height } = this.scale;
     const score = data.score ?? 0;
+    if (net.active) {
+      this.onlineResult(data);
+      return;
+    }
     const newBest = submitBest(def.meta.id, score);
     const best = getBest(def.meta.id);
     sdk.end(score, !!data.win);
@@ -205,5 +268,51 @@ export class GameOverScene extends Phaser.Scene {
       this.scene.start('Menu');
     }, { color: 0x333344 });
     this.time.delayedCall(400, () => this.input.keyboard?.once('keydown-ENTER', retry));
+  }
+
+  /**
+   * Online result: no personal best (the platform keeps match scores off the leaderboards).
+   * The host offers a rematch (new round on both sides) or the menu; the guest follows.
+   */
+  private onlineResult(data: ResultData): void {
+    const def = currentGame();
+    const { width, height } = this.scale;
+    const land = def.meta.orientation === 'landscape';
+    sdk.end(data.score ?? 0, !!data.win);
+    sdk.emit('gameOver', { score: data.score ?? 0, win: !!data.win, online: true });
+    backdrop(this, 0.78);
+    const heading = data.title ?? (data.win ? t('youWin') : t('youLose'));
+    const color = data.win ? '#5dff7a' : data.title === t('draw') ? '#ffd23f' : '#ec3013';
+    const h = txt(this, width / 2, height * 0.26, heading, { title: true, size: 46, color, wrap: width - 60, strokeThickness: 10 });
+    h.setScale(0.2);
+    this.tweens.add({ targets: h, scale: 1, duration: 450, ease: 'Back.easeOut' });
+    if (data.win) this.time.delayedCall(300, () => burst(this, width / 2, height * 0.26, [0xffd23f, 0xff4fa3, 0x3ee6ff], 40, 420));
+    playSfx(this, data.win ? 'jingle-win' : 'jingle-over');
+    if (net.peerName) txt(this, width / 2, height * 0.38, t('vs', { name: net.peerName }), { size: 30, color: '#f3f2f2' });
+
+    const by = height * (land ? 0.6 : 0.56);
+    if (net.isHost) {
+      const rematch = () => startOnlineRound(this);
+      new Button(this, width / 2, by, t('rematch'), rematch, { color: COLORS.red, width: 380, height: 104, size: 34 });
+      new Button(this, width / 2, by + 140, t('menu'), () => {
+        net.send('__menu');
+        this.scene.stop('Play');
+        this.scene.start('Menu');
+      }, { color: 0x333344 });
+      this.time.delayedCall(400, () => this.input.keyboard?.once('keydown-ENTER', rematch));
+    } else {
+      const wait = txt(this, width / 2, by, t('waitHost'), { size: 30, color: '#f3f2f2', wrap: width - 120 });
+      this.tweens.add({ targets: wait, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
+    }
+    // The guest follows the host: a rematch restarts Play, "menu" goes back to the menu.
+    net.onScene(this, '__start', (d: { seed?: number } | undefined) => {
+      net.setSeed(d?.seed ?? 0);
+      this.scene.stop();
+      this.scene.get('Play').scene.restart();
+    });
+    net.onScene(this, '__menu', () => {
+      this.scene.stop('Play');
+      this.scene.start('Menu');
+    });
   }
 }

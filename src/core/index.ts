@@ -14,6 +14,8 @@ export { t, loc, upper, getLang, registerStrings } from './i18n';
 export type { Lang, Strings, Localized } from './i18n';
 export { storage, getBest } from './storage';
 export { sdk } from './sdk';
+export { net } from './net';
+export type { NetHandler } from './net';
 export { playAyvagoIntro, INTRO_DURATION } from './intro';
 export type { GameDefinition, GameMeta, Genre } from './registry';
 export { currentGame } from './registry';

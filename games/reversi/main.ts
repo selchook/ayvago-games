@@ -35,12 +35,14 @@ launch({
       roundWin: 'KAZANDIN!', roundLose: 'KAYBETTİN', roundDraw: 'BERABERE',
       rival: 'Rakip: {name}', streak: 'Seri: {n}', keysHint: 'Oklar: seç · Boşluk: oyna',
       d0: 'Acemi', d1: 'Kolay', d2: 'Orta', d3: 'Zor', d4: 'Uzman', d5: 'Efsane',
+      netMine: 'SIRA SENDE', netTheirs: 'RAKİBİN SIRASI',
     },
     en: {
       yourTurn: 'YOUR TURN', aiTurn: 'AI THINKING', pass: 'PASS!', you: 'YOU', cpu: 'CPU',
       roundWin: 'YOU WIN!', roundLose: 'YOU LOSE', roundDraw: 'DRAW',
       rival: 'Rival: {name}', streak: 'Streak: {n}', keysHint: 'Arrows: pick · Space: play',
       d0: 'Rookie', d1: 'Easy', d2: 'Medium', d3: 'Hard', d4: 'Expert', d5: 'Legend',
+      netMine: 'YOUR TURN', netTheirs: 'THEIR TURN',
     },
   },
 });

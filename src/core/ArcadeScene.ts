@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Hud, iconButton } from './ui';
 import { t } from './i18n';
 import { sdk } from './sdk';
+import { net } from './net';
 import { playSfx } from './audio';
 import { addCrt, popup } from './fx';
 import { currentGame } from './registry';
@@ -46,8 +47,29 @@ export abstract class ArcadeScene extends Phaser.Scene {
     this.hud.setVisible(this.useHud);
     if (this.useCrt && currentGame().crt !== false) addCrt(this);
 
-    const pauseBtn = iconButton(this, this.scale.width - 52, 52, 'icon-pause', () => this.pauseGame(), 72);
-    pauseBtn.setScrollFactor(0).setDepth(9600);
+    // An online match keeps running on both sides, so it has no pause.
+    if (!net.active) {
+      const pauseBtn = iconButton(this, this.scale.width - 52, 52, 'icon-pause', () => this.pauseGame(), 72);
+      pauseBtn.setScrollFactor(0).setDepth(9600);
+    } else {
+      net.onPeerLeave(this, () => {
+        this.notice(t('peerLeft'));
+        if (!this.isOver) this.endGame({ win: true, title: t('peerLeft'), delay: 300 });
+      });
+      net.onPeerJoin(this, () => this.notice(t('peerBack')));
+      // The host restarting or leaving while this side is still playing (guest only; once the
+      // round is over the result screen handles it).
+      if (!net.isHost) {
+        net.onScene(this, '__start', (d: { seed?: number } | undefined) => {
+          if (this.isOver) return;
+          net.setSeed(d?.seed ?? 0);
+          this.scene.restart();
+        });
+        net.onScene(this, '__menu', () => {
+          if (!this.isOver) this.scene.start('Menu');
+        });
+      }
+    }
 
     const kb = this.input.keyboard;
     kb?.on('keydown-ESC', () => this.pauseGame());
@@ -82,10 +104,18 @@ export abstract class ArcadeScene extends Phaser.Scene {
   }
 
   pauseGame(): void {
-    if (this.isOver || !this.scene.isActive()) return;
+    if (this.isOver || !this.scene.isActive() || net.active) return;
     this.scene.pause();
     this.scene.launch('Pause');
     sdk.emit('pause');
+  }
+
+  /** Short message across the top of the screen (online events such as the opponent leaving). */
+  notice(message: string): void {
+    const text = this.add.text(this.scale.width / 2, 140, message, {
+      fontFamily: '"Pixelify Sans", sans-serif', fontSize: '34px', color: '#ffd23f', stroke: '#000', strokeThickness: 6,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(9700);
+    this.tweens.add({ targets: text, alpha: 0, delay: 2200, duration: 500, onComplete: () => text.destroy() });
   }
 
   sfx(key: string, config?: Phaser.Types.Sound.SoundConfig): void {

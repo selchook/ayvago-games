@@ -14,6 +14,8 @@ export interface GameMeta {
   controls: Array<'touch' | 'keyboard' | 'mouse'>;
   version: string;
   credits?: string[];
+  /** Supports online two-player matches (core/net.ts); the platform lists it as multiplayer. */
+  multiplayer?: boolean;
 }
 
 export interface GameDefinition {
