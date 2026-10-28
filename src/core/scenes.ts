@@ -125,10 +125,13 @@ export class MenuScene extends Phaser.Scene {
     } else {
       const wait = txt(this, width / 2, height * (land ? 0.56 : 0.52), t('waitHost'), { size: 32, color: '#f3f2f2', wrap: width - 120 });
       this.tweens.add({ targets: wait, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
-      net.onScene(this, '__start', (d: { seed?: number } | undefined) => {
+      const begin = (d: { seed?: number } | undefined) => {
         net.setSeed(d?.seed ?? 0);
         this.scene.start('Play');
-      });
+      };
+      net.onScene(this, '__start', begin);
+      const early = net.takePendingStart();
+      if (early) this.time.delayedCall(0, () => begin(early));
     }
     const howY = height * (land ? 0.7 : 0.66);
     txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, t, txt, rng, net } from '@core';
 
 // Goal frame (front view)
 const GL = 110, GR = 610, GT = 330, GB = 560;
@@ -7,8 +7,52 @@ const SPOT_X = 360, SPOT_Y = 1060;
 const STAND_Y = 485;
 const MATCHES = 3;
 
-type Phase = 'aim' | 'flight' | 'runup' | 'defend' | 'wait';
+type Phase = 'aim' | 'flight' | 'runup' | 'defend' | 'wait' | 'pick' | 'netRun';
 interface Shot { tx: number; ty: number; T: number; curve: number; t: number; byYou: boolean }
+
+// ---------- online match (net.active) ----------
+// Every kick both players choose at once: the shooter aims, the keeper picks one of six dive
+// zones. Each side sends its pick; the kick plays out only when both picks are in, and both
+// screens compute the same outcome from the same two picks.
+const PICK_TIME = 10;                         // seconds to choose before an automatic pick
+const SEAT_COLORS = [0xec3013, 0x2d6cdf];     // host red, guest blue
+/** A pick for kick k: the shooter sends tx/ty/T/c, the keeper sends z (zone 0..5). */
+interface Pick { k: number; r?: number; tx?: number; ty?: number; T?: number; c?: number; z?: number }
+/** Round tag from the shared seed: a pick from an earlier round never leaks into a rematch. */
+const roundTag = (): number => net.seed & 0xfff;
+type Outcome = 'goal' | 'save' | 'post' | 'wide' | 'over';
+
+/** Dive zones: 3 columns × 2 rows across the goal mouth. */
+function zoneCenter(z: number): [number, number] {
+  const col = z % 3, row = Math.floor(z / 3);
+  return [Math.round(GL + (col + 0.5) * (GR - GL) / 3), Math.round(GT + (row + 0.5) * (GB - GT) / 2)];
+}
+
+/** Keeper body centre after diving with the hands towards (x, y) (same rule as setDive). */
+function diveTarget(x: number, y: number): [number, number] {
+  const off = Phaser.Math.Clamp(x - SPOT_X, -260, 260);
+  return [
+    Phaser.Math.Clamp(x - Math.sign(off) * Math.min(70, Math.abs(off)), GL + 30, GR - 30),
+    Phaser.Math.Clamp(y + 40, 400, STAND_Y),
+  ];
+}
+
+/** Pure outcome of a shot at (tx, ty) against a keeper standing at (kx, ky). */
+function kickOutcome(tx: number, ty: number, kx: number, ky: number): Outcome {
+  const onPost = (Math.abs(tx - GL + 6) < 16 || Math.abs(tx - GR - 6) < 16) && ty > GT - 12 && ty < GB || (Math.abs(ty - GT + 6) < 14 && tx > GL && tx < GR);
+  if (onPost) return 'post';
+  if (!(tx > GL && tx < GR && ty > GT && ty < GB)) return ty < GT ? 'over' : 'wide';
+  const th = Phaser.Math.DegToRad(Phaser.Math.Clamp((kx - SPOT_X) / 200, -1, 1) * 80);
+  const dx = Math.sin(th), dy = -Math.cos(th);
+  const x1 = kx - dx * 70, y1 = ky - dy * 70, x2 = kx + dx * 100, y2 = ky + dy * 100;
+  const p = Phaser.Geom.Line.GetNearestPoint(new Phaser.Geom.Line(x1, y1, x2, y2), new Phaser.Geom.Point(tx, ty));
+  const cx = Phaser.Math.Clamp(p.x, Math.min(x1, x2), Math.max(x1, x2)), cy = Phaser.Math.Clamp(p.y, Math.min(y1, y2), Math.max(y1, y2));
+  return Math.hypot(tx - cx, ty - cy) < 58 ? 'save' : 'goal';
+}
+
+function clip(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
 
 export class PlayScene extends ArcadeScene {
   private ball!: Phaser.GameObjects.Image;
@@ -36,11 +80,24 @@ export class PlayScene extends ArcadeScene {
   private match = 1;
   private netShake = 0;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
+  // online state
+  private online = false;
+  private kick = 0;                             // kick index; the host shoots the even ones
+  private myPick: Pick | null = null;
+  private peerPicks = new Map<number, Pick>();
+  private zone = 1;                             // keeper's selected dive zone
+  private pickLeft = 0;
+  private outcome: Outcome = 'goal';
+  private zonesG!: Phaser.GameObjects.Graphics;
+  private clockText!: Phaser.GameObjects.Text;
 
   createGame(): void {
     this.phase = 'wait'; this.shot = null; this.kx = SPOT_X; this.ky = STAND_Y; this.gx = SPOT_X; this.gy = STAND_Y;
     this.keeperSpeed = 0; this.aiDelay = 0; this.rx = SPOT_X; this.ry = 450; this.kbCurve = 0; this.swipe = null;
     this.you = []; this.them = []; this.match = 1; this.netShake = 0;
+    this.online = net.active;
+    this.kick = 0; this.myPick = null; this.peerPicks = new Map(); this.zone = 1; this.pickLeft = 0; this.outcome = 'goal';
+    this.useHud = !this.online;
     this.textures.get('ball').setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.textures.get('glove').setFilter(Phaser.Textures.FilterMode.NEAREST);
 
@@ -56,13 +113,27 @@ export class PlayScene extends ArcadeScene {
     this.boardText = txt(this, 360, 140, '', { title: true, size: 22 }).setDepth(9);
     this.banner = txt(this, 360, 760, '', { title: true, size: 36, color: '#ffd23f', wrap: 660 }).setDepth(20);
     this.curlText = txt(this, 360, 1170, '', { size: 30, color: '#3ee6ff' }).setDepth(9);
+    this.zonesG = this.add.graphics().setDepth(7);
+    this.clockText = txt(this, 360, 1232, '', { title: true, size: 24, color: '#ffd23f' }).setDepth(9);
 
     const kb = this.input.keyboard!;
     const K = Phaser.Input.Keyboard.KeyCodes;
     this.keys = { left: kb.addKey(K.LEFT), right: kb.addKey(K.RIGHT), up: kb.addKey(K.UP), down: kb.addKey(K.DOWN), a: kb.addKey(K.A), d: kb.addKey(K.D), w: kb.addKey(K.W), s: kb.addKey(K.S) };
-    const kbShoot = () => { if (this.phase === 'aim') this.shoot(this.rx, this.ry, 0.68, this.kbCurve, 18); };
+    const kbShoot = () => {
+      if (this.phase === 'aim') this.shoot(this.rx, this.ry, 0.68, this.kbCurve, 18);
+      else if (this.phase === 'pick') this.commitZone(this.zone);
+    };
     kb.on('keydown-SPACE', kbShoot);
     kb.on('keydown-Z', kbShoot);
+    kb.on('keydown-ENTER', () => { if (this.phase === 'pick') this.commitZone(this.zone); });
+    const zoneKey = (dc: number, dr: number) => {
+      if (this.phase !== 'pick') return;
+      const col = Phaser.Math.Clamp((this.zone % 3) + dc, 0, 2), row = Phaser.Math.Clamp(Math.floor(this.zone / 3) + dr, 0, 1);
+      if (col + row * 3 !== this.zone) { this.zone = col + row * 3; this.sfx('curl', { volume: 0.3 }); }
+    };
+    for (const [k, dc, dr] of [['LEFT', -1, 0], ['A', -1, 0], ['RIGHT', 1, 0], ['D', 1, 0], ['UP', 0, -1], ['W', 0, -1], ['DOWN', 0, 1], ['S', 0, 1]] as const) {
+      kb.on(`keydown-${k}`, () => zoneKey(dc, dr));
+    }
     kb.on('keydown-X', () => {
       if (this.phase !== 'aim') return;
       this.kbCurve = this.kbCurve === 0 ? 1 : this.kbCurve === 1 ? -1 : 0;
@@ -73,6 +144,7 @@ export class PlayScene extends ArcadeScene {
       if (p.x > 580 && p.y < 140) return;
       if (this.phase === 'aim') this.swipe = { x: p.x, y: p.y, t: this.time.now, pts: [new Phaser.Math.Vector2(p.x, p.y)] };
       else if (this.phase === 'defend' || this.phase === 'runup') this.setDive(p.x, p.y);
+      else if (this.phase === 'pick') { const z = this.zoneAt(p.x, p.y); if (z >= 0) this.commitZone(z); }
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!p.isDown) return;
@@ -82,6 +154,18 @@ export class PlayScene extends ArcadeScene {
         if (a) { this.rx = a.tx; this.ry = a.ty; }
       } else if (this.phase === 'defend' || this.phase === 'runup') this.setDive(p.x, p.y);
     });
+    if (this.online) {
+      this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+        if (this.phase !== 'pick') return;
+        const z = this.zoneAt(p.x, p.y);
+        if (z >= 0) this.zone = z;
+      });
+      net.onScene(this, 'pick', (d: Pick) => {
+        if (!d || typeof d.k !== 'number' || d.k < this.kick || d.r !== roundTag()) return;
+        this.peerPicks.set(d.k, d);
+        this.tryResolve();
+      });
+    }
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
       const sw = this.swipe;
       this.swipe = null;
@@ -102,7 +186,8 @@ export class PlayScene extends ArcadeScene {
     });
 
     this.hud.setRight(`${this.match}/${MATCHES}`);
-    this.startMatch();
+    if (this.online) this.startOnline();
+    else this.startMatch();
   }
 
   // ---------- drawing ----------
@@ -182,7 +267,9 @@ export class PlayScene extends ArcadeScene {
     };
     row(this.you, 180); row(this.them, 226);
     const yg = this.you.filter(Boolean).length, tg = this.them.filter(Boolean).length;
-    this.boardText.setText(t('m' + this.match)).setPosition(360, 126).setColor('#ffd23f').setFontSize(20);
+    const head = !this.online ? t('m' + this.match)
+      : this.kick >= 10 ? t('sudden') : `${t('kickN')} ${Math.floor(this.kick / 2) + 1}/5`;
+    this.boardText.setText(head).setPosition(360, 126).setColor('#ffd23f').setFontSize(20);
     this.boardLabels(yg, tg);
   }
 
@@ -191,7 +278,7 @@ export class PlayScene extends ArcadeScene {
     for (const l of this.labels) l.destroy();
     this.labels = [
       txt(this, 140, 180, `${t('you')} ${yg}`, { title: true, size: 20, color: '#3ee6ff' }).setOrigin(0, 0.5).setDepth(9),
-      txt(this, 140, 226, `${t('them')} ${tg}`, { title: true, size: 20, color: '#ff6b5a' }).setOrigin(0, 0.5).setDepth(9),
+      txt(this, 140, 226, `${this.online ? clip(net.peerName || t('them'), 9) : t('them')} ${tg}`, { title: true, size: 20, color: '#ff6b5a' }).setOrigin(0, 0.5).setDepth(9),
     ];
   }
 
@@ -268,6 +355,13 @@ export class PlayScene extends ArcadeScene {
     if (this.phase !== 'aim') return;
     const a = Phaser.Math.FloatBetween(0, Math.PI * 2), r = Phaser.Math.FloatBetween(0, scatter);
     const T = 0.95 - speed * 0.45;
+    if (this.online) {
+      this.commit({
+        k: this.kick, tx: Math.round(tx + Math.cos(a) * r), ty: Math.round(ty + Math.sin(a) * r),
+        T: Math.round(T * 100) / 100, c: Math.round(Phaser.Math.Clamp(curve, -1, 1) * 100) / 100,
+      });
+      return;
+    }
     this.launch({ tx: tx + Math.cos(a) * r, ty: ty + Math.sin(a) * r, T, curve, t: 0, byYou: true });
     this.phase = 'flight';
     // keeper AI
@@ -412,6 +506,11 @@ export class PlayScene extends ArcadeScene {
       this.gy = STAND_Y;
       this.keeperSpeed = 200;
       this.curlText.setText(this.kbCurve ? `${t('curl')} ${this.kbCurve < 0 ? '◄' : '►'}` : '');
+    } else if (this.phase === 'pick' || this.phase === 'wait' || this.phase === 'netRun') {
+      // online: idle keeper sway until the kick
+      this.gx = SPOT_X + Math.sin(this.elapsed * 2.2) * 30;
+      this.gy = STAND_Y;
+      this.keeperSpeed = 200;
     } else if ((this.phase === 'defend' || this.phase === 'runup') && (ax || ay)) {
       this.keeperSpeed = 1300;
       this.gx = Phaser.Math.Clamp(this.gx + ax * 900 * dt, GL + 30, GR - 30);
@@ -438,12 +537,217 @@ export class PlayScene extends ArcadeScene {
       this.ball.setPosition(bx, by).setScale(Phaser.Math.Linear(5, 2, p)).setAngle(this.ball.angle + 900 * dt);
       this.shadow.setPosition(bx, Phaser.Math.Linear(SPOT_Y + 40, GB + 6, p)).setScale(Phaser.Math.Linear(1, 0.4, p));
       this.trail.fillStyle(0xffffff, 0.25).fillCircle(bx, by, Phaser.Math.Linear(30, 10, p));
-      if (p >= 1) { this.shadow.setVisible(false); this.resolve(); }
+      if (p >= 1) { this.shadow.setVisible(false); if (this.online) this.resolveOnline(); else this.resolve(); }
     }
 
     this.netShake = Math.max(0, this.netShake - dt * 8);
     this.drawNet();
     this.drawReticle();
+    if (this.online) this.updateOnline(dt);
+  }
+
+  // ---------- online match ----------
+  private shooterSeat(k = this.kick): 0 | 1 {
+    return k % 2 === 0 ? 0 : 1;
+  }
+
+  private iShoot(): boolean {
+    return this.shooterSeat() === net.seat;
+  }
+
+  private paint(c: Phaser.GameObjects.Container, color: number): void {
+    c.list.forEach((o) => {
+      if (o instanceof Phaser.GameObjects.Rectangle && (o.width === 56 || o.width === 14)) o.setFillStyle(color);
+    });
+  }
+
+  private startOnline(): void {
+    this.drawBoard();
+    this.showBanner(t('vs', { name: net.peerName || t('opponent') }), '#ffd23f');
+    this.sfx('whistle', { volume: 0.5 });
+    this.time.delayedCall(1300, () => this.startKick());
+  }
+
+  private startKick(): void {
+    if (this.isOver) return;
+    this.resetBall();
+    this.myPick = null;
+    this.pickLeft = PICK_TIME;
+    this.drawBoard();
+    const shooter = this.shooterSeat();
+    this.paint(this.keeper, SEAT_COLORS[1 - shooter]);
+    this.paint(this.kicker, SEAT_COLORS[shooter]);
+    this.kicker.setVisible(false).setAlpha(1).setScale(1.5);
+    if (this.iShoot()) {
+      this.phase = 'aim';
+      this.rx = SPOT_X; this.ry = 450;
+      this.showBanner(t('shoot'), '#f3f2f2');
+    } else {
+      this.phase = 'pick';
+      this.zone = 1;
+      this.showBanner(t('pickDive'), '#3ee6ff');
+      this.kicker.setVisible(true).setPosition(250, 1190);
+    }
+    if (this.kick === 10) popup(this, 360, 880, t('sudden'), '#ff4fa3', 34);
+  }
+
+  private zoneAt(x: number, y: number): number {
+    if (x < GL - 60 || x > GR + 60 || y < GT - 90 || y > GB + 70) return -1;
+    const col = Phaser.Math.Clamp(Math.floor((x - GL) / ((GR - GL) / 3)), 0, 2);
+    return col + (y < (GT + GB) / 2 ? 0 : 3);
+  }
+
+  private commitZone(z: number): void {
+    if (this.phase !== 'pick') return;
+    this.zone = z;
+    this.sfx('save', { volume: 0.35 });
+    const [x, y] = zoneCenter(z);
+    burst(this, x, y, [0x3ee6ff, 0xffffff], 10, 160);
+    this.commit({ k: this.kick, z });
+  }
+
+  private commit(pick: Pick): void {
+    pick.r = roundTag();
+    this.myPick = pick;
+    net.send('pick', pick);
+    this.phase = 'wait';
+    this.swipe = null;
+    this.clockText.setText('');
+    this.curlText.setText('');
+    this.showBanner(t('waitPeer'), '#f3f2f2');
+    this.tweens.add({ targets: this.banner, alpha: 0.4, duration: 600, yoyo: true, repeat: -1, delay: 300 });
+    this.tryResolve();
+  }
+
+  /** Plays the kick once both picks for it are known (identical on both screens). */
+  private tryResolve(): void {
+    if (this.isOver || this.phase !== 'wait' || !this.myPick || this.myPick.k !== this.kick) return;
+    const peer = this.peerPicks.get(this.kick);
+    if (!peer) return;
+    this.peerPicks.delete(this.kick);
+    const shot = this.iShoot() ? this.myPick : peer;
+    const keep = this.iShoot() ? peer : this.myPick;
+    this.myPick = null;
+    const tx = Number(shot.tx ?? SPOT_X), ty = Number(shot.ty ?? 450);
+    const T = Phaser.Math.Clamp(Number(shot.T ?? 0.7), 0.4, 1), c = Phaser.Math.Clamp(Number(shot.c ?? 0), -1, 1);
+    const [zx, zy] = zoneCenter(Phaser.Math.Clamp(Math.round(Number(keep.z ?? 1)), 0, 5));
+    const [kx, ky] = diveTarget(zx, zy);
+    this.outcome = kickOutcome(tx, ty, kx, ky);
+
+    this.phase = 'netRun';
+    this.tweens.killTweensOf(this.banner);
+    this.banner.setText('').setAlpha(1);
+    this.zonesG.clear();
+    this.kicker.setVisible(true).setAlpha(1).setPosition(250, 1300);
+    this.tweens.add({
+      targets: this.kicker, x: 300, y: SPOT_Y + 30, duration: 700, ease: 'Sine.easeIn',
+      onComplete: () => {
+        if (this.isOver) return;
+        this.launch({ tx, ty, T, curve: c, t: 0, byYou: this.iShoot() });
+        this.phase = 'flight';
+        this.gx = kx; this.gy = ky;            // the keeper dives into the chosen zone
+        this.keeperSpeed = 1300; this.aiDelay = 0.08;
+        this.tweens.add({ targets: this.kicker, alpha: 0, duration: 600 });
+      },
+    });
+    this.sfx('step', { volume: 0.3 });
+    this.time.delayedCall(350, () => this.sfx('step', { volume: 0.3 }));
+  }
+
+  /** Ball arrived: show the outcome computed in tryResolve (the same on both screens). */
+  private resolveOnline(): void {
+    const s = this.shot!;
+    this.shot = null;
+    this.phase = 'wait';
+    this.kx = this.gx; this.ky = this.gy;      // keeper is exactly at the dive target on both screens
+    const mine = this.iShoot();
+    const o = this.outcome;
+    const goal = o === 'goal';
+    if (o === 'post') {
+      this.sfx('post', { volume: 0.7 }); shake(this, 0.01, 150);
+      this.showBanner(t('post'), '#f3f2f2');
+      this.tweens.add({ targets: this.ball, x: s.tx + (s.tx < SPOT_X ? -200 : 200), y: s.ty + 300, scale: 2.4, duration: 600 });
+    } else if (o === 'wide' || o === 'over') {
+      this.showBanner(t(o), '#f3f2f2');
+      this.tweens.add({ targets: this.ball, x: s.tx + (s.tx - SPOT_X) * 0.3, y: s.ty - 80, scale: 1.2, alpha: 0, duration: 500 });
+    } else if (o === 'save') {
+      this.sfx('save', { volume: 0.8 }); shake(this, 0.008, 120);
+      burst(this, s.tx, s.ty, [0xffffff, 0xffe14d], 18, 260);
+      this.tweens.add({ targets: this.ball, x: s.tx + (s.tx < this.kx ? -160 : 160), y: s.ty + 220, scale: 3.2, angle: 400, duration: 600, ease: 'Quad.easeOut' });
+    } else {
+      this.netShake = 6;
+      this.sfx('net', { volume: 0.7 });
+      this.tweens.add({ targets: this.ball, y: s.ty + 14, scale: 1.8, duration: 160, ease: 'Quad.easeOut' });
+      this.ball.setDepth(2);
+    }
+    if (mine) {
+      this.you.push(goal);
+      if (goal) {
+        const corner = s.ty < GT + 80 && (s.tx < GL + 90 || s.tx > GR - 90);
+        this.sfx('goal', { volume: 0.6 });
+        flash(this, 0x5dff7a, 150);
+        burst(this, s.tx, s.ty, [0x5dff7a, 0xffd23f, 0xffffff], 36, 380);
+        this.addScore(corner ? 200 : 100, s.tx, s.ty - 40);
+        this.showBanner(corner ? t('corner') : t('goal'), '#5dff7a');
+      } else if (o === 'save') { this.showBanner(t('saved'), '#ec3013'); this.sfx('boo', { volume: 0.4 }); }
+    } else {
+      this.them.push(goal);
+      if (goal) { this.showBanner(t('goal'), '#ec3013'); this.sfx('boo', { volume: 0.4 }); shake(this, 0.006, 150); }
+      else if (o === 'save') {
+        this.addScore(150, s.tx, s.ty - 40);
+        this.showBanner(t('bigSave'), '#5dff7a');
+        flash(this, 0x3ee6ff, 120);
+        this.sfx('goal', { volume: 0.6 });
+      }
+    }
+    this.drawBoard();
+    this.time.delayedCall(1500, () => this.nextOnline());
+  }
+
+  private nextOnline(): void {
+    if (this.isOver) return;
+    const d = this.decided();
+    if (d) {
+      const win = d === 'win';
+      this.showBanner(win ? t('youWin') : t('youLose'), win ? '#5dff7a' : '#ec3013');
+      if (win) {
+        this.sfx('jingle-win', { volume: 0.6 });
+        burst(this, 360, 640, [0xffd23f, 0x5dff7a, 0x3ee6ff], 60, 500);
+      } else shake(this, 0.015, 300);
+      this.endGame({ win, title: win ? t('youWin') : t('youLose'), delay: 1600 });
+      return;
+    }
+    this.kick++;
+    this.startKick();
+  }
+
+  private updateOnline(dt: number): void {
+    // dive zones on the keeper's screen
+    const g = this.zonesG;
+    g.clear();
+    const keeping = !this.iShoot() && (this.phase === 'pick' || (this.phase === 'wait' && !!this.myPick));
+    if (keeping) {
+      const w = (GR - GL) / 3, h = (GB - GT) / 2;
+      for (let z = 0; z < 6; z++) {
+        const x = GL + (z % 3) * w, y = GT + Math.floor(z / 3) * h;
+        const sel = z === this.zone;
+        if (this.phase === 'wait' && !sel) continue;
+        g.fillStyle(sel ? 0x3ee6ff : 0xffffff, sel ? 0.28 + Math.sin(this.elapsed * 8) * 0.08 : 0.07).fillRect(x + 4, y + 4, w - 8, h - 8);
+        g.lineStyle(3, sel ? 0x3ee6ff : 0xffffff, sel ? 0.9 : 0.3).strokeRect(x + 4, y + 4, w - 8, h - 8);
+      }
+    }
+    // choice clock: an automatic pick when it runs out
+    if (this.phase === 'aim' || this.phase === 'pick') {
+      const before = Math.ceil(this.pickLeft);
+      this.pickLeft -= dt;
+      const now = Math.ceil(this.pickLeft);
+      this.clockText.setText(`${Math.max(0, now)}`).setColor(now <= 3 ? '#ec3013' : '#ffd23f');
+      if (now !== before && now <= 3 && now > 0) this.sfx('curl', { volume: 0.25 });
+      if (this.pickLeft <= 0) {
+        if (this.phase === 'aim') this.shoot(this.rx, this.ry, 0.5, this.kbCurve, 18);
+        else this.commitZone(this.zone);
+      }
+    }
   }
 
   private drawReticle(): void {

@@ -16,6 +16,9 @@ const leaveHandlers = new Set<() => void>();
 const joinHandlers = new Set<(name: string) => void>();
 let wired: Multiplayer | null = null;
 let roundSeed = 0;
+// A round start that arrived before anyone listened (the guest still in the intro); the
+// guest's menu picks it up as soon as it opens.
+let pendingStart: { seed?: number } | null = null;
 
 function mp(): Multiplayer | null {
   const m = sdk.adapter?.multiplayer ?? null;
@@ -24,7 +27,10 @@ function mp(): Multiplayer | null {
     m.onMove((raw) => {
       const msg = raw as { t?: unknown; d?: unknown } | null;
       if (!msg || typeof msg.t !== 'string') return;
-      handlers.get(msg.t)?.forEach((h) => {
+      if (msg.t === '__start' || msg.t === '__menu') pendingStart = null;
+      const listeners = handlers.get(msg.t);
+      if (msg.t === '__start' && !listeners?.size) pendingStart = (msg.d ?? {}) as { seed?: number };
+      listeners?.forEach((h) => {
         try {
           h(msg.d);
         } catch (error) {
@@ -36,6 +42,11 @@ function mp(): Multiplayer | null {
     m.onPeerJoin((name) => joinHandlers.forEach((h) => h(name)));
   }
   return m && m.active ? m : null;
+}
+
+/** Connects to the adapter's move stream; launch() calls it so no early message is missed. */
+export function wireNet(): void {
+  mp();
 }
 
 export const net = {
@@ -60,6 +71,12 @@ export const net = {
   },
   setSeed(seed: number): void {
     roundSeed = seed >>> 0;
+  },
+  /** The host's round start that arrived before the menu was listening, if any (read once). */
+  takePendingStart(): { seed?: number } | null {
+    const start = pendingStart;
+    pendingStart = null;
+    return start;
   },
   send(type: string, data?: unknown): void {
     mp()?.send({ t: type, d: data });

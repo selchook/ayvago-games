@@ -37,11 +37,13 @@ launch({
       you: 'SEN', them: 'RAKİP', shoot: 'ŞUTUNU ÇEK!', keep: 'KALEYİ KORU!', goal: 'GOL!', saved: 'KURTARDI!', bigSave: 'KURTARIŞ!',
       wide: 'AUT!', post: 'DİREK!', over: 'ÜSTTEN AUT!', matchWin: 'MAÇI KAZANDIN!', sudden: 'ANİ ÖLÜM', champion: 'ŞAMPİYON!',
       out: 'ELENDİN!', m1: 'ÇEYREK FİNAL', m2: 'YARI FİNAL', m3: 'FİNAL', curl: 'FALSO', corner: 'DOKSAN!',
+      kickN: 'PENALTI', pickDive: 'ATLAYACAĞIN YERİ SEÇ!', waitPeer: 'RAKİP BEKLENİYOR…',
     },
     en: {
       you: 'YOU', them: 'THEM', shoot: 'TAKE YOUR SHOT!', keep: 'SAVE IT!', goal: 'GOAL!', saved: 'SAVED!', bigSave: 'GREAT SAVE!',
       wide: 'WIDE!', post: 'POST!', over: 'OVER THE BAR!', matchWin: 'MATCH WON!', sudden: 'SUDDEN DEATH', champion: 'CHAMPIONS!',
       out: 'KNOCKED OUT!', m1: 'QUARTER-FINAL', m2: 'SEMI-FINAL', m3: 'FINAL', curl: 'CURL', corner: 'TOP CORNER!',
+      kickN: 'KICK', pickDive: 'PICK YOUR DIVE!', waitPeer: 'WAITING FOR OPPONENT…',
     },
   },
 });
