@@ -40,7 +40,7 @@ launch({
       c.add(scene.add.image(off[0], off[1], 'pf-' + k));
       if (i === 3) scene.tweens.add({ targets: c, angle: ang + 90, duration: 300, yoyo: true, repeat: -1, hold: 900, repeatDelay: 900 });
     });
-    const big = scene.add.container(width / 2, height * 0.86).setScale(0.9);
+    const big = scene.add.container(width / 2, height * 0.82).setScale(0.6);
     big.add(scene.add.image(0, 0, 'pf-water-cross'));
     scene.tweens.add({ targets: big, angle: 360, duration: 6000, repeat: -1 });
   },

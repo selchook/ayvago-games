@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, COLORS } from '@core';
+import { ArcadeScene, Button, burst, shake, popup, txt, t, rng } from '@core';
 
 type Kind = 'elbow' | 'straight' | 'tee' | 'cross';
 const N = 1, E = 2, S = 4, W = 8;
@@ -54,6 +54,7 @@ export class PlayScene extends ArcadeScene {
   private showCursor = false;
   private cursorBox!: Phaser.GameObjects.Rectangle;
   private timerText!: Phaser.GameObjects.Text;
+  private livesText!: Phaser.GameObjects.Text;
   private bar!: Phaser.GameObjects.Rectangle;
   private flowBtn!: Button;
   private srcStub!: Phaser.GameObjects.Image;
@@ -61,6 +62,8 @@ export class PlayScene extends ArcadeScene {
   private lastTick = 0;
   private earlySecs = 0;
   private srcFilled = false;
+  /** Rotations of the generated solution (kept for QA scripts). */
+  solution: number[] = [];
 
   createGame(): void {
     this.phase = 'build'; this.level = 1; this.lives = 3; this.cells = []; this.leaks = new Set(); this.linked = false;
@@ -70,6 +73,7 @@ export class PlayScene extends ArcadeScene {
     this.layer = this.add.container(0, 0);
     this.add.rectangle(60, 112, 440, 24, 0x000000, 0.6).setOrigin(0, 0.5).setStrokeStyle(4, 0xffffff, 0.8);
     this.bar = this.add.rectangle(64, 112, 432, 16, 0x3ee6ff).setOrigin(0, 0.5);
+    this.livesText = txt(this, 516, 112, '', { title: true, size: 18, color: '#ff4fa3' }).setOrigin(0, 0.5).setDepth(9);
     this.timerText = txt(this, 280, 150, '', { title: true, size: 18, color: '#3ee6ff' }).setDepth(9);
     this.cursorBox = this.add.rectangle(0, 0, 10, 10).setStrokeStyle(6, 0xffd23f).setDepth(20).setVisible(false);
     this.tweens.add({ targets: this.cursorBox, alpha: 0.4, duration: 400, yoyo: true, repeat: -1 });
@@ -116,6 +120,7 @@ export class PlayScene extends ArcadeScene {
     }
     const decoyPool: Kind[] = ['elbow', 'elbow', 'elbow', 'straight', 'straight', 'tee', 'tee', 'cross'];
     for (let i = 0; i < n; i++) if (!onPath.has(i)) { kinds[i] = rng.pick(decoyPool); rots[i] = rng.int(0, 3); }
+    this.solution = [...rots];
     // scramble every rotation; make sure the level does not start solved
     for (const i of path) rots[i] = (rots[i] + rng.int(1, 3)) % 4;
 
@@ -397,7 +402,7 @@ export class PlayScene extends ArcadeScene {
     const filled = this.cells.filter((c) => c.filled).length;
     const bonus = 250 * this.level + this.earlySecs * 10 * this.level;
     this.sfx('win', { volume: 0.6 });
-    flash(this, 0x3ee6ff, 140);
+    softFlash(this, 0x3ee6ff);
     const dx = this.x0 + this.cd * this.cell + this.cell / 2, yb = this.y0 + this.rows * this.cell;
     for (let k = 0; k < 5; k++) this.time.delayedCall(k * 120, () => burst(this, dx, yb + this.cell * 0.5, [0x3ee6ff, 0xffffff, 0x5dff7a], 20, 360));
     this.addScore(bonus, 360, 640);
@@ -418,8 +423,9 @@ export class PlayScene extends ArcadeScene {
     this.lives--;
     this.sfx('fail', { volume: 0.6 });
     shake(this, 0.02, 350);
-    flash(this, 0xec3013, 150);
+    softFlash(this, 0xec3013);
     this.updateHud();
+    this.tweens.add({ targets: this.livesText, scale: { from: 1.6, to: 1 }, duration: 400, ease: 'Back.easeOut' });
     const band = this.add.rectangle(360, 620, 720, 130, 0x000000, 0.75).setDepth(29);
     const msg = txt(this, 360, 620, t('blocked'), { title: true, size: 34, color: '#ec3013' }).setDepth(30).setScale(0);
     this.tweens.add({ targets: msg, scale: 1, duration: 360, ease: 'Back.easeOut' });
@@ -451,7 +457,7 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setCenter(`${t('level')} ${this.level}`);
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.livesText.setText(`${t('lives')} ${Math.max(0, this.lives)}`);
     const f = Phaser.Math.Clamp(this.countdown / this.countMax, 0, 1);
     this.bar.width = 432 * f;
     this.bar.fillColor = f > 0.3 ? 0x3ee6ff : 0xec3013;
@@ -460,4 +466,10 @@ export class PlayScene extends ArcadeScene {
   }
 }
 
-export { COLORS };
+
+/** Semi-transparent screen flash (the camera flash starts fully opaque). */
+function softFlash(scene: Phaser.Scene, color: number, alpha = 0.35, ms = 220): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, alpha).setOrigin(0).setDepth(7000);
+  scene.tweens.add({ targets: r, alpha: 0, duration: ms, onComplete: () => r.destroy() });
+}

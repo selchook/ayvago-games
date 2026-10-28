@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, storage, COLORS } from '@core';
+import { ArcadeScene, Button, burst, shake, popup, txt, t, rng, storage, COLORS } from '@core';
 
 const BOARD = 640;
 const CY = 660;
@@ -294,7 +294,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: c, y, alpha: 1, duration: 380, delay: 150, ease: 'Bounce.easeOut', onComplete: () => { this.sfx('place'); shake(this, 0.008, 120); } });
     this.time.delayedCall(600, () => {
       this.sfx('solved', { volume: 0.6 });
-      flash(this, 0x5dff7a, 140);
+      softFlash(this, 0x5dff7a);
       let k = 0;
       this.tiles.forEach((tl) => {
         const d = k++ * 25;
@@ -339,4 +339,11 @@ export class PlayScene extends ArcadeScene {
     const bm = storage.get<number>(`sp-moves-${this.n}`, 0);
     this.infoText.setText(`${t('puzzle')} ${this.puzzle} · ${this.n}×${this.n} · ${t('best')}: ${bm || t('none')}`);
   }
+}
+
+/** Semi-transparent screen flash (the camera flash starts fully opaque). */
+function softFlash(scene: Phaser.Scene, color: number, alpha = 0.35, ms = 220): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, alpha).setOrigin(0).setDepth(7000);
+  scene.tweens.add({ targets: r, alpha: 0, duration: ms, onComplete: () => r.destroy() });
 }

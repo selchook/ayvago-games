@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng } from '@core';
 
 export const ANIMALS = [
   'bear', 'buffalo', 'chick', 'chicken', 'cow', 'crocodile', 'dog', 'duck', 'elephant', 'frog',
@@ -247,7 +247,7 @@ export class PlayScene extends ArcadeScene {
     const timeBonus = Math.floor(this.timeLeft) * 10;
     const starBonus = stars * 100 * this.level;
     this.sfx('clear', { volume: 0.6 });
-    flash(this, 0x5dff7a, 120);
+    softFlash(this, 0x5dff7a);
     this.cards.forEach((c, k) => this.tweens.add({ targets: c.c, angle: 360, duration: 500, delay: k * 18, ease: 'Cubic.easeOut' }));
 
     const panel = this.add.rectangle(360, 640, 600, 420, 0x0b1424, 0.92).setStrokeStyle(6, 0xffd23f).setDepth(40).setScale(0);
@@ -281,7 +281,7 @@ export class PlayScene extends ArcadeScene {
     this.cursorBox.setVisible(false);
     this.sfx('miss', { volume: 0.5 });
     shake(this, 0.02, 400);
-    flash(this, 0xec3013, 150);
+    softFlash(this, 0xec3013);
     this.cards.forEach((c, k) => {
       if (!c.done) this.time.delayedCall(k * 20, () => { this.flip(c, true, false); c.face.setTint(0xffc8c8); });
     });
@@ -337,4 +337,11 @@ export class PlayScene extends ArcadeScene {
     this.timeText.setText(`${Math.ceil(this.timeLeft)}s`).setColor(this.timeLeft <= 10 ? '#ec3013' : '#ffd23f');
     if (this.phase === 'play') this.infoText.setText(`${t('pairs')} ${this.matched}/${this.cards.length / 2}   ${t('moves')} ${this.moves}`);
   }
+}
+
+/** Semi-transparent screen flash (the camera flash starts fully opaque). */
+function softFlash(scene: Phaser.Scene, color: number, alpha = 0.35, ms = 220): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, alpha).setOrigin(0).setDepth(7000);
+  scene.tweens.add({ targets: r, alpha: 0, duration: ms, onComplete: () => r.destroy() });
 }

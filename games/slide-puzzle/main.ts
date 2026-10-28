@@ -22,11 +22,11 @@ launch({
     const order = [1, 2, 3, 4, 5, 6, 7, 0, 8];
     order.forEach((v, i) => {
       if (!v) return;
-      const x = width / 2 + ((i % 3) - 1) * 92, y = height * 0.865 + (Math.floor(i / 3) - 1) * 92;
+      const x = width / 2 + ((i % 3) - 1) * 70, y = height * 0.83 + (Math.floor(i / 3) - 1) * 70;
       const c = scene.add.container(x, y);
-      c.add(scene.add.image(0, 0, 'sp-tile').setDisplaySize(86, 86).setTint(tileColor(v - 1, 3)));
-      c.add(scene.add.text(0, 2, String(v), { fontFamily: '"Press Start 2P"', fontSize: '30px', color: '#fff', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5));
-      if (v === 8) scene.tweens.add({ targets: c, x: x - 92, duration: 700, yoyo: true, repeat: -1, hold: 500, repeatDelay: 500, ease: 'Cubic.easeInOut' });
+      c.add(scene.add.image(0, 0, 'sp-tile').setDisplaySize(64, 64).setTint(tileColor(v - 1, 3)));
+      c.add(scene.add.text(0, 2, String(v), { fontFamily: '"Press Start 2P"', fontSize: '22px', color: '#fff', stroke: '#000', strokeThickness: 5 }).setOrigin(0.5));
+      if (v === 8) scene.tweens.add({ targets: c, x: x - 70, duration: 700, yoyo: true, repeat: -1, hold: 500, repeatDelay: 500, ease: 'Cubic.easeInOut' });
     });
     for (let i = 0; i < 6; i++) {
       const s = scene.add.image(width * (0.1 + i * 0.16), height * 0.08 + (i % 2) * 26, 'sp-tile').setDisplaySize(64, 64).setTint(tileColor(i * 3, 5)).setAngle(i % 2 ? 8 : -8);

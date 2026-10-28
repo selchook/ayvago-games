@@ -1,11 +1,11 @@
 {
   "id": "hex-merge",
-  "title": { "tr": "Hex Merge", "en": "Hex Merge" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "Altıgen Birleştir", "en": "Hex Merge" },
+  "description": { "tr": "Sayılı altıgenleri tahtaya bırak. Aynı sayıdan üç ya da daha fazlası yan yana gelince birleşip bir üst sayıya dönüşür; zincirleme birleşmelerle puanı katla. Tahta dolarsa oyun biter.", "en": "Drop numbered hexes on the board. Three or more equal numbers touching merge into the next number; chain merges multiply your score. The game ends when the board is full." },
+  "howTo": { "tr": "Boş altıgene dokun: parçayı bırak. Alttaki parçaya dokun: sıradakiyle değiştir. Klavye: oklar, Boşluk bırak, X değiştir.", "en": "Tap an empty hex to drop the piece. Tap the piece below to swap it with the next one. Keyboard: arrows, Space drops, X swaps." },
+  "genres": ["puzzle", "casual", "strategy"],
   "orientation": "portrait",
-  "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }

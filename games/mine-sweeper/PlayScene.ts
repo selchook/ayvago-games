@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, storage, COLORS } from '@core';
+import { ArcadeScene, Button, burst, shake, popup, txt, t, rng, storage, COLORS } from '@core';
 
 /** Frames in the onebit colored_transparent_packed sheet (16 px tiles, 48 per row). */
 export const OB = { bomb: 477, flag: 401, heart: 519, hourglass: 615, spark: 564 };
@@ -406,7 +406,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: b, scale: 3.4, duration: 300, ease: 'Back.easeOut' });
     burst(this, x, y, [0xec3013, 0xffd23f, 0xffa53a, 0xffffff], 40, 420);
     shake(this, 0.022, 320);
-    flash(this, 0xec3013, 160);
+    softFlash(this, 0xec3013);
     this.sfx('boom', { volume: 0.6 });
     this.sfx('boom2', { volume: 0.45 });
     this.timeLeft = Math.max(0, this.timeLeft - PENALTY);
@@ -445,7 +445,7 @@ export class PlayScene extends ArcadeScene {
     const bonus = 250 * d.mult * this.level + Math.floor(this.timeLeft) * 2 * d.mult;
     this.time.delayedCall(350, () => {
       this.sfx('clear', { volume: 0.6 });
-      flash(this, 0x5dff7a, 140);
+      softFlash(this, 0x5dff7a);
       this.addScore(bonus, 360, 600);
       for (let k = 0; k < 6; k++) this.time.delayedCall(k * 120, () => burst(this, rng.int(120, 600), rng.int(300, 900), [0xffd23f, 0x5dff7a, 0x3ee6ff, 0xff4fa3], 24, 380));
       const band = this.add.rectangle(360, 590, 720, 190, 0x000000, 0.75).setDepth(29).setScale(1, 0);
@@ -514,4 +514,11 @@ export class PlayScene extends ArcadeScene {
     const flagsUsed = this.flags.filter(Boolean).length + this.blown.filter(Boolean).length;
     this.mineText.setText(String(this.mineCount - flagsUsed));
   }
+}
+
+/** Semi-transparent screen flash (the camera flash starts fully opaque). */
+function softFlash(scene: Phaser.Scene, color: number, alpha = 0.35, ms = 220): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, alpha).setOrigin(0).setDepth(7000);
+  scene.tweens.add({ targets: r, alpha: 0, duration: ms, onComplete: () => r.destroy() });
 }
