@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng } from '@core';
 
 export const ANIMALS = ['bear', 'chick', 'cow', 'dog', 'duck', 'frog', 'monkey', 'panda', 'penguin', 'pig', 'rabbit', 'owl', 'hippo', 'zebra'];
 
@@ -27,6 +27,14 @@ const ANIMAL_W = 132;
 const KEYS_LETTERS = ['Q', 'W', 'E', 'A', 'S', 'D', 'Z', 'X', 'C'];
 const KEYS_NUMPAD = ['NUMPAD_SEVEN', 'NUMPAD_EIGHT', 'NUMPAD_NINE', 'NUMPAD_FOUR', 'NUMPAD_FIVE', 'NUMPAD_SIX', 'NUMPAD_ONE', 'NUMPAD_TWO', 'NUMPAD_THREE'];
 const KEYS_DIGITS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'];
+
+
+/** Screen flash that never fully covers the view (the core camera flash starts opaque). */
+function softFlash(scene: Phaser.Scene, color: number, ms = 120): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, 0.4).setOrigin(0).setScrollFactor(0).setDepth(8000);
+  scene.tweens.add({ targets: r, alpha: 0, duration: ms * 2, onComplete: () => r.destroy() });
+}
 
 export class PlayScene extends ArcadeScene {
   private holes: Hole[] = [];
@@ -202,7 +210,7 @@ export class PlayScene extends ArcadeScene {
       const bonus = 50 * this.round + this.lives * 20;
       this.addScore(bonus);
       this.sfx('clear', { volume: 0.5 });
-      flash(this, 0xffffff, 120);
+      softFlash(this, 0xffffff, 120);
       const b = txt(this, width / 2, height * 0.32, t('roundClear'), { title: true, size: 40, color: '#5dff7a', wrap: width - 60 }).setDepth(60).setScale(0.3);
       const s = txt(this, width / 2, height * 0.32 + 70, `${t('bonus')} +${bonus}`, { title: true, size: 24, color: '#ffd23f' }).setDepth(60);
       this.tweens.add({ targets: b, scale: 1, duration: 350, ease: 'Back.easeOut' });
@@ -334,7 +342,7 @@ export class PlayScene extends ArcadeScene {
     this.sfx('boom', { volume: 0.7 });
     this.sfx('hurt', { volume: 0.4 });
     shake(this, 0.025, 320);
-    flash(this, 0xec3013, 160);
+    softFlash(this, 0xec3013, 160);
     this.lives--;
     this.combo = 0;
     this.addScore(-20);

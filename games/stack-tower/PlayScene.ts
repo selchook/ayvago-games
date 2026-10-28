@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, ensurePixel } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng, ensurePixel } from '@core';
 
 const BLOCK_H = 56;
 const START_W = 420;
@@ -23,6 +23,14 @@ interface Block {
   y: number;
   w: number;
   c: Phaser.GameObjects.Container;
+}
+
+
+/** Screen flash that never fully covers the view (the core camera flash starts opaque). */
+function softFlash(scene: Phaser.Scene, color: number, ms = 120): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, 0.4).setOrigin(0).setScrollFactor(0).setDepth(8000);
+  scene.tweens.add({ targets: r, alpha: 0, duration: ms * 2, onComplete: () => r.destroy() });
 }
 
 export class PlayScene extends ArcadeScene {
@@ -77,7 +85,7 @@ export class PlayScene extends ArcadeScene {
     const base = this.makeBlock(width / 2, baseY, START_W, 0x4b4b5c);
     this.stack.push(base);
 
-    this.bigNum = txt(this, width / 2, 210, '0', { title: true, size: 80, color: '#ffffff', strokeThickness: 0 })
+    this.bigNum = txt(this, width / 2, 210, '0', { title: true, size: 80, color: '#ffffff', strokeThickness: 0, shadow: false })
       .setScrollFactor(0).setDepth(50).setAlpha(0.9);
     this.hint = txt(this, width / 2, 330, t('tapDrop'), { size: 34 }).setScrollFactor(0).setDepth(50);
     this.tweens.add({ targets: this.hint, alpha: 0.3, duration: 600, yoyo: true, repeat: -1 });
@@ -93,7 +101,7 @@ export class PlayScene extends ArcadeScene {
       g.destroy();
     }
     for (let i = 0; i < MAX_LIVES; i++) {
-      this.hearts.push(this.add.image(width / 2 - 44 + i * 44, 36, 'st-heart').setScale(0.9).setScrollFactor(0).setDepth(9000));
+      this.hearts.push(this.add.image(width - 150 - (MAX_LIVES - 1 - i) * 42, 88, 'st-heart').setScale(0.9).setScrollFactor(0).setDepth(9000));
     }
 
     this.spawnNext();
@@ -134,7 +142,8 @@ export class PlayScene extends ArcadeScene {
     const top = this.stack[this.stack.length - 1];
     const y = top.y - BLOCK_H;
     this.dir = this.floors % 2 === 0 ? 1 : -1;
-    const x = this.dir > 0 ? width / 2 - 330 : width / 2 + 330;
+    // the new block appears just clear of the tower and slides across it
+    const x = Phaser.Math.Clamp(top.x - this.dir * (top.w + 30), width / 2 - 330, width / 2 + 330);
     this.cur = this.makeBlock(x, y, top.w, blockColor(this.floors + 1));
     this.cur.c.setAlpha(0);
     this.tweens.add({ targets: this.cur.c, alpha: 1, duration: 150 });
@@ -229,7 +238,7 @@ export class PlayScene extends ArcadeScene {
     this.level++;
     this.addScore(50 * this.level);
     this.sfx('level', { volume: 0.5 });
-    flash(this, 0xffffff, 100);
+    softFlash(this, 0xffffff, 100);
     const b = txt(this, width / 2, height * 0.42, `${t('level')} ${this.level}`, { title: true, size: 46, color: '#ffd23f' })
       .setScrollFactor(0).setDepth(60).setScale(0.3);
     this.tweens.add({ targets: b, scale: 1, duration: 320, ease: 'Back.easeOut' });
@@ -246,7 +255,7 @@ export class PlayScene extends ArcadeScene {
       onComplete: () => { this.sfx('crash', { volume: 0.5 }); cur.c.destroy(); },
     });
     shake(this, 0.02, 350);
-    flash(this, 0xec3013, 150);
+    softFlash(this, 0xec3013, 150);
     // the tower wobbles
     this.stack.slice(-6).forEach((b, i) => {
       this.tweens.add({ targets: b.c, angle: (i % 2 ? 2 : -2), duration: 90, yoyo: true, repeat: 3 });

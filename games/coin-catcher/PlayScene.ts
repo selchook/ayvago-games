@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, popup, txt, t, rng } from '@core';
 
 type Kind = 'bronze' | 'silver' | 'gold' | 'gem' | 'star' | 'heart' | 'bomb';
 interface Item {
@@ -18,6 +18,14 @@ const GROUND_Y = 1168;
 const BASKET_W = 150;
 const MAX_LIVES = 3;
 const CATCHES_PER_LEVEL = 15;
+
+
+/** Screen flash that never fully covers the view (the core camera flash starts opaque). */
+function softFlash(scene: Phaser.Scene, color: number, ms = 120): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, 0.4).setOrigin(0).setScrollFactor(0).setDepth(8000);
+  scene.tweens.add({ targets: r, alpha: 0, duration: ms * 2, onComplete: () => r.destroy() });
+}
 
 export class PlayScene extends ArcadeScene {
   private controls!: Controls;
@@ -223,7 +231,7 @@ export class PlayScene extends ArcadeScene {
       this.magnet = 7;
       popup(this, x, y - 70, t('magnet'), '#ff4fa3', 24);
       this.sfx('magnet', { volume: 0.45 });
-      flash(this, 0xff4fa3, 90);
+      softFlash(this, 0xff4fa3, 90);
     }
     const prevMult = this.mult;
     this.combo++;
@@ -276,7 +284,7 @@ export class PlayScene extends ArcadeScene {
     popup(this, x, y - 50, t('boom'), '#ec3013', 30);
     this.sfx('hurt', { volume: 0.5 });
     shake(this, 0.022, 320);
-    flash(this, 0xec3013, 160);
+    softFlash(this, 0xec3013, 160);
     this.tweens.add({ targets: this.hearts[this.lives], scale: 0.6, duration: 120, yoyo: true });
     this.updateHud();
     if (this.lives <= 0) {

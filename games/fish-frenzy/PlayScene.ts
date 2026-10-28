@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, popup, txt, t, rng } from '@core';
 
 /** Swimming species: texture key, fish tile number and the fish's visible width inside the 64px tile. */
 export const SPECIES = [
@@ -30,6 +30,14 @@ interface Fish {
   chase: number;       // seconds of chasing left (sharks)
   dead: boolean;
   glow?: Phaser.GameObjects.Ellipse;
+}
+
+
+/** Screen flash that never fully covers the view (the core camera flash starts opaque). */
+function softFlash(scene: Phaser.Scene, color: number, ms = 120): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, 0.4).setOrigin(0).setScrollFactor(0).setDepth(8000);
+  scene.tweens.add({ targets: r, alpha: 0, duration: ms * 2, onComplete: () => r.destroy() });
 }
 
 export class PlayScene extends ArcadeScene {
@@ -323,7 +331,7 @@ export class PlayScene extends ArcadeScene {
     this.sfx('bite', { volume: 0.6 });
     this.sfx('hurt', { volume: 0.4 });
     shake(this, 0.02, 300);
-    flash(this, 0xec3013, 160);
+    softFlash(this, 0xec3013, 160);
     burst(this, this.player.x, this.player.y, [0xec3013, 0xffffff], 26, 340);
     // the attacker lunges
     this.tweens.add({ targets: f.img, scaleX: f.img.scaleX * 1.15, scaleY: f.img.scaleY * 1.15, duration: 90, yoyo: true });
@@ -345,7 +353,7 @@ export class PlayScene extends ArcadeScene {
     const bonus = 150 * this.level + this.lives * 50;
     this.addScore(bonus, this.player.x, this.player.y - 60);
     this.sfx('level', { volume: 0.55 });
-    flash(this, 0xffffff, 140);
+    softFlash(this, 0xffffff, 140);
     this.banner(t('levelClear'), '#5dff7a');
     burst(this, this.player.x, this.player.y, [0xffd23f, 0x5dff7a, 0xffffff], 40, 420);
     // the sea clears: everyone else swims away fast

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, ensurePixel } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng, ensurePixel } from '@core';
 
 /** Cyan, magenta, yellow, purple: the four gate colours. */
 export const PALETTE = [0x3ee6ff, 0xff4fa3, 0xffd23f, 0x8b5cff];
@@ -37,6 +37,14 @@ interface Gate {
   star?: Phaser.GameObjects.Image;
   sw?: Phaser.GameObjects.Graphics;
   passed: boolean;
+}
+
+
+/** Screen flash that never fully covers the view (the core camera flash starts opaque). */
+function softFlash(scene: Phaser.Scene, color: number, ms = 120): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, 0.4).setOrigin(0).setScrollFactor(0).setDepth(8000);
+  scene.tweens.add({ targets: r, alpha: 0, duration: ms * 2, onComplete: () => r.destroy() });
 }
 
 export class PlayScene extends ArcadeScene {
@@ -90,7 +98,7 @@ export class PlayScene extends ArcadeScene {
       g.destroy();
     }
     for (let i = 0; i < MAX_LIVES; i++) {
-      this.hearts.push(this.add.image(width / 2 - 44 + i * 44, 36, 'cg-heart').setScale(0.9).setScrollFactor(0).setDepth(9000));
+      this.hearts.push(this.add.image(width - 150 - (MAX_LIVES - 1 - i) * 42, 88, 'cg-heart').setScale(0.9).setScrollFactor(0).setDepth(9000));
     }
     this.bg = this.add.tileSprite(0, 0, width, height, 'cg-dots').setOrigin(0).setScrollFactor(0).setDepth(-10);
 
@@ -357,7 +365,7 @@ export class PlayScene extends ArcadeScene {
       const { width, height } = this.scale;
       this.addScore(25 * this.level);
       this.sfx('level', { volume: 0.5 });
-      flash(this, 0xffffff, 90);
+      softFlash(this, 0xffffff, 90);
       const banner = txt(this, width / 2, height * 0.3, `${t('level')} ${this.level}`, { title: true, size: 48, color: '#ffd23f' })
         .setScrollFactor(0).setDepth(60).setScale(0.3);
       this.tweens.add({ targets: banner, scale: 1, duration: 350, ease: 'Back.easeOut' });
@@ -378,7 +386,7 @@ export class PlayScene extends ArcadeScene {
     this.sfx('shatter', { volume: 0.5 });
     this.sfx('die', { volume: 0.45 });
     shake(this, 0.025, 320);
-    flash(this, 0xec3013, 160);
+    softFlash(this, 0xec3013, 160);
     this.lives--;
     this.updateHud();
     const heart = this.hearts[Math.max(0, this.lives)];
