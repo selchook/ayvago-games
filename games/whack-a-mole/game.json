@@ -1,0 +1,11 @@
+{
+  "id": "whack-a-mole",
+  "title": { "tr": "Whack-a-Mole", "en": "Whack-a-Mole" },
+  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
+  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
+  "genres": ["arcade"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "0.1.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}
