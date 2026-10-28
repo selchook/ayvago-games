@@ -6,7 +6,7 @@ import { playAyvagoIntro } from './intro';
 import { registerStrings, loc, getLang, setLang } from './i18n';
 import { sdk } from './sdk';
 import { wireNet } from './net';
-import { isMuted, isSilenced, setHostMuted } from './audio';
+import { installMasterBus, isMuted, isSilenced, setHostMuted } from './audio';
 import type { PlatformAdapter } from './ayvago/adapter';
 import { GameDefinition, setCurrentGame, gameSize } from './registry';
 import { BootScene, MenuScene, PauseScene, GameOverScene, setIntroPromise } from './scenes';
@@ -87,6 +87,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
     scene: [BootScene, MenuScene, ...def.scenes, PauseScene, GameOverScene],
   });
   game.sound.mute = isSilenced();
+  installMasterBus(game);
 
   bindPlatform(game, adapter);
 

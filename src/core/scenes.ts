@@ -252,9 +252,9 @@ export class GameOverScene extends Phaser.Scene {
       const nb = txt(this, width / 2, height * 0.34 + 185, t('newBest'), { title: true, size: 28, color: '#ff4fa3' });
       this.tweens.add({ targets: nb, alpha: 0.2, duration: 300, yoyo: true, repeat: -1 });
       this.time.delayedCall(300, () => burst(this, width / 2, height * 0.34 + 60, [0xffd23f, 0xff4fa3, 0x3ee6ff], 40, 420));
-      playSfx(this, 'jingle-best');
+      playSfx(this, 'jingle-best', { exact: true });
     } else {
-      playSfx(this, data.win ? 'jingle-win' : 'jingle-over');
+      playSfx(this, data.win ? 'jingle-win' : 'jingle-over', { exact: true });
     }
 
     const retry = () => {
@@ -287,7 +287,7 @@ export class GameOverScene extends Phaser.Scene {
     h.setScale(0.2);
     this.tweens.add({ targets: h, scale: 1, duration: 450, ease: 'Back.easeOut' });
     if (data.win) this.time.delayedCall(300, () => burst(this, width / 2, height * 0.26, [0xffd23f, 0xff4fa3, 0x3ee6ff], 40, 420));
-    playSfx(this, data.win ? 'jingle-win' : 'jingle-over');
+    playSfx(this, data.win ? 'jingle-win' : 'jingle-over', { exact: true });
     if (net.peerName) txt(this, width / 2, height * 0.38, t('vs', { name: net.peerName }), { size: 30, color: '#f3f2f2' });
 
     const by = height * (land ? 0.6 : 0.56);
