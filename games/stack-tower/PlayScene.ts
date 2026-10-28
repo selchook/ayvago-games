@@ -8,6 +8,7 @@ const PERFECT = 9;          // px tolerance for a perfect drop
 const GROW = 18;            // px regained per perfect drop once the streak is 3+
 const FLOORS_PER_LEVEL = 10;
 const MAX_LIVES = 3;
+const MERCY_W = 160;       // after a miss the top block is rebuilt to at least this width
 const ARM_TIME = 0.35;      // a fresh block can't be dropped instantly (stops accidental double taps)
 const SKY = [0x7ec8f5, 0x9d92ee, 0xe98aa6, 0x6a3f9a, 0x251a52, 0x0b0820];
 
@@ -101,7 +102,7 @@ export class PlayScene extends ArcadeScene {
       if (p.x > width - 130 && p.y < 130) return;     // pause button
       this.drop();
     });
-    for (const k of ['SPACE', 'ENTER', 'DOWN', 'UP', 'Z', 'S']) {
+    for (const k of ['SPACE', 'ENTER']) {
       this.input.keyboard?.on(`keydown-${k}`, (e: KeyboardEvent) => { if (!e.repeat) this.drop(); });
     }
     this.updateHud();
@@ -256,7 +257,22 @@ export class PlayScene extends ArcadeScene {
       this.endGame({ title: t('down'), delay: 1300 });
       return;
     }
-    // try again on the same floor
+    // try again on the same floor; a too-thin top block is patched up so the retry is fair
+    this.time.delayedCall(700, () => {
+      if (this.isOver) return;
+      const top = this.stack[this.stack.length - 1];
+      if (top.w < MERCY_W && this.stack.length > 1) {
+        const { width } = this.scale;
+        const nx = Phaser.Math.Clamp(top.x, MERCY_W / 2 + 20, width - MERCY_W / 2 - 20);
+        const fixed = this.makeBlock(nx, top.y, MERCY_W, blockColor(this.stack.length - 1));
+        fixed.c.setScale(top.w / MERCY_W, 1);
+        top.c.destroy();
+        this.stack[this.stack.length - 1] = fixed;
+        this.tweens.add({ targets: fixed.c, scaleX: 1, duration: 300, ease: 'Back.easeOut' });
+        burst(this, nx, top.y, [0x5dff7a, 0xffffff], 16, 240);
+        this.sfx('grow', { volume: 0.35 });
+      }
+    });
     this.time.delayedCall(1200, () => {
       if (this.isOver) return;
       this.dead = false;
