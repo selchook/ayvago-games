@@ -344,7 +344,13 @@ export class PlayScene extends ArcadeScene {
     if (this.blown[i] || this.adj[i] === 0) return;
     const nb = this.neighbors(i);
     const marked = nb.filter((j) => this.flags[j] || this.blown[j]).length;
-    if (marked !== this.adj[i]) { this.sfx('nope', { volume: 0.3 }); this.tweens.add({ targets: this.nums[i], scale: { from: 1.3, to: 1 }, duration: 200 }); return; }
+    if (marked !== this.adj[i]) {
+      this.sfx('nope', { volume: 0.3 });
+      // The number appears a moment after its cell opens (flood animation), so it can still be null.
+      const num = this.nums[i];
+      if (num) this.tweens.add({ targets: num, scale: { from: 1.3, to: 1 }, duration: 200 });
+      return;
+    }
     const todo = nb.filter((j) => !this.open[j] && !this.flags[j]);
     const bad = todo.find((j) => this.mines[j]);
     if (bad !== undefined) { this.explode(bad); return; }
