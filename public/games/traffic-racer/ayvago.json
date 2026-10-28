@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "trafficracer",
+  "title": {
+    "en": "Traffic Racer",
+    "tr": "Trafik Yarışçısı"
+  },
+  "description": {
+    "en": "Weave through busy highway traffic, chain near misses for combos, grab coins and fuel, and drive as far as you can before the tank runs dry!",
+    "tr": "Yoğun otoyolda arabaların arasından sıyrıl, kıl payı geçişlerle kombo yap, altın topla ve benzinin bitmeden gidebildiğin kadar uzağa git!"
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "action",
+    "retro"
+  ],
+  "tags": [
+    "traffic",
+    "racer",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/traffic-racer/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/traffic-racer/ayvago/icon-512.png",
+    "cover": "/games/traffic-racer/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/traffic-racer/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "coin-catcher",
+  "title": { "tr": "Altın Avcısı", "en": "Coin Catcher" },
+  "description": {
+    "tr": "Gökten yağan altınları ve mücevherleri sepetinle yakala, bombalardan kaç. Arka arkaya yakalayıp kombo çarpanını büyüt!",
+    "en": "Catch the coins and gems raining from the sky with your basket and dodge the bombs. Chain catches to grow your combo multiplier!"
+  },
+  "howTo": {
+    "tr": "Parmağını sürükle ya da ok tuşlarıyla / A-D ile sağa sola koş. Bombaları yakalama; yıldız mıknatıs verir.",
+    "en": "Drag your finger or use the arrow keys / A-D to run left and right. Don't catch bombs; the star is a magnet."
+  },
+  "genres": ["arcade", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-28" }
+}

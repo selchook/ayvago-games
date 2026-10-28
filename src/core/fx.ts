@@ -46,9 +46,15 @@ export function shake(scene: Phaser.Scene, intensity = 0.01, duration = 150): vo
   scene.cameras.main.shake(duration, intensity);
 }
 
-export function flash(scene: Phaser.Scene, color = 0xffffff, duration = 120): void {
-  const c = Phaser.Display.Color.IntegerToRGB(color);
-  scene.cameras.main.flash(duration, c.r, c.g, c.b);
+/**
+ * Screen flash as a semi-transparent overlay that fades out. Phaser's camera flash starts fully
+ * opaque, which is harsh on the eyes and blanks the whole frame for a moment.
+ */
+export function flash(scene: Phaser.Scene, color = 0xffffff, duration = 120, alpha = 0.45): void {
+  const cam = scene.cameras.main;
+  const overlay = scene.add.rectangle(0, 0, cam.width, cam.height, color, alpha)
+    .setOrigin(0).setScrollFactor(0).setDepth(9000);
+  scene.tweens.add({ targets: overlay, alpha: 0, duration: Math.max(duration, 80), onComplete: () => overlay.destroy() });
 }
 
 /** Floating "+10" style popup. */

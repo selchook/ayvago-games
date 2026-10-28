@@ -1,0 +1,12 @@
+{
+  "id": "plinko-drop",
+  "title": { "tr": "Plinko", "en": "Plinko Drop" },
+  "description": { "tr": "Topları çivilerin arasından bırak, altın çivilere çarptır ve çarpanlı ceplere düşür. Her turun hedefini tuttur!", "en": "Drop balls through a field of pegs, ping the gold pegs and land in multiplier slots. Hit each round's target!" },
+  "howTo": { "tr": "Sürükleyip bırak ya da ok tuşlarıyla nişan al, Boşluk ile topu bırak. Hedefe ulaşamazsan bir can gider.", "en": "Drag and release, or aim with the arrow keys and press Space to drop. Miss the round target and you lose a life." },
+  "genres": ["casual", "arcade"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-28" }
+}

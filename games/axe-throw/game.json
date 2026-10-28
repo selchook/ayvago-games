@@ -1,0 +1,29 @@
+{
+  "id": "axe-throw",
+  "title": {
+    "tr": "Balta Atışı",
+    "en": "Axe Throw"
+  },
+  "description": {
+    "tr": "Dönen kütüğe baltalarını sapla, saplı baltalara çarpma. Elmaları vur, her beş aşamada bir dev hedefi yen.",
+    "en": "Stick your axes into the spinning log without hitting the ones already there. Slice apples and beat a boss target every five stages."
+  },
+  "howTo": {
+    "tr": "Balta atmak için ekrana dokun ya da Boşluk'a bas. Kütükteki baltalara çarparsan bir can gider; üç canın var.",
+    "en": "Tap the screen or press Space to throw an axe. Hitting an axe already in the log costs one of your three lives."
+  },
+  "genres": [
+    "arcade",
+    "casual"
+  ],
+  "orientation": "portrait",
+  "controls": [
+    "touch",
+    "keyboard"
+  ],
+  "version": "1.0.0",
+  "credits": [
+    "Art & audio: Kenney (CC0) — kenney.nl"
+  ],
+  "platform": { "addedAt": "2026-10-28" }
+}

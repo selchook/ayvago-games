@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "cavecopter",
+  "title": {
+    "en": "Cave Copter",
+    "tr": "Mağara Helikopteri"
+  },
+  "description": {
+    "en": "Fly your helicopter as far as you can through a narrowing cave, avoid the walls and rock spikes and grab the stars.",
+    "tr": "Daralan mağarada helikopterini duvarlara ve sarkıtlara çarpmadan olabildiğince uzağa uçur, yıldızları topla."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "casual",
+    "retro"
+  ],
+  "tags": [
+    "cave",
+    "copter",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/cave-copter/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/cave-copter/ayvago/icon-512.png",
+    "cover": "/games/cave-copter/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/cave-copter/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

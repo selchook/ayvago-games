@@ -1,0 +1,12 @@
+{
+  "id": "mine-sweeper",
+  "title": { "tr": "Mayın Tarlası", "en": "Mine Sweeper" },
+  "description": { "tr": "Sayılara bakarak mayınların yerini bul, güvenli kareleri aç ve süre bitmeden tarlayı temizle. Her tarla bir öncekinden daha çok mayın saklar.", "en": "Read the numbers, find the mines, open every safe square and clear the field before the clock runs out. Each field hides more mines than the last." },
+  "howTo": { "tr": "Dokun: kareyi aç. Basılı tut ya da BAYRAK modunu seç: bayrak koy. Klavye: oklar, Boşluk aç, X bayrak. Mayın 15 sn götürür!", "en": "Tap: open a square. Long-press or switch to FLAG mode: place a flag. Keyboard: arrows, Space opens, X flags. A mine costs 15 s!" },
+  "genres": ["puzzle", "retro", "strategy"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-28" }
+}

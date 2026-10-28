@@ -1,0 +1,18 @@
+{
+  "id": "color-gate",
+  "title": { "tr": "Renk Kapısı", "en": "Color Gate" },
+  "description": {
+    "tr": "Topu zıplatarak dönen renkli halkalardan ve kayan kapılardan geçir. Yalnızca topunla aynı renkteki bölümden geçebilirsin!",
+    "en": "Hop the ball up through spinning rings and sliding gates. You can only pass through the part that matches your colour!"
+  },
+  "howTo": {
+    "tr": "Zıplamak için ekrana dokun ya da Boşluk / Yukarı tuşuna bas. Sadece kendi rengindeki bölümden geç, yıldızları topla.",
+    "en": "Tap the screen or press Space / Up to hop. Pass only through your own colour and grab the stars."
+  },
+  "genres": ["arcade", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-28" }
+}

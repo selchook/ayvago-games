@@ -1,0 +1,56 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "nonogram",
+  "title": {
+    "en": "Pixel Logic",
+    "tr": "Piksel Mantık"
+  },
+  "description": {
+    "en": "Crack the row and column clues, fill the right squares and reveal a hidden pixel picture. 12 puzzles from 5x5 to 10x10, beat the clock!",
+    "tr": "Satır ve sütun ipuçlarını çöz, doğru kareleri boya ve gizli piksel resmi ortaya çıkar. 5x5'ten 10x10'a 12 bulmacayı süre bitmeden çöz!"
+  },
+  "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "casual"
+  ],
+  "tags": [
+    "nonogram",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/nonogram/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/nonogram/ayvago/icon-512.png",
+    "cover": "/games/nonogram/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/nonogram/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

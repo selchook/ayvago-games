@@ -1,0 +1,12 @@
+{
+  "id": "pixel-runner",
+  "title": { "tr": "Piksel Koşucu", "en": "Pixel Runner" },
+  "description": { "tr": "Durmadan koş! Çukurların üstünden zıpla, düşmanların kafasına bas, altınları topla. Koştukça hız artar.", "en": "Never stop running! Leap over pits, stomp enemies and grab coins. The further you go, the faster it gets." },
+  "howTo": { "tr": "Zıplamak için dokun ya da Boşluk/Yukarı tuşuna bas; havada bir kez daha bas: çift zıplama. Uzun basarsan daha yükseğe zıplarsın.", "en": "Tap or press Space/Up to jump; press again in mid-air to double-jump. Hold longer to jump higher." },
+  "genres": ["action", "arcade", "retro"],
+  "orientation": "landscape",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-28" }
+}

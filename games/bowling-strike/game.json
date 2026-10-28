@@ -1,0 +1,12 @@
+{
+  "id": "bowling-strike",
+  "title": { "tr": "Bowling", "en": "Bowling Strike" },
+  "description": { "tr": "On karelik gerçek bowling: topu konumla, nişan al, gücünü ve falsosunu ayarla. Strike ve spare ile 300 sayıya uzan!", "en": "Ten frames of real bowling: position, aim, set power and spin. Chain strikes and spares on your way to a perfect 300!" },
+  "howTo": { "tr": "Topu sürükle ya da oklarla kaydır. Dokun veya Boşluk: önce nişan, sonra güç, sonra falso.", "en": "Drag the ball or slide it with the arrows. Tap or press Space to lock aim, then power, then spin." },
+  "genres": ["sports", "casual", "arcade"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-28" }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "ufoabduction",
+  "title": {
+    "en": "UFO Abduction",
+    "tr": "UFO Kaçırma"
+  },
+  "description": {
+    "en": "Hover your flying saucer over the farm, beam animals up and dodge the missiles and planes the humans send after you.",
+    "tr": "Uçan dairenle çiftliğin üstünde süzül, çekim ışınıyla hayvanları kaçır; füzelerden ve uçaklardan kaç."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "action",
+    "casual"
+  ],
+  "tags": [
+    "ufo",
+    "abduction",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/ufo-abduction/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/ufo-abduction/ayvago/icon-512.png",
+    "cover": "/games/ufo-abduction/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/ufo-abduction/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

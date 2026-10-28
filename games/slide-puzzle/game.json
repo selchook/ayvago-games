@@ -1,0 +1,12 @@
+{
+  "id": "slide-puzzle",
+  "title": { "tr": "Kaydırmalı Bulmaca", "en": "Slide Puzzle" },
+  "description": { "tr": "Karışık sayı karolarını boşluğa kaydırarak sıraya diz. 3×3 ile ısın, 4×4 ve 5×5 ile ustalaş; az hamle ve kısa süre daha çok puan getirir.", "en": "Slide the scrambled number tiles into the gap until they are back in order. Warm up on 3×3, master 4×4 and 5×5; fewer moves and less time score more." },
+  "howTo": { "tr": "Boşlukla aynı sıradaki bir karoya dokun ya da kaydır. Klavye: ok tuşları karoyu boşluğa iter. 1'den başlayarak sırala!", "en": "Tap or swipe a tile in line with the gap. Keyboard: arrow keys push a tile into the gap. Put them in order starting from 1!" },
+  "genres": ["puzzle", "casual", "retro"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-28" }
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "axethrow",
+  "title": {
+    "en": "Axe Throw",
+    "tr": "Balta Atışı"
+  },
+  "description": {
+    "en": "Stick your axes into the spinning log without hitting the ones already there. Slice apples and beat a boss target every five stages.",
+    "tr": "Dönen kütüğe baltalarını sapla, saplı baltalara çarpma. Elmaları vur, her beş aşamada bir dev hedefi yen."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "casual"
+  ],
+  "tags": [
+    "axe",
+    "throw",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/axe-throw/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/axe-throw/ayvago/icon-512.png",
+    "cover": "/games/axe-throw/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/axe-throw/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

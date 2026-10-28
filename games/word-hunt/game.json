@@ -1,0 +1,12 @@
+{
+  "id": "word-hunt",
+  "title": { "tr": "Kelime Avı", "en": "Word Hunt" },
+  "description": { "tr": "Harf ızgarasında gizlenmiş temalı kelimeleri süre bitmeden bul. 10 bölüm boyunca ızgara büyür, kelimeler her yöne saklanır!", "en": "Find the themed words hidden in the letter grid before time runs out. Over 10 levels the grid grows and words hide in every direction!" },
+  "howTo": { "tr": "Kelimenin üzerinde parmağını sürükle (8 yön). Klavye: oklar, Boşluk ile başla ve bitir, H ipucu.", "en": "Drag across a word in any of 8 directions. Keys: arrows to move, Space to start and end, H for a hint." },
+  "genres": ["word", "puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-28" }
+}

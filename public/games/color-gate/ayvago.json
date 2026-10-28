@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "colorgate",
+  "title": {
+    "en": "Color Gate",
+    "tr": "Renk Kapısı"
+  },
+  "description": {
+    "en": "Hop the ball up through spinning rings and sliding gates. You can only pass through the part that matches your colour!",
+    "tr": "Topu zıplatarak dönen renkli halkalardan ve kayan kapılardan geçir. Yalnızca topunla aynı renkteki bölümden geçebilirsin!"
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "casual"
+  ],
+  "tags": [
+    "color",
+    "gate",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/color-gate/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/color-gate/ayvago/icon-512.png",
+    "cover": "/games/color-gate/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/color-gate/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

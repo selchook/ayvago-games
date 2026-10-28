@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "stacktower",
+  "title": {
+    "en": "Stack Tower",
+    "tr": "Kule Diz"
+  },
+  "description": {
+    "en": "Drop each sliding block at the right moment; the overhang gets sliced off. Chain perfect drops to regrow and build a sky-high tower!",
+    "tr": "Kayan blokları tam zamanında bırak, taşan kısmı kesilir. Kusursuz bırakışlarla bloğunu büyüt ve göklere uzanan bir kule dik!"
+  },
+  "category": "casual",
+  "categories": [
+    "casual",
+    "arcade"
+  ],
+  "tags": [
+    "stack",
+    "tower",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/stack-tower/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/stack-tower/ayvago/icon-512.png",
+    "cover": "/games/stack-tower/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/stack-tower/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}
