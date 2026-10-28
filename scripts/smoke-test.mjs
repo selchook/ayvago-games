@@ -66,10 +66,13 @@ async function testGame(slug) {
     await waitScene('Play', 5000);
     step.play = true;
 
-    // 8 seconds of random play: keys + taps/drags away from the pause button
+    // Up to 8 seconds of random play: keys + taps/drags away from the pause button
     const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyZ', 'KeyX'];
     const box = await page.locator('canvas').first().boundingBox();
     for (let i = 0; i < 40; i++) {
+      // A round may end on its own (three quick deaths in a road crossing are fair): stop before
+      // a random tap lands on the result screen's MENU button.
+      if (i % 4 === 0 && await page.evaluate(() => window.__ayvago.game.scene.isActive('GameOver'))) break;
       const k = keys[Math.floor(Math.random() * keys.length)];
       await page.keyboard.down(k);
       const x = box.x + box.width * (0.1 + Math.random() * 0.8), y = box.y + box.height * (0.2 + Math.random() * 0.7);
