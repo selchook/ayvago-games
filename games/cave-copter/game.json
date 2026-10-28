@@ -1,11 +1,29 @@
 {
   "id": "cave-copter",
-  "title": { "tr": "Cave Copter", "en": "Cave Copter" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": {
+    "tr": "Mağara Helikopteri",
+    "en": "Cave Copter"
+  },
+  "description": {
+    "tr": "Daralan mağarada helikopterini duvarlara ve sarkıtlara çarpmadan olabildiğince uzağa uçur, yıldızları topla.",
+    "en": "Fly your helicopter as far as you can through a narrowing cave, avoid the walls and rock spikes and grab the stars."
+  },
+  "howTo": {
+    "tr": "Yükselmek için ekrana ya da Boşluk'a basılı tut, bırakınca alçalırsın. Üç çarpma hakkın var.",
+    "en": "Hold the screen or Space to climb; let go to drop. Your copter survives three bumps."
+  },
+  "genres": [
+    "arcade",
+    "casual",
+    "retro"
+  ],
   "orientation": "portrait",
-  "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
-  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+  "controls": [
+    "touch",
+    "keyboard"
+  ],
+  "version": "1.0.0",
+  "credits": [
+    "Art & audio: Kenney (CC0) — kenney.nl"
+  ]
 }

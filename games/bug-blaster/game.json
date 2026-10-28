@@ -1,11 +1,11 @@
 {
   "id": "bug-blaster",
-  "title": { "tr": "Bug Blaster", "en": "Bug Blaster" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "Böcek Avcısı", "en": "Bug Blaster" },
+  "description": { "tr": "Mantar tarlasında kıvrılarak inen kırkayağı parça parça vur, örümcek ve pirelerden kaç.", "en": "Shoot the centipede apart as it weaves down through the mushroom field, and keep clear of the spider and fleas." },
+  "howTo": { "tr": "Parmağını sürükle ya da ok tuşlarıyla hareket et; ateş otomatik. Kırkayağın tüm parçalarını vur.", "en": "Drag your finger or use the arrow keys to move; firing is automatic. Shoot every centipede segment." },
+  "genres": ["arcade", "retro", "action"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
-  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl"]
 }

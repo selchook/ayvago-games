@@ -1,11 +1,11 @@
 {
   "id": "shooting-gallery",
-  "title": { "tr": "Shooting Gallery", "en": "Shooting Gallery" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
-  "orientation": "portrait",
-  "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
+  "title": { "tr": "Atış Poligonu", "en": "Shooting Gallery" },
+  "description": { "tr": "Panayır atış poligonunda kayan ördekleri ve hedefleri vur. Her turda süre dolmadan puan hedefini tuttur.", "en": "Pop the sliding ducks and targets at the fairground stall. Reach each round's score goal before the clock runs out." },
+  "howTo": { "tr": "Hedefe dokun ya da tıkla; klavyede oklarla nişan al, Boşluk ile ateş et. Tezgâha dokun ya da R ile şarjör doldur.", "en": "Tap or click a target to shoot; on keyboard aim with the arrows and fire with Space. Tap the counter or press R to reload." },
+  "genres": ["arcade", "casual", "sports"],
+  "orientation": "landscape",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }

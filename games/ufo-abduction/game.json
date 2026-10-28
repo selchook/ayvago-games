@@ -1,11 +1,11 @@
 {
   "id": "ufo-abduction",
-  "title": { "tr": "UFO Abduction", "en": "UFO Abduction" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "UFO Kaçırma", "en": "UFO Abduction" },
+  "description": { "tr": "Uçan dairenle çiftliğin üstünde süzül, çekim ışınıyla hayvanları kaçır; füzelerden ve uçaklardan kaç.", "en": "Hover your flying saucer over the farm, beam animals up and dodge the missiles and planes the humans send after you." },
+  "howTo": { "tr": "Sol tarafta sürükle ya da ok tuşlarıyla uç. Işın için A düğmesini ya da Boşluk'u basılı tut, füze ve uçaklardan kaç.", "en": "Drag on the left side or use the arrow keys to fly. Hold the A button or Space to beam animals up; dodge missiles and planes." },
+  "genres": ["arcade", "action", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
+  "version": "1.0.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }
