@@ -35,6 +35,9 @@ async function fontsReady(timeoutMs = 3000): Promise<void> {
   const loads = Promise.all([
     document.fonts.load('32px "Press Start 2P"', 'AĞŞİ'),
     document.fonts.load('32px "Pixelify Sans"', 'AĞŞİ'),
+    // Canvas text never triggers a font download, so the bold face (Latin + Latin Extended) is
+    // loaded here too; otherwise bold Turkish letters fall back to another font.
+    document.fonts.load('bold 32px "Pixelify Sans"', 'AĞŞİ'),
   ]).then(() => undefined);
   await Promise.race([loads, new Promise<void>((r) => setTimeout(r, timeoutMs))]);
 }
