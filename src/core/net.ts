@@ -16,9 +16,14 @@ const leaveHandlers = new Set<() => void>();
 const joinHandlers = new Set<(name: string) => void>();
 let wired: Multiplayer | null = null;
 let roundSeed = 0;
+// Turn order (a platform rule for every online game): the room's host takes the first turn of
+// the first round; after that the previous round's winner does, and after a draw the player who
+// did not start the last round.
+let roundStarter: 0 | 1 = 0;
+let nextStarter: 0 | 1 = 0;
 // A round start that arrived before anyone listened (the guest still in the intro); the
 // guest's menu picks it up as soon as it opens.
-let pendingStart: { seed?: number } | null = null;
+let pendingStart: { seed?: number; starter?: number } | null = null;
 // Game messages that arrived while nothing listened for their type, e.g. the host's first move
 // landing before the guest's Play scene has started. Delivered to the first listener; dropped
 // when a new round starts or the players go back to the menu.
@@ -37,7 +42,7 @@ function mp(): Multiplayer | null {
         early.clear();
       }
       const listeners = handlers.get(msg.t);
-      if (msg.t === '__start' && !listeners?.size) pendingStart = (msg.d ?? {}) as { seed?: number };
+      if (msg.t === '__start' && !listeners?.size) pendingStart = (msg.d ?? {}) as { seed?: number; starter?: number };
       if (!msg.t.startsWith('__') && !listeners?.size) {
         const queue = early.get(msg.t) ?? [];
         queue.push(msg.d);
@@ -87,8 +92,30 @@ export const net = {
   setSeed(seed: number): void {
     roundSeed = seed >>> 0;
   },
+  /** Seat that takes the first turn (or serve) of the current round. */
+  get starter(): 0 | 1 {
+    return roundStarter;
+  },
+  /** True when this player takes the first turn of the current round. */
+  get myTurnFirst(): boolean {
+    return net.seat === roundStarter;
+  },
+  /** Applies a round start from the host: the shared seed and who starts. */
+  applyStart(d: { seed?: number; starter?: number } | null | undefined): void {
+    roundSeed = (d?.seed ?? 0) >>> 0;
+    roundStarter = d?.starter === 1 ? 1 : 0;
+  },
+  /** Records the round's result (from this player's side); it decides who starts the next one. */
+  recordResult(outcome: 'win' | 'lose' | 'draw'): void {
+    const other = (s: 0 | 1): 0 | 1 => (s === 0 ? 1 : 0);
+    nextStarter = outcome === 'draw' ? other(roundStarter) : outcome === 'win' ? net.seat : other(net.seat);
+  },
+  /** Seat that starts the next round (host side, when it sends "__start"). */
+  get nextStarter(): 0 | 1 {
+    return nextStarter;
+  },
   /** The host's round start that arrived before the menu was listening, if any (read once). */
-  takePendingStart(): { seed?: number } | null {
+  takePendingStart(): { seed?: number; starter?: number } | null {
     const start = pendingStart;
     pendingStart = null;
     return start;

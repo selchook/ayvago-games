@@ -11,6 +11,8 @@ export interface EndOptions {
   win?: boolean;
   /** Override the title shown on the result screen (already translated). */
   title?: string;
+  /** Online: the round ended level (decides who starts the next round). */
+  draw?: boolean;
   delay?: number;
 }
 
@@ -60,9 +62,9 @@ export abstract class ArcadeScene extends Phaser.Scene {
       // The host restarting or leaving while this side is still playing (guest only; once the
       // round is over the result screen handles it).
       if (!net.isHost) {
-        net.onScene(this, '__start', (d: { seed?: number } | undefined) => {
+        net.onScene(this, '__start', (d: { seed?: number; starter?: number } | undefined) => {
           if (this.isOver) return;
-          net.setSeed(d?.seed ?? 0);
+          net.applyStart(d);
           this.scene.restart();
         });
         net.onScene(this, '__menu', () => {
@@ -126,6 +128,7 @@ export abstract class ArcadeScene extends Phaser.Scene {
   endGame(o: EndOptions = {}): void {
     if (this.isOver) return;
     this.isOver = true;
+    if (net.active) net.recordResult(o.draw || o.title === t('draw') ? 'draw' : o.win ? 'win' : 'lose');
     this.physics?.world?.pause();
     this.time.delayedCall(o.delay ?? 600, () => {
       this.scene.pause();

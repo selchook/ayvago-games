@@ -34,6 +34,8 @@ function category(m) {
 
 function tags(m) {
   const out = new Set();
+  // Online two-player games are tagged first, so the tag survives the limit below.
+  if (m.multiplayer) out.add('multiplayer');
   for (const part of m.id.split('-')) if (part.length >= 3) out.add(part);
   out.add('retro');
   return [...out].filter((t) => /^[a-z0-9-]{2,24}$/.test(t)).slice(0, 10);

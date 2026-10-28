@@ -125,8 +125,8 @@ export class MenuScene extends Phaser.Scene {
     } else {
       const wait = txt(this, width / 2, height * (land ? 0.56 : 0.52), t('waitHost'), { size: 32, color: '#f3f2f2', wrap: width - 120 });
       this.tweens.add({ targets: wait, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
-      const begin = (d: { seed?: number } | undefined) => {
-        net.setSeed(d?.seed ?? 0);
+      const begin = (d: { seed?: number; starter?: number } | undefined) => {
+        net.applyStart(d);
         this.scene.start('Play');
       };
       net.onScene(this, '__start', begin);
@@ -163,11 +163,14 @@ export class MenuScene extends Phaser.Scene {
   }
 }
 
-/** Host only: picks a fresh shared seed, tells the guest and starts the round on both sides. */
+/**
+ * Host only: picks a fresh shared seed and the round's starter (the turn-order rule in net.ts),
+ * tells the guest and starts the round on both sides.
+ */
 export function startOnlineRound(scene: Phaser.Scene): void {
-  const seed = Math.floor(Math.random() * 2 ** 31);
-  net.setSeed(seed);
-  net.send('__start', { seed });
+  const start = { seed: Math.floor(Math.random() * 2 ** 31), starter: net.nextStarter };
+  net.applyStart(start);
+  net.send('__start', start);
   scene.scene.stop('GameOver');
   const play = scene.scene.get('Play');
   if (play.scene.isActive() || play.scene.isPaused()) play.scene.restart();
@@ -289,6 +292,8 @@ export class GameOverScene extends Phaser.Scene {
     if (data.win) this.time.delayedCall(300, () => burst(this, width / 2, height * 0.26, [0xffd23f, 0xff4fa3, 0x3ee6ff], 40, 420));
     playSfx(this, data.win ? 'jingle-win' : 'jingle-over');
     if (net.peerName) txt(this, width / 2, height * 0.38, t('vs', { name: net.peerName }), { size: 30, color: '#f3f2f2' });
+    const first = net.nextStarter === net.seat ? t('you') : net.peerName || t('opponent');
+    txt(this, width / 2, height * 0.44, t('nextFirst', { name: first }), { size: 26, color: '#3ee6ff', wrap: width - 80 });
 
     const by = height * (land ? 0.6 : 0.56);
     if (net.isHost) {
@@ -305,8 +310,8 @@ export class GameOverScene extends Phaser.Scene {
       this.tweens.add({ targets: wait, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
     }
     // The guest follows the host: a rematch restarts Play, "menu" goes back to the menu.
-    net.onScene(this, '__start', (d: { seed?: number } | undefined) => {
-      net.setSeed(d?.seed ?? 0);
+    net.onScene(this, '__start', (d: { seed?: number; starter?: number } | undefined) => {
+      net.applyStart(d);
       this.scene.stop();
       this.scene.get('Play').scene.restart();
     });
