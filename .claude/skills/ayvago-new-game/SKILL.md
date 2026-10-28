@@ -76,7 +76,15 @@ What the base class gives you:
 - **HUD.** `this.hud.setRight(str)` for lives/level/time and `this.hud.setCenter(str)` for wave/moves. The score is drawn top-left automatically. Set `protected useHud = false` to draw your own.
 - **Round state.** `this.elapsed` (seconds in round), `this.isOver`.
 - **Ending.** `endGame({ win?, title?, delay? })` shows the result overlay, saves the best score and emits SDK `gameOver`.
-- **Sound.** `this.sfx(key, config?)` plays a sound and respects mute.
+- **Sound.** `this.sfx(key, config?)` plays a sound and respects mute. The core mixes for you:
+  - Every play gets a slight random pitch (±4%) and level variation, so repeated hits never sound
+    identical. Pass `exact: true` for jingles and anything musical; a sound with an explicit
+    `rate` (a note) is never varied.
+  - The same key twice within ~30 ms counts once, and at most 4 copies of one key play at once.
+  - `this.sfxAt(key, x, config?)` pans the sound to where it happens on screen. Use it for
+    collisions, explosions and pickups that are not at the centre.
+  - A master compressor keeps stacked sounds from clipping, so effects can be played at real
+    volumes (0.5–0.9) instead of whisper-quiet ones.
 - **Pause.** Built in. Keep the top-right 120×120 px free; the pause button lives there.
 
 Other helpers from `@core`:

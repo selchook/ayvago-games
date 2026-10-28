@@ -3,7 +3,7 @@ import { Hud, iconButton } from './ui';
 import { t } from './i18n';
 import { sdk } from './sdk';
 import { net } from './net';
-import { playSfx } from './audio';
+import { playSfx, type SfxConfig } from './audio';
 import { addCrt, popup } from './fx';
 import { currentGame } from './registry';
 
@@ -118,8 +118,13 @@ export abstract class ArcadeScene extends Phaser.Scene {
     this.tweens.add({ targets: text, alpha: 0, delay: 2200, duration: 500, onComplete: () => text.destroy() });
   }
 
-  sfx(key: string, config?: Phaser.Types.Sound.SoundConfig): void {
+  sfx(key: string, config?: SfxConfig): void {
     playSfx(this, key, config);
+  }
+
+  /** Like sfx(), panned to where it happens on screen (world x). */
+  sfxAt(key: string, x: number, config?: SfxConfig): void {
+    playSfx(this, key, { ...config, x });
   }
 
   /** Ends the round and shows the result overlay (score saving is handled there). */
