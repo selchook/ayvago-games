@@ -172,7 +172,7 @@ export class PlayScene extends ArcadeScene {
 
     // monsters
     const f = this.floor;
-    const pool = MONSTERS.filter((m) => m.minFloor <= f && m.minFloor >= f - 4);
+    const pool = MONSTERS.filter((m) => m.minFloor <= f).slice(-5);   // the five toughest unlocked kinds
     const count = Math.min(10, 2 + Math.floor(f * 0.9));
     for (let i = 0; i < count; i++) {
       const spot = free();
@@ -251,9 +251,9 @@ export class PlayScene extends ArcadeScene {
   }
 
   private spawnMonster(def: MonsterDef, c: number, r: number, boss: boolean): void {
-    const scaleHp = 1 + (this.floor - 1) * 0.1;
+    const scaleHp = 1 + (this.floor - 1) * 0.14;
     const hp = boss ? 8 + this.floor * 2 : Math.round(def.hp * scaleHp);
-    const atk = boss ? 2 + Math.floor(this.floor / 5) : def.atk + Math.floor((this.floor - def.minFloor) / 4);
+    const atk = boss ? 2 + Math.floor(this.floor / 5) : def.atk + Math.floor((this.floor - def.minFloor) / 3);
     const img = this.add.image(OX + c * TS + TS / 2, OY + r * TS + TS / 2, 'mr', def.frame).setScale(SC).setDepth(4).setVisible(false);
     if (boss) img.setTint(0xff9090);
     this.monsters.push({ def, c, r, hp, maxHp: hp, atk, img, awake: boss, boss, tick: 0 });
@@ -448,7 +448,7 @@ export class PlayScene extends ArcadeScene {
 
   private gainXp(n: number): void {
     this.xp += n;
-    const need = 4 + this.lvl * 4;
+    const need = 5 + this.lvl * 5;
     if (this.xp < need) return;
     this.xp -= need;
     this.lvl++;
@@ -564,7 +564,7 @@ export class PlayScene extends ArcadeScene {
     const k = Math.max(0, this.hp) / this.maxHp;
     g.fillStyle(k > 0.5 ? 0x5dff7a : k > 0.25 ? 0xffd23f : 0xec3013, 1).fillRoundedRect(28, 88, 254 * k, 24, 6);
     g.fillStyle(0x000000, 0.6).fillRect(24, 120, 262, 8);
-    g.fillStyle(0x3ee6ff, 1).fillRect(25, 121, 260 * Math.min(1, this.xp / (4 + this.lvl * 4)), 6);
+    g.fillStyle(0x3ee6ff, 1).fillRect(25, 121, 260 * Math.min(1, this.xp / (5 + this.lvl * 5)), 6);
     this.hpText.setText(`${Math.max(0, this.hp)}/${this.maxHp}`);
     this.atkText.setText(String(this.atk));
     this.defText.setText(String(this.def));
