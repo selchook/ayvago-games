@@ -1,11 +1,17 @@
 {
   "id": "fish-frenzy",
-  "title": { "tr": "Fish Frenzy", "en": "Fish Frenzy" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
-  "orientation": "portrait",
+  "title": { "tr": "Balık Çılgınlığı", "en": "Fish Frenzy" },
+  "description": {
+    "tr": "Küçük balıkları yiyerek büyü, senden büyük balıklardan ve köpekbalıklarından kaç. Her bölümde hedef boyuta ulaş, okyanus giderek tehlikeli hale gelir!",
+    "en": "Eat smaller fish to grow and steer clear of bigger fish and sharks. Reach the target size to clear each level as the ocean gets more dangerous!"
+  },
+  "howTo": {
+    "tr": "Balığını parmağınla sürükle ya da ok tuşları / WASD ile yüz. Kendinden küçükleri ye, kırmızı parlayan büyüklerden kaç.",
+    "en": "Drag your fish with your finger or swim with the arrow keys / WASD. Eat smaller fish and avoid the bigger ones glowing red."
+  },
+  "genres": ["arcade", "action", "casual"],
+  "orientation": "landscape",
   "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
+  "version": "1.0.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }

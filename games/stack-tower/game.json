@@ -1,11 +1,17 @@
 {
   "id": "stack-tower",
-  "title": { "tr": "Stack Tower", "en": "Stack Tower" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "Kule Diz", "en": "Stack Tower" },
+  "description": {
+    "tr": "Kayan blokları tam zamanında bırak, taşan kısmı kesilir. Kusursuz bırakışlarla bloğunu büyüt ve göklere uzanan bir kule dik!",
+    "en": "Drop each sliding block at the right moment; the overhang gets sliced off. Chain perfect drops to regrow and build a sky-high tower!"
+  },
+  "howTo": {
+    "tr": "Bloğu bırakmak için ekrana dokun ya da Boşluk tuşuna bas. Alttaki bloğun tam üstüne denk getir.",
+    "en": "Tap the screen or press Space to drop the block. Line it up exactly with the block below."
+  },
+  "genres": ["casual", "arcade"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
-  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl"]
 }

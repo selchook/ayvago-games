@@ -1,0 +1,29 @@
+{
+  "id": "platform-hopper",
+  "title": {
+    "tr": "Platform Zıpzıp",
+    "en": "Platform Hopper"
+  },
+  "description": {
+    "tr": "On el yapımı bölümde zıpla: mücevherleri topla, balçıklardan, salyangozlardan, arılardan ve testerelerden kaç, bayrağa ulaş. Düşmanların üstüne zıplayarak onları ez!",
+    "en": "Hop through ten handmade levels: collect the gems, dodge slimes, snails, bees and saws, then reach the flag. Stomp enemies from above!"
+  },
+  "howTo": {
+    "tr": "Ekrandaki ok ve zıplama tuşlarını ya da ok tuşları/WASD ve Boşluk'u kullan. Önce tüm mücevherleri topla, sonra bayrağa dokun.",
+    "en": "Use the on-screen arrows and jump button, or arrow keys/WASD and Space. Collect every gem first, then touch the flag."
+  },
+  "genres": [
+    "action",
+    "arcade",
+    "casual"
+  ],
+  "orientation": "landscape",
+  "controls": [
+    "touch",
+    "keyboard"
+  ],
+  "version": "1.0.0",
+  "credits": [
+    "Art & audio: Kenney (CC0) — kenney.nl"
+  ]
+}

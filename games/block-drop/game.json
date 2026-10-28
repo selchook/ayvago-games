@@ -1,0 +1,11 @@
+{
+  "id": "block-drop",
+  "title": { "tr": "Blok Düşür", "en": "Block Drop" },
+  "description": { "tr": "Düşen yedi farklı bloğu döndür ve yerleştir, satırları tamamlayıp temizle. Her 10 satırda seviye atlar, bloklar hızlanır.", "en": "Rotate and place seven kinds of falling blocks to complete and clear lines. Every 10 lines the level rises and the blocks fall faster." },
+  "howTo": { "tr": "Alttaki tuşlarla ya da tahtada sürükleyerek oyna: dokun = döndür, aşağı hızlı kaydır = bırak, yukarı = sakla. Klavye: oklar, Boşluk, C.", "en": "Use the buttons or drag on the board: tap = rotate, flick down = drop, flick up = hold. Keyboard: arrows, Space, C." },
+  "genres": ["puzzle", "retro", "arcade"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

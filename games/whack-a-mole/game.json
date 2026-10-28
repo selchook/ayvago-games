@@ -1,11 +1,17 @@
 {
   "id": "whack-a-mole",
-  "title": { "tr": "Whack-a-Mole", "en": "Whack-a-Mole" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "Köstebek Avı", "en": "Whack-a-Mole" },
+  "description": {
+    "tr": "Deliklerden fırlayan hayvanlara tokmağı indir, bombalara dokunma! Her turda süre dolmadan hedefe ulaş; turlar giderek hızlanır.",
+    "en": "Bop the critters popping out of their holes, but leave the bombs alone! Reach each round's target before time runs out; every round gets faster."
+  },
+  "howTo": {
+    "tr": "Hayvanlara dokun ya da Q W E / A S D / Z X C (veya sayı) tuşlarıyla vur. Ok tuşları + Boşluk da olur. Bombaya vurma!",
+    "en": "Tap the critters or whack them with Q W E / A S D / Z X C (or number keys). Arrows + Space work too. Don't hit bombs!"
+  },
+  "genres": ["arcade", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
+  "version": "1.0.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }
