@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "airhockey",
+  "title": {
+    "en": "Air Hockey",
+    "tr": "Hava Hokeyi"
+  },
+  "description": {
+    "en": "Neon air hockey against an AI that adapts to you. Bank shots off the walls, smash it hard, first to 7 goals wins!",
+    "tr": "Neon masada sana göre uyum sağlayan yapay zekâya karşı hava hokeyi. Duvardan sektir, sert vur, 7 golü ilk atan kazanır!"
+  },
+  "category": "sports",
+  "categories": [
+    "sports",
+    "arcade",
+    "action"
+  ],
+  "tags": [
+    "air",
+    "hockey",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/air-hockey/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/air-hockey/ayvago/icon-512.png",
+    "cover": "/games/air-hockey/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/air-hockey/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

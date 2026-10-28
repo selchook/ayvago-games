@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "blockdrop",
+  "title": {
+    "en": "Block Drop",
+    "tr": "Blok Düşür"
+  },
+  "description": {
+    "en": "Rotate and place seven kinds of falling blocks to complete and clear lines. Every 10 lines the level rises and the blocks fall faster.",
+    "tr": "Düşen yedi farklı bloğu döndür ve yerleştir, satırları tamamlayıp temizle. Her 10 satırda seviye atlar, bloklar hızlanır."
+  },
+  "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "retro",
+    "arcade"
+  ],
+  "tags": [
+    "block",
+    "drop",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/block-drop/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/block-drop/ayvago/icon-512.png",
+    "cover": "/games/block-drop/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/block-drop/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

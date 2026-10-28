@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "memorymatch",
+  "title": {
+    "en": "Memory Match",
+    "tr": "Hafıza Kartları"
+  },
+  "description": {
+    "en": "Flip the cards and match the animal pairs. Every level grows the board and tightens the clock; finish fast with few moves to earn three stars.",
+    "tr": "Kartları çevir, aynı hayvanları eşleştir. Her bölümde tahta büyür, süre daralır; hızlı ve az hamleyle bitir, üç yıldızı kap."
+  },
+  "category": "casual",
+  "categories": [
+    "casual",
+    "puzzle",
+    "card"
+  ],
+  "tags": [
+    "memory",
+    "match",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/memory-match/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/memory-match/ayvago/icon-512.png",
+    "cover": "/games/memory-match/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/memory-match/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

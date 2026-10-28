@@ -1,13 +1,16 @@
 # Ayvago launch catalogue
 
-## Status (26 shipped)
+## Status (54 shipped)
 
-**Shipped.** 26 games. All pass the smoke test, the GHA protocol test and manifest validation, and all are in the platform catalog:
-alien-invaders, asteroid-storm, block-blast, brick-breaker, bubble-pop, city-defender, connect-four, gem-match, hoop-shot, lights-out, lunar-lander, merge-2048, mini-golf, neon-pong, penalty-kick, retro-snake, reversi, simon-says, sky-jumper, sokoban, solitaire, space-blaster, tank-arena, tappy-plane, tower-defense, zombie-survivor.
+**Shipped.** All 54 games in the concept list. Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
+air-hockey, alien-invaders, asteroid-storm, axe-throw, block-blast, block-drop, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-gate, connect-four, dungeon-dash, fish-frenzy, gem-match, hex-merge, hoop-shot, lights-out, lunar-lander, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, neon-pong, nonogram, penalty-kick, pipe-flow, pixel-runner, platform-hopper, plinko-drop, retro-snake, reversi, road-crosser, shooting-gallery, simon-says, sky-jumper, slide-puzzle, sokoban, solitaire, space-blaster, stack-tower, tank-arena, tappy-plane, tile-triple, tower-defense, traffic-racer, ufo-abduction, whack-a-mole, word-hunt, zombie-survivor.
 
-**Work in progress** (moved to `wip/`, not built): dungeon-dash, nonogram. Both have a template play scene with partial helpers.
+- **Launch wave (2026-10-27):** 26 games.
+- **Second wave (2026-10-28):** 28 games. These are the former backlog plus dungeon-dash and nonogram, finished from `wip/`. Each carries `platform.addedAt` in its `game.json`.
 
-**Backlog** (not started): air-hockey, axe-throw, bowling-strike, bug-blaster, cave-copter, coin-catcher, color-gate, fish-frenzy, hex-merge, maze-muncher, memory-match, mine-sweeper, pipe-flow, pixel-runner, platform-hopper, plinko-drop, road-crosser, shooting-gallery, slide-puzzle, stack-tower, tile-triple, traffic-racer, ufo-abduction, whack-a-mole, word-hunt, block-drop.
+**Work in progress:** none.
+
+**Backlog:** empty. New concepts go into the concept list below.
 
 ## Concept list (54 games)
 

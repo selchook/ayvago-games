@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "platformhopper",
+  "title": {
+    "en": "Platform Hopper",
+    "tr": "Platform Zıpzıp"
+  },
+  "description": {
+    "en": "Hop through ten handmade levels: collect the gems, dodge slimes, snails, bees and saws, then reach the flag. Stomp enemies from above!",
+    "tr": "On el yapımı bölümde zıpla: mücevherleri topla, balçıklardan, salyangozlardan, arılardan ve testerelerden kaç, bayrağa ulaş. Düşmanların üstüne zıplayarak onları ez!"
+  },
+  "category": "action",
+  "categories": [
+    "action",
+    "arcade",
+    "casual"
+  ],
+  "tags": [
+    "platform",
+    "hopper",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/platform-hopper/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/platform-hopper/ayvago/icon-512.png",
+    "cover": "/games/platform-hopper/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/platform-hopper/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

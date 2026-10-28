@@ -7,5 +7,6 @@
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
   "version": "1.0.0",
-  "credits": ["Audio: Kenney (CC0) — kenney.nl", "Art: drawn in code"]
+  "credits": ["Audio: Kenney (CC0) — kenney.nl", "Art: drawn in code"],
+  "platform": { "addedAt": "2026-10-28" }
 }

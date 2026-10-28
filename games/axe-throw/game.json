@@ -24,5 +24,6 @@
   "version": "1.0.0",
   "credits": [
     "Art & audio: Kenney (CC0) — kenney.nl"
-  ]
+  ],
+  "platform": { "addedAt": "2026-10-28" }
 }

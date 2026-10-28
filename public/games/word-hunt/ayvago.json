@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "wordhunt",
+  "title": {
+    "en": "Word Hunt",
+    "tr": "Kelime Avı"
+  },
+  "description": {
+    "en": "Find the themed words hidden in the letter grid before time runs out. Over 10 levels the grid grows and words hide in every direction!",
+    "tr": "Harf ızgarasında gizlenmiş temalı kelimeleri süre bitmeden bul. 10 bölüm boyunca ızgara büyür, kelimeler her yöne saklanır!"
+  },
+  "category": "word",
+  "categories": [
+    "word",
+    "puzzle",
+    "casual"
+  ],
+  "tags": [
+    "word",
+    "hunt",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/word-hunt/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/word-hunt/ayvago/icon-512.png",
+    "cover": "/games/word-hunt/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/word-hunt/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

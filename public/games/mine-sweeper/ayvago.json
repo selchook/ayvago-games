@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "minesweeper",
+  "title": {
+    "en": "Mine Sweeper",
+    "tr": "Mayın Tarlası"
+  },
+  "description": {
+    "en": "Read the numbers, find the mines, open every safe square and clear the field before the clock runs out. Each field hides more mines than the last.",
+    "tr": "Sayılara bakarak mayınların yerini bul, güvenli kareleri aç ve süre bitmeden tarlayı temizle. Her tarla bir öncekinden daha çok mayın saklar."
+  },
+  "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "retro",
+    "strategy"
+  ],
+  "tags": [
+    "mine",
+    "sweeper",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/mine-sweeper/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/mine-sweeper/ayvago/icon-512.png",
+    "cover": "/games/mine-sweeper/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/mine-sweeper/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

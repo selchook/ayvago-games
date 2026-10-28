@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "roadcrosser",
+  "title": {
+    "en": "Road Crosser",
+    "tr": "Yol Geçidi"
+  },
+  "description": {
+    "en": "Hop the frog through traffic, ride logs and hippos across the river and fill all five homes. Traffic speeds up every level!",
+    "tr": "Kurbağayı trafiğin arasından geçir, kütüklerin ve suaygırlarının sırtında nehri aş, beş yuvayı da doldur. Her bölümde trafik hızlanır!"
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "retro",
+    "casual"
+  ],
+  "tags": [
+    "road",
+    "crosser",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/road-crosser/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/road-crosser/ayvago/icon-512.png",
+    "cover": "/games/road-crosser/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/road-crosser/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

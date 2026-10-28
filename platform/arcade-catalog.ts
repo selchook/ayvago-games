@@ -30,11 +30,13 @@ type ArcadeEntry = Pick<
 > &
   Partial<Pick<GameManifestInput, 'ageRating' | 'scoring' | 'version'>> & {
     slug: string;
+    addedAt?: string;
     featured?: boolean;
   };
 
 function arcadeGame({
   slug,
+  addedAt,
   featured,
   ageRating,
   scoring,
@@ -45,7 +47,7 @@ function arcadeGame({
     slug,
     repo: 'selchook/ayvago-games',
     status: ARCADE_STATUS,
-    addedAt: ARCADE_ADDED_AT,
+    addedAt: addedAt ?? ARCADE_ADDED_AT,
     ...(featured ? { featured } : {}),
     manifest: {
       id: slug.replace(/-/g, ''),
@@ -67,6 +69,20 @@ function arcadeGame({
 }
 
 export const ARCADE_GAMES: SeedGame[] = [
+  arcadeGame({
+    slug: 'air-hockey',
+    title: { en: 'Air Hockey', tr: 'Hava Hokeyi' },
+    description: {
+      en: 'Neon air hockey against an AI that adapts to you. Bank shots off the walls, smash it hard, first to 7 goals wins!',
+      tr: 'Neon masada sana göre uyum sağlayan yapay zekâya karşı hava hokeyi. Duvardan sektir, sert vur, 7 golü ilk atan kazanır!',
+    },
+    category: 'sports',
+    categories: ['sports', 'arcade', 'action'],
+    tags: ['air', 'hockey', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
   arcadeGame({
     slug: 'alien-invaders',
     title: { en: 'Alien Invaders', tr: 'Uzaylı İstilası' },
@@ -94,6 +110,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'axe-throw',
+    title: { en: 'Axe Throw', tr: 'Balta Atışı' },
+    description: {
+      en: 'Stick your axes into the spinning log without hitting the ones already there. Slice apples and beat a boss target every five stages.',
+      tr: 'Dönen kütüğe baltalarını sapla, saplı baltalara çarpma. Elmaları vur, her beş aşamada bir dev hedefi yen.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'casual'],
+    tags: ['axe', 'throw', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
     slug: 'block-blast',
     title: { en: 'Block Blast', tr: 'Blok Patlat' },
     description: {
@@ -105,6 +135,34 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['block', 'blast', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+  }),
+  arcadeGame({
+    slug: 'block-drop',
+    title: { en: 'Block Drop', tr: 'Blok Düşür' },
+    description: {
+      en: 'Rotate and place seven kinds of falling blocks to complete and clear lines. Every 10 lines the level rises and the blocks fall faster.',
+      tr: 'Düşen yedi farklı bloğu döndür ve yerleştir, satırları tamamlayıp temizle. Her 10 satırda seviye atlar, bloklar hızlanır.',
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'retro', 'arcade'],
+    tags: ['block', 'drop', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'bowling-strike',
+    title: { en: 'Bowling Strike', tr: 'Bowling' },
+    description: {
+      en: 'Ten frames of real bowling: position, aim, set power and spin. Chain strikes and spares on your way to a perfect 300!',
+      tr: 'On karelik gerçek bowling: topu konumla, nişan al, gücünü ve falsosunu ayarla. Strike ve spare ile 300 sayıya uzan!',
+    },
+    category: 'sports',
+    categories: ['sports', 'casual', 'arcade'],
+    tags: ['bowling', 'strike', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
   }),
   arcadeGame({
     slug: 'brick-breaker',
@@ -134,6 +192,34 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'bug-blaster',
+    title: { en: 'Bug Blaster', tr: 'Böcek Avcısı' },
+    description: {
+      en: 'Shoot the centipede apart as it weaves down through the mushroom field, and keep clear of the spider and fleas.',
+      tr: 'Mantar tarlasında kıvrılarak inen kırkayağı parça parça vur, örümcek ve pirelerden kaç.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'retro', 'action'],
+    tags: ['bug', 'blaster', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'cave-copter',
+    title: { en: 'Cave Copter', tr: 'Mağara Helikopteri' },
+    description: {
+      en: 'Fly your helicopter as far as you can through a narrowing cave, avoid the walls and rock spikes and grab the stars.',
+      tr: 'Daralan mağarada helikopterini duvarlara ve sarkıtlara çarpmadan olabildiğince uzağa uçur, yıldızları topla.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'casual', 'retro'],
+    tags: ['cave', 'copter', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
     slug: 'city-defender',
     title: { en: 'City Defender', tr: 'Şehir Savunması' },
     description: {
@@ -145,6 +231,34 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['city', 'defender', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+  }),
+  arcadeGame({
+    slug: 'coin-catcher',
+    title: { en: 'Coin Catcher', tr: 'Altın Avcısı' },
+    description: {
+      en: 'Catch the coins and gems raining from the sky with your basket and dodge the bombs. Chain catches to grow your combo multiplier!',
+      tr: 'Gökten yağan altınları ve mücevherleri sepetinle yakala, bombalardan kaç. Arka arkaya yakalayıp kombo çarpanını büyüt!',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'casual'],
+    tags: ['coin', 'catcher', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'color-gate',
+    title: { en: 'Color Gate', tr: 'Renk Kapısı' },
+    description: {
+      en: 'Hop the ball up through spinning rings and sliding gates. You can only pass through the part that matches your colour!',
+      tr: 'Topu zıplatarak dönen renkli halkalardan ve kayan kapılardan geçir. Yalnızca topunla aynı renkteki bölümden geçebilirsin!',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'casual'],
+    tags: ['color', 'gate', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
   }),
   arcadeGame({
     slug: 'connect-four',
@@ -160,6 +274,34 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'dungeon-dash',
+    title: { en: 'Dungeon Dash', tr: 'Zindan Koşusu' },
+    description: {
+      en: 'A turn-based micro roguelike: fight monsters, grab potions and chests, take the stairs ever deeper.',
+      tr: 'Sıra tabanlı mini zindan macerası: canavarlarla savaş, iksir ve sandık topla, merdivenden aşağı in.',
+    },
+    category: 'strategy',
+    categories: ['strategy', 'retro', 'puzzle'],
+    tags: ['dungeon', 'dash', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'fish-frenzy',
+    title: { en: 'Fish Frenzy', tr: 'Balık Çılgınlığı' },
+    description: {
+      en: 'Eat smaller fish to grow and steer clear of bigger fish and sharks. Reach the target size to clear each level as the ocean gets more dangerous!',
+      tr: 'Küçük balıkları yiyerek büyü, senden büyük balıklardan ve köpekbalıklarından kaç. Her bölümde hedef boyuta ulaş, okyanus giderek tehlikeli hale gelir!',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action', 'casual'],
+    tags: ['fish', 'frenzy', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
     slug: 'gem-match',
     title: { en: 'Gem Match', tr: 'Mücevher Eşle' },
     description: {
@@ -172,6 +314,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     featured: true,
+  }),
+  arcadeGame({
+    slug: 'hex-merge',
+    title: { en: 'Hex Merge', tr: 'Altıgen Birleştir' },
+    description: {
+      en: 'Drop numbered hexes on the board. Three or more equal numbers touching merge into the next number; chain merges multiply your score. The game ends when the board is full.',
+      tr: 'Sayılı altıgenleri tahtaya bırak. Aynı sayıdan üç ya da daha fazlası yan yana gelince birleşip bir üst sayıya dönüşür; zincirleme birleşmelerle puanı katla. Tahta dolarsa oyun biter.',
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'casual', 'strategy'],
+    tags: ['hex', 'merge', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
   }),
   arcadeGame({
     slug: 'hoop-shot',
@@ -213,6 +369,34 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'maze-muncher',
+    title: { en: 'Maze Muncher', tr: 'Labirent Yiyici' },
+    description: {
+      en: 'Eat every dot in the maze and escape four ghosts with different minds. Swallow a power pellet and turn the hunt around! Ghosts get faster every level.',
+      tr: 'Labirentteki tüm yemleri ye, dört farklı hayaletten kaç. Güç hapını yut ve avcı sen ol! Her bölümde hayaletler hızlanır.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'retro', 'action'],
+    tags: ['maze', 'muncher', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'memory-match',
+    title: { en: 'Memory Match', tr: 'Hafıza Kartları' },
+    description: {
+      en: 'Flip the cards and match the animal pairs. Every level grows the board and tightens the clock; finish fast with few moves to earn three stars.',
+      tr: 'Kartları çevir, aynı hayvanları eşleştir. Her bölümde tahta büyür, süre daralır; hızlı ve az hamleyle bitir, üç yıldızı kap.',
+    },
+    category: 'casual',
+    categories: ['casual', 'puzzle', 'card'],
+    tags: ['memory', 'match', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
     slug: 'merge-2048',
     title: { en: 'Merge 2048', tr: '2048' },
     description: {
@@ -224,6 +408,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['merge', '2048', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+  }),
+  arcadeGame({
+    slug: 'mine-sweeper',
+    title: { en: 'Mine Sweeper', tr: 'Mayın Tarlası' },
+    description: {
+      en: 'Read the numbers, find the mines, open every safe square and clear the field before the clock runs out. Each field hides more mines than the last.',
+      tr: 'Sayılara bakarak mayınların yerini bul, güvenli kareleri aç ve süre bitmeden tarlayı temizle. Her tarla bir öncekinden daha çok mayın saklar.',
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'retro', 'strategy'],
+    tags: ['mine', 'sweeper', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
   }),
   arcadeGame({
     slug: 'mini-golf',
@@ -252,6 +450,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'nonogram',
+    title: { en: 'Pixel Logic', tr: 'Piksel Mantık' },
+    description: {
+      en: 'Crack the row and column clues, fill the right squares and reveal a hidden pixel picture. 12 puzzles from 5x5 to 10x10, beat the clock!',
+      tr: "Satır ve sütun ipuçlarını çöz, doğru kareleri boya ve gizli piksel resmi ortaya çıkar. 5x5'ten 10x10'a 12 bulmacayı süre bitmeden çöz!",
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'casual'],
+    tags: ['nonogram', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
     slug: 'penalty-kick',
     title: { en: 'Penalty Kick', tr: 'Penaltı Atışı' },
     description: {
@@ -263,6 +475,62 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['penalty', 'kick', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+  }),
+  arcadeGame({
+    slug: 'pipe-flow',
+    title: { en: 'Pipe Flow', tr: 'Boru Akışı' },
+    description: {
+      en: 'Rotate the pipes to connect the source to the drain before the water starts to flow. You can still turn pipes ahead of the water; every level grows the grid and speeds up the flow.',
+      tr: 'Su akmaya başlamadan boruları döndür ve kaynağı gidere bağla. Su yolda ilerlerken bile önündeki boruları çevirebilirsin; her bölümde ızgara büyür, su hızlanır.',
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'casual', 'strategy'],
+    tags: ['pipe', 'flow', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'pixel-runner',
+    title: { en: 'Pixel Runner', tr: 'Piksel Koşucu' },
+    description: {
+      en: 'Never stop running! Leap over pits, stomp enemies and grab coins. The further you go, the faster it gets.',
+      tr: 'Durmadan koş! Çukurların üstünden zıpla, düşmanların kafasına bas, altınları topla. Koştukça hız artar.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade', 'retro'],
+    tags: ['pixel', 'runner', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'platform-hopper',
+    title: { en: 'Platform Hopper', tr: 'Platform Zıpzıp' },
+    description: {
+      en: 'Hop through ten handmade levels: collect the gems, dodge slimes, snails, bees and saws, then reach the flag. Stomp enemies from above!',
+      tr: 'On el yapımı bölümde zıpla: mücevherleri topla, balçıklardan, salyangozlardan, arılardan ve testerelerden kaç, bayrağa ulaş. Düşmanların üstüne zıplayarak onları ez!',
+    },
+    category: 'action',
+    categories: ['action', 'arcade', 'casual'],
+    tags: ['platform', 'hopper', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'plinko-drop',
+    title: { en: 'Plinko Drop', tr: 'Plinko' },
+    description: {
+      en: "Drop balls through a field of pegs, ping the gold pegs and land in multiplier slots. Hit each round's target!",
+      tr: 'Topları çivilerin arasından bırak, altın çivilere çarptır ve çarpanlı ceplere düşür. Her turun hedefini tuttur!',
+    },
+    category: 'casual',
+    categories: ['casual', 'arcade'],
+    tags: ['plinko', 'drop', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
   }),
   arcadeGame({
     slug: 'retro-snake',
@@ -291,6 +559,34 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'road-crosser',
+    title: { en: 'Road Crosser', tr: 'Yol Geçidi' },
+    description: {
+      en: 'Hop the frog through traffic, ride logs and hippos across the river and fill all five homes. Traffic speeds up every level!',
+      tr: 'Kurbağayı trafiğin arasından geçir, kütüklerin ve suaygırlarının sırtında nehri aş, beş yuvayı da doldur. Her bölümde trafik hızlanır!',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'retro', 'casual'],
+    tags: ['road', 'crosser', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'shooting-gallery',
+    title: { en: 'Shooting Gallery', tr: 'Atış Poligonu' },
+    description: {
+      en: "Pop the sliding ducks and targets at the fairground stall. Reach each round's score goal before the clock runs out.",
+      tr: 'Panayır atış poligonunda kayan ördekleri ve hedefleri vur. Her turda süre dolmadan puan hedefini tuttur.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'casual', 'sports'],
+    tags: ['shooting', 'gallery', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
     slug: 'simon-says',
     title: { en: 'Simon Says', tr: 'Simon Der Ki' },
     description: {
@@ -315,6 +611,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['sky', 'jumper', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+  }),
+  arcadeGame({
+    slug: 'slide-puzzle',
+    title: { en: 'Slide Puzzle', tr: 'Kaydırmalı Bulmaca' },
+    description: {
+      en: 'Slide the scrambled number tiles into the gap until they are back in order. Warm up on 3×3, master 4×4 and 5×5; fewer moves and less time score more.',
+      tr: 'Karışık sayı karolarını boşluğa kaydırarak sıraya diz. 3×3 ile ısın, 4×4 ve 5×5 ile ustalaş; az hamle ve kısa süre daha çok puan getirir.',
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'casual', 'retro'],
+    tags: ['slide', 'puzzle', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
   }),
   arcadeGame({
     slug: 'sokoban',
@@ -357,6 +667,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     featured: true,
   }),
   arcadeGame({
+    slug: 'stack-tower',
+    title: { en: 'Stack Tower', tr: 'Kule Diz' },
+    description: {
+      en: 'Drop each sliding block at the right moment; the overhang gets sliced off. Chain perfect drops to regrow and build a sky-high tower!',
+      tr: 'Kayan blokları tam zamanında bırak, taşan kısmı kesilir. Kusursuz bırakışlarla bloğunu büyüt ve göklere uzanan bir kule dik!',
+    },
+    category: 'casual',
+    categories: ['casual', 'arcade'],
+    tags: ['stack', 'tower', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
     slug: 'tank-arena',
     title: { en: 'Tank Arena', tr: 'Tank Arenası' },
     description: {
@@ -383,6 +707,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'tile-triple',
+    title: { en: 'Tile Triple', tr: 'Üçlü Taş' },
+    description: {
+      en: 'Pick stacked animal tiles into the tray and match three of a kind to clear them. Empty every layer before the tray fills up!',
+      tr: 'Üst üste yığılmış hayvan taşlarını tepsiye al, aynı üç taşı eşleştirip yok et. Tepsi dolmadan her katmanı temizle!',
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'casual'],
+    tags: ['tile', 'triple', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
     slug: 'tower-defense',
     title: { en: 'Tower Defense', tr: 'Kule Savunması' },
     description: {
@@ -394,6 +732,62 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['tower', 'defense', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
+  }),
+  arcadeGame({
+    slug: 'traffic-racer',
+    title: { en: 'Traffic Racer', tr: 'Trafik Yarışçısı' },
+    description: {
+      en: 'Weave through busy highway traffic, chain near misses for combos, grab coins and fuel, and drive as far as you can before the tank runs dry!',
+      tr: 'Yoğun otoyolda arabaların arasından sıyrıl, kıl payı geçişlerle kombo yap, altın topla ve benzinin bitmeden gidebildiğin kadar uzağa git!',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action', 'retro'],
+    tags: ['traffic', 'racer', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'ufo-abduction',
+    title: { en: 'UFO Abduction', tr: 'UFO Kaçırma' },
+    description: {
+      en: 'Hover your flying saucer over the farm, beam animals up and dodge the missiles and planes the humans send after you.',
+      tr: 'Uçan dairenle çiftliğin üstünde süzül, çekim ışınıyla hayvanları kaçır; füzelerden ve uçaklardan kaç.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action', 'casual'],
+    tags: ['ufo', 'abduction', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'whack-a-mole',
+    title: { en: 'Whack-a-Mole', tr: 'Köstebek Avı' },
+    description: {
+      en: "Bop the critters popping out of their holes, but leave the bombs alone! Reach each round's target before time runs out; every round gets faster.",
+      tr: 'Deliklerden fırlayan hayvanlara tokmağı indir, bombalara dokunma! Her turda süre dolmadan hedefe ulaş; turlar giderek hızlanır.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'casual'],
+    tags: ['whack', 'mole', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'word-hunt',
+    title: { en: 'Word Hunt', tr: 'Kelime Avı' },
+    description: {
+      en: 'Find the themed words hidden in the letter grid before time runs out. Over 10 levels the grid grows and words hide in every direction!',
+      tr: 'Harf ızgarasında gizlenmiş temalı kelimeleri süre bitmeden bul. 10 bölüm boyunca ızgara büyür, kelimeler her yöne saklanır!',
+    },
+    category: 'word',
+    categories: ['word', 'puzzle', 'casual'],
+    tags: ['word', 'hunt', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-28',
   }),
   arcadeGame({
     slug: 'zombie-survivor',

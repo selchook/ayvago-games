@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "bowlingstrike",
+  "title": {
+    "en": "Bowling Strike",
+    "tr": "Bowling"
+  },
+  "description": {
+    "en": "Ten frames of real bowling: position, aim, set power and spin. Chain strikes and spares on your way to a perfect 300!",
+    "tr": "On karelik gerçek bowling: topu konumla, nişan al, gücünü ve falsosunu ayarla. Strike ve spare ile 300 sayıya uzan!"
+  },
+  "category": "sports",
+  "categories": [
+    "sports",
+    "casual",
+    "arcade"
+  ],
+  "tags": [
+    "bowling",
+    "strike",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/bowling-strike/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/bowling-strike/ayvago/icon-512.png",
+    "cover": "/games/bowling-strike/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/bowling-strike/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

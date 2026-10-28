@@ -1,6 +1,40 @@
 {
-  "count": 26,
+  "count": 54,
   "games": [
+    {
+      "id": "air-hockey",
+      "title": {
+        "tr": "Hava Hokeyi",
+        "en": "Air Hockey"
+      },
+      "description": {
+        "tr": "Neon masada sana göre uyum sağlayan yapay zekâya karşı hava hokeyi. Duvardan sektir, sert vur, 7 golü ilk atan kazanır!",
+        "en": "Neon air hockey against an AI that adapts to you. Bank shots off the walls, smash it hard, first to 7 goals wins!"
+      },
+      "howTo": {
+        "tr": "Raketini parmağınla sürükle ya da ok tuşları/WASD ile yönet. Pakı rakibin kalesine sok, 7 golü ilk atan kazanır.",
+        "en": "Drag your mallet with your finger or move it with the arrow keys/WASD. Score in the top goal; first to 7 wins."
+      },
+      "genres": [
+        "sports",
+        "arcade",
+        "action"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl",
+        "Art: drawn in code"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
     {
       "id": "alien-invaders",
       "title": {
@@ -62,6 +96,38 @@
       "thumb": "thumbs/asteroid-storm.png"
     },
     {
+      "id": "axe-throw",
+      "title": {
+        "tr": "Balta Atışı",
+        "en": "Axe Throw"
+      },
+      "description": {
+        "tr": "Dönen kütüğe baltalarını sapla, saplı baltalara çarpma. Elmaları vur, her beş aşamada bir dev hedefi yen.",
+        "en": "Stick your axes into the spinning log without hitting the ones already there. Slice apples and beat a boss target every five stages."
+      },
+      "howTo": {
+        "tr": "Balta atmak için ekrana dokun ya da Boşluk'a bas. Kütükteki baltalara çarparsan bir can gider; üç canın var.",
+        "en": "Tap the screen or press Space to throw an axe. Hitting an axe already in the log costs one of your three lives."
+      },
+      "genres": [
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
       "id": "block-blast",
       "title": {
         "tr": "Blok Patlat",
@@ -89,6 +155,72 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/block-blast.png"
+    },
+    {
+      "id": "block-drop",
+      "title": {
+        "tr": "Blok Düşür",
+        "en": "Block Drop"
+      },
+      "description": {
+        "tr": "Düşen yedi farklı bloğu döndür ve yerleştir, satırları tamamlayıp temizle. Her 10 satırda seviye atlar, bloklar hızlanır.",
+        "en": "Rotate and place seven kinds of falling blocks to complete and clear lines. Every 10 lines the level rises and the blocks fall faster."
+      },
+      "howTo": {
+        "tr": "Alttaki tuşlarla ya da tahtada sürükleyerek oyna: dokun = döndür, aşağı hızlı kaydır = bırak, yukarı = sakla. Klavye: oklar, Boşluk, C.",
+        "en": "Use the buttons or drag on the board: tap = rotate, flick down = drop, flick up = hold. Keyboard: arrows, Space, C."
+      },
+      "genres": [
+        "puzzle",
+        "retro",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "bowling-strike",
+      "title": {
+        "tr": "Bowling",
+        "en": "Bowling Strike"
+      },
+      "description": {
+        "tr": "On karelik gerçek bowling: topu konumla, nişan al, gücünü ve falsosunu ayarla. Strike ve spare ile 300 sayıya uzan!",
+        "en": "Ten frames of real bowling: position, aim, set power and spin. Chain strikes and spares on your way to a perfect 300!"
+      },
+      "howTo": {
+        "tr": "Topu sürükle ya da oklarla kaydır. Dokun veya Boşluk: önce nişan, sonra güç, sonra falso.",
+        "en": "Drag the ball or slide it with the arrows. Tap or press Space to lock aim, then power, then spin."
+      },
+      "genres": [
+        "sports",
+        "casual",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
     },
     {
       "id": "brick-breaker",
@@ -155,6 +287,72 @@
       "thumb": "thumbs/bubble-pop.png"
     },
     {
+      "id": "bug-blaster",
+      "title": {
+        "tr": "Böcek Avcısı",
+        "en": "Bug Blaster"
+      },
+      "description": {
+        "tr": "Mantar tarlasında kıvrılarak inen kırkayağı parça parça vur, örümcek ve pirelerden kaç.",
+        "en": "Shoot the centipede apart as it weaves down through the mushroom field, and keep clear of the spider and fleas."
+      },
+      "howTo": {
+        "tr": "Parmağını sürükle ya da ok tuşlarıyla hareket et; ateş otomatik. Kırkayağın tüm parçalarını vur.",
+        "en": "Drag your finger or use the arrow keys to move; firing is automatic. Shoot every centipede segment."
+      },
+      "genres": [
+        "arcade",
+        "retro",
+        "action"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "cave-copter",
+      "title": {
+        "tr": "Mağara Helikopteri",
+        "en": "Cave Copter"
+      },
+      "description": {
+        "tr": "Daralan mağarada helikopterini duvarlara ve sarkıtlara çarpmadan olabildiğince uzağa uçur, yıldızları topla.",
+        "en": "Fly your helicopter as far as you can through a narrowing cave, avoid the walls and rock spikes and grab the stars."
+      },
+      "howTo": {
+        "tr": "Yükselmek için ekrana ya da Boşluk'a basılı tut, bırakınca alçalırsın. Üç çarpma hakkın var.",
+        "en": "Hold the screen or Space to climb; let go to drop. Your copter survives three bumps."
+      },
+      "genres": [
+        "arcade",
+        "casual",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
       "id": "city-defender",
       "title": {
         "tr": "Şehir Savunması",
@@ -186,6 +384,70 @@
       "thumb": "thumbs/city-defender.png"
     },
     {
+      "id": "coin-catcher",
+      "title": {
+        "tr": "Altın Avcısı",
+        "en": "Coin Catcher"
+      },
+      "description": {
+        "tr": "Gökten yağan altınları ve mücevherleri sepetinle yakala, bombalardan kaç. Arka arkaya yakalayıp kombo çarpanını büyüt!",
+        "en": "Catch the coins and gems raining from the sky with your basket and dodge the bombs. Chain catches to grow your combo multiplier!"
+      },
+      "howTo": {
+        "tr": "Parmağını sürükle ya da ok tuşlarıyla / A-D ile sağa sola koş. Bombaları yakalama; yıldız mıknatıs verir.",
+        "en": "Drag your finger or use the arrow keys / A-D to run left and right. Don't catch bombs; the star is a magnet."
+      },
+      "genres": [
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "color-gate",
+      "title": {
+        "tr": "Renk Kapısı",
+        "en": "Color Gate"
+      },
+      "description": {
+        "tr": "Topu zıplatarak dönen renkli halkalardan ve kayan kapılardan geçir. Yalnızca topunla aynı renkteki bölümden geçebilirsin!",
+        "en": "Hop the ball up through spinning rings and sliding gates. You can only pass through the part that matches your colour!"
+      },
+      "howTo": {
+        "tr": "Zıplamak için ekrana dokun ya da Boşluk / Yukarı tuşuna bas. Sadece kendi rengindeki bölümden geç, yıldızları topla.",
+        "en": "Tap the screen or press Space / Up to hop. Pass only through your own colour and grab the stars."
+      },
+      "genres": [
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
       "id": "connect-four",
       "title": {
         "tr": "Dört Bağla",
@@ -214,6 +476,72 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/connect-four.png"
+    },
+    {
+      "id": "dungeon-dash",
+      "title": {
+        "tr": "Zindan Koşusu",
+        "en": "Dungeon Dash"
+      },
+      "description": {
+        "tr": "Sıra tabanlı mini zindan macerası: canavarlarla savaş, iksir ve sandık topla, merdivenden aşağı in.",
+        "en": "A turn-based micro roguelike: fight monsters, grab potions and chests, take the stairs ever deeper."
+      },
+      "howTo": {
+        "tr": "Gitmek istediğin yöne dokun ya da ok tuşları/WASD ile yürü; canavara yürüyerek saldır. Boşluk: bekle, X: iksir. Merdivenden in!",
+        "en": "Tap a direction or walk with the arrows/WASD; walk into monsters to attack. Space: wait, X: potion. Take the stairs down!"
+      },
+      "genres": [
+        "strategy",
+        "retro",
+        "puzzle"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "fish-frenzy",
+      "title": {
+        "tr": "Balık Çılgınlığı",
+        "en": "Fish Frenzy"
+      },
+      "description": {
+        "tr": "Küçük balıkları yiyerek büyü, senden büyük balıklardan ve köpekbalıklarından kaç. Her bölümde hedef boyuta ulaş, okyanus giderek tehlikeli hale gelir!",
+        "en": "Eat smaller fish to grow and steer clear of bigger fish and sharks. Reach the target size to clear each level as the ocean gets more dangerous!"
+      },
+      "howTo": {
+        "tr": "Balığını parmağınla sürükle ya da ok tuşları / WASD ile yüz. Kendinden küçükleri ye, kırmızı parlayan büyüklerden kaç.",
+        "en": "Drag your fish with your finger or swim with the arrow keys / WASD. Eat smaller fish and avoid the bigger ones glowing red."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "casual"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
     },
     {
       "id": "gem-match",
@@ -247,6 +575,40 @@
         "featured": true
       },
       "thumb": "thumbs/gem-match.png"
+    },
+    {
+      "id": "hex-merge",
+      "title": {
+        "tr": "Altıgen Birleştir",
+        "en": "Hex Merge"
+      },
+      "description": {
+        "tr": "Sayılı altıgenleri tahtaya bırak. Aynı sayıdan üç ya da daha fazlası yan yana gelince birleşip bir üst sayıya dönüşür; zincirleme birleşmelerle puanı katla. Tahta dolarsa oyun biter.",
+        "en": "Drop numbered hexes on the board. Three or more equal numbers touching merge into the next number; chain merges multiply your score. The game ends when the board is full."
+      },
+      "howTo": {
+        "tr": "Boş altıgene dokun: parçayı bırak. Alttaki parçaya dokun: sıradakiyle değiştir. Klavye: oklar, Boşluk bırak, X değiştir.",
+        "en": "Tap an empty hex to drop the piece. Tap the piece below to swap it with the next one. Keyboard: arrows, Space drops, X swaps."
+      },
+      "genres": [
+        "puzzle",
+        "casual",
+        "strategy"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
     },
     {
       "id": "hoop-shot",
@@ -338,6 +700,73 @@
       "thumb": "thumbs/lunar-lander.png"
     },
     {
+      "id": "maze-muncher",
+      "title": {
+        "tr": "Labirent Yiyici",
+        "en": "Maze Muncher"
+      },
+      "description": {
+        "tr": "Labirentteki tüm yemleri ye, dört farklı hayaletten kaç. Güç hapını yut ve avcı sen ol! Her bölümde hayaletler hızlanır.",
+        "en": "Eat every dot in the maze and escape four ghosts with different minds. Swallow a power pellet and turn the hunt around! Ghosts get faster every level."
+      },
+      "howTo": {
+        "tr": "Kaydırarak, yön tuşlarına dokunarak ya da ok tuşları/WASD ile yön ver. Büyük hap hayaletleri yenebilir yapar.",
+        "en": "Swipe, tap the on-screen arrows or use the arrow keys/WASD to steer. Big pellets make the ghosts edible."
+      },
+      "genres": [
+        "arcade",
+        "retro",
+        "action"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "memory-match",
+      "title": {
+        "tr": "Hafıza Kartları",
+        "en": "Memory Match"
+      },
+      "description": {
+        "tr": "Kartları çevir, aynı hayvanları eşleştir. Her bölümde tahta büyür, süre daralır; hızlı ve az hamleyle bitir, üç yıldızı kap.",
+        "en": "Flip the cards and match the animal pairs. Every level grows the board and tightens the clock; finish fast with few moves to earn three stars."
+      },
+      "howTo": {
+        "tr": "Bir karta dokunup çevir, eşini bul. Klavye: oklarla seç, Boşluk ile çevir. Süre bitmeden tüm çiftleri bul!",
+        "en": "Tap a card to flip it and find its twin. Keyboard: arrows select, Space flips. Find every pair before time runs out!"
+      },
+      "genres": [
+        "casual",
+        "puzzle",
+        "card"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
       "id": "merge-2048",
       "title": {
         "tr": "2048",
@@ -365,6 +794,40 @@
         "Audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/merge-2048.png"
+    },
+    {
+      "id": "mine-sweeper",
+      "title": {
+        "tr": "Mayın Tarlası",
+        "en": "Mine Sweeper"
+      },
+      "description": {
+        "tr": "Sayılara bakarak mayınların yerini bul, güvenli kareleri aç ve süre bitmeden tarlayı temizle. Her tarla bir öncekinden daha çok mayın saklar.",
+        "en": "Read the numbers, find the mines, open every safe square and clear the field before the clock runs out. Each field hides more mines than the last."
+      },
+      "howTo": {
+        "tr": "Dokun: kareyi aç. Basılı tut ya da BAYRAK modunu seç: bayrak koy. Klavye: oklar, Boşluk aç, X bayrak. Mayın 15 sn götürür!",
+        "en": "Tap: open a square. Long-press or switch to FLAG mode: place a flag. Keyboard: arrows, Space opens, X flags. A mine costs 15 s!"
+      },
+      "genres": [
+        "puzzle",
+        "retro",
+        "strategy"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
     },
     {
       "id": "mini-golf",
@@ -428,6 +891,39 @@
       "thumb": "thumbs/neon-pong.png"
     },
     {
+      "id": "nonogram",
+      "title": {
+        "tr": "Piksel Mantık",
+        "en": "Pixel Logic"
+      },
+      "description": {
+        "tr": "Satır ve sütun ipuçlarını çöz, doğru kareleri boya ve gizli piksel resmi ortaya çıkar. 5x5'ten 10x10'a 12 bulmacayı süre bitmeden çöz!",
+        "en": "Crack the row and column clues, fill the right squares and reveal a hidden pixel picture. 12 puzzles from 5x5 to 10x10, beat the clock!"
+      },
+      "howTo": {
+        "tr": "Sayılar her satırdaki dolu kare gruplarını gösterir. Dokun ya da sürükleyerek boya, İŞARET modunda X koy. Klavye: oklar, Boşluk boya, X işaretle, M mod değiştir.",
+        "en": "Numbers give the runs of filled squares in each line. Tap or drag to fill, use MARK mode to place X. Keys: arrows, Space fills, X marks, M switches mode."
+      },
+      "genres": [
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
       "id": "penalty-kick",
       "title": {
         "tr": "Penaltı Atışı",
@@ -456,6 +952,138 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/penalty-kick.png"
+    },
+    {
+      "id": "pipe-flow",
+      "title": {
+        "tr": "Boru Akışı",
+        "en": "Pipe Flow"
+      },
+      "description": {
+        "tr": "Su akmaya başlamadan boruları döndür ve kaynağı gidere bağla. Su yolda ilerlerken bile önündeki boruları çevirebilirsin; her bölümde ızgara büyür, su hızlanır.",
+        "en": "Rotate the pipes to connect the source to the drain before the water starts to flow. You can still turn pipes ahead of the water; every level grows the grid and speeds up the flow."
+      },
+      "howTo": {
+        "tr": "Boruya dokun: döner. Yeşil borular kaynağa bağlı. Klavye: oklar, Boşluk döndürür, F suyu hemen açar (bonus!).",
+        "en": "Tap a pipe to rotate it. Green pipes are linked to the source. Keyboard: arrows, Space rotates, F opens the water early (bonus!)."
+      },
+      "genres": [
+        "puzzle",
+        "casual",
+        "strategy"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "pixel-runner",
+      "title": {
+        "tr": "Piksel Koşucu",
+        "en": "Pixel Runner"
+      },
+      "description": {
+        "tr": "Durmadan koş! Çukurların üstünden zıpla, düşmanların kafasına bas, altınları topla. Koştukça hız artar.",
+        "en": "Never stop running! Leap over pits, stomp enemies and grab coins. The further you go, the faster it gets."
+      },
+      "howTo": {
+        "tr": "Zıplamak için dokun ya da Boşluk/Yukarı tuşuna bas; havada bir kez daha bas: çift zıplama. Uzun basarsan daha yükseğe zıplarsın.",
+        "en": "Tap or press Space/Up to jump; press again in mid-air to double-jump. Hold longer to jump higher."
+      },
+      "genres": [
+        "action",
+        "arcade",
+        "retro"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "platform-hopper",
+      "title": {
+        "tr": "Platform Zıpzıp",
+        "en": "Platform Hopper"
+      },
+      "description": {
+        "tr": "On el yapımı bölümde zıpla: mücevherleri topla, balçıklardan, salyangozlardan, arılardan ve testerelerden kaç, bayrağa ulaş. Düşmanların üstüne zıplayarak onları ez!",
+        "en": "Hop through ten handmade levels: collect the gems, dodge slimes, snails, bees and saws, then reach the flag. Stomp enemies from above!"
+      },
+      "howTo": {
+        "tr": "Ekrandaki ok ve zıplama tuşlarını ya da ok tuşları/WASD ve Boşluk'u kullan. Önce tüm mücevherleri topla, sonra bayrağa dokun.",
+        "en": "Use the on-screen arrows and jump button, or arrow keys/WASD and Space. Collect every gem first, then touch the flag."
+      },
+      "genres": [
+        "action",
+        "arcade",
+        "casual"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "plinko-drop",
+      "title": {
+        "tr": "Plinko",
+        "en": "Plinko Drop"
+      },
+      "description": {
+        "tr": "Topları çivilerin arasından bırak, altın çivilere çarptır ve çarpanlı ceplere düşür. Her turun hedefini tuttur!",
+        "en": "Drop balls through a field of pegs, ping the gold pegs and land in multiplier slots. Hit each round's target!"
+      },
+      "howTo": {
+        "tr": "Sürükleyip bırak ya da ok tuşlarıyla nişan al, Boşluk ile topu bırak. Hedefe ulaşamazsan bir can gider.",
+        "en": "Drag and release, or aim with the arrow keys and press Space to drop. Miss the round target and you lose a life."
+      },
+      "genres": [
+        "casual",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
     },
     {
       "id": "retro-snake",
@@ -517,6 +1145,73 @@
       "thumb": "thumbs/reversi.png"
     },
     {
+      "id": "road-crosser",
+      "title": {
+        "tr": "Yol Geçidi",
+        "en": "Road Crosser"
+      },
+      "description": {
+        "tr": "Kurbağayı trafiğin arasından geçir, kütüklerin ve suaygırlarının sırtında nehri aş, beş yuvayı da doldur. Her bölümde trafik hızlanır!",
+        "en": "Hop the frog through traffic, ride logs and hippos across the river and fill all five homes. Traffic speeds up every level!"
+      },
+      "howTo": {
+        "tr": "Dokun = ileri zıpla; kaydır, alttaki okları kullan ya da ok tuşları/WASD ile yön ver. Suya düşme, arabalara çarpma.",
+        "en": "Tap = hop forward; swipe, use the arrows below or the arrow keys/WASD to move. Don't fall in the water or get hit."
+      },
+      "genres": [
+        "arcade",
+        "retro",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "shooting-gallery",
+      "title": {
+        "tr": "Atış Poligonu",
+        "en": "Shooting Gallery"
+      },
+      "description": {
+        "tr": "Panayır atış poligonunda kayan ördekleri ve hedefleri vur. Her turda süre dolmadan puan hedefini tuttur.",
+        "en": "Pop the sliding ducks and targets at the fairground stall. Reach each round's score goal before the clock runs out."
+      },
+      "howTo": {
+        "tr": "Hedefe dokun ya da tıkla; klavyede oklarla nişan al, Boşluk ile ateş et. Tezgâha dokun ya da R ile şarjör doldur.",
+        "en": "Tap or click a target to shoot; on keyboard aim with the arrows and fire with Space. Tap the counter or press R to reload."
+      },
+      "genres": [
+        "arcade",
+        "casual",
+        "sports"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
       "id": "simon-says",
       "title": {
         "tr": "Simon Der Ki",
@@ -574,6 +1269,40 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/sky-jumper.png"
+    },
+    {
+      "id": "slide-puzzle",
+      "title": {
+        "tr": "Kaydırmalı Bulmaca",
+        "en": "Slide Puzzle"
+      },
+      "description": {
+        "tr": "Karışık sayı karolarını boşluğa kaydırarak sıraya diz. 3×3 ile ısın, 4×4 ve 5×5 ile ustalaş; az hamle ve kısa süre daha çok puan getirir.",
+        "en": "Slide the scrambled number tiles into the gap until they are back in order. Warm up on 3×3, master 4×4 and 5×5; fewer moves and less time score more."
+      },
+      "howTo": {
+        "tr": "Boşlukla aynı sıradaki bir karoya dokun ya da kaydır. Klavye: ok tuşları karoyu boşluğa iter. 1'den başlayarak sırala!",
+        "en": "Tap or swipe a tile in line with the gap. Keyboard: arrow keys push a tile into the gap. Put them in order starting from 1!"
+      },
+      "genres": [
+        "puzzle",
+        "casual",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
     },
     {
       "id": "sokoban",
@@ -670,6 +1399,38 @@
       "thumb": "thumbs/space-blaster.png"
     },
     {
+      "id": "stack-tower",
+      "title": {
+        "tr": "Kule Diz",
+        "en": "Stack Tower"
+      },
+      "description": {
+        "tr": "Kayan blokları tam zamanında bırak, taşan kısmı kesilir. Kusursuz bırakışlarla bloğunu büyüt ve göklere uzanan bir kule dik!",
+        "en": "Drop each sliding block at the right moment; the overhang gets sliced off. Chain perfect drops to regrow and build a sky-high tower!"
+      },
+      "howTo": {
+        "tr": "Bloğu bırakmak için ekrana dokun ya da Boşluk tuşuna bas. Alttaki bloğun tam üstüne denk getir.",
+        "en": "Tap the screen or press Space to drop the block. Line it up exactly with the block below."
+      },
+      "genres": [
+        "casual",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
       "id": "tank-arena",
       "title": {
         "tr": "Tank Arenası",
@@ -731,6 +1492,39 @@
       "thumb": "thumbs/tappy-plane.png"
     },
     {
+      "id": "tile-triple",
+      "title": {
+        "tr": "Üçlü Taş",
+        "en": "Tile Triple"
+      },
+      "description": {
+        "tr": "Üst üste yığılmış hayvan taşlarını tepsiye al, aynı üç taşı eşleştirip yok et. Tepsi dolmadan her katmanı temizle!",
+        "en": "Pick stacked animal tiles into the tray and match three of a kind to clear them. Empty every layer before the tray fills up!"
+      },
+      "howTo": {
+        "tr": "Üstü açık taşlara dokun; 3 aynı taş patlar, 7 yuvalı tepsi dolarsa kaybedersin. Klavye: oklar seç, Boşluk al, U geri al, S karıştır.",
+        "en": "Tap uncovered tiles; three alike clear, a full 7-slot tray loses. Keys: arrows to aim, Space to pick, U undo, S shuffle."
+      },
+      "genres": [
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
       "id": "tower-defense",
       "title": {
         "tr": "Kule Savunması",
@@ -760,6 +1554,138 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/tower-defense.png"
+    },
+    {
+      "id": "traffic-racer",
+      "title": {
+        "tr": "Trafik Yarışçısı",
+        "en": "Traffic Racer"
+      },
+      "description": {
+        "tr": "Yoğun otoyolda arabaların arasından sıyrıl, kıl payı geçişlerle kombo yap, altın topla ve benzinin bitmeden gidebildiğin kadar uzağa git!",
+        "en": "Weave through busy highway traffic, chain near misses for combos, grab coins and fuel, and drive as far as you can before the tank runs dry!"
+      },
+      "howTo": {
+        "tr": "Gitmek istediğin yere dokun ya da sürükle; klavyede sol/sağ ok ile direksiyon. Benzin bidonlarını topla, araçlara çarpma.",
+        "en": "Touch or drag where you want to drive, or steer with the left/right arrow keys. Grab fuel cans and don't hit the traffic."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "ufo-abduction",
+      "title": {
+        "tr": "UFO Kaçırma",
+        "en": "UFO Abduction"
+      },
+      "description": {
+        "tr": "Uçan dairenle çiftliğin üstünde süzül, çekim ışınıyla hayvanları kaçır; füzelerden ve uçaklardan kaç.",
+        "en": "Hover your flying saucer over the farm, beam animals up and dodge the missiles and planes the humans send after you."
+      },
+      "howTo": {
+        "tr": "Sol tarafta sürükle ya da ok tuşlarıyla uç. Işın için A düğmesini ya da Boşluk'u basılı tut, füze ve uçaklardan kaç.",
+        "en": "Drag on the left side or use the arrow keys to fly. Hold the A button or Space to beam animals up; dodge missiles and planes."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "whack-a-mole",
+      "title": {
+        "tr": "Köstebek Avı",
+        "en": "Whack-a-Mole"
+      },
+      "description": {
+        "tr": "Deliklerden fırlayan hayvanlara tokmağı indir, bombalara dokunma! Her turda süre dolmadan hedefe ulaş; turlar giderek hızlanır.",
+        "en": "Bop the critters popping out of their holes, but leave the bombs alone! Reach each round's target before time runs out; every round gets faster."
+      },
+      "howTo": {
+        "tr": "Hayvanlara dokun ya da Q W E / A S D / Z X C (veya sayı) tuşlarıyla vur. Ok tuşları + Boşluk da olur. Bombaya vurma!",
+        "en": "Tap the critters or whack them with Q W E / A S D / Z X C (or number keys). Arrows + Space work too. Don't hit bombs!"
+      },
+      "genres": [
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
+    },
+    {
+      "id": "word-hunt",
+      "title": {
+        "tr": "Kelime Avı",
+        "en": "Word Hunt"
+      },
+      "description": {
+        "tr": "Harf ızgarasında gizlenmiş temalı kelimeleri süre bitmeden bul. 10 bölüm boyunca ızgara büyür, kelimeler her yöne saklanır!",
+        "en": "Find the themed words hidden in the letter grid before time runs out. Over 10 levels the grid grows and words hide in every direction!"
+      },
+      "howTo": {
+        "tr": "Kelimenin üzerinde parmağını sürükle (8 yön). Klavye: oklar, Boşluk ile başla ve bitir, H ipucu.",
+        "en": "Drag across a word in any of 8 directions. Keys: arrows to move, Space to start and end, H for a hint."
+      },
+      "genres": [
+        "word",
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-28"
+      },
+      "thumb": null
     },
     {
       "id": "zombie-survivor",

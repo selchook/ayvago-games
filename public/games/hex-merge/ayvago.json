@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "hexmerge",
+  "title": {
+    "en": "Hex Merge",
+    "tr": "Altıgen Birleştir"
+  },
+  "description": {
+    "en": "Drop numbered hexes on the board. Three or more equal numbers touching merge into the next number; chain merges multiply your score. The game ends when the board is full.",
+    "tr": "Sayılı altıgenleri tahtaya bırak. Aynı sayıdan üç ya da daha fazlası yan yana gelince birleşip bir üst sayıya dönüşür; zincirleme birleşmelerle puanı katla. Tahta dolarsa oyun biter."
+  },
+  "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "casual",
+    "strategy"
+  ],
+  "tags": [
+    "hex",
+    "merge",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/hex-merge/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/hex-merge/ayvago/icon-512.png",
+    "cover": "/games/hex-merge/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/hex-merge/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

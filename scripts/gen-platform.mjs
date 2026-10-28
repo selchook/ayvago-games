@@ -16,7 +16,8 @@ const args = process.argv.slice(2);
 const arg = (name, def) => (args.includes(name) ? args[args.indexOf(name) + 1] : def);
 const ORIGIN = (arg('--origin', process.env.AYVAGO_GAMES_ORIGIN) ?? 'https://ayvago-games.vercel.app').replace(/\/$/, '');
 const REPO = 'selchook/ayvago-games';
-const ADDED_AT = arg('--added-at', new Date().toISOString().slice(0, 10));
+// The launch date of the catalog; games added later carry their own date in game.json.
+const ADDED_AT = arg('--added-at', '2026-10-27');
 const STATUS = args.includes('--live') ? 'live' : 'coming_soon';
 
 let passing = null;
@@ -84,15 +85,17 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
 
 // Only what differs per game goes into the catalog; arcadeGame() fills the shared defaults.
 const DEFAULT_TEXT = JSON.stringify(DEFAULT_SCORING);
-const featuredSlugs = new Set(
-  games.filter(({ slug }) => JSON.parse(readFileSync(join(root, 'games', slug, 'game.json'), 'utf8')).platform?.featured).map((g) => g.slug),
-);
+// Per-game platform overrides from game.json: `featured`, and `addedAt` for games added after
+// the first release (default --added-at).
+const platformOf = (slug) => JSON.parse(readFileSync(join(root, 'games', slug, 'game.json'), 'utf8')).platform ?? {};
 const entries = games.map(({ slug, manifest: m }) => {
   const e = { slug, title: m.title, description: m.description, category: m.category, categories: m.categories, tags: m.tags, orientation: m.orientation, input: m.input };
   if (m.ageRating !== '3+') e.ageRating = m.ageRating;
   if (JSON.stringify(m.scoring) !== DEFAULT_TEXT) e.scoring = m.scoring;
   if (m.version !== '1.0.0') e.version = m.version;
-  if (featuredSlugs.has(slug)) e.featured = true;
+  const p = platformOf(slug);
+  if (p.addedAt && p.addedAt !== ADDED_AT) e.addedAt = p.addedAt;
+  if (p.featured) e.featured = true;
   return e;
 });
 const catalogTs = `import type { GameManifestInput } from './manifest';
@@ -119,15 +122,16 @@ type ArcadeEntry = Pick<
 > &
   Partial<Pick<GameManifestInput, 'ageRating' | 'scoring' | 'version'>> & {
     slug: string;
+    addedAt?: string;
     featured?: boolean;
   };
 
-function arcadeGame({ slug, featured, ageRating, scoring, version, ...text }: ArcadeEntry): SeedGame {
+function arcadeGame({ slug, addedAt, featured, ageRating, scoring, version, ...text }: ArcadeEntry): SeedGame {
   return {
     slug,
     repo: '${REPO}',
     status: ARCADE_STATUS,
-    addedAt: ARCADE_ADDED_AT,
+    addedAt: addedAt ?? ARCADE_ADDED_AT,
     ...(featured ? { featured } : {}),
     manifest: {
       id: slug.replace(/-/g, ''),

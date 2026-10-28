@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "fishfrenzy",
+  "title": {
+    "en": "Fish Frenzy",
+    "tr": "Balık Çılgınlığı"
+  },
+  "description": {
+    "en": "Eat smaller fish to grow and steer clear of bigger fish and sharks. Reach the target size to clear each level as the ocean gets more dangerous!",
+    "tr": "Küçük balıkları yiyerek büyü, senden büyük balıklardan ve köpekbalıklarından kaç. Her bölümde hedef boyuta ulaş, okyanus giderek tehlikeli hale gelir!"
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "action",
+    "casual"
+  ],
+  "tags": [
+    "fish",
+    "frenzy",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/fish-frenzy/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/fish-frenzy/ayvago/icon-512.png",
+    "cover": "/games/fish-frenzy/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/fish-frenzy/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

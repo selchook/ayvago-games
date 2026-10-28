@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "shootinggallery",
+  "title": {
+    "en": "Shooting Gallery",
+    "tr": "Atış Poligonu"
+  },
+  "description": {
+    "en": "Pop the sliding ducks and targets at the fairground stall. Reach each round's score goal before the clock runs out.",
+    "tr": "Panayır atış poligonunda kayan ördekleri ve hedefleri vur. Her turda süre dolmadan puan hedefini tuttur."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "casual",
+    "sports"
+  ],
+  "tags": [
+    "shooting",
+    "gallery",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/shooting-gallery/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/shooting-gallery/ayvago/icon-512.png",
+    "cover": "/games/shooting-gallery/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/shooting-gallery/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}
