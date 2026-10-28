@@ -29,7 +29,7 @@ export class PlayScene extends ArcadeScene {
   private streak = 0;
   private round = 0;
   private playerMoves = 0;
-  // online two-player state (net.active): host = red (1) and starts, guest = yellow (2)
+  // online two-player state (net.active): host = red (1), guest = yellow (2); net.starter moves first
   private online = false;
   private mine = 1;
   private moveNo = 0;
@@ -193,7 +193,7 @@ export class PlayScene extends ArcadeScene {
     this.round++;
     this.playerMoves = 0;
     this.placeHover();
-    if (this.online) this.setTurn(this.mine === 1 ? 'player' : 'ai');   // red (host) starts
+    if (this.online) this.setTurn(net.myTurnFirst ? 'player' : 'ai');   // the round's starter moves first
     else this.setTurn(this.round % 2 === 1 ? 'player' : 'ai');
   }
 
@@ -318,7 +318,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.banner.setText(msg).setColor(color).setVisible(true).setScale(0.3).setAlpha(1);
     this.tweens.add({ targets: this.banner, scale: 1, duration: 400, ease: 'Back.easeOut' });
-    this.endGame({ win, title, delay: 1800 });
+    this.endGame({ win, title, draw: winner === 0, delay: 1800 });
   }
 
   private clearBoard(): void {

@@ -128,7 +128,9 @@ export class PlayScene extends ArcadeScene {
 
     this.updateHud();
     if (this.online) this.setupOnline();
-    if (!this.online || this.host) this.serve('me', 900);
+    // online: the first serve goes to the round's starter (net.starter): the puck appears on their
+    // side ('me' = the host's half, 'cpu' = the guest's half)
+    if (!this.online || this.host) this.serve(this.online && net.starter === 1 ? 'cpu' : 'me', 900);
   }
 
   // ---------------------------------------------------------------- drawing

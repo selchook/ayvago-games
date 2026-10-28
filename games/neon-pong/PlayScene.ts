@@ -116,7 +116,9 @@ export class PlayScene extends ArcadeScene {
 
     this.updateHud();
     if (this.online) this.setupOnline();
-    if (!this.online || this.host) this.serve(1, 1.4);
+    // online: the first serve goes to the round's starter (net.starter), who gets the first hit;
+    // dir 1 = towards the host's paddle, -1 = towards the guest's
+    if (!this.online || this.host) this.serve(this.online && net.starter === 1 ? -1 : 1, 1.4);
   }
 
   private updateHud(): void {
