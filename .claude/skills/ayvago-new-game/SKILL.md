@@ -1,6 +1,6 @@
 ---
 name: ayvago-new-game
-description: Build a new retro arcade / action / casual / puzzle game for the Ayvago Games platform on the shared Phaser 3 + TypeScript runtime (@core), with the Ayvago boot intro, TR/EN text, touch + keyboard controls, Kenney CC0 assets and an automated smoke test. Use whenever a new game is added to ayvago-games or an existing game is reworked.
+description: Build a new retro arcade / action / casual / puzzle game for the Ayvago Games platform on the shared Phaser 3 + TypeScript runtime (@core), with the Ayvago boot intro, TR/EN text, touch + keyboard controls, CC0 assets (Kenney + the OpenGameArt packs in docs/assets/LICENSES.md) and an automated smoke test. Use whenever a new game is added to ayvago-games or an existing game is reworked.
 ---
 
 # Ayvago: build a new game
@@ -102,6 +102,8 @@ Other helpers from `@core`:
 - **Look before you use.** Open the PNGs or tilesheets with the Read tool to see them before picking frames.
 - **No network.** Never load anything from the network. If something is missing, draw it with Graphics/shapes, or generate a texture with `scene.make.graphics(...).generateTexture(key, w, h)`.
 - **Sound.** Use sounds generously but at sane volumes. Good sources:
+  - `oga/junkala-sfx` (load with `loadAudio(load, key, 'oga/junkala-sfx/<path>')`, list in `docs/assets/oga-junkala-sfx.txt`): 512 polished retro effects — coins, positive/negative stings, impacts, jumps and landings, lasers, explosions, menu sounds, alarms. Prefer these for game events; they are richer than the Kenney digital set.
+  - Music is automatic (the core plays it). Pick a track only when the default does not fit: `music: { play: 'level2' }` in the game definition (`TRACKS` in `src/core/music.ts`); `false` for silence.
   - `sfx-digital`: retro lasers, power-ups, zaps.
   - `sfx-interface`: clicks, confirmations, errors.
   - `sfx-impact`

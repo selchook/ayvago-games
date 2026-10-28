@@ -10,6 +10,7 @@ export { txt, COLORS, hex, FONT_TITLE, FONT_BODY } from './theme';
 export { burst, shake, flash, popup, addCrt, ensurePixel } from './fx';
 export { asset, kenney, loadAudio, loadSfx, ASSET_ROOT } from './assets';
 export { playSfx, isMuted, type SfxConfig } from './audio';
+export { playMusic, stopMusic, duckMusic, restoreMusic, TRACKS, type Track } from './music';
 export { t, loc, upper, getLang, registerStrings } from './i18n';
 export type { Lang, Strings, Localized } from './i18n';
 export { storage, getBest } from './storage';

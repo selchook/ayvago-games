@@ -4,6 +4,7 @@ import { t, loc, upper, getLang, setLang } from './i18n';
 import { txt, COLORS } from './theme';
 import { getBest, submitBest } from './storage';
 import { isMuted, isSilenced, setMuted, playSfx } from './audio';
+import { duckMusic, menuTrack, MUSIC_VOLUME, playMusic, restoreMusic } from './music';
 import { addCrt, burst } from './fx';
 import { sdk } from './sdk';
 import { net } from './net';
@@ -63,6 +64,7 @@ export class MenuScene extends Phaser.Scene {
     const land = meta.orientation === 'landscape';
     this.cameras.main.setBackgroundColor(def.background ?? '#0e0d12');
     def.menuDecor?.(this);
+    playMusic(this, menuTrack(), MUSIC_VOLUME.menu);
     if (net.active) {
       this.onlineMenu();
       return;
@@ -185,7 +187,9 @@ export class PauseScene extends Phaser.Scene {
     const top = height * (land ? 0.36 : 0.45), gap = land ? 118 : 140;
     backdrop(this, 0.75);
     txt(this, width / 2, height * (land ? 0.14 : 0.28), t('paused'), { title: true, size: 44, color: '#ffd23f' });
+    duckMusic();
     const resume = () => {
+      restoreMusic();
       this.scene.stop();
       this.scene.resume('Play');
       sdk.emit('resume');
@@ -222,6 +226,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(data: ResultData): void {
+    duckMusic();
     const def = currentGame();
     const { width, height } = this.scale;
     const score = data.score ?? 0;

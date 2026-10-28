@@ -1,3 +1,4 @@
+import type { Track } from './music';
 import type Phaser from 'phaser';
 import type { Localized, Strings } from './i18n';
 
@@ -34,6 +35,11 @@ export interface GameDefinition {
   scenes: Array<new (...args: any[]) => Phaser.Scene>;
   /** Extra i18n keys for t(). */
   strings?: Partial<Strings>;
+  /**
+   * Background music (src/core/music.ts). Defaults: the title theme on the menu and a track
+   * picked from the game's genre during rounds; `false` turns a slot off.
+   */
+  music?: { menu?: Track | false; play?: Track | false };
   /** Optional decoration for the menu (sprites behind the title). */
   menuDecor?: (scene: Phaser.Scene) => void;
 }
