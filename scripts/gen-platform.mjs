@@ -1,8 +1,8 @@
 // Generates the Ayvago platform integration files for every finished game:
 //   public/games/<slug>/ayvago.json   manifest served next to the game (schema: selchook/ayvago
 //                                     packages/shared/src/manifest.ts, sdkVersion 2)
-//   platform/arcade-catalog.ts        SeedGame entries to drop into the platform repo
-//                                     (packages/shared/src/arcade-catalog.ts)
+//   platform/arcade-catalog.ts        SeedGame entries; the platform's "Sync arcade catalog" workflow
+//                                     pulls it from main into packages/shared/src/arcade-catalog.ts
 // Usage: node scripts/gen-platform.mjs [--origin https://games.example.com] [--live] [--require-smoke]
 //   --live            catalog status 'live' (only once the origin is deployed); default 'coming_soon'
 //   --require-smoke   only include games that PASS in reports/smoke.json (full run)

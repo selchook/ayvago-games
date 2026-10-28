@@ -176,4 +176,4 @@ Verify with the two-player bench, which needs no platform:
 - Run `npm run platform` (writes `public/games/<slug>/ayvago.json` and the platform catalog).
 - Run `node scripts/gen-store-assets.mjs <slug>` (platform cover + icon + portal thumbnail).
 - Run `node scripts/platform-harness.mjs <slug>` (GHA_* protocol check, embedded like ayvago.com).
-- Commit `games/<slug>`, `public/games/<slug>/`, `public/thumbs/<slug>.png` and `platform/arcade-catalog.ts`. Then copy the catalog into selchook/ayvago `packages/shared/src/arcade-catalog.ts`.
+- Commit `games/<slug>`, `public/games/<slug>/`, `public/thumbs/<slug>.png` and `platform/arcade-catalog.ts`. The platform pulls the catalog from `main` by itself (its "Sync arcade catalog" workflow opens the PR); never copy it by hand.

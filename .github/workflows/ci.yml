@@ -4,6 +4,34 @@ on:
     branches: [main]
   pull_request:
 jobs:
+  # ayvago-games is the studio; ayvago.com (selchook/ayvago) is the platform. These checks keep
+  # the two in step: the platform pulls platform/arcade-catalog.ts from main by itself, so it must
+  # be current, and the vendored adapter must be the platform's.
+  platform-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Platform manifests and catalog are up to date
+        run: |
+          node scripts/gen-platform.mjs --live
+          if ! git diff --quiet -- platform public/games; then
+            git diff --stat -- platform public/games
+            echo "::error::platform/arcade-catalog.ts or public/games/*/ayvago.json is stale. Run 'node scripts/gen-platform.mjs --live' and commit the result."
+            exit 1
+          fi
+      - name: Vendored adapter matches the platform
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/selchook/ayvago/main/packages/platform-adapter/src/adapter.ts -o "$RUNNER_TEMP/adapter.ts"
+          if ! diff -u "$RUNNER_TEMP/adapter.ts" src/core/ayvago/adapter.ts; then
+            echo "::error file=src/core/ayvago/adapter.ts::The vendored adapter differs from selchook/ayvago packages/platform-adapter/src/adapter.ts on main. Copy that file here verbatim."
+            exit 1
+          fi
+
   build-and-smoke:
     runs-on: ubuntu-latest
     steps:
