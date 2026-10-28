@@ -1,11 +1,11 @@
 {
   "id": "pipe-flow",
-  "title": { "tr": "Pipe Flow", "en": "Pipe Flow" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "Boru Akışı", "en": "Pipe Flow" },
+  "description": { "tr": "Su akmaya başlamadan boruları döndür ve kaynağı gidere bağla. Su yolda ilerlerken bile önündeki boruları çevirebilirsin; her bölümde ızgara büyür, su hızlanır.", "en": "Rotate the pipes to connect the source to the drain before the water starts to flow. You can still turn pipes ahead of the water; every level grows the grid and speeds up the flow." },
+  "howTo": { "tr": "Boruya dokun: döner. Yeşil borular kaynağa bağlı. Klavye: oklar, Boşluk döndürür, F suyu hemen açar (bonus!).", "en": "Tap a pipe to rotate it. Green pipes are linked to the source. Keyboard: arrows, Space rotates, F opens the water early (bonus!)." },
+  "genres": ["puzzle", "casual", "strategy"],
   "orientation": "portrait",
-  "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }

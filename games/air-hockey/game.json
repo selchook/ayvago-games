@@ -1,11 +1,11 @@
 {
   "id": "air-hockey",
-  "title": { "tr": "Air Hockey", "en": "Air Hockey" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "Hava Hokeyi", "en": "Air Hockey" },
+  "description": { "tr": "Neon masada sana göre uyum sağlayan yapay zekâya karşı hava hokeyi. Duvardan sektir, sert vur, 7 golü ilk atan kazanır!", "en": "Neon air hockey against an AI that adapts to you. Bank shots off the walls, smash it hard, first to 7 goals wins!" },
+  "howTo": { "tr": "Raketini parmağınla sürükle ya da ok tuşları/WASD ile yönet. Pakı rakibin kalesine sok, 7 golü ilk atan kazanır.", "en": "Drag your mallet with your finger or move it with the arrow keys/WASD. Score in the top goal; first to 7 wins." },
+  "genres": ["sports", "arcade", "action"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
-  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl", "Art: drawn in code"]
 }

@@ -5,13 +5,13 @@ import { ftxt, fpopup, freshTextCanvases } from './fasttext';
 // Lane geometry (720 x 1280 world, top-down, pins at the top)
 const LANE_L = 230, LANE_R = 490, LANE_C = 360, GUT = 30;
 const FOUL_Y = 1110, BALL_Y = 1150, PIT_Y = 232, OIL_END = 780;
-const BALL_R = 22, PIN_R = 13, DOWN_R = 15;
+const BALL_R = 22, PIN_R = 13, DOWN_R = 20;
 const HOOK = 330, SUB = 5;
 const SPOTS: Array<[number, number]> = [
   [360, 440], [330, 388], [390, 388], [300, 336], [360, 336], [420, 336], [270, 284], [330, 284], [390, 284], [450, 284],
 ];
 // card layout
-const CARD_X = 24, CARD_Y = 84, FW = 64, LAST_W = 96, CARD_H = 92;
+const CARD_X = 24, CARD_Y = 94, FW = 64, LAST_W = 96, CARD_H = 86;
 
 type Phase = 'position' | 'power' | 'spin' | 'rolling' | 'settle' | 'wait';
 interface Pin { i: number; x: number; y: number; vx: number; vy: number; up: boolean; out: boolean; img: Phaser.GameObjects.Image; hitSfx: number }
@@ -48,6 +48,7 @@ export class PlayScene extends ArcadeScene {
   private standingAtThrow = 0;
   private phase: Phase = 'wait';
   private phaseT = 0;
+  private startX = LANE_C;
   private bx = LANE_C; private by = BALL_Y; private bvx = 0; private bvy = 0;
   private aim = 0; private power = 0; private spin = 0;
   private gutter = false;
@@ -66,7 +67,7 @@ export class PlayScene extends ArcadeScene {
     makeBowlingTextures(this);
     this.textures.get('ball').setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.pins = []; this.frames = []; this.marks = []; this.totals = [];
-    this.frame = 0; this.standingAtThrow = 0; this.phase = 'wait'; this.phaseT = 0;
+    this.startX = LANE_C; this.frame = 0; this.standingAtThrow = 0; this.phase = 'wait'; this.phaseT = 0;
     this.bx = LANE_C; this.by = BALL_Y; this.bvx = this.bvy = 0; this.aim = this.power = this.spin = 0;
     this.gutter = false; this.ballGone = false; this.settleT = 0; this.strikeRun = 0;
     this.dragId = -1; this.dragMoved = false; this.rollSfxT = 0; this.crashPlayed = false;
@@ -157,10 +158,10 @@ export class PlayScene extends ArcadeScene {
       const bw = f === 9 ? 32 : 30;
       for (let b = 0; b < boxes; b++) {
         const bx = x + w - (boxes - b) * bw;
-        g.lineStyle(2, 0x201e1d, 1).strokeRect(bx, CARD_Y, bw, 38);
-        this.marks.push(ftxt(this, bx + bw / 2, CARD_Y + 20, '', { title: true, size: 16, color: '#201e1d', strokeThickness: 0, shadow: false }).setDepth(11));
+        g.lineStyle(2, 0x201e1d, 1).strokeRect(bx, CARD_Y, bw, 36);
+        this.marks.push(ftxt(this, bx + bw / 2, CARD_Y + 19, '', { title: true, size: 16, color: '#201e1d', strokeThickness: 0, shadow: false }).setDepth(11));
       }
-      this.totals.push(ftxt(this, x + w / 2, CARD_Y + 66, '', { title: true, size: 18, color: '#201e1d', strokeThickness: 0, shadow: false }).setDepth(11));
+      this.totals.push(ftxt(this, x + w / 2, CARD_Y + 62, '', { title: true, size: 18, color: '#201e1d', strokeThickness: 0, shadow: false }).setDepth(11));
     }
   }
 
@@ -201,7 +202,7 @@ export class PlayScene extends ArcadeScene {
     if (this.isOver) return;
     this.phase = 'position';
     this.phaseT = rng.int(0, 100) / 100;
-    this.by = BALL_Y; this.bvx = this.bvy = 0;
+    this.bx = this.startX; this.by = BALL_Y; this.bvx = this.bvy = 0;
     this.gutter = false; this.ballGone = false; this.crashPlayed = false;
     this.ball.setPosition(this.bx, this.by).setDisplaySize(BALL_R * 2, BALL_R * 2).setAlpha(0).setAngle(0);
     this.tweens.add({ targets: this.ball, alpha: 1, duration: 200 });
@@ -235,6 +236,7 @@ export class PlayScene extends ArcadeScene {
 
   private release(): void {
     this.phase = 'rolling';
+    this.startX = this.bx;
     this.hint.setText('');
     const speed = 640 + this.power * 660;
     this.bvx = Math.sin(this.aim) * speed;
@@ -451,7 +453,7 @@ export class PlayScene extends ArcadeScene {
       if (!this.gutter) {
         for (const p of this.pins) {
           if (p.out) continue;
-          const r = this.collide(this.bx, this.by, BALL_R, 6, this.bvx, this.bvy, p, p.up ? PIN_R : DOWN_R);
+          const r = this.collide(this.bx, this.by, BALL_R, 8 + Math.abs(this.spin) * 5, this.bvx, this.bvy, p, p.up ? PIN_R : DOWN_R);
           if (!r) continue;
           this.bx += r.ox; this.by += r.oy; this.bvx = r.nvx; this.bvy = r.nvy;
           this.knock(p, r.j);

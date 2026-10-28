@@ -1,0 +1,11 @@
+{
+  "id": "tile-triple",
+  "title": { "tr": "Tile Triple", "en": "Tile Triple" },
+  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
+  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
+  "genres": ["arcade"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "0.1.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}
