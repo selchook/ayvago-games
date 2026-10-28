@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { readdirSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+import { availableParallelism, tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
@@ -47,7 +47,7 @@ async function testGame(slug) {
   const step = { intro: false, menu: false, play: false, gameOver: false, retry: false, nonBlank: false };
   try {
     await page.goto(`${BASE}/games/${slug}/?lang=tr`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#ayvago-boot canvas', { timeout: dev ? 30000 : 5000 });
+    await page.waitForSelector('#ayvago-boot canvas', { timeout: dev ? 30000 : 15000 });
     step.intro = true;
     await page.waitForTimeout(1200);
     await page.mouse.click(270, 480);                       // tap skips the intro
@@ -93,9 +93,10 @@ async function testGame(slug) {
     });
     await waitScene('GameOver', 6000);
     step.gameOver = true;
-    // the result screen arms its Enter shortcut after a short delay; retry a few times under load
-    for (let i = 0; i < 5; i++) {
-      await page.waitForTimeout(700);
+    // The result screen arms its Enter shortcut after a delay counted in game time, which runs
+    // slower than wall time on a loaded machine: keep pressing for up to 15 s.
+    for (let i = 0; i < 20; i++) {
+      await page.waitForTimeout(750);
       await page.keyboard.press('Enter');
       if (await page.evaluate(() => window.__ayvago.game.scene.isActive('Play')).catch(() => false)) break;
     }
@@ -111,7 +112,10 @@ async function testGame(slug) {
 }
 
 const queue = [...slugs];
-const workers = Array.from({ length: Math.min(args.includes('--serial') ? 1 : 4, queue.length) }, async () => {
+// One browser context per two cores (at most 4): each game renders WebGL in software, and more
+// parallel games than the machine can run slow every game's clock past the step timeouts.
+const parallel = args.includes('--serial') ? 1 : Math.min(4, Math.max(1, Math.floor(availableParallelism() / 2)));
+const workers = Array.from({ length: Math.min(parallel, queue.length) }, async () => {
   while (queue.length) {
     const slug = queue.shift();
     const r = await testGame(slug);
