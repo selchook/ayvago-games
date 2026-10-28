@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, t, rng, ensurePixel } from '@core';
-import { ftxt, fpopup, freshTextCanvases } from './fasttext';
+import { ArcadeScene, Controls, burst, shake, t, rng, ensurePixel } from '@core';
+import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Table (720 x 1280 world)
 const L = 40, R = 680, T = 140, B = 1236, MID = (T + B) / 2;
@@ -166,13 +166,13 @@ export class PlayScene extends ArcadeScene {
       const bonus = Math.round(Math.max(0, speed - 700) / 12);
       this.addScore(100 + bonus);
       this.sfx('goal', { volume: 0.7 });
-      flash(this, 0xff4f5e, 200);
+      softFlash(this, 0xff4f5e, 200);
       this.banner(t('goal'), '#ffd23f', 64);
       if (bonus > 10) fpopup(this, 360, MID + 80, t('power', { n: bonus }), '#ff4fa3', 24);
     } else {
       this.cpuGoals++;
       this.sfx('concede', { volume: 0.6 });
-      flash(this, 0x3ee6ff, 200);
+      softFlash(this, 0x3ee6ff, 200);
       this.banner(t('concede'), '#3ee6ff', 44);
     }
     // the AI adapts: it sharpens when you lead and eases off when it leads
@@ -205,7 +205,17 @@ export class PlayScene extends ArcadeScene {
     this.aiNoise = rng.int(-1, 1) * (1 - s) * 55;
     const rushing = this.pvy < -260;
     if (inMyHalf && !rushing) {
-      if (this.cpu.y > this.py - 20) {
+      if (this.py < T + MAL_R + PUCK_R + 6) {
+        // puck pinned against our back wall: sweep it sideways, away from our goal mouth
+        const out = this.px < 360 ? -1 : 1;
+        this.aiTx = this.px + out * 90;
+        this.aiTy = Math.max(this.py, T + MAL_R);
+        if (Math.abs(this.cpu.x - this.px) < MAL_R + PUCK_R && (this.cpu.x - this.px) * out > 0) {
+          // we are on the wrong side: step back towards the middle first
+          this.aiTx = this.px - out * (MAL_R + PUCK_R + 20);
+          this.aiTy = T + MAL_R + 70;
+        }
+      } else if (this.cpu.y > this.py - 20) {
         // puck is between us and our own goal: slide around it first
         const side = this.cpu.x < this.px ? -1 : 1;
         this.aiTx = this.px + side * (MAL_R + PUCK_R + 14);
@@ -217,28 +227,23 @@ export class PlayScene extends ArcadeScene {
         let gx = this.aiAimX;
         if (s > 0.6 && rng.chance(0.3)) gx = this.px < 360 ? -this.aiAimX + 2 * L : 2 * R - this.aiAimX;
         const dx = gx - this.px, dy = B - this.py, d = Math.hypot(dx, dy) || 1;
-        this.aiTx = this.px + (dx / d) * 70;
-        this.aiTy = this.py + (dy / d) * 70;
+        this.aiTx = this.px + (dx / d) * 150;
+        this.aiTy = this.py + (dy / d) * 150;
       }
     } else {
-      // defend like a goalie: stay on the line between our goal and the puck
-      let fx = this.px, fy = this.py;
-      if (this.pvy < -10) {
-        // look ahead to where the puck will be, sharper AIs look further
-        const look = 0.12 + s * 0.25;
-        fx = this.px + this.pvx * look;
-        fy = this.py + this.pvy * look;
+      // defend like a goalie: guard line in front of our goal, read the puck's path
+      const D = 100 + (1 - s) * 25, gy = T + D;
+      let gx = 360 + (this.px - 360) * 0.45;
+      if (this.pvy < -60 && this.py > gy) {
+        const tHit = (gy - this.py) / this.pvy;
         const w = R - L - PUCK_R * 2;
-        let x = fx - (L + PUCK_R);
+        let x = this.px + this.pvx * tHit - (L + PUCK_R);
         x = ((x % (2 * w)) + 2 * w) % (2 * w);
         if (x > w) x = 2 * w - x;
-        fx = x + L + PUCK_R;
-        fy = Math.max(fy, T + 40);
+        gx = Phaser.Math.Linear(gx, x + L + PUCK_R, 0.35 + s * 0.65);
       }
-      const dx = fx - 360, dy = fy - T, d = Math.hypot(dx, dy) || 1;
-      const D = 105 + (1 - s) * 25;
-      this.aiTx = 360 + (dx / d) * D;
-      this.aiTy = T + (dy / d) * D;
+      this.aiTx = Phaser.Math.Clamp(gx, GOAL_L - 10, GOAL_R + 10);
+      this.aiTy = gy;
     }
     this.aiTx += this.aiNoise;
   }

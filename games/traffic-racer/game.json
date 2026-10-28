@@ -1,11 +1,11 @@
 {
   "id": "traffic-racer",
-  "title": { "tr": "Traffic Racer", "en": "Traffic Racer" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "Trafik Yarışçısı", "en": "Traffic Racer" },
+  "description": { "tr": "Yoğun otoyolda arabaların arasından sıyrıl, kıl payı geçişlerle kombo yap, altın topla ve benzinin bitmeden gidebildiğin kadar uzağa git!", "en": "Weave through busy highway traffic, chain near misses for combos, grab coins and fuel, and drive as far as you can before the tank runs dry!" },
+  "howTo": { "tr": "Gitmek istediğin yere dokun ya da sürükle; klavyede sol/sağ ok ile direksiyon. Benzin bidonlarını topla, araçlara çarpma.", "en": "Touch or drag where you want to drive, or steer with the left/right arrow keys. Grab fuel cans and don't hit the traffic." },
+  "genres": ["arcade", "action", "retro"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
+  "version": "1.0.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }

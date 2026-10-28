@@ -1,11 +1,11 @@
 {
   "id": "tile-triple",
-  "title": { "tr": "Tile Triple", "en": "Tile Triple" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "Üçlü Taş", "en": "Tile Triple" },
+  "description": { "tr": "Üst üste yığılmış hayvan taşlarını tepsiye al, aynı üç taşı eşleştirip yok et. Tepsi dolmadan her katmanı temizle!", "en": "Pick stacked animal tiles into the tray and match three of a kind to clear them. Empty every layer before the tray fills up!" },
+  "howTo": { "tr": "Üstü açık taşlara dokun; 3 aynı taş patlar, 7 yuvalı tepsi dolarsa kaybedersin. Klavye: oklar seç, Boşluk al, U geri al, S karıştır.", "en": "Tap uncovered tiles; three alike clear, a full 7-slot tray loses. Keys: arrows to aim, Space to pick, U undo, S shuffle." },
+  "genres": ["puzzle", "casual"],
   "orientation": "portrait",
-  "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }

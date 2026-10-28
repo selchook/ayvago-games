@@ -51,3 +51,10 @@ export function freshTextCanvases(scene: Phaser.Scene): void {
   for (let i = pool.free(); i > 0; i--) pool.create2D(owner, 1, 1);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => pool.remove(owner));
 }
+
+/** Semi-transparent full-screen flash (the camera flash starts fully opaque). */
+export function softFlash(scene: Phaser.Scene, color = 0xffffff, duration = 160, alpha = 0.3): void {
+  const { width, height } = scene.scale;
+  const r = scene.add.rectangle(0, 0, width, height, color, alpha).setOrigin(0).setScrollFactor(0).setDepth(8000);
+  scene.tweens.add({ targets: r, alpha: 0, duration, onComplete: () => r.destroy() });
+}

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, t, rng } from '@core';
-import { ftxt, fpopup, freshTextCanvases } from './fasttext';
+import { ArcadeScene, Controls, burst, shake, t, rng } from '@core';
+import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Lane geometry (720 x 1280 world, top-down, pins at the top)
 const LANE_L = 230, LANE_R = 490, LANE_C = 360, GUT = 30;
@@ -266,14 +266,14 @@ export class PlayScene extends ArcadeScene {
       const label = this.strikeRun >= 3 ? t('turkey') : this.strikeRun === 2 ? t('double') : t('strike');
       this.banner(label, '#ffd23f', 52);
       this.sfx('strike', { volume: 0.6 });
-      flash(this, 0xffd23f, 200);
+      softFlash(this, 0xffd23f, 200);
       shake(this, 0.014, 350);
       for (let i = 0; i < 3; i++) this.time.delayedCall(i * 160, () => burst(this, rng.int(260, 460), rng.int(260, 460), [0xffd23f, 0xec3013, 0x3ee6ff, 0xffffff], 40, 520));
     } else if (spare) {
       this.strikeRun = 0;
       this.banner(t('spare'), '#5dff7a', 48);
       this.sfx('spare', { volume: 0.6 });
-      flash(this, 0x5dff7a, 150);
+      softFlash(this, 0x5dff7a, 150);
       burst(this, 360, 360, [0x5dff7a, 0xffffff], 40, 420);
     } else {
       this.strikeRun = 0;

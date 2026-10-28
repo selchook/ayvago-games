@@ -150,7 +150,7 @@ export class PlayScene extends ArcadeScene {
     // tiles + letters
     this.tiles = [];
     this.letters = [];
-    const fs = Math.round(this.cell * 0.5);
+    const fs = Math.round(this.cell * 0.58);
     for (let r = 0; r < this.n; r++) {
       this.tiles.push([]);
       this.letters.push([]);
@@ -440,6 +440,8 @@ export class PlayScene extends ArcadeScene {
     for (let i = 0; i < 6; i++) {
       this.time.delayedCall(i * 120, () => burst(this, rng.int(80, width - 80), rng.int(GRID_TOP + 60, GRID_TOP + GRID_SIZE - 60), FOUND_COLORS, 22, 380));
     }
+    const panel = this.add.rectangle(width / 2, GRID_TOP + GRID_SIZE / 2, width - 60, 220, 0x0e0d12, 0.85).setStrokeStyle(4, 0x5dff7a).setDepth(49).setScale(1, 0);
+    this.tweens.add({ targets: panel, scaleY: 1, duration: 250, ease: 'Quad.easeOut' });
     const banner = txt(this, width / 2, GRID_TOP + GRID_SIZE / 2 - 40, t('levelClear'), { title: true, size: 40, color: '#5dff7a', wrap: width - 60 }).setDepth(50).setScale(0);
     const sub = txt(this, width / 2, GRID_TOP + GRID_SIZE / 2 + 40, `${t('timeBonus')} +${bonus}`, { title: true, size: 22, color: '#ffd23f' }).setDepth(50).setAlpha(0);
     this.tweens.add({ targets: banner, scale: 1, duration: 420, ease: 'Back.easeOut' });
@@ -451,6 +453,7 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(1900, () => {
       banner.destroy();
       sub.destroy();
+      panel.destroy();
       if (last) {
         this.endGame({ win: true, title: t('allFound'), delay: 200 });
         return;

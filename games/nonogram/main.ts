@@ -16,6 +16,9 @@ launch({
     loadSfx(l, 'solved', 'sfx-digital/audio/powerup3');
     loadSfx(l, 'reveal', 'sfx-digital/audio/phaserup3');
     loadSfx(l, 'toggle', 'sfx-interface/audio/switch_002');
+    loadSfx(l, 'move', 'sfx-interface/audio/tick_004');
+    loadSfx(l, 'warn', 'sfx-interface/audio/error_002');
+    loadSfx(l, 'timeup', 'sfx-digital/audio/phaserdown3');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;
@@ -26,7 +29,7 @@ launch({
   },
   scenes: [PlayScene],
   strings: {
-    tr: { fill: 'BOYA', markMode: 'İŞARET', puzzle: 'BULMACA {n}/{m}', solved: 'ÇÖZÜLDÜ!', mistake: 'HATA!', allDone: 'HEPSİ ÇÖZÜLDÜ!' },
-    en: { fill: 'FILL', markMode: 'MARK', puzzle: 'PUZZLE {n}/{m}', solved: 'SOLVED!', mistake: 'MISTAKE!', allDone: 'ALL SOLVED!' },
+    tr: { fill: 'BOYA', markMode: 'İŞARET', puzzle: 'BULMACA {n}/{m}', solved: 'ÇÖZÜLDÜ!', mistake: 'HATA!', allDone: 'HEPSİ ÇÖZÜLDÜ!', perfect: 'HATASIZ! +300', mistakes: 'Hata', timeUp: 'SÜRE BİTTİ!' },
+    en: { fill: 'FILL', markMode: 'MARK', puzzle: 'PUZZLE {n}/{m}', solved: 'SOLVED!', mistake: 'MISTAKE!', allDone: 'ALL SOLVED!', perfect: 'PERFECT! +300', mistakes: 'Mistakes', timeUp: "TIME'S UP!" },
   },
 });

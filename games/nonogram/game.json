@@ -1,11 +1,29 @@
 {
   "id": "nonogram",
-  "title": { "tr": "Piksel Mantık", "en": "Pixel Logic" },
-  "description": { "tr": "Satır ve sütun ipuçlarını çöz, doğru kareleri boya ve gizli piksel resmi ortaya çıkar. 5x5'ten 10x10'a 12 bulmaca!", "en": "Crack the row and column clues, fill the right squares and reveal a hidden pixel picture. 12 puzzles from 5x5 to 10x10!" },
-  "howTo": { "tr": "Sayılar, o satırdaki dolu kare gruplarını gösterir. Kareye dokunup boya, İŞARET modunda X koy. Klavye: oklar, Boşluk boya, X işaretle.", "en": "Numbers give the runs of filled squares in each line. Tap to fill, use MARK mode to place X. Keys: arrows, Space fills, X marks." },
-  "genres": ["puzzle", "casual"],
+  "title": {
+    "tr": "Piksel Mantık",
+    "en": "Pixel Logic"
+  },
+  "description": {
+    "tr": "Satır ve sütun ipuçlarını çöz, doğru kareleri boya ve gizli piksel resmi ortaya çıkar. 5x5'ten 10x10'a 12 bulmaca, süre azalmadan bitir!",
+    "en": "Crack the row and column clues, fill the right squares and reveal a hidden pixel picture. 12 puzzles from 5x5 to 10x10, beat the clock!"
+  },
+  "howTo": {
+    "tr": "Sayılar her satırdaki dolu kare gruplarını gösterir. Dokun ya da sürükleyerek boya, İŞARET modunda X koy. Klavye: oklar, Boşluk boya, X işaretle, M mod değiştir.",
+    "en": "Numbers give the runs of filled squares in each line. Tap or drag to fill, use MARK mode to place X. Keys: arrows, Space fills, X marks, M switches mode."
+  },
+  "genres": [
+    "puzzle",
+    "casual"
+  ],
   "orientation": "portrait",
-  "controls": ["touch", "keyboard", "mouse"],
+  "controls": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
   "version": "1.0.0",
-  "credits": ["Audio: Kenney (CC0) — kenney.nl"]
+  "credits": [
+    "Audio: Kenney (CC0) — kenney.nl"
+  ]
 }

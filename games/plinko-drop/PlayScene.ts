@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, t, rng } from '@core';
-import { ftxt, fpopup, freshTextCanvases } from './fasttext';
+import { ArcadeScene, Controls, burst, shake, t, rng } from '@core';
+import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Board geometry (720 x 1280 world)
 const L = 40, R = 680, W = R - L;
@@ -209,7 +209,7 @@ export class PlayScene extends ArcadeScene {
       const bonus = 40 * this.round + Math.max(0, this.roundScore - this.target);
       this.addScore(bonus);
       this.sfx('clear');
-      flash(this, 0x5dff7a, 160);
+      softFlash(this, 0x5dff7a, 160);
       burst(this, 360, 600, [0xffd23f, 0x5dff7a, 0x3ee6ff], 50, 520);
       this.banner(t('roundClear'), '#5dff7a', t('bonus', { n: bonus }));
       this.round++;
@@ -220,7 +220,7 @@ export class PlayScene extends ArcadeScene {
       this.tweens.add({ targets: this.livesG, alpha: 0.2, duration: 120, yoyo: true, repeat: 3 });
       this.sfx('fail');
       shake(this, 0.015, 300);
-      flash(this, 0xec3013, 160);
+      softFlash(this, 0xec3013, 160);
       this.banner(t('roundFail'), '#ec3013', t('lifeLost'));
       if (this.lives <= 0) this.endGame({ delay: 1500 });
       else this.time.delayedCall(1700, () => !this.isOver && this.startRound());
@@ -368,7 +368,7 @@ export class PlayScene extends ArcadeScene {
           this.addScore(bonus);
           this.roundScore += bonus;
           this.sfx('mult');
-          flash(this, 0xffd23f, 140);
+          softFlash(this, 0xffd23f, 140);
           this.banner(t('allGold', { n: bonus }), '#ffd23f');
         }
       } else if (p.kind === 'mult') {
@@ -414,7 +414,7 @@ export class PlayScene extends ArcadeScene {
       this.sfx(big ? 'big' : 'land', { volume: big ? 0.7 : 0.5 });
       burst(this, cx, FLOOR - 30, [SLOT_COLORS[s.value] ?? 0xffffff, 0xffd23f, 0xffffff], big ? 40 : 18, big ? 420 : 260);
       if (big) shake(this, 0.008, 160);
-      if (gate > 1 || b.mult > 1) flash(this, 0xff4fa3, 90);
+      if (gate > 1 || b.mult > 1) softFlash(this, 0xff4fa3, 90);
       fpopup(this, cx, FLOOR - 90, `+${pts}`, gate > 1 || b.mult > 1 ? '#ff4fa3' : '#ffd23f', big ? 30 : 24);
     }
     this.tweens.add({ targets: this.slotTexts[i], scale: 1.5, duration: 110, yoyo: true });
