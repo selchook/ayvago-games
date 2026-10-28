@@ -24,7 +24,7 @@ launch({
     loadSfx(l, 'boss', 'sfx-digital/audio/lowthreetone');
   },
   menuDecor(scene) {
-    warmText(scene, [[22, true], [24, true], [18, true], [30, true], [28, true], [20, true], [40, true]]);
+    warmText(scene, [[18, true], [22, true], [24, true], [18, true], [30, true], [28, true], [20, true], [40, true]]);
     const { width, height } = scene.scale;
     const frames = [4, 10, 22, 12, 21, 9];
     frames.forEach((f, i) => scene.add.image(width * (0.15 + i * 0.14), height * 0.86, 'mr', f).setScale(9));

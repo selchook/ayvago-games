@@ -91,7 +91,7 @@ export class PlayScene extends ArcadeScene {
     this.add.image(440, 100, 'mr', F.shield).setScale(5).setDepth(21);
     this.defText = ftxt(this, 482, 100, '', { title: true, size: 22 }).setDepth(21);
     this.lvlText = ftxt(this, 560, 100, '', { title: true, size: 18, color: '#3ee6ff' }).setDepth(21);
-    this.msg = ftxt(this, 360, 1124, '', { size: 26, color: '#ffd23f' }).setDepth(21);
+    this.msg = ftxt(this, 360, 1126, '', { title: true, size: 20, color: '#ffd23f' }).setDepth(21);
 
     new Button(this, 190, 1206, t('wait'), () => this.act('wait'), { width: 300, height: 92, size: 24, color: 0x333344 });
     this.potionBtn = new Button(this, 530, 1206, '', () => this.act('potion'), { width: 300, height: 92, size: 24, color: COLORS.red });
