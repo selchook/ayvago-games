@@ -12,6 +12,9 @@ const common: Strings = {
     gameOver: 'OYUN BİTTİ', newBest: 'YENİ REKOR!', youWin: 'KAZANDIN!', levelClear: 'BÖLÜM TAMAM!',
     tapToStart: 'Başlamak için dokun', howTo: 'NASIL OYNANIR', sound: 'SES', on: 'AÇIK', off: 'KAPALI',
     next: 'SONRAKİ', ready: 'HAZIR', go: 'BAŞLA!', wave: 'DALGA', combo: 'KOMBO',
+    online: 'ÇEVRİMİÇİ MAÇ', vs: 'Rakip: {name}', opponent: 'Rakip', waitHost: 'Oda sahibinin başlatması bekleniyor…',
+    rematch: 'RÖVANŞ', youLose: 'KAYBETTİN', draw: 'BERABERE', peerLeft: 'Rakip ayrıldı', peerBack: 'Rakip geri döndü',
+    yourTurn: 'SIRA SENDE', theirTurn: 'RAKİBİN SIRASI', you: 'SEN',
   },
   en: {
     play: 'PLAY', retry: 'RETRY', menu: 'MENU', resume: 'RESUME', paused: 'PAUSED',
@@ -19,6 +22,9 @@ const common: Strings = {
     gameOver: 'GAME OVER', newBest: 'NEW BEST!', youWin: 'YOU WIN!', levelClear: 'LEVEL CLEAR!',
     tapToStart: 'Tap to start', howTo: 'HOW TO PLAY', sound: 'SOUND', on: 'ON', off: 'OFF',
     next: 'NEXT', ready: 'READY', go: 'GO!', wave: 'WAVE', combo: 'COMBO',
+    online: 'ONLINE MATCH', vs: 'Opponent: {name}', opponent: 'Opponent', waitHost: 'Waiting for the host to start…',
+    rematch: 'REMATCH', youLose: 'YOU LOSE', draw: 'DRAW', peerLeft: 'Your opponent left', peerBack: 'Your opponent is back',
+    yourTurn: 'YOUR TURN', theirTurn: "THEIR TURN", you: 'YOU',
   },
 };
 

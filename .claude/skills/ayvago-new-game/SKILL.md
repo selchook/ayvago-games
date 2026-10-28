@@ -120,6 +120,55 @@ node scripts/smoke-test.mjs --dev --serial <slug>
 
 For screenshots, adapt `scripts/smoke-test.mjs`. It exposes `window.__ayvago.game`; use `?nointro` to skip the intro while iterating.
 
+## 7a. Online two-player mode (optional)
+
+Games with `"multiplayer": true` in game.json can be played online by two people. The player who
+creates a room on ayvago.com is the **host**; a friend joins with the invite link as the **guest**.
+The platform does the matchmaking and the connection. The game only exchanges small JSON
+messages through `net` from `@core` (`src/core/net.ts`).
+
+Core already handles:
+- the online menu: the host presses PLAY, and the guest waits and follows;
+- the shared round seed (`net.seed`);
+- no pause in online play;
+- "opponent left": the round ends with a notice;
+- the online result screen: the host chooses REMATCH or MENU, and the guest follows.
+
+Your PlayScene only implements the match, in `createGame()`:
+- **Mode:** check `net.active`. When it is false, the game is the normal solo game; keep that
+  unchanged.
+- **Seat:** `net.seat` is 0 for the host and 1 for the guest. `net.isHost` is true for the host.
+  `net.peerName` is the opponent's name.
+- **Send:** `net.send(type, data)` sends JSON, under about 16 KB. Keep messages small and send
+  real-time state at most about 20 times per second.
+- **Receive:** `net.onScene(this, type, (data) => …)` listens for a message type and is removed
+  automatically on restart.
+- **Seed:** use `rng.seeded(net.seed)` for anything random that must match on both screens.
+- **End:** both screens must agree on the result. Call
+  `this.endGame({ win, title: t('youWin') | t('youLose') | t('draw') })` on both sides, normally
+  after the deciding move or state message arrives.
+- **Patterns:**
+  - **Turn-based** (board games, alternate shots): both sides run the same rules. A player
+    acts only on their turn and sends the move, and the other side applies it. Seat 0 starts
+    unless the rules say otherwise; alternate the starting seat on rematches if you like.
+  - **Real-time** (pong, air hockey): the **host simulates**. The guest sends its input
+    (paddle position) about 20 times per second. The host sends compact state snapshots
+    (positions, velocities, score) about 20 times per second. The guest renders the snapshots
+    with interpolation and draws its own paddle locally for responsiveness. Mirror the field
+    for the guest, so each player sees their own side at the bottom.
+- **Strings:** use the core strings `t('yourTurn')`, `t('theirTurn')`, `t('you')`,
+  `t('opponent')`, `t('youLose')` and `t('draw')`.
+- **HUD:** show whose turn it is or the match score, and the opponent's name.
+
+Verify with the two-player bench, which needs no platform:
+`node scripts/mp-harness.mjs --dev --shots <slug>`.
+- **What it does:** it embeds two copies side by side, relays the moves with 60 ms latency
+  (`--latency` changes this) and plays randomly on both.
+- **What must pass:** both menus appear, the host starts, moves flow both ways, there are no
+  errors, and "opponent left" ends the guest's round.
+- **Screenshots:** they go to `reports/mp/`. Look at them: both screens must show the same game
+  state. The solo smoke test must still pass.
+
 ## 8. Ship
 
 - Run `npm run registry` (validates `game.json`).

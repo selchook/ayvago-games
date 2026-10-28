@@ -10,7 +10,7 @@
  * Update vendored copies by copying this file; do not edit them in place.
  */
 
-export const ADAPTER_VERSION = '2.0.0';
+export const ADAPTER_VERSION = '2.1.0';
 export const PROTOCOL_VERSION = 2;
 
 /** Origins allowed to host games. "*" matches one DNS label segment (letters, digits, "-"). */
@@ -35,12 +35,39 @@ export type StartConfig = ThemeInfo & {
   isHost: boolean;
   playerIndex: number;
   playerCount: number;
+  /** Multiplayer only: the other player's display name. */
+  peerName?: string;
   locale: string;
   adsEnabled: boolean;
   protocol: number;
 };
 
 export type GameResult = { score?: number; won?: boolean; message?: string };
+
+/** Largest move payload (serialized JSON, in characters); larger moves are dropped. */
+export const MAX_MOVE_SIZE = 16_000;
+
+/**
+ * Two-player online play (protocol 2.1). The platform owns the room and the connection
+ * (WebRTC, relayed through TURN or the database when needed); the game only exchanges moves.
+ * Messages: GHA_MOVE_OUT { data } game → platform, GHA_MOVE_IN { data } platform → game,
+ * GHA_PEER_LEAVE / GHA_PEER_JOIN { name } when the other player drops out or comes back.
+ */
+export interface Multiplayer {
+  /** True when the platform started this game for an online match. */
+  readonly active: boolean;
+  /** The room creator; by convention the host runs authoritative simulations. */
+  readonly isHost: boolean;
+  /** 0 for the host, 1 for the guest. */
+  readonly playerIndex: number;
+  /** The other player's display name ('' when unknown). */
+  readonly peerName: string;
+  /** Sends a JSON-serializable move to the other player (dropped above MAX_MOVE_SIZE). */
+  send(data: unknown): void;
+  onMove(callback: (data: unknown) => void): () => void;
+  onPeerLeave(callback: () => void): () => void;
+  onPeerJoin(callback: (name: string) => void): () => void;
+}
 
 export interface PlatformAdapter {
   readonly name: 'ayvago' | 'standalone';
@@ -69,6 +96,8 @@ export interface PlatformAdapter {
   onLocaleChange(callback: (locale: string) => void): () => void;
   /** Writes the platform theme tokens as CSS custom properties (default: <html>). */
   applyThemeTokens(target?: { style: { setProperty(name: string, value: string): void } }): void;
+  /** Online two-player play; inactive in solo runs and standalone. */
+  readonly multiplayer: Multiplayer;
 }
 
 /** The browser surface the adapter needs; replaced by a fake in tests. */
@@ -161,9 +190,30 @@ class Emitter<T> {
   }
 }
 
+const OFFLINE: Multiplayer = {
+  active: false,
+  isHost: true,
+  playerIndex: 0,
+  peerName: '',
+  send: () => {},
+  onMove: () => () => {},
+  onPeerLeave: () => () => {},
+  onPeerJoin: () => () => {},
+};
+
+function moveFits(data: unknown): boolean {
+  try {
+    const json = JSON.stringify(data);
+    return json !== undefined && json.length <= MAX_MOVE_SIZE;
+  } catch {
+    return false;
+  }
+}
+
 class StandaloneAdapter implements PlatformAdapter {
   readonly name = 'standalone' as const;
   readonly config = null;
+  readonly multiplayer = OFFLINE;
 
   constructor(readonly locale: string) {}
 
@@ -209,6 +259,10 @@ class AyvagoAdapter implements PlatformAdapter {
   private mute = new Emitter<boolean>();
   private theme = new Emitter<ThemeInfo>();
   private localeChange = new Emitter<string>();
+  private moveIn = new Emitter<unknown>();
+  private peerLeave = new Emitter<void>();
+  private peerJoin = new Emitter<string>();
+  readonly multiplayer: Multiplayer;
 
   constructor(
     private env: HostEnv,
@@ -218,6 +272,29 @@ class AyvagoAdapter implements PlatformAdapter {
   ) {
     this.currentConfig = config;
     this.currentLocale = config.locale;
+    const self = this;
+    this.multiplayer = {
+      get active() {
+        return self.currentConfig.mode === 'multiplayer';
+      },
+      get isHost() {
+        return self.currentConfig.isHost;
+      },
+      get playerIndex() {
+        return self.currentConfig.playerIndex;
+      },
+      get peerName() {
+        return self.currentConfig.peerName ?? '';
+      },
+      send: (data: unknown) => {
+        if (self.currentConfig.mode !== 'multiplayer') return;
+        if (moveFits(data)) self.send('GHA_MOVE_OUT', { data });
+        else console.warn('[ayvago] move dropped: not JSON or larger than', MAX_MOVE_SIZE);
+      },
+      onMove: (callback) => self.moveIn.add(callback),
+      onPeerLeave: (callback) => self.peerLeave.add(callback),
+      onPeerJoin: (callback) => self.peerJoin.add(callback),
+    };
     env.listen((data, messageOrigin, fromParent) => {
       if (fromParent && messageOrigin === origin) this.handle(data);
     });
@@ -267,6 +344,15 @@ class AyvagoAdapter implements PlatformAdapter {
           this.currentLocale = msg.locale;
           this.localeChange.emit(msg.locale);
         }
+        break;
+      case 'GHA_MOVE_IN':
+        if ('data' in msg) this.moveIn.emit(msg.data);
+        break;
+      case 'GHA_PEER_LEAVE':
+        this.peerLeave.emit();
+        break;
+      case 'GHA_PEER_JOIN':
+        this.peerJoin.emit(typeof msg.name === 'string' ? msg.name : '');
         break;
       case 'GHA_AD_RESULT': {
         const settle = typeof msg.id === 'number' ? this.pendingAds.get(msg.id) : undefined;
