@@ -36,11 +36,14 @@ export class PlayScene extends ArcadeScene {
   private swipe: { x: number; y: number; t: number } | null = null;
   private queued: Dir | null = null;
   private lastTick = 0;
+  private lifeIcons: Phaser.GameObjects.Image[] = [];
 
   createGame(): void {
     this.lanes = []; this.homes = [false, false, false, false, false]; this.homeImgs = [];
     this.lives = 3; this.level = 1; this.alive = true; this.hopping = false; this.chick = null; this.chickBay = -1; this.chickT = 6;
     this.swipe = null; this.queued = null; this.lastTick = 0;
+    this.lifeIcons = [];
+    for (let i = 0; i < 3; i++) this.lifeIcons.push(this.add.image(40 + i * 44, 78, 'frog').setScale(0.26).setDepth(9000));
     this.makeTextures();
     this.drawBoard();
     this.frog = this.add.image(0, 0, 'frog').setScale(0.42).setDepth(20);
@@ -198,7 +201,7 @@ export class PlayScene extends ArcadeScene {
       case 'hippo': {
         for (let i = 0; i < l.size; i++) {
           const hx = (i - (l.size - 1) / 2) * COL;
-          view.add(this.add.ellipse(hx, 6, COL - 2, 40, 0xbfe4ff, 0.55));
+          view.add(this.add.ellipse(hx, 14, COL + 8, 36, 0xd6efff, 0.75));
           view.add(this.add.image(hx, 0, 'hippo').setScale(0.44));
         }
         w = l.size * COL - 6;
@@ -394,8 +397,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setCenter(`${t('level')} ${this.level}`);
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setRight(`${t('level')} ${this.level}`);
+    this.lifeIcons.forEach((im, i) => im.setAlpha(i < this.lives ? 1 : 0.2));
   }
 
   updateGame(_time: number, delta: number): void {
