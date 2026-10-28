@@ -33,7 +33,7 @@ launch({
   },
   scenes: [PlayScene],
   strings: {
-    tr: { floor: 'KAT', wait: 'BEKLE', potion: 'İKSİR', atk: 'SALDIRI', armor: 'ZIRH', maxhp: 'CAN', heal: 'CAN', boss: 'KAT BEKÇİSİ!', down: 'AŞAĞI!', full: 'Çanta dolu' },
-    en: { floor: 'FLOOR', wait: 'WAIT', potion: 'POTION', atk: 'ATTACK', armor: 'ARMOR', maxhp: 'MAX HP', heal: 'HP', boss: 'FLOOR GUARDIAN!', down: 'DOWN!', full: 'Bag full' },
+    tr: { floor: 'KAT', wait: 'BEKLE', potion: 'İKSİR', atk: 'SALDIRI', armor: 'ZIRH', maxhp: 'MAKS. CAN', heal: 'CAN', boss: 'KAT BEKÇİSİ!', down: 'MERDİVEN AÇILDI!', full: 'Çanta dolu', locked: 'Önce kat bekçisini yen!', trap: 'TUZAK!', levelUp: 'SEVİYE {n}! GÜÇLENDİN', lv: 'SV' },
+    en: { floor: 'FLOOR', wait: 'WAIT', potion: 'POTION', atk: 'ATTACK', armor: 'ARMOR', maxhp: 'MAX HP', heal: 'HP', boss: 'FLOOR GUARDIAN!', down: 'STAIRS OPEN!', full: 'Bag full', locked: 'Defeat the guardian first!', trap: 'TRAP!', levelUp: 'LEVEL {n}! STRONGER', lv: 'LV' },
   },
 });

@@ -9,7 +9,7 @@ const VIEW = 4.5;                       // light radius in tiles
 
 // micro-roguelike frames
 const F = {
-  wall: 58, wallTop: 0, floor: 15, floor2: 60, stairs: 47,
+  wall: 58, floor: 15, floor2: 60, stairs: 47,
   hero: 4, heroArmor: 6, heroKnight: 5,
   potion: 119, chest: 82, coin: 78, ring: 79, sword: 62, shield: 94, heart: 90, fire: 120,
 };
@@ -21,13 +21,13 @@ const MONSTERS: MonsterDef[] = [
   { frame: 19, hp: 3, atk: 1, def: 0, score: 10, beh: 'chase', minFloor: 1 },     // rat
   { frame: 22, hp: 5, atk: 2, def: 0, score: 15, beh: 'slow', minFloor: 2 },      // slime
   { frame: 18, hp: 4, atk: 2, def: 0, score: 20, beh: 'chase', minFloor: 2 },     // snake
-  { frame: 21, hp: 5, atk: 3, def: 0, score: 25, beh: 'erratic', minFloor: 3 },   // spider
+  { frame: 21, hp: 5, atk: 2, def: 0, score: 25, beh: 'erratic', minFloor: 3 },   // spider
   { frame: 10, hp: 7, atk: 3, def: 1, score: 35, beh: 'chase', minFloor: 4 },     // skeleton
-  { frame: 11, hp: 7, atk: 4, def: 0, score: 35, beh: 'chase', minFloor: 4 },     // goblin
-  { frame: 12, hp: 10, atk: 4, def: 2, score: 45, beh: 'slow', minFloor: 5 },     // crab
-  { frame: 9, hp: 13, atk: 5, def: 1, score: 60, beh: 'chase', minFloor: 6 },     // orc
-  { frame: 26, hp: 18, atk: 5, def: 2, score: 70, beh: 'slow', minFloor: 7 },     // treant
-  { frame: 25, hp: 14, atk: 6, def: 1, score: 80, beh: 'chase', minFloor: 8 },    // demon
+  { frame: 11, hp: 6, atk: 3, def: 0, score: 35, beh: 'chase', minFloor: 4 },     // goblin
+  { frame: 12, hp: 10, atk: 3, def: 2, score: 45, beh: 'slow', minFloor: 5 },     // crab
+  { frame: 9, hp: 13, atk: 4, def: 1, score: 60, beh: 'chase', minFloor: 6 },     // orc
+  { frame: 26, hp: 18, atk: 4, def: 2, score: 70, beh: 'slow', minFloor: 7 },     // treant
+  { frame: 25, hp: 14, atk: 5, def: 1, score: 80, beh: 'chase', minFloor: 8 },    // demon
 ];
 const BOSS: MonsterDef = { frame: 13, hp: 20, atk: 4, def: 1, score: 300, beh: 'chase', minFloor: 5 };
 
@@ -52,12 +52,15 @@ export class PlayScene extends ArcadeScene {
   private hpText!: Phaser.GameObjects.Text;
   private atkText!: Phaser.GameObjects.Text;
   private defText!: Phaser.GameObjects.Text;
+  private lvlText!: Phaser.GameObjects.Text;
   private msg!: Phaser.GameObjects.Text;
   private potionBtn!: Button;
   private pc = 0; private pr = 0;
   private sc = 0; private sr = 0;
   private hp = 12; private maxHp = 12; private atk = 3; private def = 0;
   private potions = 1;
+  private xp = 0;
+  private lvl = 1;
   private floor = 1;
   private busyUntil = 0;
   private bossAlive = false;
@@ -69,7 +72,7 @@ export class PlayScene extends ArcadeScene {
   createGame(): void {
     freshTextCanvases(this);
     this.grid = []; this.seen = []; this.vis = []; this.tiles = []; this.items = []; this.monsters = [];
-    this.hp = 12; this.maxHp = 12; this.atk = 3; this.def = 0; this.potions = 1; this.floor = 1;
+    this.hp = 16; this.maxHp = 16; this.atk = 3; this.def = 0; this.potions = 2; this.floor = 1; this.xp = 0; this.lvl = 1;
     this.busyUntil = 0; this.bossAlive = false; this.dead = false; this.turn = 0; this.holdDir = null; this.holdT = 0;
 
     this.add.rectangle(OX - 6, OY - 6, COLS * TS + 12, ROWS * TS + 12, 0x000000).setOrigin(0).setStrokeStyle(4, 0x3a3450);
@@ -87,6 +90,7 @@ export class PlayScene extends ArcadeScene {
     this.atkText = ftxt(this, 372, 100, '', { title: true, size: 22 }).setDepth(21);
     this.add.image(440, 100, 'mr', F.shield).setScale(5).setDepth(21);
     this.defText = ftxt(this, 482, 100, '', { title: true, size: 22 }).setDepth(21);
+    this.lvlText = ftxt(this, 560, 100, '', { title: true, size: 18, color: '#3ee6ff' }).setDepth(21);
     this.msg = ftxt(this, 360, 1124, '', { size: 26, color: '#ffd23f' }).setDepth(21);
 
     new Button(this, 190, 1206, t('wait'), () => this.act('wait'), { width: 300, height: 92, size: 24, color: 0x333344 });
@@ -204,8 +208,12 @@ export class PlayScene extends ArcadeScene {
     // paint tiles
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       const img = this.tiles[r][c];
-      if (this.grid[r][c] === 1) img.setFrame(this.grid[r + 1]?.[c] === 0 ? F.wall : F.wallTop);
-      else img.setFrame(rng.chance(0.18) ? F.floor2 : F.floor);
+      img.setVisible(true);
+      if (this.grid[r][c] === 1) {
+        let nearFloor = false;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (this.grid[r + dy]?.[c + dx] === 0) nearFloor = true;
+        img.setFrame(F.wall).setVisible(nearFloor);
+      } else img.setFrame(rng.chance(0.18) ? F.floor2 : F.floor);
       img.setAlpha(0).setTint(0xffffff);
     }
     this.seen = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
@@ -244,8 +252,8 @@ export class PlayScene extends ArcadeScene {
 
   private spawnMonster(def: MonsterDef, c: number, r: number, boss: boolean): void {
     const scaleHp = 1 + (this.floor - 1) * 0.1;
-    const hp = boss ? def.hp + this.floor * 3 : Math.round(def.hp * scaleHp);
-    const atk = boss ? def.atk + Math.floor(this.floor / 2) : def.atk + Math.floor((this.floor - def.minFloor) / 4);
+    const hp = boss ? 8 + this.floor * 2 : Math.round(def.hp * scaleHp);
+    const atk = boss ? 2 + Math.floor(this.floor / 5) : def.atk + Math.floor((this.floor - def.minFloor) / 4);
     const img = this.add.image(OX + c * TS + TS / 2, OY + r * TS + TS / 2, 'mr', def.frame).setScale(SC).setDepth(4).setVisible(false);
     if (boss) img.setTint(0xff9090);
     this.monsters.push({ def, c, r, hp, maxHp: hp, atk, img, awake: boss, boss, tick: 0 });
@@ -420,6 +428,7 @@ export class PlayScene extends ArcadeScene {
       this.monsters.splice(this.monsters.indexOf(m), 1);
       const pts = m.def.score * (m.boss ? 1 : 1 + Math.floor(this.floor / 3));
       this.addScore(pts);
+      this.gainXp(Math.ceil(m.def.score / 10) * (m.boss ? 1 : 1));
       this.sfx('kill', { volume: 0.5 });
       burst(this, m.img.x, m.img.y, [0xec3013, 0xffd23f, 0x5dff7a], m.boss ? 60 : 22, m.boss ? 420 : 260);
       fpopup(this, m.img.x, m.img.y - 70, `+${pts}`, '#ffd23f', 22);
@@ -435,6 +444,21 @@ export class PlayScene extends ArcadeScene {
         this.items.push({ kind: 'chest', c: m.c, r: m.r, img });
       }
     } else if (!m.awake) m.awake = true;
+  }
+
+  private gainXp(n: number): void {
+    this.xp += n;
+    const need = 4 + this.lvl * 4;
+    if (this.xp < need) return;
+    this.xp -= need;
+    this.lvl++;
+    this.maxHp += 3;
+    this.hp = Math.min(this.maxHp, this.hp + 6);
+    if (this.lvl % 2 === 1) this.atk++;
+    this.sfx('item', { volume: 0.6, rate: 1.2 });
+    burst(this, this.hero.x, this.hero.y, [0x3ee6ff, 0xffd23f, 0xffffff], 30, 260);
+    softFlash(this, 0x3ee6ff, 200, 0.2);
+    this.say(t('levelUp', { n: this.lvl }), '#3ee6ff');
   }
 
   private hurt(dmg: number, color = 0xec3013): void {
@@ -461,6 +485,8 @@ export class PlayScene extends ArcadeScene {
 
   private endTurn(lock: number): void {
     this.turn++;
+    // slow natural regeneration
+    if (this.turn % 12 === 0 && this.hp < this.maxHp) this.hp++;
     this.busyUntil = this.time.now + lock;
     this.monstersAct();
     this.updateVision();
@@ -537,9 +563,12 @@ export class PlayScene extends ArcadeScene {
     g.fillStyle(0x000000, 0.6).fillRoundedRect(24, 84, 262, 32, 8);
     const k = Math.max(0, this.hp) / this.maxHp;
     g.fillStyle(k > 0.5 ? 0x5dff7a : k > 0.25 ? 0xffd23f : 0xec3013, 1).fillRoundedRect(28, 88, 254 * k, 24, 6);
+    g.fillStyle(0x000000, 0.6).fillRect(24, 120, 262, 8);
+    g.fillStyle(0x3ee6ff, 1).fillRect(25, 121, 260 * Math.min(1, this.xp / (4 + this.lvl * 4)), 6);
     this.hpText.setText(`${Math.max(0, this.hp)}/${this.maxHp}`);
     this.atkText.setText(String(this.atk));
     this.defText.setText(String(this.def));
+    this.lvlText.setText(`${t('lv')}${this.lvl}`);
     this.potionBtn.setText(`${t('potion')} ${this.potions}`);
     // health bars over wounded visible monsters
     for (const m of this.monsters) {
