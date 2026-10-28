@@ -121,6 +121,10 @@ const workers = Array.from({ length: Math.min(parallel, queue.length) }, async (
     const r = await testGame(slug);
     results.push(r);
     console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${slug}${r.ok ? '' : '\n      ' + JSON.stringify(r.step) + '\n      ' + r.errors.join('\n      ')}`);
+    // GitHub Actions: one annotation per failing game, readable without the full job log.
+    if (!r.ok && process.env.GITHUB_ACTIONS) {
+      console.log(`::error title=smoke ${slug}::${JSON.stringify(r.step)} ${r.errors.join(' / ').replace(/\r?\n/g, ' ')}`);
+    }
   }
 });
 await Promise.all(workers);
