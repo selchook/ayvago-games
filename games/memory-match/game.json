@@ -1,0 +1,11 @@
+{
+  "id": "memory-match",
+  "title": { "tr": "Hafıza Kartları", "en": "Memory Match" },
+  "description": { "tr": "Kartları çevir, aynı hayvanları eşleştir. Her bölümde tahta büyür, süre daralır; hızlı ve az hamleyle bitir, üç yıldızı kap.", "en": "Flip the cards and match the animal pairs. Every level grows the board and tightens the clock; finish fast with few moves to earn three stars." },
+  "howTo": { "tr": "Bir karta dokunup çevir, eşini bul. Klavye: oklarla seç, Boşluk ile çevir. Süre bitmeden tüm çiftleri bul!", "en": "Tap a card to flip it and find its twin. Keyboard: arrows select, Space flips. Find every pair before time runs out!" },
+  "genres": ["casual", "puzzle", "card"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+}

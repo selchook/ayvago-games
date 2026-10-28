@@ -14,7 +14,6 @@ launch({
     l.image('ball', kenney(P2 + 'balls/blue/ballblue_09.png'));
     l.image('ball-gold', kenney(P2 + 'balls/yellow/ballyellow_09.png'));
     l.image('peg-gold', kenney(P2 + 'coins/coin_06.png'));
-    l.image('peg-star', kenney(P2 + 'coins/coin_37.png'));
     l.image('spark', kenney(P2 + 'particles_yellow/particleyellow_3.png'));
     loadSfx(l, 'ping', 'sfx-interface/audio/pluck_001');
     loadSfx(l, 'drop', 'sfx-interface/audio/drop_002');
