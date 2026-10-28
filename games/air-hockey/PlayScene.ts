@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, t, rng, ensurePixel } from '@core';
+import { ArcadeScene, Controls, burst, shake, t, rng, ensurePixel, net, upper } from '@core';
 import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Table (720 x 1280 world)
@@ -9,6 +9,13 @@ const GOAL_L = 250, GOAL_R = 470;             // goal mouth
 const PUCK_R = 28, MAL_R = 46;
 const MAX_PUCK = 1600, SUB = 6;
 const WIN_GOALS = 7;
+// Online match: the table is symmetric, so the guest sees the host's table rotated by 180°
+// (x' = 720 - x, y' = MIRROR_Y - y) with its own mallet at the bottom.
+const MIRROR_Y = T + B;
+const SEND_MS = 50;            // ~20 messages per second each way
+const REMOTE_SPEED = 3200;     // the remote mallet follows its reports quickly
+
+interface Snap { p: number[]; m: number[]; k: number[]; l: number; h: number }
 
 export function makeHockeyTextures(scene: Phaser.Scene): void {
   if (scene.textures.exists('ah-puck')) return;
@@ -62,6 +69,19 @@ export class PlayScene extends ArcadeScene {
   private glow = 0;
   private goalFlash = 0;
   private goalFlashTop = true;
+  // online
+  private online = false;
+  private host = true;
+  private sendT = 0;
+  private pingT = 0;
+  private lat = 0.04;               // estimated one-way latency (s), guest only
+  private rx = 360; private ry = T + 150; private rvx = 0; private rvy = 0; private rAt = 0;
+  private corrX = 0; private corrY = 0;
+  private localHitT = -1e9;
+  private hits = 0;
+  private seenHits = 0;
+  private held = false;
+  private quiet = false;
 
   createGame(): void {
     freshTextCanvases(this);
@@ -70,13 +90,17 @@ export class PlayScene extends ArcadeScene {
     this.myGoals = 0; this.cpuGoals = 0; this.live = false; this.pointerId = -1;
     this.tx = 360; this.ty = 1000; this.aiTx = 360; this.aiTy = T + 100; this.aiThink = 0; this.aiNoise = 0; this.aiAimX = 360;
     this.skill = 0.45; this.wallSfx = 0; this.hitSfx = 0; this.lastHitBy = null; this.glow = 0; this.goalFlash = 0;
+    this.online = net.active; this.host = net.isHost;
+    this.sendT = 0; this.pingT = 0; this.lat = 0.04; this.rx = 360; this.ry = T + 150; this.rvx = this.rvy = 0; this.rAt = 0;
+    this.corrX = this.corrY = 0; this.localHitT = -1e9; this.hits = 0; this.seenHits = 0; this.held = false; this.quiet = false;
 
     this.tableG = this.add.graphics().setDepth(0);
     this.fxG = this.add.graphics().setDepth(1);
     this.drawTable();
     this.cpuGoalsText = ftxt(this, 96, MID - 70, '0', { title: true, size: 60, color: '#3ee6ff' }).setAlpha(0.55).setDepth(1);
     this.myGoalsText = ftxt(this, 96, MID + 70, '0', { title: true, size: 60, color: '#ff4f5e' }).setAlpha(0.55).setDepth(1);
-    ftxt(this, 624, MID - 40, t('cpu'), { title: true, size: 18, color: '#3ee6ff' }).setAlpha(0.6).setDepth(1);
+    const oppLabel = this.online ? upper((net.peerName || t('opponent')).slice(0, 8)) : t('cpu');
+    ftxt(this, 624, MID - 40, oppLabel, { title: true, size: 18, color: '#3ee6ff' }).setAlpha(0.6).setDepth(1);
     ftxt(this, 624, MID + 40, t('you'), { title: true, size: 18, color: '#ff4f5e' }).setAlpha(0.6).setDepth(1);
     this.hud.setRight(t('firstTo'));
 
@@ -103,7 +127,8 @@ export class PlayScene extends ArcadeScene {
     this.input.on('pointerupoutside', up);
 
     this.updateHud();
-    this.serve('me', 900);
+    if (this.online) this.setupOnline();
+    if (!this.online || this.host) this.serve('me', 900);
   }
 
   // ---------------------------------------------------------------- drawing
@@ -148,10 +173,12 @@ export class PlayScene extends ArcadeScene {
       this.live = true;
       this.sfx('serve', { volume: 0.5 });
       this.trail.start();
+      if (this.online) this.sendSnap();
     });
   }
 
   private goal(mine: boolean): void {
+    if (this.online) { this.hostGoal(mine); return; }
     this.live = false;
     this.trail.stop();
     const speed = Math.hypot(this.pvx, this.pvy);
@@ -284,11 +311,13 @@ export class PlayScene extends ArcadeScene {
         if (who === 'me' && this.lastHitBy === 'cpu' && this.py > B - 260 && -vn > 700) fpopup(this, this.px, this.py - 60, t('save'), '#5dff7a', 20);
       }
       this.lastHitBy = who;
+      this.hits++;
+      if (this.online && !this.host) this.localHitT = this.time.now;
     }
   }
 
   private wallHit(speed: number, x: number, y: number): void {
-    if (speed < 120 || this.time.now - this.wallSfx < 60) return;
+    if (this.quiet || speed < 120 || this.time.now - this.wallSfx < 60) return;
     this.wallSfx = this.time.now;
     this.sfx('wall', { volume: Math.min(0.6, speed / 2600) });
     if (speed > 600) burst(this, x, y, [0x8b5cff, 0xffffff], 6, 160);
@@ -298,6 +327,12 @@ export class PlayScene extends ArcadeScene {
     this.px += this.pvx * h; this.py += this.pvy * h;
     const inMouth = this.px > GOAL_L && this.px < GOAL_R;
     // goals
+    if (inMouth && (this.py < T - 4 || this.py > B + 4) && this.online && !this.host) {
+      // guest: the host decides about goals; hold the puck in the mouth until it does
+      if (!this.quiet) { this.held = true; this.pvx = this.pvy = 0; }
+      this.py = Phaser.Math.Clamp(this.py, T - 30, B + 30);
+      return true;
+    }
     if (inMouth && this.py < T - 4) { this.goal(true); return true; }
     if (inMouth && this.py > B + 4) { this.goal(false); return true; }
     // side walls
@@ -337,6 +372,7 @@ export class PlayScene extends ArcadeScene {
   // ---------------------------------------------------------------- loop
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
+    if (this.online) { this.updateOnline(dt); return; }
     const c = this.controls;
     // player target: finger or keys
     if (this.pointerId < 0 && (c.axisX || c.axisY)) {
@@ -373,8 +409,11 @@ export class PlayScene extends ArcadeScene {
     }
     this.me.img.setPosition(this.me.x, this.me.y);
     this.cpu.img.setPosition(this.cpu.x, this.cpu.y);
+    this.drawFx(dt);
+  }
 
-    // fx: puck glow ring + goal light
+  /** Puck glow ring + goal light. */
+  private drawFx(dt: number): void {
     const g = this.fxG;
     g.clear();
     this.glow = Math.max(0, this.glow - dt * 4);
@@ -384,5 +423,188 @@ export class PlayScene extends ArcadeScene {
       const y = this.goalFlashTop ? T : B - 120;
       g.fillStyle(this.goalFlashTop ? 0xff4f5e : 0x3ee6ff, this.goalFlash * 0.35).fillRect(GOAL_L - 40, y, GOAL_R - GOAL_L + 80, 120);
     }
+  }
+
+  // ================================================================ online two-player
+  // Host: runs the puck, goals and serves; its mallet is "me", the guest's mallet is "cpu".
+  // Guest: moves its own mallet locally and sends it ('in'); it renders the host's snapshots ('st'),
+  // predicting the puck between snapshots and blending towards the host's state.
+
+  private setupOnline(): void {
+    this.hud.setRight(t('firstTo'));
+    if (this.host) {
+      net.onScene(this, 'in', (d: { m: number[] }) => {
+        this.rx = 720 - d.m[0]; this.ry = MIRROR_Y - d.m[1]; this.rvx = -d.m[2]; this.rvy = -d.m[3]; this.rAt = this.time.now;
+      });
+      net.onScene(this, 'pi', (d: unknown) => net.send('po', d));
+    } else {
+      net.onScene(this, 'st', (d: Snap) => this.applySnap(d));
+      net.onScene(this, 'po', (d: { t: number }) => {
+        const rtt = (this.time.now - d.t) / 1000;
+        if (rtt >= 0 && rtt < 1) this.lat = Phaser.Math.Linear(this.lat, rtt / 2, 0.5);
+      });
+    }
+  }
+
+  /** Host → guest: puck, host mallet, goals, live flag and hit count (host coordinates). */
+  private sendSnap(): void {
+    const r = Math.round;
+    net.send('st', {
+      p: [r(this.px), r(this.py), r(this.pvx), r(this.pvy)],
+      m: [r(this.me.x), r(this.me.y), r(this.me.vx), r(this.me.vy)],
+      k: [this.myGoals, this.cpuGoals],
+      l: this.live ? 1 : 0,
+      h: this.hits,
+    });
+  }
+
+  private updateOnline(dt: number): void {
+    const c = this.controls;
+    if (this.pointerId < 0 && (c.axisX || c.axisY)) {
+      this.tx = this.me.x + c.axisX * 900 * dt * 1.5;
+      this.ty = this.me.y + c.axisY * 900 * dt * 1.5;
+    } else if (this.pointerId < 0) { this.tx = this.me.x; this.ty = this.me.y; }
+    const meSpeed = this.pointerId >= 0 ? 2600 : 900;
+    // the other player's mallet: last report, extrapolated a little
+    const age = Math.min(0.15, (this.time.now - this.rAt) / 1000 + (this.host ? 0 : this.lat));
+    const rtx = this.rx + this.rvx * age, rty = this.ry + this.rvy * age;
+
+    const h = dt / SUB;
+    for (let s = 0; s < SUB; s++) {
+      this.moveMallet(this.me, this.tx, this.ty, meSpeed, h, false);
+      this.moveMallet(this.cpu, rtx, rty, REMOTE_SPEED, h, true);
+      if (!this.live || this.held) continue;
+      if (this.stepPuck(h)) break;
+      this.hitMallet(this.me, 'me');
+      this.hitMallet(this.cpu, 'cpu');
+    }
+    if (this.live) {
+      if (!this.held) {
+        const f = Math.exp(-0.22 * dt);
+        this.pvx *= f; this.pvy *= f;
+        if (this.host && Math.hypot(this.pvx, this.pvy) < 25 && Math.abs(this.py - MID) < PUCK_R + 4) this.pvy += (this.py < MID ? -1 : 1) * 60 * dt;
+      }
+      if (!this.host) {
+        const k = Math.min(1, dt * 12);
+        this.px += this.corrX * k; this.py += this.corrY * k;
+        this.corrX -= this.corrX * k; this.corrY -= this.corrY * k;
+      }
+      this.puck.setPosition(this.px, this.py);
+      this.trail.setPosition(this.px, this.py);
+      this.puck.rotation += this.pvx * dt * 0.004;
+    }
+    this.me.img.setPosition(this.me.x, this.me.y);
+    this.cpu.img.setPosition(this.cpu.x, this.cpu.y);
+    this.drawFx(dt);
+
+    // fixed real-time rate (the scene delta is clamped, so it can lag behind on slow frames)
+    const now = this.time.now;
+    if (now - this.sendT >= SEND_MS) {
+      this.sendT = now - Math.min(SEND_MS, now - this.sendT - SEND_MS);
+      const r = Math.round;
+      if (this.host) this.sendSnap();
+      else net.send('in', { m: [r(this.me.x), r(this.me.y), r(this.me.vx), r(this.me.vy)] });
+    }
+    if (!this.host && now >= this.pingT) { this.pingT = now + 1000; net.send('pi', { t: Math.round(now) }); }
+  }
+
+  /** Host: a goal in the online match. `mine` = the host scored. */
+  private hostGoal(mine: boolean): void {
+    this.live = false;
+    if (mine) this.myGoals++; else this.cpuGoals++;
+    this.goalFx(mine);
+    this.sendSnap();
+    if (this.myGoals >= WIN_GOALS || this.cpuGoals >= WIN_GOALS) { this.finishOnline(); return; }
+    this.serve(mine ? 'cpu' : 'me', 1300);
+    this.sendSnap();
+  }
+
+  private goalFx(mine: boolean): void {
+    this.trail.stop();
+    this.goalFlash = 1;
+    this.goalFlashTop = mine;
+    burst(this, this.px, mine ? T : B, mine ? [0xff4f5e, 0xffd23f, 0xffffff] : [0x3ee6ff, 0xffffff], 60, 600);
+    shake(this, 0.02, 380);
+    this.tweens.add({ targets: this.puck, alpha: 0, scale: 0.4, duration: 250 });
+    if (mine) {
+      this.sfx('goal', { volume: 0.7 });
+      softFlash(this, 0xff4f5e, 200);
+      this.banner(t('goal'), '#ffd23f', 64);
+    } else {
+      this.sfx('concede', { volume: 0.6 });
+      softFlash(this, 0x3ee6ff, 200);
+      this.banner(t('concede'), '#3ee6ff', 44);
+    }
+    this.setScore(this.myGoals);
+    this.updateHud();
+    const txt = mine ? this.myGoalsText : this.cpuGoalsText;
+    txt.setScale(1.8).setAlpha(1);
+    this.tweens.add({ targets: txt, scale: 1, alpha: 0.55, duration: 600, ease: 'Back.easeOut' });
+  }
+
+  /** Both sides: someone reached 7 goals. */
+  private finishOnline(): void {
+    const win = this.myGoals >= WIN_GOALS;
+    this.endGame({ win, title: win ? t('youWin') : t('youLose'), delay: 1400 });
+  }
+
+  /** Guest: a host snapshot arrived (host coordinates → table rotated for the local view). */
+  private applySnap(d: Snap): void {
+    if (this.isOver || !d?.p) return;
+    const now = this.time.now;
+    this.rx = 720 - d.m[0]; this.ry = MIRROR_Y - d.m[1]; this.rvx = -d.m[2]; this.rvy = -d.m[3]; this.rAt = now;
+    const ax = 720 - d.p[0], ay = MIRROR_Y - d.p[1], avx = -d.p[2], avy = -d.p[3];
+
+    const me = d.k[1], opp = d.k[0];
+    if (me !== this.myGoals || opp !== this.cpuGoals) {
+      const mine = me > this.myGoals;
+      this.myGoals = me; this.cpuGoals = opp;
+      this.live = false; this.held = false;
+      this.goalFx(mine);
+      if (me >= WIN_GOALS || opp >= WIN_GOALS) { this.finishOnline(); return; }
+      if (me === WIN_GOALS - 1 || opp === WIN_GOALS - 1) this.banner(t('matchPoint'), '#ffd23f', 36, 520);
+      this.time.delayedCall(650, () => {
+        if (this.isOver) return;
+        this.puck.setScale(0).setAlpha(1);
+        this.tweens.add({ targets: this.puck, scale: 1, duration: 350, ease: 'Back.easeOut' });
+      });
+    }
+
+    const wasLive = this.live;
+    this.live = !!d.l;
+    if (d.h < this.seenHits) this.seenHits = d.h;
+    if (!this.live) {
+      this.px = ax; this.py = ay; this.pvx = this.pvy = 0; this.corrX = this.corrY = 0; this.held = false;
+      this.puck.setPosition(ax, ay);
+      return;
+    }
+    // a mallet hit on the host that we did not predict: let it be heard
+    if (d.h > this.seenHits) {
+      if (now - this.localHitT > 300 && now - this.hitSfx > 70) { this.hitSfx = now; this.sfx('hit', { volume: 0.4 }); this.glow = 1; }
+      this.seenHits = d.h;
+    }
+    // where the puck is on the host right now: advance the snapshot by the one-way latency
+    const save = [this.px, this.py, this.pvx, this.pvy];
+    this.px = ax; this.py = ay; this.pvx = avx; this.pvy = avy;
+    this.quiet = true;
+    const n = Math.ceil(this.lat / 0.006);
+    for (let i = 0; i < n; i++) if (this.stepPuck(this.lat / n)) break;
+    this.quiet = false;
+    const s = [this.px, this.py, this.pvx, this.pvy];
+    [this.px, this.py, this.pvx, this.pvy] = save;
+
+    if (!wasLive || this.held) {
+      [this.px, this.py, this.pvx, this.pvy] = s;
+      this.corrX = this.corrY = 0; this.held = false;
+      if (!wasLive) { this.sfx('serve', { volume: 0.5 }); this.trail.start(); this.puck.setAlpha(1).setScale(1); }
+      return;
+    }
+    // we predicted a mallet hit the host has not confirmed yet: keep our prediction a moment
+    const keepMs = 150 + this.lat * 2000;
+    if (now - this.localHitT < keepMs && s[2] * this.pvx + s[3] * this.pvy < 0) return;
+    this.pvx = s[2]; this.pvy = s[3];
+    const ex = s[0] - this.px, ey = s[1] - this.py;
+    if (Math.hypot(ex, ey) > 120) { this.px = s[0]; this.py = s[1]; this.corrX = this.corrY = 0; }
+    else { this.corrX = ex; this.corrY = ey; }
   }
 }

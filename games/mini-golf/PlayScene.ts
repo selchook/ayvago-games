@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, t, txt, net, upper } from '@core';
 
 type R4 = [number, number, number, number];           // x, y, w, h
 interface Mover { r: R4; ax: number; ay: number; speed: number; phase: number }
@@ -24,6 +24,16 @@ const HOLES: Hole[] = [
   { par: 3, tee: [360, 1120], cup: [360, 290], movers: [{ r: [260, 900, 200, 36], ax: 220, ay: 0, speed: 1.3, phase: 0 }, { r: [260, 580, 200, 36], ax: 220, ay: 0, speed: 1.9, phase: 2 }], bumpers: [[170, 400, 34], [550, 400, 34]], water: [[50, 740, 120, 80], [550, 740, 120, 80]] },
   { par: 5, tee: [120, 1120], cup: [580, 290], walls: [[170, 1000, 500, 30], [50, 780, 500, 30], [170, 560, 500, 30]], water: [[50, 230, 230, 150]], bumpers: [[430, 400, 40]], movers: [{ r: [300, 660, 36, 100], ax: 0, ay: 0, speed: 0, phase: 0 }, { r: [380, 860, 120, 36], ax: 200, ay: 0, speed: 1.4, phase: 1 }] },
 ];
+
+// online: both players play every hole; shots alternate (host first) until both balls are done
+const SEND_MS = 50;              // ~20 ball snapshots per second during a shot
+const TEE_OFF = 16;              // the two balls share the tee mat, side by side
+const OPP_TINT = 0xff8a5a;       // the other player's ball
+/** Shot snapshot: shot number, ball x/y, hole clock (ms), events since the last one (1 wall, 2 bumper, 4 sand, 8 water). */
+interface ShotSnap { n: number; x: number; y: number; h: number; e: number }
+/** Shot result: shot number, rest x/y, strokes on this hole, sunk. */
+interface ShotDone { n: number; x: number; y: number; k: number; s: number }
+interface PState { x: number; y: number; strokes: number; total: number; done: boolean; img: Phaser.GameObjects.Image; shadow: Phaser.GameObjects.Ellipse }
 
 const inRect = (x: number, y: number, r: R4) => x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <= r[1] + r[3];
 
@@ -53,6 +63,22 @@ export class PlayScene extends ArcadeScene {
   private bumperFlash: number[] = [];
   private holeT = 0;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
+  // online
+  private online = false;
+  private seat: 0 | 1 = 0;
+  private ps: PState[] = [];
+  private cur: 0 | 1 = 0;           // whose ball is loaded into bx/by/strokes (the shooter)
+  private shotNo = 0;               // completed shots in the match
+  private turnLive = false;         // the shooter may putt now
+  private inShot = false;           // the shooter's ball is out on a shot
+  private watching = false;         // the other player's shot is being streamed to us
+  private sendT = 0;
+  private ev = 0;
+  private wx = 0; private wy = 0;   // last streamed ball position (watcher)
+  private started = false;
+  private topLine!: Phaser.GameObjects.Text;
+  private meLine!: Phaser.GameObjects.Text;
+  private oppLine!: Phaser.GameObjects.Text;
 
   createGame(): void {
     this.holeIdx = 0; this.strokes = 0; this.totalStrokes = 0; this.moving = false; this.sinking = false; this.between = false;
@@ -66,6 +92,9 @@ export class PlayScene extends ArcadeScene {
     this.ball = this.add.image(0, 0, 'ball').setScale((BR * 2) / 8).setDepth(4);
     this.flag = this.add.image(0, 0, 'flag').setOrigin(0.12, 0.92).setScale(3).setDepth(6);
     this.footer = txt(this, 360, 1240, '', { title: true, size: 22, color: '#f3f2f2' }).setDepth(10);
+    this.online = net.active; this.seat = net.seat; this.ps = []; this.cur = 0; this.shotNo = 0;
+    this.turnLive = false; this.inShot = false; this.watching = false; this.sendT = 0; this.ev = 0; this.started = false;
+    this.useHud = !this.online;
 
     const kb = this.input.keyboard!;
     const K = Phaser.Input.Keyboard.KeyCodes;
@@ -89,10 +118,12 @@ export class PlayScene extends ArcadeScene {
       if (this.dragPower > 0.03) { this.power = this.dragPower; this.putt(this.aimAngle, this.dragPower); }
     });
 
+    if (this.online) { this.setupOnline(); return; }
     this.loadHole(0);
   }
 
   private canPutt(): boolean {
+    if (this.online && !(this.turnLive && this.cur === this.seat && !this.inShot)) return false;
     return !this.moving && !this.sinking && !this.between && !this.isOver;
   }
 
@@ -121,6 +152,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateFooter(): void {
+    if (this.online) { this.updateOnlineText(); return; }
     this.footer.setText(`${t('par')} ${this.hole.par}    ${t('strokes')} ${this.strokes}`);
   }
 
@@ -178,6 +210,7 @@ export class PlayScene extends ArcadeScene {
     this.vx = Math.cos(angle) * sp; this.vy = Math.sin(angle) * sp;
     this.lastX = this.bx; this.lastY = this.by;
     this.moving = true;
+    if (this.online) { this.inShot = true; this.ev = 0; this.sendT = -1e9; }
     this.strokes++; this.totalStrokes++;
     this.updateFooter();
     this.sfx('putt', { volume: 0.4 + power * 0.5 });
@@ -199,23 +232,27 @@ export class PlayScene extends ArcadeScene {
     const vn = rvx * nx + rvy * ny;
     if (vn < 0) {
       this.vx -= (1 + e) * vn * nx; this.vy -= (1 + e) * vn * ny;
-      if (-vn > 60) this.sfx('wall', { volume: Math.min(0.7, -vn / 900) });
+      if (-vn > 60) { this.sfx('wall', { volume: Math.min(0.7, -vn / 900) }); this.ev |= 1; }
       if (!this.moving) this.moving = true;
     }
     return true;
   }
 
-  private step(dt: number): void {
-    const h = this.hole;
-    // movers
+  private stepMovers(dt: number): void {
     this.holeT += dt;
-    (h.movers ?? []).forEach((m, i) => {
+    (this.hole.movers ?? []).forEach((m, i) => {
       const r = this.moverRects[i];
       const nx = m.r[0] + Math.sin(this.holeT * m.speed + m.phase) * m.ax, ny = m.r[1] + Math.sin(this.holeT * m.speed + m.phase) * m.ay;
       this.moverVel[i] = [(nx - r[0]) / dt, (ny - r[1]) / dt];
       r[0] = nx; r[1] = ny;
     });
     this.bumperFlash = this.bumperFlash.map((f) => Math.max(0, f - dt * 5));
+  }
+
+  private step(dt: number): void {
+    const h = this.hole;
+    // movers
+    this.stepMovers(dt);
 
     const speed = Math.hypot(this.vx, this.vy);
     const n = Math.max(1, Math.ceil((speed * dt) / 5));
@@ -223,10 +260,10 @@ export class PlayScene extends ArcadeScene {
     for (let s = 0; s < n && !this.sinking; s++) {
       this.bx += this.vx * sdt; this.by += this.vy * sdt;
       // outer bounds
-      if (this.bx < B[0] + BR) { this.bx = B[0] + BR; this.vx = Math.abs(this.vx) * 0.75; this.sfx('wall', { volume: 0.3 }); }
-      if (this.bx > B[0] + B[2] - BR) { this.bx = B[0] + B[2] - BR; this.vx = -Math.abs(this.vx) * 0.75; this.sfx('wall', { volume: 0.3 }); }
-      if (this.by < B[1] + BR) { this.by = B[1] + BR; this.vy = Math.abs(this.vy) * 0.75; this.sfx('wall', { volume: 0.3 }); }
-      if (this.by > B[1] + B[3] - BR) { this.by = B[1] + B[3] - BR; this.vy = -Math.abs(this.vy) * 0.75; this.sfx('wall', { volume: 0.3 }); }
+      if (this.bx < B[0] + BR) { this.bx = B[0] + BR; this.vx = Math.abs(this.vx) * 0.75; this.sfx('wall', { volume: 0.3 }); this.ev |= 1; }
+      if (this.bx > B[0] + B[2] - BR) { this.bx = B[0] + B[2] - BR; this.vx = -Math.abs(this.vx) * 0.75; this.sfx('wall', { volume: 0.3 }); this.ev |= 1; }
+      if (this.by < B[1] + BR) { this.by = B[1] + BR; this.vy = Math.abs(this.vy) * 0.75; this.sfx('wall', { volume: 0.3 }); this.ev |= 1; }
+      if (this.by > B[1] + B[3] - BR) { this.by = B[1] + B[3] - BR; this.vy = -Math.abs(this.vy) * 0.75; this.sfx('wall', { volume: 0.3 }); this.ev |= 1; }
       for (const w of h.walls ?? []) this.bounceRect(w, 0.75);
       this.moverRects.forEach((r, i) => { if (this.bounceRect(r, 0.8, this.moverVel[i])) shake(this, 0.003, 60); });
       (h.bumpers ?? []).forEach((b, i) => {
@@ -241,6 +278,7 @@ export class PlayScene extends ArcadeScene {
           const k = sp / Math.hypot(this.vx, this.vy);
           this.vx *= k; this.vy *= k;
           this.bumperFlash[i] = 1;
+          this.ev |= 2;
           this.sfx('bumper', { volume: 0.5 });
           burst(this, b[0] + nx * b[2], b[1] + ny * b[2], [0xffd23f, 0xffffff], 8, 180);
         }
@@ -259,22 +297,25 @@ export class PlayScene extends ArcadeScene {
     const inSand = (h.sand ?? []).some((s) => inRect(this.bx, this.by, s));
     const k = inSand ? 3.2 : 0.9, c = inSand ? 220 : 55;
     let sp = Math.hypot(this.vx, this.vy);
-    if (inSand && sp > 200 && Math.random() < dt * 8) this.sfx('sand', { volume: 0.3 });
+    if (inSand && sp > 200 && Math.random() < dt * 8) { this.sfx('sand', { volume: 0.3 }); this.ev |= 4; }
     const nsp = Math.max(0, sp * Math.exp(-k * dt) - c * dt);
     if (sp > 0) { this.vx *= nsp / sp; this.vy *= nsp / sp; }
     sp = nsp;
 
     // water
-    if ((h.water ?? []).some((w) => inRect(this.bx, this.by, w))) { this.splash(); return; }
+    // (only once per drop; the ball sits in the water until it is put back)
+    if (!this.between && (h.water ?? []).some((w) => inRect(this.bx, this.by, w))) { this.splash(); return; }
     if (sp < 6 && this.moving) {
       this.vx = this.vy = 0;
       this.moving = false;
-      if (this.strokes >= MAX_STROKES) this.finishHole(false);
+      if (this.online) this.shotEnded(false);
+      else if (this.strokes >= MAX_STROKES) this.finishHole(false);
     }
   }
 
   private splash(): void {
     this.moving = false; this.vx = this.vy = 0;
+    if (this.online) { this.ev |= 8; this.streamShot(true); }
     this.sfx('splash', { volume: 0.7 });
     burst(this, this.bx, this.by, [0x6fc3ff, 0xffffff, 0x1f6fb5], 24, 220);
     popup(this, this.bx, this.by - 30, t('water'), '#6fc3ff', 22);
@@ -287,13 +328,20 @@ export class PlayScene extends ArcadeScene {
       this.ball.setAlpha(1).setScale(0.1);
       this.tweens.add({ targets: this.ball, scale: (BR * 2) / 8, duration: 250, ease: 'Back.easeOut' });
       this.between = false;
-      if (this.strokes >= MAX_STROKES) this.finishHole(false);
+      if (this.online) this.shotEnded(false);
+      else if (this.strokes >= MAX_STROKES) this.finishHole(false);
     });
   }
 
   private sink(): void {
     this.sinking = true; this.moving = false; this.vx = this.vy = 0;
     const [cx, cy] = this.hole.cup;
+    if (this.online) {
+      this.sinkFx(this.ball);
+      this.bx = cx; this.by = cy;
+      this.time.delayedCall(260, () => this.shotEnded(true));
+      return;
+    }
     this.sfx('cup', { volume: 0.8 });
     this.tweens.add({ targets: this.ball, x: cx, y: cy, scale: 1, alpha: 0.4, duration: 220, ease: 'Quad.easeIn' });
     this.bx = cx; this.by = cy;
@@ -334,6 +382,7 @@ export class PlayScene extends ArcadeScene {
   // ---------- loop ----------
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
+    if (this.online) { this.updateOnline(dt); return; }
     if (!this.sinking) this.step(dt);
     if (this.canPutt()) {
       const k = this.keys;
@@ -361,5 +410,256 @@ export class PlayScene extends ArcadeScene {
     const tx = this.bx + cx * len, ty = this.by + cy * len;
     g.fillStyle(col).fillTriangle(tx + cx * 16, ty + cy * 16, tx - cy * 11, ty + cx * 11, tx + cy * 11, ty - cx * 11);
     g.lineStyle(2, 0xffffff, 0.5 + Math.sin(this.elapsed * 6) * 0.3).strokeCircle(this.bx, this.by, BR + 8);
+  }
+
+  // ================================================================ online two-player
+  // Both players play the same nine holes with their own ball; on each hole the shots alternate
+  // (host first) until both balls are down or out of strokes. The shooter simulates its shot and
+  // streams the ball ('gs', ~20/s), then reports where it came to rest ('gd'). Lowest total wins.
+
+  private oppName(): string {
+    return upper(net.peerName || t('opponent')).slice(0, 10);
+  }
+
+  private setupOnline(): void {
+    this.ps = ([0, 1] as const).map((seat) => {
+      const img = seat === 0 ? this.ball : this.add.image(0, 0, 'ball').setScale((BR * 2) / 8).setDepth(4);
+      const shadow = seat === 0 ? this.ballShadow : this.add.ellipse(0, 0, 26, 14, 0x000000, 0.3).setDepth(3);
+      if (seat !== this.seat) img.setTint(OPP_TINT);
+      return { x: 0, y: 0, strokes: 0, total: 0, done: false, img, shadow };
+    });
+    this.topLine = txt(this, 360, 42, '', { title: true, size: 22, color: '#ffd23f' }).setDepth(10).setScrollFactor(0);
+    this.meLine = txt(this, 190, 98, '', { title: true, size: 20, color: '#ffffff' }).setDepth(10).setScrollFactor(0);
+    this.oppLine = txt(this, 530, 98, '', { title: true, size: 20, color: '#ffb38a' }).setDepth(10).setScrollFactor(0);
+    net.onScene(this, 'gs', (d: ShotSnap) => this.onShotSnap(d));
+    net.onScene(this, 'gd', (d: ShotDone) => this.onShotDone(d));
+    this.loadHoleOnline(0);
+    if (net.isHost) {
+      // first shot once the guest's course is up (or after 2.5 s at the latest)
+      const go = () => {
+        if (this.started || this.isOver) return;
+        this.started = true;
+        this.beginShotTurn(0);
+      };
+      net.onScene(this, 'hi', go);
+      this.time.delayedCall(2500, go);
+    } else {
+      net.send('hi', 1);
+      this.started = true;
+      this.beginShotTurn(0);
+    }
+  }
+
+  private loadHoleOnline(i: number): void {
+    this.loadHole(i);
+    const [tx, ty] = this.hole.tee;
+    this.ps.forEach((p, seat) => {
+      p.x = tx + (seat ? TEE_OFF : -TEE_OFF); p.y = ty; p.strokes = 0; p.done = false;
+      this.tweens.killTweensOf(p.img);
+      p.img.setAlpha(1).setScale((BR * 2) / 8).setPosition(p.x, p.y);
+    });
+    this.loadPlayer(0);
+    this.turnLive = false; this.inShot = false; this.watching = false;
+    this.updateOnlineText();
+  }
+
+  /** Loads a player's ball into the single-ball physics state. */
+  private loadPlayer(seat: 0 | 1): void {
+    const p = this.ps[seat];
+    this.cur = seat;
+    this.ball = p.img; this.ballShadow = p.shadow;
+    this.bx = p.x; this.by = p.y; this.lastX = p.x; this.lastY = p.y;
+    this.vx = this.vy = 0;
+    this.strokes = p.strokes;
+    this.moving = false; this.sinking = false; this.between = false;
+    this.dragging = null;
+    this.aimAngle = Math.atan2(this.hole.cup[1] - this.by, this.hole.cup[0] - this.bx);
+    p.img.setDepth(4.5);
+    this.ps[1 - seat].img.setDepth(4);
+  }
+
+  private beginShotTurn(seat: 0 | 1): void {
+    if (this.isOver || this.watching) return;
+    const was = this.cur;
+    this.loadPlayer(seat);
+    this.turnLive = true;
+    this.updateOnlineText();
+    if (seat === this.seat && (was !== seat || this.strokes === 0)) {
+      popup(this, this.bx, this.by - 50, t('yourTurn'), '#5dff7a', 22);
+      this.sfx('next', { volume: 0.3 });
+    }
+  }
+
+  private updateOnlineText(): void {
+    if (!this.ps.length || !this.topLine) return;
+    const me = this.ps[this.seat], op = this.ps[1 - this.seat];
+    this.topLine.setText(`${t('hole')} ${this.holeIdx + 1}/9 · ${t('par')} ${this.hole.par}`);
+    this.meLine.setText(`${t('you')} ${me.total}`);
+    this.oppLine.setText(`${this.oppName()} ${op.total}`);
+    const mine = this.cur === this.seat;
+    this.footer.setText(`${mine ? t('yourTurn') : t('theirTurn')} · ${t('strokes')} ${this.strokes}`).setColor(mine ? '#5dff7a' : '#ffb38a');
+  }
+
+  private updateOnline(dt: number): void {
+    const shooting = this.inShot && this.cur === this.seat;
+    if (shooting) {
+      if (!this.sinking) this.step(dt);
+      if (this.inShot) this.streamShot(false);
+    } else {
+      this.stepMovers(dt);
+      if (this.watching && !this.sinking) {
+        const k = Math.min(1, dt * 15);
+        this.bx += (this.wx - this.bx) * k; this.by += (this.wy - this.by) * k;
+      }
+    }
+    if (this.canPutt()) {
+      const k = this.keys;
+      const ax = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
+      const ay = (k.up.isDown || k.w.isDown ? 1 : 0) - (k.down.isDown || k.s.isDown ? 1 : 0);
+      this.aimAngle += ax * 2.2 * dt;
+      this.power = Phaser.Math.Clamp(this.power + ay * 0.7 * dt, 0.05, 1);
+    }
+    if (!this.sinking) this.ball.setPosition(this.bx, this.by);
+    for (const p of this.ps) p.shadow.setPosition(p.img.x + 3, p.img.y + 5).setVisible(p.img.alpha > 0.5 && p.img.scale > 2);
+    this.flag.setAngle(Math.sin(this.elapsed * 3) * 4);
+    this.drawDynamic();
+    this.drawAim();
+  }
+
+  /** Shooter: ball snapshot to the other player. */
+  private streamShot(force: boolean): void {
+    const now = this.time.now;
+    if (!force && now - this.sendT < SEND_MS) return;
+    this.sendT = now;
+    net.send('gs', { n: this.shotNo, x: Math.round(this.bx), y: Math.round(this.by), h: Math.round(this.holeT * 1000), e: this.ev });
+    this.ev = 0;
+  }
+
+  /** Shooter: the ball is at rest (or in the cup): report it, then both sides move on. */
+  private shotEnded(sunk: boolean): void {
+    if (!this.inShot || this.cur !== this.seat || this.isOver) return;
+    this.bx = Math.round(this.bx); this.by = Math.round(this.by);
+    this.streamShot(true);
+    net.send('gd', { n: this.shotNo, x: this.bx, y: this.by, k: this.strokes, s: sunk ? 1 : 0 });
+    this.resolveShot(sunk);
+  }
+
+  /** Watcher: the shooter's ball in flight. */
+  private onShotSnap(d: ShotSnap): void {
+    if (this.isOver || this.cur === this.seat || d.n !== this.shotNo) return;
+    if (!this.watching) {
+      this.watching = true;
+      this.turnLive = false;
+      this.strokes++;
+      this.updateOnlineText();
+      this.sfx('putt', { volume: 0.6 });
+      burst(this, this.bx, this.by, [0xffffff, 0x8ee28f], 6, 120);
+    }
+    this.wx = d.x; this.wy = d.y;
+    const h = d.h / 1000;
+    if (Math.abs(h - this.holeT) > 0.08) this.holeT = h;
+    if (d.e & 1) this.sfx('wall', { volume: 0.4 });
+    if (d.e & 2) {
+      this.sfx('bumper', { volume: 0.5 });
+      (this.hole.bumpers ?? []).forEach((b, i) => {
+        if (Math.hypot(d.x - b[0], d.y - b[1]) < b[2] + BR + 40) { this.bumperFlash[i] = 1; burst(this, d.x, d.y, [0xffd23f, 0xffffff], 8, 180); }
+      });
+    }
+    if (d.e & 4) this.sfx('sand', { volume: 0.3 });
+    if (d.e & 8) {
+      this.bx = d.x; this.by = d.y;
+      this.sfx('splash', { volume: 0.7 });
+      burst(this, d.x, d.y, [0x6fc3ff, 0xffffff, 0x1f6fb5], 24, 220);
+      popup(this, d.x, d.y - 30, t('water'), '#6fc3ff', 22);
+      this.strokes++;
+      this.updateOnlineText();
+      this.ball.setAlpha(0);
+    }
+  }
+
+  /** Watcher: where the shooter's ball came to rest. */
+  private onShotDone(d: ShotDone): void {
+    if (this.isOver || this.cur === this.seat || d.n !== this.shotNo) return;
+    this.watching = false;
+    this.strokes = d.k;
+    if (d.s) {
+      this.sinking = true;
+      this.sinkFx(this.ball);
+      [this.bx, this.by] = this.hole.cup;
+    } else {
+      this.bx = d.x; this.by = d.y;
+      if (this.ball.alpha < 0.5) {
+        this.ball.setAlpha(1).setScale(0.1);
+        this.tweens.add({ targets: this.ball, scale: (BR * 2) / 8, duration: 250, ease: 'Back.easeOut' });
+      }
+    }
+    this.resolveShot(d.s === 1);
+  }
+
+  private sinkFx(img: Phaser.GameObjects.Image): void {
+    const [cx, cy] = this.hole.cup;
+    this.sfx('cup', { volume: 0.8 });
+    this.tweens.add({ targets: img, x: cx, y: cy, scale: 1, alpha: 0.4, duration: 220, ease: 'Quad.easeIn' });
+  }
+
+  /** Both sides: a shot is over; score it and pick the next shooter (or the next hole). */
+  private resolveShot(sunk: boolean): void {
+    this.shotNo++;
+    this.inShot = false; this.watching = false; this.turnLive = false;
+    const p = this.ps[this.cur];
+    p.total += this.strokes - p.strokes;
+    p.strokes = this.strokes;
+    p.x = this.bx; p.y = this.by;
+    if (sunk || p.strokes >= MAX_STROKES) { p.done = true; this.holeResult(this.cur, sunk); }
+    this.updateOnlineText();
+    if (this.ps[0].done && this.ps[1].done) { this.time.delayedCall(1800, () => this.nextHoleOnline()); return; }
+    const other = (1 - this.cur) as 0 | 1;
+    const next = this.ps[other].done ? this.cur : other;
+    this.time.delayedCall(sunk ? 900 : 500, () => this.beginShotTurn(next));
+  }
+
+  private holeResult(seat: number, sunk: boolean): void {
+    const p = this.ps[seat];
+    const diff = p.strokes - this.hole.par;
+    let label: string, color = '#f3f2f2';
+    if (!sunk) { label = t('maxed'); color = '#ec3013'; }
+    else if (p.strokes === 1) { label = t('ace'); color = '#ffd23f'; }
+    else if (diff <= -3) { label = t('albatross'); color = '#ffd23f'; }
+    else if (diff === -2) { label = t('eagle'); color = '#5dff7a'; }
+    else if (diff === -1) { label = t('birdie'); color = '#5dff7a'; }
+    else if (diff === 0) { label = t('parName'); color = '#3ee6ff'; }
+    else if (diff === 1) label = t('bogey');
+    else if (diff === 2) label = t('dbogey');
+    else { label = `+${diff}`; color = '#ec3013'; }
+    if (!sunk) this.tweens.add({ targets: p.img, alpha: 0, duration: 400 });
+    const [cx, cy] = this.hole.cup;
+    if (seat === this.seat) {
+      if (sunk && diff < 0) { this.sfx('great', { volume: 0.6 }); flash(this, 0xffd23f, 150); shake(this, 0.008, 160); }
+      else if (!sunk || diff > 1) this.sfx('bad', { volume: 0.4 });
+      burst(this, cx, cy, sunk && diff < 0 ? [0xffd23f, 0x5dff7a, 0xffffff] : [0xffffff], sunk && diff < 0 ? 40 : 14, 320);
+      const lt = txt(this, 360, 640, label, { title: true, size: 44, color, wrap: 640 }).setDepth(20).setScale(0.2);
+      this.tweens.add({ targets: lt, scale: 1, duration: 320, ease: 'Back.easeOut', hold: 900, yoyo: true, onComplete: () => lt.destroy() });
+    } else {
+      burst(this, cx, cy, [0xffb38a, 0xffffff], 14, 260);
+      popup(this, 360, 600, `${this.oppName()}: ${label}`, '#ffb38a', 26);
+    }
+  }
+
+  private nextHoleOnline(): void {
+    if (this.isOver) return;
+    if (this.holeIdx >= HOLES.length - 1) { this.finishOnline(); return; }
+    this.sfx('next', { volume: 0.5 });
+    this.loadHoleOnline(this.holeIdx + 1);
+    this.time.delayedCall(500, () => this.beginShotTurn(0));
+  }
+
+  private finishOnline(): void {
+    const me = this.ps[this.seat].total, opp = this.ps[1 - this.seat].total;
+    this.setScore(me);
+    const tl = txt(this, 360, 740, t('total', { n: me }), { title: true, size: 22, color: '#ffd23f' }).setDepth(20);
+    tl.setAlpha(0);
+    this.tweens.add({ targets: tl, alpha: 1, duration: 300 });
+    const win = me < opp;
+    this.endGame({ win, title: me === opp ? t('draw') : win ? t('youWin') : t('youLose'), delay: 1200 });
   }
 }

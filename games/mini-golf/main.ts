@@ -36,11 +36,11 @@ launch({
   strings: {
     tr: {
       hole: 'DELİK', par: 'PAR', strokes: 'VURUŞ', ace: 'TEK VURUŞ!', albatross: 'ALBATROS!', eagle: 'KARTAL!', birdie: 'BİRDİ!',
-      parName: 'PAR', bogey: 'BOGİ', dbogey: 'ÇİFT BOGİ', over: 'SONRAKİ DELİĞE', water: 'SUYA DÜŞTÜ! +1', finish: 'PARKUR TAMAM!', total: 'TOPLAM {n} VURUŞ',
+      parName: 'PAR', bogey: 'BOGİ', dbogey: 'ÇİFT BOGİ', over: 'SONRAKİ DELİĞE', water: 'SUYA DÜŞTÜ! +1', finish: 'PARKUR TAMAM!', total: 'TOPLAM {n} VURUŞ', maxed: 'VURUŞ HAKKI BİTTİ',
     },
     en: {
       hole: 'HOLE', par: 'PAR', strokes: 'STROKES', ace: 'HOLE IN ONE!', albatross: 'ALBATROSS!', eagle: 'EAGLE!', birdie: 'BIRDIE!',
-      parName: 'PAR', bogey: 'BOGEY', dbogey: 'DOUBLE BOGEY', over: 'NEXT HOLE', water: 'IN THE WATER! +1', finish: 'COURSE CLEAR!', total: 'TOTAL {n} STROKES',
+      parName: 'PAR', bogey: 'BOGEY', dbogey: 'DOUBLE BOGEY', over: 'NEXT HOLE', water: 'IN THE WATER! +1', finish: 'COURSE CLEAR!', total: 'TOTAL {n} STROKES', maxed: 'OUT OF STROKES',
     },
   },
 });

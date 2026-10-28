@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, t, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, t, rng, net, upper } from '@core';
 import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Lane geometry (720 x 1280 world, top-down, pins at the top)
@@ -13,7 +13,16 @@ const SPOTS: Array<[number, number]> = [
 // card layout
 const CARD_X = 24, CARD_Y = 94, FW = 64, LAST_W = 96, CARD_H = 86;
 
+// online card: two rows (own row on top), no core HUD
+const ON_X = 80, ON_FW = 60, ON_LAST = 90, ON_Y = [10, 80], ON_BOX = 30, ON_ROW = 62;
+const SEND_MS = 50;           // ~20 snapshots per second while a throw is on
+
 type Phase = 'position' | 'power' | 'spin' | 'rolling' | 'settle' | 'wait';
+const PHASES: Phase[] = ['position', 'power', 'spin', 'rolling', 'settle', 'wait'];
+/** Throw snapshot: turn number, phase, ball [x, y, gone], aim/power/spin ×1000, pins [x, y, state, angle]×10. */
+interface ThrowSnap { t: number; ph: number; b: number[]; a: number; w: number; s: number; p?: number[] }
+/** Final result of a roll: turn number, pins knocked, bitmask of the pins still standing, gutter ball. */
+interface RollMsg { t: number; k: number; u: number; g: number }
 interface Pin { i: number; x: number; y: number; vx: number; vy: number; up: boolean; out: boolean; img: Phaser.GameObjects.Image; hitSfx: number }
 
 export function makeBowlingTextures(scene: Phaser.Scene): void {
@@ -61,6 +70,20 @@ export class PlayScene extends ArcadeScene {
   private dragMoved = false;
   private rollSfxT = 0;
   private crashPlayed = false;
+  // online: players alternate frames (host first); the thrower is authoritative for its throw
+  private online = false;
+  private seat: 0 | 1 = 0;
+  private turnSeat: 0 | 1 = 0;
+  private turnNo = 0;                         // frame * 2 + seat of the frame being bowled
+  private allFrames: number[][][] = [[], []];
+  private rowMarks: Phaser.GameObjects.Text[][] = [[], []];
+  private rowTotals: Phaser.GameObjects.Text[][] = [[], []];
+  private runs: number[] = [0, 0];
+  private turnText!: Phaser.GameObjects.Text;
+  private sendT = 0;
+  private started = false;
+  private watchBx = LANE_C; private watchBy = BALL_Y;
+  private pinTargets: number[] | null = null;
 
   createGame(): void {
     freshTextCanvases(this);
@@ -71,12 +94,16 @@ export class PlayScene extends ArcadeScene {
     this.bx = LANE_C; this.by = BALL_Y; this.bvx = this.bvy = 0; this.aim = this.power = this.spin = 0;
     this.gutter = false; this.ballGone = false; this.settleT = 0; this.strikeRun = 0;
     this.dragId = -1; this.dragMoved = false; this.rollSfxT = 0; this.crashPlayed = false;
+    this.online = net.active; this.seat = net.seat; this.turnSeat = 0; this.turnNo = 0;
+    this.allFrames = [[], []]; this.rowMarks = [[], []]; this.rowTotals = [[], []]; this.runs = [0, 0];
+    this.sendT = 0; this.started = false; this.watchBx = LANE_C; this.watchBy = BALL_Y; this.pinTargets = null;
+    this.useHud = !this.online;
 
     this.laneG = this.add.graphics().setDepth(0);
     this.cardG = this.add.graphics().setDepth(10);
     this.fxG = this.add.graphics().setDepth(4);
     this.drawLane();
-    this.buildCard();
+    if (this.online) this.buildOnlineCard(); else this.buildCard();
     this.ball = this.add.image(this.bx, this.by, 'ball').setDisplaySize(BALL_R * 2, BALL_R * 2).setDepth(5);
     this.hint = ftxt(this, 360, 1196, '', { size: 26, color: '#ffd23f' }).setDepth(12);
 
@@ -87,7 +114,7 @@ export class PlayScene extends ArcadeScene {
       this.dragId = p.id; this.dragStartX = p.x; this.dragBallX = this.bx; this.dragMoved = false;
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (p.id !== this.dragId || !p.isDown || this.phase !== 'position') return;
+      if (p.id !== this.dragId || !p.isDown || this.phase !== 'position' || !this.myTurn()) return;
       if (Math.abs(p.x - this.dragStartX) > 14) this.dragMoved = true;
       if (this.dragMoved) this.bx = this.clampBallX(this.dragBallX + (p.x - this.dragStartX));
     });
@@ -99,6 +126,7 @@ export class PlayScene extends ArcadeScene {
 
     this.hud.setRight(`${t('frame')} 1/10`);
     this.rack(true);
+    if (this.online) { this.setupOnline(); return; }
     this.time.delayedCall(700, () => this.newThrow());
   }
 
@@ -219,7 +247,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private lock(): void {
-    if (this.isOver) return;
+    if (this.isOver || !this.myTurn()) return;
     if (this.phase === 'position') {
       this.phase = 'power'; this.phaseT = 0;
       this.hint.setText(t('powerHint'));
@@ -248,6 +276,12 @@ export class PlayScene extends ArcadeScene {
 
   private onRollDone(): void {
     const knocked = this.standingAtThrow - this.standingCount();
+    if (this.online) this.sendRoll(knocked);
+    this.resolveRoll(knocked);
+  }
+
+  /** Records a roll of the current player, shows the feedback and moves the game on. */
+  private resolveRoll(knocked: number): void {
     const f = (this.frames[this.frame] ??= []);
     f.push(knocked);
     const first = f.length === 1;
@@ -298,6 +332,7 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'wait';
     this.time.delayedCall(1100, () => {
       if (this.isOver) return;
+      if (this.online) { this.advanceOnline(frameDone, resetRack); return; }
       if (frameDone) {
         if (this.frame === 9) { this.finish(); return; }
         this.frame++;
@@ -392,6 +427,7 @@ export class PlayScene extends ArcadeScene {
     const tots = this.computeTotals();
     tots.forEach((v, f) => this.totals[f].setText(v === null ? '' : String(v)));
     const last = tots.filter((v) => v !== null).pop();
+    if (this.online) { this.updateOnlineTotals(); return; }
     this.setScore((last as number | undefined) ?? 0);
   }
 
@@ -504,6 +540,7 @@ export class PlayScene extends ArcadeScene {
   // ---------------------------------------------------------------- loop
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
+    if (this.online && !this.myTurn()) { this.watchUpdate(dt); return; }
     this.phaseT += dt;
     const sp = this.meterSpeed();
     const c = this.controls;
@@ -534,14 +571,20 @@ export class PlayScene extends ArcadeScene {
     }
     if (this.phase === 'position' || this.phase === 'power' || this.phase === 'spin') this.ball.setPosition(this.bx, this.by);
     this.drawFx();
+    if (this.online && this.started) this.streamThrow();
   }
 
   private drawFx(): void {
     const g = this.fxG;
     g.clear();
     // current frame highlight on the card
-    const fx = CARD_X + this.frame * FW, fw = this.frame === 9 ? LAST_W : FW;
-    g.lineStyle(5, 0xec3013, 0.6 + Math.sin(this.elapsed * 6) * 0.3).strokeRect(fx - 2, CARD_Y - 2, fw + 4, CARD_H + 4);
+    if (this.online) {
+      const fx = ON_X + this.frame * ON_FW, fw = this.frame === 9 ? ON_LAST : ON_FW, fy = ON_Y[this.turnSeat === this.seat ? 0 : 1];
+      g.lineStyle(5, 0xec3013, 0.6 + Math.sin(this.elapsed * 6) * 0.3).strokeRect(fx - 2, fy - 2, fw + 4, ON_ROW + 4);
+    } else {
+      const fx = CARD_X + this.frame * FW, fw = this.frame === 9 ? LAST_W : FW;
+      g.lineStyle(5, 0xec3013, 0.6 + Math.sin(this.elapsed * 6) * 0.3).strokeRect(fx - 2, CARD_Y - 2, fw + 4, CARD_H + 4);
+    }
     g.setDepth(12);
     const aiming = this.phase === 'position' || this.phase === 'power' || this.phase === 'spin';
     if (aiming) {
@@ -577,5 +620,229 @@ export class PlayScene extends ArcadeScene {
       const mx = 105 + (sx - 360) * 0.75, my = 720 + (sy - 380) * 0.75;
       g.fillStyle(p.up && !p.out ? 0xffffff : 0x4a3d5c, 1).fillCircle(mx, my, 9);
     }
+  }
+
+  // ================================================================ online two-player
+  // Players alternate frames (host first), 10 frames each, on one two-row scorecard. The thrower
+  // simulates its own throw and streams snapshots ('bs', ~20/s) to the watcher, then sends the
+  // final pin result ('roll'); both sides then score and advance with the same rules.
+
+  private myTurn(): boolean {
+    return !this.online || this.turnSeat === this.seat;
+  }
+
+  private setupOnline(): void {
+    this.turnText = ftxt(this, 360, 164, '', { title: true, size: 18, color: '#ffd23f' }).setDepth(12);
+    net.onScene(this, 'bs', (d: ThrowSnap) => this.applyThrowSnap(d));
+    net.onScene(this, 'roll', (d: RollMsg) => this.applyRoll(d));
+    this.selectTurn(0, 0);
+    if (net.isHost) {
+      // first throw once the guest's table is up (or after 2.5 s at the latest)
+      const go = () => {
+        if (this.started || this.isOver) return;
+        this.started = true;
+        this.beginTurn();
+      };
+      net.onScene(this, 'hi', go);
+      this.time.delayedCall(2500, go);
+    } else {
+      net.send('hi', 1);
+      this.started = true;
+      this.beginTurn();
+    }
+  }
+
+  private buildOnlineCard(): void {
+    const g = this.cardG;
+    g.clear();
+    for (const seat of [0, 1] as const) {
+      const mine = seat === this.seat;
+      const y = ON_Y[mine ? 0 : 1];
+      g.fillStyle(mine ? 0x5dff7a : 0x3ee6ff, 1).fillRect(8, y, ON_X - 12, ON_ROW);
+      g.lineStyle(3, 0x201e1d, 1).strokeRect(8, y, ON_X - 12, ON_ROW);
+      const name = mine ? t('you') : upper(net.peerName || t('opponent')).slice(0, 5);
+      ftxt(this, 8 + (ON_X - 12) / 2, y + ON_ROW / 2, name, { title: true, size: 12, color: '#201e1d', strokeThickness: 0, shadow: false }).setDepth(11);
+      for (let f = 0; f < 10; f++) {
+        const x = ON_X + f * ON_FW, w = f === 9 ? ON_LAST : ON_FW;
+        g.fillStyle(0xf3f2f2, 1).fillRect(x, y, w, ON_ROW);
+        g.lineStyle(3, 0x201e1d, 1).strokeRect(x, y, w, ON_ROW);
+        const boxes = f === 9 ? 3 : 2;
+        const bw = f === 9 ? 30 : 28;
+        for (let b = 0; b < boxes; b++) {
+          const bx = x + w - (boxes - b) * bw;
+          g.lineStyle(2, 0x201e1d, 1).strokeRect(bx, y, bw, ON_BOX);
+          this.rowMarks[seat].push(ftxt(this, bx + bw / 2, y + 16, '', { title: true, size: 14, color: '#201e1d', strokeThickness: 0, shadow: false }).setDepth(11));
+        }
+        this.rowTotals[seat].push(ftxt(this, x + w / 2, y + 47, '', { title: true, size: 16, color: '#201e1d', strokeThickness: 0, shadow: false }).setDepth(11));
+      }
+    }
+  }
+
+  /** Points the single-player bookkeeping (frames, card row, strike run) at the given player. */
+  private selectTurn(seat: 0 | 1, frame: number): void {
+    this.runs[this.turnSeat] = this.strikeRun;
+    this.turnSeat = seat;
+    this.frame = frame;
+    this.turnNo = frame * 2 + seat;
+    this.frames = this.allFrames[seat];
+    this.marks = this.rowMarks[seat];
+    this.totals = this.rowTotals[seat];
+    this.strikeRun = this.runs[seat];
+    const mine = seat === this.seat;
+    this.turnText.setText(`${t('frame')} ${frame + 1}/10 · ${mine ? t('yourTurn') : t('theirTurn')}`).setColor(mine ? '#5dff7a' : '#3ee6ff');
+  }
+
+  /** Next ball: the thrower starts aiming, the other side watches. */
+  private beginTurn(): void {
+    if (this.isOver) return;
+    if (this.myTurn()) { this.newThrow(); return; }
+    this.phase = 'wait';
+    this.gutter = false; this.ballGone = false; this.crashPlayed = false;
+    this.pinTargets = null;
+    this.standingAtThrow = this.standingCount();
+    this.ball.setAlpha(0).setAngle(0).setDisplaySize(BALL_R * 2, BALL_R * 2);
+    this.hint.setText(t('theirTurn'));
+  }
+
+  private advanceOnline(frameDone: boolean, resetRack: boolean): void {
+    if (frameDone) {
+      if (this.turnSeat === 1 && this.frame === 9) { this.finishOnline(); return; }
+      const next: 0 | 1 = this.turnSeat === 0 ? 1 : 0;
+      this.selectTurn(next, next === 0 ? this.frame + 1 : this.frame);
+      this.rack(true);
+      const mine = next === this.seat;
+      this.turnText.setScale(1.5);
+      this.tweens.add({ targets: this.turnText, scale: 1, duration: 400, ease: 'Back.easeOut' });
+      fpopup(this, 360, 1000, mine ? t('yourTurn') : t('theirTurn'), mine ? '#5dff7a' : '#3ee6ff', 30);
+    } else this.rack(resetRack);
+    this.time.delayedCall(450, () => this.beginTurn());
+  }
+
+  private totalOf(seat: number): number {
+    const keep = this.frames;
+    this.frames = this.allFrames[seat];
+    const v = this.computeTotals().filter((x) => x !== null).pop();
+    this.frames = keep;
+    return (v as number | undefined) ?? 0;
+  }
+
+  private updateOnlineTotals(): void {
+    this.setScore(this.totalOf(this.seat));
+  }
+
+  private finishOnline(): void {
+    const me = this.totalOf(this.seat), opp = this.totalOf(1 - this.seat);
+    this.setScore(me);
+    const win = me > opp;
+    this.endGame({ win, title: me === opp ? t('draw') : win ? t('youWin') : t('youLose'), delay: 700 });
+  }
+
+  /** Thrower: stream the throw (aim, meters, ball and pins) to the watcher. */
+  private streamThrow(): void {
+    if (this.phase === 'wait') return;
+    const now = this.time.now;
+    if (now - this.sendT < SEND_MS) return;
+    this.sendT = now;
+    const r = Math.round;
+    const d: ThrowSnap = {
+      t: this.turnNo, ph: PHASES.indexOf(this.phase), b: [r(this.bx), r(this.by), this.ballGone ? 1 : 0],
+      a: r(this.aim * 1000), w: r(this.power * 1000), s: r(this.spin * 1000),
+    };
+    if (this.phase === 'rolling' || this.phase === 'settle') d.p = this.pins.flatMap((p) => [r(p.x), r(p.y), p.out ? 2 : p.up ? 0 : 1, r(p.img.angle)]);
+    net.send('bs', d);
+  }
+
+  private sendRoll(knocked: number): void {
+    let mask = 0;
+    this.pins.forEach((p, i) => { if (p.up && !p.out) mask |= 1 << i; });
+    net.send('roll', { t: this.turnNo, k: knocked, u: mask, g: this.gutter ? 1 : 0 });
+  }
+
+  /** Watcher: a throw snapshot from the thrower. */
+  private applyThrowSnap(d: ThrowSnap): void {
+    if (this.isOver || this.myTurn() || d.t !== this.turnNo) return;
+    const ph = PHASES[d.ph] ?? 'wait';
+    if (ph === 'rolling' && this.phase !== 'rolling' && this.phase !== 'settle') {
+      this.sfx('throw', { volume: 0.6 });
+      shake(this, 0.003, 120);
+      this.hint.setText('');
+    } else if ((ph === 'power' && this.phase === 'position') || (ph === 'spin' && this.phase === 'power')) {
+      this.sfx('lock', { volume: 0.4, rate: ph === 'power' ? 1 : 1.15 });
+    }
+    if (this.phase === 'wait' && ph === 'position') {
+      this.bx = d.b[0]; this.by = d.b[1];
+      this.tweens.add({ targets: this.ball, alpha: 1, duration: 200 });
+    }
+    this.phase = ph;
+    this.watchBx = d.b[0]; this.watchBy = d.b[1];
+    if (d.b[2] && !this.ballGone) {
+      this.ballGone = true;
+      this.tweens.add({ targets: this.ball, alpha: 0, scale: this.ball.scale * 0.6, duration: 200 });
+    }
+    this.aim = d.a / 1000; this.power = d.w / 1000; this.spin = d.s / 1000;
+    if (d.p) this.pinTargets = d.p;
+  }
+
+  /** Watcher: the thrower's final pin result. */
+  private applyRoll(d: RollMsg): void {
+    if (this.isOver || this.myTurn() || d.t !== this.turnNo) return;
+    this.pins.forEach((p, i) => {
+      const up = ((d.u >> i) & 1) === 1;
+      if (!up && p.up) { p.up = false; p.img.setTexture('bw-pin-down'); }
+    });
+    this.gutter = d.g === 1;
+    if (!this.ballGone) {
+      this.ballGone = true;
+      this.tweens.add({ targets: this.ball, alpha: 0, duration: 200 });
+    }
+    this.pinTargets = null;
+    this.resolveRoll(d.k);
+  }
+
+  /** Watcher: render the streamed throw smoothly. */
+  private watchUpdate(dt: number): void {
+    const k = Math.min(1, dt * 18);
+    if (this.phase !== 'wait' && !this.ballGone) {
+      const ox = this.bx, oy = this.by;
+      const rolling = this.phase === 'rolling' || this.phase === 'settle';
+      // while rolling, keep moving between snapshots at the ball's speed
+      if (rolling) {
+        const dx = this.watchBx - this.bx, dy = this.watchBy - this.by;
+        this.bx += dx * k; this.by += dy * k;
+      } else { this.bx = this.watchBx; this.by = this.watchBy; }
+      this.ball.setPosition(this.bx, this.by);
+      const dist = Math.hypot(this.bx - ox, this.by - oy);
+      this.ball.rotation += dist / BALL_R * 0.4 + (rolling ? this.spin * dt * 6 : 0);
+      if (rolling) {
+        this.rollSfxT -= dt;
+        if (this.rollSfxT <= 0 && dist > 1) { this.rollSfxT = 0.16; this.sfx('roll', { volume: 0.18, rate: 0.6 }); }
+      }
+    }
+    const pt = this.pinTargets;
+    if (pt) {
+      const kp = Math.min(1, dt * 16);
+      this.pins.forEach((p, i) => {
+        if (p.out) return;
+        const o = i * 4;
+        if (pt[o] === undefined) return;
+        p.x += (pt[o] - p.x) * kp; p.y += (pt[o + 1] - p.y) * kp;
+        if (pt[o + 2] >= 1 && p.up) {
+          p.up = false;
+          p.img.setTexture('bw-pin-down');
+          burst(this, p.x, p.y, [0xffffff, 0xd62828], 8, 200);
+          this.sfx(rng.pick(['pin1', 'pin2', 'pin3']), { volume: 0.45, rate: 0.9 + Math.random() * 0.3 });
+          if (!this.crashPlayed) { this.crashPlayed = true; this.sfx('crash', { volume: 0.7 }); shake(this, 0.006, 160); }
+        }
+        if (!p.up) p.img.angle = pt[o + 3];
+        if (pt[o + 2] === 2) {
+          p.out = true;
+          const gx = p.x < LANE_L ? LANE_L - GUT / 2 : p.x > LANE_R ? LANE_R + GUT / 2 : p.x;
+          this.tweens.add({ targets: p.img, x: gx, y: Math.min(p.y, PIT_Y - 20), alpha: 0.0, duration: 450 });
+          return;
+        }
+        p.img.setPosition(p.x, p.y);
+      });
+    }
+    this.drawFx();
   }
 }

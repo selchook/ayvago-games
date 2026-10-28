@@ -19,6 +19,11 @@ let roundSeed = 0;
 // A round start that arrived before anyone listened (the guest still in the intro); the
 // guest's menu picks it up as soon as it opens.
 let pendingStart: { seed?: number } | null = null;
+// Game messages that arrived while nothing listened for their type, e.g. the host's first move
+// landing before the guest's Play scene has started. Delivered to the first listener; dropped
+// when a new round starts or the players go back to the menu.
+const early = new Map<string, unknown[]>();
+const EARLY_LIMIT = 64;
 
 function mp(): Multiplayer | null {
   const m = sdk.adapter?.multiplayer ?? null;
@@ -27,9 +32,19 @@ function mp(): Multiplayer | null {
     m.onMove((raw) => {
       const msg = raw as { t?: unknown; d?: unknown } | null;
       if (!msg || typeof msg.t !== 'string') return;
-      if (msg.t === '__start' || msg.t === '__menu') pendingStart = null;
+      if (msg.t === '__start' || msg.t === '__menu') {
+        pendingStart = null;
+        early.clear();
+      }
       const listeners = handlers.get(msg.t);
       if (msg.t === '__start' && !listeners?.size) pendingStart = (msg.d ?? {}) as { seed?: number };
+      if (!msg.t.startsWith('__') && !listeners?.size) {
+        const queue = early.get(msg.t) ?? [];
+        queue.push(msg.d);
+        if (queue.length > EARLY_LIMIT) queue.shift();
+        early.set(msg.t, queue);
+        return;
+      }
       listeners?.forEach((h) => {
         try {
           h(msg.d);
@@ -87,6 +102,21 @@ export const net = {
     let set = handlers.get(type);
     if (!set) handlers.set(type, (set = new Set()));
     set.add(handler);
+    const waiting = early.get(type);
+    if (waiting) {
+      early.delete(type);
+      // After the caller's create() has finished setting up its state.
+      setTimeout(() => {
+        if (!set.has(handler)) return;
+        for (const data of waiting) {
+          try {
+            handler(data);
+          } catch (error) {
+            console.error('[ayvago] net handler failed', type, error);
+          }
+        }
+      }, 0);
+    }
     return () => set.delete(handler);
   },
   /** Like on(), removed automatically when the scene shuts down (restart, scene change). */
