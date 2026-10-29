@@ -50,8 +50,10 @@ async function testGame(slug) {
     await page.waitForSelector('#ayvago-boot canvas', { timeout: dev ? 30000 : 15000 });
     step.intro = true;
     await page.waitForTimeout(1200);
-    await page.mouse.click(270, 480);                       // tap skips the intro
-    await waitScene('Menu');
+    // Tap skips the intro. Near the top edge: the centre is where the menu's PLAY button
+    // appears, and a tap landing there after the intro ended would start the round at once.
+    await page.mouse.click(270, 40);
+    await page.waitForFunction(() => ['Menu', 'Play'].some((k) => window.__ayvago?.game.scene.isActive(k)), null, { timeout: 15000 });
     step.menu = true;
     await page.waitForTimeout(700);
     if (thumbs) {
@@ -62,7 +64,7 @@ async function testGame(slug) {
       await page.locator('canvas').first().screenshot({ path: join(root, 'public', 'thumbs', `${slug}.png`) });
       if (land) await page.setViewportSize({ width: 540, height: 960 });
     }
-    await page.keyboard.press('Enter');
+    if (!(await page.evaluate(() => window.__ayvago?.game.scene.isActive('Play')))) await page.keyboard.press('Enter');
     await waitScene('Play', 5000);
     step.play = true;
 
