@@ -1,0 +1,35 @@
+{
+  "id": "gomoku",
+  "title": {
+    "tr": "Beşli Taş",
+    "en": "Five in a Row"
+  },
+  "description": {
+    "tr": "15x15 tahtada taşlarını sırayla koy, beşini yan yana diz! Rakip yapay zekâ her galibiyette tehditleri daha iyi okur. Çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Take turns placing stones on a 15x15 board and line up five! The AI reads threats better after every win. Play a friend online too."
+  },
+  "howTo": {
+    "tr": "Bir kesişime dokun, onaylamak için yine dokun ya da oklarla seçip Boşluk'a bas. Beş taşı yan yana dizen kazanır.",
+    "en": "Tap a point, then tap it again to place (or use the arrows and Space). Five in a row, column or diagonal wins."
+  },
+  "genres": [
+    "strategy",
+    "puzzle",
+    "casual"
+  ],
+  "orientation": "portrait",
+  "controls": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": [
+    "Audio: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": {
+    "addedAt": "2026-10-29"
+  }
+}
