@@ -1,6 +1,6 @@
-import { launch, kenney, loadAudio, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadCharacter, CHARACTER_FRAME, Phaser, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene, F } from './PlayScene';
+import { PlayScene, F, HERO_SCALE } from './PlayScene';
 
 launch({
   meta: meta as GameMeta,
@@ -11,6 +11,13 @@ launch({
     const l = scene.load;
     l.spritesheet('pp', kenney('pixel-platformer/tilemap/tilemap_packed.png'), { frameWidth: 21, frameHeight: 21 });
     l.spritesheet('ppbg', kenney('pixel-platformer/backgrounds/backgrounds.png'), { frameWidth: 231, frameHeight: 63 });
+    // The player's chosen character. The game draws with pixelArt (nearest) sampling; these are
+    // smooth vector art scaled down, so they keep linear filtering.
+    const poses = ['walk1', 'walk2', 'jump', 'hit'] as const;
+    loadCharacter(l, { poses });
+    l.once('complete', () => {
+      for (const pose of poses) scene.textures.get(`pc-${pose}`).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    });
     const J = 'oga/junkala-sfx/';
     const M = J + 'movement/jumping-and-landing/';
     loadAudio(l, 'jump', M + 'sfx-movement-jump9');
@@ -32,9 +39,9 @@ launch({
     scene.add.tileSprite(0, height - 200, width, 252, 'ppbg', 1).setOrigin(0).setTileScale(4).setAlpha(0.5);
     scene.add.tileSprite(0, height - 63, width, 63, 'pp', F.top).setOrigin(0).setTileScale(3);
     scene.cameras.main.setBackgroundColor('#1d2a3a');
-    const runner = scene.add.sprite(140, height - 63 - 30, 'pp', F.run[0]).setScale(3);
+    const runner = scene.add.sprite(140, height - 63, 'pc-walk1').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(HERO_SCALE * 1.3);
     let f = 0;
-    scene.time.addEvent({ delay: 110, loop: true, callback: () => runner.setFrame(F.run[++f % 2]) });
+    scene.time.addEvent({ delay: 110, loop: true, callback: () => runner.setTexture(++f % 2 ? 'pc-walk2' : 'pc-walk1') });
     scene.tweens.add({ targets: runner, x: width - 140, duration: 5200, yoyo: true, repeat: -1, onYoyo: () => runner.setFlipX(true), onRepeat: () => runner.setFlipX(false) });
     for (let i = 0; i < 5; i++) {
       const c = scene.add.image(300 + i * 160, height - 140, 'pp', F.coin).setScale(3);
