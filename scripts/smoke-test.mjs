@@ -34,6 +34,19 @@ const BASE = `http://localhost:${PORT}`;
 const browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 const results = [];
 
+/** True when every error of a failed run is a flow step timeout. */
+function retryable(r) {
+  return r.errors.length > 0 && r.errors.every((e) => e.startsWith('flow: ') && /Timeout \d+ms exceeded/.test(e));
+}
+
+function report(r, note = '') {
+  console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.slug}${note}${r.ok ? '' : '\n      ' + JSON.stringify(r.step) + '\n      ' + r.errors.join('\n      ')}`);
+  // GitHub Actions: one annotation per failing game, readable without the full job log.
+  if (!r.ok && process.env.GITHUB_ACTIONS) {
+    console.log(`::error title=smoke ${r.slug}::${JSON.stringify(r.step)} ${r.errors.join(' / ').replace(/\r?\n/g, ' ')}`);
+  }
+}
+
 async function testGame(slug) {
   const errors = [];
   const ctx = await browser.newContext({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 1 });
@@ -137,14 +150,21 @@ const workers = Array.from({ length: Math.min(parallel, queue.length) }, async (
     const slug = queue.shift();
     const r = await testGame(slug);
     results.push(r);
-    console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${slug}${r.ok ? '' : '\n      ' + JSON.stringify(r.step) + '\n      ' + r.errors.join('\n      ')}`);
-    // GitHub Actions: one annotation per failing game, readable without the full job log.
-    if (!r.ok && process.env.GITHUB_ACTIONS) {
-      console.log(`::error title=smoke ${slug}::${JSON.stringify(r.step)} ${r.errors.join(' / ').replace(/\r?\n/g, ' ')}`);
-    }
+    if (!r.ok && retryable(r)) console.log(`SLOW  ${slug} (timed out under load, retried at the end)`);
+    else report(r);
   }
 });
 await Promise.all(workers);
+
+// A run that only timed out (no page, console or network error) is retried once on its own:
+// the step timeouts count wall time, and with several games rendering WebGL in software on a
+// shared runner a game's clock can fall behind them. Any error, or a second timeout, fails.
+for (const [i, r] of results.entries()) {
+  if (r.ok || !retryable(r)) continue;
+  const again = await testGame(r.slug);
+  results[i] = again;
+  report(again, again.ok ? ' (passed on its own after a timeout under load)' : '');
+}
 if (dev) await new Promise((r) => setTimeout(r, 100));
 await browser.close();
 stopServer();
