@@ -611,7 +611,7 @@ export class PlayScene extends ArcadeScene {
         this.advance(p, dt, want);
         if (bombNow && this.phase === 'play') this.dropBomb(p);
         if (p.invuln > 0) { p.invuln -= dt; p.img.setAlpha(Math.floor(p.invuln * 10) % 2 ? 0.45 : 1); } else p.img.setAlpha(1);
-        this.marker.setVisible(true).setPosition(p.img.x - 11, p.img.y - 74);
+        this.marker.setVisible(true).setPosition(p.img.x, p.img.y - 74);   // the triangle is centred on its origin
       } else this.marker.setVisible(false);
       if (!p.alive && this.respawnAt > 0 && this.now >= this.respawnAt) { this.respawnAt = -1; this.respawn(); }
     }

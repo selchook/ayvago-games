@@ -9,8 +9,8 @@
     "en": "Draw the bow, read the wind and hit the ten-ring target. Each round the target moves farther, gets smaller and finally starts to move."
   },
   "howTo": {
-    "tr": "Geri sürükleyip bırak ya da oklarla nişan alıp Boşluk'u basılı tut ve bırak. 5 okla turun hedef puanını tuttur.",
-    "en": "Drag back and release, or aim with the arrow keys and hold, then release Space. Reach each round's target score with 5 arrows."
+    "tr": "Geri sürükleyip bırak ya da ok tuşlarıyla nişan alıp Boşluk tuşunu basılı tut, sonra bırak. Her turun hedef puanına 5 okla ulaş.",
+    "en": "Drag back and release, or aim with the arrow keys, then hold and release Space. Reach each round's target score with 5 arrows."
   },
   "genres": [
     "sports",

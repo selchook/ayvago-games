@@ -120,7 +120,8 @@ export class PlayScene extends ArcadeScene {
     const r = this.round;
     this.arrowsLeft = ARROWS;
     this.roundScore = 0;
-    this.need = Math.min(42, 20 + r * 3);
+    // +3 a round while the target is still, +2 once it moves; capped at 40 of 50 (an 8 average)
+    this.need = Math.min(40, r <= 4 ? 20 + r * 3 : 32 + (r - 4) * 2);
     for (const s of this.stuck) s.img.destroy();
     this.stuck = [];
     this.tx = Math.min(1150, 600 + (r - 1) * 80);
@@ -130,6 +131,9 @@ export class PlayScene extends ArcadeScene {
     this.tyBase = this.amp ? Math.max(this.tr + 150 + this.amp, 430) : GROUND - 150;
     this.tt = 0;
     this.windBase = r === 1 ? 0 : (rng.chance(0.5) ? 1 : -1) * Math.min(260, 30 + r * 28) * rng.int(60, 100) / 100;
+    // the flag and the read-out show this round's wind during the banner, not the last arrow's
+    this.wind = this.windBase;
+    this.showWind();
     this.face.setScale(this.tr / 128).setPosition(this.tx, this.tyBase);
     this.ty = this.tyBase;
     this.drawStand();
@@ -153,11 +157,15 @@ export class PlayScene extends ArcadeScene {
     if (this.isOver) return;
     this.wind = this.windBase * rng.int(80, 120) / 100;
     if (this.round === 1) this.wind = 0;
-    const ms = Math.abs(this.wind) / 40;
-    this.windText.setText(ms < 0.05 ? t('noWind') : `${t('wind')} ${ms.toFixed(1)} m/s ${this.wind > 0 ? '→' : '←'}`);
+    this.showWind();
     this.phase = 'aim';
     this.power = 0;
     this.sfx('nock', { volume: 0.4 });
+  }
+
+  private showWind(): void {
+    const ms = Math.abs(this.wind) / 40;
+    this.windText.setText(ms < 0.05 ? t('noWind') : `${t('wind')} ${ms.toFixed(1)} m/s ${this.wind > 0 ? '→' : '←'}`);
   }
 
   private updatePanel(): void {
@@ -313,8 +321,10 @@ export class PlayScene extends ArcadeScene {
       if (px < this.tx && this.ax >= this.tx) {
         const yc = py + (this.ay - py) * (this.tx - px) / (this.ax - px);
         const d = Math.abs(yc - this.ty);
-        if (d <= this.tr) {
-          const ringW = this.tr / 10;
+        // the painted face is 124 of the texture's 128 px radius: score exactly what is drawn
+        const faceR = this.tr * 124 / 128;
+        if (d <= faceR) {
+          const ringW = faceR / 10;
           const pts = Math.max(1, 10 - Math.floor(d / ringW));
           const x = d < ringW / 2;
           a.setPosition(this.tx + 14, yc).setRotation(Math.atan2(this.avy, this.avx));
