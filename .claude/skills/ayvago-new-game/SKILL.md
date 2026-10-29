@@ -107,7 +107,9 @@ Other helpers from `@core`:
   bots: `otherCharacters(playerCharacter())`; online opponent: `peerCharacter()`. Test any
   character with `?character=<id>`. A hero whose arms must hold something (a bow, a rope) uses
   the rig parts instead: `pc-archer` (armless, same frame), `pc-arm` and `pc-hand`, posed from
-  `characterRig(id).shoulders` every frame (see `games/archery`). Pixel-art games keep their own sprites.
+  `characterRig(id).shoulders` every frame (see `games/archery`). In a `pixelArt` game, give the
+  pc-* textures linear filtering (`setFilter(Phaser.Textures.FilterMode.LINEAR)`) so the
+  scaled-down vector art stays smooth (see `games/pixel-runner/main.ts`).
 - **Look before you use.** Open the PNGs or tilesheets with the Read tool to see them before picking frames.
 - **No network.** Never load anything from the network. If something is missing, draw it with Graphics/shapes, or generate a texture with `scene.make.graphics(...).generateTexture(key, w, h)`.
 - **Sound.** Use sounds generously but at sane volumes. Good sources:

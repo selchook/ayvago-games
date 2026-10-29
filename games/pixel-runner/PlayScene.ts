@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, CHARACTER_FRAME, burst, shake, flash, popup, t, txt, rng } from '@core';
 
 /** pixel-platformer tilemap_packed frames (21 px tiles, 30 per row). */
 export const F = {
@@ -16,6 +16,10 @@ const S = 3, T = 21 * S;                     // scale and tile size in world px
 const PX = 300;                              // runner's screen x
 const GRAV = 2700, JUMP = -1000, JUMP2 = -900, CUT = -380;
 const HW = 18, HH = 26;                      // runner half extents (hitbox)
+// The runner is the player's chosen character (pc-* textures, see main.ts), drawn as tall as the
+// old 21 px tile at scale 3 and centred on its frame, so its feet land on the hitbox bottom.
+export const HERO_SCALE = 62 / CHARACTER_FRAME.standHeight;
+const HERO_FEET = (CHARACTER_FRAME.originY - 0.5) * CHARACTER_FRAME.height * HERO_SCALE;
 const TOPS = [720 - 2 * T, 720 - 3 * T, 720 - 4 * T];
 
 interface Seg { x: number; w: number; top: number; float: boolean; objs: Phaser.GameObjects.GameObject[] }
@@ -71,7 +75,7 @@ export class PlayScene extends ArcadeScene {
     while (this.genX < width * 2) this.generate();
 
     this.py = TOPS[0] - HH;
-    this.player = this.add.sprite(PX, this.py, 'pp', F.run[0]).setScale(S).setDepth(20);
+    this.player = this.add.sprite(PX, this.py, 'pc-walk1').setScale(HERO_SCALE).setDepth(20);
 
     for (let i = 0; i < 3; i++) this.hearts.push(this.add.image(40 + i * 54, 92, 'pp', F.heart).setScale(2.4).setScrollFactor(0).setDepth(9000));
     this.updateHud();
@@ -250,7 +254,7 @@ export class PlayScene extends ArcadeScene {
 
   private die(): void {
     this.dead = true;
-    this.player.setFrame(F.hurt).setFlipY(true);
+    this.player.setTexture('pc-hit').setFlipY(true);
     this.vy = -900;
     this.time.delayedCall(150, () => this.sfx('die', { volume: 0.6, exact: true }));
     burst(this, this.scroll + PX, this.py, [0xec3013, 0xffd23f], 30, 380);
@@ -326,9 +330,9 @@ export class PlayScene extends ArcadeScene {
 
     // runner sprite
     this.animT += dt * (this.speed / 380);
-    if (this.grounded) this.player.setFrame(F.run[Math.floor(this.animT * 9) % 2]);
-    else this.player.setFrame(F.jump);
-    this.player.setPosition(this.scroll + PX, this.py - 4);
+    if (this.grounded) this.player.setTexture(Math.floor(this.animT * 9) % 2 ? 'pc-walk2' : 'pc-walk1');
+    else this.player.setTexture(this.invuln > 1.2 ? 'pc-hit' : 'pc-jump');
+    this.player.setPosition(this.scroll + PX, this.py + HH - HERO_FEET);
     this.player.setAlpha(this.invuln > 0 ? (Math.floor(this.invuln * 14) % 2 ? 0.35 : 1) : 1);
     this.cameras.main.scrollX = this.scroll;
     this.bgFar.tilePositionX = this.scroll * 0.05;
