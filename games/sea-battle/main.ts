@@ -55,7 +55,7 @@ launch({
       yourFleet: 'FİLON', enemyFleet: 'DÜŞMAN FİLOSU', sunk: 'BATIRDIN!', lostShip: 'Gemin battı!',
       ship0: 'Uçak Gemisi', ship1: 'Zırhlı', ship2: 'Kruvazör', ship3: 'Denizaltı', ship4: 'Muhrip',
       victory: 'ZAFER!', defeat: 'FİLON BATTI', accuracy: 'İsabet: %{n}',
-      rival: 'Rakip: {name}', streak: 'Seri: {n}',
+      rival: 'Rakip: {name}', lv: 'Seviye {n}', streak: 'Seri: {n}',
       d0: 'Acemi Er', d1: 'Tayfa', d2: 'Kaptan', d3: 'Komodor', d4: 'Amiral',
     },
     en: {
@@ -66,7 +66,7 @@ launch({
       yourFleet: 'YOUR FLEET', enemyFleet: 'ENEMY FLEET', sunk: 'SUNK!', lostShip: 'Ship lost!',
       ship0: 'Carrier', ship1: 'Battleship', ship2: 'Cruiser', ship3: 'Submarine', ship4: 'Destroyer',
       victory: 'VICTORY!', defeat: 'FLEET SUNK', accuracy: 'Accuracy: {n}%',
-      rival: 'Rival: {name}', streak: 'Streak: {n}',
+      rival: 'Rival: {name}', lv: 'Level {n}', streak: 'Streak: {n}',
       d0: 'Cadet', d1: 'Sailor', d2: 'Captain', d3: 'Commodore', d4: 'Admiral',
     },
   },

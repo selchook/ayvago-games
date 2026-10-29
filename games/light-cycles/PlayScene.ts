@@ -190,7 +190,8 @@ export class PlayScene extends ArcadeScene {
   private mirror(x: number, y: number): [number, number] { return [COLS - 1 - x, ROWS - 1 - y]; }
 
   private guestTick(m: StMsg): void {
-    if (this.isOver) return;
+    // a snapshot before this round's setup ("rd") has nothing to move
+    if (this.isOver || this.riders.length < 2 || this.phase === 'gap' || this.phase === 'over') return;
     if (this.phase === 'count') this.phase = 'run';
     this.tickNo = m.k;
     // host cycle 1 is me, cycle 0 the opponent; both seen turned 180°
@@ -239,9 +240,10 @@ export class PlayScene extends ArcadeScene {
     if (this.isOver) return;
     this.round++;
     const sp = this.speedFor(this.round);
-    // spawn sides alternate every round; online the round's starter (net.starter) takes the
-    // bottom spawn in the first round
-    const sw = this.online ? (this.round + net.starter) % 2 === 0 : false;
+    // The spawns and obstacles are point-symmetric and the guest sees the field turned 180°,
+    // so without a swap both players start at the bottom of their own screen every round
+    // (swapping put both of them at the top in alternate rounds and changed nothing else).
+    const sw = false;
     if (this.online) net.send('rd', { r: this.round, sp, sw: sw ? 1 : 0 } satisfies RdMsg);
     this.beginRound(this.round, sp, sw);
   }

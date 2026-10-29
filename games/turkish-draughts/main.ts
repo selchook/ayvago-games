@@ -38,14 +38,14 @@ launch({
     tr: {
       yourTurn: 'SIRA SENDE', mustTake: 'TAŞ ALMAK ZORUNLU!', aiTurn: 'RAKİP DÜŞÜNÜYOR', cpu: 'RAKİP', dama: 'DAMA!',
       roundWin: 'KAZANDIN!', roundLose: 'KAYBETTİN', roundDraw: 'BERABERE',
-      rival: 'Rakip: {name}', streak: 'Seri: {n}',
+      rival: 'Rakip: {name}', lv: 'Seviye {n}', streak: 'Seri: {n}',
       keysHint: 'Oklar: taş / hamle seç · Boşluk: seç / oyna · X: bırak', touchHint: 'Taşa dokun, sonra gideceği kareye dokun',
       d0: 'Acemi', d1: 'Heveskâr', d2: 'Mahalle Ustası', d3: 'Zorlu', d4: 'Uzman', d5: 'Dama Ustası',
     },
     en: {
       yourTurn: 'YOUR TURN', mustTake: 'CAPTURE IS A MUST!', aiTurn: 'AI THINKING', cpu: 'CPU', dama: 'DAMA!',
       roundWin: 'YOU WIN!', roundLose: 'YOU LOSE', roundDraw: 'DRAW',
-      rival: 'Rival: {name}', streak: 'Streak: {n}',
+      rival: 'Rival: {name}', lv: 'Level {n}', streak: 'Streak: {n}',
       keysHint: 'Arrows: pick piece / move · Space: select / play · X: drop', touchHint: 'Tap a piece, then tap where it goes',
       d0: 'Rookie', d1: 'Amateur', d2: 'Local Hero', d3: 'Tough', d4: 'Expert', d5: 'Dama Master',
     },

@@ -86,6 +86,7 @@ export class PlayScene extends ArcadeScene {
     kb?.on('keydown-R', () => this.rotateSel()); kb?.on('keydown-Z', () => this.rotateSel());
     kb?.on('keydown-X', () => { if (this.phase === 'place' && !this.myReady) this.autoPlace(); });
     kb?.on('keydown-SHIFT', () => this.cycleSel()); kb?.on('keydown-TAB', () => this.cycleSel());
+    kb?.addCapture('TAB');   // Tab is a game key here, not browser focus navigation
 
     if (this.online) {
       net.onScene(this, 'rdy', () => {
@@ -255,8 +256,8 @@ export class PlayScene extends ArcadeScene {
       this.info.setText(this.phase === 'place' ? `${base}   ${t('timeLeft', { n: this.placeLeft })}` : base);
     } else {
       this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
-      this.hud.setCenter(`${t('level')} ${this.level + 1}`);
-      this.info.setText(`${t('rival', { name: t('d' + this.level) })}   ${t('streak', { n: this.streak })}`);
+      // the level sits in the info line: the HUD centre slot collides with LIVES in English
+      this.info.setText(`${t('lv', { n: this.level + 1 })} · ${t('rival', { name: t('d' + this.level) })} · ${t('streak', { n: this.streak })}`);
     }
   }
 
@@ -372,9 +373,9 @@ export class PlayScene extends ArcadeScene {
     const lx = 360, ly = SMALL.y - 26;
     this.phaseObjs.push(txt(this, lx + 160, ly, t('enemyFleet'), { title: true, size: 16, color: '#ff9a8a' }).setDepth(3));
     FLEET.forEach((len, k) => {
-      const c = this.add.container(lx + 20, ly + 50 + k * 48).setDepth(3);
-      const img = this.add.image(0, 0, `ship${len}`).setOrigin(0, 0.5).setDisplaySize(len * 40, 34);
-      const name = txt(this, len * 40 + 14, 0, t('ship' + k), { size: 20, color: '#c8d8ec' }).setOrigin(0, 0.5);
+      const c = this.add.container(lx + 6, ly + 50 + k * 48).setDepth(3);
+      const img = this.add.image(0, 0, `ship${len}`).setOrigin(0, 0.5).setDisplaySize(len * 36, 32);
+      const name = txt(this, len * 36 + 12, 0, t('ship' + k), { size: 20, color: '#c8d8ec' }).setOrigin(0, 0.5);
       c.add([img, name]);
       c.setData('len', len);
       this.fleetList.push(c);
@@ -487,7 +488,7 @@ export class PlayScene extends ArcadeScene {
     if (!c) return;
     c.setData('sunk', true);
     c.setAlpha(0.45);
-    const x = this.add.image(len * 20, 0, 'xmark').setDisplaySize(40, 40);
+    const x = this.add.image(len * 18, 0, 'xmark').setDisplaySize(40, 40);
     c.add(x);
     this.tweens.add({ targets: c, scale: { from: 1.2, to: 1 }, duration: 300 });
   }

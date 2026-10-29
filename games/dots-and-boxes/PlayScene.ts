@@ -116,6 +116,7 @@ export class PlayScene extends ArcadeScene {
     kb?.on('keydown-UP', () => mv(-1, 0)); kb?.on('keydown-W', () => mv(-1, 0));
     kb?.on('keydown-DOWN', () => mv(1, 0)); kb?.on('keydown-S', () => mv(1, 0));
     kb?.on('keydown-X', flip); kb?.on('keydown-SHIFT', flip); kb?.on('keydown-TAB', flip);
+    kb?.addCapture('TAB');   // Tab is a game key here, not browser focus navigation
     for (const k of ['SPACE', 'ENTER', 'Z']) kb?.on(`keydown-${k}`, () => { if (this.hover >= 0) this.playerLine(this.hover); else mv(0, 0); });
 
     if (this.online) {
@@ -175,9 +176,12 @@ export class PlayScene extends ArcadeScene {
   }
 
   private takeRemote(): void {
-    while (this.state === 'ai' && !this.isOver && this.inbox.length) {
+    // a chain of extra moves arrives as several messages in a row: apply them strictly in move
+    // order, keep any that arrive ahead of their turn, drop only stale ones
+    this.inbox = this.inbox.filter((d) => d.n >= this.moveNo).sort((a, b) => a.n - b.n);
+    while (this.state === 'ai' && !this.isOver && this.inbox.length && this.inbox[0].n === this.moveNo) {
       const d = this.inbox.shift()!;
-      if (d.n !== this.moveNo || d.l < 0 || d.l >= LINES || this.lines[d.l]) continue;
+      if (d.l < 0 || d.l >= LINES || this.lines[d.l]) continue;
       this.draw(d.l, 2);
     }
   }
@@ -189,8 +193,8 @@ export class PlayScene extends ArcadeScene {
     this.theirCount.setText(String(this.count(2)));
     if (this.online) { this.info.setText(t('vs', { name: net.peerName || t('opponent') })); return; }
     this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
-    this.hud.setCenter(`${t('level')} ${this.level + 1}`);
-    this.info.setText(`${t('rival', { name: t('d' + this.level) })}   ${t('streak', { n: this.streak })}`);
+    // the level sits in the info line: the HUD centre slot collides with LIVES in English
+    this.info.setText(`${t('lv', { n: this.level + 1 })} · ${t('rival', { name: t('d' + this.level) })} · ${t('streak', { n: this.streak })}`);
   }
 
   private startRound(): void {

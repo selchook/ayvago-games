@@ -75,7 +75,8 @@ export class PlayScene extends ArcadeScene {
 
     this.status = txt(this, width / 2, 140, '', { title: true, size: 26, color: '#ffd23f' }).setDepth(30);
     this.info = txt(this, width / 2, 196, '', { size: 30, color: '#ffcf8a' }).setDepth(30);
-    this.banner = txt(this, width / 2, BY + S / 2, '', { title: true, size: 50, strokeThickness: 10 }).setDepth(40).setVisible(false);
+    // in the status slot (cleared when a round ends), so it never hides the winning five
+    this.banner = txt(this, width / 2, 140, '', { title: true, size: 50, strokeThickness: 10 }).setDepth(40).setVisible(false);
 
     // legend: who plays which colour
     const ly = BY + S + 95;
@@ -176,8 +177,8 @@ export class PlayScene extends ArcadeScene {
     this.nameW.setText(this.mine === 2 ? t('you') : other);
     if (this.online) { this.info.setText(t('vs', { name: net.peerName || t('opponent') })); return; }
     this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
-    this.hud.setCenter(`${t('level')} ${this.level + 1}`);
-    this.info.setText(`${t('rival', { name: t('d' + this.level) })}   ${t('streak', { n: this.streak })}`);
+    // the level sits in the info line: the HUD centre slot collides with LIVES in English
+    this.info.setText(`${t('lv', { n: this.level + 1 })} · ${t('rival', { name: t('d' + this.level) })} · ${t('streak', { n: this.streak })}`);
   }
 
   private startRound(): void {

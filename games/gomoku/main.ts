@@ -38,14 +38,14 @@ launch({
     tr: {
       yourTurn: 'SIRA SENDE', aiTurn: 'RAKİP DÜŞÜNÜYOR', cpu: 'RAKİP',
       roundWin: 'KAZANDIN!', roundLose: 'KAYBETTİN', roundDraw: 'BERABERE',
-      rival: 'Rakip: {name}', streak: 'Seri: {n}',
+      rival: 'Rakip: {name}', lv: 'Seviye {n}', streak: 'Seri: {n}',
       keysHint: 'Oklar: seç · Boşluk: taş koy · Fare: tıkla', touchHint: 'Dokun: nişan al · Tekrar dokun: taş koy',
       d0: 'Acemi', d1: 'Çırak', d2: 'Usta', d3: 'Zorlu', d4: 'Uzman', d5: 'Büyükusta',
     },
     en: {
       yourTurn: 'YOUR TURN', aiTurn: 'AI THINKING', cpu: 'CPU',
       roundWin: 'YOU WIN!', roundLose: 'YOU LOSE', roundDraw: 'DRAW',
-      rival: 'Rival: {name}', streak: 'Streak: {n}',
+      rival: 'Rival: {name}', lv: 'Level {n}', streak: 'Streak: {n}',
       keysHint: 'Arrows: aim · Space: place · Mouse: click', touchHint: 'Tap: aim · Tap again: place',
       d0: 'Rookie', d1: 'Apprentice', d2: 'Adept', d3: 'Tough', d4: 'Expert', d5: 'Grandmaster',
     },
