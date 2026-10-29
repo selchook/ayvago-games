@@ -269,9 +269,11 @@ export class GameOverScene extends Phaser.Scene {
       this.scene.stop();
       this.scene.get('Play').scene.restart();
     };
-    const by = height * (def.meta.orientation === 'landscape' ? 0.74 : 0.66);
-    new Button(this, width / 2, by, t('retry'), retry, { color: COLORS.red, width: 380, height: 104, size: 34 });
-    new Button(this, width / 2, by + 140, t('menu'), () => {
+    // Landscape has no room for two stacked buttons below the score: put them side by side.
+    const land = def.meta.orientation === 'landscape';
+    const by = height * (land ? 0.8 : 0.66);
+    new Button(this, land ? width / 2 - 210 : width / 2, by, t('retry'), retry, { color: COLORS.red, width: 380, height: 104, size: 34 });
+    new Button(this, land ? width / 2 + 210 : width / 2, land ? by : by + 140, t('menu'), () => {
       this.scene.stop('Play');
       this.scene.start('Menu');
     }, { color: 0x333344 });
