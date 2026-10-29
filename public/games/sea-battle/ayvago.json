@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "seabattle",
+  "title": {
+    "en": "Sea Battle",
+    "tr": "Amiral Battı"
+  },
+  "description": {
+    "en": "Hide your fleet, then shell the enemy sea! A hit lets you fire again. Rival admirals hunt smarter after every victory. Play a friend online too.",
+    "tr": "Filonu gizlice yerleştir, düşman denizine ateş aç! İsabet edersen bir daha atarsın. Rakip amiraller her zaferde daha akıllı avlanır. Çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "strategy",
+  "categories": [
+    "strategy",
+    "casual",
+    "puzzle"
+  ],
+  "tags": [
+    "multiplayer",
+    "sea",
+    "battle",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/sea-battle/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/sea-battle/ayvago/icon-512.png",
+    "cover": "/games/sea-battle/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/sea-battle/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

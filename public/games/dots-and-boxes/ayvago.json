@@ -1,0 +1,60 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "dotsandboxes",
+  "title": {
+    "en": "Dots and Boxes",
+    "tr": "Kutu Kapmaca"
+  },
+  "description": {
+    "en": "Take turns joining dots; whoever draws a box's fourth side claims it and moves again! The AI plays chains better after every win. Play a friend online too.",
+    "tr": "Noktaları sırayla birleştir, kutunun dördüncü kenarını çizen kutuyu kapar ve bir daha oynar! Rakip yapay zekâ her galibiyette zincirleri daha iyi oynar. Çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "strategy",
+    "casual"
+  ],
+  "tags": [
+    "multiplayer",
+    "dots",
+    "and",
+    "boxes",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/dots-and-boxes/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/dots-and-boxes/ayvago/icon-512.png",
+    "cover": "/games/dots-and-boxes/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/dots-and-boxes/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

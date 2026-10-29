@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "gomoku",
+  "title": {
+    "en": "Five in a Row",
+    "tr": "Beşli Taş"
+  },
+  "description": {
+    "en": "Take turns placing stones on a 15x15 board and line up five! The AI reads threats better after every win. Play a friend online too.",
+    "tr": "15x15 tahtada taşlarını sırayla koy, beşini yan yana diz! Rakip yapay zekâ her galibiyette tehditleri daha iyi okur. Çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "strategy",
+  "categories": [
+    "strategy",
+    "puzzle",
+    "casual"
+  ],
+  "tags": [
+    "multiplayer",
+    "gomoku",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/gomoku/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/gomoku/ayvago/icon-512.png",
+    "cover": "/games/gomoku/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/gomoku/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

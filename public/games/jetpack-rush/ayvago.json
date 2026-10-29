@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "jetpackrush",
+  "title": {
+    "en": "Jetpack Rush",
+    "tr": "Jetpack Koşusu"
+  },
+  "description": {
+    "en": "Fly a jetpack down a lab corridor: dodge electric zappers and warned missiles, grab coins and push for a record distance as the run speeds up.",
+    "tr": "Jetpack'inle laboratuvar koridorunda uç: elektrikli bariyerlerden ve uyarıyla gelen füzelerden kaç, altınları topla, giderek hızlanan koşuda rekor mesafeye ulaş."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "action"
+  ],
+  "tags": [
+    "jetpack",
+    "rush",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/jetpack-rush/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/jetpack-rush/ayvago/icon-512.png",
+    "cover": "/games/jetpack-rush/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/jetpack-rush/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

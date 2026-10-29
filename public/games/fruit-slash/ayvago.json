@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "fruitslash",
+  "title": {
+    "en": "Fruit Slash",
+    "tr": "Meyve Kes"
+  },
+  "description": {
+    "en": "Slice fruit tossed into the air with a glowing blade, chain combos and critical cuts, and stay away from the bombs.",
+    "tr": "Havaya fırlayan meyveleri parlak bıçak iziyle doğra, kombolar ve kritik kesimler yap, bombalardan uzak dur."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "action",
+    "casual"
+  ],
+  "tags": [
+    "fruit",
+    "slash",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/fruit-slash/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/fruit-slash/ayvago/icon-512.png",
+    "cover": "/games/fruit-slash/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/fruit-slash/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}
