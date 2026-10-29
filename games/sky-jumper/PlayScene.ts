@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { HERO_SCALE, HERO_ORIGIN_Y } from './hero';
 
 export const BIOMES = ['grass', 'sand', 'stone', 'snow', 'cake'];
 
@@ -75,7 +76,7 @@ export class PlayScene extends ArcadeScene {
     // starting ground
     for (const x of [width * 0.25, width * 0.75]) this.add.image(x, height - 40, 'ground').setScale(0.95, 0.9);
     this.startY = height - 140;
-    this.player = this.add.image(width / 2, this.startY, 'bunny-jump').setScale(0.5).setDepth(20);
+    this.player = this.add.image(width / 2, this.startY, 'pc-jump').setOrigin(0.5, HERO_ORIGIN_Y).setScale(HERO_SCALE).setDepth(20);
     this.jetpack = this.add.image(0, 0, 'jetpack').setScale(0.4).setDepth(19).setVisible(false);
     this.flames = this.add.particles(0, 0, 'flame', {
       speedY: { min: 300, max: 500 }, speedX: { min: -40, max: 40 }, scale: { start: 0.6, end: 0 }, lifespan: 300, emitting: false,
@@ -163,8 +164,8 @@ export class PlayScene extends ArcadeScene {
 
   private bounce(v: number, x: number, y: number): void {
     this.vy = v;
-    this.player.setTexture('bunny-jump');
-    this.tweens.add({ targets: this.player, scaleX: 0.58, scaleY: 0.42, duration: 70, yoyo: true });
+    this.player.setTexture('pc-jump');
+    this.tweens.add({ targets: this.player, scaleX: HERO_SCALE * 1.16, scaleY: HERO_SCALE * 0.84, duration: 70, yoyo: true });
     burst(this, x, y, [0xffffff, 0xc8f0ff], 6, 120);
   }
 
@@ -175,7 +176,7 @@ export class PlayScene extends ArcadeScene {
     else this.sfxAt('ouch', this.player.x, { volume: 0.75 });
     shake(this, 0.02, 300);
     flash(this, 0xec3013, 150);
-    this.player.setTexture('bunny-hurt');
+    this.player.setTexture('pc-hit');
     if (reason === 'ouch') { this.vy = -400; burst(this, this.player.x, this.player.y, [0xec3013, 0xffd23f], 30, 380); }
     this.endGame({ delay: 1200, title: t(reason) });
   }
@@ -210,7 +211,7 @@ export class PlayScene extends ArcadeScene {
     this.player.y += this.vy * dt;
     const feet = this.player.y + 42;
     this.jetpack.setVisible(this.jet > 0).setPosition(this.player.x + (this.player.flipX ? 16 : -16), this.player.y + 6).setFlipX(this.player.flipX);
-    if (this.vy > 150 && this.jet <= 0 && !this.dying) this.player.setTexture('bunny-stand');
+    if (this.vy > 150 && this.jet <= 0 && !this.dying) this.player.setTexture('pc-stand');
 
     // ground at the very start
     if (!this.dying && this.vy > 0 && feet >= height - 70 && this.topY > this.startY - 600) {

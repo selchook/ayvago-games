@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
-import { W, H, CEIL, FLOOR, makeLabTextures } from './art';
+import { W, H, CEIL, FLOOR, HERO_SCALE, HERO_ORIGIN_Y, makeLabTextures } from './art';
 
 const HERO_X = 270;
 const GRAVITY = 2100;
@@ -81,7 +81,7 @@ export class PlayScene extends ArcadeScene {
       lifespan: { min: 160, max: 320 }, tint: [0xffd23f, 0xff7a1a, 0xff3b1a], blendMode: 'ADD', frequency: 16, emitting: false,
     }).setDepth(19);
     this.pack = this.add.image(0, 0, 'jetpack').setDepth(19).setScale(0.9);
-    this.hero = this.add.sprite(HERO_X, this.hy, 'hero-walk1').setScale(0.5).setDepth(20);
+    this.hero = this.add.sprite(HERO_X, this.hy, 'pc-walk1').setScale(HERO_SCALE).setOrigin(0.5, HERO_ORIGIN_Y).setDepth(20);
     this.bubble = this.add.image(HERO_X, this.hy, 'bubble').setDepth(21).setScale(0.85).setVisible(false);
 
     this.controls = new Controls(this);
@@ -245,7 +245,7 @@ export class PlayScene extends ArcadeScene {
     this.dying = true;
     this.dieT = 0;
     this.vy = -520;
-    this.hero.setTexture('hero-hit');
+    this.hero.setTexture('pc-hit');
     this.flame.emitting = false;
     this.jet?.stop();
     if (kind === 'zap') {
@@ -312,10 +312,10 @@ export class PlayScene extends ArcadeScene {
     if (!this.dying) {
       if (this.grounded && !held) {
         this.runT += dt * (this.speed / 60);
-        this.hero.setTexture(Math.floor(this.runT) % 2 ? 'hero-walk1' : 'hero-walk2');
+        this.hero.setTexture(Math.floor(this.runT) % 2 ? 'pc-walk1' : 'pc-walk2');
         this.hero.angle = 0;
       } else {
-        this.hero.setTexture('hero-jump');
+        this.hero.setTexture('pc-jump');
         this.hero.angle = Phaser.Math.Clamp(this.vy / 90, -6, 8);
       }
       if (held && !this.thrusting) this.sfx('thrust', { volume: 0.3 });
