@@ -106,7 +106,9 @@ async function testGame(slug) {
       play.scene.resume();
       play.endGame?.({ delay: 0 });
     });
-    await waitScene('GameOver', 6000);
+    // The end delay runs on the game clock, which falls behind wall time on a loaded runner
+    // (tappy-plane's crash takes over 6 s there): allow as long as the other steps.
+    await waitScene('GameOver', 15000);
     step.gameOver = true;
     // The result screen arms its Enter shortcut after a delay counted in game time, which runs
     // slower than wall time on a loaded machine: keep pressing for up to 15 s.
