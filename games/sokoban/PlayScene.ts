@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, t, txt } from '@core';
+import { ArcadeScene, burst, shake, flash, t, txt, rng } from '@core';
 import { LEVELS } from './levels';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
@@ -21,6 +21,9 @@ export class PlayScene extends ArcadeScene {
   private pc = 0;
   private player!: Phaser.GameObjects.Image;
   private moves = 0;
+  /** Sound only: alternates the footstep sample; skips the level-start sting after a restart. */
+  private stepFoot = 0;
+  private quietStart = false;
   private history: Step[] = [];
   private board!: Phaser.GameObjects.Container;
   private tile = 64;
@@ -159,7 +162,8 @@ export class PlayScene extends ArcadeScene {
     this.board.setAlpha(0).setY(-30);
     this.tweens.add({ targets: this.board, alpha: 1, y: 0, duration: 350, ease: 'Back.easeOut' });
     this.updateInfo();
-    this.sfx('start', { volume: 0.4 });
+    if (!this.quietStart) this.sfx('start', { volume: 0.45 });
+    this.quietStart = false;
   }
 
   private paintBox(b: Phaser.GameObjects.Image, key: string, fx: boolean): void {
@@ -168,14 +172,15 @@ export class PlayScene extends ArcadeScene {
     b.setTexture(on ? 'sk-crate-on' : 'sk-crate');
     if (fx && on && !was) {
       burst(this, b.x, b.y, [0x5dff7a, 0xffd23f, 0xffffff], 14, 220);
-      this.sfx('goal', { volume: 0.5 });
+      this.sfxAt('goal', b.x, { volume: 0.55 });
       this.tweens.add({ targets: b, scale: b.scale * 1.15, duration: 90, yoyo: true });
     }
   }
 
   private restartLevel(): void {
     if (this.won || this.isOver) return;
-    this.sfx('undo', { volume: 0.5 });
+    this.sfx('restart', { volume: 0.5 });
+    this.quietStart = true;
     this.loadLevel();
   }
 
@@ -207,8 +212,8 @@ export class PlayScene extends ArcadeScene {
       this.boxes.delete(nk); this.boxes.set(bk, box);
       step.box = { from: nk, to: bk };
       this.tweens.add({ targets: box, x: this.x(nc + dc), y: this.y(nr + dr), duration: 110, onComplete: () => this.paintBox(box, bk, true) });
-      this.sfx('push', { volume: 0.4 });
-    } else this.sfx('step', { volume: 0.25 });
+      this.sfxAt(rng.pick(['push1', 'push2']), box.x, { volume: 0.45 });
+    } else this.sfxAt(++this.stepFoot % 2 ? 'step1' : 'step2', this.player.x, { volume: 0.4 });
     this.history.push(step);
     this.pr = nr; this.pc = nc; this.moves++;
     this.moving = true;
@@ -227,7 +232,7 @@ export class PlayScene extends ArcadeScene {
 
   private bump(dr: number, dc: number): void {
     this.queue = [];
-    this.sfx('bump', { volume: 0.3 });
+    this.sfxAt('bump', this.player.x, { volume: 0.3 });
     const px = this.x(this.pc), py = this.y(this.pr);
     this.tweens.add({ targets: this.player, x: px + dc * 8, y: py + dr * 8, duration: 50, yoyo: true, onComplete: () => this.player.setPosition(px, py) });
   }
@@ -245,7 +250,7 @@ export class PlayScene extends ArcadeScene {
     this.pr = s.pr; this.pc = s.pc;
     this.player.setPosition(this.x(s.pc), this.y(s.pr));
     this.moves = Math.max(0, this.moves - 1);
-    this.sfx('undo', { volume: 0.4 });
+    this.sfx('undo', { volume: 0.45 });
     this.updateInfo();
   }
 
@@ -296,7 +301,7 @@ export class PlayScene extends ArcadeScene {
     const stars = this.moves <= par ? 3 : this.moves <= Math.ceil(par * 1.5) ? 2 : 1;
     const pts = 100 + 10 * (this.level + 1) + Math.round(400 * Math.min(1, par / this.moves));
     this.addScore(pts, this.player.x, this.player.y - 40);
-    this.sfx('win', { volume: 0.6 });
+    this.sfx('win', { volume: 0.7, exact: true });
     flash(this, 0x5dff7a, 150);
     shake(this, 0.006, 150);
     for (const b of this.boxes.values()) burst(this, b.x, b.y, [0xffd23f, 0x5dff7a, 0xff4fa3], 18, 300);
@@ -308,7 +313,7 @@ export class PlayScene extends ArcadeScene {
       const s = this.add.image(360 + (i - 1) * 90, 650, 'icon-star').setDisplaySize(72, 72).setDepth(60).setScale(0)
         .setTint(i < stars ? 0xffd23f : 0x444455);
       starImgs.push(s);
-      this.tweens.add({ targets: s, scale: 72 / s.width, duration: 250, delay: 250 + i * 180, ease: 'Back.easeOut', onStart: () => i < stars && this.sfx('star', { volume: 0.4, detune: i * 200 }) });
+      this.tweens.add({ targets: s, scale: 72 / s.width, duration: 250, delay: 250 + i * 180, ease: 'Back.easeOut', onStart: () => i < stars && this.sfx('star', { volume: 0.5, rate: 1 + i * 0.12, exact: true }) });
     }
     this.time.delayedCall(1900, () => {
       if (gen !== this.gen) return;

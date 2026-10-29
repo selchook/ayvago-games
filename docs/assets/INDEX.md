@@ -1,7 +1,10 @@
-# Asset index (public/assets/kenney)
+# Asset index (public/assets)
 
-All packs are Kenney CC0. Full file lists with pixel sizes: `docs/assets/<pack>.txt`.
-Load with `kenney('<pack>/<path>')`; audio with `loadSfx(load, key, '<pack>/<path-without-ext>')`.
+Every pack is CC0; sources and licenses: [LICENSES.md](LICENSES.md). Full file lists with pixel
+sizes: `docs/assets/<pack>.txt`.
+Load Kenney art with `kenney('<pack>/<path>')`; Kenney audio with
+`loadSfx(load, key, '<pack>/<path-without-ext>')`; other audio with
+`loadAudio(load, key, 'oga/<pack>/<path-without-ext>')`.
 
 | pack | images | sounds |
 |---|---|---|
@@ -44,3 +47,11 @@ Load with `kenney('<pack>/<path>')`; audio with `loadSfx(load, key, '<pack>/<pat
 | topdown-shooter | 581 | 0 |
 | tower-defense | 299 | 0 |
 | ui | 151 | 6 |
+
+## OpenGameArt CC0 (`public/assets/oga`)
+
+| pack | sounds | list |
+|---|---|---|
+| junkala-sfx | 512 retro effects: coins, positive/negative, impacts, jumps, lasers, explosions, menu sounds, alarms… | `oga-junkala-sfx.txt` |
+| junkala-music | 9 chiptune loops, played by the core (`src/core/music.ts`); games only choose | `oga-junkala-music.txt` |
+

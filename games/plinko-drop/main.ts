@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { warmText } from './fasttext';
@@ -15,17 +15,20 @@ launch({
     l.image('ball-gold', kenney(P2 + 'balls/yellow/ballyellow_09.png'));
     l.image('peg-gold', kenney(P2 + 'coins/coin_06.png'));
     l.image('spark', kenney(P2 + 'particles_yellow/particleyellow_3.png'));
-    loadSfx(l, 'ping', 'sfx-interface/audio/pluck_001');
-    loadSfx(l, 'drop', 'sfx-interface/audio/drop_002');
-    loadSfx(l, 'land', 'sfx-casino/audio/chiplay1');
-    loadSfx(l, 'big', 'sfx-casino/audio/chipsstack3');
-    loadSfx(l, 'gold', 'sfx-digital/audio/pepsound3');
-    loadSfx(l, 'mult', 'sfx-digital/audio/powerup4');
-    loadSfx(l, 'bump', 'sfx-digital/audio/zap1');
-    loadSfx(l, 'extra', 'sfx-digital/audio/powerup9');
-    loadSfx(l, 'clear', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'fail', 'sfx-digital/audio/phaserdown2');
-    loadSfx(l, 'zero', 'sfx-interface/audio/error_004');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'ping', J + 'simple-bleeps/sfx-sounds-blip10');
+    loadAudio(l, 'drop', 'oga/junkala-sfx/movement/jumping-and-landing/sfx-movement-jump5');
+    loadAudio(l, 'land', J + 'coins/sfx-coin-double1');
+    loadAudio(l, 'big', J + 'coins/sfx-coin-cluster4');
+    loadAudio(l, 'gold', J + 'coins/sfx-coin-single5');
+    loadAudio(l, 'allgold', J + 'coins/sfx-coin-cluster6');
+    loadAudio(l, 'mult', J + 'positive-sounds/sfx-sounds-powerup8');
+    loadAudio(l, 'bump', 'oga/junkala-sfx/movement/jumping-and-landing/sfx-movement-jump18');
+    loadAudio(l, 'extra', J + 'fanfares/sfx-sounds-fanfare3');
+    loadAudio(l, 'round', J + 'pause-sounds/sfx-sounds-pause4-in');
+    loadAudio(l, 'clear', J + 'fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'fail', J + 'negative-sounds/sfx-sounds-negative2');
+    loadAudio(l, 'zero', J + 'negative-sounds/sfx-sounds-error3');
   },
   menuDecor(scene) {
     warmText(scene, [[20, true], [22, true], [26, true], [28, true], [40, true], [22, false], [26, false]]);

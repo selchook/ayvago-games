@@ -1,8 +1,10 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeTextures } from './PlayScene';
 
 const SS = 'space-shooter/png/';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -15,15 +17,23 @@ launch({
     l.image('gun', kenney(SS + 'parts/gun09.png'));
     l.image('star', kenney(SS + 'effects/star1.png'));
     l.image('warhead', kenney(SS + 'lasers/laserred08.png'));
-    loadSfx(l, 'launch', 'sfx-digital/audio/laser6');
-    loadSfx(l, 'boom', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'pop', 'sfx-digital/audio/spacetrash1');
-    loadSfx(l, 'impact', 'sfx-impact/audio/impactmetal_heavy_002');
-    loadSfx(l, 'empty', 'sfx-interface/audio/error_004');
-    loadSfx(l, 'tally', 'sfx-interface/audio/select_001');
-    loadSfx(l, 'wave', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'bonus', 'sfx-digital/audio/powerup8');
-    loadSfx(l, 'split', 'sfx-digital/audio/zap2');
+    loadAudio(l, 'launch', J + 'weapons/grenade-whistles/sfx-wpn-missilelaunch');
+    loadAudio(l, 'boom1', J + 'explosions/shortest/sfx-exp-shortest-soft1');
+    loadAudio(l, 'boom2', J + 'explosions/shortest/sfx-exp-shortest-soft2');
+    loadAudio(l, 'boom3', J + 'explosions/shortest/sfx-exp-shortest-soft6');
+    loadAudio(l, 'pop', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit7');
+    loadAudio(l, 'combo', J + 'general-sounds/positive-sounds/sfx-sounds-powerup6');
+    loadAudio(l, 'impact', J + 'explosions/short/sfx-exp-short-hard2');
+    loadAudio(l, 'ruin', J + 'explosions/medium-length/sfx-exp-medium5');
+    loadAudio(l, 'fallen', J + 'explosions/long/sfx-exp-long2');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
+    loadAudio(l, 'empty', J + 'weapons/out-of-ammo/sfx-wpn-noammo1');
+    loadAudio(l, 'tally', J + 'general-sounds/coins/sfx-coin-single4');
+    loadAudio(l, 'tallyCity', J + 'general-sounds/coins/sfx-coin-double6');
+    loadAudio(l, 'clear', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
+    loadAudio(l, 'wave', J + 'general-sounds/alarms/alarms/sfx-alarm-loop1');
+    loadAudio(l, 'bonus', J + 'general-sounds/positive-sounds/sfx-sounds-powerup16');
+    loadAudio(l, 'split', J + 'weapons/lasers/sfx-wpn-laser4');
   },
   menuDecor(scene) {
     makeTextures(scene);

@@ -129,7 +129,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: a, scale: 1, duration: 400, ease: 'Back.easeOut' });
     this.time.delayedCall(1500, () => {
       a.setText(t('go'));
-      this.sfx('go', { volume: 0.5 });
+      this.sfx('go', { volume: 0.6 });
       this.tweens.add({ targets: [a, b], alpha: 0, delay: 400, duration: 300, onComplete: () => { a.destroy(); b.destroy(); } });
       this.running = true;
     });
@@ -167,7 +167,7 @@ export class PlayScene extends ArcadeScene {
   private startReload(): void {
     if (this.reloading > 0 || this.ammo === MAX_AMMO || !this.running) return;
     this.reloading = 0.9;
-    this.sfx('shell', { volume: 0.5 });
+    this.sfx('shell', { volume: 0.55 });
     this.tweens.add({ targets: this.rifle, y: H + 220, duration: 200, yoyo: true, hold: 450 });
   }
 
@@ -175,14 +175,14 @@ export class PlayScene extends ArcadeScene {
     if (!this.running || this.isOver) return;
     if (this.reloading > 0) return;
     if (this.ammo <= 0) {
-      this.sfx('dry', { volume: 0.4 });
+      this.sfxAt('dry', this.cross.x, { volume: 0.6 });
       popup(this, this.cross.x, this.cross.y - 40, t('empty'), '#ec3013', 24);
       this.startReload();
       return;
     }
     this.ammo--;
     this.shots++;
-    this.sfx('shot', { volume: 0.55 });
+    this.sfxAt(rng.pick(['shot', 'shot2', 'shot3']), this.cross.x, { volume: 0.55 });
     this.tweens.add({ targets: this.rifle, y: this.rifle.y + 30, duration: 60, yoyo: true });
     this.tweens.add({ targets: this.cross, scale: 1.7, duration: 60, yoyo: true });
     shake(this, 0.003, 60);
@@ -201,7 +201,7 @@ export class PlayScene extends ArcadeScene {
     if (target) this.hitItem(target, x, y);
     else {
       this.streak = 0;
-      this.sfx('miss', { volume: 0.4 });
+      this.sfxAt(rng.pick(['miss', 'miss2']), x, { volume: 0.4 });
       const hole = this.add.image(x, y, 'shot_grey_large').setDepth(y > COUNTER ? 42 : 36).setScale(0.6).setAlpha(0.8);
       this.tweens.add({ targets: hole, alpha: 0, delay: 600, duration: 500, onComplete: () => hole.destroy() });
       burst(this, x, y, [0x8b5a2b, 0xd2a36c], 6, 120);
@@ -215,17 +215,19 @@ export class PlayScene extends ArcadeScene {
     this.hits++;
     this.streak++;
     const mult = Math.min(4, 1 + Math.floor(this.streak / 4));
+    const multUp = mult > 1 && this.streak % 4 === 0 && this.streak <= 12;
     const pts = it.kind.pts * mult;
     this.roundScore += pts;
     this.addScore(pts, x, y - 40);
     if (mult > 1) popup(this, x + 60, y - 10, `x${mult}`, '#ff4fa3', 22);
-    this.sfx(it.kind.duck ? 'quack' : 'ding', { volume: it.kind.duck ? 0.5 : 0.3 });
+    this.sfxAt(it.kind.duck ? rng.pick(['quack', 'quack2']) : rng.pick(['ding', 'ding2']), x, { volume: it.kind.duck ? 0.5 : 0.35 });
+    if (multUp) this.time.delayedCall(90, () => this.sfx('combo', { volume: 0.5, rate: 0.9 + mult * 0.08 }));
     burst(this, x, y, it.kind.duck ? [0xffd23f, 0xffffff, 0x8b5a2b] : [0xec3013, 0xffffff], 18, 260);
     const hole = this.add.image(x - it.c.x, y - it.c.y, 'shot_brown_small');
     it.c.add(hole);
     if (it.kind.gold) {
       this.timeLeft += 3;
-      this.sfx('bonus', { volume: 0.5 });
+      this.sfxAt('bonus', x, { volume: 0.6 });
       flash(this, 0xffd23f, 120);
       popup(this, x, y - 90, '+3s', '#5dff7a', 30);
     }
@@ -237,7 +239,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: it.c, y: it.c.y + 230, delay: 260, duration: 320, ease: 'Back.easeIn', onComplete: () => it.c.destroy() });
     if (this.roundScore >= this.quota && this.roundScore - pts < this.quota) {
       popup(this, W / 2, 250, t('roundClear'), '#5dff7a', 30);
-      this.sfx('bonus', { volume: 0.4 });
+      this.sfx('quota', { volume: 0.55 });
     }
   }
 
@@ -247,7 +249,7 @@ export class PlayScene extends ArcadeScene {
       const acc = this.shots ? this.hits / this.shots : 0;
       const bonus = Math.round(acc * 100) * this.round;
       this.addScore(bonus);
-      this.sfx('round', { volume: 0.5 });
+      this.sfx('round', { volume: 0.55, exact: true });
       const a = txt(this, W / 2, 290, t('roundClear'), { title: true, size: 48, color: '#5dff7a' }).setDepth(80).setScale(0.3);
       const b = txt(this, W / 2, 370, t('accuracy', { n: bonus }), { size: 36 }).setDepth(80);
       this.tweens.add({ targets: a, scale: 1, duration: 400, ease: 'Back.easeOut' });
@@ -322,7 +324,7 @@ export class PlayScene extends ArcadeScene {
       const s = Math.ceil(this.timeLeft);
       if (s !== this.lastTick) {
         this.lastTick = s;
-        if (s <= 5 && s > 0) this.sfx('tick', { volume: 0.5 });
+        if (s <= 5 && s > 0) this.sfx('tick', { volume: s <= 2 ? 0.6 : 0.45, rate: s <= 2 ? 1.15 : 1 });
         this.updateHud();
       }
       if (this.timeLeft <= 0) { this.timeLeft = 0; this.updateHud(); this.endRound(); }

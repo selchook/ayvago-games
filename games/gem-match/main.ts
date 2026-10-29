@@ -1,6 +1,8 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, GEM_FILES } from './PlayScene';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -11,16 +13,21 @@ launch({
     GEM_FILES.forEach((f, i) => l.image(`gem${i}`, kenney(`puzzle/png/element_${f}_glossy.png`)));
     l.image('gm-selector', kenney('puzzle/png/selectora.png'));
     l.image('gm-star', kenney('puzzle/png/particlestar.png'));
-    loadSfx(l, 'swap', 'sfx-interface/audio/switch_002');
-    loadSfx(l, 'match', 'sfx-digital/audio/pepsound1');
-    loadSfx(l, 'bad', 'sfx-interface/audio/error_004');
-    loadSfx(l, 'special', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'line', 'sfx-digital/audio/laser5');
-    loadSfx(l, 'bomb', 'sfx-impact/audio/impactglass_heavy_000');
-    loadSfx(l, 'rainbow', 'sfx-digital/audio/phaserup3');
-    loadSfx(l, 'land', 'sfx-interface/audio/drop_002');
-    loadSfx(l, 'select', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'clear', 'sfx-digital/audio/threetone1');
+    loadAudio(l, 'swap', J + 'general-sounds/interactions/sfx-sounds-interaction18');
+    loadAudio(l, 'cursor', J + 'general-sounds/menu-sounds/sfx-menu-move2');
+    loadAudio(l, 'select', J + 'general-sounds/buttons/sfx-sounds-button11');
+    loadAudio(l, 'bad', J + 'general-sounds/negative-sounds/sfx-sounds-error3');
+    loadAudio(l, 'match', J + 'general-sounds/high-pitched-sounds/sfx-sounds-high3');
+    loadAudio(l, 'combo', J + 'general-sounds/positive-sounds/sfx-sounds-powerup11');
+    loadAudio(l, 'special', J + 'general-sounds/positive-sounds/sfx-sounds-powerup4');
+    loadAudio(l, 'line', J + 'weapons/lasers/sfx-wpn-laser6');
+    loadAudio(l, 'bomb', J + 'explosions/short/sfx-exp-short-soft3');
+    loadAudio(l, 'rainbow', J + 'general-sounds/weird-sounds/sfx-sound-bling');
+    loadAudio(l, 'land', J + 'movement/jumping-and-landing/sfx-movement-jump16-landing');
+    loadAudio(l, 'shuffle', J + 'general-sounds/interactions/sfx-sounds-interaction13');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop6');
+    loadAudio(l, 'fail', J + 'general-sounds/negative-sounds/sfx-sounds-negative2');
+    loadAudio(l, 'clear', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, FOODS } from './PlayScene';
 
@@ -9,12 +9,18 @@ launch({
   preload(scene) {
     const l = scene.load;
     l.spritesheet('onebit', kenney('onebit/tilesheet/colored_transparent_packed.png'), { frameWidth: 16, frameHeight: 16 });
-    loadSfx(l, 'eat', 'sfx-digital/audio/pepsound1');
-    loadSfx(l, 'bonus', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'level', 'sfx-digital/audio/phaserup3');
-    loadSfx(l, 'die', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'turn', 'sfx-interface/audio/tick_001');
-    loadSfx(l, 'spawn', 'sfx-interface/audio/pluck_001');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'eat', J + 'coins/sfx-coin-single2');
+    loadAudio(l, 'bonus', J + 'coins/sfx-coin-cluster5');
+    loadAudio(l, 'level', J + 'positive-sounds/sfx-sounds-powerup12');
+    loadAudio(l, 'rock', J + 'impacts/sfx-sounds-impact11');
+    loadAudio(l, 'die', 'oga/junkala-sfx/explosions/shortest/sfx-exp-shortest-hard5');
+    loadAudio(l, 'crumble', J + 'impacts/sfx-sounds-impact3');
+    loadAudio(l, 'turn', J + 'menu-sounds/sfx-menu-move3');
+    loadAudio(l, 'mode', J + 'menu-sounds/sfx-menu-move2');
+    loadAudio(l, 'go', J + 'menu-sounds/sfx-menu-select2');
+    loadAudio(l, 'spawn', J + 'pause-sounds/sfx-sounds-pause1-in');
+    loadAudio(l, 'expire', J + 'pause-sounds/sfx-sounds-pause1-out');
   },
   menuDecor(scene) {
     scene.textures.get('onebit').setFilter(1);

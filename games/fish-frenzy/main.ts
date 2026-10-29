@@ -1,9 +1,11 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, SPECIES } from './PlayScene';
 
 const F = 'fish/png/default_size/fishtile_';
 const tile = (n: number) => kenney(`${F}${String(n).padStart(3, '0')}.png`);
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -18,14 +20,19 @@ launch({
     for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9]) l.image(`ff-sand${n}`, tile(n));
     for (const n of [10, 11, 12, 14, 28, 29, 30, 32, 34, 48, 64, 65, 70, 47, 51, 82, 84, 86]) l.image(`ff-deco${n}`, tile(n));
     l.image('ff-bubble', tile(123));
-    loadSfx(l, 'eat', 'sfx-interface/audio/drop_002');
+    loadSfx(l, 'eat1', 'sfx-interface/audio/drop_001');
+    loadSfx(l, 'eat2', 'sfx-interface/audio/drop_002');
+    loadSfx(l, 'eat3', 'sfx-interface/audio/drop_003');
     loadSfx(l, 'eatbig', 'sfx-interface/audio/drop_004');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'bite', 'sfx-impact/audio/impactpunch_heavy_002');
-    loadSfx(l, 'warn', 'sfx-interface/audio/error_006');
-    loadSfx(l, 'level', 'sfx-digital/audio/threetone2');
-    loadSfx(l, 'grow', 'sfx-digital/audio/phaserup2');
-    loadSfx(l, 'puff', 'sfx-interface/audio/maximize_006');
+    loadAudio(l, 'chomp', J + 'weapons/melee/sfx-wpn-punch4');
+    loadAudio(l, 'bite', J + 'weapons/melee/sfx-wpn-punch2');
+    loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage3');
+    loadAudio(l, 'sink', J + 'movement/falling-sounds/sfx-sounds-falling6');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
+    loadAudio(l, 'warn', J + 'general-sounds/alarms/alarms/sfx-alarm-loop6');
+    loadAudio(l, 'puff', J + 'movement/jumping-and-landing/sfx-movement-jump4');
+    loadAudio(l, 'level', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'grow', J + 'general-sounds/positive-sounds/sfx-sounds-powerup13');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

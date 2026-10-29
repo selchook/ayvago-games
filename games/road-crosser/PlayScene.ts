@@ -275,8 +275,8 @@ export class PlayScene extends ArcadeScene {
     const nx = Phaser.Math.Clamp(this.fx + d.x * COL, COL / 2, W - COL / 2);
     if (d.x && Math.abs(nx - this.fx) < 2) return;
     this.hopping = true;
-    this.sfx('hop', { volume: 0.35, rate: 0.95 + Math.random() * 0.15 });
-    const fromX = this.fx, fromY = rowY(this.fr);
+    this.sfxAt(rng.pick(['hop', 'hop2']), this.fx, { volume: 0.35 });
+    const fromX = this.fx, fromY = rowY(this.fr), fromRow = this.fr;
     this.fr = nr;
     this.tweens.addCounter({
       from: 0, to: 1, duration: 120,
@@ -290,6 +290,7 @@ export class PlayScene extends ArcadeScene {
         this.frog.setScale(0.42);
         this.hopping = false;
         this.land();
+        if (this.alive) this.nearMiss(fromRow, fromX);
         if (this.queued && this.alive) { const q = this.queued; this.queued = null; this.tryHop(q); }
       },
     });
@@ -308,6 +309,15 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     this.checkHazards();
+    if (this.alive && this.fr >= 1 && this.fr <= 5) this.sfxAt('log', this.fx, { volume: 0.8 });
+  }
+
+  /** A car sweeping through the spot the frog just left gets a whoosh. */
+  private nearMiss(row: number, x: number): void {
+    if (row < 7 || row > 11) return;
+    const lane = this.lanes.find((l) => l.row === row);
+    const car = lane?.objs.find((o) => Math.abs(o.x - x) < o.w / 2 + 70);
+    if (car) this.sfxAt('whoosh', car.x, { volume: 0.45 });
   }
 
   private platformUnder(): Obj | null {
@@ -335,12 +345,12 @@ export class PlayScene extends ArcadeScene {
     this.frog.setVisible(false);
     const pts = 50 + Math.ceil(this.timeLeft) * 10;
     this.addScore(pts, colX(BAYS[bay]), rowY(HOME_ROW) + 50);
-    this.sfx('home', { volume: 0.5 });
+    this.sfxAt('home', colX(BAYS[bay]), { volume: 0.6 });
     burst(this, colX(BAYS[bay]), rowY(HOME_ROW), [0x5dff7a, 0xffffff, 0xffd23f], 20, 240);
     if (this.chickBay === bay && this.chick) {
       this.addScore(200, colX(BAYS[bay]), rowY(HOME_ROW) + 100);
       popup(this, W / 2, 420, t('rescue'), '#ffd23f', 26);
-      this.sfx('bonus', { volume: 0.5 });
+      this.sfxAt('bonus', colX(BAYS[bay]), { volume: 0.6 });
       this.chick.destroy(); this.chick = null; this.chickBay = -1;
     }
     if (this.homes.every(Boolean)) { this.levelClear(); return; }
@@ -352,7 +362,7 @@ export class PlayScene extends ArcadeScene {
   private levelClear(): void {
     this.alive = false;
     this.addScore(500 + this.level * 250, W / 2, 560);
-    this.sfx('level', { volume: 0.5 });
+    this.sfx('level', { volume: 0.55, exact: true });
     flash(this, 0x5dff7a, 200);
     const msg = txt(this, W / 2, 520, t('levelClear'), { title: true, size: 40, color: '#5dff7a' }).setDepth(50).setScale(0.2);
     const sub = txt(this, W / 2, 590, t('fastTraffic'), { title: true, size: 20, color: '#ffd23f' }).setDepth(50).setAlpha(0);
@@ -377,12 +387,12 @@ export class PlayScene extends ArcadeScene {
     this.updateHud();
     const x = this.frog.x, y = this.frog.y;
     if (why === 'water') {
-      this.sfx('splash', { volume: 0.6 });
+      this.sfxAt('splash', x, { volume: 0.6 });
       burst(this, x, y, [0x5fb2ff, 0xffffff, 0x2a7fd4], 26, 260);
       this.tweens.add({ targets: this.frog, scale: 0, alpha: 0, angle: 180, duration: 400 });
     } else {
-      this.sfx(why === 'car' ? 'splat' : 'splash', { volume: 0.6 });
-      if (why === 'car') this.sfx('honk', { volume: 0.3 });
+      this.sfxAt(why === 'car' ? 'splat' : why === 'hedge' ? 'bonk' : 'timeout', x, { volume: why === 'car' ? 0.75 : 0.6 });
+      if (why === 'car') this.time.delayedCall(120, () => this.sfxAt('honk', x, { volume: 0.35, rate: 0.75 }));
       burst(this, x, y, [0x5dff7a, 0xec3013, 0xffffff], 26, 300);
       this.frog.setScale(0.5, 0.18);
       this.tweens.add({ targets: this.frog, alpha: 0, delay: 300, duration: 400 });
@@ -417,6 +427,7 @@ export class PlayScene extends ArcadeScene {
           this.chickBay = rng.pick(free);
           this.chick = this.add.image(colX(BAYS[this.chickBay]), rowY(HOME_ROW), 'chick').setScale(0).setDepth(6);
           this.tweens.add({ targets: this.chick, scale: 0.34, duration: 250, ease: 'Back.easeOut' });
+          this.sfxAt('chick', this.chick.x, { volume: 0.4 });
         }
         this.chickT = rng.int(4, 6);
       }
@@ -428,7 +439,7 @@ export class PlayScene extends ArcadeScene {
     const k = Math.max(0, this.timeLeft / this.timeMax);
     this.timerBar.width = (W - 44) * k;
     this.timerBar.setFillStyle(k > 0.5 ? 0x5dff7a : k > 0.25 ? 0xffd23f : 0xec3013);
-    if (k < 0.25 && Math.floor(this.timeLeft) !== this.lastTick) { this.lastTick = Math.floor(this.timeLeft); this.sfx('tick', { volume: 0.3 }); }
+    if (k < 0.25 && Math.floor(this.timeLeft) !== this.lastTick) { this.lastTick = Math.floor(this.timeLeft); this.sfx('tick', { volume: 0.4 }); }
     if (this.timeLeft <= 0) { this.die('time'); return; }
 
     // riding logs / hippos

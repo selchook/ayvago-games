@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -31,14 +31,27 @@ launch({
     l.image('pu-shield', kenney(SS + 'power-ups/powerupblue_shield.png'));
     l.image('pu-repair', kenney(SS + 'power-ups/pill_green.png'));
     l.image('shield', kenney(SS + 'effects/shield2.png'));
-    loadSfx(l, 'fire', 'sfx-impact/audio/impactpunch_heavy_001');
-    loadSfx(l, 'efire', 'sfx-impact/audio/impactpunch_medium_002');
-    loadSfx(l, 'boom', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'clang', 'sfx-impact/audio/impactmetal_medium_001');
-    loadSfx(l, 'wood', 'sfx-impact/audio/impactwood_heavy_002');
-    loadSfx(l, 'power', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'wave', 'sfx-digital/audio/threetone1');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'fire', J + 'weapons/cannon/sfx-wpn-cannon4');
+    loadAudio(l, 'efire', J + 'weapons/single-shot-sounds/sfx-weapon-singleshot3');
+    loadAudio(l, 'boom1', J + 'explosions/short/sfx-exp-short-hard2');
+    loadAudio(l, 'boom2', J + 'explosions/short/sfx-exp-short-hard4');
+    loadAudio(l, 'boom3', J + 'explosions/short/sfx-exp-short-hard12');
+    loadAudio(l, 'pop', J + 'explosions/shortest/sfx-exp-shortest-soft7');
+    loadAudio(l, 'die', J + 'explosions/medium-length/sfx-exp-medium1');
+    loadAudio(l, 'clang1', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit10');
+    loadAudio(l, 'clang2', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit7');
+    loadAudio(l, 'thud', J + 'general-sounds/impacts/sfx-sounds-impact3');
+    loadAudio(l, 'wood', J + 'general-sounds/impacts/sfx-sounds-impact8');
+    loadAudio(l, 'crate', J + 'general-sounds/impacts/sfx-sounds-impact11');
+    loadAudio(l, 'shieldhit', J + 'general-sounds/impacts/sfx-sounds-impact13');
+    loadAudio(l, 'power', J + 'general-sounds/positive-sounds/sfx-sounds-powerup13');
+    loadAudio(l, 'repair', J + 'general-sounds/positive-sounds/sfx-sounds-powerup2');
+    loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage3');
+    loadAudio(l, 'lowhp', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop6');
+    loadAudio(l, 'wave', J + 'general-sounds/alarms/alarms/sfx-alarm-loop5');
+    loadAudio(l, 'clear', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
+    loadAudio(l, 'perfect', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

@@ -85,7 +85,7 @@ export class PlayScene extends ArcadeScene {
     if (this.controls.touchUi) this.buildRotateButtons();
 
     this.thrustSnd = undefined;
-    if (this.cache.audio.exists('thrust')) this.thrustSnd = this.sound.add('thrust', { loop: true, volume: 0.25 });
+    if (this.cache.audio.exists('thrust')) this.thrustSnd = this.sound.add('thrust', { loop: true, volume: 0.3, rate: 0.85 });
     const stop = () => this.thrustSnd?.stop();
     this.events.on(Phaser.Scenes.Events.PAUSE, stop);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -189,7 +189,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: this.lander, scale: LS, duration: 400, ease: 'Back.easeOut' });
     this.vx = rng.int(-50, 50); this.vy = 10; this.ang = 0;
     this.flying = true;
-    this.sfx('ready', { volume: 0.3 });
+    this.sfxAt('ready', this.lander.x, { volume: 0.4 });
   }
 
   // ---------- helpers ----------
@@ -244,12 +244,12 @@ export class PlayScene extends ArcadeScene {
     const pts = 50 * pad.mult * (perfect ? 2 : 1) + this.level * 25;
     this.addScore(pts, x, y - 70);
     const refuel = perfect ? 450 : 300;
-    this.time.delayedCall(500, () => popup(this, x, y - 120, `+${refuel} ${t('fuelBonus')}`, '#3ee6ff', 20));
+    this.time.delayedCall(500, () => { popup(this, x, y - 120, `+${refuel} ${t('fuelBonus')}`, '#3ee6ff', 20); this.sfxAt('refuel', x, { volume: 0.45 }); });
     this.fuel = Math.min(FUEL_MAX, this.fuel + refuel);
     burst(this, x, pad.y, [0x5dff7a, 0xffd23f, 0xffffff, 0x3ee6ff], 40, 300);
     this.dust.explode(30, x, pad.y);
-    this.sfx('touch', { volume: 0.6 });
-    this.sfx(perfect ? 'perfect' : 'land');
+    this.sfxAt('touch', x, { volume: 0.9 });
+    this.sfx(perfect ? 'perfect' : 'land', { volume: perfect ? 0.8 : 0.65, exact: perfect });
     flash(this, 0x5dff7a, 120);
     this.banner(perfect ? t('perfect') : t('landed'), '#5dff7a', `x${pad.mult}`);
     this.time.delayedCall(2300, () => { if (!this.isOver) this.nextLevel(); });
@@ -264,8 +264,8 @@ export class PlayScene extends ArcadeScene {
     burst(this, x, y, [0x9a9aa8, 0x55555f], 30, 200);
     shake(this, 0.025, 400);
     flash(this, 0xec3013, 180);
-    this.sfx('crash', { volume: 0.6 });
-    this.sfx('boom', { volume: 0.5 });
+    this.sfxAt('boom', x, { volume: 0.85 });
+    this.sfxAt('crash', x, { volume: 0.5 });
     this.lives--;
     this.updateLives();
     this.banner(t('crashed'), '#ec3013', reason);
@@ -296,7 +296,7 @@ export class PlayScene extends ArcadeScene {
       this.vx += Math.sin(rad) * 150 * dt;
       this.vy -= Math.cos(rad) * 150 * dt;
       this.fuel = Math.max(0, this.fuel - 65 * dt);
-      if (this.fuel === 0) this.banner(t('noFuel'), '#ec3013');
+      if (this.fuel === 0) { this.banner(t('noFuel'), '#ec3013'); this.sfx('empty', { volume: 0.7 }); }
     }
     this.vy += this.gravity * dt;
     this.vx += this.wind * dt;
@@ -319,7 +319,7 @@ export class PlayScene extends ArcadeScene {
 
     // low-fuel warning
     this.warnCd -= dt;
-    if (this.fuel > 0 && this.fuel < 150 && this.warnCd <= 0) { this.warnCd = 1; this.sfx('warn', { volume: 0.25 }); popup(this, L.x, L.y - 60, t('lowFuel'), '#ec3013', 18); }
+    if (this.fuel > 0 && this.fuel < 150 && this.warnCd <= 0) { this.warnCd = 1; this.sfx('warn', { volume: 0.35 }); popup(this, L.x, L.y - 60, t('lowFuel'), '#ec3013', 18); }
 
     // collision: both feet + body against the terrain polyline
     const cos = Math.cos(rad), sin = Math.sin(rad);

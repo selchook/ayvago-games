@@ -1,4 +1,4 @@
-import { launch, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -8,13 +8,19 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    loadSfx(l, 'slide', 'sfx-interface/audio/scroll_002');
-    loadSfx(l, 'merge', 'sfx-digital/audio/pepsound2');
-    loadSfx(l, 'bump', 'sfx-interface/audio/tick_004');
-    loadSfx(l, 'undo', 'sfx-interface/audio/back_003');
-    loadSfx(l, 'level', 'sfx-digital/audio/powerup4');
-    loadSfx(l, 'win', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'over', 'sfx-digital/audio/lowdown');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'slide', 'oga/junkala-sfx/weapons/melee/sfx-wpn-sword3');
+    loadAudio(l, 'slide2', 'oga/junkala-sfx/weapons/melee/sfx-wpn-sword2');
+    loadAudio(l, 'merge', J + 'coins/sfx-coin-single2');
+    loadAudio(l, 'combo', J + 'coins/sfx-coin-double3');
+    loadAudio(l, 'bump', J + 'menu-sounds/sfx-menu-move4');
+    loadAudio(l, 'nope', J + 'negative-sounds/sfx-sounds-error6');
+    loadAudio(l, 'stuck', J + 'negative-sounds/sfx-sounds-error10');
+    loadAudio(l, 'undo', J + 'pause-sounds/sfx-sounds-pause6-out');
+    loadAudio(l, 'level', J + 'positive-sounds/sfx-sounds-powerup12');
+    loadAudio(l, 'win', J + 'fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'win2', J + 'coins/sfx-coin-cluster8');
+    loadAudio(l, 'over', J + 'negative-sounds/sfx-sounds-negative2');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

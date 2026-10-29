@@ -222,7 +222,7 @@ export class PlayScene extends ArcadeScene {
     if (it.kind === 'heart') {
       this.lives = Math.min(MAX_LIVES, this.lives + 1);
       popup(this, x, y - 40, t('life'), '#ff4fa3');
-      this.sfx('heart', { volume: 0.5 });
+      this.sfxAt('heart', x, { volume: 0.6 });
       burst(this, x, y, [0xff4fa3, 0xffffff], 20, 260);
       this.updateHud();
       return;
@@ -230,7 +230,7 @@ export class PlayScene extends ArcadeScene {
     if (it.kind === 'star') {
       this.magnet = 7;
       popup(this, x, y - 70, t('magnet'), '#ff4fa3', 24);
-      this.sfx('magnet', { volume: 0.45 });
+      this.sfxAt('magnet', x, { volume: 0.55 });
       softFlash(this, 0xff4fa3, 90);
     }
     const prevMult = this.mult;
@@ -238,10 +238,10 @@ export class PlayScene extends ArcadeScene {
     this.catches++;
     this.addScore(it.value * this.mult, x, y - 40);
     this.sparks.explode(it.kind === 'gem' ? 14 : 8, x, y);
-    if (it.kind === 'gem') { this.sfx('gem', { volume: 0.55 }); burst(this, x, y, [0x3ee6ff, 0xffffff, 0x5dff7a], 14, 240); }
-    else this.sfx('coin', { volume: 0.3, detune: Math.min(this.combo, 20) * 20 });
+    if (it.kind === 'gem') { this.sfxAt('gem', x, { volume: 0.5 }); burst(this, x, y, [0x3ee6ff, 0xffffff, 0x5dff7a], 14, 240); }
+    else this.sfxAt('coin', x, { volume: 0.35, detune: Math.min(this.combo, 20) * 30, exact: true });
     if (this.mult > prevMult) {
-      this.sfx('combo', { volume: 0.4 });
+      this.sfx('combo', { volume: 0.55, delay: 0.06 });
       this.tweens.add({ targets: this.comboText, scale: 1.6, duration: 120, yoyo: true });
       popup(this, this.player.x, this.basket.y - 110, `${t('combo')} x${this.mult}`, '#3ee6ff', 26);
     }
@@ -259,11 +259,11 @@ export class PlayScene extends ArcadeScene {
     }
     // missed valuables break the combo
     if (it.kind !== 'heart' && it.kind !== 'star') {
-      if (this.combo >= 5) popup(this, x, GROUND_Y - 60, `${t('combo')} 0`, '#ec3013', 18);
+      if (this.combo >= 5) { popup(this, x, GROUND_Y - 60, `${t('combo')} 0`, '#ec3013', 18); this.sfx('broken', { volume: 0.4 }); }
       this.combo = 0;
       this.updateHud();
     }
-    this.sfx('thud', { volume: 0.3 });
+    this.sfxAt('thud', x, { volume: 0.3 });
     burst(this, x, GROUND_Y - 10, [0x8bc34a, 0xffffff], 6, 120);
     this.tweens.add({ targets: it.img, y: GROUND_Y - 4, alpha: 0, scale: 0.2, duration: 220, onComplete: () => it.img.destroy() });
   }
@@ -276,13 +276,14 @@ export class PlayScene extends ArcadeScene {
     smoke.explode(caught ? 10 : 5);
     this.time.delayedCall(900, () => smoke.destroy());
     burst(this, x, y, [0xffd23f, 0xec3013, 0xff8c00], caught ? 36 : 16, caught ? 420 : 240);
-    this.sfx('boom', { volume: caught ? 0.7 : 0.35 });
+    this.sfxAt(caught ? 'boom' : 'boomFar', x, { volume: caught ? 0.8 : 0.4 });
     if (!caught) { shake(this, 0.004, 100); return; }
     this.lives--;
     this.combo = 0;
     this.hurtT = 0.6;
     popup(this, x, y - 50, t('boom'), '#ec3013', 30);
-    this.sfx('hurt', { volume: 0.5 });
+    this.sfxAt(this.lives <= 0 ? 'death' : 'hurt', x, { volume: this.lives <= 0 ? 0.7 : 0.5, delay: 0.08 });
+    if (this.lives === 1) this.sfx('low', { volume: 0.45, delay: 0.7 });
     shake(this, 0.022, 320);
     softFlash(this, 0xec3013, 160);
     this.tweens.add({ targets: this.hearts[this.lives], scale: 0.6, duration: 120, yoyo: true });
@@ -297,7 +298,7 @@ export class PlayScene extends ArcadeScene {
   private levelUp(): void {
     const { width, height } = this.scale;
     this.level++;
-    this.sfx('level', { volume: 0.5 });
+    this.sfx('level', { volume: 0.65, exact: true });
     const b = txt(this, width / 2, height * 0.42, `${t('level')} ${this.level}`, { title: true, size: 46, color: '#ffd23f' }).setDepth(60).setScale(0.3);
     this.tweens.add({ targets: b, scale: 1, duration: 320, ease: 'Back.easeOut' });
     this.tweens.add({ targets: b, alpha: 0, delay: 900, duration: 400, onComplete: () => b.destroy() });

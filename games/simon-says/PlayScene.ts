@@ -19,6 +19,7 @@ export class PlayScene extends ArcadeScene {
   private lives = 3;
   private state: State = 'busy';
   private timeLeft = 0;
+  private hurried = false;
   private timeMax = 3;
   private mistakesThisRound = 0;
   private ring!: Phaser.GameObjects.Graphics;
@@ -118,7 +119,7 @@ export class PlayScene extends ArcadeScene {
     this.mistakesThisRound = 0;
     if (this.round > 1 && this.round % 5 === 1) {
       popup(this, CX, 300, t('speedUp'), '#ff4fa3', 30);
-      this.sfx('levelup', { volume: 0.5 });
+      this.sfx('levelup', { volume: 0.55, exact: true });
     }
     this.updateHud();
     this.playSequence();
@@ -139,6 +140,8 @@ export class PlayScene extends ArcadeScene {
       this.pos = 0;
       this.timeMax = Math.max(1.8, 3.2 - this.round * 0.05);
       this.timeLeft = this.timeMax;
+      this.hurried = false;
+      this.sfx('go', { volume: 0.3, exact: true });
       this.status.setText(t('yourTurn')).setColor('#5dff7a');
       this.progress.setText(`0 / ${this.seq.length}`);
     });
@@ -154,6 +157,7 @@ export class PlayScene extends ArcadeScene {
     this.addScore(5 * this.round, px, py);
     this.pos++;
     this.timeLeft = this.timeMax;
+    this.hurried = false;
     this.progress.setText(`${this.pos} / ${this.seq.length}`);
     if (this.pos >= this.seq.length) {
       this.state = 'busy';
@@ -163,7 +167,8 @@ export class PlayScene extends ArcadeScene {
         if (this.isOver) return;
         this.addScore(bonus, CX, CY - 140);
         if (!this.mistakesThisRound && this.round >= 3) popup(this, CX, 300, t('perfect'), '#5dff7a', 30);
-        this.sfx('round', { volume: 0.5 });
+        this.sfx('round', { volume: 0.55, exact: true });
+        if (!this.mistakesThisRound && this.round >= 3) this.time.delayedCall(380, () => this.sfx('perfect', { volume: 0.45, exact: true }));
         burst(this, CX, CY, [0xffd23f, 0x5dff7a, 0x3ee6ff, 0xff4fa3], 30, 360);
         this.tweens.add({ targets: this.centerTxt, scale: 1.4, duration: 150, yoyo: true });
       });
@@ -178,7 +183,7 @@ export class PlayScene extends ArcadeScene {
     this.mistakesThisRound++;
     this.updateHud();
     this.tone(90, 600, 'sawtooth', 0.15);
-    this.sfx('buzz', { volume: 0.4 });
+    this.sfx('buzz', { volume: 0.5 });
     shake(this, 0.02, 350);
     flash(this, 0xec3013, 200);
     this.status.setText(msg).setColor('#ec3013');
@@ -197,6 +202,7 @@ export class PlayScene extends ArcadeScene {
     this.ring.beginPath();
     this.ring.arc(0, 0, R_IN - 22, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2, false);
     this.ring.strokePath();
+    if (f <= 0.35 && !this.hurried && this.timeLeft > 0) { this.hurried = true; this.sfx('hurry', { volume: 0.3 }); }
     if (this.timeLeft <= 0) this.mistake(t('tooSlow'));
   }
 }

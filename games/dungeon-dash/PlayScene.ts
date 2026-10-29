@@ -71,6 +71,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     freshTextCanvases(this);
+    this.stepFoot = 0; this.lowWarned = false;
     this.grid = []; this.seen = []; this.vis = []; this.tiles = []; this.items = []; this.monsters = [];
     this.hp = 16; this.maxHp = 16; this.atk = 3; this.def = 0; this.potions = 2; this.floor = 1; this.xp = 0; this.lvl = 1;
     this.busyUntil = 0; this.bossAlive = false; this.dead = false; this.turn = 0; this.holdDir = null; this.holdT = 0;
@@ -306,6 +307,10 @@ export class PlayScene extends ArcadeScene {
   }
 
   // ---------------------------------------------------------------- turns
+  /** Sound-only state: alternating footsteps and a single low-health warning until healed. */
+  private stepFoot = 0;
+  private lowWarned = false;
+
   private heroFrame(): number {
     return this.def >= 3 ? F.heroKnight : this.def >= 1 ? F.heroArmor : F.hero;
   }
@@ -313,12 +318,12 @@ export class PlayScene extends ArcadeScene {
   private act(a: string): void {
     if (this.isOver || this.dead || this.time.now < this.busyUntil) return;
     if (a === 'wait') {
-      this.sfx('step', { volume: 0.2, rate: 0.7 });
+      this.sfx('wait', { volume: 0.25 });
       this.endTurn(120);
       return;
     }
     if (a === 'potion') {
-      if (this.potions <= 0 || this.hp >= this.maxHp) { this.sfx('bump', { volume: 0.4 }); return; }
+      if (this.potions <= 0 || this.hp >= this.maxHp) { this.sfx('nope', { volume: 0.4 }); return; }
       this.potions--;
       const heal = Math.max(6, Math.round(this.maxHp * 0.6));
       this.hp = Math.min(this.maxHp, this.hp + heal);
@@ -334,7 +339,7 @@ export class PlayScene extends ArcadeScene {
     const m = this.monsterAt(nc, nr);
     if (m) { this.heroAttack(m, dx, dy); this.endTurn(170); return; }
     if (!this.walkable(nc, nr)) {
-      this.sfx('bump', { volume: 0.3 });
+      this.sfxAt('bump', this.hero.x, { volume: 0.3 });
       this.tweens.add({ targets: this.hero, x: this.hero.x + dx * 8, y: this.hero.y + dy * 8, duration: 50, yoyo: true });
       this.busyUntil = this.time.now + 110;
       return;
@@ -342,11 +347,12 @@ export class PlayScene extends ArcadeScene {
     this.pc = nc; this.pr = nr;
     if (dx) this.hero.setFlipX(dx < 0);
     this.tweens.add({ targets: this.hero, x: OX + nc * TS + TS / 2, y: OY + nr * TS + TS / 2, duration: 100, ease: 'Quad.easeOut' });
-    this.sfx('step', { volume: 0.25, rate: 0.9 + Math.random() * 0.3 });
+    this.stepFoot ^= 1;
+    this.sfxAt(this.stepFoot ? 'step1' : 'step2', this.hero.x, { volume: 0.35 });
     this.pickup();
     if (this.dead) return;
     if (nc === this.sc && nr === this.sr) {
-      if (this.bossAlive) this.say(t('locked'), '#ec3013');
+      if (this.bossAlive) { this.say(t('locked'), '#ec3013'); this.sfx('locked', { volume: 0.4 }); }
       else { this.descend(); return; }
     }
     this.endTurn(130);
@@ -360,6 +366,7 @@ export class PlayScene extends ArcadeScene {
     if (it.kind === 'fire') {
       // traps stay put
       const dmg = 2 + Math.floor(this.floor / 4);
+      this.sfxAt('trap', x, { volume: 0.45 });
       this.hurt(dmg, 0xff8c00);
       burst(this, x, y, [0xff8c00, 0xffd23f], 14, 200);
       fpopup(this, x, y - 70, t('trap'), '#ff8c00', 18);
@@ -370,7 +377,7 @@ export class PlayScene extends ArcadeScene {
     if (it.kind === 'coin') {
       const v = 10 + this.floor * 5;
       this.addScore(v);
-      this.sfx('coin', { volume: 0.5 });
+      this.sfxAt('coin', x, { volume: 0.5 });
       fpopup(this, x, y - 30, `+${v}`, '#ffd23f', 22);
       burst(this, x, y, [0xffd23f, 0xffffff], 10, 160);
     } else if (it.kind === 'potion') {
@@ -383,14 +390,14 @@ export class PlayScene extends ArcadeScene {
         this.potions++;
         fpopup(this, x, y - 30, `+1 ${t('potion')}`, '#ff8fa3', 20);
       }
-      this.sfx('item', { volume: 0.5 });
+      this.sfxAt('item', x, { volume: 0.5 });
     } else if (it.kind === 'heart') {
       const heal = Math.min(this.maxHp - this.hp, 4);
       this.hp += heal;
-      this.sfx('potion', { volume: 0.5 });
+      this.sfxAt('heart', x, { volume: 0.5 });
       fpopup(this, x, y - 30, `+${heal} ${t('heal')}`, '#5dff7a', 20);
     } else if (it.kind === 'chest') {
-      this.sfx('chest', { volume: 0.6 });
+      this.sfxAt('chest', x, { volume: 0.6 });
       burst(this, x, y, [0xffd23f, 0xb5651d, 0xffffff], 22, 260);
       shake(this, 0.004, 100);
       const roll = Math.random();
@@ -403,7 +410,7 @@ export class PlayScene extends ArcadeScene {
       const icon = this.add.image(x, y, 'mr', frame).setScale(SC).setDepth(30);
       this.tweens.add({ targets: icon, y: y - 90, scale: SC * 1.3, duration: 450, ease: 'Back.easeOut', onComplete: () => this.tweens.add({ targets: icon, alpha: 0, duration: 250, onComplete: () => icon.destroy() }) });
       fpopup(this, x, y - 110, label, '#3ee6ff', 22);
-      this.sfx('item', { volume: 0.5, delay: 0.15 });
+      this.sfx('loot', { volume: 0.55, delay: 0.15, exact: true });
     }
     this.updateUi();
   }
@@ -422,14 +429,15 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(80, () => { if (m.img.active) { m.img.clearTint(); if (m.boss) m.img.setTint(0xff9090); } });
     fpopup(this, m.img.x, m.img.y - 30, crit ? `${dmg}!` : String(dmg), crit ? '#ffd23f' : '#ffffff', crit ? 28 : 22);
     burst(this, m.img.x, m.img.y, [0xec3013, 0xffffff], crit ? 16 : 8, 180);
-    this.sfx('hit', { volume: 0.5 });
+    this.sfxAt(rng.pick(['slash1', 'slash2', 'slash3']), m.img.x, { volume: 0.5 });
+    if (crit) this.sfxAt('crit', m.img.x, { volume: 0.5 });
     if (crit) shake(this, 0.006, 100);
     if (m.hp <= 0) {
       this.monsters.splice(this.monsters.indexOf(m), 1);
       const pts = m.def.score * (m.boss ? 1 : 1 + Math.floor(this.floor / 3));
       this.addScore(pts);
       this.gainXp(Math.ceil(m.def.score / 10) * (m.boss ? 1 : 1));
-      this.sfx('kill', { volume: 0.5 });
+      if (!m.boss) this.sfxAt(rng.pick(['kill1', 'kill2']), m.img.x, { volume: 0.45 });
       burst(this, m.img.x, m.img.y, [0xec3013, 0xffd23f, 0x5dff7a], m.boss ? 60 : 22, m.boss ? 420 : 260);
       fpopup(this, m.img.x, m.img.y - 70, `+${pts}`, '#ffd23f', 22);
       this.tweens.add({ targets: m.img, alpha: 0, scale: SC * 1.4, angle: 90, duration: 250, onComplete: () => m.img.destroy() });
@@ -438,7 +446,7 @@ export class PlayScene extends ArcadeScene {
         shake(this, 0.02, 400);
         softFlash(this, 0xffd23f, 300, 0.35);
         this.say(t('down'), '#5dff7a');
-        this.sfx('stairs', { volume: 0.5 });
+        this.sfxAt('bossdown', m.img.x, { volume: 0.8 });
         // the guardian always drops a chest
         const img = this.add.image(m.img.x, m.img.y, 'mr', F.chest).setScale(SC).setDepth(3);
         this.items.push({ kind: 'chest', c: m.c, r: m.r, img });
@@ -455,15 +463,17 @@ export class PlayScene extends ArcadeScene {
     this.maxHp += 3;
     this.hp = Math.min(this.maxHp, this.hp + 6);
     if (this.lvl % 2 === 1) this.atk++;
-    this.sfx('item', { volume: 0.6, rate: 1.2 });
+    this.sfx('levelup', { volume: 0.65 });
     burst(this, this.hero.x, this.hero.y, [0x3ee6ff, 0xffd23f, 0xffffff], 30, 260);
     softFlash(this, 0x3ee6ff, 200, 0.2);
     this.say(t('levelUp', { n: this.lvl }), '#3ee6ff');
   }
 
   private hurt(dmg: number, color = 0xec3013): void {
+    if (this.hp > this.maxHp * 0.4) this.lowWarned = false;
     this.hp -= dmg;
     this.sfx('hurt', { volume: 0.5 });
+    if (this.hp > 0 && this.hp <= this.maxHp * 0.25 && !this.lowWarned) { this.lowWarned = true; this.sfx('low', { volume: 0.45, delay: 0.2 }); }
     shake(this, 0.012, 160);
     softFlash(this, color, 160, 0.25);
     this.hero.setTintFill(0xffffff);
@@ -478,6 +488,7 @@ export class PlayScene extends ArcadeScene {
     this.dead = true;
     this.hp = 0;
     this.updateUi();
+    this.sfxAt('death', this.hero.x, { volume: 0.7 });
     burst(this, this.hero.x, this.hero.y, [0xec3013, 0x888888], 50, 360);
     this.tweens.add({ targets: this.hero, angle: 90, alpha: 0.3, duration: 400 });
     this.endGame({ delay: 1200 });
@@ -505,7 +516,7 @@ export class PlayScene extends ArcadeScene {
         // attack
         const { dmg, crit } = this.damage(m.atk, this.def);
         this.tweens.add({ targets: m.img, x: m.img.x + dx * 20, y: m.img.y + dy * 20, duration: 60, yoyo: true });
-        this.sfx('hit', { volume: 0.35, rate: 0.8 });
+        this.sfxAt(rng.pick(['punch1', 'punch2', 'punch3']), m.img.x, { volume: 0.45 });
         this.hurt(dmg);
         if (crit) shake(this, 0.02, 200);
         continue;
@@ -537,7 +548,7 @@ export class PlayScene extends ArcadeScene {
     this.busyUntil = this.time.now + 900;
     const bonus = 50 * this.floor;
     this.addScore(bonus);
-    this.sfx('stairs', { volume: 0.6 });
+    this.sfx('stairs', { volume: 0.55 });
     fpopup(this, this.hero.x, this.hero.y - 40, `+${bonus}`, '#5dff7a', 24);
     this.tweens.add({ targets: this.hero, scale: SC * 0.3, angle: 360, duration: 380 });
     this.cameras.main.fadeOut(380, 0, 0, 0);

@@ -4,6 +4,7 @@ import { t } from './i18n';
 import { sdk } from './sdk';
 import { net } from './net';
 import { playSfx, type SfxConfig } from './audio';
+import { MUSIC_VOLUME, playMusic, playTrack } from './music';
 import { addCrt, popup } from './fx';
 import { currentGame } from './registry';
 
@@ -45,6 +46,7 @@ export abstract class ArcadeScene extends Phaser.Scene {
     this.isOver = false;
     this.elapsed = 0;
     this.hud = new Hud(this, t('score'));
+    playMusic(this, playTrack(), MUSIC_VOLUME.play);
     this.createGame();
     this.hud.setVisible(this.useHud);
     if (this.useCrt && currentGame().crt !== false) addCrt(this);

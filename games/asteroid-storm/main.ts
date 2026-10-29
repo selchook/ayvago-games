@@ -1,8 +1,10 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
 const SS = 'space-shooter/png/';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -24,15 +26,24 @@ launch({
     l.image('rock2-1', kenney(SS + 'meteors/meteorgrey_small1.png'));
     l.image('rock2-2', kenney(SS + 'meteors/meteorgrey_small2.png'));
     l.image('rock-brown', kenney(SS + 'meteors/meteorbrown_big3.png'));
-    loadSfx(l, 'shoot', 'sfx-digital/audio/laser5');
-    loadSfx(l, 'boom-big', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'boom-small', 'sfx-digital/audio/spacetrash2');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'hyper', 'sfx-digital/audio/phasejump3');
-    loadSfx(l, 'ufo', 'sfx-digital/audio/zaptwotone');
-    loadSfx(l, 'eshoot', 'sfx-digital/audio/laser9');
-    loadSfx(l, 'wave', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'life', 'sfx-digital/audio/powerup3');
+    loadAudio(l, 'shoot1', J + 'weapons/lasers/sfx-wpn-laser10');
+    loadAudio(l, 'shoot2', J + 'weapons/lasers/sfx-wpn-laser2');
+    loadAudio(l, 'boom0a', J + 'explosions/short/sfx-exp-short-soft2');
+    loadAudio(l, 'boom0b', J + 'explosions/short/sfx-exp-short-soft5');
+    loadAudio(l, 'boom1a', J + 'explosions/shortest/sfx-exp-shortest-soft3');
+    loadAudio(l, 'boom1b', J + 'explosions/shortest/sfx-exp-shortest-soft5');
+    loadAudio(l, 'boom2a', J + 'explosions/shortest/sfx-exp-shortest-hard6');
+    loadAudio(l, 'boom2b', J + 'explosions/shortest/sfx-exp-shortest-hard8');
+    loadAudio(l, 'hurt', J + 'explosions/short/sfx-exp-short-hard5');
+    loadAudio(l, 'death', J + 'explosions/medium-length/sfx-exp-medium8');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
+    loadAudio(l, 'hyper', J + 'movement/portals-and-transitions/sfx-movement-portal5');
+    loadAudio(l, 'ufo', J + 'general-sounds/alarms/alarms/sfx-alarm-loop6');
+    loadAudio(l, 'ufo-boom', J + 'explosions/short/sfx-exp-short-hard13');
+    loadAudio(l, 'eshoot', J + 'weapons/lasers/sfx-wpn-laser1');
+    loadAudio(l, 'wave', J + 'movement/portals-and-transitions/sfx-movement-portal3');
+    loadAudio(l, 'clear', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
+    loadAudio(l, 'life', J + 'general-sounds/positive-sounds/sfx-sounds-powerup12');
     loadSfx(l, 'beat', 'sfx-digital/audio/tone1');
   },
   menuDecor(scene) {

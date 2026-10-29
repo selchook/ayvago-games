@@ -76,6 +76,7 @@ export class PlayScene extends ArcadeScene {
   createGame(): void {
     this.grid = []; this.cells = []; this.pieceImgs = []; this.ghostImgs = []; this.nextImgs = []; this.holdImgs = [];
     this.bag = []; this.queue = []; this.holdP = -1; this.holdUsed = false; this.level = 1; this.lines = 0;
+    this.danger = false;
     this.combo = -1; this.b2b = false; this.fallT = 0; this.lockT = 0; this.lockResets = 0; this.active = null;
     this.phase = 'play'; this.phaseT = 0; this.clearRows = []; this.drag = null;
     this.held = { left: null, right: null, down: null };
@@ -256,7 +257,7 @@ export class PlayScene extends ArcadeScene {
     if (!this.fits(a.p, a.rot, a.x + dir, a.y)) return false;
     a.x += dir;
     this.touchLock();
-    this.sfx('move', { volume: 0.25 });
+    this.sfx('move', { volume: 0.3 });
     this.render();
     return true;
   }
@@ -274,19 +275,19 @@ export class PlayScene extends ArcadeScene {
   private rotate(dir: 1 | -1): void {
     const a = this.active;
     if (!a || this.phase !== 'play' || this.isOver) return;
-    if (PIECES[a.p].name === 'O') { this.sfx('rotate', { volume: 0.2 }); return; }
+    if (PIECES[a.p].name === 'O') { this.sfx('rotate', { volume: 0.25 }); return; }
     const to = (a.rot + dir + 4) % 4;
     const table = PIECES[a.p].name === 'I' ? KICKS_I : KICKS;
     for (const [kx, ky] of table[`${a.rot}${to}`]) {
       if (this.fits(a.p, to, a.x + kx, a.y - ky)) {
         a.x += kx; a.y -= ky; a.rot = to;
         this.touchLock();
-        this.sfx('rotate', { volume: 0.3 });
+        this.sfx('rotate', { volume: 0.35 });
         this.render();
         return;
       }
     }
-    this.sfx('bad', { volume: 0.15 });
+    this.sfx('bad', { volume: 0.25 });
   }
 
   private hardDrop(): void {
@@ -301,16 +302,16 @@ export class PlayScene extends ArcadeScene {
       const tr = this.add.rectangle(this.px(a.x + cx), (this.py(y0 + cy) + this.py(a.y + cy)) / 2, CELL - 10, Math.max(CELL, n * CELL), COLORS_FX[a.p], 0.25).setDepth(1);
       this.tweens.add({ targets: tr, alpha: 0, scaleX: 0.2, duration: 220, onComplete: () => tr.destroy() });
     }
-    this.sfx('harddrop', { volume: 0.5 });
+    this.sfx('harddrop', { volume: 0.55 });
     shake(this, 0.004 + Math.min(0.006, n * 0.0004), 90);
     this.lock();
   }
 
   private hold(): void {
     const a = this.active;
-    if (!a || this.phase !== 'play' || this.isOver || this.holdUsed) { if (this.holdUsed) this.sfx('bad', { volume: 0.15 }); return; }
+    if (!a || this.phase !== 'play' || this.isOver || this.holdUsed) { if (this.holdUsed) this.sfx('bad', { volume: 0.25 }); return; }
     this.holdUsed = true;
-    this.sfx('hold', { volume: 0.4 });
+    this.sfx('hold', { volume: 0.45 });
     const prev = this.holdP;
     this.holdP = a.p;
     this.active = null;
@@ -335,7 +336,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.active = null;
     this.holdUsed = false;
-    this.sfx('lock', { volume: 0.35 });
+    this.sfx(Math.random() < 0.5 ? 'lock1' : 'lock2', { volume: 0.45 });
     this.renderBoard();
     this.render();
     // squash the freshly locked cells
@@ -364,6 +365,7 @@ export class PlayScene extends ArcadeScene {
       this.combo = -1;
       this.phase = 'spawn';
       this.phaseT = 0.05;
+      this.checkDanger();
     }
   }
 
@@ -385,15 +387,16 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: msg, scale: 1, duration: 260, ease: 'Back.easeOut' });
     this.tweens.add({ targets: msg, alpha: 0, y: midY - 60, delay: 700, duration: 400, onComplete: () => msg.destroy() });
     for (const y of full) for (let x = 0; x < W; x += 2) burst(this, this.px(x), this.py(y), [COLORS_FX[this.grid[y][x]], 0xffffff], 6, 260);
-    if (quad) { shake(this, 0.014, 260); flash(this, 0xffd23f, 160); this.sfx('tetris', { volume: 0.6 }); }
-    else { shake(this, 0.004 * n, 140); this.sfx('line', { volume: 0.5, rate: 1 + (n - 1) * 0.12 }); }
+    if (quad) { shake(this, 0.014, 260); flash(this, 0xffd23f, 160); this.sfx('tetris', { volume: 0.75, exact: true }); }
+    else { shake(this, 0.004 * n, 140); this.sfx('line', { volume: 0.55, rate: 1 + (n - 1) * 0.12 }); }
+    if (this.combo > 0) this.sfx('combo', { volume: 0.5, exact: true, rate: Math.min(1.5, 1 + this.combo * 0.07), delay: 0.18 });
 
     const before = this.level;
     this.lines += n;
     this.level = Math.floor(this.lines / 10) + 1;
     if (this.level > before) {
       this.time.delayedCall(350, () => {
-        this.sfx('levelup', { volume: 0.5 });
+        this.sfx('levelup', { volume: 0.65 });
         flash(this, 0x8b5cff, 200);
         popup(this, BX + W * CELL / 2, 520, t('levelUp'), '#ff4fa3', 30);
       });
@@ -410,11 +413,21 @@ export class PlayScene extends ArcadeScene {
     this.clearRows = [];
     for (const row of this.cells) for (const im of row) im.setScale((CELL - 2) / 32);
     this.renderBoard();
+    this.checkDanger();
+  }
+
+  /** One warning beep when the stack first climbs near the top; re-arms once it is lower again. */
+  private danger = false;
+  private checkDanger(): void {
+    const top = this.grid.findIndex((row) => row.some((c) => c >= 0));
+    const height = top < 0 ? 0 : H - top;
+    if (!this.danger && height >= H - HIDDEN - 4) { this.danger = true; this.sfx('danger', { volume: 0.4 }); }
+    else if (this.danger && height <= H - HIDDEN - 7) this.danger = false;
   }
 
   private gameOver(): void {
     if (this.isOver) return;
-    this.sfx('bad', { volume: 0.5 });
+    this.sfx('topout', { volume: 0.65 });
     shake(this, 0.02, 400);
     flash(this, 0xec3013, 200);
     // grey out the stack row by row

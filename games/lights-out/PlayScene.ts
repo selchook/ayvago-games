@@ -98,7 +98,7 @@ export class PlayScene extends ArcadeScene {
     this.cursor = r * n + c;
     this.showCursor = true;
     this.moveCursor();
-    this.sfx('move', { volume: 0.3 });
+    this.sfx('move', { volume: 0.35 });
   }
 
   private moveCursor(): void {
@@ -183,8 +183,12 @@ export class PlayScene extends ArcadeScene {
         if (!this.on[j]) burst(this, img.x, img.y, [0xffd23f, 0xfff3b0], 5, 120);
       });
     });
-    this.sfx('toggle', { volume: 0.45, detune: rng.int(-100, 100) });
+    // The click climbs as the board goes dark.
+    const lit = this.on.filter(Boolean).length / this.on.length;
+    this.sfxAt('toggle', this.cells[i].x, { volume: 0.5, rate: 0.9 + (1 - lit) * 0.35 + (Math.random() - 0.5) * 0.04 });
     this.updateHud();
+    const left = this.maxMoves - this.moves;
+    if (left > 0 && left <= 2 && this.on.some((v) => v)) this.sfx('warn', { volume: 0.35 });
 
     if (this.on.every((v) => !v)) this.solved();
     else if (this.moves >= this.maxMoves) this.outOfMoves();
@@ -199,7 +203,7 @@ export class PlayScene extends ArcadeScene {
     this.hintRing.setPosition(img.x, img.y).setVisible(true);
     this.hintsUsed++;
     this.addScore(-25, img.x, img.y - 40);
-    this.sfx('hint', { volume: 0.5 });
+    this.sfxAt('hint', img.x, { volume: 0.5 });
   }
 
   private solved(): void {
@@ -207,7 +211,8 @@ export class PlayScene extends ArcadeScene {
     const perfect = this.moves <= this.par;
     const pts = 100 * this.level + Math.max(0, this.maxMoves - this.moves) * 20 + (perfect ? 250 : 0);
     this.time.delayedCall(250, () => {
-      this.sfx('solved', { volume: 0.6 });
+      this.sfx('solved', { volume: 0.7 });
+      if (perfect && this.hintsUsed === 0) this.time.delayedCall(260, () => this.sfx('perfect', { volume: 0.6 }));
       flash(this, 0x3ee6ff, 150);
       this.addScore(pts, 360, BOARD_Y);
       if (perfect && this.hintsUsed === 0) popup(this, 360, BOARD_Y - 90, t('perfect'), '#5dff7a', 30);
@@ -226,7 +231,7 @@ export class PlayScene extends ArcadeScene {
   private outOfMoves(): void {
     this.locked = true;
     this.lives--;
-    this.sfx('fail', { volume: 0.6 });
+    this.sfx('fail', { volume: 0.7 });
     shake(this, 0.015, 280);
     flash(this, 0xec3013, 150);
     this.updateHud();

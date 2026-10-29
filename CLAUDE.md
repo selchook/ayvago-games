@@ -15,7 +15,7 @@ wip/               unfinished games (not built)
 docs/              GAMES.md (catalogue + backlog), assets/INDEX.md + assets/<pack>.txt (every file with px size)
 portal/ index.html game launcher page (reads src/generated/registry.json)
 scripts/           gen-registry, new-game, smoke-test (Playwright)
-tools/             import-kenney.py (re-import packs from a Kenney mirror)
+tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio from OpenGameArt)
 .claude/           skills/ayvago-new-game (how to build a game), agents/ayvago-game-dev + ayvago-game-qa
 ```
 
@@ -38,7 +38,8 @@ tools/             import-kenney.py (re-import packs from a Kenney mirror)
 - **Ayvago intro on every game.** `src/core/intro.ts` is a 1:1 port of the Unity `AyvagoBootIntro.cs`: 5.3 s, skippable by tap. It runs automatically from `launch()` while the game preloads. Don't change its choreography without the brand owner.
 - **Mobile and desktop.** Every game supports touch and keyboard. Portrait 720×1280 by default; landscape 1280×720 only when needed.
 - **TR and EN.** Every user-visible string is in both languages; the Turkish must be correct (ç ğ ı İ ö ş ü). Fonts: Press Start 2P (titles) + Pixelify Sans (body). Both cover Turkish. The Kenney fonts do not.
-- **Assets.** Kenney CC0 assets only, from `public/assets`. No runtime network loads.
+- **Assets.** CC0 only, from `public/assets`: Kenney (`kenney/`) and the CC0 packs recorded in `docs/assets/LICENSES.md` (`oga/`: Juhani Junkala's 512 retro effects and chiptune music). A new pack is added to that register (source, author, license) before it is used; CC-BY and other attribution licenses are not allowed. No runtime network loads.
+- **Music.** The core plays background music (`src/core/music.ts`): the title theme on the menu and a track picked from the game's genre during rounds, ducked under pause and result screens. A game may choose with `music: { menu, play }` in its definition (`false` turns a slot off).
 - **Done means tested.** A game is done when the smoke test passes and it meets the Definition of Done in `.claude/skills/ayvago-new-game/SKILL.md`.
 
 ## Ayvago platform integration (selchook/ayvago)

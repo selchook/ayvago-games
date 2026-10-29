@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -21,14 +21,18 @@ launch({
     l.image('sk-left', kenney(`${SK}player/player_14.png`));
     l.image('sk-arrow', kenney('game-icons/png/white/1x/arrowup.png'));
     l.image('sk-restart', kenney('game-icons/png/white/1x/previous.png'));
-    loadSfx(l, 'step', 'sfx-impact/audio/footstep_concrete_000');
-    loadSfx(l, 'push', 'sfx-impact/audio/impactplank_medium_000');
-    loadSfx(l, 'bump', 'sfx-interface/audio/error_006');
-    loadSfx(l, 'goal', 'sfx-interface/audio/confirmation_002');
-    loadSfx(l, 'undo', 'sfx-interface/audio/back_002');
-    loadSfx(l, 'win', 'sfx-digital/audio/threetone2');
-    loadSfx(l, 'star', 'sfx-interface/audio/glass_002');
-    loadSfx(l, 'start', 'sfx-interface/audio/maximize_003');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'step1', J + 'movement/footsteps/sfx-movement-footsteps1a');
+    loadAudio(l, 'step2', J + 'movement/footsteps/sfx-movement-footsteps1b');
+    loadAudio(l, 'push1', J + 'general-sounds/impacts/sfx-sounds-impact2');
+    loadAudio(l, 'push2', J + 'general-sounds/impacts/sfx-sounds-impact8');
+    loadAudio(l, 'bump', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit2');
+    loadAudio(l, 'goal', J + 'general-sounds/coins/sfx-coin-double1');
+    loadAudio(l, 'undo', J + 'general-sounds/pause-sounds/sfx-sounds-pause1-out');
+    loadAudio(l, 'restart', J + 'general-sounds/pause-sounds/sfx-sounds-pause7-out');
+    loadAudio(l, 'win', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
+    loadAudio(l, 'star', J + 'general-sounds/coins/sfx-coin-single5');
+    loadAudio(l, 'start', J + 'general-sounds/pause-sounds/sfx-sounds-pause3-in');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

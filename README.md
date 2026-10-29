@@ -5,7 +5,7 @@ Retro arcade, aksiyon, casual ve bulmaca oyunlarını Ayvago platformu için ür
 - **Motor:** Phaser 3.90 + TypeScript + Vite
 - **Platform:** Mobil (dokunmatik) + masaüstü (klavye/fare)
 - **Dil:** TR + EN
-- **Grafik ve ses:** Kenney CC0 paketleri
+- **Grafik ve ses:** Kenney ve OpenGameArt CC0 paketleri (Juhani Junkala: 512 retro efekt + chiptune müzik); liste `docs/assets/LICENSES.md`
 - **Açılış:** Her oyun Ayvago açılış intro'su ile başlar. Bu, Unity'deki `AyvagoBootIntro.cs`'in birebir portudur.
 
 ## Hızlı başlangıç
@@ -43,6 +43,6 @@ Claude Code ile: `ayvago-game-dev` agent'ına slug + konsept ver, ardından `ayv
 
 ## Lisanslar
 
-- **Grafik ve ses:** Kenney.nl (CC0)
+- **Grafik ve ses:** Kenney.nl (CC0), Juhani Junkala / OpenGameArt (CC0). Kaynaklar: `docs/assets/LICENSES.md`
 - **Fontlar:** Press Start 2P ve Pixelify Sans (SIL OFL)
 - **Ayvago marka görselleri:** Ayvago'ya aittir.

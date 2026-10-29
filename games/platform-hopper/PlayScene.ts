@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng } from '@core';
 import { LEVELS } from './levels';
 
 const TS = 64, OY = 720 - 11 * TS, SC = 0.5;
@@ -41,6 +41,8 @@ export class PlayScene extends ArcadeScene {
   private touch = { left: false, right: false, jump: false };
   private walkT = 0;
   private wasOnGround = true;
+  /** Vertical speed in the previous frame, for the landing thud. */
+  private airVy = 0;
   private stompChain = 0;
   private boosted = false;
 
@@ -230,7 +232,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: sub, alpha: 1, duration: 300, delay: 200 });
     this.tweens.add({ targets: [b, sub], alpha: 0, delay: 1300, duration: 300, onComplete: () => { b.destroy(); sub.destroy(); } });
     this.time.delayedCall(700, () => { if (this.state === 'intro') this.state = 'play'; });
-    this.sfx('start', { volume: 0.4 });
+    this.sfx('start', { volume: 0.45 });
   }
 
   private spawnEnemy(kind: Kind, x: number, y: number): void {
@@ -277,14 +279,14 @@ export class PlayScene extends ArcadeScene {
     this.gems = this.gems.filter((x) => x !== g);
     this.gemsGot++;
     this.addScore(100, g.x, g.y - 30);
-    this.sfx('gem', { volume: 0.5, rate: 1 + this.gemsGot * 0.08 });
+    this.sfxAt('gem', g.x, { volume: 0.5, rate: 1 + this.gemsGot * 0.08 });
     burst(this, g.x, g.y, [0x3ee6ff, 0xffffff, 0xffd23f], 16, 220);
     this.tweens.killTweensOf(g);
     this.tweens.add({ targets: g, scale: 0.8, alpha: 0, y: g.y - 40, duration: 260, onComplete: () => g.destroy() });
     this.updateHud();
     if (this.gemsGot >= this.gemsTotal) {
       this.flag.setTexture('flag-1');
-      this.sfx('flagup', { volume: 0.5 });
+      this.sfxAt('flagup', this.flag.x, { volume: 0.6 });
       burst(this, this.flag.x, this.flag.y - 20, [0x5dff7a, 0xffffff], 20, 260);
       popup(this, this.flag.x, this.flag.y - 70, t('flagUp'), '#5dff7a', 20);
       this.tweens.add({ targets: this.flag, scale: SC * 1.2, duration: 160, yoyo: true });
@@ -296,7 +298,8 @@ export class PlayScene extends ArcadeScene {
     this.state = 'dead';
     this.lives--;
     this.updateHud();
-    this.sfx('hurt', { volume: 0.55 });
+    this.sfxAt('hurt', this.player.x, { volume: 0.65 });
+    this.time.delayedCall(300, () => this.sfx('fall', { volume: 0.5 }));
     shake(this, 0.018, 280);
     flash(this, 0xec3013, 160);
     const pb = this.player.body as Body;
@@ -318,7 +321,7 @@ export class PlayScene extends ArcadeScene {
     this.player.setTexture('p-jump');
     const bonus = 300 + Math.max(0, Math.round(60 - this.levelT)) * 10;
     this.addScore(bonus, this.flag.x - 60, this.flag.y - 90);
-    this.sfx('win', { volume: 0.55 });
+    this.sfx('win', { volume: 0.6, exact: true });
     flash(this, 0x5dff7a, 150);
     for (let i = 0; i < 4; i++) this.time.delayedCall(i * 150, () => burst(this, this.flag.x + (i - 1.5) * 30, this.flag.y - 40, [0xffd23f, 0x5dff7a, 0x3ee6ff, 0xff4fa3], 18, 320));
     this.tweens.add({ targets: this.player, y: this.player.y - 40, duration: 220, yoyo: true, repeat: 1 });
@@ -370,15 +373,17 @@ export class PlayScene extends ArcadeScene {
     if (this.jumpBuf > 0 && this.coyote > 0) {
       pb.setVelocityY(JUMP);
       this.coyote = 0; this.jumpBuf = 0;
-      this.sfx('jump', { volume: 0.35 });
+      this.sfxAt(rng.pick(['jump', 'jump2']), this.player.x, { volume: 0.4 });
       burst(this, this.player.x, pb.bottom, 0xffffff, 6, 120);
     }
     if (pb.velocity.y >= 0) this.boosted = false;
     if (!jumpHeld && !this.boosted && pb.velocity.y < CUT) pb.setVelocityY(CUT);
     if (onGround && !this.wasOnGround) {
+      if (this.airVy > 300) this.sfxAt('land', this.player.x, { volume: Math.min(0.9, 0.4 + this.airVy / 2000) });
       burst(this, this.player.x, pb.bottom, 0xd8f0c0, 5, 90);
     }
     this.wasOnGround = onGround;
+    this.airVy = pb.velocity.y;
 
     // animation
     if (!onGround) this.player.setTexture('p-jump');
@@ -396,7 +401,7 @@ export class PlayScene extends ArcadeScene {
         this.coyote = 0;
         s.img.setTexture('sprung');
         this.time.delayedCall(220, () => s.img.active && s.img.setTexture('spring'));
-        this.sfx('spring', { volume: 0.5 });
+        this.sfxAt('spring', s.img.x, { volume: 0.55 });
         this.tweens.add({ targets: s.img, scaleY: SC * 1.15, duration: 90, yoyo: true });
       }
     }
@@ -428,7 +433,7 @@ export class PlayScene extends ArcadeScene {
     this.stompChain++;
     const pts = 100 * this.stompChain;
     this.addScore(pts, e.spr.x, e.spr.y - 40);
-    this.sfx('stomp', { volume: 0.6 });
+    this.sfxAt('stomp', e.spr.x, { volume: 0.65, rate: 1 + Math.min(5, this.stompChain - 1) * 0.08 });
     shake(this, 0.006, 100);
     burst(this, e.spr.x, e.spr.y, [0xffffff, 0x5dff7a, 0xffd23f], 16, 260);
     const dead = { s: 'e-slime-dead', n: 'e-snail-shell', w: 'e-saw', f: 'e-fly-dead', b: 'e-bee-dead' }[e.kind];

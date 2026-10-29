@@ -1,4 +1,4 @@
-import { launch, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, blockColor } from './PlayScene';
 
@@ -8,13 +8,16 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    loadSfx(l, 'place', 'sfx-casino/audio/chipsstack1');
-    loadSfx(l, 'cut', 'sfx-impact/audio/impactplank_medium_001');
-    loadSfx(l, 'perfect', 'sfx-digital/audio/powerup1');
-    loadSfx(l, 'grow', 'sfx-digital/audio/phaserup6');
-    loadSfx(l, 'miss', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'crash', 'sfx-impact/audio/impactwood_heavy_002');
-    loadSfx(l, 'level', 'sfx-digital/audio/threetone1');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'place1', J + 'movement/jumping-and-landing/sfx-movement-jump13-landing');
+    loadAudio(l, 'place2', J + 'movement/jumping-and-landing/sfx-movement-jump16-landing');
+    loadAudio(l, 'place3', J + 'movement/jumping-and-landing/sfx-movement-jump17-landing');
+    loadAudio(l, 'cut', J + 'weapons/melee/sfx-wpn-sword1');
+    loadAudio(l, 'perfect', J + 'general-sounds/coins/sfx-coin-single4');
+    loadAudio(l, 'grow', J + 'general-sounds/positive-sounds/sfx-sounds-powerup5');
+    loadAudio(l, 'miss', J + 'movement/falling-sounds/sfx-sounds-falling11');
+    loadAudio(l, 'crash', J + 'explosions/shortest/sfx-exp-shortest-hard7');
+    loadAudio(l, 'level', J + 'general-sounds/fanfares/sfx-sounds-fanfare3');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

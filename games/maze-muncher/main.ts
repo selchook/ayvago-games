@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeTextures, GHOST_COLORS } from './PlayScene';
 
@@ -10,15 +10,18 @@ launch({
   preload(scene) {
     const l = scene.load;
     l.spritesheet('onebit', kenney('onebit/tilesheet/colored_transparent_packed.png'), { frameWidth: 16, frameHeight: 16 });
-    loadSfx(l, 'waka', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'pellet', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'eatghost', 'sfx-digital/audio/zapthreetoneup');
-    loadSfx(l, 'fruit', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'die', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'clear', 'sfx-digital/audio/powerup10');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'waka', J + 'simple-bleeps/sfx-sounds-blip11');
+    loadAudio(l, 'waka2', J + 'simple-bleeps/sfx-sounds-blip3');
+    loadAudio(l, 'pellet', J + 'positive-sounds/sfx-sounds-powerup6');
+    loadAudio(l, 'unfright', J + 'pause-sounds/sfx-sounds-pause1-out');
+    loadAudio(l, 'eatghost', J + 'positive-sounds/sfx-sounds-powerup5');
+    loadAudio(l, 'fruit', J + 'coins/sfx-coin-cluster5');
+    loadAudio(l, 'die', 'oga/junkala-sfx/movement/falling-sounds/sfx-sounds-falling1');
+    loadAudio(l, 'clear', J + 'fanfares/sfx-sounds-fanfare1');
     loadSfx(l, 'ready', 'jingles/audio/8-bit_jingles/jingles_nes00');
-    loadSfx(l, 'life', 'sfx-digital/audio/powerup5');
-    loadSfx(l, 'turn', 'sfx-interface/audio/click_001');
+    loadAudio(l, 'life', J + 'fanfares/sfx-sounds-fanfare3');
+    loadAudio(l, 'turn', J + 'menu-sounds/sfx-menu-move1');
   },
   menuDecor(scene) {
     makeTextures(scene);

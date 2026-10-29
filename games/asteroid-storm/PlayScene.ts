@@ -93,7 +93,7 @@ export class PlayScene extends ArcadeScene {
     this.wave++;
     this.updateHud();
     this.banner(`${t('wave')} ${this.wave}`);
-    this.sfx('wave', { volume: 0.4 });
+    this.sfx('wave', { volume: 0.45 });
     const { width, height } = this.scale;
     const n = Math.min(3 + this.wave, 11);
     for (let i = 0; i < n; i++) {
@@ -123,7 +123,7 @@ export class PlayScene extends ArcadeScene {
     const { img } = rock;
     if (scored) this.addScore(ROCK[rock.size].pts, img.x, img.y);
     burst(this, img.x, img.y, [0xb0b0b8, 0x7d7d88, 0xffd23f], 14 + (2 - rock.size) * 10, 200 + (2 - rock.size) * 90);
-    this.sfx(rock.size === 0 ? 'boom-big' : 'boom-small', { volume: 0.35 });
+    this.sfxAt(`boom${rock.size}${rng.pick(['a', 'b'])}`, img.x, { volume: [0.65, 0.5, 0.4][rock.size] });
     if (rock.size === 0) shake(this, 0.006, 120);
     if (rock.size < 2) for (let k = 0; k < 2; k++) this.spawnRock(img.x, img.y, rock.size + 1, rock.vx, rock.vy);
     img.destroy();
@@ -135,7 +135,7 @@ export class PlayScene extends ArcadeScene {
     this.nextLife += EXTRA_LIFE;
     this.lives++;
     this.updateHud();
-    this.sfx('life');
+    this.sfx('life', { volume: 0.7, exact: true });
     this.banner(t('extraLife'), '#5dff7a');
   }
 
@@ -144,7 +144,7 @@ export class PlayScene extends ArcadeScene {
     const c = Math.cos(this.heading), s = Math.sin(this.heading);
     const img = this.add.image(this.ship.x + c * 30, this.ship.y + s * 30, 'shot').setRotation(this.heading + Math.PI / 2).setScale(0.75).setDepth(7);
     this.shots.push({ img, vx: c * 820 + this.vx, vy: s * 820 + this.vy, life: 0.85 });
-    this.sfx('shoot', { volume: 0.22 });
+    this.sfxAt(rng.pick(['shoot1', 'shoot2']), this.ship.x, { volume: 0.3 });
   }
 
   private hyperspace(): void {
@@ -157,7 +157,7 @@ export class PlayScene extends ArcadeScene {
     this.invuln = Math.max(this.invuln, 0.6);
     burst(this, this.ship.x, this.ship.y, [0x3ee6ff, 0xffffff], 24, 260);
     flash(this, 0x3ee6ff, 90);
-    this.sfx('hyper', { volume: 0.4 });
+    this.sfxAt('hyper', this.ship.x, { volume: 0.5 });
   }
 
   private die(): void {
@@ -168,7 +168,7 @@ export class PlayScene extends ArcadeScene {
     burst(this, this.ship.x, this.ship.y, [0x3ee6ff, 0xffd23f, 0xec3013, 0xffffff], 50, 420);
     shake(this, 0.02, 300);
     flash(this, 0xec3013, 160);
-    this.sfx('hurt');
+    this.sfxAt(this.lives <= 0 ? 'death' : 'hurt', this.ship.x, { volume: this.lives <= 0 ? 0.9 : 0.8 });
     this.ship.setVisible(false); this.flame.setVisible(false); this.trail.emitting = false;
     if (this.lives <= 0) { this.endGame({ delay: 1200 }); return; }
     this.respawnIn = 1.6;
@@ -181,6 +181,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: this.ship, scale: 0.7, duration: 300, ease: 'Back.easeOut' });
     this.heading = -Math.PI / 2; this.vx = this.vy = 0;
     this.invuln = 2.5;
+    if (this.lives === 1) this.sfx('low', { volume: 0.45 });
   }
 
   private spawnUfo(): void {
@@ -204,7 +205,7 @@ export class PlayScene extends ArcadeScene {
     }
     burst(this, u.img.x, u.img.y, [0xff4fa3, 0xffd23f, 0x3ee6ff], 40, 380);
     shake(this, 0.012, 200);
-    this.sfx('boom-big', { volume: 0.5 });
+    this.sfxAt('ufo-boom', u.img.x, { volume: 0.8 });
     u.img.destroy();
     this.ufo = null;
   }
@@ -313,7 +314,7 @@ export class PlayScene extends ArcadeScene {
         if (u.small) a = Phaser.Math.Angle.Between(u.img.x, u.img.y, this.ship.x, this.ship.y) + (Math.random() - 0.5) * Math.max(0.15, 0.7 - this.wave * 0.06);
         const img = this.add.image(u.img.x, u.img.y, 'eshot').setScale(0.6).setDepth(7);
         this.eshots.push({ img, vx: Math.cos(a) * 380, vy: Math.sin(a) * 380, life: 1.6 });
-        this.sfx('eshoot', { volume: 0.2 });
+        this.sfxAt('eshoot', u.img.x, { volume: 0.25 });
       }
       for (const r of this.rocks) {
         if (Phaser.Math.Distance.Between(u.img.x, u.img.y, r.img.x, r.img.y) < r.r + u.r - 6) { this.breakRock(r, false); this.killUfo(false); break; }
@@ -336,13 +337,14 @@ export class PlayScene extends ArcadeScene {
     this.beat -= dt;
     if (this.rocks.length && this.beat <= 0) {
       this.beat = Phaser.Math.Clamp(0.25 + this.rocks.length * 0.05, 0.3, 1.0);
-      this.sfx('beat', { volume: 0.07, rate: 0.5 });
+      this.sfx('beat', { volume: 0.1, rate: 0.5, exact: true });
     }
     if (this.rocks.length === 0 && !this.ufo) {
       if (this.waveCd <= 0) {
         this.waveCd = 2.2;
         this.addScore(this.wave * 100, width / 2, height * 0.46);
         this.banner(t('waveClear'), '#5dff7a');
+        this.sfx('clear', { volume: 0.65, exact: true });
       } else {
         this.waveCd -= dt;
         if (this.waveCd <= 0.01) { this.waveCd = 0; this.nextWave(); }

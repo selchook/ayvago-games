@@ -205,7 +205,7 @@ export class PlayScene extends ArcadeScene {
     this.vy = double ? JUMP2 : JUMP;
     this.jumps = double ? 2 : 1;
     this.grounded = false; this.coyote = 0; this.buffer = 0;
-    this.sfx(double ? 'jump2' : 'jump', { volume: 0.35 });
+    this.sfx(double ? 'jump2' : 'jump', { volume: 0.4 });
     const wx = this.scroll + PX;
     if (double) {
       burst(this, wx, this.py + HH, [0xffffff, 0x3ee6ff], 12, 200);
@@ -229,7 +229,7 @@ export class PlayScene extends ArcadeScene {
     const h = this.hearts[this.lives];
     if (h) this.tweens.add({ targets: h, scale: 3.4, duration: 120, yoyo: true });
     this.updateHud();
-    this.sfx(fell ? 'fall' : 'hurt', { volume: 0.5 });
+    this.sfx(fell ? 'fall' : 'hurt', { volume: fell ? 0.6 : 0.65 });
     shake(this, 0.015, 250);
     flash(this, 0xec3013, 150);
     if (this.lives <= 0) { this.die(); return; }
@@ -252,6 +252,7 @@ export class PlayScene extends ArcadeScene {
     this.dead = true;
     this.player.setFrame(F.hurt).setFlipY(true);
     this.vy = -900;
+    this.time.delayedCall(150, () => this.sfx('die', { volume: 0.6, exact: true }));
     burst(this, this.scroll + PX, this.py, [0xec3013, 0xffd23f], 30, 380);
     this.endGame({ delay: 1300 });
   }
@@ -286,7 +287,7 @@ export class PlayScene extends ArcadeScene {
     if (this.meters >= this.nextMilestone) {
       this.addScore(100);
       popup(this, this.scroll + width / 2, 200, `${this.nextMilestone} m!`, '#5dff7a', 34);
-      this.sfx('milestone', { volume: 0.45 });
+      this.sfx(this.nextMilestone % 500 === 0 ? 'faster' : 'milestone', { volume: 0.55 });
       if (this.nextMilestone % 500 === 0) popup(this, this.scroll + width / 2, 260, t('faster'), '#ff4fa3', 22);
       this.nextMilestone += 250;
     }
@@ -314,7 +315,7 @@ export class PlayScene extends ArcadeScene {
     }
     if (this.grounded) {
       if (!wasGrounded) {
-        this.sfx('land', { volume: 0.3 });
+        this.sfx(rng.pick(['land', 'land2']), { volume: 0.55 });
         burst(this, wx - 12, this.py + HH, 0xe6d3a3, 5, 100);
         this.stompChain = 0;
         if (this.buffer > 0) this.jump(false);
@@ -339,7 +340,8 @@ export class PlayScene extends ArcadeScene {
       if (Math.abs(c.x - wx) < 34 && Math.abs(c.y - this.py) < 46) {
         this.coinCount++;
         this.addScore(10);
-        this.sfx('coin', { volume: 0.3, rate: 1 + Math.min(0.5, (this.coinCount % 10) * 0.05) });
+        this.sfx('coin', { volume: 0.35, rate: 1 + Math.min(0.5, (this.coinCount % 10) * 0.05) });
+        if (this.coinCount % 10 === 0) this.sfx('coin10', { volume: 0.5 });
         burst(this, c.x, c.y, [0xffd23f, 0xffffff], 8, 160);
         const img = c.img;
         img.active = false;
@@ -368,7 +370,7 @@ export class PlayScene extends ArcadeScene {
           this.stompChain++;
           const pts = 50 * this.stompChain;
           this.addScore(pts, ex, ey - 40);
-          this.sfx('stomp', { volume: 0.6 });
+          this.sfxAt('stomp', ex - this.scroll, { volume: 0.6, rate: 1 + Math.min(5, this.stompChain - 1) * 0.08 });
           shake(this, 0.006, 90);
           this.killEnemy(e, true);
           this.vy = this.holding ? -900 : -650;

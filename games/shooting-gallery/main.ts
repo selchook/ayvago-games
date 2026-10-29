@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -18,17 +18,26 @@ launch({
       l.image(f, kenney(SG + 'objects/' + f + '.png'));
     }
     for (const f of ['crosshair_red_large', 'icon_bullet_gold_long', 'icon_bullet_empty_long']) l.image(f, kenney(SG + 'hud/' + f + '.png'));
-    loadSfx(l, 'shot', 'sfx-impact/audio/impactpunch_heavy_001');
+    const J = 'oga/junkala-sfx/';
+    const S = J + 'weapons/single-shot-sounds/';
+    loadAudio(l, 'shot', S + 'sfx-weapon-singleshot8');
+    loadAudio(l, 'shot2', S + 'sfx-weapon-singleshot13');
+    loadAudio(l, 'shot3', S + 'sfx-weapon-singleshot17');
     loadSfx(l, 'ding', 'sfx-impact/audio/impactbell_heavy_001');
+    loadSfx(l, 'ding2', 'sfx-impact/audio/impactbell_heavy_003');
     loadSfx(l, 'quack', 'sfx-impact/audio/impactplate_light_002');
+    loadSfx(l, 'quack2', 'sfx-impact/audio/impactplate_light_004');
     loadSfx(l, 'miss', 'sfx-impact/audio/impactwood_light_001');
-    loadSfx(l, 'dry', 'sfx-interface/audio/error_002');
-    loadSfx(l, 'shell', 'sfx-ui/audio/switch3');
-    loadSfx(l, 'reloaded', 'sfx-interface/audio/drop_002');
-    loadSfx(l, 'bonus', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
+    loadSfx(l, 'miss2', 'sfx-impact/audio/impactwood_light_003');
+    loadAudio(l, 'dry', J + 'weapons/out-of-ammo/sfx-wpn-noammo1');
+    loadAudio(l, 'shell', J + 'weapons/out-of-ammo/sfx-wpn-reload');
+    loadAudio(l, 'reloaded', J + 'movement/opening-doors/sfx-movement-dooropen2');
+    loadAudio(l, 'combo', J + 'general-sounds/positive-sounds/sfx-sounds-powerup5');
+    loadAudio(l, 'bonus', J + 'general-sounds/coins/sfx-coin-cluster5');
+    loadAudio(l, 'quota', J + 'general-sounds/positive-sounds/sfx-sounds-powerup13');
+    loadAudio(l, 'tick', J + 'general-sounds/high-pitched-sounds/sfx-sounds-high1');
     loadSfx(l, 'round', 'jingles/audio/8-bit_jingles/jingles_nes07');
-    loadSfx(l, 'go', 'sfx-digital/audio/threetone2');
+    loadAudio(l, 'go', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

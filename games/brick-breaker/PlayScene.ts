@@ -148,7 +148,7 @@ export class PlayScene extends ArcadeScene {
       const a = Phaser.Math.DegToRad(-90 + b.off * 0.8);
       b.vx = Math.cos(a) * this.curSpeed(); b.vy = Math.sin(a) * this.curSpeed();
     }
-    if (any) { this.sfx('launch', { volume: 0.4 }); this.hint.setVisible(false); }
+    if (any) { this.sfxAt('launch', this.paddle.x, { volume: 0.45 }); this.hint.setVisible(false); }
   }
 
   private brickAt(x: number, y: number): Brick | undefined {
@@ -160,7 +160,7 @@ export class PlayScene extends ArcadeScene {
 
   private hitBrick(b: Brick): void {
     if (b.steel) {
-      this.sfx('steel', { volume: 0.35 });
+      this.sfxAt('steel', b.x, { volume: 0.4 });
       this.tweens.add({ targets: b.img, scaleX: b.img.scaleX * 1.12, scaleY: b.img.scaleY * 1.12, duration: 60, yoyo: true });
       return;
     }
@@ -170,7 +170,7 @@ export class PlayScene extends ArcadeScene {
       this.styleBrick(b);
       b.img.setTintFill(0xffffff);
       this.time.delayedCall(50, () => b.img.clearTint());
-      this.sfx('crack', { volume: 0.4 });
+      this.sfxAt('crack', b.x, { volume: 0.45 });
       burst(this, b.x, b.y, tint, 6, 160);
       this.addScore(5);
       return;
@@ -179,7 +179,8 @@ export class PlayScene extends ArcadeScene {
     const pts = 10 * Math.min(8, this.combo) + this.level * 2;
     this.addScore(pts, b.x, b.y);
     if (this.combo >= 4 && this.combo % 2 === 0) popup(this, b.x, b.y - 40, `${t('combo')} x${Math.min(8, this.combo)}`, '#ff4fa3', 22);
-    this.sfx('brick', { volume: 0.45, detune: Math.min(1200, this.combo * 80) });
+    this.sfxAt('brick', b.x, { volume: 0.45, detune: Math.min(1200, this.combo * 80), exact: true });
+    this.sfxAt('debris', b.x, { volume: 0.3 });
     burst(this, b.x, b.y, [tint, 0xffffff], 18, 300);
     shake(this, 0.004, 80);
     this.bricks.splice(this.bricks.indexOf(b), 1);
@@ -200,10 +201,11 @@ export class PlayScene extends ArcadeScene {
     c.setScale(0);
     this.tweens.add({ targets: c, scale: 1, duration: 200, ease: 'Back.easeOut' });
     this.drops.push({ kind, obj: c });
+    this.sfxAt('drop', x, { volume: 0.3 });
   }
 
   private collect(d: Drop): void {
-    this.sfx('power', { volume: 0.5 });
+    this.sfxAt(d.kind === 'life' ? 'life' : 'power', d.obj.x, { volume: d.kind === 'life' ? 0.7 : 0.6 });
     flash(this, POWER_COLORS[d.kind], 90);
     burst(this, d.obj.x, d.obj.y, POWER_COLORS[d.kind], 20, 260);
     popup(this, d.obj.x, d.obj.y - 30, t(d.kind), '#ffffff', 22);
@@ -221,7 +223,7 @@ export class PlayScene extends ArcadeScene {
 
   private levelClear(): void {
     this.busy = true;
-    this.sfx('clear', { volume: 0.5 });
+    this.sfx('clear', { volume: 0.6, exact: true });
     flash(this, 0xffd23f, 200);
     const bonus = 250 + this.level * 100 + this.lives * 50;
     this.addScore(bonus, 360, 640);
@@ -245,7 +247,8 @@ export class PlayScene extends ArcadeScene {
     this.lives--;
     this.combo = 0;
     this.updateHud();
-    this.sfx('lose', { volume: 0.5 });
+    this.sfx('lose', { volume: 0.6 });
+    if (this.lives === 1) this.sfx('low', { volume: 0.45, delay: 0.7 });
     shake(this, 0.02, 280);
     flash(this, 0xec3013, 160);
     burst(this, this.paddle.x, PADDLE_Y, [0xec3013, 0xffffff], 30, 380);
@@ -294,13 +297,13 @@ export class PlayScene extends ArcadeScene {
   private stepBall(b: Ball, dt: number): void {
     // X axis
     b.x += b.vx * dt;
-    if (b.x < FIELD_L + BALL_R) { b.x = FIELD_L + BALL_R; b.vx = Math.abs(b.vx); this.sfx('wall', { volume: 0.2 }); }
-    if (b.x > FIELD_R - BALL_R) { b.x = FIELD_R - BALL_R; b.vx = -Math.abs(b.vx); this.sfx('wall', { volume: 0.2 }); }
+    if (b.x < FIELD_L + BALL_R) { b.x = FIELD_L + BALL_R; b.vx = Math.abs(b.vx); this.sfxAt('wall', b.x, { volume: 0.25 }); }
+    if (b.x > FIELD_R - BALL_R) { b.x = FIELD_R - BALL_R; b.vx = -Math.abs(b.vx); this.sfxAt('wall', b.x, { volume: 0.25 }); }
     let hit = this.brickAt(b.x, b.y);
     if (hit) { b.x -= b.vx * dt; b.vx = -b.vx; this.hitBrick(hit); }
     // Y axis
     b.y += b.vy * dt;
-    if (b.y < FIELD_T + BALL_R) { b.y = FIELD_T + BALL_R; b.vy = Math.abs(b.vy); this.sfx('wall', { volume: 0.2 }); }
+    if (b.y < FIELD_T + BALL_R) { b.y = FIELD_T + BALL_R; b.vy = Math.abs(b.vy); this.sfxAt('wall', b.x, { volume: 0.25 }); }
     hit = this.brickAt(b.x, b.y);
     if (hit) { b.y -= b.vy * dt; b.vy = -b.vy; this.hitBrick(hit); }
     // paddle
@@ -309,11 +312,11 @@ export class PlayScene extends ArcadeScene {
       const off = Phaser.Math.Clamp((b.x - this.paddle.x) / (this.paddleW / 2), -1, 1);
       const a = Phaser.Math.DegToRad(-90 + off * 62);
       this.hits++;
-      if (this.hits % 8 === 0 && this.speed < 980) { this.speed += 20; popup(this, this.paddle.x, PADDLE_Y - 70, t('fast'), '#ff4fa3', 18); }
+      if (this.hits % 8 === 0 && this.speed < 980) { this.speed += 20; popup(this, this.paddle.x, PADDLE_Y - 70, t('fast'), '#ff4fa3', 18); this.sfx('fast', { volume: 0.35 }); }
       const s = this.curSpeed();
       b.vx = Math.cos(a) * s; b.vy = Math.sin(a) * s; b.y = top - BALL_R;
       this.combo = 0;
-      this.sfx('paddle', { volume: 0.45 });
+      this.sfxAt('paddle', b.x, { volume: 0.5 });
       burst(this, b.x, top, 0x3ee6ff, 8, 160);
       this.tweens.add({ targets: this.paddle, displayHeight: PADDLE_H * 0.7, duration: 60, yoyo: true });
     }

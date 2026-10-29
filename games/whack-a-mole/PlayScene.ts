@@ -195,7 +195,7 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(1300, () => {
       banner.setText(t('go')).setColor('#5dff7a');
       sub.destroy();
-      this.sfx('go', { volume: 0.4 });
+      this.sfx('go', { volume: 0.5 });
       this.tweens.add({ targets: banner, scale: 1.4, alpha: 0, duration: 450, delay: 250, onComplete: () => banner.destroy() });
       this.playing = true;
       this.spawnCd = 0.3;
@@ -209,7 +209,7 @@ export class PlayScene extends ArcadeScene {
     if (this.hits >= this.quota) {
       const bonus = 50 * this.round + this.lives * 20;
       this.addScore(bonus);
-      this.sfx('clear', { volume: 0.5 });
+      this.sfx('clear', { volume: 0.65, exact: true });
       softFlash(this, 0xffffff, 120);
       const b = txt(this, width / 2, height * 0.32, t('roundClear'), { title: true, size: 40, color: '#5dff7a', wrap: width - 60 }).setDepth(60).setScale(0.3);
       const s = txt(this, width / 2, height * 0.32 + 70, `${t('bonus')} +${bonus}`, { title: true, size: 24, color: '#ffd23f' }).setDepth(60);
@@ -254,7 +254,7 @@ export class PlayScene extends ArcadeScene {
     img.y = h.y + 130;
     img.scaleY = img.scaleX;
     const peak = h.y - 46;
-    this.sfx('pop', { volume: 0.3, detune: rng.int(-200, 200) });
+    this.sfxAt(rng.pick(['pop1', 'pop2']), h.x, { volume: 0.3, rate: kind === 'bomb' ? 0.8 : 0.9 + Math.random() * 0.2 });
     this.tweens.add({ targets: img, y: peak, duration: 170, ease: 'Back.easeOut' });
     const upTime = Math.max(0.5, 1.25 - 0.1 * (r - 1)) * (kind === 'gold' ? 0.7 : kind === 'bomb' ? 1.4 : 1) * rng.int(85, 115) / 100;
     h.timer = this.time.delayedCall(170 + upTime * 1000, () => this.hide(h, false));
@@ -281,7 +281,7 @@ export class PlayScene extends ArcadeScene {
     m.setVisible(true).setAlpha(1).setPosition(h.x + 92, h.y + 10).setAngle(15);
     this.tweens.add({ targets: m, angle: -58, duration: 70, ease: 'Quad.easeIn' });
     this.tweens.add({ targets: m, alpha: 0, delay: 220, duration: 150, onComplete: () => m.setVisible(false) });
-    this.sfx('swish', { volume: 0.2 });
+    this.sfxAt('swish', h.x, { volume: 0.25 });
   }
 
   private whack(h: Hole): void {
@@ -306,9 +306,12 @@ export class PlayScene extends ArcadeScene {
     const mult = Math.min(4, 1 + Math.floor(this.combo / 5));
     const pts = (h.kind === 'gold' ? 50 : 10) * mult;
     this.addScore(pts, h.x, h.y - 150);
-    if (mult > 1 && this.combo % 5 === 0) popup(this, h.x, h.y - 210, `${t('combo')} x${mult}`, '#3ee6ff', 22);
-    this.sfx('whack', { volume: 0.55 });
-    if (h.kind === 'gold') { this.sfx('gold', { volume: 0.45 }); this.sparks.explode(18, h.x, h.y - 50); }
+    if (mult > 1 && this.combo % 5 === 0) {
+      popup(this, h.x, h.y - 210, `${t('combo')} x${mult}`, '#3ee6ff', 22);
+      this.sfx('combo', { volume: 0.5, rate: 1 + (mult - 2) * 0.12, exact: true });
+    }
+    this.sfxAt(rng.pick(['whack1', 'whack2', 'whack3']), h.x, { volume: 0.6 });
+    if (h.kind === 'gold') { this.sfxAt('gold', h.x, { volume: 0.5 }); this.sparks.explode(18, h.x, h.y - 50); }
     this.sparks.explode(8, h.x, h.y - 60);
     this.leaves.explode(5, h.x, h.y);
     shake(this, 0.004, 80);
@@ -321,7 +324,7 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(200, () => this.hide(h, true));
     this.updateHud();
     if (this.hits === this.quota) {
-      this.sfx('clear', { volume: 0.3 });
+      this.sfx('quota', { volume: 0.45 });
       this.tweens.add({ targets: this.barText, scale: 1.4, duration: 120, yoyo: true });
     }
   }
@@ -339,8 +342,8 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(900, () => smoke.destroy());
     burst(this, x, y - 50, [0xffd23f, 0xec3013, 0xff8c00], 40, 450);
     popup(this, x, y - 160, t('boom'), '#ec3013', 32);
-    this.sfx('boom', { volume: 0.7 });
-    this.sfx('hurt', { volume: 0.4 });
+    this.sfxAt('boom', x, { volume: 0.75 });
+    this.sfxAt('hurt', x, { volume: 0.45 });
     shake(this, 0.025, 320);
     softFlash(this, 0xec3013, 160);
     this.lives--;
@@ -362,7 +365,8 @@ export class PlayScene extends ArcadeScene {
     if (sec !== this.lastTick) {
       this.lastTick = sec;
       this.updateHud();
-      if (sec <= 5 && sec > 0) this.sfx('tick', { volume: 0.4 });
+      // the last five seconds tick a little higher each time
+      if (sec <= 5 && sec > 0) this.sfx('tick', { volume: 0.4, rate: 1 + (5 - sec) * 0.06, exact: true });
     }
     if (this.timeLeft <= 0) {
       this.timeLeft = 0;

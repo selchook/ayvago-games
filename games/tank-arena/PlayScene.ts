@@ -182,7 +182,8 @@ export class PlayScene extends ArcadeScene {
   private explode(x: number, y: number, big: boolean): void {
     for (let i = 0; i < (big ? 4 : 2); i++) this.puff(x + rng.int(-25, 25), y + rng.int(-25, 25), `smoke${rng.int(0, 5)}`, big ? 1.4 : 0.8);
     burst(this, x, y, [0xffd23f, 0xec3013, 0x333333], big ? 30 : 14, big ? 380 : 240);
-    this.sfx('boom', { volume: big ? 0.5 : 0.3 });
+    if (big) this.sfxAt(rng.pick(['boom1', 'boom2', 'boom3']), x, { volume: 0.6 });
+    else this.sfxAt('pop', x, { volume: 0.4 });
     shake(this, big ? 0.012 : 0.005, big ? 220 : 120);
   }
 
@@ -204,7 +205,7 @@ export class PlayScene extends ArcadeScene {
     const angles = this.triple > 0 ? [a - 0.22, a, a + 0.22] : [a];
     for (const an of angles) this.fireFrom(this.player, this.pBullets, 'bullet-p', this.player.kind.bullet, an);
     this.player.fireCd = this.rapid > 0 ? 0.16 : this.player.kind.rate;
-    this.sfx('fire', { volume: 0.45 });
+    this.sfxAt('fire', this.player.b.x, { volume: 0.4 });
     shake(this, 0.003, 60);
   }
 
@@ -212,11 +213,11 @@ export class PlayScene extends ArcadeScene {
     if (!bl.active || !w.active) return;
     this.spark(bl);
     const kind = w.getData('kind') as string;
-    if (kind === 'sandbag' || kind === 'tree') { this.sfx('clang', { volume: 0.2 }); return; }
+    if (kind === 'sandbag' || kind === 'tree') { this.sfxAt('thud', bl.x, { volume: 0.3 }); return; }
     const hp = (w.getData('hp') as number) - 1;
     w.setData('hp', hp);
     if (hp > 0) {
-      this.sfx('wood', { volume: 0.25 });
+      this.sfxAt('wood', w.x, { volume: 0.35 });
       w.setTintFill(0xffffff); this.time.delayedCall(60, () => w.active && w.clearTint());
       return;
     }
@@ -240,7 +241,7 @@ export class PlayScene extends ArcadeScene {
         if (Phaser.Math.Distance.Between(x, y, this.player.b.x, this.player.b.y) < 110) this.hurt();
       });
     } else {
-      this.sfx('wood', { volume: 0.4 });
+      this.sfxAt('crate', x, { volume: 0.5 });
       burst(this, x, y, [0x9c6b3c, 0xd9a066, 0x5a3a1e], 18, 260);
       if (scored) this.addScore(25, x, y);
       if (rng.chance(0.28)) this.dropItem(x, y);
@@ -263,7 +264,7 @@ export class PlayScene extends ArcadeScene {
     e.hp -= dmg;
     e.b.setTintFill(0xffffff); e.barrel.setTintFill(0xffffff);
     this.time.delayedCall(70, () => { if (e.b.active) { e.b.clearTint(); e.barrel.clearTint(); } });
-    if (e.hp > 0) { this.sfx('clang', { volume: 0.35 }); return; }
+    if (e.hp > 0) { this.sfxAt(rng.pick(['clang1', 'clang2']), e.b.x, { volume: 0.45 }); return; }
     this.explode(e.b.x, e.b.y, true);
     this.addScore(e.kind.pts, e.b.x, e.b.y - 30);
     if (rng.chance(0.14)) this.dropItem(e.b.x, e.b.y);
@@ -292,23 +293,25 @@ export class PlayScene extends ArcadeScene {
     if (key === 'pu-repair') { this.lives = Math.min(5, this.lives + 1); label = t('repair'); this.updateHud(); }
     popup(this, it.x, it.y - 30, label, '#5dff7a', 22);
     this.addScore(30);
-    this.sfx('power', { volume: 0.5 });
+    this.sfxAt(key === 'pu-repair' ? 'repair' : 'power', it.x, { volume: 0.6 });
     flash(this, 0x3ee6ff, 90);
     it.destroy();
   }
 
   private hurt(): void {
     if (this.invuln > 0 || this.isOver) return;
-    if (this.shield > 0) { this.shield = 0; this.invuln = 0.8; this.sfx('clang'); return; }
+    if (this.shield > 0) { this.shield = 0; this.invuln = 0.8; this.sfxAt('shieldhit', this.player.b.x, { volume: 0.6 }); return; }
     this.lives--;
     this.waveDamage = true;
     this.invuln = 1.6;
-    this.sfx('hurt', { volume: 0.6 });
+    if (this.lives > 0) this.sfxAt('hurt', this.player.b.x, { volume: 0.7 });
+    if (this.lives === 1) this.time.delayedCall(250, () => this.sfx('lowhp', { volume: 0.5 }));
     shake(this, 0.02, 260);
     flash(this, 0xec3013, 160);
     this.updateHud();
     if (this.lives <= 0) {
       this.explode(this.player.b.x, this.player.b.y, true);
+      this.sfxAt('die', this.player.b.x, { volume: 0.8 });
       this.player.b.setVisible(false); this.player.barrel.setVisible(false);
       this.endGame({ delay: 900 });
     }
@@ -339,7 +342,7 @@ export class PlayScene extends ArcadeScene {
     this.refillCrates();
     this.updateHud();
     this.banner(`${t('wave')} ${this.wave}`);
-    this.sfx('wave', { volume: 0.5 });
+    this.sfx('wave', { volume: 0.4 });
   }
 
   // ---------- update ----------
@@ -423,7 +426,7 @@ export class PlayScene extends ArcadeScene {
       if (e.fireCd <= 0 && dist < 650 && Math.abs(Phaser.Math.Angle.Wrap(e.aim - want)) < 0.25 && p.b.visible) {
         e.fireCd = e.kind.rate * (0.8 + Math.random() * 0.5) / (1 + Math.min(0.6, this.wave * 0.05));
         this.fireFrom(e, this.eBullets, 'bullet-e', e.kind.bullet, e.aim + (Math.random() - 0.5) * 0.12);
-        this.sfx('efire', { volume: 0.25 });
+        this.sfxAt('efire', e.b.x, { volume: 0.25 });
       }
     }
 
@@ -445,7 +448,7 @@ export class PlayScene extends ArcadeScene {
         const bonus = 200 * this.wave + (this.waveDamage ? 0 : 500);
         this.addScore(bonus, p.b.x, p.b.y - 60);
         this.banner(this.waveDamage ? t('waveClear') : t('perfect'), '#5dff7a');
-        this.sfx('power', { volume: 0.5 });
+        this.sfx(this.waveDamage ? 'clear' : 'perfect', { volume: 0.65, exact: true });
       } else if (this.betweenWaves > 0) {
         this.betweenWaves -= dt;
         if (this.betweenWaves <= 0) this.startWave();

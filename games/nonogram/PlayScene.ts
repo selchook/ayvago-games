@@ -37,6 +37,8 @@ export class PlayScene extends ArcadeScene {
   private colDone: boolean[] = [];
   private timeLeft = START_TIME;
   private lastWarn = 0;
+  private fillRun = 0;
+  private lastFillAt = -1000;
   private mode: Mode = 'fill';
   private locked = true;
   private mistakes = 0;
@@ -124,7 +126,7 @@ export class PlayScene extends ArcadeScene {
     };
     on(this.fillBtn, m === 'fill');
     on(this.markBtn, m === 'mark');
-    if (!silent) this.sfx('toggle', { volume: 0.6 });
+    if (!silent) this.sfx('toggle', { volume: 0.55 });
   }
 
   private flashLocal(color: number, alpha: number): void {
@@ -291,7 +293,7 @@ export class PlayScene extends ArcadeScene {
       if (this.kbActive) {
         this.cursor = [Phaser.Math.Clamp(this.cursor[0] + mv[k][0], 0, this.n - 1), Phaser.Math.Clamp(this.cursor[1] + mv[k][1], 0, this.n - 1)];
         if (this.fillHeld && this.state[this.cursor[0]][this.cursor[1]] === EMPTY) this.apply(this.cursor[0], this.cursor[1], 'fill');
-        else this.sfx('move', { volume: 0.25 });
+        else this.sfx('move', { volume: 0.3 });
       }
       this.kbActive = true;
     } else if (k === 'Space' || k === 'KeyZ' || k === 'Enter') {
@@ -333,11 +335,11 @@ export class PlayScene extends ArcadeScene {
     if (action === 'mark') {
       if (s !== EMPTY) return;
       this.state[r][c] = MARKED;
-      this.sfx('mark', { volume: 0.5 });
+      this.sfxAt('mark', cx, { volume: 0.45 });
     } else if (action === 'unmark') {
       if (s !== MARKED) return;
       this.state[r][c] = EMPTY;
-      this.sfx('mark', { volume: 0.35, rate: 0.8 });
+      this.sfxAt('mark', cx, { volume: 0.35, rate: 0.8 });
     } else {
       if (s !== EMPTY) return;
       if (this.sol[r][c]) {
@@ -346,7 +348,11 @@ export class PlayScene extends ArcadeScene {
         rect.setScale(0.6);
         this.tweens.add({ targets: rect, scale: 1, duration: 160, ease: 'Back.easeOut' });
         this.addScore(5);
-        this.sfx('fill', { volume: 0.6 });
+        // Quick runs of fills (a drag) climb in pitch.
+        const now = this.time.now;
+        this.fillRun = now - this.lastFillAt < 450 ? Math.min(10, this.fillRun + 1) : 0;
+        this.lastFillAt = now;
+        this.sfxAt('fill', cx, { volume: 0.45, rate: 1 + this.fillRun * 0.04 });
         this.checkLines(r, c);
       } else {
         this.state[r][c] = MISTAKE;
@@ -358,7 +364,7 @@ export class PlayScene extends ArcadeScene {
         burst(this, cx, cy, COLORS.red, 14, 220);
         shake(this, 0.008, 160);
         this.flashLocal(COLORS.red, 0.22);
-        this.sfx('wrong', { volume: 0.6 });
+        this.sfxAt('wrong', cx, { volume: 0.6 });
         this.tweens.add({ targets: rect, angle: 8, duration: 50, yoyo: true, repeat: 2 });
         this.refreshInfo();
       }
@@ -420,7 +426,8 @@ export class PlayScene extends ArcadeScene {
     const P = PUZZLES[this.idx];
     const n = this.n;
     const bonus = 100 * n + (this.mistakes === 0 ? 300 : 0);
-    this.sfx('solved');
+    this.sfx('solved', { volume: 0.8, exact: true });
+    if (this.mistakes === 0) this.time.delayedCall(450, () => this.sfx('perfect', { volume: 0.6 }));
     this.flashLocal(0xffffff, 0.3);
     shake(this, 0.006, 200);
 
@@ -477,7 +484,7 @@ export class PlayScene extends ArcadeScene {
     const secs = this.showTime();
     if (secs <= 10 && secs > 0 && secs !== this.lastWarn) {
       this.lastWarn = secs;
-      this.sfx('warn', { volume: 0.5 });
+      this.sfx('warn', { volume: secs <= 3 ? 0.6 : 0.45, rate: secs <= 3 ? 1.15 : 1 });
     }
     if (this.timeLeft <= 0) {
       this.locked = true;
@@ -488,7 +495,7 @@ export class PlayScene extends ArcadeScene {
       }
       shake(this, 0.012, 300);
       this.flashLocal(COLORS.red, 0.3);
-      this.sfx('timeup');
+      this.sfx('timeup', { volume: 0.7 });
       this.endGame({ title: t('timeUp'), delay: 1300 });
     }
   }

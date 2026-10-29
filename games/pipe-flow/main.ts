@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -18,16 +18,19 @@ launch({
       const folder = set === 'grey' ? 'grey/pipegrey_' : 'green/pipegreen_';
       ['elbow', 'straight', 'tee', 'cross'].forEach((kind, i) => l.image(`pf-${set}-${kind}`, kenney(`${P}${folder}${list[i]}.png`)));
     }
-    loadSfx(l, 'rotate', 'sfx-interface/audio/switch_005');
-    loadSfx(l, 'locked', 'sfx-interface/audio/error_006');
-    loadSfx(l, 'link', 'sfx-interface/audio/select_004');
-    loadSfx(l, 'flow', 'sfx-digital/audio/phaserup3');
-    loadSfx(l, 'fill', 'sfx-interface/audio/drop_001');
-    loadSfx(l, 'leak', 'sfx-impact/audio/impactsoft_medium_002');
-    loadSfx(l, 'win', 'sfx-digital/audio/powerup5');
-    loadSfx(l, 'fail', 'sfx-digital/audio/phaserdown2');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'move', 'sfx-interface/audio/tick_001');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'rotate', J + 'movement/opening-doors/sfx-movement-dooropen3');
+    loadAudio(l, 'rotate2', J + 'movement/opening-doors/sfx-movement-dooropen4');
+    loadAudio(l, 'rotate3', J + 'movement/opening-doors/sfx-movement-dooropen1');
+    loadAudio(l, 'locked', J + 'general-sounds/negative-sounds/sfx-sounds-error7');
+    loadAudio(l, 'link', J + 'general-sounds/coins/sfx-coin-double4');
+    loadAudio(l, 'flow', J + 'general-sounds/weird-sounds/sfx-sound-noise');
+    loadAudio(l, 'fill', J + 'movement/jumping-and-landing/sfx-movement-jump4');
+    loadAudio(l, 'leak', J + 'explosions/shortest/sfx-exp-shortest-soft2');
+    loadAudio(l, 'win', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'fail', J + 'general-sounds/negative-sounds/sfx-sounds-negative2');
+    loadAudio(l, 'tick', J + 'general-sounds/high-pitched-sounds/sfx-sounds-high1');
+    loadAudio(l, 'move', J + 'general-sounds/menu-sounds/sfx-menu-move3');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

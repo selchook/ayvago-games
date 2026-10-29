@@ -116,7 +116,7 @@ export class PlayScene extends ArcadeScene {
     steps.forEach((s, i) => this.time.delayedCall(300 + i * 450, () => {
       if (this.isOver) return;
       this.banner(s, i === 3 ? '#5dff7a' : '#ffd23f', i === 3 ? 56 : 72, 380);
-      this.sfx(i === 3 ? 'level' : 'swerve', { volume: 0.4 });
+      this.sfx('beep', { volume: 0.5, rate: i === 3 ? 1.5 : 1, exact: true });
       if (i === 3) { this.started = true; this.speed = 480; }
     }));
   }
@@ -208,7 +208,7 @@ export class PlayScene extends ArcadeScene {
     this.combo = 0;
     this.speed = Math.max(380, this.speed * 0.55);
     this.updateHud();
-    this.sfx('crash', { volume: 0.7 });
+    this.sfxAt(this.lives > 0 ? 'crash' : 'wreck', this.px, { volume: this.lives > 0 ? 0.75 : 0.85 });
     shake(this, 0.025, 380);
     softFlash(this, 0xec3013, 220, 0.4);
     burst(this, (this.px + o.x) / 2, (PY + o.y) / 2, [0xffd23f, 0xec3013, 0x555555, 0xffffff], 40, 460);
@@ -229,7 +229,7 @@ export class PlayScene extends ArcadeScene {
     this.comboT = 3;
     const pts = 50 * this.combo;
     this.addScore(pts);
-    this.sfx('near', { volume: 0.45, rate: 1 + this.combo * 0.08 });
+    this.sfxAt('near', o.x, { volume: 0.45, rate: 1 + this.combo * 0.08 });
     fpopup(this, (this.px + o.x) / 2, PY - 110, this.combo > 1 ? `${t('near')} x${this.combo}` : t('near'), '#3ee6ff', 22);
     fpopup(this, (this.px + o.x) / 2, PY - 60, `+${pts}`, '#ffd23f', 22);
     burst(this, (this.px + o.x) / 2, PY - 20, [0x3ee6ff, 0xffffff], 12, 220);
@@ -249,13 +249,13 @@ export class PlayScene extends ArcadeScene {
       this.fuel = Math.max(0, this.fuel - FUEL_DRAIN * dt * (0.8 + this.speed / 2400));
       if (this.fuel <= 0) {
         this.outOfFuel = true;
-        this.sfx('empty', { volume: 0.6 });
+        this.sfx('empty', { volume: 0.65 });
         this.banner(t('outOfFuel'), '#ec3013', 40, 1400);
         this.endGame({ title: t('outOfFuel'), delay: 1600 });
       }
       if (this.fuel < 25) {
         this.lowT -= dt;
-        if (this.lowT <= 0) { this.lowT = 2; this.sfx('low', { volume: 0.35 }); fpopup(this, 160, 150, t('lowFuel'), '#ec3013', 18); }
+        if (this.lowT <= 0) { this.lowT = 2; this.sfx('low', { volume: 0.35, exact: true }); fpopup(this, 160, 150, t('lowFuel'), '#ec3013', 18); }
       }
     } else if (this.outOfFuel) this.speed = Math.max(0, this.speed - 500 * dt);
 
@@ -288,7 +288,7 @@ export class PlayScene extends ArcadeScene {
     if (lvl > this.level) {
       this.level = lvl;
       this.updateHud();
-      this.sfx('level', { volume: 0.5 });
+      this.sfx('level', { volume: 0.55, exact: true });
       this.banner(`${t('level')} ${lvl}`, '#5dff7a', 44);
       softFlash(this, 0x5dff7a, 200, 0.2);
     }
@@ -339,7 +339,7 @@ export class PlayScene extends ArcadeScene {
         if (o.kind === 'coin' && dx < 50 && dy < 70) {
           o.hit = true;
           this.addScore(25);
-          this.sfx('coin', { volume: 0.4 });
+          this.sfxAt(rng.pick(['coin1', 'coin2']), o.x, { volume: 0.4 });
           burst(this, o.x, o.y, [0xffd23f, 0xffffff], 10, 200);
           this.tweens.killTweensOf(o.img);
           this.tweens.add({ targets: o.img, y: o.y - 60, alpha: 0, scale: 0.6, duration: 250 });
@@ -347,7 +347,7 @@ export class PlayScene extends ArcadeScene {
           o.hit = true;
           this.fuel = Math.min(100, this.fuel + 45);
           this.addScore(20);
-          this.sfx('fuel', { volume: 0.6 });
+          this.sfxAt('fuel', o.x, { volume: 0.6 });
           softFlash(this, 0x5dff7a, 150, 0.2);
           fpopup(this, o.x, o.y - 40, t('fuelUp'), '#5dff7a', 22);
           this.tweens.killTweensOf(o.img);
@@ -356,13 +356,13 @@ export class PlayScene extends ArcadeScene {
           o.hit = true;
           this.skid = 0.6;
           this.skidDir = this.px < 360 ? 1 : -1;
-          this.sfx('skid', { volume: 0.6 });
+          this.sfxAt('skid', this.px, { volume: 0.6 });
           fpopup(this, this.px, PY - 120, t('oil'), '#ffd23f', 22);
         } else if ((o.kind === 'car' || o.kind === 'cone' || o.kind === 'barrel') && dx < (PW + o.w) / 2 && dy < (PH + o.h) / 2) {
           if (o.kind === 'car') this.crash(o);
           else if (this.invuln <= 0) {
             o.hit = true;
-            this.sfx('bump', { volume: 0.5 });
+            this.sfxAt('bump', o.x, { volume: 0.55 });
             this.speed *= 0.75;
             this.fuel = Math.max(0, this.fuel - 8);
             shake(this, 0.01, 160);

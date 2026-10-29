@@ -156,7 +156,7 @@ export class PlayScene extends ArcadeScene {
     this.selectLayer = [];
     this.timerText.setVisible(true); this.mineText.setVisible(true);
     this.modeBtn.setVisible(true);
-    this.sfx('mode');
+    this.sfx('pick', { volume: 0.6 });
     this.buildBoard();
   }
 
@@ -269,8 +269,8 @@ export class PlayScene extends ArcadeScene {
       if (e.code === 'Digit1' || e.code === 'Numpad1') this.pickDiff(0);
       else if (e.code === 'Digit2' || e.code === 'Numpad2') this.pickDiff(1);
       else if (e.code === 'Digit3' || e.code === 'Numpad3') this.pickDiff(2);
-      else if (e.code === 'ArrowUp' || e.code === 'KeyW') { this.selectFocus = (this.selectFocus + 2) % 3; this.moveSelectRing(); this.sfx('move', { volume: 0.4 }); }
-      else if (e.code === 'ArrowDown' || e.code === 'KeyS') { this.selectFocus = (this.selectFocus + 1) % 3; this.moveSelectRing(); this.sfx('move', { volume: 0.4 }); }
+      else if (e.code === 'ArrowUp' || e.code === 'KeyW') { this.selectFocus = (this.selectFocus + 2) % 3; this.moveSelectRing(); this.sfx('move', { volume: 0.45 }); }
+      else if (e.code === 'ArrowDown' || e.code === 'KeyS') { this.selectFocus = (this.selectFocus + 1) % 3; this.moveSelectRing(); this.sfx('move', { volume: 0.45 }); }
       else if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyZ') this.pickDiff(this.selectFocus);
       return;
     }
@@ -292,7 +292,7 @@ export class PlayScene extends ArcadeScene {
     this.cursor = r * this.cols + c;
     this.showCursor = true;
     this.moveCursor();
-    this.sfx('move', { volume: 0.25 });
+    this.sfx('move', { volume: 0.3 });
   }
 
   private moveCursor(): void {
@@ -304,7 +304,7 @@ export class PlayScene extends ArcadeScene {
     if (this.phase !== 'play') return;
     this.flagMode = !this.flagMode;
     this.modeBtn.setText(t(this.flagMode ? 'modeFlag' : 'modeDig'));
-    this.sfx('mode');
+    this.sfx('mode', { volume: 0.5 });
     this.tweens.add({ targets: this.modeBtn, scale: { from: 1.12, to: 1 }, duration: 220, ease: 'Back.easeOut' });
   }
 
@@ -319,13 +319,13 @@ export class PlayScene extends ArcadeScene {
       this.boardLayer.add(f);
       this.icons[i] = f;
       this.tweens.add({ targets: f, y, alpha: 1, duration: 200, ease: 'Bounce.easeOut' });
-      this.sfx('flag', { volume: 0.5 });
+      this.sfxAt('flag', x, { volume: 0.5 });
       burst(this, x, y, [0xec3013, 0xffffff], 6, 120);
     } else {
       const f = this.icons[i];
       this.icons[i] = null;
       if (f) this.tweens.add({ targets: f, scale: 0, duration: 150, onComplete: () => f.destroy() });
-      this.sfx('unflag', { volume: 0.45 });
+      this.sfxAt('unflag', x, { volume: 0.4 });
     }
     this.updateHud();
   }
@@ -391,8 +391,9 @@ export class PlayScene extends ArcadeScene {
         if (dist.size > 6 && k % 3 === 0) burst(this, x, y, [0x6a73c4, 0x3ee6ff], 3, 90);
       });
     }
-    if (dist.size > 1) this.sfx('flood', { volume: 0.5 });
-    else this.sfx('dig', { volume: 0.5, detune: rng.int(-150, 150) });
+    const at = this.cellPos(start[0]).x;
+    if (dist.size > 1) this.sfxAt('flood', at, { volume: 0.4 + Math.min(0.3, dist.size / 80) });
+    else this.sfxAt(rng.pick(['dig', 'dig2', 'dig3']), at, { volume: 0.5 });
     if (dist.size) {
       const first = this.cellPos(start[0]);
       this.addScore(gained, first.x, first.y - 30);
@@ -413,8 +414,8 @@ export class PlayScene extends ArcadeScene {
     burst(this, x, y, [0xec3013, 0xffd23f, 0xffa53a, 0xffffff], 40, 420);
     shake(this, 0.022, 320);
     softFlash(this, 0xec3013);
-    this.sfx('boom', { volume: 0.6 });
-    this.sfx('boom2', { volume: 0.45 });
+    this.sfxAt('boom', x, { volume: 0.8 });
+    this.time.delayedCall(180, () => this.sfx('penalty', { volume: 0.5 }));
     this.timeLeft = Math.max(0, this.timeLeft - PENALTY);
     popup(this, Phaser.Math.Clamp(x, 140, 580), Math.max(200, y - 40), t('penalty'), '#ff5a5a', 30);
     this.tweens.add({ targets: this.timerText, scale: { from: 1.5, to: 1 }, duration: 400, ease: 'Back.easeOut' });
@@ -450,7 +451,8 @@ export class PlayScene extends ArcadeScene {
     });
     const bonus = 250 * d.mult * this.level + Math.floor(this.timeLeft) * 2 * d.mult;
     this.time.delayedCall(350, () => {
-      this.sfx('clear', { volume: 0.6 });
+      this.sfx('clear', { volume: 0.75, exact: true });
+      if (newBest) this.time.delayedCall(450, () => this.sfx('best', { volume: 0.6 }));
       softFlash(this, 0x5dff7a);
       this.addScore(bonus, 360, 600);
       for (let k = 0; k < 6; k++) this.time.delayedCall(k * 120, () => burst(this, rng.int(120, 600), rng.int(300, 900), [0xffd23f, 0x5dff7a, 0x3ee6ff, 0xff4fa3], 24, 380));
@@ -472,7 +474,7 @@ export class PlayScene extends ArcadeScene {
     if (this.phase === 'over') return;
     this.phase = 'over';
     this.cursorBox.setVisible(false);
-    this.sfx('boom', { volume: 0.6 });
+    this.sfx('bigboom', { volume: 0.8 });
     shake(this, 0.03, 500);
     const list = this.mines.map((m, i) => (m && !this.blown[i] ? i : -1)).filter((i) => i >= 0);
     list.forEach((i, k) => this.time.delayedCall(80 + k * 45, () => {
@@ -481,7 +483,7 @@ export class PlayScene extends ArcadeScene {
       this.icons[i]?.destroy();
       const b = this.add.image(x, y, 'ob', OB.bomb).setScale(3.4);
       this.boardLayer.add(b);
-      if (!this.flags[i]) burst(this, x, y, [0xec3013, 0xffd23f], 8, 200);
+      if (!this.flags[i]) { burst(this, x, y, [0xec3013, 0xffd23f], 8, 200); this.sfxAt('pop', x, { volume: 0.35 }); }
     }));
     this.add.rectangle(360, 600, 720, 140, 0x000000, 0.75).setDepth(29);
     const msg = txt(this, 360, 600, t('timeUp'), { title: true, size: 40, color: '#ec3013' }).setDepth(30).setScale(0);
@@ -499,7 +501,7 @@ export class PlayScene extends ArcadeScene {
     this.timeLeft -= dt;
     if (this.timeLeft <= 10 && Math.ceil(this.timeLeft) !== this.lastTick) {
       this.lastTick = Math.ceil(this.timeLeft);
-      this.sfx('tick', { volume: 0.5 });
+      this.sfx('tick', { volume: this.lastTick <= 3 ? 0.6 : 0.45, rate: this.lastTick <= 3 ? 1.15 : 1 });
       this.tweens.add({ targets: this.timerText, scale: { from: 1.3, to: 1 }, duration: 250 });
     }
     if (this.timeLeft <= 0) { this.timeLeft = 0; this.updateHud(); this.timeUp(); return; }

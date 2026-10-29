@@ -102,7 +102,7 @@ export class PlayScene extends ArcadeScene {
       for (const o of this.readyGroup) this.tweens.add({ targets: o, alpha: 0, duration: 250, onComplete: () => o.destroy() });
     }
     this.vy = FLAP_V;
-    this.sfx('flap', { volume: 0.35 });
+    this.sfx(rng.pick(['flap1', 'flap2']), { volume: 0.32 });
     this.puffs.emitParticleAt(this.plane.x - 40, this.plane.y + 6, 3);
     this.tweens.add({ targets: this.plane, scaleX: 1.12, scaleY: 0.9, duration: 70, yoyo: true });
   }
@@ -153,7 +153,7 @@ export class PlayScene extends ArcadeScene {
     o.passed = true;
     this.gaps++;
     this.addScore(10, this.plane.x + 40, this.plane.y - 60);
-    this.sfx('pass', { volume: 0.5 });
+    this.sfx('pass', { volume: 0.4 });
     this.updateHud();
     for (const [n, m, bonus] of MEDALS) if (this.gaps === n) this.medal(m, bonus);
     if (this.gaps % 12 === 0) this.nextBiome();
@@ -168,7 +168,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: [img, label], alpha: 0, delay: 1600, duration: 400, onComplete: () => { img.destroy(); label.destroy(); } });
     burst(this, width / 2, height * 0.3, [0xffd23f, 0xffffff, 0xff4fa3], 50, 420);
     this.addScore(bonus, width / 2, height * 0.3 - 80);
-    this.sfx('medal', { volume: 0.6 });
+    this.sfx('medal', { volume: 0.6, exact: true });
   }
 
   private nextBiome(): void {
@@ -178,15 +178,15 @@ export class PlayScene extends ArcadeScene {
     this.ceiling.setTexture(b.ground);
     this.bg.setTint(b.tint);
     flash(this, 0xffffff, 200);
-    this.sfx('biome', { volume: 0.4 });
+    this.sfx('biome', { volume: 0.45 });
   }
 
   private crash(): void {
     if (this.state === 'dead') return;
     this.state = 'dead';
     const { height } = this.scale;
-    this.sfx('crash', { volume: 0.6 });
-    this.sfx('fall', { volume: 0.4 });
+    this.sfx('crash', { volume: 0.7 });
+    this.time.delayedCall(120, () => this.sfx('fall', { volume: 0.45 }));
     shake(this, 0.025, 320);
     flash(this, 0xec3013, 160);
     burst(this, this.plane.x, this.plane.y, [0xec3013, 0xffd23f, 0x444444], 40, 420);
@@ -244,7 +244,7 @@ export class PlayScene extends ArcadeScene {
       if (Phaser.Math.Distance.Between(s.x, s.y, this.plane.x, this.plane.y) < 55) {
         burst(this, s.x, s.y, [0xffd23f, 0xffffff], 18, 260);
         this.addScore(25, s.x, s.y - 30);
-        this.sfx('star', { volume: 0.45 });
+        this.sfx('star', { volume: 0.55 });
         s.destroy();
         return false;
       }

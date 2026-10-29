@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, cardKey } from './PlayScene';
 
@@ -14,16 +14,25 @@ launch({
     const l = scene.load;
     SUITS.forEach((s, si) => RANKS.forEach((r, ri) => l.image(cardKey(si, ri + 1), kenney(`${C}card${s}${r}.png`))));
     l.image('card-back', kenney(C + 'cardback_red2.png'));
-    loadSfx(l, 'place', 'sfx-casino/audio/cardplace1');
+    // physical card sounds stay Kenney casino; cues and stings come from the Junkala pack
+    loadSfx(l, 'place1', 'sfx-casino/audio/cardplace1');
     loadSfx(l, 'place2', 'sfx-casino/audio/cardplace3');
-    loadSfx(l, 'slide', 'sfx-casino/audio/cardslide2');
-    loadSfx(l, 'flip', 'sfx-casino/audio/cardslide5');
+    loadSfx(l, 'place3', 'sfx-casino/audio/cardplace4');
+    loadSfx(l, 'flip1', 'sfx-casino/audio/cardslide5');
+    loadSfx(l, 'flip2', 'sfx-casino/audio/cardslide6');
     loadSfx(l, 'shuffle', 'sfx-casino/audio/cardshuffle');
-    loadSfx(l, 'fan', 'sfx-casino/audio/cardfan1');
-    loadSfx(l, 'found', 'sfx-interface/audio/confirmation_002');
-    loadSfx(l, 'error', 'sfx-interface/audio/error_004');
-    loadSfx(l, 'undo', 'sfx-interface/audio/back_002');
-    loadSfx(l, 'stuck', 'sfx-digital/audio/phaserdown3');
+    loadSfx(l, 'recycle', 'sfx-casino/audio/cardshove2');
+    loadSfx(l, 'fan', 'sfx-casino/audio/cardfan2');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'found', J + 'coins/sfx-coin-single1');
+    loadAudio(l, 'suit', J + 'coins/sfx-coin-cluster3');
+    loadAudio(l, 'reveal', J + 'high-pitched-sounds/sfx-sounds-high6');
+    loadAudio(l, 'hint', J + 'high-pitched-sounds/sfx-sounds-high2');
+    loadAudio(l, 'cursor', J + 'menu-sounds/sfx-menu-move3');
+    loadAudio(l, 'error', J + 'negative-sounds/sfx-sounds-error6');
+    loadAudio(l, 'undo', J + 'pause-sounds/sfx-sounds-pause2-out');
+    loadAudio(l, 'stuck', J + 'negative-sounds/sfx-sounds-negative2');
+    loadAudio(l, 'win', J + 'fanfares/sfx-sounds-fanfare1');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

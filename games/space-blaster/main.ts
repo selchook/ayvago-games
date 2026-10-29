@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -20,11 +20,20 @@ launch({
     l.image('pu-shield', kenney(SS + 'power-ups/powerupblue_shield.png'));
     l.image('shield', kenney(SS + 'effects/shield1.png'));
     l.image('star', kenney(SS + 'effects/star1.png'));
-    loadSfx(l, 'shoot', 'sfx-digital/audio/laser4');
-    loadSfx(l, 'boom', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'hit', 'sfx-digital/audio/zap1');
-    loadSfx(l, 'power', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown3');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'shoot', J + 'weapons/lasers/sfx-wpn-laser8');
+    loadAudio(l, 'eshot', J + 'weapons/lasers/sfx-wpn-laser2');
+    loadAudio(l, 'hit', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit5');
+    loadAudio(l, 'boom1', J + 'explosions/shortest/sfx-exp-shortest-hard2');
+    loadAudio(l, 'boom2', J + 'explosions/shortest/sfx-exp-shortest-hard8');
+    loadAudio(l, 'boom3', J + 'explosions/shortest/sfx-exp-shortest-hard9');
+    loadAudio(l, 'rock', J + 'explosions/short/sfx-exp-short-soft5');
+    loadAudio(l, 'power-bolt', J + 'general-sounds/positive-sounds/sfx-sounds-powerup11');
+    loadAudio(l, 'power-shield', J + 'general-sounds/positive-sounds/sfx-sounds-powerup13');
+    loadAudio(l, 'shieldhit', J + 'general-sounds/impacts/sfx-sounds-impact13');
+    loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage1');
+    loadAudio(l, 'die', J + 'explosions/medium-length/sfx-exp-medium3');
+    loadAudio(l, 'wave', J + 'general-sounds/fanfares/sfx-sounds-fanfare3');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeHexTextures, HEX_COLORS } from './PlayScene';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -10,17 +12,22 @@ launch({
   preload(scene) {
     const l = scene.load;
     l.spritesheet('ob', kenney('onebit/tilesheet/colored_transparent_packed.png'), { frameWidth: 16, frameHeight: 16 });
-    loadSfx(l, 'drop', 'sfx-casino/audio/chiplay2');
-    loadSfx(l, 'merge', 'sfx-digital/audio/pepsound2');
-    loadSfx(l, 'chain', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'nova', 'sfx-digital/audio/powerup9');
-    loadSfx(l, 'boom', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'swap', 'sfx-casino/audio/chipshandle3');
-    loadSfx(l, 'nope', 'sfx-interface/audio/error_004');
+    loadSfx(l, 'drop1', 'sfx-casino/audio/chiplay1');
+    loadSfx(l, 'drop2', 'sfx-casino/audio/chiplay2');
+    loadSfx(l, 'drop3', 'sfx-casino/audio/chiplay3');
+    loadAudio(l, 'merge', J + 'general-sounds/positive-sounds/sfx-sounds-powerup5');
+    loadAudio(l, 'chain', J + 'general-sounds/positive-sounds/sfx-sounds-powerup6');
+    loadAudio(l, 'nova', J + 'explosions/odd/sfx-exp-odd6');
+    loadAudio(l, 'novaJingle', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'boom', J + 'explosions/short/sfx-exp-short-hard14');
+    loadAudio(l, 'full', J + 'general-sounds/negative-sounds/sfx-sounds-negative1');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop6');
+    loadAudio(l, 'swap', J + 'general-sounds/interactions/sfx-sounds-interaction24');
+    loadAudio(l, 'nope', J + 'general-sounds/negative-sounds/sfx-sounds-error8');
     loadSfx(l, 'stone', 'sfx-impact/audio/impactmining_001');
     loadSfx(l, 'crack', 'sfx-impact/audio/impactmining_003');
-    loadSfx(l, 'levelup', 'sfx-interface/audio/maximize_008');
-    loadSfx(l, 'move', 'sfx-interface/audio/tick_001');
+    loadAudio(l, 'levelup', J + 'general-sounds/positive-sounds/sfx-sounds-powerup8');
+    loadAudio(l, 'move', J + 'general-sounds/menu-sounds/sfx-menu-move4');
   },
   menuDecor(scene) {
     makeHexTextures(scene);

@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -17,14 +17,26 @@ launch({
     l.image('bush', kenney(P + 'tiles/tile_183.png'));
     l.image('bush2', kenney(P + 'tiles/tile_186.png'));
     l.image('rock', kenney(P + 'tiles/tile_237.png'));
-    loadSfx(l, 'shoot', 'sfx-digital/audio/laser6');
-    loadSfx(l, 'hit', 'sfx-impact/audio/impactsoft_heavy_001');
-    loadSfx(l, 'die', 'sfx-impact/audio/impactpunch_heavy_002');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'upgrade', 'sfx-digital/audio/powerup5');
-    loadSfx(l, 'pickup', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'wave', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'toggle', 'sfx-interface/audio/switch_002');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'shoot1', J + 'weapons/single-shot-sounds/sfx-weapon-singleshot15');
+    loadAudio(l, 'shoot2', J + 'weapons/single-shot-sounds/sfx-weapon-singleshot4');
+    loadAudio(l, 'shoot3', J + 'weapons/single-shot-sounds/sfx-weapon-singleshot20');
+    loadAudio(l, 'hit1', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit1');
+    loadAudio(l, 'hit2', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit6');
+    loadAudio(l, 'splat1', J + 'explosions/shortest/sfx-exp-shortest-soft1');
+    loadAudio(l, 'splat2', J + 'explosions/shortest/sfx-exp-shortest-soft8');
+    loadAudio(l, 'brutedie', J + 'death-screams/alien/sfx-deathscream-alien5');
+    loadAudio(l, 'bossdie', J + 'death-screams/alien/sfx-deathscream-alien1');
+    loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage1');
+    loadAudio(l, 'die', J + 'death-screams/human/sfx-deathscream-human1');
+    loadAudio(l, 'lowhp', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop3');
+    loadAudio(l, 'pickup', J + 'general-sounds/positive-sounds/sfx-sounds-powerup4');
+    loadAudio(l, 'wave', J + 'general-sounds/alarms/alarms/sfx-alarm-loop5');
+    loadAudio(l, 'boss', J + 'general-sounds/alarms/alarms/sfx-alarm-loop4');
+    loadAudio(l, 'menu', J + 'general-sounds/pause-sounds/sfx-sounds-pause5-in');
+    loadAudio(l, 'upgrade', J + 'general-sounds/positive-sounds/sfx-sounds-powerup18');
+    loadAudio(l, 'toggle', J + 'general-sounds/menu-sounds/sfx-menu-move5');
+    loadAudio(l, 'aim', J + 'general-sounds/buttons/sfx-sounds-button3');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

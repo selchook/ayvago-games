@@ -1,4 +1,4 @@
-import { launch, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeLightTextures } from './PlayScene';
 
@@ -8,11 +8,14 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    loadSfx(l, 'toggle', 'sfx-interface/audio/switch_003');
-    loadSfx(l, 'move', 'sfx-interface/audio/tick_001');
-    loadSfx(l, 'hint', 'sfx-interface/audio/question_002');
-    loadSfx(l, 'solved', 'sfx-digital/audio/powerup5');
-    loadSfx(l, 'fail', 'sfx-digital/audio/phaserdown2');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'toggle', J + 'buttons/sfx-sounds-button6');
+    loadAudio(l, 'move', J + 'menu-sounds/sfx-menu-move2');
+    loadAudio(l, 'hint', J + 'pause-sounds/sfx-sounds-pause4-in');
+    loadAudio(l, 'warn', J + 'alarms/low-health-alarms/sfx-lowhealth-alarmloop6');
+    loadAudio(l, 'solved', J + 'positive-sounds/sfx-sounds-powerup13');
+    loadAudio(l, 'perfect', J + 'coins/sfx-coin-cluster8');
+    loadAudio(l, 'fail', J + 'negative-sounds/sfx-sounds-negative2');
   },
   menuDecor(scene) {
     makeLightTextures(scene);

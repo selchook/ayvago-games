@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, ANIMALS, makeTextures } from './PlayScene';
 
@@ -20,16 +20,22 @@ launch({
     for (const n of [1, 2, 3]) l.image('plane' + n, kenney(`tappy-plane/png/planes/planered${n}.png`));
     l.image('puff', kenney('tappy-plane/png/puffsmall.png'));
     l.image('grass', kenney('platformer/png/ground/grass/grassmid.png'));
-    loadSfx(l, 'beam', 'sfx-digital/audio/phaserup2');
-    loadSfx(l, 'grab', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'combo', 'sfx-digital/audio/powerup7');
-    loadSfx(l, 'launch', 'sfx-digital/audio/laser6');
-    loadSfx(l, 'warn', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'jet', 'sfx-digital/audio/phasejump3');
-    loadSfx(l, 'boom', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'bonk', 'sfx-impact/audio/impactsoft_medium_001');
-    loadSfx(l, 'over', 'sfx-interface/audio/error_004');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'beam', J + 'weapons/lasers/sfx-wpn-laser3');
+    loadAudio(l, 'grab', J + 'general-sounds/positive-sounds/sfx-sounds-powerup10');
+    loadAudio(l, 'golden', J + 'general-sounds/coins/sfx-coin-cluster1');
+    loadAudio(l, 'combo', J + 'general-sounds/positive-sounds/sfx-sounds-powerup6');
+    loadAudio(l, 'launch', J + 'weapons/grenade-whistles/sfx-wpn-missilelaunch');
+    loadAudio(l, 'warn', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop7');
+    loadAudio(l, 'warnplane', J + 'general-sounds/weird-sounds/sfx-sound-nagger1');
+    loadAudio(l, 'jet', J + 'movement/vehicles/sfx-vehicle-plainloop');
+    loadAudio(l, 'boom', J + 'explosions/shortest/sfx-exp-shortest-hard1');
+    loadAudio(l, 'fizzle', J + 'explosions/shortest/sfx-exp-shortest-soft5');
+    loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage1');
+    loadAudio(l, 'die', J + 'explosions/long/sfx-exp-long1');
+    loadAudio(l, 'bonk', J + 'movement/jumping-and-landing/sfx-movement-jump9-landing');
+    loadAudio(l, 'overheat', J + 'general-sounds/weird-sounds/sfx-sound-vaporizing');
+    loadAudio(l, 'ready', J + 'general-sounds/pause-sounds/sfx-sounds-pause3-in');
     loadSfx(l, 'level', 'jingles/audio/8-bit_jingles/jingles_nes05');
   },
   menuDecor(scene) {

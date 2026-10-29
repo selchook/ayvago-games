@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import Phaser from 'phaser';
 import meta from './game.json';
 import { PlayScene, drawHoop } from './PlayScene';
@@ -12,16 +12,23 @@ launch({
   preload(scene) {
     const l = scene.load;
     l.image('ball', kenney(SP + 'equipment/ball_basket1.png'));
-    loadSfx(l, 'throw', 'sfx-interface/audio/drop_002');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'throw', J + 'movement/jumping-and-landing/sfx-movement-jump16');
     loadSfx(l, 'rim', 'sfx-impact/audio/impactmetal_light_001');
+    loadSfx(l, 'rim2', 'sfx-impact/audio/impactmetal_light_003');
+    loadSfx(l, 'rim3', 'sfx-impact/audio/impactmetal_medium_002');
     loadSfx(l, 'board', 'sfx-impact/audio/impactplank_medium_001');
+    loadSfx(l, 'board2', 'sfx-impact/audio/impactplank_medium_003');
     loadSfx(l, 'bounce', 'sfx-impact/audio/impactsoft_heavy_001');
-    loadSfx(l, 'score', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'swish', 'sfx-interface/audio/confirmation_002');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_001');
-    loadSfx(l, 'buzzer', 'sfx-digital/audio/lowthreetone');
-    loadSfx(l, 'levelup', 'sfx-digital/audio/phaserup3');
-    loadSfx(l, 'miss', 'sfx-interface/audio/error_004');
+    loadSfx(l, 'bounce2', 'sfx-impact/audio/impactsoft_heavy_003');
+    loadAudio(l, 'net', J + 'weapons/melee/sfx-wpn-sword1');
+    loadAudio(l, 'score', J + 'general-sounds/coins/sfx-coin-double2');
+    loadAudio(l, 'swish', J + 'general-sounds/positive-sounds/sfx-sounds-powerup8');
+    loadAudio(l, 'beater', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'tick', J + 'general-sounds/high-pitched-sounds/sfx-sounds-high1');
+    loadAudio(l, 'buzzer', J + 'general-sounds/alarms/alarms/sfx-alarm-loop5');
+    loadAudio(l, 'levelup', J + 'general-sounds/positive-sounds/sfx-sounds-powerup2');
+    loadAudio(l, 'miss', J + 'general-sounds/negative-sounds/sfx-sounds-error15');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

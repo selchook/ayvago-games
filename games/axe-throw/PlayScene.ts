@@ -169,7 +169,7 @@ export class PlayScene extends ArcadeScene {
     const b = txt(this, W / 2, 760, title, { title: true, size: this.boss ? 46 : 40, color: this.boss ? '#ec3013' : '#ffd23f' }).setDepth(50).setScale(0.3);
     this.tweens.add({ targets: b, scale: 1, duration: 350, ease: 'Back.easeOut' });
     this.tweens.add({ targets: b, alpha: 0, delay: 1000, duration: 350, onComplete: () => b.destroy() });
-    if (this.boss) { this.sfx('boss', { volume: 0.5 }); shake(this, 0.01, 300); }
+    if (this.boss) { this.sfx('boss', { volume: 0.6, exact: true }); shake(this, 0.01, 300); }
     this.tweens.add({
       targets: this.logC, scale: 1, duration: 420, ease: 'Back.easeOut',
       onComplete: () => { this.busy = false; },
@@ -192,7 +192,7 @@ export class PlayScene extends ArcadeScene {
     if (icon) { icon.setTint(0x333333); this.tweens.add({ targets: icon, scale: 1.4, duration: 80, yoyo: true }); }
     this.flying = this.add.image(CX, THROW_Y, 'axe').setDepth(20);
     this.hand.setAlpha(0);
-    this.sfx('throw', { volume: 0.25 });
+    this.sfx(rng.pick(['throw1', 'throw2', 'throw3']), { volume: 0.45 });
   }
 
   private land(): void {
@@ -204,7 +204,7 @@ export class PlayScene extends ArcadeScene {
 
     axe.destroy();
     this.addStuck(phi, true);
-    this.sfx('thunk' + rng.int(0, 2), { volume: 0.6 });
+    this.sfx('thunk' + Math.floor(Math.random() * 3), { volume: 0.65 });
     if (this.boss) this.sfx('plate', { volume: 0.25 });
     this.addScore(10);
     burst(this, CX, CY + R, this.boss ? [0xffffff, 0xec3013] : [0xd9a066, 0x8b5a2b, 0xffe0b0], 14, 260);
@@ -232,8 +232,8 @@ export class PlayScene extends ArcadeScene {
     a.img.destroy();
     this.addScore(50, x, y - 30);
     popup(this, x, y - 80, t('apple'), '#ff4fa3', 22);
-    this.sfx('apple', { volume: 0.6 });
-    this.sfx('bonus', { volume: 0.3 });
+    this.sfxAt('apple', x, { volume: 0.6 });
+    this.sfxAt('bonus', x, { volume: 0.5, delay: 0.05 });
     burst(this, x, y, [0xd62828, 0xfff2b3, 0x4caf50], 22, 300);
     for (const dir of [-1, 1]) {
       const half = this.add.image(x, y, 'apple').setDepth(40).setCrop(dir < 0 ? 0 : 24, 0, 24, 48);
@@ -244,7 +244,9 @@ export class PlayScene extends ArcadeScene {
   private fail(axe: Phaser.GameObjects.Image): void {
     this.lives--;
     this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
-    this.sfx('clang', { volume: 0.7 });
+    this.sfx('clang', { volume: 0.75 });
+    this.sfx('hurt', { volume: 0.45, delay: 0.08 });
+    if (this.lives === 1) this.sfx('low', { volume: 0.4, delay: 0.5 });
     shake(this, 0.02, 300);
     flash(this, 0xec3013, 160);
     burst(this, axe.x, axe.y - 80, [0xffffff, 0xffd23f], 24, 340);
@@ -271,8 +273,9 @@ export class PlayScene extends ArcadeScene {
     const bossWas = this.boss;
     this.time.delayedCall(180, () => {
       if (this.isOver) return;
-      this.sfx('shatter', { volume: 0.7 });
-      this.sfx('thunk0', { volume: 0.5 });
+      this.sfx('shatter', { volume: 0.75 });
+      this.sfx('crunch', { volume: 0.55 });
+      this.sfx('clear', { volume: 0.6, exact: true, delay: 0.3 });
       shake(this, 0.018, 280);
       flash(this, 0xffffff, 120);
       const bonus = bossWas ? 150 + this.stage * 20 : 20 * this.stage;
@@ -307,7 +310,7 @@ export class PlayScene extends ArcadeScene {
       this.time.delayedCall(950, () => {
         if (this.isOver) return;
         this.stage++;
-        this.sfx('stage', { volume: 0.4 });
+        if (this.stage % 5 !== 0) this.sfx('stage', { volume: 0.45 });
         this.setupStage();
       });
     });

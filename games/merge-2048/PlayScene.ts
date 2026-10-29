@@ -178,22 +178,23 @@ export class PlayScene extends ArcadeScene {
     }
     if (!moved) {
       for (const m of moving) m.merged = false;
-      this.sfx('bump', { volume: 0.25 });
+      this.sfx('bump', { volume: 0.35 });
       return;
     }
     this.snapshot = before;
     this.grid = next;
     this.busy = true;
-    this.sfx('slide', { volume: 0.35 });
+    this.sfx(rng.pick(['slide', 'slide2']), { volume: 0.3 });
     const gen = this.gen;
     for (const m of moving) this.tweens.add({ targets: m.obj, x: this.cx(m.c), y: this.cy(m.r), duration: 100, ease: 'Quad.easeOut' });
     this.time.delayedCall(110, () => {
       if (gen !== this.gen) return;
-      let biggest = 0;
+      let biggest = 0, merges = 0;
       for (const m of moving) {
         if (m.dead) { m.obj.destroy(); continue; }
         if (m.merged) {
           m.merged = false;
+          merges++;
           this.paint(m);
           biggest = Math.max(biggest, m.v);
           this.tweens.add({ targets: m.obj, scale: 1.18, duration: 80, yoyo: true });
@@ -202,13 +203,15 @@ export class PlayScene extends ArcadeScene {
       }
       if (gained) {
         this.addScore(gained, 360, Y0 - 30);
-        this.sfx('merge', { volume: 0.45, detune: Math.min(1400, (Math.log2(biggest) - 2) * 120) });
+        // The pop rises a step with every doubling of the biggest tile.
+        this.sfx('merge', { volume: 0.5, detune: Math.min(1400, (Math.log2(biggest) - 2) * 120), exact: true });
+        if (merges >= 3) this.time.delayedCall(70, () => this.sfx('combo', { volume: 0.45 }));
         if (biggest >= 256) shake(this, 0.004 + Math.log2(biggest) * 0.0006, 140);
         if (biggest > this.maxTile) {
           this.maxTile = biggest;
           this.maxTxt.setText(String(biggest));
           this.tweens.add({ targets: this.maxTxt, scale: 1.4, duration: 120, yoyo: true });
-          if (biggest >= 128) { this.sfx('level', { volume: 0.4 }); flash(this, PALETTE[biggest] ?? 0xffffff, 90); }
+          if (biggest >= 128) { this.sfx('level', { volume: 0.55 }); flash(this, PALETTE[biggest] ?? 0xffffff, 90); }
         }
       }
       this.spawn();
@@ -236,7 +239,7 @@ export class PlayScene extends ArcadeScene {
       const m = txt(this, 360, Y0 + SIZE / 2, t('stuckUndo'), { title: true, size: 26, color: '#ffd23f', wrap: 600 }).setDepth(40);
       this.tweens.add({ targets: m, alpha: 0, delay: 1600, duration: 400, onComplete: () => m.destroy() });
       this.tweens.add({ targets: this.undoTxt, scale: 1.3, duration: 200, yoyo: true, repeat: 3 });
-      this.sfx('bump', { volume: 0.5 });
+      this.sfx('stuck', { volume: 0.55 });
       this.time.delayedCall(2600, () => { if (!this.canMove() && !this.isOver) this.finishNoMoves(); });
       return;
     }
@@ -247,13 +250,13 @@ export class PlayScene extends ArcadeScene {
     const m = txt(this, 360, Y0 + SIZE / 2, t('noMoves'), { title: true, size: 40, color: '#ec3013' }).setDepth(40).setScale(0.3);
     this.tweens.add({ targets: m, scale: 1, duration: 300, ease: 'Back.easeOut' });
     shake(this, 0.012, 250);
-    this.sfx('over', { volume: 0.5 });
+    this.sfx('over', { volume: 0.65 });
     this.endGame({ win: this.reached, delay: 1300 });
   }
 
   private undo(): void {
     if (this.busy || this.isOver || this.overlayOpen || !this.snapshot || this.undoLeft <= 0) {
-      if (!this.busy) this.sfx('bump', { volume: 0.3 });
+      if (!this.busy) this.sfx('nope', { volume: 0.35 });
       return;
     }
     this.undoLeft--;
@@ -275,7 +278,8 @@ export class PlayScene extends ArcadeScene {
   // ---------- 2048 reached ----------
   private showWin(): void {
     this.overlayOpen = true;
-    this.sfx('win', { volume: 0.6 });
+    this.sfx('win', { volume: 0.8, exact: true });
+    this.time.delayedCall(450, () => this.sfx('win2', { volume: 0.6 }));
     flash(this, 0x8b5cff, 250);
     for (let i = 0; i < 8; i++) this.time.delayedCall(i * 100, () => burst(this, rng.int(80, 640), rng.int(300, 1000), [0xffd23f, 0x8b5cff, 0xff4fa3], 30, 420));
     const o = this.add.container(0, 0).setDepth(80);

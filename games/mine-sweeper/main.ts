@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeMineTextures, OB } from './PlayScene';
 
@@ -10,17 +10,25 @@ launch({
   preload(scene) {
     const l = scene.load;
     l.spritesheet('ob', kenney('onebit/tilesheet/colored_transparent_packed.png'), { frameWidth: 16, frameHeight: 16 });
-    loadSfx(l, 'dig', 'sfx-interface/audio/click_003');
-    loadSfx(l, 'flood', 'sfx-interface/audio/drop_002');
-    loadSfx(l, 'flag', 'sfx-interface/audio/pluck_001');
-    loadSfx(l, 'unflag', 'sfx-interface/audio/pluck_002');
-    loadSfx(l, 'boom', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'boom2', 'sfx-impact/audio/impactplate_heavy_002');
-    loadSfx(l, 'clear', 'sfx-digital/audio/powerup5');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'mode', 'sfx-interface/audio/switch_002');
-    loadSfx(l, 'move', 'sfx-interface/audio/tick_001');
-    loadSfx(l, 'nope', 'sfx-interface/audio/error_004');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    const X = 'oga/junkala-sfx/explosions/';
+    loadAudio(l, 'dig', J + 'impacts/sfx-sounds-impact1');
+    loadAudio(l, 'dig2', J + 'impacts/sfx-sounds-impact6');
+    loadAudio(l, 'dig3', J + 'impacts/sfx-sounds-impact7');
+    loadAudio(l, 'flood', J + 'interactions/sfx-sounds-interaction12');
+    loadAudio(l, 'flag', J + 'buttons/sfx-sounds-button9');
+    loadAudio(l, 'unflag', J + 'pause-sounds/sfx-sounds-pause3-out');
+    loadAudio(l, 'boom', X + 'short/sfx-exp-short-hard5');
+    loadAudio(l, 'penalty', J + 'negative-sounds/sfx-sounds-damage2');
+    loadAudio(l, 'bigboom', X + 'long/sfx-exp-long2');
+    loadAudio(l, 'pop', X + 'shortest/sfx-exp-shortest-soft7');
+    loadAudio(l, 'clear', J + 'fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'best', J + 'coins/sfx-coin-cluster8');
+    loadAudio(l, 'tick', J + 'high-pitched-sounds/sfx-sounds-high1');
+    loadAudio(l, 'pick', J + 'menu-sounds/sfx-menu-select2');
+    loadAudio(l, 'mode', J + 'buttons/sfx-sounds-button11');
+    loadAudio(l, 'move', J + 'menu-sounds/sfx-menu-move3');
+    loadAudio(l, 'nope', J + 'negative-sounds/sfx-sounds-error6');
   },
   menuDecor(scene) {
     makeMineTextures(scene);

@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -20,14 +20,22 @@ launch({
       l.image(`truck-${c}`, kenney(`${CARS}car_${c}_5.png`));
     }
     for (const c of ['blue', 'yellow', 'red']) l.image(`moto-${c}`, kenney(`racing/png/motorcycles/motorcycle_${c}.png`));
-    loadSfx(l, 'hop', 'sfx-interface/audio/pluck_002');
-    loadSfx(l, 'splat', 'sfx-impact/audio/impactpunch_heavy_001');
-    loadSfx(l, 'splash', 'sfx-impact/audio/impactsoft_heavy_004');
-    loadSfx(l, 'home', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'bonus', 'sfx-digital/audio/threetone2');
+    const J = 'oga/junkala-sfx/';
+    const M = J + 'movement/jumping-and-landing/';
+    loadAudio(l, 'hop', M + 'sfx-movement-jump10');
+    loadAudio(l, 'hop2', M + 'sfx-movement-jump5');
+    loadAudio(l, 'log', M + 'sfx-movement-jump10-landing');
+    loadAudio(l, 'whoosh', J + 'weapons/melee/sfx-wpn-sword1');
+    loadAudio(l, 'splat', J + 'explosions/shortest/sfx-exp-shortest-hard8');
+    loadAudio(l, 'splash', J + 'explosions/short/sfx-exp-short-soft2');
+    loadAudio(l, 'bonk', J + 'general-sounds/impacts/sfx-sounds-impact12');
+    loadAudio(l, 'timeout', J + 'general-sounds/negative-sounds/sfx-sounds-negative2');
+    loadAudio(l, 'home', J + 'general-sounds/positive-sounds/sfx-sounds-powerup13');
+    loadAudio(l, 'bonus', J + 'general-sounds/coins/sfx-coin-cluster5');
+    loadAudio(l, 'chick', J + 'general-sounds/high-pitched-sounds/sfx-sounds-high2');
     loadSfx(l, 'level', 'jingles/audio/8-bit_jingles/jingles_nes03');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_004');
-    loadSfx(l, 'honk', 'sfx-digital/audio/twotone2');
+    loadAudio(l, 'tick', J + 'general-sounds/high-pitched-sounds/sfx-sounds-high1');
+    loadAudio(l, 'honk', J + 'general-sounds/alarms/alarms/sfx-alarm-loop6');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

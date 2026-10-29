@@ -1,6 +1,8 @@
-import { launch, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeTextures, PALETTES } from './PlayScene';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -8,17 +10,24 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    loadSfx(l, 'shoot', 'sfx-digital/audio/laser9');
-    loadSfx(l, 'hit', 'sfx-digital/audio/zap1');
-    loadSfx(l, 'head', 'sfx-digital/audio/pepsound3');
-    loadSfx(l, 'mush', 'sfx-impact/audio/impactsoft_medium_000');
-    loadSfx(l, 'spider', 'sfx-digital/audio/spacetrash2');
-    loadSfx(l, 'spiderIn', 'sfx-digital/audio/lowrandom');
-    loadSfx(l, 'flea', 'sfx-digital/audio/phaserdown1');
-    loadSfx(l, 'die', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'wave', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'oneup', 'sfx-digital/audio/powerup4');
-    loadSfx(l, 'repair', 'sfx-interface/audio/tick_001');
+    loadAudio(l, 'shoot1', J + 'weapons/lasers/sfx-wpn-laser8');
+    loadAudio(l, 'shoot2', J + 'weapons/lasers/sfx-wpn-laser2');
+    loadAudio(l, 'hit1', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit2');
+    loadAudio(l, 'hit2', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit6');
+    loadAudio(l, 'hit3', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit9');
+    loadAudio(l, 'head', J + 'explosions/shortest/sfx-exp-shortest-hard5');
+    loadAudio(l, 'mush1', J + 'general-sounds/impacts/sfx-sounds-impact3');
+    loadAudio(l, 'mush2', J + 'general-sounds/impacts/sfx-sounds-impact4');
+    loadAudio(l, 'spider', J + 'death-screams/alien/sfx-deathscream-alien3');
+    loadAudio(l, 'spiderIn', J + 'general-sounds/interactions/sfx-sounds-interaction5');
+    loadAudio(l, 'flea', J + 'movement/falling-sounds/sfx-sounds-falling5');
+    loadAudio(l, 'fleaKill', J + 'death-screams/alien/sfx-deathscream-alien6');
+    loadAudio(l, 'die', J + 'explosions/short/sfx-exp-short-hard6');
+    loadAudio(l, 'death', J + 'explosions/medium-length/sfx-exp-medium10');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
+    loadAudio(l, 'clear', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
+    loadAudio(l, 'oneup', J + 'general-sounds/positive-sounds/sfx-sounds-powerup12');
+    loadAudio(l, 'repair', J + 'general-sounds/coins/sfx-coin-single3');
   },
   menuDecor(scene) {
     makeTextures(scene);
