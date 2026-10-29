@@ -1,0 +1,12 @@
+{
+  "id": "sudoku",
+  "title": { "tr": "Sudoku", "en": "Sudoku" },
+  "description": { "tr": "Tek çözümlü, her seferinde yeni üretilen sudokular: kolaydan uzmana tırman, not al, ipucu kullan ve saate karşı yarış.", "en": "Freshly generated sudokus with one solution each: climb from easy to expert, take notes, use hints and race the clock." },
+  "howTo": { "tr": "Hücreye dokun, alttaki tuştan rakam seç; NOT ile kalem notu al. Klavye: oklar, 1-9, N not, H ipucu, Sil.", "en": "Tap a cell, then a digit on the pad; NOTES toggles pencil marks. Keyboard: arrows, 1-9, N notes, H hint, Delete." },
+  "genres": ["puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Audio: Juhani Junkala (CC0) — opengameart.org", "UI sounds: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-29" }
+}

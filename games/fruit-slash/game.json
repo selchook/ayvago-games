@@ -1,0 +1,12 @@
+{
+  "id": "fruit-slash",
+  "title": { "tr": "Meyve Kes", "en": "Fruit Slash" },
+  "description": { "tr": "Havaya fırlayan meyveleri parlak bıçak iziyle doğra, kombolar ve kritik kesimler yap, bombalardan uzak dur.", "en": "Slice fruit tossed into the air with a glowing blade, chain combos and critical cuts, and stay away from the bombs." },
+  "howTo": { "tr": "Parmağını ya da fareyi kaydırarak kes; bombaya dokunma, 3 meyve kaçırma. Klavye: oklarla bıçağı taşı, Boşluk basılıyken kes.", "en": "Swipe with a finger or the mouse to slice; avoid bombs and don't miss 3 fruit. Keyboard: arrows move the blade, hold Space to slash." },
+  "genres": ["arcade", "action", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl", "Audio: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-10-29" }
+}
