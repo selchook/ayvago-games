@@ -730,8 +730,8 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'sky-jumper',
     title: { en: 'Sky Jumper', tr: 'Gök Zıplayıcı' },
     description: {
-      en: 'Bounce the bunny up into the sky: ride springs, blast off with a jetpack and dodge breaking platforms and monsters.',
-      tr: 'Tavşanı bulutların üstüne zıplat: yaylarla uç, jet sırt çantasıyla fırla, kırılan platformlardan ve yaratıklardan sakın.',
+      en: 'Bounce your character up into the sky: ride springs, blast off with a jetpack and dodge breaking platforms and monsters.',
+      tr: 'Karakterini bulutların üstüne zıplat: yaylarla uç, jet sırt çantasıyla fırla, kırılan platformlardan ve yaratıklardan sakın.',
     },
     category: 'arcade',
     categories: ['arcade', 'casual'],
