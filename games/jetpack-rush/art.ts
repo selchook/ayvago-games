@@ -1,9 +1,15 @@
 import Phaser from 'phaser';
+import { CHARACTER_FRAME } from '@core';
 
 export const W = 1280;
 export const H = 720;
 export const CEIL = 92;     // top of the corridor
 export const FLOOR = 636;   // feet touch here
+
+// The hero is the player's character, as tall as the old 0.5-scale alien (92 px standing). The origin
+// sits mid-body, 46 px above the feet, so the hero's y is the centre the collisions use.
+export const HERO_SCALE = 92 / CHARACTER_FRAME.standHeight;
+export const HERO_ORIGIN_Y = CHARACTER_FRAME.originY - 46 / HERO_SCALE / CHARACTER_FRAME.height;
 
 /** Procedural lab corridor art: wall tile, floor tile, zapper orb, missile warning, shield bubble. */
 export function makeLabTextures(scene: Phaser.Scene): void {

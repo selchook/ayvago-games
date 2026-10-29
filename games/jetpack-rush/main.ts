@@ -1,9 +1,8 @@
-import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, loadCharacter, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
-import { makeLabTextures, W, H, FLOOR } from './art';
+import { makeLabTextures, W, H, FLOOR, HERO_SCALE, HERO_ORIGIN_Y } from './art';
 
-const AL = 'platformer/png/players/variable_sizes/green/aliengreen_';
 const J = 'oga/junkala-sfx/';
 
 launch({
@@ -12,10 +11,8 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    l.image('hero-walk1', kenney(AL + 'walk1.png'));
-    l.image('hero-walk2', kenney(AL + 'walk2.png'));
-    l.image('hero-jump', kenney(AL + 'jump.png'));
-    l.image('hero-hit', kenney(AL + 'hit.png'));
+    // the player's chosen character: pc-walk1/2 (running), pc-jump (flying), pc-hit (crash)
+    loadCharacter(l, { poses: ['walk1', 'walk2', 'jump', 'hit'] });
     l.image('coin', kenney('platformer/png/items/coingold.png'));
     l.image('gem', kenney('platformer/png/items/gemblue.png'));
     loadAudio(l, 'jet', J + 'movement/vehicles/sfx-vehicle-engineloop');
@@ -35,9 +32,10 @@ launch({
     makeLabTextures(scene);
     scene.add.tileSprite(0, 0, W, H, 'lab-wall').setOrigin(0).setAlpha(0.55);
     scene.add.tileSprite(0, FLOOR, W, 84, 'lab-floor').setOrigin(0).setAlpha(0.8);
-    const hero = scene.add.image(W * 0.16, H * 0.55, 'hero-jump').setScale(0.6);
-    scene.add.image(W * 0.16 - 36, H * 0.55 + 4, 'jetpack');
-    scene.tweens.add({ targets: hero, y: hero.y - 30, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    // the jetpack sits behind the player's character, as in the game
+    const pack = scene.add.image(W * 0.16 - 36, H * 0.55, 'jetpack').setScale(1.08);
+    const hero = scene.add.image(W * 0.16, H * 0.55, 'pc-jump').setScale(HERO_SCALE * 1.2).setOrigin(0.5, HERO_ORIGIN_Y);
+    scene.tweens.add({ targets: [hero, pack], y: '-=30', duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     for (let i = 0; i < 5; i++) scene.add.image(W * 0.8 + i * 40, H * 0.5 - Math.sin(i) * 30, 'coin').setScale(0.3);
   },
   scenes: [PlayScene],

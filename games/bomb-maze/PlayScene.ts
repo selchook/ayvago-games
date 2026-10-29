@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ACTOR_SCALE, ACTOR_ORIGIN_Y, BOT_PREFIXES } from './cast';
 import { CELL, makeMazeTextures } from './art';
 
 const COLS = 13;
@@ -13,7 +14,6 @@ const WALL = 1;
 const CRATE = 2;
 const DIRS: Array<[number, number]> = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const BOT_SPAWNS: Array<[number, number]> = [[11, 13], [11, 1], [1, 13], [6, 7], [11, 7], [1, 7]];
-const BOT_SKINS = ['pink', 'blue', 'yellow', 'beige', 'pink', 'blue'];
 const DPAD = { x: 172, y: 1088, r: 150 };
 const BOMB_BTN = { x: 560, y: 1088, r: 108 };
 
@@ -23,7 +23,7 @@ interface Actor {
   player: boolean;
   img: Phaser.GameObjects.Image;
   shadow: Phaser.GameObjects.Ellipse;
-  skin: string;
+  skin: string;              // texture prefix of its character: 'pc' or 'bot<k>'
   cx: number; cy: number;    // cell we come from
   tx: number; ty: number;    // cell we go to
   p: number;                 // progress 0..1
@@ -194,10 +194,10 @@ export class PlayScene extends ArcadeScene {
         this.levelObjs.push(c);
       }
     }
-    this.player = this.makeActor(true, 1, 1, 'green');
+    this.player = this.makeActor(true, 1, 1, 'pc');
     this.player.speed = this.pSpeed; this.player.range = this.pRange; this.player.maxBombs = this.pBombs;
     BOT_SPAWNS.slice(0, nBots).forEach(([x, y], k) => {
-      const b = this.makeActor(false, x, y, BOT_SKINS[k]);
+      const b = this.makeActor(false, x, y, BOT_PREFIXES[k]);
       b.speed = Math.min(4.6, 2.5 + 0.25 * (L - 1));
       b.range = Math.min(4, 1 + Math.ceil(L / 2));
       b.maxBombs = Math.min(3, 1 + Math.floor((L - 1) / 2));
@@ -214,8 +214,7 @@ export class PlayScene extends ArcadeScene {
 
   private makeActor(player: boolean, x: number, y: number, skin: string): Actor {
     const shadow = this.add.ellipse(cx(x), cy(y) + 20, 38, 14, 0x000000, 0.3).setDepth(2);
-    const img = this.add.image(cx(x), cy(y), `al-${skin}`).setOrigin(0.5, 0.86);
-    img.setDisplaySize(40, 57);
+    const img = this.add.image(cx(x), cy(y), `${skin}-front`).setOrigin(0.5, ACTOR_ORIGIN_Y).setScale(ACTOR_SCALE);
     const a: Actor = {
       player, img, shadow, skin, cx: x, cy: y, tx: x, ty: y, p: 0, moving: false, speed: 3, range: 2, maxBombs: 1, placed: 0,
       alive: true, think: 0, invuln: player ? 1.5 : 0, bob: Math.random() * 6,
@@ -232,6 +231,9 @@ export class PlayScene extends ArcadeScene {
     const y = Phaser.Math.Linear(cy(a.cy), cy(a.ty), f);
     const hop = a.moving ? Math.abs(Math.sin(a.bob * 2)) * 5 : 0;
     a.img.setPosition(x, y + CELL * 0.32 - hop).setDepth(10 + y / 10);
+    // side steps walk (flipX faces left), up/down steps and standing face the camera
+    const side = a.moving && a.tx !== a.cx;
+    a.img.setTexture(`${a.skin}-${side ? (Math.floor(a.bob) % 2 ? 'walk2' : 'walk1') : 'front'}`);
     a.shadow.setPosition(x, y + CELL * 0.32);
   }
 
@@ -535,6 +537,7 @@ export class PlayScene extends ArcadeScene {
   private kill(a: Actor, i: number): void {
     a.alive = false;
     const { x, y } = a.img;
+    a.img.setTexture(`${a.skin}-hit`);
     burst(this, x, y - 20, a.player ? [0x5dff7a, 0xffffff] : [0xff8ac0, 0xffffff, 0x3ee6ff], 26, 340);
     this.tweens.add({ targets: a.img, angle: 540, scaleX: 0, scaleY: 0, alpha: 0, duration: 600, ease: 'Cubic.easeIn' });
     a.shadow.setVisible(false);
@@ -565,7 +568,7 @@ export class PlayScene extends ArcadeScene {
     const spot = spots.find(([x, y]) => this.grid[idx(x, y)] === 0 && !this.bombAt[idx(x, y)] && d[idx(x, y)] >= INF) ?? [1, 1];
     p.cx = p.tx = spot[0]; p.cy = p.ty = spot[1]; p.p = 0; p.moving = false;
     p.alive = true; p.invuln = 2.5; p.placed = 0;
-    p.img.setAngle(0).setAlpha(1).setDisplaySize(40, 57);
+    p.img.setAngle(0).setAlpha(1).setScale(ACTOR_SCALE);
     p.shadow.setVisible(true);
     this.place(p);
     this.sfx('start', { volume: 0.5 });

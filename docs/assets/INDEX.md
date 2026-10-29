@@ -8,6 +8,7 @@ Load Kenney art with `kenney('<pack>/<path>')`; Kenney audio with
 
 | pack | images | sounds |
 |---|---|---|
+| characters | 110 | 0 |
 | alien-ufo | 46 | 0 |
 | animals | 60 | 0 |
 | boardgame | 523 | 0 |
@@ -54,4 +55,13 @@ Load Kenney art with `kenney('<pack>/<path>')`; Kenney audio with
 |---|---|---|
 | junkala-sfx | 512 retro effects: coins, positive/negative, impacts, jumps, lasers, explosions, menu sounds, alarms… | `oga-junkala-sfx.txt` |
 | junkala-music | 9 chiptune loops, played by the core (`src/core/music.ts`); games only choose | `oga-junkala-music.txt` |
+
+## characters
+
+The ten player characters players choose on ayvago.com (`src/core/characters.ts`): `alien-green`
+(default), `alien-blue`, `alien-pink`, `alien-yellow`, `alien-beige`, `adventurer`, `explorer`,
+`rookie`, `soldier`, `zombie`. Each has 11 poses at `characters/<id>/<pose>.png`: `stand`,
+`front`, `walk1`, `walk2`, `jump`, `hit`, `duck`, `climb1`, `climb2`, `swim1`, `swim2`. Every
+frame is 144x176 with the feet 2 px above the bottom and the standing pose 150 px tall, so one
+size and anchor fit all ten. Built by `tools/import-characters.py`.
 

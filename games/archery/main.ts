@@ -1,7 +1,7 @@
-import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, loadCharacter, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
-import { makeArcheryTextures, W, H, GROUND } from './art';
+import { makeArcheryTextures, W, H, GROUND, ARCHER_SCALE, ARCHER_ORIGIN_Y } from './art';
 
 const SG = 'shooting-gallery/png/stall/';
 const J = 'oga/junkala-sfx/';
@@ -12,7 +12,8 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    l.image('archer', kenney('platformer/png/players/variable_sizes/green/aliengreen_stand.png'));
+    // the player's chosen character: pc-stand (aiming), pc-jump (round cleared), pc-hit (round failed)
+    loadCharacter(l, { poses: ['stand', 'jump', 'hit'] });
     l.image('cloud1', kenney(SG + 'cloud1.png'));
     l.image('cloud2', kenney(SG + 'cloud2.png'));
     l.image('tree_oak', kenney(SG + 'tree_oak.png'));
@@ -36,7 +37,7 @@ launch({
     // above the how-to text, which reaches the right side of the menu at y 515-580
     const face = scene.add.image(W * 0.85, GROUND - 250, 'face').setScale(0.7);
     scene.tweens.add({ targets: face, angle: 6, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    scene.add.image(W * 0.06, GROUND + 2, 'archer').setOrigin(0.5, 1).setScale(0.6);
+    scene.add.image(W * 0.06, GROUND + 2, 'pc-stand').setOrigin(0.5, ARCHER_ORIGIN_Y).setScale(ARCHER_SCALE * 0.97);
     const arrow = scene.add.image(W * 0.83, GROUND - 255, 'arrow').setOrigin(1, 0.5).setAngle(12).setScale(1.2);
     scene.tweens.add({ targets: arrow, angle: 14, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   },

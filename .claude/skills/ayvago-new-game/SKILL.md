@@ -99,6 +99,13 @@ Other helpers from `@core`:
 ## 5. Assets
 
 - **Location.** Everything is in `public/assets/kenney/<pack>/…`, all CC0. Pack list: `docs/assets/INDEX.md`. Exact files with pixel sizes: `docs/assets/<pack>.txt`, so grep there before you guess a filename. Paths are lowercase and use `_` instead of spaces.
+- **Player character.** A game with a hero (runner, platformer, shooter on foot) uses the
+  player's chosen character instead of a fixed sprite, when the Kenney vector style fits the game:
+  `loadCharacter(load)` in preload gives textures `pc-stand`, `pc-front`, `pc-walk1`, `pc-walk2`,
+  `pc-jump`, `pc-hit`, `pc-duck`, `pc-climb1/2`, `pc-swim1/2`. All frames share
+  `CHARACTER_FRAME` (144x176, feet at `originY`): size the sprite by `standHeight`. Rivals and
+  bots: `otherCharacters(playerCharacter())`; online opponent: `peerCharacter()`. Test any
+  character with `?character=<id>`. Pixel-art games keep their own sprites.
 - **Look before you use.** Open the PNGs or tilesheets with the Read tool to see them before picking frames.
 - **No network.** Never load anything from the network. If something is missing, draw it with Graphics/shapes, or generate a texture with `scene.make.graphics(...).generateTexture(key, w, h)`.
 - **Sound.** Use sounds generously but at sane volumes. Good sources:

@@ -1,6 +1,7 @@
-import { launch, kenney, loadAudio, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadCharacter, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, BIOMES } from './PlayScene';
+import { HERO_SCALE, HERO_ORIGIN_Y } from './hero';
 
 const J = 'jumper/png/';
 
@@ -11,7 +12,8 @@ launch({
   preload(scene) {
     const l = scene.load;
     for (const n of [2, 3, 4]) l.image('bg' + n, kenney(`${J}background/bg_layer${n}.png`));
-    for (const f of ['jump', 'stand', 'hurt']) l.image('bunny-' + f, kenney(`${J}players/bunny1_${f}.png`));
+    // the player's chosen character: pc-jump (rising), pc-stand (falling), pc-hit (lost)
+    loadCharacter(l, { poses: ['jump', 'stand', 'hit'] });
     for (const b of BIOMES) {
       l.image(`plat-${b}`, kenney(`${J}environment/ground_${b}_small.png`));
       l.image(`plat-${b}-broken`, kenney(`${J}environment/ground_${b}_small_broken.png`));
@@ -49,7 +51,7 @@ launch({
     scene.add.image(width / 2, height + 200, 'bg3').setOrigin(0.5, 1).setScale(0.8).setAlpha(0.7);
     scene.add.image(width * 0.25, height * 0.9, 'plat-grass').setScale(0.7);
     scene.add.image(width * 0.75, height * 0.78, 'plat-wood').setScale(0.7);
-    const b = scene.add.image(width * 0.25, height * 0.83, 'bunny-jump').setScale(0.55);
+    const b = scene.add.image(width * 0.25, height * 0.83, 'pc-jump').setOrigin(0.5, HERO_ORIGIN_Y).setScale(HERO_SCALE * 1.1);
     scene.tweens.add({ targets: b, y: b.y - 120, duration: 450, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
     scene.add.image(width * 0.82, height * 0.1, 'wingman').setScale(0.5);
     scene.add.image(width * 0.15, height * 0.32, 'carrot').setScale(0.7).setAngle(-20);

@@ -10,7 +10,7 @@
  * Update vendored copies by copying this file; do not edit them in place.
  */
 
-export const ADAPTER_VERSION = '2.1.0';
+export const ADAPTER_VERSION = '2.2.0';
 export const PROTOCOL_VERSION = 2;
 
 /** Origins allowed to host games. "*" matches one DNS label segment (letters, digits, "-"). */
@@ -37,6 +37,13 @@ export type StartConfig = ThemeInfo & {
   playerCount: number;
   /** Multiplayer only: the other player's display name. */
   peerName?: string;
+  /**
+   * Protocol 2.2: the player's chosen character (an id from the platform's character list, e.g.
+   * "alien-green"). Absent for players who have not chosen one; games then use their default.
+   */
+  character?: string;
+  /** Protocol 2.2, multiplayer only: the other player's character. */
+  peerCharacter?: string;
   locale: string;
   adsEnabled: boolean;
   protocol: number;
@@ -62,6 +69,8 @@ export interface Multiplayer {
   readonly playerIndex: number;
   /** The other player's display name ('' when unknown). */
   readonly peerName: string;
+  /** The other player's character id ('' when unknown, protocol 2.2). */
+  readonly peerCharacter: string;
   /** Sends a JSON-serializable move to the other player (dropped above MAX_MOVE_SIZE). */
   send(data: unknown): void;
   onMove(callback: (data: unknown) => void): () => void;
@@ -195,6 +204,7 @@ const OFFLINE: Multiplayer = {
   isHost: true,
   playerIndex: 0,
   peerName: '',
+  peerCharacter: '',
   send: () => {},
   onMove: () => () => {},
   onPeerLeave: () => () => {},
@@ -285,6 +295,9 @@ class AyvagoAdapter implements PlatformAdapter {
       },
       get peerName() {
         return self.currentConfig.peerName ?? '';
+      },
+      get peerCharacter() {
+        return self.currentConfig.peerCharacter ?? '';
       },
       send: (data: unknown) => {
         if (self.currentConfig.mode !== 'multiplayer') return;

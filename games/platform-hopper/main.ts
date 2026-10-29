@@ -1,6 +1,7 @@
-import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, loadCharacter, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
+import { HERO_SCALE, HERO_ORIGIN_Y } from './hero';
 
 const P = 'platformer/png/';
 
@@ -12,7 +13,8 @@ launch({
   preload(scene) {
     const l = scene.load;
     const img = (key: string, path: string) => l.image(key, kenney(P + path));
-    for (const [k, f] of [['p-stand', 'stand'], ['p-walk1', 'walk1'], ['p-walk2', 'walk2'], ['p-jump', 'jump'], ['p-hit', 'hit']]) img(k, `players/128x256/pink/alienpink_${f}.png`);
+    // the player's chosen character: pc-stand, pc-walk1/2, pc-jump, pc-hit
+    loadCharacter(l, { poses: ['stand', 'walk1', 'walk2', 'jump', 'hit'] });
     for (const [k, f] of [['g-mid', 'grassmid'], ['g-left', 'grassleft'], ['g-right', 'grassright'], ['g-single', 'grass'], ['g-center', 'grasscenter'],
       ['h-mid', 'grasshalf_mid'], ['h-left', 'grasshalf_left'], ['h-right', 'grasshalf_right'], ['h-single', 'grasshalf']]) img(k, `ground/grass/${f}.png`);
     img('spikes', 'tiles/spikes.png');
@@ -46,7 +48,7 @@ launch({
     const { width, height } = scene.scale;
     scene.add.image(0, height, 'bg-grass').setOrigin(0, 1).setScale(1.25).setAlpha(0.9);
     for (let i = 0; i < 20; i++) scene.add.image(32 + i * 64, height - 32, i === 0 ? 'g-left' : i === 19 ? 'g-right' : 'g-mid').setScale(0.5);
-    const hero = scene.add.image(150, height - 64 - 64, 'p-stand').setScale(0.5);
+    const hero = scene.add.image(150, height - 64 - 64, 'pc-stand').setOrigin(0.5, HERO_ORIGIN_Y).setScale(HERO_SCALE);
     scene.tweens.add({ targets: hero, y: hero.y - 90, duration: 420, yoyo: true, repeat: -1, ease: 'Quad.easeOut', repeatDelay: 500 });
     scene.add.image(width - 160, height - 96, 'flag-1').setScale(0.5);
     const slime = scene.add.image(width - 320, height - 96, 'e-slime').setScale(0.5);

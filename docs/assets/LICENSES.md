@@ -7,6 +7,7 @@ the row.
 | Pack (`public/assets/…`) | Source | Author | License | Import |
 |---|---|---|---|---|
 | `kenney/*` | [kenney.nl](https://kenney.nl/assets) | Kenney | CC0 1.0 | `tools/import-kenney.py` |
+| `characters/*` (the ten player characters) | Kenney [Platformer Pack Redux](https://kenney.nl/assets/platformer-pack-redux) aliens + [Platformer Characters 1](https://kenney.nl/assets/platformer-characters-1) | Kenney | CC0 1.0 | `tools/import-characters.py <kenney.nl mirror>` |
 | `oga/junkala-sfx` | [The Essential Retro Video Game Sound Effects Collection (512 sounds)](https://opengameart.org/content/512-sound-effects-8-bit-style) | Juhani Junkala | CC0 1.0 | `tools/import-oga.py junkala-sfx <zip>` |
 | `oga/junkala-music` (`level-1..3`, `title-screen`, `ending`) | [5 Chiptunes (Action)](https://opengameart.org/content/5-chiptunes-action) | Juhani Junkala | CC0 1.0 | `tools/import-oga.py junkala-music <zip> --music` |
 | `oga/junkala-music` (`1-stage-1`, `2-stage-2`, `3-boss-fight`, `4-stage-select`) | [4 Chiptunes (Adventure)](https://opengameart.org/content/4-chiptunes-adventure) | Juhani Junkala (SubspaceAudio) | CC0 1.0 | `tools/import-oga.py junkala-music <zip> --music` |

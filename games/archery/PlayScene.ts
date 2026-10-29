@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
-import { W, H, GROUND, RING_COLORS, makeArcheryTextures } from './art';
+import { W, H, GROUND, RING_COLORS, ARCHER_SCALE, ARCHER_ORIGIN_Y, handColor, makeArcheryTextures } from './art';
 
 const BX = 214;            // bow hand
 const BY = GROUND - 74;
+const ARCHER_X = BX - 44;
 const GRAV = 900;
 const MIN_V = 600;
 const MAX_V = 1750;
@@ -52,6 +53,7 @@ export class PlayScene extends ArcadeScene {
   private offMark!: Phaser.GameObjects.Triangle;
   private archer!: Phaser.GameObjects.Image;
   private wave = 0;
+  private hand = 0x6fc4a9;
 
   createGame(): void {
     makeArcheryTextures(this);
@@ -71,7 +73,8 @@ export class PlayScene extends ArcadeScene {
 
     this.stand = this.add.graphics().setDepth(1);
     this.face = this.add.image(this.tx, this.ty, 'face').setDepth(2);
-    this.archer = this.add.image(BX - 44, GROUND + 2, 'archer').setOrigin(0.5, 1).setScale(0.62).setDepth(5);
+    this.archer = this.add.image(ARCHER_X, GROUND + 2, 'pc-stand').setOrigin(0.5, ARCHER_ORIGIN_Y).setScale(ARCHER_SCALE).setDepth(5);
+    this.hand = handColor();
     this.bowG = this.add.graphics().setDepth(6);
     this.flagG = this.add.graphics().setDepth(3);
     for (let i = 0; i < 9; i++) this.dots.push(this.add.image(0, 0, 'dot').setDepth(7).setVisible(false));
@@ -249,6 +252,11 @@ export class PlayScene extends ArcadeScene {
     const bonus = 20 * this.round + Math.max(0, this.roundScore - this.need) * 5;
     this.addScore(bonus);
     this.sfx('pass', { volume: 0.7, exact: true });
+    this.archer.setTexture('pc-jump');
+    this.tweens.add({
+      targets: this.archer, y: GROUND - 22, duration: 220, yoyo: true, repeat: 1, ease: 'Sine.easeOut',
+      onComplete: () => { this.archer.setTexture('pc-stand'); this.archer.y = GROUND + 2; },
+    });
     const b = txt(this, W / 2, H * 0.36, t('roundClear'), { title: true, size: 46, color: '#5dff7a', strokeThickness: 12 }).setDepth(80).setScale(0.3);
     const s = txt(this, W / 2, H * 0.36 + 64, `${this.roundScore} / ${this.need}   +${bonus}`, { title: true, size: 24, color: '#ffd23f' }).setDepth(80);
     this.tweens.add({ targets: b, scale: 1, duration: 360, ease: 'Back.easeOut' });
@@ -259,6 +267,7 @@ export class PlayScene extends ArcadeScene {
   private failRound(): void {
     this.phase = 'between';
     this.sfx('fail', { volume: 0.7 });
+    this.archer.setTexture('pc-hit');
     shake(this, 0.01, 250);
     this.endGame({ title: t('roundFail'), delay: 900 });
   }
@@ -374,10 +383,13 @@ export class PlayScene extends ArcadeScene {
     const [sx1, sy1] = P(-6, -52), [sx2, sy2] = P(-6, 52), [nx, ny] = P(-pull, shakeAmt);
     g.lineStyle(2, 0xffffff, 0.9).lineBetween(sx1, sy1, nx, ny).lineBetween(nx, ny, sx2, sy2);
     // grip hand and drawing arm
-    g.fillStyle(0x7be0b3).fillCircle(...P(4, 0), 7);
-    const [shx, shy] = [BX - 34, BY - 2];
-    g.lineStyle(7, 0x7be0b3).lineBetween(shx, shy, ...P(4, 0));
-    g.lineStyle(7, 0x7be0b3).lineBetween(shx, shy, nx, ny);
+    // both arms start at the character's shoulder (the body is shorter than the old alien's)
+    const [shx, shy] = [ARCHER_X + 16, this.archer.y - 50];
+    g.lineStyle(9, 0xffffff, 0.9).lineBetween(shx, shy, ...P(4, 0)).lineBetween(shx, shy, nx, ny);
+    g.lineStyle(7, this.hand).lineBetween(shx, shy, ...P(4, 0));
+    g.lineStyle(7, this.hand).lineBetween(shx, shy, nx, ny);
+    g.fillStyle(0xffffff, 0.9).fillCircle(...P(4, 0), 8);
+    g.fillStyle(this.hand).fillCircle(...P(4, 0), 7);
     // nocked arrow
     if (this.phase === 'aim' || this.phase === 'between') {
       if (this.phase === 'aim') {

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng } from '@core';
 import { LEVELS } from './levels';
+import { HERO_SCALE, HERO_ORIGIN_Y, HERO_BODY } from './hero';
 
 const TS = 64, OY = 720 - 11 * TS, SC = 0.5;
 const RUN = 300, ACCEL = 2400, JUMP = -800, SPRING = -1290, CUT = -320;
@@ -59,9 +60,9 @@ export class PlayScene extends ArcadeScene {
     this.moverGroup = this.physics.add.group({ allowGravity: false, immovable: true, frictionX: 1 });
     this.enemyGroup = this.physics.add.group();
 
-    this.player = this.physics.add.sprite(100, 400, 'p-stand').setScale(SC).setDepth(20);
+    this.player = this.physics.add.sprite(100, 400, 'pc-stand').setOrigin(0.5, HERO_ORIGIN_Y).setScale(HERO_SCALE).setDepth(20);
     const pb = this.player.body as Body;
-    pb.setSize(64, 136).setOffset(32, 120);
+    pb.setSize(HERO_BODY[0], HERO_BODY[1]).setOffset(HERO_BODY[2], HERO_BODY[3]);
     pb.setMaxVelocity(RUN, 1300);
     this.player.setCollideWorldBounds(true);
 
@@ -219,7 +220,7 @@ export class PlayScene extends ArcadeScene {
     }
     const pb = this.player.body as Body;
     pb.enable = true;
-    this.player.setPosition(start.x, start.y).setTexture('p-stand').setFlipX(false).setAngle(0).setAlpha(1).setVisible(true);
+    this.player.setPosition(start.x, start.y).setTexture('pc-stand').setFlipX(false).setAngle(0).setAlpha(1).setVisible(true);
     pb.reset(start.x, start.y);
     pb.setVelocity(0, 0);
     this.updateHud();
@@ -304,7 +305,7 @@ export class PlayScene extends ArcadeScene {
     flash(this, 0xec3013, 160);
     const pb = this.player.body as Body;
     pb.enable = false;
-    this.player.setTexture('p-hit');
+    this.player.setTexture('pc-hit');
     burst(this, this.player.x, this.player.y, [0xec3013, 0xffffff], 22, 300);
     this.tweens.add({ targets: this.player, y: this.player.y - 90, duration: 300, ease: 'Quad.easeOut', yoyo: false,
       onComplete: () => this.tweens.add({ targets: this.player, y: 900, angle: 200, duration: 700, ease: 'Quad.easeIn' }) });
@@ -318,7 +319,7 @@ export class PlayScene extends ArcadeScene {
     this.state = 'won';
     const pb = this.player.body as Body;
     pb.setVelocity(0, 0); pb.enable = false;
-    this.player.setTexture('p-jump');
+    this.player.setTexture('pc-jump');
     const bonus = 300 + Math.max(0, Math.round(60 - this.levelT)) * 10;
     this.addScore(bonus, this.flag.x - 60, this.flag.y - 90);
     this.sfx('win', { volume: 0.6, exact: true });
@@ -386,11 +387,11 @@ export class PlayScene extends ArcadeScene {
     this.airVy = pb.velocity.y;
 
     // animation
-    if (!onGround) this.player.setTexture('p-jump');
+    if (!onGround) this.player.setTexture('pc-jump');
     else if (Math.abs(pb.velocity.x) > 20) {
       this.walkT += dt * Math.abs(pb.velocity.x) / RUN;
-      this.player.setTexture(Math.floor(this.walkT * 9) % 2 ? 'p-walk1' : 'p-walk2');
-    } else this.player.setTexture('p-stand');
+      this.player.setTexture(Math.floor(this.walkT * 9) % 2 ? 'pc-walk1' : 'pc-walk2');
+    } else this.player.setTexture('pc-stand');
 
     const pr = this.playerRect();
     // springs

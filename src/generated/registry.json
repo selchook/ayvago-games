@@ -99,7 +99,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/archery.png"
     },
     {
       "id": "asteroid-storm",
@@ -257,7 +257,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/bomb-maze.png"
     },
     {
       "id": "bowling-strike",
@@ -583,7 +583,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/dots-and-boxes.png"
     },
     {
       "id": "dungeon-dash",
@@ -684,7 +684,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/fruit-slash.png"
     },
     {
       "id": "gem-match",
@@ -753,7 +753,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/gomoku.png"
     },
     {
       "id": "hex-merge",
@@ -850,7 +850,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/jetpack-rush.png"
     },
     {
       "id": "light-cycles",
@@ -885,7 +885,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/light-cycles.png"
     },
     {
       "id": "lights-out",
@@ -1463,7 +1463,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/sea-battle.png"
     },
     {
       "id": "shooting-gallery",
@@ -1749,7 +1749,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/sudoku.png"
     },
     {
       "id": "tank-arena",
@@ -1943,7 +1943,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
-      "thumb": null
+      "thumb": "thumbs/turkish-draughts.png"
     },
     {
       "id": "ufo-abduction",
