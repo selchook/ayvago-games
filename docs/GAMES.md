@@ -8,7 +8,7 @@ air-hockey, alien-invaders, asteroid-storm, axe-throw, block-blast, block-drop, 
 - **Launch wave (2026-10-27):** 26 games.
 - **Second wave (2026-10-28):** 28 games. These are the former backlog plus dungeon-dash and nonogram, finished from `wip/`. Each carries `platform.addedAt` in its `game.json`.
 
-**Work in progress:** none.
+**Work in progress:** wave 3 (2026-10-29), 10 games in batches J and K. The five in batch J are playable online by two players (`"multiplayer": true`).
 
 **Backlog:** empty. New concepts go into the concept list below.
 
@@ -105,3 +105,24 @@ Columns: slug · EN title / TR title · concept · suggested assets (`public/ass
 | simon-says | Simon Says / Simon Der Ki | repeat growing colour/tone sequence | drawn + sfx | P |
 | nonogram | Pixel Logic / Piksel Mantık | picross puzzles 5x5→10x10 forming pixel pictures | drawn | P |
 | tile-triple | Tile Triple / Üçlü Taş | stacked tiles, pick into 7-slot tray, 3 of a kind clear | game-icons / emotes | P |
+
+## Batch J — two-player (online + vs AI)
+Every game here has a full solo mode against an AI and an online mode for two players (`"multiplayer": true`, skill §7a): the room's host takes the first turn, then the winner of the previous round (`net.starter` / `net.myTurnFirst`).
+
+| slug | title | concept | assets | o |
+|---|---|---|---|---|
+| gomoku | Five in a Row / Beşli Taş | Gomoku on a 15x15 board: five in a row wins; threat-based AI that ramps up; online: alternate stones, the starter plays black | boardgame / drawn | P |
+| dots-and-boxes | Dots and Boxes / Kutu Kapmaca | 5x5 boxes: draw a line, closing a box scores and gives another move; AI avoids third sides and plays chains; online: same rules, both sides apply moves | drawn | P |
+| sea-battle | Sea Battle / Amiral Battı | 10x10 fleets, drag/rotate or auto placement, a hit shoots again; hunt-and-target AI; online: both place secretly, shots go out and the owner answers hit / miss / sunk | drawn + particles | P |
+| turkish-draughts | Turkish Draughts / Dama | Türk daması on 8x8: pieces move forward and sideways, captures are compulsory and the longest capture must be taken, kings fly; AI with depth levels; online: alternate moves | boardgame pieces / drawn | P |
+| light-cycles | Light Cycles / Işık Motorları | Tron duel on a grid: steer with arrows or swipes, trails stay, crash loses, best of 5, speed ramps; AI rivals; online: the host simulates, the guest sends turns | drawn neon | P |
+
+## Batch K — wave 3 solo
+| slug | title | concept | assets | o |
+|---|---|---|---|---|
+| sudoku | Sudoku / Sudoku | generated unique-solution puzzles in 4 difficulties, notes mode, 3 mistakes, hints, timer | drawn | P |
+| fruit-slash | Fruit Slash / Meyve Kes | swipe through tossed fruit, avoid bombs, multi-slice combos, 3 misses ends the run | drawn + particles | P |
+| jetpack-rush | Jetpack Rush / Jetpack Koşusu | hold to fly, zappers, warned missiles, coins, distance and speed ramp | pixel-platformer / space-shooter | L |
+| bomb-maze | Bomb Maze / Bomba Labirenti | Bomberman-like grid levels vs AI bots, breakable crates, power-ups (range, bombs, speed) | micro-roguelike / drawn | P |
+| archery | Archery / Okçuluk | drag to draw and aim with wind, moving targets at growing distances, rounds | shooting-gallery / sports | L |
+
