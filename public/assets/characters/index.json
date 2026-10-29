@@ -1,0 +1,31 @@
+{
+  "size": [
+    144,
+    176
+  ],
+  "poses": [
+    "stand",
+    "front",
+    "walk1",
+    "walk2",
+    "jump",
+    "hit",
+    "duck",
+    "climb1",
+    "climb2",
+    "swim1",
+    "swim2"
+  ],
+  "characters": [
+    "alien-green",
+    "alien-blue",
+    "alien-pink",
+    "alien-yellow",
+    "alien-beige",
+    "adventurer",
+    "explorer",
+    "rookie",
+    "soldier",
+    "zombie"
+  ]
+}
