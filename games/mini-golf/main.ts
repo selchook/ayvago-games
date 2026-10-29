@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import Phaser from 'phaser';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
@@ -13,13 +13,16 @@ launch({
     l.image('flag', kenney('sports/png/equipment/flag_checkered.png'));
     loadSfx(l, 'putt', 'sfx-impact/audio/impactgeneric_light_002');
     loadSfx(l, 'wall', 'sfx-impact/audio/impactwood_light_001');
-    loadSfx(l, 'bumper', 'sfx-digital/audio/pepsound2');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'bumper', J + 'simple-bleeps/sfx-sounds-blip9');
     loadSfx(l, 'cup', 'sfx-casino/audio/chiplay2');
     loadSfx(l, 'splash', 'sfx-impact/audio/impactsoft_medium_001');
     loadSfx(l, 'sand', 'sfx-impact/audio/footstep_snow_001');
-    loadSfx(l, 'great', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'next', 'sfx-interface/audio/maximize_003');
-    loadSfx(l, 'bad', 'sfx-interface/audio/error_004');
+    loadAudio(l, 'great', J + 'fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'par', J + 'coins/sfx-coin-double2');
+    loadAudio(l, 'next', J + 'pause-sounds/sfx-sounds-pause4-in');
+    loadAudio(l, 'bad', J + 'negative-sounds/sfx-sounds-error11');
+    loadAudio(l, 'turn', J + 'simple-bleeps/sfx-sounds-blip7');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

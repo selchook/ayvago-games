@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -15,13 +15,15 @@ launch({
     l.image('ball', kenney(P + 'balls/yellow/ballyellow_04.png'));
     l.image('glow', kenney(P + 'particles_white/particlewhite_4.png'));
     l.image('spark', kenney(P + 'particles_white/particlewhite_7.png'));
-    loadSfx(l, 'hit', 'sfx-digital/audio/tone1');
-    loadSfx(l, 'hit2', 'sfx-digital/audio/pepsound2');
-    loadSfx(l, 'wall', 'sfx-digital/audio/twotone1');
-    loadSfx(l, 'goal', 'sfx-digital/audio/powerup5');
-    loadSfx(l, 'miss', 'sfx-digital/audio/phaserdown2');
-    loadSfx(l, 'serve', 'sfx-digital/audio/phasejump1');
-    loadSfx(l, 'match', 'jingles/audio/8-bit_jingles/jingles_nes06');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'hit', J + 'simple-bleeps/sfx-sounds-blip9');
+    loadAudio(l, 'hit2', J + 'simple-bleeps/sfx-sounds-blip4');
+    loadAudio(l, 'wall', J + 'menu-sounds/sfx-menu-move1');
+    loadAudio(l, 'goal', J + 'positive-sounds/sfx-sounds-powerup2');
+    loadAudio(l, 'miss', J + 'simple-damage-sounds/sfx-damage-hit2');
+    loadAudio(l, 'serve', 'oga/junkala-sfx/movement/jumping-and-landing/sfx-movement-jump12');
+    loadAudio(l, 'match', J + 'fanfares/sfx-sounds-fanfare3');
+    loadAudio(l, 'lose', J + 'negative-sounds/sfx-sounds-negative2');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

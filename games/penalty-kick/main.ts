@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import Phaser from 'phaser';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
@@ -12,13 +12,17 @@ launch({
     l.image('ball', kenney('sports/png/equipment/ball_soccer2.png'));
     l.image('glove', kenney('sports/png/equipment/boxing_glove.png'));
     loadSfx(l, 'kick', 'sfx-impact/audio/impactpunch_medium_000');
-    loadSfx(l, 'goal', 'sfx-digital/audio/powerup2');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'goal', J + 'positive-sounds/sfx-sounds-powerup4');
     loadSfx(l, 'net', 'sfx-impact/audio/impactsoft_medium_002');
     loadSfx(l, 'save', 'sfx-impact/audio/impactsoft_heavy_002');
     loadSfx(l, 'post', 'sfx-impact/audio/impactmetal_heavy_001');
-    loadSfx(l, 'whistle', 'sfx-digital/audio/twotone1');
-    loadSfx(l, 'boo', 'sfx-interface/audio/error_003');
-    loadSfx(l, 'curl', 'sfx-interface/audio/switch_002');
+    loadAudio(l, 'whistle', J + 'high-pitched-sounds/sfx-sounds-high3');
+    loadAudio(l, 'boo', J + 'negative-sounds/sfx-sounds-error11');
+    loadAudio(l, 'curl', J + 'menu-sounds/sfx-menu-move2');
+    loadAudio(l, 'clock', J + 'simple-bleeps/sfx-sounds-blip10');
+    loadAudio(l, 'wide', 'oga/junkala-sfx/movement/falling-sounds/sfx-sounds-falling3');
+    loadAudio(l, 'lose', J + 'negative-sounds/sfx-sounds-negative1');
     loadSfx(l, 'step', 'sfx-impact/audio/footstep_grass_001');
   },
   menuDecor(scene) {

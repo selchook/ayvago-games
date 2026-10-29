@@ -180,7 +180,10 @@ export class PlayScene extends ArcadeScene {
     if (this.online) {
       this.status.setText(mine ? t('netMine') : s === 'ai' ? t('netTheirs') : '');
       this.status.setColor(mine ? (this.mine === 1 ? '#ff5a4a' : '#ffd23f') : '#8890b8');
-      if (mine) this.tweens.add({ targets: this.status, scale: { from: 1.25, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+      if (mine) {
+        this.tweens.add({ targets: this.status, scale: { from: 1.25, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+        if (this.moveNo > 0) this.sfx('turn', { volume: 0.45 });
+      }
       if (s === 'ai') this.takeRemote();
       return;
     }
