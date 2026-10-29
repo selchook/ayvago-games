@@ -73,7 +73,7 @@ async function check(slug) {
     await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_LOADING'), null, { timeout: 15000 });
     step.loading = true;
     await page.waitForTimeout(800);
-    await page.mouse.click(270, 480);   // skip intro
+    await page.mouse.click(270, 40);    // skip intro (away from the menu's PLAY button)
     await frame().waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: 15000 });
     step.locale = await frame().evaluate(() => document.documentElement.lang);
     await page.waitForTimeout(400);
