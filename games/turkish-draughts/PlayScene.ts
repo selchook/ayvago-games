@@ -395,16 +395,19 @@ export class PlayScene extends ArcadeScene {
     this.lastFx.forEach((o) => o.destroy());
     this.lastFx = [m.from, to].map((x) => this.add.rectangle(this.sx(x), this.sy(x), CELL, CELL, 0xffd23f, 0.22).setDepth(1));
 
-    // hop along the path; jumped pieces dim as they are passed and leave together at the end
+    // hop along the path; each jumped piece leaves the board as soon as it is taken
     const hop = m.caps.length ? 230 : 200;
     const tweens: Phaser.Types.Tweens.TweenBuilderConfig[] = m.path.map((sq, k) => ({
       targets: sprite, x: this.sx(sq), y: this.sy(sq), duration: hop, ease: 'Quad.easeInOut',
       onComplete: () => {
         this.sfxAt(m.caps.length ? 'jump' : rng.chance(0.5) ? 'place' : 'place2', sprite.x, { volume: 0.7, rate: m.caps.length ? 1 + k * 0.08 : undefined });
         const victim = m.caps[k];
-        if (victim !== undefined) {
-          const v = this.sprites[victim];
-          if (v) { v.setAlpha(0.45); this.tweens.add({ targets: v, angle: 15, duration: 80, yoyo: true }); }
+        const v = victim !== undefined ? this.sprites[victim] : null;
+        if (v) {
+          this.sprites[victim] = null;
+          burst(this, v.x, v.y, mover === W ? [0x333333, 0x777777] : [0xffffff, 0xd8d0c0], 14, 240);
+          this.tweens.add({ targets: v, scale: 0, alpha: 0, angle: 180, duration: 220, onComplete: () => v.destroy() });
+          this.sfxAt('capture', v.x, { volume: 0.5, rate: 1 + k * 0.08 });
         }
       },
     }));
@@ -415,15 +418,7 @@ export class PlayScene extends ArcadeScene {
       onComplete: () => {
         this.sprites[to] = sprite;
         sprite.setDepth(10);
-        for (const x of m.caps) {
-          const v = this.sprites[x];
-          this.sprites[x] = null;
-          if (!v) continue;
-          burst(this, v.x, v.y, mover === W ? [0x333333, 0x777777] : [0xffffff, 0xd8d0c0], 14, 240);
-          this.tweens.add({ targets: v, scale: 0, alpha: 0, angle: 180, duration: 260, onComplete: () => v.destroy() });
-        }
         if (m.caps.length) {
-          this.sfx('capture', { volume: 0.6 });
           shake(this, 0.003 + m.caps.length * 0.003, 160);
           if (mover === this.mine) {
             this.captured += m.caps.length;
