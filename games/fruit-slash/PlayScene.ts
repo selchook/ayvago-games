@@ -29,6 +29,9 @@ export class PlayScene extends ArcadeScene {
   private items: Item[] = [];
   private pieces: Piece[] = [];
   private trail: Pt[] = [];
+  /** Last blade point for cutting; unlike the trail it is not aged out, so a slow frame or a
+   *  sparse stream of move events cannot drop the segment that should cut. */
+  private lastPt: Pt | null = null;
   private trailG!: Phaser.GameObjects.Graphics;
   private blade!: Phaser.GameObjects.Image;
   private bx = W / 2;
@@ -56,7 +59,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     makeFruitTextures(this);
-    this.items = []; this.pieces = []; this.trail = [];
+    this.items = []; this.pieces = []; this.trail = []; this.lastPt = null;
     this.bx = W / 2; this.by = H * 0.6; this.kbMode = false; this.pointerDown = false; this.kbSlash = false; this.kbHeld = 0;
     this.strokeHits = 0; this.lastHit = 0; this.misses = 0; this.wave = 0; this.waveTimer = 1.2; this.sinceWave = 0;
     this.waveDur = 2; this.pending = 0; this.freeze = 0; this.dead = false; this.sliced = 0; this.bestCombo = 0;
@@ -80,12 +83,13 @@ export class PlayScene extends ArcadeScene {
       this.blade.setVisible(false);
       this.endStroke();
       this.trail = [{ x: p.x, y: p.y, t: this.time.now }];
+      this.lastPt = this.trail[0];
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!this.pointerDown || !p.isDown || this.dead) return;
       this.addPoint(p.x, p.y);
     });
-    const up = () => { this.pointerDown = false; this.endStroke(); };
+    const up = () => { this.pointerDown = false; this.lastPt = null; this.endStroke(); };
     this.input.on('pointerup', up);
     this.input.on('pointerupoutside', up);
 
@@ -179,8 +183,10 @@ export class PlayScene extends ArcadeScene {
 
   private addPoint(x: number, y: number): void {
     const now = this.time.now;
-    const prev = this.trail[this.trail.length - 1];
-    this.trail.push({ x, y, t: now });
+    const prev = this.lastPt;
+    const pt = { x, y, t: now };
+    this.trail.push(pt);
+    this.lastPt = pt;
     if (!prev) return;
     const len = Math.hypot(x - prev.x, y - prev.y);
     const dt = Math.max(8, now - prev.t) / 1000;
@@ -285,6 +291,8 @@ export class PlayScene extends ArcadeScene {
     }
     const b = txt(this, W / 2, H * 0.42, t('boom'), { title: true, size: 56, color: '#ec3013', strokeThickness: 12 }).setDepth(95).setScale(0.2);
     this.tweens.add({ targets: b, scale: 1, duration: 400, ease: 'Back.easeOut' });
+    // gone before the result screen, whose title says the same, so the two never overlap
+    this.tweens.add({ targets: b, alpha: 0, delay: 1000, duration: 350 });
     this.endGame({ title: t('boom'), delay: 1500 });
   }
 
@@ -352,7 +360,7 @@ export class PlayScene extends ArcadeScene {
         if (prev) this.cutAlong(prev.x, prev.y, this.bx, this.by);
       } else if (this.kbSlash) { this.kbSlash = false; this.endStroke(); }
       if (!c.a) this.kbHeld = 0;
-      this.blade.setScale(this.kbSlash ? 1.3 : 0.9).setAlpha(this.kbSlash ? 1 : 0.6);
+      this.blade.setScale(this.kbSlash ? 1.3 : 1).setAlpha(this.kbSlash ? 1 : 0.85);
     }
 
     // stroke combo window

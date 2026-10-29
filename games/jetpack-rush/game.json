@@ -2,7 +2,7 @@
   "id": "jetpack-rush",
   "title": { "tr": "Jetpack Koşusu", "en": "Jetpack Rush" },
   "description": { "tr": "Jetpack'inle laboratuvar koridorunda uç: elektrikli bariyerlerden ve uyarıyla gelen füzelerden kaç, altınları topla, giderek hızlanan koşuda rekor mesafeye ulaş.", "en": "Fly a jetpack down a lab corridor: dodge electric zappers and warned missiles, grab coins and push for a record distance as the run speeds up." },
-  "howTo": { "tr": "Uçmak için ekrana basılı tut (ya da Boşluk / Yukarı ok), bırakınca düşersin. Zap'lere ve füzelere değme.", "en": "Hold the screen (or Space / Up arrow) to thrust, release to fall. Don't touch zappers or missiles." },
+  "howTo": { "tr": "Uçmak için ekrana basılı tut (ya da Boşluk / Yukarı ok), bırakınca düşersin. Elektrikli bariyerlere ve füzelere çarpma.", "en": "Hold the screen (or Space / Up arrow) to thrust, release to fall. Don't touch zappers or missiles." },
   "genres": ["arcade", "action"],
   "orientation": "landscape",
   "controls": ["touch", "keyboard"],

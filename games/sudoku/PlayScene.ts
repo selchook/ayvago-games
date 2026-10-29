@@ -138,8 +138,9 @@ export class PlayScene extends ArcadeScene {
       this.gameLayer.push(d, n);
     }
     this.timerText = txt(this, 30, 128, '0:00', { title: true, size: 22, color: '#ffd23f' }).setOrigin(0, 0.5);
-    this.mistakeText = txt(this, 690, 128, '', { title: true, size: 22, color: '#ff5a5a' }).setOrigin(1, 0.5);
-    this.infoText = txt(this, 360, 128, '', { size: 26, color: '#aab0d0' });
+    // EN "MISTAKES 0/3" is wide: the puzzle number sits left of centre so the two never touch.
+    this.mistakeText = txt(this, 690, 128, '', { title: true, size: 20, color: '#ff5a5a' }).setOrigin(1, 0.5);
+    this.infoText = txt(this, 300, 128, '', { size: 26, color: '#aab0d0' });
     this.gameLayer.push(this.timerText, this.mistakeText, this.infoText);
   }
 
