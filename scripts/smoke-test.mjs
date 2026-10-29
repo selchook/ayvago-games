@@ -74,7 +74,12 @@ async function testGame(slug) {
     for (let i = 0; i < 40; i++) {
       // A round may end on its own (three quick deaths in a road crossing are fair): stop before
       // a random tap lands on the result screen's MENU button.
-      if (i % 4 === 0 && await page.evaluate(() => window.__ayvago.game.scene.isActive('GameOver'))) break;
+      // Checked before every input, and on the round's own end flag: the result screen only
+      // opens after the end delay, so waiting for it can leave one tap too many.
+      if (await page.evaluate(() => {
+        const sc = window.__ayvago.game.scene;
+        return sc.isActive('GameOver') || !!sc.getScene('Play')?.isOver || !sc.isActive('Play');
+      })) break;
       const k = keys[Math.floor(Math.random() * keys.length)];
       await page.keyboard.down(k);
       const x = box.x + box.width * (0.1 + Math.random() * 0.8), y = box.y + box.height * (0.2 + Math.random() * 0.7);
@@ -88,6 +93,11 @@ async function testGame(slug) {
     step.nonBlank = new Set(Array.from(shot.subarray(200, Math.min(shot.length, 20000)))).size > 40;
 
     // the flow must survive a forced end of round
+    // (if a stray input still left the round for the menu, start a fresh one first)
+    if (await page.evaluate(() => window.__ayvago.game.scene.isActive('Menu'))) {
+      await page.keyboard.press('Enter');
+      await waitScene('Play', 5000);
+    }
     const active = await scenes();
     if (active.includes('Pause')) { await page.keyboard.press('Escape'); await page.waitForTimeout(200); }
     await page.evaluate(() => {
