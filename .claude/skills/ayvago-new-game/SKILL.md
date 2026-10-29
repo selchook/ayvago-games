@@ -105,7 +105,9 @@ Other helpers from `@core`:
   `pc-jump`, `pc-hit`, `pc-duck`, `pc-climb1/2`, `pc-swim1/2`. All frames share
   `CHARACTER_FRAME` (144x176, feet at `originY`): size the sprite by `standHeight`. Rivals and
   bots: `otherCharacters(playerCharacter())`; online opponent: `peerCharacter()`. Test any
-  character with `?character=<id>`. Pixel-art games keep their own sprites.
+  character with `?character=<id>`. A hero whose arms must hold something (a bow, a rope) uses
+  the rig parts instead: `pc-archer` (armless, same frame), `pc-arm` and `pc-hand`, posed from
+  `characterRig(id).shoulders` every frame (see `games/archery`). Pixel-art games keep their own sprites.
 - **Look before you use.** Open the PNGs or tilesheets with the Read tool to see them before picking frames.
 - **No network.** Never load anything from the network. If something is missing, draw it with Graphics/shapes, or generate a texture with `scene.make.graphics(...).generateTexture(key, w, h)`.
 - **Sound.** Use sounds generously but at sane volumes. Good sources:

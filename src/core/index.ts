@@ -17,10 +17,10 @@ export { storage, getBest } from './storage';
 export { sdk } from './sdk';
 export { net } from './net';
 export {
-  CHARACTER_IDS, CHARACTER_POSES, CHARACTER_FRAME, DEFAULT_CHARACTER,
-  isCharacterId, playerCharacter, peerCharacter, otherCharacters, characterUrl, loadCharacter,
+  CHARACTER_IDS, CHARACTER_POSES, CHARACTER_PARTS, CHARACTER_FRAME, DEFAULT_CHARACTER,
+  isCharacterId, playerCharacter, peerCharacter, otherCharacters, characterUrl, characterRig, loadCharacter,
 } from './characters';
-export type { CharacterId, CharacterPose } from './characters';
+export type { CharacterId, CharacterPose, CharacterPart, CharacterRig } from './characters';
 export type { NetHandler } from './net';
 export { playAyvagoIntro, INTRO_DURATION } from './intro';
 export type { GameDefinition, GameMeta, Genre } from './registry';
