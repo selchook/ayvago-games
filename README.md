@@ -1,6 +1,8 @@
 # Ayvago Games
 
-Retro arcade, aksiyon, casual ve bulmaca oyunlarını Ayvago platformu için üreten oyun fabrikası.
+Retro arcade, aksiyon, casual ve bulmaca oyunlarını Ayvago platformu için üreten oyun fabrikası (stüdyo).
+Oyuncular oyunlarla [ayvago.com](https://ayvago.com) üzerinde buluşur: hesaplar, skor tabloları, temalar,
+yönetim paneli ve çevrimiçi odalar platform reposundadır (`selchook/ayvago`).
 
 - **Motor:** Phaser 3.90 + TypeScript + Vite
 - **Platform:** Mobil (dokunmatik) + masaüstü (klavye/fare)
@@ -25,7 +27,7 @@ npm run release        # build + testler + ayvago.json + kapak/ikon
 2. Oyunu oluştur: `npm run new-game -- benim-oyunum "My Game"`.
 3. Oyunu yaz: `games/benim-oyunum/`. Kurallar `.claude/skills/ayvago-new-game/SKILL.md`'de.
 4. Tek oyunu test et: `node scripts/smoke-test.mjs --dev --serial benim-oyunum`.
-5. Yayın öncesi `npm run release` çalıştır. Ardından `platform/arcade-catalog.ts` dosyasını platform reposuna kopyala ve Vercel'e deploy et.
+5. Yayın öncesi `npm run release` çalıştır ve `main`'e birleştir. Vercel oyunları yayınlar; platformdaki "Sync arcade catalog" iş akışı `platform/arcade-catalog.ts` dosyasını kendisi alıp PR açar.
 
 Claude Code ile: `ayvago-game-dev` agent'ına slug + konsept ver, ardından `ayvago-game-qa` ile kontrol ettir.
 
