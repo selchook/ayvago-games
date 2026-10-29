@@ -70,11 +70,12 @@ export class PlayScene extends ArcadeScene {
   private dragMoved = false;
   private rollSfxT = 0;
   private crashPlayed = false;
-  // online: players alternate frames (host first); the thrower is authoritative for its throw
+  // online: players alternate frames (the round's starter, net.starter, first); the thrower is
+  // authoritative for its throw
   private online = false;
   private seat: 0 | 1 = 0;
   private turnSeat: 0 | 1 = 0;
-  private turnNo = 0;                         // frame * 2 + seat of the frame being bowled
+  private turnNo = 0;                         // frame * 2 + order (0 = starter) of the turn being bowled
   private allFrames: number[][][] = [[], []];
   private rowMarks: Phaser.GameObjects.Text[][] = [[], []];
   private rowTotals: Phaser.GameObjects.Text[][] = [[], []];
@@ -94,7 +95,7 @@ export class PlayScene extends ArcadeScene {
     this.bx = LANE_C; this.by = BALL_Y; this.bvx = this.bvy = 0; this.aim = this.power = this.spin = 0;
     this.gutter = false; this.ballGone = false; this.settleT = 0; this.strikeRun = 0;
     this.dragId = -1; this.dragMoved = false; this.rollSfxT = 0; this.crashPlayed = false;
-    this.online = net.active; this.seat = net.seat; this.turnSeat = 0; this.turnNo = 0;
+    this.online = net.active; this.seat = net.seat; this.turnSeat = this.online ? net.starter : 0; this.turnNo = 0;
     this.allFrames = [[], []]; this.rowMarks = [[], []]; this.rowTotals = [[], []]; this.runs = [0, 0];
     this.sendT = 0; this.started = false; this.watchBx = LANE_C; this.watchBy = BALL_Y; this.pinTargets = null;
     this.useHud = !this.online;
@@ -623,7 +624,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   // ================================================================ online two-player
-  // Players alternate frames (host first), 10 frames each, on one two-row scorecard. The thrower
+  // Players alternate frames (the round's starter first), 10 frames each, on one two-row scorecard. The thrower
   // simulates its own throw and streams snapshots ('bs', ~20/s) to the watcher, then sends the
   // final pin result ('roll'); both sides then score and advance with the same rules.
 
@@ -635,9 +636,9 @@ export class PlayScene extends ArcadeScene {
     this.turnText = ftxt(this, 360, 164, '', { title: true, size: 18, color: '#ffd23f' }).setDepth(12);
     net.onScene(this, 'bs', (d: ThrowSnap) => this.applyThrowSnap(d));
     net.onScene(this, 'roll', (d: RollMsg) => this.applyRoll(d));
-    this.selectTurn(0, 0);
-    if (net.isHost) {
-      // first throw once the guest's table is up (or after 2.5 s at the latest)
+    this.selectTurn(net.starter, 0);
+    if (net.myTurnFirst) {
+      // first throw once the other side's table is up (or after 2.5 s at the latest)
       const go = () => {
         if (this.started || this.isOver) return;
         this.started = true;
@@ -683,7 +684,7 @@ export class PlayScene extends ArcadeScene {
     this.runs[this.turnSeat] = this.strikeRun;
     this.turnSeat = seat;
     this.frame = frame;
-    this.turnNo = frame * 2 + seat;
+    this.turnNo = frame * 2 + (seat === net.starter ? 0 : 1);
     this.frames = this.allFrames[seat];
     this.marks = this.rowMarks[seat];
     this.totals = this.rowTotals[seat];
@@ -706,9 +707,10 @@ export class PlayScene extends ArcadeScene {
 
   private advanceOnline(frameDone: boolean, resetRack: boolean): void {
     if (frameDone) {
-      if (this.turnSeat === 1 && this.frame === 9) { this.finishOnline(); return; }
+      // the starter bowls each frame first; the frame ends with the other player's turn
+      if (this.turnSeat !== net.starter && this.frame === 9) { this.finishOnline(); return; }
       const next: 0 | 1 = this.turnSeat === 0 ? 1 : 0;
-      this.selectTurn(next, next === 0 ? this.frame + 1 : this.frame);
+      this.selectTurn(next, next === net.starter ? this.frame + 1 : this.frame);
       this.rack(true);
       const mine = next === this.seat;
       this.turnText.setScale(1.5);
@@ -734,7 +736,7 @@ export class PlayScene extends ArcadeScene {
     const me = this.totalOf(this.seat), opp = this.totalOf(1 - this.seat);
     this.setScore(me);
     const win = me > opp;
-    this.endGame({ win, title: me === opp ? t('draw') : win ? t('youWin') : t('youLose'), delay: 700 });
+    this.endGame({ win, title: me === opp ? t('draw') : win ? t('youWin') : t('youLose'), draw: me === opp, delay: 700 });
   }
 
   /** Thrower: stream the throw (aim, meters, ball and pins) to the watcher. */

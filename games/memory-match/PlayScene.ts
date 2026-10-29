@@ -93,7 +93,7 @@ export class PlayScene extends ArcadeScene {
   private banner: Phaser.GameObjects.GameObject[] = [];
   // online two-player state (net.active)
   private online = false;
-  private turn: 0 | 1 = 0;            // seat whose turn it is (host starts)
+  private turn: 0 | 1 = 0;            // seat whose turn it is (net.starter starts)
   private pairsBy: [number, number] = [0, 0];
   private flipNo = 0;
   private turnText!: Phaser.GameObjects.Text;
@@ -104,7 +104,7 @@ export class PlayScene extends ArcadeScene {
     this.moves = 0; this.matched = 0; this.combo = 0; this.cursor = 0; this.showCursor = false; this.banner = [];
     this.lastTick = 0;
     this.online = net.active;
-    this.turn = 0; this.pairsBy = [0, 0]; this.flipNo = 0;
+    this.turn = this.online ? net.starter : 0; this.pairsBy = [0, 0]; this.flipNo = 0;
     this.useHud = !this.online;
 
     this.barBg = this.add.rectangle(60, 112, 440, 26, 0x000000, 0.6).setOrigin(0, 0.5).setStrokeStyle(4, 0xffffff, 0.8);
@@ -343,7 +343,7 @@ export class PlayScene extends ArcadeScene {
 ${clip(net.peerName || t('opponent'), 12)}: ${them} ${t('pairs')}`, { size: 34 }).setDepth(41);
     this.banner.push(panel, head, lines);
     if (win) burst(this, 360, 560, [0xffd23f, 0x5dff7a, 0xffffff], 40, 380);
-    this.endGame({ win, title, delay: 2200 });
+    this.endGame({ win, title, draw: me === them, delay: 2200 });
   }
 
   private levelClear(): void {

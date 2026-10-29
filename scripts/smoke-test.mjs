@@ -50,8 +50,10 @@ async function testGame(slug) {
     await page.waitForSelector('#ayvago-boot canvas', { timeout: dev ? 30000 : 15000 });
     step.intro = true;
     await page.waitForTimeout(1200);
-    await page.mouse.click(270, 480);                       // tap skips the intro
-    await waitScene('Menu');
+    // Tap skips the intro. Near the top edge: the centre is where the menu's PLAY button
+    // appears, and a tap landing there after the intro ended would start the round at once.
+    await page.mouse.click(270, 40);
+    await page.waitForFunction(() => ['Menu', 'Play'].some((k) => window.__ayvago?.game.scene.isActive(k)), null, { timeout: 15000 });
     step.menu = true;
     await page.waitForTimeout(700);
     if (thumbs) {
@@ -62,7 +64,7 @@ async function testGame(slug) {
       await page.locator('canvas').first().screenshot({ path: join(root, 'public', 'thumbs', `${slug}.png`) });
       if (land) await page.setViewportSize({ width: 540, height: 960 });
     }
-    await page.keyboard.press('Enter');
+    if (!(await page.evaluate(() => window.__ayvago?.game.scene.isActive('Play')))) await page.keyboard.press('Enter');
     await waitScene('Play', 5000);
     step.play = true;
 
@@ -72,7 +74,12 @@ async function testGame(slug) {
     for (let i = 0; i < 40; i++) {
       // A round may end on its own (three quick deaths in a road crossing are fair): stop before
       // a random tap lands on the result screen's MENU button.
-      if (i % 4 === 0 && await page.evaluate(() => window.__ayvago.game.scene.isActive('GameOver'))) break;
+      // Checked before every input, and on the round's own end flag: the result screen only
+      // opens after the end delay, so waiting for it can leave one tap too many.
+      if (await page.evaluate(() => {
+        const sc = window.__ayvago.game.scene;
+        return sc.isActive('GameOver') || !!sc.getScene('Play')?.isOver || !sc.isActive('Play');
+      })) break;
       const k = keys[Math.floor(Math.random() * keys.length)];
       await page.keyboard.down(k);
       const x = box.x + box.width * (0.1 + Math.random() * 0.8), y = box.y + box.height * (0.2 + Math.random() * 0.7);
@@ -86,6 +93,11 @@ async function testGame(slug) {
     step.nonBlank = new Set(Array.from(shot.subarray(200, Math.min(shot.length, 20000)))).size > 40;
 
     // the flow must survive a forced end of round
+    // (if a stray input still left the round for the menu, start a fresh one first)
+    if (await page.evaluate(() => window.__ayvago.game.scene.isActive('Menu'))) {
+      await page.keyboard.press('Enter');
+      await waitScene('Play', 5000);
+    }
     const active = await scenes();
     if (active.includes('Pause')) { await page.keyboard.press('Escape'); await page.waitForTimeout(200); }
     await page.evaluate(() => {
@@ -94,7 +106,9 @@ async function testGame(slug) {
       play.scene.resume();
       play.endGame?.({ delay: 0 });
     });
-    await waitScene('GameOver', 6000);
+    // The end delay runs on the game clock, which falls behind wall time on a loaded runner
+    // (tappy-plane's crash takes over 6 s there): allow as long as the other steps.
+    await waitScene('GameOver', 15000);
     step.gameOver = true;
     // The result screen arms its Enter shortcut after a delay counted in game time, which runs
     // slower than wall time on a loaded machine: keep pressing for up to 15 s.

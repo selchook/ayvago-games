@@ -29,7 +29,8 @@ export class PlayScene extends ArcadeScene {
   private lives = 2;
   private streak = 0;
   private round = 0;
-  // online two-player state (net.active): host = black (1) and starts, guest = white (2)
+  // online two-player state (net.active): the round's starter (net.starter) plays black (1),
+  // which always moves first; the other player is white (2)
   private online = false;
   private mine = 1;
   private moveNo = 0;
@@ -43,7 +44,7 @@ export class PlayScene extends ArcadeScene {
     this.state = 'busy'; this.cur = 19;
     this.level = 0; this.lives = 2; this.streak = 0; this.round = 0;
     this.online = net.active;
-    this.mine = this.online && net.seat === 1 ? 2 : 1;
+    this.mine = this.online && !net.myTurnFirst ? 2 : 1;
     this.moveNo = 0; this.inbox = [];
     this.useHud = !this.online;
     this.cameras.main.setBackgroundColor('#0d2418');
@@ -160,7 +161,7 @@ export class PlayScene extends ArcadeScene {
     this.board.fill(0); this.discs.fill(null);
     this.putDisc(27, 2, true); this.putDisc(28, 1, true); this.putDisc(35, 1, true); this.putDisc(36, 2, true);
     this.updateHud();
-    // online: black (the host) always starts; solo: the player starts odd rounds
+    // online: black (the round's starter) always moves first; solo: the player starts odd rounds
     this.time.delayedCall(300, () => this.nextTurn(this.online ? 1 : this.round % 2 === 1 ? 1 : 2, false));
   }
 
@@ -332,7 +333,7 @@ export class PlayScene extends ArcadeScene {
       this.showBanner(t('roundDraw'), '#3ee6ff');
       this.sfx('pass');
     }
-    this.endGame({ win, title: win ? t('youWin') : them > me ? t('youLose') : t('draw'), delay: 2000 });
+    this.endGame({ win, title: win ? t('youWin') : them > me ? t('youLose') : t('draw'), draw: me === them, delay: 2000 });
   }
 
   updateGame(): void {

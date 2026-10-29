@@ -25,7 +25,8 @@ const HOLES: Hole[] = [
   { par: 5, tee: [120, 1120], cup: [580, 290], walls: [[170, 1000, 500, 30], [50, 780, 500, 30], [170, 560, 500, 30]], water: [[50, 230, 230, 150]], bumpers: [[430, 400, 40]], movers: [{ r: [300, 660, 36, 100], ax: 0, ay: 0, speed: 0, phase: 0 }, { r: [380, 860, 120, 36], ax: 200, ay: 0, speed: 1.4, phase: 1 }] },
 ];
 
-// online: both players play every hole; shots alternate (host first) until both balls are done
+// online: both players play every hole; shots alternate (the round's starter, net.starter, tees
+// off first on every hole) until both balls are done
 const SEND_MS = 50;              // ~20 ball snapshots per second during a shot
 const TEE_OFF = 16;              // the two balls share the tee mat, side by side
 const OPP_TINT = 0xff8a5a;       // the other player's ball
@@ -414,7 +415,7 @@ export class PlayScene extends ArcadeScene {
 
   // ================================================================ online two-player
   // Both players play the same nine holes with their own ball; on each hole the shots alternate
-  // (host first) until both balls are down or out of strokes. The shooter simulates its shot and
+  // (the round's starter first) until both balls are down or out of strokes. The shooter simulates its shot and
   // streams the ball ('gs', ~20/s), then reports where it came to rest ('gd'). Lowest total wins.
 
   private oppName(): string {
@@ -434,19 +435,19 @@ export class PlayScene extends ArcadeScene {
     net.onScene(this, 'gs', (d: ShotSnap) => this.onShotSnap(d));
     net.onScene(this, 'gd', (d: ShotDone) => this.onShotDone(d));
     this.loadHoleOnline(0);
-    if (net.isHost) {
-      // first shot once the guest's course is up (or after 2.5 s at the latest)
+    if (net.myTurnFirst) {
+      // first shot once the other side's course is up (or after 2.5 s at the latest)
       const go = () => {
         if (this.started || this.isOver) return;
         this.started = true;
-        this.beginShotTurn(0);
+        this.beginShotTurn(net.starter);
       };
       net.onScene(this, 'hi', go);
       this.time.delayedCall(2500, go);
     } else {
       net.send('hi', 1);
       this.started = true;
-      this.beginShotTurn(0);
+      this.beginShotTurn(net.starter);
     }
   }
 
@@ -458,7 +459,7 @@ export class PlayScene extends ArcadeScene {
       this.tweens.killTweensOf(p.img);
       p.img.setAlpha(1).setScale((BR * 2) / 8).setPosition(p.x, p.y);
     });
-    this.loadPlayer(0);
+    this.loadPlayer(net.starter);   // the starter tees off first on every hole
     this.turnLive = false; this.inShot = false; this.watching = false;
     this.updateOnlineText();
   }
@@ -650,7 +651,7 @@ export class PlayScene extends ArcadeScene {
     if (this.holeIdx >= HOLES.length - 1) { this.finishOnline(); return; }
     this.sfx('next', { volume: 0.5 });
     this.loadHoleOnline(this.holeIdx + 1);
-    this.time.delayedCall(500, () => this.beginShotTurn(0));
+    this.time.delayedCall(500, () => this.beginShotTurn(net.starter));
   }
 
   private finishOnline(): void {
@@ -660,6 +661,6 @@ export class PlayScene extends ArcadeScene {
     tl.setAlpha(0);
     this.tweens.add({ targets: tl, alpha: 1, duration: 300 });
     const win = me < opp;
-    this.endGame({ win, title: me === opp ? t('draw') : win ? t('youWin') : t('youLose'), delay: 1200 });
+    this.endGame({ win, title: me === opp ? t('draw') : win ? t('youWin') : t('youLose'), draw: me === opp, delay: 1200 });
   }
 }

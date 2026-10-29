@@ -82,7 +82,7 @@ export class PlayScene extends ArcadeScene {
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   // online state
   private online = false;
-  private kick = 0;                             // kick index; the host shoots the even ones
+  private kick = 0;                             // kick index; the round's starter (net.starter) shoots the even ones
   private myPick: Pick | null = null;
   private peerPicks = new Map<number, Pick>();
   private zone = 1;                             // keeper's selected dive zone
@@ -547,8 +547,9 @@ export class PlayScene extends ArcadeScene {
   }
 
   // ---------- online match ----------
+  /** Seat that shoots kick k: the round's starter takes the even kicks, sudden death included. */
   private shooterSeat(k = this.kick): 0 | 1 {
-    return k % 2 === 0 ? 0 : 1;
+    return k % 2 === 0 ? net.starter : net.starter === 0 ? 1 : 0;
   }
 
   private iShoot(): boolean {
