@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "lightcycles",
+  "title": {
+    "en": "Light Cycles",
+    "tr": "Işık Motorları"
+  },
+  "description": {
+    "en": "Race your light cycle across a neon grid and box your rival in with the wall you leave behind! First to three rounds wins, and every round is faster. Each rival is craftier than the last. Play a friend online too.",
+    "tr": "Neon ızgarada ışık motorunla yarış, arkanda kalan duvarla rakibi sıkıştır! Beş turun üçünü alan kazanır, her turda hız artar. Her rakip bir öncekinden daha kurnaz. Çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "action",
+    "retro"
+  ],
+  "tags": [
+    "multiplayer",
+    "light",
+    "cycles",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/light-cycles/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/light-cycles/ayvago/icon-512.png",
+    "cover": "/games/light-cycles/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/light-cycles/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "turkishdraughts",
+  "title": {
+    "en": "Turkish Draughts",
+    "tr": "Dama"
+  },
+  "description": {
+    "en": "Classic Turkish draughts: men move forward and sideways, captures are compulsory and the longest capture must be taken. Reach the last row to crown a dama! The AI thinks deeper after every win. Play a friend online too.",
+    "tr": "Klasik Türk daması: taşlar ileri ve yana gider, taş almak zorunludur ve en çok taş alan hamle oynanır. Son sıraya varan taş dama olur! Rakip yapay zekâ her galibiyette daha derin düşünür. Çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "strategy",
+  "categories": [
+    "strategy",
+    "puzzle",
+    "casual"
+  ],
+  "tags": [
+    "multiplayer",
+    "turkish",
+    "draughts",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/turkish-draughts/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/turkish-draughts/ayvago/icon-512.png",
+    "cover": "/games/turkish-draughts/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/turkish-draughts/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

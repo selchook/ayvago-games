@@ -1,0 +1,34 @@
+{
+  "id": "archery",
+  "title": {
+    "tr": "Okçuluk",
+    "en": "Archery"
+  },
+  "description": {
+    "tr": "Yayını ger, rüzgarı hesaba kat ve on halkalı hedefi vur. Her turda hedef uzaklaşır, küçülür ve sonunda hareket etmeye başlar.",
+    "en": "Draw the bow, read the wind and hit the ten-ring target. Each round the target moves farther, gets smaller and finally starts to move."
+  },
+  "howTo": {
+    "tr": "Geri sürükleyip bırak ya da ok tuşlarıyla nişan alıp Boşluk tuşunu basılı tut, sonra bırak. Her turun hedef puanına 5 okla ulaş.",
+    "en": "Drag back and release, or aim with the arrow keys, then hold and release Space. Reach each round's target score with 5 arrows."
+  },
+  "genres": [
+    "sports",
+    "casual",
+    "arcade"
+  ],
+  "orientation": "landscape",
+  "controls": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "version": "1.0.0",
+  "credits": [
+    "Art & audio: Kenney (CC0) — kenney.nl",
+    "Audio: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": {
+    "addedAt": "2026-10-29"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "bombmaze",
+  "title": {
+    "en": "Bomb Maze",
+    "tr": "Bomba Labirenti"
+  },
+  "description": {
+    "en": "Blast crates in a maze, grab power-ups and outsmart the bomber bots hunting you. Every level brings more and smarter bots.",
+    "tr": "Labirentte bombalarla sandıkları patlat, güçlendirmeleri topla ve seni kovalayan robot rakipleri alt et. Her bölümde daha çok ve daha zeki robot var."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "action",
+    "strategy"
+  ],
+  "tags": [
+    "bomb",
+    "maze",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/bomb-maze/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/bomb-maze/ayvago/icon-512.png",
+    "cover": "/games/bomb-maze/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/bomb-maze/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

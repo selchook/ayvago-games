@@ -1,0 +1,35 @@
+{
+  "id": "sea-battle",
+  "title": {
+    "tr": "Amiral Battı",
+    "en": "Sea Battle"
+  },
+  "description": {
+    "tr": "Filonu gizlice yerleştir, düşman denizine ateş aç! İsabet edersen bir daha atarsın. Rakip amiraller her zaferde daha akıllı avlanır. Çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Hide your fleet, then shell the enemy sea! A hit lets you fire again. Rival admirals hunt smarter after every victory. Play a friend online too."
+  },
+  "howTo": {
+    "tr": "Gemileri sürükle ya da OTOMATİK'e bas, sonra HAZIR. Düşman denizine dokunarak ya da oklar ve Boşluk ile ateş et.",
+    "en": "Drag your ships or press AUTO, then READY. Tap the enemy sea, or use the arrows and Space, to fire."
+  },
+  "genres": [
+    "strategy",
+    "casual",
+    "puzzle"
+  ],
+  "orientation": "portrait",
+  "controls": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": [
+    "Art: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": {
+    "addedAt": "2026-10-29"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "bomb-maze",
+  "title": { "tr": "Bomba Labirenti", "en": "Bomb Maze" },
+  "description": { "tr": "Labirentte bombalarla sandıkları patlat, güçlendirmeleri topla ve seni kovalayan robot rakipleri alt et. Her bölümde daha çok ve daha zeki robot var.", "en": "Blast crates in a maze, grab power-ups and outsmart the bomber bots hunting you. Every level brings more and smarter bots." },
+  "howTo": { "tr": "Ok tuşlarıyla ya da ekrandaki yön düğmeleriyle yürü; Boşluk ya da BOMBA düğmesiyle bomba bırak. Patlama artı şeklinde yayılır: kaç!", "en": "Walk with the arrow keys or the on-screen pad, drop bombs with Space or BOMB. Blasts spread in a cross: run!" },
+  "genres": ["arcade", "action", "strategy"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl", "Audio: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-10-29" }
+}

@@ -1,0 +1,34 @@
+{
+  "id": "light-cycles",
+  "title": {
+    "tr": "Işık Motorları",
+    "en": "Light Cycles"
+  },
+  "description": {
+    "tr": "Neon ızgarada ışık motorunla yarış, arkanda kalan duvarla rakibi sıkıştır! Beş turun üçünü alan kazanır, her turda hız artar. Her rakip bir öncekinden daha kurnaz. Çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Race your light cycle across a neon grid and box your rival in with the wall you leave behind! First to three rounds wins, and every round is faster. Each rival is craftier than the last. Play a friend online too."
+  },
+  "howTo": {
+    "tr": "Oklar veya WASD ile yön ver, ekranda kaydır ya da SOL / SAĞ düğmelerine dokun. Duvara veya ize çarpan turu kaybeder.",
+    "en": "Steer with the arrows or WASD, swipe, or tap LEFT / RIGHT. Hit a wall or a trail and you lose the round."
+  },
+  "genres": [
+    "arcade",
+    "action",
+    "retro"
+  ],
+  "orientation": "portrait",
+  "controls": [
+    "touch",
+    "keyboard"
+  ],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": [
+    "Art: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": {
+    "addedAt": "2026-10-29"
+  }
+}

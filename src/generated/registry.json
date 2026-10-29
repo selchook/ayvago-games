@@ -1,5 +1,5 @@
 {
-  "count": 54,
+  "count": 64,
   "games": [
     {
       "id": "air-hockey",
@@ -65,6 +65,41 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/alien-invaders.png"
+    },
+    {
+      "id": "archery",
+      "title": {
+        "tr": "Okçuluk",
+        "en": "Archery"
+      },
+      "description": {
+        "tr": "Yayını ger, rüzgarı hesaba kat ve on halkalı hedefi vur. Her turda hedef uzaklaşır, küçülür ve sonunda hareket etmeye başlar.",
+        "en": "Draw the bow, read the wind and hit the ten-ring target. Each round the target moves farther, gets smaller and finally starts to move."
+      },
+      "howTo": {
+        "tr": "Geri sürükleyip bırak ya da ok tuşlarıyla nişan alıp Boşluk tuşunu basılı tut, sonra bırak. Her turun hedef puanına 5 okla ulaş.",
+        "en": "Drag back and release, or aim with the arrow keys, then hold and release Space. Reach each round's target score with 5 arrows."
+      },
+      "genres": [
+        "sports",
+        "casual",
+        "arcade"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl",
+        "Audio: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
     },
     {
       "id": "asteroid-storm",
@@ -189,6 +224,40 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/block-drop.png"
+    },
+    {
+      "id": "bomb-maze",
+      "title": {
+        "tr": "Bomba Labirenti",
+        "en": "Bomb Maze"
+      },
+      "description": {
+        "tr": "Labirentte bombalarla sandıkları patlat, güçlendirmeleri topla ve seni kovalayan robot rakipleri alt et. Her bölümde daha çok ve daha zeki robot var.",
+        "en": "Blast crates in a maze, grab power-ups and outsmart the bomber bots hunting you. Every level brings more and smarter bots."
+      },
+      "howTo": {
+        "tr": "Ok tuşlarıyla ya da ekrandaki yön düğmeleriyle yürü; Boşluk ya da BOMBA düğmesiyle bomba bırak. Patlama artı şeklinde yayılır: kaç!",
+        "en": "Walk with the arrow keys or the on-screen pad, drop bombs with Space or BOMB. Blasts spread in a cross: run!"
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "strategy"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl",
+        "Audio: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
     },
     {
       "id": "bowling-strike",
@@ -481,6 +550,42 @@
       "thumb": "thumbs/connect-four.png"
     },
     {
+      "id": "dots-and-boxes",
+      "title": {
+        "tr": "Kutu Kapmaca",
+        "en": "Dots and Boxes"
+      },
+      "description": {
+        "tr": "Noktaları sırayla birleştir, kutunun dördüncü kenarını çizen kutuyu kapar ve bir daha oynar! Rakip yapay zekâ her galibiyette zincirleri daha iyi oynar. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Take turns joining dots; whoever draws a box's fourth side claims it and moves again! The AI plays chains better after every win. Play a friend online too."
+      },
+      "howTo": {
+        "tr": "İki nokta arasına dokun ya da oklarla seç, X ile çevir, Boşluk ile çiz. Kutuyu kapatan bir daha oynar.",
+        "en": "Tap between two dots, or pick a line with the arrows, flip it with X and press Space. Closing a box gives another move."
+      },
+      "genres": [
+        "puzzle",
+        "strategy",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Art: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
+    },
+    {
       "id": "dungeon-dash",
       "title": {
         "tr": "Zindan Koşusu",
@@ -547,6 +652,41 @@
       "thumb": "thumbs/fish-frenzy.png"
     },
     {
+      "id": "fruit-slash",
+      "title": {
+        "tr": "Meyve Kes",
+        "en": "Fruit Slash"
+      },
+      "description": {
+        "tr": "Havaya fırlayan meyveleri parlak bıçak iziyle doğra, kombolar ve kritik kesimler yap, bombalardan uzak dur.",
+        "en": "Slice fruit tossed into the air with a glowing blade, chain combos and critical cuts, and stay away from the bombs."
+      },
+      "howTo": {
+        "tr": "Parmağını ya da fareyi kaydırarak kes; bombaya dokunma, 3 meyve kaçırma. Klavye: oklarla bıçağı taşı, Boşluk basılıyken kes.",
+        "en": "Swipe with a finger or the mouse to slice; avoid bombs and don't miss 3 fruit. Keyboard: arrows move the blade, hold Space to slash."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl",
+        "Audio: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
+    },
+    {
       "id": "gem-match",
       "title": {
         "tr": "Mücevher Eşle",
@@ -578,6 +718,42 @@
         "featured": true
       },
       "thumb": "thumbs/gem-match.png"
+    },
+    {
+      "id": "gomoku",
+      "title": {
+        "tr": "Beşli Taş",
+        "en": "Five in a Row"
+      },
+      "description": {
+        "tr": "15x15 tahtada taşlarını sırayla koy, beşini yan yana diz! Rakip yapay zekâ her galibiyette tehditleri daha iyi okur. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Take turns placing stones on a 15x15 board and line up five! The AI reads threats better after every win. Play a friend online too."
+      },
+      "howTo": {
+        "tr": "Bir kesişime dokun, onaylamak için yine dokun ya da oklarla seçip Boşluk'a bas. Beş taşı yan yana dizen kazanır.",
+        "en": "Tap a point, then tap it again to place (or use the arrows and Space). Five in a row, column or diagonal wins."
+      },
+      "genres": [
+        "strategy",
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
     },
     {
       "id": "hex-merge",
@@ -642,6 +818,74 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/hoop-shot.png"
+    },
+    {
+      "id": "jetpack-rush",
+      "title": {
+        "tr": "Jetpack Koşusu",
+        "en": "Jetpack Rush"
+      },
+      "description": {
+        "tr": "Jetpack'inle laboratuvar koridorunda uç: elektrikli bariyerlerden ve uyarıyla gelen füzelerden kaç, altınları topla, giderek hızlanan koşuda rekor mesafeye ulaş.",
+        "en": "Fly a jetpack down a lab corridor: dodge electric zappers and warned missiles, grab coins and push for a record distance as the run speeds up."
+      },
+      "howTo": {
+        "tr": "Uçmak için ekrana basılı tut (ya da Boşluk / Yukarı ok), bırakınca düşersin. Elektrikli bariyerlere ve füzelere çarpma.",
+        "en": "Hold the screen (or Space / Up arrow) to thrust, release to fall. Don't touch zappers or missiles."
+      },
+      "genres": [
+        "arcade",
+        "action"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl",
+        "Audio: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
+    },
+    {
+      "id": "light-cycles",
+      "title": {
+        "tr": "Işık Motorları",
+        "en": "Light Cycles"
+      },
+      "description": {
+        "tr": "Neon ızgarada ışık motorunla yarış, arkanda kalan duvarla rakibi sıkıştır! Beş turun üçünü alan kazanır, her turda hız artar. Her rakip bir öncekinden daha kurnaz. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Race your light cycle across a neon grid and box your rival in with the wall you leave behind! First to three rounds wins, and every round is faster. Each rival is craftier than the last. Play a friend online too."
+      },
+      "howTo": {
+        "tr": "Oklar veya WASD ile yön ver, ekranda kaydır ya da SOL / SAĞ düğmelerine dokun. Duvara veya ize çarpan turu kaybeder.",
+        "en": "Steer with the arrows or WASD, swipe, or tap LEFT / RIGHT. Hit a wall or a trail and you lose the round."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "retro"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Art: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
     },
     {
       "id": "lights-out",
@@ -1186,6 +1430,42 @@
       "thumb": "thumbs/road-crosser.png"
     },
     {
+      "id": "sea-battle",
+      "title": {
+        "tr": "Amiral Battı",
+        "en": "Sea Battle"
+      },
+      "description": {
+        "tr": "Filonu gizlice yerleştir, düşman denizine ateş aç! İsabet edersen bir daha atarsın. Rakip amiraller her zaferde daha akıllı avlanır. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Hide your fleet, then shell the enemy sea! A hit lets you fire again. Rival admirals hunt smarter after every victory. Play a friend online too."
+      },
+      "howTo": {
+        "tr": "Gemileri sürükle ya da OTOMATİK'e bas, sonra HAZIR. Düşman denizine dokunarak ya da oklar ve Boşluk ile ateş et.",
+        "en": "Drag your ships or press AUTO, then READY. Tap the enemy sea, or use the arrows and Space, to fire."
+      },
+      "genres": [
+        "strategy",
+        "casual",
+        "puzzle"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Art: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
+    },
+    {
       "id": "shooting-gallery",
       "title": {
         "tr": "Atış Poligonu",
@@ -1439,6 +1719,39 @@
       "thumb": "thumbs/stack-tower.png"
     },
     {
+      "id": "sudoku",
+      "title": {
+        "tr": "Sudoku",
+        "en": "Sudoku"
+      },
+      "description": {
+        "tr": "Tek çözümlü, her seferinde yeni üretilen sudokular: kolaydan uzmana tırman, not al, ipucu kullan ve saate karşı yarış.",
+        "en": "Freshly generated sudokus with one solution each: climb from easy to expert, take notes, use hints and race the clock."
+      },
+      "howTo": {
+        "tr": "Hücreye dokun, alttaki tuştan rakam seç; NOT ile kalem notu al. Klavye: oklar, 1-9, N not, H ipucu, Sil.",
+        "en": "Tap a cell, then a digit on the pad; NOTES toggles pencil marks. Keyboard: arrows, 1-9, N notes, H hint, Delete."
+      },
+      "genres": [
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Juhani Junkala (CC0) — opengameart.org",
+        "UI sounds: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
+    },
+    {
       "id": "tank-arena",
       "title": {
         "tr": "Tank Arenası",
@@ -1595,6 +1908,42 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/traffic-racer.png"
+    },
+    {
+      "id": "turkish-draughts",
+      "title": {
+        "tr": "Dama",
+        "en": "Turkish Draughts"
+      },
+      "description": {
+        "tr": "Klasik Türk daması: taşlar ileri ve yana gider, taş almak zorunludur ve en çok taş alan hamle oynanır. Son sıraya varan taş dama olur! Rakip yapay zekâ her galibiyette daha derin düşünür. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Classic Turkish draughts: men move forward and sideways, captures are compulsory and the longest capture must be taken. Reach the last row to crown a dama! The AI thinks deeper after every win. Play a friend online too."
+      },
+      "howTo": {
+        "tr": "Yeşil halkalı taşa, sonra gideceği kareye dokun ya da oklar ve Boşluk'u kullan. Taş almak zorunludur.",
+        "en": "Tap a piece with a green ring, then its target square, or use the arrows and Space. Captures are compulsory."
+      },
+      "genres": [
+        "strategy",
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-29"
+      },
+      "thumb": null
     },
     {
       "id": "ufo-abduction",

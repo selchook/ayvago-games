@@ -1,0 +1,35 @@
+{
+  "id": "dots-and-boxes",
+  "title": {
+    "tr": "Kutu Kapmaca",
+    "en": "Dots and Boxes"
+  },
+  "description": {
+    "tr": "Noktaları sırayla birleştir, kutunun dördüncü kenarını çizen kutuyu kapar ve bir daha oynar! Rakip yapay zekâ her galibiyette zincirleri daha iyi oynar. Çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Take turns joining dots; whoever draws a box's fourth side claims it and moves again! The AI plays chains better after every win. Play a friend online too."
+  },
+  "howTo": {
+    "tr": "İki nokta arasına dokun ya da oklarla seç, X ile çevir, Boşluk ile çiz. Kutuyu kapatan bir daha oynar.",
+    "en": "Tap between two dots, or pick a line with the arrows, flip it with X and press Space. Closing a box gives another move."
+  },
+  "genres": [
+    "puzzle",
+    "strategy",
+    "casual"
+  ],
+  "orientation": "portrait",
+  "controls": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": [
+    "Art: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": {
+    "addedAt": "2026-10-29"
+  }
+}

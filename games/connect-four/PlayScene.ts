@@ -168,8 +168,8 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
-    this.hud.setCenter(`${t('level')} ${this.level + 1}`);
-    this.info.setText(`${t('rival', { name: t('d' + Math.min(this.level, LEVELS.length - 1)) })}   ${t('streak', { n: this.streak })}`);
+    // the level sits in the info line: in English the centre slot ran into the lives
+    this.info.setText(`${t('level')} ${this.level + 1}   ${t('rival', { name: t('d' + Math.min(this.level, LEVELS.length - 1)) })}   ${t('streak', { n: this.streak })}`);
   }
 
   private setTurn(s: State): void {

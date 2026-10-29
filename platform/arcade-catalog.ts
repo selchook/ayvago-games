@@ -101,6 +101,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'archery',
+    title: { en: 'Archery', tr: 'Okçuluk' },
+    description: {
+      en: 'Draw the bow, read the wind and hit the ten-ring target. Each round the target moves farther, gets smaller and finally starts to move.',
+      tr: 'Yayını ger, rüzgarı hesaba kat ve on halkalı hedefi vur. Her turda hedef uzaklaşır, küçülür ve sonunda hareket etmeye başlar.',
+    },
+    category: 'sports',
+    categories: ['sports', 'casual', 'arcade'],
+    tags: ['archery', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
+  }),
+  arcadeGame({
     slug: 'asteroid-storm',
     title: { en: 'Asteroid Storm', tr: 'Göktaşı Fırtınası' },
     description: {
@@ -153,6 +167,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'bomb-maze',
+    title: { en: 'Bomb Maze', tr: 'Bomba Labirenti' },
+    description: {
+      en: 'Blast crates in a maze, grab power-ups and outsmart the bomber bots hunting you. Every level brings more and smarter bots.',
+      tr: 'Labirentte bombalarla sandıkları patlat, güçlendirmeleri topla ve seni kovalayan robot rakipleri alt et. Her bölümde daha çok ve daha zeki robot var.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action', 'strategy'],
+    tags: ['bomb', 'maze', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
   }),
   arcadeGame({
     slug: 'bowling-strike',
@@ -280,6 +308,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'dots-and-boxes',
+    title: { en: 'Dots and Boxes', tr: 'Kutu Kapmaca' },
+    description: {
+      en: "Take turns joining dots; whoever draws a box's fourth side claims it and moves again! The AI plays chains better after every win. Play a friend online too.",
+      tr: 'Noktaları sırayla birleştir, kutunun dördüncü kenarını çizen kutuyu kapar ve bir daha oynar! Rakip yapay zekâ her galibiyette zincirleri daha iyi oynar. Çevrimiçi bir arkadaşınla da oyna.',
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'strategy', 'casual'],
+    tags: ['multiplayer', 'dots', 'and', 'boxes', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
+    multiplayer: true,
+  }),
+  arcadeGame({
     slug: 'dungeon-dash',
     title: { en: 'Dungeon Dash', tr: 'Zindan Koşusu' },
     description: {
@@ -308,6 +351,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'fruit-slash',
+    title: { en: 'Fruit Slash', tr: 'Meyve Kes' },
+    description: {
+      en: 'Slice fruit tossed into the air with a glowing blade, chain combos and critical cuts, and stay away from the bombs.',
+      tr: 'Havaya fırlayan meyveleri parlak bıçak iziyle doğra, kombolar ve kritik kesimler yap, bombalardan uzak dur.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action', 'casual'],
+    tags: ['fruit', 'slash', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
+  }),
+  arcadeGame({
     slug: 'gem-match',
     title: { en: 'Gem Match', tr: 'Mücevher Eşle' },
     description: {
@@ -320,6 +377,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     featured: true,
+  }),
+  arcadeGame({
+    slug: 'gomoku',
+    title: { en: 'Five in a Row', tr: 'Beşli Taş' },
+    description: {
+      en: 'Take turns placing stones on a 15x15 board and line up five! The AI reads threats better after every win. Play a friend online too.',
+      tr: '15x15 tahtada taşlarını sırayla koy, beşini yan yana diz! Rakip yapay zekâ her galibiyette tehditleri daha iyi okur. Çevrimiçi bir arkadaşınla da oyna.',
+    },
+    category: 'strategy',
+    categories: ['strategy', 'puzzle', 'casual'],
+    tags: ['multiplayer', 'gomoku', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'hex-merge',
@@ -347,6 +419,35 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['hoop', 'shot', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+  }),
+  arcadeGame({
+    slug: 'jetpack-rush',
+    title: { en: 'Jetpack Rush', tr: 'Jetpack Koşusu' },
+    description: {
+      en: 'Fly a jetpack down a lab corridor: dodge electric zappers and warned missiles, grab coins and push for a record distance as the run speeds up.',
+      tr: "Jetpack'inle laboratuvar koridorunda uç: elektrikli bariyerlerden ve uyarıyla gelen füzelerden kaç, altınları topla, giderek hızlanan koşuda rekor mesafeye ulaş.",
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action'],
+    tags: ['jetpack', 'rush', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
+  }),
+  arcadeGame({
+    slug: 'light-cycles',
+    title: { en: 'Light Cycles', tr: 'Işık Motorları' },
+    description: {
+      en: 'Race your light cycle across a neon grid and box your rival in with the wall you leave behind! First to three rounds wins, and every round is faster. Each rival is craftier than the last. Play a friend online too.',
+      tr: 'Neon ızgarada ışık motorunla yarış, arkanda kalan duvarla rakibi sıkıştır! Beş turun üçünü alan kazanır, her turda hız artar. Her rakip bir öncekinden daha kurnaz. Çevrimiçi bir arkadaşınla da oyna.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action', 'retro'],
+    tags: ['multiplayer', 'light', 'cycles', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'lights-out',
@@ -584,6 +685,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'sea-battle',
+    title: { en: 'Sea Battle', tr: 'Amiral Battı' },
+    description: {
+      en: 'Hide your fleet, then shell the enemy sea! A hit lets you fire again. Rival admirals hunt smarter after every victory. Play a friend online too.',
+      tr: 'Filonu gizlice yerleştir, düşman denizine ateş aç! İsabet edersen bir daha atarsın. Rakip amiraller her zaferde daha akıllı avlanır. Çevrimiçi bir arkadaşınla da oyna.',
+    },
+    category: 'strategy',
+    categories: ['strategy', 'casual', 'puzzle'],
+    tags: ['multiplayer', 'sea', 'battle', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
+    multiplayer: true,
+  }),
+  arcadeGame({
     slug: 'shooting-gallery',
     title: { en: 'Shooting Gallery', tr: 'Atış Poligonu' },
     description: {
@@ -692,6 +808,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'sudoku',
+    title: { en: 'Sudoku', tr: 'Sudoku' },
+    description: {
+      en: 'Freshly generated sudokus with one solution each: climb from easy to expert, take notes, use hints and race the clock.',
+      tr: 'Tek çözümlü, her seferinde yeni üretilen sudokular: kolaydan uzmana tırman, not al, ipucu kullan ve saate karşı yarış.',
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'casual'],
+    tags: ['sudoku', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
+  }),
+  arcadeGame({
     slug: 'tank-arena',
     title: { en: 'Tank Arena', tr: 'Tank Arenası' },
     description: {
@@ -757,6 +887,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'turkish-draughts',
+    title: { en: 'Turkish Draughts', tr: 'Dama' },
+    description: {
+      en: 'Classic Turkish draughts: men move forward and sideways, captures are compulsory and the longest capture must be taken. Reach the last row to crown a dama! The AI thinks deeper after every win. Play a friend online too.',
+      tr: 'Klasik Türk daması: taşlar ileri ve yana gider, taş almak zorunludur ve en çok taş alan hamle oynanır. Son sıraya varan taş dama olur! Rakip yapay zekâ her galibiyette daha derin düşünür. Çevrimiçi bir arkadaşınla da oyna.',
+    },
+    category: 'strategy',
+    categories: ['strategy', 'puzzle', 'casual'],
+    tags: ['multiplayer', 'turkish', 'draughts', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-29',
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'ufo-abduction',

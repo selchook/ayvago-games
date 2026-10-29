@@ -1,0 +1,35 @@
+{
+  "id": "turkish-draughts",
+  "title": {
+    "tr": "Dama",
+    "en": "Turkish Draughts"
+  },
+  "description": {
+    "tr": "Klasik Türk daması: taşlar ileri ve yana gider, taş almak zorunludur ve en çok taş alan hamle oynanır. Son sıraya varan taş dama olur! Rakip yapay zekâ her galibiyette daha derin düşünür. Çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Classic Turkish draughts: men move forward and sideways, captures are compulsory and the longest capture must be taken. Reach the last row to crown a dama! The AI thinks deeper after every win. Play a friend online too."
+  },
+  "howTo": {
+    "tr": "Yeşil halkalı taşa, sonra gideceği kareye dokun ya da oklar ve Boşluk'u kullan. Taş almak zorunludur.",
+    "en": "Tap a piece with a green ring, then its target square, or use the arrows and Space. Captures are compulsory."
+  },
+  "genres": [
+    "strategy",
+    "puzzle",
+    "casual"
+  ],
+  "orientation": "portrait",
+  "controls": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": [
+    "Art & audio: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": {
+    "addedAt": "2026-10-29"
+  }
+}
