@@ -177,7 +177,7 @@ export class PlayScene extends ArcadeScene {
     this.vx = v.vx; this.vy = v.vy;
     this.flying = true; this.aiming = false; this.flightT = 0;
     this.aimG.clear();
-    this.sfx('throw', { volume: 0.5 });
+    this.sfxAt('throw', this.bx, { volume: 0.45 });
     burst(this, this.bx, this.by + R, [0xffffff, 0xc98a4b], 8, 140);
   }
 
@@ -193,8 +193,8 @@ export class PlayScene extends ArcadeScene {
     if (this.timeLeft > 0) {
       this.timeLeft = Math.max(0, this.timeLeft - dt);
       const s = Math.ceil(this.timeLeft);
-      if (s <= 5 && s !== this.lastTick && s > 0) { this.lastTick = s; this.sfx('tick', { volume: 0.6 }); this.clockText.setScale(1.3); this.tweens.add({ targets: this.clockText, scale: 1, duration: 200 }); }
-      if (this.timeLeft === 0) this.sfx('buzzer', { volume: 0.6 });
+      if (s <= 5 && s !== this.lastTick && s > 0) { this.lastTick = s; this.sfx('tick', { volume: s <= 2 ? 0.6 : 0.45, rate: s <= 2 ? 1.12 : 1 }); this.clockText.setScale(1.3); this.tweens.add({ targets: this.clockText, scale: 1, duration: 200 }); }
+      if (this.timeLeft === 0) this.sfx('buzzer', { volume: 0.7, exact: true });
     }
     this.clockText.setText(String(Math.ceil(this.timeLeft))).setColor(this.timeLeft <= 5 ? '#ffd23f' : '#ec3013');
     if (this.timeLeft <= 0 && !this.flying) { this.endGame({ title: t('timeUp'), delay: 700 }); return; }
@@ -275,7 +275,7 @@ export class PlayScene extends ArcadeScene {
       if (this.bx > width - R) { this.bx = width - R; this.vx = -Math.abs(this.vx) * 0.7; }
       if (this.by > FLOOR - R && this.vy > 0) {
         this.by = FLOOR - R;
-        if (this.vy > 250) this.sfx('bounce', { volume: Math.min(0.8, this.vy / 2000) });
+        if (this.vy > 250) this.sfxAt(rng.pick(['bounce', 'bounce2']), this.bx, { volume: Math.min(0.8, this.vy / 2000) });
         this.vy = -this.vy * 0.55; this.vx *= 0.8;
         if (!this.scoredThisShot && this.flightT > 0.2) this.onMiss();
       }
@@ -297,7 +297,7 @@ export class PlayScene extends ArcadeScene {
     const vn = this.vx * nx + this.vy * ny;
     if (vn < 0) {
       this.vx -= (1 + e) * vn * nx; this.vy -= (1 + e) * vn * ny;
-      if (-vn > 120) { this.sfx('rim', { volume: Math.min(0.7, -vn / 1200) }); this.netSway = rng.int(-10, 10); }
+      if (-vn > 120) { this.sfxAt(rng.pick(['rim', 'rim2', 'rim3']), px, { volume: Math.min(0.7, -vn / 1200) }); this.netSway = rng.int(-10, 10); }
       this.rimTouched = true;
     }
   }
@@ -311,7 +311,7 @@ export class PlayScene extends ArcadeScene {
     const vn = this.vx * nx + this.vy * ny;
     if (vn < 0) {
       this.vx -= (1 + e) * vn * nx; this.vy -= (1 + e) * vn * ny;
-      if (-vn > 120) this.sfx('board', { volume: 0.6 });
+      if (-vn > 120) this.sfxAt(rng.pick(['board', 'board2']), this.bx, { volume: Math.min(0.65, 0.3 - vn / 2400) });
       this.boardTouched = true;
     }
   }
@@ -328,7 +328,10 @@ export class PlayScene extends ArcadeScene {
     const bonus = swish ? 3 : 2;
     if (!buzzer) this.timeLeft += bonus;
     this.netSwing = 1;
-    this.sfx(swish ? 'swish' : 'score', { volume: 0.6 });
+    this.sfxAt('net', this.hx, { volume: swish ? 0.5 : 0.35 });
+    // The basket sound climbs with the streak.
+    this.sfxAt(swish ? 'swish' : 'score', this.hx, { volume: 0.6, rate: 1 + (Math.min(5, this.streak) - 1) * 0.05 });
+    if (buzzer) this.sfx('beater', { volume: 0.75, exact: true });
     burst(this, this.hx, this.hy + 40, [0xffd23f, 0xff7a1a, 0xffffff], swish ? 30 : 18, 300);
     if (this.streak >= 3) shake(this, 0.006, 120);
     const msg = buzzer ? t('buzzer') : swish ? t('swish') : this.boardTouched ? t('bank') : '';
@@ -344,7 +347,7 @@ export class PlayScene extends ArcadeScene {
       this.level = newLevel;
       this.hud.setRight(`${t('level')} ${this.level}`);
       this.time.delayedCall(350, () => {
-        this.sfx('levelup', { volume: 0.5 });
+        this.sfx('levelup', { volume: 0.6 });
         const lt = txt(this, this.scale.width / 2, 640, t('levelUp', { n: this.level }), { title: true, size: 40, color: '#ffd23f' }).setDepth(20).setScale(0.3);
         this.tweens.add({ targets: lt, scale: 1, duration: 300, ease: 'Back.easeOut', hold: 600, yoyo: true, onComplete: () => lt.destroy() });
       });
@@ -354,7 +357,7 @@ export class PlayScene extends ArcadeScene {
   private onMiss(): void {
     if (this.scoredThisShot || this.flightT < 0) return;
     this.scoredThisShot = true; // handled
-    if (this.streak >= 2) { this.sfx('miss', { volume: 0.4 }); popup(this, this.bx, this.by - 60, '×', '#ec3013', 32); }
+    if (this.streak >= 2) { this.sfxAt('miss', this.bx, { volume: 0.4 }); popup(this, this.bx, this.by - 60, '×', '#ec3013', 32); }
     this.streak = 0;
   }
 }

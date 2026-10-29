@@ -204,7 +204,7 @@ export class PlayScene extends ArcadeScene {
     this.refreshUi();
     this.busy = true;
     this.time.delayedCall(700 + S.layers * 160, () => { this.busy = false; });
-    this.sfx('deal');
+    this.sfx('deal', { volume: 0.5 });
 
     const banner = txt(this, this.scale.width / 2, 520, `${t('level')} ${this.level}`, { title: true, size: 48, color: '#ffd23f' }).setDepth(3000).setScale(0);
     this.tweens.add({ targets: banner, scale: 1, duration: 380, ease: 'Back.easeOut', yoyo: true, hold: 500, onComplete: () => banner.destroy() });
@@ -286,7 +286,7 @@ export class PlayScene extends ArcadeScene {
         this.kbActive = true;
         this.cursor = this.cursor?.onBoard && this.cursor.free ? this.cursor : this.nearestFree(this.scale.width / 2, 500);
       } else this.moveCursor(...dirs[e.code]);
-      this.sfx('tick', { volume: 0.3 });
+      this.sfx('tick', { volume: 0.35 });
       this.drawCursor();
     } else if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyZ') {
       if (this.busy) return;
@@ -333,7 +333,7 @@ export class PlayScene extends ArcadeScene {
 
   private pick(tl: Tile): void {
     if (!tl.free) {
-      this.sfx('blocked', { volume: 0.4 });
+      this.sfxAt('blocked', tl.view.x, { volume: 0.35 });
       this.tweens.add({ targets: tl.view, x: tl.view.x + 6, duration: 40, yoyo: true, repeat: 2 });
       return;
     }
@@ -347,7 +347,8 @@ export class PlayScene extends ArcadeScene {
     this.tray.splice(at, 0, tl);
     tl.view.setDepth(2000 + at);
     this.addScore(5);
-    this.sfx('pick', { volume: 0.7 });
+    // the pick tone climbs as the tray fills: an audible warning before it overflows
+    this.sfxAt('pick', tl.view.x, { volume: 0.55, rate: 1 + (this.tray.length - 1) * 0.06, exact: true });
     burst(this, tl.view.x, tl.view.y, TINTS[ANIMALS[tl.type]] ?? 0xffffff, 8, 160);
 
     const same = this.tray.filter((x) => x.type === tl.type);
@@ -363,7 +364,7 @@ export class PlayScene extends ArcadeScene {
 
     if (cleared.length) this.time.delayedCall(260, () => this.clearTriple(cleared));
     if (this.tray.length >= TRAY_SLOTS) this.lose();
-    else if (!cleared.length && this.tray.length === TRAY_SLOTS - 1) this.sfx('warn', { volume: 0.6 });
+    else if (!cleared.length && this.tray.length === TRAY_SLOTS - 1) this.sfx('warn', { volume: 0.5 });
     this.refreshUi();
     if (!this.tiles.some((x) => x.onBoard || x.inTray)) this.time.delayedCall(700, () => this.levelClear());
   }
@@ -399,7 +400,8 @@ export class PlayScene extends ArcadeScene {
     const pts = (30 + this.level * 10) * Math.min(this.combo, 5);
     this.addScore(pts, cx, cy - 80);
     if (this.combo > 1) popup(this, cx, cy - 140, `${t('combo')} x${Math.min(this.combo, 5)}`, '#ff4fa3', 22);
-    this.sfx('match');
+    if (this.combo > 1) this.sfxAt('combo', cx, { volume: 0.6, rate: 1 + (Math.min(this.combo, 5) - 2) * 0.06, exact: true });
+    else this.sfxAt('match', cx, { volume: 0.55 });
   }
 
   private undo(): void {
@@ -420,7 +422,7 @@ export class PlayScene extends ArcadeScene {
     this.layoutTray([], 0);
     this.refreshFree();
     this.refreshUi();
-    this.sfx('undo');
+    this.sfx('undo', { volume: 0.5 });
   }
 
   private shuffle(): void {
@@ -433,7 +435,7 @@ export class PlayScene extends ArcadeScene {
     this.shuffles--;
     this.busy = true;
     const kinds = rng.shuffle(board.map((x) => x.type));
-    this.sfx('shuffle');
+    this.sfx('shuffle', { volume: 0.55 });
     this.flashLocal(0x3ee6ff, 0.25);
     board.forEach((tl, i) => {
       this.tweens.add({
@@ -454,7 +456,7 @@ export class PlayScene extends ArcadeScene {
     this.cursorBox.setVisible(false);
     shake(this, 0.014, 320);
     this.flashLocal(COLORS.red, 0.35);
-    this.sfx('lose');
+    this.sfx('lose', { volume: 0.6 });
     this.tray.forEach((x, i) => this.tweens.add({ targets: x.view, angle: rng.int(-25, 25), y: TRAY_Y + 10, duration: 200, delay: i * 50 }));
     this.endGame({ title: t('trayFull'), delay: 1200 });
   }
@@ -466,7 +468,7 @@ export class PlayScene extends ArcadeScene {
     const bonus = 200 * this.level;
     this.flashLocal(0xffffff, 0.35);
     shake(this, 0.008, 200);
-    this.sfx('clear');
+    this.sfx('clear', { volume: 0.7, exact: true });
     for (let i = 0; i < 6; i++) this.time.delayedCall(i * 110, () => burst(this, rng.int(100, width - 100), rng.int(250, 750), [0xffd23f, 0xff4fa3, 0x5dff7a, 0x3ee6ff], 24, 380));
     const banner = txt(this, width / 2, 460, t('levelClear'), { title: true, size: 40, color: '#5dff7a', wrap: width - 60 }).setDepth(3000).setScale(0);
     this.tweens.add({ targets: banner, scale: 1, duration: 420, ease: 'Back.easeOut' });

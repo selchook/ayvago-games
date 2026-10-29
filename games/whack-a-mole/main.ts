@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, ANIMALS } from './PlayScene';
 
@@ -16,15 +16,21 @@ launch({
     l.image('wm-smoke', kenney('particles/png_transparent/smoke_01.png'));
     for (const n of ['001', '003', '007', '010', '038', '041', '049', '050', '051', '053', '062']) l.image('wm-f' + n, kenney(`${F}foliagepack_${n}.png`));
     l.image('wm-leaf', kenney(`${F}leaves/foliagepack_leaves_007.png`));
-    loadSfx(l, 'whack', 'sfx-impact/audio/impactpunch_medium_002');
-    loadSfx(l, 'swish', 'sfx-interface/audio/scratch_002');
-    loadSfx(l, 'pop', 'sfx-interface/audio/pluck_001');
-    loadSfx(l, 'gold', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'boom', 'sfx-impact/audio/impactpunch_heavy_003');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'clear', 'sfx-digital/audio/threetone2');
-    loadSfx(l, 'go', 'sfx-digital/audio/powerup6');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'whack1', J + 'weapons/melee/sfx-wpn-punch1');
+    loadAudio(l, 'whack2', J + 'weapons/melee/sfx-wpn-punch2');
+    loadAudio(l, 'whack3', J + 'weapons/melee/sfx-wpn-punch3');
+    loadAudio(l, 'swish', J + 'weapons/melee/sfx-wpn-sword2');
+    loadAudio(l, 'pop1', J + 'movement/jumping-and-landing/sfx-movement-jump1');
+    loadAudio(l, 'pop2', J + 'movement/jumping-and-landing/sfx-movement-jump5');
+    loadAudio(l, 'gold', J + 'general-sounds/coins/sfx-coin-double3');
+    loadAudio(l, 'combo', J + 'general-sounds/positive-sounds/sfx-sounds-powerup15');
+    loadAudio(l, 'quota', J + 'general-sounds/positive-sounds/sfx-sounds-powerup8');
+    loadAudio(l, 'boom', J + 'explosions/short/sfx-exp-short-hard5');
+    loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage3');
+    loadAudio(l, 'tick', J + 'general-sounds/simple-bleeps/sfx-sounds-blip6');
+    loadAudio(l, 'clear', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'go', J + 'general-sounds/weird-sounds/sfx-sound-refereewhistle');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

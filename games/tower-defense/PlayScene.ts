@@ -209,7 +209,7 @@ export class PlayScene extends ArcadeScene {
 
   private pickType(i: number): void {
     this.selType = i; this.selTower = null;
-    this.sfx('select', { volume: 0.4 });
+    this.sfx('select', { volume: 0.35 });
     this.refreshUi();
   }
 
@@ -217,7 +217,7 @@ export class PlayScene extends ArcadeScene {
     const tw = this.towers.find((o) => o.c === c && o.r === r);
     if (tw) {
       if (keyboard && this.selTower === tw) this.upgrade();
-      else { this.selTower = tw; this.sfx('select', { volume: 0.4 }); }
+      else { this.selTower = tw; this.sfxAt('select', tw.x, { volume: 0.35 }); }
       this.refreshUi();
       return;
     }
@@ -233,13 +233,13 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: [base, head], scale: 1, duration: 280, ease: 'Back.easeOut' });
     this.towers.push({ def: d, lv: 1, c, r, x: cx, y: cy, base, head, cd: 0.2, spent: d.cost });
     burst(this, cx, cy, [0xbfc7cc, 0x8a6a3a], 14, 160);
-    this.sfx('build', { volume: 0.5 });
+    this.sfxAt('build', cx, { volume: 0.55 });
     this.refreshUi();
   }
 
   private warn(msg: string, x: number, y: number): void {
     popup(this, Phaser.Math.Clamp(x, 200, FIELD_W - 200), y, msg, '#ec3013', 18);
-    this.sfx('error', { volume: 0.4 });
+    this.sfxAt('error', x, { volume: 0.4 });
   }
 
   private upCost(tw: Tower): number {
@@ -262,7 +262,7 @@ export class PlayScene extends ArcadeScene {
     tw.base.setTint(tint);
     this.tweens.add({ targets: [tw.base, tw.head], scale: { from: 1.35, to: 1 + (tw.lv - 1) * 0.06 }, duration: 300, ease: 'Back.easeOut' });
     burst(this, tw.x, tw.y, [COLORS.yellow, COLORS.cyan, 0xffffff], 24, 240);
-    this.sfx('upgrade', { volume: 0.5 });
+    this.sfxAt('upgrade', tw.x, { volume: 0.55 });
     this.refreshUi();
   }
 
@@ -278,7 +278,7 @@ export class PlayScene extends ArcadeScene {
     this.towers = this.towers.filter((o) => o !== tw);
     this.shots = this.shots.filter((s) => { if (s.tw === tw) s.spr.destroy(); return s.tw !== tw; });
     this.selTower = null;
-    this.sfx('sell', { volume: 0.6 });
+    this.sfxAt('sell', tw.x, { volume: 0.55 });
     this.refreshUi();
   }
 
@@ -294,7 +294,8 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'wave';
     this.queue = this.buildWave(this.wave);
     this.spawnT = 0.3;
-    this.sfx('wave', { volume: 0.5 });
+    if (this.wave === WAVES) this.sfx('final', { volume: 0.5 });
+    else this.sfx('wave', { volume: 0.4 });
     const title = this.wave === WAVES ? t('finalWave') : `${t('wave')} ${this.wave}`;
     const b = txt(this, FIELD_W / 2, 360, title, { title: true, size: 48, color: this.wave === WAVES ? '#ec3013' : '#ffd23f' }).setDepth(200).setScale(0.3);
     this.tweens.add({ targets: b, scale: 1, duration: 350, ease: 'Back.easeOut', hold: 700, yoyo: true, onComplete: () => b.destroy() });
@@ -345,7 +346,10 @@ export class PlayScene extends ArcadeScene {
     if (this.phase === 'build') {
       this.countdown -= dt;
       if (this.countdown <= 0) this.startWave(false);
-      else if (Math.ceil(this.countdown) !== Math.ceil(this.countdown + dt)) this.refreshUi();
+      else if (Math.ceil(this.countdown) !== Math.ceil(this.countdown + dt)) {
+        this.refreshUi();
+        if (this.countdown <= 3 && this.wave > 0) this.sfx('tick', { volume: 0.3, exact: true });
+      }
     } else if (this.queue.length) {
       this.spawnT -= dt;
       if (this.spawnT <= 0) { const q = this.queue.shift()!; this.spawn(q.kind); this.spawnT = this.queue[0]?.gap ?? 0; }
@@ -390,7 +394,9 @@ export class PlayScene extends ArcadeScene {
     if (!e.alive) return;
     this.removeEnemy(e);
     this.lives -= ENEMY[e.kind].lives;
-    this.sfx('leak', { volume: 0.5 });
+    this.sfxAt('leak', e.spr.x, { volume: 0.6 });
+    const before = this.lives + ENEMY[e.kind].lives;
+    if (before > 5 && this.lives <= 5 && this.lives > 0) this.time.delayedCall(250, () => this.sfx('lowhp', { volume: 0.55 }));
     shake(this, 0.012, 200);
     flash(this, 0xec3013, 120);
     this.updateHud();
@@ -425,7 +431,7 @@ export class PlayScene extends ArcadeScene {
       const spr = this.add.image(mx, my, tw.def.shot).setDepth(50).setScale(tw.def.name === 'tMissile' ? 0.8 : 1);
       this.shots.push({ spr, tw, target: best, tx: best.spr.x, ty: best.spr.y, dmg });
       this.tweens.add({ targets: tw.head, scale: { from: 0.88, to: tw.head.scale }, duration: 90 });
-      this.throttledSfx(tw.def.sfx, tw.def.name === 'tGun' ? 0.12 : 0.3);
+      this.throttledSfx(tw.def.sfx, tw.def.name === 'tGun' ? 0.16 : 0.3, tw.x);
     }
   }
 
@@ -456,7 +462,7 @@ export class PlayScene extends ArcadeScene {
       const scorch = this.add.image(s.tx, s.ty, 'td-scorch').setDepth(8).setAlpha(0.45).setScale(0.6);
       this.tweens.add({ targets: scorch, alpha: 0, delay: 1200, duration: 800, onComplete: () => scorch.destroy() });
       burst(this, s.tx, s.ty, [0xffd23f, 0xff8a3d, 0x555555], 12, 200);
-      this.throttledSfx('boom', 0.35);
+      this.throttledSfx(rng.pick(['boom1', 'boom2', 'boom3']), 0.35, s.tx);
       if (d.name === 'tMissile') shake(this, 0.004, 90);
     } else if (s.target.alive) {
       this.damage(s.target, s.dmg);
@@ -480,7 +486,10 @@ export class PlayScene extends ArcadeScene {
       const s = this.add.image(e.spr.x, e.spr.y, 'td-scorch').setDepth(8).setAlpha(0.6);
       this.tweens.add({ targets: s, alpha: 0, delay: 2000, duration: 1000, onComplete: () => s.destroy() });
     }
-    this.throttledSfx('kill', 0.3);
+    if (e.kind === 'boss') this.sfxAt('killboss', e.spr.x, { volume: 0.8 });
+    else if (e.kind.startsWith('tank')) this.throttledSfx('killtank', 0.45, e.spr.x);
+    else if (e.air) this.throttledSfx('killplane', 0.4, e.spr.x);
+    else this.throttledSfx(rng.pick(['kill1', 'kill2']), 0.35, e.spr.x);
     this.removeEnemy(e);
     this.refreshUi();
   }
@@ -489,7 +498,7 @@ export class PlayScene extends ArcadeScene {
     const bonus = 20 + this.wave * 5;
     this.gold += bonus;
     this.addScore(this.wave * 100);
-    this.sfx('clear', { volume: 0.5 });
+    this.sfx('clear', { volume: 0.6, exact: true });
     const b = txt(this, FIELD_W / 2, 330, `${t('clearBonus')}\n+$${bonus}`, { title: true, size: 32, color: '#5dff7a' }).setDepth(200);
     this.tweens.add({ targets: b, y: 290, alpha: 0, delay: 900, duration: 600, onComplete: () => b.destroy() });
     if (this.wave >= WAVES) {
@@ -504,11 +513,11 @@ export class PlayScene extends ArcadeScene {
     this.refreshUi();
   }
 
-  private throttledSfx(key: string, volume: number): void {
+  private throttledSfx(key: string, volume: number, x?: number): void {
     const now = this.time.now;
     if (now - (this.lastSfx[key] ?? 0) < 70) return;
     this.lastSfx[key] = now;
-    this.sfx(key, { volume });
+    this.sfx(key, { volume, x });
   }
 
   private drawOverlay(): void {

@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -6,6 +6,8 @@ const TP = 'tappy-plane/png/';
 
 launch({
   meta: meta as GameMeta,
+  // the genre default (boss fight) is too grim for a breezy flapper
+  music: { play: 'level1' },
   background: '#1d3b4f',
   physics: 'none',
   preload(scene) {
@@ -24,13 +26,15 @@ launch({
     l.image('star', kenney(TP + 'stargold.png'));
     l.image('tap', kenney(TP + 'ui/tap.png'));
     for (const m of ['bronze', 'silver', 'gold']) l.image('medal-' + m, kenney(`${TP}ui/medal${m}.png`));
-    loadSfx(l, 'flap', 'sfx-digital/audio/phasejump1');
-    loadSfx(l, 'pass', 'sfx-interface/audio/pluck_001');
-    loadSfx(l, 'star', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'crash', 'sfx-impact/audio/impactmetal_heavy_001');
-    loadSfx(l, 'fall', 'sfx-digital/audio/phaserdown3');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'flap1', J + 'movement/jumping-and-landing/sfx-movement-jump14');
+    loadAudio(l, 'flap2', J + 'movement/jumping-and-landing/sfx-movement-jump12');
+    loadAudio(l, 'pass', J + 'general-sounds/coins/sfx-coin-single3');
+    loadAudio(l, 'star', J + 'general-sounds/coins/sfx-coin-double6');
+    loadAudio(l, 'crash', J + 'explosions/short/sfx-exp-short-hard13');
+    loadAudio(l, 'fall', J + 'movement/falling-sounds/sfx-sounds-falling3');
+    loadAudio(l, 'biome', J + 'movement/portals-and-transitions/sfx-movement-portal5');
     loadSfx(l, 'medal', 'jingles/audio/8-bit_jingles/jingles_nes04');
-    loadSfx(l, 'biome', 'sfx-digital/audio/threetone1');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

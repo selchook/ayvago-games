@@ -1,6 +1,8 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, BUBBLE_COLORS } from './PlayScene';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -11,14 +13,19 @@ launch({
     // the orange set is numbered one lower than the other colours (34 = outlined circle)
     BUBBLE_COLORS.forEach((c, i) => l.image(`b${i}`, kenney(`puzzle2/png/tiles_${c}/tile${c}_${c === 'orange' ? 34 : 35}.png`)));
     l.image('spark', kenney('puzzle2/png/particles_white/particlewhite_1.png'));
-    loadSfx(l, 'shoot', 'sfx-digital/audio/phasejump1');
-    loadSfx(l, 'bounce', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'stick', 'sfx-impact/audio/impactglass_light_000');
-    loadSfx(l, 'pop', 'sfx-digital/audio/pepsound2');
-    loadSfx(l, 'drop', 'sfx-interface/audio/drop_002');
-    loadSfx(l, 'row', 'sfx-impact/audio/impactmetal_heavy_000');
-    loadSfx(l, 'swap', 'sfx-interface/audio/switch_002');
-    loadSfx(l, 'level', 'sfx-digital/audio/powerup3');
+    loadAudio(l, 'shoot1', J + 'movement/jumping-and-landing/sfx-movement-jump2');
+    loadAudio(l, 'shoot2', J + 'movement/jumping-and-landing/sfx-movement-jump3');
+    loadAudio(l, 'bounce', J + 'movement/jumping-and-landing/sfx-movement-jump14-landing');
+    loadAudio(l, 'stick', J + 'movement/jumping-and-landing/sfx-movement-jump12-landing');
+    loadAudio(l, 'pop', J + 'general-sounds/simple-bleeps/sfx-sounds-blip11');
+    loadAudio(l, 'combo', J + 'general-sounds/positive-sounds/sfx-sounds-powerup11');
+    loadAudio(l, 'drop', J + 'movement/falling-sounds/sfx-sounds-falling11');
+    loadAudio(l, 'coins', J + 'general-sounds/coins/sfx-coin-cluster2');
+    loadAudio(l, 'row', J + 'general-sounds/impacts/sfx-sounds-impact11');
+    loadAudio(l, 'danger', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop7');
+    loadAudio(l, 'swap', J + 'general-sounds/menu-sounds/sfx-menu-move5');
+    loadAudio(l, 'level', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'lose', J + 'general-sounds/negative-sounds/sfx-sounds-negative2');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

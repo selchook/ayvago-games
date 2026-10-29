@@ -168,8 +168,8 @@ export class PlayScene extends ArcadeScene {
     if (this.invuln > 0 || this.dead) return;
     this.hp--;
     this.invuln = 1.8;
-    this.sfx('hurt', { volume: 0.6 });
-    this.sfx('boom', { volume: 0.5 });
+    this.sfxAt('hurt', this.ufo.x, { volume: 0.6 });
+    if (this.hp > 0) this.sfxAt('boom', this.ufo.x, { volume: 0.55 });
     shake(this, 0.02, 300);
     flash(this, 0xec3013, 160);
     burst(this, this.ufo.x, this.ufo.y, [0xff4fa3, 0xffd23f, 0xffffff], 30, 380);
@@ -178,7 +178,7 @@ export class PlayScene extends ArcadeScene {
     this.updateHud();
     if (this.hp <= 0) {
       this.dead = true;
-      this.sfx('over');
+      this.sfxAt('die', this.ufo.x, { volume: 0.85 });
       this.boomFx(this.ufo.x, this.ufo.y, 1.4);
       burst(this, this.ufo.x, this.ufo.y, [0x6fe0b0, 0xff4fa3, 0xffd23f], 70, 560);
       shake(this, 0.035, 500);
@@ -204,8 +204,8 @@ export class PlayScene extends ArcadeScene {
     this.addScore(pts, this.ufo.x, this.ufo.y - 70);
     if (this.combo > 1) {
       popup(this, this.ufo.x + 90, this.ufo.y - 20, `x${this.combo}`, '#ff4fa3', 30);
-      this.sfx('combo', { volume: 0.4 });
-    } else this.sfx('grab', { volume: 0.45 });
+      this.sfxAt('combo', this.ufo.x, { volume: 0.5, rate: 1 + (this.combo - 2) * 0.08, exact: true });
+    } else this.sfxAt(a.golden ? 'golden' : 'grab', this.ufo.x, { volume: a.golden ? 0.55 : 0.45 });
     if (a.golden) { this.energy = 100; this.overheated = false; flash(this, 0xffe066, 120); }
     burst(this, this.ufo.x, this.ufo.y + 20, [0x7dffb0, 0xffffff], 18, 240);
     this.tweens.add({ targets: a.img, scale: 0, y: this.ufo.y, x: this.ufo.x, angle: 360, duration: 220, onComplete: () => a.img.destroy() });
@@ -220,7 +220,7 @@ export class PlayScene extends ArcadeScene {
     this.level++;
     this.caught = 0;
     this.quota = this.quotaFor(this.level);
-    this.sfx('level', { volume: 0.5 });
+    this.sfx('level', { volume: 0.55, exact: true });
     flash(this, 0x7dffb0, 200);
     // clear the sky of hazards for a short breather
     for (const m of this.missiles) { burst(this, m.img.x, m.img.y, [0xffd23f, 0xaaaaaa], 10, 200); m.img.destroy(); }
@@ -238,7 +238,7 @@ export class PlayScene extends ArcadeScene {
   private launchMissile(): void {
     const x = Phaser.Math.Clamp(this.ufo.x + rng.int(-260, 260), 40, W - 40);
     const warn = this.add.image(x, GROUND - 30, 'warn').setDepth(30);
-    this.sfx('warn', { volume: 0.5 });
+    this.sfxAt('warn', x, { volume: 0.35 });
     this.tweens.add({ targets: warn, alpha: 0.2, duration: 120, yoyo: true, repeat: 3 });
     this.time.delayedCall(950, () => {
       warn.destroy();
@@ -248,7 +248,7 @@ export class PlayScene extends ArcadeScene {
       this.missiles.push({ img, vx: 0, vy: -speed, life: 5 });
       const fx = this.add.image(x, GROUND + 6, 'gburst').setOrigin(0.5, 1).setDepth(9).setScale(0.4).setTint(0xffaa55);
       this.tweens.add({ targets: fx, scale: 0.8, alpha: 0, duration: 450, onComplete: () => fx.destroy() });
-      this.sfx('launch', { volume: 0.35 });
+      this.sfxAt('launch', x, { volume: 0.4 });
       burst(this, x, GROUND, [0xffaa55, 0xaaaaaa], 12, 180);
     });
   }
@@ -257,7 +257,7 @@ export class PlayScene extends ArcadeScene {
     const y = Phaser.Math.Clamp(this.ufo.y + rng.int(-110, 110), TOP, BOTTOM);
     const fromLeft = rng.chance(0.5);
     const arrow = this.add.image(fromLeft ? 34 : W - 34, y, 'arrow').setDepth(30).setFlipX(!fromLeft);
-    this.sfx('warn', { volume: 0.5 });
+    this.sfxAt('warnplane', fromLeft ? 0 : W, { volume: 0.4 });
     this.tweens.add({ targets: arrow, alpha: 0.2, duration: 140, yoyo: true, repeat: 4 });
     this.time.delayedCall(1250, () => {
       arrow.destroy();
@@ -266,7 +266,7 @@ export class PlayScene extends ArcadeScene {
       img.play('plane-fly');
       const speed = 520 + this.level * 35;
       this.planes.push({ img, vx: fromLeft ? speed : -speed });
-      this.sfx('jet', { volume: 0.4 });
+      this.sfxAt('jet', fromLeft ? 0 : W, { volume: 0.35 });
     });
   }
 
@@ -278,16 +278,16 @@ export class PlayScene extends ArcadeScene {
 
     // --- beam / energy
     const wantBeam = c.a;
-    if (this.overheated && this.energy >= 30) this.overheated = false;
+    if (this.overheated && this.energy >= 30) { this.overheated = false; this.sfx('ready', { volume: 0.35 }); }
     const canBeam = wantBeam && !this.overheated;
-    if (canBeam && !this.beaming) this.sfx('beam', { volume: 0.3 });
+    if (canBeam && !this.beaming) this.sfxAt('beam', this.ufo.x, { volume: 0.3 });
     this.beaming = canBeam;
     if (this.beaming) {
       this.energy -= (15 + this.level) * dt;
       if (this.energy <= 0) {
         this.energy = 0; this.overheated = true; this.beaming = false;
         popup(this, this.ufo.x, this.ufo.y - 80, t('overheat'), '#ec3013', 24);
-        this.sfx('over', { volume: 0.4 });
+        this.sfxAt('overheat', this.ufo.x, { volume: 0.45 });
       }
     } else this.energy = Math.min(100, this.energy + 22 * dt);
 
@@ -363,7 +363,7 @@ export class PlayScene extends ArcadeScene {
           img.y = a.baseY;
           img.setAngle(0);
           if (a.vy > 700) {
-            this.sfx('bonk', { volume: 0.5 });
+            this.sfxAt('bonk', img.x, { volume: 0.5 });
             burst(this, img.x, GROUND, [0x8b5a2b, 0x6fbf3f], 10, 160);
             this.tweens.add({ targets: img, scaleY: img.scaleY * 0.7, duration: 80, yoyo: true });
           }
@@ -405,7 +405,7 @@ export class PlayScene extends ArcadeScene {
         this.hurt();
       }
       if (m.life <= 0 || m.img.y < -60) {
-        if (m.img.y > 0) { burst(this, m.img.x, m.img.y, [0xffd23f, 0xec3013], 14, 220); this.sfx('boom', { volume: 0.2 }); }
+        if (m.img.y > 0) { burst(this, m.img.x, m.img.y, [0xffd23f, 0xec3013], 14, 220); this.sfxAt('fizzle', m.img.x, { volume: 0.25 }); }
         m.img.destroy();
       }
     }

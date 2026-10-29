@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -10,15 +10,16 @@ launch({
     const l = scene.load;
     l.image('tile', kenney('letter-tiles/png/blue/letter.png'));
     for (const c of ['a', 'b', 'c', 'd']) l.image('menu-' + c, kenney(`letter-tiles/png/wood/letter_${c}.png`));
-    loadSfx(l, 'tap', 'sfx-interface/audio/click_003');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'wrong', 'sfx-interface/audio/error_004');
-    loadSfx(l, 'found', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'clear', 'sfx-digital/audio/threetone2');
-    loadSfx(l, 'hint', 'sfx-interface/audio/question_002');
-    loadSfx(l, 'warn', 'sfx-interface/audio/tick_004');
-    loadSfx(l, 'timeup', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'start', 'sfx-interface/audio/maximize_004');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'tap', J + 'simple-bleeps/sfx-sounds-blip3');
+    loadAudio(l, 'tick', J + 'menu-sounds/sfx-menu-move4');
+    loadAudio(l, 'wrong', J + 'negative-sounds/sfx-sounds-error8');
+    loadAudio(l, 'found', J + 'coins/sfx-coin-cluster3');
+    loadAudio(l, 'clear', J + 'fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'hint', J + 'high-pitched-sounds/sfx-sounds-high7');
+    loadAudio(l, 'warn', J + 'simple-bleeps/sfx-sounds-blip10');
+    loadAudio(l, 'timeup', J + 'negative-sounds/sfx-sounds-negative1');
+    loadAudio(l, 'start', J + 'pause-sounds/sfx-sounds-pause4-in');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

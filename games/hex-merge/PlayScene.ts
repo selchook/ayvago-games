@@ -75,6 +75,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     makeHexTextures(this);
+    this.lowWarned = false;
     this.textures.get('ob').setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.cells = []; this.swapUsed = false; this.locked = false; this.placed = 0; this.level = 1; this.best = 1;
     this.showCursor = false; this.over = false;
@@ -172,16 +173,19 @@ export class PlayScene extends ArcadeScene {
 
   // ---------- turn ----------
 
+  /** Sound only: one warning beep when the board is nearly full. */
+  private lowWarned = false;
+
   private swap(): void {
     if (this.locked || this.over) return;
-    if (this.swapUsed) { this.sfx('nope', { volume: 0.35 }); this.tweens.add({ targets: this.hintText, x: 368, duration: 40, yoyo: true, repeat: 2 }); return; }
+    if (this.swapUsed) { this.sfx('nope', { volume: 0.4 }); this.tweens.add({ targets: this.hintText, x: 368, duration: 40, yoyo: true, repeat: 2 }); return; }
     this.swapUsed = true;
     [this.cur, this.next] = [this.next, this.cur];
     this.drawPiece(this.curC, this.cur);
     this.drawPiece(this.nextC, this.next);
     this.tweens.add({ targets: this.curC, angle: { from: -180, to: 0 }, duration: 260, ease: 'Back.easeOut' });
     this.tweens.add({ targets: this.nextC, angle: { from: 180, to: 0 }, duration: 260, ease: 'Back.easeOut' });
-    this.sfx('swap', { volume: 0.5 });
+    this.sfx('swap', { volume: 0.45 });
     this.updateHud();
   }
 
@@ -190,7 +194,7 @@ export class PlayScene extends ArcadeScene {
     const cell = this.cells[i];
     if (this.cur === BOMB) { this.locked = true; this.bomb(i); return; }
     if (cell.v !== 0) {
-      this.sfx('nope', { volume: 0.35 });
+      this.sfxAt('nope', cell.x, { volume: 0.4 });
       if (cell.piece) this.tweens.add({ targets: cell.piece, x: cell.x + 6, duration: 40, yoyo: true, repeat: 2 });
       return;
     }
@@ -198,7 +202,7 @@ export class PlayScene extends ArcadeScene {
     const p = this.makePiece(i, this.cur);
     p.setPosition(cell.x, cell.y - 70).setScale(1.3).setAlpha(0);
     this.tweens.add({ targets: p, y: cell.y, scale: 1, alpha: 1, duration: 170, ease: 'Quad.easeIn' });
-    this.sfx('drop', { volume: 0.5, detune: rng.int(-100, 100) });
+    this.sfxAt(['drop1', 'drop2', 'drop3'][Math.floor(Math.random() * 3)], cell.x, { volume: 0.5, delay: 0.12 });
     this.addScore(this.cur);
     this.time.delayedCall(190, () => {
       burst(this, cell.x, cell.y + 20, [0xffffff, HEX_COLORS[cell.v] ?? 0xffffff], 5, 110);
@@ -227,7 +231,7 @@ export class PlayScene extends ArcadeScene {
     const stones = new Set<number>();
     for (const g of grp) for (const n of this.cells[g].nb) if (this.cells[n].v === STONE) stones.add(n);
     stones.forEach((s) => this.clearCell(s));
-    if (stones.size) this.sfx('crack', { volume: 0.5 });
+    if (stones.size) this.sfxAt('crack', cell.x, { volume: 0.55 });
 
     if (v === MAXV) { this.supernova(i, grp, chain); return; }
     const nv = v + 1;
@@ -244,7 +248,7 @@ export class PlayScene extends ArcadeScene {
       if (cell.piece) this.drawPiece(cell.piece, nv);
       this.tweens.add({ targets: cell.piece, scale: { from: 1.45, to: 1 }, duration: 260, ease: 'Back.easeOut' });
       burst(this, cell.x, cell.y, [HEX_COLORS[nv], 0xffffff, HEX_COLORS[v]], 18 + chain * 6, 260 + chain * 40);
-      this.sfx(chain > 1 ? 'chain' : 'merge', { volume: 0.55, detune: (nv - 2) * 120 + (chain - 1) * 100 });
+      this.sfxAt(chain > 1 ? 'chain' : 'merge', cell.x, { volume: 0.55, detune: (nv - 2) * 120 + (chain - 1) * 100, exact: true });
       this.addScore(pts, cell.x, cell.y - 50);
       if (chain > 1) {
         popup(this, CX, CY - 380, `${t('chain')} x${chain}`, '#ff4fa3', 26);
@@ -261,7 +265,8 @@ export class PlayScene extends ArcadeScene {
     for (const g of grp) for (const n of this.cells[g].nb) area.add(n);
     const pts = 1000 * chain + area.size * 20;
     area.forEach((a, k) => this.time.delayedCall(k * 25, () => this.clearCell(a)));
-    this.sfx('nova', { volume: 0.7 });
+    this.sfxAt('nova', cell.x, { volume: 0.75 });
+    this.sfx('novaJingle', { volume: 0.65, exact: true, delay: 0.35 });
     shake(this, 0.025, 450);
     softFlash(this, HEX_COLORS[MAXV], 0.4);
     for (let k = 0; k < 5; k++) this.time.delayedCall(k * 90, () => burst(this, cell.x + rng.int(-80, 80), cell.y + rng.int(-80, 80), [0x8b5cff, 0xff4fa3, 0xffd23f, 0xffffff], 30, 460));
@@ -279,7 +284,7 @@ export class PlayScene extends ArcadeScene {
     burst(this, cell.x, cell.y, [0xec3013, 0xffd23f, 0xffa53a, 0xffffff], 40, 420);
     shake(this, 0.02, 300);
     softFlash(this, 0xffa53a, 0.3);
-    this.sfx('boom', { volume: 0.6 });
+    this.sfxAt('boom', cell.x, { volume: 0.7 });
     if (pts) this.addScore(pts, cell.x, cell.y - 40);
     this.time.delayedCall(260, () => this.finishTurn());
   }
@@ -296,12 +301,15 @@ export class PlayScene extends ArcadeScene {
     if (this.placed % 12 === 0) this.levelUp();
     this.locked = false;
     this.updateHud();
+    const empty = this.cells.filter((c) => c.v === 0).length;
+    if (empty > 0 && empty <= 3 && !this.lowWarned) { this.lowWarned = true; this.sfx('low', { volume: 0.35 }); }
+    else if (empty >= 6) this.lowWarned = false;
     this.checkOver();
   }
 
   private levelUp(): void {
     this.level++;
-    this.sfx('levelup', { volume: 0.5 });
+    this.sfx('levelup', { volume: 0.6 });
     popup(this, CX, CY - 380, `${t('level')} ${this.level}`, '#3ee6ff', 28);
     if (this.level < 3) return;
     const empty = this.cells.map((c, i) => (c.v === 0 ? i : -1)).filter((i) => i >= 0);
@@ -312,7 +320,7 @@ export class PlayScene extends ArcadeScene {
     p.setY(cell.y - 300).setAlpha(0);
     this.tweens.add({
       targets: p, y: cell.y, alpha: 1, duration: 420, ease: 'Bounce.easeOut', delay: 300,
-      onComplete: () => { this.sfx('stone', { volume: 0.6 }); shake(this, 0.01, 160); burst(this, cell.x, cell.y + 30, [0x6d6878, 0x3a3642], 12, 200); },
+      onComplete: () => { this.sfxAt('stone', cell.x, { volume: 0.6 }); shake(this, 0.01, 160); burst(this, cell.x, cell.y + 30, [0x6d6878, 0x3a3642], 12, 200); },
     });
     this.time.delayedCall(300, () => popup(this, CX, CY - 330, t('stoneWarn'), '#aab0d0', 20));
   }
@@ -323,7 +331,7 @@ export class PlayScene extends ArcadeScene {
     this.over = true;
     this.locked = true;
     this.cursorImg.setVisible(false);
-    this.sfx('boom', { volume: 0.6 });
+    this.sfx('full', { volume: 0.6 });
     shake(this, 0.02, 400);
     this.cells.forEach((c, k) => this.time.delayedCall(k * 30, () => c.piece?.list.forEach((o) => (o as Phaser.GameObjects.Image).setTint?.(0x555566))));
     const band = this.add.rectangle(360, CY, 720, 130, 0x000000, 0.8).setDepth(40);

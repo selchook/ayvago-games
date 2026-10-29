@@ -166,7 +166,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.killTweensOf(pc.box);
     pc.box.setScale(1).setDepth(20);
     this.follow(p);
-    this.sfx('pick', { volume: 0.5 });
+    this.sfxAt('pick', p.x, { volume: 0.5 });
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
@@ -188,7 +188,7 @@ export class PlayScene extends ArcadeScene {
     this.drag = null;
     pc.box.setDepth(10);
     if (!this.isOver && this.fits(pc.shape, this.cur.r, this.cur.c)) this.place(pc, this.cur.r, this.cur.c);
-    else { this.toTray(pc, true); this.clearGhost(); }
+    else { this.toTray(pc, true); this.clearGhost(); this.sfx('back', { volume: 0.35 }); }
   }
 
   // ---------- keyboard ----------
@@ -208,10 +208,10 @@ export class PlayScene extends ArcadeScene {
       this.cur.r = Phaser.Math.Clamp(this.cur.r + mv[k][0], 0, N - pc.h);
       this.cur.c = Phaser.Math.Clamp(this.cur.c + mv[k][1], 0, N - pc.w);
       this.showGhost(pc, this.cur.r, this.cur.c, true);
-      this.sfx('pick', { volume: 0.25 });
+      this.sfx('nudge', { volume: 0.3 });
     } else if (k === 'Space' || k === 'KeyZ' || k === 'Enter') {
       if (this.fits(pc.shape, this.cur.r, this.cur.c)) this.place(pc, this.cur.r, this.cur.c);
-      else { this.sfx('bad', { volume: 0.4 }); shake(this, 0.004, 100); }
+      else { this.sfx('bad', { volume: 0.45 }); shake(this, 0.004, 100); }
     }
   }
 
@@ -223,7 +223,7 @@ export class PlayScene extends ArcadeScene {
     const pc = this.tray[next]!;
     this.cur = { r: Math.floor((N - pc.h) / 2), c: Math.floor((N - pc.w) / 2) };
     this.showGhost(pc, this.cur.r, this.cur.c, true);
-    this.sfx('pick', { volume: 0.4 });
+    this.sfxAt('pick', SLOTS[next], { volume: 0.4 });
   }
 
   private setSel(i: number): void {
@@ -282,7 +282,7 @@ export class PlayScene extends ArcadeScene {
       this.tweens.add({ targets: img, scale: s, duration: 160, ease: 'Back.easeOut' });
       this.tiles[r + y][c + x] = img;
     }
-    this.sfx('place', { volume: 0.6 });
+    this.sfxAt(rng.pick(['place1', 'place2', 'place3']), LEFT + (c + pc.w / 2) * CELL, { volume: 0.6 });
     this.addScore(pc.shape.length);
 
     const { rows, cols } = this.fullLines(null, 0, 0);
@@ -298,13 +298,13 @@ export class PlayScene extends ArcadeScene {
       popup(this, 360, TOP - 50 + 420, word, '#5dff7a', 34);
       if (this.combo > 1) {
         this.hud.setCenter(`${t('combo')} x${this.combo}`);
-        this.sfx('combo', { volume: 0.5 });
+        this.sfx('combo', { volume: 0.6, exact: true, rate: Math.min(1.4, 1 + (this.combo - 2) * 0.07), delay: 0.12 });
         this.time.delayedCall(1200, () => !this.isOver && this.updateHud());
       }
     } else if (++this.sinceClear >= 3) this.combo = 0;
 
     const lvl = 1 + Math.floor(this.score / 1500);
-    if (lvl !== this.level) { this.level = lvl; this.updateHud(); }
+    if (lvl !== this.level) { this.level = lvl; this.updateHud(); this.sfx('level', { volume: 0.6, delay: 0.3 }); }
 
     if (this.tray.every((x) => !x)) this.refill();
     this.time.delayedCall(lines ? 420 : 50, () => this.checkStuck());
@@ -329,10 +329,11 @@ export class PlayScene extends ArcadeScene {
         onComplete: () => img.destroy(),
       });
     }
-    this.sfx('clear', { volume: 0.5 });
+    const n = rows.length + cols.length;
+    this.sfx(n >= 3 ? 'clear3' : n === 2 ? 'clear2' : 'clear1', { volume: n >= 3 ? 0.75 : n === 2 ? 0.65 : 0.55 });
     shake(this, 0.004 + 0.003 * (rows.length + cols.length), 180);
     if (this.board.every((row) => row.every((v) => v < 0))) {
-      this.time.delayedCall(300, () => { flash(this, 0x5dff7a, 200); this.addScore(1000, 360, TOP + 300); });
+      this.time.delayedCall(300, () => { flash(this, 0x5dff7a, 200); this.addScore(1000, 360, TOP + 300); this.sfx('wipe', { volume: 0.8, exact: true }); });
     }
   }
 
@@ -344,7 +345,7 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     this.locked = true;
-    this.sfx('bad');
+    this.sfx('stuck', { volume: 0.7 });
     shake(this, 0.015, 300);
     left.forEach((pc) => pc.box.setAlpha(0.35));
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {

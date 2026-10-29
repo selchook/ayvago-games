@@ -253,7 +253,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.cursor = { r: nr, c: nc };
     this.placeCursor();
-    this.sfx('select', { volume: 0.25 });
+    this.sfx('cursor', { volume: 0.25 });
   }
 
   private placeCursor(): void {
@@ -265,7 +265,7 @@ export class PlayScene extends ArcadeScene {
     this.selImg.setVisible(!!cell);
     if (cell) {
       this.selImg.setPosition(this.px(cell.c), this.py(cell.r));
-      this.sfx('select', { volume: 0.4 });
+      this.sfxAt('select', this.px(cell.c), { volume: 0.4 });
       const gem = this.g[cell.r][cell.c];
       if (gem) this.tweens.add({ targets: gem.img, scale: gem.img.scale * 1.12, duration: 90, yoyo: true });
     }
@@ -277,7 +277,7 @@ export class PlayScene extends ArcadeScene {
     if (!ga || !gb || this.busy || this.isOver) return;
     this.busy = true;
     const gen = this.gen;
-    this.sfx('swap', { volume: 0.5 });
+    this.sfx('swap', { volume: 0.45 });
     this.g[a.r][a.c] = gb; this.g[b.r][b.c] = ga;
     await Promise.all([this.moveGem(ga, b.r, b.c, 160), this.moveGem(gb, a.r, a.c, 160)]);
     if (gen !== this.gen) return;
@@ -292,10 +292,10 @@ export class PlayScene extends ArcadeScene {
         for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (this.g[r][c]?.color === other.color) forced.add(`${r},${c}`);
         forced.add(ga.special === 'rainbow' ? `${b.r},${b.c}` : `${a.r},${a.c}`);
       }
-      this.sfx('rainbow');
+      this.sfx('rainbow', { volume: 0.65 });
       flash(this, 0xffffff, 150);
     } else if (!this.findGroups().length) {
-      this.sfx('bad', { volume: 0.5 });
+      this.sfx('bad', { volume: 0.45 });
       this.g[a.r][a.c] = ga; this.g[b.r][b.c] = gb;
       await Promise.all([this.moveGem(ga, a.r, a.c, 160), this.moveGem(gb, b.r, b.c, 160)]);
       if (gen === this.gen) this.busy = false;
@@ -303,6 +303,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.moves--;
     this.updateUi();
+    if (this.moves === 3 && this.levelScore < this.target) this.sfx('low', { volume: 0.35 });
     await this.resolve(b, forced);
     if (gen !== this.gen || this.isOver) return;
     this.afterMove();
@@ -314,6 +315,7 @@ export class PlayScene extends ArcadeScene {
       const m = txt(this, 360, 640, t('outOfMoves'), { title: true, size: 40, color: '#ec3013' }).setDepth(50);
       this.tweens.add({ targets: m, scale: { from: 0.4, to: 1 }, duration: 350, ease: 'Back.easeOut' });
       shake(this, 0.01, 200);
+      this.sfx('fail', { volume: 0.6 });
       this.endGame({ delay: 1400 });
       return;
     }
@@ -321,6 +323,7 @@ export class PlayScene extends ArcadeScene {
       const s = txt(this, 360, 640, t('shuffle'), { title: true, size: 40, color: '#3ee6ff' }).setDepth(50);
       this.tweens.add({ targets: s, alpha: 0, delay: 700, duration: 300, onComplete: () => s.destroy() });
       this.reshuffleColors();
+      this.sfx('shuffle', { volume: 0.45 });
       for (const row of this.g) for (const gem of row) if (gem) gem.img.setTexture(gem.special === 'rainbow' ? 'gm-rainbow' : `gem${gem.color}`);
     }
     this.busy = false;
@@ -330,7 +333,7 @@ export class PlayScene extends ArcadeScene {
     this.busy = true;
     const gen = this.gen;
     const bonus = this.moves * 60;
-    this.sfx('clear');
+    this.sfx('clear', { volume: 0.75, exact: true });
     flash(this, 0xffd23f, 200);
     const m = txt(this, 360, 600, t('levelClear'), { title: true, size: 40, color: '#5dff7a' }).setDepth(50);
     if (bonus) txt(this, 360, 680, `${t('bonus')} +${bonus}`, { title: true, size: 26, color: '#ffd23f' }).setDepth(50).setName('bonusTxt');
@@ -386,15 +389,16 @@ export class PlayScene extends ArcadeScene {
         if (!gem) continue;
         this.setSpecial(gem, cr.sp);
         this.tweens.add({ targets: gem.img, scale: gem.img.scale * 1.3, duration: 150, yoyo: true });
-        this.sfx('special', { volume: 0.5 });
+        this.sfxAt('special', gem.img.x, { volume: 0.55 });
       }
       const gained = n * pts + creates.length * 50;
       this.levelScore += gained;
       if (n) this.addScore(gained, sx / n, sy / n);
-      this.sfx('match', { volume: 0.5, detune: Math.min(1200, (chain - 1) * 200) });
+      this.sfxAt('match', n ? sx / n : 360, { volume: 0.5, detune: Math.min(1200, (chain - 1) * 200), exact: true });
       if (chain >= 2) {
         const word = chain >= 4 ? t('awesome') : chain === 3 ? t('great') : t('nice');
         popup(this, 360, Y0 - 20, `${word} x${chain}`, '#3ee6ff', 30);
+        if (chain >= 3) this.sfx('combo', { volume: 0.55, delay: 0.1 });
       }
       this.updateUi();
       await this.wait(200);
@@ -475,7 +479,7 @@ export class PlayScene extends ArcadeScene {
             ? this.add.rectangle(360, this.py(r), COLS * S, 26, 0xffffff, 0.9)
             : this.add.rectangle(this.px(c), Y0 + (ROWS * S) / 2, 26, ROWS * S, 0xffffff, 0.9);
           this.tweens.add({ targets: beam, alpha: 0, scaleY: gem.special === 'h' ? 0.1 : 1, scaleX: gem.special === 'v' ? 0.1 : 1, duration: 350, onComplete: () => beam.destroy() });
-          this.sfx('line', { volume: 0.4 });
+          this.sfxAt('line', gem.img.x, { volume: 0.45 });
           shake(this, 0.006, 120);
         } else if (gem.special === 'bomb') {
           for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
@@ -483,14 +487,14 @@ export class PlayScene extends ArcadeScene {
             if (rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS) clear.add(`${rr},${cc}`);
           }
           burst(this, gem.img.x, gem.img.y, [0xffd23f, 0xec3013, 0xffffff], 40, 420);
-          this.sfx('bomb', { volume: 0.5 });
+          this.sfxAt('bomb', gem.img.x, { volume: 0.6 });
           shake(this, 0.014, 200);
         } else if (gem.special === 'rainbow') {
           const counts = new Array(this.colors).fill(0);
           for (const row of this.g) for (const x of row) if (x && x.color >= 0) counts[x.color]++;
           const target = counts.indexOf(Math.max(...counts));
           for (let rr = 0; rr < ROWS; rr++) for (let cc = 0; cc < COLS; cc++) if (this.g[rr][cc]?.color === target) clear.add(`${rr},${cc}`);
-          this.sfx('rainbow', { volume: 0.5 });
+          this.sfx('rainbow', { volume: 0.6 });
           flash(this, 0xffffff, 100);
         }
       }

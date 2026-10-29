@@ -188,7 +188,7 @@ export class PlayScene extends ArcadeScene {
     this.setPhase('ready', this.level === 1 && this.lives === 3 && this.eatenDots === 0 ? 2.2 : 1.6);
     this.banner.setText(t('ready')).setVisible(true).setScale(0.3);
     this.tweens.add({ targets: this.banner, scale: 1, duration: 350, ease: 'Back.easeOut' });
-    this.sfx('ready', { volume: 0.5 });
+    this.sfx('ready', { volume: 0.55, exact: true });
     this.drawActors();
   }
 
@@ -354,7 +354,7 @@ export class PlayScene extends ArcadeScene {
 
   private choosePac = (m: Mover): void => {
     if ((this.want.x || this.want.y) && this.open(m.x + this.want.x, m.y + this.want.y)) {
-      if (m.dx !== this.want.x || m.dy !== this.want.y) this.sfx('turn', { volume: 0.08 });
+      if (m.dx !== this.want.x || m.dy !== this.want.y) this.sfx('turn', { volume: 0.12 });
       m.dx = this.want.x; m.dy = this.want.y;
     } else if (!this.open(m.x + m.dx, m.y + m.dy)) { m.dx = 0; m.dy = 0; }
     if (m.dx || m.dy) this.facing = { x: m.dx, y: m.dy };
@@ -432,13 +432,13 @@ export class PlayScene extends ArcadeScene {
     if (d) {
       d.destroy(); this.dots.delete(key); this.eatenDots++;
       this.addScore(10);
-      if (this.wakaT <= 0) { this.sfx('waka', { volume: 0.25, rate: 1 + (this.eatenDots % 2) * 0.25 }); this.wakaT = 0.09; }
+      if (this.wakaT <= 0) { this.sfx(this.eatenDots % 2 ? 'waka2' : 'waka', { volume: 0.3, exact: true }); this.wakaT = 0.09; }
     }
     const p = this.pellets.get(key);
     if (p) {
       p.destroy(); this.pellets.delete(key); this.eatenDots++;
       this.addScore(50, cx(c), cy(r) - 20);
-      this.sfx('pellet', { volume: 0.5 });
+      this.sfx('pellet', { volume: 0.65 });
       flash(this, 0x2a3bff, 120);
       burst(this, cx(c), cy(r), [0xffe0b0, 0x3a5bff], 18, 220);
       this.fright = Math.max(1.5, 7 - this.level * 0.7);
@@ -449,7 +449,7 @@ export class PlayScene extends ArcadeScene {
     if ((d || p) && (this.eatenDots === 50 || this.eatenDots === 120) && !this.fruit && this.fruitsShown < 2) this.spawnFruit();
     if (this.extraGiven === false && this.score >= 10000) {
       this.extraGiven = true; this.lives++; this.updateHud();
-      this.sfx('life'); popup(this, cx(9), cy(13), t('extraLife'), '#5dff7a', 26);
+      this.sfx('life', { volume: 0.75 }); popup(this, cx(9), cy(13), t('extraLife'), '#5dff7a', 26);
     }
     if ((d || p) && this.dotsLeft() <= 0) this.levelClear();
   }
@@ -465,7 +465,7 @@ export class PlayScene extends ArcadeScene {
   private levelClear(): void {
     this.setPhase('clear', 2.2);
     if (this.fruit) { this.fruit.destroy(); this.fruit = null; }
-    this.sfx('clear', { volume: 0.6 });
+    this.sfx('clear', { volume: 0.75 });
     this.banner.setText(t('levelClear')).setVisible(true).setScale(0.3);
     this.tweens.add({ targets: this.banner, scale: 1, duration: 350, ease: 'Back.easeOut' });
     for (const g of this.ghosts) { g.body.setVisible(false); g.eyes.setVisible(false); }
@@ -476,7 +476,7 @@ export class PlayScene extends ArcadeScene {
 
   private die(): void {
     this.setPhase('dying', 1.4);
-    this.sfx('die', { volume: 0.6 });
+    this.sfx('die', { volume: 0.7, exact: true });
     shake(this, 0.015, 300);
     flash(this, 0xec3013, 150);
     for (const g of this.ghosts) { g.body.setVisible(false); g.eyes.setVisible(false); }
@@ -500,7 +500,7 @@ export class PlayScene extends ArcadeScene {
     g.scared = false; g.state = 'eaten';
     burst(this, cx(g.x), cy(g.y), [0x2a3bff, 0xffffff, GHOST_COLORS[g.id]], 26, 320);
     shake(this, 0.008, 120);
-    this.sfx('eatghost', { volume: 0.55 });
+    this.sfxAt('eatghost', cx(g.x), { volume: 0.65, rate: 1 + (Math.min(4, this.ghostChain) - 1) * 0.12 });
     this.addScore(pts, cx(g.x), cy(g.y));
     this.setPhase('freeze', 0.45);
     // snap eyes to the grid so the pathing stays exact
@@ -532,7 +532,9 @@ export class PlayScene extends ArcadeScene {
     this.lifeT += dt;
     // scatter/chase schedule pauses while ghosts are frightened
     if (this.fright > 0) {
+      const wasLong = this.fright >= 2;
       this.fright -= dt;
+      if (wasLong && this.fright < 2 && this.fright > 0) this.sfx('unfright', { volume: 0.4 });
       if (this.fright <= 0) { this.fright = 0; for (const g of this.ghosts) g.scared = false; }
     } else {
       const sch = this.schedule();
@@ -555,7 +557,7 @@ export class PlayScene extends ArcadeScene {
       if (Math.abs(this.me.x - FRUIT_CELL.x) < 0.5 && Math.abs(this.me.y - FRUIT_CELL.y) < 0.5) {
         const pts = FRUIT_PTS[Math.min(FRUIT_PTS.length - 1, this.level - 1)];
         this.addScore(pts, this.fruit.x, this.fruit.y - 20);
-        this.sfx('fruit', { volume: 0.5 });
+        this.sfxAt('fruit', this.fruit.x, { volume: 0.6 });
         burst(this, this.fruit.x, this.fruit.y, [0xff3b3b, 0x5dff7a, 0xffd23f], 20, 260);
         this.fruit.destroy(); this.fruit = null;
       } else if (this.fruitT <= 0) {

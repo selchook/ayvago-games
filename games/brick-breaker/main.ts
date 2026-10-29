@@ -1,12 +1,15 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { BRICK_COLORS } from './levels';
 
 const P = 'puzzle2/png/';
 
+const J = 'oga/junkala-sfx/';
+
 launch({
   meta: meta as GameMeta,
+  music: { play: 'level1' },
   background: '#0d0b1e',
   physics: 'none',
   preload(scene) {
@@ -20,14 +23,19 @@ launch({
     l.image('ball', kenney(P + 'balls/grey/ballgrey_09.png'));
     l.image('spark', kenney(P + 'particles_white/particlewhite_7.png'));
     l.image('star', kenney(P + 'particles_white/particlewhite_3.png'));
-    loadSfx(l, 'paddle', 'sfx-impact/audio/impactplate_light_001');
-    loadSfx(l, 'brick', 'sfx-impact/audio/impactglass_light_002');
-    loadSfx(l, 'crack', 'sfx-impact/audio/impactplate_medium_000');
-    loadSfx(l, 'steel', 'sfx-impact/audio/impactmetal_light_003');
-    loadSfx(l, 'wall', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'launch', 'sfx-digital/audio/pepsound1');
-    loadSfx(l, 'power', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'lose', 'sfx-digital/audio/phaserdown3');
+    loadAudio(l, 'paddle', J + 'general-sounds/simple-bleeps/sfx-sounds-blip9');
+    loadAudio(l, 'brick', J + 'general-sounds/simple-bleeps/sfx-sounds-blip5');
+    loadAudio(l, 'debris', J + 'explosions/shortest/sfx-exp-shortest-soft7');
+    loadAudio(l, 'crack', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit5');
+    loadAudio(l, 'steel', J + 'general-sounds/impacts/sfx-sounds-impact2');
+    loadAudio(l, 'wall', J + 'general-sounds/menu-sounds/sfx-menu-move1');
+    loadAudio(l, 'launch', J + 'movement/jumping-and-landing/sfx-movement-jump12');
+    loadAudio(l, 'drop', J + 'general-sounds/high-pitched-sounds/sfx-sounds-high2');
+    loadAudio(l, 'power', J + 'general-sounds/positive-sounds/sfx-sounds-powerup3');
+    loadAudio(l, 'life', J + 'general-sounds/positive-sounds/sfx-sounds-powerup12');
+    loadAudio(l, 'fast', J + 'general-sounds/positive-sounds/sfx-sounds-powerup15');
+    loadAudio(l, 'lose', J + 'general-sounds/negative-sounds/sfx-sounds-negative2');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
     loadSfx(l, 'clear', 'jingles/audio/8-bit_jingles/jingles_nes05');
   },
   menuDecor(scene) {

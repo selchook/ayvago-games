@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeLanderTexture } from './PlayScene';
 
@@ -12,14 +12,17 @@ launch({
     l.image('flame', kenney(SS + 'effects/fire13.png'));
     l.image('star', kenney(SS + 'effects/star1.png'));
     l.image('planet', kenney(SS + 'meteors/meteorgrey_big4.png'));
-    loadSfx(l, 'thrust', 'sfx-digital/audio/lowrandom');
-    loadSfx(l, 'boom', 'sfx-digital/audio/lowdown');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'thrust', J + 'movement/vehicles/sfx-vehicle-plainloop');
+    loadAudio(l, 'boom', J + 'explosions/medium-length/sfx-exp-medium3');
     loadSfx(l, 'crash', 'sfx-impact/audio/impactmetal_heavy_003');
-    loadSfx(l, 'land', 'sfx-digital/audio/threetone2');
-    loadSfx(l, 'perfect', 'sfx-digital/audio/powerup8');
-    loadSfx(l, 'warn', 'sfx-interface/audio/error_006');
-    loadSfx(l, 'touch', 'sfx-impact/audio/footstep_concrete_000');
-    loadSfx(l, 'ready', 'sfx-digital/audio/phaserup3');
+    loadAudio(l, 'land', J + 'general-sounds/positive-sounds/sfx-sounds-powerup13');
+    loadAudio(l, 'perfect', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'refuel', J + 'general-sounds/coins/sfx-coin-cluster3');
+    loadAudio(l, 'warn', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop6');
+    loadAudio(l, 'empty', J + 'weapons/out-of-ammo/sfx-wpn-noammo3');
+    loadAudio(l, 'touch', J + 'movement/jumping-and-landing/sfx-movement-jump17-landing');
+    loadAudio(l, 'ready', J + 'movement/portals-and-transitions/sfx-movement-portal5');
   },
   menuDecor(scene) {
     makeLanderTexture(scene);

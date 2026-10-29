@@ -190,7 +190,7 @@ export class PlayScene extends ArcadeScene {
         targets: slice.c, y: cur.y + 900, x: cx + Math.sign(dx) * 140, angle: Math.sign(dx) * rng.int(60, 140), alpha: 0,
         duration: 1100, ease: 'Quad.easeIn', onComplete: () => slice.c.destroy(),
       });
-      this.sfx('cut', { volume: 0.45 });
+      this.sfxAt('cut', cx, { volume: 0.5 });
       shake(this, 0.004, 100);
     }
 
@@ -204,17 +204,18 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: placed.c, scaleX: 1, scaleY: 1, duration: 180, ease: 'Back.easeOut' });
     burst(this, nx - nw / 2, cur.y + BLOCK_H / 2, [0xffffff, blockColor(this.floors)], 8, 160);
     burst(this, nx + nw / 2, cur.y + BLOCK_H / 2, [0xffffff, blockColor(this.floors)], 8, 160);
-    this.sfx('place', { volume: 0.5 });
+    this.sfxAt(rng.pick(['place1', 'place2', 'place3']), nx, { volume: 0.55 });
 
     if (perfect) {
       const bonus = 10 * Math.min(this.streak, 10);
       this.addScore(10 + bonus);
-      this.sfx('perfect', { volume: 0.4, detune: Math.min(this.streak - 1, 8) * 150 });
+      // one step up the scale per perfect in a row
+      this.sfxAt('perfect', nx, { volume: 0.5, rate: 2 ** (Math.min(this.streak - 1, 8) * 1.5 / 12), exact: true });
       const ring = this.add.rectangle(nx, cur.y, nw + 8, BLOCK_H + 8).setStrokeStyle(6, 0xffffff, 1);
       this.tweens.add({ targets: ring, scaleX: 1.25, scaleY: 1.8, alpha: 0, duration: 380, onComplete: () => ring.destroy() });
       popup(this, nx, cur.y - 60, `${t('perfect')} x${this.streak}`, '#ffffff', 26);
       if (this.streak >= 3 && nw > top.w) {
-        this.sfx('grow', { volume: 0.35 });
+        this.sfxAt('grow', nx, { volume: 0.45 });
         popup(this, nx, cur.y - 110, t('grow'), '#5dff7a', 22);
         burst(this, nx, cur.y, [0x5dff7a, 0xffffff], 20, 300);
       }
@@ -237,7 +238,7 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     this.level++;
     this.addScore(50 * this.level);
-    this.sfx('level', { volume: 0.5 });
+    this.sfx('level', { volume: 0.6, exact: true });
     softFlash(this, 0xffffff, 100);
     const b = txt(this, width / 2, height * 0.42, `${t('level')} ${this.level}`, { title: true, size: 46, color: '#ffd23f' })
       .setScrollFactor(0).setDepth(60).setScale(0.3);
@@ -249,10 +250,10 @@ export class PlayScene extends ArcadeScene {
     this.dead = true;
     this.streak = 0;
     this.lives--;
-    this.sfx('miss', { volume: 0.5 });
+    this.sfxAt('miss', cur.c.x, { volume: 0.55 });
     this.tweens.add({
       targets: cur.c, y: cur.y + 1100, angle: this.dir * 160, duration: 1100, ease: 'Quad.easeIn',
-      onComplete: () => { this.sfx('crash', { volume: 0.5 }); cur.c.destroy(); },
+      onComplete: () => { this.sfxAt('crash', cur.c.x, { volume: 0.6 }); cur.c.destroy(); },
     });
     shake(this, 0.02, 350);
     softFlash(this, 0xec3013, 150);
@@ -279,7 +280,7 @@ export class PlayScene extends ArcadeScene {
         this.stack[this.stack.length - 1] = fixed;
         this.tweens.add({ targets: fixed.c, scaleX: 1, duration: 300, ease: 'Back.easeOut' });
         burst(this, nx, top.y, [0x5dff7a, 0xffffff], 16, 240);
-        this.sfx('grow', { volume: 0.35 });
+        this.sfxAt('grow', nx, { volume: 0.45 });
       }
     });
     this.time.delayedCall(1200, () => {

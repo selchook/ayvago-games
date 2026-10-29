@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -28,14 +28,19 @@ launch({
       ['e-snail', 'snail'], ['e-snail-move', 'snail_move'], ['e-snail-shell', 'snail_shell'], ['e-saw', 'saw'],
       ['e-fly', 'fly'], ['e-fly-2', 'fly_dead'], ['e-fly-dead', 'fly_move'], ['e-bee', 'bee'], ['e-bee-move', 'bee_move'], ['e-bee-dead', 'bee_dead']]) img(k, `enemies/${f}.png`);
     for (const [k, f] of [['bg-grass', 'colored_grass'], ['bg-land', 'colored_land'], ['bg-shroom', 'colored_shroom'], ['bg-desert', 'colored_desert']]) img(k, `backgrounds/${f}.png`);
-    loadSfx(l, 'jump', 'sfx-digital/audio/phasejump1');
-    loadSfx(l, 'gem', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'flagup', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'stomp', 'sfx-impact/audio/impactsoft_heavy_002');
-    loadSfx(l, 'spring', 'sfx-digital/audio/phaserup2');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown3');
+    const J = 'oga/junkala-sfx/';
+    const M = J + 'movement/jumping-and-landing/';
+    loadAudio(l, 'jump', M + 'sfx-movement-jump3');
+    loadAudio(l, 'jump2', M + 'sfx-movement-jump2');
+    loadAudio(l, 'land', M + 'sfx-movement-jump13-landing');
+    loadAudio(l, 'gem', J + 'general-sounds/coins/sfx-coin-double2');
+    loadAudio(l, 'flagup', J + 'general-sounds/positive-sounds/sfx-sounds-powerup12');
+    loadAudio(l, 'stomp', J + 'general-sounds/impacts/sfx-sounds-impact5');
+    loadAudio(l, 'spring', M + 'sfx-movement-jump6');
+    loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage1');
+    loadAudio(l, 'fall', J + 'movement/falling-sounds/sfx-sounds-falling11');
     loadSfx(l, 'win', 'jingles/audio/8-bit_jingles/jingles_nes04');
-    loadSfx(l, 'start', 'sfx-interface/audio/confirmation_002');
+    loadAudio(l, 'start', J + 'general-sounds/menu-sounds/sfx-menu-select5');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, ANIMALS } from './PlayScene';
 
@@ -9,16 +9,18 @@ launch({
   preload(scene) {
     const l = scene.load;
     for (const a of ANIMALS) l.image('an-' + a, kenney(`animals/png/round/${a}.png`));
-    loadSfx(l, 'pick', 'sfx-casino/audio/chiplay1');
-    loadSfx(l, 'match', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'blocked', 'sfx-interface/audio/error_004');
-    loadSfx(l, 'warn', 'sfx-interface/audio/error_006');
-    loadSfx(l, 'undo', 'sfx-interface/audio/back_002');
-    loadSfx(l, 'shuffle', 'sfx-casino/audio/cardshuffle');
-    loadSfx(l, 'deal', 'sfx-casino/audio/cardfan1');
-    loadSfx(l, 'clear', 'sfx-digital/audio/threetone2');
-    loadSfx(l, 'lose', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'pick', J + 'interactions/sfx-sounds-interaction7');
+    loadAudio(l, 'match', J + 'coins/sfx-coin-cluster2');
+    loadAudio(l, 'combo', J + 'coins/sfx-coin-cluster5');
+    loadAudio(l, 'blocked', J + 'negative-sounds/sfx-sounds-error3');
+    loadAudio(l, 'warn', J + 'alarms/low-health-alarms/sfx-lowhealth-alarmloop6');
+    loadAudio(l, 'undo', J + 'pause-sounds/sfx-sounds-pause1-out');
+    loadAudio(l, 'shuffle', J + 'interactions/sfx-sounds-interaction16');
+    loadAudio(l, 'deal', J + 'interactions/sfx-sounds-interaction15');
+    loadAudio(l, 'clear', J + 'fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'lose', J + 'negative-sounds/sfx-sounds-error12');
+    loadAudio(l, 'tick', J + 'menu-sounds/sfx-menu-move1');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

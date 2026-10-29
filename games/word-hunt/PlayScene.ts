@@ -186,7 +186,7 @@ export class PlayScene extends ArcadeScene {
     this.refreshHud();
     this.locked = true;
     this.time.delayedCall(450, () => { this.locked = false; });
-    this.sfx('start');
+    this.sfx('start', { volume: 0.5 });
   }
 
   /** Places words (longest first) with overlaps allowed when letters agree, then fills the rest. */
@@ -296,7 +296,7 @@ export class PlayScene extends ArcadeScene {
     this.cursorBox.setVisible(false);
     this.dragStart = c;
     this.dragEnd = c;
-    this.sfx('tap', { volume: 0.5 });
+    this.sfx('tap', { volume: 0.45 });
     this.drawSelection();
   }
 
@@ -305,7 +305,9 @@ export class PlayScene extends ArcadeScene {
     const end = this.snapEnd(this.dragStart, p.x, p.y);
     if (end[0] !== this.dragEnd?.[0] || end[1] !== this.dragEnd?.[1]) {
       this.dragEnd = end;
-      this.sfx('tick', { volume: 0.25 });
+      // each extra letter in the selection ticks one step higher
+      const len = this.line(this.dragStart, end)?.length ?? 1;
+      this.sfx('tick', { volume: 0.35, rate: 1 + Math.min(len - 1, 12) * 0.05, exact: true });
       this.drawSelection();
     }
   }
@@ -329,12 +331,12 @@ export class PlayScene extends ArcadeScene {
       this.kbActive = true;
       const [dr, dc] = move[k];
       this.kbCursor = [Phaser.Math.Clamp(this.kbCursor[0] + dr, 0, this.n - 1), Phaser.Math.Clamp(this.kbCursor[1] + dc, 0, this.n - 1)];
-      this.sfx('tick', { volume: 0.25 });
+      this.sfx('tick', { volume: 0.3 });
     } else if (k === 'Space' || k === 'Enter' || k === 'KeyZ') {
       this.kbActive = true;
       if (!this.kbAnchor) {
         this.kbAnchor = [...this.kbCursor] as Cell;
-        this.sfx('tap', { volume: 0.5 });
+        this.sfx('tap', { volume: 0.45 });
       } else {
         const a = this.kbAnchor;
         this.kbAnchor = null;
@@ -413,7 +415,7 @@ export class PlayScene extends ArcadeScene {
         burst(this, x, y, [color, 0xffffff], 6, 160);
       });
     });
-    this.sfx('found');
+    this.sfxAt('found', mx, { volume: 0.55, rate: 1 + (Math.min(this.combo, 4) - 1) * 0.06, exact: true });
 
     // strike the word in the list
     w.label.setColor('#' + color.toString(16).padStart(6, '0'));
@@ -436,7 +438,7 @@ export class PlayScene extends ArcadeScene {
     const { width } = this.scale;
     this.flashLocal(0xffffff, 0.35);
     shake(this, 0.008, 220);
-    this.sfx('clear');
+    this.sfx('clear', { volume: 0.7, exact: true });
     for (let i = 0; i < 6; i++) {
       this.time.delayedCall(i * 120, () => burst(this, rng.int(80, width - 80), rng.int(GRID_TOP + 60, GRID_TOP + GRID_SIZE - 60), FOUND_COLORS, 22, 380));
     }
@@ -479,7 +481,7 @@ export class PlayScene extends ArcadeScene {
     popup(this, x, y - 20, '-10s', '#ec3013', 22);
     burst(this, x, y, 0x5dff7a, 14, 200);
     this.tweens.add({ targets: w.label, scale: 1.3, duration: 180, yoyo: true, repeat: 2 });
-    this.sfx('hint');
+    this.sfxAt('hint', x, { volume: 0.5 });
     this.refreshHud();
   }
 
@@ -505,7 +507,8 @@ export class PlayScene extends ArcadeScene {
     this.hud.setRight(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);
     if (secs <= 10 && secs > 0 && secs !== this.lastTick) {
       this.lastTick = secs;
-      this.sfx('warn', { volume: 0.5 });
+      // the last ten seconds tick a little higher each second
+      this.sfx('warn', { volume: 0.45, rate: 1 + (10 - secs) * 0.03, exact: true });
       this.tweens.add({ targets: this.timeBar, alpha: 0.3, duration: 120, yoyo: true });
     }
     if (this.timeLeft <= 0) {
@@ -520,7 +523,7 @@ export class PlayScene extends ArcadeScene {
       }
       shake(this, 0.012, 300);
       this.flashLocal(0xec3013, 0.3);
-      this.sfx('timeup');
+      this.sfx('timeup', { volume: 0.5 });
       this.endGame({ title: t('timeUp'), delay: 1400 });
     }
   }

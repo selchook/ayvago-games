@@ -121,7 +121,8 @@ export class PlayScene extends ArcadeScene {
     this.toSpawn = 8 + this.wave * 4;
     this.spawnCd = 0.5;
     this.updateHud();
-    this.sfx('wave', { volume: 0.5 });
+    if (this.wave % 5 === 0) this.sfx('boss', { volume: 0.5 });
+    else this.sfx('wave', { volume: 0.4 });
     if (this.wave % 5 === 0) { this.banner(t('boss'), '#c77dff'); this.time.delayedCall(1500, () => !this.isOver && this.spawnZombie('boss')); }
     else this.banner(`${t('wave')} ${this.wave}`);
   }
@@ -159,7 +160,7 @@ export class PlayScene extends ArcadeScene {
       b.setVelocity(Math.cos(a) * 900, Math.sin(a) * 900);
     }
     burst(this, this.hero.x + Math.cos(this.aim) * 38, this.hero.y + Math.sin(this.aim) * 38, [0xffd23f, 0xffffff], 4, 120);
-    this.sfx('shoot', { volume: 0.12, rate: 1.4 + Math.random() * 0.2 });
+    this.sfxAt(rng.pick(['shoot1', 'shoot2', 'shoot3']), this.hero.x, { volume: 0.18 });
   }
 
   private hitZombie(b: Body, z: Body): void {
@@ -178,7 +179,7 @@ export class PlayScene extends ArcadeScene {
     if (hp > 0) {
       z.setTintFill(0xffffff);
       this.time.delayedCall(50, () => z.active && z.setTint(Z[z.getData('kind') as string].tint));
-      this.sfx('hit', { volume: 0.25 });
+      this.sfxAt(rng.pick(['hit1', 'hit2']), z.x, { volume: 0.3 });
       return;
     }
     this.killZombie(z);
@@ -191,7 +192,9 @@ export class PlayScene extends ArcadeScene {
     burst(this, z.x, z.y, [0x8a1c1c, 0x5a0f0f, 0x6b8e4e], kind === 'boss' ? 60 : 16, kind === 'boss' ? 420 : 240);
     const blood = this.add.circle(z.x, z.y, 14 * zt.scale, 0x5a0f0f, 0.55).setDepth(1).setScale(1, 0.7);
     this.tweens.add({ targets: blood, alpha: 0, delay: 3000, duration: 1500, onComplete: () => blood.destroy() });
-    this.sfx('die', { volume: kind === 'boss' ? 0.7 : 0.35 });
+    if (kind === 'boss') this.sfxAt('bossdie', z.x, { volume: 0.8 });
+    else if (kind === 'brute') this.sfxAt('brutedie', z.x, { volume: 0.5 });
+    else this.sfxAt(rng.pick(['splat1', 'splat2']), z.x, { volume: 0.4 });
     if (kind === 'boss' || kind === 'brute') shake(this, kind === 'boss' ? 0.02 : 0.006, kind === 'boss' ? 400 : 120);
     if (kind === 'boss' || rng.chance(0.035)) this.dropMedkit(z.x, z.y);
     z.destroy();
@@ -210,7 +213,7 @@ export class PlayScene extends ArcadeScene {
     m.destroy();
     this.hp = Math.min(this.maxHp, this.hp + 1);
     popup(this, this.hero.x, this.hero.y - 40, t('heal'), '#5dff7a', 22);
-    this.sfx('pickup', { volume: 0.5 });
+    this.sfxAt('pickup', this.hero.x, { volume: 0.55 });
     this.updateHud();
   }
 
@@ -221,7 +224,9 @@ export class PlayScene extends ArcadeScene {
     this.invuln = 1;
     const a = Phaser.Math.Angle.Between(z.x, z.y, this.hero.x, this.hero.y);
     this.hero.x += Math.cos(a) * 30; this.hero.y += Math.sin(a) * 30;
-    this.sfx('hurt', { volume: 0.5 });
+    if (this.hp > 0) this.sfxAt('hurt', this.hero.x, { volume: 0.6 });
+    else this.sfxAt('die', this.hero.x, { volume: 0.75 });
+    if (this.hp === 1) this.time.delayedCall(250, () => this.sfx('lowhp', { volume: 0.5 }));
     shake(this, 0.015, 200);
     flash(this, 0x8a1c1c, 150);
     burst(this, this.hero.x, this.hero.y, 0xec3013, 12, 200);
@@ -252,6 +257,7 @@ export class PlayScene extends ArcadeScene {
     const title = txt(this, width / 2, height * 0.25, t('chooseUp'), { title: true, size: 30, color: '#ffd23f' }).setDepth(9101);
     objs.push(dim, title);
     let sel = 1;
+    this.sfx('menu', { volume: 0.5 });
     const cards: Button[] = [];
     const choose = (k: UpKey) => {
       if (!this.choosing) return;
@@ -294,7 +300,7 @@ export class PlayScene extends ArcadeScene {
     if (k === 'upSpeed') this.speed *= 1.12;
     if (k === 'upHeal') { this.maxHp++; this.hp = this.maxHp; }
     this.hero.setTexture(this.multi >= 3 ? 'hero-machine' : this.dmg >= 3 ? 'hero-silencer' : 'hero-gun');
-    this.sfx('upgrade', { volume: 0.5 });
+    this.sfx('upgrade', { volume: 0.6 });
     flash(this, 0x5dff7a, 120);
     burst(this, this.hero.x, this.hero.y, [0x5dff7a, 0xffd23f], 30, 300);
     this.updateHud();
@@ -307,7 +313,7 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     const c = this.controls;
     this.invuln = Math.max(0, this.invuln - dt);
-    if (c.justB()) { this.autoAim = !this.autoAim; this.sfx('toggle', { volume: 0.5 }); this.updateHud(); }
+    if (c.justB()) { this.autoAim = !this.autoAim; this.sfx('aim', { volume: 0.45 }); this.updateHud(); }
 
     let mx = c.axisX, my = c.axisY;
     const len = Math.hypot(mx, my);

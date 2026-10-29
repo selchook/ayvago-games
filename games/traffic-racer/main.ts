@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeRacerTextures, TRAFFIC } from './PlayScene';
 import { warmText } from './fasttext';
@@ -20,16 +20,19 @@ launch({
     l.image('oil', kenney(RC + 'objects/oil.png'));
     l.image('tires', kenney(RC + 'objects/tires_white.png'));
     l.image('coin', kenney('platformer/png/items/coingold.png'));
-    loadSfx(l, 'coin', 'sfx-digital/audio/pepsound2');
-    loadSfx(l, 'crash', 'sfx-impact/audio/impactmetal_heavy_001');
-    loadSfx(l, 'bump', 'sfx-impact/audio/impactplate_heavy_002');
-    loadSfx(l, 'near', 'sfx-digital/audio/phaserup2');
-    loadSfx(l, 'fuel', 'sfx-digital/audio/powerup5');
-    loadSfx(l, 'level', 'sfx-digital/audio/threetone2');
-    loadSfx(l, 'low', 'sfx-interface/audio/error_002');
-    loadSfx(l, 'skid', 'sfx-impact/audio/impactsoft_heavy_002');
-    loadSfx(l, 'swerve', 'sfx-interface/audio/scratch_002');
-    loadSfx(l, 'empty', 'sfx-digital/audio/phaserdown1');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'beep', J + 'general-sounds/simple-bleeps/sfx-sounds-blip2');
+    loadAudio(l, 'coin1', J + 'general-sounds/coins/sfx-coin-single2');
+    loadAudio(l, 'coin2', J + 'general-sounds/coins/sfx-coin-single4');
+    loadAudio(l, 'crash', J + 'explosions/short/sfx-exp-short-hard3');
+    loadAudio(l, 'wreck', J + 'explosions/medium-length/sfx-exp-medium8');
+    loadAudio(l, 'bump', J + 'general-sounds/impacts/sfx-sounds-impact12');
+    loadAudio(l, 'near', J + 'general-sounds/high-pitched-sounds/sfx-sounds-high4');
+    loadAudio(l, 'fuel', J + 'general-sounds/positive-sounds/sfx-sounds-powerup14');
+    loadAudio(l, 'level', J + 'general-sounds/fanfares/sfx-sounds-fanfare3');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop1');
+    loadAudio(l, 'skid', J + 'movement/vehicles/sfx-vehicle-breaks');
+    loadAudio(l, 'empty', J + 'general-sounds/weird-sounds/sfx-sound-shutdown1');
   },
   menuDecor(scene) {
     warmText(scene, [[18, true], [20, true], [22, true], [26, true], [28, true], [40, true], [44, true], [48, true], [56, true], [72, true], [24, false]]);

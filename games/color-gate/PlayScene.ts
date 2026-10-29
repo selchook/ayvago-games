@@ -147,7 +147,7 @@ export class PlayScene extends ArcadeScene {
       if (this.lives < MAX_LIVES) this.invuln = 1.2;     // grace period after a respawn
     }
     this.vy = HOP_V;
-    this.sfx('hop', { volume: 0.25 });
+    this.sfx(rng.pick(['hop1', 'hop2', 'hop3']), { volume: 0.3 });
     this.tweens.add({ targets: this.ball, scaleX: 0.8, scaleY: 1.2, duration: 70, yoyo: true });
   }
 
@@ -330,7 +330,7 @@ export class PlayScene extends ArcadeScene {
     gate.star = undefined;
     this.stars++;
     this.addScore(10 * this.level, s.x + 70, s.y);
-    this.sfx('star', { volume: 0.45 });
+    this.sfxAt('star', s.x, { volume: 0.5 });
     burst(this, s.x, s.y, [0xffd23f, 0xffffff], 18, 300);
     this.tweens.killTweensOf(s);
     this.tweens.add({ targets: s, scale: 0.9, alpha: 0, angle: 180, duration: 300, onComplete: () => s.destroy() });
@@ -347,7 +347,7 @@ export class PlayScene extends ArcadeScene {
     const c = PALETTE[n];
     this.ball.setFillStyle(c);
     this.trail.particleTint = c;
-    this.sfx('switch', { volume: 0.35 });
+    this.sfx('switch', { volume: 0.5 });
     burst(this, sw.x, sw.y, PALETTE, 24, 280);
     this.tweens.add({ targets: this.ball, scale: 1.5, duration: 90, yoyo: true });
     this.tweens.killTweensOf(sw);
@@ -357,6 +357,7 @@ export class PlayScene extends ArcadeScene {
   private passGate(gate: Gate): void {
     gate.passed = true;
     this.passed++;
+    if (this.passed % LEVEL_EVERY !== 0) this.sfx('pass', { volume: 0.25, exact: true, rate: 1 + (this.passed % LEVEL_EVERY) * 0.05 });
     for (const o of [...gate.rings.map((r) => r.g), ...gate.bars.map((b) => b.g)]) {
       this.tweens.add({ targets: o, alpha: 0.35, duration: 400 });
     }
@@ -364,7 +365,7 @@ export class PlayScene extends ArcadeScene {
       this.level++;
       const { width, height } = this.scale;
       this.addScore(25 * this.level);
-      this.sfx('level', { volume: 0.5 });
+      this.sfx('level', { volume: 0.65, exact: true });
       softFlash(this, 0xffffff, 90);
       const banner = txt(this, width / 2, height * 0.3, `${t('level')} ${this.level}`, { title: true, size: 48, color: '#ffd23f' })
         .setScrollFactor(0).setDepth(60).setScale(0.3);
@@ -383,8 +384,8 @@ export class PlayScene extends ArcadeScene {
     this.trail.stop();
     burst(this, x, y, PALETTE, 50, 520);
     burst(this, x, y, PALETTE[this.colorIdx], 30, 300);
-    this.sfx('shatter', { volume: 0.5 });
-    this.sfx('die', { volume: 0.45 });
+    this.sfxAt('shatter', x, { volume: 0.6 });
+    this.sfx('die', { volume: 0.5 });
     shake(this, 0.025, 320);
     softFlash(this, 0xec3013, 160);
     this.lives--;
@@ -415,6 +416,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: cam, scrollY: this.restY - height * 0.75, duration: 300, ease: 'Sine.easeOut' });
     this.hint.setAlpha(1);
     this.tweens.add({ targets: this.hint, alpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
-    this.sfx('switch', { volume: 0.3 });
+    this.sfx('respawn', { volume: 0.35 });
+    if (this.lives === 1) this.sfx('low', { volume: 0.4, delay: 0.3 });
   }
 }

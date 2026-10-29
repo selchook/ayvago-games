@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, BIOMES } from './PlayScene';
 
@@ -31,14 +31,18 @@ launch({
     l.image('wingman', kenney(J + 'enemies/wingman1.png'));
     l.image('wingman2', kenney(J + 'enemies/wingman3.png'));
     l.image('piece', kenney(J + 'particles/particle_brown.png'));
-    loadSfx(l, 'jump', 'sfx-digital/audio/phasejump1');
-    loadSfx(l, 'spring', 'sfx-digital/audio/phaserup6');
-    loadSfx(l, 'break', 'sfx-impact/audio/impactwood_light_002');
-    loadSfx(l, 'carrot', 'sfx-digital/audio/powerup4');
-    loadSfx(l, 'stomp', 'sfx-impact/audio/impactpunch_medium_000');
-    loadSfx(l, 'die', 'sfx-digital/audio/phaserdown2');
-    loadSfx(l, 'jet', 'sfx-digital/audio/powerup8');
-    loadSfx(l, 'milestone', 'sfx-digital/audio/threetone2');
+    const S = 'oga/junkala-sfx/';
+    loadAudio(l, 'jump1', S + 'movement/jumping-and-landing/sfx-movement-jump2');
+    loadAudio(l, 'jump2', S + 'movement/jumping-and-landing/sfx-movement-jump3');
+    loadAudio(l, 'spring', S + 'movement/jumping-and-landing/sfx-movement-jump6');
+    loadAudio(l, 'break', S + 'general-sounds/impacts/sfx-sounds-impact11');
+    loadAudio(l, 'carrot', S + 'general-sounds/coins/sfx-coin-single2');
+    loadAudio(l, 'gold', S + 'general-sounds/coins/sfx-coin-double2');
+    loadAudio(l, 'stomp', S + 'weapons/melee/sfx-wpn-punch4');
+    loadAudio(l, 'ouch', S + 'general-sounds/negative-sounds/sfx-sounds-damage2');
+    loadAudio(l, 'fall', S + 'movement/falling-sounds/sfx-sounds-falling2');
+    loadAudio(l, 'jet', S + 'weapons/grenade-whistles/sfx-wpn-missilelaunch');
+    loadAudio(l, 'milestone', S + 'general-sounds/fanfares/sfx-sounds-fanfare1');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

@@ -171,7 +171,8 @@ export class PlayScene extends ArcadeScene {
   private die(reason: 'fell' | 'ouch'): void {
     if (this.dying) return;
     this.dying = true;
-    this.sfx('die', { volume: 0.5 });
+    if (reason === 'fell') this.sfx('fall', { volume: 0.65 });
+    else this.sfxAt('ouch', this.player.x, { volume: 0.75 });
     shake(this, 0.02, 300);
     flash(this, 0xec3013, 150);
     this.player.setTexture('bunny-hurt');
@@ -215,7 +216,7 @@ export class PlayScene extends ArcadeScene {
     if (!this.dying && this.vy > 0 && feet >= height - 70 && this.topY > this.startY - 600) {
       this.player.y = height - 70 - 42;
       this.bounce(JUMP_V, this.player.x, height - 70);
-      this.sfx('jump', { volume: 0.3 });
+      this.sfxAt(rng.pick(['jump1', 'jump2']), this.player.x, { volume: 0.35 });
     }
 
     // platforms
@@ -231,7 +232,7 @@ export class PlayScene extends ArcadeScene {
       if (prevFeet <= top + 4 && feet >= top && Math.abs(this.player.x - p.img.x) < PLAT_W / 2 + 22) {
         if (p.kind === 'break') {
           p.dead = true;
-          this.sfx('break', { volume: 0.5 });
+          this.sfxAt('break', p.img.x, { volume: 0.55 });
           burst(this, p.img.x, p.img.y, [0x8b5a2b, 0xc8955c], 14, 220);
           this.tweens.add({ targets: p.img, y: p.img.y + 300, angle: rng.int(-40, 40), alpha: 0, duration: 600, onComplete: () => p.img.destroy() });
           continue;
@@ -241,11 +242,11 @@ export class PlayScene extends ArcadeScene {
           p.spring.setTexture('spring-out');
           this.time.delayedCall(250, () => p.spring?.active && p.spring.setTexture('spring'));
           this.bounce(SPRING_V, this.player.x, top);
-          this.sfx('spring', { volume: 0.5 });
+          this.sfxAt('spring', this.player.x, { volume: 0.6 });
           this.tweens.add({ targets: this.player, angle: this.player.flipX ? -360 : 360, duration: 700, onComplete: () => this.player.setAngle(0) });
         } else {
           this.bounce(JUMP_V, this.player.x, top);
-          this.sfx('jump', { volume: 0.3 });
+          this.sfxAt(rng.pick(['jump1', 'jump2']), this.player.x, { volume: 0.35 });
         }
       }
     }
@@ -274,13 +275,13 @@ export class PlayScene extends ArcadeScene {
       if (this.dying || Phaser.Math.Distance.Between(it.img.x, it.img.y, this.player.x, this.player.y) > 65) continue;
       if (it.kind === 'jet') {
         this.jet = 2.6;
-        this.sfx('jet', { volume: 0.5 });
+        this.sfxAt('jet', it.img.x, { volume: 0.6 });
         flash(this, 0xffd23f, 120);
       } else {
         const pts = it.kind === 'gold' ? 100 : 20;
         this.bonus += pts;
         popup(this, it.img.x, it.img.y - 30, '+' + pts);
-        this.sfx('carrot', { volume: 0.35 });
+        this.sfxAt(it.kind === 'gold' ? 'gold' : 'carrot', it.img.x, { volume: it.kind === 'gold' ? 0.6 : 0.4 });
       }
       burst(this, it.img.x, it.img.y, [0xff9a2e, 0x5dff7a, 0xffd23f], 14, 240);
       it.img.destroy();
@@ -295,7 +296,7 @@ export class PlayScene extends ArcadeScene {
         this.milestone = m;
         this.bonus += 50;
         popup(this, width / 2, cam.scrollY + height * 0.3, `${m * 500} ${t('meters')}!`, '#5dff7a', 40);
-        this.sfx('milestone', { volume: 0.5 });
+        this.sfx('milestone', { volume: 0.6, exact: true });
       }
     }
     this.updateHud();
@@ -320,7 +321,7 @@ export class PlayScene extends ArcadeScene {
     e.dead = true;
     this.bonus += 50;
     popup(this, e.img.x, e.img.y - 40, '+50');
-    this.sfx('stomp', { volume: 0.5 });
+    this.sfxAt('stomp', e.img.x, { volume: 0.6 });
     shake(this, 0.008, 120);
     burst(this, e.img.x, e.img.y, [0xffd23f, 0xffffff, 0xff9a2e], 22, 320);
     this.tweens.add({ targets: e.img, y: e.img.y + (stomp ? 600 : -200), angle: 180, alpha: 0, duration: 700, onComplete: () => e.img.destroy() });

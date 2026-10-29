@@ -1,6 +1,8 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, BLOCK_TILES } from './PlayScene';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -9,12 +11,21 @@ launch({
   preload(scene) {
     const l = scene.load;
     BLOCK_TILES.forEach((f, i) => l.image(`blk${i}`, kenney(`puzzle2/png/${f}`)));
-    loadSfx(l, 'pick', 'sfx-interface/audio/click_003');
-    loadSfx(l, 'place', 'sfx-impact/audio/impactplate_light_001');
-    loadSfx(l, 'bad', 'sfx-interface/audio/error_004');
-    loadSfx(l, 'clear', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'combo', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'refill', 'sfx-interface/audio/maximize_003');
+    loadAudio(l, 'pick', J + 'general-sounds/interactions/sfx-sounds-interaction1');
+    loadAudio(l, 'nudge', J + 'general-sounds/menu-sounds/sfx-menu-move3');
+    loadAudio(l, 'back', J + 'general-sounds/menu-sounds/sfx-menu-move1');
+    loadAudio(l, 'place1', J + 'movement/jumping-and-landing/sfx-movement-jump12-landing');
+    loadAudio(l, 'place2', J + 'movement/jumping-and-landing/sfx-movement-jump13-landing');
+    loadAudio(l, 'place3', J + 'movement/jumping-and-landing/sfx-movement-jump16-landing');
+    loadAudio(l, 'bad', J + 'general-sounds/negative-sounds/sfx-sounds-error3');
+    loadAudio(l, 'clear1', J + 'general-sounds/positive-sounds/sfx-sounds-powerup10');
+    loadAudio(l, 'clear2', J + 'general-sounds/positive-sounds/sfx-sounds-powerup11');
+    loadAudio(l, 'clear3', J + 'general-sounds/positive-sounds/sfx-sounds-powerup18');
+    loadAudio(l, 'combo', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
+    loadAudio(l, 'wipe', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'level', J + 'general-sounds/positive-sounds/sfx-sounds-powerup2');
+    loadAudio(l, 'refill', J + 'general-sounds/interactions/sfx-sounds-interaction10');
+    loadAudio(l, 'stuck', J + 'general-sounds/negative-sounds/sfx-sounds-negative2');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

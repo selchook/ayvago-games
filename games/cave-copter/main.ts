@@ -1,8 +1,10 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeTextures } from './PlayScene';
 
 const TP = 'tappy-plane/png/';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -13,12 +15,15 @@ launch({
     for (const k of ['rock', 'rockdown', 'rockgrass', 'rockgrassdown', 'rockice', 'rockicedown', 'rocksnow', 'rocksnowdown', 'stargold', 'puffsmall', 'pufflarge']) {
       l.image(k, kenney(TP + k + '.png'));
     }
-    loadSfx(l, 'star', 'sfx-digital/audio/powerup1');
-    loadSfx(l, 'crash', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'boom', 'sfx-impact/audio/impactmining_002');
-    loadSfx(l, 'zone', 'sfx-digital/audio/threetone2');
-    loadSfx(l, 'start', 'sfx-digital/audio/phaserup1');
-    loadSfx(l, 'blip', 'sfx-interface/audio/tick_001');
+    loadAudio(l, 'star1', J + 'general-sounds/coins/sfx-coin-double3');
+    loadAudio(l, 'star2', J + 'general-sounds/coins/sfx-coin-double4');
+    loadAudio(l, 'hit', J + 'explosions/short/sfx-exp-short-hard3');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
+    loadAudio(l, 'crash', J + 'explosions/medium-length/sfx-exp-medium1');
+    loadAudio(l, 'zone', J + 'general-sounds/fanfares/sfx-sounds-fanfare3');
+    loadAudio(l, 'start', J + 'general-sounds/weird-sounds/sfx-sound-poweron');
+    loadAudio(l, 'blip', J + 'general-sounds/high-pitched-sounds/sfx-sounds-high3');
+    loadAudio(l, 'rotor', J + 'movement/vehicles/sfx-vehicle-helicopterloop1');
   },
   menuDecor(scene) {
     makeTextures(scene);

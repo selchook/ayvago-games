@@ -73,6 +73,7 @@ export class PlayScene extends ArcadeScene {
       if (from.y < 120 && from.x > 600) return; // pause button corner
       if (Math.hypot(dx, dy) > 30) { this.turn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? RIGHT : LEFT) : (dy > 0 ? DOWN : UP)); return; }
       // tap: turn towards the tapped side of the head
+      if (!this.snake.length) return; // the body is crumbling after a crash
       const last = this.queue[this.queue.length - 1] ?? this.dir;
       const h = this.cellPos(this.snake[0]);
       if (last.x !== 0) this.turn(p.y < h.y ? UP : DOWN);
@@ -96,7 +97,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: sel, alpha: 0.3, duration: 400, yoyo: true, repeat: -1 });
     this.chooser = [title, shade, b1, i1, b2, i2, sel];
     const kb = this.input.keyboard;
-    const toggle = () => { if (!this.started) { this.mode = this.mode === 'classic' ? 'walls' : 'classic'; place(); this.sfx('turn'); } };
+    const toggle = () => { if (!this.started) { this.mode = this.mode === 'classic' ? 'walls' : 'classic'; place(); this.sfx('mode', { volume: 0.45 }); } };
     kb?.on('keydown-UP', toggle); kb?.on('keydown-DOWN', toggle);
     kb?.on('keydown-W', toggle); kb?.on('keydown-S', toggle);
     const go = () => { if (!this.started) this.start(this.mode); };
@@ -112,7 +113,7 @@ export class PlayScene extends ArcadeScene {
     for (const o of this.chooser) o.destroy();
     this.chooser = [];
     this.drawBorder();
-    this.sfx('spawn');
+    this.sfx('go', { volume: 0.55 });
     this.placeFood();
   }
 
@@ -138,7 +139,7 @@ export class PlayScene extends ArcadeScene {
     if (!this.started || this.dead) return;
     const last = this.queue[this.queue.length - 1] ?? this.dir;
     if ((d.x === -last.x && d.y === -last.y) || (d.x === last.x && d.y === last.y)) return;
-    if (this.queue.length < 3) { this.queue.push(d); this.sfx('turn', { volume: 0.25 }); }
+    if (this.queue.length < 3) { this.queue.push(d); this.sfx('turn', { volume: 0.22 }); }
   }
 
   private occupied(x: number, y: number): boolean {
@@ -170,7 +171,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: this.bonus, scale: (CELL / 16) * 1.05, duration: 300, ease: 'Back.easeOut' });
     this.tweens.add({ targets: this.bonus, angle: { from: -12, to: 12 }, duration: 300, yoyo: true, repeat: -1 });
     this.bonusT = 7;
-    this.sfx('spawn');
+    this.sfxAt('spawn', p.x, { volume: 0.45 });
   }
 
   private clearBonus(): void {
@@ -193,6 +194,7 @@ export class PlayScene extends ArcadeScene {
       burst(this, p.x, p.y, [0x8a8a8a, 0xc9b28a], 10, 160);
     }
     this.drawRocks();
+    if (n > 0) this.sfx('rock', { volume: 0.5 });
   }
 
   private inFront(h: { x: number; y: number }, c: { x: number; y: number }): boolean {
@@ -251,7 +253,8 @@ export class PlayScene extends ArcadeScene {
       this.grow += 2;
       this.eaten++;
       this.addScore(10 * this.level * mult, p.x, p.y - 20);
-      this.sfx('eat', { volume: 0.45, detune: (this.eaten % 6) * 100 });
+      // Each bite steps up a major scale.
+      this.sfxAt('eat', p.x, { volume: 0.45, detune: [0, 200, 400, 500, 700, 900][this.eaten % 6], exact: true });
       burst(this, p.x, p.y, [0xec3013, 0xffd23f, 0x9dff6a], 14, 220);
       this.placeFood();
       if (this.eaten % 5 === 0 && !this.bonus) this.placeBonus();
@@ -262,7 +265,7 @@ export class PlayScene extends ArcadeScene {
       this.addScore(pts, p.x, p.y - 20);
       popup(this, p.x, p.y - 70, t('bonus'), '#ff4fa3', 22);
       this.grow += 3;
-      this.sfx('bonus', { volume: 0.5 });
+      this.sfxAt('bonus', p.x, { volume: 0.6 });
       flash(this, 0xffd23f, 100);
       burst(this, p.x, p.y, [0xffd23f, 0xffffff], 30, 320);
       this.clearBonus();
@@ -274,7 +277,7 @@ export class PlayScene extends ArcadeScene {
     this.level++;
     this.interval = Math.max(0.06, 0.16 - (this.level - 1) * 0.012);
     this.updateHud();
-    this.sfx('level', { volume: 0.45 });
+    this.sfx('level', { volume: 0.55 });
     popup(this, 360, 640, t('faster'), '#3ee6ff', 30);
     if (this.level >= 3) this.addRocks(this.level >= 6 ? 3 : 2);
   }
@@ -282,7 +285,7 @@ export class PlayScene extends ArcadeScene {
   private die(): void {
     if (this.dead) return;
     this.dead = true;
-    this.sfx('die', { volume: 0.55 });
+    this.sfx('die', { volume: 0.75 });
     shake(this, 0.02, 300);
     flash(this, 0xec3013, 160);
     this.clearBonus();
@@ -290,6 +293,7 @@ export class PlayScene extends ArcadeScene {
     segs.forEach((s, i) => this.time.delayedCall(i * 30, () => {
       const p = this.cellPos(s);
       burst(this, p.x, p.y, [0x9dff6a, 0x1f7a2e], 6, 200);
+      if (i % 2 === 0) this.sfxAt('crumble', p.x, { volume: 0.25 });
       this.snake = this.snake.filter((q) => q !== s);
       this.drawSnakeSafe();
     }));
@@ -312,7 +316,7 @@ export class PlayScene extends ArcadeScene {
       g.fillStyle(0x000000, 0.6).fillRect(this.bonus.x - 19, this.bonus.y - 30, 38, 7);
       g.fillStyle(this.bonusT < 2 ? 0xec3013 : 0xffd23f).fillRect(this.bonus.x - 18, this.bonus.y - 29, w, 5);
       this.bonus.setAlpha(this.bonusT < 2 ? (Math.floor(this.bonusT * 8) % 2 ? 0.4 : 1) : 1);
-      if (this.bonusT <= 0) this.clearBonus();
+      if (this.bonusT <= 0) { this.sfxAt('expire', this.bonus.x, { volume: 0.35 }); this.clearBonus(); }
     }
   }
 }

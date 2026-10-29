@@ -1,8 +1,9 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
 const SS = 'space-shooter/png/';
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -17,15 +18,22 @@ launch({
     for (const k of ['red1', 'red5', 'blue3', 'blue2', 'green2', 'green3']) l.image('alien-' + k, kenney(`${SS}enemies/enemy${k}.png`));
     l.image('mystery', kenney('alien-ufo/png/shippink.png'));
     l.image('mystery-menu', kenney('alien-ufo/png/shipyellow_manned.png'));
-    loadSfx(l, 'shoot', 'sfx-digital/audio/laser4');
-    loadSfx(l, 'kill', 'sfx-digital/audio/spacetrash3');
-    loadSfx(l, 'bomb', 'sfx-digital/audio/laser9');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown3');
+    loadAudio(l, 'shoot1', J + 'weapons/lasers/sfx-wpn-laser8');
+    loadAudio(l, 'shoot2', J + 'weapons/lasers/sfx-wpn-laser2');
+    loadAudio(l, 'kill1', J + 'explosions/shortest/sfx-exp-shortest-hard2');
+    loadAudio(l, 'kill2', J + 'explosions/shortest/sfx-exp-shortest-hard9');
+    loadAudio(l, 'kill3', J + 'explosions/shortest/sfx-exp-shortest-soft7');
+    loadAudio(l, 'bomb', J + 'weapons/lasers/sfx-wpn-laser10');
+    loadAudio(l, 'chip', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit3');
+    loadAudio(l, 'hurt', J + 'explosions/short/sfx-exp-short-hard4');
+    loadAudio(l, 'death', J + 'explosions/medium-length/sfx-exp-medium3');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
     loadSfx(l, 'march', 'sfx-digital/audio/tone1');
-    loadSfx(l, 'ufo', 'sfx-digital/audio/phaserup5');
-    loadSfx(l, 'ufo-kill', 'sfx-digital/audio/threetone2');
-    loadSfx(l, 'clink', 'sfx-digital/audio/zap1');
-    loadSfx(l, 'level', 'sfx-digital/audio/powerup6');
+    loadAudio(l, 'ufo', J + 'general-sounds/alarms/alarms/sfx-alarm-loop4');
+    loadAudio(l, 'ufo-kill', J + 'explosions/short/sfx-exp-short-hard1');
+    loadAudio(l, 'ufo-coins', J + 'general-sounds/coins/sfx-coin-cluster3');
+    loadAudio(l, 'clink', J + 'general-sounds/impacts/sfx-sounds-impact5');
+    loadAudio(l, 'level', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

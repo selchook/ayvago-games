@@ -91,6 +91,16 @@ export class PlayScene extends ArcadeScene {
     this.camX = 0; this.hy = 640; this.vy = 0; this.speed = 300; this.started = false; this.dead = false; this.touching = false;
     this.center = 690; this.centerTarget = 690; this.gap = 820; this.sinceTurn = 0;
     this.nextSpike = 1500; this.nextStar = 900; this.zone = 0; this.bonus = 0; this.lastMeters = 0; this.hp = 3; this.invuln = 0;
+    this.rotorSound = null;
+    const onPause = () => this.rotorSound?.pause();
+    const onResume = () => { if (!this.isOver) this.rotorSound?.resume(); };
+    this.events.on(Phaser.Scenes.Events.PAUSE, onPause);
+    this.events.on(Phaser.Scenes.Events.RESUME, onResume);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.stopRotor();
+      this.events.off(Phaser.Scenes.Events.PAUSE, onPause);
+      this.events.off(Phaser.Scenes.Events.RESUME, onResume);
+    });
 
     this.bgRect = this.add.rectangle(0, 0, W, H, BIOMES[0].bg).setOrigin(0);
     this.back = this.add.tileSprite(0, 0, W, H, 'backrocks').setOrigin(0).setTint(BIOMES[0].wall).setAlpha(0.55);
@@ -114,6 +124,24 @@ export class PlayScene extends ArcadeScene {
     this.hint = txt(this, W / 2, 900, t('hold'), { title: true, size: 24, color: '#ffd23f', wrap: 640 }).setDepth(50);
     this.tweens.add({ targets: this.hint, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
     this.updateHud();
+  }
+
+  // A quiet rotor hum while flying; it pitches up under thrust (sound only).
+  private rotorSound: Phaser.Sound.WebAudioSound | null = null;
+
+  private startRotor(): void {
+    this.stopRotor();
+    if (!this.cache.audio.exists('rotor')) return;
+    try {
+      this.rotorSound = this.sound.add('rotor', { loop: true, volume: 0.09 }) as Phaser.Sound.WebAudioSound;
+      this.rotorSound.play();
+    } catch { this.rotorSound = null; }
+  }
+
+  private stopRotor(): void {
+    this.rotorSound?.stop();
+    this.rotorSound?.destroy();
+    this.rotorSound = null;
   }
 
   private updateHud(): void {
@@ -186,7 +214,8 @@ export class PlayScene extends ArcadeScene {
     if (this.hp <= 0) { this.crash(); return; }
     this.invuln = 2.2;
     this.vy = fromCeiling ? 260 : -420;
-    this.sfx('boom', { volume: 0.6 });
+    this.sfx('hit', { volume: 0.75 });
+    if (this.hp === 1) this.sfx('low', { volume: 0.45, delay: 0.4 });
     shake(this, 0.018, 260);
     flash(this, 0xec3013, 140);
     burst(this, this.heli.x, this.heli.y, [0xec3013, 0xffd23f, 0x333333], 26, 340);
@@ -195,8 +224,8 @@ export class PlayScene extends ArcadeScene {
   private crash(): void {
     if (this.dead) return;
     this.dead = true;
-    this.sfx('crash', { volume: 0.6 });
-    this.sfx('boom', { volume: 0.6 });
+    this.stopRotor();
+    this.sfx('crash', { volume: 0.9 });
     shake(this, 0.03, 400);
     flash(this, 0xec3013, 180);
     burst(this, this.heli.x, this.heli.y, [0xec3013, 0xffd23f, 0xffffff, 0x333333], 60, 520);
@@ -215,7 +244,8 @@ export class PlayScene extends ArcadeScene {
       this.heli.y = this.hy + Math.sin(this.elapsed * 3) * 10;
       if (hold) {
         this.started = true;
-        this.sfx('start', { volume: 0.4 });
+        this.sfx('start', { volume: 0.45 });
+        this.startRotor();
         this.tweens.add({ targets: this.hint, alpha: 0, duration: 200, onComplete: () => this.hint.destroy() });
       }
       this.drawCave();
@@ -236,6 +266,8 @@ export class PlayScene extends ArcadeScene {
     this.heli.setPosition(HX, this.hy).setAngle(this.vy * 0.025);
     this.heli.setAlpha(this.invuln > 0 ? (Math.floor(this.elapsed * 14) % 2 ? 0.35 : 1) : 1);
     if (hold && Math.random() < 0.7) this.puffs.emitParticleAt(HX - 60, this.hy + 2, 1);
+    const rate = hold ? 1.12 : 0.94;
+    if (this.rotorSound && this.rotorSound.rate !== rate) this.rotorSound.setRate(rate);
 
     // scroll + difficulty
     this.speed = Math.min(640, 300 + this.camX * 0.012);
@@ -248,7 +280,7 @@ export class PlayScene extends ArcadeScene {
     const z = Math.floor(this.camX / ZONE_LEN);
     if (z !== this.zone) {
       this.zone = z;
-      this.sfx('zone', { volume: 0.5 });
+      this.sfx('zone', { volume: 0.65, exact: true });
       this.bonus += 100;
       this.setScore(Math.floor(this.camX / 10) + this.bonus);
       popup(this, W / 2, 560, '+100', '#5dff7a', 34);
@@ -266,7 +298,7 @@ export class PlayScene extends ArcadeScene {
       this.lastMeters = meters;
       this.setScore(meters + this.bonus);
       this.updateHud();
-      if (meters % 100 === 0) this.sfx('blip', { volume: 0.4 });
+      if (meters % 100 === 0) this.sfx('blip', { volume: 0.35 });
     }
 
     // spikes and stars follow the scroll
@@ -281,7 +313,7 @@ export class PlayScene extends ArcadeScene {
         this.setScore(meters + this.bonus);
         popup(this, s.img.x, s.y - 30, '+25');
         burst(this, s.img.x, s.y, [0xffd23f, 0xffffff], 18, 260);
-        this.sfx('star', { volume: 0.45 });
+        this.sfx(Math.random() < 0.5 ? 'star1' : 'star2', { volume: 0.5 });
         s.img.destroy();
         return false;
       }

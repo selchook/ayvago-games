@@ -224,10 +224,10 @@ export class PlayScene extends ArcadeScene {
   private undo(): void {
     if (this.busy || this.isOver || this.finished) return;
     const s = this.history.pop();
-    if (!s) { this.sfx('error', { volume: 0.4 }); return; }
+    if (!s) { this.sfx('error', { volume: 0.35 }); return; }
     this.piles = s.piles; this.up = s.up; this.passes = s.passes; this.moves = s.moves;
     this.setScore(s.score);
-    this.sfx('undo', { volume: 0.6 });
+    this.sfx('undo', { volume: 0.5 });
     this.layout(); this.refreshInfo();
   }
 
@@ -239,16 +239,16 @@ export class PlayScene extends ArcadeScene {
       const id = st.pop()!;
       this.up[id] = true;
       w.push(id);
-      this.sfx('flip', { volume: 0.6 });
+      this.sfxAt(rng.pick(['flip1', 'flip2']), colX(0), { volume: 0.6 });
     } else if (w.length && this.passes < MAX_PASSES) {
       this.snapshot();
       this.piles[STOCK] = w.reverse().map((id) => { this.up[id] = false; return id; });
       this.piles[WASTE] = [];
       this.passes++;
       this.addScore(-50, colX(0), TOP_Y);
-      this.sfx('shuffle', { volume: 0.5 });
+      this.sfxAt('recycle', colX(0), { volume: 0.6 });
     } else {
-      this.sfx('error', { volume: 0.4 });
+      this.sfx('error', { volume: 0.35 });
       return;
     }
     this.moves++;
@@ -268,14 +268,20 @@ export class PlayScene extends ArcadeScene {
     if (m.from >= T0 && src.length && !this.up[src[src.length - 1]]) {
       this.up[src[src.length - 1]] = true;
       pts += 5;
+      const [rx] = this.posOf(m.from, src.length - 1);
+      this.time.delayedCall(120, () => this.sfxAt('reveal', rx, { volume: 0.3 }));
     }
     this.moves++;
     const [x, y] = this.posOf(m.to, this.piles[m.to].length - 1);
     if (pts) this.addScore(pts, x, y - 50);
     if (toFound) {
-      this.sfx('found', { volume: 0.45 });
+      // the chime climbs as the foundations fill up
+      const filled = this.piles.slice(F0, T0).reduce((n, p) => n + p.length, 0);
+      this.sfxAt(rng.pick(['place1', 'place2', 'place3']), x, { volume: 0.5 });
+      if (this.piles[m.to].length === 13) this.sfxAt('suit', x, { volume: 0.6, exact: true });
+      else this.sfxAt('found', x, { volume: 0.4, rate: 0.9 + filled * 0.012, exact: true });
       this.time.delayedCall(150, () => burst(this, x, y, isRed(ids[0]) ? [0xec3013, 0xffffff] : [0x222222, 0xffffff, 0xffd23f], 16, 240));
-    } else this.sfx(rng.chance(0.5) ? 'place' : 'place2', { volume: 0.6 });
+    } else this.sfxAt(rng.pick(['place1', 'place2', 'place3']), x, { volume: 0.6 });
     this.afterAction();
   }
 
@@ -316,6 +322,8 @@ export class PlayScene extends ArcadeScene {
     const bonus = 500 + Math.max(0, Math.round(1500 - this.elapsed * 2));
     this.addScore(bonus, 360, 640);
     flash(this, 0xffd23f, 200);
+    this.sfx('fan', { volume: 0.6 });
+    this.time.delayedCall(300, () => this.sfx('win', { volume: 0.7, exact: true }));
     txt(this, 360, 560, t('solved'), { title: true, size: 52, color: '#5dff7a', strokeThickness: 10 }).setDepth(4000);
     this.sprites.forEach((s, i) => {
       this.tweens.add({ targets: s, x: rng.int(40, 680), y: rng.int(300, 1100), angle: rng.int(-180, 180), delay: i * 25, duration: 600, ease: 'Back.easeOut' });
@@ -326,7 +334,7 @@ export class PlayScene extends ArcadeScene {
 
   private stuck(): void {
     this.finished = true;
-    this.sfx('stuck');
+    this.sfx('stuck', { volume: 0.6 });
     shake(this, 0.01, 300);
     txt(this, 360, 620, t('noMoves'), { title: true, size: 40, color: '#ec3013', strokeThickness: 10 }).setDepth(4000);
     this.endGame({ delay: 1800 });
@@ -337,7 +345,7 @@ export class PlayScene extends ArcadeScene {
     const m = this.usefulMoves()[0];
     if (!m) {
       if (this.canDraw()) this.pulse(this.piles[STOCK].length ? this.sprites[this.piles[STOCK][this.piles[STOCK].length - 1]] : this.recycle);
-      else this.sfx('error');
+      else this.sfx('error', { volume: 0.35 });
       return;
     }
     this.addScore(-5);
@@ -347,7 +355,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private pulse(o: Phaser.GameObjects.Image): void {
-    this.sfx('fan', { volume: 0.5 });
+    this.sfxAt('hint', o.x, { volume: 0.45 });
     o.setTint(0xfff27a);
     this.tweens.add({ targets: o, y: o.y - 14, duration: 140, yoyo: true, repeat: 2, onComplete: () => o.clearTint() });
   }
@@ -438,7 +446,7 @@ export class PlayScene extends ArcadeScene {
     if (!this.sel.on) this.sel.on = true;
     else if (dx) { this.sel.src = Phaser.Math.Wrap(this.sel.src + dx, 0, 8); this.sel.depth = 0; }
     else this.sel.depth = Math.max(0, this.sel.depth + dy);
-    this.sfx('slide', { volume: 0.3 });
+    this.sfx('cursor', { volume: 0.35 });
     this.updateSel();
   }
 

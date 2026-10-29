@@ -45,6 +45,16 @@ export class PlayScene extends ArcadeScene {
     this.aliens = []; this.shots = []; this.bombs = []; this.bunkers = []; this.lifeIcons = []; this.ufo = null;
     this.lives = 3; this.level = 0; this.frozen = 0; this.invuln = 0; this.note = 0; this.dead = false; this.clearing = false;
     this.fireCd = 0; this.ufoCd = rng.int(14, 20);
+    this.ufoLoop = null;
+    const onPause = () => this.ufoLoop?.pause();
+    const onResume = () => { if (!this.isOver) this.ufoLoop?.resume(); };
+    this.events.on(Phaser.Scenes.Events.PAUSE, onPause);
+    this.events.on(Phaser.Scenes.Events.RESUME, onResume);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.stopUfoLoop();
+      this.events.off(Phaser.Scenes.Events.PAUSE, onPause);
+      this.events.off(Phaser.Scenes.Events.RESUME, onResume);
+    });
 
     for (let i = 0; i < 70; i++) {
       const s = this.add.image(rng.int(0, width), rng.int(0, GROUND_Y), 'star').setScale(0.06 + Math.random() * 0.18).setAlpha(0.2 + Math.random() * 0.45);
@@ -115,6 +125,7 @@ export class PlayScene extends ArcadeScene {
       }
       this.drawBunker(b);
       burst(this, x, y, [0x5dff7a, 0x2a8a3a], 6, 120);
+      this.sfxAt('chip', x, { volume: 0.3 });
       return true;
     }
     return false;
@@ -129,6 +140,24 @@ export class PlayScene extends ArcadeScene {
       if (this.hitBunker(x, y, radius)) return y;
     }
     return null;
+  }
+
+  // ---------- mystery UFO warble (a quiet loop only while it crosses) ----------
+  private ufoLoop: Phaser.Sound.BaseSound | null = null;
+
+  private startUfoLoop(): void {
+    this.stopUfoLoop();
+    if (!this.cache.audio.exists('ufo')) return;
+    try {
+      this.ufoLoop = this.sound.add('ufo', { loop: true, volume: 0.14 });
+      this.ufoLoop.play();
+    } catch { this.ufoLoop = null; }
+  }
+
+  private stopUfoLoop(): void {
+    this.ufoLoop?.stop();
+    this.ufoLoop?.destroy();
+    this.ufoLoop = null;
   }
 
   // ---------- helpers ----------
@@ -155,14 +184,14 @@ export class PlayScene extends ArcadeScene {
     this.fireCd = 0.12;
     const img = this.add.image(this.player.x, this.player.y - 40, 'shot').setDepth(9);
     this.shots.push({ img, vy: -1050 });
-    this.sfx('shoot', { volume: 0.22 });
+    this.sfxAt(rng.pick(['shoot1', 'shoot2']), this.player.x, { volume: 0.35 });
   }
 
   private killAlien(a: Alien): void {
     a.alive = false;
     this.addScore(ROW_PTS[a.row] * (1 + Math.floor((this.level - 1) / 3)), a.img.x, a.img.y);
     burst(this, a.img.x, a.img.y, [ROW_TINT[a.row], 0xffffff, 0xffd23f], 18, 260);
-    this.sfx('kill', { volume: 0.35 });
+    this.sfxAt(rng.pick(['kill1', 'kill2', 'kill3']), a.img.x, { volume: 0.5 });
     const img = a.img;
     this.tweens.add({ targets: img, scale: 0.8, alpha: 0, duration: 160, onComplete: () => img.destroy() });
     if (this.living().length === 0) this.levelClear();
@@ -173,7 +202,7 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     this.addScore(this.level * 250, width / 2, height * 0.45);
     this.banner(t('levelClear'), '#5dff7a');
-    this.sfx('level');
+    this.sfx('level', { volume: 0.75, exact: true });
     flash(this, 0x5dff7a, 120);
     for (const b of this.bombs) b.img.destroy();
     this.bombs = [];
@@ -187,8 +216,8 @@ export class PlayScene extends ArcadeScene {
     burst(this, this.player.x, this.player.y, [0x5dff7a, 0xffd23f, 0xec3013, 0xffffff], 50, 380);
     shake(this, 0.02, 300);
     flash(this, 0xec3013, 160);
-    this.sfx('hurt');
-    if (this.lives <= 0) { this.player.setVisible(false); this.endGame({ delay: 1200 }); return; }
+    this.sfxAt(this.lives <= 0 ? 'death' : 'hurt', this.player.x, { volume: this.lives <= 0 ? 0.9 : 0.8 });
+    if (this.lives <= 0) { this.player.setVisible(false); this.stopUfoLoop(); this.endGame({ delay: 1200 }); return; }
     this.dead = true;
     this.player.setVisible(false);
     this.frozen = 1.4;
@@ -199,6 +228,7 @@ export class PlayScene extends ArcadeScene {
       this.dead = false;
       this.invuln = 1.5;
       this.player.setPosition(this.scale.width / 2, PLAYER_Y).setVisible(true);
+      if (this.lives === 1) this.sfx('low', { volume: 0.45 });
     });
   }
 
@@ -210,7 +240,8 @@ export class PlayScene extends ArcadeScene {
     this.player.setVisible(false);
     shake(this, 0.03, 500);
     flash(this, 0xec3013, 250);
-    this.sfx('hurt');
+    this.stopUfoLoop();
+    this.sfxAt('death', this.player.x, { volume: 0.9 });
     this.endGame({ title: t('invaded'), delay: 1200 });
   }
 
@@ -240,7 +271,7 @@ export class PlayScene extends ArcadeScene {
       }
       if (a.img.y + 20 >= PLAYER_Y - 24) this.invaded();
     }
-    this.sfx('march', { volume: 0.18, rate: MARCH_RATES[this.note++ % 4] });
+    this.sfx('march', { volume: 0.22, rate: MARCH_RATES[this.note++ % 4], exact: true });
   }
 
   private dropBomb(): void {
@@ -256,7 +287,7 @@ export class PlayScene extends ArcadeScene {
     }
     const img = this.add.image(s.img.x, s.img.y + 24, 'bomb').setScale(0.55).setDepth(8);
     this.bombs.push({ img, vy: 330 + Math.min(10, this.level) * 25 });
-    this.sfx('bomb', { volume: 0.12 });
+    this.sfxAt('bomb', s.img.x, { volume: 0.18 });
   }
 
   // ---------- loop ----------
@@ -313,7 +344,7 @@ export class PlayScene extends ArcadeScene {
         if (Math.abs(b.img.x - s.img.x) < 14 && Math.abs(b.img.y - s.img.y) < 30) {
           burst(this, b.img.x, b.img.y, [0xffffff, 0xec3013], 10, 160);
           this.addScore(5, b.img.x, b.img.y);
-          this.sfx('clink', { volume: 0.3 });
+          this.sfxAt('clink', b.img.x, { volume: 0.45 });
           b.img.destroy(); this.bombs.splice(j, 1); hit = true; break;
         }
       }
@@ -323,7 +354,9 @@ export class PlayScene extends ArcadeScene {
         popup(this, this.ufo.img.x, this.ufo.img.y + 50, t('mystery'), '#ff4fa3', 20);
         burst(this, this.ufo.img.x, this.ufo.img.y, [0xff4fa3, 0xffd23f, 0xffffff], 40, 380);
         shake(this, 0.012, 200);
-        this.sfx('ufo-kill');
+        this.stopUfoLoop();
+        this.sfxAt('ufo-kill', this.ufo.img.x, { volume: 0.8 });
+        this.sfxAt('ufo-coins', this.ufo.img.x, { volume: 0.6, delay: 0.15 });
         this.ufo.img.destroy(); this.ufo = null; hit = true;
       }
       if (hit) { s.img.destroy(); this.shots.splice(i, 1); }
@@ -352,7 +385,7 @@ export class PlayScene extends ArcadeScene {
     if (this.ufo) {
       this.ufo.img.x += this.ufo.vx * dt;
       this.ufo.img.y = 135 + Math.sin(this.elapsed * 5) * 6;
-      if (this.ufo.img.x < -90 || this.ufo.img.x > width + 90) { this.ufo.img.destroy(); this.ufo = null; }
+      if (this.ufo.img.x < -90 || this.ufo.img.x > width + 90) { this.ufo.img.destroy(); this.ufo = null; this.stopUfoLoop(); }
     } else if (!this.clearing && alive >= 6) {
       this.ufoCd -= dt;
       if (this.ufoCd <= 0) {
@@ -360,7 +393,7 @@ export class PlayScene extends ArcadeScene {
         const fromLeft = rng.chance(0.5);
         const img = this.add.image(fromLeft ? -70 : width + 70, 135, 'mystery').setScale(0.7).setDepth(6);
         this.ufo = { img, vx: (fromLeft ? 1 : -1) * (170 + this.level * 10) };
-        this.sfx('ufo', { volume: 0.35 });
+        this.startUfoLoop();
       }
     }
   }

@@ -249,7 +249,7 @@ export class PlayScene extends ArcadeScene {
     if (this.phase !== 'build' && this.phase !== 'flow') return;
     const cl = this.cells[i];
     if (cl.filled) {
-      this.sfx('locked', { volume: 0.3 });
+      this.sfxAt('locked', cl.c.x, { volume: 0.35 });
       this.tweens.add({ targets: cl.c, x: cl.c.x + 5, duration: 40, yoyo: true, repeat: 1 });
       return;
     }
@@ -260,7 +260,7 @@ export class PlayScene extends ArcadeScene {
     const target = cl.c.angle + dir * 90;
     this.tweens.add({ targets: cl.c, angle: target, duration: 120, ease: 'Back.easeOut', onComplete: () => cl.c.setAngle(cl.r * 90) });
     this.tweens.add({ targets: cl.c, scale: s * 0.9, duration: 60, yoyo: true });
-    this.sfx('rotate', { volume: 0.35, detune: rng.int(-120, 120) });
+    this.sfxAt(rng.pick(['rotate', 'rotate2', 'rotate3']), cl.c.x, { volume: 0.45 });
     this.refreshLinks(true);
   }
 
@@ -280,7 +280,7 @@ export class PlayScene extends ArcadeScene {
     this.cursor = r * this.cols + c;
     this.showCursor = true;
     this.moveCursor();
-    this.sfx('move', { volume: 0.25 });
+    this.sfx('move', { volume: 0.3 });
   }
 
   private moveCursor(): void {
@@ -314,7 +314,7 @@ export class PlayScene extends ArcadeScene {
       cl.grey.setVisible(!on);
     });
     if (done && !this.linked && announce && this.phase === 'build') {
-      this.sfx('link', { volume: 0.5 });
+      this.sfx('link', { volume: 0.6 });
       popup(this, 360, this.y0 - 20, t('connected'), '#5dff7a', 26);
       this.drnStub.setTexture('pf-green-straight');
     } else if (!done) this.drnStub.setTexture('pf-grey-straight');
@@ -333,7 +333,7 @@ export class PlayScene extends ArcadeScene {
     this.countdown = 0;
     this.flowAcc = this.flowStep * 0.6;
     this.srcStub.setTexture('pf-water-straight');
-    this.sfx('flow', { volume: 0.5 });
+    this.sfx('flow', { volume: 0.45 });
     shake(this, 0.006, 200);
     this.updateHud();
   }
@@ -347,7 +347,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: cl.c, scale: s * 1.1, duration: 120, yoyo: true });
     const { x, y } = this.cellXY(i);
     burst(this, x, y, [0x3ee6ff, 0x1f6fd1, 0xffffff], 6, 120);
-    this.sfx('fill', { volume: 0.3, detune: Math.min(800, this.cells.filter((c) => c.filled).length * 30) });
+    this.sfxAt('fill', x, { volume: 0.4, detune: Math.min(800, this.cells.filter((c) => c.filled).length * 30) });
     this.addScore(10 * this.level);
   }
 
@@ -389,7 +389,7 @@ export class PlayScene extends ArcadeScene {
     const { x, y } = this.cellXY(i);
     const ex = x + DR[d][1] * this.cell * 0.5, ey = y + DR[d][0] * this.cell * 0.5;
     burst(this, ex, ey, [0x3ee6ff, 0x1f6fd1, 0xffffff], 22, 260);
-    this.sfx('leak', { volume: 0.5 });
+    this.sfxAt('leak', ex, { volume: 0.55 });
     popup(this, ex, ey - 20, t('leak'), '#3ee6ff', 18);
     const puddle = this.add.circle(ex, ey, this.cell * 0.18, 0x3ee6ff, 0.7).setScale(0);
     this.layer.add(puddle);
@@ -401,7 +401,7 @@ export class PlayScene extends ArcadeScene {
     this.drnStub.setTexture('pf-water-straight');
     const filled = this.cells.filter((c) => c.filled).length;
     const bonus = 250 * this.level + this.earlySecs * 10 * this.level;
-    this.sfx('win', { volume: 0.6 });
+    this.sfx('win', { volume: 0.8, exact: true });
     softFlash(this, 0x3ee6ff);
     const dx = this.x0 + this.cd * this.cell + this.cell / 2, yb = this.y0 + this.rows * this.cell;
     for (let k = 0; k < 5; k++) this.time.delayedCall(k * 120, () => burst(this, dx, yb + this.cell * 0.5, [0x3ee6ff, 0xffffff, 0x5dff7a], 20, 360));
@@ -421,7 +421,7 @@ export class PlayScene extends ArcadeScene {
   private failLevel(): void {
     this.phase = 'between';
     this.lives--;
-    this.sfx('fail', { volume: 0.6 });
+    this.sfx('fail', { volume: 0.7 });
     shake(this, 0.02, 350);
     softFlash(this, 0xec3013);
     this.updateHud();
@@ -444,7 +444,7 @@ export class PlayScene extends ArcadeScene {
       this.countdown -= dt;
       if (this.countdown <= 5 && Math.ceil(this.countdown) !== this.lastTick && this.countdown > 0) {
         this.lastTick = Math.ceil(this.countdown);
-        this.sfx('tick', { volume: 0.5 });
+        this.sfx('tick', { volume: this.lastTick <= 2 ? 0.6 : 0.45, rate: this.lastTick <= 2 ? 1.15 : 1 });
         this.tweens.add({ targets: this.timerText, scale: { from: 1.3, to: 1 }, duration: 250 });
       }
       if (this.countdown <= 0) this.startFlow(false);

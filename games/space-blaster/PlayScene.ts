@@ -71,6 +71,7 @@ export class PlayScene extends ArcadeScene {
   private nextWave(): void {
     this.wave++;
     this.updateHud();
+    if (this.wave > 1) this.sfx('wave', { volume: 0.5, exact: true });
     const { width } = this.scale;
     const n = 4 + Math.min(10, this.wave * 2);
     const pattern = this.wave % 3;
@@ -108,7 +109,7 @@ export class PlayScene extends ArcadeScene {
       const l = this.lasers.create(this.ship.x + o, this.ship.y - 50, 'laser') as Body;
       l.setVelocityY(-950);
     }
-    this.sfx('shoot', { volume: 0.25 });
+    this.sfxAt('shoot', this.ship.x, { volume: 0.22 });
   }
 
   private hitEnemy(l: Body, e: Body): void {
@@ -118,14 +119,15 @@ export class PlayScene extends ArcadeScene {
     e.setTintFill(0xffffff);
     this.time.delayedCall(60, () => e.active && e.clearTint());
     if (hp <= 0) this.killEnemy(e, true);
-    else this.sfx('hit', { volume: 0.3 });
+    else this.sfxAt('hit', e.x, { volume: 0.4 });
   }
 
   private killEnemy(e: Body, scored: boolean): void {
     if (!e.active) return;
     if (scored) this.addScore(e.getData('pts') as number, e.x, e.y);
     burst(this, e.x, e.y, e.getData('meteor') ? [0xb5651d, 0x888888] : [0xffd23f, 0xec3013, 0xffffff], 22, 320);
-    this.sfx('boom', { volume: 0.4 });
+    if (e.getData('meteor')) this.sfxAt('rock', e.x, { volume: 0.5 });
+    else this.sfxAt(rng.pick(['boom1', 'boom2', 'boom3']), e.x, { volume: 0.45 });
     if (scored && rng.chance(0.08)) {
       const it = this.items.create(e.x, e.y, rng.chance(0.5) ? 'pu-bolt' : 'pu-shield') as Body;
       it.setVelocityY(160);
@@ -136,23 +138,24 @@ export class PlayScene extends ArcadeScene {
   private collect(i: Body): void {
     if (i.texture.key === 'pu-bolt') this.doubleShot = 10;
     else this.shield = 8;
-    this.sfx('power');
+    this.sfxAt(i.texture.key === 'pu-bolt' ? 'power-bolt' : 'power-shield', i.x, { volume: 0.65 });
     flash(this, 0x3ee6ff, 100);
     i.destroy();
   }
 
   private hurt(): void {
     if (this.invuln > 0 || this.isOver) return;
-    if (this.shield > 0) { this.shield = 0; this.invuln = 1; this.sfx('hit'); return; }
+    if (this.shield > 0) { this.shield = 0; this.invuln = 1; this.sfxAt('shieldhit', this.ship.x, { volume: 0.6 }); return; }
     this.lives--;
     this.invuln = 2;
-    this.sfx('hurt');
+    if (this.lives > 0) this.sfxAt('hurt', this.ship.x, { volume: 0.7 });
     shake(this, 0.02, 250);
     flash(this, 0xec3013, 150);
     this.updateHud();
     if (this.lives <= 0) {
       burst(this, this.ship.x, this.ship.y, [0xec3013, 0xffd23f], 60, 500);
       this.ship.setVisible(false);
+      this.sfxAt('die', this.ship.x, { volume: 0.85 });
       this.endGame();
     }
   }
@@ -183,6 +186,7 @@ export class PlayScene extends ArcadeScene {
           const b = this.enemyShots.create(obj.x, obj.y + 30, 'elaser') as Body;
           const a = Phaser.Math.Angle.Between(obj.x, obj.y, this.ship.x, this.ship.y);
           b.setVelocity(Math.cos(a) * 320, Math.sin(a) * 320).setRotation(a - Math.PI / 2);
+          this.sfxAt('eshot', obj.x, { volume: 0.14 });
         }
       }
       if (obj.y > height + 100) obj.destroy();

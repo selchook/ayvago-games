@@ -1,4 +1,4 @@
-import { launch, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeTileTexture, tileColor } from './PlayScene';
 
@@ -8,13 +8,17 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    loadSfx(l, 'slide', 'sfx-interface/audio/scroll_003');
-    loadSfx(l, 'bump', 'sfx-interface/audio/tick_004');
-    loadSfx(l, 'shuffle', 'sfx-interface/audio/maximize_006');
-    loadSfx(l, 'place', 'sfx-interface/audio/drop_003');
-    loadSfx(l, 'solved', 'sfx-digital/audio/powerup5');
-    loadSfx(l, 'pick', 'sfx-interface/audio/switch_002');
-    loadSfx(l, 'move', 'sfx-interface/audio/tick_001');
+    const S = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'slide1', S + 'impacts/sfx-sounds-impact6');
+    loadAudio(l, 'slide2', S + 'impacts/sfx-sounds-impact7');
+    loadAudio(l, 'bump', S + 'negative-sounds/sfx-sounds-error6');
+    loadAudio(l, 'correct', S + 'simple-bleeps/sfx-sounds-blip11');
+    loadAudio(l, 'shuffle', S + 'interactions/sfx-sounds-interaction15');
+    loadAudio(l, 'place', S + 'impacts/sfx-sounds-impact5');
+    loadAudio(l, 'solved', S + 'fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'record', S + 'weird-sounds/sfx-sound-bling');
+    loadAudio(l, 'pick', S + 'menu-sounds/sfx-menu-select1');
+    loadAudio(l, 'move', S + 'menu-sounds/sfx-menu-move2');
   },
   menuDecor(scene) {
     makeTileTexture(scene);

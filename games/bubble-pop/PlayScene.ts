@@ -162,7 +162,7 @@ export class PlayScene extends ArcadeScene {
     this.refreshShooter();
     this.curImg.setScale((D / 149) * 1.25);
     this.tweens.add({ targets: this.curImg, scale: D / 149, duration: 160, ease: 'Back.easeOut' });
-    this.sfx('swap', { volume: 0.5 });
+    this.sfx('swap', { volume: 0.45 });
   }
 
   private fire(): void {
@@ -174,7 +174,7 @@ export class PlayScene extends ArcadeScene {
     this.refreshShooter();
     this.curImg.setScale(0);
     this.tweens.add({ targets: this.curImg, scale: D / 149, duration: 200, ease: 'Back.easeOut' });
-    this.sfx('shoot', { volume: 0.35 });
+    this.sfx(Math.random() < 0.5 ? 'shoot1' : 'shoot2', { volume: 0.4 });
   }
 
   // ---------- update ----------
@@ -226,8 +226,8 @@ export class PlayScene extends ArcadeScene {
     for (let i = 0; i < steps; i++) {
       b.img.x += (b.vx * dt) / steps;
       b.img.y += (b.vy * dt) / steps;
-      if (b.img.x < LEFT + R) { b.img.x = LEFT + R; b.vx = Math.abs(b.vx); this.sfx('bounce', { volume: 0.4 }); }
-      if (b.img.x > RIGHT - R) { b.img.x = RIGHT - R; b.vx = -Math.abs(b.vx); this.sfx('bounce', { volume: 0.4 }); }
+      if (b.img.x < LEFT + R) { b.img.x = LEFT + R; b.vx = Math.abs(b.vx); this.sfxAt('bounce', b.img.x, { volume: 0.4 }); }
+      if (b.img.x > RIGHT - R) { b.img.x = RIGHT - R; b.vx = -Math.abs(b.vx); this.sfxAt('bounce', b.img.x, { volume: 0.4 }); }
       if (b.img.y <= TOP + R || this.hits(b.img.x, b.img.y)) { this.snap(); return; }
     }
   }
@@ -253,7 +253,7 @@ export class PlayScene extends ArcadeScene {
     const cell = this.place(r, c, b.color);
     cell.img.setPosition(x, y);
     this.tweens.add({ targets: cell.img, x: this.cx(r, c), y: this.cy(r), duration: 60 });
-    this.sfx('stick', { volume: 0.5 });
+    this.sfxAt('stick', x, { volume: 0.5 });
     this.wobble(r, c);
 
     const group = this.flood(r, c, (n) => n.color === b.color);
@@ -261,8 +261,9 @@ export class PlayScene extends ArcadeScene {
       group.forEach(([gr, gc], i) => this.popCell(gr, gc, i));
       this.addScore(group.length * 10 * this.level, this.cx(r, c), this.cy(r));
       const dropped = this.dropFloating();
+      if (group.length >= 6) this.sfx('combo', { volume: 0.6, delay: 0.2 });
       if (dropped > 0) {
-        this.time.delayedCall(250, () => this.addScore(dropped * 25 * this.level, SHOOT_X, this.cy(r) + 80));
+        this.time.delayedCall(250, () => { this.addScore(dropped * 25 * this.level, SHOOT_X, this.cy(r) + 80); if (!this.isOver) this.sfx('coins', { volume: 0.5 }); });
         if (dropped >= 4) shake(this, 0.008, 160);
       }
       this.afterShot(true);
@@ -302,7 +303,7 @@ export class PlayScene extends ArcadeScene {
     this.grid[r][c] = null;
     this.time.delayedCall(i * 40, () => {
       burst(this, cell.img.x, cell.img.y, [TINTS[cell.color], 0xffffff], 14, 300);
-      this.sfx('pop', { volume: 0.4, detune: Math.min(1200, i * 120) });
+      this.sfxAt('pop', cell.img.x, { volume: 0.45, detune: Math.min(1200, i * 120), exact: true });
       this.tweens.add({ targets: cell.img, scale: cell.img.scale * 1.5, alpha: 0, duration: 160, onComplete: () => cell.img.destroy() });
     });
   }
@@ -327,7 +328,7 @@ export class PlayScene extends ArcadeScene {
         });
       }
     }
-    if (n) this.sfx('drop', { volume: 0.5 });
+    if (n) this.sfx('drop', { volume: 0.45 });
     return n;
   }
 
@@ -361,7 +362,10 @@ export class PlayScene extends ArcadeScene {
         if (cell) this.tweens.add({ targets: cell.img, x: this.cx(r, c), y: this.cy(r), duration: 250, ease: 'Quad.easeOut' });
       }
     }
-    this.sfx('row', { volume: 0.5 });
+    this.sfx('row', { volume: 0.55 });
+    let lowest = -1;
+    for (let r = 0; r < this.grid.length; r++) if (this.grid[r].some(Boolean)) lowest = r;
+    if (lowest >= MAXR - 2 && lowest < MAXR) this.sfx('danger', { volume: 0.4, delay: 0.3 });
     shake(this, 0.012, 200);
     popup(this, 360, TOP + 300, t('newRow'), '#ec3013', 26);
     for (let r = MAXR; r < this.grid.length; r++) if (this.grid[r].some(Boolean)) { this.time.delayedCall(260, () => this.lose()); return; }
@@ -371,7 +375,7 @@ export class PlayScene extends ArcadeScene {
     this.busy = true;
     const bonus = 500 * this.level;
     this.addScore(bonus);
-    this.sfx('level');
+    this.sfx('level', { volume: 0.75, exact: true });
     flash(this, 0x5dff7a, 200);
     const msg = txt(this, 360, 560, t('clear'), { title: true, size: 40, color: '#5dff7a' }).setDepth(50).setScale(0);
     const sub = txt(this, 360, 630, `+${bonus}`, { title: true, size: 30, color: '#ffd23f' }).setDepth(50);
@@ -388,6 +392,7 @@ export class PlayScene extends ArcadeScene {
 
   private lose(): void {
     if (this.isOver) return;
+    this.sfx('lose', { volume: 0.65 });
     shake(this, 0.025, 400);
     flash(this, 0xec3013, 200);
     for (const row of this.grid) for (const cell of row) if (cell) this.tweens.add({ targets: cell.img, alpha: 0.35, duration: 400 });

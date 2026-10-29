@@ -200,6 +200,7 @@ export class PlayScene extends ArcadeScene {
     this.updateHud();
     this.drawBoard();
     this.banner(`${t('round')} ${r}`, '#ffd23f', `${t('target')} ${this.target}`);
+    this.sfx('round', { volume: 0.45 });
     this.time.delayedCall(900, () => { if (!this.isOver) this.between = false; });
   }
 
@@ -208,7 +209,7 @@ export class PlayScene extends ArcadeScene {
     if (this.roundScore >= this.target) {
       const bonus = 40 * this.round + Math.max(0, this.roundScore - this.target);
       this.addScore(bonus);
-      this.sfx('clear');
+      this.sfx('clear', { volume: 0.8, exact: true });
       softFlash(this, 0x5dff7a, 160);
       burst(this, 360, 600, [0xffd23f, 0x5dff7a, 0x3ee6ff], 50, 520);
       this.banner(t('roundClear'), '#5dff7a', t('bonus', { n: bonus }));
@@ -218,7 +219,7 @@ export class PlayScene extends ArcadeScene {
       this.lives--;
       this.updateHud();
       this.tweens.add({ targets: this.livesG, alpha: 0.2, duration: 120, yoyo: true, repeat: 3 });
-      this.sfx('fail');
+      this.sfx('fail', { volume: 0.7 });
       shake(this, 0.015, 300);
       softFlash(this, 0xec3013, 160);
       this.banner(t('roundFail'), '#ec3013', t('lifeLost'));
@@ -278,7 +279,7 @@ export class PlayScene extends ArcadeScene {
     this.dropCd = 0.3;
     const img = this.add.image(this.dropX, DROP_Y, 'ball').setDisplaySize(BALL_R * 2, BALL_R * 2).setDepth(5);
     this.balls.push({ x: this.dropX + rng.int(-2, 2), y: DROP_Y, vx: 0, vy: 40, mult: 1, img, still: 0 });
-    this.sfx('drop', { volume: 0.5 });
+    this.sfxAt('drop', this.dropX, { volume: 0.45 });
     this.pingStep = 0;
     this.holder.setScale(0);
     this.tweens.add({ targets: this.holder, scale: (BALL_R * 2) / this.holder.width, duration: 220, delay: 120, ease: 'Back.easeOut' });
@@ -324,7 +325,7 @@ export class PlayScene extends ArcadeScene {
       const cx = Phaser.Math.Clamp(b.x, bar.x - bar.half, bar.x + bar.half);
       if (this.collideCircle(b, cx, bar.y, 8, 0.55, 0, bar.vx)) {
         b.vx += bar.vx * 0.5;
-        this.ping(1.4);
+        this.ping(1.4, b.x);
       }
     }
     // slot dividers (vertical capsules)
@@ -345,17 +346,17 @@ export class PlayScene extends ArcadeScene {
     if (p.kind === 'n') {
       p.img.setTint(0x3ee6ff);
       this.time.delayedCall(180, () => p.img.active && p.img.clearTint());
-      this.ping(1 + Math.min(1.2, this.pingStep * 0.08));
+      this.ping(1 + Math.min(1.2, this.pingStep * 0.08), p.x);
       this.pingStep++;
     } else if (p.kind === 'bump') {
-      this.sfx('bump', { volume: 0.35 });
+      this.sfxAt('bump', p.x, { volume: 0.4 });
       burst(this, p.x, p.y, [0x8b5cff, 0xffffff], 10, 220);
       this.addScore(2);
       this.roundScore += 2;
     } else if (!p.used) {
       p.used = true;
       if (p.kind === 'gold') {
-        this.sfx('gold', { volume: 0.5 });
+        this.sfxAt('gold', p.x, { volume: 0.55 });
         burst(this, p.x, p.y, [0xffd23f, 0xffffff], 14, 240);
         fpopup(this, p.x, p.y - 20, '+10', '#ffd23f', 20);
         this.addScore(10);
@@ -367,14 +368,14 @@ export class PlayScene extends ArcadeScene {
           const bonus = 100 + this.round * 20;
           this.addScore(bonus);
           this.roundScore += bonus;
-          this.sfx('mult');
+          this.sfx('allgold', { volume: 0.7 });
           softFlash(this, 0xffd23f, 140);
           this.banner(t('allGold', { n: bonus }), '#ffd23f');
         }
       } else if (p.kind === 'mult') {
         b.mult = Math.min(4, b.mult * 2);
         b.img.setTexture('ball-gold');
-        this.sfx('mult', { volume: 0.6 });
+        this.sfxAt('mult', p.x, { volume: 0.6 });
         burst(this, p.x, p.y, [0xff4fa3, 0xffd23f], 18, 280);
         fpopup(this, p.x, p.y - 24, `x${b.mult}`, '#ff4fa3', 26);
         p.img.setAlpha(0.35);
@@ -383,11 +384,11 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  private ping(rate: number): void {
+  private ping(rate: number, x: number): void {
     const now = this.time.now;
     if (now - this.lastPing < 45) return;
     this.lastPing = now;
-    this.sfx('ping', { volume: 0.25, rate });
+    this.sfxAt('ping', x, { volume: 0.3, rate });
   }
 
   private land(b: Ball): void {
@@ -397,12 +398,12 @@ export class PlayScene extends ArcadeScene {
     this.slotFlash[i] = 1;
     if (s.kind === 'ball') {
       this.ballsLeft++;
-      this.sfx('extra');
+      this.sfxAt('extra', cx, { volume: 0.7, exact: true });
       burst(this, cx, FLOOR - 30, [0x5dff7a, 0xffffff], 22, 300);
       fpopup(this, cx, FLOOR - 90, t('extraBall'), '#5dff7a', 22);
       this.tweens.add({ targets: this.ballsText, scale: 1.3, duration: 120, yoyo: true });
     } else if (s.kind === 'zero') {
-      this.sfx('zero', { volume: 0.5 });
+      this.sfxAt('zero', cx, { volume: 0.5 });
       burst(this, cx, FLOOR - 30, [0x555566, 0x8a84a8], 12, 160);
       fpopup(this, cx, FLOOR - 90, '0', '#8a84a8', 26);
     } else {
@@ -411,7 +412,9 @@ export class PlayScene extends ArcadeScene {
       this.addScore(pts);
       this.roundScore += pts;
       const big = pts >= 100;
-      this.sfx(big ? 'big' : 'land', { volume: big ? 0.7 : 0.5 });
+      // Higher slots ring higher.
+      if (big) this.sfxAt('big', cx, { volume: 0.7 });
+      else this.sfxAt('land', cx, { volume: 0.5, rate: 0.9 + Math.min(0.35, pts / 200) });
       burst(this, cx, FLOOR - 30, [SLOT_COLORS[s.value] ?? 0xffffff, 0xffd23f, 0xffffff], big ? 40 : 18, big ? 420 : 260);
       if (big) shake(this, 0.008, 160);
       if (gate > 1 || b.mult > 1) softFlash(this, 0xff4fa3, 90);

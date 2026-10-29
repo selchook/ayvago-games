@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, F } from './PlayScene';
 
@@ -11,14 +11,20 @@ launch({
     const l = scene.load;
     l.spritesheet('pp', kenney('pixel-platformer/tilemap/tilemap_packed.png'), { frameWidth: 21, frameHeight: 21 });
     l.spritesheet('ppbg', kenney('pixel-platformer/backgrounds/backgrounds.png'), { frameWidth: 231, frameHeight: 63 });
-    loadSfx(l, 'jump', 'sfx-digital/audio/phasejump1');
-    loadSfx(l, 'jump2', 'sfx-digital/audio/phasejump3');
-    loadSfx(l, 'coin', 'sfx-digital/audio/pepsound2');
-    loadSfx(l, 'stomp', 'sfx-impact/audio/impactsoft_heavy_001');
-    loadSfx(l, 'hurt', 'sfx-digital/audio/phaserdown2');
-    loadSfx(l, 'fall', 'sfx-digital/audio/lowdown');
-    loadSfx(l, 'land', 'sfx-impact/audio/footstep_grass_001');
-    loadSfx(l, 'milestone', 'sfx-digital/audio/powerup4');
+    const J = 'oga/junkala-sfx/';
+    const M = J + 'movement/jumping-and-landing/';
+    loadAudio(l, 'jump', M + 'sfx-movement-jump9');
+    loadAudio(l, 'jump2', M + 'sfx-movement-jump12');
+    loadAudio(l, 'coin', J + 'general-sounds/coins/sfx-coin-single3');
+    loadAudio(l, 'coin10', J + 'general-sounds/coins/sfx-coin-double2');
+    loadAudio(l, 'stomp', J + 'general-sounds/impacts/sfx-sounds-impact8');
+    loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage1');
+    loadAudio(l, 'fall', J + 'movement/falling-sounds/sfx-sounds-falling3');
+    loadAudio(l, 'die', J + 'movement/falling-sounds/sfx-sounds-falling11');
+    loadAudio(l, 'land', M + 'sfx-movement-jump12-landing');
+    loadAudio(l, 'land2', M + 'sfx-movement-jump16-landing');
+    loadAudio(l, 'milestone', J + 'general-sounds/positive-sounds/sfx-sounds-powerup8');
+    loadAudio(l, 'faster', J + 'general-sounds/positive-sounds/sfx-sounds-powerup12');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

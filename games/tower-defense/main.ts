@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { warmText } from './fasttext';
@@ -20,19 +20,29 @@ launch({
   preload(scene) {
     const l = scene.load;
     for (const [k, n] of Object.entries(IMAGES)) l.image(k, TILE(n));
-    loadSfx(l, 'build', 'sfx-impact/audio/impactmetal_heavy_001');
-    loadSfx(l, 'gun', 'sfx-digital/audio/laser9');
-    loadSfx(l, 'cannon', 'sfx-impact/audio/impactpunch_heavy_002');
-    loadSfx(l, 'missile', 'sfx-digital/audio/phaserup2');
-    loadSfx(l, 'boom', 'sfx-impact/audio/impactmining_001');
-    loadSfx(l, 'kill', 'sfx-digital/audio/zap1');
-    loadSfx(l, 'leak', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'wave', 'sfx-digital/audio/threetone1');
-    loadSfx(l, 'clear', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'upgrade', 'sfx-digital/audio/powerup7');
-    loadSfx(l, 'sell', 'sfx-casino/audio/chipsstack2');
-    loadSfx(l, 'error', 'sfx-interface/audio/error_004');
-    loadSfx(l, 'select', 'sfx-interface/audio/select_004');
+    const J = 'oga/junkala-sfx/';
+    loadAudio(l, 'build', J + 'general-sounds/impacts/sfx-sounds-impact12');
+    loadAudio(l, 'gun', J + 'weapons/single-shot-sounds/sfx-weapon-singleshot19');
+    loadAudio(l, 'cannon', J + 'weapons/cannon/sfx-wpn-cannon1');
+    loadAudio(l, 'missile', J + 'weapons/grenade-whistles/sfx-wpn-missilelaunch');
+    loadAudio(l, 'boom1', J + 'explosions/shortest/sfx-exp-shortest-hard4');
+    loadAudio(l, 'boom2', J + 'explosions/shortest/sfx-exp-shortest-hard5');
+    loadAudio(l, 'boom3', J + 'explosions/shortest/sfx-exp-shortest-hard6');
+    loadAudio(l, 'kill1', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit9');
+    loadAudio(l, 'kill2', J + 'general-sounds/simple-damage-sounds/sfx-damage-hit3');
+    loadAudio(l, 'killtank', J + 'explosions/short/sfx-exp-short-hard6');
+    loadAudio(l, 'killplane', J + 'explosions/shortest/sfx-exp-shortest-soft3');
+    loadAudio(l, 'killboss', J + 'explosions/medium-length/sfx-exp-medium2');
+    loadAudio(l, 'leak', J + 'general-sounds/negative-sounds/sfx-sounds-damage2');
+    loadAudio(l, 'lowhp', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
+    loadAudio(l, 'wave', J + 'general-sounds/alarms/alarms/sfx-alarm-loop6');
+    loadAudio(l, 'final', J + 'general-sounds/alarms/alarms/sfx-alarm-loop3');
+    loadAudio(l, 'tick', J + 'general-sounds/simple-bleeps/sfx-sounds-blip8');
+    loadAudio(l, 'clear', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
+    loadAudio(l, 'upgrade', J + 'general-sounds/positive-sounds/sfx-sounds-powerup12');
+    loadAudio(l, 'sell', J + 'general-sounds/coins/sfx-coin-cluster4');
+    loadAudio(l, 'error', J + 'general-sounds/negative-sounds/sfx-sounds-error5');
+    loadAudio(l, 'select', J + 'general-sounds/menu-sounds/sfx-menu-select2');
   },
   menuDecor(scene) {
     warmText(scene, [[26, true], [16, true], [1, true], [26, false], [22, false], [18, true], [20, true], [48, true], [36, true], [32, true]]);

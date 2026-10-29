@@ -101,7 +101,7 @@ export class PlayScene extends ArcadeScene {
     this.startSize = SIZES[i];
     this.n = SIZES[i];
     this.puzzle = 1;
-    this.sfx('pick');
+    this.sfx('pick', { volume: 0.6 });
     this.buildPuzzle();
   }
 
@@ -247,19 +247,20 @@ export class PlayScene extends ArcadeScene {
       gap = q;
       this.moves++;
     }
-    this.sfx('slide', { volume: 0.45, detune: rng.int(-100, 100) });
+    this.sfx(rng.pick(['slide1', 'slide2']), { volume: 0.45 });
     this.refreshCorrect();
     this.updateHud();
     if (this.isSolved()) this.solved();
   }
 
   private bump(pos = -1): void {
-    this.sfx('bump', { volume: 0.4 });
+    this.sfx('bump', { volume: 0.35 });
     const tl = pos >= 0 ? this.tiles.get(this.grid[pos]) : undefined;
     if (tl) this.tweens.add({ targets: tl.c, angle: { from: -6, to: 0 }, duration: 160, ease: 'Back.easeOut' });
   }
 
   private refreshCorrect(): void {
+    let gained = false;
     this.grid.forEach((v, pos) => {
       if (!v) return;
       const tl = this.tiles.get(v)!;
@@ -267,10 +268,12 @@ export class PlayScene extends ArcadeScene {
       if (ok && !tl.c.getData('ok') && this.moves > 0) {
         const { x, y } = this.posXY(pos);
         this.time.delayedCall(110, () => burst(this, x, y, [tileColor(v - 1, this.n), 0xffffff], 6, 120));
+        gained = true;
       }
       tl.c.setData('ok', ok);
       tl.img.setAlpha(ok ? 1 : 0.72);
     });
+    if (gained && !this.isSolved()) this.time.delayedCall(110, () => this.sfx('correct', { volume: 0.3 }));
   }
 
   private solved(): void {
@@ -291,9 +294,9 @@ export class PlayScene extends ArcadeScene {
     c.add(this.add.image(0, 0, 'sp-tile').setDisplaySize(this.cell - 6, this.cell - 6).setTint(tileColor(last - 1, n)));
     c.add(this.add.text(0, 2, String(last), { fontFamily: '"Press Start 2P", monospace', fontSize: `${Math.round(this.cell * 0.32)}px`, color: '#fff', stroke: '#000', strokeThickness: 7 }).setOrigin(0.5));
     this.tiles.set(last, { c, img: c.list[0] as Phaser.GameObjects.Image, value: last });
-    this.tweens.add({ targets: c, y, alpha: 1, duration: 380, delay: 150, ease: 'Bounce.easeOut', onComplete: () => { this.sfx('place'); shake(this, 0.008, 120); } });
+    this.tweens.add({ targets: c, y, alpha: 1, duration: 380, delay: 150, ease: 'Bounce.easeOut', onComplete: () => { this.sfx('place', { volume: 0.6 }); shake(this, 0.008, 120); } });
     this.time.delayedCall(600, () => {
-      this.sfx('solved', { volume: 0.6 });
+      this.sfx('solved', { volume: 0.7, exact: true });
       softFlash(this, 0x5dff7a);
       let k = 0;
       this.tiles.forEach((tl) => {
@@ -308,7 +311,7 @@ export class PlayScene extends ArcadeScene {
       this.tweens.add({ targets: msg, scale: 1, duration: 360, ease: 'Back.easeOut' });
       const sub = txt(this, 360, CY + 40, `${t('moves')}: ${moves} · ${t('time')}: ${this.fmt(secs)}${record ? '  ' + t('record') : ''}${done ? '' : '\n' + t('nextSize', { n: `${n + 1}×${n + 1}` })}`,
         { size: 28, color: record ? '#ff4fa3' : '#ffd23f' }).setDepth(30);
-      if (record) popup(this, 360, CY - 140, t('record'), '#ff4fa3', 26);
+      if (record) { popup(this, 360, CY - 140, t('record'), '#ff4fa3', 26); this.time.delayedCall(450, () => this.sfx('record', { volume: 0.5, exact: true })); }
       if (done) { this.endGame({ win: true, delay: 2600, title: t('allSolved') }); return; }
       this.time.delayedCall(2800, () => {
         msg.destroy(); sub.destroy(); band.destroy();

@@ -1,6 +1,8 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeTextures } from './PlayScene';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -12,14 +14,22 @@ launch({
     for (const k of ['target_colored', 'target_red1', 'target_red2', 'target_red3']) l.image(k, kenney(`shooting-gallery/png/objects/${k}.png`));
     l.image('pine', kenney('shooting-gallery/png/stall/tree_pine.png'));
     l.image('oak', kenney('shooting-gallery/png/stall/tree_oak.png'));
-    loadSfx(l, 'throw', 'sfx-digital/audio/phasejump1');
-    for (const n of [0, 1, 2]) loadSfx(l, 'thunk' + n, `sfx-impact/audio/impactwood_heavy_00${n}`);
+    loadAudio(l, 'throw1', J + 'weapons/melee/sfx-wpn-sword1');
+    loadAudio(l, 'throw2', J + 'weapons/melee/sfx-wpn-sword2');
+    loadAudio(l, 'throw3', J + 'weapons/melee/sfx-wpn-sword3');
+    loadSfx(l, 'thunk0', 'sfx-impact/audio/impactwood_heavy_000');
+    loadSfx(l, 'thunk1', 'sfx-impact/audio/impactwood_heavy_001');
+    loadSfx(l, 'thunk2', 'sfx-impact/audio/impactwood_heavy_002');
     loadSfx(l, 'clang', 'sfx-impact/audio/impactmetal_heavy_000');
+    loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage1');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop6');
     loadSfx(l, 'plate', 'sfx-impact/audio/impactplate_heavy_001');
     loadSfx(l, 'apple', 'sfx-impact/audio/impactsoft_heavy_000');
-    loadSfx(l, 'bonus', 'sfx-digital/audio/powerup5');
+    loadAudio(l, 'bonus', J + 'general-sounds/coins/sfx-coin-double2');
     loadSfx(l, 'shatter', 'sfx-impact/audio/impactplank_medium_002');
-    loadSfx(l, 'stage', 'sfx-digital/audio/threetone1');
+    loadAudio(l, 'crunch', J + 'explosions/shortest/sfx-exp-shortest-soft4');
+    loadAudio(l, 'clear', J + 'general-sounds/fanfares/sfx-sounds-fanfare3');
+    loadAudio(l, 'stage', J + 'general-sounds/menu-sounds/sfx-menu-select2');
     loadSfx(l, 'boss', 'jingles/audio/8-bit_jingles/jingles_nes10');
   },
   menuDecor(scene) {

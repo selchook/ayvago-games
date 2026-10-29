@@ -1,4 +1,4 @@
-import { launch, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { PUZZLES, PALETTE } from './puzzles';
@@ -9,16 +9,18 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    loadSfx(l, 'fill', 'sfx-interface/audio/click_003');
-    loadSfx(l, 'mark', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'wrong', 'sfx-interface/audio/error_006');
-    loadSfx(l, 'line', 'sfx-interface/audio/confirmation_001');
-    loadSfx(l, 'solved', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'reveal', 'sfx-digital/audio/phaserup3');
-    loadSfx(l, 'toggle', 'sfx-interface/audio/switch_002');
-    loadSfx(l, 'move', 'sfx-interface/audio/tick_004');
-    loadSfx(l, 'warn', 'sfx-interface/audio/error_002');
-    loadSfx(l, 'timeup', 'sfx-digital/audio/phaserdown3');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'fill', J + 'simple-bleeps/sfx-sounds-blip5');
+    loadAudio(l, 'mark', J + 'simple-bleeps/sfx-sounds-blip8');
+    loadAudio(l, 'wrong', J + 'negative-sounds/sfx-sounds-error8');
+    loadAudio(l, 'line', J + 'coins/sfx-coin-double3');
+    loadAudio(l, 'solved', J + 'fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'perfect', J + 'coins/sfx-coin-cluster8');
+    loadAudio(l, 'reveal', J + 'positive-sounds/sfx-sounds-powerup14');
+    loadAudio(l, 'toggle', J + 'buttons/sfx-sounds-button11');
+    loadAudio(l, 'move', J + 'menu-sounds/sfx-menu-move2');
+    loadAudio(l, 'warn', J + 'high-pitched-sounds/sfx-sounds-high1');
+    loadAudio(l, 'timeup', J + 'negative-sounds/sfx-sounds-negative2');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

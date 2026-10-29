@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, PALETTE } from './PlayScene';
+
+const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
@@ -10,12 +12,17 @@ launch({
   preload(scene) {
     const l = scene.load;
     l.image('cg-star', kenney('platformer/png/items/star.png'));
-    loadSfx(l, 'hop', 'sfx-digital/audio/pepsound2');
-    loadSfx(l, 'star', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'switch', 'sfx-digital/audio/phaserup3');
-    loadSfx(l, 'die', 'sfx-digital/audio/lowdown');
+    loadAudio(l, 'hop1', J + 'movement/jumping-and-landing/sfx-movement-jump1');
+    loadAudio(l, 'hop2', J + 'movement/jumping-and-landing/sfx-movement-jump5');
+    loadAudio(l, 'hop3', J + 'movement/jumping-and-landing/sfx-movement-jump10');
+    loadAudio(l, 'star', J + 'general-sounds/coins/sfx-coin-double4');
+    loadAudio(l, 'switch', J + 'general-sounds/positive-sounds/sfx-sounds-powerup10');
+    loadAudio(l, 'pass', J + 'general-sounds/simple-bleeps/sfx-sounds-blip6');
+    loadAudio(l, 'level', J + 'general-sounds/fanfares/sfx-sounds-fanfare3');
     loadSfx(l, 'shatter', 'sfx-impact/audio/impactglass_heavy_001');
-    loadSfx(l, 'level', 'sfx-digital/audio/threetone1');
+    loadAudio(l, 'die', J + 'general-sounds/negative-sounds/sfx-sounds-damage2');
+    loadAudio(l, 'respawn', J + 'movement/portals-and-transitions/sfx-movement-portal5');
+    loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;

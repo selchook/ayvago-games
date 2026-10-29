@@ -198,7 +198,7 @@ export class PlayScene extends ArcadeScene {
     const warn = txt(this, wx, y, '!', { title: true, size: 56, color: '#ec3013' }).setDepth(50);
     const label = txt(this, wx + (fromLeft ? 120 : -120), y, t('shark'), { title: true, size: 18, color: '#ffffff' }).setDepth(50);
     this.tweens.add({ targets: [warn, label], alpha: 0.2, duration: 160, yoyo: true, repeat: 3, onComplete: () => { warn.destroy(); label.destroy(); } });
-    this.sfx('warn', { volume: 0.4 });
+    this.sfxAt('warn', wx, { volume: 0.45 });
     this.time.delayedCall(1100, () => {
       if (this.isOver) return;
       const img = this.add.image(fromLeft ? -size : width + size, y, 'ff-shark').setDepth(15).setScale(size / SHARK_W).setFlipX(!fromLeft);
@@ -272,7 +272,7 @@ export class PlayScene extends ArcadeScene {
           const near = dist < 170;
           if (near !== f.puffed) {
             f.puffed = near;
-            if (near) this.sfx('puff', { volume: 0.25 });
+            if (near) this.sfxAt('puff', f.img.x, { volume: 0.3 });
             this.tweens.add({ targets: f.img, scale: (f.size * (near ? 1.7 : 1)) / f.baseW, duration: 200, ease: 'Back.easeOut' });
           }
         }
@@ -314,7 +314,8 @@ export class PlayScene extends ArcadeScene {
     const pts = Math.max(5, Math.round(f.size / 4)) * this.level;
     this.addScore(pts, x, y - 30);
     const big = f.size > this.size * 0.6;
-    this.sfx(big ? 'eatbig' : 'eat', { volume: 0.45, detune: rng.int(-150, 150) });
+    if (big) { this.sfxAt('eatbig', x, { volume: 0.5 }); this.sfxAt('chomp', x, { volume: 0.4 }); }
+    else this.sfxAt(rng.pick(['eat1', 'eat2', 'eat3']), x, { volume: 0.45, detune: Math.round((Math.random() - 0.5) * 300) });
     burst(this, x, y, [0xffffff, 0xbfefff], 8, 160);
     // grow
     this.size = Math.min(this.target, this.size + f.size * 0.11);
@@ -328,8 +329,9 @@ export class PlayScene extends ArcadeScene {
     if (this.invuln > 0 || this.isOver) return;
     this.lives--;
     this.invuln = 2.2;
-    this.sfx('bite', { volume: 0.6 });
-    this.sfx('hurt', { volume: 0.4 });
+    this.sfxAt('bite', this.player.x, { volume: 0.65 });
+    this.sfx(this.lives <= 0 ? 'sink' : 'hurt', { volume: this.lives <= 0 ? 0.6 : 0.45, delay: 0.06 });
+    if (this.lives === 1) this.sfx('low', { volume: 0.45, delay: 0.6 });
     shake(this, 0.02, 300);
     softFlash(this, 0xec3013, 160);
     burst(this, this.player.x, this.player.y, [0xec3013, 0xffffff], 26, 340);
@@ -352,7 +354,7 @@ export class PlayScene extends ArcadeScene {
     this.transition = true;
     const bonus = 150 * this.level + this.lives * 50;
     this.addScore(bonus, this.player.x, this.player.y - 60);
-    this.sfx('level', { volume: 0.55 });
+    this.sfx('level', { volume: 0.7, exact: true });
     softFlash(this, 0xffffff, 140);
     this.banner(t('levelClear'), '#5dff7a');
     burst(this, this.player.x, this.player.y, [0xffd23f, 0x5dff7a, 0xffffff], 40, 420);
@@ -367,7 +369,7 @@ export class PlayScene extends ArcadeScene {
       this.target = this.targetFor(this.level);
       this.size = START_SIZE;
       this.tweens.add({ targets: this.player, scale: START_SIZE / PLAYER_W, duration: 400, ease: 'Back.easeOut' });
-      this.sfx('grow', { volume: 0.35 });
+      this.sfx('grow', { volume: 0.45 });
       this.updateHud();
       this.banner(`${t('level')} ${this.level}`, '#ffd23f');
       this.sharkCd = 4;

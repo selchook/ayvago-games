@@ -126,7 +126,7 @@ export class PlayScene extends ArcadeScene {
     this.spawnCd = 1.6;
     this.banner(`${t('wave')} ${this.wave}`, '#ffd23f');
     if (this.mult > 1) popup(this, this.scale.width / 2, this.scale.height * 0.47, `x${this.mult}`, '#ff4fa3', 30);
-    this.sfx('wave', { volume: 0.4 });
+    this.sfx('wave', { volume: 0.35 });
   }
 
   // ---------- player ----------
@@ -134,7 +134,7 @@ export class PlayScene extends ArcadeScene {
     if (this.tallying || this.isOver) return;
     ty = Math.min(ty, GROUND_Y - 90);
     const bases = this.sites.filter((s) => s.kind === 'base' && s.alive && s.ammo > 0);
-    if (!bases.length) { this.sfx('empty', { volume: 0.4 }); return; }
+    if (!bases.length) { this.sfxAt('empty', tx, { volume: 0.5 }); return; }
     const b = bases.reduce((best, s) => (Math.abs(s.x - tx) < Math.abs(best.x - tx) ? s : best));
     b.ammo--;
     this.refreshAmmo();
@@ -145,13 +145,14 @@ export class PlayScene extends ArcadeScene {
     const marker = this.add.image(tx, ty, 'marker').setScale(0.5).setDepth(7);
     this.tweens.add({ targets: marker, angle: 180, duration: 600, repeat: -1 });
     this.shots.push({ x0, y0, x: x0, y: y0, tx, ty, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, marker });
-    this.sfx('launch', { volume: 0.25 });
+    this.sfxAt('launch', x0, { volume: 0.3 });
   }
 
   private blast(x: number, y: number, player: boolean, max = 78, chain = 0): void {
     this.blasts.push({ x, y, r: 4, max, t: 0, grow: 0.32, hold: 0.25, fade: 0.45, player, kills: 0, chain });
     burst(this, x, y, player ? [0xffffff, 0xffd23f, 0x3ee6ff] : [0xec3013, 0xff7b00, 0xffd23f], player ? 14 : 22, 220);
-    this.sfx(player ? 'boom' : 'impact', { volume: player ? 0.32 : 0.45 });
+    if (player) this.sfxAt(rng.pick(['boom1', 'boom2', 'boom3']), x, { volume: 0.45 });
+    else this.sfxAt('impact', x, { volume: 0.55 });
   }
 
   // ---------- enemies ----------
@@ -185,6 +186,9 @@ export class PlayScene extends ArcadeScene {
     shake(this, 0.012, 200);
     if (!s.alive) return;
     s.alive = false;
+    const left = this.cityCount();
+    this.sfxAt(left === 0 ? 'fallen' : 'ruin', s.x, { volume: left === 0 ? 0.9 : 0.75 });
+    if (left === 1 && s.kind === 'city') this.sfx('low', { volume: 0.45, delay: 0.6 });
     flash(this, 0xec3013, 140);
     burst(this, s.x, GROUND_Y - 24, [0xec3013, 0xffd23f, 0x5d8af0, 0x888888], 40, 360);
     if (s.kind === 'city') s.img.setTexture('ruin');
@@ -203,10 +207,11 @@ export class PlayScene extends ArcadeScene {
     const ammo = this.sites.filter((s) => s.kind === 'base').reduce((n, s) => n + s.ammo, 0);
     const cities = this.sites.filter((s) => s.kind === 'city' && s.alive);
     this.banner(t('levelClear'), '#5dff7a', 0.3, 2400);
+    this.sfx('clear', { volume: 0.65, exact: true });
     let delay = 600;
     for (const s of this.sites) if (s.kind === 'base' && s.ammo > 0) {
       for (let k = 0; k < s.ammo; k++) {
-        this.time.delayedCall(delay, () => { this.addScore(5 * this.mult); this.sfx('tally', { volume: 0.2 }); });
+        this.time.delayedCall(delay, () => { this.addScore(5 * this.mult); this.sfx('tally', { volume: 0.25 }); });
         delay += 45;
       }
       const base = s;
@@ -217,7 +222,7 @@ export class PlayScene extends ArcadeScene {
       this.time.delayedCall(delay, () => {
         this.addScore(100 * this.mult, c.x, GROUND_Y - 70);
         this.tweens.add({ targets: c.img, scaleY: 1.2, duration: 120, yoyo: true });
-        this.sfx('tally', { volume: 0.35, rate: 1.3 });
+        this.sfxAt('tallyCity', c.x, { volume: 0.45 });
       });
     }
     popup(this, width / 2, height * 0.38, `${t('ammo')} ${ammo}  ${t('cities')} ${cities.length}`, '#3ee6ff', 22);
@@ -231,7 +236,7 @@ export class PlayScene extends ArcadeScene {
         ruin.alive = true; ruin.img.setTexture('city').setScale(0);
         this.tweens.add({ targets: ruin.img, scale: 1, duration: 400, ease: 'Back.easeOut' });
         this.banner(t('bonusCity'), '#ff4fa3', 0.5);
-        this.sfx('bonus');
+        this.sfx('bonus', { volume: 0.7 });
       }
     });
     this.time.delayedCall(delay + 1800, () => { if (!this.isOver) this.nextWave(); });
@@ -280,7 +285,7 @@ export class PlayScene extends ArcadeScene {
       m.head.setPosition(m.x, m.y).angle += 300 * dt;
       if (m.y >= m.splitAt) {
         m.splitAt = Infinity;
-        this.sfx('split', { volume: 0.25 });
+        this.sfxAt('split', m.x, { volume: 0.3 });
         for (let k = 0; k < 2; k++) this.spawnMissile(m.x, m.y);
       }
       if (m.y >= m.ty) { this.impact(m); this.removeMissile(i); }
@@ -300,11 +305,11 @@ export class PlayScene extends ArcadeScene {
           b.kills++;
           const pts = 25 * this.mult * (1 + b.chain);
           this.addScore(pts, m.x, m.y - 20);
-          this.sfx('pop', { volume: 0.35 });
+          this.sfxAt('pop', m.x, { volume: 0.35 });
           const mx = m.x, my = m.y;
           this.removeMissile(j);
           this.blast(mx, my, true, 44, b.chain + 1);
-          if (b.kills === 3) popup(this, b.x, b.y - 60, `${t('combo')}!`, '#ff4fa3', 24);
+          if (b.kills === 3) { popup(this, b.x, b.y - 60, `${t('combo')}!`, '#ff4fa3', 24); this.sfx('combo', { volume: 0.55 }); }
         }
       }
       if (b.t >= b.grow + b.hold + b.fade) this.blasts.splice(i, 1);

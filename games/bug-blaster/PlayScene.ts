@@ -173,7 +173,7 @@ export class PlayScene extends ArcadeScene {
       this.grid[r][c] = null;
       if (byPlayer) this.gain(1);
     } else m.img.setTexture('mush' + (4 - m.hp));
-    if (byPlayer) this.sfx('mush', { volume: 0.25 });
+    if (byPlayer) this.sfxAt(Math.random() < 0.5 ? 'mush1' : 'mush2', cx(c), { volume: m.hp <= 0 ? 0.35 : 0.25 });
   }
 
   private gain(n: number, x?: number, y?: number): void {
@@ -182,7 +182,7 @@ export class PlayScene extends ArcadeScene {
       this.nextLife += 6000;
       this.lives++;
       this.updateHud();
-      this.sfx('oneup', { volume: 0.5 });
+      this.sfx('oneup', { volume: 0.7, exact: true });
       popup(this, this.player.x, this.player.y - 60, t('oneUp'), '#5dff7a', 26);
     }
   }
@@ -207,7 +207,6 @@ export class PlayScene extends ArcadeScene {
     const b = txt(this, W / 2, 560, t('waveN', { n: this.wave }), { title: true, size: 44, color: '#ffd23f' }).setDepth(9000).setScale(0.3);
     this.tweens.add({ targets: b, scale: 1, duration: 350, ease: 'Back.easeOut' });
     this.tweens.add({ targets: b, alpha: 0, delay: 1200, duration: 400, onComplete: () => b.destroy() });
-    if (!first) this.sfx('wave', { volume: 0.5 });
   }
 
   private spawnChain(len: number, c: number, dx: number): void {
@@ -262,7 +261,7 @@ export class PlayScene extends ArcadeScene {
     const isHead = idx === 0;
     this.gain(isHead ? 100 : 10, s.img.x, s.img.y);
     burst(this, s.img.x, s.img.y, [this.pal.seg, 0xffffff], isHead ? 20 : 12, isHead ? 300 : 220);
-    this.sfx(isHead ? 'head' : 'hit', { volume: 0.35 });
+    this.sfxAt(isHead ? 'head' : rng.pick(['hit1', 'hit2', 'hit3']), s.img.x, { volume: isHead ? 0.5 : 0.4 });
     if (isHead) shake(this, 0.004, 80);
     s.img.destroy();
     // the hit segment becomes a mushroom
@@ -282,6 +281,7 @@ export class PlayScene extends ArcadeScene {
     this.gain(50 * this.wave, W / 2, 700);
     this.wave++;
     flash(this, this.pal.seg, 150);
+    this.sfx('clear', { volume: 0.65, exact: true });
     this.time.delayedCall(600, () => { if (!this.isOver && !this.dead && !this.chains.length) this.startWave(false); });
   }
 
@@ -311,7 +311,7 @@ export class PlayScene extends ArcadeScene {
     this.dead = true;
     this.lives--;
     this.updateHud();
-    this.sfx('die', { volume: 0.6 });
+    this.sfxAt(this.lives <= 0 ? 'death' : 'die', this.player.x, { volume: this.lives <= 0 ? 0.9 : 0.8 });
     shake(this, 0.025, 350);
     flash(this, 0xec3013, 180);
     burst(this, this.player.x, this.player.y, [0x3ee6ff, 0xffffff, 0xec3013], 50, 460);
@@ -333,7 +333,7 @@ export class PlayScene extends ArcadeScene {
             if (!m.img.active) return;
             m.hp = 4; m.img.setTexture('mush0');
             this.tweens.add({ targets: m.img, scale: 1.3, duration: 80, yoyo: true });
-            this.gain(5); this.sfx('repair', { volume: 0.25 });
+            this.gain(5); this.sfxAt('repair', m.img.x, { volume: 0.25, exact: true, rate: Math.min(1.6, 1 + k * 0.025) });
           });
         }
       }
@@ -341,6 +341,7 @@ export class PlayScene extends ArcadeScene {
         if (this.isOver) return;
         this.player.setPosition(W / 2, cy(MAXR - 1)).setVisible(true).setAlpha(0);
         this.tweens.add({ targets: this.player, alpha: 1, duration: 300 });
+        if (this.lives === 1) this.sfx('low', { volume: 0.45 });
         // clear a landing spot
         for (let r = MAXR - 2; r <= MAXR; r++) for (let c = 8; c <= 9; c++) { const m = this.grid[r][c]; if (m) { m.img.destroy(); this.grid[r][c] = null; } }
         this.dead = false;
@@ -356,7 +357,7 @@ export class PlayScene extends ArcadeScene {
     const img = this.add.image(fromLeft ? -40 : W + 40, y, 'spider').setDepth(15);
     const sp = 120 + Math.min(10, this.wave) * 12;
     this.spider = { img, vx: fromLeft ? sp : -sp, vy: rng.pick([-1, 1]) * rng.int(180, 300) };
-    this.sfx('spiderIn', { volume: 0.35 });
+    this.sfxAt('spiderIn', fromLeft ? 0 : W, { volume: 0.35 });
   }
 
   private killSpider(): void {
@@ -366,7 +367,7 @@ export class PlayScene extends ArcadeScene {
     this.gain(pts, s.img.x, s.img.y);
     burst(this, s.img.x, s.img.y, [0x8b5cff, 0xffd23f, 0xffffff], 30, 360);
     shake(this, 0.01, 150);
-    this.sfx('spider', { volume: 0.5 });
+    this.sfxAt('spider', s.img.x, { volume: 0.55 });
     s.img.destroy();
     this.spider = null;
   }
@@ -391,7 +392,7 @@ export class PlayScene extends ArcadeScene {
       this.boltOn = true;
       this.bolt.setPosition(this.player.x, this.player.y - 24).setVisible(true);
       this.fireCd = 0.07;
-      this.sfx('shoot', { volume: 0.1 });
+      this.sfxAt(Math.random() < 0.5 ? 'shoot1' : 'shoot2', this.player.x, { volume: 0.12 });
     }
     if (this.boltOn) this.moveBolt(dt);
 
@@ -436,7 +437,7 @@ export class PlayScene extends ArcadeScene {
         const col = rng.int(0, COLS - 1);
         const img = this.add.image(cx(col), 80, 'flea').setDepth(15);
         this.flea = { img, hp: 2, vy: 420 + this.wave * 20, lastRow: 1 };
-        this.sfx('flea', { volume: 0.4 });
+        this.sfxAt('flea', cx(col), { volume: 0.35 });
       }
     }
     if (this.flea) {
@@ -487,9 +488,9 @@ export class PlayScene extends ArcadeScene {
         if (f.hp <= 0) {
           this.gain(200, f.img.x, f.img.y);
           burst(this, f.img.x, f.img.y, [0xff4fa3, 0xffffff], 20, 280);
-          this.sfx('spider', { volume: 0.4 });
+          this.sfxAt('fleaKill', f.img.x, { volume: 0.5 });
           f.img.destroy(); this.flea = null;
-        } else { f.vy *= 1.8; f.img.setTintFill(0xffffff); this.time.delayedCall(60, () => f.img.active && f.img.clearTint()); this.sfx('hit', { volume: 0.3 }); }
+        } else { f.vy *= 1.8; f.img.setTintFill(0xffffff); this.time.delayedCall(60, () => f.img.active && f.img.clearTint()); this.sfxAt('hit1', f.img.x, { volume: 0.4 }); }
         return;
       }
       const c = Math.floor(bx / CELL), r = Math.floor(by / CELL);
