@@ -413,20 +413,21 @@ export class PlayScene extends ArcadeScene {
     const inside = s.tx > GL && s.tx < GR && s.ty > GT && s.ty < GB;
     let goal = false;
     if (onPost) {
-      this.sfx('post', { volume: 0.7 }); shake(this, 0.01, 150);
+      this.sfx('post', { volume: 0.7, x: s.tx }); shake(this, 0.01, 150);
       this.showBanner(t('post'), '#f3f2f2');
       this.tweens.add({ targets: this.ball, x: s.tx + (s.tx < SPOT_X ? -200 : 200), y: s.ty + 300, scale: 2.4, duration: 600 });
     } else if (!inside) {
       this.showBanner(s.ty < GT ? t('over') : t('wide'), '#f3f2f2');
+      this.sfx('wide', { volume: 0.5, x: s.tx });
       this.tweens.add({ targets: this.ball, x: s.tx + (s.tx - SPOT_X) * 0.3, y: s.ty - 80, scale: 1.2, alpha: 0, duration: 500 });
     } else if (this.saves(s.tx, s.ty)) {
-      this.sfx('save', { volume: 0.8 }); shake(this, 0.008, 120);
+      this.sfx('save', { volume: 0.8, x: s.tx }); shake(this, 0.008, 120);
       burst(this, s.tx, s.ty, [0xffffff, 0xffe14d], 18, 260);
       this.tweens.add({ targets: this.ball, x: s.tx + (s.tx < this.kx ? -160 : 160), y: s.ty + rng.int(150, 300), scale: 3.2, angle: 400, duration: 600, ease: 'Quad.easeOut' });
     } else {
       goal = true;
       this.netShake = 6;
-      this.sfx('net', { volume: 0.7 });
+      this.sfx('net', { volume: 0.7, x: s.tx });
       this.tweens.add({ targets: this.ball, y: s.ty + 14, scale: 1.8, duration: 160, ease: 'Quad.easeOut' });
       this.ball.setDepth(2);
     }
@@ -665,19 +666,20 @@ export class PlayScene extends ArcadeScene {
     const o = this.outcome;
     const goal = o === 'goal';
     if (o === 'post') {
-      this.sfx('post', { volume: 0.7 }); shake(this, 0.01, 150);
+      this.sfx('post', { volume: 0.7, x: s.tx }); shake(this, 0.01, 150);
       this.showBanner(t('post'), '#f3f2f2');
       this.tweens.add({ targets: this.ball, x: s.tx + (s.tx < SPOT_X ? -200 : 200), y: s.ty + 300, scale: 2.4, duration: 600 });
     } else if (o === 'wide' || o === 'over') {
       this.showBanner(t(o), '#f3f2f2');
+      this.sfx('wide', { volume: 0.5, x: s.tx });
       this.tweens.add({ targets: this.ball, x: s.tx + (s.tx - SPOT_X) * 0.3, y: s.ty - 80, scale: 1.2, alpha: 0, duration: 500 });
     } else if (o === 'save') {
-      this.sfx('save', { volume: 0.8 }); shake(this, 0.008, 120);
+      this.sfx('save', { volume: 0.8, x: s.tx }); shake(this, 0.008, 120);
       burst(this, s.tx, s.ty, [0xffffff, 0xffe14d], 18, 260);
       this.tweens.add({ targets: this.ball, x: s.tx + (s.tx < this.kx ? -160 : 160), y: s.ty + 220, scale: 3.2, angle: 400, duration: 600, ease: 'Quad.easeOut' });
     } else {
       this.netShake = 6;
-      this.sfx('net', { volume: 0.7 });
+      this.sfx('net', { volume: 0.7, x: s.tx });
       this.tweens.add({ targets: this.ball, y: s.ty + 14, scale: 1.8, duration: 160, ease: 'Quad.easeOut' });
       this.ball.setDepth(2);
     }
@@ -714,7 +716,10 @@ export class PlayScene extends ArcadeScene {
       if (win) {
         this.sfx('jingle-win', { volume: 0.6 });
         burst(this, 360, 640, [0xffd23f, 0x5dff7a, 0x3ee6ff], 60, 500);
-      } else shake(this, 0.015, 300);
+      } else {
+        this.sfx('lose', { volume: 0.6 });
+        shake(this, 0.015, 300);
+      }
       this.endGame({ win, title: win ? t('youWin') : t('youLose'), delay: 1600 });
       return;
     }
@@ -743,7 +748,7 @@ export class PlayScene extends ArcadeScene {
       this.pickLeft -= dt;
       const now = Math.ceil(this.pickLeft);
       this.clockText.setText(`${Math.max(0, now)}`).setColor(now <= 3 ? '#ec3013' : '#ffd23f');
-      if (now !== before && now <= 3 && now > 0) this.sfx('curl', { volume: 0.25 });
+      if (now !== before && now <= 3 && now > 0) this.sfx('clock', { volume: 0.4 });
       if (this.pickLeft <= 0) {
         if (this.phase === 'aim') this.shoot(this.rx, this.ry, 0.5, this.kbCurve, 18);
         else this.commitZone(this.zone);

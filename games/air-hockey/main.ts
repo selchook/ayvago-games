@@ -1,4 +1,4 @@
-import { launch, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeHockeyTextures } from './PlayScene';
 import { warmText } from './fasttext';
@@ -12,10 +12,11 @@ launch({
     loadSfx(l, 'hit', 'sfx-impact/audio/impactplate_light_001');
     loadSfx(l, 'hit2', 'sfx-impact/audio/impactplate_medium_002');
     loadSfx(l, 'wall', 'sfx-impact/audio/impactgeneric_light_001');
-    loadSfx(l, 'goal', 'sfx-digital/audio/powerup2');
-    loadSfx(l, 'concede', 'sfx-digital/audio/phaserdown3');
-    loadSfx(l, 'serve', 'sfx-interface/audio/select_005');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'goal', J + 'positive-sounds/sfx-sounds-powerup8');
+    loadAudio(l, 'concede', J + 'negative-sounds/sfx-sounds-negative2');
+    loadAudio(l, 'serve', J + 'menu-sounds/sfx-menu-select4');
+    loadAudio(l, 'matchPoint', J + 'high-pitched-sounds/sfx-sounds-high5');
   },
   menuDecor(scene) {
     warmText(scene, [[22, true], [26, true], [40, true], [60, true], [96, true], [24, false]]);

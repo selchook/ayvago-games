@@ -281,7 +281,9 @@ export class PlayScene extends ArcadeScene {
     if (finished) this.phase = 'between';
     const mine = !this.online || this.turn === net.seat;
     this.time.delayedCall(220, () => {
-      this.sfx('match', { volume: 0.55, detune: Math.min(600, (this.combo - 1) * 100) });
+      // a streak of pairs climbs in pitch; the opponent's pairs get a quieter, neutral tone
+      if (mine) this.sfx('match', { volume: 0.55, detune: Math.min(600, (this.combo - 1) * 100) });
+      else this.sfx('theirMatch', { volume: 0.45 });
       for (const c of [a, b]) {
         this.tweens.add({ targets: c.c, scale: 1.18, duration: 140, yoyo: true, ease: 'Quad.easeOut', onComplete: () => c.face.setTint(0xc8ffd0) });
         burst(this, c.c.x, c.c.y, [0x5dff7a, 0xffd23f, 0xffffff], 18, 260);
@@ -323,6 +325,7 @@ export class PlayScene extends ArcadeScene {
     if (!mine) { this.showCursor = false; this.cursorBox.setVisible(false); }
     this.turnText.setText(mine ? t('yourTurn') : t('theirTurn')).setColor(mine ? '#5dff7a' : '#ff8a7a');
     this.tweens.add({ targets: this.turnText, scale: { from: 1.3, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+    if (mine && this.flipNo > 0) this.sfx('turn', { volume: 0.45 });
   }
 
   /** Online: every pair is found; both screens counted the same pairs. */
@@ -332,7 +335,7 @@ export class PlayScene extends ArcadeScene {
     const me = this.pairsBy[net.seat], them = this.pairsBy[net.seat === 0 ? 1 : 0];
     const win = me > them, title = win ? t('youWin') : me < them ? t('youLose') : t('draw');
     this.turnText.setText('');
-    this.sfx(win ? 'clear' : 'miss', { volume: 0.6 });
+    this.sfx(win ? 'clear' : me < them ? 'lose' : 'draw', { volume: 0.6 });
     softFlash(this, win ? 0x5dff7a : me < them ? 0xec3013 : 0xffd23f);
     if (!win) shake(this, 0.01, 250);
     this.cards.forEach((c, k) => this.tweens.add({ targets: c.c, angle: 360, duration: 500, delay: k * 18, ease: 'Cubic.easeOut' }));
@@ -370,7 +373,7 @@ ${clip(net.peerName || t('opponent'), 12)}: ${them} ${t('pairs')}`, { size: 34 }
       this.time.delayedCall(350 + s * 260, () => {
         this.tweens.add({ targets: st, scale: 96 / st.width, duration: 280, ease: 'Back.easeOut' });
         if (on) {
-          this.sfx('star', { volume: 0.5, detune: s * 200 });
+          this.sfx('star', { volume: 0.5, detune: s * 200, exact: true });
           burst(this, st.x, st.y, [0xffd23f, 0xffffff], 16, 260);
         }
       });
@@ -386,7 +389,7 @@ ${clip(net.peerName || t('opponent'), 12)}: ${them} ${t('pairs')}`, { size: 34 }
   private timeUp(): void {
     this.phase = 'over';
     this.cursorBox.setVisible(false);
-    this.sfx('miss', { volume: 0.5 });
+    this.sfx('timeup', { volume: 0.6 });
     shake(this, 0.02, 400);
     softFlash(this, 0xec3013);
     this.cards.forEach((c, k) => {

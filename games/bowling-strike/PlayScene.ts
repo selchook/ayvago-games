@@ -471,7 +471,7 @@ export class PlayScene extends ArcadeScene {
     }
     if (this.time.now - p.hitSfx > 90 && speed > 40) {
       p.hitSfx = this.time.now;
-      this.sfx(rng.pick(['pin1', 'pin2', 'pin3']), { volume: Math.min(0.7, 0.2 + speed / 2500), rate: 0.9 + Math.random() * 0.3 });
+      this.sfx(rng.pick(['pin1', 'pin2', 'pin3']), { volume: Math.min(0.7, 0.2 + speed / 2500), rate: 0.9 + Math.random() * 0.3, x: p.x });
     }
   }
 
@@ -484,7 +484,7 @@ export class PlayScene extends ArcadeScene {
         this.gutter = true;
         this.bvx = 0;
         this.bx = this.bx < LANE_C ? LANE_L - GUT / 2 : LANE_R + GUT / 2;
-        this.sfx('gutter', { volume: 0.5 });
+        this.sfx('gutter', { volume: 0.5, x: this.bx });
         shake(this, 0.004, 120);
       }
       if (!this.gutter) {
@@ -690,6 +690,7 @@ export class PlayScene extends ArcadeScene {
     this.totals = this.rowTotals[seat];
     this.strikeRun = this.runs[seat];
     const mine = seat === this.seat;
+    if (mine && this.online && this.turnNo > 0) this.sfx('turn', { volume: 0.45 });
     this.turnText.setText(`${t('frame')} ${frame + 1}/10 · ${mine ? t('yourTurn') : t('theirTurn')}`).setColor(mine ? '#5dff7a' : '#3ee6ff');
   }
 
@@ -832,7 +833,7 @@ export class PlayScene extends ArcadeScene {
           p.up = false;
           p.img.setTexture('bw-pin-down');
           burst(this, p.x, p.y, [0xffffff, 0xd62828], 8, 200);
-          this.sfx(rng.pick(['pin1', 'pin2', 'pin3']), { volume: 0.45, rate: 0.9 + Math.random() * 0.3 });
+          this.sfx(rng.pick(['pin1', 'pin2', 'pin3']), { volume: 0.45, rate: 0.9 + Math.random() * 0.3, x: p.x });
           if (!this.crashPlayed) { this.crashPlayed = true; this.sfx('crash', { volume: 0.7 }); shake(this, 0.006, 160); }
         }
         if (!p.up) p.img.angle = pt[o + 3];

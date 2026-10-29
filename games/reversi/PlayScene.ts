@@ -191,7 +191,10 @@ export class PlayScene extends ArcadeScene {
     if (p === this.mine) {
       this.state = 'player';
       this.status.setText(this.online ? t('netMine') : t('yourTurn')).setColor('#f3f2f2');
-      if (this.online) this.tweens.add({ targets: this.status, scale: { from: 1.25, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+      if (this.online) {
+        this.tweens.add({ targets: this.status, scale: { from: 1.25, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+        if (this.moveNo > 0) this.sfx('turn', { volume: 0.45 });
+      }
       this.showHints(true);
       this.cursor.setVisible(true);
       if (!moves.includes(this.cur)) { this.cur = moves[0]; }
@@ -257,12 +260,16 @@ export class PlayScene extends ArcadeScene {
         onComplete: () => {
           d.setTexture(p === 1 ? 'disc-b' : 'disc-w');
           this.tweens.add({ targets: d, scaleX: sx, duration: 110, ease: 'Quad.easeOut' });
-          this.sfx('flip', { volume: 0.25 });
+          // flips climb in pitch as the wave spreads out from the new disc
+          this.sfx('flip', { volume: 0.25, rate: 1 + Math.min(dist, 7) * 0.05, x: d.x });
           burst(this, d.x, d.y, p === 1 ? [0x333333, 0xffffff] : [0xffffff, 0xcccccc], 5, 120);
         },
       });
     }
-    if (f.length >= 5) shake(this, 0.006, 160);
+    if (f.length >= 5) {
+      shake(this, 0.006, 160);
+      this.time.delayedCall(maxDelay + 160, () => this.sfx('big', { volume: 0.5 }));
+    }
     this.time.delayedCall(maxDelay + 280, () => {
       this.updateHud();
       this.nextTurn(3 - p, false);

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeBowlingTextures } from './PlayScene';
 import { warmText } from './fasttext';
@@ -19,11 +19,13 @@ launch({
     loadSfx(l, 'pin3', 'sfx-impact/audio/impactplank_medium_001');
     loadSfx(l, 'crash', 'sfx-impact/audio/impactwood_heavy_003');
     loadSfx(l, 'gutter', 'sfx-impact/audio/impactmetal_light_002');
-    loadSfx(l, 'lock', 'sfx-interface/audio/select_003');
-    loadSfx(l, 'strike', 'jingles/audio/8-bit_jingles/jingles_nes05');
-    loadSfx(l, 'spare', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'meh', 'sfx-interface/audio/error_004');
-    loadSfx(l, 'reset', 'sfx-interface/audio/drop_003');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'lock', J + 'menu-sounds/sfx-menu-select2');
+    loadAudio(l, 'strike', J + 'fanfares/sfx-sounds-fanfare3');
+    loadAudio(l, 'spare', J + 'positive-sounds/sfx-sounds-powerup6');
+    loadAudio(l, 'meh', J + 'negative-sounds/sfx-sounds-error11');
+    loadAudio(l, 'reset', 'oga/junkala-sfx/movement/opening-doors/sfx-movement-dooropen2');
+    loadAudio(l, 'turn', J + 'simple-bleeps/sfx-sounds-blip7');
   },
   menuDecor(scene) {
     warmText(scene, [[14, true], [16, true], [18, true], [20, true], [22, true], [26, true], [44, true], [24, false]]);

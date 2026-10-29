@@ -235,7 +235,7 @@ export class PlayScene extends ArcadeScene {
 
   private wallHit(): void {
     this.spin *= -0.5;
-    this.sfx('wall', { volume: 0.2 });
+    this.sfx('wall', { volume: 0.25, x: this.ball.x });
     burst(this, this.ball.x, this.ball.y, 0x3ee6ff, 6, 140);
   }
 
@@ -260,7 +260,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private hitFx(p: Phaser.GameObjects.Image, py: number, mine: boolean): void {
-    this.sfx(mine ? 'hit' : 'hit2', { volume: 0.4, detune: Math.min(600, this.rally * 30) });
+    // a long rally climbs in pitch
+    this.sfx(mine ? 'hit' : 'hit2', { volume: 0.4, detune: Math.min(600, this.rally * 30), x: this.ball.x });
     burst(this, this.ball.x, py, mine ? [0x3ee6ff, 0xffffff] : [0xff4fa3, 0xffffff], 14, 260);
     const glow = mine ? this.meGlow : this.aiGlow;
     this.tweens.add({ targets: glow, alpha: 0.95, duration: 70, yoyo: true });
@@ -425,7 +426,7 @@ export class PlayScene extends ArcadeScene {
     if (win) {
       this.sfx('match', { volume: 0.5 });
       for (let i = 0; i < 4; i++) this.time.delayedCall(i * 150, () => burst(this, rng.int(100, 620), rng.int(400, 900), [0xffd23f, 0x3ee6ff, 0xff4fa3], 30, 400));
-    }
+    } else this.sfx('lose', { volume: 0.5 });
     this.endGame({ win, title: win ? t('youWin') : t('youLose'), delay: 1100 });
   }
 

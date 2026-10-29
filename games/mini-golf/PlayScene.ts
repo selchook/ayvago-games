@@ -233,7 +233,7 @@ export class PlayScene extends ArcadeScene {
     const vn = rvx * nx + rvy * ny;
     if (vn < 0) {
       this.vx -= (1 + e) * vn * nx; this.vy -= (1 + e) * vn * ny;
-      if (-vn > 60) { this.sfx('wall', { volume: Math.min(0.7, -vn / 900) }); this.ev |= 1; }
+      if (-vn > 60) { this.sfx('wall', { volume: Math.min(0.7, -vn / 900), x: this.bx }); this.ev |= 1; }
       if (!this.moving) this.moving = true;
     }
     return true;
@@ -261,10 +261,10 @@ export class PlayScene extends ArcadeScene {
     for (let s = 0; s < n && !this.sinking; s++) {
       this.bx += this.vx * sdt; this.by += this.vy * sdt;
       // outer bounds
-      if (this.bx < B[0] + BR) { this.bx = B[0] + BR; this.vx = Math.abs(this.vx) * 0.75; this.sfx('wall', { volume: 0.3 }); this.ev |= 1; }
-      if (this.bx > B[0] + B[2] - BR) { this.bx = B[0] + B[2] - BR; this.vx = -Math.abs(this.vx) * 0.75; this.sfx('wall', { volume: 0.3 }); this.ev |= 1; }
-      if (this.by < B[1] + BR) { this.by = B[1] + BR; this.vy = Math.abs(this.vy) * 0.75; this.sfx('wall', { volume: 0.3 }); this.ev |= 1; }
-      if (this.by > B[1] + B[3] - BR) { this.by = B[1] + B[3] - BR; this.vy = -Math.abs(this.vy) * 0.75; this.sfx('wall', { volume: 0.3 }); this.ev |= 1; }
+      if (this.bx < B[0] + BR) { this.bx = B[0] + BR; this.vx = Math.abs(this.vx) * 0.75; this.sfx('wall', { volume: 0.3, x: this.bx }); this.ev |= 1; }
+      if (this.bx > B[0] + B[2] - BR) { this.bx = B[0] + B[2] - BR; this.vx = -Math.abs(this.vx) * 0.75; this.sfx('wall', { volume: 0.3, x: this.bx }); this.ev |= 1; }
+      if (this.by < B[1] + BR) { this.by = B[1] + BR; this.vy = Math.abs(this.vy) * 0.75; this.sfx('wall', { volume: 0.3, x: this.bx }); this.ev |= 1; }
+      if (this.by > B[1] + B[3] - BR) { this.by = B[1] + B[3] - BR; this.vy = -Math.abs(this.vy) * 0.75; this.sfx('wall', { volume: 0.3, x: this.bx }); this.ev |= 1; }
       for (const w of h.walls ?? []) this.bounceRect(w, 0.75);
       this.moverRects.forEach((r, i) => { if (this.bounceRect(r, 0.8, this.moverVel[i])) shake(this, 0.003, 60); });
       (h.bumpers ?? []).forEach((b, i) => {
@@ -280,7 +280,7 @@ export class PlayScene extends ArcadeScene {
           this.vx *= k; this.vy *= k;
           this.bumperFlash[i] = 1;
           this.ev |= 2;
-          this.sfx('bumper', { volume: 0.5 });
+          this.sfx('bumper', { volume: 0.5, x: this.bx });
           burst(this, b[0] + nx * b[2], b[1] + ny * b[2], [0xffd23f, 0xffffff], 8, 180);
         }
       });
@@ -366,6 +366,7 @@ export class PlayScene extends ArcadeScene {
     else { label = `+${diff}`; pts = 15; color = '#ec3013'; }
     if (pts) this.addScore(pts, this.hole.cup[0], this.hole.cup[1] - 60);
     if (sunk && diff < 0) { this.sfx('great', { volume: 0.6 }); flash(this, 0xffd23f, 150); shake(this, 0.008, 160); }
+    else if (sunk && diff === 0) this.sfx('par', { volume: 0.5 });
     else if (!sunk || diff > 1) this.sfx('bad', { volume: 0.4 });
     burst(this, this.hole.cup[0], this.hole.cup[1], diff < 0 ? [0xffd23f, 0x5dff7a, 0xffffff] : [0xffffff], diff < 0 ? 40 : 14, 320);
     const lt = txt(this, 360, 640, label, { title: true, size: 44, color, wrap: 640 }).setDepth(20).setScale(0.2);
@@ -487,7 +488,7 @@ export class PlayScene extends ArcadeScene {
     this.updateOnlineText();
     if (seat === this.seat && (was !== seat || this.strokes === 0)) {
       popup(this, this.bx, this.by - 50, t('yourTurn'), '#5dff7a', 22);
-      this.sfx('next', { volume: 0.3 });
+      this.sfx('turn', { volume: 0.45 });
     }
   }
 
@@ -559,9 +560,9 @@ export class PlayScene extends ArcadeScene {
     this.wx = d.x; this.wy = d.y;
     const h = d.h / 1000;
     if (Math.abs(h - this.holeT) > 0.08) this.holeT = h;
-    if (d.e & 1) this.sfx('wall', { volume: 0.4 });
+    if (d.e & 1) this.sfx('wall', { volume: 0.4, x: this.wx });
     if (d.e & 2) {
-      this.sfx('bumper', { volume: 0.5 });
+      this.sfx('bumper', { volume: 0.5, x: this.wx });
       (this.hole.bumpers ?? []).forEach((b, i) => {
         if (Math.hypot(d.x - b[0], d.y - b[1]) < b[2] + BR + 40) { this.bumperFlash[i] = 1; burst(this, d.x, d.y, [0xffd23f, 0xffffff], 8, 180); }
       });
@@ -636,6 +637,7 @@ export class PlayScene extends ArcadeScene {
     const [cx, cy] = this.hole.cup;
     if (seat === this.seat) {
       if (sunk && diff < 0) { this.sfx('great', { volume: 0.6 }); flash(this, 0xffd23f, 150); shake(this, 0.008, 160); }
+      else if (sunk && diff === 0) this.sfx('par', { volume: 0.5 });
       else if (!sunk || diff > 1) this.sfx('bad', { volume: 0.4 });
       burst(this, cx, cy, sunk && diff < 0 ? [0xffd23f, 0x5dff7a, 0xffffff] : [0xffffff], sunk && diff < 0 ? 40 : 14, 320);
       const lt = txt(this, 360, 640, label, { title: true, size: 44, color, wrap: 640 }).setDepth(20).setScale(0.2);

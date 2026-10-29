@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 
@@ -12,14 +12,17 @@ launch({
     const l = scene.load;
     l.image('disc-b', kenney(BG + 'chipblackwhite_border.png'));
     l.image('disc-w', kenney(BG + 'chipwhite_border.png'));
+    const J = 'oga/junkala-sfx/general-sounds/';
     loadSfx(l, 'place', 'sfx-casino/audio/chiplay1');
     loadSfx(l, 'place2', 'sfx-casino/audio/chiplay3');
     loadSfx(l, 'flip', 'sfx-casino/audio/chipshandle2');
-    loadSfx(l, 'move', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'error', 'sfx-interface/audio/error_004');
-    loadSfx(l, 'pass', 'sfx-interface/audio/question_002');
-    loadSfx(l, 'win', 'sfx-digital/audio/powerup3');
-    loadSfx(l, 'lose', 'sfx-digital/audio/phaserdown3');
+    loadAudio(l, 'move', J + 'menu-sounds/sfx-menu-move2');
+    loadAudio(l, 'turn', J + 'simple-bleeps/sfx-sounds-blip7');
+    loadAudio(l, 'big', J + 'coins/sfx-coin-double3');
+    loadAudio(l, 'error', J + 'negative-sounds/sfx-sounds-error3');
+    loadAudio(l, 'pass', J + 'neutral-sounds/sfx-sound-neutral6');
+    loadAudio(l, 'win', J + 'fanfares/sfx-sounds-fanfare2');
+    loadAudio(l, 'lose', J + 'negative-sounds/sfx-sounds-negative1');
     loadSfx(l, 'clear', 'sfx-casino/audio/chipscollide3');
   },
   menuDecor(scene) {

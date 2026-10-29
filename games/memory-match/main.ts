@@ -1,4 +1,4 @@
-import { launch, kenney, loadSfx, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, ANIMALS, makeCardTextures } from './PlayScene';
 
@@ -13,12 +13,18 @@ launch({
     loadSfx(l, 'flipback', 'sfx-casino/audio/cardslide2');
     loadSfx(l, 'deal', 'sfx-casino/audio/cardfan1');
     loadSfx(l, 'shuffle', 'sfx-casino/audio/cardshuffle');
-    loadSfx(l, 'match', 'sfx-digital/audio/pepsound3');
-    loadSfx(l, 'miss', 'sfx-interface/audio/error_002');
-    loadSfx(l, 'clear', 'sfx-digital/audio/powerup5');
-    loadSfx(l, 'star', 'sfx-interface/audio/confirmation_002');
-    loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
-    loadSfx(l, 'move', 'sfx-interface/audio/tick_001');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'match', J + 'coins/sfx-coin-double1');
+    loadAudio(l, 'theirMatch', J + 'neutral-sounds/sfx-sound-neutral2');
+    loadAudio(l, 'miss', J + 'negative-sounds/sfx-sounds-error5');
+    loadAudio(l, 'clear', J + 'fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'lose', J + 'negative-sounds/sfx-sounds-negative1');
+    loadAudio(l, 'draw', J + 'neutral-sounds/sfx-sound-neutral6');
+    loadAudio(l, 'timeup', J + 'negative-sounds/sfx-sounds-negative2');
+    loadAudio(l, 'star', J + 'coins/sfx-coin-single3');
+    loadAudio(l, 'tick', J + 'simple-bleeps/sfx-sounds-blip10');
+    loadAudio(l, 'move', J + 'menu-sounds/sfx-menu-move2');
+    loadAudio(l, 'turn', J + 'simple-bleeps/sfx-sounds-blip7');
   },
   menuDecor(scene) {
     makeCardTextures(scene);

@@ -169,7 +169,10 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: this.puck, scale: 1, duration: 350, delay: delay * 0.5, ease: 'Back.easeOut' });
     this.lastHitBy = null;
     this.trail.stop();
-    if (this.myGoals === WIN_GOALS - 1 || this.cpuGoals === WIN_GOALS - 1) this.banner(t('matchPoint'), '#ffd23f', 36, delay * 0.4);
+    if (this.myGoals === WIN_GOALS - 1 || this.cpuGoals === WIN_GOALS - 1) {
+      this.banner(t('matchPoint'), '#ffd23f', 36, delay * 0.4);
+      this.time.delayedCall(delay * 0.4, () => this.sfx('matchPoint', { volume: 0.5 }));
+    }
     this.time.delayedCall(delay, () => {
       if (this.isOver) return;
       this.live = true;
@@ -305,7 +308,7 @@ export class PlayScene extends ArcadeScene {
       if (this.time.now - this.hitSfx > 70) {
         this.hitSfx = this.time.now;
         const hard = -vn > 900;
-        this.sfx(hard ? 'hit2' : 'hit', { volume: Math.min(0.8, 0.25 + -vn / 2000) });
+        this.sfx(hard ? 'hit2' : 'hit', { volume: Math.min(0.8, 0.25 + -vn / 2000), x: this.px });
         burst(this, this.px - nx * PUCK_R, this.py - ny * PUCK_R, who === 'me' ? [0xff4f5e, 0xffffff] : [0x3ee6ff, 0xffffff], hard ? 16 : 7, hard ? 320 : 180);
         if (hard) shake(this, 0.006, 100);
         this.glow = 1;
@@ -321,7 +324,7 @@ export class PlayScene extends ArcadeScene {
   private wallHit(speed: number, x: number, y: number): void {
     if (this.quiet || speed < 120 || this.time.now - this.wallSfx < 60) return;
     this.wallSfx = this.time.now;
-    this.sfx('wall', { volume: Math.min(0.6, speed / 2600) });
+    this.sfx('wall', { volume: Math.min(0.6, speed / 2600), x });
     if (speed > 600) burst(this, x, y, [0x8b5cff, 0xffffff], 6, 160);
   }
 
@@ -582,7 +585,7 @@ export class PlayScene extends ArcadeScene {
     }
     // a mallet hit on the host that we did not predict: let it be heard
     if (d.h > this.seenHits) {
-      if (now - this.localHitT > 300 && now - this.hitSfx > 70) { this.hitSfx = now; this.sfx('hit', { volume: 0.4 }); this.glow = 1; }
+      if (now - this.localHitT > 300 && now - this.hitSfx > 70) { this.hitSfx = now; this.sfx('hit', { volume: 0.4, x: ax }); this.glow = 1; }
       this.seenHits = d.h;
     }
     // where the puck is on the host right now: advance the snapshot by the one-way latency
