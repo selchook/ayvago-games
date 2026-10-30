@@ -1,0 +1,12 @@
+{
+  "id": "rope-swing",
+  "title": { "tr": "İp Salıncağı", "en": "Rope Swing" },
+  "description": { "tr": "Tavana ip at, sallan ve bırakıp uç! Çukurların ve dikenlerin üstünden geç, altınları topla. Hız gittikçe artar.", "en": "Fire a rope at the ceiling, swing and let go to fly! Clear pits and spikes and grab the coins. The speed keeps rising." },
+  "howTo": { "tr": "Basılı tut (dokun ya da Boşluk): tavana ip at ve sallan. Bırak: ivmeyle uç. Çukura ya da dikene düşme.", "en": "Hold (touch or Space) to fire the rope at the ceiling and swing. Release to fly with your momentum. Avoid pits and spikes." },
+  "genres": ["arcade", "action"],
+  "orientation": "landscape",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art: Kenney (CC0) — kenney.nl", "Sounds: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-10-30" }
+}
