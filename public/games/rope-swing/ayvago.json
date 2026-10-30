@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "ropeswing",
+  "title": {
+    "en": "Rope Swing",
+    "tr": "İp Salıncağı"
+  },
+  "description": {
+    "en": "Fire a rope at the ceiling, swing and let go to fly! Clear pits and spikes and grab the coins. The speed keeps rising.",
+    "tr": "Tavana ip at, sallan ve bırakıp uç! Çukurların ve dikenlerin üstünden geç, altınları topla. Hız gittikçe artar."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "action"
+  ],
+  "tags": [
+    "rope",
+    "swing",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/rope-swing/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/rope-swing/ayvago/icon-512.png",
+    "cover": "/games/rope-swing/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/rope-swing/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

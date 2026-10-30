@@ -1,19 +1,20 @@
 # Ayvago launch catalogue
 
-## Status (64 shipped)
+## Status (70 shipped)
 
-**Shipped.** All 64 games in the concept list. Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
-air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, block-blast, block-drop, bomb-maze, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-gate, connect-four, dots-and-boxes, dungeon-dash, fish-frenzy, fruit-slash, gem-match, gomoku, hex-merge, hoop-shot, jetpack-rush, light-cycles, lights-out, lunar-lander, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, neon-pong, nonogram, penalty-kick, pipe-flow, pixel-runner, platform-hopper, plinko-drop, retro-snake, reversi, road-crosser, sea-battle, shooting-gallery, simon-says, sky-jumper, slide-puzzle, sokoban, solitaire, space-blaster, stack-tower, sudoku, tank-arena, tappy-plane, tile-triple, tower-defense, traffic-racer, turkish-draughts, ufo-abduction, whack-a-mole, word-hunt, zombie-survivor.
+**Shipped.** All 70 games in the concept list. Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
+air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, block-blast, block-drop, bomb-maze, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-gate, connect-four, dots-and-boxes, dungeon-dash, fish-frenzy, fruit-slash, gem-match, gomoku, head-soccer, hex-merge, hoop-shot, jetpack-rush, light-cycles, lights-out, lunar-lander, mangala, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, neon-pong, nonogram, penalty-kick, pinball, pipe-flow, pixel-runner, platform-hopper, plinko-drop, retro-snake, reversi, road-crosser, rope-swing, sea-battle, shooting-gallery, simon-says, sky-jumper, slide-puzzle, sokoban, solitaire, space-blaster, stack-tower, sudoku, tank-arena, tappy-plane, tile-triple, tower-defense, traffic-racer, turkish-draughts, ufo-abduction, water-sort, whack-a-mole, word-hunt, zombie-survivor.
 
 - **Launch wave (2026-10-27):** 26 games.
 - **Second wave (2026-10-28):** 28 games. These are the former backlog plus dungeon-dash and nonogram, finished from `wip/`. Each carries `platform.addedAt` in its `game.json`.
 - **Third wave (2026-10-29):** 10 games, batches J and K. The five in batch J (gomoku, dots-and-boxes, sea-battle, turkish-draughts, light-cycles) are playable online by two players (`"multiplayer": true`), bringing the online games to 13.
+- **Fourth wave (2026-10-30):** 6 games, batches L and M. The three in batch L (mangala, backgammon, head-soccer) are playable online, bringing the online games to 16. head-soccer and rope-swing use the player's platform character.
 
 **Work in progress:** none.
 
 **Backlog:** empty. New concepts go into the concept list below.
 
-## Concept list (64 games)
+## Concept list (70 games)
 
 Columns: slug · EN title / TR title · concept · suggested assets (`public/assets/kenney/…`) · orientation (P = portrait, L = landscape).
 
@@ -127,3 +128,19 @@ Every game here has a full solo mode against an AI and an online mode for two pl
 | bomb-maze | Bomb Maze / Bomba Labirenti | Bomberman-like grid levels vs AI bots, breakable crates, power-ups (range, bombs, speed) | micro-roguelike / drawn | P |
 | archery | Archery / Okçuluk | drag to draw and aim with wind, moving targets at growing distances, rounds | shooting-gallery / sports | L |
 
+
+## Batch L — wave 4 two-player (online + vs AI)
+Same rules as batch J: a full solo mode against an AI and an online mode (`"multiplayer": true`). Round 1 starts with the host, later rounds with `net.starter` / `net.myTurnFirst`.
+
+| slug | title | concept | assets | o |
+|---|---|---|---|---|
+| mangala | Mangala / Mangala | Turkish mancala: 2x6 pits of 4 stones and two stores; sow counter-clockwise starting in the picked pit (a single stone moves on), last stone in your store plays again, an even count in a rival pit captures it, last stone in your own empty pit captures the opposite pit; the side that empties first takes the rest; AI with lookahead | drawn | P |
+| backgammon | Backgammon / Tavla | one game to 5 points (plain win 1, gammon/mars 2), standard moves, bar, bearing off, doubles move four times, forced-move rules; tap a checker then a target with hints; AI picks the best move by a heuristic; online: the mover rolls and sends dice and moves | drawn / boardgame dice | L |
+| head-soccer | Head Soccer / Kafa Topu | 1v1 side-view football with big-headed player characters: run, jump, kick; 60-second matches, golden goal on a draw; AI rival; online: the host simulates, the guest sends input; each side shows its own platform character (`playerCharacter()` / `peerCharacter()`) | characters + sports pack | L |
+
+## Batch M — wave 4 solo
+| slug | title | concept | assets | o |
+|---|---|---|---|---|
+| water-sort | Water Sort / Su Sıralama | pour coloured layers between tubes until each tube holds one colour; generated solvable levels that grow, undo, extra empty tube as a help | drawn | P |
+| pinball | Pinball / Langırt | one table with flippers, bumpers, slingshots, drop targets and lanes, 3 balls, multipliers, tilt-free nudge; left/right keys or screen halves | drawn + particles | P |
+| rope-swing | Rope Swing / İp Salıncağı | hold to fire a rope at the ceiling and swing, release to fly; distance score, coins, gaps and spikes, speed ramps; the hero is the player's character | characters + pixel-platformer | L |

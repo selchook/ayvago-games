@@ -1,0 +1,34 @@
+{
+  "id": "head-soccer",
+  "title": {
+    "tr": "Kafa Topu",
+    "en": "Head Soccer"
+  },
+  "description": {
+    "tr": "Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve kramponu savur. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Big-headed one-on-one football! Run, jump, head the ball and swing your boot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too."
+  },
+  "howTo": {
+    "tr": "Sol/Sağ ok ya da A/D ile koş, Yukarı ya da W ile zıpla, Boşluk ile şut çek. Dokunmatikte ekrandaki tuşları kullan.",
+    "en": "Run with Left/Right or A/D, jump with Up or W, kick with Space. On touch screens use the on-screen buttons."
+  },
+  "genres": [
+    "sports",
+    "action",
+    "arcade"
+  ],
+  "orientation": "landscape",
+  "controls": [
+    "touch",
+    "keyboard"
+  ],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": [
+    "Characters, art & audio: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": {
+    "addedAt": "2026-10-30"
+  }
+}

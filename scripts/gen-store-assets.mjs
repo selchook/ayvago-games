@@ -24,6 +24,13 @@ const only = args.filter((a) => !a.startsWith('--'));
 const slugs = (only.length ? only : readdirSync(join(root, 'public', 'games')))
   .filter((s) => existsSync(join(root, 'public', 'games', s, 'ayvago.json')));
 
+// Cover title size: smaller for long titles, and small enough that the longest word fits the text column.
+function titleSize(title) {
+  const size = title.length > 14 ? 74 : 92;
+  const longest = Math.max(...title.split(/[\s-]+/).map((w) => w.length));
+  return longest * size > 840 ? Math.floor(760 / longest) : size;
+}
+
 const font = (pkg, file) => readFileSync(join(root, 'node_modules', '@fontsource', pkg, 'files', file)).toString('base64');
 const FONTS = `
 @font-face { font-family: P2P; src: url(data:font/woff2;base64,${font('press-start-2p', 'press-start-2p-latin-400-normal.woff2')}) format('woff2'); }
@@ -59,7 +66,7 @@ function coverHtml(m, menu, play) {
   .brand { display: flex; align-items: center; gap: 18px; font-family: P2P; font-size: 26px; letter-spacing: 4px; }
   .brand .mark { width: 58px; height: 58px; }
   .brand b { color: #ec3013; font-size: 16px; letter-spacing: 6px; font-weight: normal; }
-  h1 { font-family: P2P; font-weight: normal; font-size: ${m.title.en.length > 14 ? 74 : 92}px; line-height: 1.25; color: #ffd23f; text-shadow: 0 10px 0 #000, 0 0 40px rgba(255,210,63,.35); }
+  h1 { font-family: P2P; font-weight: normal; font-size: ${titleSize(m.title.en)}px; line-height: 1.25; color: #ffd23f; text-shadow: 0 10px 0 #000, 0 0 40px rgba(255,210,63,.35); }
   p { font-size: 40px; font-weight: 700; line-height: 1.3; color: #d8d4d2; max-width: 820px; }
   .chip { align-self: flex-start; font-family: P2P; font-size: 20px; background: #ec3013; color: #fff; padding: 14px 20px; box-shadow: 0 6px 0 #000; }
   .shot { position: absolute; z-index: 3; border: 10px solid #0a0909; box-shadow: 0 30px 0 rgba(0,0,0,.5), 0 0 0 4px #ec3013; background: #000; }

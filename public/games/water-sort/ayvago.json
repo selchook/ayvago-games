@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "watersort",
+  "title": {
+    "en": "Water Sort",
+    "tr": "Su Sıralama"
+  },
+  "description": {
+    "en": "Pour coloured water between tubes until every tube holds a single colour. Levels grow in colours and tubes.",
+    "tr": "Renkli suları tüpler arasında dök, her tüpte tek bir renk kalsın. Bölümler büyüdükçe renkler ve tüpler artar."
+  },
+  "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "casual"
+  ],
+  "tags": [
+    "water",
+    "sort",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/water-sort/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/water-sort/ayvago/icon-512.png",
+    "cover": "/games/water-sort/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/water-sort/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

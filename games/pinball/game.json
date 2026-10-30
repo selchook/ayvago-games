@@ -1,0 +1,12 @@
+{
+  "id": "pinball",
+  "title": { "tr": "Langırt", "en": "Pinball" },
+  "description": { "tr": "Paletlerle topu masada tut; tamponlara, sapanlara ve düşen hedeflere vur, AYVA harflerini yakıp çarpanı büyüt. Üç topun var.", "en": "Keep the ball on the table with the flippers; hit bumpers, slingshots and drop targets, light the AYVA lanes to raise the multiplier. You have three balls." },
+  "howTo": { "tr": "Ekranın sol ve sağ yarısına dokun ya da ← → (Z ve /) ile paletleri kullan. FIRLAT düğmesini ya da Boşluk'u basılı tutup bırak; SALLA ya da ↑ masayı sarsar.", "en": "Tap the left and right halves of the screen or use ← → (Z and /) for the flippers. Hold and release LAUNCH or Space; NUDGE or ↑ shakes the table." },
+  "genres": ["arcade", "retro", "action"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Sounds: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-10-30" }
+}

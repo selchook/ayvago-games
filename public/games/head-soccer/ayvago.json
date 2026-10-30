@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "headsoccer",
+  "title": {
+    "en": "Head Soccer",
+    "tr": "Kafa Topu"
+  },
+  "description": {
+    "en": "Big-headed one-on-one football! Run, jump, head the ball and swing your boot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too.",
+    "tr": "Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve kramponu savur. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "sports",
+  "categories": [
+    "sports",
+    "action",
+    "arcade"
+  ],
+  "tags": [
+    "multiplayer",
+    "head",
+    "soccer",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/head-soccer/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/head-soccer/ayvago/icon-512.png",
+    "cover": "/games/head-soccer/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/head-soccer/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

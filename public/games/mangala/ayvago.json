@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "mangala",
+  "title": {
+    "en": "Mangala",
+    "tr": "Mangala"
+  },
+  "description": {
+    "en": "The traditional Turkish mancala: sow the stones of your six pits counter-clockwise, drop the last one in your store to play again and make a rival pit even to grab its stones. Most stones wins! The AI looks further ahead after every win. Play a friend online too.",
+    "tr": "Geleneksel Türk zekâ oyunu: altı kuyudaki taşları saat yönünün tersine dağıt, son taşı hazinene düşürüp tekrar oyna, rakibin kuyusunu çift yapıp taşlarını kap. En çok taşı toplayan kazanır! Rakip her galibiyette daha ileriyi düşünür. Çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "strategy",
+  "categories": [
+    "strategy",
+    "puzzle",
+    "casual"
+  ],
+  "tags": [
+    "multiplayer",
+    "mangala",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/mangala/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/mangala/ayvago/icon-512.png",
+    "cover": "/games/mangala/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/mangala/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

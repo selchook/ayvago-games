@@ -1,0 +1,12 @@
+{
+  "id": "water-sort",
+  "title": { "tr": "Su Sıralama", "en": "Water Sort" },
+  "description": { "tr": "Renkli suları tüpler arasında dök, her tüpte tek bir renk kalsın. Bölümler büyüdükçe renkler ve tüpler artar.", "en": "Pour coloured water between tubes until every tube holds a single colour. Levels grow in colours and tubes." },
+  "howTo": { "tr": "Bir tüpe dokun, sonra dökeceğin tüpe dokun. Klavyede oklar ve Boşluk; Z geri alır, X boş tüp ekler.", "en": "Tap a tube, then tap where to pour it. On a keyboard use the arrows and Space; Z undoes, X adds an empty tube." },
+  "genres": ["puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Sounds: Juhani Junkala (CC0) — opengameart.org", "Sounds: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-10-30" }
+}
