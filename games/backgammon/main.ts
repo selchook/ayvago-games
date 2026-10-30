@@ -1,6 +1,6 @@
 import { launch, kenney, loadAudio, loadSfx, rng, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene } from './PlayScene';
+import { PlayScene, drawBoard, pointX, G } from './PlayScene';
 
 launch({
   meta: meta as GameMeta,
@@ -36,21 +36,25 @@ launch({
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;
-    // a few checkers and dice along the bottom of the menu
-    const y = height * 0.9;
-    for (let k = 0; k < 5; k++) {
-      scene.add.image(width * 0.12 + k * 44, y, 'bg-w').setDisplaySize(52, 52);
-      scene.add.image(width * 0.88 - k * 44, y, 'bg-b').setDisplaySize(52, 52);
+    // the board in the opening position, dimmed behind the menu
+    drawBoard(scene, false);
+    const start: Array<[number, number, string]> = [[24, 2, 'bg-w'], [13, 5, 'bg-w'], [8, 3, 'bg-w'], [6, 5, 'bg-w'], [1, 2, 'bg-b'], [12, 5, 'bg-b'], [17, 3, 'bg-b'], [19, 5, 'bg-b']];
+    for (const [v, n, key] of start) for (let k = 0; k < n; k++) {
+      const top = v >= 13, y = top ? G.IY0 + 32 + k * 52 : G.IY1 - 32 - k * 52;
+      scene.add.image(pointX(v), y, key).setDisplaySize(G.CK, G.CK);
     }
-    const d1 = scene.add.image(width * 0.36, y, `die-white-${rng.int(1, 6)}`).setDisplaySize(52, 52).setAngle(-12);
-    const d2 = scene.add.image(width * 0.64, y, `die-red-${rng.int(1, 6)}`).setDisplaySize(52, 52).setAngle(10);
+    scene.add.rectangle(0, 0, width, height, 0x0e0d12, 0.72).setOrigin(0);
+    // two dice tumbling beside the footer
+    const y = height * 0.9;
+    const d1 = scene.add.image(width * 0.3, y, `die-white-${rng.int(1, 6)}`).setDisplaySize(52, 52).setAngle(-12);
+    const d2 = scene.add.image(width * 0.7, y, `die-red-${rng.int(1, 6)}`).setDisplaySize(52, 52).setAngle(10);
     scene.tweens.add({ targets: [d1, d2], angle: '+=360', duration: 2600, repeat: -1, ease: 'Cubic.easeInOut', repeatDelay: 900 });
   },
   scenes: [PlayScene],
   strings: {
     tr: {
       matchTo: '{n} PUANLIK MAÇ', waitPeer: 'RAKİP BEKLENİYOR…', undo: 'GERİ AL', done: 'TAMAM', pips: 'Pip: {n}', doubles: 'ÇİFT ZAR!', noMoves: 'HAMLE YOK',
-      hit: 'KIRILDI!', barFirst: 'Önce kırık taşı sok', cantMove: 'Bu taş oynayamaz', confirm: 'HAMLEYİ ONAYLA', aiTurn: 'RAKİP OYNUYOR',
+      hit: 'KIRILDI!', barFirst: 'Önce kırık taşını gir', cantMove: 'Bu taş oynayamaz', confirm: 'HAMLEYİ ONAYLA', aiTurn: 'RAKİP OYNUYOR',
       mars: 'MARS!', gameWin: 'EL SENİN!', gameLose: 'ELİ VERDİN', matchWin: 'MAÇI KAZANDIN!', matchLose: 'MAÇI KAYBETTİN',
       d0: 'Acemi', d1: 'Heveskâr', d2: 'Kahveci', d3: 'Usta', d4: 'Tavla Üstadı',
     },

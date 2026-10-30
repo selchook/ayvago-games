@@ -11,10 +11,10 @@ export const GOAL_TOP = 418;        // crossbar height
 export const BAR_R = 8;
 export const BALL_R = 24;
 export const CHAR_SCALE = 1.0;      // player characters drawn at their natural 150 px height
-export const HEAD_OFF = 118;        // feet -> head centre
-export const HEAD_R = 44;
-export const BODY_OFF = 42;
-export const BODY_R = 32;
+export const HEAD_OFF = 108;        // feet -> head centre
+export const HEAD_R = 48;
+export const BODY_OFF = 40;
+export const BODY_R = 30;
 export const KICK_T = 0.24;         // seconds of one boot swing
 
 const G_PLAYER = 2300;
@@ -39,13 +39,14 @@ export interface Input { x: number; jump: boolean; kick: boolean }
 /** Sound / effect counters; the online guest plays effects when they change. */
 export interface Events { kick: [number, number]; swing: [number, number]; head: [number, number]; jump: [number, number]; post: number; bounce: number; power: number }
 
-export interface World { p: [Player, Player]; b: Ball; ev: Events }
+export interface World { p: [Player, Player]; b: Ball; ev: Events; squeeze: number }
 
 export function newWorld(): World {
   return {
     p: [newPlayer(0), newPlayer(1)],
     b: { x: W / 2, y: 220, vx: 0, vy: 0, a: 0 },
     ev: { kick: [0, 0], swing: [0, 0], head: [0, 0], jump: [0, 0], post: 0, bounce: 0, power: 0 },
+    squeeze: 0,
   };
 }
 
@@ -113,8 +114,8 @@ export function step(w: World, inputs: [Input, Input], dt: number): number {
   // players push each other apart
   const [a, c] = w.p;
   const dx = c.x - a.x;
-  if (Math.abs(dx) < 74 && Math.abs(a.y - c.y) < 150) {
-    const push = (74 - Math.abs(dx)) / 2 * (dx >= 0 ? 1 : -1);
+  if (Math.abs(dx) < 84 && Math.abs(a.y - c.y) < 150) {
+    const push = (84 - Math.abs(dx)) / 2 * (dx >= 0 ? 1 : -1);
     a.x -= push; c.x += push;
     a.x = Math.max(44, Math.min(W - 44, a.x)); c.x = Math.max(44, Math.min(W - 44, c.x));
   }
@@ -137,11 +138,18 @@ export function step(w: World, inputs: [Input, Input], dt: number): number {
     if (b.x > W - BALL_R) { b.x = W - BALL_R; b.vx = -Math.abs(b.vx) * 0.7; }
     bar(w, 0, GOAL_W);
     bar(w, W - GOAL_W, W);
+    let touching = 0;
     for (const i of [0, 1] as const) {
       const p = w.p[i];
       const hv = bump(b, p.x, p.y - HEAD_OFF, HEAD_R, p.vx, p.vy, 0.72);
-      if (hv > 260) w.ev.head[i]++;
-      bump(b, p.x, p.y - BODY_OFF, BODY_R, p.vx, p.vy, 0.5);
+      if (hv > 0) {
+        touching++;
+        // headers go forwards, and a ball never settles on top of a head
+        b.vx += p.face * (hv > 200 ? 200 : 70);
+        if (hv > 200) b.vy -= 90;
+        if (hv > 260) w.ev.head[i]++;
+      }
+      if (bump(b, p.x, p.y - BODY_OFF, BODY_R, p.vx, p.vy, 0.5) > 0) touching++;
       // the boot: live in the middle of the swing, once per swing
       if (p.kickT >= 0.02 && p.kickT <= 0.17 && !p.kicked) {
         const kx = p.x + p.face * 46, ky = p.y - 30;
@@ -156,6 +164,15 @@ export function step(w: World, inputs: [Input, Input], dt: number): number {
           w.ev.power = Math.round(Math.hypot(b.vx, b.vy));
         }
       }
+    }
+    // wedged between both players for a moment: it squirts out over their heads
+    w.squeeze = touching >= 2 && Math.abs(w.p[0].x - w.p[1].x) < 160 ? w.squeeze + 1 : 0;
+    if (w.squeeze > 10) {
+      w.squeeze = 0;
+      b.y = Math.min(w.p[0].y, w.p[1].y) - HEAD_OFF - HEAD_R - BALL_R - 6;
+      b.x = (w.p[0].x + w.p[1].x) / 2;
+      b.vy = -560;
+      b.vx = (Math.random() < 0.5 ? -1 : 1) * 160;
     }
     const sp = Math.hypot(b.vx, b.vy);
     if (sp > MAX_BALL) { b.vx *= MAX_BALL / sp; b.vy *= MAX_BALL / sp; }
@@ -218,6 +235,9 @@ export function think(w: World, i: 0 | 1, lv: AiLevel, rand: () => number): Inpu
     // a ball dropping on us: jump to head it forwards
     if (dx > -30 && dx < 80 && high > 130 && high < 260 && w.b.vy > -100 && rand() < lv.jump) jump = true;
   }
+  // the ball sits on (or bobs just over) our head: nod it forwards with a jump
+  const nowU = mx(w.b.x), headY = me.y - HEAD_OFF;
+  if (Math.abs(nowU - u) < 60 && w.b.y < headY && w.b.y > headY - 150 && me.ground) jump = true;
   // a shot racing at our goal while we are far ahead of it: get back
   if (bvu < -500 && bu < u && bu < 640) target = Math.min(target, bu - 50);
   // never wander deep into our own goal

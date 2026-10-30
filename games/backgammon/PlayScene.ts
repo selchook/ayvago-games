@@ -730,6 +730,7 @@ export class PlayScene extends ArcadeScene {
         this.showBanner(matchWin ? t('matchWin') : t('matchLose'), matchWin ? '#ffd23f' : '#ff4f5e');
         if (matchWin) this.sfx('fanfare', { volume: 0.7 });
       });
+      this.time.delayedCall(2850, () => this.tweens.add({ targets: this.banner, alpha: 0, duration: 250 }));
       this.endGame({ win: matchWin, title: matchWin ? t('youWin') : t('youLose'), delay: 3200 });
       return;
     }

@@ -441,6 +441,11 @@ export class PlayScene extends ArcadeScene {
     this.updateLabels();
   }
 
+  /** The round banner fades before the result screen opens over it. */
+  private fadeBanner(after: number): void {
+    this.time.delayedCall(after, () => this.tweens.add({ targets: this.banner, alpha: 0, duration: 250 }));
+  }
+
   private showBanner(s: string, color: string): void {
     this.banner.setText(s).setColor(color).setVisible(true).setAlpha(1).setScale(0.3);
     this.tweens.add({ targets: this.banner, scale: 1, duration: 400, ease: 'Back.easeOut' });
@@ -466,6 +471,7 @@ export class PlayScene extends ArcadeScene {
     }
     if (this.online) {
       if (win) this.addScore(200 + (me - them) * 10);
+      this.fadeBanner(2000);
       this.endGame({ win, draw, title: draw ? t('draw') : win ? t('youWin') : t('youLose'), delay: 2400 });
       return;
     }
@@ -476,7 +482,7 @@ export class PlayScene extends ArcadeScene {
     } else if (!draw) { this.lives--; this.streak = 0; }
     else this.addScore(50, cx, BY - 80);
     this.updateInfo();
-    if (this.lives <= 0) { this.endGame({ delay: 2400 }); return; }
+    if (this.lives <= 0) { this.fadeBanner(2000); this.endGame({ delay: 2400 }); return; }
     this.time.delayedCall(2600, () => {
       if (this.isOver) return;
       this.tweens.add({ targets: this.banner, alpha: 0, duration: 250, onComplete: () => this.banner.setVisible(false) });
