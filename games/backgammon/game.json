@@ -1,0 +1,34 @@
+{
+  "id": "backgammon",
+  "title": {
+    "tr": "Tavla",
+    "en": "Backgammon"
+  },
+  "description": {
+    "tr": "Klasik tavla: zarları at, taşlarını rakibin etrafından dolaştırıp evine topla ve ilk sen çıkar. Açık taşları kır, kapıları kapat, mars yap! 5 puanlık maçta rakip her elde biraz daha usta oynar. Çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Classic backgammon: roll the dice, race your checkers around the board into your home and bear them off first. Hit blots, build points, win a gammon! In a match to 5 the AI plays sharper after every game you win. Play a friend online too."
+  },
+  "howTo": {
+    "tr": "Yeşil halkalı taşa, sonra parlayan hedefe dokun; bitince TAMAM'a bas. Klavyede oklar seçer, Boşluk oynar, X geri alır.",
+    "en": "Tap a checker with a green ring, then a glowing target; press DONE when finished. Keys: arrows pick, Space plays, X undoes."
+  },
+  "genres": [
+    "strategy",
+    "casual"
+  ],
+  "orientation": "landscape",
+  "controls": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": [
+    "Art & audio: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": {
+    "addedAt": "2026-10-30"
+  }
+}

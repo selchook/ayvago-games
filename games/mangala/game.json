@@ -1,0 +1,35 @@
+{
+  "id": "mangala",
+  "title": {
+    "tr": "Mangala",
+    "en": "Mangala"
+  },
+  "description": {
+    "tr": "Geleneksel Türk zekâ oyunu: altı kuyudaki taşları saat yönünün tersine dağıt, son taşı hazinene düşürüp tekrar oyna, rakibin kuyusunu çift yapıp taşlarını kap. En çok taşı toplayan kazanır! Rakip her galibiyette daha ileriyi düşünür. Çevrimiçi bir arkadaşınla da oyna.",
+    "en": "The traditional Turkish mancala: sow the stones of your six pits counter-clockwise, drop the last one in your store to play again and make a rival pit even to grab its stones. Most stones wins! The AI looks further ahead after every win. Play a friend online too."
+  },
+  "howTo": {
+    "tr": "Alttaki kuyularından birine dokun ya da oklarla seçip Boşluk'a bas: taşlar tek tek dağılır.",
+    "en": "Tap one of your pits at the bottom, or pick one with the arrows and press Space: the stones are sown one by one."
+  },
+  "genres": [
+    "strategy",
+    "puzzle",
+    "casual"
+  ],
+  "orientation": "portrait",
+  "controls": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": [
+    "Audio: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": {
+    "addedAt": "2026-10-30"
+  }
+}
