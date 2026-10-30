@@ -1,5 +1,5 @@
 {
-  "count": 64,
+  "count": 70,
   "games": [
     {
       "id": "air-hockey",
@@ -162,6 +162,41 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/axe-throw.png"
+    },
+    {
+      "id": "backgammon",
+      "title": {
+        "tr": "Tavla",
+        "en": "Backgammon"
+      },
+      "description": {
+        "tr": "Klasik tavla: zarları at, taşlarını rakibin etrafından dolaştırıp evine topla ve ilk sen çıkar. Açık taşları kır, kapıları kapat, mars yap! 5 puanlık maçta rakip her elde biraz daha usta oynar. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Classic backgammon: roll the dice, race your checkers around the board into your home and bear them off first. Hit blots, build points, win a gammon! In a match to 5 the AI plays sharper after every game you win. Play a friend online too."
+      },
+      "howTo": {
+        "tr": "Yeşil halkalı taşa, sonra parlayan hedefe dokun; bitince TAMAM'a bas. Klavyede oklar seçer, Boşluk oynar, X geri alır.",
+        "en": "Tap a checker with a green ring, then a glowing target; press DONE when finished. Keys: arrows pick, Space plays, X undoes."
+      },
+      "genres": [
+        "strategy",
+        "casual"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-30"
+      },
+      "thumb": null
     },
     {
       "id": "block-blast",
@@ -756,6 +791,41 @@
       "thumb": "thumbs/gomoku.png"
     },
     {
+      "id": "head-soccer",
+      "title": {
+        "tr": "Kafa Topu",
+        "en": "Head Soccer"
+      },
+      "description": {
+        "tr": "Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve kramponu savur. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Big-headed one-on-one football! Run, jump, head the ball and swing your boot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too."
+      },
+      "howTo": {
+        "tr": "Sol/Sağ ok ya da A/D ile koş, Yukarı ya da W ile zıpla, Boşluk ile şut çek. Dokunmatikte ekrandaki tuşları kullan.",
+        "en": "Run with Left/Right or A/D, jump with Up or W, kick with Space. On touch screens use the on-screen buttons."
+      },
+      "genres": [
+        "sports",
+        "action",
+        "arcade"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Characters, art & audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-30"
+      },
+      "thumb": null
+    },
+    {
       "id": "hex-merge",
       "title": {
         "tr": "Altıgen Birleştir",
@@ -945,6 +1015,42 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/lunar-lander.png"
+    },
+    {
+      "id": "mangala",
+      "title": {
+        "tr": "Mangala",
+        "en": "Mangala"
+      },
+      "description": {
+        "tr": "Geleneksel Türk zekâ oyunu: altı kuyudaki taşları saat yönünün tersine dağıt, son taşı hazinene düşürüp tekrar oyna, rakibin kuyusunu çift yapıp taşlarını kap. En çok taşı toplayan kazanır! Rakip her galibiyette daha ileriyi düşünür. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "The traditional Turkish mancala: sow the stones of your six pits counter-clockwise, drop the last one in your store to play again and make a rival pit even to grab its stones. Most stones wins! The AI looks further ahead after every win. Play a friend online too."
+      },
+      "howTo": {
+        "tr": "Alttaki kuyularından birine dokun ya da oklarla seçip Boşluk'a bas: taşlar tek tek dağılır.",
+        "en": "Tap one of your pits at the bottom, or pick one with the arrows and press Space: the stones are sown one by one."
+      },
+      "genres": [
+        "strategy",
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-30"
+      },
+      "thumb": null
     },
     {
       "id": "maze-muncher",
@@ -1205,6 +1311,39 @@
       "thumb": "thumbs/penalty-kick.png"
     },
     {
+      "id": "pinball",
+      "title": {
+        "tr": "Langırt",
+        "en": "Pinball"
+      },
+      "description": {
+        "tr": "Paletlerle topu masada tut; tamponlara, sapanlara ve düşen hedeflere vur, AYVA harflerini yakıp çarpanı büyüt. Üç topun var.",
+        "en": "Keep the ball on the table with the flippers; hit bumpers, slingshots and drop targets, light the AYVA lanes to raise the multiplier. You have three balls."
+      },
+      "howTo": {
+        "tr": "Ekranın sol ve sağ yarısına dokun ya da ← → (Z ve /) ile paletleri kullan. FIRLAT düğmesini ya da Boşluk'u basılı tutup bırak; SALLA ya da ↑ masayı sarsar.",
+        "en": "Tap the left and right halves of the screen or use ← → (Z and /) for the flippers. Hold and release LAUNCH or Space; NUDGE or ↑ shakes the table."
+      },
+      "genres": [
+        "arcade",
+        "retro",
+        "action"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Sounds: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-30"
+      },
+      "thumb": null
+    },
+    {
       "id": "pipe-flow",
       "title": {
         "tr": "Boru Akışı",
@@ -1428,6 +1567,39 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/road-crosser.png"
+    },
+    {
+      "id": "rope-swing",
+      "title": {
+        "tr": "İp Salıncağı",
+        "en": "Rope Swing"
+      },
+      "description": {
+        "tr": "Tavana ip at, sallan ve bırakıp uç! Çukurların ve dikenlerin üstünden geç, altınları topla. Hız gittikçe artar.",
+        "en": "Fire a rope at the ceiling, swing and let go to fly! Clear pits and spikes and grab the coins. The speed keeps rising."
+      },
+      "howTo": {
+        "tr": "Basılı tut (dokun ya da Boşluk): tavana ip at ve sallan. Bırak: ivmeyle uç. Çukura ya da dikene düşme.",
+        "en": "Hold (touch or Space) to fire the rope at the ceiling and swing. Release to fly with your momentum. Avoid pits and spikes."
+      },
+      "genres": [
+        "arcade",
+        "action"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art: Kenney (CC0) — kenney.nl",
+        "Sounds: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-10-30"
+      },
+      "thumb": null
     },
     {
       "id": "sea-battle",
@@ -1977,6 +2149,39 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/ufo-abduction.png"
+    },
+    {
+      "id": "water-sort",
+      "title": {
+        "tr": "Su Sıralama",
+        "en": "Water Sort"
+      },
+      "description": {
+        "tr": "Renkli suları tüpler arasında dök, her tüpte tek bir renk kalsın. Bölümler büyüdükçe renkler ve tüpler artar.",
+        "en": "Pour coloured water between tubes until every tube holds a single colour. Levels grow in colours and tubes."
+      },
+      "howTo": {
+        "tr": "Bir tüpe dokun, sonra dökeceğin tüpe dokun. Klavyede oklar ve Boşluk; Z geri alır, X boş tüp ekler.",
+        "en": "Tap a tube, then tap where to pour it. On a keyboard use the arrows and Space; Z undoes, X adds an empty tube."
+      },
+      "genres": [
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Sounds: Juhani Junkala (CC0) — opengameart.org",
+        "Sounds: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-10-30"
+      },
+      "thumb": null
     },
     {
       "id": "whack-a-mole",
