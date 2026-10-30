@@ -142,6 +142,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'backgammon',
+    title: { en: 'Backgammon', tr: 'Tavla' },
+    description: {
+      en: 'Classic backgammon: roll the dice, race your checkers around the board into your home and bear them off first. Hit blots, build points, win a gammon! In a match to 5 the AI plays sharper after every game you win. Play a friend online too.',
+      tr: 'Klasik tavla: zarları at, taşlarını rakibin etrafından dolaştırıp evine topla ve ilk sen çıkar. Açık taşları kır, kapıları kapat, mars yap! 5 puanlık maçta rakip her elde biraz daha usta oynar. Çevrimiçi bir arkadaşınla da oyna.',
+    },
+    category: 'strategy',
+    categories: ['strategy', 'casual'],
+    tags: ['multiplayer', 'backgammon', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-30',
+    multiplayer: true,
+  }),
+  arcadeGame({
     slug: 'block-blast',
     title: { en: 'Block Blast', tr: 'Blok Patlat' },
     description: {
@@ -394,6 +409,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'head-soccer',
+    title: { en: 'Head Soccer', tr: 'Kafa Topu' },
+    description: {
+      en: 'Big-headed one-on-one football! Run, jump, head the ball and swing your boot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too.',
+      tr: 'Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve kramponu savur. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.',
+    },
+    category: 'sports',
+    categories: ['sports', 'action', 'arcade'],
+    tags: ['multiplayer', 'head', 'soccer', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-30',
+    multiplayer: true,
+  }),
+  arcadeGame({
     slug: 'hex-merge',
     title: { en: 'Hex Merge', tr: 'Altıgen Birleştir' },
     description: {
@@ -474,6 +504,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['lunar', 'lander', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+  }),
+  arcadeGame({
+    slug: 'mangala',
+    title: { en: 'Mangala', tr: 'Mangala' },
+    description: {
+      en: 'The traditional Turkish mancala: sow the stones of your six pits counter-clockwise, drop the last one in your store to play again and make a rival pit even to grab its stones. Most stones wins! The AI looks further ahead after every win. Play a friend online too.',
+      tr: 'Geleneksel Türk zekâ oyunu: altı kuyudaki taşları saat yönünün tersine dağıt, son taşı hazinene düşürüp tekrar oyna, rakibin kuyusunu çift yapıp taşlarını kap. En çok taşı toplayan kazanır! Rakip her galibiyette daha ileriyi düşünür. Çevrimiçi bir arkadaşınla da oyna.',
+    },
+    category: 'strategy',
+    categories: ['strategy', 'puzzle', 'casual'],
+    tags: ['multiplayer', 'mangala', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-30',
+    multiplayer: true,
   }),
   arcadeGame({
     slug: 'maze-muncher',
@@ -588,6 +633,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'pinball',
+    title: { en: 'Pinball', tr: 'Langırt' },
+    description: {
+      en: 'Keep the ball on the table with the flippers; hit bumpers, slingshots and drop targets, light the AYVA lanes to raise the multiplier. You have three balls.',
+      tr: 'Paletlerle topu masada tut; tamponlara, sapanlara ve düşen hedeflere vur, AYVA harflerini yakıp çarpanı büyüt. Üç topun var.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'retro', 'action'],
+    tags: ['pinball', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-30',
+  }),
+  arcadeGame({
     slug: 'pipe-flow',
     title: { en: 'Pipe Flow', tr: 'Boru Akışı' },
     description: {
@@ -683,6 +742,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'rope-swing',
+    title: { en: 'Rope Swing', tr: 'İp Salıncağı' },
+    description: {
+      en: 'Fire a rope at the ceiling, swing and let go to fly! Clear pits and spikes and grab the coins. The speed keeps rising.',
+      tr: 'Tavana ip at, sallan ve bırakıp uç! Çukurların ve dikenlerin üstünden geç, altınları topla. Hız gittikçe artar.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action'],
+    tags: ['rope', 'swing', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-30',
   }),
   arcadeGame({
     slug: 'sea-battle',
@@ -916,6 +989,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'water-sort',
+    title: { en: 'Water Sort', tr: 'Su Sıralama' },
+    description: {
+      en: 'Pour coloured water between tubes until every tube holds a single colour. Levels grow in colours and tubes.',
+      tr: 'Renkli suları tüpler arasında dök, her tüpte tek bir renk kalsın. Bölümler büyüdükçe renkler ve tüpler artar.',
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'casual'],
+    tags: ['water', 'sort', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-10-30',
   }),
   arcadeGame({
     slug: 'whack-a-mole',

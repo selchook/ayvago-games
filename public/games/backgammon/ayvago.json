@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "backgammon",
+  "title": {
+    "en": "Backgammon",
+    "tr": "Tavla"
+  },
+  "description": {
+    "en": "Classic backgammon: roll the dice, race your checkers around the board into your home and bear them off first. Hit blots, build points, win a gammon! In a match to 5 the AI plays sharper after every game you win. Play a friend online too.",
+    "tr": "Klasik tavla: zarları at, taşlarını rakibin etrafından dolaştırıp evine topla ve ilk sen çıkar. Açık taşları kır, kapıları kapat, mars yap! 5 puanlık maçta rakip her elde biraz daha usta oynar. Çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "strategy",
+  "categories": [
+    "strategy",
+    "casual"
+  ],
+  "tags": [
+    "multiplayer",
+    "backgammon",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/backgammon/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/backgammon/ayvago/icon-512.png",
+    "cover": "/games/backgammon/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/backgammon/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}
