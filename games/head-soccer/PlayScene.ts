@@ -4,13 +4,15 @@ import {
 } from '@core';
 import {
   W, GROUND, GOAL_W, GOAL_TOP, BALL_R, CHAR_SCALE, KICK_T, AI_LEVELS,
-  newWorld, resetPlayers, dropBall, step, think, type World, type Input, type Events,
+  newWorld, newPlayer, resetPlayers, dropBall, step, think, movePlayer, separate, type World, type Input, type Events, type Player,
 } from './sim';
 import { makeTextures, drawPitch, drawNets } from './art';
 
 const MATCH_S = 60;
 const SEND_MS = 50;              // ~20 messages per second each way
 const INTERP_MS = 110;           // the guest draws the host's world this far in the past
+const SEND_MIN_MS = 25;          // the guest sends an input change at once, at most this often
+const SNAP_PX = 220;             // a prediction this far off jumps to the host's position
 const READY_S = 1.1;
 const GOAL_S = 2.3;
 export const POSES = ['stand', 'walk1', 'walk2', 'jump', 'hit'] as const;
@@ -30,9 +32,11 @@ interface Snap {
   ev: number[];
   gn: number;                     // goals so far (triggers the goal effects)
   w: number;                      // winner when the match ended (0 / 1), else -1
+  a: number;                      // the guest's last input (its q) the host had when sending, or -1
+  ia: number;                     // ms the host had been playing that input
 }
-/** Guest -> host input: direction (guest's own view), jump held, kick presses so far. */
-interface InMsg { x: number; u: number; k: number }
+/** Guest -> host input: direction (guest's own view), jump held, kick presses so far, sequence. */
+interface InMsg { x: number; u: number; k: number; q: number }
 
 interface ViewPlayer { x: number; y: number; vx: number; vy: number; kickT: number; ground: boolean; face: 1 | -1; mood: number }
 
@@ -64,8 +68,17 @@ export class PlayScene extends ArcadeScene {
   private aiIn: Input = { x: 0, jump: false, kick: false };
   // online
   private sendT = 0;
-  private remote: InMsg = { x: 0, u: 0, k: 0 };
+  private remote: InMsg = { x: 0, u: 0, k: 0, q: -1 };
   private remoteKicks = 0;
+  private remoteAt = 0;
+  // online guest: its own player, predicted locally from its input (host coordinates) and pulled
+  // towards the host's snapshots
+  private pred: Player = newPlayer(1);
+  private predHist: Array<{ at: number; x: number; y: number }> = [];
+  private predFix = { x: 0, y: 0 };
+  private sentIn: InMsg = { x: 0, u: 0, k: 0, q: -1 };
+  private sentLog: Array<{ q: number; at: number }> = [];
+  private jumpLatch = false;
   private snaps: Array<{ s: Snap; at: number }> = [];
   private offset = Number.NaN;
   private lastEv: number[] = [];
@@ -95,7 +108,8 @@ export class PlayScene extends ArcadeScene {
     this.kickoffSide = 0; this.mood = [0, 0]; this.level = 0; this.matchNo = 0; this.rivalPrefix = 'p2';
     this.online = net.active; this.host = net.isHost;
     this.kickPresses = 0; this.kickWas = false; this.kickQueued = false; this.jumpQueued = false; this.aiT = 0; this.aiIn = { x: 0, jump: false, kick: false };
-    this.sendT = 0; this.remote = { x: 0, u: 0, k: 0 }; this.remoteKicks = 0; this.snaps = []; this.offset = Number.NaN;
+    this.sendT = 0; this.remote = { x: 0, u: 0, k: 0, q: -1 }; this.remoteKicks = 0; this.remoteAt = 0; this.snaps = []; this.offset = Number.NaN;
+    this.pred = newPlayer(1); this.predHist = []; this.predFix = { x: 0, y: 0 }; this.sentIn = { x: 0, u: 0, k: 0, q: -1 }; this.sentLog = []; this.jumpLatch = false;
     this.lastEv = []; this.lastGoals = 0; this.walkT = [0, 0]; this.lastTick = -1;
     this.sprites = []; this.boots = []; this.shadows = []; this.touchBtns = [];
 
@@ -122,8 +136,8 @@ export class PlayScene extends ArcadeScene {
     this.scoreMe = txt(this, W / 2 - 110, 66, '0', { title: true, size: 40, color: '#ffffff' }).setDepth(31);
     this.scoreThem = txt(this, W / 2 + 110, 66, '0', { title: true, size: 40, color: '#ffffff' }).setDepth(31);
     this.clockText = txt(this, W / 2, 56, '1:00', { title: true, size: 24, color: '#ffd23f' }).setDepth(31);
-    this.banner = txt(this, W / 2, 230, '', { title: true, size: 60, strokeThickness: 10 }).setDepth(60).setVisible(false);
-    this.sub = txt(this, W / 2, 300, '', { size: 30, color: '#ffffff' }).setDepth(60).setVisible(false);
+    this.banner = txt(this, W / 2, 290, '', { title: true, size: 60, strokeThickness: 10 }).setDepth(60).setVisible(false);
+    this.sub = txt(this, W / 2, 352, '', { size: 30, color: '#ffffff' }).setDepth(60).setVisible(false);
 
     this.setupInput();
     if (this.online) this.setupOnline();
@@ -295,7 +309,7 @@ export class PlayScene extends ArcadeScene {
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
     const local = this.readInput();
-    if (this.online && !this.host) { this.guestUpdate(local); return; }
+    if (this.online && !this.host) { this.guestUpdate(local, dt); return; }
 
     // inputs in world terms: player 0 is the local player (host / solo)
     let other: Input;
@@ -453,7 +467,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   /** Sounds and sparks for what happened since the last frame (counters from the simulation). */
-  private effects(ev: Events | number[]): void {
+  private effects(ev: Events | number[], ownLocal = false): void {
     const now = Array.isArray(ev) ? ev : [...ev.kick, ...ev.swing, ...ev.head, ...ev.jump, ev.post, ev.bounce];
     const prev = this.lastEv.length ? this.lastEv : now;
     const grew = (k: number) => now[k] > prev[k];
@@ -467,9 +481,11 @@ export class PlayScene extends ArcadeScene {
         burst(this, bx, by, [0xffffff, 0xffd23f], 14, 300);
         shake(this, 0.006, 100);
       }
-      if (grew(2 + i)) this.sfxAt('swing', px, { volume: 0.35 });
+      // the online guest plays its own swing and jump when it presses (predictOwn)
+      const own = ownLocal && i === 1;
+      if (grew(2 + i) && !own) this.sfxAt('swing', px, { volume: 0.35 });
       if (grew(4 + i)) { this.sfxAt('head', bx, { volume: 0.6 }); burst(this, bx, by, [0xffffff], 8, 200); }
-      if (grew(6 + i)) this.sfxAt('jump', px, { volume: 0.35 });
+      if (grew(6 + i) && !own) this.sfxAt('jump', px, { volume: 0.35 });
     }
     if (grew(8)) { this.sfxAt('post', bx, { volume: 0.7 }); shake(this, 0.008, 140); burst(this, bx, by - 20, [0xffffff, 0xcccccc], 10, 220); }
     if (grew(9)) this.sfxAt('bounce', bx, { volume: 0.35 });
@@ -484,7 +500,9 @@ export class PlayScene extends ArcadeScene {
     if (this.host) {
       net.onScene(this, 'in', (d: InMsg) => {
         if (!d || typeof d.x !== 'number') return;
-        this.remote = { x: Phaser.Math.Clamp(d.x, -1, 1), u: d.u ? 1 : 0, k: Number(d.k) || 0 };
+        const q = Number.isFinite(d.q) ? Number(d.q) : this.remote.q;
+        if (q !== this.remote.q) this.remoteAt = this.time.now;
+        this.remote = { x: Phaser.Math.Clamp(d.x, -1, 1), u: d.u ? 1 : 0, k: Number(d.k) || 0, q };
       });
     } else {
       net.onScene(this, 'st', (d: Snap) => {
@@ -496,6 +514,7 @@ export class PlayScene extends ArcadeScene {
         this.snaps.push({ s: d, at });
         if (this.snaps.length > 40) this.snaps.shift();
         this.onSnapEvents(d);
+        this.reconcile(d);
       });
     }
   }
@@ -514,6 +533,8 @@ export class PlayScene extends ArcadeScene {
       ev: [...ev.kick, ...ev.swing, ...ev.head, ...ev.jump, ev.post, ev.bounce],
       gn: this.goalCount,
       w: this.winner,
+      a: this.remote.q,
+      ia: this.remote.q >= 0 ? Math.round(this.time.now - this.remoteAt) : 0,
     } satisfies Snap);
   }
 
@@ -548,12 +569,21 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  private guestUpdate(local: Input): void {
+  private guestUpdate(local: Input, dt: number): void {
     const now = this.time.now;
-    if (now - this.sendT >= SEND_MS) {
-      this.sendT = now - Math.min(SEND_MS, now - this.sendT - SEND_MS);
-      net.send('in', { x: local.x, u: local.jump ? 1 : 0, k: this.kickPresses } satisfies InMsg);
-    }
+    // input: a change goes out at once (so the host plays the same input timeline as the
+    // prediction below), otherwise ~20 times a second; a jump tap is held until it was sent
+    const want: InMsg = { x: local.x, u: local.jump || this.jumpLatch ? 1 : 0, k: this.kickPresses, q: this.sentIn.q };
+    const changed = want.x !== this.sentIn.x || want.u !== this.sentIn.u || want.k !== this.sentIn.k;
+    if ((changed && now - this.sendT >= SEND_MIN_MS) || now - this.sendT >= SEND_MS) {
+      this.sendT = now;
+      want.q = this.sentIn.q + 1;
+      this.sentIn = want;
+      this.jumpLatch = false;
+      this.sentLog.push({ q: want.q, at: now });
+      if (this.sentLog.length > 120) this.sentLog.shift();
+      net.send('in', want);
+    } else if (local.jump) this.jumpLatch = true;
     if (!this.snaps.length) return;
     const target = now - this.offset - INTERP_MS;     // host time to draw
     let a = this.snaps[0], b = a;
@@ -570,14 +600,76 @@ export class PlayScene extends ArcadeScene {
         kickT: (k < 0.5 ? pa[4] : pb[4]) / 1000, ground: !!(k < 0.5 ? pa[5] : pb[5]), face: i === 1 ? 1 : -1, mood: pb[6],
       };
     };
+    const rival = mirror(0);
+    const own = this.predictOwn(local, rival, dt);
     const ba = a.s.b, bb = b.s.b;
     // jumps across a reset (kickoff) are not smoothed
     const jumpy = Math.abs(ba[0] - bb[0]) > 300 || Math.abs(ba[1] - bb[1]) > 300;
     const bx = W - (jumpy ? bb[0] : L(ba[0], bb[0])), by = jumpy ? bb[1] : L(ba[1], bb[1]);
     const latest = this.snaps[this.snaps.length - 1].s;
-    this.effects(latest.ev);
-    this.render([mirror(1), mirror(0)], bx, by, -L(ba[2], bb[2]), L(ba[3], bb[3]), -L(ba[4], bb[4]) / 100, this.game.loop.delta / 1000);
+    this.effects(latest.ev, true);
+    this.render([own, rival], bx, by, -L(ba[2], bb[2]), L(ba[3], bb[3]), -L(ba[4], bb[4]) / 100, dt);
     this.updateClock();
+  }
+
+  /**
+   * Guest: moves its own player locally with the input it sent, so it answers the keys at once
+   * instead of a round trip later. The host stays in charge of the ball, goals and the result;
+   * reconcile() pulls this prediction smoothly towards the host's snapshots.
+   */
+  private predictOwn(local: Input, rival: ViewPlayer, dt: number): ViewPlayer {
+    const p = this.pred, now = this.time.now;
+    const latest = this.snaps[this.snaps.length - 1].s;
+    if (this.phase === 'ready') {
+      // everyone waits on their spot until the whistle
+      this.pred = newPlayer(1);
+      this.predHist = [];
+      this.predFix = { x: 0, y: 0 };
+    } else if (this.phase !== 'end') {
+      // host coordinates: the guest's +x (towards the rival goal) is the host's -x
+      const r = movePlayer(p, { x: -this.sentIn.x, jump: !!this.sentIn.u, kick: local.kick }, dt);
+      if (r.jumped) this.sfxAt('jump', W - p.x, { volume: 0.35 });
+      if (r.swung) this.sfxAt('swing', W - p.x, { volume: 0.35 });
+      separate({ x: W - rival.x, y: rival.y }, p, 0, 0.5);
+      // ease in the correction from the last snapshot over a few frames
+      const f = Math.min(1, dt * 12);
+      const cx = this.predFix.x * f, cy = this.predFix.y * f;
+      this.predFix.x -= cx; this.predFix.y -= cy;
+      p.x = Phaser.Math.Clamp(p.x + cx, 44, W - 44);
+      p.y = Math.min(GROUND, p.y + cy);
+      for (const h of this.predHist) { h.x += cx; h.y += cy; }
+    }
+    const q = this.pred;
+    this.predHist.push({ at: now, x: q.x, y: q.y });
+    while (this.predHist.length > 2 && now - this.predHist[0].at > 2000) this.predHist.shift();
+    return { x: W - q.x, y: q.y, vx: -q.vx, vy: q.vy, kickT: q.kickT, ground: q.ground, face: 1, mood: latest.p[1]?.[6] ?? 0 };
+  }
+
+  /** Guest: compares the host's position of our player with where we predicted it back then. */
+  private reconcile(d: Snap): void {
+    if (this.isOver || (d.ph !== PHASES.indexOf('play') && d.ph !== PHASES.indexOf('goal'))) return;
+    const sent = this.sentLog.find((e) => e.q === d.a);
+    const hp = d.p[1];
+    if (!sent || !hp || !this.predHist.length) return;
+    // the host's state had played our input `a` for `ia` ms: the same moment of our prediction
+    const at = Math.min(this.time.now, sent.at + Math.max(0, d.ia || 0));
+    const hist = this.predHist;
+    if (at < hist[0].at) return;
+    let j = hist.length - 1;
+    while (j > 0 && hist[j - 1].at > at) j--;
+    const h1 = hist[j], h0 = hist[Math.max(0, j - 1)];
+    const u = h1.at > h0.at ? Phaser.Math.Clamp((at - h0.at) / (h1.at - h0.at), 0, 1) : 1;
+    const ex = hp[0] - (h0.x + (h1.x - h0.x) * u);
+    const ey = hp[1] - (h0.y + (h1.y - h0.y) * u);
+    if (Math.hypot(ex, ey) > SNAP_PX) {
+      // far off (a goal reset, a long freeze): take the host's position
+      const p = this.pred;
+      p.x += ex; p.y = Math.min(GROUND, p.y + ey); p.vy = hp[3]; p.ground = !!hp[5];
+      for (const e of hist) { e.x += ex; e.y += ey; }
+      this.predFix = { x: 0, y: 0 };
+      return;
+    }
+    this.predFix = { x: Math.abs(ex) < 1.5 ? 0 : ex, y: Math.abs(ey) < 4 ? 0 : ey };
   }
 }
 

@@ -441,9 +441,9 @@ export class PlayScene extends ArcadeScene {
     this.updateLabels();
   }
 
-  /** The round banner fades before the result screen opens over it. */
+  /** The round banner and the final count fade before the result screen opens over them. */
   private fadeBanner(after: number): void {
-    this.time.delayedCall(after, () => this.tweens.add({ targets: this.banner, alpha: 0, duration: 250 }));
+    this.time.delayedCall(after, () => this.tweens.add({ targets: [this.banner, this.status], alpha: 0, duration: 250 }));
   }
 
   private showBanner(s: string, color: string): void {

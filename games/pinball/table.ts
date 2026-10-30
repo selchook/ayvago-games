@@ -77,6 +77,10 @@ export function buildWalls(): Seg[] {
   wall(30, TOP_CY, 30, GUIDE_L[0][1]);                     // left wall
   wall(GUIDE_L[0][0], GUIDE_L[0][1], GUIDE_L[1][0], GUIDE_L[1][1], 5, 0.3);
   wall(GUIDE_R[0][0], GUIDE_R[0][1], GUIDE_R[1][0], GUIDE_R[1][1], 5, 0.3);
+  // the drain channel under the flippers (hidden by the apron): a ball the flipper knocks sideways
+  // down there still drains, instead of flying out under the inlanes and off the table
+  wall(176, 1062, 176, DRAIN_Y + 60, 4, 0.3);
+  wall(504, 1062, 504, DRAIN_Y + 60, 4, 0.3);
   // slingshots: the long inner face kicks, the other two sides are plain walls
   for (const [s, id] of [[SLING_L, 0], [SLING_R, 1]] as const) {
     wall(s.a[0], s.a[1], s.b[0], s.b[1], 6, 0.4);

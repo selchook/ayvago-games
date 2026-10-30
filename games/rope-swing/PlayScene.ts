@@ -19,6 +19,7 @@ const HEAD = 30;                               // head above the hand
 const HALF_W = 16;
 const SCREEN_X = 420;                          // hero's x on screen
 const MAX_V = 1050;                            // grows to 1500 with difficulty
+const HOOK_HOP = 420;                          // upward pop when the rope is fired from the ground
 
 // The hero is the player's chosen character (pc-* textures), 76 px tall, anchored at the hand so
 // it can lean along the rope while swinging.
@@ -214,7 +215,8 @@ export class PlayScene extends ArcadeScene {
     }
     this.ceils = keepC;
     this.coins = this.coins.filter((c) => {
-      if (c.x < left) { c.img.destroy(); return false; }
+      // the spin tween repeats forever: stop it with the coin, or it keeps running on a dead image
+      if (c.x < left) { this.tweens.killTweensOf(c.img); c.img.destroy(); return false; }
       return true;
     });
   }
@@ -239,6 +241,9 @@ export class PlayScene extends ArcadeScene {
         const along = this.vx * tx + this.vy * ty;
         const want = Math.max(Math.abs(along), this.runSpeed * 1.15) * (along < -40 ? -1 : 1);
         this.vx += tx * (want - along); this.vy += ty * (want - along);
+        // fired from the ground, the hook yanks the hero off it at once; without the hop the swing
+        // drags the feet along the ground for a third of the rope, straight into spikes ahead
+        if (this.grounded) this.vy = Math.min(this.vy, -HOOK_HOP);
         this.ropeShow = 0;
         this.grounded = false;
         this.sfxAt('fire', this.px - this.cameras.main.scrollX, { volume: 0.4 });

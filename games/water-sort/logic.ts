@@ -162,8 +162,8 @@ export function scramble(spec: LevelSpec, rand: () => number = Math.random): Tub
     const n = 1 + Math.floor(rand() * Math.min(run, CAP - tubes[a].length));
     const c = top(tubes[b]);
     const rest = tubes[b].length - n;
-    // after the forward pour b's top was c: b had to be empty or topped with c before it
-    if (rest > 0 && tubes[b][rest - 1] !== c && n < run) continue;
+    // before the forward pour b had to be empty or topped with c
+    if (rest > 0 && tubes[b][rest - 1] !== c) continue;
     // and the forward pour moved every matching layer that fit: a's top before must differ
     if (tubes[a].length && top(tubes[a]) === c) continue;
     for (let i = 0; i < n; i++) tubes[a].push(tubes[b].pop()!);

@@ -68,10 +68,20 @@ export function dropBall(w: World, side: 0 | 1): void {
 }
 
 function stepPlayer(w: World, i: 0 | 1, inp: Input, dt: number): void {
-  const p = w.p[i];
+  const r = movePlayer(w.p[i], inp, dt);
+  if (r.jumped) w.ev.jump[i]++;
+  if (r.swung) w.ev.swing[i]++;
+}
+
+/**
+ * One player's own movement for one step: run, jump, boot swing, gravity, the side lines and the
+ * crossbar. Shared by the simulation and the online guest's prediction of its own player.
+ */
+export function movePlayer(p: Player, inp: Input, dt: number): { jumped: boolean; swung: boolean } {
+  let jumped = false, swung = false;
   p.vx = Math.max(-1, Math.min(1, inp.x)) * p.speed;
-  if (inp.jump && p.ground) { p.vy = -JUMP_V; p.ground = false; w.ev.jump[i]++; }
-  if (inp.kick && p.kickT < 0) { p.kickT = 0; p.kicked = false; w.ev.swing[i]++; }
+  if (inp.jump && p.ground) { p.vy = -JUMP_V; p.ground = false; jumped = true; }
+  if (inp.kick && p.kickT < 0) { p.kickT = 0; p.kicked = false; swung = true; }
   if (p.kickT >= 0) { p.kickT += dt; if (p.kickT > KICK_T) p.kickT = -1; }
   p.vy += G_PLAYER * dt;
   p.x += p.vx * dt;
@@ -84,6 +94,17 @@ function stepPlayer(w: World, i: 0 | 1, inp: Input, dt: number): void {
   if (underBar && headTop < GOAL_TOP + BAR_R && p.y > GOAL_TOP) {
     p.y = GOAL_TOP + BAR_R + HEAD_OFF + HEAD_R;
     if (p.vy < 0) p.vy = 0;
+  }
+  return { jumped, swung };
+}
+
+/** Players push each other apart; `share` is how much of the overlap `a` takes (0..1). */
+export function separate(a: { x: number; y: number }, c: { x: number; y: number }, shareA = 0.5, shareC = 0.5): void {
+  const dx = c.x - a.x;
+  if (Math.abs(dx) < 84 && Math.abs(a.y - c.y) < 150) {
+    const push = (84 - Math.abs(dx)) * (dx >= 0 ? 1 : -1);
+    a.x -= push * shareA; c.x += push * shareC;
+    a.x = Math.max(44, Math.min(W - 44, a.x)); c.x = Math.max(44, Math.min(W - 44, c.x));
   }
 }
 
@@ -112,13 +133,7 @@ export function step(w: World, inputs: [Input, Input], dt: number): number {
   stepPlayer(w, 0, inputs[0], dt);
   stepPlayer(w, 1, inputs[1], dt);
   // players push each other apart
-  const [a, c] = w.p;
-  const dx = c.x - a.x;
-  if (Math.abs(dx) < 84 && Math.abs(a.y - c.y) < 150) {
-    const push = (84 - Math.abs(dx)) / 2 * (dx >= 0 ? 1 : -1);
-    a.x -= push; c.x += push;
-    a.x = Math.max(44, Math.min(W - 44, a.x)); c.x = Math.max(44, Math.min(W - 44, c.x));
-  }
+  separate(w.p[0], w.p[1]);
   const n = 3, h = dt / n, b = w.b;
   for (let s = 0; s < n; s++) {
     b.vy += G_BALL * h;

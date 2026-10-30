@@ -117,15 +117,15 @@ export class PlayScene extends ArcadeScene {
 
     // right panel: match score, pips, undo and done
     const px = 1210;
-    txt(this, px, 140, t('matchTo', { n: MATCH }), { title: true, size: 12, color: '#d9a56a', wrap: 130 });
+    txt(this, px, 148, t('matchTo', { n: MATCH }), { title: true, size: 13, color: '#d9a56a', wrap: 150 });
     this.add.image(px - 40, 196, this.tex(this.mine)).setDisplaySize(30, 30);
     txt(this, px + 14, 196, t('you'), { size: 22, color: '#ffffff' }).setOrigin(0.5);
     this.ptsMe = txt(this, px, 236, '0', { title: true, size: 32, color: '#ffd23f' });
-    this.pipMe = txt(this, px, 270, '', { size: 18, color: '#c49a6a' });
+    this.pipMe = txt(this, px, 270, '', { size: 20, color: '#c49a6a' });
     this.add.image(px - 40, 316, this.tex(other(this.mine))).setDisplaySize(30, 30);
     this.nameThem = txt(this, px + 14, 316, '', { size: 20, color: '#ffffff', wrap: 100 }).setOrigin(0.5);
     this.ptsThem = txt(this, px, 356, '0', { title: true, size: 32, color: '#7fd8ff' });
-    this.pipThem = txt(this, px, 390, '', { size: 18, color: '#c49a6a' });
+    this.pipThem = txt(this, px, 390, '', { size: 20, color: '#c49a6a' });
     this.undoBtn = this.panelButton(px, 480, 'bg-undo', t('undo'), () => this.undo());
     this.doneBtn = this.panelButton(px, 610, 'bg-ok', t('done'), () => this.confirm());
     this.setButtons();
@@ -175,7 +175,7 @@ export class PlayScene extends ArcadeScene {
     const shadow = this.add.rectangle(0, 6, 124, 104, 0x000000, 0.5);
     const face = this.add.rectangle(0, 0, 124, 104, 0x7a4a24).setStrokeStyle(4, 0x2e1606);
     const img = this.add.image(0, -14, icon).setDisplaySize(52, 52);
-    const lab = txt(this, 0, 32, label, { title: true, size: 12, color: '#ffffff', strokeThickness: 4 });
+    const lab = txt(this, 0, 32, label, { title: true, size: 14, color: '#ffffff', strokeThickness: 4 });
     c.add([shadow, face, img, lab]);
     c.setSize(124, 110).setInteractive({ useHandCursor: true });
     c.on('pointerdown', () => { face.y = img.y = 3; lab.y = 35; });

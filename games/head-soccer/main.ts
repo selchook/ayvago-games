@@ -33,8 +33,8 @@ launch({
     drawPitch(scene);
     drawNets(scene, 1);
     scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x000000, 0.45).setOrigin(0);
-    const you = scene.add.image(300, GROUND, 'p1-walk1').setOrigin(0.5, CHARACTER_FRAME.originY);
-    const rival = scene.add.image(980, GROUND, 'p2-stand').setOrigin(0.5, CHARACTER_FRAME.originY).setFlipX(true);
+    const you = scene.add.image(150, GROUND, 'p1-walk1').setOrigin(0.5, CHARACTER_FRAME.originY);
+    const rival = scene.add.image(1130, GROUND, 'p2-stand').setOrigin(0.5, CHARACTER_FRAME.originY).setFlipX(true);
     const ball = scene.add.image(640, GROUND - 26, 'hs-ball');
     scene.tweens.add({ targets: ball, y: GROUND - 230, duration: 600, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
     scene.tweens.add({ targets: ball, angle: 360, duration: 1200, repeat: -1 });

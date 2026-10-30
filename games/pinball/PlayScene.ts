@@ -70,7 +70,9 @@ export class PlayScene extends ArcadeScene {
       gravity: 1250,
     };
 
-    this.input.addPointer(3);
+    // two thumbs plus the launch button; the pointers live on the game, so add them only once
+    const pointers = this.input.manager.pointersTotal;
+    if (pointers < 6) this.input.addPointer(6 - pointers);
     this.table = this.add.container(0, 0);
     this.drawTable();
 
@@ -218,7 +220,8 @@ export class PlayScene extends ArcadeScene {
 
     this.saveText = txt(this, W / 2, 1172, t('ballSave'), { title: true, size: 16, color: '#5dff7a' }).setDepth(21);
     this.infoText = txt(this, W / 2, 1222, '', { title: true, size: 18, color: '#ffd23f' }).setDepth(21);
-    this.launchHint = txt(this, 520, 1060, t('holdLaunch'), { size: 22, color: '#f3f2f2', align: 'right' }).setOrigin(1, 0.5).setDepth(21);
+    // between the slingshots, clear of the flippers (it only shows while the ball waits in the shooter lane)
+    this.launchHint = txt(this, 340, 935, t('holdLaunch'), { size: 24, color: '#f3f2f2', strokeThickness: 5, align: 'center' }).setDepth(21);
     this.table.add([this.saveText, this.infoText, this.launchHint]);
 
     this.nudgeBtn = this.add.graphics().setDepth(22);
