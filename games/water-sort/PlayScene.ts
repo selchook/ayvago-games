@@ -52,8 +52,9 @@ export class PlayScene extends ArcadeScene {
     this.level = 1; this.moves = 0; this.par = 0; this.mult = 1; this.undos = UNDOS;
     this.extraUsed = false; this.helped = false; this.selected = -1; this.cursor = 0;
     this.busy = false; this.running = false; this.timeLeft = 0; this.timeTotal = 1; this.lastTick = 0;
-    // the keyboard cursor appears on desktops at once, on phones only after a key press
-    this.pointerUsed = !this.sys.game.device.os.desktop;
+    // the keyboard cursor shows at once on keyboard-only desktops; on touch screens after a key press
+    const device = this.sys.game.device;
+    this.pointerUsed = !device.os.desktop || device.input.touch;
 
     // backdrop: soft gradient and rising bubbles
     const bg = this.add.graphics().setDepth(-10);
