@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CHARACTER_FRAME, playerCharacter, type CharacterId } from '@core';
+import { CHARACTER_FRAME } from '@core';
 
 export const W = 1280;
 export const H = 720;
@@ -8,16 +8,6 @@ export const GROUND = 620;
 // The archer is the player's character, 114 px tall standing (as the old 0.62-scale alien), feet on the turf.
 export const ARCHER_SCALE = 114 / CHARACTER_FRAME.standHeight;
 export const ARCHER_ORIGIN_Y = CHARACTER_FRAME.originY;
-
-// Skin (or glove) colour of each character, for the drawn arms that hold the bow.
-const HAND: Record<CharacterId, number> = {
-  'alien-green': 0x6fc4a9, 'alien-blue': 0x8db5e7, 'alien-pink': 0xf19cb7, 'alien-yellow': 0xffcc00,
-  'alien-beige': 0xe0d1af, adventurer: 0xffe0b1, explorer: 0xffe0b1, rookie: 0xffe0b1, soldier: 0x8c6e40,
-  zombie: 0x2ecc71,
-};
-export function handColor(): number {
-  return HAND[playerCharacter()];
-}
 
 /** WA-style ten ring face: white, black, blue, red, gold (two rings each). */
 export const RING_COLORS = [0xf4f4f4, 0xf4f4f4, 0x262626, 0x262626, 0x2f8fd8, 0x2f8fd8, 0xe8332a, 0xe8332a, 0xffd23f, 0xffd23f];

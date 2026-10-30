@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { asset } from './assets';
 import { sdk } from './sdk';
+import RIG from './character-rig.json';
 
 // Player characters (protocol 2.2): players pick one of ten characters in their ayvago.com profile
 // and the platform sends the id in GHA_START (`character`, and `peerCharacter` in online matches).
@@ -29,6 +30,27 @@ export const CHARACTER_POSES = [
 ] as const;
 
 export type CharacterPose = (typeof CHARACTER_POSES)[number];
+
+/**
+ * Parts for games that pose the arms themselves (Archery): `archer` is the character facing
+ * front without arms, on the same frame as the poses; `arm` (shoulder at the top centre) and
+ * `hand` are drawn on their own, rotated towards what the hands hold.
+ */
+export const CHARACTER_PARTS = ['archer', 'arm', 'hand'] as const;
+
+export type CharacterPart = (typeof CHARACTER_PARTS)[number];
+
+export type CharacterRig = {
+  /** Left and right shoulder on the 144x176 frame, where the arms attach. */
+  shoulders: [[number, number], [number, number]];
+  /** Size of the `arm` image in px: width and length from shoulder to wrist. */
+  arm: [number, number];
+};
+
+/** Shoulder points and arm size of a character, built by tools/import-characters.py. */
+export function characterRig(id: CharacterId): CharacterRig {
+  return (RIG as Record<CharacterId, CharacterRig>)[id];
+}
 
 /**
  * Every pose of every character shares one frame: 144x176, feet 2 px above the bottom edge,
@@ -69,8 +91,8 @@ export function otherCharacters(...exclude: CharacterId[]): CharacterId[] {
   return CHARACTER_IDS.filter((id) => !exclude.includes(id));
 }
 
-/** URL of one pose. */
-export function characterUrl(id: CharacterId, pose: CharacterPose): string {
+/** URL of one pose or part. */
+export function characterUrl(id: CharacterId, pose: CharacterPose | CharacterPart): string {
   return asset(`characters/${id}/${pose}.png`);
 }
 
@@ -80,7 +102,7 @@ export function characterUrl(id: CharacterId, pose: CharacterPose): string {
  */
 export function loadCharacter(
   load: Phaser.Loader.LoaderPlugin,
-  options: { id?: CharacterId; prefix?: string; poses?: readonly CharacterPose[] } = {},
+  options: { id?: CharacterId; prefix?: string; poses?: readonly (CharacterPose | CharacterPart)[] } = {},
 ): void {
   const { id = playerCharacter(), prefix = 'pc', poses = CHARACTER_POSES } = options;
   for (const pose of poses) load.image(`${prefix}-${pose}`, characterUrl(id, pose));

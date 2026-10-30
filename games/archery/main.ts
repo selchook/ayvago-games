@@ -12,8 +12,8 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    // the player's chosen character: pc-stand (aiming), pc-jump (round cleared), pc-hit (round failed)
-    loadCharacter(l, { poses: ['stand', 'jump', 'hit'] });
+    // the player's chosen character: pc-stand on the menu; in play the armless pc-archer with arms posed on the bow
+    loadCharacter(l, { poses: ['stand', 'archer', 'arm', 'hand'] });
     l.image('cloud1', kenney(SG + 'cloud1.png'));
     l.image('cloud2', kenney(SG + 'cloud2.png'));
     l.image('tree_oak', kenney(SG + 'tree_oak.png'));
