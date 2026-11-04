@@ -412,8 +412,8 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'head-soccer',
     title: { en: 'Head Soccer', tr: 'Kafa Topu' },
     description: {
-      en: 'Big-headed one-on-one football! Run, jump, head the ball and swing your boot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too.',
-      tr: 'Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve kramponu savur. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.',
+      en: 'Big-headed one-on-one football! Run, jump, head the ball and shoot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too.',
+      tr: 'Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve şut çek. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.',
     },
     category: 'sports',
     categories: ['sports', 'action', 'arcade'],
