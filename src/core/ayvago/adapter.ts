@@ -39,7 +39,7 @@ export type StartConfig = ThemeInfo & {
   peerName?: string;
   /**
    * Protocol 2.2: the player's chosen character (an id from the platform's character list, e.g.
-   * "alien-green"). Absent for players who have not chosen one; games then use their default.
+   * "adventurer"). Absent for players who have not chosen one; games then use their default.
    */
   character?: string;
   /** Protocol 2.2, multiplayer only: the other player's character. */
