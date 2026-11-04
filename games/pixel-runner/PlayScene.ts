@@ -20,11 +20,12 @@ const HW = 18, HH = 26;                      // runner half extents (hitbox)
 // old 21 px tile at scale 3 and centred on its frame, so its feet land on the hitbox bottom.
 export const HERO_SCALE = 62 / CHARACTER_FRAME.standHeight;
 const HERO_FEET = (CHARACTER_FRAME.originY - 0.5) * CHARACTER_FRAME.height * HERO_SCALE;
+const SLIME_HW = 26;
 const TOPS = [720 - 2 * T, 720 - 3 * T, 720 - 4 * T];
 
 interface Seg { x: number; w: number; top: number; float: boolean; objs: Phaser.GameObjects.GameObject[] }
 interface Coin { img: Phaser.GameObjects.Image; x: number; y: number }
-interface Enemy { kind: 'slime' | 'bee' | 'spike'; img: Phaser.GameObjects.Sprite; x: number; y: number; vx: number; baseY: number; t: number; alive: boolean }
+interface Enemy { kind: 'slime' | 'bee' | 'spike'; img: Phaser.GameObjects.Sprite; x: number; y: number; vx: number; baseY: number; t: number; alive: boolean; minX: number; maxX: number }
 
 export class PlayScene extends ArcadeScene {
   private player!: Phaser.GameObjects.Sprite;
@@ -160,7 +161,7 @@ export class PlayScene extends ArcadeScene {
     if (slots > 1) {
       const roll = rng.int(0, 99);
       const at = seg.x + rng.int(2, slots) * T + T / 2;
-      if (roll < 30 + d * 25) this.addEnemy('slime', at, top);
+      if (roll < 30 + d * 25) this.addEnemy('slime', at, top, seg);
       else if (roll < 50 + d * 30) {
         const n = d > 0.5 && rng.chance(0.5) ? 2 : 1;
         for (let i = 0; i < n; i++) this.addEnemy('spike', at + i * T, top);
@@ -170,7 +171,7 @@ export class PlayScene extends ArcadeScene {
         const ny = rng.chance(0.5) ? top - 40 : top - 150;
         for (let i = 0; i < Math.min(5, len - 2); i++) this.addCoin(cx + i * T * 0.75 + T / 2, ny);
       }
-      if (d > 0.4 && rng.chance(0.3) && len > 8) this.addEnemy('slime', seg.x + (len - 2) * T, top);
+      if (d > 0.4 && rng.chance(0.3) && len > 8) this.addEnemy('slime', seg.x + (len - 2) * T, top, seg);
     }
     this.genX += len * T;
   }
@@ -181,10 +182,12 @@ export class PlayScene extends ArcadeScene {
     this.coins.push({ img, x, y });
   }
 
-  private addEnemy(kind: Enemy['kind'], x: number, y: number): void {
+  // Slimes patrol the ground segment they stand on and turn round at its edges.
+  private addEnemy(kind: Enemy['kind'], x: number, y: number, seg?: Seg): void {
     const frame = kind === 'slime' ? F.slime[0] : kind === 'bee' ? F.bee[0] : F.spike;
     const img = this.add.sprite(x, 0, 'pp', frame).setScale(S).setDepth(9).setOrigin(0.5, 1);
-    const e: Enemy = { kind, img, x, y, vx: kind === 'slime' ? -rng.int(40, 90) : 0, baseY: y, t: rng.int(0, 100) / 10, alive: true };
+    const e: Enemy = { kind, img, x, y, vx: kind === 'slime' ? -rng.int(40, 90) : 0, baseY: y, t: rng.int(0, 100) / 10, alive: true,
+      minX: seg ? seg.x + SLIME_HW : x, maxX: seg ? seg.x + seg.w - SLIME_HW : x };
     img.setY(kind === 'bee' ? y + 30 : y + 3);
     if (kind === 'slime') img.setFlipX(false);
     this.enemies.push(e);
@@ -361,6 +364,11 @@ export class PlayScene extends ArcadeScene {
       e.t += dt;
       if (e.kind === 'slime') {
         e.x += e.vx * dt;
+        if ((e.x < e.minX && e.vx < 0) || (e.x > e.maxX && e.vx > 0)) {
+          e.x = Phaser.Math.Clamp(e.x, e.minX, e.maxX);
+          e.vx = -e.vx;
+          e.img.setFlipX(e.vx > 0);
+        }
         e.img.setFrame(F.slime[Math.floor(e.t * 5) % 2]);
       } else if (e.kind === 'bee') {
         e.y = e.baseY + Math.sin(e.t * 3) * 40;
