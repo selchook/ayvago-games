@@ -1,0 +1,18 @@
+{
+  "id": "color-road",
+  "title": { "tr": "Renk Yolu", "en": "Color Road" },
+  "description": {
+    "tr": "Top sonsuz bir yolda yuvarlanıyor. Yalnızca kendi rengindeki blokları parçala, başka renge çarparsan oyun biter! Renk kapıları topunun rengini değiştirir; yol hızlandıkça bloklar sıklaşır.",
+    "en": "The ball rolls down an endless road. Smash only the blocks of your own colour; hit another colour and the run is over! Colour gates switch your colour, and the road gets faster and busier."
+  },
+  "howTo": {
+    "tr": "Topu yönlendirmek için parmağını sağa sola sürükle ya da sol / sağ oka bas. Kendi rengin ve şeklindeki blokları vur, elmasları topla.",
+    "en": "Drag sideways or press Left / Right to steer. Hit the blocks with your colour and symbol, and grab the gems."
+  },
+  "genres": ["arcade", "action"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Audio: Juhani Junkala (CC0) — opengameart.org", "Audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-11-04" }
+}

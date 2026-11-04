@@ -1,0 +1,18 @@
+{
+  "id": "color-wheel",
+  "title": { "tr": "Renk Çarkı", "en": "Color Wheel" },
+  "description": {
+    "tr": "Her yönden renkli noktalar geliyor. Ortadaki çarkı çevir, her nokta kendi rengine çarpsın! Dalgalar hızlanır, çarka yeni renkler eklenir.",
+    "en": "Coloured dots fly in from every side. Spin the wheel in the middle so each dot hits its own colour! Waves speed up and the wheel gains colours."
+  },
+  "howTo": {
+    "tr": "Çarkı çevirmek için ekranın sol / sağ yarısına dokun, sürükle ya da sol / sağ oka bas. Her nokta aynı renk ve şekle çarpmalı.",
+    "en": "Tap the left / right half, drag, or press Left / Right to turn the wheel. Every dot must hit the matching colour and symbol."
+  },
+  "genres": ["arcade", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Audio: Juhani Junkala (CC0) — opengameart.org", "Audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-11-04" }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "color-bounce",
+  "title": { "tr": "Renkli Zıplama", "en": "Color Bounce" },
+  "description": {
+    "tr": "Top renkli çubuklardan oluşan bir kulede yukarı zıplıyor. Konmadan önce rengini değiştir: aynı renkteki çubuk seni zıplatır, yanlış renk oyunu bitirir. Kayan, ikiye bölünen ve eriyen çubuklara dikkat!",
+    "en": "The ball bounces up a tower of coloured bars. Change its colour before it lands: a matching bar bounces it on, a wrong one ends the run. Watch out for sliding, split and shrinking bars!"
+  },
+  "howTo": {
+    "tr": "Rengi değiştirmek için ekranın sol / sağ yarısına dokun ya da sol / sağ oka bas. Ok işaretinin gösterdiği yerdeki renge düş.",
+    "en": "Tap the left / right half or press Left / Right to change colour. Match the colour where the white marker points."
+  },
+  "genres": ["arcade", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Audio: Juhani Junkala (CC0) — opengameart.org", "Audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-11-04" }
+}
