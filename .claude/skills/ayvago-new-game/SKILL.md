@@ -98,6 +98,7 @@ Other helpers from `@core`:
   - **Rule: every directional game uses the standard touch controls, as in `games/asteroid-storm`.** A directional game is one where the player steers a character, vehicle or ship by direction: shooters, racers, platformers, mazes, snakes, grid movers and sports players.
     - On touch, these games use `new Controls(this, { joystick: true, buttons: [...] })`: a floating stick that appears wherever the left thumb lands on the left half, plus the A/B buttons on the right.
     - With no buttons, the stick works anywhere on the screen.
+    - When the buttons' default spot on the right edge would cover play (a goal, a lane), move them with `buttonPos` / `buttonScale` instead of moving the created objects. The stick never starts on the pause button (top-right 120 px).
     - Left/right-only games read `axisX`. Grid games read `dir4()`, and move one cell per press or repeat while it is held.
     - Do not add swipe gestures, on-screen arrow pads or "tap the left or right half" schemes for movement.
   - **Exceptions:** games where the finger directly is the control keep pointer events (`this.input.on('pointerdown', …)`): a paddle that follows the finger, aiming or slingshot drags, slicing, and tapping cells or cards in board and puzzle games. Whole-board swipes (2048, slide puzzle) are also exceptions. Add a keyboard path where it makes sense.

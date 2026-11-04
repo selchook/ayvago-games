@@ -167,25 +167,10 @@ export class PlayScene extends ArcadeScene {
     this.input.addPointer(3);
     // the standard controls: a floating stick on the left half (run, push up to jump),
     // A jumps and B kicks on the right
-    const before = new Set(this.children.list);
-    this.controls = new Controls(this, { joystick: true, buttons: ['A', 'B'], forceTouchUi: true });
-    this.placeButtons(this.children.list.filter((o) => !before.has(o)));
-  }
-
-  /**
-   * The core puts A/B in a column on the right edge, which would cover the right goal mouth
-   * (x > W - GOAL_W, y 418..640). Move them side by side onto the strip below the grass line,
-   * clear of the goal and the HUD: B (kick, the busiest) next to the goal, A (jump) inside it.
-   */
-  private placeButtons(made: Phaser.GameObjects.GameObject[]): void {
-    const spots: Record<string, [number, number]> = { A: [W - GOAL_W - 214, 662], B: [W - GOAL_W - 72, 662] };
-    const arcs = made.filter((o): o is Phaser.GameObjects.Arc => o instanceof Phaser.GameObjects.Arc && o.input !== null);
-    const labels = made.filter((o): o is Phaser.GameObjects.Text => o instanceof Phaser.GameObjects.Text);
-    (['A', 'B'] as const).forEach((name, i) => {
-      const [x, y] = spots[name];
-      arcs[i]?.setPosition(x, y).setScale(0.85);
-      labels.find((l) => l.text === name)?.setPosition(x, y).setScale(0.85);
-    });
+    // A and B sit side by side on the strip below the grass line, clear of the right goal mouth
+    // (x > W - GOAL_W, y 418..640) and the HUD: B (kick, the busiest) next to the goal.
+    const spots: Record<'A' | 'B', [number, number]> = { A: [W - GOAL_W - 214, 662], B: [W - GOAL_W - 72, 662] };
+    this.controls = new Controls(this, { joystick: true, buttons: ['A', 'B'], forceTouchUi: true, buttonPos: spots, buttonScale: 0.85 });
     // your own character in its kick pose marks the kick button
     const [kx, ky] = spots.B;
     this.add.image(kx - 2, ky - 4, 'p1-kick').setOrigin(0.5, 0.52).setScale(0.5).setDepth(9499).setAlpha(0.55);

@@ -7,7 +7,14 @@ export interface ControlsOptions {
   buttons?: Array<'A' | 'B'>;
   /** Force on-screen controls even without a touch screen (tests/demo). */
   forceTouchUi?: boolean;
+  /** Where the A/B buttons sit (world px), when the default column on the right edge covers play. */
+  buttonPos?: Partial<Record<'A' | 'B', [number, number]>>;
+  /** Size of the A/B buttons (1 = the default 72 px radius). */
+  buttonScale?: number;
 }
+
+// The pause button owns the top-right corner; the stick never starts there.
+const PAUSE_ZONE = 120;
 
 /**
  * Unified input: keyboard (arrows/WASD, Space/Z = A, X/Shift = B) + touch joystick/buttons.
@@ -104,6 +111,7 @@ export class Controls {
       this.knob = s.add.circle(0, 0, 38, 0xffffff, 0.35).setScrollFactor(0).setDepth(depth).setVisible(false);
       s.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
         if (this.stick.active || p.x > width * 0.5 && this.o.buttons?.length) return;
+        if (p.x > width - PAUSE_ZONE && p.y < PAUSE_ZONE) return;
         this.stick = { active: true, id: p.id, ox: p.x, oy: p.y, x: p.x, y: p.y };
         this.base!.setPosition(p.x, p.y).setVisible(true);
         this.knob!.setPosition(p.x, p.y).setVisible(true);
@@ -125,10 +133,11 @@ export class Controls {
     }
     const btns = this.o.buttons ?? [];
     btns.forEach((name, i) => {
-      const bx = width - 110 - (btns.length - 1 - i) * 0, by = height - 130 - i * 170;
-      const c = s.add.circle(bx, by, 72, name === 'A' ? 0xec3013 : 0x3ee6ff, 0.35)
+      const [bx, by] = this.o.buttonPos?.[name] ?? [width - 110, height - 130 - i * 170];
+      const scale = this.o.buttonScale ?? 1;
+      const c = s.add.circle(bx, by, 72 * scale, name === 'A' ? 0xec3013 : 0x3ee6ff, 0.35)
         .setStrokeStyle(5, 0xffffff, 0.6).setScrollFactor(0).setDepth(depth).setInteractive();
-      s.add.text(bx, by, name, { fontFamily: '"Press Start 2P"', fontSize: '34px', color: '#ffffff' })
+      s.add.text(bx, by, name, { fontFamily: '"Press Start 2P"', fontSize: `${Math.round(34 * scale)}px`, color: '#ffffff' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(depth + 1).setAlpha(0.8);
       const set = (v: boolean) => {
         if (name === 'A') this.touchA = v; else this.touchB = v;
