@@ -1,0 +1,19 @@
+{
+  "id": "ultimate-tictactoe",
+  "title": { "tr": "Süper XOX", "en": "Ultimate Tic-Tac-Toe" },
+  "description": {
+    "tr": "Dokuz küçük XOX tek bir büyük tahtada! Oynadığın kare, rakibin hangi küçük tahtada oynayacağını belirler. Yan yana üç küçük tahta kazanan maçı alır. Yapay zekâ her galibiyette daha uzun düşünür; çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Nine small tic-tac-toe boards inside a big one! The square you play sends your rival to the matching small board. Win three small boards in a row to take the match. The AI thinks longer after every win; play a friend online too."
+  },
+  "howTo": {
+    "tr": "Parlayan tahtada bir kareye dokun ya da oklarla seçip Boşluk'a bas. Yan yana üç küçük tahta kazanan maçı alır.",
+    "en": "Tap a square on a glowing board, or pick one with the arrows and press Space. Win three small boards in a row."
+  },
+  "genres": ["strategy", "puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-11-04" }
+}

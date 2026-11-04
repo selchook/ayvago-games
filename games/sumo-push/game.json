@@ -1,0 +1,19 @@
+{
+  "id": "sumo-push",
+  "title": { "tr": "Sumo Güreşi", "en": "Sumo Push" },
+  "description": {
+    "tr": "Tombul güreşçini halkada yönet, hücumla rakibine yüklen ve onu ipin dışına it! Halka zamanla daralır; beş tur üzerinden üç turu alan kazanır. Her galibiyette daha kurnaz bir rakip gelir; çevrimiçi bir arkadaşınla da güreş.",
+    "en": "Steer your round wrestler, dash into your rival and shove them out of the ring! The ring shrinks over time; win three bouts out of five. Every match win brings a craftier rival; wrestle a friend online too."
+  },
+  "howTo": {
+    "tr": "Oklar ya da sürüklenen kumanda çubuğuyla yürü, Boşluk ya da HÜCUM düğmesiyle atıl. Rakibini halkanın dışına it.",
+    "en": "Move with the arrows or the drag joystick, dash with Space or the DASH button. Push your rival out of the ring."
+  },
+  "genres": ["sports", "action", "arcade"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-11-04" }
+}

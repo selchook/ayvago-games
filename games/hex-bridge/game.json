@@ -1,0 +1,19 @@
+{
+  "id": "hex-bridge",
+  "title": { "tr": "Hex Köprüsü", "en": "Hex" },
+  "description": {
+    "tr": "11x11 altıgen tahtada kendi kenarlarını birleştiren köprüyü ilk sen kur! Kırmızı üstten alta, mavi soldan sağa bağlanır; beraberlik yoktur. İlk taştan sonra ikinci oyuncu yer değiştirebilir. Yapay zekâ her galibiyette daha derin düşünür; çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Be first to build a bridge between your two edges of an 11x11 hex board! Red joins top to bottom, blue joins left to right, and there are no draws. After the first stone the second player may swap. The AI looks deeper after every win; play a friend online too."
+  },
+  "howTo": {
+    "tr": "Bir altıgene dokun, onaylamak için yine dokun ya da oklarla seçip Boşluk'a bas. Kendi renginin iki kenarını taşlarınla birleştir.",
+    "en": "Tap a hex, then tap it again to place (or use the arrows and Space). Join your two coloured edges with a chain of stones."
+  },
+  "genres": ["strategy", "puzzle"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-11-04" }
+}

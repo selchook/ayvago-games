@@ -1,0 +1,19 @@
+{
+  "id": "nine-mens-morris",
+  "title": { "tr": "Dokuz Taş", "en": "Nine Men's Morris" },
+  "description": {
+    "tr": "Dokuzar taşı sırayla yerleştir, sonra çizgiler boyunca oynat; üç taşın kalınca istediğin yere uç! Üç taşı yan yana dizip değirmen kurunca rakibin bir taşını alırsın. İki taşa düşen ya da hamlesi kalmayan kaybeder. Yapay zekâ her galibiyette daha derin hesaplar; çevrimiçi bir arkadaşınla da oyna.",
+    "en": "Place nine stones each, then slide them along the lines, and fly anywhere once you are down to three! Line up three to form a mill and take one of your rival's stones. Down to two stones or out of moves, you lose. The AI looks further ahead after every win; play a friend online too."
+  },
+  "howTo": {
+    "tr": "Bir noktaya dokunup taş koy; sonra taşına ve gideceği noktaya dokun (ya da oklar + Boşluk). Değirmen kurunca rakibin bir taşını seç.",
+    "en": "Tap a point to place a stone; later tap your stone, then where it goes (or arrows + Space). Form a mill, then pick a rival stone to take."
+  },
+  "genres": ["strategy", "puzzle"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": ["Audio: Kenney (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-11-04" }
+}
