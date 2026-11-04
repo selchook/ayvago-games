@@ -56,7 +56,7 @@ launch({
       out: 'ELENDİN!', m1: 'ÇEYREK FİNAL', m2: 'YARI FİNAL', m3: 'FİNAL', curl: 'FALSO', corner: 'DOKSAN!',
       kickN: 'PENALTI', pickDive: 'ATLAYACAĞIN YERİ SEÇ!', waitPeer: 'RAKİP BEKLENİYOR…',
       hintShoot: 'Ekranın her yerinden kaleye doğru kaydır · kaleye dokun', hintKeep: 'Atlamak için dokun ya da kaydır',
-      hintShootKeys: 'Oklar nişan · X falso · Boşluk şut', hintKeepKeys: 'Oklar ile atla',
+      hintShootKeys: 'Kaleye doğru sürükle · oklar nişan, X falso, Boşluk şut', hintKeepKeys: 'Atlamak için tıkla ya da okları kullan',
     },
     en: {
       you: 'YOU', them: 'THEM', shoot: 'TAKE YOUR SHOT!', keep: 'SAVE IT!', goal: 'GOAL!', saved: 'SAVED!', bigSave: 'GREAT SAVE!',
@@ -64,7 +64,7 @@ launch({
       out: 'KNOCKED OUT!', m1: 'QUARTER-FINAL', m2: 'SEMI-FINAL', m3: 'FINAL', curl: 'CURL', corner: 'TOP CORNER!',
       kickN: 'KICK', pickDive: 'PICK YOUR DIVE!', waitPeer: 'WAITING FOR OPPONENT…',
       hintShoot: 'Swipe toward the goal from anywhere · or tap the goal', hintKeep: 'Tap or swipe to dive',
-      hintShootKeys: 'Arrows aim · X curl · Space shoots', hintKeepKeys: 'Arrows to dive',
+      hintShootKeys: 'Drag toward the goal · arrows aim, X curl, Space shoots', hintKeepKeys: 'Click or use the arrows to dive',
     },
   },
 });

@@ -97,7 +97,7 @@ export class PlayScene extends ArcadeScene {
     this.net = { stretch: 0, sway: 0, swayZ: 0, bulge: null, t: 0 };
     this.rimGlow = 0; this.camDirty = true;
     this.phase = 'intro'; this.round = 1; this.rules = roundRules(1); this.spot = 0; this.ball = 0;
-    this.racks = []; this.pts = 0; this.timeLeft = this.rules.time; this.lastTick = -1; this.streak = 0; this.moveT = 0;
+    this.racks = []; this.pts = 0; this.timeLeft = this.rules.time; this.lastTick = -1; this.streak = 0; this.moveT = 0; this.moveFrom = 0; this.moveTo = 0;
     this.holding = false; this.pickT = 0; this.charging = false; this.chargeT = 0; this.liftT = 0; this.power = 0;
     this.aim = 0; this.aimStart = 0; this.downX = 0; this.driftPhase = 0; this.driftW = 2.6; this.wasGreen = false; this.shotsTaken = 0;
     this.touchUi = this.sys.game.device.input.touch;

@@ -408,7 +408,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.killTweensOf(this.kicker);
     this.kickerMood = 'idle';
     this.kicker.setTexture(`${this.kickerPrefix}-stand`).setVisible(true).setAlpha(1).setFlipX(false).setScale(KICKER_S * 1.04)
-      .setPosition(sx - 120, sy + 34);
+      .setPosition(sx - 70, sy + 22);
   }
 
   /** Run-up with the character's walk poses, then the kick pose with the foot on the ball. */
@@ -416,7 +416,7 @@ export class PlayScene extends ArcadeScene {
     const [sx, sy] = this.strikePos();
     this.tweens.killTweensOf(this.kicker);
     this.kickerMood = 'idle';
-    this.kicker.setVisible(true).setAlpha(1).setFlipX(false).setPosition(fromX, fromY).setScale(KICKER_S * (1 + (fromY - sy) / 900));
+    this.kicker.setTexture(`${this.kickerPrefix}-walk1`).setVisible(true).setAlpha(1).setFlipX(false).setPosition(fromX, fromY).setScale(KICKER_S * (1 + (fromY - sy) / 900));
     const step = Math.max(90, Math.min(150, ms / 6));
     let last = -1;
     this.tweens.add({
@@ -780,6 +780,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private startOnline(): void {
+    this.cast(this.iShoot());                    // the right keeper is in goal from the first frame
     this.drawBoard();
     this.showBanner(t('vs', { name: net.peerName || t('opponent') }), '#ffd23f');
     this.sfx('whistle', { volume: 0.5 });
