@@ -4,6 +4,7 @@ import {
   POS, MILLS, DRAW_PLIES, LEVELS, State, Move, newState, clone, count, apply, result, moves,
   targets, closesMill, removable, flying, millsAt, choose,
 } from './rules';
+import { think, nextToken } from './ai-client';
 
 const U = 100;                      // grid unit
 const BX = 60, BY = 340;            // grid origin (point [0, 0])
@@ -63,6 +64,8 @@ export class PlayScene extends ArcadeScene {
   private moveNo = 0;
   private inbox: MoveMsg[] = [];
   private extras: Phaser.GameObjects.GameObject[] = [];
+  /** Id of the AI request this turn waits for (answers to older ones are dropped). */
+  private aiToken = 0;
 
   createGame(): void {
     const { width } = this.scale;
@@ -71,7 +74,7 @@ export class PlayScene extends ArcadeScene {
     this.hands = [[], [], []];
     this.turn = 'busy'; this.step = 'pick'; this.sel = -1; this.pending = null; this.cur = 0;
     this.level = 0; this.lives = 3; this.streak = 0; this.round = 0; this.captures = 0; this.myMoves = 0;
-    this.online = net.active; this.mine = 1; this.moveNo = 0; this.inbox = []; this.extras = [];
+    this.online = net.active; this.mine = 1; this.moveNo = 0; this.inbox = []; this.extras = []; this.aiToken = 0;
     this.useHud = !this.online;
     this.cameras.main.setBackgroundColor('#1a1410');
     makeMorrisTextures(this);
@@ -235,7 +238,7 @@ export class PlayScene extends ArcadeScene {
     } else {
       this.status.setText(this.online ? t('theirTurn') : t('aiTurn')).setColor('#b89a72');
       if (this.online) this.takeRemote();
-      else this.time.delayedCall(rng.int(350, 550), () => this.aiMove());
+      else this.aiMove();
     }
     this.placeCursor();
     this.refreshPrompt();
@@ -361,11 +364,24 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
+  /** Solo: the AI's turn. The search runs in a worker while a short "thinking" pause plays. */
   private aiMove(): void {
     if (this.isOver || this.turn !== 'ai') return;
-    const m = choose(clone(this.st), LEVELS[Math.min(this.level, LEVELS.length - 1)]);
-    if (!m) return;
-    this.perform(m, false);
+    const token = (this.aiToken = nextToken());
+    const delay = rng.int(350, 550), t0 = this.time.now;
+    const level = Math.min(this.level, LEVELS.length - 1);
+    const s = clone(this.st);
+    const req = { board: Array.from(s.board), hand: s.hand, turn: s.turn, quiet: s.quiet, level };
+    think<Move | null>(req, () => choose(clone(s), LEVELS[level]), LEVELS[level].ms + 1500).then((m) => {
+      if (token !== this.aiToken || (!this.sys.isActive() && !this.sys.isPaused())) return;
+      this.time.delayedCall(Math.max(0, delay - (this.time.now - t0)), () => {
+        if (token !== this.aiToken || this.isOver || this.turn !== 'ai') return;
+        // the worker's answer is plain data: check it against the rules before playing it
+        const ok = m && moves(this.st).some((k) => k.f === m.f && k.t === m.t && k.x === m.x);
+        const mv = ok ? m : choose(clone(this.st), LEVELS[0]);
+        if (mv) this.perform({ f: mv.f, t: mv.t, x: mv.x }, false);
+      });
+    });
   }
 
   /** Applies a full move with its animation (placing or moving, then the capture). */

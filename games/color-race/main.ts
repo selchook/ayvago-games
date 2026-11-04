@@ -44,13 +44,15 @@ launch({
   scenes: [PlayScene],
   strings: {
     tr: {
-      tapHop: 'Zıplamak için dokun', backTo: 'Kontrol noktası: dokun ve devam et', wrong: 'YANLIŞ RENK!', fell: 'DÜŞTÜN!',
+      tapHop: 'Zıplamak için dokun', backTo: 'Kontrol noktası: dokun ve devam et',
+      keyHop: "Zıplamak için Boşluk'a bas", backToKey: "Kontrol noktası: Boşluk'la devam et", wrong: 'YANLIŞ RENK!', fell: 'DÜŞTÜN!',
       finish: 'ZİRVE', checkpoint: 'KONTROL NOKTASI!', timeUp: 'SÜRE BİTTİ', raceWin: 'YARIŞI KAZANDIN!', raceLose: 'HAYALET KAZANDI',
       ghost: 'HAYALET', roundN: '{n}. Tur', rival: 'Rakip: {name}',
       d0: 'Acemi', d1: 'Çırak', d2: 'Usta', d3: 'Zorlu', d4: 'Uzman', d5: 'Şimşek',
     },
     en: {
-      tapHop: 'Tap to hop', backTo: 'Checkpoint: tap to carry on', wrong: 'WRONG COLOUR!', fell: 'YOU FELL!',
+      tapHop: 'Tap to hop', backTo: 'Checkpoint: tap to carry on',
+      keyHop: 'Press Space to hop', backToKey: 'Checkpoint: press Space to carry on', wrong: 'WRONG COLOUR!', fell: 'YOU FELL!',
       finish: 'THE TOP', checkpoint: 'CHECKPOINT!', timeUp: "TIME'S UP", raceWin: 'RACE WON!', raceLose: 'THE GHOST WON',
       ghost: 'GHOST', roundN: 'Round {n}', rival: 'Rival: {name}',
       d0: 'Rookie', d1: 'Apprentice', d2: 'Adept', d3: 'Tough', d4: 'Expert', d5: 'Lightning',

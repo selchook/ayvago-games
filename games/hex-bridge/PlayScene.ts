@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, net } from '@core';
 import { N, CELLS, RED, BLUE, LEVELS, chooseMove, winPath, openingMove, wantsSwap, swapCell } from './hex';
+import { think, nextToken } from './ai-client';
 
 // The rhombus stands upright: r runs to the right, c runs down (flat-top hexes).
 const S = 32;                        // hex radius
@@ -54,6 +55,8 @@ export class PlayScene extends ArcadeScene {
   private inbox: MoveMsg[] = [];
   private swapped = false;
   private extras: Phaser.GameObjects.GameObject[] = [];
+  /** Id of the AI request this turn waits for (answers to older ones are dropped). */
+  private aiToken = 0;
 
   createGame(): void {
     const { width } = this.scale;
@@ -61,7 +64,7 @@ export class PlayScene extends ArcadeScene {
     this.stones = new Array(CELLS).fill(null);
     this.turn = 'busy'; this.cur = 60;
     this.level = 0; this.lives = 3; this.streak = 0; this.round = 0; this.myStones = 0;
-    this.online = net.active; this.mine = RED; this.moveNo = 0; this.inbox = []; this.swapped = false; this.extras = [];
+    this.online = net.active; this.mine = RED; this.moveNo = 0; this.inbox = []; this.swapped = false; this.extras = []; this.aiToken = 0;
     this.useHud = !this.online;
     this.cameras.main.setBackgroundColor('#0f1424');
     makeHexTextures(this);
@@ -241,7 +244,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.status.setText(this.online ? t('theirTurn') : t('aiTurn')).setColor('#8a98c8');
     if (this.online) this.takeRemote();
-    else this.time.delayedCall(rng.int(350, 550), () => this.aiMove());
+    else this.aiMove();
   }
 
   private takeRemote(): void {
@@ -273,17 +276,27 @@ export class PlayScene extends ArcadeScene {
     this.doSwap();
   }
 
+  /** Solo: the AI's turn. The search runs in a worker while a short "thinking" pause plays. */
   private aiMove(): void {
     if (this.isOver || this.turn !== 'ai') return;
+    const token = (this.aiToken = nextToken());
+    const delay = rng.int(350, 550), t0 = this.time.now;
+    const act = (fn: () => void) => this.time.delayedCall(Math.max(0, delay - (this.time.now - t0)), () => {
+      if (token === this.aiToken && !this.isOver && this.turn === 'ai') fn();
+    });
     const p = this.mover();
-    if (this.moveNo === 0) { this.place(openingMove(this.level)); return; }
+    if (this.moveNo === 0) { const i = openingMove(this.level); act(() => this.place(i)); return; }
     if (this.moveNo === 1) {
       const first = this.board.findIndex((v) => v === RED);
-      if (first >= 0 && wantsSwap(first, this.level)) { this.doSwap(); return; }
+      if (first >= 0 && wantsSwap(first, this.level)) { act(() => this.doSwap()); return; }
     }
-    const i = chooseMove(this.board, p, LEVELS[Math.min(this.level, LEVELS.length - 1)], 600);
-    if (i < 0 || this.board[i]) return;
-    this.place(i);
+    const level = Math.min(this.level, LEVELS.length - 1), budget = 600;
+    const board = this.board.slice();
+    think<number>({ board: Array.from(board), p, level, budget }, () => chooseMove(board, p, LEVELS[level], budget), budget + 1500)
+      .then((i) => {
+        if (token !== this.aiToken || (!this.sys.isActive() && !this.sys.isPaused())) return;
+        act(() => { if (i >= 0 && !this.board[i]) this.place(i); });
+      });
   }
 
   /** The first red stone becomes a blue one, mirrored across the long diagonal. */

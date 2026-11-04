@@ -8,6 +8,8 @@ const SB = 222, GAP = 12;         // small board size and the gap between small 
 const CELL = SB / 3;              // 74 px cells
 const MARK = 54;
 const X_COL = 0xff4fa3, O_COL = 0x3ee6ff;
+/** Longest the AI thinks per move (wall time, ms). */
+const AI_WALL_MS = 950;
 
 type Turn = 'player' | 'ai' | 'busy';
 interface MoveMsg { i: number; n: number }
@@ -412,8 +414,11 @@ export class PlayScene extends ArcadeScene {
   updateGame(time: number): void {
     if (this.mcts && this.turn === 'ai' && !this.online) {
       const lvl = LEVELS[Math.min(this.level, LEVELS.length - 1)];
-      if (this.mcts.spent < lvl.ms) this.mcts.run(Math.min(10, lvl.ms - this.mcts.spent));
-      else if (time - this.aiAt > 450) this.aiChoose();
+      // the search runs in slices of a frame; the top levels also stop at AI_WALL_MS of wall
+      // time, so a slow phone answers in about a second with a shallower search
+      const waited = time - this.aiAt;
+      if (this.mcts.spent < lvl.ms && waited < AI_WALL_MS) this.mcts.run(Math.min(12, lvl.ms - this.mcts.spent));
+      else if (waited > 450) this.aiChoose();
       const d = Math.floor((time - this.aiAt) / 300) % 4;
       if (d !== this.dots) { this.dots = d; this.status.setText(t('aiTurn') + '.'.repeat(d)); }
     }

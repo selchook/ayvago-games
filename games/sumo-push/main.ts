@@ -38,7 +38,7 @@ launch({
   scenes: [PlayScene],
   strings: {
     tr: {
-      cpu: 'RAKİP', dash: 'HÜCUM', bout: '{n}. TUR', boutWin: 'İTTİN!', boutLose: 'DIŞARIDASIN!',
+      cpu: 'RAKİP', dash: 'HÜCUM', bout: '{n}. TUR', boutWin: 'DIŞARI İTTİN!', boutLose: 'DIŞARIDASIN!',
       shrink: 'Halka daralıyor!', nextRival: 'YENİ RAKİP', matchLost: 'MAÇI KAYBETTİN',
       rival: 'Rakip: {name}', keysHint: 'Oklar: yürü · Boşluk: hücum',
       d0: 'Çaylak', d1: 'Acemi Pehlivan', d2: 'Pehlivan', d3: 'Usta', d4: 'Şampiyon', d5: 'Yokozuna',

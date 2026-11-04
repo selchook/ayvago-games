@@ -286,10 +286,16 @@ export class PlayScene extends ArcadeScene {
       if (this.host) this.sendSnap();
       this.setScore(this.kMe * 100 + (win ? 300 : 0));
       this.time.delayedCall(400, () => this.sfx(win ? 'win' : 'lose', { volume: 0.7 }));
+      this.hideBanner(1100);
       this.endGame({ win, title: win ? t('youWin') : t('youLose'), delay: 1600 });
       return;
     }
-    if (!win) { this.time.delayedCall(400, () => this.sfx('lose', { volume: 0.7 })); this.endGame({ title: t('matchLost'), delay: 1600 }); return; }
+    if (!win) {
+      this.time.delayedCall(400, () => this.sfx('lose', { volume: 0.7 }));
+      this.hideBanner(1100);
+      this.endGame({ title: t('matchLost'), delay: 1600 });
+      return;
+    }
     // solo: next, smarter rival
     this.addScore(300 * (this.level + 1), CX, CY - 220);
     this.sfx('win', { volume: 0.7 });
@@ -431,6 +437,7 @@ export class PlayScene extends ArcadeScene {
     let inOp: In = { x: 0, y: 0, dash: false };
     if (this.phase === 'count') {
       this.countdownFx();
+      this.remoteIn.dash = false;
       if (this.phaseT >= COUNT_MS) {
         this.phase = 'live'; this.phaseT = 0;
         // dash advantage: the other side's dash charges for a second
@@ -462,6 +469,8 @@ export class PlayScene extends ArcadeScene {
         this.boutOver(meLost);
       }
     } else if (this.phase === 'over') {
+      // a guest dash that arrives after the bout is over must not fire at the next GO
+      this.remoteIn.dash = false;
       // the loser keeps sliding out
       for (const w of [this.me, this.op]) { w.x += w.vx * dt; w.y += w.vy * dt; w.vx *= Math.exp(-3 * dt); w.vy *= Math.exp(-3 * dt); }
       if (this.phaseT >= OVER_MS) {

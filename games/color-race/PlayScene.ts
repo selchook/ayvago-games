@@ -101,7 +101,13 @@ export class PlayScene extends ArcadeScene {
       scale: { start: 3.5, end: 0 }, alpha: { start: 0.6, end: 0 }, tint: PALETTE[0],
     }).setDepth(19);
 
-    this.hint = txt(this, width / 2, height * 0.9, t('tapHop'), { size: 34, color: '#f3f2f2' }).setScrollFactor(0).setDepth(50);
+    // the course scrolls under the timer and the round line: a dark strip keeps them readable
+    const strip = this.add.graphics().setScrollFactor(0).setDepth(8800);
+    const stripH = this.online ? 124 : 172;
+    strip.fillStyle(0x0b0a18, 0.8).fillRect(0, 0, width, stripH - 40);
+    for (let k = 0; k < 8; k++) strip.fillStyle(0x0b0a18, 0.8 * (1 - (k + 1) / 9)).fillRect(0, stripH - 40 + k * 5, width, 5);
+    this.touch = this.sys.game.device.input.touch;
+    this.hint = txt(this, width / 2, height * 0.9, this.hopText(), { size: 34, color: '#f3f2f2' }).setScrollFactor(0).setDepth(50);
     this.timerText = txt(this, width / 2, this.online ? 40 : 92, '', { title: true, size: this.online ? 34 : 28, color: '#ffffff' }).setScrollFactor(0).setDepth(9000);
     this.info = txt(this, width / 2, this.online ? 92 : 140, '', { size: 26, color: '#d8d0ff' }).setScrollFactor(0).setDepth(9000);
     this.banner = txt(this, width / 2, height * 0.38, '', { title: true, size: 64, strokeThickness: 10 }).setScrollFactor(0).setDepth(60).setVisible(false);
@@ -136,8 +142,10 @@ export class PlayScene extends ArcadeScene {
 
   // ---------------------------------------------------------------- course
   private buildCourse(seed: number, gatesN: number, hard: number): void {
-    for (const g of this.gates) { g.rings.forEach((r) => r.g.destroy()); g.sw?.g.destroy(); g.cp?.g.destroy(); }
-    this.children.list.filter((o) => o.getData?.('course')).forEach((o) => o.destroy());
+    // the switchers and the finish flag spin / pulse forever: stop their tweens with them
+    const drop = (o: Phaser.GameObjects.GameObject) => { this.tweens.killTweensOf(o); o.destroy(); };
+    for (const g of this.gates) { g.rings.forEach((r) => drop(r.g)); if (g.sw) drop(g.sw.g); if (g.cp) drop(g.cp.g); }
+    this.children.list.filter((o) => o.getData?.('course')).forEach(drop);
     this.gates = [];
     const R = rng.seeded(seed);
     const ri = (a: number, b: number) => a + Math.floor(R() * (b - a + 1));
@@ -204,6 +212,11 @@ export class PlayScene extends ArcadeScene {
   }
 
   private startCol = 0;
+  private touch = false;
+
+  private hopText(): string {
+    return this.touch ? t('tapHop') : t('keyHop');
+  }
 
   private makeRing(y: number, r: number, speed: number, wobble: number, cols: number[], a0: number, mirrorOf?: Ring): Ring {
     const g = this.add.graphics({ x: CX, y }).setDepth(5);
@@ -258,7 +271,7 @@ export class PlayScene extends ArcadeScene {
     this.trail.start();
     this.ghost.setPosition(CX + GHOST_DX, START_Y).setVisible(true).setFillStyle(this.gh.col, 0.45);
     this.cameras.main.setScroll(0, START_Y - height * 0.75);
-    this.hint.setAlpha(1).setText(t('tapHop'));
+    this.hint.setAlpha(1).setText(this.hopText());
     this.tweens.killTweensOf(this.hint);
     this.tweens.add({ targets: this.hint, alpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
     this.updateInfo();
@@ -284,6 +297,10 @@ export class PlayScene extends ArcadeScene {
       this.info.setText(`${t('roundN', { n: this.round })} · ${t('rival', { name: t('d' + Math.min(5, this.round - 1)) })}`);
       this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
     }
+  }
+
+  private fadeBanner(delay: number): void {
+    this.tweens.add({ targets: this.banner, alpha: 0, delay, duration: 250 });
   }
 
   private showBanner(s: string, color: string, size = 64): void {
@@ -548,7 +565,7 @@ export class PlayScene extends ArcadeScene {
       this.trail.start();
       const cam = this.cameras.main;
       this.tweens.add({ targets: cam, scrollY: m.y - height * 0.75, duration: 300, ease: 'Sine.easeOut' });
-      this.hint.setAlpha(1).setText(t('backTo'));
+      this.hint.setAlpha(1).setText(this.touch ? t('backTo') : t('backToKey'));
       this.tweens.add({ targets: this.hint, alpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
       this.sfx('respawn', { volume: 0.35 });
     });
@@ -598,6 +615,7 @@ export class PlayScene extends ArcadeScene {
     this.setScore(Math.round(this.progress(this.me) / 10) + (win ? 300 : 0) + (win ? Math.round(Math.max(0, RACE_S - this.raceT)) * 5 : 0));
     this.showBanner(win ? t('youWin') : r === 'draw' ? t('draw') : t('youLose'), win ? '#5dff7a' : r === 'draw' ? '#3ee6ff' : '#ec3013', 52);
     this.time.delayedCall(300, () => this.sfx(win ? 'win' : 'lose', { volume: 0.6 }));
+    this.fadeBanner(1250);
     this.endGame({ win, title: win ? t('youWin') : r === 'draw' ? t('draw') : t('youLose'), draw: r === 'draw', delay: 1800 });
   }
 
@@ -617,7 +635,7 @@ export class PlayScene extends ArcadeScene {
       shake(this, 0.015, 300);
     }
     this.updateInfo();
-    if (this.lives <= 0) { this.endGame({ title: t('raceLose'), delay: 1800 }); return; }
+    if (this.lives <= 0) { this.fadeBanner(1250); this.endGame({ title: t('raceLose'), delay: 1800 }); return; }
     this.time.delayedCall(2200, () => {
       if (this.isOver) return;
       this.banner.setVisible(false);
