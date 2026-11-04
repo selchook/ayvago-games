@@ -94,7 +94,13 @@ Other helpers from `@core`:
 - **UI.** `Button(scene, x, y, label, onClick, { width, height, color })`, `iconButton`.
 - **Randomness.** `rng.int / pick / chance / shuffle / seeded(seed)`.
 - **Text and colours.** `t('score' | 'level' | 'lives' | 'time' | 'moves' | 'wave' | 'combo' | 'next' | 'go' | …)`, `loc({tr, en})`, `upper(str)` (locale-aware), `COLORS`.
-- **Controls.** `Controls` gives keyboard (arrows/WASD, Space/Z/Enter = A, X/Shift = B) plus a touch joystick and buttons. It exposes `axisX/axisY`, `left/right/up/down`, `a/b`, `justA()/justB()`. For puzzle and tap games, use pointer events directly (`this.input.on('pointerdown', …)`) and also add a keyboard path where it makes sense.
+- **Controls.** `Controls` gives keyboard (arrows/WASD, Space/Z/Enter = A, X/Shift = B) plus a touch joystick and buttons. It exposes `axisX/axisY`, `left/right/up/down`, `dir4()`, `a/b` and `justA()/justB()`.
+  - **Rule: every directional game uses the standard touch controls, as in `games/asteroid-storm`.** A directional game is one where the player steers a character, vehicle or ship by direction: shooters, racers, platformers, mazes, snakes, grid movers and sports players.
+    - On touch, these games use `new Controls(this, { joystick: true, buttons: [...] })`: a floating stick that appears wherever the left thumb lands on the left half, plus the A/B buttons on the right.
+    - With no buttons, the stick works anywhere on the screen.
+    - Left/right-only games read `axisX`. Grid games read `dir4()`, and move one cell per press or repeat while it is held.
+    - Do not add swipe gestures, on-screen arrow pads or "tap the left or right half" schemes for movement.
+  - **Exceptions:** games where the finger directly is the control keep pointer events (`this.input.on('pointerdown', …)`): a paddle that follows the finger, aiming or slingshot drags, slicing, and tapping cells or cards in board and puzzle games. Whole-board swipes (2048, slide puzzle) are also exceptions. Add a keyboard path where it makes sense.
 
 ## 5. Assets
 

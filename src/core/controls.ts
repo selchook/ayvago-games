@@ -52,6 +52,17 @@ export class Controls {
   get up(): boolean { return this.axisY < -0.3; }
   get down(): boolean { return this.axisY > 0.3; }
 
+  /**
+   * The one direction held on a 4-way grid, from the keys or the stick (its dominant axis), or
+   * null. Grid games (snake, mazes, Sokoban) read this instead of the raw axes.
+   */
+  dir4(): 'left' | 'right' | 'up' | 'down' | null {
+    const x = this.axisX, y = this.axisY;
+    if (Math.max(Math.abs(x), Math.abs(y)) < 0.35) return null;
+    if (Math.abs(x) >= Math.abs(y)) return x < 0 ? 'left' : 'right';
+    return y < 0 ? 'up' : 'down';
+  }
+
   justA(): boolean { return this.pressedA; }
   justB(): boolean { return this.pressedB; }
 
