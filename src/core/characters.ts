@@ -3,17 +3,13 @@ import { asset } from './assets';
 import { sdk } from './sdk';
 import RIG from './character-rig.json';
 
-// Player characters (protocol 2.2): players pick one of ten characters in their ayvago.com profile
+// Player characters (protocol 2.2): players pick one of five characters in their ayvago.com profile
 // and the platform sends the id in GHA_START (`character`, and `peerCharacter` in online matches).
 // Games with a hero load its poses from here instead of a fixed sprite. The ids are the contract
 // with the platform (packages/shared there); the art is built by tools/import-characters.py.
+// An id the platform no longer lists (the five aliens of the first set) falls back to the default.
 
 export const CHARACTER_IDS = [
-  'alien-green',
-  'alien-blue',
-  'alien-pink',
-  'alien-yellow',
-  'alien-beige',
   'adventurer',
   'explorer',
   'rookie',
@@ -23,10 +19,18 @@ export const CHARACTER_IDS = [
 
 export type CharacterId = (typeof CHARACTER_IDS)[number];
 
-export const DEFAULT_CHARACTER: CharacterId = 'alien-green';
+export const DEFAULT_CHARACTER: CharacterId = 'adventurer';
 
+/**
+ * Every pose the characters are drawn in, all facing right except `front` and `back`. A game shows
+ * its hero's moves with these poses only and never draws extra limbs on top: a kick is `kick`, a
+ * rope swing is `hang`. A move that has no pose is added here for every character
+ * (tools/import-characters.py), never drawn in one game.
+ */
 export const CHARACTER_POSES = [
   'stand', 'front', 'walk1', 'walk2', 'jump', 'hit', 'duck', 'climb1', 'climb2', 'swim1', 'swim2',
+  'kick', 'hang', 'fall', 'slide', 'skid', 'cheer1', 'cheer2', 'hold1', 'hold2', 'action1', 'action2',
+  'back', 'talk',
 ] as const;
 
 export type CharacterPose = (typeof CHARACTER_POSES)[number];
@@ -45,9 +49,13 @@ export type CharacterRig = {
   shoulders: [[number, number], [number, number]];
   /** Size of the `arm` image in px: width and length from shoulder to wrist. */
   arm: [number, number];
+  /** Tip of the kicking foot in `kick`, on the frame: where a kicked ball meets the character. */
+  kickFoot: [number, number];
+  /** Raised fist in `hang`, on the frame: where a rope or bar is held. */
+  hangHand: [number, number];
 };
 
-/** Shoulder points and arm size of a character, built by tools/import-characters.py. */
+/** Rig points of a character (shoulders, arm size, kick foot, hang hand), built by tools/import-characters.py. */
 export function characterRig(id: CharacterId): CharacterRig {
   return (RIG as Record<CharacterId, CharacterRig>)[id];
 }

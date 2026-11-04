@@ -99,17 +99,34 @@ Other helpers from `@core`:
 ## 5. Assets
 
 - **Location.** Everything is in `public/assets/kenney/<pack>/…`, all CC0. Pack list: `docs/assets/INDEX.md`. Exact files with pixel sizes: `docs/assets/<pack>.txt`, so grep there before you guess a filename. Paths are lowercase and use `_` instead of spaces.
-- **Player character.** A game with a hero (runner, platformer, shooter on foot) uses the
-  player's chosen character instead of a fixed sprite, when the Kenney vector style fits the game:
-  `loadCharacter(load)` in preload gives textures `pc-stand`, `pc-front`, `pc-walk1`, `pc-walk2`,
-  `pc-jump`, `pc-hit`, `pc-duck`, `pc-climb1/2`, `pc-swim1/2`. All frames share
-  `CHARACTER_FRAME` (144x176, feet at `originY`): size the sprite by `standHeight`. Rivals and
-  bots: `otherCharacters(playerCharacter())`; online opponent: `peerCharacter()`. Test any
-  character with `?character=<id>`. A hero whose arms must hold something (a bow, a rope) uses
-  the rig parts instead: `pc-archer` (armless, same frame), `pc-arm` and `pc-hand`, posed from
-  `characterRig(id).shoulders` every frame (see `games/archery`). In a `pixelArt` game, give the
-  pc-* textures linear filtering (`setFilter(Phaser.Textures.FilterMode.LINEAR)`) so the
-  scaled-down vector art stays smooth (see `games/pixel-runner/main.ts`).
+- **Player character.** A game with a hero (runner, platformer, shooter on foot, sports player) uses
+  the player's chosen character instead of a fixed sprite, when the Kenney vector style fits the
+  game. There are five human figures: `adventurer` (default), `explorer`, `rookie`, `soldier`,
+  `zombie`.
+  - **Loading.** `loadCharacter(load, { poses })` in preload gives textures `pc-<pose>` for any of
+    the 24 poses in `CHARACTER_POSES`: `stand`, `front`, `walk1/2`, `jump`, `fall`, `hit`, `duck`,
+    `kick`, `hang`, `slide`, `skid`, `cheer1/2`, `hold1/2`, `action1/2`, `climb1/2`, `swim1/2`,
+    `back`, `talk`. All face right except `front` and `back`. Look at
+    `public/assets/characters/<id>/<pose>.png` before you pick one.
+  - **Frame.** All frames share `CHARACTER_FRAME` (144x176, feet at `originY`): size the sprite by
+    `standHeight`.
+  - **Others.** Rivals and bots: `otherCharacters(playerCharacter())`. Online opponent:
+    `peerCharacter()`.
+  - **Own limbs only.** Every move is shown with the character's own pose: a kick is `kick`, a
+    rope swing is `hang`, a win is `cheer1`. Never draw extra limbs, boots or hands on top of a
+    character.
+    - Where something meets the body, take the point from `characterRig(id)`: `kickFoot` (foot
+      tip in `kick`), `hangHand` (raised fist in `hang`) or `shoulders`. Scale it and mirror it
+      like the sprite, so the ball or rope touches the real foot or hand.
+    - A hero whose arms must follow something continuously (a bow) uses the rig parts:
+      `pc-archer` (armless, same frame), `pc-arm` and `pc-hand`, posed from
+      `characterRig(id).shoulders` every frame (see `games/archery`).
+    - If a move has no pose, add it for all five characters in `tools/import-characters.py` and
+      `CHARACTER_POSES`. Never draw it in one game.
+  - **Testing.** Test with `?character=<id>`, with at least two different characters.
+  - **pixelArt games.** Give the pc-* textures linear filtering
+    (`setFilter(Phaser.Textures.FilterMode.LINEAR)`) so the scaled-down vector art stays smooth
+    (see `games/pixel-runner/main.ts`).
 - **Look before you use.** Open the PNGs or tilesheets with the Read tool to see them before picking frames.
 - **No network.** Never load anything from the network. If something is missing, draw it with Graphics/shapes, or generate a texture with `scene.make.graphics(...).generateTexture(key, w, h)`.
 - **Sound.** Use sounds generously but at sane volumes. Good sources:
@@ -131,6 +148,7 @@ Other helpers from `@core`:
 6. **No console errors, no 404s.** `npx tsc --noEmit` shows no errors in your files.
 7. **Smoke test passes.** `node scripts/smoke-test.mjs --dev --serial <slug>` prints PASS. It checks: intro shown → menu → play with random input → game over → retry, with no errors and a non-blank canvas.
 8. **Visual check.** Take at least one gameplay screenshot with Playwright and look at it; layout must fit the 720×1280 (or 1280×720) world.
+9. **Characters move with their own limbs.** In a game with a player character, every move uses one of its poses (no extra limbs drawn on top). Screenshots with two characters show the ball, rope or tool meeting the real foot or hand.
 
 ## 7. Verify
 
