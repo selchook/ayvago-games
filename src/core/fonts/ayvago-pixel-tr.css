@@ -1,0 +1,11 @@
+/* Turkish capital dotted I for the title font (tools/build-tr-font.py, SIL OFL 1.1). It covers
+   U+0130 only and comes first in the title font stack, so every other character still uses
+   Press Start 2P. */
+@font-face {
+  font-family: 'Ayvago Pixel TR';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(./ayvago-pixel-tr.woff) format('woff');
+  unicode-range: U+0130;
+}
