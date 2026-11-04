@@ -49,12 +49,31 @@ async function renderScreenshot(browser, b64, land, path) {
   await page.close();
 }
 
+// Games starring a player character get the character on the cover, large and in a pose from
+// the game, so the art matches what players see (public/assets/characters/<id>/<pose>.png).
+const COVER_HERO = {
+  archery: ['explorer', 'action2'],
+  'bomb-maze': ['soldier', 'cheer1'],
+  'coin-catcher': ['rookie', 'cheer2'],
+  'head-soccer': ['adventurer', 'kick'],
+  'jetpack-rush': ['soldier', 'jump'],
+  'penalty-kick': ['zombie', 'kick'],
+  'pixel-runner': ['rookie', 'walk1'],
+  'platform-hopper': ['explorer', 'jump'],
+  'rope-swing': ['adventurer', 'hang'],
+  'sky-jumper': ['zombie', 'jump'],
+};
+const heroImage = (slug) => {
+  const h = COVER_HERO[slug];
+  return h && readFileSync(join(root, 'public', 'assets', 'characters', h[0], `${h[1]}.png`)).toString('base64');
+};
+
 const CATEGORY = {
   arcade: 'ARCADE', action: 'ACTION', casual: 'CASUAL', puzzle: 'PUZZLE', retro: 'RETRO',
   sports: 'SPORTS', strategy: 'STRATEGY', card: 'CARD', word: 'WORD',
 };
 
-function coverHtml(m, menu, play) {
+function coverHtml(m, menu, play, hero) {
   const land = m.orientation === 'landscape';
   const shot = (b64, cls) => `<div class="shot ${cls}"><img src="data:image/png;base64,${b64}"></div>`;
   return `<!doctype html><html><head><style>${FONTS}
@@ -74,6 +93,9 @@ function coverHtml(m, menu, play) {
   .p1 { width: 420px; height: 747px; right: 150px; top: 166px; transform: rotate(3deg); }
   .p2 { width: 330px; height: 587px; right: 560px; top: 300px; transform: rotate(-5deg); opacity: .9; }
   .l1 { width: 900px; height: 506px; right: 90px; top: 230px; transform: rotate(2deg); }
+  .hero { position: absolute; z-index: 4; height: 470px; bottom: 30px; filter: drop-shadow(0 18px 0 rgba(0,0,0,.55)) drop-shadow(0 0 30px rgba(255,210,63,.25)); image-rendering: auto; }
+  .hero.p { left: ${land ? 0 : 880}px; }
+  .hero.l { left: 790px; }
   </style></head><body><div class="glow"></div>
   <div class="left">
     <div class="brand"><img class="mark" src="data:image/png;base64,${mark}">AYVAGO <b>GAMES</b></div>
@@ -82,6 +104,7 @@ function coverHtml(m, menu, play) {
     <span class="chip">${CATEGORY[m.category] ?? 'ARCADE'}</span>
   </div>
   ${land ? shot(play, 'l1') : shot(menu, 'p2') + shot(play, 'p1')}
+  ${hero ? `<img class="hero ${land ? 'l' : 'p'}" src="data:image/png;base64,${hero}">` : ''}
   <div class="scan"></div></body></html>`;
 }
 
@@ -141,7 +164,7 @@ for (const slug of slugs) {
     await renderScreenshot(browser, play, land, join(out, 'screenshot.jpg'));
 
     const art = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-    await art.setContent(coverHtml(m, menu, play));
+    await art.setContent(coverHtml(m, menu, play, heroImage(slug)));
     await art.evaluate(() => document.fonts.ready);
     await art.screenshot({ path: join(out, 'cover-1920x1080.jpg'), type: 'jpeg', quality: 86 });
     await art.setViewportSize({ width: 512, height: 512 });

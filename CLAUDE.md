@@ -32,7 +32,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 | `npm run new-game -- <slug> "<Title>"` | scaffold a game |
 | `npm run build` | registry + typecheck + production build into `dist/` |
 | `npm run test:smoke` | full smoke test of every game against `dist/` |
-| `npm run test:changed` | build + smoke + platform check of only the games changed since `origin/main` (every game when shared code changed); CI runs the same |
+| `npm run test:changed` | build + smoke + platform check of only the games changed since `origin/main` (every game only when the shared runtime changed: `src/core`, `public/assets`, build config); CI runs the same |
 | `node scripts/smoke-test.mjs --dev --serial <slug>` | smoke-test one game without building |
 | `npm run test:platform` | GHA protocol check of every game embedded like ayvago.com |
 | `npm run platform` | regenerate ayvago.json manifests + `platform/arcade-catalog.ts` |
@@ -43,7 +43,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 
 - **Ayvago intro on every game.** `src/core/intro.ts` is a 1:1 port of the Unity `AyvagoBootIntro.cs`: 5.3 s, skippable by tap. It runs automatically from `launch()` while the game preloads. Don't change its choreography without the brand owner.
 - **Mobile and desktop.** Every game supports touch and keyboard. Portrait 720×1280 by default; landscape 1280×720 only when needed.
-- **TR and EN.** Every user-visible string is in both languages; the Turkish must be correct (ç ğ ı İ ö ş ü). Fonts: Press Start 2P (titles) + Pixelify Sans (body). Both cover Turkish. The Kenney fonts do not.
+- **TR and EN.** Every user-visible string is in both languages; the Turkish must be correct (ç ğ ı İ ö ş ü). Fonts: Press Start 2P (titles) + Pixelify Sans (body). Both cover Turkish; the core puts "Ayvago Pixel TR" (`src/core/turkish-font.ts`, one glyph) in front of Press Start 2P because its own İ looks like a lowercase i. The Kenney fonts do not cover Turkish.
 - **Assets.** CC0 only, from `public/assets`: Kenney (`kenney/`) and the CC0 packs recorded in `docs/assets/LICENSES.md` (`oga/`: Juhani Junkala's 512 retro effects and chiptune music). A new pack is added to that register (source, author, license) before it is used; CC-BY and other attribution licenses are not allowed. No runtime network loads.
 - **Music.** The core plays background music (`src/core/music.ts`): the title theme on the menu and a track picked from the game's genre during rounds, ducked under pause and result screens. A game may choose with `music: { menu, play }` in its definition (`false` turns a slot off).
 - **Player characters.** Players pick one of five human characters on ayvago.com; the platform sends it in GHA_START (protocol 2.2).

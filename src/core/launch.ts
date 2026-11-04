@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import '@fontsource/press-start-2p/400.css';
 import '@fontsource/pixelify-sans/400.css';
 import '@fontsource/pixelify-sans/700.css';
+import { installTurkishI, TURKISH_I_FAMILY } from './turkish-font';
 import { playAyvagoIntro } from './intro';
 import { registerStrings, loc, getLang, setLang } from './i18n';
 import { sdk } from './sdk';
@@ -35,6 +36,7 @@ function bindPlatform(game: Phaser.Game, adapter: PlatformAdapter): void {
 async function fontsReady(timeoutMs = 3000): Promise<void> {
   const loads = Promise.all([
     document.fonts.load('32px "Press Start 2P"', 'AĞŞİ'),
+    document.fonts.load(`32px "${TURKISH_I_FAMILY}"`, 'İ'),
     document.fonts.load('32px "Pixelify Sans"', 'AĞŞİ'),
     // Canvas text never triggers a font download, so the bold face (Latin + Latin Extended) is
     // loaded here too; otherwise bold Turkish letters fall back to another font.
@@ -48,6 +50,7 @@ async function fontsReady(timeoutMs = 3000): Promise<void> {
  * then runs Menu -> Play -> GameOver with the shared platform services.
  */
 export async function launch(def: GameDefinition): Promise<Phaser.Game> {
+  installTurkishI();
   setCurrentGame(def);
   if (def.strings) registerStrings(def.strings);
   // The handshake (GHA_READY) goes out first so the platform reveals the frame and the intro shows.
