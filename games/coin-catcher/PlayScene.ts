@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, popup, txt, t, rng } from '@core';
+import { ArcadeScene, CHARACTER_FRAME, Controls, burst, shake, popup, txt, t, rng } from '@core';
 
 type Kind = 'bronze' | 'silver' | 'gold' | 'gem' | 'star' | 'heart' | 'bomb';
 interface Item {
@@ -18,6 +18,11 @@ const GROUND_Y = 1168;
 const BASKET_W = 150;
 const MAX_LIVES = 3;
 const CATCHES_PER_LEVEL = 15;
+/** The hero (the player's character, cc-hero-* textures) stands 135 px tall, like the old sprite. */
+export const HERO_SCALE = 135 / CHARACTER_FRAME.standHeight;
+const HERO_FEET = GROUND_Y + 4;
+/** The basket rides on the head, this far above the feet, whatever the pose. */
+const BASKET_UP = 135 + 30;
 
 
 /** Screen flash that never fully covers the view (the core camera flash starts opaque). */
@@ -71,7 +76,7 @@ export class PlayScene extends ArcadeScene {
       g.destroy();
     }
 
-    this.player = this.add.image(width / 2, GROUND_Y + 4, 'cc-alien-front').setOrigin(0.5, 1).setScale(0.72).setDepth(10);
+    this.player = this.add.image(width / 2, HERO_FEET, 'cc-hero-front').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(HERO_SCALE).setDepth(10);
     this.basket = this.add.image(width / 2, 0, 'cc-basket').setDepth(11);
     this.magnetFx = this.add.circle(width / 2, 0, 120, 0xff4fa3, 0.12).setStrokeStyle(4, 0xff4fa3, 0.7).setDepth(9).setVisible(false);
     this.sparks = this.add.particles(0, 0, 'cc-spark', {
@@ -163,12 +168,12 @@ export class PlayScene extends ArcadeScene {
       if (Math.abs(d) < 4) vx = 0;
     }
     this.player.x = Phaser.Math.Clamp(this.player.x + vx * dt, 70, width - 70);
-    if (this.hurtT > 0) this.player.setTexture('cc-alien-hit');
+    if (this.hurtT > 0) this.player.setTexture('cc-hero-hit');
     else if (Math.abs(vx) > 30) {
       this.walkT += dt;
-      this.player.setTexture(Math.floor(this.walkT * 9) % 2 ? 'cc-alien-walk1' : 'cc-alien-walk2').setFlipX(vx < 0);
-    } else this.player.setTexture('cc-alien-front');
-    const by = this.player.y - this.player.displayHeight - 20;
+      this.player.setTexture(Math.floor(this.walkT * 9) % 2 ? 'cc-hero-walk1' : 'cc-hero-walk2').setFlipX(vx < 0);
+    } else this.player.setTexture('cc-hero-front').setFlipX(false);
+    const by = HERO_FEET - BASKET_UP;
     this.basket.setPosition(this.player.x, by);
     this.basket.setAngle(Phaser.Math.Clamp(vx / 120, -6, 6));
     this.magnetFx.setVisible(this.magnet > 0).setPosition(this.basket.x, by);
@@ -289,7 +294,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: this.hearts[this.lives], scale: 0.6, duration: 120, yoyo: true });
     this.updateHud();
     if (this.lives <= 0) {
-      this.player.setTexture('cc-alien-hit');
+      this.player.setTexture('cc-hero-hit');
       this.tweens.add({ targets: this.basket, y: GROUND_Y, angle: 120, duration: 500, ease: 'Bounce.easeOut' });
       this.endGame({ delay: 1000 });
     }

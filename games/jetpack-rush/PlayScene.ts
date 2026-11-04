@@ -315,7 +315,8 @@ export class PlayScene extends ArcadeScene {
         this.hero.setTexture(Math.floor(this.runT) % 2 ? 'pc-walk1' : 'pc-walk2');
         this.hero.angle = 0;
       } else {
-        this.hero.setTexture('pc-jump');
+        // thrusting (or still rising): fist up; dropping with the jet off: arms out, falling
+        this.hero.setTexture(held || this.vy < 0 ? 'pc-jump' : 'pc-fall');
         this.hero.angle = Phaser.Math.Clamp(this.vy / 90, -6, 8);
       }
       if (held && !this.thrusting) this.sfx('thrust', { volume: 0.3 });

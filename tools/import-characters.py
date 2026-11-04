@@ -1,9 +1,10 @@
-"""Build the ten player characters (public/assets/characters/<id>/<pose>.png) from two Kenney CC0
-packs: the aliens of Platformer Pack Redux (already in public/assets/kenney/platformer) and the five
-figures of Platformer Characters 1 (from a checkout of the ETdoFresh/kenney.nl mirror).
+"""Build the five player characters (public/assets/characters/<id>/<pose>.png) from the figures of
+Kenney's CC0 Platformer Characters 1 (from a checkout of the ETdoFresh/kenney.nl mirror). Every pose
+the pack draws is imported, so games show the character's own limbs for kicks, hangs and cheers.
 
 It also builds an armless `archer` body with separate `arm` and `hand` parts and writes their
-shoulder points to src/core/character-rig.json, for games that pose the arms themselves (Archery).
+shoulder points to src/core/character-rig.json, for games that pose the arms themselves (Archery),
+together with the foot tip of `kick` and the raised fist of `hang` (where a ball or a rope meets them).
 
 Every pose lands on the same 144x176 canvas: the character is scaled so its standing pose is 150 px
 tall, its feet sit 2 px above the bottom edge and its standing pose is centred, so games can swap
@@ -22,20 +23,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'public', 'assets', 'characters')
 W, H, TARGET, FOOT = 144, 176, 150, 2
 
-POSES = ['stand', 'front', 'walk1', 'walk2', 'jump', 'hit', 'duck', 'climb1', 'climb2', 'swim1', 'swim2']
+POSES = ['stand', 'front', 'walk1', 'walk2', 'jump', 'hit', 'duck', 'climb1', 'climb2', 'swim1', 'swim2',
+         'kick', 'hang', 'fall', 'slide', 'skid', 'cheer1', 'cheer2', 'hold1', 'hold2', 'action1', 'action2',
+         'back', 'talk']
 
-ALIEN_DIR = os.path.join(ROOT, 'public', 'assets', 'kenney', 'platformer', 'png', 'players', '128x256')
-ALIENS = {'alien-green': 'green/aliengreen', 'alien-blue': 'blue/alienblue', 'alien-pink': 'pink/alienpink',
-          'alien-yellow': 'yellow/alienyellow', 'alien-beige': 'beige/alienbeige'}
 FIGURES = {'adventurer': 'Adventurer/Poses/adventurer', 'explorer': 'Female/Poses/female',
            'rookie': 'Player/Poses/player', 'soldier': 'Soldier/Poses/soldier', 'zombie': 'Zombie/Poses/zombie'}
 FIGURE_POSE = {'front': 'idle', 'hit': 'hurt'}
 
 
 def sources(mirror):
-    for cid, stem in ALIENS.items():
-        files = {p: os.path.join(ALIEN_DIR, f'{stem}_{p}.png') for p in POSES}
-        yield cid, files, alien_rig(files['front'])
     base = os.path.join(mirror, 'kenney_platformercharacters', 'PNG')
     for cid, stem in FIGURES.items():
         files = {p: os.path.join(base, f'{stem}_{FIGURE_POSE.get(p, p)}.png') for p in POSES}
@@ -67,15 +64,43 @@ def build(cid, files, rig_source):
         if canvas.getbbox() is None:
             raise SystemExit(f'{cid} {pose}: empty frame')
         canvas.save(os.path.join(OUT, cid, f'{pose}.png'), optimize=True)
+    def point(x, y):
+        return [round(ox + x * scale), round(oy + y * scale)]
+
     body, arm, hand, shoulders = rig_source()
     place(body, scale, ox, oy).save(os.path.join(OUT, cid, 'archer.png'), optimize=True)
     for name, part in (('arm', arm), ('hand', hand)):
         part.resize((round(part.width * scale), round(part.height * scale)), Image.LANCZOS) \
             .save(os.path.join(OUT, cid, f'{name}.png'), optimize=True)
     return {
-        'shoulders': [[round(ox + x * scale), round(oy + y * scale)] for x, y in shoulders],
+        'shoulders': [point(x, y) for x, y in shoulders],
         'arm': [round(arm.width * scale), round(arm.height * scale)],
+        'kickFoot': point(*kick_foot(files['kick'])),
+        'hangHand': point(*hang_hand(files['hang'])),
     }
+
+
+def kick_foot(path):
+    """Tip of the kicking foot: the figures face right, so the rightmost opaque column of the lower
+    half of the pose, at the middle of its opaque rows."""
+    a = np.asarray(Image.open(path).convert('RGBA'))[..., 3] > 128
+    rows = np.where(a.any(axis=1))[0]
+    low = a[(rows.min() + rows.max()) // 2:]
+    x = int(np.where(low.any(axis=0))[0].max())
+    ys = np.where(low[:, x - 3:x + 1].any(axis=1))[0] + (rows.min() + rows.max()) // 2
+    return x - 4, int(ys.mean())
+
+
+def hang_hand(path):
+    """Grip of the raised fist in `hang`: the figures hang by their right hand, so the rightmost
+    opaque column of the upper half of the pose, a fist's half-width inside it."""
+    a = np.asarray(Image.open(path).convert('RGBA'))[..., 3] > 128
+    rows = np.where(a.any(axis=1))[0]
+    mid = (rows.min() + rows.max()) // 2
+    up = a[:mid]
+    x = int(np.where(up.any(axis=0))[0].max())
+    ys = np.where(up[:, x - 3:x + 1].any(axis=1))[0]
+    return x - 10, int(ys.mean())
 
 
 def _find(img, tpl):
@@ -107,47 +132,6 @@ def figure_rig(limbs, idle_path):
         out.alpha_composite(body, (bx, by))
         out.alpha_composite(focus, (hx, hy))
         return out, arm, hand, [(bx + 5, by + 6), (bx + body.width - 5, by + 6)]
-    return rig
-
-
-def alien_rig(front_path):
-    """The aliens have no separate limbs: erase the arms beside the torso (keeping the white
-    helmet ring) and draw capsule arms in the body colour."""
-    def rig():
-        im = Image.open(front_path).convert('RGBA')
-        a = np.asarray(im).copy()
-        solid = a[..., 3] > 40
-        cx = solid.shape[1] // 2
-        hip = np.where(solid[:, cx])[0].max() - 6
-        left = right = cx
-        while left > 0 and solid[hip, left - 1]:
-            left -= 1
-        while right < solid.shape[1] - 1 and solid[hip, right + 1]:
-            right += 1
-        rgb = a[..., :3].astype(int)
-        white = (rgb.min(axis=2) > 200) & ((rgb.max(axis=2) - rgb.min(axis=2)) < 30)
-        top = np.where(solid.any(axis=1))[0].min()
-        erase = np.zeros_like(solid)
-        erase[top:hip + 1, :left - 1] = True
-        erase[top:hip + 1, right + 2:] = True
-        erase &= ~white & solid
-        # Shoulders: on the torso edges just below the helmet ring, where the arms hang from.
-        ring_bottom = int(np.where((white & solid).any(axis=1))[0].max())
-        shoulders = [(left + 5, ring_bottom - 6), (right - 5, ring_bottom - 6)]
-        torso = a[hip - 30:hip, left + 6:right - 6]
-        keep = (torso[..., 3] > 200) & ~white[hip - 30:hip, left + 6:right - 6]
-        colour = tuple(int(v) for v in np.median(torso[keep][:, :3], axis=0))
-        a[erase, 3] = 0
-        dark = tuple(max(0, c - 45) for c in colour)
-        arm = Image.new('RGBA', (17, 58))
-        d = ImageDraw.Draw(arm)
-        d.rounded_rectangle((0, 0, 16, 57), radius=8, fill=dark + (255,))
-        d.rounded_rectangle((2, 2, 14, 55), radius=6, fill=colour + (255,))
-        hand = Image.new('RGBA', (22, 22))
-        d = ImageDraw.Draw(hand)
-        d.ellipse((0, 0, 21, 21), fill=dark + (255,))
-        d.ellipse((2, 2, 19, 19), fill=colour + (255,))
-        return Image.fromarray(a), arm, hand, shoulders
     return rig
 
 

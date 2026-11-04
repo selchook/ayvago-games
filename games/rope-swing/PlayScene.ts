@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import { ArcadeScene, CHARACTER_FRAME, burst, shake, flash, popup, ensurePixel, t, txt, rng, COLORS } from '@core';
+import {
+  ArcadeScene, CHARACTER_FRAME, burst, shake, flash, popup, ensurePixel, t, txt, rng, COLORS, characterRig, playerCharacter, type CharacterId,
+} from '@core';
 
 /** pixel-platformer tilemap_packed frames (21 px tiles, 30 per row). */
 export const F = {
@@ -25,6 +27,17 @@ const HOOK_HOP = 420;                          // upward pop when the rope is fi
 // it can lean along the rope while swinging.
 export const HERO_SCALE = 76 / CHARACTER_FRAME.standHeight;
 const HERO_ORIGIN_Y = CHARACTER_FRAME.originY - HAND / (HERO_SCALE * CHARACTER_FRAME.height);
+
+/**
+ * The fist of the `hang` pose, from the hero's anchor point (unrotated, facing right): the rope is
+ * tied there. `tilt` is the angle of that fist from straight up: the body hangs under its hand, so
+ * on the rope the hero leans back by part of it and the arm points up the rope.
+ */
+export function hangGrip(id: CharacterId, scale = HERO_SCALE, originY = HERO_ORIGIN_Y): { x: number; y: number; tilt: number } {
+  const [hx, hy] = characterRig(id).hangHand;
+  const x = (hx - CHARACTER_FRAME.width / 2) * scale, y = (hy - originY * CHARACTER_FRAME.height) * scale;
+  return { x, y, tilt: Math.atan2(x, -y) };
+}
 
 interface Ground { x: number; w: number; top: number; spikeA: number; spikeB: number; objs: Phaser.GameObjects.GameObject[] }
 interface Ceil { x: number; w: number; bottom: number; spikeA: number; spikeB: number; objs: Phaser.GameObjects.GameObject[] }
@@ -60,6 +73,7 @@ export class PlayScene extends ArcadeScene {
   private animT = 0;
   private lean = 0;
   private runSpeed = 340;
+  private grip = hangGrip(playerCharacter());
 
   createGame(): void {
     this.grounds = []; this.ceils = []; this.coins = []; this.keys = [];
@@ -67,6 +81,7 @@ export class PlayScene extends ArcadeScene {
     this.held = false; this.retry = 0; this.started = false; this.startT = 0; this.dead = false;
     this.coinCount = 0; this.meters = 0; this.nextMilestone = 250; this.animT = 0; this.lean = 0; this.runSpeed = 340;
     this.cameras.main.setScroll(0, 0);
+    this.grip = hangGrip(playerCharacter());
 
     this.add.rectangle(0, 0, W, H, 0xd3f3f7).setOrigin(0).setScrollFactor(0).setDepth(-10);
     this.bgFar = this.add.tileSprite(0, 250, W, 189, 'ppbg', 0).setOrigin(0).setTileScale(3).setScrollFactor(0).setDepth(-9);
@@ -465,10 +480,13 @@ export class PlayScene extends ArcadeScene {
       else if (this.grounded && !this.attached) {
         this.hero.setTexture(Math.floor(this.animT * (6 + this.runSpeed / 60)) % 2 ? 'pc-walk2' : 'pc-walk1');
         if (Math.floor(this.animT * 12) % 3 === 0) this.dust.emitParticleAt(this.px - 8, this.py + HAND, 1);
+      } else if (this.attached) {
+        // hanging from the rope by one hand: the arm follows the rope
+        this.hero.setTexture('pc-hang');
+        lean = Math.atan2(this.ax - this.px, this.py - this.ay) * 0.8 - this.grip.tilt * 0.45;
       } else {
-        this.hero.setTexture('pc-jump');
-        if (this.attached) lean = Math.atan2(this.ax - this.px, this.py - this.ay) * 0.8;
-        else lean = Phaser.Math.Clamp(this.vy / 2400, -0.35, 0.35);
+        this.hero.setTexture(this.vy > 0 ? 'pc-fall' : 'pc-jump');
+        lean = Phaser.Math.Clamp(this.vy / 2400, -0.35, 0.35);
       }
       this.lean += (lean - this.lean) * Math.min(1, 12 * dt);
       this.hero.setRotation(this.lean);
@@ -478,7 +496,9 @@ export class PlayScene extends ArcadeScene {
     r.clear();
     if (this.attached && !this.dead) {
       this.ropeShow = Math.min(1, this.ropeShow + dt / 0.07);
-      const hx = this.px + Math.sin(this.lean) * 6, hy = this.py - 4;
+      // tied to the fist of the hang pose, wherever the lean has turned it
+      const c = Math.cos(this.lean), sn = Math.sin(this.lean);
+      const hx = this.px + this.grip.x * c - this.grip.y * sn, hy = this.py + this.grip.x * sn + this.grip.y * c;
       const ex = hx + (this.ax - hx) * this.ropeShow, ey = hy + (this.ay - hy) * this.ropeShow;
       r.lineStyle(6, 0x4a2c12, 1).lineBetween(hx, hy, ex, ey);
       r.lineStyle(3, 0xc8925a, 1).lineBetween(hx, hy, ex, ey);

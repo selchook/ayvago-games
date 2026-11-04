@@ -8,7 +8,7 @@ Load Kenney art with `kenney('<pack>/<path>')`; Kenney audio with
 
 | pack | images | sounds |
 |---|---|---|
-| characters | 140 | 0 |
+| characters | 135 | 0 |
 | alien-ufo | 46 | 0 |
 | animals | 60 | 0 |
 | boardgame | 523 | 0 |
@@ -58,14 +58,29 @@ Load Kenney art with `kenney('<pack>/<path>')`; Kenney audio with
 
 ## characters
 
-The ten player characters players choose on ayvago.com (`src/core/characters.ts`): `alien-green`
-(default), `alien-blue`, `alien-pink`, `alien-yellow`, `alien-beige`, `adventurer`, `explorer`,
-`rookie`, `soldier`, `zombie`. Each has 11 poses at `characters/<id>/<pose>.png`: `stand`,
-`front`, `walk1`, `walk2`, `jump`, `hit`, `duck`, `climb1`, `climb2`, `swim1`, `swim2`. Every
-frame is 144x176 with the feet 2 px above the bottom and the standing pose 150 px tall, so one
-size and anchor fit all ten. Built by `tools/import-characters.py`.
+The five player characters players choose on ayvago.com (`src/core/characters.ts`): `adventurer`
+(default), `explorer`, `rookie`, `soldier`, `zombie`.
 
-Rig parts for heroes that hold something with both hands: `archer.png` (the character facing front
-without arms, on the same frame), `arm.png` (shoulder at the top) and `hand.png`; the shoulder
-points and arm size are in `src/core/character-rig.json` (`characterRig(id)`).
+**Poses.** Each has the 24 poses of Kenney Platformer Characters 1 at
+`characters/<id>/<pose>.png`:
+- `stand`, `front`, `walk1`, `walk2`, `jump`, `fall`, `hit`, `duck`
+- `kick`, `hang`, `slide`, `skid`
+- `cheer1`, `cheer2`, `hold1`, `hold2`, `action1`, `action2`
+- `climb1`, `climb2`, `swim1`, `swim2`
+- `back`, `talk`
+
+All poses face right except `front` and `back`.
+
+**Frame.** Every frame is 144x176 with the feet 2 px above the bottom and the standing pose
+150 px tall, so one size and anchor fit all five. Built by `tools/import-characters.py`.
+
+**Rig parts**, for heroes whose arms follow something every frame (`games/archery`):
+- `archer.png`: the character facing front without arms, on the same frame;
+- `arm.png`: an arm, with the shoulder at the top;
+- `hand.png`: a hand.
+
+**Rig points.** `src/core/character-rig.json` (`characterRig(id)`) holds, per character:
+- the shoulder points and the arm size;
+- `kickFoot`: the foot tip in `kick`;
+- `hangHand`: the raised fist in `hang`.
 
