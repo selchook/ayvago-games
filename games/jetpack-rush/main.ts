@@ -11,8 +11,8 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    // the player's chosen character: pc-walk1/2 (running), pc-jump (flying), pc-hit (crash)
-    loadCharacter(l, { poses: ['walk1', 'walk2', 'jump', 'hit'] });
+    // the player's chosen character: pc-walk1/2 (running), pc-jump (thrusting), pc-fall (dropping), pc-hit (crash)
+    loadCharacter(l, { poses: ['walk1', 'walk2', 'jump', 'fall', 'hit'] });
     l.image('coin', kenney('platformer/png/items/coingold.png'));
     l.image('gem', kenney('platformer/png/items/gemblue.png'));
     loadAudio(l, 'jet', J + 'movement/vehicles/sfx-vehicle-engineloop');

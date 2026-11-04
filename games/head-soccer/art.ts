@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { W, GROUND, GOAL_W, GOAL_TOP, BALL_R } from './sim';
 
-/** Ball, boot and spark textures (drawn, so they stay crisp at any size). */
+/** Ball and spark textures (drawn, so they stay crisp at any size). */
 export function makeTextures(scene: Phaser.Scene): void {
   if (scene.textures.exists('hs-ball')) return;
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
@@ -29,16 +29,6 @@ export function makeTextures(scene: Phaser.Scene): void {
   g.fillStyle(0xffffff, 0.45).fillCircle(c - 8, c - 9, 6);
   g.lineStyle(2, 0x000000, 1).strokeCircle(c, c, r);
   g.generateTexture('hs-ball', c * 2, c * 2);
-
-  // boot on a short leg; the hip is the top centre (14, 0), the toe points right
-  g.clear();
-  g.fillStyle(0xffffff, 1).fillRect(8, 0, 13, 40);
-  g.fillStyle(0xec3013, 1).fillRect(8, 10, 13, 5).fillRect(8, 22, 13, 5);
-  g.fillStyle(0x000000, 1).fillRoundedRect(4, 36, 34, 18, 7);
-  g.fillStyle(0x2a2a33, 1).fillRoundedRect(6, 38, 30, 12, 5);
-  g.fillStyle(0xffffff, 1).fillRect(14, 40, 3, 4).fillRect(20, 40, 3, 4).fillRect(26, 40, 3, 4);
-  g.fillStyle(0xffd23f, 1).fillRect(6, 50, 32, 4);
-  g.generateTexture('hs-boot', 40, 56);
 
   g.clear();
   g.fillStyle(0xffffff, 1).fillCircle(4, 4, 4);

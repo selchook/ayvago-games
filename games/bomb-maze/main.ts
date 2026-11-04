@@ -23,7 +23,7 @@ launch({
     loadSfx(l, 'crate', 'sfx-impact/audio/impactwood_heavy_002');
     loadAudio(l, 'power', J + 'general-sounds/positive-sounds/sfx-sounds-powerup2');
     loadAudio(l, 'die', J + 'general-sounds/negative-sounds/sfx-sounds-negative2');
-    loadAudio(l, 'botdie', J + 'death-screams/alien/sfx-deathscream-alien2');
+    loadAudio(l, 'botdie', J + 'death-screams/human/sfx-deathscream-human3');
     loadAudio(l, 'clear', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
     loadAudio(l, 'start', J + 'general-sounds/menu-sounds/sfx-menu-select3');
   },

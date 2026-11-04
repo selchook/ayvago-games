@@ -1,6 +1,6 @@
-import { launch, kenney, loadAudio, loadCharacter, CHARACTER_FRAME, Phaser, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadCharacter, playerCharacter, characterRig, CHARACTER_FRAME, Phaser, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene, F, HERO_SCALE } from './PlayScene';
+import { PlayScene, F, HERO_SCALE, hangGrip } from './PlayScene';
 
 const J = 'oga/junkala-sfx/';
 const M = J + 'movement/jumping-and-landing/';
@@ -17,7 +17,7 @@ launch({
     l.spritesheet('ppbg', kenney('pixel-platformer/backgrounds/backgrounds.png'), { frameWidth: 231, frameHeight: 63 });
     // The player's chosen character. The game samples nearest (pixelArt); the character is smooth
     // vector art scaled down, so its textures keep linear filtering.
-    const poses = ['stand', 'jump', 'walk1', 'walk2', 'hit'] as const;
+    const poses = ['stand', 'jump', 'fall', 'walk1', 'walk2', 'hit', 'hang'] as const;
     loadCharacter(l, { poses });
     l.once('complete', () => {
       for (const pose of poses) scene.textures.get(`pc-${pose}`).setFilter(Phaser.Textures.FilterMode.LINEAR);
@@ -39,17 +39,20 @@ launch({
     scene.add.tileSprite(0, height - 260, width, 189, 'ppbg', 0).setOrigin(0).setTileScale(3).setAlpha(0.5);
     scene.add.tileSprite(0, height - 63, width, 63, 'pp', F.top).setOrigin(0).setTileScale(3);
     scene.add.tileSprite(0, 0, width, 63, 'pp', F.rock).setOrigin(0).setTileScale(3).setAlpha(0.9);
-    // the hero swings on a rope from the ceiling, left of the title
+    // the hero hangs by one hand from a rope on the ceiling, left of the title
     const ax = 190, ay = 63, len = 330;
     const rope = scene.add.graphics();
-    const hero = scene.add.image(0, 0, 'pc-jump').setScale(HERO_SCALE * 1.3).setOrigin(0.5, CHARACTER_FRAME.originY - 0.3);
+    const [hx, hy] = characterRig(playerCharacter()).hangHand;
+    const grip = hangGrip(playerCharacter(), HERO_SCALE * 1.3);
+    const hero = scene.add.image(0, 0, 'pc-hang').setScale(HERO_SCALE * 1.3)
+      .setOrigin(hx / CHARACTER_FRAME.width, hy / CHARACTER_FRAME.height);
     const st = { a: -0.6 };
     scene.tweens.add({
       targets: st, a: 0.6, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
       onUpdate: () => {
         const x = ax + Math.sin(st.a) * len, y = ay + Math.cos(st.a) * len;
         rope.clear().lineStyle(5, 0x8b5a2b, 1).lineBetween(ax, ay, x, y);
-        hero.setPosition(x, y).setRotation(-st.a * 0.8);
+        hero.setPosition(x, y).setRotation(-st.a * 0.8 - grip.tilt * 0.45);
       },
     });
     for (let i = 0; i < 5; i++) {
