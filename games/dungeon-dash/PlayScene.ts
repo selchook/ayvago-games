@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, COLORS, Controls, burst, shake, t, rng } from '@core';
-import { StickDir, type Dir4 } from './stick';
+import { ArcadeScene, Button, COLORS, Controls, burst, shake, t, rng, StickDir, type Dir4 } from '@core';
 import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Grid: 11 x 15 tiles of 8 px art scaled x8 = 64 px

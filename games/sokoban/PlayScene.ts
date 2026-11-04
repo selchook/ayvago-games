@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, loc, t, txt, rng } from '@core';
-import { StickDir } from './stick';
+import { ArcadeScene, Controls, burst, shake, flash, loc, t, txt, rng, StickDir } from '@core';
 import { LEVELS } from './levels';
 
 type Dir = 'up' | 'down' | 'left' | 'right';

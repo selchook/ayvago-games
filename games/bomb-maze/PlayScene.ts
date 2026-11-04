@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, loc, txt, t, rng } from '@core';
-import { StickDir } from './stick';
+import { ArcadeScene, Controls, burst, shake, flash, popup, loc, txt, t, rng, StickDir } from '@core';
 import { ACTOR_SCALE, ACTOR_ORIGIN_Y, BOT_PREFIXES } from './cast';
 import { CELL, makeMazeTextures } from './art';
 

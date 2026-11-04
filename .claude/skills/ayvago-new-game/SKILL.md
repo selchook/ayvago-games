@@ -99,7 +99,7 @@ Other helpers from `@core`:
     - On touch, these games use `new Controls(this, { joystick: true, buttons: [...] })`: a floating stick that appears wherever the left thumb lands on the left half, plus the A/B buttons on the right.
     - With no buttons, the stick works anywhere on the screen.
     - When the buttons' default spot on the right edge would cover play (a goal, a lane), move them with `buttonPos` / `buttonScale` instead of moving the created objects. The stick never starts on the pause button (top-right 120 px).
-    - Left/right-only games read `axisX`. Grid games read `dir4()`, and move one cell per press or repeat while it is held.
+    - Left/right-only games read `axisX`. Grid games use `StickDir` from `@core` (`new StickDir(controls, delay, rate)`, then `update(delta)` each frame): `pressed` for turning games (snake, maze), `step` to move one cell and repeat while held (Sokoban, frog hops), `latch()` after a death or a new level so a held thumb does not move on by itself. It has a dead zone with hysteresis and an axis lock, so a thumb near a diagonal never zig-zags. Keys stay on the game's own handlers or `dir4()`.
     - Do not add swipe gestures, on-screen arrow pads or "tap the left or right half" schemes for movement.
   - **Exceptions:** games where the finger directly is the control keep pointer events (`this.input.on('pointerdown', …)`): a paddle that follows the finger, aiming or slingshot drags, slicing, and tapping cells or cards in board and puzzle games. Whole-board swipes (2048, slide puzzle) are also exceptions. Add a keyboard path where it makes sense.
 

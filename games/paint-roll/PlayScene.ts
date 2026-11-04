@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, Controls, burst, shake, txt, t, storage, COLORS, ensurePixel } from '@core';
-import { StickDir, type Dir4 } from './stick';
+import { ArcadeScene, Button, Controls, burst, shake, txt, t, storage, COLORS, ensurePixel, StickDir, type Dir4 } from '@core';
 import { PALETTE, makeSymbols, softFlash, banner } from './symbols';
 import { generate, slide, DIRS, type Level } from './logic';
 

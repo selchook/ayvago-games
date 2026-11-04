@@ -1,9 +1,10 @@
-import type { Controls } from '@core';
+import type { Controls } from './controls';
 
 export type Dir4 = 'left' | 'right' | 'up' | 'down';
 
 /**
- * Grid reading of the core touch stick (`new Controls(scene, { joystick: true })`).
+ * Grid reading of the touch stick (`new Controls(scene, { joystick: true })`), for games that
+ * move on a grid: snakes, mazes, Sokoban, frog hops.
  *
  * - Reads the stick only: the game's own keyboard handlers stay exactly as they were.
  * - Dead zone with hysteresis: a direction engages past 40% of the stick's reach and lets go
@@ -29,10 +30,9 @@ export class StickDir {
     private rate = 150,
   ) {}
 
-  /** True while a thumb is on the stick (the core keeps this private, so read it defensively). */
+  /** True while a thumb is on the stick. */
   get active(): boolean {
-    const s = (this.controls as unknown as { stick?: { active?: boolean } }).stick;
-    return !!s?.active;
+    return this.controls.stickActive;
   }
 
   /** Change the hold repeat timing (for example when the game speeds up). */

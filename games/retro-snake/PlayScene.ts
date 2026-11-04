@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, Controls, COLORS, burst, shake, flash, popup, t, txt, rng } from '@core';
-import { StickDir, type Dir4 } from './stick';
+import { ArcadeScene, Button, Controls, COLORS, burst, shake, flash, popup, t, txt, rng, StickDir, type Dir4 } from '@core';
 
 /** onebit frames: apple, pear, carrot, meat, cheese */
 export const FOODS = [897, 898, 994, 801, 802];

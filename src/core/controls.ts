@@ -54,6 +54,9 @@ export class Controls {
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.PRE_UPDATE, this.poll, this));
   }
 
+  /** True while a thumb is on the touch stick (keys do not count). */
+  get stickActive(): boolean { return this.stick.active; }
+
   get left(): boolean { return this.axisX < -0.3; }
   get right(): boolean { return this.axisX > 0.3; }
   get up(): boolean { return this.axisY < -0.3; }

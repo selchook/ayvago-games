@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, loc, t, txt, rng } from '@core';
-import { StickDir, type Dir4 } from './stick';
+import { ArcadeScene, Controls, burst, shake, flash, popup, loc, t, txt, rng, StickDir, type Dir4 } from '@core';
 
 // '#' wall, 'X' void (wall, not drawn), '.' dot, 'o' power pellet, ' ' empty,
 // '-' ghost-house door, 'B'/'P'/'I'/'C' ghost starts, 'M' muncher start, 'F' fruit spot.

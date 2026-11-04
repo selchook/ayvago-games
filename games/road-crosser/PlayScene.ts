@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, loc, t, txt, rng } from '@core';
-import { StickDir, type Dir4 } from './stick';
+import { ArcadeScene, Controls, burst, shake, flash, popup, loc, t, txt, rng, StickDir, type Dir4 } from '@core';
 
 const W = 720, COLS = 11, COL = W / COLS, ROW = 72, TOP = 104;
 const HOME_ROW = 0, MEDIAN = 6, START = 12;

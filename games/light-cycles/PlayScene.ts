@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, net, upper } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, net, upper, StickDir, type Dir4 } from '@core';
 import { Arena, COLS, ROWS, DX, DY, aiDir, makeObstacles } from './arena';
-import { StickDir, type Dir4 } from './stick';
 
 const STICK_DIR: Record<Dir4, number> = { up: 0, right: 1, down: 2, left: 3 };
 
