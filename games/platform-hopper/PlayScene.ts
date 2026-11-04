@@ -39,7 +39,7 @@ export class PlayScene extends ArcadeScene {
   private coyote = 0;
   private jumpBuf = 0;
   private prevJump = false;
-  private touch = { left: false, right: false, jump: false };
+  private upKeys: Phaser.Input.Keyboard.Key[] = [];
   private walkT = 0;
   private wasOnGround = true;
   /** Vertical speed in the previous frame, for the landing thud. */
@@ -51,7 +51,6 @@ export class PlayScene extends ArcadeScene {
     this.level = 0; this.lives = 3; this.gemsGot = 0; this.gemsTotal = 0; this.state = 'intro';
     this.movers = []; this.enemies = []; this.hazards = []; this.springs = []; this.gems = []; this.levelObjs = []; this.hearts = [];
     this.coyote = 0; this.jumpBuf = 0; this.prevJump = false; this.walkT = 0; this.wasOnGround = true; this.stompChain = 0; this.boosted = false;
-    this.touch = { left: false, right: false, jump: false };
 
     this.bg = this.add.image(0, 720, BGS[0]).setOrigin(0, 1).setScale(1.25).setDepth(-10);
     this.physics.world.setBounds(0, -400, 1280, 1400, true, true, false, false);
@@ -75,29 +74,11 @@ export class PlayScene extends ArcadeScene {
 
     for (let i = 0; i < 3; i++) this.hearts.push(this.add.image(42 + i * 50, 92, 'heart').setScale(0.36).setDepth(9000));
 
-    this.controls = new Controls(this);
-    this.buildTouch();
+    // touch: floating stick on the left half runs left/right (analog), A on the right jumps
+    this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
+    const kb = this.input.keyboard!, K = Phaser.Input.Keyboard.KeyCodes;
+    this.upKeys = [kb.addKey(K.UP, true, false), kb.addKey(K.W, true, false)];
     this.loadLevel();
-  }
-
-  // ---------- touch controls ----------
-
-  private buildTouch(): void {
-    if (!this.sys.game.device.input.touch) return;
-    this.input.addPointer(2);
-    const mk = (x: number, y: number, r: number, key: 'left' | 'right' | 'jump', draw: (g: Phaser.GameObjects.Graphics) => void) => {
-      const c = this.add.circle(x, y, r, 0xffffff, 0.18).setStrokeStyle(5, 0xffffff, 0.6).setDepth(9500).setInteractive();
-      const g = this.add.graphics({ x, y }).setDepth(9501);
-      g.fillStyle(0xffffff, 0.85);
-      draw(g);
-      const set = (v: boolean) => { this.touch[key] = v; c.setFillStyle(0xffffff, v ? 0.4 : 0.18); };
-      c.on('pointerdown', () => set(true));
-      c.on('pointerup', () => set(false));
-      c.on('pointerout', () => set(false));
-    };
-    mk(95, 625, 66, 'left', (g) => g.fillTriangle(-26, 0, 16, -26, 16, 26));
-    mk(255, 625, 66, 'right', (g) => g.fillTriangle(26, 0, -16, -26, -16, 26));
-    mk(1180, 615, 78, 'jump', (g) => g.fillTriangle(0, -28, -30, 18, 30, 18));
   }
 
   // ---------- level building ----------
@@ -354,8 +335,11 @@ export class PlayScene extends ArcadeScene {
 
     const pb = this.player.body as Body;
     const c = this.controls;
-    const ax = (c.axisX < -0.3 || this.touch.left ? -1 : 0) + (c.axisX > 0.3 || this.touch.right ? 1 : 0);
-    const jumpHeld = c.a || c.up || this.touch.jump;
+    // keys give -1/0/1; a small stick push walks, a full push runs
+    const mag = Phaser.Math.Clamp((Math.abs(c.axisX) - 0.15) / 0.55, 0, 1);
+    const ax = Math.sign(c.axisX) * mag;
+    // jump: A (button / Space / Z / Enter) or the Up / W key; pushing the stick up does not jump
+    const jumpHeld = c.a || this.upKeys.some((k) => k.isDown);
     const jumpPressed = jumpHeld && !this.prevJump;
     this.prevJump = jumpHeld;
     if (this.state === 'intro') { pb.setVelocityX(0); return; }

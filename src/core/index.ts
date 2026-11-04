@@ -5,6 +5,8 @@ export { ArcadeScene } from './ArcadeScene';
 export type { EndOptions } from './ArcadeScene';
 export { Controls } from './controls';
 export type { ControlsOptions } from './controls';
+export { StickDir } from './stick';
+export type { Dir4 } from './stick';
 export { Button, Hud, iconButton, backdrop } from './ui';
 export { txt, COLORS, hex, FONT_TITLE, FONT_BODY } from './theme';
 export { burst, shake, flash, popup, addCrt, ensurePixel } from './fx';

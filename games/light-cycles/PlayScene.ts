@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, upper } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, net, upper, StickDir, type Dir4 } from '@core';
 import { Arena, COLS, ROWS, DX, DY, aiDir, makeObstacles } from './arena';
+
+const STICK_DIR: Record<Dir4, number> = { up: 0, right: 1, down: 2, left: 3 };
 
 const CELL = 20;
 const X0 = (720 - COLS * CELL) / 2;
@@ -38,7 +40,8 @@ export class PlayScene extends ArcadeScene {
   private rival = 0;
   private pts = [0, 0];
   private survived = 0;
-  private swipe: { x: number; y: number } | null = null;
+  private controls!: Controls;
+  private stick!: StickDir;
   // online
   private online = false;
   private host = true;
@@ -52,7 +55,7 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'count';
     this.riders = []; this.trails = []; this.heads = []; this.glows = []; this.live = []; this.pips = [[], []];
     this.acc = 0; this.lastTick = 0; this.tickNo = 0; this.round = 0; this.rival = 0; this.pts = [0, 0]; this.survived = 0;
-    this.swipe = null; this.aimDir = 0; this.aimAt = 0;
+    this.aimDir = 0; this.aimAt = 0;
     this.cameras.main.setBackgroundColor('#05040f');
     this.makeTextures();
 
@@ -114,34 +117,13 @@ export class PlayScene extends ArcadeScene {
     kb?.on('keydown-Z', () => this.turnRel(-1)); kb?.on('keydown-Q', () => this.turnRel(-1));
     kb?.on('keydown-X', () => this.turnRel(1)); kb?.on('keydown-E', () => this.turnRel(1));
 
-    // swipes anywhere on the field; turn buttons below it on touch screens
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (p.y < Y0 + FH) this.swipe = { x: p.x, y: p.y }; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!this.swipe || !p.isDown) return;
-      const dx = p.x - this.swipe.x, dy = p.y - this.swipe.y;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 28) return;
-      this.steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : dy > 0 ? 2 : 0);
-      this.swipe = { x: p.x, y: p.y };
-    });
-    this.input.on('pointerup', () => { this.swipe = null; });
+    // touch: the standard floating stick, anywhere on the screen; a new direction is the next turn
+    this.controls = new Controls(this, { joystick: true });
+    this.stick = new StickDir(this.controls);
 
     const by = Y0 + FH + 78;
-    if (this.sys.game.device.input.touch) {
-      for (const side of [-1, 1]) {
-        const x = 360 + side * 172;
-        const btn = this.add.rectangle(x, by, 320, 132, 0x1d1850, 0.85).setStrokeStyle(4, 0x8b5cff).setInteractive();
-        const g = this.add.graphics();
-        g.fillStyle(0xb48cff);
-        // curved-arrow look: a bar and a head pointing the turn's way
-        g.fillRect(x - 50, by - 8, 100, 16);
-        g.fillTriangle(x + side * 70, by, x + side * 40, by - 28, x + side * 40, by + 28);
-        txt(this, x - side * 20, by + 44, side < 0 ? t('left') : t('right'), { title: true, size: 16, color: '#b48cff' });
-        btn.on('pointerdown', () => {
-          this.turnRel(side);
-          btn.setFillStyle(0x3a2f90, 0.95);
-          this.time.delayedCall(90, () => btn.setFillStyle(0x1d1850, 0.85));
-        });
-      }
+    if (this.controls.touchUi) {
+      txt(this, 360, by, t('touchHint'), { size: 28, color: '#a9b0e8', wrap: 660 });
     } else {
       txt(this, 360, by - 20, t('keysHint'), { size: 26, color: '#a9b0e8', wrap: 660 });
       txt(this, 360, by + 22, t('keysHint2'), { size: 22, color: '#7f86c0', wrap: 660 });
@@ -251,6 +233,7 @@ export class PlayScene extends ArcadeScene {
   private beginRound(r: number, sp: number, swap: boolean): void {
     this.round = r;
     this.interval = 1000 / sp;
+    this.stick.reset();   // a stick still held from the last round counts as a fresh turn
     this.acc = 0; this.tickNo = 0; this.survived = 0;
     const obstacles = this.online ? r >= 2 : this.rival >= 1 && r >= 2;
     const rand = rng.seeded((this.online ? net.seed : rng.int(1, 1e9)) + r * 7919);
@@ -335,6 +318,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   updateGame(_time: number, delta: number): void {
+    this.stick.update(delta);
+    if (this.stick.pressed) this.steer(STICK_DIR[this.stick.pressed]);
     if (this.phase === 'run' && this.host) {
       this.acc += delta;
       let n = 0;

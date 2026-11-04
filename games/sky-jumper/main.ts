@@ -58,7 +58,7 @@ launch({
   },
   scenes: [PlayScene],
   strings: {
-    tr: { meters: 'm', steer: '<  DOKUN  >', fell: 'DÜŞTÜN!', ouch: 'YAKALANDIN!' },
-    en: { meters: 'm', steer: '<  TOUCH  >', fell: 'YOU FELL!', ouch: 'CAUGHT!' },
+    tr: { meters: 'm', steer: 'Joystick ile yönlen', steerKeys: '<  Ok tuşları  >', fell: 'DÜŞTÜN!', ouch: 'YAKALANDIN!' },
+    en: { meters: 'm', steer: 'Steer with the joystick', steerKeys: '<  Arrow keys  >', fell: 'YOU FELL!', ouch: 'CAUGHT!' },
   },
 });

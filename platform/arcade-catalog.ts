@@ -724,8 +724,8 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'paint-roll',
     title: { en: 'Paint Roll', tr: 'Boya Yuvarla' },
     description: {
-      en: 'Swipe the paint ball: it slides until it hits a wall and paints every tile it crosses. Paint the whole maze! 60 levels that grow as you go; finish within par for three stars.',
-      tr: 'Boya topunu kaydır: duvara çarpana kadar gider ve geçtiği her kareyi boyar. Labirentin tamamını boya! 60 bölüm büyüdükçe zorlaşır; az hamleyle bitirip üç yıldız topla.',
+      en: 'Roll the paint ball: it slides until it hits a wall and paints every tile it crosses. Paint the whole maze! 60 levels that grow as you go; finish within par for three stars.',
+      tr: 'Boya topunu yuvarla: duvara çarpana kadar gider ve geçtiği her kareyi boyar. Labirentin tamamını boya! 60 bölüm büyüdükçe zorlaşır; az hamleyle bitirip üç yıldız topla.',
     },
     category: 'puzzle',
     categories: ['puzzle', 'casual'],

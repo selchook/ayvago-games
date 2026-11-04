@@ -2,7 +2,7 @@
   "id": "dungeon-dash",
   "title": { "tr": "Zindan Koşusu", "en": "Dungeon Dash" },
   "description": { "tr": "Sıra tabanlı mini zindan macerası: canavarlarla savaş, iksir ve sandık topla, merdivenden aşağı in.", "en": "A turn-based micro roguelike: fight monsters, grab potions and chests, take the stairs ever deeper." },
-  "howTo": { "tr": "Gitmek istediğin yöne dokun ya da ok tuşları/WASD ile yürü; canavara yürüyerek saldır. Boşluk: bekle, X: iksir. Merdivenden in!", "en": "Tap a direction or walk with the arrows/WASD; walk into monsters to attack. Space: wait, X: potion. Take the stairs down!" },
+  "howTo": { "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda koluyla yürü, basılı tutunca yürümeye devam eder. Klavyede ok tuşları ya da WASD; canavara yürüyerek saldır. Boşluk: bekle, X: iksir. Merdivenden in!", "en": "Touch and drag anywhere for a stick to walk (hold it to keep walking), or use the arrows/WASD; walk into monsters to attack. Space: wait, X: potion. Take the stairs down!" },
   "genres": ["strategy", "retro", "puzzle"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],

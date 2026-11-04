@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 export const CELL = 52;
 
-/** Procedural tiles: floor checker, flame, power-up plates and the on-screen pad. */
+/** Procedural tiles: floor checker, flame and power-up plates. */
 export function makeMazeTextures(scene: Phaser.Scene): void {
   if (scene.textures.exists('floor-a')) return;
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
@@ -54,10 +54,5 @@ export function makeMazeTextures(scene: Phaser.Scene): void {
   g.clear();
   g.fillStyle(0xffffff).fillCircle(4, 4, 4);
   g.generateTexture('spark', 8, 8);
-
-  // d-pad arrow
-  g.clear();
-  g.fillStyle(0xffffff, 1).fillTriangle(0, 30, 26, 0, 52, 30);
-  g.generateTexture('arrow', 52, 30);
   g.destroy();
 }

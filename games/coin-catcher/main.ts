@@ -54,7 +54,7 @@ launch({
   },
   scenes: [PlayScene],
   strings: {
-    tr: { magnet: 'MIKNATIS!', life: '+1 CAN', boom: 'BUM!', dragHint: '< Sürükle >', bombs: 'BOMBA YAĞMURU!' },
-    en: { magnet: 'MAGNET!', life: '+1 LIFE', boom: 'BOOM!', dragHint: '< Drag >', bombs: 'BOMB RAIN!' },
+    tr: { magnet: 'MIKNATIS!', life: '+1 CAN', boom: 'BUM!', stickHint: 'Joystick ile koş', keysHint: '< Ok tuşları >', bombs: 'BOMBA YAĞMURU!' },
+    en: { magnet: 'MAGNET!', life: '+1 LIFE', boom: 'BOOM!', stickHint: 'Run with the joystick', keysHint: '< Arrow keys >', bombs: 'BOMB RAIN!' },
   },
 });

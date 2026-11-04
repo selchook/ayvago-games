@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, loc, t, txt, rng, StickDir, type Dir4 } from '@core';
 
 // '#' wall, 'X' void (wall, not drawn), '.' dot, 'o' power pellet, ' ' empty,
 // '-' ghost-house door, 'B'/'P'/'I'/'C' ghost starts, 'M' muncher start, 'F' fruit spot.
@@ -38,6 +38,7 @@ const SCATTER = [{ x: 17, y: -2 }, { x: 1, y: -2 }, { x: 18, y: 22 }, { x: 0, y:
 type Dir = { x: number; y: number };
 const DIRS: Dir[] = [{ x: 0, y: -1 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 0 }]; // classic tie order: up, left, down, right
 const NONE: Dir = { x: 0, y: 0 };
+const STICK_DIRS: Record<Dir4, Dir> = { up: DIRS[0], left: DIRS[1], down: DIRS[2], right: DIRS[3] };
 
 interface Mover { x: number; y: number; dx: number; dy: number }
 type GState = 'house' | 'leaving' | 'active' | 'eaten' | 'entering';
@@ -115,14 +116,15 @@ export class PlayScene extends ArcadeScene {
   private banner!: Phaser.GameObjects.Text;
   private livesGfx!: Phaser.GameObjects.Graphics;
   private levelIcons: Phaser.GameObjects.Image[] = [];
-  private swipe: { x: number; y: number } | null = null;
+  private controls!: Controls;
+  private stick!: StickDir;
 
   createGame(): void {
     makeTextures(this);
     this.textures.get('onebit').setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.dots = new Map(); this.pellets = new Map(); this.ghosts = []; this.levelIcons = [];
     this.level = 1; this.lives = 3; this.fright = 0; this.ghostChain = 0; this.extraGiven = false;
-    this.fruit = null; this.fruitT = 0; this.swipe = null; this.want = NONE; this.mouth = 0; this.wakaT = 0;
+    this.fruit = null; this.fruitT = 0; this.want = NONE; this.mouth = 0; this.wakaT = 0;
 
     this.add.rectangle(OX - 6, OY - 6, COLS * CELL + 12, ROWS * CELL + 12, 0x000000).setOrigin(0);
     this.walls = this.add.graphics();
@@ -136,7 +138,6 @@ export class PlayScene extends ArcadeScene {
     this.banner = txt(this, cx(9), cy(11), '', { title: true, size: 26, color: '#ffd23f' }).setDepth(20);
     this.livesGfx = this.add.graphics().setDepth(5);
 
-    this.buildDpad();
     this.bindInput();
     this.startLevel(true);
   }
@@ -274,35 +275,21 @@ export class PlayScene extends ArcadeScene {
     const kb = this.input.keyboard;
     const map: Record<string, Dir> = { UP: DIRS[0], LEFT: DIRS[1], DOWN: DIRS[2], RIGHT: DIRS[3], W: DIRS[0], A: DIRS[1], S: DIRS[2], D: DIRS[3] };
     for (const [k, d] of Object.entries(map)) kb?.on(`keydown-${k}`, () => this.steer(d));
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { this.swipe = p.y < 900 || p.x < 120 ? { x: p.x, y: p.y } : null; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!p.isDown || !this.swipe) return;
-      const dx = p.x - this.swipe.x, dy = p.y - this.swipe.y;
-      if (Math.hypot(dx, dy) < 28) return;
-      this.steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? DIRS[3] : DIRS[1]) : (dy > 0 ? DIRS[2] : DIRS[0]));
-      this.swipe = { x: p.x, y: p.y };
-    });
-    this.input.on('pointerup', () => { this.swipe = null; });
+    // touch: the standard floating stick, anywhere on the screen; its direction is the next turn
+    this.controls = new Controls(this, { joystick: true });
+    this.stick = new StickDir(this.controls);
+    if (this.controls.touchUi) {
+      txt(this, 360, 1040, loc({ tr: 'Ekrana bas ve sürükle: yön ver', en: 'Touch and drag to steer' }), { size: 26, color: '#3a5bff' }).setAlpha(0.8);
+    }
   }
 
-  private buildDpad(): void {
-    const c = { x: 360, y: 1068 };
-    const spots: Array<[Dir, number, number, number]> = [
-      [DIRS[0], c.x, c.y - 112, -90], [DIRS[2], c.x, c.y + 112, 90], [DIRS[1], c.x - 150, c.y, 180], [DIRS[3], c.x + 150, c.y, 0],
-    ];
-    this.add.circle(c.x, c.y, 46, 0xffffff, 0.06).setStrokeStyle(3, 0x3a5bff, 0.5);
-    for (const [d, x, y, ang] of spots) {
-      const w = d.x ? 130 : 120, h = d.x ? 110 : 104;
-      const btn = this.add.rectangle(x, y, w, h, 0x3a5bff, 0.22).setStrokeStyle(4, 0x3a5bff, 0.85).setInteractive();
-      const arrow = this.add.triangle(x, y, 0, -22, 0, 22, 30, 0, 0xffffff, 0.85).setAngle(ang);
-      btn.on('pointerdown', () => {
-        this.steer(d);
-        btn.setFillStyle(0x3a5bff, 0.6);
-        this.tweens.add({ targets: arrow, scale: 0.8, duration: 70, yoyo: true });
-      });
-      const up = () => btn.setFillStyle(0x3a5bff, 0.22);
-      btn.on('pointerup', up); btn.on('pointerout', up);
-    }
+  /** The stick's held direction becomes the wanted turn (and re-applies after a reset). */
+  private readStick(delta: number): void {
+    this.stick.update(delta);
+    const h = this.stick.held;
+    if (!h) return;
+    const d = STICK_DIRS[h];
+    if (this.stick.pressed || this.want.x !== d.x || this.want.y !== d.y) this.steer(d);
   }
 
   private steer(d: Dir): void {
@@ -511,6 +498,7 @@ export class PlayScene extends ArcadeScene {
   // ---------- loop ----------
 
   updateGame(_time: number, delta: number): void {
+    this.readStick(delta);
     const dt = delta / 1000;
     this.wakaT -= dt;
     if (this.phase !== 'play') {

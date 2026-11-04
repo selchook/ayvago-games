@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, COLORS, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, Button, Controls, COLORS, burst, shake, flash, popup, t, txt, rng, StickDir, type Dir4 } from '@core';
 
 /** onebit frames: apple, pear, carrot, meat, cheese */
 export const FOODS = [897, 898, 994, 801, 802];
@@ -8,6 +8,7 @@ const BONUS_FRAME = 140;  // golden crown
 const CELL = 40, COLS = 17, ROWS = 26, OX = 20, OY = 150;
 type Dir = { x: number; y: number };
 const UP: Dir = { x: 0, y: -1 }, DOWN: Dir = { x: 0, y: 1 }, LEFT: Dir = { x: -1, y: 0 }, RIGHT: Dir = { x: 1, y: 0 };
+const STICK_DIR: Record<Dir4, Dir> = { up: UP, down: DOWN, left: LEFT, right: RIGHT };
 type Mode = 'classic' | 'walls';
 let lastMode: Mode = 'classic';
 
@@ -33,14 +34,15 @@ export class PlayScene extends ArcadeScene {
   private rocks: { x: number; y: number }[] = [];
   private rockGfx!: Phaser.GameObjects.Graphics;
   private chooser: Phaser.GameObjects.GameObject[] = [];
-  private down: { x: number; y: number } | null = null;
+  private controls!: Controls;
+  private stick!: StickDir;
   private modeText?: Phaser.GameObjects.Text;
 
   createGame(): void {
     this.textures.get('onebit').setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.snake = []; this.queue = []; this.rocks = []; this.chooser = [];
     this.dir = RIGHT; this.grow = 0; this.stepT = 0; this.interval = 0.16; this.level = 1; this.eaten = 0;
-    this.started = false; this.dead = false; this.modeText = undefined; this.bonus = null; this.bonusT = 0; this.down = null;
+    this.started = false; this.dead = false; this.modeText = undefined; this.bonus = null; this.bonusT = 0;
     this.mode = lastMode;
 
     // checkerboard field
@@ -60,25 +62,13 @@ export class PlayScene extends ArcadeScene {
     this.updateHud();
     this.showChooser();
 
-    // input: keyboard arrows/WASD, swipes, and taps beside the head
+    // input: keyboard arrows/WASD; on touch the standard floating stick (anywhere on screen),
+    // where every new stick direction queues the next turn
     const kb = this.input.keyboard;
     const keyDir: Record<string, Dir> = { UP, DOWN, LEFT, RIGHT, W: UP, S: DOWN, A: LEFT, D: RIGHT };
     for (const [k, d] of Object.entries(keyDir)) kb?.on(`keydown-${k}`, () => this.turn(d));
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { this.down = this.started ? { x: p.x, y: p.y } : null; });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (!this.down || !this.started) { this.down = null; return; }
-      const dx = p.x - this.down.x, dy = p.y - this.down.y;
-      const from = this.down;
-      this.down = null;
-      if (from.y < 120 && from.x > 600) return; // pause button corner
-      if (Math.hypot(dx, dy) > 30) { this.turn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? RIGHT : LEFT) : (dy > 0 ? DOWN : UP)); return; }
-      // tap: turn towards the tapped side of the head
-      if (!this.snake.length) return; // the body is crumbling after a crash
-      const last = this.queue[this.queue.length - 1] ?? this.dir;
-      const h = this.cellPos(this.snake[0]);
-      if (last.x !== 0) this.turn(p.y < h.y ? UP : DOWN);
-      else this.turn(p.x < h.x ? LEFT : RIGHT);
-    });
+    this.controls = new Controls(this, { joystick: true });
+    this.stick = new StickDir(this.controls);
   }
 
   private showChooser(): void {
@@ -306,6 +296,8 @@ export class PlayScene extends ArcadeScene {
 
   updateGame(_time: number, delta: number): void {
     if (!this.started || this.dead) return;
+    this.stick.update(delta);
+    if (this.stick.pressed) this.turn(STICK_DIR[this.stick.pressed]);
     const dt = delta / 1000;
     this.stepT += dt;
     while (this.stepT >= this.interval && !this.dead) { this.stepT -= this.interval; this.step(); }

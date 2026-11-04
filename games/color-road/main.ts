@@ -40,11 +40,11 @@ launch({
   scenes: [PlayScene],
   strings: {
     tr: {
-      hint: 'Sağa sola sürükle ya da ok tuşlarını kullan. Sadece kendi rengindeki bloklara çarp!',
+      hint: 'Joystick ya da ok tuşlarıyla sağa sola git. Sadece kendi rengindeki bloklara çarp!',
       wrong: 'YANLIŞ RENK!', comboLost: 'KOMBO BİTTİ',
     },
     en: {
-      hint: 'Drag sideways or use the arrow keys. Hit only blocks of your own colour!',
+      hint: 'Steer with the joystick or the arrow keys. Hit only blocks of your own colour!',
       wrong: 'WRONG COLOUR!', comboLost: 'COMBO LOST',
     },
   },

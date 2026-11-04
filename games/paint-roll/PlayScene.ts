@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, txt, t, storage, COLORS, ensurePixel } from '@core';
+import { ArcadeScene, Button, Controls, burst, shake, txt, t, storage, COLORS, ensurePixel, StickDir, type Dir4 } from '@core';
 import { PALETTE, makeSymbols, softFlash, banner } from './symbols';
 import { generate, slide, DIRS, type Level } from './logic';
 
@@ -18,6 +18,8 @@ const BONUS_PER_SEC = 2;
 const BAR_X = 60;
 const BAR_W = 380;
 const PIP_Y = 1117;
+/** Stick direction to the slide direction index of `logic.ts` (right, left, down, up). */
+const STICK_DIR: Record<Dir4, number> = { right: 0, left: 1, down: 2, up: 3 };
 
 type Phase = 'select' | 'play' | 'clear';
 
@@ -54,14 +56,14 @@ export class PlayScene extends ArcadeScene {
   private page = 0;
   private focus = 1;
   private focusRing?: Phaser.GameObjects.Rectangle;
-  private down = { x: 0, y: 0, on: false };
+  private controls!: Controls;
+  private stick!: StickDir;
 
   createGame(): void {
     makeSymbols(this);
     this.phase = 'select'; this.level = 1; this.pos = 0; this.painted = new Set(); this.moves = 0;
     this.undoStack = []; this.sliding = false; this.queued = -1; this.timeLeft = 0; this.timeMax = 1; this.cleared = 0; this.gen++;
     this.paintRects = new Map(); this.ui = []; this.selectUi = []; this.page = 0; this.focusRing = undefined;
-    this.down = { x: 0, y: 0, on: false };
 
     this.add.rectangle(0, 0, 720, 1280, 0x17122b).setOrigin(0).setDepth(-20);
     this.board = this.add.container(0, 0).setDepth(5);
@@ -70,24 +72,9 @@ export class PlayScene extends ArcadeScene {
     this.bonusText = txt(this, 660, 169, '', { size: 24, color: '#5dff7a' }).setOrigin(1, 0.5).setDepth(50);
     this.pips = this.add.graphics().setDepth(50);
 
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (this.phase !== 'play' || p.y > BTN_Y - 70 || (p.x > 600 && p.y < 130)) return;
-      this.down = { x: p.x, y: p.y, on: true };
-    });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (!this.down.on) return;
-      this.down.on = false;
-      if (this.phase !== 'play') return;
-      const dx = p.x - this.down.x, dy = p.y - this.down.y;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) > 36) {
-        this.move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 0 : 1) : (dy > 0 ? 2 : 3));
-      } else {
-        // a tap sends the ball toward the tapped side of it
-        const bx = this.ball.x, by = this.ball.y;
-        const tx = p.x - bx, ty = p.y - by;
-        if (Math.max(Math.abs(tx), Math.abs(ty)) > this.cell * 0.5) this.move(Math.abs(tx) > Math.abs(ty) ? (tx > 0 ? 0 : 1) : (ty > 0 ? 2 : 3));
-      }
-    });
+    // touch: the standard floating stick, anywhere on the screen; each flick sends the ball
+    this.controls = new Controls(this, { joystick: true });
+    this.stick = new StickDir(this.controls);
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.onKey(e));
     this.showSelect();
   }
@@ -485,7 +472,9 @@ export class PlayScene extends ArcadeScene {
 
   // ---------- update ----------
   updateGame(_time: number, delta: number): void {
+    this.stick.update(delta);
     if (this.phase !== 'play') return;
+    if (this.stick.pressed) this.move(STICK_DIR[this.stick.pressed]);
     // the bonus clock only shrinks the time bonus; a calm puzzle never fails on time
     this.timeLeft = Math.max(0, this.timeLeft - delta / 1000);
     const f = this.timeLeft / this.timeMax;

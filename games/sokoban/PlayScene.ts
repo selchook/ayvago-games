@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, t, txt, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, loc, t, txt, rng, StickDir } from '@core';
 import { LEVELS } from './levels';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
@@ -35,63 +35,47 @@ export class PlayScene extends ArcadeScene {
   private queue: Dir[] = [];
   private won = false;
   private gen = 0;
-  private swipe: { x: number; y: number; done: boolean } | null = null;
+  private controls!: Controls;
+  private stick!: StickDir;
   private levelTxt!: Phaser.GameObjects.Text;
   private movesTxt!: Phaser.GameObjects.Text;
-  private holdTimer?: Phaser.Time.TimerEvent;
 
   createGame(): void {
     this.gen++;
-    this.level = 0; this.queue = []; this.moving = false; this.won = false; this.swipe = null; this.holdTimer = undefined;
+    this.level = 0; this.queue = []; this.moving = false; this.won = false;
     this.hud.setCenter('');
     this.levelTxt = txt(this, 360, 118, '', { title: true, size: 26, color: '#ffd23f' });
     this.movesTxt = txt(this, 360, 164, '', { size: 30, color: '#f3f2f2' });
+    // touch: the standard floating stick, anywhere on the screen. A push takes one step and
+    // holding it keeps walking; UNDO and RESTART stay as buttons on the right.
+    this.controls = new Controls(this, { joystick: true });
+    this.stick = new StickDir(this.controls, 300, 170);
     this.buildControls();
 
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (p.y < 1010 && p.y > 190) this.swipe = { x: p.x, y: p.y, done: false };
-    });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      const s = this.swipe;
-      if (!s || s.done || !p.isDown) return;
-      const dx = p.x - s.x, dy = p.y - s.y;
-      if (Math.hypot(dx, dy) < 40) return;
-      s.done = true;
-      this.queue = [];
-      this.tryStep(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
-    });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      const s = this.swipe;
-      this.swipe = null;
-      if (s && !s.done && Math.hypot(p.x - s.x, p.y - s.y) < 20) this.tapCell(p.x, p.y);
-    });
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.onKey(e));
     this.loadLevel();
   }
 
   // ---------- UI ----------
   private buildControls(): void {
-    const btn = (x: number, y: number, size: number, icon: string, angle: number, onDown: () => void, hold = false) => {
+    const btn = (x: number, y: number, size: number, icon: string, onDown: () => void) => {
       const c = this.add.container(x, y).setDepth(50);
       const bg = this.add.rectangle(0, 0, size, size, 0x000000, 0.45).setStrokeStyle(4, 0xffffff, 0.7);
-      const im = this.add.image(0, 0, icon).setDisplaySize(size * 0.5, size * 0.5).setAngle(angle);
+      const im = this.add.image(0, 0, icon).setDisplaySize(size * 0.5, size * 0.5);
       c.add([bg, im]).setSize(size, size).setInteractive({ useHandCursor: true });
-      const stop = () => { this.holdTimer?.remove(); this.holdTimer = undefined; bg.setFillStyle(0x000000, 0.45); };
+      const stop = () => bg.setFillStyle(0x000000, 0.45);
       c.on('pointerdown', () => {
         bg.setFillStyle(0xec3013, 0.6);
         onDown();
-        if (hold) { this.holdTimer?.remove(); this.holdTimer = this.time.addEvent({ delay: 170, loop: true, startAt: -200, callback: onDown }); }
       });
       c.on('pointerup', stop);
       c.on('pointerout', stop);
     };
-    btn(90, 1150, 112, 'icon-return', 0, () => this.undo());
-    btn(222, 1150, 112, 'sk-restart', 0, () => this.restartLevel());
-    const cx = 560, cy = 1150, s = 94, gap = 98;
-    btn(cx, cy - gap * 0.75, s, 'sk-arrow', 0, () => this.tryStep('up'), true);
-    btn(cx, cy + gap * 0.75, s, 'sk-arrow', 180, () => this.tryStep('down'), true);
-    btn(cx - gap, cy, s, 'sk-arrow', -90, () => this.tryStep('left'), true);
-    btn(cx + gap, cy, s, 'sk-arrow', 90, () => this.tryStep('right'), true);
+    btn(500, 1150, 112, 'icon-return', () => this.undo());
+    btn(632, 1150, 112, 'sk-restart', () => this.restartLevel());
+    if (this.controls.touchUi) {
+      txt(this, 200, 1150, loc({ tr: 'Bas ve sürükle: yürü', en: 'Touch and drag: walk' }), { size: 26, color: '#f3f2f2' }).setAlpha(0.6);
+    }
   }
 
   private updateInfo(): void {
@@ -110,6 +94,7 @@ export class PlayScene extends ArcadeScene {
     this.board?.destroy();
     this.walls.clear(); this.goals.clear(); this.boxes.clear();
     this.history = []; this.moves = 0; this.queue = []; this.moving = false; this.won = false;
+    this.stick.latch();   // a thumb still held from the last level must let go first
     const map = LEVELS[this.level].map;
     const theme = THEMES[Math.floor(this.level / 5) % THEMES.length];
     this.rows = map.length; this.cols = Math.max(...map.map((r) => r.length));
@@ -254,45 +239,6 @@ export class PlayScene extends ArcadeScene {
     this.updateInfo();
   }
 
-  /** Tap: adjacent cell = step/push, farther floor = walk there along the shortest path. */
-  private tapCell(px: number, py: number): void {
-    if (this.won || this.isOver) return;
-    const c = Math.floor((px - this.ox) / this.tile), r = Math.floor((py - this.oy) / this.tile);
-    if (r < 0 || c < 0 || r >= this.rows || c >= this.cols) return;
-    const dist = Math.abs(r - this.pr) + Math.abs(c - this.pc);
-    if (dist === 0) return;
-    if (dist === 1) {
-      const d = (Object.keys(DIRS) as Dir[]).find((k) => DIRS[k][0] === r - this.pr && DIRS[k][1] === c - this.pc)!;
-      this.tryStep(d);
-      return;
-    }
-    const path = this.findPath(r, c);
-    if (path && path.length) { this.queue = path.slice(1, 40); this.tryStep(path[0]); }
-  }
-
-  private findPath(tr: number, tc: number): Dir[] | null {
-    const start = this.k(this.pr, this.pc), goal = this.k(tr, tc);
-    if (this.walls.has(goal) || this.boxes.has(goal)) return null;
-    const prev = new Map<string, [string, Dir]>();
-    const q = [start];
-    const seen = new Set([start]);
-    while (q.length) {
-      const cur = q.shift()!;
-      if (cur === goal) break;
-      const [r, c] = cur.split(',').map(Number);
-      for (const d of Object.keys(DIRS) as Dir[]) {
-        const nr = r + DIRS[d][0], nc = c + DIRS[d][1], nk = this.k(nr, nc);
-        if (seen.has(nk) || this.walls.has(nk) || this.boxes.has(nk) || nr < 0 || nc < 0 || nr >= this.rows || nc >= this.cols) continue;
-        seen.add(nk); prev.set(nk, [cur, d]); q.push(nk);
-      }
-    }
-    if (!prev.has(goal)) return null;
-    const path: Dir[] = [];
-    let cur = goal;
-    while (cur !== start) { const [p, d] = prev.get(cur)!; path.unshift(d); cur = p; }
-    return path;
-  }
-
   private checkWin(): boolean {
     for (const key of this.boxes.keys()) if (!this.goals.has(key)) return false;
     this.won = true;
@@ -325,7 +271,15 @@ export class PlayScene extends ArcadeScene {
     return true;
   }
 
-  updateGame(): void {
+  updateGame(_time: number, delta: number): void {
+    // stick: a fresh push steps at once (dropping older queued steps, like a key press);
+    // a held repeat only steps when the last one has finished, so a push never overshoots
+    this.stick.update(delta);
+    const st = this.stick.step;
+    if (st && !this.isOver) {
+      if (this.stick.pressed) { this.queue = []; this.tryStep(st); }
+      else if (!this.moving && !this.queue.length) this.tryStep(st);
+    }
     // idle bob for the player
     if (!this.moving && this.player?.active) this.player.setScale(this.player.scaleX, this.player.scaleX * (1 + Math.sin(this.elapsed * 6) * 0.02));
   }

@@ -117,14 +117,12 @@ export class PlayScene extends ArcadeScene {
   private zoneT = 0;
   private spiderCd = 5;
   private dead = false;
-  private dragX: number | null = null;
-  private dragY: number | null = null;
 
   createGame(): void {
     makeTextures(this);
     this.boltOn = false; this.fireCd = 0; this.chains = []; this.spider = null; this.flea = null;
     this.wave = 1; this.lives = 3; this.nextLife = 6000; this.acc = 0; this.zoneT = 0; this.spiderCd = 6;
-    this.dead = false; this.dragX = this.dragY = null;
+    this.dead = false;
     this.add.tileSprite(0, ROW0 * CELL, W, (MAXR + 1 - ROW0) * CELL, 'gridbg').setOrigin(0);
     this.add.rectangle(0, ZONE * CELL, W, (MAXR + 1 - ZONE) * CELL, 0x3ee6ff, 0.05).setOrigin(0);
     this.add.rectangle(0, ZONE * CELL, W, 2, 0x3ee6ff, 0.25).setOrigin(0);
@@ -140,14 +138,8 @@ export class PlayScene extends ArcadeScene {
 
     this.player = this.add.image(W / 2, cy(MAXR - 1), 'shooter').setDepth(20).setScale(1.3);
     this.bolt = this.add.image(0, 0, 'bolt').setDepth(19).setVisible(false);
-    this.controls = new Controls(this);
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { this.dragX = p.x; this.dragY = p.y; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!p.isDown || this.dragX === null || this.dragY === null || this.dead) return;
-      this.movePlayer((p.x - this.dragX) * 1.25, (p.y - this.dragY) * 1.25);
-      this.dragX = p.x; this.dragY = p.y;
-    });
-    this.input.on('pointerup', () => { this.dragX = this.dragY = null; });
+    // touch: floating stick anywhere on the screen (auto-fire, so no buttons)
+    this.controls = new Controls(this, { joystick: true });
     this.startWave(true);
   }
 
@@ -384,7 +376,7 @@ export class PlayScene extends ArcadeScene {
 
     // --- player
     const c = this.controls;
-    if (c.axisX || c.axisY) this.movePlayer(c.axisX * 520 * dt, c.axisY * 520 * dt);
+    if (c.axisX || c.axisY) this.movePlayer(c.axisX * 560 * dt, c.axisY * 560 * dt);
 
     // --- auto fire, one bolt at a time (classic)
     this.fireCd -= dt;

@@ -50,14 +50,13 @@ export class PlayScene extends ArcadeScene {
   private magnet = 0;
   private hurtT = 0;
   private walkT = 0;
-  private targetX: number | null = null;
   private rainT = 0;
 
   createGame(): void {
     const { width, height } = this.scale;
     this.items = []; this.hearts = [];
     this.lives = MAX_LIVES; this.level = 1; this.catches = 0; this.combo = 0;
-    this.spawnCd = 1; this.magnet = 0; this.hurtT = 0; this.walkT = 0; this.targetX = null; this.rainT = 0;
+    this.spawnCd = 1; this.magnet = 0; this.hurtT = 0; this.walkT = 0; this.rainT = 0;
 
     this.add.image(width / 2, GROUND_Y + 30 - 640, 'cc-bg').setDisplaySize(1280, 1280).setDepth(-10);
     for (let x = 48; x < width + 96; x += 96) this.add.image(x, GROUND_Y + 48, 'cc-grass').setScale(0.75).setDepth(-5);
@@ -86,13 +85,10 @@ export class PlayScene extends ArcadeScene {
 
     for (let i = 0; i < MAX_LIVES; i++) this.hearts.push(this.add.image(44 + i * 50, 92, 'cc-heart').setScale(0.36).setScrollFactor(0).setDepth(9000));
     this.comboText = txt(this, width - 130, 92, '', { title: true, size: 26, color: '#ffd23f' }).setOrigin(1, 0.5).setDepth(9000);
-    this.hint = txt(this, width / 2, height * 0.62, t('dragHint'), { size: 40 }).setDepth(50);
+    // touch: floating joystick anywhere on the screen, read as axisX
+    this.controls = new Controls(this, { joystick: true });
+    this.hint = txt(this, width / 2, height * 0.62, t(this.controls.touchUi ? 'stickHint' : 'keysHint'), { size: 40 }).setDepth(50);
     this.tweens.add({ targets: this.hint, alpha: 0, delay: 1800, duration: 600 });
-
-    this.controls = new Controls(this);
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (!(p.x > width - 130 && p.y < 130)) this.targetX = p.x; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (p.isDown && this.targetX !== null) this.targetX = p.x; });
-    this.input.on('pointerup', () => { this.targetX = null; });
 
     this.updateHud();
   }
@@ -160,13 +156,9 @@ export class PlayScene extends ArcadeScene {
     this.hurtT = Math.max(0, this.hurtT - dt);
     this.magnet = Math.max(0, this.magnet - dt);
 
-    // movement: keyboard axis, or follow the finger
-    let vx = this.controls.axisX * 820;
-    if (this.targetX !== null) {
-      const d = this.targetX - this.player.x;
-      vx = Phaser.Math.Clamp(d * 14, -1150, 1150);
-      if (Math.abs(d) < 4) vx = 0;
-    }
+    // movement: keyboard or joystick axis; a half push already runs fast, a full push sprints
+    const ax = this.controls.axisX;
+    const vx = Math.sign(ax) * Math.pow(Math.abs(ax), 0.7) * 820;
     this.player.x = Phaser.Math.Clamp(this.player.x + vx * dt, 70, width - 70);
     if (this.hurtT > 0) this.player.setTexture('cc-hero-hit');
     else if (Math.abs(vx) > 30) {

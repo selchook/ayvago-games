@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import {
-  ArcadeScene, CHARACTER_FRAME, burst, shake, flash, txt, t, rng, net, loadCharacter, otherCharacters, playerCharacter, peerCharacter,
+  ArcadeScene, CHARACTER_FRAME, Controls, burst, shake, flash, txt, t, rng, net, loadCharacter, otherCharacters, playerCharacter, peerCharacter,
   characterRig, type CharacterId,
 } from '@core';
 import {
@@ -60,7 +60,8 @@ export class PlayScene extends ArcadeScene {
   // input
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private touchUi = false;
-  private touchBtns: Array<{ id: string; x: number; y: number; r: number; g: Phaser.GameObjects.Arc }> = [];
+  /** Standard touch controls (stick + A jump + B kick); only read on touch screens. */
+  private controls?: Controls;
   private kickPresses = 0;
   private kickWas = false;
   private kickQueued = false;
@@ -116,7 +117,7 @@ export class PlayScene extends ArcadeScene {
     this.sendT = 0; this.remote = { x: 0, u: 0, k: 0, q: -1 }; this.remoteKicks = 0; this.remoteAt = 0; this.snaps = []; this.offset = Number.NaN;
     this.pred = newPlayer(1); this.predHist = []; this.predFix = { x: 0, y: 0 }; this.sentIn = { x: 0, u: 0, k: 0, q: -1 }; this.sentLog = []; this.jumpLatch = false;
     this.lastEv = []; this.lastGoals = 0; this.walkT = [0, 0]; this.lastTick = -1;
-    this.sprites = []; this.shadows = []; this.touchBtns = [];
+    this.sprites = []; this.shadows = []; this.controls = undefined;
 
     drawPitch(this);
     for (let i = 0; i < 2; i++) {
@@ -164,19 +165,15 @@ export class PlayScene extends ArcadeScene {
     this.touchUi = this.sys.game.device.input.touch || new URLSearchParams(location.search).has('touch');
     if (!this.touchUi) return;
     this.input.addPointer(3);
-    const mk = (id: string, x: number, y: number, r: number, color: number, draw: (g: Phaser.GameObjects.Graphics) => void) => {
-      const g = this.add.circle(x, y, r, color, 0.28).setStrokeStyle(5, 0xffffff, 0.55).setDepth(9500);
-      const ic = this.add.graphics().setDepth(9501);
-      ic.fillStyle(0xffffff, 0.85);
-      draw(ic);
-      this.touchBtns.push({ id, x, y, r, g });
-    };
-    mk('left', 84, 664, 56, 0x3ee6ff, (g) => g.fillTriangle(60, 664, 100, 640, 100, 688));
-    mk('right', 218, 664, 56, 0x3ee6ff, (g) => g.fillTriangle(242, 664, 202, 640, 202, 688));
-    mk('jump', 1062, 664, 56, 0x5dff7a, (g) => g.fillTriangle(1062, 638, 1036, 684, 1088, 684));
-    mk('kick', 1196, 640, 66, 0xec3013, () => undefined);
-    // the icon is your own character in its kick pose
-    this.add.image(1192, 640, 'p1-kick').setOrigin(0.5, 0.52).setScale(0.68).setDepth(9501).setAlpha(0.95);
+    // the standard controls: a floating stick on the left half (run, push up to jump),
+    // A jumps and B kicks on the right
+    // A and B sit side by side on the strip below the grass line, clear of the right goal mouth
+    // (x > W - GOAL_W, y 418..640) and the HUD: B (kick, the busiest) next to the goal.
+    const spots: Record<'A' | 'B', [number, number]> = { A: [W - GOAL_W - 214, 662], B: [W - GOAL_W - 72, 662] };
+    this.controls = new Controls(this, { joystick: true, buttons: ['A', 'B'], forceTouchUi: true, buttonPos: spots, buttonScale: 0.85 });
+    // your own character in its kick pose marks the kick button
+    const [kx, ky] = spots.B;
+    this.add.image(kx - 2, ky - 4, 'p1-kick').setOrigin(0.5, 0.52).setScale(0.5).setDepth(9499).setAlpha(0.55);
   }
 
   private setFoot(i: 0 | 1, id: CharacterId): void {
@@ -193,17 +190,13 @@ export class PlayScene extends ArcadeScene {
     this.jumpQueued = false;
     if (down('left') || down('a')) x -= 1;
     if (down('right') || down('d')) x += 1;
-    if (this.touchUi) {
-      const held = new Set<string>();
-      for (const p of this.input.manager.pointers) {
-        if (!p.isDown) continue;
-        for (const b of this.touchBtns) if (Math.hypot(p.x - b.x, p.y - b.y) < b.r + 26) held.add(b.id);
-      }
-      for (const b of this.touchBtns) b.g.setFillStyle(b.g.fillColor, held.has(b.id) ? 0.6 : 0.28);
-      if (held.has('left')) x -= 1;
-      if (held.has('right')) x += 1;
-      if (held.has('jump')) jump = true;
-      if (held.has('kick')) kick = true;
+    const c = this.controls;
+    if (this.touchUi && c) {
+      // analog run (a small push walks), quantised so the online input only changes in steps
+      const mag = Phaser.Math.Clamp((Math.abs(c.axisX) - 0.15) / 0.5, 0, 1);
+      if (mag > 0) x = Math.sign(c.axisX) * Math.round(mag * 4) / 4;
+      if (c.a || c.axisY < -0.55) jump = true;
+      if (c.b) kick = true;
     }
     const press = (kick && !this.kickWas) || tapped;
     this.kickWas = kick;

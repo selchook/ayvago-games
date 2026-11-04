@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, COLORS, burst, shake, t, rng } from '@core';
+import { ArcadeScene, Button, COLORS, Controls, burst, shake, t, rng, StickDir, type Dir4 } from '@core';
 import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Grid: 11 x 15 tiles of 8 px art scaled x8 = 64 px
@@ -68,6 +68,10 @@ export class PlayScene extends ArcadeScene {
   private turn = 0;
   private holdDir: string | null = null;
   private holdT = 0;
+  private controls!: Controls;
+  private stick!: StickDir;
+  private stickWant: Dir4 | null = null;   // a stick step waiting for the current turn to finish
+  private stickWantAt = 0;
 
   createGame(): void {
     freshTextCanvases(this);
@@ -75,6 +79,7 @@ export class PlayScene extends ArcadeScene {
     this.grid = []; this.seen = []; this.vis = []; this.tiles = []; this.items = []; this.monsters = [];
     this.hp = 16; this.maxHp = 16; this.atk = 3; this.def = 0; this.potions = 2; this.floor = 1; this.xp = 0; this.lvl = 1;
     this.busyUntil = 0; this.bossAlive = false; this.dead = false; this.turn = 0; this.holdDir = null; this.holdT = 0;
+    this.stickWant = null; this.stickWantAt = 0;
 
     this.add.rectangle(OX - 6, OY - 6, COLS * TS + 12, ROWS * TS + 12, 0x000000).setOrigin(0).setStrokeStyle(4, 0x3a3450);
     for (let r = 0; r < ROWS; r++) {
@@ -108,15 +113,10 @@ export class PlayScene extends ArcadeScene {
     kb.on('keydown-X', () => this.act('potion'));
     kb.on('keydown-Q', () => this.act('potion'));
 
-    // touch: tap a spot on the map to step towards it
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (p.y < OY || p.y > OY + ROWS * TS) return;
-      const c = Math.floor((p.x - OX) / TS), r = Math.floor((p.y - OY) / TS);
-      const dx = c - this.pc, dy = r - this.pr;
-      if (dx === 0 && dy === 0) { this.act('wait'); return; }
-      if (Math.abs(dx) >= Math.abs(dy)) this.act(dx < 0 ? 'left' : 'right');
-      else this.act(dy < 0 ? 'up' : 'down');
-    });
+    // touch: the standard floating stick, anywhere on the screen. A push steps one tile and
+    // holding it keeps walking at the same pace as a held key; WAIT and POTION stay as buttons.
+    this.controls = new Controls(this, { joystick: true });
+    this.stick = new StickDir(this.controls, 280, 160);
 
     this.buildFloor();
   }
@@ -591,6 +591,15 @@ export class PlayScene extends ArcadeScene {
   }
 
   updateGame(_time: number, delta: number): void {
+    // stick: a step that lands during a monster turn waits for it (briefly) instead of being lost
+    this.stick.update(delta);
+    if (this.stick.step) { this.stickWant = this.stick.step; this.stickWantAt = this.time.now; }
+    if (this.stickWant && this.time.now - this.stickWantAt > 300) this.stickWant = null;
+    if (this.stickWant && !this.dead && this.time.now >= this.busyUntil) {
+      const d = this.stickWant;
+      this.stickWant = null;
+      this.act(d);
+    }
     // held direction keys repeat steps
     if (this.holdDir) {
       this.holdT -= delta / 1000;

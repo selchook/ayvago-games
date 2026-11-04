@@ -19,7 +19,6 @@ launch({
     l.image('sk-up', kenney(`${SK}player/player_02.png`));
     l.image('sk-right', kenney(`${SK}player/player_11.png`));
     l.image('sk-left', kenney(`${SK}player/player_14.png`));
-    l.image('sk-arrow', kenney('game-icons/png/white/1x/arrowup.png'));
     l.image('sk-restart', kenney('game-icons/png/white/1x/previous.png'));
     const J = 'oga/junkala-sfx/';
     loadAudio(l, 'step1', J + 'movement/footsteps/sfx-movement-footsteps1a');

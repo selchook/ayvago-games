@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, loc, t, txt, rng, StickDir, type Dir4 } from '@core';
 
 const W = 720, COLS = 11, COL = W / COLS, ROW = 72, TOP = 104;
 const HOME_ROW = 0, MEDIAN = 6, START = 12;
@@ -11,6 +11,7 @@ type Kind = 'log' | 'hippo' | 'car' | 'car2' | 'truck' | 'moto';
 interface Lane { row: number; kind: Kind; speed: number; size: number; gapMin: number; gapMax: number; objs: Obj[]; nextGap: number }
 interface Obj { x: number; w: number; view: Phaser.GameObjects.Container; dive: number; under: boolean }
 type Dir = { x: number; y: number };
+const STICK_DIR: Record<Dir4, Dir> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 
 const COLORS_CAR = ['black', 'blue', 'green', 'red', 'yellow'];
 
@@ -33,7 +34,8 @@ export class PlayScene extends ArcadeScene {
   private timeMax = 40;
   private timerBar!: Phaser.GameObjects.Rectangle;
   private water!: Phaser.GameObjects.TileSprite;
-  private swipe: { x: number; y: number; t: number } | null = null;
+  private controls!: Controls;
+  private stick!: StickDir;
   private queued: Dir | null = null;
   private lastTick = 0;
   private lifeIcons: Phaser.GameObjects.Image[] = [];
@@ -41,13 +43,12 @@ export class PlayScene extends ArcadeScene {
   createGame(): void {
     this.lanes = []; this.homes = [false, false, false, false, false]; this.homeImgs = [];
     this.lives = 3; this.level = 1; this.alive = true; this.hopping = false; this.chick = null; this.chickBay = -1; this.chickT = 6;
-    this.swipe = null; this.queued = null; this.lastTick = 0;
+    this.queued = null; this.lastTick = 0;
     this.lifeIcons = [];
     for (let i = 0; i < 3; i++) this.lifeIcons.push(this.add.image(40 + i * 44, 78, 'frog').setScale(0.26).setDepth(9000));
     this.makeTextures();
     this.drawBoard();
     this.frog = this.add.image(0, 0, 'frog').setScale(0.42).setDepth(20);
-    this.buildButtons();
     this.bindInput();
     this.setupLanes(true);
     this.respawn();
@@ -114,22 +115,6 @@ export class PlayScene extends ArcadeScene {
     this.timerBar = this.add.rectangle(22, TOP + 13 * ROW + 16, W - 44, 12, 0x5dff7a).setOrigin(0, 0.5).setDepth(31);
   }
 
-  private buildButtons(): void {
-    const y = 1192, w = 158, h = 132, gap = 12;
-    const dirs: Array<[Dir, number]> = [[{ x: -1, y: 0 }, 180], [{ x: 0, y: -1 }, -90], [{ x: 0, y: 1 }, 90], [{ x: 1, y: 0 }, 0]];
-    const x0 = (W - (4 * w + 3 * gap)) / 2 + w / 2;
-    dirs.forEach(([d, ang], i) => {
-      const x = x0 + i * (w + gap);
-      const main = d.y === -1;
-      const col = main ? 0x5dff7a : 0x3ee6ff;
-      const bg = this.add.rectangle(x, y, w, h, col, 0.18).setStrokeStyle(4, col, 0.85).setInteractive().setDepth(30);
-      const ar = this.add.triangle(x, y, 0, -26, 0, 26, 36, 0, 0xffffff, 0.9).setAngle(ang).setDepth(31);
-      bg.on('pointerdown', () => { this.tryHop(d); bg.setFillStyle(col, 0.5); this.tweens.add({ targets: ar, scale: 0.8, duration: 60, yoyo: true }); });
-      const up = () => bg.setFillStyle(col, 0.18);
-      bg.on('pointerup', up); bg.on('pointerout', up);
-    });
-  }
-
   private bindInput(): void {
     const kb = this.input.keyboard;
     const map: Record<string, Dir> = {
@@ -137,18 +122,14 @@ export class PlayScene extends ArcadeScene {
       W: { x: 0, y: -1 }, S: { x: 0, y: 1 }, A: { x: -1, y: 0 }, D: { x: 1, y: 0 }, SPACE: { x: 0, y: -1 },
     };
     for (const [k, d] of Object.entries(map)) kb?.on(`keydown-${k}`, () => this.tryHop(d));
-    const fieldBottom = TOP + 13 * ROW + 30;
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      this.swipe = p.y < fieldBottom && !(p.x > W - 130 && p.y < 120) ? { x: p.x, y: p.y, t: this.time.now } : null;
-    });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      const s = this.swipe;
-      this.swipe = null;
-      if (!s) return;
-      const dx = p.x - s.x, dy = p.y - s.y;
-      if (Math.hypot(dx, dy) < 30) this.tryHop({ x: 0, y: -1 });
-      else this.tryHop(Math.abs(dx) > Math.abs(dy) ? { x: Math.sign(dx), y: 0 } : { x: 0, y: Math.sign(dy) });
-    });
+    // touch: the standard floating stick, anywhere on the screen. A push hops one cell and
+    // holding it keeps hopping at a steady pace (a hop still in the air queues the next one).
+    this.controls = new Controls(this, { joystick: true });
+    this.stick = new StickDir(this.controls, 250, 190);
+    if (this.controls.touchUi) {
+      txt(this, W / 2, 1175, loc({ tr: 'Ekrana bas ve sürükle: zıpla', en: 'Touch and drag to hop' }), { size: 28, color: '#d8f5c9' })
+        .setAlpha(0.75).setDepth(30);
+    }
   }
 
   // ---------- lanes ----------
@@ -261,6 +242,7 @@ export class PlayScene extends ArcadeScene {
   private respawn(): void {
     this.fx = colX(5); this.fr = START; this.furthest = START;
     this.alive = true; this.hopping = false; this.queued = null;
+    this.stick.latch();   // a thumb still held from the last life must let go before hopping again
     this.timeMax = Math.max(24, 40 - (this.level - 1) * 2);
     this.timeLeft = this.timeMax;
     this.frog.setPosition(this.fx, rowY(this.fr)).setAngle(0).setAlpha(1).setVisible(true).setScale(0);
@@ -412,6 +394,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   updateGame(_time: number, delta: number): void {
+    this.stick.update(delta);
+    if (this.stick.step) this.tryHop(STICK_DIR[this.stick.step]);
     const dt = delta / 1000;
     this.water.tilePositionX -= dt * 20;
     this.water.tilePositionY = Math.sin(this.elapsed * 1.5) * 4;
