@@ -26,12 +26,12 @@ launch({
   menuDecor(scene) {
     makeSumoTextures(scene);
     const { width, height } = scene.scale;
-    const cy = height * 0.86;
+    const cy = height * 0.855;
     const g = scene.add.graphics();
-    g.fillStyle(0xe6cf9a).fillCircle(width / 2, cy, 120);
-    g.lineStyle(12, 0xcdb060).strokeCircle(width / 2, cy, 124);
-    const a = scene.add.image(width / 2 - 50, cy, 'sm-red').setDisplaySize(110, 110);
-    const b = scene.add.image(width / 2 + 50, cy, 'sm-blue').setDisplaySize(110, 110).setRotation(Math.PI);
+    g.fillStyle(0xe6cf9a).fillCircle(width / 2, cy, 86);
+    g.lineStyle(10, 0xcdb060).strokeCircle(width / 2, cy, 90);
+    const a = scene.add.image(width / 2 - 38, cy, 'sm-red').setDisplaySize(84, 84);
+    const b = scene.add.image(width / 2 + 38, cy, 'sm-blue').setDisplaySize(84, 84).setRotation(Math.PI);
     scene.tweens.add({ targets: a, x: a.x + 14, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     scene.tweens.add({ targets: b, x: b.x + 14, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   },

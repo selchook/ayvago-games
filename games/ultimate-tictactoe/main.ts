@@ -26,7 +26,7 @@ launch({
   menuDecor(scene) {
     makeMarkTextures(scene);
     const { width, height } = scene.scale;
-    const cx = width / 2, cy = height * 0.86, s = 62, gap = 8;
+    const cx = width / 2, cy = height * 0.855, s = 52, gap = 6;
     const g = scene.add.graphics();
     for (let b = 0; b < 9; b++) {
       const x = cx + ((b % 3) - 1) * (s + gap) - s / 2, y = cy + (Math.floor(b / 3) - 1) * (s + gap) - s / 2;
@@ -37,7 +37,7 @@ launch({
     }
     [0, 4, 8].forEach((b, k) => {
       const x = cx + ((b % 3) - 1) * (s + gap), y = cy + (Math.floor(b / 3) - 1) * (s + gap);
-      const m = scene.add.image(x, y, k === 1 ? 'ut-o' : 'ut-x').setDisplaySize(52, 52);
+      const m = scene.add.image(x, y, k === 1 ? 'ut-o' : 'ut-x').setDisplaySize(44, 44);
       scene.tweens.add({ targets: m, scale: m.scale * 1.15, duration: 520, delay: k * 160, yoyo: true, repeat: -1 });
     });
   },
@@ -46,14 +46,14 @@ launch({
     tr: {
       aiTurn: 'RAKİP DÜŞÜNÜYOR', cpu: 'RAKİP', anywhere: 'İSTEDİĞİN YERE',
       roundWin: 'KAZANDIN!', roundLose: 'KAYBETTİN', roundDraw: 'BERABERE',
-      rival: 'Rakip: {name}', lv: 'Seviye {n}', streak: 'Seri: {n}', boards: '{n} tahta',
+      rival: 'Rakip: {name}', lv: 'Seviye {n}', streak: 'Seri: {n}', boards: 'Tahta: {n}',
       keysHint: 'Oklar: seç · Boşluk: oyna · Fare: tıkla', touchHint: 'Parlayan tahtada bir kareye dokun',
       d0: 'Acemi', d1: 'Çırak', d2: 'Usta', d3: 'Zorlu', d4: 'Uzman', d5: 'Büyükusta',
     },
     en: {
       aiTurn: 'AI THINKING', cpu: 'CPU', anywhere: 'PLAY ANYWHERE',
       roundWin: 'YOU WIN!', roundLose: 'YOU LOSE', roundDraw: 'DRAW',
-      rival: 'Rival: {name}', lv: 'Level {n}', streak: 'Streak: {n}', boards: '{n} boards',
+      rival: 'Rival: {name}', lv: 'Level {n}', streak: 'Streak: {n}', boards: 'Boards: {n}',
       keysHint: 'Arrows: aim · Space: play · Mouse: click', touchHint: 'Tap a square on a glowing board',
       d0: 'Rookie', d1: 'Apprentice', d2: 'Adept', d3: 'Tough', d4: 'Expert', d5: 'Grandmaster',
     },

@@ -25,16 +25,16 @@ launch({
   menuDecor(scene) {
     makeMorrisTextures(scene);
     const { width, height } = scene.scale;
-    const cx = width / 2, cy = height * 0.86, u = 30;
+    const cx = width / 2, cy = height * 0.857, u = 22;
     const g = scene.add.graphics();
-    g.fillStyle(0xc8924e).fillRoundedRect(cx - 3 * u - 22, cy - 3 * u - 22, 6 * u + 44, 6 * u + 44, 12);
+    g.fillStyle(0xc8924e).fillRoundedRect(cx - 3 * u - 18, cy - 3 * u - 18, 6 * u + 36, 6 * u + 36, 10);
     g.lineStyle(4, 0x4a2c10);
     for (const k of [3, 2, 1]) g.strokeRect(cx - k * u, cy - k * u, 2 * k * u, 2 * k * u);
     g.lineBetween(cx, cy - 3 * u, cx, cy - u).lineBetween(cx, cy + u, cx, cy + 3 * u);
     g.lineBetween(cx - 3 * u, cy, cx - u, cy).lineBetween(cx + u, cy, cx + 3 * u, cy);
     const spots: Array<[number, number, string]> = [[-3, -3, 'mm-1'], [0, -3, 'mm-1'], [3, -3, 'mm-1'], [-1, 1, 'mm-2'], [1, 1, 'mm-2'], [3, 0, 'mm-2']];
     spots.forEach(([x, y, key], k) => {
-      const s = scene.add.image(cx + x * u, cy + y * u, key).setDisplaySize(36, 36);
+      const s = scene.add.image(cx + x * u, cy + y * u, key).setDisplaySize(28, 28);
       scene.tweens.add({ targets: s, scale: s.scale * 1.15, duration: 520, delay: k * 120, yoyo: true, repeat: -1 });
     });
   },

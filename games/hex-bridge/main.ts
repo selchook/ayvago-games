@@ -25,21 +25,21 @@ launch({
     makeHexTextures(scene);
     const { width, height } = scene.scale;
     const g = scene.add.graphics();
-    const s = 26, cx = width / 2, cy = height * 0.86;
+    const s = 20, cx = width / 2, cy = height * 0.855;
     const hex = (x: number, y: number) => {
       const pts: Phaser.Math.Vector2[] = [];
       for (let k = 0; k < 6; k++) pts.push(new Phaser.Math.Vector2(x + s * Math.cos((k * Math.PI) / 3), y + s * Math.sin((k * Math.PI) / 3)));
       return pts;
     };
     const cells: Array<[number, number, string | null]> = [];
-    for (let r = -3; r <= 3; r++) for (let c = -1; c <= 1; c++) {
+    for (let r = -2; r <= 2; r++) for (let c = -1; c <= 1; c++) {
       const x = cx + r * 1.5 * s, y = cy + (c + r / 2) * Math.sqrt(3) * s - 0;
       cells.push([x, y, (r + c) % 3 === 0 ? 'hx-red' : (r - c) % 4 === 1 ? 'hx-blue' : null]);
     }
     for (const [x, y] of cells) { g.fillStyle(0x2c3a60).fillPoints(hex(x, y), true); g.lineStyle(2, 0x5a6a9a).strokePoints(hex(x, y), true, true); }
     cells.forEach(([x, y, key], k) => {
       if (!key) return;
-      const st = scene.add.image(x, y, key).setDisplaySize(36, 36);
+      const st = scene.add.image(x, y, key).setDisplaySize(28, 28);
       scene.tweens.add({ targets: st, scale: st.scale * 1.15, duration: 500, delay: k * 90, yoyo: true, repeat: -1 });
     });
   },

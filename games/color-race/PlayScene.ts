@@ -63,6 +63,7 @@ export class PlayScene extends ArcadeScene {
   // solo ghost brain
   private ghStage = 0;
   private ghWait = 0;
+  private ghCareless = false;
   private ghRespawn = 0;
   // online
   private online = false;
@@ -250,7 +251,7 @@ export class PlayScene extends ArcadeScene {
     this.me = this.newRunner();
     this.gh = this.newRunner();
     this.skill = Math.min(0.95, 0.3 + (this.round - 1) * 0.12);
-    this.ghStage = 0; this.ghWait = 0.6; this.ghRespawn = 0;
+    this.enterStage(0); this.ghWait = 0.6; this.ghRespawn = 0;
     this.raceT = 0; this.going = false; this.ended = false; this.clock = 0;
     this.ball.setPosition(CX, START_Y).setFillStyle(this.me.col).setVisible(true).setAlpha(1);
     this.trail.particleTint = this.me.col;
@@ -356,7 +357,7 @@ export class PlayScene extends ArcadeScene {
     if (m.fin) return;
     if (m.dead) {
       this.ghRespawn -= dt;
-      if (this.ghRespawn <= 0) { this.respawn(m); m.started = true; this.ghStage = 0; this.ghWait = this.react(); }
+      if (this.ghRespawn <= 0) { this.respawn(m); m.started = true; this.enterStage(0); }
       return;
     }
     m.started = true;
@@ -366,14 +367,12 @@ export class PlayScene extends ArcadeScene {
     else if (this.ghStage === 0) {
       target = next.bottom + 150;
       this.ghWait -= dt;
-      if (this.ghWait <= 0 && m.y > next.bottom + 20 && this.arcOk(next, 90, m.col, (m.y - next.bottom) / 380 + 0.05)) {
-        this.ghStage = 1; this.ghWait = this.react();
-      }
+      if (this.ghWait <= 0 && m.y > next.bottom + 20 && this.arcOk(next, 90, m.col, (m.y - next.bottom) / 330)) this.enterStage(1);
     } else if (this.ghStage === 1) {
       target = next.y;
       this.ghWait -= dt;
       const inner = Math.min(...next.rings.map((r) => r.r));
-      if (m.y < next.y + 70 && this.ghWait <= 0 && this.arcOk(next, 270, m.col, (inner - 20) / 380 + 0.05)) this.ghStage = 2;
+      if (m.y < next.y + 70 && this.ghWait <= 0 && this.arcOk(next, 270, m.col, (inner - 20) / 330)) this.enterStage(2);
     } else { target = next.top - 100; full = true; }
     // hop to hold the target height (small hops while hovering)
     if (m.y > target && m.vy > -60) {
@@ -381,7 +380,7 @@ export class PlayScene extends ArcadeScene {
     }
     const before = m.passed;
     const res = this.stepRunner(m, dt, this.cameras.main.scrollY + this.scale.height + 900);
-    if (m.passed > before) { this.ghStage = 0; this.ghWait = this.react() * 0.5; }
+    if (m.passed > before) this.enterStage(0);
     if (res === 'wrong' || res === 'fell') {
       m.dead = true;
       this.ghRespawn = 0.9;
@@ -389,19 +388,20 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  private react(): number {
-    return 0.1 + (1 - this.skill) * (0.3 + Math.random() * 0.9);
+  private enterStage(n: number): void {
+    this.ghStage = n;
+    this.ghWait = 0.08 + (1 - this.skill) * (0.2 + Math.random() * 0.8);
+    // a careless rival sometimes goes without looking
+    this.ghCareless = Math.random() < 0.16 * (1 - this.skill);
   }
 
   /** Will every ring of g show colour col at world angle ang around `inS` seconds from now? */
   private arcOk(g: Gate, ang: number, col: number, inS: number): boolean {
-    // careless rivals sometimes go without looking
-    if (Math.random() < 0.02 * (1 - this.skill)) return true;
-    const lookAhead = this.skill >= 0.45;
+    if (this.ghCareless) return true;
     for (const r of g.rings) {
       const src = r.mirrorOf ?? r;
       const save = src.g.angle;
-      const times = lookAhead ? [inS - 0.08, inS + 0.12] : [0];
+      const times = [Math.max(0, inS - 0.15), inS, inS + 0.15];
       let ok = true;
       for (const dt of times) {
         src.g.angle = save + src.speed * dt;
