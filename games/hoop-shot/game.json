@@ -1,11 +1,30 @@
 {
   "id": "hoop-shot",
-  "title": { "tr": "Basket Atışı", "en": "Hoop Shot" },
-  "description": { "tr": "Topu fırlat, hareketli potadan geçir! Seri yap, süre kazan, son saniye basketleriyle rekor kır.", "en": "Flick the ball through a moving hoop! Build streaks, earn extra time and sink buzzer beaters for a high score." },
-  "howTo": { "tr": "Yukarı kaydırıp bırak ya da ←→ ile yön, ↑↓ ile güç seç, Boşluk ile at. Her basket süre kazandırır.", "en": "Swipe up and release, or aim with ←→, set power with ↑↓ and shoot with Space. Every basket adds time." },
-  "genres": ["sports", "arcade", "casual"],
+  "title": {
+    "tr": "Basket Atışı",
+    "en": "Hoop Shot"
+  },
+  "description": {
+    "tr": "Beş noktadan üçlük yarışması! Köşeler, kanatlar ve tepe: her rafın son topu çift sayı. Süre dolmadan hedefi tut, bir sonraki tura geç.",
+    "en": "A five-spot three-point contest! Corners, wings and the top of the key: the last ball of every rack counts double. Hit the target before the clock runs out to reach the next round."
+  },
+  "howTo": {
+    "tr": "Basılı tut, güç çubuğu yeşildeyken bırak; nişan için sağa sola kaydır. Klavye: Boşluk basılı tut, ←→ nişan.",
+    "en": "Hold and release when the power bar is in the green; slide left or right to aim. Keys: hold Space, ←→ to aim."
+  },
+  "genres": [
+    "sports",
+    "arcade",
+    "casual"
+  ],
   "orientation": "portrait",
-  "controls": ["touch", "keyboard"],
-  "version": "1.0.0",
-  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
+  "controls": [
+    "touch",
+    "keyboard"
+  ],
+  "version": "1.1.0",
+  "credits": [
+    "Art: drawn in code; audio: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ]
 }
