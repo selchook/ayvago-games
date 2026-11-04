@@ -36,9 +36,10 @@ launch({
       ring.add(scene.add.image(Math.cos(a) * 64, Math.sin(a) * 64, `sym-${i}`).setScale(0.34));
     }
     scene.tweens.add({ targets: ring, angle: 360, duration: 6000, repeat: -1 });
-    [0, 180, 35, 145].forEach((deg, i) => {
+    // dots fly in from the sides (kept clear of the sound and language buttons in the corners)
+    [0, 180, 25, 155].forEach((deg, i) => {
       const a = Phaser.Math.DegToRad(deg);
-      const d = scene.add.circle(cx + Math.cos(a) * 300, cy + Math.sin(a) * 300, 14, PALETTE[i]).setStrokeStyle(3, 0xffffff);
+      const d = scene.add.circle(cx + Math.cos(a) * 270, cy + Math.sin(a) * 270, 14, PALETTE[i]).setStrokeStyle(3, 0xffffff);
       scene.tweens.add({ targets: d, x: cx + Math.cos(a) * 100, y: cy + Math.sin(a) * 100, alpha: { from: 1, to: 0.2 }, duration: 1500, delay: i * 380, repeat: -1, ease: 'Quad.easeIn' });
     });
   },

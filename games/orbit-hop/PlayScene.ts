@@ -63,12 +63,13 @@ export class PlayScene extends ArcadeScene {
   private clock = 0;
   private warnRing = 0;
   private made = 0;
+  private camY = 0;             // where the camera is heading (it eases there after a catch)
 
   createGame(): void {
     this.planets = []; this.comets = []; this.pickups = [];
     this.mode = 'orbit'; this.left = null; this.ang = -Math.PI / 2; this.dir = 1; this.vx = 0; this.vy = 0;
     this.reached = 0; this.stars = 0; this.level = 1; this.started = false; this.cometTimer = 4; this.flyTime = 0;
-    this.clock = 0; this.warnRing = 0; this.made = 0;
+    this.clock = 0; this.warnRing = 0; this.made = 0; this.camY = 0;
     this.cameras.main.setScroll(0, 0);
     this.makeTextures();
 
@@ -300,7 +301,8 @@ export class PlayScene extends ArcadeScene {
       this.sfx('alarm', { volume: 0.35 });
     }
     // camera brings the new planet down
-    this.tweens.add({ targets: this.cameras.main, scrollY: Math.min(this.cameras.main.scrollY, p.y - 860), duration: 700, ease: 'Sine.easeInOut' });
+    this.camY = Math.min(this.camY, p.y - 860);
+    this.tweens.add({ targets: this.cameras.main, scrollY: this.camY, duration: 700, ease: 'Sine.easeInOut' });
     this.drawRing(p);
     if (this.left && this.left !== p) this.drawRing(this.left);
     while (this.made - p.idx < 5) this.addPlanet();
@@ -312,7 +314,13 @@ export class PlayScene extends ArcadeScene {
       q.ring.destroy();
       return false;
     });
-    this.pickups = this.pickups.filter((s) => !s.taken && s.img.y < bottom + 400);
+    this.pickups = this.pickups.filter((s) => {
+      if (s.taken) return false;
+      if (s.img.y < bottom + 400) return true;
+      this.tweens.killTweensOf(s.img);
+      s.img.destroy();
+      return false;
+    });
   }
 
   // ---------- update ----------
@@ -338,7 +346,11 @@ export class PlayScene extends ArcadeScene {
     if (this.mode === 'orbit') {
       const p = this.cur;
       if (p.kind === 'shrink' && this.started) {
-        p.orbit = Math.max(p.r - 4, p.orbit - (16 + this.level * 2.5) * dt);
+        // the orbit closes in a set number of laps (fewer as the levels go up), so the ship always
+        // passes every launch direction before it burns up
+        const lap = (2 * Math.PI * p.orbit0) / (250 + Math.min(150, this.level * 14));
+        const laps = Math.max(1.6, 3.2 - this.level * 0.2);
+        p.orbit = Math.max(p.r - 4, p.orbit - ((p.orbit0 - p.r - 6) / (laps * lap)) * dt);
         this.warnRing += dt;
         if (p.orbit < p.r + 30 && Math.floor(this.warnRing * 6) % 2 === 0) this.ship.setTint(0xff6b5a); else this.ship.clearTint();
       }
@@ -348,21 +360,28 @@ export class PlayScene extends ArcadeScene {
       this.placeOnOrbit();
       if (this.rad <= p.r + 6) { this.die(t('burned')); return; }
     } else {
-      this.flyTime += dt;
-      this.ship.x += this.vx * dt;
-      this.ship.y += this.vy * dt;
       const heading = Math.atan2(this.vy, this.vx);
       this.ship.rotation = heading + Math.PI / 2;
-      this.flame.setPosition(this.ship.x - Math.cos(heading) * 22, this.ship.y - Math.sin(heading) * 22);
-      for (const p of this.planets) {
-        const d = Math.hypot(this.ship.x - p.x, this.ship.y - p.y);
-        if (d < p.r + 6) { this.die(t('crashed')); return; }
-        if (p === this.left && this.flyTime < 0.35) continue;
-        if (d < p.orbit + CAPTURE && d > p.r + 6) { this.capture(p, d); break; }
+      // small steps, so a slow frame never carries the ship across a capture band
+      const n = Math.max(1, Math.ceil((Math.hypot(this.vx, this.vy) * dt) / 10));
+      flight: for (let i = 0; i < n; i++) {
+        this.flyTime += dt / n;
+        this.ship.x += (this.vx * dt) / n;
+        this.ship.y += (this.vy * dt) / n;
+        for (const p of this.planets) {
+          const d = Math.hypot(this.ship.x - p.x, this.ship.y - p.y);
+          if (d < p.r + 6) { this.die(t('crashed')); return; }
+          if (p === this.left && this.flyTime < 0.35) continue;
+          if (d < p.orbit + CAPTURE) { this.capture(p, d); break flight; }
+        }
       }
-      // drifting away
-      const sx = this.ship.x, sy = this.ship.y - cam.scrollY;
-      if (sx < -40 || sx > 760 || sy > 1320 || sy < -160) { this.lost(); return; }
+      if (this.mode === 'fly') {
+        this.flame.setPosition(this.ship.x - Math.cos(heading) * 22, this.ship.y - Math.sin(heading) * 22);
+        // drifting away (measured from where the camera is heading: it may still be catching up)
+        const sx = this.ship.x;
+        const top = this.ship.y - Math.min(cam.scrollY, this.camY), bottom = this.ship.y - Math.max(cam.scrollY, this.camY);
+        if (sx < -40 || sx > 760 || bottom > 1320 || top < -160) { this.lost(); return; }
+      }
     }
 
     // pickups
@@ -395,7 +414,7 @@ export class PlayScene extends ArcadeScene {
       if (c.delay > 0) {
         c.delay -= dt;
         if (c.delay <= 0) {
-          c.warn?.destroy();
+          if (c.warn) { this.tweens.killTweensOf(c.warn); c.warn.destroy(); c.warn = undefined; }
           c.img.setVisible(true);
           c.trail.start();
         }

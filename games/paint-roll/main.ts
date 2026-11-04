@@ -21,8 +21,6 @@ launch({
     loadAudio(l, 'start', J + 'positive-sounds/sfx-sounds-powerup10');
     loadAudio(l, 'clear', J + 'fanfares/sfx-sounds-fanfare1');
     loadAudio(l, 'star', J + 'coins/sfx-coin-single3');
-    loadAudio(l, 'tick', J + 'simple-bleeps/sfx-sounds-blip9');
-    loadAudio(l, 'timeup', J + 'negative-sounds/sfx-sounds-negative2');
   },
   menuDecor(scene) {
     makeSymbols(scene);
@@ -57,12 +55,12 @@ launch({
     tr: {
       chooseLevel: 'BÖLÜM SEÇ', selectHint: 'Bir bölüme dokun ya da oklarla seçip Enter’a bas',
       undo: 'GERİ AL', restart: 'BAŞTAN', levels: 'BÖLÜMLER', par: 'HEDEF',
-      timeUp: 'SÜRE BİTTİ!', allClear: 'HEPSİ BOYANDI!',
+      timeBonus: 'SÜRE BONUSU', set: 'SERİ', setDone: 'SERİ TAMAM!', allClear: 'HEPSİ BOYANDI!',
     },
     en: {
       chooseLevel: 'CHOOSE LEVEL', selectHint: 'Tap a level, or pick one with the arrows and press Enter',
       undo: 'UNDO', restart: 'RESTART', levels: 'LEVELS', par: 'PAR',
-      timeUp: "TIME'S UP!", allClear: 'ALL PAINTED!',
+      timeBonus: 'TIME BONUS', set: 'SET', setDone: 'SET COMPLETE!', allClear: 'ALL PAINTED!',
     },
   },
 });

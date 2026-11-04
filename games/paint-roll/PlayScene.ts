@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, popup, txt, t, storage, COLORS, ensurePixel } from '@core';
+import { ArcadeScene, Button, burst, shake, txt, t, storage, COLORS, ensurePixel } from '@core';
 import { PALETTE, makeSymbols, softFlash, banner } from './symbols';
 import { generate, slide, DIRS, type Level } from './logic';
 
@@ -11,6 +11,13 @@ const BTN_Y = 1185;
 const PER_PAGE = 20;
 const KEY_MAX = 'paint-roll:max';
 const KEY_STARS = 'paint-roll:stars';
+/** A run is a set of this many cleared levels; then the score goes to the leaderboard. */
+const SET_LEN = 5;
+/** Points per second left on the level's bonus clock (the clock never ends the run). */
+const BONUS_PER_SEC = 2;
+const BAR_X = 60;
+const BAR_W = 380;
+const PIP_Y = 1117;
 
 type Phase = 'select' | 'play' | 'clear';
 
@@ -31,7 +38,8 @@ export class PlayScene extends ArcadeScene {
   private queued = -1;
   private timeLeft = 0;
   private timeMax = 1;
-  private lastTick = 0;
+  private cleared = 0;          // levels cleared in this run (set)
+  private gen = 0;              // bumps whenever the board is torn down: stale slide callbacks bail out
   private colour = 0;
   private board!: Phaser.GameObjects.Container;
   private paintRects = new Map<number, Phaser.GameObjects.Container>();
@@ -39,6 +47,8 @@ export class PlayScene extends ArcadeScene {
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
   private info!: Phaser.GameObjects.Text;
   private timerBar!: Phaser.GameObjects.Graphics;
+  private bonusText!: Phaser.GameObjects.Text;
+  private pips!: Phaser.GameObjects.Graphics;
   private ui: Phaser.GameObjects.GameObject[] = [];
   private selectUi: Phaser.GameObjects.GameObject[] = [];
   private page = 0;
@@ -49,7 +59,7 @@ export class PlayScene extends ArcadeScene {
   createGame(): void {
     makeSymbols(this);
     this.phase = 'select'; this.level = 1; this.pos = 0; this.painted = new Set(); this.moves = 0;
-    this.undoStack = []; this.sliding = false; this.queued = -1; this.timeLeft = 0; this.timeMax = 1; this.lastTick = 0;
+    this.undoStack = []; this.sliding = false; this.queued = -1; this.timeLeft = 0; this.timeMax = 1; this.cleared = 0; this.gen++;
     this.paintRects = new Map(); this.ui = []; this.selectUi = []; this.page = 0; this.focusRing = undefined;
     this.down = { x: 0, y: 0, on: false };
 
@@ -57,6 +67,8 @@ export class PlayScene extends ArcadeScene {
     this.board = this.add.container(0, 0).setDepth(5);
     this.info = txt(this, 360, 122, '', { size: 30, color: '#f3f2f2' }).setDepth(50);
     this.timerBar = this.add.graphics().setDepth(50);
+    this.bonusText = txt(this, 660, 169, '', { size: 24, color: '#5dff7a' }).setOrigin(1, 0.5).setDepth(50);
+    this.pips = this.add.graphics().setDepth(50);
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.phase !== 'play' || p.y > BTN_Y - 70 || (p.x > 600 && p.y < 130)) return;
@@ -91,6 +103,8 @@ export class PlayScene extends ArcadeScene {
     this.ui = [];
     this.info.setText('');
     this.timerBar.clear();
+    this.bonusText.setText('');
+    this.pips.clear();
     this.hud.setRight('');
     const max = this.maxLevel();
     this.focus = Math.min(max, this.focus > 1 ? this.focus : max);
@@ -99,6 +113,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private drawSelect(): void {
+    if (this.focusRing) this.tweens.killTweensOf(this.focusRing);
     this.selectUi.forEach((o) => o.destroy());
     this.selectUi = [];
     const max = this.maxLevel();
@@ -108,6 +123,7 @@ export class PlayScene extends ArcadeScene {
     const total = stars.reduce((a, b) => a + (b || 0), 0);
     add(this.add.image(300, 205, 'icon-star').setScale(0.45).setTint(0xffd23f));
     add(txt(this, 330, 205, `${total} / ${LEVELS * 3}`, { size: 28 }).setOrigin(0, 0.5));
+    add(txt(this, 360, 1130, `${t('set')} ${this.cleared} / ${SET_LEN}`, { title: true, size: 18, color: '#ffd23f' }));
     for (let i = 0; i < PER_PAGE; i++) {
       const n = this.page * PER_PAGE + i + 1;
       if (n > LEVELS) break;
@@ -138,7 +154,7 @@ export class PlayScene extends ArcadeScene {
     if (this.page > 0) add(new Button(this, 110, BTN_Y, '<', () => this.flip(-1), { width: 140, height: 90, color: 0x333344 }));
     if (this.page < pages - 1) add(new Button(this, 610, BTN_Y, '>', () => this.flip(1), { width: 140, height: 90, color: 0x333344 }));
     add(txt(this, 360, BTN_Y, `${this.page + 1} / ${pages}`, { title: true, size: 22, color: '#aab0d0' }));
-    add(txt(this, 360, 1090, t('selectHint'), { size: 24, color: '#aab0d0', wrap: 640 }));
+    add(txt(this, 360, 1080, t('selectHint'), { size: 24, color: '#aab0d0', wrap: 640 }));
   }
 
   private placeFocus(): void {
@@ -163,6 +179,7 @@ export class PlayScene extends ArcadeScene {
   // ---------- level ----------
   private startLevel(n: number): void {
     if (this.isOver) return;
+    if (this.focusRing) this.tweens.killTweensOf(this.focusRing);
     this.selectUi.forEach((o) => o.destroy());
     this.selectUi = [];
     this.focusRing = undefined;
@@ -173,6 +190,10 @@ export class PlayScene extends ArcadeScene {
   }
 
   private clearBoard(): void {
+    this.gen++;
+    if (this.ball) this.tweens.killTweensOf(this.ball);
+    this.sliding = false;
+    this.queued = -1;
     this.board.removeAll(true);
     this.paintRects.clear();
     this.ball?.destroy();
@@ -248,10 +269,10 @@ export class PlayScene extends ArcadeScene {
     this.queued = -1;
     this.timeMax = Math.round(20 + lv.floorCount * 0.6 + lv.par * 2.5);
     this.timeLeft = this.timeMax;
-    this.lastTick = 0;
     this.phase = 'play';
     this.buildButtons();
     this.updateInfo();
+    this.drawPips();
     banner(this, 640, `${t('level')} ${this.level}`, '#ffd23f', 40);
   }
 
@@ -260,8 +281,26 @@ export class PlayScene extends ArcadeScene {
     this.ui = [
       new Button(this, 130, BTN_Y, t('undo'), () => this.undo(), { width: 220, height: 92, size: 22, color: 0x2f6fd0 }),
       new Button(this, 360, BTN_Y, t('restart'), () => this.restartLevel(), { width: 210, height: 92, size: 22, color: 0xd98a1a }),
-      new Button(this, 590, BTN_Y, t('levels'), () => this.showSelect(), { width: 220, height: 92, size: 22, color: 0x333344 }),
+      new Button(this, 590, BTN_Y, t('levels'), () => this.toSelect(), { width: 220, height: 92, size: 22, color: 0x333344 }),
     ];
+  }
+
+  /** Back to the level select from a level (the run and its score carry on). */
+  private toSelect(): void {
+    if (this.phase !== 'play' || this.isOver) return;
+    this.showSelect();
+  }
+
+  /** Progress through the set: one paint tile per level cleared in this run. */
+  private drawPips(): void {
+    const g = this.pips;
+    g.clear();
+    const s = 26, gap = 12, x0 = 360 - (SET_LEN * s + (SET_LEN - 1) * gap) / 2;
+    for (let i = 0; i < SET_LEN; i++) {
+      const x = x0 + i * (s + gap);
+      g.fillStyle(i < this.cleared ? PALETTE[i % PALETTE.length] : 0x2c2545, 1).fillRect(x, PIP_Y - s / 2, s, s);
+      g.lineStyle(3, i < this.cleared ? 0xffffff : 0x4a4370, i < this.cleared ? 0.9 : 1).strokeRect(x, PIP_Y - s / 2, s, s);
+    }
   }
 
   private cellXY(i: number): { x: number; y: number } {
@@ -298,7 +337,7 @@ export class PlayScene extends ArcadeScene {
     if (dir !== undefined) this.move(dir);
     else if (e.code === 'KeyZ' || e.code === 'Backspace') this.undo();
     else if (e.code === 'KeyR' || e.code === 'KeyX') this.restartLevel();
-    else if (e.code === 'KeyL') this.showSelect();
+    else if (e.code === 'KeyL') this.toSelect();
   }
 
   private move(d: number): void {
@@ -322,6 +361,7 @@ export class PlayScene extends ArcadeScene {
     this.ball.setScale(dx ? 1.15 : 0.88, dy ? 1.15 : 0.88);
     this.sfx('roll', { volume: 0.35 });
     let k = 0;
+    const gen = this.gen;
     this.tweens.add({
       targets: this.ball, x: to.x, y: to.y, duration: 50 + s.path.length * 42, ease: 'Sine.easeIn',
       onUpdate: () => {
@@ -334,6 +374,7 @@ export class PlayScene extends ArcadeScene {
         }
       },
       onComplete: () => {
+        if (gen !== this.gen) return;
         s.path.forEach((c) => this.paint(c));
         this.pos = s.end;
         this.sliding = false;
@@ -393,7 +434,11 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'clear';
     const par = this.lv.par;
     const stars = this.moves <= par ? 3 : this.moves <= par + Math.max(1, Math.ceil(par * 0.25)) ? 2 : 1;
-    const pts = stars * 100 + this.level * 20 + Math.ceil(this.timeLeft) * 5;
+    const bonus = Math.ceil(this.timeLeft) * BONUS_PER_SEC;
+    const pts = stars * 100 + this.level * 20 + bonus;
+    this.cleared++;
+    this.drawPips();
+    this.bonusText.setText(`${t('timeBonus')} +${bonus}`);
     // save progress
     const all = this.starsOf();
     all[this.level - 1] = Math.max(all[this.level - 1] ?? 0, stars);
@@ -412,7 +457,7 @@ export class PlayScene extends ArcadeScene {
     burst(this, this.ball.x, this.ball.y, [PALETTE[this.colour], 0xffffff, 0xffd23f], 50, 520);
 
     const panel = this.add.container(360, 640).setDepth(60);
-    panel.add(this.add.rectangle(0, 0, 560, 330, 0x0e0d12, 0.88).setStrokeStyle(6, PALETTE[this.colour]));
+    panel.add(this.add.rectangle(0, 0, 600, 380, 0x0e0d12, 0.88).setStrokeStyle(6, PALETTE[this.colour]));
     panel.add(txt(this, 0, -110, t('levelClear'), { title: true, size: 32, color: '#5dff7a' }));
     for (let s = 0; s < 3; s++) {
       const st = this.add.image((s - 1) * 110, -10, 'icon-star').setScale(0).setTint(s < stars ? 0xffd23f : 0x3a3352);
@@ -420,14 +465,18 @@ export class PlayScene extends ArcadeScene {
       this.tweens.add({ targets: st, scale: 1.7, duration: 280, delay: 250 + s * 200, ease: 'Back.easeOut' });
       if (s < stars) this.time.delayedCall(250 + s * 200, () => this.sfx('star', { volume: 0.5, exact: true, rate: 1 + s * 0.12 }));
     }
-    panel.add(txt(this, 0, 90, `${t('moves')} ${this.moves} · ${t('par')} ${par}   +${pts}`, { size: 28, color: '#ffd23f' }));
+    panel.add(txt(this, 0, 86, `${t('moves')} ${this.moves} · ${t('par')} ${par}   +${pts}`, { size: 28, color: '#ffd23f' }));
+    panel.add(txt(this, 0, 134, `${t('timeBonus')} +${bonus}  ·  ${t('set')} ${this.cleared} / ${SET_LEN}`, { size: 24, color: '#aab0d0' }));
     panel.setScale(0.4).setAlpha(0);
     this.tweens.add({ targets: panel, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
 
+    const setDone = this.cleared >= SET_LEN;
     this.time.delayedCall(2100, () => {
       panel.destroy();
       if (this.isOver) return;
+      // the run ends after a set of levels (or the last level): the score goes to the leaderboard
       if (this.level >= LEVELS) { this.endGame({ win: true, title: t('allClear'), delay: 200 }); return; }
+      if (setDone) { this.endGame({ win: true, title: t('setDone'), delay: 200 }); return; }
       this.level++;
       this.focus = this.level;
       this.buildLevel();
@@ -437,24 +486,13 @@ export class PlayScene extends ArcadeScene {
   // ---------- update ----------
   updateGame(_time: number, delta: number): void {
     if (this.phase !== 'play') return;
-    const dt = delta / 1000;
-    this.timeLeft = Math.max(0, this.timeLeft - dt);
+    // the bonus clock only shrinks the time bonus; a calm puzzle never fails on time
+    this.timeLeft = Math.max(0, this.timeLeft - delta / 1000);
     const f = this.timeLeft / this.timeMax;
     const g = this.timerBar;
     g.clear();
-    g.fillStyle(0x000000, 0.5).fillRoundedRect(60, 158, 600, 22, 11);
-    g.fillStyle(this.timeLeft < 10 ? COLORS.red : f < 0.5 ? COLORS.yellow : COLORS.green, 1).fillRoundedRect(62, 160, Math.max(0, 596 * f), 18, 9);
-    if (this.timeLeft < 10 && Math.ceil(this.timeLeft) !== this.lastTick) {
-      this.lastTick = Math.ceil(this.timeLeft);
-      if (this.timeLeft > 0) this.sfx('tick', { volume: 0.4, exact: true });
-    }
-    if (this.timeLeft <= 0) {
-      this.phase = 'clear';
-      this.sfx('timeup', { volume: 0.6 });
-      shake(this, 0.015, 300);
-      softFlash(this, COLORS.red, 160);
-      popup(this, 360, 640, t('timeUp'), '#ec3013', 34);
-      this.endGame({ title: t('timeUp'), delay: 1200 });
-    }
+    g.fillStyle(0x000000, 0.5).fillRoundedRect(BAR_X, 158, BAR_W, 22, 11);
+    if (f > 0) g.fillStyle(f < 0.35 ? COLORS.yellow : COLORS.green, 1).fillRoundedRect(BAR_X + 2, 160, Math.max(18, (BAR_W - 4) * f), 18, 9);
+    this.bonusText.setText(`${t('timeBonus')} +${Math.ceil(this.timeLeft) * BONUS_PER_SEC}`).setColor(f > 0 ? '#5dff7a' : '#6b6488');
   }
 }

@@ -7,6 +7,7 @@ const BAR_H = 34;
 const BALL_R = 26;
 const SEG_W = 112;          // segment width of a moving strip
 const START_Y = 1060;
+const LAND_GRACE = BALL_R * 0.7;   // px either side of the ball centre that still count on landing
 
 type Kind = 'pad' | 'solid' | 'split' | 'strip' | 'fade';
 
@@ -188,6 +189,7 @@ export class PlayScene extends ArcadeScene {
 
   private drawBar(b: Bar): void {
     const g = b.g;
+    if (!g.active) return;      // recycled below the view (its landing tween may still be running)
     g.clear();
     const x0 = b.x - b.w / 2, y = b.y, w = b.w;
     g.fillStyle(0x000000, 0.45).fillRoundedRect(x0 + 4, y + 8, w, BAR_H, 10);
@@ -377,7 +379,11 @@ export class PlayScene extends ArcadeScene {
   private land(b: Bar): void {
     this.flying = false;
     this.ball.angle = 0;
-    const col = this.colourAt(b, this.ball.x);
+    // Forgiving landing: the ball counts as matched when its own colour is anywhere under its
+    // footprint, so a strip edge sliding past the marker at the very moment of landing is not a
+    // coin flip.
+    const x = this.ball.x;
+    const col = [x, x - LAND_GRACE, x + LAND_GRACE].map((px) => this.colourAt(b, px)).includes(this.colour) ? this.colour : this.colourAt(b, x);
     if (col !== this.colour) {
       this.die(b);
       return;

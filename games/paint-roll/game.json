@@ -6,8 +6,8 @@
     "en": "Swipe the paint ball: it slides until it hits a wall and paints every tile it crosses. Paint the whole maze! 60 levels that grow as you go; finish within par for three stars."
   },
   "howTo": {
-    "tr": "Topu kaydırmak için parmağını kaydır ya da ok tuşlarına bas. Z geri alır, R baştan başlatır. Süre bitmeden her kareyi boya.",
-    "en": "Swipe or press the arrow keys to slide the ball. Z undoes, R restarts. Paint every tile before the time runs out."
+    "tr": "Kaydır ya da ok tuşlarına bas, her kareyi boya. Z geri alır, R baştan başlatır. Hızlı bitir, bonus kazan. Skor beş bölümde bir kaydedilir.",
+    "en": "Swipe or use the arrows to paint every tile. Z undoes, R restarts. Finish fast for a bonus; scores save every five levels."
   },
   "genres": ["puzzle", "casual"],
   "orientation": "portrait",
