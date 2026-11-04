@@ -6,8 +6,8 @@
     "tr": "Basket Atışı"
   },
   "description": {
-    "en": "Flick the ball through a moving hoop! Build streaks, earn extra time and sink buzzer beaters for a high score.",
-    "tr": "Topu fırlat, hareketli potadan geçir! Seri yap, süre kazan, son saniye basketleriyle rekor kır."
+    "en": "A five-spot three-point contest! Corners, wings and the top of the key: the last ball of every rack counts double. Hit the target before the clock runs out to reach the next round.",
+    "tr": "Beş noktadan üçlük yarışması! Köşeler, kanatlar ve tepe: her rafın son topu çift sayı. Süre dolmadan hedefi tut, bir sonraki tura geç."
   },
   "category": "sports",
   "categories": [
@@ -54,5 +54,5 @@
     "cover": "/games/hoop-shot/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/hoop-shot/ayvago/screenshot.jpg"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

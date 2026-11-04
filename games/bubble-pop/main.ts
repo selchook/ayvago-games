@@ -1,6 +1,6 @@
 import { launch, loadAudio, kenney, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene, BUBBLE_COLORS } from './PlayScene';
+import { PlayScene, BUBBLE_COLORS, BOARD_BGS } from './PlayScene';
 
 const J = 'oga/junkala-sfx/';
 
@@ -13,6 +13,19 @@ launch({
     // the orange set is numbered one lower than the other colours (34 = outlined circle)
     BUBBLE_COLORS.forEach((c, i) => l.image(`b${i}`, kenney(`puzzle2/png/tiles_${c}/tile${c}_${c === 'orange' ? 34 : 35}.png`)));
     l.image('spark', kenney('puzzle2/png/particles_white/particlewhite_1.png'));
+    // board: one platformer background per level, shooting-gallery wood frame
+    BOARD_BGS.forEach((b, i) => l.image(`bg-${i}`, kenney(`platformer/png/backgrounds/${b}.png`)));
+    l.image('wood', kenney('shooting-gallery/png/stall/bg_wood.png'));
+    l.image('bolt', kenney('space-shooter/png/parts/turretbase_small.png'));
+    // launcher: tower-defense steel mount, tanks barrel, space-shooter turret hub
+    l.image('mount', kenney('tower-defense/png/default_size/towerdefense_tile180.png'));
+    l.image('holder', kenney('tower-defense/png/default_size/towerdefense_tile182.png'));
+    l.image('barrel', kenney('tanks/png/tanks/barrelblue_outline.png'));
+    l.image('hub', kenney('space-shooter/png/parts/turretbase_big.png'));
+    l.image('smoke', kenney('tanks/png/smoke/smokegrey2.png'));
+    l.image('ammo', kenney('shooting-gallery/png/hud/icon_bullet_gold_short.png'));
+    l.image('ammo-empty', kenney('shooting-gallery/png/hud/icon_bullet_empty_short.png'));
+    loadAudio(l, 'cannon', J + 'weapons/cannon/sfx-wpn-cannon2');
     loadAudio(l, 'shoot1', J + 'movement/jumping-and-landing/sfx-movement-jump2');
     loadAudio(l, 'shoot2', J + 'movement/jumping-and-landing/sfx-movement-jump3');
     loadAudio(l, 'bounce', J + 'movement/jumping-and-landing/sfx-movement-jump14-landing');

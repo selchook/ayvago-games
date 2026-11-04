@@ -1,363 +1,642 @@
 import Phaser from 'phaser';
 import { ArcadeScene, burst, shake, flash, popup, t, txt, rng } from '@core';
+import {
+  type V3, type Ball, v3, add, mul, norm, len, dot, launch, stepBall, preview, SPOTS, BALL_R, RIM_Y, RIM_R,
+} from './sim';
+import { Cam, Arena, camFor, camBetween, drawHoop, drawBall, drawShadow, type NetState, type BallLook } from './view';
 
-const G = 2300;          // gravity px/s²
-const R = 31;            // ball radius
-const RW = 64;           // rim half width
-const FLOOR = 1180;
-const START_TIME = 45;
+const RACK = 5;
+const IDEAL = 0.7;             // the meter value of a perfect shot
+const ANGLE = 52;              // release angle in degrees
+const SPIN = 13;               // backspin in rad/s
+const PICKUP_S = 0.32;
+const MOVE_S = 1.05;
+const LIFT_S = 0.35;           // the ball rises from the chest to the set point
 
-/** Side-view hoop: backboard, rim and net. `swing` 0..1 stretches the net after a basket. */
-export function drawHoop(g: Phaser.GameObjects.Graphics, hx: number, hy: number, swing: number, sway: number): void {
-  // pole + arm
-  g.fillStyle(0x55525e).fillRect(hx + RW + 30, hy - 120, 10, 30);
-  // backboard
-  g.fillStyle(0x000000, 0.35).fillRect(hx + RW + 14, hy - 146, 16, 186);
-  g.fillStyle(0xf3f2f2).fillRect(hx + RW + 10, hy - 150, 14, 186);
-  g.fillStyle(0xec3013).fillRect(hx + RW + 10, hy - 70, 14, 50);
-  // net
-  const drop = 78 + swing * 26;
-  const narrow = 26 - swing * 8;
-  g.lineStyle(3, 0xffffff, 0.9);
-  for (let i = 0; i <= 6; i++) {
-    const tx = hx - RW + (i / 6) * RW * 2;
-    const bx = hx - RW + narrow + (i / 6) * (RW - narrow) * 2 + sway;
-    g.lineBetween(tx, hy, bx, hy + drop);
-  }
-  for (let k = 1; k <= 3; k++) {
-    const f = k / 3.4, y = hy + drop * f, inset = narrow * f;
-    g.lineBetween(hx - RW + inset + sway * f, y, hx + RW - inset + sway * f, y);
-  }
-  // rim (side view: a thick orange bar with bright end caps)
-  g.fillStyle(0xd04a00).fillRect(hx - RW - 4, hy - 5, RW * 2 + 18, 10);
-  g.fillStyle(0xff7a1a).fillRect(hx - RW - 4, hy - 5, RW * 2 + 18, 4);
-  g.fillStyle(0xffb066).fillCircle(hx - RW, hy, 7);
+type Phase = 'intro' | 'shoot' | 'move' | 'wait' | 'between';
+
+interface Flying {
+  b: Ball;
+  g: Phaser.GameObjects.Graphics;
+  look: BallLook;
+  spot: number;
+  idx: number;
+  resolved: boolean;
+  fade: number;
+  label: boolean;
 }
 
-interface Rect { x: number; y: number; w: number; h: number }
+/** Difficulty of round n (1-based). */
+function roundRules(n: number) {
+  const k = n - 1;
+  return {
+    time: Math.max(36, 62 - k * 6),
+    need: Math.min(26, 9 + k * 3),
+    meter: Math.max(0.55, 1.0 - k * 0.09),          // seconds from empty to full
+    spread: Math.min(0.22, 0.12 + k * 0.025),       // how much a meter error changes the speed
+    drift: Math.min(2.2, 0.35 + k * 0.45),          // nerves: aim sway in degrees while charging
+  };
+}
 
 export class PlayScene extends ArcadeScene {
-  private ball!: Phaser.GameObjects.Image;
-  private shadow!: Phaser.GameObjects.Ellipse;
-  private hoopG!: Phaser.GameObjects.Graphics;
-  private aimG!: Phaser.GameObjects.Graphics;
+  private cam = new Cam();
+  private arena!: Arena;
+  private bg!: Phaser.GameObjects.Graphics;
+  private bgRT!: Phaser.GameObjects.RenderTexture;
+  private clockShown = '';
+  private shadows!: Phaser.GameObjects.Graphics;
+  private gBoard!: Phaser.GameObjects.Graphics;
+  private gBack!: Phaser.GameObjects.Graphics;
+  private gFront!: Phaser.GameObjects.Graphics;
+  private gHeld!: Phaser.GameObjects.Graphics;
+  private gHint!: Phaser.GameObjects.Graphics;
+  private gMeter!: Phaser.GameObjects.Graphics;
+  private gRack!: Phaser.GameObjects.Graphics;
+  private gBoardHud!: Phaser.GameObjects.Graphics;
   private clockText!: Phaser.GameObjects.Text;
-  private infoText!: Phaser.GameObjects.Text;
-  private bx = 0; private by = 0; private vx = 0; private vy = 0;
-  private flying = false;
-  private ready = false;
-  private flightT = 0;
-  private scoredThisShot = false;
-  private rimTouched = false;
-  private boardTouched = false;
-  private hx = 360; private hy = 420; private hoopT = 0;
-  private netSwing = 0; private netSway = 0;
-  private aimAngle = 0;    // degrees from vertical
-  private aimPower = 0.62; // 0..1
-  private aiming = false;
-  private dragStart: Phaser.Math.Vector2 | null = null;
-  private timeLeft = START_TIME;
-  private lastTick = 0;
-  private baskets = 0;
+  private ptsText!: Phaser.GameObjects.Text;
+  private spotText!: Phaser.GameObjects.Text;
+  private banner!: Phaser.GameObjects.Text;
+  private sub!: Phaser.GameObjects.Text;
+  private hintText!: Phaser.GameObjects.Text;
+  private flying: Flying[] = [];
+  private pool: Phaser.GameObjects.Graphics[] = [];
+  private net: NetState = { stretch: 0, sway: 0, swayZ: 0, bulge: null, t: 0 };
+  private rimGlow = 0;
+  private camDirty = true;
+
+  private phase: Phase = 'intro';
+  private round = 1;
+  private rules = roundRules(1);
+  private spot = 0;
+  private ball = 0;              // next ball of the rack
+  private racks: (boolean | null)[][] = [];
+  private pts = 0;
+  private timeLeft = 60;
+  private lastTick = -1;
   private streak = 0;
-  private level = 1;
+  private moveT = 0;
+  private holding = false;
+  private pickT = 0;
+  private charging = false;
+  private chargeT = 0;
+  private liftT = 0;
+  private power = 0;
+  private aim = 0;
+  private aimStart = 0;
+  private downX = 0;
+  private driftPhase = 0;
+  private driftW = 2.6;
+  private wasGreen = false;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
+  private touchUi = false;
+  private shotsTaken = 0;
 
   createGame(): void {
-    const { width } = this.scale;
-    this.bx = 0; this.by = 0; this.vx = 0; this.vy = 0;
-    this.flying = false; this.ready = false; this.flightT = 0; this.scoredThisShot = false; this.rimTouched = false; this.boardTouched = false;
-    this.hx = width / 2; this.hy = 420; this.hoopT = 0; this.netSwing = 0; this.netSway = 0;
-    this.aimAngle = 0; this.aimPower = 0.4; this.aiming = false; this.dragStart = null;
-    this.timeLeft = START_TIME; this.lastTick = 0; this.baskets = 0; this.streak = 0; this.level = 1;
-    this.textures.get('ball').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.flying = []; this.pool = [];
+    this.net = { stretch: 0, sway: 0, swayZ: 0, bulge: null, t: 0 };
+    this.rimGlow = 0; this.camDirty = true;
+    this.phase = 'intro'; this.round = 1; this.rules = roundRules(1); this.spot = 0; this.ball = 0;
+    this.racks = []; this.pts = 0; this.timeLeft = this.rules.time; this.lastTick = -1; this.streak = 0; this.moveT = 0; this.moveFrom = 0; this.moveTo = 0;
+    this.holding = false; this.pickT = 0; this.charging = false; this.chargeT = 0; this.liftT = 0; this.power = 0;
+    this.aim = 0; this.aimStart = 0; this.downX = 0; this.driftPhase = 0; this.driftW = 2.6; this.wasGreen = false; this.shotsTaken = 0;
+    this.touchUi = this.sys.game.device.input.touch;
 
-    this.drawCourt();
-    this.hoopG = this.add.graphics().setDepth(6);
-    this.aimG = this.add.graphics().setDepth(4);
-    this.shadow = this.add.ellipse(0, FLOOR + 8, 60, 14, 0x000000, 0.35).setDepth(2);
-    this.ball = this.add.image(0, 0, 'ball').setScale((R * 2.1) / 18).setDepth(5);
+    this.arena = new Arena();
+    // the arena is baked into a texture and only redrawn when the camera moves
+    this.bg = this.make.graphics({}, false);
+    this.bgRT = this.add.renderTexture(0, 0, 720, 1280).setOrigin(0).setDepth(0);
+    this.clockShown = '';
+    this.shadows = this.add.graphics().setDepth(1);
+    this.gBoard = this.add.graphics();
+    this.gBack = this.add.graphics();
+    this.gFront = this.add.graphics();
+    this.gHeld = this.add.graphics().setDepth(80);
+    this.gHint = this.add.graphics().setDepth(78);
+    this.gMeter = this.add.graphics().setDepth(90);
+    this.gRack = this.add.graphics().setDepth(90);
+    this.gBoardHud = this.add.graphics().setDepth(90);
 
-    // scoreboard
-    this.add.rectangle(width / 2, 150, 250, 92, 0x0a0a0a).setStrokeStyle(5, 0x55525e).setDepth(1);
-    this.clockText = txt(this, width / 2, 152, '45', { title: true, size: 52, color: '#ec3013', strokeThickness: 0 }).setDepth(2);
-    this.infoText = txt(this, width / 2, 222, '', { title: true, size: 18, color: '#ffd23f' }).setDepth(2);
+    // scoreboard: shot clock, points against the target
+    this.clockText = txt(this, 110, 106, '', { title: true, size: 34, color: '#ec3013', strokeThickness: 0 }).setDepth(92);
+    this.ptsText = txt(this, 520, 106, '', { title: true, size: 15, color: '#ffd23f', strokeThickness: 0 }).setDepth(92);
+    this.spotText = txt(this, 360, 760, '', { title: true, size: 28, color: '#f3f2f2' }).setDepth(92);
+    this.banner = txt(this, 360, 560, '', { title: true, size: 40, color: '#ffd23f', wrap: 660 }).setDepth(95).setVisible(false);
+    this.sub = txt(this, 360, 630, '', { size: 32, color: '#ffffff', wrap: 660 }).setDepth(95).setVisible(false);
+    this.hintText = txt(this, 360, 1258, '', { size: 22, color: '#cfc6e6' }).setDepth(92);
 
+    this.setupInput();
+    this.cam.set(camFor(SPOTS[0]).pos, camFor(SPOTS[0]).look);
+    this.startRound();
+  }
+
+  // ---------------------------------------------------------------- input
+  private setupInput(): void {
     const kb = this.input.keyboard!;
     const K = Phaser.Input.Keyboard.KeyCodes;
-    this.keys = {
-      left: kb.addKey(K.LEFT), right: kb.addKey(K.RIGHT), up: kb.addKey(K.UP), down: kb.addKey(K.DOWN),
-      a: kb.addKey(K.A), d: kb.addKey(K.D), w: kb.addKey(K.W), s: kb.addKey(K.S),
-    };
-    kb.on('keydown-SPACE', () => this.shoot());
-    kb.on('keydown-Z', () => this.shoot());
-
+    this.keys = { left: kb.addKey(K.LEFT), right: kb.addKey(K.RIGHT), a: kb.addKey(K.A), d: kb.addKey(K.D) };
+    for (const k of ['SPACE', 'UP', 'W', 'Z']) {
+      kb.on(`keydown-${k}`, (e: KeyboardEvent) => { if (!e.repeat) this.beginCharge(); });
+      kb.on(`keyup-${k}`, () => this.release());
+    }
+    // touch / mouse: hold anywhere to charge, slide sideways to aim, let go to shoot
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (p.x > width - 140 && p.y < 140) return;
-      this.dragStart = new Phaser.Math.Vector2(p.x, p.y);
+      if (p.x > 600 && p.y < 130) return;          // pause button
+      this.downX = p.x;
+      this.beginCharge();
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!this.dragStart || !p.isDown) return;
-      this.setAimFromDrag(p.x - this.dragStart.x, p.y - this.dragStart.y);
+      if (!this.charging || !p.isDown) return;
+      this.aim = Phaser.Math.Clamp(this.aimStart + (p.x - this.downX) * 0.014, -6, 6);
     });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (!this.dragStart) return;
-      const dx = p.x - this.dragStart.x, dy = p.y - this.dragStart.y;
-      this.dragStart = null;
-      if (dy < -30 && this.setAimFromDrag(dx, dy)) this.shoot();
-      else this.aiming = false;
+    this.input.on('pointerup', () => this.release());
+    this.input.on('pointerupoutside', () => this.release());
+  }
+
+  private canShoot(): boolean {
+    return this.phase === 'shoot' && this.holding && this.pickT >= 1 && this.timeLeft > 0 && !this.isOver;
+  }
+
+  private beginCharge(): void {
+    if (!this.canShoot() || this.charging) return;
+    this.charging = true;
+    this.chargeT = 0;
+    this.aimStart = this.aim;
+    this.wasGreen = false;
+    this.driftPhase = rng.int(0, 628) / 100;
+    this.driftW = 2.2 + rng.int(0, 120) / 100;
+  }
+
+  private drift(): number {
+    return this.rules.drift * Math.sin(this.driftPhase + this.chargeT * this.driftW);
+  }
+
+  private meterAt(tc: number): number {
+    const x = tc / this.rules.meter;
+    const m = x % 2;
+    return m < 1 ? m : 2 - m;
+  }
+
+  // ---------------------------------------------------------------- flow
+  private startRound(): void {
+    this.rules = roundRules(this.round);
+    this.racks = SPOTS.map(() => new Array(RACK).fill(null));
+    this.pts = 0; this.timeLeft = this.rules.time; this.lastTick = -1;
+    this.ball = 0; this.holding = false; this.charging = false;
+    this.hud.setRight(t('round', { n: this.round }));
+    const from = this.spot;
+    this.spot = 0;
+    this.phase = 'intro';
+    if (from !== 0) this.moveCamera(from, 0);
+    this.showBanner(t('round', { n: this.round }), '#ffd23f', t('target', { n: this.rules.need }));
+    this.sfx('levelup', { volume: 0.5 });
+    this.time.delayedCall(1500, () => {
+      if (this.isOver) return;
+      this.hideBanner();
+      this.phase = 'shoot';
+      this.announceSpot();
+      this.pickUp();
     });
-
-    this.hud.setRight(`${t('level')} 1`);
-    this.spawnBall();
+    this.updateBoard();
   }
 
-  private drawCourt(): void {
-    const { width, height } = this.scale;
-    if (this.textures.exists('hs-court')) { this.add.image(0, 0, 'hs-court').setOrigin(0).setDepth(0); return; }
-    const g = this.make.graphics({}, false);
-    // wall
-    g.fillGradientStyle(0x2a1f3d, 0x2a1f3d, 0x3d2a4a, 0x3d2a4a).fillRect(0, 0, width, FLOOR - 120);
-    g.lineStyle(2, 0xffffff, 0.05);
-    for (let y = 40; y < FLOOR - 120; y += 40) {
-      g.lineBetween(0, y, width, y);
-      for (let x = (y / 40) % 2 ? 0 : 40; x < width; x += 80) g.lineBetween(x, y, x, y + 40);
+  private moveFrom = 0;
+  private moveTo = 0;
+  private moveCamera(from: number, to: number): void {
+    this.moveFrom = from; this.moveTo = to; this.moveT = 0;
+    this.sfx('throw', { volume: 0.25, rate: 0.7 });
+  }
+
+  private announceSpot(): void {
+    const key = SPOTS[this.spot].key;
+    this.tweens.killTweensOf(this.spotText);
+    this.spotText.setText(t(key)).setScale(0.6).setAlpha(1);
+    this.tweens.add({ targets: this.spotText, scale: 1, duration: 260, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: this.spotText, alpha: 0, delay: 1100, duration: 350 });
+  }
+
+  private pickUp(): void {
+    if (this.isOver) return;
+    this.holding = true;
+    this.pickT = 0;
+    this.liftT = 0;
+    this.power = 0;
+    this.aim = 0;
+    this.updateBoard();
+  }
+
+  private release(): void {
+    if (!this.charging) return;
+    this.charging = false;
+    if (!this.canShoot()) return;
+    const from = this.holdPos();
+    const money = this.ball === RACK - 1;
+    const b = launch(from, { power: this.power, ideal: IDEAL, spread: this.rules.spread, aimDeg: this.aim + this.drift(), angleDeg: ANGLE, spin: SPIN }, money);
+    const g = this.pool.pop() ?? this.add.graphics();
+    g.setVisible(true).setAlpha(1);
+    this.flying.push({ b, g, look: { phase: 0, roll: 0, money }, spot: this.spot, idx: this.ball, resolved: false, fade: 1, label: false });
+    this.shotsTaken++;
+    this.holding = false;
+    this.gHeld.clear();
+    this.sfx('throw', { volume: 0.5, rate: 1.05 });
+    const s = this.cam.project(from);
+    if (s) burst(this, s.x, s.y, [0xffffff, 0xffd23f], 6, 120);
+    this.ball++;
+    if (this.ball < RACK) this.time.delayedCall(PICKUP_S * 1000, () => { if (this.phase === 'shoot') this.pickUp(); });
+    else if (this.spot < SPOTS.length - 1) {
+      this.time.delayedCall(420, () => {
+        if (this.isOver || this.phase !== 'shoot') return;
+        this.phase = 'move';
+        this.moveCamera(this.spot, this.spot + 1);
+      });
+    } else this.phase = 'wait';
+    this.updateBoard();
+  }
+
+  private holdPos(): V3 {
+    const s = SPOTS[this.spot];
+    const h = norm(v3(-s.x, 0, -s.z));
+    const lift = Phaser.Math.Easing.Sine.Out(Math.min(1, this.liftT / LIFT_S));
+    return add(v3(s.x, 1.4 + lift * 0.85, s.z), mul(h, 0.32));
+  }
+
+  private endRound(): void {
+    if (this.isOver || this.phase === 'between') return;
+    this.phase = 'between';
+    this.holding = false; this.charging = false;
+    this.gHeld.clear(); this.gMeter.clear(); this.gHint.clear();
+    if (this.pts >= this.rules.need) {
+      const bonus = Math.ceil(this.timeLeft) * 20;
+      if (bonus > 0) this.addScore(bonus);
+      this.showBanner(t('qualified'), '#5dff7a', `${this.pts} / ${this.rules.need}${bonus > 0 ? '   ' + t('timeBonus', { n: bonus }) : ''}`);
+      this.sfx('beater', { volume: 0.6, exact: true });
+      flash(this, 0x5dff7a, 160);
+      burst(this, 360, 560, [0xffd23f, 0x5dff7a, 0x3ee6ff, 0xffffff], 60, 520);
+      this.time.delayedCall(2300, () => { if (!this.isOver) { this.round++; this.startRound(); } });
+    } else {
+      this.showBanner(t('out'), '#ec3013', `${this.pts} / ${this.rules.need}`);
+      this.sfx('miss', { volume: 0.6 });
+      shake(this, 0.01, 260);
+      this.endGame({ title: this.timeLeft <= 0 ? t('timeUp') : t('out'), delay: 1500 });
     }
-    // padded wall strip + crowd silhouettes
-    g.fillStyle(0x1a1226).fillRect(0, FLOOR - 220, width, 100);
-    for (let i = 0; i < 18; i++) {
-      const cx = 20 + i * 40 + rng.int(-6, 6), cy = FLOOR - 190 + rng.int(-8, 8);
-      g.fillStyle(rng.pick([0x3a2d55, 0x45365e, 0x2e2444]));
-      g.fillCircle(cx, cy, 14).fillRect(cx - 16, cy + 10, 32, 50);
-    }
-    g.fillStyle(0xec3013).fillRect(0, FLOOR - 124, width, 8);
-    // wooden floor in perspective
-    g.fillStyle(0xc98a4b).fillRect(0, FLOOR - 116, width, height - FLOOR + 116);
-    g.lineStyle(2, 0x8f5a2a, 0.6);
-    for (let y = FLOOR - 116; y < height; y += 22) g.lineBetween(0, y, width, y);
-    for (let i = -10; i <= 10; i++) g.lineBetween(width / 2 + i * 50, FLOOR - 116, width / 2 + i * 130, height);
-    g.lineStyle(6, 0xffffff, 0.8).strokeEllipse(width / 2, FLOOR + 20, 520, 120);
-    g.generateTexture('hs-court', 720, 1280);
-    g.destroy();
-    this.add.image(0, 0, 'hs-court').setOrigin(0).setDepth(0);
   }
 
-  private spawnBall(): void {
-    const { width } = this.scale;
-    const spread = this.level >= 2 ? Math.min(250, 80 + this.level * 30) : 0;
-    this.bx = width / 2 + (spread ? rng.int(-spread, spread) : 0);
-    this.by = 1040 - (this.level >= 4 ? rng.int(0, 120) : 0);
-    this.vx = this.vy = 0;
-    this.flying = false; this.ready = true; this.flightT = 0;
-    this.scoredThisShot = false; this.rimTouched = false; this.boardTouched = false;
-    this.ball.setPosition(this.bx, this.by).setAngle(0).setScale(0.2 * (R * 2.1) / 18).setAlpha(1);
-    this.tweens.add({ targets: this.ball, scale: (R * 2.1) / 18, duration: 250, ease: 'Back.easeOut' });
-  }
-
-  /** Swipe vector → aim. Returns false if the swipe is too short to be a shot. */
-  private setAimFromDrag(dx: number, dy: number): boolean {
-    const len = Math.hypot(dx, dy);
-    if (dy > -10 || len < 30) { this.aiming = false; return false; }
-    this.aiming = true;
-    this.aimAngle = Phaser.Math.Clamp(Phaser.Math.RadToDeg(Math.atan2(dx, -dy)), -50, 50);
-    this.aimPower = Phaser.Math.Clamp((len - 30) / 330, 0, 1);
-    return true;
-  }
-
-  private launchVel(): { vx: number; vy: number } {
-    const speed = 1150 + this.aimPower * 1150;
-    const a = Phaser.Math.DegToRad(this.aimAngle);
-    return { vx: Math.sin(a) * speed, vy: -Math.cos(a) * speed };
-  }
-
-  private shoot(): void {
-    if (!this.ready || this.flying || this.isOver || this.timeLeft <= 0) return;
-    this.ready = false;
-    const v = this.launchVel();
-    this.vx = v.vx; this.vy = v.vy;
-    this.flying = true; this.aiming = false; this.flightT = 0;
-    this.aimG.clear();
-    this.sfxAt('throw', this.bx, { volume: 0.45 });
-    burst(this, this.bx, this.by + R, [0xffffff, 0xc98a4b], 8, 140);
-  }
-
-  private hoopRects(): Rect[] {
-    return [{ x: this.hx + RW + 10, y: this.hy - 150, w: 14, h: 186 }];
-  }
-
+  // ---------------------------------------------------------------- loop
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
-    const { width } = this.scale;
 
-    // clock
-    if (this.timeLeft > 0) {
+    // shot clock
+    if ((this.phase === 'shoot' || this.phase === 'move' || this.phase === 'wait') && this.timeLeft > 0) {
       this.timeLeft = Math.max(0, this.timeLeft - dt);
       const s = Math.ceil(this.timeLeft);
-      if (s <= 5 && s !== this.lastTick && s > 0) { this.lastTick = s; this.sfx('tick', { volume: s <= 2 ? 0.6 : 0.45, rate: s <= 2 ? 1.12 : 1 }); this.clockText.setScale(1.3); this.tweens.add({ targets: this.clockText, scale: 1, duration: 200 }); }
-      if (this.timeLeft === 0) this.sfx('buzzer', { volume: 0.7, exact: true });
+      if (s <= 5 && s > 0 && s !== this.lastTick) {
+        this.lastTick = s;
+        this.sfx('tick', { volume: s <= 2 ? 0.6 : 0.45, rate: s <= 2 ? 1.12 : 1 });
+        this.clockText.setScale(1.25);
+        this.tweens.add({ targets: this.clockText, scale: 1, duration: 200 });
+      }
+      if (this.timeLeft === 0) {
+        this.sfx('buzzer', { volume: 0.6, exact: true });
+        this.charging = false; this.holding = false; this.gHeld.clear();
+        this.phase = 'wait';
+        this.showBanner(t('timeUp'), '#ffd23f', '');
+        this.time.delayedCall(900, () => this.hideBanner());
+      }
     }
-    this.clockText.setText(String(Math.ceil(this.timeLeft))).setColor(this.timeLeft <= 5 ? '#ffd23f' : '#ec3013');
-    if (this.timeLeft <= 0 && !this.flying) { this.endGame({ title: t('timeUp'), delay: 700 }); return; }
-
-    // moving hoop from level 3
-    this.hoopT += dt;
-    if (this.level >= 3) {
-      const amp = Math.min(200, 70 + (this.level - 3) * 30);
-      const spd = Math.min(2.2, 0.8 + (this.level - 3) * 0.22);
-      this.hx = width / 2 - 30 + Math.sin(this.hoopT * spd) * amp;
-      this.hy = 420 + (this.level >= 5 ? Math.sin(this.hoopT * spd * 0.7) * 60 : 0);
+    const clock = this.clockStr();
+    if (clock !== this.clockShown) {
+      this.clockShown = clock;
+      this.clockText.setText(clock).setColor(this.timeLeft <= 5 ? '#ffd23f' : '#ec3013');
     }
-    this.netSwing = Math.max(0, this.netSwing - dt * 2.5);
-    this.netSway *= Math.pow(0.02, dt);
 
-    // keyboard aim
-    if (this.ready) {
+    // camera between racks
+    if (this.moveT < 1 && this.moveFrom !== this.moveTo) {
+      this.moveT = Math.min(1, this.moveT + dt / MOVE_S);
+      const e = Phaser.Math.Easing.Sine.InOut(this.moveT);
+      const c = camBetween(SPOTS[this.moveFrom], SPOTS[this.moveTo], e);
+      this.cam.set(c.pos, c.look);
+      this.camDirty = true;
+      if (this.moveT >= 1) {
+        this.moveFrom = this.moveTo;
+        if (this.phase === 'move') {
+          this.spot = this.moveTo;
+          this.ball = 0;
+          this.phase = 'shoot';
+          this.announceSpot();
+          this.pickUp();
+          this.updateBoard();
+        }
+      }
+    }
+    if (this.camDirty) {
+      this.arena.draw(this.bg, this.cam);
+      this.bgRT.clear().draw(this.bg);
+      this.camDirty = false;
+    }
+
+    // the ball in hand
+    if (this.holding) {
+      this.pickT = Math.min(1, this.pickT + dt / PICKUP_S);
+      if (this.charging) {
+        this.chargeT += dt;
+        this.liftT += dt;
+        this.power = this.meterAt(this.chargeT);
+        const green = Math.abs(this.power - IDEAL) < this.greenHalf();
+        if (green && !this.wasGreen) this.sfx('tick', { volume: 0.18, rate: 1.6 });
+        this.wasGreen = green;
+      }
       const k = this.keys;
       const ax = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
-      const ay = (k.up.isDown || k.w.isDown ? 1 : 0) - (k.down.isDown || k.s.isDown ? 1 : 0);
-      if (ax || ay) {
-        this.aiming = true;
-        this.aimAngle = Phaser.Math.Clamp(this.aimAngle + ax * 40 * dt, -50, 50);
-        this.aimPower = Phaser.Math.Clamp(this.aimPower + ay * 0.5 * dt, 0, 1);
+      if (ax) this.aim = Phaser.Math.Clamp(this.aim + ax * 4 * dt, -6, 6);
+    }
+    this.drawHeld();
+    this.drawMeter();
+    this.drawHint();
+
+    // balls in flight
+    this.shadows.clear();
+    let bulge: V3 | null = null;
+    for (const f of this.flying) {
+      const ev = stepBall(f.b, dt);
+      this.ballEvents(f, ev);
+      if (f.b.made && f.b.p.y < RIM_Y + 0.1 && f.b.p.y > RIM_Y - 0.6 && Math.hypot(f.b.p.x, f.b.p.z) < RIM_R + 0.1) bulge = f.b.p;
+      // seams: backspin about the spin axis as the camera sees it
+      const w = f.b.w, wl = len(w);
+      if (wl > 0.01) {
+        const ax = dot(w, this.cam.right), ay = dot(w, this.cam.up);
+        f.look.roll = Math.atan2(-ay, ax);
+        f.look.phase += wl * dt * (dot(w, this.cam.right) >= 0 ? 1 : -1);
       }
-      this.drawAim();
+      if (!f.resolved && (f.b.floor >= 1 || f.b.t > 4) && !f.b.made) this.onMiss(f);
+      if (f.b.made && f.b.floor >= 2 || f.b.t > 5 || (f.resolved && f.b.floor >= 3)) f.fade -= dt * 3;
+    }
+    this.net.bulge = bulge ? { p: bulge } : null;
+    for (const f of this.flying) {
+      if (f.fade <= 0) { f.g.clear().setVisible(false); this.pool.push(f.g); }
+    }
+    this.flying = this.flying.filter((f) => f.fade > 0);
+    for (const f of this.flying) {
+      const pr = this.cam.project(f.b.p);
+      f.g.clear();
+      if (!pr) continue;
+      drawShadow(this.shadows, this.cam, f.b.p, BALL_R);
+      f.g.setDepth(this.depthOf(pr.z));
+      drawBall(f.g, pr.x, pr.y, BALL_R * pr.s, f.look, Math.max(0, Math.min(1, f.fade)));
+      if (f.look.money && !f.b.made && f.b.t < 2 && rng.chance(0.4)) burst(this, pr.x, pr.y, [0xffd23f, 0xffffff], 1, 40);
+    }
+    if (this.holding) {
+      const hp = this.holdPos();
+      if (this.pickT >= 1) drawShadow(this.shadows, this.cam, hp, BALL_R);
     }
 
-    if (this.flying) this.stepBall(dt);
+    // hoop
+    this.net.t += dt;
+    this.net.stretch = Math.max(0, this.net.stretch - dt * 1.6);
+    this.net.sway *= Math.pow(0.05, dt);
+    this.net.swayZ *= Math.pow(0.05, dt);
+    this.rimGlow = Math.max(0, this.rimGlow - dt * 2.5);
+    drawHoop(this.gBoard, this.gBack, this.gFront, this.cam, this.net, this.rimGlow);
+    const rz = this.cam.depth(v3(0, RIM_Y, 0));
+    this.gBoard.setDepth(this.depthOf(this.cam.depth(v3(0, 3.4, -0.4))));
+    this.gBack.setDepth(this.depthOf(rz + 0.1));
+    this.gFront.setDepth(this.depthOf(rz - 0.1));
 
-    this.ball.setPosition(this.bx, this.by);
-    const hgt = Phaser.Math.Clamp((FLOOR - this.by) / 900, 0, 1);
-    this.shadow.setPosition(this.bx, FLOOR + 8).setScale(1 - hgt * 0.6).setAlpha(1 - hgt * 0.7);
-    this.hoopG.clear();
-    drawHoop(this.hoopG, this.hx, this.hy, this.netSwing, this.netSway);
+    // the round ends when the last ball (or the buzzer) has played out
+    if ((this.phase === 'wait') && this.flying.every((f) => f.resolved)) this.endRound();
   }
 
-  private drawAim(): void {
-    const g = this.aimG;
-    g.clear();
-    if (!this.aiming) {
-      // idle hint: pulsing arrow above the ball
-      const a = 0.4 + Math.sin(this.elapsed * 6) * 0.3;
-      g.fillStyle(0xffffff, a).fillTriangle(this.bx - 16, this.by - R - 20, this.bx + 16, this.by - R - 20, this.bx, this.by - R - 44);
-      return;
-    }
-    const v = this.launchVel();
-    const preview = Math.max(0.12, 0.34 - (this.level - 1) * 0.03);
-    for (let i = 1; i <= 9; i++) {
-      const tt = (i / 9) * preview;
-      const x = this.bx + v.vx * tt, y = this.by + v.vy * tt + 0.5 * G * tt * tt;
-      g.fillStyle(0xffd23f, 1 - i / 11).fillCircle(x, y, 9 - i * 0.6);
-    }
-    // power bar
-    g.fillStyle(0x000000, 0.5).fillRect(this.bx - 60, this.by + R + 18, 120, 14);
-    g.fillStyle(Phaser.Display.Color.GetColor(255, Math.round(210 - this.aimPower * 160), 60)).fillRect(this.bx - 58, this.by + R + 20, 116 * this.aimPower, 10);
+  private depthOf(z: number): number {
+    return 10 + Math.max(0, 60 - z);
   }
 
-  private stepBall(dt: number): void {
-    const { width } = this.scale;
-    this.flightT += dt;
-    const steps = 5, h = dt / steps;
-    for (let s = 0; s < steps; s++) {
-      const prevY = this.by;
-      this.vy += G * h;
-      this.bx += this.vx * h;
-      this.by += this.vy * h;
-      // rim end caps
-      for (const px of [this.hx - RW, this.hx + RW]) this.collidePoint(px, this.hy, 7, 0.55);
-      for (const r of this.hoopRects()) this.collideRect(r, 0.65);
-      // basket: crossing the rim line downward between the caps
-      if (!this.scoredThisShot && prevY < this.hy && this.by >= this.hy && this.vy > 0 && Math.abs(this.bx - this.hx) < RW - 8) {
-        this.scoredThisShot = true;
-        this.onBasket();
-      }
-      // walls / floor
-      if (this.bx < R) { this.bx = R; this.vx = Math.abs(this.vx) * 0.7; }
-      if (this.bx > width - R) { this.bx = width - R; this.vx = -Math.abs(this.vx) * 0.7; }
-      if (this.by > FLOOR - R && this.vy > 0) {
-        this.by = FLOOR - R;
-        if (this.vy > 250) this.sfxAt(rng.pick(['bounce', 'bounce2']), this.bx, { volume: Math.min(0.8, this.vy / 2000) });
-        this.vy = -this.vy * 0.55; this.vx *= 0.8;
-        if (!this.scoredThisShot && this.flightT > 0.2) this.onMiss();
-      }
-    }
-    this.ball.angle += this.vx * dt * 0.4;
-    if ((this.scoredThisShot && this.by > this.hy + 140 && this.flightT > 0.6) || this.flightT > 3.2 || (Math.abs(this.vy) < 120 && this.by >= FLOOR - R - 2)) {
-      if (!this.scoredThisShot) this.onMiss();
-      this.flying = false;
-      this.tweens.add({ targets: this.ball, alpha: 0, duration: 120, onComplete: () => { if (!this.isOver) this.spawnBall(); } });
-      this.flightT = -99; // prevent double handling while fading
-    }
+  private clockStr(): string {
+    const s = Math.ceil(this.timeLeft);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   }
 
-  private collidePoint(px: number, py: number, pr: number, e: number): void {
-    const dx = this.bx - px, dy = this.by - py, d = Math.hypot(dx, dy), min = R + pr;
-    if (d >= min || d === 0) return;
-    const nx = dx / d, ny = dy / d;
-    this.bx = px + nx * min; this.by = py + ny * min;
-    const vn = this.vx * nx + this.vy * ny;
-    if (vn < 0) {
-      this.vx -= (1 + e) * vn * nx; this.vy -= (1 + e) * vn * ny;
-      if (-vn > 120) { this.sfxAt(rng.pick(['rim', 'rim2', 'rim3']), px, { volume: Math.min(0.7, -vn / 1200) }); this.netSway = rng.int(-10, 10); }
-      this.rimTouched = true;
-    }
+  private greenHalf(): number {
+    return 0.034 * (0.12 / this.rules.spread);
   }
 
-  private collideRect(r: Rect, e: number): void {
-    const cx = Phaser.Math.Clamp(this.bx, r.x, r.x + r.w), cy = Phaser.Math.Clamp(this.by, r.y, r.y + r.h);
-    const dx = this.bx - cx, dy = this.by - cy, d = Math.hypot(dx, dy);
-    if (d >= R || d === 0) return;
-    const nx = dx / d, ny = dy / d;
-    this.bx = cx + nx * R; this.by = cy + ny * R;
-    const vn = this.vx * nx + this.vy * ny;
-    if (vn < 0) {
-      this.vx -= (1 + e) * vn * nx; this.vy -= (1 + e) * vn * ny;
-      if (-vn > 120) this.sfxAt(rng.pick(['board', 'board2']), this.bx, { volume: Math.min(0.65, 0.3 - vn / 2400) });
-      this.boardTouched = true;
+  // ---------------------------------------------------------------- events
+  private ballEvents(f: Flying, ev: { rim: number; board: number; floor: number; made: boolean; rimX: number }): void {
+    const rimS = this.cam.project(v3(ev.rimX, RIM_Y, 0));
+    if (ev.rim > 0) {
+      this.sfxAt(ev.rim > 3 ? 'rim3' : rng.pick(['rim', 'rim2']), rimS?.x ?? 360, { volume: Math.min(0.8, 0.2 + ev.rim / 8) });
+      this.net.sway += (f.b.v.x > 0 ? 1 : -1) * Math.min(0.06, ev.rim * 0.012);
+      this.net.swayZ += Math.min(0.05, ev.rim * 0.01);
+      this.rimGlow = Math.min(1, this.rimGlow + ev.rim / 6);
+      if (rimS) burst(this, rimS.x, rimS.y, [0xffb066, 0xffffff], Math.min(10, 2 + Math.round(ev.rim)), 140);
+      if (ev.rim > 3) shake(this, 0.004, 90);
     }
+    if (ev.board > 0) {
+      const bs = this.cam.project(f.b.p);
+      this.sfxAt(rng.pick(['board', 'board2']), bs?.x ?? 360, { volume: Math.min(0.7, 0.25 + ev.board / 10) });
+      if (ev.board > 4) shake(this, 0.003, 70);
+    }
+    if (ev.floor > 0) {
+      const fs = this.cam.project(f.b.p);
+      this.sfxAt(rng.pick(['bounce', 'bounce2']), fs?.x ?? 360, { volume: Math.min(0.6, ev.floor / 12) });
+    }
+    if (ev.made) this.onMake(f);
   }
 
-  private onBasket(): void {
-    this.baskets++;
+  private onMake(f: Flying): void {
+    if (f.resolved) return;
+    f.resolved = true;
+    this.racks[f.spot][f.idx] = true;
+    const swish = !f.b.rim && !f.b.board;
+    const value = f.b.money ? 2 : 1;
+    this.pts += value;
     this.streak++;
-    const swish = !this.rimTouched && !this.boardTouched;
-    const buzzer = this.timeLeft <= 0;
-    let pts = swish ? 3 : 2;
-    pts *= 10 * Math.min(5, this.streak);
-    if (buzzer) pts *= 2;
-    this.addScore(pts, this.hx, this.hy - 60);
-    const bonus = swish ? 3 : 2;
-    if (!buzzer) this.timeLeft += bonus;
-    this.netSwing = 1;
-    this.sfxAt('net', this.hx, { volume: swish ? 0.5 : 0.35 });
-    // The basket sound climbs with the streak.
-    this.sfxAt(swish ? 'swish' : 'score', this.hx, { volume: 0.6, rate: 1 + (Math.min(5, this.streak) - 1) * 0.05 });
-    if (buzzer) this.sfx('beater', { volume: 0.75, exact: true });
-    burst(this, this.hx, this.hy + 40, [0xffd23f, 0xff7a1a, 0xffffff], swish ? 30 : 18, 300);
-    if (this.streak >= 3) shake(this, 0.006, 120);
-    const msg = buzzer ? t('buzzer') : swish ? t('swish') : this.boardTouched ? t('bank') : '';
-    if (msg) popup(this, this.scale.width / 2, this.hy + 170, msg, swish ? '#5dff7a' : '#3ee6ff', 30);
-    if (buzzer) flash(this, 0xffd23f, 200);
-    this.infoText.setText(`${this.streak >= 2 ? t('streak', { n: Math.min(5, this.streak) }) + '  ' : ''}${buzzer ? '' : t('secs', { n: bonus })}`);
-    this.infoText.setAlpha(1);
-    this.tweens.killTweensOf(this.infoText);
-    this.tweens.add({ targets: this.infoText, alpha: 0, delay: 1100, duration: 400 });
-
-    const newLevel = 1 + Math.floor(this.baskets / 4);
-    if (newLevel > this.level) {
-      this.level = newLevel;
-      this.hud.setRight(`${t('level')} ${this.level}`);
-      this.time.delayedCall(350, () => {
-        this.sfx('levelup', { volume: 0.6 });
-        const lt = txt(this, this.scale.width / 2, 640, t('levelUp', { n: this.level }), { title: true, size: 40, color: '#ffd23f' }).setDepth(20).setScale(0.3);
-        this.tweens.add({ targets: lt, scale: 1, duration: 300, ease: 'Back.easeOut', hold: 600, yoyo: true, onComplete: () => lt.destroy() });
+    let pts = value * 100;
+    if (swish) pts += 50;
+    if (this.streak >= 3) pts += Math.min(150, 25 * (this.streak - 2));
+    const at = this.cam.project(v3(0, RIM_Y, 0));
+    const ax = at?.x ?? 360, ay = at?.y ?? 400;
+    this.addScore(pts, ax, ay - 70);
+    this.net.stretch = swish ? 1.25 : 0.9;
+    this.sfxAt('net', ax, { volume: swish ? 0.55 : 0.4 });
+    this.sfxAt(swish ? 'swish' : 'score', ax, { volume: 0.55, rate: 1 + Math.min(6, this.streak - 1) * 0.04 });
+    burst(this, ax, ay + 30, swish ? [0xffffff, 0x5dff7a, 0x3ee6ff] : [0xffd23f, 0xff7a1a, 0xffffff], swish ? 26 : 16, swish ? 320 : 240);
+    if (swish) this.swishRing(ax, ay);
+    // the big call goes under the hoop
+    let msg = '', color = '#ffffff';
+    if (f.b.money) { msg = t('moneyBall'); color = '#ffd23f'; }
+    else if (swish) { msg = t('swish'); color = '#5dff7a'; }
+    else if (f.b.board) { msg = t('bank'); color = '#3ee6ff'; }
+    if (f.b.money) {
+      this.sfx('beater', { volume: 0.55, exact: true });
+      flash(this, 0xffd23f, 140);
+      shake(this, 0.007, 160);
+      burst(this, ax, ay, [0xffd23f, 0xec3013, 0x2d6cdf, 0xffffff], 40, 420);
+    }
+    if (msg) popup(this, ax, ay + 150, msg, color, 30);
+    if (this.streak >= 3) popup(this, ax, ay + 200, t('streak', { n: this.streak }), '#ff4fa3', 24);
+    if (this.racks[f.spot].every((r) => r === true)) {
+      this.time.delayedCall(450, () => {
+        if (this.isOver) return;
+        this.addScore(250, 360, 700);
+        popup(this, 360, 760, t('perfectRack'), '#5dff7a', 34);
+        this.sfx('levelup', { volume: 0.55 });
+        flash(this, 0x5dff7a, 120);
       });
     }
+    this.updateBoard();
   }
 
-  private onMiss(): void {
-    if (this.scoredThisShot || this.flightT < 0) return;
-    this.scoredThisShot = true; // handled
-    if (this.streak >= 2) { this.sfxAt('miss', this.bx, { volume: 0.4 }); popup(this, this.bx, this.by - 60, '×', '#ec3013', 32); }
+  private swishRing(x: number, y: number): void {
+    const ring = this.add.ellipse(x, y + 20, 60, 16).setStrokeStyle(4, 0xffffff, 0.9).setDepth(85);
+    this.tweens.add({ targets: ring, scaleX: 3, scaleY: 2.2, alpha: 0, duration: 420, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+  }
+
+  private onMiss(f: Flying): void {
+    if (f.resolved) return;
+    f.resolved = true;
+    this.racks[f.spot][f.idx] = false;
+    const broke = this.streak >= 3;
     this.streak = 0;
+    const at = this.cam.project(v3(0, RIM_Y, 0));
+    const ax = at?.x ?? 360, ay = at?.y ?? 400;
+    let msg: string;
+    if (!f.b.rim && !f.b.board) msg = t('airball');
+    else if (f.b.rim && Math.abs(f.b.power - f.b.ideal) < this.greenHalf() * 1.3) msg = t('rimOut');
+    else msg = f.b.power < f.b.ideal ? t('short') : t('long');
+    popup(this, ax, ay + 150, msg, '#ec3013', 26);
+    if (broke) this.sfx('miss', { volume: 0.35 });
+    this.updateBoard();
+  }
+
+  // ---------------------------------------------------------------- drawing
+  private drawHeld(): void {
+    const g = this.gHeld;
+    g.clear();
+    if (!this.holding) return;
+    const hp = this.holdPos();
+    const pr = this.cam.project(hp);
+    if (!pr) return;
+    let x = pr.x, y = pr.y, r = BALL_R * pr.s;
+    if (this.pickT < 1) {
+      // from the rack at the bottom into the hands
+      const e = Phaser.Math.Easing.Quadratic.Out(this.pickT);
+      const [rx, ry] = this.rackSlot(this.ball);
+      x = Phaser.Math.Linear(rx, x, e); y = Phaser.Math.Linear(ry, y, e) - Math.sin(Math.PI * e) * 60; r = Phaser.Math.Linear(24, r, e);
+    }
+    const money = this.ball === RACK - 1;
+    drawBall(g, x, y, r, { phase: 0.7, roll: -0.25, money });
+    if (money && this.pickT >= 1) {
+      const a = 0.35 + Math.sin(this.elapsed * 8) * 0.2;
+      g.lineStyle(4, 0xffd23f, a).strokeCircle(x, y, r + 8);
+    }
+  }
+
+  private rackSlot(i: number): [number, number] {
+    return [232 + i * 64, 1196];
+  }
+
+  /** The aim direction (yaw) the shot would leave at now. */
+  private aimNow(): number {
+    return this.aim + (this.charging ? this.drift() : 0);
+  }
+
+  private drawMeter(): void {
+    const g = this.gMeter;
+    g.clear();
+    if (!this.holding || this.pickT < 1 || this.phase !== 'shoot') return;
+    const x = 640, y0 = 1060, h = 330, w = 34;
+    g.fillStyle(0x000000, 0.55).fillRoundedRect(x - w / 2 - 6, y0 - h - 6, w + 12, h + 12, 10);
+    const gh = this.greenHalf();
+    const yOf = (p: number) => y0 - p * h;
+    g.fillStyle(0xffd23f, 0.35).fillRect(x - w / 2, yOf(IDEAL + gh * 2), w, gh * 4 * h);
+    g.fillStyle(0x5dff7a, 0.85).fillRect(x - w / 2, yOf(IDEAL + gh), w, gh * 2 * h);
+    if (this.charging) {
+      const p = this.power;
+      const green = Math.abs(p - IDEAL) < gh;
+      g.fillStyle(green ? 0x5dff7a : p > IDEAL ? 0xff7a1a : 0xffffff, 0.95).fillRect(x - w / 2 + 6, yOf(p), w - 12, p * h);
+      g.fillStyle(0xffffff, 1).fillTriangle(x - w / 2 - 18, yOf(p) - 10, x - w / 2 - 18, yOf(p) + 10, x - w / 2 - 4, yOf(p));
+    } else {
+      const a = 0.4 + Math.sin(this.elapsed * 6) * 0.3;
+      g.lineStyle(3, 0xffffff, a).strokeRoundedRect(x - w / 2 - 6, y0 - h - 6, w + 12, h + 12, 10);
+    }
+    g.lineStyle(3, 0xffffff, 0.6).strokeRoundedRect(x - w / 2, y0 - h, w, h, 6);
+  }
+
+  private drawHint(): void {
+    const g = this.gHint;
+    g.clear();
+    if (!this.holding || this.pickT < 1 || this.phase !== 'shoot') return;
+    const from = this.holdPos();
+    const sp = { power: this.charging ? this.power : IDEAL, ideal: IDEAL, spread: this.rules.spread, aimDeg: this.aimNow(), angleDeg: ANGLE, spin: SPIN };
+    // aim marker at the rim: where this direction crosses the ring's distance
+    const s = SPOTS[this.spot];
+    const d = Math.hypot(s.x, s.z) - 0.32;
+    const yaw = Math.atan2(-from.x, -from.z) + (this.aimNow() * Math.PI) / 180;
+    const target = v3(from.x + Math.sin(yaw) * d, RIM_Y + 0.55, from.z + Math.cos(yaw) * d);
+    const pr = this.cam.project(target);
+    const ok = Math.abs(this.aimNow()) < 0.6;
+    if (pr) {
+      const c = ok ? 0x5dff7a : 0xffd23f;
+      g.lineStyle(4, c, 0.9);
+      g.lineBetween(pr.x - 18, pr.y - 10, pr.x, pr.y + 4).lineBetween(pr.x + 18, pr.y - 10, pr.x, pr.y + 4);
+    }
+    // trajectory hint: the whole arc early in the first round, then a short stub, then nothing
+    const full = this.round === 1 && this.spot <= 1;
+    const stub = (this.round === 1) || (this.round === 2 && this.spot === 0);
+    if (!full && !stub) return;
+    const pts = preview(from, sp);
+    const n = full ? pts.length : Math.floor(pts.length * 0.35);
+    for (let i = 2; i < n; i += 2) {
+      const q = this.cam.project(pts[i]);
+      if (!q) continue;
+      const a = full ? 0.75 - (i / pts.length) * 0.4 : 0.7 * (1 - i / n);
+      g.fillStyle(0xffffff, a).fillCircle(q.x, q.y, Math.min(9, Math.max(2.5, 0.022 * q.s)));
+    }
+  }
+
+  /** Scoreboard: clock, points, the five racks (made / missed / to come) and the current rack. */
+  private updateBoard(): void {
+    const g = this.gBoardHud;
+    g.clear();
+    // clock on the left, points against the target on the right: the middle stays free for the arc
+    g.fillStyle(0x000000, 0.6).fillRoundedRect(20, 66, 180, 80, 12);
+    g.lineStyle(3, 0x55525e, 1).strokeRoundedRect(20, 66, 180, 80, 12);
+    g.fillStyle(0x000000, 0.6).fillRoundedRect(450, 66, 140, 80, 12);
+    g.lineStyle(3, 0x55525e, 1).strokeRoundedRect(450, 66, 140, 80, 12);
+    this.ptsText.setText(`${t('ptsLabel')} ${this.pts}\n${t('needLabel')} ${this.rules.need}`).setColor(this.pts >= this.rules.need ? '#5dff7a' : '#ffd23f');
+    // rack grid (one column per spot)
+    for (let s = 0; s < SPOTS.length; s++) {
+      for (let i = 0; i < RACK; i++) {
+        const x = 32 + s * 34 + i * 6, y = 160;
+        const v = this.racks[s]?.[i];
+        const col = v === true ? 0x5dff7a : v === false ? 0xec3013 : s === this.spot && this.phase !== 'between' ? 0xffffff : 0x55525e;
+        g.fillStyle(col, v === null && s !== this.spot ? 0.6 : 1).fillCircle(x, y, i === RACK - 1 ? 3.2 : 2.5);
+      }
+    }
+    // the rack at the bottom: balls still to shoot
+    const r = this.gRack;
+    r.clear();
+    r.fillStyle(0x000000, 0.45).fillRoundedRect(180, 1158, 360, 80, 16);
+    r.lineStyle(6, 0x8a8f9e, 1).lineBetween(196, 1222, 524, 1222);
+    r.lineStyle(4, 0x6c7180, 1).lineBetween(206, 1222, 200, 1240).lineBetween(514, 1222, 520, 1240);
+    for (let i = 0; i < RACK; i++) {
+      const left = i >= this.ball || this.phase === 'intro';
+      if (!left || (i === this.ball && this.holding)) continue;
+      const [x, y] = this.rackSlot(i);
+      drawBall(r, x, y, 24, { phase: 0.7, roll: 0.2 * i, money: i === RACK - 1 });
+    }
+    this.hintText.setText(this.shotsTaken < 6 ? (this.touchUi ? t('hintTouch') : t('hintKeys')) : '');
+  }
+
+  private showBanner(title: string, color: string, sub: string): void {
+    this.banner.setText(title).setColor(color).setVisible(true).setScale(0.3).setAlpha(1);
+    this.sub.setText(sub).setVisible(!!sub).setAlpha(0);
+    this.tweens.killTweensOf([this.banner, this.sub]);
+    this.tweens.add({ targets: this.banner, scale: 1, duration: 280, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: this.sub, alpha: 1, duration: 300, delay: 150 });
+  }
+
+  private hideBanner(): void {
+    this.tweens.add({ targets: [this.banner, this.sub], alpha: 0, duration: 250 });
   }
 }
+

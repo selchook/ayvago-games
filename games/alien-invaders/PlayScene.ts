@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { BankedShip } from './BankedShip';
 
 type Img = Phaser.GameObjects.Image;
 
@@ -17,7 +18,7 @@ const MARCH_RATES = [0.62, 0.56, 0.5, 0.45];
 
 export class PlayScene extends ArcadeScene {
   private controls!: Controls;
-  private player!: Img;
+  private player!: BankedShip;
   private aliens: Alien[] = [];
   private shots: Bullet[] = [];
   private bombs: Bullet[] = [];
@@ -62,8 +63,12 @@ export class PlayScene extends ArcadeScene {
     }
     this.add.rectangle(0, GROUND_Y, width, 4, 0x5dff7a).setOrigin(0).setAlpha(0.8);
 
-    this.player = this.add.image(width / 2, PLAYER_Y, 'player').setScale(0.62).setDepth(10);
-    this.controls = new Controls(this);
+    this.player = new BankedShip(this, width / 2, PLAYER_Y, 'player', {
+      scale: 0.62, depth: 10, fullSpeed: 380, trailLife: 150, flameKeys: ['flame1', 'flame2'], trailTints: [0x7fd8ff, 0x3ea8ff, 0xd8f6ff],
+      flames: [{ x: 0, y: 35, s: 1.2 }, { x: -33, y: 26, s: 0.55 }, { x: 33, y: 26, s: 0.55 }],
+    });
+    // Touch: floating stick on the left half, A (fire) on the right. Keyboard: arrows + Space.
+    this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
     this.updateLives();
     this.nextLevel();
   }
@@ -298,19 +303,15 @@ export class PlayScene extends ArcadeScene {
     this.fireCd -= dt;
     this.invuln = Math.max(0, this.invuln - dt);
 
-    // player: keyboard or "hold and follow your finger" (auto-fire)
+    // player: stick or arrows (speed scales with the push), A / Space fires
     if (!this.dead) {
-      const p = this.input.activePointer;
-      let move = c.axisX * 460 * dt;
-      let wantFire = c.a;
-      if (p.isDown && !c.axisX) {
-        move = Phaser.Math.Clamp(p.worldX - this.player.x, -520 * dt, 520 * dt);
-        wantFire = true;
-      }
+      const move = c.axisX * 480 * dt;
+      const wantFire = c.a;
       this.player.x = Phaser.Math.Clamp(this.player.x + move, 40, width - 40);
       if (wantFire) this.fire();
       this.player.setAlpha(this.invuln > 0 ? (Math.floor(this.elapsed * 12) % 2 ? 0.3 : 1) : 1);
     }
+    this.player.update(dt);
 
     // formation march (speeds up as the fleet thins out)
     const alive = this.living().length;

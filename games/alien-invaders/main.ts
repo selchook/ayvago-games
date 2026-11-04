@@ -15,6 +15,9 @@ launch({
     l.image('shot', kenney(SS + 'lasers/laserblue01.png'));
     l.image('bomb', kenney(SS + 'lasers/laserred08.png'));
     l.image('star', kenney(SS + 'effects/star1.png'));
+    // engine flames (tip pointing down) that follow the ship's bank
+    l.image('flame1', kenney(SS + 'effects/fire14.png'));
+    l.image('flame2', kenney(SS + 'effects/fire15.png'));
     for (const k of ['red1', 'red5', 'blue3', 'blue2', 'green2', 'green3']) l.image('alien-' + k, kenney(`${SS}enemies/enemy${k}.png`));
     l.image('mystery', kenney('alien-ufo/png/shippink.png'));
     l.image('mystery-menu', kenney('alien-ufo/png/shipyellow_manned.png'));
