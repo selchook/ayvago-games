@@ -552,7 +552,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/color-bounce.png"
     },
     {
       "id": "color-gate",
@@ -618,7 +618,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/color-race.png"
     },
     {
       "id": "color-road",
@@ -651,7 +651,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/color-road.png"
     },
     {
       "id": "color-wheel",
@@ -684,7 +684,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/color-wheel.png"
     },
     {
       "id": "connect-four",
@@ -930,8 +930,8 @@
         "en": "Head Soccer"
       },
       "description": {
-        "tr": "Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve kramponu savur. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.",
-        "en": "Big-headed one-on-one football! Run, jump, head the ball and swing your boot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too."
+        "tr": "Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve şut çek. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Big-headed one-on-one football! Run, jump, head the ball and shoot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too."
       },
       "howTo": {
         "tr": "Sol/Sağ ok ya da A/D ile koş, Yukarı ya da W ile zıpla, Boşluk ile şut çek. Dokunmatikte ekrandaki tuşları kullan.",
@@ -991,7 +991,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/hex-bridge.png"
     },
     {
       "id": "hex-merge",
@@ -1447,7 +1447,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/nine-mens-morris.png"
     },
     {
       "id": "nonogram",
@@ -1513,7 +1513,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/orbit-hop.png"
     },
     {
       "id": "paint-roll",
@@ -1546,7 +1546,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/paint-roll.png"
     },
     {
       "id": "penalty-kick",
@@ -2225,7 +2225,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/sumo-push.png"
     },
     {
       "id": "tank-arena",
@@ -2488,7 +2488,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
-      "thumb": null
+      "thumb": "thumbs/ultimate-tictactoe.png"
     },
     {
       "id": "water-sort",

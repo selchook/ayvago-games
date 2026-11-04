@@ -32,6 +32,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 | `npm run new-game -- <slug> "<Title>"` | scaffold a game |
 | `npm run build` | registry + typecheck + production build into `dist/` |
 | `npm run test:smoke` | full smoke test of every game against `dist/` |
+| `npm run test:changed` | build + smoke + platform check of only the games changed since `origin/main` (every game when shared code changed); CI runs the same |
 | `node scripts/smoke-test.mjs --dev --serial <slug>` | smoke-test one game without building |
 | `npm run test:platform` | GHA protocol check of every game embedded like ayvago.com |
 | `npm run platform` | regenerate ayvago.json manifests + `platform/arcade-catalog.ts` |
@@ -45,7 +46,10 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 - **TR and EN.** Every user-visible string is in both languages; the Turkish must be correct (ç ğ ı İ ö ş ü). Fonts: Press Start 2P (titles) + Pixelify Sans (body). Both cover Turkish. The Kenney fonts do not.
 - **Assets.** CC0 only, from `public/assets`: Kenney (`kenney/`) and the CC0 packs recorded in `docs/assets/LICENSES.md` (`oga/`: Juhani Junkala's 512 retro effects and chiptune music). A new pack is added to that register (source, author, license) before it is used; CC-BY and other attribution licenses are not allowed. No runtime network loads.
 - **Music.** The core plays background music (`src/core/music.ts`): the title theme on the menu and a track picked from the game's genre during rounds, ducked under pause and result screens. A game may choose with `music: { menu, play }` in its definition (`false` turns a slot off).
-- **Player characters.** Players pick one of ten characters on ayvago.com; the platform sends it in GHA_START (protocol 2.2). Games with a hero whose art fits the Kenney vector style use it through `loadCharacter()` / `playerCharacter()` in `src/core/characters.ts` (art in `public/assets/characters`, built by `tools/import-characters.py`). The ten ids are the contract with the platform's `packages/shared`.
+- **Player characters.** Players pick one of five human characters on ayvago.com; the platform sends it in GHA_START (protocol 2.2).
+  - Games with a hero whose art fits the Kenney vector style use it through `loadCharacter()` / `playerCharacter()` in `src/core/characters.ts`. The art is in `public/assets/characters` (24 poses each, built by `tools/import-characters.py`).
+  - Every move uses the character's own pose (`kick`, `hang`, `cheer1` ...); never draw extra limbs on top of a character.
+  - The five ids are the contract with the platform's `packages/shared`.
 - **Done means tested.** A game is done when the smoke test passes and it meets the Definition of Done in `.claude/skills/ayvago-new-game/SKILL.md`.
 
 ## Ayvago platform integration (selchook/ayvago)
@@ -74,5 +78,5 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 1. Add the concepts to `docs/GAMES.md`.
 2. Spawn one `ayvago-game-dev` agent per 4–6 games. Each owns only its `games/<slug>` folders.
 3. Run `ayvago-game-qa` over the results.
-4. Run `npm run release`.
+4. Test only what changed: `npm run test:changed` (build, smoke and platform check of the new or changed games), then `node scripts/gen-platform.mjs --live`, `node scripts/gen-store-assets.mjs <new slugs>` and `npm run validate:platform`. `npm run release` tests every game; keep it for changes to shared code.
 5. Merge to `main`. Vercel deploys the games; the platform's catalog sync then opens its PR (run "Sync arcade catalog" from the platform's Actions tab to do it at once).

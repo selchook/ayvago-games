@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import {
-  ArcadeScene, CHARACTER_FRAME, burst, shake, flash, txt, t, rng, net, loadCharacter, otherCharacters, playerCharacter,
+  ArcadeScene, CHARACTER_FRAME, burst, shake, flash, txt, t, rng, net, loadCharacter, otherCharacters, playerCharacter, peerCharacter,
+  characterRig, type CharacterId,
 } from '@core';
 import {
-  W, GROUND, GOAL_W, GOAL_TOP, BALL_R, CHAR_SCALE, KICK_T, AI_LEVELS,
-  newWorld, newPlayer, resetPlayers, dropBall, step, think, movePlayer, separate, type World, type Input, type Events, type Player,
+  W, GROUND, GOAL_W, GOAL_TOP, BALL_R, CHAR_SCALE, KICK_ON, KICK_POSE_END, AI_LEVELS,
+  footOffset, newWorld, newPlayer, resetPlayers, dropBall, step, think, movePlayer, separate, type World, type Input, type Events, type Player,
 } from './sim';
 import { makeTextures, drawPitch, drawNets } from './art';
 
@@ -15,7 +16,7 @@ const SEND_MIN_MS = 25;          // the guest sends an input change at once, at 
 const SNAP_PX = 220;             // a prediction this far off jumps to the host's position
 const READY_S = 1.1;
 const GOAL_S = 2.3;
-export const POSES = ['stand', 'walk1', 'walk2', 'jump', 'hit'] as const;
+export const POSES = ['stand', 'walk1', 'walk2', 'jump', 'hit', 'kick', 'cheer1', 'cheer2'] as const;
 
 type Phase = 'ready' | 'play' | 'goal' | 'end';
 const PHASES: Phase[] = ['ready', 'play', 'goal', 'end'];
@@ -85,7 +86,6 @@ export class PlayScene extends ArcadeScene {
   private lastGoals = 0;
   // drawing
   private sprites: Phaser.GameObjects.Image[] = [];
-  private boots: Phaser.GameObjects.Image[] = [];
   private shadows: Phaser.GameObjects.Ellipse[] = [];
   private ball!: Phaser.GameObjects.Image;
   private ballShadow!: Phaser.GameObjects.Ellipse;
@@ -104,6 +104,11 @@ export class PlayScene extends ArcadeScene {
     makeTextures(this);
     this.epoch++;
     this.world = newWorld();
+    // each player kicks from its own character's foot; the guest's world is the host's, so player
+    // 0 is the host's character on both screens
+    const guest = net.active && !net.isHost;
+    this.setFoot(0, guest ? peerCharacter() : playerCharacter());
+    this.setFoot(1, guest ? playerCharacter() : peerCharacter());
     this.phase = 'ready'; this.phaseT = 0; this.clock = MATCH_S; this.golden = false; this.goals = [0, 0]; this.goalCount = 0; this.winner = -1;
     this.kickoffSide = 0; this.mood = [0, 0]; this.level = 0; this.matchNo = 0; this.rivalPrefix = 'p2';
     this.online = net.active; this.host = net.isHost;
@@ -111,13 +116,12 @@ export class PlayScene extends ArcadeScene {
     this.sendT = 0; this.remote = { x: 0, u: 0, k: 0, q: -1 }; this.remoteKicks = 0; this.remoteAt = 0; this.snaps = []; this.offset = Number.NaN;
     this.pred = newPlayer(1); this.predHist = []; this.predFix = { x: 0, y: 0 }; this.sentIn = { x: 0, u: 0, k: 0, q: -1 }; this.sentLog = []; this.jumpLatch = false;
     this.lastEv = []; this.lastGoals = 0; this.walkT = [0, 0]; this.lastTick = -1;
-    this.sprites = []; this.boots = []; this.shadows = []; this.touchBtns = [];
+    this.sprites = []; this.shadows = []; this.touchBtns = [];
 
     drawPitch(this);
     for (let i = 0; i < 2; i++) {
       this.shadows.push(this.add.ellipse(0, GROUND + 4, 96, 18, 0x000000, 0.3).setDepth(2));
       this.sprites.push(this.add.image(0, GROUND, 'p1-stand').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(CHAR_SCALE).setDepth(10 + i));
-      this.boots.push(this.add.image(0, 0, 'hs-boot').setOrigin(0.35, 0.03).setDepth(12 + i).setVisible(false));
     }
     this.sprites[1].setTexture('p2-stand').setFlipX(true);
     this.ballShadow = this.add.ellipse(0, GROUND + 4, 48, 12, 0x000000, 0.3).setDepth(2);
@@ -171,7 +175,12 @@ export class PlayScene extends ArcadeScene {
     mk('right', 218, 664, 56, 0x3ee6ff, (g) => g.fillTriangle(242, 664, 202, 640, 202, 688));
     mk('jump', 1062, 664, 56, 0x5dff7a, (g) => g.fillTriangle(1062, 638, 1036, 684, 1088, 684));
     mk('kick', 1196, 640, 66, 0xec3013, () => undefined);
-    this.add.image(1196, 640, 'hs-boot').setDepth(9501).setAngle(-60).setScale(1.2).setAlpha(0.9);
+    // the icon is your own character in its kick pose
+    this.add.image(1192, 640, 'p1-kick').setOrigin(0.5, 0.52).setScale(0.68).setDepth(9501).setAlpha(0.95);
+  }
+
+  private setFoot(i: 0 | 1, id: CharacterId): void {
+    this.world.foot[i] = footOffset(characterRig(id).kickFoot, CHARACTER_FRAME);
   }
 
   /** The local player's input this frame (in its own view: +x is towards the rival goal). */
@@ -221,14 +230,16 @@ export class PlayScene extends ArcadeScene {
 
   /** Solo: every new match brings a different rival character (loaded on demand). */
   private ensureRival(then: () => void): void {
-    if (this.online || this.matchNo === 1) { this.rivalPrefix = 'p2'; then(); return; }
+    if (this.online || this.matchNo === 1) { this.rivalPrefix = 'p2'; if (!this.online) this.setFoot(1, peerCharacter()); then(); return; }
     const pool = otherCharacters(playerCharacter());
     const id = pool[(this.matchNo - 1) % pool.length];
     const prefix = `r-${id}`;
     const epoch = this.epoch;
     const use = () => {
       if (epoch !== this.epoch || this.isOver) return;     // the scene restarted meanwhile
-      this.rivalPrefix = this.textures.exists(`${prefix}-stand`) ? prefix : 'p2';
+      const ok = this.textures.exists(`${prefix}-stand`);
+      this.rivalPrefix = ok ? prefix : 'p2';
+      this.setFoot(1, ok ? id : peerCharacter());
       then();
     };
     if (this.textures.exists(`${prefix}-stand`)) { use(); return; }
@@ -392,27 +403,27 @@ export class PlayScene extends ArcadeScene {
   // ---------------------------------------------------------------- drawing
   private render(pl: [ViewPlayer, ViewPlayer], bx: number, by: number, bvx: number, bvy: number, ba: number, dt: number): void {
     for (const i of [0, 1] as const) {
-      const p = pl[i], s = this.sprites[i], boot = this.boots[i];
+      const p = pl[i], s = this.sprites[i];
       const prefix = i === 0 ? 'p1' : this.rivalPrefix;
+      // a kick is the character's own `kick` pose: leg back (walk1), the kick, then the leg returns
+      const kicking = p.kickT >= KICK_ON && p.kickT < KICK_POSE_END;
       let pose: string;
-      if (p.mood === 2) pose = 'hit';
+      if (p.kickT >= 0 && p.kickT < KICK_ON) pose = 'walk1';
+      else if (kicking) pose = 'kick';
+      else if (p.mood === 2) pose = 'hit';
       else if (!p.ground) pose = 'jump';
       else if (Math.abs(p.vx) > 10) {
         this.walkT[i] += dt * Math.abs(p.vx) / 60;
         pose = Math.floor(this.walkT[i]) % 2 ? 'walk2' : 'walk1';
-      } else pose = p.mood === 1 && Math.floor(this.time.now / 220) % 2 ? 'jump' : 'stand';
-      const hop = p.mood === 1 && p.ground ? -Math.abs(Math.sin(this.time.now / 140)) * 26 : 0;
+      } else if (p.mood === 1) pose = Math.floor(this.time.now / 220) % 2 ? 'cheer2' : 'cheer1';
+      else pose = 'stand';
+      const hop = p.mood === 1 && p.ground && !kicking ? -Math.abs(Math.sin(this.time.now / 140)) * 26 : 0;
+      // the frame is centred on the feet, so flipping it mirrors the kick for a player facing left
       s.setTexture(`${prefix}-${pose}`).setPosition(p.x, p.y + hop).setFlipX(p.face < 0);
-      s.setAngle(p.ground ? 0 : Phaser.Math.Clamp(p.vx * 0.012, -6, 6));
+      s.setAngle(p.ground || kicking ? 0 : Phaser.Math.Clamp(p.vx * 0.012, -6, 6));
       const sh = this.shadows[i];
       const air = Math.max(0, GROUND - p.y);
       sh.setPosition(p.x, GROUND + 4).setScale(Math.max(0.4, 1 - air / 400)).setAlpha(0.3 * Math.max(0.3, 1 - air / 300));
-      if (p.kickT >= 0) {
-        const q = Phaser.Math.Clamp(p.kickT / KICK_T, 0, 1);
-        const e = q < 0.35 ? -q / 0.35 * 0.3 : (q - 0.35) / 0.65;      // a little wind-up, then the swing
-        const a = Phaser.Math.Linear(30, -105, Phaser.Math.Easing.Cubic.Out(Math.max(0, e))) + (e < 0 ? -e * 80 : 0);
-        boot.setVisible(true).setPosition(p.x - p.face * 6, p.y - 58).setFlipX(p.face < 0).setAngle(p.face > 0 ? a : -a);
-      } else boot.setVisible(false);
     }
     this.ball.setPosition(bx, by).setRotation(ba);
     const air = Math.max(0, GROUND - BALL_R - by);

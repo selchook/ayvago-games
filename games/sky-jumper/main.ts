@@ -12,8 +12,8 @@ launch({
   preload(scene) {
     const l = scene.load;
     for (const n of [2, 3, 4]) l.image('bg' + n, kenney(`${J}background/bg_layer${n}.png`));
-    // the player's chosen character: pc-jump (rising), pc-stand (falling), pc-hit (lost)
-    loadCharacter(l, { poses: ['jump', 'stand', 'hit'] });
+    // the player's chosen character: pc-jump (rising), pc-fall (falling), pc-hit (lost)
+    loadCharacter(l, { poses: ['jump', 'fall', 'hit'] });
     for (const b of BIOMES) {
       l.image(`plat-${b}`, kenney(`${J}environment/ground_${b}_small.png`));
       l.image(`plat-${b}-broken`, kenney(`${J}environment/ground_${b}_small_broken.png`));

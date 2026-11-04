@@ -211,7 +211,9 @@ export class PlayScene extends ArcadeScene {
     this.player.y += this.vy * dt;
     const feet = this.player.y + 42;
     this.jetpack.setVisible(this.jet > 0).setPosition(this.player.x + (this.player.flipX ? 16 : -16), this.player.y + 6).setFlipX(this.player.flipX);
-    if (this.vy > 150 && this.jet <= 0 && !this.dying) this.player.setTexture('pc-stand');
+    // rising (a bounce or the jetpack): fist up; dropping: the fall pose
+    if (this.jet > 0 && !this.dying) this.player.setTexture('pc-jump');
+    else if (this.vy > 150 && !this.dying) this.player.setTexture('pc-fall');
 
     // ground at the very start
     if (!this.dying && this.vy > 0 && feet >= height - 70 && this.topY > this.startY - 600) {

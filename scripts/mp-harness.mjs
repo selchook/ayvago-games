@@ -52,6 +52,8 @@ const hostPage = (slug, land) => {
   const names = ['Host', 'Guest'];
   window.relayed = [[], []];          // messages sent by player i
   window.log = [[], []];
+  // Different characters per seat, as on ayvago.com (protocol 2.2), so both screens agree on who is who.
+  const chars = ['zombie', 'rookie'];
   window.send = (i, m) => frames[i].contentWindow.postMessage(m, '${GAME_ORIGIN}');
   addEventListener('message', (e) => {
     const i = frames.findIndex((f) => f.contentWindow === e.source);
@@ -60,6 +62,7 @@ const hostPage = (slug, land) => {
     window.log[i].push(m.type);
     if (m.type === 'GHA_READY') send(i, { type: 'GHA_START', config: {
       mode: 'multiplayer', isHost: i === 0, playerIndex: i, playerCount: 2, peerName: names[1 - i], protocol: 2,
+      character: chars[i], peerCharacter: chars[1 - i],
       theme: 'retro', colorMode: 'dark', tokens: { '--accent': '#ec3013' }, locale: 'tr', adsEnabled: false } });
     if (m.type === 'GHA_MOVE_OUT') {
       window.relayed[i].push(m.data && m.data.t);

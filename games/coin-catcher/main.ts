@@ -1,6 +1,6 @@
-import { launch, loadAudio, kenney, type GameMeta } from '@core';
+import { launch, loadAudio, loadCharacter, kenney, CHARACTER_FRAME, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene } from './PlayScene';
+import { PlayScene, HERO_SCALE } from './PlayScene';
 
 const P = 'platformer/png/';
 
@@ -14,9 +14,8 @@ launch({
     const l = scene.load;
     l.image('cc-bg', kenney(P + 'backgrounds/colored_grass.png'));
     l.image('cc-grass', kenney(P + 'ground/grass/grass.png'));
-    for (const f of ['front', 'walk1', 'walk2', 'hit', 'jump']) {
-      l.image('cc-alien-' + f, kenney(`${P}players/variable_sizes/green/aliengreen_${f}.png`));
-    }
+    // the hero is the player's chosen character
+    loadCharacter(l, { prefix: 'cc-hero', poses: ['front', 'walk1', 'walk2', 'hit'] });
     for (const c of ['gold', 'silver', 'bronze']) l.image('cc-coin-' + c, kenney(`${P}items/coin${c}.png`));
     for (const c of ['blue', 'green', 'red', 'yellow']) l.image('cc-gem-' + c, kenney(`${P}items/gem${c}.png`));
     l.image('cc-star', kenney(P + 'items/star.png'));
@@ -34,8 +33,8 @@ launch({
     loadAudio(l, 'broken', J + 'general-sounds/negative-sounds/sfx-sounds-damage3');
     loadAudio(l, 'boom', J + 'explosions/short/sfx-exp-short-hard9');
     loadAudio(l, 'boomFar', J + 'explosions/shortest/sfx-exp-shortest-hard7');
-    loadAudio(l, 'hurt', J + 'death-screams/alien/sfx-deathscream-alien5');
-    loadAudio(l, 'death', J + 'death-screams/alien/sfx-deathscream-alien1');
+    loadAudio(l, 'hurt', J + 'death-screams/human/sfx-deathscream-human5');
+    loadAudio(l, 'death', J + 'death-screams/human/sfx-deathscream-human1');
     loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop5');
     loadAudio(l, 'level', J + 'general-sounds/fanfares/sfx-sounds-fanfare3');
   },
@@ -48,8 +47,10 @@ launch({
       const img = scene.add.image(70 + i * 116, height * 0.08 + (i % 2) * 50, k).setScale(0.6);
       scene.tweens.add({ targets: img, y: img.y + 24, duration: 700 + i * 90, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     });
-    const a = scene.add.image(width * 0.18, height - 110, 'cc-alien-walk1').setOrigin(0.5, 1).setScale(0.7);
+    const a = scene.add.image(width * 0.18, height - 110, 'cc-hero-walk1').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(HERO_SCALE * 0.97);
     scene.tweens.add({ targets: a, x: width * 0.82, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', onYoyo: () => a.setFlipX(true), onRepeat: () => a.setFlipX(false) });
+    let f = 0;
+    scene.time.addEvent({ delay: 140, loop: true, callback: () => a.setTexture(++f % 2 ? 'cc-hero-walk2' : 'cc-hero-walk1') });
   },
   scenes: [PlayScene],
   strings: {

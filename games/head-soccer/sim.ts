@@ -15,7 +15,11 @@ export const HEAD_OFF = 108;        // feet -> head centre
 export const HEAD_R = 48;
 export const BODY_OFF = 40;
 export const BODY_R = 30;
-export const KICK_T = 0.24;         // seconds of one boot swing
+export const KICK_T = 0.24;         // seconds of one kick, wind-up to recovery
+export const KICK_ON = 0.03;        // the wind-up (`walk1`, leg back) ends and the foot is out
+export const KICK_OFF = 0.17;       // the foot can no longer strike the ball
+export const KICK_POSE_END = 0.19;  // `kick` is drawn until here, then the leg comes back
+const KICK_REACH = 40;              // how far from the foot tip (beyond the ball's radius) it strikes
 
 const G_PLAYER = 2300;
 const G_BALL = 1500;
@@ -26,7 +30,7 @@ export interface Player {
   x: number; y: number; vx: number; vy: number;
   ground: boolean;
   face: 1 | -1;
-  /** Seconds into the current boot swing, or -1. */
+  /** Seconds into the current kick, or -1. */
   kickT: number;
   kicked: boolean;
   speed: number;
@@ -39,7 +43,20 @@ export interface Input { x: number; jump: boolean; kick: boolean }
 /** Sound / effect counters; the online guest plays effects when they change. */
 export interface Events { kick: [number, number]; swing: [number, number]; head: [number, number]; jump: [number, number]; post: number; bounce: number; power: number }
 
-export interface World { p: [Player, Player]; b: Ball; ev: Events; squeeze: number }
+/**
+ * Tip of each player's kicking foot in the `kick` pose, from the point between the feet, facing
+ * right, in world px. Each player kicks from its own character's foot (`kickFoot` in the rig);
+ * both sides of an online match know both characters, so they hold the same numbers.
+ */
+export type Foot = [number, number];
+
+export interface World { p: [Player, Player]; b: Ball; ev: Events; squeeze: number; foot: [Foot, Foot] }
+
+/** Rig point on the 144x176 character frame -> offset from the feet in world px (facing right). */
+export function footOffset(kickFoot: [number, number], frame: { width: number; height: number; originY: number }): Foot {
+  const r = (v: number) => Math.round(v * 10) / 10;
+  return [r((kickFoot[0] - frame.width / 2) * CHAR_SCALE), r((kickFoot[1] - frame.originY * frame.height) * CHAR_SCALE)];
+}
 
 export function newWorld(): World {
   return {
@@ -47,6 +64,7 @@ export function newWorld(): World {
     b: { x: W / 2, y: 220, vx: 0, vy: 0, a: 0 },
     ev: { kick: [0, 0], swing: [0, 0], head: [0, 0], jump: [0, 0], post: 0, bounce: 0, power: 0 },
     squeeze: 0,
+    foot: [[54, -46], [54, -46]],
   };
 }
 
@@ -74,7 +92,7 @@ function stepPlayer(w: World, i: 0 | 1, inp: Input, dt: number): void {
 }
 
 /**
- * One player's own movement for one step: run, jump, boot swing, gravity, the side lines and the
+ * One player's own movement for one step: run, jump, kick, gravity, the side lines and the
  * crossbar. Shared by the simulation and the online guest's prediction of its own player.
  */
 export function movePlayer(p: Player, inp: Input, dt: number): { jumped: boolean; swung: boolean } {
@@ -165,13 +183,21 @@ export function step(w: World, inputs: [Input, Input], dt: number): number {
         if (hv > 260) w.ev.head[i]++;
       }
       if (bump(b, p.x, p.y - BODY_OFF, BODY_R, p.vx, p.vy, 0.5) > 0) touching++;
-      // the boot: live in the middle of the swing, once per swing
-      if (p.kickT >= 0.02 && p.kickT <= 0.17 && !p.kicked) {
-        const kx = p.x + p.face * 46, ky = p.y - 30;
+      // the kicking foot: live while the `kick` pose is out, once per kick
+      if (p.kickT >= KICK_ON && p.kickT <= KICK_OFF && !p.kicked) {
+        const f = w.foot[i];
+        const kx = p.x + p.face * f[0], ky = p.y + f[1];
         const ddx = b.x - kx, ddy = b.y - ky;
-        if (ddx * ddx + ddy * ddy < (BALL_R + 40) * (BALL_R + 40)) {
+        if (ddx * ddx + ddy * ddy < (BALL_R + KICK_REACH) * (BALL_R + KICK_REACH)) {
           p.kicked = true;
           const low = b.y > p.y - 62;
+          // the ball leaves from the foot: it sits against the tip (on its forward side) as it flies
+          const d = Math.hypot(ddx, ddy) || 1;
+          let nx = Math.max(0.35, (ddx * p.face) / d), ny = ddy / d;
+          const nl = Math.hypot(nx, ny);
+          nx /= nl; ny /= nl;
+          b.x = kx + p.face * nx * BALL_R;
+          b.y = Math.min(GROUND - BALL_R, ky + ny * BALL_R);
           const power = low ? 900 : 1120;
           b.vx = p.face * power + p.vx * 0.35;
           b.vy = low ? -640 : -300 + Math.min(0, p.vy * 0.2);
