@@ -20,6 +20,9 @@ launch({
     l.image('pu-shield', kenney(SS + 'power-ups/powerupblue_shield.png'));
     l.image('shield', kenney(SS + 'effects/shield1.png'));
     l.image('star', kenney(SS + 'effects/star1.png'));
+    // engine flames (tip pointing down) that follow the ship's bank
+    l.image('flame1', kenney(SS + 'effects/fire13.png'));
+    l.image('flame2', kenney(SS + 'effects/fire16.png'));
     const J = 'oga/junkala-sfx/';
     loadAudio(l, 'shoot', J + 'weapons/lasers/sfx-wpn-laser8');
     loadAudio(l, 'eshot', J + 'weapons/lasers/sfx-wpn-laser2');

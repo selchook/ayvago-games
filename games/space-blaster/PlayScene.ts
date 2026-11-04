@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { ArcadeScene, Controls, burst, shake, flash, t, rng } from '@core';
+import { BankedShip } from './BankedShip';
 
 type Body = Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
 
 export class PlayScene extends ArcadeScene {
   private controls!: Controls;
-  private ship!: Body;
+  private ship!: Body;            // invisible hitbox; the visible hull is `bank`
+  private bank!: BankedShip;
   private shieldFx!: Phaser.GameObjects.Image;
   private lasers!: Phaser.Physics.Arcade.Group;
   private enemyShots!: Phaser.Physics.Arcade.Group;
@@ -20,8 +22,6 @@ export class PlayScene extends ArcadeScene {
   private doubleShot = 0;
   private shield = 0;
   private invuln = 0;
-  private dragX: number | null = null;
-  private dragY: number | null = null;
 
   createGame(): void {
     const { width, height } = this.scale;
@@ -41,18 +41,15 @@ export class PlayScene extends ArcadeScene {
 
     this.ship = this.physics.add.image(width / 2, height * 0.82, 'ship').setDepth(10) as Body;
     this.ship.setCollideWorldBounds(true).body.setSize(70, 50);
+    this.ship.setVisible(false);
+    this.bank = new BankedShip(this, this.ship.x, this.ship.y, 'ship', {
+      depth: 10, flameKeys: ['flame1', 'flame2'], trailTints: [0xffb347, 0xff6a3d, 0xffe08a],
+      flames: [{ x: 0, y: 34, s: 1.15 }, { x: -25, y: 24, s: 0.6 }, { x: 25, y: 24, s: 0.6 }],
+    });
     this.shieldFx = this.add.image(0, 0, 'shield').setDepth(11).setVisible(false).setScale(0.9);
 
-    this.controls = new Controls(this);
-    // Direct drag: the ship follows the finger with an offset so it stays visible.
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { this.dragX = p.x; this.dragY = p.y; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!p.isDown || this.dragX === null || this.dragY === null) return;
-      this.ship.x = Phaser.Math.Clamp(this.ship.x + p.x - this.dragX, 40, width - 40);
-      this.ship.y = Phaser.Math.Clamp(this.ship.y + p.y - this.dragY, height * 0.35, height - 60);
-      this.dragX = p.x; this.dragY = p.y;
-    });
-    this.input.on('pointerup', () => { this.dragX = this.dragY = null; });
+    // Touch: floating stick anywhere (fire is automatic, so no buttons). Keyboard: arrows/WASD.
+    this.controls = new Controls(this, { joystick: true });
 
     this.physics.add.overlap(this.lasers, this.enemies, (l, e) => this.hitEnemy(l as Body, e as Body));
     this.physics.add.overlap(this.ship, this.enemies, (_s, e) => { this.killEnemy(e as Body, false); this.hurt(); });
@@ -154,7 +151,7 @@ export class PlayScene extends ArcadeScene {
     this.updateHud();
     if (this.lives <= 0) {
       burst(this, this.ship.x, this.ship.y, [0xec3013, 0xffd23f], 60, 500);
-      this.ship.setVisible(false);
+      this.bank.setVisible(false);
       this.sfxAt('die', this.ship.x, { volume: 0.85 });
       this.endGame();
     }
@@ -164,9 +161,10 @@ export class PlayScene extends ArcadeScene {
     const dt = delta / 1000;
     const { width, height } = this.scale;
     const c = this.controls;
+    // speed scales with how far the stick is pushed (keys give full speed)
     if (c.axisX || c.axisY) {
-      this.ship.x = Phaser.Math.Clamp(this.ship.x + c.axisX * 560 * dt, 40, width - 40);
-      this.ship.y = Phaser.Math.Clamp(this.ship.y + c.axisY * 560 * dt, height * 0.35, height - 60);
+      this.ship.x = Phaser.Math.Clamp(this.ship.x + c.axisX * 600 * dt, 40, width - 40);
+      this.ship.y = Phaser.Math.Clamp(this.ship.y + c.axisY * 600 * dt, height * 0.35, height - 60);
     }
     this.fireCd -= dt; this.spawnCd -= dt;
     this.doubleShot = Math.max(0, this.doubleShot - dt);
@@ -174,8 +172,10 @@ export class PlayScene extends ArcadeScene {
     this.invuln = Math.max(0, this.invuln - dt);
     if (this.fireCd <= 0) { this.fire(); this.fireCd = 0.18; }
 
-    this.ship.setAlpha(this.invuln > 0 && this.shield <= 0 ? (Math.floor(this.elapsed * 12) % 2 ? 0.3 : 1) : 1);
-    this.shieldFx.setVisible(this.shield > 0).setPosition(this.ship.x, this.ship.y);
+    this.bank.x = this.ship.x; this.bank.y = this.ship.y;
+    this.bank.update(dt);
+    this.bank.setAlpha(this.invuln > 0 && this.shield <= 0 ? (Math.floor(this.elapsed * 12) % 2 ? 0.3 : 1) : 1);
+    this.shieldFx.setVisible(this.shield > 0).setPosition(this.ship.x, this.ship.y).setRotation(this.bank.root.rotation);
 
     for (const obj of this.enemies.getChildren() as Body[]) {
       const tt = (obj.getData('t') as number) + dt;
