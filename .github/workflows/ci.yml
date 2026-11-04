@@ -32,10 +32,14 @@ jobs:
             exit 1
           fi
 
+  # Builds and smoke-tests only the games the change touches; a change to shared code (core,
+  # scripts, assets, config) tests every game. Typecheck always covers the whole project.
   build-and-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -43,8 +47,12 @@ jobs:
       - run: npm ci
       - run: npx playwright@1.56.1 install --with-deps chromium
       - run: npm i --no-save playwright@1.56.1
-      - run: npm run build
-      - run: npm run test:smoke
+      - name: Build and smoke-test the changed games
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then base="origin/${{ github.base_ref }}"; else base="${{ github.event.before }}"; fi
+          # A new branch or a force push has no usable base: test everything.
+          git cat-file -e "$base^{commit}" 2>/dev/null || base=all
+          node scripts/test-changed.mjs "$base" --smoke-only
       - uses: actions/upload-artifact@v4
         if: always()
         with:

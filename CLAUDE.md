@@ -32,6 +32,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 | `npm run new-game -- <slug> "<Title>"` | scaffold a game |
 | `npm run build` | registry + typecheck + production build into `dist/` |
 | `npm run test:smoke` | full smoke test of every game against `dist/` |
+| `npm run test:changed` | build + smoke + platform check of only the games changed since `origin/main` (every game when shared code changed); CI runs the same |
 | `node scripts/smoke-test.mjs --dev --serial <slug>` | smoke-test one game without building |
 | `npm run test:platform` | GHA protocol check of every game embedded like ayvago.com |
 | `npm run platform` | regenerate ayvago.json manifests + `platform/arcade-catalog.ts` |
@@ -77,5 +78,5 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 1. Add the concepts to `docs/GAMES.md`.
 2. Spawn one `ayvago-game-dev` agent per 4–6 games. Each owns only its `games/<slug>` folders.
 3. Run `ayvago-game-qa` over the results.
-4. Run `npm run release`.
+4. Test only what changed: `npm run test:changed` (build, smoke and platform check of the new or changed games), then `node scripts/gen-platform.mjs --live`, `node scripts/gen-store-assets.mjs <new slugs>` and `npm run validate:platform`. `npm run release` tests every game; keep it for changes to shared code.
 5. Merge to `main`. Vercel deploys the games; the platform's catalog sync then opens its PR (run "Sync arcade catalog" from the platform's Actions tab to do it at once).

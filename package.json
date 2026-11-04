@@ -16,7 +16,8 @@
     "store-assets": "node scripts/gen-store-assets.mjs",
     "release": "npm run build && node scripts/gen-platform.mjs && npm run build && npm run test:smoke && npm run test:platform && node scripts/gen-store-assets.mjs && npm run validate:platform",
     "validate:platform": "tsx scripts/validate-manifests.ts",
-    "test:mp": "node scripts/mp-harness.mjs"
+    "test:mp": "node scripts/mp-harness.mjs",
+    "test:changed": "node scripts/test-changed.mjs"
   },
   "devDependencies": {
     "prettier": "^3.9.10",
