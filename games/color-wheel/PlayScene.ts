@@ -9,6 +9,8 @@ const RING_T = 50;           // band thickness
 const DOT_R = 26;
 const HIT_R = RING_R + RING_T / 2 + DOT_R * 0.55;
 const RAINBOW = -1;
+const MIN_GAP = 0.16;        // s between two arrivals that need the same ring rotation
+const TURN_TIME = 0.15;      // extra s per ring step the player has to tap between two arrivals
 
 interface Dot {
   c: Phaser.GameObjects.Container;
@@ -206,27 +208,38 @@ export class PlayScene extends ArcadeScene {
     this.plan = [];
     let at = this.travel + (grow ? 1.6 : 1.0);
     let lastAng = -999;
+    // Every dot needs the ring at one rotation (in steps). Two dots in a row that need rotations
+    // far apart get enough time between them for the taps, so a wave can always be matched.
+    const segs = this.segs;
+    const turns = (a: number, b: number) => { const d = Math.abs(a - b) % segs; return Math.min(d, segs - d); };
+    let prevAt = -1, prevR = -1;
+    const fit = (r: number) => {
+      if (prevR >= 0) at = Math.max(at, prevAt + MIN_GAP + TURN_TIME * turns(prevR, r));
+      prevAt = at; prevR = r;
+    };
     for (let i = 0; i < n; i++) {
       const stepDeg = this.stepDeg;
       if (rng.chance(doubleP) && i > 1) {
         // two dots at once: their colours fit one rotation of the ring, so it is always solvable
-        const r = rng.int(0, this.segs - 1);
-        const k1 = rng.int(0, this.segs - 1);
-        let k2 = (k1 + rng.int(1, this.segs - 1)) % this.segs;
-        if (k2 === k1) k2 = (k1 + 1) % this.segs;
+        const r = rng.int(0, segs - 1);
+        const k1 = rng.int(0, segs - 1);
+        let k2 = (k1 + rng.int(1, segs - 1)) % segs;
+        if (k2 === k1) k2 = (k1 + 1) % segs;
+        fit(r);
         for (const k of [k1, k2]) {
           const ang = (k + 0.5) * stepDeg;
-          const seg = (((k - r) % this.segs) + this.segs) % this.segs;
+          const seg = (((k - r) % segs) + segs) % segs;
           this.plan.push({ arrive: at, ang, col: this.cols[seg] });
         }
         at += gapBase * 1.9;
         continue;
       }
-      let k = rng.int(0, this.segs - 1);
-      if ((k + 0.5) * stepDeg === lastAng && rng.chance(0.5)) k = (k + 1) % this.segs;
+      let k = rng.int(0, segs - 1);
+      if ((k + 0.5) * stepDeg === lastAng && rng.chance(0.5)) k = (k + 1) % segs;
       const ang = (k + 0.5) * stepDeg + Phaser.Math.FloatBetween(-stepDeg * 0.18, stepDeg * 0.18);
       lastAng = (k + 0.5) * stepDeg;
-      const col = rng.chance(rainbowP) ? RAINBOW : this.cols[rng.int(0, this.segs - 1)];
+      const col = rng.chance(rainbowP) ? RAINBOW : this.cols[rng.int(0, segs - 1)];
+      if (col !== RAINBOW) fit((((k - this.cols.indexOf(col)) % segs) + segs) % segs);
       this.plan.push({ arrive: at, ang, col });
       at += gapBase * Phaser.Math.FloatBetween(0.85, 1.45);
     }
