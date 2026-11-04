@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "orbithop",
+  "title": {
+    "en": "Orbit Hop",
+    "tr": "Yörünge Atlayışı"
+  },
+  "description": {
+    "en": "Your little ship circles a planet. Launch at the right moment to catch the next planet's orbit; miss and you drift off into deep space! Comets and shrinking orbits make every hop harder.",
+    "tr": "Küçük gemin bir gezegenin çevresinde dönüyor. Doğru anda fırla ve bir sonraki gezegenin yörüngesine yakalan; ıskalarsan uzayın derinliklerinde kaybolursun! Kuyruklu yıldızlar ve daralan yörüngeler işini zorlaştırır."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "casual"
+  ],
+  "tags": [
+    "orbit",
+    "hop",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/orbit-hop/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/orbit-hop/ayvago/icon-512.png",
+    "cover": "/games/orbit-hop/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/orbit-hop/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "ultimatetictactoe",
+  "title": {
+    "en": "Ultimate Tic-Tac-Toe",
+    "tr": "Süper XOX"
+  },
+  "description": {
+    "en": "Nine small tic-tac-toe boards inside a big one! The square you play sends your rival to the matching small board. Win three small boards in a row to take the match. The AI thinks longer after every win; play a friend online too.",
+    "tr": "Dokuz küçük XOX tek bir büyük tahtada! Oynadığın kare, rakibin hangi küçük tahtada oynayacağını belirler. Yan yana üç küçük tahta kazanan maçı alır. Yapay zekâ her galibiyette daha uzun düşünür; çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "strategy",
+  "categories": [
+    "strategy",
+    "puzzle",
+    "casual"
+  ],
+  "tags": [
+    "multiplayer",
+    "ultimate",
+    "tictactoe",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/ultimate-tictactoe/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/ultimate-tictactoe/ayvago/icon-512.png",
+    "cover": "/games/ultimate-tictactoe/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/ultimate-tictactoe/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

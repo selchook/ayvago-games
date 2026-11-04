@@ -1,16 +1,17 @@
 # Ayvago launch catalogue
 
-## Status (70 shipped)
+## Status (80 shipped)
 
-**Shipped.** All 70 games in the concept list. Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
-air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, block-blast, block-drop, bomb-maze, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-gate, connect-four, dots-and-boxes, dungeon-dash, fish-frenzy, fruit-slash, gem-match, gomoku, head-soccer, hex-merge, hoop-shot, jetpack-rush, light-cycles, lights-out, lunar-lander, mangala, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, neon-pong, nonogram, penalty-kick, pinball, pipe-flow, pixel-runner, platform-hopper, plinko-drop, retro-snake, reversi, road-crosser, rope-swing, sea-battle, shooting-gallery, simon-says, sky-jumper, slide-puzzle, sokoban, solitaire, space-blaster, stack-tower, sudoku, tank-arena, tappy-plane, tile-triple, tower-defense, traffic-racer, turkish-draughts, ufo-abduction, water-sort, whack-a-mole, word-hunt, zombie-survivor.
+**Shipped.** All 80 games in the concept list. Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
+air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, block-blast, block-drop, bomb-maze, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-bounce, color-gate, color-race, color-road, color-wheel, connect-four, dots-and-boxes, dungeon-dash, fish-frenzy, fruit-slash, gem-match, gomoku, head-soccer, hex-bridge, hex-merge, hoop-shot, jetpack-rush, light-cycles, lights-out, lunar-lander, mangala, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, neon-pong, nine-mens-morris, nonogram, orbit-hop, paint-roll, penalty-kick, pinball, pipe-flow, pixel-runner, platform-hopper, plinko-drop, retro-snake, reversi, road-crosser, rope-swing, sea-battle, shooting-gallery, simon-says, sky-jumper, slide-puzzle, sokoban, solitaire, space-blaster, stack-tower, sudoku, sumo-push, tank-arena, tappy-plane, tile-triple, tower-defense, traffic-racer, turkish-draughts, ufo-abduction, ultimate-tictactoe, water-sort, whack-a-mole, word-hunt, zombie-survivor.
 
 - **Launch wave (2026-10-27):** 26 games.
 - **Second wave (2026-10-28):** 28 games. These are the former backlog plus dungeon-dash and nonogram, finished from `wip/`. Each carries `platform.addedAt` in its `game.json`.
 - **Third wave (2026-10-29):** 10 games, batches J and K. The five in batch J (gomoku, dots-and-boxes, sea-battle, turkish-draughts, light-cycles) are playable online by two players (`"multiplayer": true`), bringing the online games to 13.
 - **Fourth wave (2026-10-30):** 6 games, batches L and M. The three in batch L (mangala, backgammon, head-soccer) are playable online, bringing the online games to 16. head-soccer and rope-swing use the player's platform character.
+- **Fifth wave (2026-11-04):** 10 games, batches N and O. The five in batch N (color-race, ultimate-tictactoe, hex-bridge, nine-mens-morris, sumo-push) are playable online, bringing the online games to 21. Batch O adds one-touch colour games in the spirit of Color Gate.
 
-**Work in progress:** wave 5 (batches N and O): color-race, ultimate-tictactoe, hex-bridge, nine-mens-morris, sumo-push, color-road, color-wheel, color-bounce, paint-roll, orbit-hop.
+**Work in progress:** none.
 
 **Backlog:** empty. New concepts go into the concept list below.
 

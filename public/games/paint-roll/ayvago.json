@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "paintroll",
+  "title": {
+    "en": "Paint Roll",
+    "tr": "Boya Yuvarla"
+  },
+  "description": {
+    "en": "Swipe the paint ball: it slides until it hits a wall and paints every tile it crosses. Paint the whole maze! 60 levels that grow as you go; finish within par for three stars.",
+    "tr": "Boya topunu kaydır: duvara çarpana kadar gider ve geçtiği her kareyi boyar. Labirentin tamamını boya! 60 bölüm büyüdükçe zorlaşır; az hamleyle bitirip üç yıldız topla."
+  },
+  "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "casual"
+  ],
+  "tags": [
+    "paint",
+    "roll",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/paint-roll/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/paint-roll/ayvago/icon-512.png",
+    "cover": "/games/paint-roll/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/paint-roll/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

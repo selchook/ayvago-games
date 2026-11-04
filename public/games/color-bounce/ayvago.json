@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "colorbounce",
+  "title": {
+    "en": "Color Bounce",
+    "tr": "Renkli Zıplama"
+  },
+  "description": {
+    "en": "The ball bounces up a tower of coloured bars. Change its colour before it lands: a matching bar bounces it on, a wrong one ends the run. Watch out for sliding, split and shrinking bars!",
+    "tr": "Top renkli çubuklardan oluşan bir kulede yukarı zıplıyor. Konmadan önce rengini değiştir: aynı renkteki çubuk seni zıplatır, yanlış renk oyunu bitirir. Kayan, ikiye bölünen ve eriyen çubuklara dikkat!"
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "casual"
+  ],
+  "tags": [
+    "color",
+    "bounce",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/color-bounce/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/color-bounce/ayvago/icon-512.png",
+    "cover": "/games/color-bounce/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/color-bounce/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

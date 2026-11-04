@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "colorwheel",
+  "title": {
+    "en": "Color Wheel",
+    "tr": "Renk Çarkı"
+  },
+  "description": {
+    "en": "Coloured dots fly in from every side. Spin the wheel in the middle so each dot hits its own colour! Waves speed up and the wheel gains colours.",
+    "tr": "Her yönden renkli noktalar geliyor. Ortadaki çarkı çevir, her nokta kendi rengine çarpsın! Dalgalar hızlanır, çarka yeni renkler eklenir."
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "casual"
+  ],
+  "tags": [
+    "color",
+    "wheel",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/color-wheel/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/color-wheel/ayvago/icon-512.png",
+    "cover": "/games/color-wheel/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/color-wheel/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

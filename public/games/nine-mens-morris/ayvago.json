@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "ninemensmorris",
+  "title": {
+    "en": "Nine Men's Morris",
+    "tr": "Dokuz Taş"
+  },
+  "description": {
+    "en": "Place nine stones each, then slide them along the lines, and fly anywhere once you are down to three! Line up three to form a mill and take one of your rival's stones. Down to two stones or out of moves, you lose. The AI looks further ahead after every win; play a friend online too.",
+    "tr": "Dokuzar taşı sırayla yerleştir, sonra çizgiler boyunca oynat; üç taşın kalınca istediğin yere uç! Üç taşı yan yana dizip değirmen kurunca rakibin bir taşını alırsın. İki taşa düşen ya da hamlesi kalmayan kaybeder. Yapay zekâ her galibiyette daha derin hesaplar; çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "strategy",
+  "categories": [
+    "strategy",
+    "puzzle"
+  ],
+  "tags": [
+    "multiplayer",
+    "nine",
+    "mens",
+    "morris",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/nine-mens-morris/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/nine-mens-morris/ayvago/icon-512.png",
+    "cover": "/games/nine-mens-morris/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/nine-mens-morris/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}
