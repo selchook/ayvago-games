@@ -1,5 +1,5 @@
 {
-  "count": 70,
+  "count": 80,
   "games": [
     {
       "id": "air-hockey",
@@ -522,6 +522,39 @@
       "thumb": "thumbs/coin-catcher.png"
     },
     {
+      "id": "color-bounce",
+      "title": {
+        "tr": "Renkli Zıplama",
+        "en": "Color Bounce"
+      },
+      "description": {
+        "tr": "Top renkli çubuklardan oluşan bir kulede yukarı zıplıyor. Konmadan önce rengini değiştir: aynı renkteki çubuk seni zıplatır, yanlış renk oyunu bitirir. Kayan, ikiye bölünen ve eriyen çubuklara dikkat!",
+        "en": "The ball bounces up a tower of coloured bars. Change its colour before it lands: a matching bar bounces it on, a wrong one ends the run. Watch out for sliding, split and shrinking bars!"
+      },
+      "howTo": {
+        "tr": "Rengi değiştirmek için ekranın sol / sağ yarısına dokun ya da sol / sağ oka bas. Ok işaretinin gösterdiği yerdeki renge düş.",
+        "en": "Tap the left / right half or press Left / Right to change colour. Match the colour where the white marker points."
+      },
+      "genres": [
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Juhani Junkala (CC0) — opengameart.org",
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/color-bounce.png"
+    },
+    {
       "id": "color-gate",
       "title": {
         "tr": "Renk Kapısı",
@@ -552,6 +585,106 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/color-gate.png"
+    },
+    {
+      "id": "color-race",
+      "title": {
+        "tr": "Renk Yarışı",
+        "en": "Color Race"
+      },
+      "description": {
+        "tr": "Dönen renkli halkaların arasından yalnızca kendi renginden geçerek zirveye tırman ve rakibini geç! Yanlış renk seni son kontrol noktasına geri gönderir. Zirveye ilk varan ya da 90 saniye bittiğinde daha yukarıda olan kazanır. Tek başına her turda hızlanan bir hayalete karşı yarış, çevrimiçi bir arkadaşınla aynı parkurda kapış.",
+        "en": "Climb through rotating colour rings, passing only through your own colour, and beat your rival to the top! A wrong colour sends you back to the last checkpoint. First to the top, or higher when the 90 seconds run out, wins. Race an AI ghost that gets faster every round, or a friend online on the same course."
+      },
+      "howTo": {
+        "tr": "Zıplamak için dokun ya da Boşluk'a bas. Halkalardan yalnızca topunla aynı renkten geç.",
+        "en": "Tap or press Space to hop. Only pass through the part of a ring that matches your ball."
+      },
+      "genres": [
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Art & audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/color-race.png"
+    },
+    {
+      "id": "color-road",
+      "title": {
+        "tr": "Renk Yolu",
+        "en": "Color Road"
+      },
+      "description": {
+        "tr": "Top sonsuz bir yolda yuvarlanıyor. Yalnızca kendi rengindeki blokları parçala, başka renge çarparsan oyun biter! Renk kapıları topunun rengini değiştirir; yol hızlandıkça bloklar sıklaşır.",
+        "en": "The ball rolls down an endless road. Smash only the blocks of your own colour; hit another colour and the run is over! Colour gates switch your colour, and the road gets faster and busier."
+      },
+      "howTo": {
+        "tr": "Topu yönlendirmek için parmağını sağa sola sürükle ya da sol / sağ oka bas. Kendi rengin ve şeklindeki blokları vur, elmasları topla.",
+        "en": "Drag sideways or press Left / Right to steer. Hit the blocks with your colour and symbol, and grab the gems."
+      },
+      "genres": [
+        "arcade",
+        "action"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Juhani Junkala (CC0) — opengameart.org",
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/color-road.png"
+    },
+    {
+      "id": "color-wheel",
+      "title": {
+        "tr": "Renk Çarkı",
+        "en": "Color Wheel"
+      },
+      "description": {
+        "tr": "Her yönden renkli noktalar geliyor. Ortadaki çarkı çevir, her nokta kendi rengine çarpsın! Dalgalar hızlanır, çarka yeni renkler eklenir.",
+        "en": "Coloured dots fly in from every side. Spin the wheel in the middle so each dot hits its own colour! Waves speed up and the wheel gains colours."
+      },
+      "howTo": {
+        "tr": "Çarkı çevirmek için ekranın sol / sağ yarısına dokun, sürükle ya da sol / sağ oka bas. Her nokta aynı renk ve şekle çarpmalı.",
+        "en": "Tap the left / right half, drag, or press Left / Right to turn the wheel. Every dot must hit the matching colour and symbol."
+      },
+      "genres": [
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Juhani Junkala (CC0) — opengameart.org",
+        "Audio: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/color-wheel.png"
     },
     {
       "id": "connect-four",
@@ -797,8 +930,8 @@
         "en": "Head Soccer"
       },
       "description": {
-        "tr": "Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve kramponu savur. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.",
-        "en": "Big-headed one-on-one football! Run, jump, head the ball and swing your boot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too."
+        "tr": "Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve şut çek. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Big-headed one-on-one football! Run, jump, head the ball and shoot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too."
       },
       "howTo": {
         "tr": "Sol/Sağ ok ya da A/D ile koş, Yukarı ya da W ile zıpla, Boşluk ile şut çek. Dokunmatikte ekrandaki tuşları kullan.",
@@ -824,6 +957,41 @@
         "addedAt": "2026-10-30"
       },
       "thumb": "thumbs/head-soccer.png"
+    },
+    {
+      "id": "hex-bridge",
+      "title": {
+        "tr": "Hex Köprüsü",
+        "en": "Hex"
+      },
+      "description": {
+        "tr": "11x11 altıgen tahtada kendi kenarlarını birleştiren köprüyü ilk sen kur! Kırmızı üstten alta, mavi soldan sağa bağlanır; beraberlik yoktur. İlk taştan sonra ikinci oyuncu yer değiştirebilir. Yapay zekâ her galibiyette daha derin düşünür; çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Be first to build a bridge between your two edges of an 11x11 hex board! Red joins top to bottom, blue joins left to right, and there are no draws. After the first stone the second player may swap. The AI looks deeper after every win; play a friend online too."
+      },
+      "howTo": {
+        "tr": "Bir altıgene dokun, onaylamak için yine dokun ya da oklarla seçip Boşluk'a bas. Kendi renginin iki kenarını taşlarınla birleştir.",
+        "en": "Tap a hex, then tap it again to place (or use the arrows and Space). Join your two coloured edges with a chain of stones."
+      },
+      "genres": [
+        "strategy",
+        "puzzle"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/hex-bridge.png"
     },
     {
       "id": "hex-merge",
@@ -1247,6 +1415,41 @@
       "thumb": "thumbs/neon-pong.png"
     },
     {
+      "id": "nine-mens-morris",
+      "title": {
+        "tr": "Dokuz Taş",
+        "en": "Nine Men's Morris"
+      },
+      "description": {
+        "tr": "Dokuzar taşı sırayla yerleştir, sonra çizgiler boyunca oynat; üç taşın kalınca istediğin yere uç! Üç taşı yan yana dizip değirmen kurunca rakibin bir taşını alırsın. İki taşa düşen ya da hamlesi kalmayan kaybeder. Yapay zekâ her galibiyette daha derin hesaplar; çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Place nine stones each, then slide them along the lines, and fly anywhere once you are down to three! Line up three to form a mill and take one of your rival's stones. Down to two stones or out of moves, you lose. The AI looks further ahead after every win; play a friend online too."
+      },
+      "howTo": {
+        "tr": "Noktaya dokunup taş koy, sonra taşına ve hedefine dokun (ya da oklar + Boşluk). Değirmen kurunca rakipten taş al.",
+        "en": "Tap a point to place, then tap a stone and its target (or arrows + Space). A mill lets you take a rival stone."
+      },
+      "genres": [
+        "strategy",
+        "puzzle"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/nine-mens-morris.png"
+    },
+    {
       "id": "nonogram",
       "title": {
         "tr": "Piksel Mantık",
@@ -1278,6 +1481,72 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/nonogram.png"
+    },
+    {
+      "id": "orbit-hop",
+      "title": {
+        "tr": "Yörünge Atlayışı",
+        "en": "Orbit Hop"
+      },
+      "description": {
+        "tr": "Küçük gemin bir gezegenin çevresinde dönüyor. Doğru anda fırla ve bir sonraki gezegenin yörüngesine yakalan; ıskalarsan uzayın derinliklerinde kaybolursun! Kuyruklu yıldızlar ve daralan yörüngeler işini zorlaştırır.",
+        "en": "Your little ship circles a planet. Launch at the right moment to catch the next planet's orbit; miss and you drift off into deep space! Comets and shrinking orbits make every hop harder."
+      },
+      "howTo": {
+        "tr": "Gemi yörüngesinden düz ileri fırlasın diye ekrana dokun ya da Boşluk / Yukarı tuşuna bas. Yıldızları topla, kırmızı yörüngelerden çabuk ayrıl.",
+        "en": "Tap or press Space / Up to launch straight ahead off the orbit. Grab the stars and leave red orbits quickly."
+      },
+      "genres": [
+        "arcade",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Art: Kenney (CC0) — kenney.nl",
+        "Audio: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/orbit-hop.png"
+    },
+    {
+      "id": "paint-roll",
+      "title": {
+        "tr": "Boya Yuvarla",
+        "en": "Paint Roll"
+      },
+      "description": {
+        "tr": "Boya topunu kaydır: duvara çarpana kadar gider ve geçtiği her kareyi boyar. Labirentin tamamını boya! 60 bölüm büyüdükçe zorlaşır; az hamleyle bitirip üç yıldız topla.",
+        "en": "Swipe the paint ball: it slides until it hits a wall and paints every tile it crosses. Paint the whole maze! 60 levels that grow as you go; finish within par for three stars."
+      },
+      "howTo": {
+        "tr": "Kaydır ya da ok tuşlarına bas, her kareyi boya. Z geri alır, R baştan başlatır. Hızlı bitir, bonus kazan. Skor beş bölümde bir kaydedilir.",
+        "en": "Swipe or use the arrows to paint every tile. Z undoes, R restarts. Finish fast for a bonus; scores save every five levels."
+      },
+      "genres": [
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Juhani Junkala (CC0) — opengameart.org",
+        "Icons: Kenney (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/paint-roll.png"
     },
     {
       "id": "penalty-kick",
@@ -1924,6 +2193,41 @@
       "thumb": "thumbs/sudoku.png"
     },
     {
+      "id": "sumo-push",
+      "title": {
+        "tr": "Sumo Güreşi",
+        "en": "Sumo Push"
+      },
+      "description": {
+        "tr": "Tombul güreşçini halkada yönet, hücumla rakibine yüklen ve onu ipin dışına it! Halka zamanla daralır; beş tur üzerinden üç turu alan kazanır. Her galibiyette daha kurnaz bir rakip gelir; çevrimiçi bir arkadaşınla da güreş.",
+        "en": "Steer your round wrestler, dash into your rival and shove them out of the ring! The ring shrinks over time; win three bouts out of five. Every match win brings a craftier rival; wrestle a friend online too."
+      },
+      "howTo": {
+        "tr": "Oklar ya da sürüklenen kumanda çubuğuyla yürü, Boşluk ya da HÜCUM düğmesiyle atıl. Rakibini halkanın dışına it.",
+        "en": "Move with the arrows or the drag joystick, dash with Space or the DASH button. Push your rival out of the ring."
+      },
+      "genres": [
+        "sports",
+        "action",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/sumo-push.png"
+    },
+    {
       "id": "tank-arena",
       "title": {
         "tr": "Tank Arenası",
@@ -2149,6 +2453,42 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/ufo-abduction.png"
+    },
+    {
+      "id": "ultimate-tictactoe",
+      "title": {
+        "tr": "Süper XOX",
+        "en": "Ultimate Tic-Tac-Toe"
+      },
+      "description": {
+        "tr": "Dokuz küçük XOX tek bir büyük tahtada! Oynadığın kare, rakibin hangi küçük tahtada oynayacağını belirler. Yan yana üç küçük tahta kazanan maçı alır. Yapay zekâ her galibiyette daha uzun düşünür; çevrimiçi bir arkadaşınla da oyna.",
+        "en": "Nine small tic-tac-toe boards inside a big one! The square you play sends your rival to the matching small board. Win three small boards in a row to take the match. The AI thinks longer after every win; play a friend online too."
+      },
+      "howTo": {
+        "tr": "Parlayan tahtada bir kareye dokun ya da oklarla seçip Boşluk'a bas. Yan yana üç küçük tahta kazanan maçı alır.",
+        "en": "Tap a square on a glowing board, or pick one with the arrows and press Space. Win three small boards in a row."
+      },
+      "genres": [
+        "strategy",
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "Audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-11-04"
+      },
+      "thumb": "thumbs/ultimate-tictactoe.png"
     },
     {
       "id": "water-sort",

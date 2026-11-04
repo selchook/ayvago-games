@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "hexbridge",
+  "title": {
+    "en": "Hex",
+    "tr": "Hex Köprüsü"
+  },
+  "description": {
+    "en": "Be first to build a bridge between your two edges of an 11x11 hex board! Red joins top to bottom, blue joins left to right, and there are no draws. After the first stone the second player may swap. The AI looks deeper after every win; play a friend online too.",
+    "tr": "11x11 altıgen tahtada kendi kenarlarını birleştiren köprüyü ilk sen kur! Kırmızı üstten alta, mavi soldan sağa bağlanır; beraberlik yoktur. İlk taştan sonra ikinci oyuncu yer değiştirebilir. Yapay zekâ her galibiyette daha derin düşünür; çevrimiçi bir arkadaşınla da oyna."
+  },
+  "category": "strategy",
+  "categories": [
+    "strategy",
+    "puzzle"
+  ],
+  "tags": [
+    "multiplayer",
+    "hex",
+    "bridge",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/hex-bridge/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/hex-bridge/ayvago/icon-512.png",
+    "cover": "/games/hex-bridge/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/hex-bridge/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

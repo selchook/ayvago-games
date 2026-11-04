@@ -1,0 +1,19 @@
+{
+  "id": "color-race",
+  "title": { "tr": "Renk Yarışı", "en": "Color Race" },
+  "description": {
+    "tr": "Dönen renkli halkaların arasından yalnızca kendi renginden geçerek zirveye tırman ve rakibini geç! Yanlış renk seni son kontrol noktasına geri gönderir. Zirveye ilk varan ya da 90 saniye bittiğinde daha yukarıda olan kazanır. Tek başına her turda hızlanan bir hayalete karşı yarış, çevrimiçi bir arkadaşınla aynı parkurda kapış.",
+    "en": "Climb through rotating colour rings, passing only through your own colour, and beat your rival to the top! A wrong colour sends you back to the last checkpoint. First to the top, or higher when the 90 seconds run out, wins. Race an AI ghost that gets faster every round, or a friend online on the same course."
+  },
+  "howTo": {
+    "tr": "Zıplamak için dokun ya da Boşluk'a bas. Halkalardan yalnızca topunla aynı renkten geç.",
+    "en": "Tap or press Space to hop. Only pass through the part of a ring that matches your ball."
+  },
+  "genres": ["arcade", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-11-04" }
+}

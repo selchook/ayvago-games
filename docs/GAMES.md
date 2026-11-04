@@ -1,20 +1,21 @@
 # Ayvago launch catalogue
 
-## Status (70 shipped)
+## Status (80 shipped)
 
-**Shipped.** All 70 games in the concept list. Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
-air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, block-blast, block-drop, bomb-maze, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-gate, connect-four, dots-and-boxes, dungeon-dash, fish-frenzy, fruit-slash, gem-match, gomoku, head-soccer, hex-merge, hoop-shot, jetpack-rush, light-cycles, lights-out, lunar-lander, mangala, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, neon-pong, nonogram, penalty-kick, pinball, pipe-flow, pixel-runner, platform-hopper, plinko-drop, retro-snake, reversi, road-crosser, rope-swing, sea-battle, shooting-gallery, simon-says, sky-jumper, slide-puzzle, sokoban, solitaire, space-blaster, stack-tower, sudoku, tank-arena, tappy-plane, tile-triple, tower-defense, traffic-racer, turkish-draughts, ufo-abduction, water-sort, whack-a-mole, word-hunt, zombie-survivor.
+**Shipped.** All 80 games in the concept list. Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
+air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, block-blast, block-drop, bomb-maze, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-bounce, color-gate, color-race, color-road, color-wheel, connect-four, dots-and-boxes, dungeon-dash, fish-frenzy, fruit-slash, gem-match, gomoku, head-soccer, hex-bridge, hex-merge, hoop-shot, jetpack-rush, light-cycles, lights-out, lunar-lander, mangala, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, neon-pong, nine-mens-morris, nonogram, orbit-hop, paint-roll, penalty-kick, pinball, pipe-flow, pixel-runner, platform-hopper, plinko-drop, retro-snake, reversi, road-crosser, rope-swing, sea-battle, shooting-gallery, simon-says, sky-jumper, slide-puzzle, sokoban, solitaire, space-blaster, stack-tower, sudoku, sumo-push, tank-arena, tappy-plane, tile-triple, tower-defense, traffic-racer, turkish-draughts, ufo-abduction, ultimate-tictactoe, water-sort, whack-a-mole, word-hunt, zombie-survivor.
 
 - **Launch wave (2026-10-27):** 26 games.
 - **Second wave (2026-10-28):** 28 games. These are the former backlog plus dungeon-dash and nonogram, finished from `wip/`. Each carries `platform.addedAt` in its `game.json`.
 - **Third wave (2026-10-29):** 10 games, batches J and K. The five in batch J (gomoku, dots-and-boxes, sea-battle, turkish-draughts, light-cycles) are playable online by two players (`"multiplayer": true`), bringing the online games to 13.
 - **Fourth wave (2026-10-30):** 6 games, batches L and M. The three in batch L (mangala, backgammon, head-soccer) are playable online, bringing the online games to 16. head-soccer and rope-swing use the player's platform character.
+- **Fifth wave (2026-11-04):** 10 games, batches N and O. The five in batch N (color-race, ultimate-tictactoe, hex-bridge, nine-mens-morris, sumo-push) are playable online, bringing the online games to 21. Batch O adds one-touch colour games in the spirit of Color Gate.
 
 **Work in progress:** none.
 
 **Backlog:** empty. New concepts go into the concept list below.
 
-## Concept list (70 games)
+## Concept list (80 games)
 
 Columns: slug · EN title / TR title · concept · suggested assets (`public/assets/kenney/…`) · orientation (P = portrait, L = landscape).
 
@@ -144,3 +145,23 @@ Same rules as batch J: a full solo mode against an AI and an online mode (`"mult
 | water-sort | Water Sort / Su Sıralama | pour coloured layers between tubes until each tube holds one colour; generated solvable levels that grow, undo, extra empty tube as a help | drawn | P |
 | pinball | Pinball / Langırt | one table with flippers, bumpers, slingshots, drop targets and lanes, 3 balls, multipliers, tilt-free nudge; left/right keys or screen halves | drawn + particles | P |
 | rope-swing | Rope Swing / İp Salıncağı | hold to fire a rope at the ceiling and swing, release to fly; distance score, coins, gaps and spikes, speed ramps; the hero is the player's character | characters + pixel-platformer | L |
+
+## Batch N — wave 5 two-player (online + vs AI)
+Same rules as batch J: a full solo mode against an AI and an online mode (`"multiplayer": true`). Round 1 starts with the host, later rounds with `net.starter` / `net.myTurnFirst`.
+
+| slug | title | concept | assets | o |
+|---|---|---|---|---|
+| color-race | Color Race / Renk Yarışı | Color Gate as a race: both climb the same seeded course of rotating rings, passing only through your colour; a wrong colour sends you back to the last checkpoint; first to the top (or furthest at 90 s) wins; solo races an AI ghost; online: each side plays its own run on the shared seed and sends its height, shown as the rival's ghost | drawn | P |
+| ultimate-tictactoe | Ultimate Tic-Tac-Toe / Süper XOX | nine small boards in a big one: your move sends the rival to the matching small board, win three small boards in a row; AI with MCTS that ramps up; online: alternate moves | drawn | P |
+| hex-bridge | Hex / Hex Köprüsü | connection game on an 11x11 rhombus: red joins top-bottom, blue left-right, no draws; swap rule after the first move; AI with shortest-path evaluation plus search; online: alternate moves | drawn hexes | P |
+| nine-mens-morris | Nine Men's Morris / Dokuz Taş | place nine stones each, then move along the lines, fly with three; a mill (three in a row) removes a rival stone; down to two stones or no move loses; minimax AI; online: alternate moves | boardgame pieces / drawn | P |
+| sumo-push | Sumo Push / Sumo Güreşi | top-down ring: steer your wrestler, charge to dash, shove the rival out; the ring shrinks over time; best of 5 bouts; AI rival; online: the host simulates, the guest sends input | drawn | P |
+
+## Batch O — wave 5 solo (colour and one-touch, like Color Gate)
+| slug | title | concept | assets | o |
+|---|---|---|---|---|
+| color-road | Color Road / Renk Yolu | a ball rolls down an endless lane: drag sideways to hit only blocks of your colour, gates switch your colour, a wrong hit ends the run; speed ramps | drawn + particles | P |
+| color-wheel | Color Wheel / Renk Çarkı | a ring of colour segments in the middle: dots fly in from all sides, rotate the ring (tap halves, drag or arrows) so each dot hits its colour; waves get faster and denser | drawn | P |
+| color-bounce | Color Bounce / Renkli Zıplama | the ball bounces up a tower of coloured bars: tap to change its colour before it lands, matching bars bounce it on, a wrong one breaks the run; moving and splitting bars | drawn | P |
+| paint-roll | Paint Roll / Boya Yuvarla | swipe a paint ball that slides until a wall, colouring every tile it crosses; fill the whole maze; generated solvable levels that grow, move count stars | drawn | P |
+| orbit-hop | Orbit Hop / Yörünge Atlayışı | the ship circles a planet: tap to launch straight ahead and catch the next planet's orbit; miss and drift into space; comets and shrinking orbits, distance score | drawn + space-shooter | P |

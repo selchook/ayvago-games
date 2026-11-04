@@ -1,0 +1,18 @@
+{
+  "id": "orbit-hop",
+  "title": { "tr": "Yörünge Atlayışı", "en": "Orbit Hop" },
+  "description": {
+    "tr": "Küçük gemin bir gezegenin çevresinde dönüyor. Doğru anda fırla ve bir sonraki gezegenin yörüngesine yakalan; ıskalarsan uzayın derinliklerinde kaybolursun! Kuyruklu yıldızlar ve daralan yörüngeler işini zorlaştırır.",
+    "en": "Your little ship circles a planet. Launch at the right moment to catch the next planet's orbit; miss and you drift off into deep space! Comets and shrinking orbits make every hop harder."
+  },
+  "howTo": {
+    "tr": "Gemi yörüngesinden düz ileri fırlasın diye ekrana dokun ya da Boşluk / Yukarı tuşuna bas. Yıldızları topla, kırmızı yörüngelerden çabuk ayrıl.",
+    "en": "Tap or press Space / Up to launch straight ahead off the orbit. Grab the stars and leave red orbits quickly."
+  },
+  "genres": ["arcade", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["Art: Kenney (CC0) — kenney.nl", "Audio: Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-11-04" }
+}

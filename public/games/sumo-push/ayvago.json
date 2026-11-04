@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "sumopush",
+  "title": {
+    "en": "Sumo Push",
+    "tr": "Sumo Güreşi"
+  },
+  "description": {
+    "en": "Steer your round wrestler, dash into your rival and shove them out of the ring! The ring shrinks over time; win three bouts out of five. Every match win brings a craftier rival; wrestle a friend online too.",
+    "tr": "Tombul güreşçini halkada yönet, hücumla rakibine yüklen ve onu ipin dışına it! Halka zamanla daralır; beş tur üzerinden üç turu alan kazanır. Her galibiyette daha kurnaz bir rakip gelir; çevrimiçi bir arkadaşınla da güreş."
+  },
+  "category": "sports",
+  "categories": [
+    "sports",
+    "action",
+    "arcade"
+  ],
+  "tags": [
+    "multiplayer",
+    "sumo",
+    "push",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/sumo-push/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/sumo-push/ayvago/icon-512.png",
+    "cover": "/games/sumo-push/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/sumo-push/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}
