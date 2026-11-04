@@ -15,8 +15,10 @@ if (!base) { console.error('usage: changed-games.mjs <base-ref>'); process.exit(
 const files = execFileSync('git', ['diff', '--name-only', `${base}...HEAD`], { cwd: root, encoding: 'utf8' })
   .split('\n').filter(Boolean);
 
-// Paths that never change how a game runs.
-const inert = [/^docs\//, /\.md$/, /^\.claude\//, /^platform\//, /^public\/thumbs\//, /^tools\//, /^portal\//];
+// Paths that never change how a game runs. src/generated/registry.json is the portal's list,
+// rebuilt from every game.json, so adding a game must not count as a shared change.
+const inert = [/^docs\//, /\.md$/, /^\.claude\//, /^platform\//, /^public\/thumbs\//, /^tools\//, /^portal\//,
+  /^src\/generated\//];
 // Per-game paths: the game's own folder and its generated platform files.
 const own = [/^games\/([^/]+)\//, /^public\/games\/([^/]+)\//];
 
