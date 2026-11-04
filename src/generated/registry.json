@@ -196,7 +196,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
-      "thumb": null
+      "thumb": "thumbs/backgammon.png"
     },
     {
       "id": "block-blast",
@@ -823,7 +823,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
-      "thumb": null
+      "thumb": "thumbs/head-soccer.png"
     },
     {
       "id": "hex-merge",
@@ -1050,7 +1050,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
-      "thumb": null
+      "thumb": "thumbs/mangala.png"
     },
     {
       "id": "maze-muncher",
@@ -1341,7 +1341,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
-      "thumb": null
+      "thumb": "thumbs/pinball.png"
     },
     {
       "id": "pipe-flow",
@@ -1599,7 +1599,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
-      "thumb": null
+      "thumb": "thumbs/rope-swing.png"
     },
     {
       "id": "sea-battle",
@@ -2181,7 +2181,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
-      "thumb": null
+      "thumb": "thumbs/water-sort.png"
     },
     {
       "id": "whack-a-mole",
