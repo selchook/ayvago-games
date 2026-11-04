@@ -2,7 +2,7 @@
   "id": "road-crosser",
   "title": { "tr": "Yol Geçidi", "en": "Road Crosser" },
   "description": { "tr": "Kurbağayı trafiğin arasından geçir, kütüklerin ve suaygırlarının sırtında nehri aş, beş yuvayı da doldur. Her bölümde trafik hızlanır!", "en": "Hop the frog through traffic, ride logs and hippos across the river and fill all five homes. Traffic speeds up every level!" },
-  "howTo": { "tr": "Dokun = ileri zıpla; kaydır, alttaki okları kullan ya da ok tuşları/WASD ile yön ver. Suya düşme, arabalara çarpma.", "en": "Tap = hop forward; swipe, use the arrows below or the arrow keys/WASD to move. Don't fall in the water or get hit." },
+  "howTo": { "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda kolu kurbağayı zıplatır, basılı tutunca zıplamaya devam eder. Klavyede ok tuşları ya da WASD, Boşluk ileri zıplar. Suya düşme, arabalara çarpma.", "en": "Touch and drag anywhere for a stick: push to hop, hold to keep hopping. On a keyboard use the arrows or WASD; Space hops forward. Don't fall in the water or get hit." },
   "genres": ["arcade", "retro", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],

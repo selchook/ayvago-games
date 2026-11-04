@@ -51,12 +51,11 @@ export class PlayScene extends ArcadeScene {
   private jet = 0;
   private milestone = 0;
   private dying = false;
-  private touchDir = 0;
 
   createGame(): void {
     const { width, height } = this.scale;
     this.plats = []; this.enemies = []; this.items = []; this.hills = [];
-    this.vx = 0; this.vy = JUMP_V; this.bonus = 0; this.jet = 0; this.milestone = 0; this.dying = false; this.touchDir = 0;
+    this.vx = 0; this.vy = JUMP_V; this.bonus = 0; this.jet = 0; this.milestone = 0; this.dying = false;
     this.cameras.main.setScroll(0, 0).setBackgroundColor(SKY[0]);
 
     // starfield that fades in with altitude
@@ -85,8 +84,9 @@ export class PlayScene extends ArcadeScene {
     this.lastPlatY = height - 130;
     this.generate();
 
-    this.controls = new Controls(this);
-    const hint = txt(this, width / 2, height * 0.6, t('steer'), { size: 40, color: '#ffffff' }).setScrollFactor(0).setDepth(50);
+    // touch: floating joystick anywhere on the screen, read as analog axisX
+    this.controls = new Controls(this, { joystick: true });
+    const hint = txt(this, width / 2, height * 0.6, t(this.controls.touchUi ? 'steer' : 'steerKeys'), { size: 40, color: '#ffffff' }).setScrollFactor(0).setDepth(50);
     this.tweens.add({ targets: hint, alpha: 0, delay: 2200, duration: 600, onComplete: () => hint.destroy() });
     this.updateHud();
   }
@@ -186,13 +186,8 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     const cam = this.cameras.main;
 
-    // steering: keys or touch on the left / right half
+    // steering: keys or the joystick (speed scales with the push)
     let dir = this.controls.axisX;
-    this.touchDir = 0;
-    for (const p of this.input.manager.pointers) {
-      if (p.isDown && !(p.x > width - 130 && p.y < 130)) this.touchDir = p.x < width / 2 ? -1 : 1;
-    }
-    if (this.touchDir) dir = this.touchDir;
     if (this.dying) dir = 0;
     this.vx += (dir * MOVE_SPEED - this.vx) * Math.min(1, dt * 10);
     this.player.x += this.vx * dt;

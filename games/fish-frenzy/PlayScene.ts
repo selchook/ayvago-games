@@ -57,14 +57,13 @@ export class PlayScene extends ArcadeScene {
   private spawnCd = 0;
   private sharkCd = 0;
   private eatenCount = 0;
-  private pointer: { x: number; y: number } | null = null;
   private transition = false;
 
   createGame(): void {
     const { width, height } = this.scale;
     this.fish = []; this.hearts = [];
     this.size = START_SIZE; this.level = 1; this.lives = MAX_LIVES; this.vx = 0; this.vy = 0;
-    this.invuln = 0; this.spawnCd = 0.5; this.sharkCd = 0; this.eatenCount = 0; this.pointer = null; this.transition = false;
+    this.invuln = 0; this.spawnCd = 0.5; this.sharkCd = 0; this.eatenCount = 0; this.transition = false;
     this.target = this.targetFor(1);
 
     this.buildSea(width, height);
@@ -77,13 +76,8 @@ export class PlayScene extends ArcadeScene {
     this.add.rectangle(width / 2, 98, 300, 20, 0x000000, 0.5).setStrokeStyle(3, 0xffffff, 0.7).setDepth(9000);
     this.barFill = this.add.rectangle(width / 2 - 146, 98, 0, 12, 0xffa31a).setOrigin(0, 0.5).setDepth(9000);
 
-    this.controls = new Controls(this);
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (p.x > width - 130 && p.y < 130) return;
-      this.pointer = { x: p.x, y: p.y };
-    });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (p.isDown && this.pointer) this.pointer = { x: p.x, y: p.y }; });
-    this.input.on('pointerup', () => { this.pointer = null; });
+    // touch: floating joystick anywhere on the screen; swim speed scales with the push
+    this.controls = new Controls(this, { joystick: true });
 
     // a starting school of small fish so there's food right away
     for (let i = 0; i < 5; i++) this.spawnFish(true, rng.int(100, width - 100));
@@ -215,12 +209,7 @@ export class PlayScene extends ArcadeScene {
 
     // player movement
     const maxV = Math.max(260, 380 - (this.size - START_SIZE) * 0.6);
-    let ax = this.controls.axisX, ay = this.controls.axisY;
-    if (this.pointer) {
-      const dx = this.pointer.x - this.player.x, dy = this.pointer.y - this.player.y;
-      const len = Math.hypot(dx, dy);
-      if (len > 10) { const k = Math.min(1, len / 120) / len; ax = dx * k; ay = dy * k; } else { ax = 0; ay = 0; }
-    }
+    const ax = this.controls.axisX, ay = this.controls.axisY;
     const acc = 9;
     this.vx += (ax * maxV - this.vx) * Math.min(1, acc * dt);
     this.vy += (ay * maxV - this.vy) * Math.min(1, acc * dt);

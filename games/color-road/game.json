@@ -6,8 +6,8 @@
     "en": "The ball rolls down an endless road. Smash only the blocks of your own colour; hit another colour and the run is over! Colour gates switch your colour, and the road gets faster and busier."
   },
   "howTo": {
-    "tr": "Topu yönlendirmek için parmağını sağa sola sürükle ya da sol / sağ oka bas. Kendi rengin ve şeklindeki blokları vur, elmasları topla.",
-    "en": "Drag sideways or press Left / Right to steer. Hit the blocks with your colour and symbol, and grab the gems."
+    "tr": "Topu joystick ya da sol / sağ ok tuşlarıyla yönlendir. Kendi rengin ve şeklindeki blokları vur, elmasları topla.",
+    "en": "Steer with the joystick or press Left / Right. Hit the blocks with your colour and symbol, and grab the gems."
   },
   "genres": ["arcade", "action"],
   "orientation": "portrait",

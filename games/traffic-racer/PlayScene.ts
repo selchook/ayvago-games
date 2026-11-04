@@ -59,7 +59,6 @@ export class PlayScene extends ArcadeScene {
   private px = 360;
   private pvx = 0;
   private speed = 0;
-  private targetX: number | null = null;
   private lives = 3;
   private fuel = 100;
   private dist = 0;
@@ -80,7 +79,7 @@ export class PlayScene extends ArcadeScene {
     freshTextCanvases(this);
     makeRacerTextures(this);
     this.things = [];
-    this.px = 360; this.pvx = 0; this.speed = 0; this.targetX = null; this.lives = 3; this.fuel = 100; this.dist = 0; this.distScore = 0;
+    this.px = 360; this.pvx = 0; this.speed = 0; this.lives = 3; this.fuel = 100; this.dist = 0; this.distScore = 0;
     this.level = 1; this.invuln = 0; this.skid = 0; this.skidDir = 0; this.combo = 0; this.comboT = 0; this.started = false; this.outOfFuel = false;
     this.carT = 1.2; this.coinT = 2; this.fuelT = 9; this.obstT = 6; this.treeT = 0; this.lowT = 0; this.driveT = 0;
 
@@ -102,13 +101,8 @@ export class PlayScene extends ArcadeScene {
     this.speedText = ftxt(this, 696, 100, '', { title: true, size: 20, color: '#3ee6ff' }).setOrigin(1, 0.5).setDepth(21);
     this.distText = ftxt(this, 24, 1250, '', { title: true, size: 18, color: '#ffffff' }).setOrigin(0, 0.5).setDepth(21);
 
-    this.controls = new Controls(this);
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (p.x > 590 && p.y < 140) return;
-      this.targetX = p.x;
-    });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (p.isDown && this.targetX !== null) this.targetX = p.x; });
-    this.input.on('pointerup', () => { this.targetX = null; });
+    // touch: floating joystick anywhere on the screen; its X push is analog steering
+    this.controls = new Controls(this, { joystick: true });
 
     this.updateHud();
     // countdown
@@ -261,9 +255,7 @@ export class PlayScene extends ArcadeScene {
 
     // steering
     const c = this.controls;
-    let want = 0;
-    if (this.targetX !== null) want = Phaser.Math.Clamp((this.targetX - this.px) / 60, -1, 1);
-    else want = c.axisX;
+    let want = c.axisX;
     if (this.skid > 0) { this.skid -= dt; want = this.skidDir; }
     const maxV = 640;
     this.pvx += (want * maxV - this.pvx) * Math.min(1, dt * 10);

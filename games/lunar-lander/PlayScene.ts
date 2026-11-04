@@ -54,15 +54,14 @@ export class PlayScene extends ArcadeScene {
   private gravity = 60;
   private wind = 0;
   private warnCd = 0;
-  private touchL = false;
-  private touchR = false;
+  private upKeys: Phaser.Input.Keyboard.Key[] = [];
   private readonly STEP = 24;
 
   createGame(): void {
     const { width, height } = this.scale;
     makeLanderTexture(this);
     this.padLabels = []; this.pts = []; this.pads = []; this.info = [];
-    this.fuel = FUEL_MAX; this.lives = 3; this.level = 0; this.flying = false; this.warnCd = 0; this.touchL = this.touchR = false;
+    this.fuel = FUEL_MAX; this.lives = 3; this.level = 0; this.flying = false; this.warnCd = 0;
 
     for (let i = 0; i < 110; i++) this.add.image(rng.int(0, width), rng.int(60, BOTTOM_TERRAIN), 'star').setScale(0.05 + Math.random() * 0.16).setAlpha(0.2 + Math.random() * 0.5);
     this.add.image(width * 0.8, 240, 'planet').setScale(1.1).setTint(0x8fb4ff).setAlpha(0.8);
@@ -81,8 +80,10 @@ export class PlayScene extends ArcadeScene {
     this.info = [0, 1, 2].map((i) => txt(this, 24, 176 + i * 30, '', { size: 26, align: 'left' }).setOrigin(0, 0).setDepth(9000));
     this.windText = txt(this, width - 24, 140, '', { size: 24, align: 'right', color: '#3ee6ff' }).setOrigin(1, 0).setDepth(9000);
 
-    this.controls = new Controls(this, { buttons: ['A'] });
-    if (this.controls.touchUi) this.buildRotateButtons();
+    // touch: floating stick on the left half rotates (analog), A on the right thrusts
+    this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
+    const kb = this.input.keyboard!, K = Phaser.Input.Keyboard.KeyCodes;
+    this.upKeys = [kb.addKey(K.UP, true, false), kb.addKey(K.W, true, false)];
 
     this.thrustSnd = undefined;
     if (this.cache.audio.exists('thrust')) this.thrustSnd = this.sound.add('thrust', { loop: true, volume: 0.3, rate: 0.85 });
@@ -94,23 +95,6 @@ export class PlayScene extends ArcadeScene {
     });
 
     this.nextLevel();
-  }
-
-  private buildRotateButtons(): void {
-    const { height } = this.scale;
-    [[-1, 100], [1, 260]].forEach(([dir, x]) => {
-      const y = height - 130;
-      const c = this.add.circle(x, y, 72, 0x3ee6ff, 0.3).setStrokeStyle(5, 0xffffff, 0.6).setDepth(9500).setInteractive();
-      const tri = this.add.triangle(x, y, 0, 0, 0, 44, 36 * dir, 22, 0xffffff, 0.85).setDepth(9501);
-      tri.setPosition(x - dir * 4, y);
-      const set = (v: boolean) => {
-        if (dir < 0) this.touchL = v; else this.touchR = v;
-        c.setFillStyle(0x3ee6ff, v ? 0.6 : 0.3);
-      };
-      c.on('pointerdown', () => set(true));
-      c.on('pointerup', () => set(false));
-      c.on('pointerout', () => set(false));
-    });
   }
 
   // ---------- level ----------
@@ -287,9 +271,12 @@ export class PlayScene extends ArcadeScene {
     this.drawGauges();
     if (!this.flying) return;
     const c = this.controls;
-    const rot = (c.left || this.touchL ? -1 : 0) + (c.right || this.touchR ? 1 : 0);
+    // keys give -1/0/1; the stick turns slower for a small push, so fine corrections are easy
+    const rot = Math.abs(c.axisX) > 0.15 ? c.axisX : 0;
     this.ang = Phaser.Math.Clamp(this.ang + rot * 140 * dt, -90, 90);
-    const thrust = (c.up || c.a) && this.fuel > 0;
+    // thrust: A (button / Space / Z / Enter) or the Up / W key. Stick-up does not thrust, so
+    // steering with the stick never burns fuel by accident.
+    const thrust = (c.a || this.upKeys.some((k) => k.isDown)) && this.fuel > 0;
 
     const rad = Phaser.Math.DegToRad(this.ang);
     if (thrust) {

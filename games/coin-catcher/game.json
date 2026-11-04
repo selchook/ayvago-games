@@ -6,8 +6,8 @@
     "en": "Catch the coins and gems raining from the sky with your basket and dodge the bombs. Chain catches to grow your combo multiplier!"
   },
   "howTo": {
-    "tr": "Parmağını sürükle ya da ok tuşlarıyla / A-D ile sağa sola koş. Bombaları yakalama; yıldız mıknatıs verir.",
-    "en": "Drag your finger or use the arrow keys / A-D to run left and right. Don't catch bombs; the star is a magnet."
+    "tr": "Joystick ya da ok tuşları / A-D ile sağa sola koş. Bombaları yakalama; yıldız mıknatıs verir.",
+    "en": "Run left and right with the joystick or the arrow keys / A-D. Don't catch bombs; the star is a magnet."
   },
   "genres": ["arcade", "casual"],
   "orientation": "portrait",

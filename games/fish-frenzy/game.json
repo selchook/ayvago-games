@@ -6,8 +6,8 @@
     "en": "Eat smaller fish to grow and steer clear of bigger fish and sharks. Reach the target size to clear each level as the ocean gets more dangerous!"
   },
   "howTo": {
-    "tr": "Balığını parmağınla sürükle ya da ok tuşları / WASD ile yüz. Kendinden küçükleri ye, kırmızı parlayan büyüklerden kaç.",
-    "en": "Drag your fish with your finger or swim with the arrow keys / WASD. Eat smaller fish and avoid the bigger ones glowing red."
+    "tr": "Joystick ya da ok tuşları / WASD ile yüz. Kendinden küçükleri ye, kırmızı parlayan büyüklerden kaç.",
+    "en": "Swim with the joystick or the arrow keys / WASD. Eat smaller fish and avoid the bigger ones glowing red."
   },
   "genres": ["arcade", "action", "casual"],
   "orientation": "landscape",

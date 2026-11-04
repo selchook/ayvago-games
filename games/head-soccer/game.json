@@ -9,8 +9,8 @@
     "en": "Big-headed one-on-one football! Run, jump, head the ball and shoot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too."
   },
   "howTo": {
-    "tr": "Sol/Sağ ok ya da A/D ile koş, Yukarı ya da W ile zıpla, Boşluk ile şut çek. Dokunmatikte ekrandaki tuşları kullan.",
-    "en": "Run with Left/Right or A/D, jump with Up or W, kick with Space. On touch screens use the on-screen buttons."
+    "tr": "Sol/Sağ ok ya da A/D ile koş, Yukarı ya da W ile zıpla, Boşluk ile şut çek. Dokunmatikte joystick ile koş (yukarı itersen zıplarsın), A düğmesiyle zıpla, B düğmesiyle şut çek.",
+    "en": "Run with Left/Right or A/D, jump with Up or W, kick with Space. On touch screens run with the joystick (push up to jump), jump with the A button and kick with the B button."
   },
   "genres": [
     "sports",

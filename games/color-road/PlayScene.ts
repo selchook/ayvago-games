@@ -69,14 +69,12 @@ export class PlayScene extends ArcadeScene {
   private combo = 0;
   private mult = 1;
   private dead = false;
-  private dragX: number | null = null;
-  private dragId = -1;
   private roll = 0;
 
   createGame(): void {
     makeSymbols(this);
     this.rows = []; this.gates = []; this.bx = 0; this.dist = 0; this.level = 1; this.passedRows = 0;
-    this.combo = 0; this.mult = 1; this.dead = false; this.dragX = null; this.dragId = -1; this.roll = 0;
+    this.combo = 0; this.mult = 1; this.dead = false; this.roll = 0;
     this.speed = 3.2; this.rowsSinceGate = 0; this.nextGateIn = rng.int(5, 7);
     this.colour = rng.int(0, 2);
     this.genCols = [this.colour];
@@ -91,7 +89,8 @@ export class PlayScene extends ArcadeScene {
       g.generateTexture('cr-gem', 64, 64);
       g.destroy();
     }
-    this.controls = new Controls(this);
+    // touch: floating joystick anywhere on the screen, read as axisX (analog)
+    this.controls = new Controls(this, { joystick: true });
     this.sky = this.add.graphics().setDepth(-20);
     this.drawSky();
     this.road = this.add.graphics().setDepth(-10);
@@ -115,17 +114,6 @@ export class PlayScene extends ArcadeScene {
     this.hint = txt(this, CX, 1200, t('hint'), { size: 30, wrap: 640 }).setDepth(9000);
     this.tweens.add({ targets: this.hint, alpha: 0.4, duration: 650, yoyo: true, repeat: -1 });
     this.time.delayedCall(4500, () => { this.tweens.killTweensOf(this.hint); this.tweens.add({ targets: this.hint, alpha: 0, duration: 400 }); });
-
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (p.x > 600 && p.y < 130) return;
-      this.dragX = p.x; this.dragId = p.id;
-    });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (this.dragX === null || p.id !== this.dragId || !p.isDown || this.dead) return;
-      this.bx += (p.x - this.dragX) * 1.2;
-      this.dragX = p.x;
-    });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => { if (p.id === this.dragId) this.dragX = null; });
 
     this.fill();
     this.updateHud();

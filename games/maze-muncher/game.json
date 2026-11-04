@@ -2,7 +2,7 @@
   "id": "maze-muncher",
   "title": { "tr": "Labirent Yiyici", "en": "Maze Muncher" },
   "description": { "tr": "Labirentteki tüm yemleri ye, dört farklı hayaletten kaç. Güç hapını yut ve avcı sen ol! Her bölümde hayaletler hızlanır.", "en": "Eat every dot in the maze and escape four ghosts with different minds. Swallow a power pellet and turn the hunt around! Ghosts get faster every level." },
-  "howTo": { "tr": "Kaydırarak, yön tuşlarına dokunarak ya da ok tuşları/WASD ile yön ver. Büyük hap hayaletleri yenebilir yapar.", "en": "Swipe, tap the on-screen arrows or use the arrow keys/WASD to steer. Big pellets make the ghosts edible." },
+  "howTo": { "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda kolu yön verir. Klavyede ok tuşları ya da WASD. Büyük hap hayaletleri yenebilir yapar.", "en": "Touch and drag anywhere for a stick that steers, or use the arrow keys/WASD. Big pellets make the ghosts edible." },
   "genres": ["arcade", "retro", "action"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],

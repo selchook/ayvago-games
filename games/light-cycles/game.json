@@ -9,8 +9,8 @@
     "en": "Race your light cycle across a neon grid and box your rival in with the wall you leave behind! First to three rounds wins, and every round is faster. Each rival is craftier than the last. Play a friend online too."
   },
   "howTo": {
-    "tr": "Oklar veya WASD ile yön ver, ekranda kaydır ya da SOL / SAĞ düğmelerine dokun. Duvara veya ize çarpan turu kaybeder.",
-    "en": "Steer with the arrows or WASD, swipe, or tap LEFT / RIGHT. Hit a wall or a trail and you lose the round."
+    "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda kolu yön verir. Klavyede oklar ya da WASD, Z / X ile sola / sağa dön. Duvara veya ize çarpan turu kaybeder.",
+    "en": "Touch and drag anywhere for a stick that steers, or use the arrows or WASD (Z / X turn left / right). Hit a wall or a trail and you lose the round."
   },
   "genres": [
     "arcade",
