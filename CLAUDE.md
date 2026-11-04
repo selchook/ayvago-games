@@ -32,7 +32,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 | `npm run new-game -- <slug> "<Title>"` | scaffold a game |
 | `npm run build` | registry + typecheck + production build into `dist/` |
 | `npm run test:smoke` | full smoke test of every game against `dist/` |
-| `npm run test:changed` | build + smoke + platform check of only the games changed since `origin/main` (every game when shared code changed); CI runs the same |
+| `npm run test:changed` | build + smoke + platform check of only the games changed since `origin/main` (every game only when the shared runtime changed: `src/core`, `public/assets`, build config); CI runs the same |
 | `node scripts/smoke-test.mjs --dev --serial <slug>` | smoke-test one game without building |
 | `npm run test:platform` | GHA protocol check of every game embedded like ayvago.com |
 | `npm run platform` | regenerate ayvago.json manifests + `platform/arcade-catalog.ts` |

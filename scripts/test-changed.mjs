@@ -1,20 +1,23 @@
 #!/usr/bin/env node
 // Build and test only the games a change touches (scripts/changed-games.mjs): the smoke test and,
 // unless --smoke-only, the platform protocol check. Shared code changes test every game.
-// Usage: node scripts/test-changed.mjs [base-ref | all, default origin/main] [--smoke-only]
+// Usage: node scripts/test-changed.mjs [base-ref | all, default origin/main] [--games "a b"] [--smoke-only]
+// --games skips the diff and tests the listed games (CI passes the list it already worked out).
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
-const base = args.find((a) => !a.startsWith('--')) ?? 'origin/main';
+const gi = args.indexOf('--games');
+const given = gi >= 0 ? args[gi + 1] : undefined;
+const base = args.find((a, i) => !a.startsWith('--') && (gi < 0 || i !== gi + 1)) ?? 'origin/main';
 const smokeOnly = args.includes('--smoke-only');
 
 const run = (cmd, cmdArgs, env = {}) =>
   execFileSync(cmd, cmdArgs, { cwd: root, stdio: 'inherit', env: { ...process.env, ...env } });
 
-const list = base === 'all' ? 'all'
+const list = given !== undefined ? given.trim() : base === 'all' ? 'all'
   : execFileSync('node', ['scripts/changed-games.mjs', base], { cwd: root, encoding: 'utf8' }).trim();
 if (!list) {
   console.log(`No game changed since ${base}; nothing to test.`);
