@@ -45,20 +45,32 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright@1.56.1 install --with-deps chromium
-      - run: npm i --no-save playwright@1.56.1
-      - name: Build and smoke-test the changed games
+      - name: Games to test
+        id: games
         run: |
           if [ "${{ github.event_name }}" = pull_request ]; then base="origin/${{ github.base_ref }}"; else base="${{ github.event.before }}"; fi
           # A new branch or a force push has no usable base: test everything.
-          git cat-file -e "$base^{commit}" 2>/dev/null || base=all
-          node scripts/test-changed.mjs "$base" --smoke-only
+          if git cat-file -e "$base^{commit}" 2>/dev/null; then list=$(node scripts/changed-games.mjs "$base"); else list=all; fi
+          echo "Games: ${list:-none}"
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+      - run: npm run typecheck
+      - if: steps.games.outputs.list != ''
+        run: npx playwright@1.56.1 install --with-deps chromium
+      - if: steps.games.outputs.list != ''
+        run: npm i --no-save playwright@1.56.1
+      - name: Build and smoke-test the changed games
+        if: steps.games.outputs.list != ''
+        run: |
+          if [ "$GAMES" = all ]; then node scripts/test-changed.mjs all --smoke-only; else node scripts/test-changed.mjs --games "$GAMES" --smoke-only; fi
+        env:
+          GAMES: ${{ steps.games.outputs.list }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: smoke-report
           path: reports/
       - uses: actions/upload-artifact@v4
+        if: steps.games.outputs.list != ''
         with:
           name: dist
           path: dist/
