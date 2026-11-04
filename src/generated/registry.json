@@ -271,8 +271,8 @@
         "en": "Blast crates in a maze, grab power-ups and outsmart the bomber bots hunting you. Every level brings more and smarter bots."
       },
       "howTo": {
-        "tr": "Ok tuşlarıyla ya da ekrandaki yön düğmeleriyle yürü; Boşluk ya da BOMBA düğmesiyle bomba bırak. Patlama artı şeklinde yayılır: kaç!",
-        "en": "Walk with the arrow keys or the on-screen pad, drop bombs with Space or BOMB. Blasts spread in a cross: run!"
+        "tr": "Ekranın sol yarısına bas ve sürükle: çıkan kumanda koluyla yürü; sağdaki A düğmesi bomba bırakır. Klavyede ok tuşları ve Boşluk. Patlama artı şeklinde yayılır: kaç!",
+        "en": "Touch and drag on the left half for a stick to walk; the A button on the right drops a bomb. On a keyboard: arrow keys and Space. Blasts spread in a cross: run!"
       },
       "genres": [
         "arcade",
@@ -403,8 +403,8 @@
         "en": "Shoot the centipede apart as it weaves down through the mushroom field, and keep clear of the spider and fleas."
       },
       "howTo": {
-        "tr": "Parmağını sürükle ya da ok tuşlarıyla hareket et; ateş otomatik. Kırkayağın tüm parçalarını vur.",
-        "en": "Drag your finger or use the arrow keys to move; firing is automatic. Shoot every centipede segment."
+        "tr": "Joystick ya da ok tuşlarıyla hareket et (dokunduğun yerde belirir); ateş otomatik. Kırkayağın tüm parçalarını vur.",
+        "en": "Move with the joystick (it appears where you touch) or the arrow keys; firing is automatic. Shoot every centipede segment."
       },
       "genres": [
         "arcade",
@@ -500,8 +500,8 @@
         "en": "Catch the coins and gems raining from the sky with your basket and dodge the bombs. Chain catches to grow your combo multiplier!"
       },
       "howTo": {
-        "tr": "Parmağını sürükle ya da ok tuşlarıyla / A-D ile sağa sola koş. Bombaları yakalama; yıldız mıknatıs verir.",
-        "en": "Drag your finger or use the arrow keys / A-D to run left and right. Don't catch bombs; the star is a magnet."
+        "tr": "Joystick ya da ok tuşları / A-D ile sağa sola koş. Bombaları yakalama; yıldız mıknatıs verir.",
+        "en": "Run left and right with the joystick or the arrow keys / A-D. Don't catch bombs; the star is a magnet."
       },
       "genres": [
         "arcade",
@@ -631,8 +631,8 @@
         "en": "The ball rolls down an endless road. Smash only the blocks of your own colour; hit another colour and the run is over! Colour gates switch your colour, and the road gets faster and busier."
       },
       "howTo": {
-        "tr": "Topu yönlendirmek için parmağını sağa sola sürükle ya da sol / sağ oka bas. Kendi rengin ve şeklindeki blokları vur, elmasları topla.",
-        "en": "Drag sideways or press Left / Right to steer. Hit the blocks with your colour and symbol, and grab the gems."
+        "tr": "Topu joystick ya da sol / sağ ok tuşlarıyla yönlendir. Kendi rengin ve şeklindeki blokları vur, elmasları topla.",
+        "en": "Steer with the joystick or press Left / Right. Hit the blocks with your colour and symbol, and grab the gems."
       },
       "genres": [
         "arcade",
@@ -764,8 +764,8 @@
         "en": "A turn-based micro roguelike: fight monsters, grab potions and chests, take the stairs ever deeper."
       },
       "howTo": {
-        "tr": "Gitmek istediğin yöne dokun ya da ok tuşları/WASD ile yürü; canavara yürüyerek saldır. Boşluk: bekle, X: iksir. Merdivenden in!",
-        "en": "Tap a direction or walk with the arrows/WASD; walk into monsters to attack. Space: wait, X: potion. Take the stairs down!"
+        "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda koluyla yürü, basılı tutunca yürümeye devam eder. Klavyede ok tuşları ya da WASD; canavara yürüyerek saldır. Boşluk: bekle, X: iksir. Merdivenden in!",
+        "en": "Touch and drag anywhere for a stick to walk (hold it to keep walking), or use the arrows/WASD; walk into monsters to attack. Space: wait, X: potion. Take the stairs down!"
       },
       "genres": [
         "strategy",
@@ -797,8 +797,8 @@
         "en": "Eat smaller fish to grow and steer clear of bigger fish and sharks. Reach the target size to clear each level as the ocean gets more dangerous!"
       },
       "howTo": {
-        "tr": "Balığını parmağınla sürükle ya da ok tuşları / WASD ile yüz. Kendinden küçükleri ye, kırmızı parlayan büyüklerden kaç.",
-        "en": "Drag your fish with your finger or swim with the arrow keys / WASD. Eat smaller fish and avoid the bigger ones glowing red."
+        "tr": "Joystick ya da ok tuşları / WASD ile yüz. Kendinden küçükleri ye, kırmızı parlayan büyüklerden kaç.",
+        "en": "Swim with the joystick or the arrow keys / WASD. Eat smaller fish and avoid the bigger ones glowing red."
       },
       "genres": [
         "arcade",
@@ -934,8 +934,8 @@
         "en": "Big-headed one-on-one football! Run, jump, head the ball and shoot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too."
       },
       "howTo": {
-        "tr": "Sol/Sağ ok ya da A/D ile koş, Yukarı ya da W ile zıpla, Boşluk ile şut çek. Dokunmatikte ekrandaki tuşları kullan.",
-        "en": "Run with Left/Right or A/D, jump with Up or W, kick with Space. On touch screens use the on-screen buttons."
+        "tr": "Sol/Sağ ok ya da A/D ile koş, Yukarı ya da W ile zıpla, Boşluk ile şut çek. Dokunmatikte joystick ile koş (yukarı itersen zıplarsın), A düğmesiyle zıpla, B düğmesiyle şut çek.",
+        "en": "Run with Left/Right or A/D, jump with Up or W, kick with Space. On touch screens run with the joystick (push up to jump), jump with the A button and kick with the B button."
       },
       "genres": [
         "sports",
@@ -1101,8 +1101,8 @@
         "en": "Race your light cycle across a neon grid and box your rival in with the wall you leave behind! First to three rounds wins, and every round is faster. Each rival is craftier than the last. Play a friend online too."
       },
       "howTo": {
-        "tr": "Oklar veya WASD ile yön ver, ekranda kaydır ya da SOL / SAĞ düğmelerine dokun. Duvara veya ize çarpan turu kaybeder.",
-        "en": "Steer with the arrows or WASD, swipe, or tap LEFT / RIGHT. Hit a wall or a trail and you lose the round."
+        "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda kolu yön verir. Klavyede oklar ya da WASD, Z / X ile sola / sağa dön. Duvara veya ize çarpan turu kaybeder.",
+        "en": "Touch and drag anywhere for a stick that steers, or use the arrows or WASD (Z / X turn left / right). Hit a wall or a trail and you lose the round."
       },
       "genres": [
         "arcade",
@@ -1165,8 +1165,8 @@
         "en": "Steer the module with thrust and rotation and land softly on a marked pad before your fuel runs out. Narrow pads, big points!"
       },
       "howTo": {
-        "tr": "Sol/Sağ: dön, Yukarı ya da Boşluk: itki. Dokunmatik: soldaki oklarla dön, sağdaki düğmeyle itki ver. Yavaş ve dik in!",
-        "en": "Left/Right: rotate, Up or Space: thrust. Touch: rotate with the left arrows, thrust with the right button. Land slow and upright!"
+        "tr": "Sol/Sağ: dön, Yukarı ya da Boşluk: itki. Dokunmatik: soldaki joystick ile dön, sağdaki A düğmesiyle itki ver. Yavaş ve dik in!",
+        "en": "Left/Right: rotate, Up or Space: thrust. Touch: rotate with the joystick on the left, thrust with the A button on the right. Land slow and upright!"
       },
       "genres": [
         "arcade",
@@ -1231,8 +1231,8 @@
         "en": "Eat every dot in the maze and escape four ghosts with different minds. Swallow a power pellet and turn the hunt around! Ghosts get faster every level."
       },
       "howTo": {
-        "tr": "Kaydırarak, yön tuşlarına dokunarak ya da ok tuşları/WASD ile yön ver. Büyük hap hayaletleri yenebilir yapar.",
-        "en": "Swipe, tap the on-screen arrows or use the arrow keys/WASD to steer. Big pellets make the ghosts edible."
+        "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda kolu yön verir. Klavyede ok tuşları ya da WASD. Büyük hap hayaletleri yenebilir yapar.",
+        "en": "Touch and drag anywhere for a stick that steers, or use the arrow keys/WASD. Big pellets make the ghosts edible."
       },
       "genres": [
         "arcade",
@@ -1522,12 +1522,12 @@
         "en": "Paint Roll"
       },
       "description": {
-        "tr": "Boya topunu kaydır: duvara çarpana kadar gider ve geçtiği her kareyi boyar. Labirentin tamamını boya! 60 bölüm büyüdükçe zorlaşır; az hamleyle bitirip üç yıldız topla.",
-        "en": "Swipe the paint ball: it slides until it hits a wall and paints every tile it crosses. Paint the whole maze! 60 levels that grow as you go; finish within par for three stars."
+        "tr": "Boya topunu yuvarla: duvara çarpana kadar gider ve geçtiği her kareyi boyar. Labirentin tamamını boya! 60 bölüm büyüdükçe zorlaşır; az hamleyle bitirip üç yıldız topla.",
+        "en": "Roll the paint ball: it slides until it hits a wall and paints every tile it crosses. Paint the whole maze! 60 levels that grow as you go; finish within par for three stars."
       },
       "howTo": {
-        "tr": "Kaydır ya da ok tuşlarına bas, her kareyi boya. Z geri alır, R baştan başlatır. Hızlı bitir, bonus kazan. Skor beş bölümde bir kaydedilir.",
-        "en": "Swipe or use the arrows to paint every tile. Z undoes, R restarts. Finish fast for a bonus; scores save every five levels."
+        "tr": "Ekranda bir yere bas ve sürükle: kumanda kolunu bir yöne it, top o yöne kayar. Klavyede ok tuşları ya da WASD. Her kareyi boya. Z geri alır, R baştan başlatır. Hızlı bitir, bonus kazan. Skor beş bölümde bir kaydedilir.",
+        "en": "Touch and drag anywhere: flick the stick and the ball rolls that way. On a keyboard use the arrows/WASD. Paint every tile. Z undoes, R restarts. Finish fast for a bonus; scores save every five levels."
       },
       "genres": [
         "puzzle",
@@ -1690,8 +1690,8 @@
         "en": "Hop through ten handmade levels: collect the gems, dodge slimes, snails, bees and saws, then reach the flag. Stomp enemies from above!"
       },
       "howTo": {
-        "tr": "Ekrandaki ok ve zıplama tuşlarını ya da ok tuşları/WASD ve Boşluk'u kullan. Önce tüm mücevherleri topla, sonra bayrağa dokun.",
-        "en": "Use the on-screen arrows and jump button, or arrow keys/WASD and Space. Collect every gem first, then touch the flag."
+        "tr": "Joystick ile koş, A ile zıpla; klavyede ok tuşları/WASD ve Boşluk. Önce tüm mücevherleri topla, sonra bayrağa dokun.",
+        "en": "Run with the joystick and jump with A, or use the arrow keys/WASD and Space. Collect every gem first, then touch the flag."
       },
       "genres": [
         "action",
@@ -1755,8 +1755,8 @@
         "en": "Classic snake: eat fruit, grow longer and faster. Grab the timed bonus food and don't bite yourself!"
       },
       "howTo": {
-        "tr": "Kaydırarak, yılanın yanına dokunarak ya da ok tuşlarıyla yön ver. Duvarlı modda kenarlar öldürür ama puan iki kat.",
-        "en": "Swipe, tap beside the snake or use the arrow keys to steer. In walls mode the edges kill, but points are doubled."
+        "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda kolu yılanı çevirir. Klavyede ok tuşları ya da WASD. Duvarlı modda kenarlar öldürür ama puan iki kat.",
+        "en": "Touch and drag anywhere for a stick that turns the snake, or use the arrow keys/WASD. In walls mode the edges kill, but points are doubled."
       },
       "genres": [
         "arcade",
@@ -1815,8 +1815,8 @@
         "en": "Hop the frog through traffic, ride logs and hippos across the river and fill all five homes. Traffic speeds up every level!"
       },
       "howTo": {
-        "tr": "Dokun = ileri zıpla; kaydır, alttaki okları kullan ya da ok tuşları/WASD ile yön ver. Suya düşme, arabalara çarpma.",
-        "en": "Tap = hop forward; swipe, use the arrows below or the arrow keys/WASD to move. Don't fall in the water or get hit."
+        "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda kolu kurbağayı zıplatır, basılı tutunca zıplamaya devam eder. Klavyede ok tuşları ya da WASD, Boşluk ileri zıplar. Suya düşme, arabalara çarpma.",
+        "en": "Touch and drag anywhere for a stick: push to hop, hold to keep hopping. On a keyboard use the arrows or WASD; Space hops forward. Don't fall in the water or get hit."
       },
       "genres": [
         "arcade",
@@ -1981,8 +1981,8 @@
         "en": "Bounce your character up into the sky: ride springs, blast off with a jetpack and dodge breaking platforms and monsters."
       },
       "howTo": {
-        "tr": "Ekranın soluna/sağına dokun ya da sol/sağ ok tuşlarıyla yönlendir. Zıplama otomatik; düşmanların üstüne basabilirsin!",
-        "en": "Touch the left/right side or use the left/right arrow keys to steer. Jumping is automatic; you can stomp on enemies!"
+        "tr": "Joystick ya da sol/sağ ok tuşlarıyla yönlendir. Zıplama otomatik; düşmanların üstüne basabilirsin!",
+        "en": "Steer with the joystick or the left/right arrow keys. Jumping is automatic; you can stomp on enemies!"
       },
       "genres": [
         "arcade",
@@ -2044,8 +2044,8 @@
         "en": "Classic Sokoban: push every crate onto a target across 20 handmade levels. Fewer moves, more stars!"
       },
       "howTo": {
-        "tr": "Ok tuşları, kaydırma ya da yön düğmeleriyle yürü; kutuları it. Bir kareye dokunarak oraya yürü. Z/geri: hamleyi geri al, R: bölümü yeniden başlat.",
-        "en": "Walk with the arrow keys, swipes or the D-pad and push the crates. Tap a tile to walk there. Z/undo button: undo, R: restart the level."
+        "tr": "Ekranda bir yere bas ve sürükle: çıkan kumanda koluyla yürü, basılı tutunca yürümeye devam eder. Klavyede ok tuşları ya da WASD. Kutuları it ve hedeflere yerleştir. Geri düğmesi ya da Z: hamleyi geri al; yeniden başlat düğmesi ya da R: bölümü baştan oyna.",
+        "en": "Touch and drag anywhere for a stick to walk (hold it to keep walking), or use the arrow keys/WASD. Push the crates onto the goals. Undo button or Z: undo a move; restart button or R: replay the level."
       },
       "genres": [
         "puzzle",
@@ -2363,8 +2363,8 @@
         "en": "Weave through busy highway traffic, chain near misses for combos, grab coins and fuel, and drive as far as you can before the tank runs dry!"
       },
       "howTo": {
-        "tr": "Gitmek istediğin yere dokun ya da sürükle; klavyede sol/sağ ok ile direksiyon. Benzin bidonlarını topla, araçlara çarpma.",
-        "en": "Touch or drag where you want to drive, or steer with the left/right arrow keys. Grab fuel cans and don't hit the traffic."
+        "tr": "Joystick ya da sol/sağ ok tuşlarıyla direksiyonu çevir; çubuğu ne kadar itersen o kadar sert dönersin. Benzin bidonlarını topla, araçlara çarpma.",
+        "en": "Steer with the joystick or the left/right arrow keys; the further you push the stick, the harder you turn. Grab fuel cans and don't hit the traffic."
       },
       "genres": [
         "arcade",
