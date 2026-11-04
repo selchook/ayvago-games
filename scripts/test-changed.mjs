@@ -28,6 +28,7 @@ console.log(list === 'all' ? 'Shared code changed: testing every game.' : `Testi
 
 run('node', ['scripts/gen-registry.mjs']);
 run('npx', ['tsc', '--noEmit']);
-run('npx', ['vite', 'build'], slugs.length ? { GAMES: slugs.join(' ') } : {});
+// Always set GAMES, so a value inherited from the environment cannot narrow a full build.
+run('npx', ['vite', 'build'], { GAMES: slugs.join(' ') });
 run('node', ['scripts/smoke-test.mjs', ...slugs]);
 if (!smokeOnly) run('node', ['scripts/platform-harness.mjs', ...slugs]);
