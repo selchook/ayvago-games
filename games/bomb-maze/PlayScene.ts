@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, loc, txt, t, rng } from '@core';
+import { StickDir } from './stick';
 import { ACTOR_SCALE, ACTOR_ORIGIN_Y, BOT_PREFIXES } from './cast';
 import { CELL, makeMazeTextures } from './art';
 
@@ -14,8 +15,7 @@ const WALL = 1;
 const CRATE = 2;
 const DIRS: Array<[number, number]> = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const BOT_SPAWNS: Array<[number, number]> = [[11, 13], [11, 1], [1, 13], [6, 7], [11, 7], [1, 7]];
-const DPAD = { x: 172, y: 1088, r: 150 };
-const BOMB_BTN = { x: 560, y: 1088, r: 108 };
+const STICK_VEC = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] } as const;
 
 type PowerKind = 'range' | 'bomb' | 'speed';
 
@@ -64,11 +64,7 @@ export class PlayScene extends ArcadeScene {
   private startDelay = 0;
   private respawnAt = -1;
   private marker!: Phaser.GameObjects.Triangle;
-  private dpadId = -1;
-  private dpadDir: [number, number] | null = null;
-  private bombTap = false;
-  private arrows: Phaser.GameObjects.Image[] = [];
-  private bombBtn!: Phaser.GameObjects.Arc;
+  private stick!: StickDir;
   private stats: Phaser.GameObjects.Text[] = [];
   private botText!: Phaser.GameObjects.Text;
   // carried power-ups
@@ -79,13 +75,11 @@ export class PlayScene extends ArcadeScene {
   createGame(): void {
     makeMazeTextures(this);
     this.level = 1; this.lives = 3; this.now = 0; this.phase = 'play'; this.startDelay = 0; this.respawnAt = -1;
-    this.dpadId = -1; this.dpadDir = null; this.bombTap = false; this.arrows = [];
     this.pRange = 2; this.pBombs = 1; this.pSpeed = 3.6;
     this.levelObjs = []; this.actors = []; this.bombs = [];
 
     this.add.rectangle(0, 0, 720, 1280, 0x1a1626).setOrigin(0).setDepth(-10);
     this.add.rectangle(360, Y0 + (ROWS * CELL) / 2, COLS * CELL + 16, ROWS * CELL + 16, 0x000000, 0.5).setDepth(-5);
-    this.buildPad();
     this.marker = this.add.triangle(0, 0, 0, 0, 22, 0, 11, 14, 0xffd23f).setDepth(900).setStrokeStyle(3, 0x000000);
     this.tweens.add({ targets: this.marker, scaleY: 0.7, duration: 300, yoyo: true, repeat: -1 });
 
@@ -100,53 +94,16 @@ export class PlayScene extends ArcadeScene {
     this.stats = [sb, sr, ss, sl];
     this.botText = this.add.text(604, 86, '', { ...st, color: '#ff8ac0' }).setOrigin(1, 0.5).setDepth(9000);
 
-    this.controls = new Controls(this);
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (Phaser.Math.Distance.Between(p.x, p.y, DPAD.x, DPAD.y) < DPAD.r + 20) { this.dpadId = p.id; this.updateDpad(p); }
-      else if (Phaser.Math.Distance.Between(p.x, p.y, BOMB_BTN.x, BOMB_BTN.y) < BOMB_BTN.r + 20) {
-        this.bombTap = true;
-        this.bombBtn.setFillStyle(0xff5a3a, 0.95);
-      }
-    });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (p.id === this.dpadId) this.updateDpad(p); });
-    const up = (p: Phaser.Input.Pointer) => {
-      if (p.id === this.dpadId) { this.dpadId = -1; this.dpadDir = null; this.paintDpad(); }
-      this.bombBtn.setFillStyle(0xec3013, 0.75);
-    };
-    this.input.on('pointerup', up);
-    this.input.on('pointerupoutside', up);
+    // touch: the standard floating stick on the left half walks, the A button drops a bomb
+    this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
+    this.stick = new StickDir(this.controls);
+    if (this.controls.touchUi) {
+      txt(this, 610, 1048, t('bombBtn'), { title: true, size: 18, color: '#ffb199' }).setDepth(9002);
+      txt(this, 200, 1150, loc({ tr: 'Bas ve sürükle: yürü', en: 'Touch and drag: walk' }), { size: 26, color: '#c9c3e6' })
+        .setAlpha(0.7).setDepth(9002);
+    }
 
     this.buildLevel();
-  }
-
-  // ---------------------------------------------------------------- touch pad
-
-  private buildPad(): void {
-    this.add.circle(DPAD.x, DPAD.y, DPAD.r, 0xffffff, 0.08).setStrokeStyle(5, 0xffffff, 0.35).setDepth(9000);
-    this.add.circle(DPAD.x, DPAD.y, 34, 0xffffff, 0.15).setDepth(9000);
-    const rots = [Math.PI / 2, -Math.PI / 2, Math.PI, 0];
-    DIRS.forEach(([dx, dy], i) => {
-      const a = this.add.image(DPAD.x + dx * 92, DPAD.y + dy * 92, 'arrow').setRotation(rots[i]).setAlpha(0.55).setDepth(9001);
-      this.arrows.push(a);
-    });
-    this.bombBtn = this.add.circle(BOMB_BTN.x, BOMB_BTN.y, BOMB_BTN.r, 0xec3013, 0.75).setStrokeStyle(6, 0xffffff, 0.7).setDepth(9000);
-    this.add.image(BOMB_BTN.x, BOMB_BTN.y - 14, 'bomb').setDisplaySize(84, 84).setTint(0x2a2a35).setDepth(9001);
-    txt(this, BOMB_BTN.x, BOMB_BTN.y + 58, t('bombBtn'), { title: true, size: 18 }).setDepth(9002);
-  }
-
-  private updateDpad(p: Phaser.Input.Pointer): void {
-    const dx = p.x - DPAD.x, dy = p.y - DPAD.y;
-    if (Math.hypot(dx, dy) < 24) this.dpadDir = null;
-    else if (Math.abs(dx) > Math.abs(dy)) this.dpadDir = [Math.sign(dx), 0];
-    else this.dpadDir = [0, Math.sign(dy)];
-    this.paintDpad();
-  }
-
-  private paintDpad(): void {
-    DIRS.forEach(([dx, dy], i) => {
-      const on = !!this.dpadDir && this.dpadDir[0] === dx && this.dpadDir[1] === dy;
-      this.arrows[i].setAlpha(on ? 1 : 0.55).setTint(on ? 0xffd23f : 0xffffff);
-    });
   }
 
   // ---------------------------------------------------------------- level
@@ -600,13 +557,15 @@ export class PlayScene extends ArcadeScene {
 
     // input
     const c = this.controls;
-    let want: [number, number] | null = this.dpadDir;
-    if (!want) {
+    // the stick (with its dead zone and axis lock) wins while a thumb is on it; else the keys
+    this.stick.update(delta);
+    const sd = this.stick.held;
+    let want: [number, number] | null = sd ? [STICK_VEC[sd][0], STICK_VEC[sd][1]] : null;
+    if (!want && !this.stick.active) {
       if (Math.abs(c.axisX) > 0.3 && Math.abs(c.axisX) >= Math.abs(c.axisY)) want = [Math.sign(c.axisX), 0];
       else if (Math.abs(c.axisY) > 0.3) want = [0, Math.sign(c.axisY)];
     }
-    const bombNow = c.justA() || this.bombTap;
-    this.bombTap = false;
+    const bombNow = c.justA();
 
     const p = this.player;
     if (this.phase !== 'dead') {

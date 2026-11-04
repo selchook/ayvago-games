@@ -2,7 +2,7 @@
   "id": "bomb-maze",
   "title": { "tr": "Bomba Labirenti", "en": "Bomb Maze" },
   "description": { "tr": "Labirentte bombalarla sandıkları patlat, güçlendirmeleri topla ve seni kovalayan robot rakipleri alt et. Her bölümde daha çok ve daha zeki robot var.", "en": "Blast crates in a maze, grab power-ups and outsmart the bomber bots hunting you. Every level brings more and smarter bots." },
-  "howTo": { "tr": "Ok tuşlarıyla ya da ekrandaki yön düğmeleriyle yürü; Boşluk ya da BOMBA düğmesiyle bomba bırak. Patlama artı şeklinde yayılır: kaç!", "en": "Walk with the arrow keys or the on-screen pad, drop bombs with Space or BOMB. Blasts spread in a cross: run!" },
+  "howTo": { "tr": "Ekranın sol yarısına bas ve sürükle: çıkan kumanda koluyla yürü; sağdaki A düğmesi bomba bırakır. Klavyede ok tuşları ve Boşluk. Patlama artı şeklinde yayılır: kaç!", "en": "Touch and drag on the left half for a stick to walk; the A button on the right drops a bomb. On a keyboard: arrow keys and Space. Blasts spread in a cross: run!" },
   "genres": ["arcade", "action", "strategy"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],

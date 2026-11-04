@@ -243,6 +243,7 @@ export class PlayScene extends ArcadeScene {
   private respawn(): void {
     this.fx = colX(5); this.fr = START; this.furthest = START;
     this.alive = true; this.hopping = false; this.queued = null;
+    this.stick.latch();   // a thumb still held from the last life must let go before hopping again
     this.timeMax = Math.max(24, 40 - (this.level - 1) * 2);
     this.timeLeft = this.timeMax;
     this.frog.setPosition(this.fx, rowY(this.fr)).setAngle(0).setAlpha(1).setVisible(true).setScale(0);

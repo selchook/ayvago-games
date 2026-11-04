@@ -20,6 +20,7 @@ export class StickDir {
   step: Dir4 | null = null;
   private holdMs = 0;
   private nextMs = 0;
+  private latched = false;
 
   constructor(
     private controls: Controls,
@@ -40,6 +41,9 @@ export class StickDir {
   /** Forget the current hold, so the next push counts as a new press. */
   reset(): void { this.held = null; this.pressed = null; this.step = null; this.holdMs = 0; }
 
+  /** Ignore the stick until the thumb lets go or returns to the centre (after a death, a level). */
+  latch(): void { this.reset(); this.latched = true; }
+
   update(delta: number): void {
     const prev = this.held;
     let cur: Dir4 | null = null;
@@ -51,6 +55,10 @@ export class StickDir {
         if (prev) horizontal = prev === 'left' || prev === 'right' ? ax * 1.35 >= ay : ax > ay * 1.35;
         cur = horizontal ? (x < 0 ? 'left' : 'right') : (y < 0 ? 'up' : 'down');
       }
+    }
+    if (this.latched) {
+      if (cur) { this.held = null; this.pressed = null; this.step = null; return; }
+      this.latched = false;
     }
     this.held = cur;
     this.pressed = cur && cur !== prev ? cur : null;
