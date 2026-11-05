@@ -1,7 +1,7 @@
-import { launch, kenney, loadAudio, loadSfx, type GameMeta } from '@core';
-import Phaser from 'phaser';
+import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
+import { makeArt, paintBackdrop, paintMenuGreen } from './art';
 
 launch({
   meta: meta as GameMeta,
@@ -9,8 +9,6 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    l.image('ball', kenney('sports/png/equipment/ball_golf.png'));
-    l.image('flag', kenney('sports/png/equipment/flag_checkered.png'));
     loadSfx(l, 'putt', 'sfx-impact/audio/impactgeneric_light_002');
     loadSfx(l, 'wall', 'sfx-impact/audio/impactwood_light_001');
     const J = 'oga/junkala-sfx/general-sounds/';
@@ -25,15 +23,36 @@ launch({
     loadAudio(l, 'turn', J + 'simple-bleeps/sfx-sounds-blip7');
   },
   menuDecor(scene) {
-    const { width, height } = scene.scale;
-    scene.textures.get('ball').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    scene.textures.get('flag').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    const g = scene.add.graphics();
-    g.fillStyle(0x4caf50).fillRoundedRect(width / 2 - 260, height * 0.79, 520, 190, 30);
-    g.fillStyle(0x111111).fillCircle(width / 2 + 150, height * 0.86, 18);
-    scene.add.image(width / 2 + 150, height * 0.86, 'flag').setOrigin(0.12, 0.92).setScale(4);
-    const b = scene.add.image(width / 2 - 180, height * 0.86, 'ball').setScale(4);
-    scene.tweens.add({ targets: b, x: width / 2 + 140, duration: 1600, repeat: -1, ease: 'Cubic.easeOut', hold: 500 });
+    const { width } = scene.scale;
+    makeArt(scene);
+    paintBackdrop(scene);
+    paintMenuGreen(scene);
+    scene.add.image(0, 0, 'mg-bg').setOrigin(0);
+    // a little putting green above the title: the ball rolls into the cup again and again
+    const gx = width / 2, gy = 150, cx = gx + 130, cy = gy - 4;
+    scene.add.image(gx, gy, 'mg-menu-green');
+    const shadow = scene.add.image(0, 0, 'mg-shadow').setDisplaySize(36, 18).setAlpha(0.8);
+    const ball = scene.add.image(0, 0, 'mg-ball').setScale(0.5);
+    const pole = scene.add.image(0, 2, 'mg-pole').setOrigin(0.5, 1).setScale(0.85);
+    const pennant = scene.add.image(3, -78, 'mg-pennant').setOrigin(0, 0).setScale(0.85);
+    scene.add.container(cx, cy, [pole, pennant]);
+    scene.tweens.add({ targets: pennant, scaleX: 0.68, scaleY: 0.9, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const follow = () => shadow.setPosition(ball.x + 3, ball.y + 7).setVisible(ball.alpha > 0.6);
+    const roll = () => {
+      ball.setPosition(gx - 220, gy + 8).setScale(0.5).setAlpha(1);
+      scene.tweens.add({
+        targets: ball, x: cx, y: cy, duration: 1700, ease: 'Cubic.easeOut', onUpdate: follow,
+        onComplete: () => scene.tweens.add({
+          targets: ball, scale: 0.2, alpha: 0, y: cy + 3, duration: 220, ease: 'Quad.easeIn', onUpdate: follow,
+          onComplete: () => {
+            const r = scene.add.image(cx, cy, 'mg-ring').setScale(0.25);
+            scene.tweens.add({ targets: r, scale: 0.8, alpha: 0, duration: 450, onComplete: () => r.destroy() });
+            scene.time.delayedCall(900, roll);
+          },
+        }),
+      });
+    };
+    roll();
   },
   scenes: [PlayScene],
   strings: {
