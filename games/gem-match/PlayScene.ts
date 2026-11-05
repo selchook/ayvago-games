@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ArcadeScene, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { THEMES, makeBackdrop, makeBoard, makeFx, makeGlass } from './art';
 
 export const GEM_FILES = ['red_diamond', 'blue_polygon', 'green_square', 'yellow_polygon', 'purple_diamond', 'grey_square'];
 const GEM_TINTS = [0xff4a3a, 0x3eb4ff, 0x8be03a, 0xffd23f, 0xb07cff, 0xe0e0e0];
@@ -7,6 +8,7 @@ const GEM_SIZE = [70, 70, 58, 70, 70, 58];
 
 const COLS = 8, ROWS = 8, S = 84;
 const X0 = (720 - COLS * S) / 2, Y0 = 350;
+const PAD = 14;                 // glass border around the cells
 
 type Special = '' | 'h' | 'v' | 'bomb' | 'rainbow';
 interface Gem { color: number; special: Special; img: Phaser.GameObjects.Image; ov?: Phaser.GameObjects.Image }
@@ -38,42 +40,60 @@ export class PlayScene extends ArcadeScene {
   private levelTxt!: Phaser.GameObjects.Text;
   private movesTxt!: Phaser.GameObjects.Text;
   private targetTxt!: Phaser.GameObjects.Text;
-  private bar!: Phaser.GameObjects.Rectangle;
+  private barFill!: Phaser.GameObjects.Image;
+  private barTip!: Phaser.GameObjects.Image;
+  private barK = 0;
   private layer!: Phaser.GameObjects.Container;
+  private bg!: Phaser.GameObjects.Image;
+  private board!: Phaser.GameObjects.Image;
+  private orbs: Phaser.GameObjects.Image[] = [];
+  private theme = -1;
 
   createGame(): void {
     this.gen++;
     this.g = []; this.busy = false; this.sel = null; this.cursor = { r: 3, c: 3 }; this.kbMode = false;
     this.drag = null; this.level = 0; this.idle = 0; this.hinting = false;
-    this.makeTextures();
+    makeFx(this);
+    this.theme = -1; this.barK = 0; this.orbs = [];
 
-    // background board
-    const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.35).fillRoundedRect(X0 - 14, Y0 - 14, COLS * S + 28, ROWS * S + 28, 18);
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      bg.fillStyle((r + c) % 2 ? 0x2a1d4a : 0x33255a, 1).fillRect(X0 + c * S, Y0 + r * S, S, S);
+    // backdrop of the level's colour theme, drifting orbs of light, and the frosted-glass board
+    this.bg = this.add.image(0, 0, makeBackdrop(this, 0)).setOrigin(0).setDepth(-10);
+    for (let i = 0; i < 7; i++) {
+      const o = this.add.image(rng.int(40, 680), rng.int(60, 1220), 'gm-glow').setDepth(-9).setBlendMode(Phaser.BlendModes.ADD)
+        .setScale(rng.int(60, 160) / 100).setAlpha(rng.int(12, 26) / 100);
+      this.tweens.add({ targets: o, x: o.x + rng.int(-90, 90), y: o.y + rng.int(-140, 140), duration: rng.int(7000, 12000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.orbs.push(o);
     }
-    bg.lineStyle(4, 0x8b5cff, 0.8).strokeRoundedRect(X0 - 14, Y0 - 14, COLS * S + 28, ROWS * S + 28, 18);
+    this.board = this.add.image(X0 - PAD - 20, Y0 - PAD - 20, makeBoard(this, 0, X0, Y0, COLS, ROWS, S, PAD)).setOrigin(0).setDepth(-5);
+    this.applyTheme(0, false);
     this.layer = this.add.container(0, 0);
     const mask = this.make.graphics({}, false).fillRect(X0, Y0, COLS * S, ROWS * S).createGeometryMask();
     this.layer.setMask(mask);
 
-    // top panel: level | target | moves
+    // top panel: level | target | moves, as glass cards
     const panel = (x: number, label: string, color: string): Phaser.GameObjects.Text => {
-      this.add.rectangle(x, 190, 200, 104, 0x000000, 0.4).setStrokeStyle(3, 0xffffff, 0.25);
+      this.add.image(x, 190, makeGlass(this, 200, 104));
       txt(this, x, 162, label, { title: true, size: 16, color });
       return txt(this, x, 208, '', { title: true, size: 28 });
     };
-    this.levelTxt = panel(130, t('level'), '#3ee6ff');
+    this.levelTxt = panel(130, t('level'), '#7fe9ff');
     this.targetTxt = panel(360, t('target'), '#ffd23f');
-    this.movesTxt = panel(590, t('moves'), '#ff4fa3');
-    this.add.rectangle(360, 280, 640, 22, 0x000000, 0.5).setStrokeStyle(3, 0xffffff, 0.3);
-    this.bar = this.add.rectangle(42, 280, 0, 16, 0x5dff7a).setOrigin(0, 0.5);
-    txt(this, 360, Y0 + ROWS * S + 70, t('hint'), { size: 30, color: '#d8c8ff' });
+    this.movesTxt = panel(590, t('moves'), '#ff8ad8');
+    // progress towards the target: a glossy bar with a light at its tip
+    this.add.image(360, 280, 'gm-track');
+    this.barFill = this.add.image(36, 280, 'gm-fill').setOrigin(0, 0.5).setCrop(0, 0, 0, 22);
+    this.barTip = this.add.image(36, 280, 'gm-glow').setScale(0.42).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+    this.tweens.add({ targets: this.barTip, scale: 0.55, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const hintY = Y0 + ROWS * S + 70;
+    this.add.image(360, hintY, makeGlass(this, 520, 64, 32));
+    txt(this, 360, hintY, t('hint'), { size: 28, color: '#f1e8ff' });
 
-    this.selImg = this.add.image(0, 0, 'gm-selector').setDisplaySize(S + 6, S + 6).setVisible(false).setDepth(20).setTint(0xffd23f);
-    this.cursorImg = this.add.image(0, 0, 'gm-selector').setDisplaySize(S + 6, S + 6).setVisible(false).setDepth(21);
-    this.tweens.add({ targets: this.selImg, alpha: 0.4, duration: 300, yoyo: true, repeat: -1 });
+    // now and then a gem catches the light
+    this.time.addEvent({ delay: 700, loop: true, callback: () => this.glint() });
+
+    this.selImg = this.add.image(0, 0, 'gm-ring').setDisplaySize(S * 112 / 84, S * 112 / 84).setVisible(false).setDepth(20);
+    this.cursorImg = this.add.image(0, 0, 'gm-cursor').setDisplaySize(S * 112 / 84, S * 112 / 84).setVisible(false).setDepth(21);
+    this.tweens.add({ targets: this.selImg, alpha: 0.55, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onDown(p));
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p));
@@ -83,29 +103,36 @@ export class PlayScene extends ArcadeScene {
     this.startLevel();
   }
 
-  // ---------- textures ----------
-  private makeTextures(): void {
-    if (this.textures.exists('gm-rainbow')) return;
-    const g = this.make.graphics({}, false);
-    const cols = [0xff4a3a, 0xffa53a, 0xffd23f, 0x8be03a, 0x3eb4ff, 0xb07cff];
-    cols.forEach((c, i) => g.fillStyle(c).fillCircle(36, 36, 34 - i * 5));
-    g.fillStyle(0xffffff, 0.9).fillCircle(26, 24, 6);
-    g.generateTexture('gm-rainbow', 72, 72);
-    g.clear();
-    g.fillStyle(0xffffff, 0.95);
-    g.fillRect(8, 30, 56, 12);
-    g.fillTriangle(0, 36, 14, 22, 14, 50).fillTriangle(72, 36, 58, 22, 58, 50);
-    g.generateTexture('gm-line', 72, 72);
-    g.clear();
-    g.lineStyle(6, 0xffffff, 1).strokeCircle(36, 36, 30);
-    g.fillStyle(0xffffff, 1).fillCircle(36, 36, 8);
-    g.generateTexture('gm-bomb', 72, 72);
-    g.destroy();
+  // ---------- look ----------
+  /** Switches backdrop and board to the colour theme of a level, cross-fading after the first. */
+  private applyTheme(i: number, fade = true): void {
+    if (i === this.theme) return;
+    this.theme = i;
+    const bgKey = makeBackdrop(this, i);
+    const boardKey = makeBoard(this, i, X0, Y0, COLS, ROWS, S, PAD);
+    const th = THEMES[i];
+    this.orbs.forEach((o, k) => o.setTint(Phaser.Display.Color.HexStringToColor(th.blobs[k % th.blobs.length]).color));
+    if (!fade) { this.bg.setTexture(bgKey); this.board.setTexture(boardKey); return; }
+    for (const [img, key, depth] of [[this.bg, bgKey, -10], [this.board, boardKey, -5]] as const) {
+      const old = this.add.image(img.x, img.y, img.texture.key).setOrigin(0).setDepth(depth + 0.5);
+      img.setTexture(key);
+      this.tweens.add({ targets: old, alpha: 0, duration: 700, onComplete: () => old.destroy() });
+    }
+  }
+
+  /** A star of light twinkles on a random gem. */
+  private glint(): void {
+    if (this.isOver || !this.g.length) return;
+    const gem = this.g[rng.int(0, ROWS - 1)]?.[rng.int(0, COLS - 1)];
+    if (!gem || !gem.img.active) return;
+    const st = this.add.image(gem.img.x - 16, gem.img.y - 18, 'gm-star').setDepth(22).setScale(0).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: st, scale: 0.45, angle: 90, duration: 260, yoyo: true, ease: 'Sine.easeOut', onComplete: () => st.destroy() });
   }
 
   // ---------- level flow ----------
   private startLevel(): void {
     const [target, moves, colors] = LEVELS[this.level];
+    this.applyTheme(this.level % THEMES.length);
     this.target = target; this.moves = moves; this.colors = colors; this.levelScore = 0;
     this.updateUi();
     for (const row of this.g) for (const gem of row) if (gem) this.killGem(gem);
@@ -124,8 +151,9 @@ export class PlayScene extends ArcadeScene {
     this.busy = true;
     const gen = this.gen;
     this.dropAll().then(() => { if (gen === this.gen) this.busy = false; });
+    const pill = this.add.image(360, 640, makeGlass(this, 360, 110, 55)).setDepth(49).setScale(0.3);
     const banner = txt(this, 360, 640, `${t('level')} ${this.level + 1}`, { title: true, size: 48, color: '#ffd23f' }).setDepth(50).setScale(0.3);
-    this.tweens.add({ targets: banner, scale: 1, duration: 400, ease: 'Back.easeOut', hold: 700, yoyo: true, onComplete: () => banner.destroy() });
+    this.tweens.add({ targets: [banner, pill], scale: 1, duration: 400, ease: 'Back.easeOut', hold: 700, yoyo: true, onComplete: () => { banner.destroy(); pill.destroy(); } });
   }
 
   private updateUi(): void {
@@ -134,8 +162,7 @@ export class PlayScene extends ArcadeScene {
     this.movesTxt.setText(String(this.moves));
     this.movesTxt.setColor(this.moves <= 3 ? '#ec3013' : '#ffffff');
     const k = Math.min(1, this.levelScore / this.target);
-    this.tweens.add({ targets: this.bar, width: 636 * k, duration: 250 });
-    this.bar.setFillStyle(k >= 1 ? 0xffd23f : 0x5dff7a);
+    this.tweens.add({ targets: this, barK: k, duration: 300, ease: 'Sine.easeOut' });
   }
 
   // ---------- gem helpers ----------
@@ -156,6 +183,10 @@ export class PlayScene extends ArcadeScene {
     if (sp === 'rainbow') {
       gem.color = -1;
       gem.img.setTexture('gm-rainbow').setDisplaySize(70, 70);
+      const halo = this.add.image(gem.img.x, gem.img.y, 'gm-glow').setDisplaySize(120, 120).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.5);
+      this.layer.addAt(halo, this.layer.getIndex(gem.img));
+      gem.ov = halo;
+      this.tweens.add({ targets: halo, alpha: 0.2, duration: 500, yoyo: true, repeat: -1 });
       this.tweens.add({ targets: gem.img, angle: 360, duration: 3000, repeat: -1 });
       return;
     }
@@ -381,6 +412,9 @@ export class PlayScene extends ArcadeScene {
         if (keep) continue;
         this.g[r][c] = null;
         burst(this, gem.img.x, gem.img.y, gem.color >= 0 ? GEM_TINTS[gem.color] : [0xffffff, 0xffd23f], 8, 220);
+        const glow = this.add.image(gem.img.x, gem.img.y, 'gm-glow').setDepth(19).setBlendMode(Phaser.BlendModes.ADD)
+          .setTint(gem.color >= 0 ? GEM_TINTS[gem.color] : 0xffffff).setScale(0.5).setAlpha(0.9);
+        this.tweens.add({ targets: glow, scale: 1.25, alpha: 0, duration: 320, ease: 'Quad.easeOut', onComplete: () => glow.destroy() });
         this.tweens.killTweensOf(gem.img);
         this.tweens.add({ targets: gem.ov ? [gem.img, gem.ov] : gem.img, scale: 0, alpha: 0, duration: 180, onComplete: () => this.killGem(gem) });
       }
@@ -475,10 +509,12 @@ export class PlayScene extends ArcadeScene {
         changed = true;
         if (gem.special === 'h' || gem.special === 'v') {
           for (let i = 0; i < (gem.special === 'h' ? COLS : ROWS); i++) clear.add(gem.special === 'h' ? `${r},${i}` : `${i},${c}`);
-          const beam = gem.special === 'h'
-            ? this.add.rectangle(360, this.py(r), COLS * S, 26, 0xffffff, 0.9)
-            : this.add.rectangle(this.px(c), Y0 + (ROWS * S) / 2, 26, ROWS * S, 0xffffff, 0.9);
-          this.tweens.add({ targets: beam, alpha: 0, scaleY: gem.special === 'h' ? 0.1 : 1, scaleX: gem.special === 'v' ? 0.1 : 1, duration: 350, onComplete: () => beam.destroy() });
+          const horiz = gem.special === 'h';
+          const beam = this.add.image(horiz ? 360 : this.px(c), horiz ? this.py(r) : Y0 + (ROWS * S) / 2, 'gm-beam')
+            .setDisplaySize(COLS * S + 40, 70).setAngle(horiz ? 0 : 90).setDepth(30).setBlendMode(Phaser.BlendModes.ADD)
+            .setTint(gem.color >= 0 ? GEM_TINTS[gem.color] : 0x7fe9ff);
+          const core = this.add.image(beam.x, beam.y, 'gm-beam').setDisplaySize(COLS * S + 40, 22).setAngle(horiz ? 0 : 90).setDepth(31).setBlendMode(Phaser.BlendModes.ADD);
+          this.tweens.add({ targets: [beam, core], alpha: 0, scaleY: 0.05, duration: 380, ease: 'Quad.easeIn', onComplete: () => { beam.destroy(); core.destroy(); } });
           this.sfxAt('line', gem.img.x, { volume: 0.45 });
           shake(this, 0.006, 120);
         } else if (gem.special === 'bomb') {
@@ -487,6 +523,11 @@ export class PlayScene extends ArcadeScene {
             if (rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS) clear.add(`${rr},${cc}`);
           }
           burst(this, gem.img.x, gem.img.y, [0xffd23f, 0xec3013, 0xffffff], 40, 420);
+          const ring = this.add.graphics().setDepth(30).setPosition(gem.img.x, gem.img.y);
+          ring.lineStyle(8, 0xffffff, 0.9).strokeCircle(0, 0, 30);
+          this.tweens.add({ targets: ring, scale: 4, alpha: 0, duration: 420, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+          const glow = this.add.image(gem.img.x, gem.img.y, 'gm-glow').setDepth(29).setBlendMode(Phaser.BlendModes.ADD).setTint(0xffb347).setScale(1);
+          this.tweens.add({ targets: glow, scale: 3.2, alpha: 0, duration: 450, onComplete: () => glow.destroy() });
           this.sfxAt('bomb', gem.img.x, { volume: 0.6 });
           shake(this, 0.014, 200);
         } else if (gem.special === 'rainbow') {
@@ -539,6 +580,9 @@ export class PlayScene extends ArcadeScene {
   }
 
   updateGame(_time: number, delta: number): void {
+    const fw = 648 * this.barK;
+    this.barFill.setCrop(0, 0, fw, 22);
+    this.barTip.setPosition(36 + fw, 280).setAlpha(this.barK > 0.01 ? 0.9 : 0).setTint(this.barK >= 1 ? 0xffd23f : 0xb8ffd0);
     if (this.busy) { this.idle = 0; return; }
     this.idle += delta / 1000;
     if (this.idle > 6 && !this.hinting) {
