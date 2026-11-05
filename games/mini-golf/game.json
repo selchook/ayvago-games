@@ -7,6 +7,6 @@
   "orientation": "portrait",
   "multiplayer": true,
   "controls": ["touch", "keyboard"],
-  "version": "1.0.0",
+  "version": "1.1.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"]
 }

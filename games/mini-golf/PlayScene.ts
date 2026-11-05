@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { ArcadeScene, burst, shake, flash, popup, t, txt, net, upper } from '@core';
-
-type R4 = [number, number, number, number];           // x, y, w, h
+import { BALL_PX, MOVER_PAD, makeArt, moverTexture, paintBackdrop, paintCourse, pill, type R4 } from './art';
 interface Mover { r: R4; ax: number; ay: number; speed: number; phase: number }
 interface Hole {
   par: number; tee: [number, number]; cup: [number, number];
@@ -12,6 +11,8 @@ const B: R4 = [50, 150, 620, 1050];   // playable bounds
 const BR = 12;                        // ball radius
 const CUP_R = 19;
 const MAX_STROKES = 8;
+const BALL_S = (BR * 2) / BALL_PX;    // ball image scale
+const TRAIL = 12;
 
 const HOLES: Hole[] = [
   { par: 2, tee: [360, 1110], cup: [360, 300], walls: [[290, 700, 140, 30]] },
@@ -34,18 +35,24 @@ const OPP_TINT = 0xff8a5a;       // the other player's ball
 interface ShotSnap { n: number; x: number; y: number; h: number; e: number }
 /** Shot result: shot number, rest x/y, strokes on this hole, sunk. */
 interface ShotDone { n: number; x: number; y: number; k: number; s: number }
-interface PState { x: number; y: number; strokes: number; total: number; done: boolean; img: Phaser.GameObjects.Image; shadow: Phaser.GameObjects.Ellipse }
+interface PState { x: number; y: number; strokes: number; total: number; done: boolean; img: Phaser.GameObjects.Image; shadow: Phaser.GameObjects.Image }
 
 const inRect = (x: number, y: number, r: R4) => x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <= r[1] + r[3];
 
 export class PlayScene extends ArcadeScene {
-  private courseG!: Phaser.GameObjects.Graphics;
-  private moverG!: Phaser.GameObjects.Graphics;
+  private course!: Phaser.GameObjects.Image;
   private aimG!: Phaser.GameObjects.Graphics;
+  private trailG!: Phaser.GameObjects.Graphics;
+  private trail: { x: number; y: number }[] = [];
   private ball!: Phaser.GameObjects.Image;
-  private ballShadow!: Phaser.GameObjects.Ellipse;
-  private flag!: Phaser.GameObjects.Image;
+  private ballShadow!: Phaser.GameObjects.Image;
+  private flag!: Phaser.GameObjects.Container;
   private footer!: Phaser.GameObjects.Text;
+  private footerPill!: Phaser.GameObjects.Image;
+  private holeObjs: Phaser.GameObjects.GameObject[] = [];
+  private bumperImgs: Phaser.GameObjects.Image[] = [];
+  private bumperGlows: Phaser.GameObjects.Image[] = [];
+  private moverImgs: Phaser.GameObjects.Image[] = [];
   private holeIdx = 0;
   private hole!: Hole;
   private bx = 0; private by = 0; private vx = 0; private vy = 0;
@@ -84,15 +91,18 @@ export class PlayScene extends ArcadeScene {
   createGame(): void {
     this.holeIdx = 0; this.strokes = 0; this.totalStrokes = 0; this.moving = false; this.sinking = false; this.between = false;
     this.aimAngle = -Math.PI / 2; this.power = 0.5; this.dragging = null; this.dragPower = 0;
-    this.textures.get('ball').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.textures.get('flag').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.courseG = this.add.graphics().setDepth(0);
-    this.moverG = this.add.graphics().setDepth(2);
+    makeArt(this);
+    paintBackdrop(this);
+    this.add.image(0, 0, 'mg-bg').setOrigin(0).setScrollFactor(0).setDepth(-10);
+    this.course = this.add.image(0, 0, 'mg-course').setOrigin(0).setDepth(0);
+    this.holeObjs = []; this.bumperImgs = []; this.bumperGlows = []; this.moverImgs = []; this.trail = [];
+    this.trailG = this.add.graphics().setDepth(3.6);
     this.aimG = this.add.graphics().setDepth(5);
-    this.ballShadow = this.add.ellipse(0, 0, 26, 14, 0x000000, 0.3).setDepth(3);
-    this.ball = this.add.image(0, 0, 'ball').setScale((BR * 2) / 8).setDepth(4);
-    this.flag = this.add.image(0, 0, 'flag').setOrigin(0.12, 0.92).setScale(3).setDepth(6);
-    this.footer = txt(this, 360, 1240, '', { title: true, size: 22, color: '#f3f2f2' }).setDepth(10);
+    this.ballShadow = this.makeShadow();
+    this.ball = this.add.image(0, 0, 'mg-ball').setScale(BALL_S).setDepth(4);
+    this.flag = this.makeFlag();
+    this.footerPill = this.add.image(360, 1246, pill(this, 400, 46)).setScrollFactor(0).setDepth(9);
+    this.footer = txt(this, 360, 1246, '', { title: true, size: 22, color: '#f3f2f2' }).setScrollFactor(0).setDepth(10);
     this.online = net.active; this.seat = net.seat; this.ps = []; this.cur = 0; this.shotNo = 0;
     this.turnLive = false; this.inShot = false; this.watching = false; this.sendT = 0; this.ev = 0; this.started = false;
     this.useHud = !this.online;
@@ -142,14 +152,61 @@ export class PlayScene extends ArcadeScene {
     this.vx = this.vy = 0;
     this.moving = false; this.sinking = false; this.between = false;
     this.aimAngle = Math.atan2(this.hole.cup[1] - this.by, this.hole.cup[0] - this.bx);
-    this.ball.setAlpha(1).setScale((BR * 2) / 8);
+    this.tweens.killTweensOf(this.ball);
+    this.ball.setAlpha(1).setScale(BALL_S);
+    this.tweens.killTweensOf(this.flag);
     this.flag.setPosition(this.hole.cup[0], this.hole.cup[1]).setAlpha(1);
+    this.trail = [];
     this.drawCourse();
     this.hud.setRight(`${t('hole')} ${i + 1}/9`);
     this.updateFooter();
     // slide-in
     this.cameras.main.setScroll(-720, 0);
     this.tweens.add({ targets: this.cameras.main, scrollX: 0, duration: 450, ease: 'Cubic.easeOut' });
+    this.label(`${t('hole')} ${i + 1}  ·  ${t('par')} ${this.hole.par}`, '#ffffff', 640, 30, 1000);
+  }
+
+  // ---------- art ----------
+  private makeShadow(): Phaser.GameObjects.Image {
+    return this.add.image(0, 0, 'mg-shadow').setDisplaySize(30, 15).setAlpha(0.8).setDepth(3);
+  }
+
+  private makeFlag(): Phaser.GameObjects.Container {
+    const pole = this.add.image(0, 2, 'mg-pole').setOrigin(0.5, 1);
+    const pennant = this.add.image(3, -92, 'mg-pennant').setOrigin(0, 0);
+    this.tweens.add({ targets: pennant, scaleX: 0.8, scaleY: 1.06, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    return this.add.container(0, 0, [pole, pennant]).setDepth(6);
+  }
+
+  /** A glass pill with a title-font label that pops in, holds and fades. */
+  private label(text: string, color: string, y: number, size: number, hold: number): void {
+    const lt = txt(this, 0, 0, text, { title: true, size, color, wrap: 600 });
+    const bg = this.add.image(0, 0, pill(this, Math.min(660, lt.width + size * 2.2), Math.round(lt.height + size * 0.9)));
+    const box = this.add.container(360, y, [bg, lt]).setDepth(20).setScale(0.3).setAlpha(0);
+    this.tweens.add({ targets: box, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: box, alpha: 0, scale: 0.9, y: y - 30, delay: 300 + hold, duration: 320, ease: 'Quad.easeIn', onComplete: () => box.destroy() });
+  }
+
+  /** An expanding ring (impact, ripple, cup). */
+  private ring(x: number, y: number, tint: number, from: number, to: number, dur: number, delay = 0, add = false): void {
+    const r = this.add.image(x, y, 'mg-ring').setTint(tint).setScale(from).setAlpha(0.9).setDepth(3.5);
+    if (add) r.setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: r, scale: to, alpha: 0, delay, duration: dur, ease: 'Cubic.easeOut', onComplete: () => r.destroy() });
+  }
+
+  private glow(x: number, y: number, tint: number, scale: number, dur: number): void {
+    const g = this.add.image(x, y, 'mg-glow').setTint(tint).setScale(scale * 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(7);
+    this.tweens.add({ targets: g, scale, alpha: 0, duration: dur, ease: 'Cubic.easeOut', onComplete: () => g.destroy() });
+  }
+
+  private splashFx(x: number, y: number): void {
+    burst(this, x, y, [0x6fc3ff, 0xffffff, 0x1f6fb5], 24, 220);
+    this.ring(x, y, 0xbfe8ff, 0.08, 0.7, 700);
+    this.ring(x, y, 0xbfe8ff, 0.05, 0.5, 700, 180);
+  }
+
+  private sandFx(x: number, y: number): void {
+    burst(this, x, y, [0xf3dfa2, 0xd8bd75, 0xfff6dc], 5, 90);
   }
 
   private updateFooter(): void {
@@ -158,49 +215,60 @@ export class PlayScene extends ArcadeScene {
   }
 
   private drawCourse(): void {
-    const g = this.courseG;
     const h = this.hole;
-    g.clear();
-    // frame + grass stripes
-    g.fillStyle(0x6b4423).fillRoundedRect(B[0] - 18, B[1] - 18, B[2] + 36, B[3] + 36, 18);
-    g.fillStyle(0x8a5a30).fillRoundedRect(B[0] - 12, B[1] - 12, B[2] + 24, B[3] + 24, 14);
-    for (let y = B[1], k = 0; y < B[1] + B[3]; y += 70, k++) g.fillStyle(k % 2 ? 0x4caf50 : 0x55bb59).fillRect(B[0], y, B[2], Math.min(70, B[1] + B[3] - y));
-    for (const s of h.sand ?? []) {
-      g.fillStyle(0xe6cf8b).fillRoundedRect(s[0], s[1], s[2], s[3], 22);
-      g.fillStyle(0xc9b06a);
-      for (let k = 0; k < (s[2] * s[3]) / 500; k++) g.fillRect(s[0] + 10 + ((k * 37) % (s[2] - 20)), s[1] + 10 + ((k * 53) % (s[3] - 20)), 3, 3);
-    }
+    paintCourse(this, 'mg-course', h, B, CUP_R, this.holeIdx + 1);
+    this.course.setTexture('mg-course');
+    for (const o of this.holeObjs) o.destroy();
+    this.holeObjs = [];
+    this.bumperImgs = (h.bumpers ?? []).map((b) => {
+      const img = this.add.image(b[0], b[1], 'mg-bumper').setScale(b[2] / 62).setDepth(1);
+      this.holeObjs.push(img);
+      return img;
+    });
+    this.bumperGlows = (h.bumpers ?? []).map((b) => {
+      const img = this.add.image(b[0], b[1], 'mg-glow').setTint(0xffc65a).setScale(b[2] / 30).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD).setDepth(1.5);
+      this.holeObjs.push(img);
+      return img;
+    });
+    this.moverImgs = this.moverRects.map((r) => {
+      const img = this.add.image(r[0] - MOVER_PAD, r[1] - MOVER_PAD, moverTexture(this, r[2], r[3])).setOrigin(0).setDepth(2);
+      this.holeObjs.push(img);
+      return img;
+    });
+    // glints on the water
     for (const w of h.water ?? []) {
-      g.fillStyle(0x1f6fb5).fillRect(w[0], w[1], w[2], w[3]);
-      g.lineStyle(3, 0x6fc3ff, 0.6);
-      for (let y = w[1] + 16; y < w[1] + w[3] - 6; y += 22) for (let x = w[0] + 10; x < w[0] + w[2] - 24; x += 46) g.lineBetween(x, y, x + 18, y);
+      const n = Math.max(2, Math.round((w[2] * w[3]) / 7000));
+      for (let k = 0; k < n; k++) {
+        const x = w[0] + 12 + Math.random() * (w[2] - 24), y = w[1] + 10 + Math.random() * (w[3] - 20);
+        const s = this.add.image(x, y, 'mg-glow').setScale(0.08 + Math.random() * 0.08, 0.04 + Math.random() * 0.03).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD).setDepth(0.5);
+        this.tweens.add({ targets: s, alpha: 0.75, x: x + 10, duration: 900 + Math.random() * 900, delay: Math.random() * 2000, yoyo: true, repeat: -1, repeatDelay: Math.random() * 1500, ease: 'Sine.easeInOut' });
+        this.holeObjs.push(s);
+      }
     }
-    for (const w of h.walls ?? []) {
-      g.fillStyle(0x000000, 0.3).fillRect(w[0] + 5, w[1] + 6, w[2], w[3]);
-      g.fillStyle(0x8a5a30).fillRect(w[0], w[1], w[2], w[3]);
-      g.fillStyle(0xb07a45).fillRect(w[0], w[1], w[2], 6);
-    }
-    // tee mat + cup
-    g.fillStyle(0x2e7d32).fillRoundedRect(h.tee[0] - 34, h.tee[1] - 24, 68, 48, 8);
-    g.fillStyle(0x000000, 0.25).fillCircle(h.cup[0], h.cup[1], CUP_R + 7);
-    g.fillStyle(0x111111).fillCircle(h.cup[0], h.cup[1], CUP_R);
   }
 
   private drawDynamic(): void {
-    const g = this.moverG;
-    g.clear();
-    (this.hole.bumpers ?? []).forEach((b, i) => {
-      const f = this.bumperFlash[i];
-      g.fillStyle(0x000000, 0.3).fillCircle(b[0] + 4, b[1] + 6, b[2]);
-      g.fillStyle(f > 0 ? 0xffffff : 0xec3013).fillCircle(b[0], b[1], b[2] + f * 6);
-      g.fillStyle(f > 0 ? 0xffd23f : 0xff6b5a).fillCircle(b[0], b[1], b[2] * 0.62);
-      g.lineStyle(4, 0xffffff, 0.9).strokeCircle(b[0], b[1], b[2] + f * 6);
+    this.bumperImgs.forEach((img, i) => {
+      const f = this.bumperFlash[i] ?? 0, b = this.hole.bumpers![i];
+      img.setScale((b[2] / 62) * (1 + f * 0.14));
+      this.bumperGlows[i]?.setAlpha(f * 0.9);
     });
-    for (const r of this.moverRects) {
-      g.fillStyle(0x000000, 0.3).fillRect(r[0] + 5, r[1] + 6, r[2], r[3]);
-      g.fillStyle(0x8b5cff).fillRect(r[0], r[1], r[2], r[3]);
-      g.fillStyle(0xb79bff).fillRect(r[0], r[1], r[2], 6);
-      g.lineStyle(3, 0x3a2a7a).strokeRect(r[0], r[1], r[2], r[3]);
+    this.moverImgs.forEach((img, i) => { const r = this.moverRects[i]; img.setPosition(r[0] - MOVER_PAD, r[1] - MOVER_PAD); });
+  }
+
+  /** A fading streak behind a fast ball. */
+  private drawTrail(): void {
+    const g = this.trailG, b = this.ball;
+    g.clear();
+    if (b.alpha <= 0.5 || this.sinking) { this.trail.length = 0; return; }
+    const last = this.trail[this.trail.length - 1];
+    if (!last || Math.hypot(b.x - last.x, b.y - last.y) > 3) this.trail.push({ x: b.x, y: b.y });
+    else this.trail.shift();   // slowing down: the streak shrinks away
+    while (this.trail.length > TRAIL) this.trail.shift();
+    const n = this.trail.length, col = b.tintTopLeft;
+    for (let i = 0; i < n - 1; i++) {
+      const f = (i + 1) / n;
+      g.fillStyle(col, 0.3 * f).fillCircle(this.trail[i].x, this.trail[i].y, BR * (0.3 + 0.6 * f));
     }
   }
 
@@ -215,7 +283,9 @@ export class PlayScene extends ArcadeScene {
     this.strokes++; this.totalStrokes++;
     this.updateFooter();
     this.sfx('putt', { volume: 0.4 + power * 0.5 });
-    burst(this, this.bx, this.by, [0xffffff, 0x8ee28f], 6, 120);
+    burst(this, this.bx, this.by, [0xffffff, 0x8ee28f], 6 + Math.round(power * 6), 120 + power * 80);
+    this.ring(this.bx, this.by, 0xffffff, 0.1, 0.35 + power * 0.25, 380);
+    this.trail = [];
   }
 
   // ---------- physics ----------
@@ -234,6 +304,7 @@ export class PlayScene extends ArcadeScene {
     if (vn < 0) {
       this.vx -= (1 + e) * vn * nx; this.vy -= (1 + e) * vn * ny;
       if (-vn > 60) { this.sfx('wall', { volume: Math.min(0.7, -vn / 900), x: this.bx }); this.ev |= 1; }
+      if (-vn > 320) this.ring(this.bx - nx * BR, this.by - ny * BR, 0xfff1d6, 0.05, 0.22, 260);
       if (!this.moving) this.moving = true;
     }
     return true;
@@ -282,6 +353,7 @@ export class PlayScene extends ArcadeScene {
           this.ev |= 2;
           this.sfx('bumper', { volume: 0.5, x: this.bx });
           burst(this, b[0] + nx * b[2], b[1] + ny * b[2], [0xffd23f, 0xffffff], 8, 180);
+          this.ring(b[0], b[1], 0xffd23f, (b[2] / 50) * 0.9, (b[2] / 50) * 1.6, 320, 0, true);
         }
       });
       // cup: gentle pull, sink when slow enough
@@ -298,7 +370,7 @@ export class PlayScene extends ArcadeScene {
     const inSand = (h.sand ?? []).some((s) => inRect(this.bx, this.by, s));
     const k = inSand ? 3.2 : 0.9, c = inSand ? 220 : 55;
     let sp = Math.hypot(this.vx, this.vy);
-    if (inSand && sp > 200 && Math.random() < dt * 8) { this.sfx('sand', { volume: 0.3 }); this.ev |= 4; }
+    if (inSand && sp > 200 && Math.random() < dt * 8) { this.sfx('sand', { volume: 0.3 }); this.ev |= 4; this.sandFx(this.bx, this.by); }
     const nsp = Math.max(0, sp * Math.exp(-k * dt) - c * dt);
     if (sp > 0) { this.vx *= nsp / sp; this.vy *= nsp / sp; }
     sp = nsp;
@@ -318,7 +390,7 @@ export class PlayScene extends ArcadeScene {
     this.moving = false; this.vx = this.vy = 0;
     if (this.online) { this.ev |= 8; this.streamShot(true); }
     this.sfx('splash', { volume: 0.7 });
-    burst(this, this.bx, this.by, [0x6fc3ff, 0xffffff, 0x1f6fb5], 24, 220);
+    this.splashFx(this.bx, this.by);
     popup(this, this.bx, this.by - 30, t('water'), '#6fc3ff', 22);
     this.strokes++; this.totalStrokes++;
     this.updateFooter();
@@ -326,8 +398,9 @@ export class PlayScene extends ArcadeScene {
     this.ball.setAlpha(0);
     this.time.delayedCall(700, () => {
       this.bx = this.lastX; this.by = this.lastY;
-      this.ball.setAlpha(1).setScale(0.1);
-      this.tweens.add({ targets: this.ball, scale: (BR * 2) / 8, duration: 250, ease: 'Back.easeOut' });
+      this.ball.setAlpha(1).setScale(BALL_S * 0.1);
+      this.tweens.add({ targets: this.ball, scale: BALL_S, duration: 250, ease: 'Back.easeOut' });
+      this.ring(this.bx, this.by, 0xffffff, 0.05, 0.3, 300);
       this.between = false;
       if (this.online) this.shotEnded(false);
       else if (this.strokes >= MAX_STROKES) this.finishHole(false);
@@ -343,8 +416,7 @@ export class PlayScene extends ArcadeScene {
       this.time.delayedCall(260, () => this.shotEnded(true));
       return;
     }
-    this.sfx('cup', { volume: 0.8 });
-    this.tweens.add({ targets: this.ball, x: cx, y: cy, scale: 1, alpha: 0.4, duration: 220, ease: 'Quad.easeIn' });
+    this.cupFx(this.ball);
     this.bx = cx; this.by = cy;
     this.tweens.add({ targets: this.flag, alpha: 0, y: cy - 40, duration: 300 });
     this.time.delayedCall(260, () => this.finishHole(true));
@@ -368,9 +440,8 @@ export class PlayScene extends ArcadeScene {
     if (sunk && diff < 0) { this.sfx('great', { volume: 0.6 }); flash(this, 0xffd23f, 150); shake(this, 0.008, 160); }
     else if (sunk && diff === 0) this.sfx('par', { volume: 0.5 });
     else if (!sunk || diff > 1) this.sfx('bad', { volume: 0.4 });
-    burst(this, this.hole.cup[0], this.hole.cup[1], diff < 0 ? [0xffd23f, 0x5dff7a, 0xffffff] : [0xffffff], diff < 0 ? 40 : 14, 320);
-    const lt = txt(this, 360, 640, label, { title: true, size: 44, color, wrap: 640 }).setDepth(20).setScale(0.2);
-    this.tweens.add({ targets: lt, scale: 1, duration: 320, ease: 'Back.easeOut', hold: 900, yoyo: true, onComplete: () => lt.destroy() });
+    this.holeFx(sunk, diff);
+    this.label(label, color, 640, 44, 900);
     this.time.delayedCall(1700, () => {
       if (this.isOver) return;
       if (this.holeIdx >= HOLES.length - 1) {
@@ -394,9 +465,10 @@ export class PlayScene extends ArcadeScene {
       this.power = Phaser.Math.Clamp(this.power + ay * 0.7 * dt, 0.05, 1);
     }
     if (!this.sinking) this.ball.setPosition(this.bx, this.by);
-    this.ballShadow.setPosition(this.bx + 3, this.by + 5).setVisible(!this.sinking && this.ball.alpha > 0.5);
-    this.flag.setAngle(Math.sin(this.elapsed * 3) * 4);
+    this.ballShadow.setPosition(this.ball.x + 3, this.ball.y + 6).setVisible(!this.sinking && this.ball.alpha > 0.5);
+    this.flag.setAngle(Math.sin(this.elapsed * 1.7) * 2);
     this.drawDynamic();
+    this.drawTrail();
     this.drawAim();
   }
 
@@ -405,13 +477,30 @@ export class PlayScene extends ArcadeScene {
     g.clear();
     if (!this.canPutt()) return;
     const p = this.dragging ? this.dragPower : this.power;
-    const len = 50 + p * 230;
+    const len = 60 + p * 230;
     const cx = Math.cos(this.aimAngle), cy = Math.sin(this.aimAngle);
-    const col = Phaser.Display.Color.GetColor(255, Math.round(230 - p * 180), Math.round(80 - p * 60));
-    for (let d = 26; d < len; d += 18) g.fillStyle(col, 0.9 - (d / len) * 0.5).fillCircle(this.bx + cx * d, this.by + cy * d, 5);
-    const tx = this.bx + cx * len, ty = this.by + cy * len;
-    g.fillStyle(col).fillTriangle(tx + cx * 16, ty + cy * 16, tx - cy * 11, ty + cx * 11, tx + cy * 11, ty - cx * 11);
-    g.lineStyle(2, 0xffffff, 0.5 + Math.sin(this.elapsed * 6) * 0.3).strokeCircle(this.bx, this.by, BR + 8);
+    // green → gold → red with power
+    const c1 = Phaser.Display.Color.ValueToColor(p < 0.5 ? 0x5dff7a : 0xffd23f), c2 = Phaser.Display.Color.ValueToColor(p < 0.5 ? 0xffd23f : 0xff4a3a);
+    const m = Phaser.Display.Color.Interpolate.ColorWithColor(c1, c2, 100, Math.round(((p < 0.5 ? p : p - 0.5) / 0.5) * 100));
+    const col = Phaser.Display.Color.GetColor(m.r, m.g, m.b);
+    const pulse = Math.sin(this.elapsed * 6);
+    // soft glow and the power ring around the ball
+    g.fillStyle(col, 0.16 + pulse * 0.04).fillCircle(this.bx, this.by, BR + 16);
+    g.lineStyle(5, 0x000000, 0.28).beginPath().arc(this.bx, this.by, BR + 11, 0, Math.PI * 2).strokePath();
+    g.lineStyle(5, col, 1).beginPath().arc(this.bx, this.by, BR + 11, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, p)).strokePath();
+    // dotted line, shrinking towards the tip
+    for (let d = BR + 26; d < len; d += 17) {
+      const f = d / len, r = 6 - f * 2.5, x = this.bx + cx * d, y = this.by + cy * d;
+      g.fillStyle(0x000000, 0.22).fillCircle(x + 2, y + 3, r);
+      g.fillStyle(col, 0.95 - f * 0.4).fillCircle(x, y, r);
+      g.fillStyle(0xffffff, 0.7 - f * 0.4).fillCircle(x - r * 0.25, y - r * 0.3, r * 0.45);
+    }
+    // arrow head
+    const tx = this.bx + cx * (len + 6), ty = this.by + cy * (len + 6);
+    const tri = (o: number, c: number, a: number) => g.fillStyle(c, a).fillTriangle(tx + o + cx * 18, ty + o * 1.5 + cy * 18, tx + o - cy * 12, ty + o * 1.5 + cx * 12, tx + o + cy * 12, ty + o * 1.5 - cx * 12);
+    tri(2, 0x000000, 0.25);
+    tri(0, col, 1);
+    g.lineStyle(2, 0xffffff, 0.45 + pulse * 0.25).strokeCircle(this.bx, this.by, BR + 19 + pulse * 2);
   }
 
   // ================================================================ online two-player
@@ -425,11 +514,14 @@ export class PlayScene extends ArcadeScene {
 
   private setupOnline(): void {
     this.ps = ([0, 1] as const).map((seat) => {
-      const img = seat === 0 ? this.ball : this.add.image(0, 0, 'ball').setScale((BR * 2) / 8).setDepth(4);
-      const shadow = seat === 0 ? this.ballShadow : this.add.ellipse(0, 0, 26, 14, 0x000000, 0.3).setDepth(3);
+      const img = seat === 0 ? this.ball : this.add.image(0, 0, 'mg-ball').setScale(BALL_S).setDepth(4);
+      const shadow = seat === 0 ? this.ballShadow : this.makeShadow();
       if (seat !== this.seat) img.setTint(OPP_TINT);
       return { x: 0, y: 0, strokes: 0, total: 0, done: false, img, shadow };
     });
+    this.add.image(360, 42, pill(this, 440, 46)).setScrollFactor(0).setDepth(9);
+    this.add.image(190, 98, pill(this, 290, 40)).setScrollFactor(0).setDepth(9);
+    this.add.image(530, 98, pill(this, 290, 40)).setScrollFactor(0).setDepth(9);
     this.topLine = txt(this, 360, 42, '', { title: true, size: 22, color: '#ffd23f' }).setDepth(10).setScrollFactor(0);
     this.meLine = txt(this, 190, 98, '', { title: true, size: 20, color: '#ffffff' }).setDepth(10).setScrollFactor(0);
     this.oppLine = txt(this, 530, 98, '', { title: true, size: 20, color: '#ffb38a' }).setDepth(10).setScrollFactor(0);
@@ -458,7 +550,7 @@ export class PlayScene extends ArcadeScene {
     this.ps.forEach((p, seat) => {
       p.x = tx + (seat ? TEE_OFF : -TEE_OFF); p.y = ty; p.strokes = 0; p.done = false;
       this.tweens.killTweensOf(p.img);
-      p.img.setAlpha(1).setScale((BR * 2) / 8).setPosition(p.x, p.y);
+      p.img.setAlpha(1).setScale(BALL_S).setPosition(p.x, p.y);
     });
     this.loadPlayer(net.starter);   // the starter tees off first on every hole
     this.turnLive = false; this.inShot = false; this.watching = false;
@@ -475,6 +567,7 @@ export class PlayScene extends ArcadeScene {
     this.strokes = p.strokes;
     this.moving = false; this.sinking = false; this.between = false;
     this.dragging = null;
+    this.trail = [];
     this.aimAngle = Math.atan2(this.hole.cup[1] - this.by, this.hole.cup[0] - this.bx);
     p.img.setDepth(4.5);
     this.ps[1 - seat].img.setDepth(4);
@@ -522,9 +615,10 @@ export class PlayScene extends ArcadeScene {
       this.power = Phaser.Math.Clamp(this.power + ay * 0.7 * dt, 0.05, 1);
     }
     if (!this.sinking) this.ball.setPosition(this.bx, this.by);
-    for (const p of this.ps) p.shadow.setPosition(p.img.x + 3, p.img.y + 5).setVisible(p.img.alpha > 0.5 && p.img.scale > 2);
-    this.flag.setAngle(Math.sin(this.elapsed * 3) * 4);
+    for (const p of this.ps) p.shadow.setPosition(p.img.x + 3, p.img.y + 6).setVisible(p.img.alpha > 0.5 && p.img.scale > BALL_S * 0.7);
+    this.flag.setAngle(Math.sin(this.elapsed * 1.7) * 2);
     this.drawDynamic();
+    this.drawTrail();
     this.drawAim();
   }
 
@@ -555,7 +649,9 @@ export class PlayScene extends ArcadeScene {
       this.strokes++;
       this.updateOnlineText();
       this.sfx('putt', { volume: 0.6 });
-      burst(this, this.bx, this.by, [0xffffff, 0x8ee28f], 6, 120);
+      burst(this, this.bx, this.by, [0xffffff, 0x8ee28f], 8, 150);
+      this.ring(this.bx, this.by, 0xffffff, 0.1, 0.5, 380);
+      this.trail = [];
     }
     this.wx = d.x; this.wy = d.y;
     const h = d.h / 1000;
@@ -564,14 +660,18 @@ export class PlayScene extends ArcadeScene {
     if (d.e & 2) {
       this.sfx('bumper', { volume: 0.5, x: this.wx });
       (this.hole.bumpers ?? []).forEach((b, i) => {
-        if (Math.hypot(d.x - b[0], d.y - b[1]) < b[2] + BR + 40) { this.bumperFlash[i] = 1; burst(this, d.x, d.y, [0xffd23f, 0xffffff], 8, 180); }
+        if (Math.hypot(d.x - b[0], d.y - b[1]) < b[2] + BR + 40) {
+          this.bumperFlash[i] = 1;
+          burst(this, d.x, d.y, [0xffd23f, 0xffffff], 8, 180);
+          this.ring(b[0], b[1], 0xffd23f, (b[2] / 50) * 0.9, (b[2] / 50) * 1.6, 320, 0, true);
+        }
       });
     }
-    if (d.e & 4) this.sfx('sand', { volume: 0.3 });
+    if (d.e & 4) { this.sfx('sand', { volume: 0.3 }); this.sandFx(d.x, d.y); }
     if (d.e & 8) {
       this.bx = d.x; this.by = d.y;
       this.sfx('splash', { volume: 0.7 });
-      burst(this, d.x, d.y, [0x6fc3ff, 0xffffff, 0x1f6fb5], 24, 220);
+      this.splashFx(d.x, d.y);
       popup(this, d.x, d.y - 30, t('water'), '#6fc3ff', 22);
       this.strokes++;
       this.updateOnlineText();
@@ -591,17 +691,37 @@ export class PlayScene extends ArcadeScene {
     } else {
       this.bx = d.x; this.by = d.y;
       if (this.ball.alpha < 0.5) {
-        this.ball.setAlpha(1).setScale(0.1);
-        this.tweens.add({ targets: this.ball, scale: (BR * 2) / 8, duration: 250, ease: 'Back.easeOut' });
+        this.ball.setAlpha(1).setScale(BALL_S * 0.1);
+        this.tweens.add({ targets: this.ball, scale: BALL_S, duration: 250, ease: 'Back.easeOut' });
       }
     }
     this.resolveShot(d.s === 1);
   }
 
   private sinkFx(img: Phaser.GameObjects.Image): void {
+    this.cupFx(img);
+  }
+
+  /** The ball drops into the cup: it shrinks into the hole, the rim flashes. */
+  private cupFx(img: Phaser.GameObjects.Image): void {
     const [cx, cy] = this.hole.cup;
     this.sfx('cup', { volume: 0.8 });
-    this.tweens.add({ targets: img, x: cx, y: cy, scale: 1, alpha: 0.4, duration: 220, ease: 'Quad.easeIn' });
+    this.trail = [];
+    this.tweens.add({ targets: img, x: cx, y: cy + 3, scale: BALL_S * 0.45, alpha: 0, duration: 260, ease: 'Quad.easeIn' });
+    this.ring(cx, cy, 0xffffff, 0.3, 0.75, 420);
+    this.glow(cx, cy, 0xfff2b0, 1.1, 500);
+  }
+
+  /** Celebration at the cup: sparkles for any sink, a gold burst under par. */
+  private holeFx(sunk: boolean, diff: number): void {
+    const [cx, cy] = this.hole.cup;
+    const great = sunk && diff < 0;
+    burst(this, cx, cy, great ? [0xffd23f, 0x5dff7a, 0xffffff, 0xff8fb1, 0x3ee6ff] : [0xffffff, 0xd9ffd2], great ? 48 : 14, great ? 380 : 260);
+    if (great) {
+      this.ring(cx, cy, 0xffd23f, 0.3, 2.2, 700, 0, true);
+      this.ring(cx, cy, 0xffffff, 0.2, 1.6, 700, 120, true);
+      this.glow(cx, cy, 0xffd23f, 3, 700);
+    } else if (sunk) this.ring(cx, cy, 0x9dffb0, 0.3, 1.2, 600, 0, true);
   }
 
   /** Both sides: a shot is over; score it and pick the next shooter (or the next hole). */
@@ -639,12 +759,11 @@ export class PlayScene extends ArcadeScene {
       if (sunk && diff < 0) { this.sfx('great', { volume: 0.6 }); flash(this, 0xffd23f, 150); shake(this, 0.008, 160); }
       else if (sunk && diff === 0) this.sfx('par', { volume: 0.5 });
       else if (!sunk || diff > 1) this.sfx('bad', { volume: 0.4 });
-      burst(this, cx, cy, sunk && diff < 0 ? [0xffd23f, 0x5dff7a, 0xffffff] : [0xffffff], sunk && diff < 0 ? 40 : 14, 320);
-      const lt = txt(this, 360, 640, label, { title: true, size: 44, color, wrap: 640 }).setDepth(20).setScale(0.2);
-      this.tweens.add({ targets: lt, scale: 1, duration: 320, ease: 'Back.easeOut', hold: 900, yoyo: true, onComplete: () => lt.destroy() });
+      this.holeFx(sunk, diff);
+      this.label(label, color, 640, 44, 900);
     } else {
       burst(this, cx, cy, [0xffb38a, 0xffffff], 14, 260);
-      popup(this, 360, 600, `${this.oppName()}: ${label}`, '#ffb38a', 26);
+      this.label(`${this.oppName()}: ${label}`, '#ffb38a', 600, 26, 900);
     }
   }
 
