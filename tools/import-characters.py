@@ -10,6 +10,11 @@ Every pose lands on the same 144x176 canvas: the character is scaled so its stan
 tall, its feet sit 2 px above the bottom edge and its standing pose is centred, so games can swap
 characters without touching sizes or offsets.
 
+Poses the pack does not draw are derived from the character's own `front` and `back` pictures by
+moving its own legs (the rows below the shorts), never by drawing a limb (see DERIVED):
+walking towards and away from the camera (`walkdown1/2`, `walkup1/2`) and a penalty kick seen
+from behind (`backkick1` wind-up, `backkick2` strike, `backkick3` follow-through).
+
 Usage: python3 tools/import-characters.py <kenney.nl mirror dir>
 """
 import json
@@ -26,6 +31,22 @@ W, H, TARGET, FOOT = 144, 176, 150, 2
 POSES = ['stand', 'front', 'walk1', 'walk2', 'jump', 'hit', 'duck', 'climb1', 'climb2', 'swim1', 'swim2',
          'kick', 'hang', 'fall', 'slide', 'skid', 'cheer1', 'cheer2', 'hold1', 'hold2', 'action1', 'action2',
          'back', 'talk']
+
+# Derived poses: source pose and, per leg, (dx, dy, rotation in degrees counter-clockwise, height
+# scale), then the body's dy. Legs are the frame's rows from LEG_Y down, split at the centre; a
+# lifted leg is shorter (it points towards or away from the camera). `top` draws that leg over the
+# body (a foot swung back towards the camera), otherwise legs go behind the body.
+LEG_Y = 160
+LEG_L, LEG_R = (28, 72), (72, 118)
+DERIVED = {
+    'walkdown1': ('front', {'r': (0, -2, 0, 1), 'l': (1, -7, 0, 0.8)}, -2, None),
+    'walkdown2': ('front', {'l': (0, -2, 0, 1), 'r': (-1, -7, 0, 0.8)}, -2, None),
+    'walkup1': ('back', {'r': (0, -2, 0, 1), 'l': (1, -7, 0, 0.8)}, -2, None),
+    'walkup2': ('back', {'l': (0, -2, 0, 1), 'r': (-1, -7, 0, 0.8)}, -2, None),
+    'backkick1': ('back', {'l': (-1, 0, 0, 1), 'r': (4, -13, 10, 0.9)}, 1, 'r'),
+    'backkick2': ('back', {'r': (8, -3, 0, 0.8), 'l': (-2, 0, 0, 1)}, 1, None),
+    'backkick3': ('back', {'r': (6, -6, 0, 0.62), 'l': (-2, 0, 0, 1)}, -1, None),
+}
 
 FIGURES = {'adventurer': 'Adventurer/Poses/adventurer', 'explorer': 'Female/Poses/female',
            'rookie': 'Player/Poses/player', 'soldier': 'Soldier/Poses/soldier', 'zombie': 'Zombie/Poses/zombie'}
@@ -135,20 +156,50 @@ def figure_rig(limbs, idle_path):
     return rig
 
 
+def derive(cid):
+    """Writes the DERIVED poses of one character from its imported `front` and `back`."""
+    for name, (src_pose, legs, body_dy, top) in DERIVED.items():
+        src = Image.open(os.path.join(OUT, cid, f'{src_pose}.png')).convert('RGBA')
+        body = src.crop((0, 0, W, LEG_Y))
+
+        def leg(side):
+            x0, x1 = LEG_L if side == 'l' else LEG_R
+            dx, dy, rot, sy = legs[side]
+            part = src.crop((x0, LEG_Y, x1, H))
+            part = part.resize((part.width, max(1, round(part.height * sy))), Image.LANCZOS)
+            layer = Image.new('RGBA', (W, H))
+            layer.alpha_composite(part, (x0 + dx, LEG_Y + dy))
+            if rot:
+                layer = layer.rotate(rot, resample=Image.BICUBIC, center=((x0 + x1) / 2 + dx, LEG_Y + dy))
+            return layer
+
+        out = Image.new('RGBA', (W, H))
+        for side in legs:
+            if side != top:
+                out.alpha_composite(leg(side))
+        lifted = Image.new('RGBA', (W, H))
+        lifted.paste(body, (0, body_dy))
+        out.alpha_composite(lifted)
+        if top:
+            out.alpha_composite(leg(top))
+        out.save(os.path.join(OUT, cid, f'{name}.png'), optimize=True)
+
+
 def main():
     if len(sys.argv) != 2:
         raise SystemExit(__doc__)
     ids, rigs = [], {}
     for cid, files, rig in sources(sys.argv[1]):
         rigs[cid] = build(cid, files, rig)
+        derive(cid)
         ids.append(cid)
     with open(os.path.join(ROOT, 'src', 'core', 'character-rig.json'), 'w') as f:
         json.dump(rigs, f, indent=2)
         f.write('\n')
     with open(os.path.join(OUT, 'index.json'), 'w') as f:
-        json.dump({'size': [W, H], 'poses': POSES, 'characters': ids}, f, indent=2)
+        json.dump({'size': [W, H], 'poses': POSES + list(DERIVED), 'characters': ids}, f, indent=2)
         f.write('\n')
-    print(f'{len(ids)} characters x {len(POSES)} poses -> {OUT}')
+    print(f'{len(ids)} characters x {len(POSES) + len(DERIVED)} poses -> {OUT}')
 
 
 if __name__ == '__main__':

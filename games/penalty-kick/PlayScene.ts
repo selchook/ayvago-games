@@ -19,50 +19,11 @@ const KICKER_S = 1.9;                // the kicker is close to the camera, seen 
 const STRIKE_X = SPOT_X - 78, STRIKE_Y = SPOT_Y + 46;
 const PAUSE_ZONE = (x: number, y: number) => !net.active && x > 590 && y < 140;
 
-export const POSES = ['back', 'cheer1', 'cheer2', 'jump', 'hang', 'duck', 'fall'] as const;
+export const POSES = ['back', 'walkup1', 'walkup2', 'backkick1', 'backkick2', 'backkick3', 'cheer1', 'cheer2', 'jump', 'hang', 'duck', 'fall'] as const;
 
-// ---------- the kicker from behind ----------
-// The camera stands behind the penalty taker, so the kicker is drawn in the character's own `back`
-// pose. Its steps and kick are made from that same picture by moving the character's own legs
-// (the rows below the shorts): no limb is added or drawn by hand.
-const LEG_Y = 158;                   // first row of the frame that holds only the legs
-const LEG_L = [30, 72] as const;     // columns of the left leg (the picture's left)
-const LEG_R = [72, 116] as const;    // columns of the right (kicking) leg
-
-/** Builds `<prefix>-bk0` (stand), `-bkW1`/`-bkW2` (steps), `-bkStrike` and `-bkFollow` from `<prefix>-back`. */
-export function makeBackPoses(scene: Phaser.Scene, prefix: string): void {
-  const key = `${prefix}-back`;
-  if (!scene.textures.exists(key) || scene.textures.exists(`${prefix}-bkFollow`)) return;
-  const src = scene.textures.get(key).getSourceImage() as HTMLImageElement;
-  const W = CHARACTER_FRAME.width, H = CHARACTER_FRAME.height, legH = H - LEG_Y;
-  const body = (c: CanvasRenderingContext2D, dy = 0) => c.drawImage(src, 0, 0, W, LEG_Y, 0, dy, W, LEG_Y);
-  /** One leg, rotated about its top centre (positive = clockwise) and moved by dx/dy. */
-  const leg = (c: CanvasRenderingContext2D, [x0, x1]: readonly [number, number], dx = 0, dy = 0, rot = 0, sy = 1) => {
-    const px = (x0 + x1) / 2;
-    c.save();
-    c.translate(px + dx, LEG_Y + dy);
-    c.rotate(rot);
-    c.scale(1, sy);
-    c.drawImage(src, x0, LEG_Y, x1 - x0, legH, x0 - px, 0, x1 - x0, legH);
-    c.restore();
-  };
-  const make = (name: string, draw: (c: CanvasRenderingContext2D) => void) => {
-    const tex = scene.textures.createCanvas(`${prefix}-${name}`, W, H);
-    if (!tex) return;
-    draw(tex.getContext());
-    tex.refresh();
-  };
-  make('bk0', (c) => c.drawImage(src, 0, 0));
-  // steps: one foot lifts (it shows shorter from behind) while the body rides up a little
-  make('bkW1', (c) => { leg(c, LEG_R, 0, -2); leg(c, LEG_L, 1, -7, 0, 0.8); body(c, -2); });
-  make('bkW2', (c) => { leg(c, LEG_L, 0, -2); leg(c, LEG_R, -1, -7, 0, 0.8); body(c, -2); });
-  // wind-up: the kicking foot swings back towards the camera and up
-  make('bkWind', (c) => { leg(c, LEG_L, -1, 0); body(c, 1); leg(c, LEG_R, 4, -13, -0.18, 0.9); });
-  // strike: the kicking leg drives forward under the body, towards the ball on the right
-  make('bkStrike', (c) => { leg(c, LEG_R, 8, -3, 0, 0.8); leg(c, LEG_L, -2, 0); body(c, 1); });
-  // follow-through: the kicking leg has gone on, away from the camera
-  make('bkFollow', (c) => { leg(c, LEG_R, 6, -6, 0, 0.62); leg(c, LEG_L, -2, 0); body(c, -1); });
-}
+// The camera stands behind the penalty taker: the kicker is drawn in the character's poses seen
+// from behind (`back`, the `walkup` steps and the `backkick` wind-up, strike and follow-through).
+const KICK_POSES = { bk0: 'back', bkW1: 'walkup1', bkW2: 'walkup2', bkWind: 'backkick1', bkStrike: 'backkick2', bkFollow: 'backkick3' } as const;
 
 type Phase = 'aim' | 'strike' | 'flight' | 'runup' | 'defend' | 'wait' | 'pick' | 'netRun';
 interface Shot { tx: number; ty: number; T: number; curve: number; t: number; byYou: boolean; x0: number; y0: number }
@@ -274,9 +235,7 @@ export class PlayScene extends ArcadeScene {
     this.keeperShadow = this.add.ellipse(SPOT_X, GB + 18, 110, 22, 0x000000, 0.3).setDepth(2);
     this.keeper = this.add.image(SPOT_X, STAND_Y, 'op-cheer2').setOrigin(0.5, KEEPER_OY).setScale(KEEPER_S).setDepth(3);
     this.kickerShadow = this.add.ellipse(0, 0, 170, 34, 0x000000, 0.3).setDepth(4).setVisible(false);
-    makeBackPoses(this, 'me');
-    makeBackPoses(this, 'op');
-    this.kicker = this.add.image(0, 0, 'me-bk0').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(KICKER_S).setDepth(7.5).setVisible(false);
+    this.kicker = this.add.image(0, 0, 'me-back').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(KICKER_S).setDepth(7.5).setVisible(false);
     this.shadow = this.add.ellipse(SPOT_X, SPOT_Y + BALL_R - 2, BALL_R * 2.2, 16, 0x000000, 0.35).setDepth(4);
     this.ball = this.add.image(SPOT_X, SPOT_Y, 'pk-ball').setDepth(7);
     this.ballScale(1);
@@ -589,8 +548,7 @@ export class PlayScene extends ArcadeScene {
     const epoch = this.epoch;
     const use = () => {
       if (epoch !== this.epoch || this.isOver) return;
-      makeBackPoses(this, prefix);
-      const ok = this.textures.exists(`${prefix}-bkFollow`);
+      const ok = this.textures.exists(`${prefix}-backkick3`);
       this.rivalId = ok ? id : peerCharacter();
       this.rivalPrefix = ok ? prefix : 'op';
       then();
@@ -601,8 +559,8 @@ export class PlayScene extends ArcadeScene {
     this.load.start();
   }
 
-  private kickerTex(pose: string): string {
-    return `${this.kickerPrefix}-${pose}`;
+  private kickerTex(pose: keyof typeof KICK_POSES | 'cheer1' | 'cheer2'): string {
+    return `${this.kickerPrefix}-${pose === 'cheer1' || pose === 'cheer2' ? pose : KICK_POSES[pose]}`;
   }
 
   /** The kicker waits a few steps behind the ball, its back to the camera, breathing. */
