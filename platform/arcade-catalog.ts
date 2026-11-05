@@ -746,7 +746,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'penalty', 'kick', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.2.0',
     multiplayer: true,
   }),
   arcadeGame({

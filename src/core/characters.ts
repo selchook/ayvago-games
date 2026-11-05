@@ -31,6 +31,9 @@ export const CHARACTER_POSES = [
   'stand', 'front', 'walk1', 'walk2', 'jump', 'hit', 'duck', 'climb1', 'climb2', 'swim1', 'swim2',
   'kick', 'hang', 'fall', 'slide', 'skid', 'cheer1', 'cheer2', 'hold1', 'hold2', 'action1', 'action2',
   'back', 'talk',
+  // derived by tools/import-characters.py from `front`/`back` with the character's own legs moved:
+  // walking towards / away from the camera, and a kick seen from behind (wind-up, strike, follow-through)
+  'walkdown1', 'walkdown2', 'walkup1', 'walkup2', 'backkick1', 'backkick2', 'backkick3',
 ] as const;
 
 export type CharacterPose = (typeof CHARACTER_POSES)[number];
