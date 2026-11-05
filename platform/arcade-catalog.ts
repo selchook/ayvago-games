@@ -1080,6 +1080,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'tito', 'tank', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
     addedAt: '2026-11-05',
     multiplayer: true,
   }),
