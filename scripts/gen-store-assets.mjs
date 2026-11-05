@@ -70,6 +70,7 @@ const COVER_HERO = {
   archery: ['explorer', 'action2'],
   'bomb-maze': ['soldier', 'cheer1'],
   'coin-catcher': ['rookie', 'cheer2'],
+  'dungeon-dash': ['explorer', 'action2'],
   'head-soccer': ['adventurer', 'kick'],
   'jetpack-rush': ['soldier', 'jump'],
   'penalty-kick': ['zombie', 'kick'],

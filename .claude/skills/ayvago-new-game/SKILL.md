@@ -129,8 +129,13 @@ Other helpers from `@core`:
     - A hero whose arms must follow something continuously (a bow) uses the rig parts:
       `pc-archer` (armless, same frame), `pc-arm` and `pc-hand`, posed from
       `characterRig(id).shoulders` every frame (see `games/archery`).
+    - **Facing by direction (top-down and grid games).** Right: `stand`, walking `walk1`/`walk2`;
+      left: the same, flipped. Down (towards the camera): `front`, walking `walkdown1`/`walkdown2`.
+      Up (away from the camera): `back`, walking `walkup1`/`walkup2`. Seen from behind, a kick is
+      `backkick1` (wind-up), `backkick2` (strike), `backkick3` (follow-through).
     - If a move has no pose, add it for all five characters in `tools/import-characters.py` and
-      `CHARACTER_POSES`. Never draw it in one game.
+      `CHARACTER_POSES`. Never draw it in one game. Poses the Kenney pack lacks are derived there
+      from `front`/`back` by moving the character's own legs (`DERIVED`).
   - **Testing.** Test with `?character=<id>`, with at least two different characters.
   - **pixelArt games.** Give the pc-* textures linear filtering
     (`setFilter(Phaser.Textures.FilterMode.LINEAR)`) so the scaled-down vector art stays smooth

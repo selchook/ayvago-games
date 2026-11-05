@@ -27,7 +27,14 @@
     "action1",
     "action2",
     "back",
-    "talk"
+    "talk",
+    "walkdown1",
+    "walkdown2",
+    "walkup1",
+    "walkup2",
+    "backkick1",
+    "backkick2",
+    "backkick3"
   ],
   "characters": [
     "adventurer",
