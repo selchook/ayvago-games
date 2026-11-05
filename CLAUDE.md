@@ -47,7 +47,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 - **Assets.** CC0 only, from `public/assets`: Kenney (`kenney/`) and the CC0 packs recorded in `docs/assets/LICENSES.md` (`oga/`: Juhani Junkala's 512 retro effects and chiptune music). A new pack is added to that register (source, author, license) before it is used; CC-BY and other attribution licenses are not allowed. No runtime network loads.
 - **Music.** The core plays background music (`src/core/music.ts`): the title theme on the menu and a track picked from the game's genre during rounds, ducked under pause and result screens. A game may choose with `music: { menu, play }` in its definition (`false` turns a slot off).
 - **Player characters.** Players pick one of five human characters on ayvago.com; the platform sends it in GHA_START (protocol 2.2).
-  - Games with a hero whose art fits the Kenney vector style use it through `loadCharacter()` / `playerCharacter()` in `src/core/characters.ts`. The art is in `public/assets/characters` (24 poses each, built by `tools/import-characters.py`).
+  - Games with a hero whose art fits the Kenney vector style use it through `loadCharacter()` / `playerCharacter()` in `src/core/characters.ts`. The art is in `public/assets/characters` (31 poses each, built by `tools/import-characters.py`; the walking-up/down and kick-from-behind poses are derived there from `front`/`back`).
   - Every move uses the character's own pose (`kick`, `hang`, `cheer1` ...); never draw extra limbs on top of a character.
   - The five ids are the contract with the platform's `packages/shared`.
 - **Done means tested.** A game is done when the smoke test passes and it meets the Definition of Done in `.claude/skills/ayvago-new-game/SKILL.md`.
