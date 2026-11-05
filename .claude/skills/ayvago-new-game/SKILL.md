@@ -89,7 +89,8 @@ What the base class gives you:
 
 Other helpers from `@core`:
 
-- **Text.** `txt(scene, x, y, str, { size, color, title, wrap })` gives retro text: Press Start 2P with `title: true`, Pixelify Sans otherwise. Both support Turkish.
+- **Visual style (rule).** Only games whose `genres` include `retro` keep the pixel look (Press Start 2P + Pixelify Sans, CRT scanlines, chunky square buttons, nearest-neighbour scaling). Every other game is **modern**: Fredoka titles + Nunito body, smooth (linear) scaling even for pixel packs, soft glow particles, rounded buttons and glass panels, no scanlines. The core picks the style from the genres (`src/core/style.ts`); `style: 'retro' | 'modern'` in the definition overrides it. Game code keeps naming the pixel fonts: in a modern game the core maps them to the modern ones, so `txt`, `Button`, `burst` and `addCrt` need no per-style code. Do not draw pixel-style UI (hard square frames, scanline overlays, blocky text effects) by hand in a modern game.
+- **Text.** `txt(scene, x, y, str, { size, color, title, wrap })`: `title: true` gives the title font (Press Start 2P, or Fredoka in modern games), otherwise the body font (Pixelify Sans, or Nunito). All four support Turkish.
 - **Effects.** `burst(scene, x, y, tint|tints[], count, speed)`, `shake(scene, intensity, ms)`, `flash(scene, color)`, `popup(scene, x, y, '+50')`.
 - **UI.** `Button(scene, x, y, label, onClick, { width, height, color })`, `iconButton`.
 - **Randomness.** `rng.int / pick / chance / shuffle / seeded(seed)`.

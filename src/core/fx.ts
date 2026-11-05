@@ -1,7 +1,25 @@
 import Phaser from 'phaser';
+import { isModern } from './style';
 
 const PX = '__ay_px';
 const SCAN = '__ay_scan';
+const DOT = '__ay_dot';
+
+/** Soft round particle (modern style): a white disc that fades to transparent at the edge. */
+function ensureDot(scene: Phaser.Scene): string {
+  if (!scene.textures.exists(DOT)) {
+    const c = scene.textures.createCanvas(DOT, 32, 32)!;
+    const ctx = c.getContext();
+    const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.55, 'rgba(255,255,255,0.85)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 32, 32);
+    c.refresh();
+  }
+  return DOT;
+}
 
 /** 1x1 white pixel texture for particles/rects; created once per game. */
 export function ensurePixel(scene: Phaser.Scene): string {
@@ -14,7 +32,7 @@ export function ensurePixel(scene: Phaser.Scene): string {
   return PX;
 }
 
-/** Subtle CRT scanlines over the whole camera. */
+/** Subtle CRT scanlines over the whole camera (retro style only; hidden in the modern style). */
 export function addCrt(scene: Phaser.Scene, alpha = 0.12): Phaser.GameObjects.TileSprite {
   if (!scene.textures.exists(SCAN)) {
     const g = scene.make.graphics({ x: 0, y: 0 }, false);
@@ -23,16 +41,19 @@ export function addCrt(scene: Phaser.Scene, alpha = 0.12): Phaser.GameObjects.Ti
     g.destroy();
   }
   const { width, height } = scene.scale;
-  return scene.add.tileSprite(0, 0, width, height, SCAN).setOrigin(0).setAlpha(alpha).setScrollFactor(0).setDepth(100000);
+  return scene.add.tileSprite(0, 0, width, height, SCAN).setOrigin(0).setAlpha(alpha).setScrollFactor(0).setDepth(100000)
+    .setVisible(!isModern());
 }
 
-/** Pixel-burst particles at (x, y). */
+/** Burst of particles at (x, y): square pixels in the retro style, soft dots in the modern one. */
 export function burst(scene: Phaser.Scene, x: number, y: number, tint: number | number[] = 0xffffff, count = 16, speed = 260): void {
-  const key = ensurePixel(scene);
+  const modern = isModern();
+  const key = modern ? ensureDot(scene) : ensurePixel(scene);
   const em = scene.add.particles(x, y, key, {
     speed: { min: speed * 0.3, max: speed },
     angle: { min: 0, max: 360 },
-    scale: { start: 2.2, end: 0 },
+    scale: modern ? { start: 0.55, end: 0 } : { start: 2.2, end: 0 },
+    ...(modern ? { alpha: { start: 1, end: 0 }, blendMode: Phaser.BlendModes.ADD } : {}),
     lifespan: { min: 250, max: 650 },
     tint,
     emitting: false,

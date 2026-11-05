@@ -1,7 +1,8 @@
 # Asset licenses
 
 Only **CC0** (public domain) assets are allowed; the one exception is the fonts, which are SIL OFL
-(Press Start 2P, Pixelify Sans and the İ face derived from Press Start 2P). Every pack that does not come from Kenney is listed
+(Press Start 2P, Pixelify Sans and the İ face derived from Press Start 2P for retro games; Fredoka and
+Nunito for modern games, all bundled from `@fontsource`). Every pack that does not come from Kenney is listed
 here with its source page, author and license before it is used. Re-import with the tool named in
 the row.
 

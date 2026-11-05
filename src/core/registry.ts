@@ -27,8 +27,14 @@ export interface GameDefinition {
   pixelArt?: boolean;
   physics?: 'arcade' | 'matter' | 'none';
   gravityY?: number;
-  /** Scanline overlay (default on). */
+  /** Scanline overlay (default on in the retro style; the modern style never has it). */
   crt?: boolean;
+  /**
+   * Look of the core UI (src/core/style.ts): 'retro' (pixel fonts, scanlines, chunky buttons) or
+   * 'modern' (rounded fonts, smooth scaling, soft UI). Default: retro for games in the retro
+   * genre, modern for every other game.
+   */
+  style?: 'retro' | 'modern';
   /** Load the game's assets (runs while the Ayvago intro plays). */
   preload: (scene: Phaser.Scene) => void;
   /** Game scenes; one of them must use the key 'Play' (usually an ArcadeScene). */
