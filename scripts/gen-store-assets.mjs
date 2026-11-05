@@ -36,7 +36,22 @@ const FONTS = `
 @font-face { font-family: P2P; src: url(data:font/woff2;base64,${font('press-start-2p', 'press-start-2p-latin-400-normal.woff2')}) format('woff2'); }
 @font-face { font-family: P2P; src: url(data:font/woff2;base64,${font('press-start-2p', 'press-start-2p-latin-ext-400-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }
 @font-face { font-family: PX; font-weight: 700; src: url(data:font/woff2;base64,${font('pixelify-sans', 'pixelify-sans-latin-700-normal.woff2')}) format('woff2'); }
-@font-face { font-family: PX; font-weight: 700; src: url(data:font/woff2;base64,${font('pixelify-sans', 'pixelify-sans-latin-ext-700-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }`;
+@font-face { font-family: PX; font-weight: 700; src: url(data:font/woff2;base64,${font('pixelify-sans', 'pixelify-sans-latin-ext-700-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }
+@font-face { font-family: MT; font-weight: 700; src: url(data:font/woff2;base64,${font('fredoka', 'fredoka-latin-700-normal.woff2')}) format('woff2'); }
+@font-face { font-family: MT; font-weight: 700; src: url(data:font/woff2;base64,${font('fredoka', 'fredoka-latin-ext-700-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }
+@font-face { font-family: MB; font-weight: 800; src: url(data:font/woff2;base64,${font('nunito', 'nunito-latin-800-normal.woff2')}) format('woff2'); }
+@font-face { font-family: MB; font-weight: 800; src: url(data:font/woff2;base64,${font('nunito', 'nunito-latin-ext-800-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }`;
+
+// Modern games (every genre but retro, src/core/style.ts) get the modern fonts and no scanlines.
+const isModern = (m) => !(m.categories ?? [m.category]).includes('retro');
+const modernCss = `
+  .brand, h1, .chip, .name { font-family: MT !important; font-weight: 700 !important; letter-spacing: 1px !important; }
+  h1 { line-height: 1.05 !important; }
+  p, body { font-family: MB !important; font-weight: 800 !important; }
+  .scan { display: none; }
+  .chip { border-radius: 999px; padding: 14px 28px !important; }
+  .shot { border-radius: 28px; overflow: hidden; }
+  .frame { border-radius: 0; }`;
 const mark = readFileSync(join(root, 'public', 'assets', 'ayvago', 'boot_mark.png')).toString('base64');
 
 // Primary platform category (the game's first genre) shown as a chip on the cover.
@@ -96,6 +111,7 @@ function coverHtml(m, menu, play, hero) {
   .hero { position: absolute; z-index: 4; height: 470px; bottom: 30px; filter: drop-shadow(0 18px 0 rgba(0,0,0,.55)) drop-shadow(0 0 30px rgba(255,210,63,.25)); image-rendering: auto; }
   .hero.p { left: ${land ? 0 : 880}px; }
   .hero.l { left: 790px; }
+  ${isModern(m) ? modernCss : ''}
   </style></head><body><div class="glow"></div>
   <div class="left">
     <div class="brand"><img class="mark" src="data:image/png;base64,${mark}">AYVAGO <b>GAMES</b></div>
@@ -117,6 +133,7 @@ function iconHtml(m, play) {
   .name { position: absolute; left: 28px; right: 110px; top: 34px; font-family: P2P; font-size: ${m.title.en.length > 12 ? 30 : 38}px; line-height: 1.3; color: #ffd23f; text-shadow: 0 5px 0 #000; }
   .frame { position: absolute; inset: 0; border: 14px solid #ec3013; }
   .mark { position: absolute; right: 26px; bottom: 26px; width: 64px; height: 64px; filter: drop-shadow(0 4px 0 #000); }
+  ${isModern(m) ? modernCss : ''}
   </style></head><body><div class="crop"></div><div class="shade"></div>
   <img class="mark" src="data:image/png;base64,${mark}">
   <div class="name">${m.title.en.toUpperCase()}</div><div class="frame"></div></body></html>`;

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { isModern } from './style';
 
 export const FONT_TITLE = '"Press Start 2P", monospace';
 export const FONT_BODY = '"Pixelify Sans", "Press Start 2P", monospace';
@@ -35,6 +36,9 @@ export function txt(scene: Phaser.Scene, x: number, y: number, s: string, st: Te
     lineSpacing: st.title ? 12 : 4,
   });
   t.setOrigin(0.5);
-  if (st.shadow !== false) t.setShadow(0, st.title ? 6 : 3, '#000000', 0, true, true);
+  if (st.shadow !== false) {
+    if (isModern()) t.setShadow(0, st.title ? 4 : 2, 'rgba(0,0,0,0.55)', st.title ? 10 : 6, true, true);
+    else t.setShadow(0, st.title ? 6 : 3, '#000000', 0, true, true);
+  }
   return t;
 }

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Button, backdrop, iconButton } from './ui';
+import { Button, backdrop, iconButton, overlayCard } from './ui';
 import { t, loc, upper, getLang, setLang } from './i18n';
 import { txt, COLORS } from './theme';
 import { getBest, submitBest } from './storage';
@@ -10,6 +10,7 @@ import { sdk } from './sdk';
 import { net } from './net';
 import { currentGame } from './registry';
 import { kenney, loadSfx } from './assets';
+import { isModern } from './style';
 
 let introDone: Promise<void> = Promise.resolve();
 export function setIntroPromise(p: Promise<void>): void {
@@ -83,7 +84,7 @@ export class MenuScene extends Phaser.Scene {
 
     const howY = height * (land ? 0.68 : 0.64);
     txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
-    txt(this, width / 2, howY + 24, loc(meta.howTo), { size: 28, wrap: width - (land ? 360 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+    txt(this, width / 2, howY + 24, loc(meta.howTo), { size: land ? 23 : 28, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
 
     // sound + language toggles
     const snd = iconButton(this, 60, height - 60, isMuted() ? 'icon-audiooff' : 'icon-audioon', () => {
@@ -137,7 +138,7 @@ export class MenuScene extends Phaser.Scene {
     }
     const howY = height * (land ? 0.7 : 0.66);
     txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
-    txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: 26, wrap: width - (land ? 360 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+    txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
     const snd = iconButton(this, 60, height - 60, isMuted() ? 'icon-audiooff' : 'icon-audioon', () => {
       setMuted(this.game, !isMuted());
       (snd.getData('icon') as Phaser.GameObjects.Image).setTexture(isMuted() ? 'icon-audiooff' : 'icon-audioon');
@@ -147,7 +148,10 @@ export class MenuScene extends Phaser.Scene {
 
   private languageToggle(width: number, height: number): void {
     const langBtn = this.add.container(width - 70, height - 60);
-    const lb = this.add.rectangle(0, 0, 100, 72, 0x000000, 0.45).setStrokeStyle(4, 0xffffff, 0.8);
+    const lb = isModern()
+      ? this.add.graphics().fillStyle(0x0b1020, 0.55).fillRoundedRect(-50, -36, 100, 72, 36)
+        .lineStyle(2, 0xffffff, 0.35).strokeRoundedRect(-50, -36, 100, 72, 36)
+      : this.add.rectangle(0, 0, 100, 72, 0x000000, 0.45).setStrokeStyle(4, 0xffffff, 0.8);
     const lt = txt(this, 0, 2, getLang() === 'tr' ? 'TR' : 'EN', { title: true, size: 24, strokeThickness: 0, shadow: false });
     langBtn.add([lb, lt]).setSize(100, 72).setInteractive({ useHandCursor: true });
     langBtn.on('pointerup', () => {
@@ -189,6 +193,8 @@ export class PauseScene extends Phaser.Scene {
     const land = currentGame().meta.orientation === 'landscape';
     const top = height * (land ? 0.36 : 0.45), gap = land ? 118 : 140;
     backdrop(this, 0.75);
+    if (land) overlayCard(this, 0.05, 0.8, 560);
+    else overlayCard(this, 0.21, 0.82);
     txt(this, width / 2, height * (land ? 0.14 : 0.28), t('paused'), { title: true, size: 44, color: '#ffd23f' });
     duckMusic();
     const resume = () => {
@@ -244,6 +250,8 @@ export class GameOverScene extends Phaser.Scene {
     sdk.emit('gameOver', { score, best, win: !!data.win, newBest });
 
     backdrop(this, 0.78);
+    if (def.meta.orientation === 'landscape') overlayCard(this, 0.07, 0.93, 900);
+    else overlayCard(this, 0.14, 0.84);
     const heading = data.title ?? (data.win ? t('youWin') : t('gameOver'));
     const h = txt(this, width / 2, height * 0.22, heading, {
       title: true, size: 46, color: data.win ? '#5dff7a' : '#ec3013', wrap: width - 60, strokeThickness: 10,
@@ -291,6 +299,8 @@ export class GameOverScene extends Phaser.Scene {
     sdk.end(data.score ?? 0, !!data.win);
     sdk.emit('gameOver', { score: data.score ?? 0, win: !!data.win, online: true });
     backdrop(this, 0.78);
+    if (land) overlayCard(this, 0.1, 0.92, 760);
+    else overlayCard(this, 0.17, 0.8);
     const heading = data.title ?? (data.win ? t('youWin') : t('youLose'));
     const color = data.win ? '#5dff7a' : data.title === t('draw') ? '#ffd23f' : '#ec3013';
     const h = txt(this, width / 2, height * 0.26, heading, { title: true, size: 46, color, wrap: width - 60, strokeThickness: 10 });

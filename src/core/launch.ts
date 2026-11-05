@@ -3,6 +3,7 @@ import '@fontsource/press-start-2p/400.css';
 import '@fontsource/pixelify-sans/400.css';
 import '@fontsource/pixelify-sans/700.css';
 import { installTurkishI, TURKISH_I_FAMILY } from './turkish-font';
+import { installStyle, isModern, MODERN_BODY, MODERN_TITLE, setStyle, styleOf } from './style';
 import { playAyvagoIntro } from './intro';
 import { registerStrings, loc, getLang, setLang } from './i18n';
 import { sdk } from './sdk';
@@ -41,6 +42,12 @@ async function fontsReady(timeoutMs = 3000): Promise<void> {
     // Canvas text never triggers a font download, so the bold face (Latin + Latin Extended) is
     // loaded here too; otherwise bold Turkish letters fall back to another font.
     document.fonts.load('bold 32px "Pixelify Sans"', 'AĞŞİ'),
+    ...(isModern() ? [
+      document.fonts.load(`700 32px "${MODERN_TITLE}"`, 'AĞŞİ'),
+      document.fonts.load(`600 32px "${MODERN_TITLE}"`, 'AĞŞİ'),
+      document.fonts.load(`800 32px "${MODERN_BODY}"`, 'AĞŞİ'),
+      document.fonts.load(`700 32px "${MODERN_BODY}"`, 'AĞŞİ'),
+    ] : []),
   ]).then(() => undefined);
   await Promise.race([loads, new Promise<void>((r) => setTimeout(r, timeoutMs))]);
 }
@@ -50,7 +57,9 @@ async function fontsReady(timeoutMs = 3000): Promise<void> {
  * then runs Menu -> Play -> GameOver with the shared platform services.
  */
 export async function launch(def: GameDefinition): Promise<Phaser.Game> {
+  setStyle(styleOf(def));
   installTurkishI();
+  installStyle();
   setCurrentGame(def);
   if (def.strings) registerStrings(def.strings);
   // The handshake (GHA_READY) goes out first so the platform reveals the frame and the intro shows.
@@ -80,8 +89,10 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
     width,
     height,
     backgroundColor: def.background ?? '#0e0d12',
-    pixelArt: !!def.pixelArt,
-    roundPixels: !!def.pixelArt,
+    // The modern style scales everything smoothly, pixel-art packs included.
+    pixelArt: !!def.pixelArt && !isModern(),
+    roundPixels: !!def.pixelArt && !isModern(),
+    antialias: true,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     physics,
     input: { activePointers: 3 },
