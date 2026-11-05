@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, COLORS, Controls, burst, shake, t, rng, StickDir, type Dir4 } from '@core';
+import { ArcadeScene, Button, CHARACTER_FRAME, COLORS, Controls, burst, shake, t, rng, StickDir, type Dir4 } from '@core';
 import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Grid: 11 x 15 tiles of 8 px art scaled x8 = 64 px
@@ -7,10 +7,24 @@ const COLS = 11, ROWS = 15, TS = 64, SC = 8;
 const OX = (720 - COLS * TS) / 2, OY = 140;
 const VIEW = 4.5;                       // light radius in tiles
 
+// The hero is the player's own character (textures 'pc-*'), posed by the way it faces: right and
+// left use the side poses (mirrored for left), down `front`, up `back`.
+export const HERO_POSES = [
+  'stand', 'walk1', 'walk2', 'front', 'walkdown1', 'walkdown2', 'back', 'walkup1', 'walkup2',
+  'action1', 'action2', 'hit', 'hold2', 'cheer1', 'cheer2', 'climb1', 'climb2',
+] as const;
+type HeroPose = (typeof HERO_POSES)[number];
+type Facing = 'left' | 'right' | 'up' | 'down';
+export const HERO_SCALE = 76 / CHARACTER_FRAME.standHeight;   // a little taller than a tile
+const FOOT = 6;                                               // feet this far above the tile's bottom edge
+const tileX = (c: number) => OX + c * TS + TS / 2;
+const tileY = (r: number) => OY + r * TS + TS / 2;
+/** Draw order: lower rows in front. */
+const depthAt = (y: number) => 4 + y / 10000;
+
 // micro-roguelike frames
 const F = {
   wall: 58, floor: 15, floor2: 60, stairs: 47,
-  hero: 4, heroArmor: 6, heroKnight: 5,
   potion: 119, chest: 82, coin: 78, ring: 79, sword: 62, shield: 94, heart: 90, fire: 120,
 };
 
@@ -47,6 +61,14 @@ export class PlayScene extends ArcadeScene {
   private items: Item[] = [];
   private monsters: Monster[] = [];
   private hero!: Phaser.GameObjects.Image;
+  private heroShadow!: Phaser.GameObjects.Ellipse;
+  private torch!: Phaser.GameObjects.Image;
+  private stairsGlow!: Phaser.GameObjects.Image;
+  private fxG!: Phaser.GameObjects.Graphics;
+  private facing: Facing = 'down';
+  private poseUntil = 0;          // a held pose (attack, hurt, potion, cheer) shows until then
+  private walkStep = 0;
+  private moveEnd = 0;            // the walk pose shows while the step tween runs
   private stairsImg!: Phaser.GameObjects.Image;
   private uiG!: Phaser.GameObjects.Graphics;
   private hpText!: Phaser.GameObjects.Text;
@@ -89,12 +111,18 @@ export class PlayScene extends ArcadeScene {
       }
     }
     this.stairsImg = this.add.image(0, 0, 'mr', F.stairs).setScale(SC).setDepth(2);
-    this.hero = this.add.image(0, 0, 'mr', F.hero).setScale(SC).setDepth(5);
+    this.makeGlow();
+    this.stairsGlow = this.add.image(0, 0, 'dd-glow').setDepth(1.5).setBlendMode(Phaser.BlendModes.ADD).setTint(0x5dff7a).setAlpha(0);
+    this.torch = this.add.image(0, 0, 'dd-glow').setDepth(2.5).setBlendMode(Phaser.BlendModes.ADD).setTint(0xffa040).setScale(2.6);
+    this.heroShadow = this.add.ellipse(0, 0, 44, 14, 0x000000, 0.45).setDepth(3.5);
+    this.hero = this.add.image(0, 0, 'pc-front').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(HERO_SCALE).setDepth(5);
+    this.fxG = this.add.graphics().setDepth(6);
+    this.facing = 'down'; this.poseUntil = 0; this.walkStep = 0; this.moveEnd = 0;
     this.uiG = this.add.graphics().setDepth(20);
     this.hpText = ftxt(this, 154, 100, '', { title: true, size: 18 }).setDepth(21);
-    this.add.image(330, 100, 'mr', F.sword).setScale(5).setDepth(21);
+    this.add.image(330, 100, 'mrk', F.sword).setScale(5).setDepth(21);
     this.atkText = ftxt(this, 372, 100, '', { title: true, size: 22 }).setDepth(21);
-    this.add.image(440, 100, 'mr', F.shield).setScale(5).setDepth(21);
+    this.add.image(440, 100, 'mrk', F.shield).setScale(5).setDepth(21);
     this.defText = ftxt(this, 482, 100, '', { title: true, size: 22 }).setDepth(21);
     this.lvlText = ftxt(this, 560, 100, '', { title: true, size: 18, color: '#3ee6ff' }).setDepth(21);
     this.msg = ftxt(this, 360, 1126, '', { title: true, size: 20, color: '#ffd23f' }).setDepth(21);
@@ -196,7 +224,10 @@ export class PlayScene extends ArcadeScene {
       for (let i = 0; i < n; i++) {
         const spot = free();
         if (!spot) return;
-        const img = this.add.image(OX + spot[0] * TS + TS / 2, OY + spot[1] * TS + TS / 2, 'mr', frame).setScale(SC).setDepth(3).setVisible(false);
+        const img = this.add.image(tileX(spot[0]), tileY(spot[1]), 'mrk', frame).setScale(SC).setDepth(3).setVisible(false);
+        // treasure floats gently; traps flicker
+        if (kind === 'fire') this.tweens.add({ targets: img, scaleY: SC * 1.12, duration: 160 + rng.int(0, 80), yoyo: true, repeat: -1 });
+        else this.tweens.add({ targets: img, y: img.y - 5, duration: 700 + rng.int(0, 300), yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: rng.int(0, 400) });
         this.items.push({ kind, c: spot[0], r: spot[1], img });
       }
     };
@@ -220,7 +251,11 @@ export class PlayScene extends ArcadeScene {
     this.seen = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
     this.vis = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
     this.stairsImg.setPosition(OX + this.sc * TS + TS / 2, OY + this.sr * TS + TS / 2).setAlpha(0);
-    this.hero.setPosition(OX + this.pc * TS + TS / 2, OY + this.pr * TS + TS / 2).setFrame(this.heroFrame());
+    this.tweens.killTweensOf(this.hero);
+    this.facing = 'down'; this.poseUntil = 0;
+    this.hero.setPosition(tileX(this.pc), this.heroFeetY(this.pr)).setScale(HERO_SCALE).setAngle(0).setAlpha(1).clearTint();
+    this.setPose(this.idlePose());
+    this.stairsGlow.setPosition(tileX(this.sc), tileY(this.sr));
     this.hud.setRight(`${t('floor')} ${f}`);
     this.updateVision();
     this.updateUi();
@@ -255,8 +290,10 @@ export class PlayScene extends ArcadeScene {
     const scaleHp = 1 + (this.floor - 1) * 0.14;
     const hp = boss ? 8 + this.floor * 2 : Math.round(def.hp * scaleHp);
     const atk = boss ? 2 + Math.floor(this.floor / 5) : def.atk + Math.floor((this.floor - def.minFloor) / 3);
-    const img = this.add.image(OX + c * TS + TS / 2, OY + r * TS + TS / 2, 'mr', def.frame).setScale(SC).setDepth(4).setVisible(false);
-    if (boss) img.setTint(0xff9090);
+    const img = this.add.image(tileX(c), tileY(r), 'mrk', def.frame).setScale(SC).setDepth(depthAt(tileY(r) + TS / 2 - 1)).setVisible(false);
+    if (boss) img.setTint(0xff9090).setScale(SC * 1.15);
+    // idle breathing, out of step with the others
+    this.tweens.add({ targets: img, scaleY: img.scaleY * 1.07, duration: 380 + rng.int(0, 200), yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: rng.int(0, 300) });
     this.monsters.push({ def, c, r, hp, maxHp: hp, atk, img, awake: boss, boss, tick: 0 });
   }
 
@@ -298,6 +335,7 @@ export class PlayScene extends ArcadeScene {
     }
     const sv = this.vis[this.sr][this.sc] ? 1 : this.seen[this.sr][this.sc] ? 0.4 : 0;
     this.stairsImg.setAlpha(sv).setTint(this.bossAlive ? 0x777777 : 0xffffff);
+    this.stairsGlowOn = sv > 0 && !this.bossAlive;
     for (const it of this.items) it.img.setVisible(this.vis[it.r][it.c] || (this.seen[it.r][it.c] && it.kind !== 'fire')).setAlpha(this.vis[it.r][it.c] ? 1 : 0.4);
     for (const m of this.monsters) {
       const v = this.vis[m.r][m.c];
@@ -309,10 +347,80 @@ export class PlayScene extends ArcadeScene {
   // ---------------------------------------------------------------- turns
   /** Sound-only state: alternating footsteps and a single low-health warning until healed. */
   private stepFoot = 0;
+  private stairsGlowOn = false;
   private lowWarned = false;
 
-  private heroFrame(): number {
-    return this.def >= 3 ? F.heroKnight : this.def >= 1 ? F.heroArmor : F.hero;
+  private heroFeetY(r: number): number {
+    return OY + r * TS + TS - FOOT;
+  }
+
+  /** Middle of the hero's body (for effects and popups). */
+  private get heroMid(): number {
+    return this.hero.y - 34;
+  }
+
+  private setPose(pose: HeroPose): void {
+    const side = this.facing === 'left' || this.facing === 'right';
+    this.hero.setTexture(`pc-${pose}`).setFlipX(side && this.facing === 'left' && pose !== 'front' && pose !== 'back');
+  }
+
+  private idlePose(): HeroPose {
+    return this.facing === 'down' ? 'front' : this.facing === 'up' ? 'back' : 'stand';
+  }
+
+  private walkPose(): HeroPose {
+    const k = this.walkStep % 2;
+    if (this.facing === 'down') return k ? 'walkdown2' : 'walkdown1';
+    if (this.facing === 'up') return k ? 'walkup2' : 'walkup1';
+    return k ? 'walk2' : 'walk1';
+  }
+
+  /** Shows a pose for a while (attack, hurt, potion, cheer); the idle pose returns after it. */
+  private holdPose(pose: HeroPose, ms: number): void {
+    this.poseUntil = this.time.now + ms;
+    this.setPose(pose);
+  }
+
+  private face(dx: number, dy: number): void {
+    this.facing = dx > 0 ? 'right' : dx < 0 ? 'left' : dy < 0 ? 'up' : 'down';
+  }
+
+  /** A soft round glow texture for the torch and the open stairs. */
+  private makeGlow(): void {
+    if (this.textures.exists('dd-glow')) return;
+    const tex = this.textures.createCanvas('dd-glow', 128, 128);
+    if (!tex) return;
+    const c = tex.getContext();
+    const g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, 'rgba(255,255,255,0.55)');
+    g.addColorStop(0.45, 'rgba(255,255,255,0.18)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+    tex.refresh();
+  }
+
+  /** Little lights rising around the hero (healing, levelling up). */
+  private sparkles(color: number): void {
+    for (let i = 0; i < 10; i++) {
+      const p = this.add.rectangle(this.hero.x + rng.int(-26, 26), this.hero.y - rng.int(0, 30), 6, 6, color).setDepth(6);
+      this.tweens.add({ targets: p, y: p.y - rng.int(50, 90), alpha: 0, duration: rng.int(450, 700), delay: i * 30, ease: 'Sine.easeOut', onComplete: () => p.destroy() });
+    }
+  }
+
+  /** Cheers with both cheer poses for a while. */
+  private cheer(ms: number): void {
+    this.holdPose('cheer1', ms);
+    for (let k = 1; k * 160 < ms; k++) this.time.delayedCall(k * 160, () => { if (this.time.now < this.poseUntil) this.setPose(k % 2 ? 'cheer2' : 'cheer1'); });
+  }
+
+  /** A quick sword-swipe arc on the attacked tile. */
+  private slash(x: number, y: number, dx: number, dy: number, crit: boolean): void {
+    const a = Math.atan2(dy, dx);
+    const arc = this.add.graphics().setDepth(6).setPosition(x, y);
+    arc.lineStyle(crit ? 10 : 7, crit ? 0xffd23f : 0xffffff, 1).beginPath().arc(0, 0, 30, a - 1.1, a + 1.1).strokePath();
+    arc.lineStyle(3, 0xffffff, 0.6).beginPath().arc(0, 0, 40, a - 0.8, a + 0.8).strokePath();
+    arc.setAngle(-30).setScale(0.7);
+    this.tweens.add({ targets: arc, angle: 30, scale: 1.1, alpha: 0, duration: 200, ease: 'Quad.easeOut', onComplete: () => arc.destroy() });
   }
 
   private act(a: string): void {
@@ -328,8 +436,10 @@ export class PlayScene extends ArcadeScene {
       const heal = Math.max(6, Math.round(this.maxHp * 0.6));
       this.hp = Math.min(this.maxHp, this.hp + heal);
       this.sfx('potion', { volume: 0.6 });
-      burst(this, this.hero.x, this.hero.y, [0xec3013, 0xff8fa3, 0xffffff], 18, 200);
-      fpopup(this, this.hero.x, this.hero.y - 40, `+${heal}`, '#5dff7a', 24);
+      this.holdPose('hold2', 420);
+      burst(this, this.hero.x, this.heroMid, [0xec3013, 0xff8fa3, 0xffffff], 18, 200);
+      this.sparkles(0x5dff7a);
+      fpopup(this, this.hero.x, this.heroMid - 40, `+${heal}`, '#5dff7a', 24);
       softFlash(this, 0x5dff7a, 160, 0.18);
       this.endTurn(160);
       return;
@@ -337,16 +447,22 @@ export class PlayScene extends ArcadeScene {
     const [dx, dy] = DIRS[a];
     const nc = this.pc + dx, nr = this.pr + dy;
     const m = this.monsterAt(nc, nr);
+    this.face(dx, dy);
     if (m) { this.heroAttack(m, dx, dy); this.endTurn(170); return; }
     if (!this.walkable(nc, nr)) {
+      this.poseUntil = 0;
+      this.setPose(this.idlePose());
       this.sfxAt('bump', this.hero.x, { volume: 0.3 });
       this.tweens.add({ targets: this.hero, x: this.hero.x + dx * 8, y: this.hero.y + dy * 8, duration: 50, yoyo: true });
       this.busyUntil = this.time.now + 110;
       return;
     }
     this.pc = nc; this.pr = nr;
-    if (dx) this.hero.setFlipX(dx < 0);
-    this.tweens.add({ targets: this.hero, x: OX + nc * TS + TS / 2, y: OY + nr * TS + TS / 2, duration: 100, ease: 'Quad.easeOut' });
+    this.walkStep++;
+    this.poseUntil = 0;
+    this.moveEnd = this.time.now + 150;
+    this.setPose(this.walkPose());
+    this.tweens.add({ targets: this.hero, x: tileX(nc), y: this.heroFeetY(nr), duration: 120, ease: 'Sine.easeOut' });
     this.stepFoot ^= 1;
     this.sfxAt(this.stepFoot ? 'step1' : 'step2', this.hero.x, { volume: 0.35 });
     this.pickup();
@@ -373,6 +489,7 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     this.items.splice(i, 1);
+    this.tweens.killTweensOf(it.img);
     this.tweens.add({ targets: it.img, y: y - 30, alpha: 0, duration: 250, onComplete: () => it.img.destroy() });
     if (it.kind === 'coin') {
       const v = 10 + this.floor * 5;
@@ -403,14 +520,15 @@ export class PlayScene extends ArcadeScene {
       const roll = Math.random();
       let label: string, frame: number;
       if (roll < 0.3) { this.atk++; label = `+1 ${t('atk')}`; frame = F.sword; }
-      else if (roll < 0.55) { this.def++; label = `+1 ${t('armor')}`; frame = F.shield; this.hero.setFrame(this.heroFrame()); }
+      else if (roll < 0.55) { this.def++; label = `+1 ${t('armor')}`; frame = F.shield; }
       else if (roll < 0.78) { this.maxHp += 3; this.hp += 3; label = `+3 ${t('maxhp')}`; frame = F.ring; }
       else if (roll < 0.9 && this.potions < 3) { this.potions++; label = `+1 ${t('potion')}`; frame = F.potion; }
       else { const v = 50 + this.floor * 15; this.addScore(v); label = `+${v}`; frame = F.coin; }
-      const icon = this.add.image(x, y, 'mr', frame).setScale(SC).setDepth(30);
+      const icon = this.add.image(x, y, 'mrk', frame).setScale(SC).setDepth(30);
       this.tweens.add({ targets: icon, y: y - 90, scale: SC * 1.3, duration: 450, ease: 'Back.easeOut', onComplete: () => this.tweens.add({ targets: icon, alpha: 0, duration: 250, onComplete: () => icon.destroy() }) });
       fpopup(this, x, y - 110, label, '#3ee6ff', 22);
       this.sfx('loot', { volume: 0.55, delay: 0.15, exact: true });
+      this.holdPose('cheer1', 380);
     }
     this.updateUi();
   }
@@ -424,7 +542,15 @@ export class PlayScene extends ArcadeScene {
   private heroAttack(m: Monster, dx: number, dy: number): void {
     const { dmg, crit } = this.damage(this.atk, m.def.def);
     m.hp -= dmg;
-    this.tweens.add({ targets: this.hero, x: this.hero.x + dx * 22, y: this.hero.y + dy * 22, duration: 60, yoyo: true });
+    // the punch: wind-up, then the hit (side poses); up and down lunge in their own facing
+    const side = dx !== 0;
+    this.holdPose(side ? 'action1' : dy < 0 ? 'walkup1' : 'walkdown1', 230);
+    this.time.delayedCall(60, () => { if (this.time.now < this.poseUntil && side) this.setPose('action2'); });
+    const hx = tileX(this.pc), hy = this.heroFeetY(this.pr);
+    this.tweens.killTweensOf(this.hero);
+    this.hero.setPosition(hx, hy);
+    this.tweens.add({ targets: this.hero, x: hx + dx * 22, y: hy + dy * 22, duration: 70, yoyo: true, ease: 'Quad.easeOut' });
+    this.slash(m.img.x, m.img.y, dx, dy, crit);
     m.img.setTintFill(0xffffff);
     this.time.delayedCall(80, () => { if (m.img.active) { m.img.clearTint(); if (m.boss) m.img.setTint(0xff9090); } });
     fpopup(this, m.img.x, m.img.y - 30, crit ? `${dmg}!` : String(dmg), crit ? '#ffd23f' : '#ffffff', crit ? 28 : 22);
@@ -440,6 +566,7 @@ export class PlayScene extends ArcadeScene {
       if (!m.boss) this.sfxAt(rng.pick(['kill1', 'kill2']), m.img.x, { volume: 0.45 });
       burst(this, m.img.x, m.img.y, [0xec3013, 0xffd23f, 0x5dff7a], m.boss ? 60 : 22, m.boss ? 420 : 260);
       fpopup(this, m.img.x, m.img.y - 70, `+${pts}`, '#ffd23f', 22);
+      this.tweens.killTweensOf(m.img);
       this.tweens.add({ targets: m.img, alpha: 0, scale: SC * 1.4, angle: 90, duration: 250, onComplete: () => m.img.destroy() });
       if (m.boss) {
         this.bossAlive = false;
@@ -448,7 +575,7 @@ export class PlayScene extends ArcadeScene {
         this.say(t('down'), '#5dff7a');
         this.sfxAt('bossdown', m.img.x, { volume: 0.8 });
         // the guardian always drops a chest
-        const img = this.add.image(m.img.x, m.img.y, 'mr', F.chest).setScale(SC).setDepth(3);
+        const img = this.add.image(m.img.x, m.img.y, 'mrk', F.chest).setScale(SC).setDepth(3);
         this.items.push({ kind: 'chest', c: m.c, r: m.r, img });
       }
     } else if (!m.awake) m.awake = true;
@@ -464,7 +591,9 @@ export class PlayScene extends ArcadeScene {
     this.hp = Math.min(this.maxHp, this.hp + 6);
     if (this.lvl % 2 === 1) this.atk++;
     this.sfx('levelup', { volume: 0.65 });
-    burst(this, this.hero.x, this.hero.y, [0x3ee6ff, 0xffd23f, 0xffffff], 30, 260);
+    burst(this, this.hero.x, this.heroMid, [0x3ee6ff, 0xffd23f, 0xffffff], 30, 260);
+    this.sparkles(0x3ee6ff);
+    this.cheer(700);
     softFlash(this, 0x3ee6ff, 200, 0.2);
     this.say(t('levelUp', { n: this.lvl }), '#3ee6ff');
   }
@@ -476,9 +605,10 @@ export class PlayScene extends ArcadeScene {
     if (this.hp > 0 && this.hp <= this.maxHp * 0.25 && !this.lowWarned) { this.lowWarned = true; this.sfx('low', { volume: 0.45, delay: 0.2 }); }
     shake(this, 0.012, 160);
     softFlash(this, color, 160, 0.25);
+    this.holdPose('hit', 260);
     this.hero.setTintFill(0xffffff);
     this.time.delayedCall(90, () => this.hero.active && this.hero.clearTint());
-    fpopup(this, this.hero.x, this.hero.y - 30, `-${dmg}`, '#ec3013', 24);
+    fpopup(this, this.hero.x, this.heroMid - 40, `-${dmg}`, '#ec3013', 24);
     this.updateUi();
     if (this.hp <= 0) this.die();
   }
@@ -489,8 +619,10 @@ export class PlayScene extends ArcadeScene {
     this.hp = 0;
     this.updateUi();
     this.sfxAt('death', this.hero.x, { volume: 0.7 });
-    burst(this, this.hero.x, this.hero.y, [0xec3013, 0x888888], 50, 360);
-    this.tweens.add({ targets: this.hero, angle: 90, alpha: 0.3, duration: 400 });
+    burst(this, this.hero.x, this.heroMid, [0xec3013, 0x888888], 50, 360);
+    this.poseUntil = Infinity;
+    this.setPose('hit');
+    this.tweens.add({ targets: this.hero, angle: this.facing === 'left' ? -90 : 90, alpha: 0.4, duration: 400, ease: 'Quad.easeIn' });
     this.endGame({ delay: 1200 });
   }
 
@@ -538,7 +670,8 @@ export class PlayScene extends ArcadeScene {
         if (m.boss && Math.hypot(nc - this.sc, nr - this.sr) > 3) continue;   // the guardian stays near the stairs
         m.c = nc; m.r = nr;
         if (sx) m.img.setFlipX(sx < 0);
-        this.tweens.add({ targets: m.img, x: OX + nc * TS + TS / 2, y: OY + nr * TS + TS / 2, duration: 100 });
+        m.img.setDepth(depthAt(tileY(nr) + TS / 2 - 1));
+        this.tweens.add({ targets: m.img, x: tileX(nc), y: tileY(nr), duration: 100 });
         break;
       }
     }
@@ -549,14 +682,18 @@ export class PlayScene extends ArcadeScene {
     const bonus = 50 * this.floor;
     this.addScore(bonus);
     this.sfx('stairs', { volume: 0.55 });
-    fpopup(this, this.hero.x, this.hero.y - 40, `+${bonus}`, '#5dff7a', 24);
-    this.tweens.add({ targets: this.hero, scale: SC * 0.3, angle: 360, duration: 380 });
+    fpopup(this, this.hero.x, this.heroMid - 40, `+${bonus}`, '#5dff7a', 24);
+    // climbs down the stairs: the climbing poses, sinking into the stairway
+    this.poseUntil = Infinity;
+    this.facing = 'up';
+    this.setPose('climb1');
+    for (let k = 1; k < 4; k++) this.time.delayedCall(k * 95, () => this.setPose(k % 2 ? 'climb2' : 'climb1'));
+    this.tweens.add({ targets: this.hero, y: this.hero.y + 14, scale: HERO_SCALE * 0.55, alpha: 0, duration: 380, ease: 'Quad.easeIn' });
     this.cameras.main.fadeOut(380, 0, 0, 0);
     this.time.delayedCall(420, () => {
       if (this.isOver) return;
       this.floor++;
       this.hp = Math.min(this.maxHp, this.hp + 2);
-      this.hero.setScale(SC).setAngle(0);
       this.buildFloor();
     });
   }
@@ -605,6 +742,17 @@ export class PlayScene extends ArcadeScene {
       this.holdT -= delta / 1000;
       if (this.holdT <= 0) { this.holdT = 0.16; this.act(this.holdDir); }
     }
+    // hero: back to the idle pose after a step or a held pose; draw order, shadow and torch follow
+    const now = this.time.now;
+    if (!this.dead && this.poseUntil !== Infinity && now >= this.poseUntil && now >= this.moveEnd) {
+      const idle = `pc-${this.idlePose()}`;
+      if (this.hero.texture.key !== idle) this.setPose(this.idlePose());
+    }
+    this.hero.setDepth(depthAt(this.hero.y));
+    this.heroShadow.setPosition(this.hero.x, this.hero.y - 2).setAlpha(0.45 * this.hero.alpha);
+    const flicker = 1 + Math.sin(now / 90) * 0.03 + Math.sin(now / 37) * 0.02;
+    this.torch.setPosition(this.hero.x, this.hero.y - 24).setScale(2.6 * flicker).setAlpha(this.dead ? 0.15 : 0.55);
+    this.stairsGlow.setAlpha(this.stairsGlowOn ? 0.5 + Math.sin(now / 260) * 0.2 : 0).setScale(1.1 + Math.sin(now / 260) * 0.08);
     // keep monster health bars glued to tweening sprites
     if (this.monsters.some((m) => m.hp < m.maxHp)) this.updateUi();
   }
