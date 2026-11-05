@@ -7,7 +7,7 @@ import {
   W, GROUND, GOAL_W, GOAL_TOP, BALL_R, CHAR_SCALE, KICK_ON, KICK_POSE_END, AI_LEVELS,
   footOffset, newWorld, newPlayer, resetPlayers, dropBall, step, think, movePlayer, separate, type World, type Input, type Events, type Player,
 } from './sim';
-import { makeTextures, drawPitch, drawNets } from './art';
+import { makeTextures, drawPitch, drawNets, TEAM } from './art';
 
 const MATCH_S = 60;
 const SEND_MS = 50;              // ~20 messages per second each way
@@ -88,6 +88,11 @@ export class PlayScene extends ArcadeScene {
   // drawing
   private sprites: Phaser.GameObjects.Image[] = [];
   private shadows: Phaser.GameObjects.Ellipse[] = [];
+  private crowd!: Phaser.GameObjects.Image;
+  private nets: Phaser.GameObjects.Image[] = [];
+  private flashes!: Phaser.GameObjects.Graphics;
+  private sparks: { x: number; y: number; life: number }[] = [];
+  private wasGround = [true, true];
   private ball!: Phaser.GameObjects.Image;
   private ballShadow!: Phaser.GameObjects.Ellipse;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -119,7 +124,9 @@ export class PlayScene extends ArcadeScene {
     this.lastEv = []; this.lastGoals = 0; this.walkT = [0, 0]; this.lastTick = -1;
     this.sprites = []; this.shadows = []; this.controls = undefined;
 
-    drawPitch(this);
+    this.crowd = drawPitch(this);
+    this.flashes = this.add.graphics().setDepth(-1);
+    this.sparks = []; this.wasGround = [true, true];
     for (let i = 0; i < 2; i++) {
       this.shadows.push(this.add.ellipse(0, GROUND + 4, 96, 18, 0x000000, 0.3).setDepth(2));
       this.sprites.push(this.add.image(0, GROUND, 'p1-stand').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(CHAR_SCALE).setDepth(10 + i));
@@ -130,14 +137,20 @@ export class PlayScene extends ArcadeScene {
       speed: 0, lifespan: 220, scale: { start: 2.6, end: 0 }, alpha: { start: 0.5, end: 0 }, tint: 0xffd23f, frequency: 18, emitting: false,
     }).setDepth(14);
     this.ball = this.add.image(W / 2, 200, 'hs-ball').setDepth(15);
-    drawNets(this, 20);
+    this.nets = drawNets(this, 20);
 
     // scoreboard
+    // scoreboard: a glass panel with each side's colour, the clock in a pill between the scores
     const sb = this.add.graphics().setDepth(30);
-    sb.fillStyle(0x000000, 0.6).fillRoundedRect(W / 2 - 250, 10, 500, 92, 14);
-    sb.lineStyle(3, 0xffd23f, 0.8).strokeRoundedRect(W / 2 - 250, 10, 500, 92, 14);
-    txt(this, W / 2 - 170, 36, t('you'), { title: true, size: 16, color: '#ff7a4a' }).setDepth(31);
-    this.nameThem = txt(this, W / 2 + 170, 36, '', { size: 22, color: '#7fd8ff' }).setDepth(31);
+    sb.fillStyle(0x000000, 0.28).fillRoundedRect(W / 2 - 246, 14, 500, 92, 22);
+    sb.fillStyle(0x0b1030, 0.78).fillRoundedRect(W / 2 - 250, 10, 500, 92, 22);
+    sb.fillStyle(0xffffff, 0.06).fillRoundedRect(W / 2 - 246, 14, 492, 38, 18);
+    sb.fillStyle(Phaser.Display.Color.HexStringToColor(TEAM[0]).color, 1).fillRoundedRect(W / 2 - 236, 22, 8, 68, 4);
+    sb.fillStyle(Phaser.Display.Color.HexStringToColor(TEAM[1]).color, 1).fillRoundedRect(W / 2 + 228, 22, 8, 68, 4);
+    sb.fillStyle(0x000000, 0.45).fillRoundedRect(W / 2 - 52, 38, 104, 36, 18);
+    sb.lineStyle(2, 0xffffff, 0.18).strokeRoundedRect(W / 2 - 250, 10, 500, 92, 22);
+    txt(this, W / 2 - 170, 36, t('you'), { title: true, size: 18, color: TEAM[0] }).setDepth(31);
+    this.nameThem = txt(this, W / 2 + 170, 36, '', { size: 22, color: TEAM[1] }).setDepth(31);
     this.scoreMe = txt(this, W / 2 - 110, 66, '0', { title: true, size: 40, color: '#ffffff' }).setDepth(31);
     this.scoreThem = txt(this, W / 2 + 110, 66, '0', { title: true, size: 40, color: '#ffffff' }).setDepth(31);
     this.clockText = txt(this, W / 2, 56, '1:00', { title: true, size: 24, color: '#ffd23f' }).setDepth(31);
@@ -312,6 +325,7 @@ export class PlayScene extends ArcadeScene {
   // ---------------------------------------------------------------- loop
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
+    this.drawFlashes(dt);
     const local = this.readInput();
     if (this.online && !this.host) { this.guestUpdate(local, dt); return; }
 
@@ -414,6 +428,9 @@ export class PlayScene extends ArcadeScene {
       // the frame is centred on the feet, so flipping it mirrors the kick for a player facing left
       s.setTexture(`${prefix}-${pose}`).setPosition(p.x, p.y + hop).setFlipX(p.face < 0);
       s.setAngle(p.ground || kicking ? 0 : Phaser.Math.Clamp(p.vx * 0.012, -6, 6));
+      // dust when a player lands
+      if (p.ground && !this.wasGround[i]) this.dust(p.x, 10);
+      this.wasGround[i] = p.ground;
       const sh = this.shadows[i];
       const air = Math.max(0, GROUND - p.y);
       sh.setPosition(p.x, GROUND + 4).setScale(Math.max(0.4, 1 - air / 400)).setAlpha(0.3 * Math.max(0.3, 1 - air / 300));
@@ -456,11 +473,54 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: [this.banner, this.sub], alpha: 0, duration: 250, onComplete: () => { this.banner.setVisible(false); this.sub.setVisible(false); } });
   }
 
+  /** A ring of light where the ball was struck. */
+  private impact(x: number, y: number, color: number, k = 1): void {
+    const ring = this.add.graphics().setDepth(16).setPosition(x, y);
+    ring.lineStyle(5, color, 0.9).strokeCircle(0, 0, 18);
+    this.tweens.add({ targets: ring, scale: 2.6 * k, alpha: 0, duration: 260, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+    const glow = this.add.image(x, y, 'hs-dot').setDepth(16).setScale(6 * k).setTint(0xffffff).setAlpha(0.8).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: glow, scale: 1, alpha: 0, duration: 200, onComplete: () => glow.destroy() });
+  }
+
+  /** A puff of dust at a player's feet. */
+  private dust(x: number, n: number): void {
+    for (let k = 0; k < n; k++) {
+      const d = this.add.circle(x + rng.int(-24, 24), GROUND - 2, rng.int(4, 9), 0xd8f0c8, 0.55).setDepth(9);
+      this.tweens.add({ targets: d, x: d.x + rng.int(-40, 40), y: d.y - rng.int(6, 22), alpha: 0, scale: 1.8, duration: rng.int(320, 520), ease: 'Quad.easeOut', onComplete: () => d.destroy() });
+    }
+  }
+
+  /** Camera flashes in the stands: a few now and then, a storm after a goal. */
+  private crowdFlash(n: number): void {
+    for (let k = 0; k < n; k++) this.sparks.push({ x: rng.int(10, W - 10), y: rng.int(250, 396), life: 1 + Math.random() * 0.5 });
+  }
+
+  private drawFlashes(dt: number): void {
+    if (Math.random() < dt * 2.5) this.crowdFlash(1);
+    const g = this.flashes;
+    g.clear();
+    for (const f of this.sparks) {
+      f.life -= dt * 3.5;
+      if (f.life <= 0) continue;
+      const a = Math.min(1, f.life);
+      g.fillStyle(0xffffff, 0.22 * a).fillCircle(f.x, f.y + (this.crowd.y - 236), 10 * a);
+      g.fillStyle(0xffffff, a).fillCircle(f.x, f.y + (this.crowd.y - 236), 2.5);
+    }
+    this.sparks = this.sparks.filter((f) => f.life > 0);
+  }
+
   private goalFx(mine: boolean, x: number): void {
     const gx = x < W / 2 ? GOAL_W / 2 : W - GOAL_W / 2;
     burst(this, gx, (GOAL_TOP + GROUND) / 2, mine ? [0xffd23f, 0xff7a4a, 0xffffff] : [0x3ee6ff, 0xffffff], 50, 520);
     shake(this, 0.02, 400);
     flash(this, mine ? 0xffd23f : 0x3ee6ff, 160);
+    // the net shakes, the crowd jumps and a storm of camera flashes goes off
+    const net = this.nets[x < W / 2 ? 0 : 1];
+    if (net) { this.tweens.killTweensOf(net); net.setX(x < W / 2 ? 0 : W); this.tweens.add({ targets: net, x: net.x + (x < W / 2 ? -7 : 7), duration: 60, yoyo: true, repeat: 5 }); }
+    this.tweens.killTweensOf(this.crowd);
+    this.crowd.setY(236);
+    this.tweens.add({ targets: this.crowd, y: 228, duration: 140, yoyo: true, repeat: 5, ease: 'Sine.easeOut' });
+    this.crowdFlash(60);
     this.sfx(mine ? 'goal' : 'concede', { volume: 0.75, exact: true });
     this.showBanner(t('goalBanner'), mine ? '#ffd23f' : '#7fd8ff', mine ? t('goalYou') : t('goalThem'));
     this.time.delayedCall(1700, () => { if (this.phase !== 'end' && !this.isOver) this.hideBanner(); });
@@ -483,12 +543,13 @@ export class PlayScene extends ArcadeScene {
       if (grew(i)) {
         this.sfxAt('kick', bx, { volume: 0.8 });
         burst(this, bx, by, [0xffffff, 0xffd23f], 14, 300);
+        this.impact(bx, by, Phaser.Display.Color.HexStringToColor(TEAM[local] ?? TEAM[0]).color);
         shake(this, 0.006, 100);
       }
       // the online guest plays its own swing and jump when it presses (predictOwn)
       const own = ownLocal && i === 1;
       if (grew(2 + i) && !own) this.sfxAt('swing', px, { volume: 0.35 });
-      if (grew(4 + i)) { this.sfxAt('head', bx, { volume: 0.6 }); burst(this, bx, by, [0xffffff], 8, 200); }
+      if (grew(4 + i)) { this.sfxAt('head', bx, { volume: 0.6 }); burst(this, bx, by, [0xffffff], 8, 200); this.impact(bx, by, 0xffffff, 0.7); }
       if (grew(6 + i) && !own) this.sfxAt('jump', px, { volume: 0.35 });
     }
     if (grew(8)) { this.sfxAt('post', bx, { volume: 0.7 }); shake(this, 0.008, 140); burst(this, bx, by - 20, [0xffffff, 0xcccccc], 10, 220); }
