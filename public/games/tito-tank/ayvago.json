@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "titotank",
+  "title": {
+    "en": "Tito's Tank",
+    "tr": "Tito'nun Tankı"
+  },
+  "description": {
+    "en": "Hit the tank behind the hills! Set your barrel, charge your power and read the wind. Every round the ground gets rougher and the gap wider. Play the computer or a friend online; first to three rounds wins.",
+    "tr": "Tepelerin ardındaki rakip tankı vur! Namluyu ayarla, gücü doldur, rüzgârı hesaba kat. Her tur arazi sertleşir, mesafe uzar. Bilgisayara karşı ya da bir arkadaşınla çevrimiçi oyna; üç turu ilk alan kazanır."
+  },
+  "category": "action",
+  "categories": [
+    "action",
+    "strategy",
+    "arcade"
+  ],
+  "tags": [
+    "multiplayer",
+    "tito",
+    "tank",
+    "retro"
+  ],
+  "entry": "https://ayvago-games.vercel.app/games/tito-tank/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/tito-tank/ayvago/icon-512.png",
+    "cover": "/games/tito-tank/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/tito-tank/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

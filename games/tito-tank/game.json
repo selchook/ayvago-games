@@ -1,0 +1,23 @@
+{
+  "id": "tito-tank",
+  "title": { "tr": "Tito'nun Tankı", "en": "Tito's Tank" },
+  "description": {
+    "tr": "Tepelerin ardındaki rakip tankı vur! Namluyu ayarla, gücü doldur, rüzgârı hesaba kat. Her tur arazi sertleşir, mesafe uzar. Bilgisayara karşı ya da bir arkadaşınla çevrimiçi oyna; üç turu ilk alan kazanır.",
+    "en": "Hit the tank behind the hills! Set your barrel, charge your power and read the wind. Every round the ground gets rougher and the gap wider. Play the computer or a friend online; first to three rounds wins."
+  },
+  "howTo": {
+    "tr": "Nişan için ekranı sürükle, tankını sürükleyerek kaydır, ATEŞ'e basılı tut ve bırak. Klavye: ↑↓ nişan, ←→ hareket, Boşluk basılı tut ve bırak.",
+    "en": "Drag the screen to aim, drag your tank to drive, hold FIRE and let go. Keys: ↑↓ aim, ←→ drive, hold Space and let go."
+  },
+  "genres": ["action", "strategy", "arcade"],
+  "orientation": "landscape",
+  "controls": ["touch", "keyboard"],
+  "multiplayer": true,
+  "version": "1.0.0",
+  "credits": [
+    "Based on Tito's Tank by selchook",
+    "Characters & smoke: Kenney (CC0) — kenney.nl",
+    "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+  ],
+  "platform": { "addedAt": "2026-11-05" }
+}
