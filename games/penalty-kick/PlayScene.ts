@@ -1,21 +1,68 @@
 import Phaser from 'phaser';
 import {
-  ArcadeScene, burst, shake, flash, popup, t, txt, rng, net, CHARACTER_FRAME, characterRig, loadCharacter,
+  ArcadeScene, burst, shake, flash, popup, t, txt, rng, net, CHARACTER_FRAME, loadCharacter,
   playerCharacter, peerCharacter, otherCharacters, type CharacterId,
 } from '@core';
 
 // Goal frame (front view)
 const GL = 110, GR = 610, GT = 330, GB = 560;
+// Back of the goal (further from the camera: higher and narrower)
+const BL = GL + 30, BR = GR - 30, BT = GT + 22, BB = GB - 36;
 const SPOT_X = 360, SPOT_Y = 1060;
 const STAND_Y = 485;                 // keeper body centre when standing
 const MATCHES = 3;
 const BALL_R = 30;                   // ball radius on the spot
 const KEEPER_S = 1.22;               // keeper scale (characters are 150 px tall at scale 1)
 const KEEPER_OY = 100 / 176;         // keeper origin: the body centre on the 144x176 frame
-const KICKER_S = 2.1;                // the kicker is close to the camera
+const KICKER_S = 1.9;                // the kicker is close to the camera, seen from behind
+// Where the kicker's feet stand when the kicking foot meets the ball (behind and left of it)
+const STRIKE_X = SPOT_X - 78, STRIKE_Y = SPOT_Y + 46;
 const PAUSE_ZONE = (x: number, y: number) => !net.active && x > 590 && y < 140;
 
-export const POSES = ['stand', 'walk1', 'walk2', 'kick', 'cheer1', 'cheer2', 'jump', 'hang', 'duck', 'fall', 'hit'] as const;
+export const POSES = ['back', 'cheer1', 'cheer2', 'jump', 'hang', 'duck', 'fall'] as const;
+
+// ---------- the kicker from behind ----------
+// The camera stands behind the penalty taker, so the kicker is drawn in the character's own `back`
+// pose. Its steps and kick are made from that same picture by moving the character's own legs
+// (the rows below the shorts): no limb is added or drawn by hand.
+const LEG_Y = 158;                   // first row of the frame that holds only the legs
+const LEG_L = [30, 72] as const;     // columns of the left leg (the picture's left)
+const LEG_R = [72, 116] as const;    // columns of the right (kicking) leg
+
+/** Builds `<prefix>-bk0` (stand), `-bkW1`/`-bkW2` (steps), `-bkStrike` and `-bkFollow` from `<prefix>-back`. */
+export function makeBackPoses(scene: Phaser.Scene, prefix: string): void {
+  const key = `${prefix}-back`;
+  if (!scene.textures.exists(key) || scene.textures.exists(`${prefix}-bkFollow`)) return;
+  const src = scene.textures.get(key).getSourceImage() as HTMLImageElement;
+  const W = CHARACTER_FRAME.width, H = CHARACTER_FRAME.height, legH = H - LEG_Y;
+  const body = (c: CanvasRenderingContext2D, dy = 0) => c.drawImage(src, 0, 0, W, LEG_Y, 0, dy, W, LEG_Y);
+  /** One leg, rotated about its top centre (positive = clockwise) and moved by dx/dy. */
+  const leg = (c: CanvasRenderingContext2D, [x0, x1]: readonly [number, number], dx = 0, dy = 0, rot = 0, sy = 1) => {
+    const px = (x0 + x1) / 2;
+    c.save();
+    c.translate(px + dx, LEG_Y + dy);
+    c.rotate(rot);
+    c.scale(1, sy);
+    c.drawImage(src, x0, LEG_Y, x1 - x0, legH, x0 - px, 0, x1 - x0, legH);
+    c.restore();
+  };
+  const make = (name: string, draw: (c: CanvasRenderingContext2D) => void) => {
+    const tex = scene.textures.createCanvas(`${prefix}-${name}`, W, H);
+    if (!tex) return;
+    draw(tex.getContext());
+    tex.refresh();
+  };
+  make('bk0', (c) => c.drawImage(src, 0, 0));
+  // steps: one foot lifts (it shows shorter from behind) while the body rides up a little
+  make('bkW1', (c) => { leg(c, LEG_R, 0, -2); leg(c, LEG_L, 1, -7, 0, 0.8); body(c, -2); });
+  make('bkW2', (c) => { leg(c, LEG_L, 0, -2); leg(c, LEG_R, -1, -7, 0, 0.8); body(c, -2); });
+  // wind-up: the kicking foot swings back towards the camera and up
+  make('bkWind', (c) => { leg(c, LEG_L, -1, 0); body(c, 1); leg(c, LEG_R, 4, -13, -0.18, 0.9); });
+  // strike: the kicking leg drives forward under the body, towards the ball on the right
+  make('bkStrike', (c) => { leg(c, LEG_R, 8, -3, 0, 0.8); leg(c, LEG_L, -2, 0); body(c, 1); });
+  // follow-through: the kicking leg has gone on, away from the camera
+  make('bkFollow', (c) => { leg(c, LEG_R, 6, -6, 0, 0.62); leg(c, LEG_L, -2, 0); body(c, -1); });
+}
 
 type Phase = 'aim' | 'strike' | 'flight' | 'runup' | 'defend' | 'wait' | 'pick' | 'netRun';
 interface Shot { tx: number; ty: number; T: number; curve: number; t: number; byYou: boolean; x0: number; y0: number }
@@ -95,6 +142,68 @@ export function makeBall(scene: Phaser.Scene): void {
   g.destroy();
 }
 
+const SHIRTS = ['#ec3013', '#f3f2f2', '#2d6cdf', '#ffd23f', '#1f9d55', '#ff4fa3', '#3a3f5a', '#f39c12', '#e8e8e8'];
+const SKINS = ['#f5d0a9', '#e0ac69', '#c68642', '#8d5524', '#ffdbac'];
+
+/** The stadium in perspective: night sky, floodlights, crowd tiers, ad boards, striped grass, lines. */
+function paintStadium(c: CanvasRenderingContext2D): void {
+  const R = rng.seeded(7);
+  const pick = <T,>(a: T[]): T => a[Math.floor(R() * a.length)];
+  // sky
+  let g = c.createLinearGradient(0, 0, 0, 300);
+  g.addColorStop(0, '#060a16'); g.addColorStop(1, '#17233f');
+  c.fillStyle = g; c.fillRect(0, 0, 720, 340);
+  // stands: rows of spectators, darker towards the back
+  for (let row = 0, y = 116; y < 292; y += 12, row++) {
+    c.fillStyle = row % 4 === 3 ? '#0c1122' : '#141a30';
+    c.fillRect(0, y - 6, 720, 12);
+    for (let x = (row % 2) * 7 + 3; x < 724; x += 14) {
+      if (R() < 0.06) continue;                       // an empty seat
+      c.fillStyle = pick(SHIRTS);
+      c.beginPath(); c.roundRect(x - 5, y, 10, 7, 3); c.fill();
+      c.fillStyle = pick(SKINS);
+      c.beginPath(); c.arc(x, y - 2, 4, 0, Math.PI * 2); c.fill();
+    }
+    c.fillStyle = `rgba(6,10,22,${0.62 * (1 - (y - 116) / 176)})`;
+    c.fillRect(0, y - 7, 720, 14);
+  }
+  // floodlights and their glow
+  for (const lx of [36, 684]) {
+    const r = c.createRadialGradient(lx, 110, 0, lx, 110, 260);
+    r.addColorStop(0, 'rgba(255,250,215,0.5)'); r.addColorStop(0.18, 'rgba(255,250,215,0.16)'); r.addColorStop(1, 'rgba(255,250,215,0)');
+    c.fillStyle = r; c.fillRect(0, 0, 720, 420);
+    c.fillStyle = '#273150';
+    c.beginPath(); c.roundRect(lx - 26, 92, 52, 38, 6); c.fill();
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) {
+      c.fillStyle = '#fffbe2'; c.beginPath(); c.arc(lx - 16 + i * 16, 103 + j * 16, 5.5, 0, Math.PI * 2); c.fill();
+    }
+  }
+  // ad boards
+  c.fillStyle = '#0b0e1a'; c.fillRect(0, 294, 720, 40);
+  const boards = ['#ec3013', '#2d6cdf', '#1f9d55', '#ec3013', '#2d6cdf', '#1f9d55'];
+  boards.forEach((col, i) => {
+    const x = i * 120 + 4;
+    const b = c.createLinearGradient(0, 300, 0, 327);
+    b.addColorStop(0, col); b.addColorStop(1, '#000000');
+    c.globalAlpha = 0.9; c.fillStyle = b; c.beginPath(); c.roundRect(x, 299, 112, 28, 5); c.fill(); c.globalAlpha = 1;
+  });
+  // grass: perspective stripes, darker far away
+  g = c.createLinearGradient(0, 334, 0, 1280);
+  g.addColorStop(0, '#24803a'); g.addColorStop(1, '#3fb24f');
+  c.fillStyle = g; c.fillRect(0, 334, 720, 946);
+  let y = 334, h = 18, i = 0;
+  while (y < 1280) { if (i++ % 2) { c.fillStyle = 'rgba(255,255,255,0.06)'; c.fillRect(0, y, 720, h); } y += h; h *= 1.16; }
+  // goal shadow on the grass
+  c.fillStyle = 'rgba(0,0,0,0.18)';
+  c.beginPath(); c.ellipse(SPOT_X, GB + 8, 290, 16, 0, 0, Math.PI * 2); c.fill();
+  // lines: goal line, goal area, penalty spot, edge of the box behind the kicker
+  c.strokeStyle = 'rgba(255,255,255,0.88)'; c.lineCap = 'round';
+  c.lineWidth = 4; c.beginPath(); c.moveTo(0, GB); c.lineTo(720, GB); c.stroke();
+  c.lineWidth = 5; c.beginPath(); c.moveTo(66, GB); c.lineTo(36, 650); c.lineTo(684, 650); c.lineTo(654, GB); c.stroke();
+  c.lineWidth = 8; c.beginPath(); c.moveTo(0, 1236); c.lineTo(720, 1236); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,0.92)'; c.beginPath(); c.ellipse(SPOT_X, SPOT_Y + BALL_R, 20, 7, 0, 0, Math.PI * 2); c.fill();
+}
+
 export class PlayScene extends ArcadeScene {
   private ball!: Phaser.GameObjects.Image;
   private shadow!: Phaser.GameObjects.Ellipse;
@@ -135,7 +244,6 @@ export class PlayScene extends ArcadeScene {
   private rivalId: CharacterId = 'adventurer';
   private kickerPrefix = 'me';
   private keeperPrefix = 'op';
-  private kickerId: CharacterId = 'adventurer';
   private epoch = 0;
   // online state
   private online = false;
@@ -156,7 +264,7 @@ export class PlayScene extends ArcadeScene {
     this.you = []; this.them = []; this.match = 1; this.netShake = 0;
     this.online = net.active;
     this.kick = 0; this.myPick = null; this.peerPicks = new Map(); this.zone = 1; this.pickLeft = 0; this.outcome = 'goal';
-    this.rivalPrefix = 'op'; this.rivalId = peerCharacter(); this.kickerPrefix = 'me'; this.keeperPrefix = 'op'; this.kickerId = playerCharacter();
+    this.rivalPrefix = 'op'; this.rivalId = peerCharacter(); this.kickerPrefix = 'me'; this.keeperPrefix = 'op';
     this.useHud = !this.online;
     this.touchUi = this.sys.game.device.input.touch;
     makeBall(this);
@@ -166,7 +274,9 @@ export class PlayScene extends ArcadeScene {
     this.keeperShadow = this.add.ellipse(SPOT_X, GB + 18, 110, 22, 0x000000, 0.3).setDepth(2);
     this.keeper = this.add.image(SPOT_X, STAND_Y, 'op-cheer2').setOrigin(0.5, KEEPER_OY).setScale(KEEPER_S).setDepth(3);
     this.kickerShadow = this.add.ellipse(0, 0, 170, 34, 0x000000, 0.3).setDepth(4).setVisible(false);
-    this.kicker = this.add.image(0, 0, 'me-stand').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(KICKER_S).setDepth(6).setVisible(false);
+    makeBackPoses(this, 'me');
+    makeBackPoses(this, 'op');
+    this.kicker = this.add.image(0, 0, 'me-bk0').setOrigin(0.5, CHARACTER_FRAME.originY).setScale(KICKER_S).setDepth(7.5).setVisible(false);
     this.shadow = this.add.ellipse(SPOT_X, SPOT_Y + BALL_R - 2, BALL_R * 2.2, 16, 0x000000, 0.35).setDepth(4);
     this.ball = this.add.image(SPOT_X, SPOT_Y, 'pk-ball').setDepth(7);
     this.ballScale(1);
@@ -176,7 +286,7 @@ export class PlayScene extends ArcadeScene {
     this.boardText = txt(this, 360, 140, '', { title: true, size: 22 }).setDepth(9);
     this.banner = txt(this, 360, 760, '', { title: true, size: 36, color: '#ffd23f', wrap: 660 }).setDepth(20);
     this.curlText = txt(this, 560, 1150, '', { size: 30, color: '#3ee6ff' }).setDepth(9);
-    this.hintText = txt(this, 360, 1248, '', { size: 24, color: '#ffffff', wrap: 680 }).setDepth(9);
+    this.hintText = txt(this, 360, 1226, '', { size: 22, color: '#ffffff', wrap: 660 }).setDepth(9);
     this.zonesG = this.add.graphics().setDepth(7);
     this.clockText = txt(this, 620, 1080, '', { title: true, size: 40, color: '#ffd23f' }).setDepth(9);
 
@@ -294,64 +404,155 @@ export class PlayScene extends ArcadeScene {
   }
 
   // ---------- drawing ----------
+  /** Stadium, crowd, ad boards and the pitch, painted once into a canvas texture. */
   private drawPitch(): void {
-    if (this.textures.exists('pk-pitch')) { this.add.image(0, 0, 'pk-pitch').setOrigin(0).setDepth(0); return; }
-    const g = this.make.graphics({}, false);
-    g.fillGradientStyle(0x0b1324, 0x0b1324, 0x1d2b4a, 0x1d2b4a).fillRect(0, 0, 720, 300);
-    // crowd
-    for (let y = 200; y < 300; y += 14) for (let x = 6; x < 720; x += 14) {
-      g.fillStyle(rng.pick([0xec3013, 0xf3f2f2, 0x2d6cdf, 0x3a3f5a, 0xffd23f, 0x3a3f5a]), 0.75).fillCircle(x + (y % 28 ? 7 : 0), y, 5);
+    const KEY = 'pk-stadium';
+    if (!this.textures.exists(KEY)) {
+      const tex = this.textures.createCanvas(KEY, 720, 1280);
+      if (tex) { paintStadium(tex.getContext()); tex.refresh(); }
     }
-    // stadium lights
-    for (const lx of [40, 680]) { g.fillStyle(0xfff6c0, 0.06).fillCircle(lx, 150, 110); g.fillStyle(0xfff6c0, 0.12).fillCircle(lx, 150, 50); }
-    // ad boards
-    g.fillStyle(0x16141c).fillRect(0, 296, 720, 34);
-    for (let x = 0; x < 720; x += 120) g.fillStyle(rng.pick([0xec3013, 0x3ee6ff, 0xffd23f])).fillRect(x + 10, 302, 100, 22);
-    // grass stripes (perspective)
-    let y = 330, h = 18, i = 0;
-    while (y < 1280) { g.fillStyle(i++ % 2 ? 0x2f8f3a : 0x37a243).fillRect(0, y, 720, h); y += h; h *= 1.16; }
-    // pitch lines
-    g.lineStyle(5, 0xffffff, 0.85);
-    g.lineBetween(0, GB, 720, GB);
-    g.lineBetween(40, 640, 680, 640); g.lineBetween(40, 640, 0, 760); g.lineBetween(680, 640, 720, 760); // 6-yard box
-    g.lineBetween(0, 880, 720, 880);
-    g.fillStyle(0xffffff, 0.9).fillEllipse(SPOT_X, SPOT_Y + BALL_R, 34, 10);
-    g.lineStyle(5, 0xffffff, 0.6).beginPath().arc(SPOT_X, 1500, 520, Math.PI * 1.32, Math.PI * 1.68).strokePath();
-    g.generateTexture('pk-pitch', 720, 1280);
-    g.destroy();
-    this.add.image(0, 0, 'pk-pitch').setOrigin(0).setDepth(0);
+    this.add.image(0, 0, KEY).setOrigin(0).setDepth(0);
+    // ad boards: the text sits on the painted boards
+    for (let i = 0; i < 6; i++) {
+      txt(this, 60 + i * 120, 313, 'AYVAGO', { title: true, size: 17, color: '#ffffff' })
+        .setDepth(0.2).setAlpha(0.92);
+    }
+    this.crowdG = this.add.graphics().setDepth(0.3);
+    if (!this.textures.exists('pk-vignette')) {
+      const v = this.textures.createCanvas('pk-vignette', 360, 640);
+      if (v) {
+        const c = v.getContext();
+        const g = c.createRadialGradient(180, 360, 120, 180, 360, 470);
+        g.addColorStop(0, 'rgba(0,0,0,0)');
+        g.addColorStop(1, 'rgba(0,0,0,0.42)');
+        c.fillStyle = g; c.fillRect(0, 0, 360, 640);
+        v.refresh();
+      }
+    }
+    this.add.image(0, 0, 'pk-vignette').setOrigin(0).setScale(2).setDepth(7.9);
   }
+
+  /** Camera flashes twinkling in the crowd; a goal sets off a storm of them. */
+  private flashes: { x: number; y: number; life: number }[] = [];
+  private crowdG!: Phaser.GameObjects.Graphics;
+  private crowdFlash(n: number): void {
+    for (let i = 0; i < n; i++) this.flashes.push({ x: rng.int(8, 712), y: rng.int(112, 288), life: 1 });
+  }
+
+  private updateCrowd(dt: number): void {
+    if (Math.random() < dt * 3) this.crowdFlash(1);
+    const g = this.crowdG;
+    g.clear();
+    for (const f of this.flashes) {
+      f.life -= dt * 4;
+      if (f.life <= 0) continue;
+      g.fillStyle(0xffffff, 0.25 * f.life).fillCircle(f.x, f.y, 9 * f.life);
+      g.fillStyle(0xffffff, f.life).fillCircle(f.x, f.y, 3);
+    }
+    this.flashes = this.flashes.filter((f) => f.life > 0);
+  }
+
+  /** Net bulge where the ball hit the back of the goal. */
+  private netHit: { x: number; y: number; s: number } | null = null;
 
   private drawNet(): void {
     const g = this.netG;
     g.clear();
     const s = this.netShake;
-    g.fillStyle(0x000000, 0.25).fillRect(GL, GT, GR - GL, GB - GT);
-    g.lineStyle(2, 0xffffff, 0.35);
-    for (let x = GL + 20; x < GR; x += 22) g.lineBetween(x + Math.sin(x + this.elapsed * 30) * s, GT, x, GB);
-    for (let y = GT + 20; y < GB; y += 22) g.lineBetween(GL, y + Math.sin(y + this.elapsed * 30) * s, GR, y);
-    // frame
-    g.fillStyle(0xdddddd).fillRect(GL - 12, GT - 12, 12, GB - GT + 12).fillRect(GR, GT - 12, 12, GB - GT + 12).fillRect(GL - 12, GT - 12, GR - GL + 24, 12);
-    g.fillStyle(0xffffff).fillRect(GL - 12, GT - 12, 5, GB - GT + 12).fillRect(GR, GT - 12, 5, GB - GT + 12).fillRect(GL - 12, GT - 12, GR - GL + 24, 4);
+    const hit = this.netHit;
+    // a net point moves towards the hit point (pushed away from the camera) and wobbles
+    const P = (x: number, y: number): [number, number] => {
+      let px = x + Math.sin(y * 0.11 + this.elapsed * 30) * s * 0.6, py = y + Math.sin(x * 0.13 + this.elapsed * 30) * s * 0.6;
+      if (hit) {
+        const k = hit.s * Math.exp(-((x - hit.x) ** 2 + (y - hit.y) ** 2) / (2 * 60 * 60));
+        px += (hit.x - x) * k * 0.3; py += (hit.y - y) * k * 0.3;
+      }
+      return [px, py];
+    };
+    const line = (pts: [number, number][], w: number, color: number, a: number) => {
+      g.lineStyle(w, color, a).beginPath();
+      pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+      g.strokePath();
+    };
+    const lerp = Phaser.Math.Linear;
+    // inside of the goal: grass floor, shaded back and side nets
+    g.fillStyle(0x0a2a12, 0.35).fillPoints([{ x: GL, y: GB }, { x: GR, y: GB }, { x: BR, y: BB }, { x: BL, y: BB }] as Phaser.Types.Math.Vector2Like[], true);
+    g.fillStyle(0x0b1324, 0.32).fillRect(BL, BT, BR - BL, BB - BT);
+    g.fillStyle(0x0b1324, 0.22)
+      .fillPoints([{ x: GL, y: GT }, { x: BL, y: BT }, { x: BL, y: BB }, { x: GL, y: GB }] as Phaser.Types.Math.Vector2Like[], true)
+      .fillPoints([{ x: GR, y: GT }, { x: BR, y: BT }, { x: BR, y: BB }, { x: GR, y: GB }] as Phaser.Types.Math.Vector2Like[], true)
+      .fillPoints([{ x: GL, y: GT }, { x: GR, y: GT }, { x: BR, y: BT }, { x: BL, y: BT }] as Phaser.Types.Math.Vector2Like[], true);
+    // back net mesh
+    const N = 20;
+    for (let x = BL; x <= BR + 0.1; x += (BR - BL) / 22) {
+      const pts: [number, number][] = [];
+      for (let i = 0; i <= N; i++) pts.push(P(x, lerp(BT, BB, i / N)));
+      line(pts, 1.5, 0xffffff, 0.3);
+    }
+    for (let y = BT; y <= BB + 0.1; y += (BB - BT) / 9) {
+      const pts: [number, number][] = [];
+      for (let i = 0; i <= N; i++) pts.push(P(lerp(BL, BR, i / N), y));
+      line(pts, 1.5, 0xffffff, 0.3);
+    }
+    // side and roof nets
+    for (let i = 0; i <= 10; i++) {
+      const k = i / 10;
+      g.lineStyle(1.5, 0xffffff, 0.22)
+        .lineBetween(GL, lerp(GT, GB, k), BL, lerp(BT, BB, k)).lineBetween(GR, lerp(GT, GB, k), BR, lerp(BT, BB, k));
+    }
+    for (let i = 1; i < 3; i++) {
+      const k = i / 3;
+      g.lineStyle(1.5, 0xffffff, 0.22)
+        .lineBetween(lerp(GL, BL, k), lerp(GT, BT, k), lerp(GL, BL, k), lerp(GB, BB, k))
+        .lineBetween(lerp(GR, BR, k), lerp(GT, BT, k), lerp(GR, BR, k), lerp(GB, BB, k));
+    }
+    for (let i = 0; i <= 22; i++) g.lineStyle(1.5, 0xffffff, 0.18).lineBetween(lerp(GL, GR, i / 22), GT, lerp(BL, BR, i / 22), BT);
+    // back frame (thin stanchions)
+    g.lineStyle(4, 0xc9ced8, 0.9).strokeRect(BL, BT, BR - BL, BB - BT);
+    g.lineBetween(GL, GT, BL, BT).lineBetween(GR, GT, BR, BT).lineBetween(GL, GB, BL, BB).lineBetween(GR, GB, BR, BB);
+    // posts and crossbar: rounded white bars with a soft shade
+    const post = (x: number, y: number, w: number, h: number) => {
+      g.fillStyle(0x000000, 0.18).fillRoundedRect(x + 3, y + 3, w, h, 6);
+      g.fillStyle(0xd9dde6).fillRoundedRect(x, y, w, h, 6);
+      g.fillStyle(0xffffff).fillRoundedRect(x + 1, y + 1, w > h ? w - 2 : w * 0.55, w > h ? h * 0.55 : h - 2, 5);
+    };
+    post(GL - 14, GT - 14, 14, GB - GT + 16);
+    post(GR, GT - 14, 14, GB - GT + 16);
+    post(GL - 14, GT - 14, GR - GL + 28, 14);
   }
 
   private drawBoard(): void {
     const g = this.board;
     g.clear();
-    g.fillStyle(0x000000, 0.6).fillRoundedRect(110, 96, 500, 160, 16);
-    const row = (arr: boolean[], y: number) => {
-      const start = Math.max(0, arr.length - 5);
+    g.fillStyle(0x000000, 0.25).fillRoundedRect(112, 100, 500, 160, 24);
+    g.fillStyle(0x0b1020, 0.78).fillRoundedRect(110, 96, 500, 160, 24);
+    g.lineStyle(2, 0xffffff, 0.14).strokeRoundedRect(110, 96, 500, 160, 24);
+    g.lineStyle(2, 0xffffff, 0.08).lineBetween(130, 203, 590, 203);
+    // whose kick is next: that row's next slot gets a gold ring
+    const youNext = this.online ? this.iShoot() : this.you.length <= this.them.length;
+    const row = (arr: boolean[], y: number, next: boolean) => {
+      const start = Math.max(0, arr.length - (arr.length >= 5 ? 4 : 5));
       for (let i = 0; i < 5; i++) {
         const v = arr[start + i];
-        const x = 380 + i * 44;
-        g.fillStyle(v === undefined ? 0x444455 : v ? 0x5dff7a : 0xec3013).fillCircle(x, y, 14);
+        const x = 392 + i * 46;
+        if (v === undefined) {
+          g.fillStyle(0xffffff, 0.06).fillCircle(x, y, 15);
+          const now = next && start + i === arr.length;
+          g.lineStyle(now ? 4 : 2, now ? 0xffd23f : 0xffffff, now ? 1 : 0.25).strokeCircle(x, y, 15);
+        } else if (v) {
+          g.fillStyle(0x23c466).fillCircle(x, y, 16);
+          g.lineStyle(4, 0xffffff, 1).beginPath().moveTo(x - 7, y).lineTo(x - 2, y + 6).lineTo(x + 8, y - 6).strokePath();
+        } else {
+          g.fillStyle(0xe2412f).fillCircle(x, y, 16);
+          g.lineStyle(4, 0xffffff, 1).lineBetween(x - 6, y - 6, x + 6, y + 6).lineBetween(x + 6, y - 6, x - 6, y + 6);
+        }
       }
     };
-    row(this.you, 180); row(this.them, 226);
+    row(this.you, 178, youNext); row(this.them, 228, !youNext);
     const yg = this.you.filter(Boolean).length, tg = this.them.filter(Boolean).length;
     const head = !this.online ? t('m' + this.match)
       : this.kick >= 10 ? t('sudden') : `${t('kickN')} ${Math.floor(this.kick / 2) + 1}/5`;
-    this.boardText.setText(head).setPosition(360, 126).setColor('#ffd23f').setFontSize(20);
+    this.boardText.setText(head).setPosition(360, 128).setColor('#ffd23f').setFontSize(22);
     this.boardLabels(yg, tg);
   }
 
@@ -359,27 +560,24 @@ export class PlayScene extends ArcadeScene {
   private boardLabels(yg: number, tg: number): void {
     for (const l of this.labels) l.destroy();
     this.labels = [
-      txt(this, 140, 180, `${t('you')} ${yg}`, { title: true, size: 20, color: '#3ee6ff' }).setOrigin(0, 0.5).setDepth(9),
-      txt(this, 140, 226, `${this.online ? clip(net.peerName || t('them'), 9) : t('them')} ${tg}`, { title: true, size: 20, color: '#ff6b5a' }).setOrigin(0, 0.5).setDepth(9),
+      txt(this, 140, 178, t('you'), { title: true, size: 20, color: '#3ee6ff' }).setOrigin(0, 0.5).setDepth(9),
+      txt(this, 140, 228, this.online ? clip(net.peerName || t('them'), 9) : t('them'), { title: true, size: 20, color: '#ff6b5a' }).setOrigin(0, 0.5).setDepth(9),
+      txt(this, 338, 178, `${yg}`, { title: true, size: 30, color: '#ffffff' }).setOrigin(0.5).setDepth(9),
+      txt(this, 338, 228, `${tg}`, { title: true, size: 30, color: '#ffffff' }).setOrigin(0.5).setDepth(9),
     ];
   }
 
   // ---------- characters ----------
-  /** Kicker feet position so that the tip of its kick foot meets the ball on the spot. */
+  /** Kicker feet position at the strike: behind and to the left of the ball, seen from behind. */
   private strikePos(): [number, number] {
-    const [fx, fy] = characterRig(this.kickerId).kickFoot;
-    const footX = SPOT_X - BALL_R * 0.78, footY = SPOT_Y + BALL_R * 0.4;
-    return [footX - (fx - CHARACTER_FRAME.width / 2) * KICKER_S, footY - (fy - CHARACTER_FRAME.originY * CHARACTER_FRAME.height) * KICKER_S];
+    return [STRIKE_X, STRIKE_Y];
   }
 
   /** Who kicks and who keeps: you and the rival in solo, the shooter's character online. */
   private cast(youShoot: boolean): void {
-    const me = playerCharacter();
-    const other = this.online ? peerCharacter() : this.rivalId;
     const otherPrefix = this.online ? 'op' : this.rivalPrefix;
     this.kickerPrefix = youShoot ? 'me' : otherPrefix;
     this.keeperPrefix = youShoot ? otherPrefix : 'me';
-    this.kickerId = youShoot ? me : other;
   }
 
   /** Solo: a new rival character for every match of the cup (loaded on demand). */
@@ -391,49 +589,71 @@ export class PlayScene extends ArcadeScene {
     const epoch = this.epoch;
     const use = () => {
       if (epoch !== this.epoch || this.isOver) return;
-      const ok = this.textures.exists(`${prefix}-kick`);
+      makeBackPoses(this, prefix);
+      const ok = this.textures.exists(`${prefix}-bkFollow`);
       this.rivalId = ok ? id : peerCharacter();
       this.rivalPrefix = ok ? prefix : 'op';
       then();
     };
-    if (this.textures.exists(`${prefix}-kick`)) { use(); return; }
+    if (this.textures.exists(`${prefix}-back`)) { use(); return; }
     loadCharacter(this.load, { id, prefix, poses: POSES });
     this.load.once(Phaser.Loader.Events.COMPLETE, use);
     this.load.start();
   }
 
-  /** The kicker waits a few steps behind the ball. */
+  private kickerTex(pose: string): string {
+    return `${this.kickerPrefix}-${pose}`;
+  }
+
+  /** The kicker waits a few steps behind the ball, its back to the camera, breathing. */
   private kickerReady(): void {
     const [sx, sy] = this.strikePos();
     this.tweens.killTweensOf(this.kicker);
     this.kickerMood = 'idle';
-    this.kicker.setTexture(`${this.kickerPrefix}-stand`).setVisible(true).setAlpha(1).setFlipX(false).setScale(KICKER_S * 1.04)
-      .setPosition(sx - 70, sy + 22);
+    const s = KICKER_S * 1.1;
+    this.kicker.setTexture(this.kickerTex('bk0')).setVisible(true).setAlpha(1).setFlipX(false).setAngle(0)
+      .setScale(s).setPosition(sx - 95, sy + 70);
+    this.tweens.add({ targets: this.kicker, scaleY: s * 1.025, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
-  /** Run-up with the character's walk poses, then the kick pose with the foot on the ball. */
+  /** Run-up from behind (the character's own legs step), then the strike with the foot on the ball. */
   private runUp(fromX: number, fromY: number, ms: number, then: () => void): void {
     const [sx, sy] = this.strikePos();
     this.tweens.killTweensOf(this.kicker);
     this.kickerMood = 'idle';
-    this.kicker.setTexture(`${this.kickerPrefix}-walk1`).setVisible(true).setAlpha(1).setFlipX(false).setPosition(fromX, fromY).setScale(KICKER_S * (1 + (fromY - sy) / 900));
-    const step = Math.max(90, Math.min(150, ms / 6));
+    const s0 = KICKER_S * (1 + (fromY - sy) / 700);
+    this.kicker.setTexture(this.kickerTex('bkW1')).setVisible(true).setAlpha(1).setFlipX(false).setAngle(0).setPosition(fromX, fromY).setScale(s0);
+    const step = Math.max(110, Math.min(160, ms / 5));
     let last = -1;
     this.tweens.add({
       targets: this.kicker, x: sx, y: sy, scale: KICKER_S, duration: ms, ease: 'Sine.easeIn',
       onUpdate: (tw) => {
-        const n = Math.floor((tw.elapsed ?? 0) / step);
+        const el = tw.elapsed ?? 0;
+        const n = Math.floor(el / step);
+        // a slight sway from foot to foot
+        this.kicker.setAngle(Math.sin((el / step) * Math.PI) * 3);
         if (n !== last) {
           last = n;
-          this.kicker.setTexture(`${this.kickerPrefix}-${n % 2 ? 'walk2' : 'walk1'}`);
+          this.kicker.setTexture(this.kickerTex(n % 2 ? 'bkW2' : 'bkW1'));
           this.sfx('step', { volume: 0.25 });
         }
       },
       onComplete: () => {
         if (this.isOver) return;
-        this.kicker.setTexture(`${this.kickerPrefix}-kick`);
-        then();
-        this.time.delayedCall(320, () => { if (this.kickerMood === 'idle') this.kicker.setTexture(`${this.kickerPrefix}-stand`); });
+        // wind up, strike, follow through
+        this.kicker.setTexture(this.kickerTex('bkWind')).setAngle(4);
+        this.time.delayedCall(90, () => {
+          if (this.isOver) return;
+          this.kicker.setTexture(this.kickerTex('bkStrike')).setAngle(-7);
+          then();
+        });
+        this.tweens.add({ targets: this.kicker, angle: -3, y: sy - 6, duration: 140, delay: 90, ease: 'Quad.easeOut' });
+        this.time.delayedCall(220, () => { if (this.kickerMood === 'idle') this.kicker.setTexture(this.kickerTex('bkFollow')); });
+        this.time.delayedCall(610, () => {
+          if (this.kickerMood !== 'idle') return;
+          this.kicker.setTexture(this.kickerTex('bk0'));
+          this.tweens.add({ targets: this.kicker, angle: 0, y: sy, duration: 200 });
+        });
       },
     });
   }
@@ -465,6 +685,8 @@ export class PlayScene extends ArcadeScene {
     this.shadow.setPosition(SPOT_X, SPOT_Y + BALL_R - 2).setScale(1).setVisible(true);
     this.kx = this.gx = SPOT_X; this.ky = this.gy = STAND_Y; this.kAngle = 0;
     this.keeperMood = 'ready'; this.diveSfx = false;
+    if (this.netHit) this.tweens.killTweensOf(this.netHit);
+    this.netHit = null;
     this.tweens.killTweensOf(this.keeper);
     this.keeper.setAlpha(1);
     this.trail.clear();
@@ -489,7 +711,7 @@ export class PlayScene extends ArcadeScene {
     this.showBanner(t('keep'), '#3ee6ff');
     this.setHint();
     const [sx, sy] = this.strikePos();
-    this.runUp(sx - 330, sy + 150, 900 + rng.int(0, 500), () => this.aiShoot());
+    this.runUp(sx - 190, sy + 170, 900 + rng.int(0, 500), () => this.aiShoot());
   }
 
   private setHint(): void {
@@ -548,10 +770,7 @@ export class PlayScene extends ArcadeScene {
   private launch(tx: number, ty: number, T: number, curve: number, byYou: boolean): void {
     this.shot = { tx, ty, T, curve, t: 0, byYou, x0: this.ball.x, y0: this.ball.y };
     this.sfx('kick', { volume: 0.8 });
-    const [fx, fy] = characterRig(this.kickerId).kickFoot;
-    const footX = this.kicker.x + (fx - CHARACTER_FRAME.width / 2) * KICKER_S;
-    const footY = this.kicker.y + (fy - CHARACTER_FRAME.originY * CHARACTER_FRAME.height) * KICKER_S;
-    burst(this, footX, footY, [0x37a243, 0xffffff], 12, 180);
+    burst(this, SPOT_X - BALL_R * 0.6, SPOT_Y + BALL_R * 0.6, [0x37a243, 0x6fd16f, 0xffffff], 14, 200);
     shake(this, 0.004, 80);
     this.banner.setText('');
     this.curlText.setText('');
@@ -595,17 +814,41 @@ export class PlayScene extends ArcadeScene {
       burst(this, s.tx, s.ty, [0xffffff, 0xffe14d], 18, 260);
       this.tweens.add({ targets: this.ball, x: s.tx + (s.tx < this.kx ? -160 : 160), y: s.ty + rng.int(150, 300), scale: this.ball.scale * 1.8, angle: 400, duration: 600, ease: 'Quad.easeOut' });
     } else {
-      this.netShake = 6;
+      // into the back of the net, which bulges, then the ball drops to the floor of the goal
+      const bx = BL + (s.tx - GL) / (GR - GL) * (BR - BL), by = BT + (s.ty - GT) / (GB - GT) * (BB - BT);
+      this.netShake = 4;
+      this.netHit = { x: bx, y: by, s: 1 };
+      this.tweens.add({ targets: this.netHit, s: 0, duration: 700, delay: 120, ease: 'Elastic.easeOut' });
       this.sfx('net', { volume: 0.7, x: s.tx });
-      this.tweens.add({ targets: this.ball, y: s.ty + 14, scale: this.ball.scale * 0.9, duration: 160, ease: 'Quad.easeOut' });
       this.ball.setDepth(2);
+      const sc = this.ball.scale;
+      this.tweens.chain({
+        targets: this.ball,
+        tweens: [
+          { x: bx, y: by, scale: sc * 0.85, duration: 150, ease: 'Quad.easeOut' },
+          { y: BB - BALL_R * 0.35, x: bx + (bx - SPOT_X) * 0.05, duration: 380, ease: 'Bounce.easeOut' },
+        ],
+      });
+      this.crowdFlash(40);
+      this.cameras.main.zoomTo(1.035, 110, 'Quad.easeOut', true);
+      this.time.delayedCall(140, () => this.cameras.main.zoomTo(1, 420, 'Sine.easeInOut', true));
     }
     // the characters react with their own poses
     const goal = o === 'goal';
     this.keeperMood = goal ? 'beaten' : o === 'save' ? 'happy' : 'ready';
     if (goal) this.tweens.add({ targets: this, ky: Math.min(STAND_Y + 30, this.ky + 40), duration: 300, ease: 'Quad.easeIn' });
     this.kickerMood = goal ? 'happy' : 'sad';
-    if (!goal) this.kicker.setTexture(`${this.kickerPrefix}-hit`);
+    this.tweens.killTweensOf(this.kicker);
+    const k = this.kicker, ky0 = STRIKE_Y;
+    if (goal) {
+      // turns round to the camera and jumps for joy
+      k.setAngle(0).setY(ky0);
+      this.tweens.add({ targets: k, y: ky0 - 40, duration: 220, yoyo: true, repeat: 2, ease: 'Quad.easeOut' });
+    } else {
+      // back to the camera, shoulders down
+      k.setTexture(this.kickerTex('bk0')).setAngle(0).setY(ky0);
+      this.tweens.add({ targets: k, scaleY: KICKER_S * 0.93, y: ky0 + 6, angle: rng.pick([-4, 4]), duration: 380, ease: 'Sine.easeOut' });
+    }
   }
 
   private resolve(): void {
@@ -626,6 +869,7 @@ export class PlayScene extends ArcadeScene {
         burst(this, s.tx, s.ty, [0x5dff7a, 0xffd23f, 0xffffff], 36, 380);
         this.addScore(corner ? 200 : 100, s.tx, s.ty - 40);
         this.showBanner(corner ? t('corner') : t('goal'), '#5dff7a');
+        this.confetti(corner ? 70 : 46);
       } else if (o === 'save') { this.showBanner(t('saved'), '#ec3013'); this.sfx('boo', { volume: 0.4 }); }
     } else {
       this.them.push(goal);
@@ -662,6 +906,7 @@ export class PlayScene extends ArcadeScene {
       this.showBanner(t('matchWin'), '#5dff7a');
       this.sfx('jingle-win', { volume: 0.6 });
       burst(this, 360, 640, [0xffd23f, 0x5dff7a, 0x3ee6ff], 60, 500);
+      this.confetti(90);
       if (this.match >= MATCHES) { this.endGame({ win: true, title: t('champion'), delay: 1600 }); return; }
       this.time.delayedCall(1800, () => { if (!this.isOver) { this.match++; this.startMatch(); } });
       return;
@@ -669,6 +914,20 @@ export class PlayScene extends ArcadeScene {
     if (this.you.length === 5 && this.them.length === 5) this.showBanner(t('sudden'), '#ff4fa3');
     if (this.you.length > this.them.length) this.startDefending();
     else this.time.delayedCall(this.you.length >= 5 && this.you.length === this.them.length ? 900 : 0, () => this.startShooting());
+  }
+
+  /** Paper confetti falling over the pitch. */
+  private confetti(n = 46): void {
+    const cols = [0xffd23f, 0x5dff7a, 0x3ee6ff, 0xff4fa3, 0xffffff, 0xec3013];
+    for (let i = 0; i < n; i++) {
+      const p = this.add.rectangle(rng.int(0, 720), rng.int(-200, -10), rng.int(8, 14), rng.int(5, 8), rng.pick(cols)).setDepth(19).setAngle(rng.int(0, 360));
+      this.tweens.add({
+        targets: p, y: rng.int(700, 1250), x: p.x + rng.int(-120, 120), angle: p.angle + rng.int(-540, 540),
+        scaleX: { from: 1, to: 0.2, yoyo: true, repeat: 4, duration: 260 },
+        duration: rng.int(1400, 2200), ease: 'Sine.easeIn', onComplete: () => p.destroy(),
+      });
+      this.tweens.add({ targets: p, alpha: 0, delay: 1300, duration: 600 });
+    }
   }
 
   private showBanner(s: string, color: string): void {
@@ -730,6 +989,8 @@ export class PlayScene extends ArcadeScene {
     }
 
     this.netShake = Math.max(0, this.netShake - dt * 8);
+    if (this.netHit && this.netHit.s <= 0.001) this.netHit = null;
+    this.updateCrowd(dt);
     this.drawNet();
     this.drawReticle();
     if (this.online) this.updateOnline(dt);
@@ -764,7 +1025,8 @@ export class PlayScene extends ArcadeScene {
 
   private renderKicker(): void {
     const k = this.kicker;
-    this.kickerShadow.setVisible(k.visible).setPosition(k.x + 4, k.y - 4).setScale(k.scale / KICKER_S).setAlpha(0.3 * k.alpha);
+    const air = Math.max(0, STRIKE_Y - k.y - 8);
+    this.kickerShadow.setVisible(k.visible).setPosition(k.x + 4, Math.max(k.y, STRIKE_Y) - 4).setScale(k.scaleX / KICKER_S * Math.max(0.6, 1 - air / 120)).setAlpha(0.3 * k.alpha);
     if (!k.visible) return;
     if (this.kickerMood === 'happy') k.setTexture(`${this.kickerPrefix}-${Math.floor(this.time.now / 220) % 2 ? 'cheer1' : 'cheer2'}`);
   }
@@ -886,6 +1148,7 @@ export class PlayScene extends ArcadeScene {
         burst(this, s.tx, s.ty, [0x5dff7a, 0xffd23f, 0xffffff], 36, 380);
         this.addScore(corner ? 200 : 100, s.tx, s.ty - 40);
         this.showBanner(corner ? t('corner') : t('goal'), '#5dff7a');
+        this.confetti(corner ? 70 : 46);
       } else if (o === 'save') { this.showBanner(t('saved'), '#ec3013'); this.sfx('boo', { volume: 0.4 }); }
     } else {
       this.them.push(goal);
