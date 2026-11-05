@@ -13,7 +13,8 @@ const DRIVE = 80;                   // px per second
 const AIM_RATE = 55;                // degrees per second with the keys
 const UI = 1000;                    // UI objects sit at this depth or above, fixed to the screen
 const CREW_S = 0.34;                // commander scale in the hatch
-const FIRE_X = 1180, FIRE_Y = 622, FIRE_R = 68;
+// kept clear of the screen's edges, which a rounded or cropped frame may hide
+const FIRE_X = 1162, FIRE_Y = 600, FIRE_R = 70;
 const MAP = { x: 460, y: 64, w: 360, h: 46 };
 
 export const CREW_POSES = ['stand', 'front', 'action1', 'action2', 'hit', 'cheer1', 'cheer2'] as const;
@@ -841,16 +842,16 @@ export class PlayScene extends ArcadeScene {
     this.mapG = ui(this.add.graphics(), 1) as Phaser.GameObjects.Graphics;
     const peer = this.online ? (net.peerName || t('opponent')).slice(0, 10) : t('cpu');
     const names = this.mySeat === 0 ? [t('you'), peer] : [peer, t('you')];
-    this.nameL = ui(txt(this, 452, 30, names[0], { title: true, size: 22, color: TEAM[0].main }).setOrigin(1, 0.5), 2) as Phaser.GameObjects.Text;
-    this.nameR = ui(txt(this, 828, 30, names[1], { title: true, size: 22, color: TEAM[1].main }).setOrigin(0, 0.5), 2) as Phaser.GameObjects.Text;
-    this.roundText = ui(txt(this, 640, 30, '', { title: true, size: 18, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
-    this.windText = ui(txt(this, 590, 136, '', { title: true, size: 16, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
-    this.aimText = ui(txt(this, 160, 660, '', { title: true, size: 24, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
-    this.fireText = ui(txt(this, FIRE_X, FIRE_Y, t('fire'), { title: true, size: 26, color: '#ffffff' }), 3) as Phaser.GameObjects.Text;
-    this.turnText = ui(txt(this, 640, 182, '', { title: true, size: 26, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
+    this.nameL = ui(txt(this, 448, 34, names[0], { title: true, size: 26, color: TEAM[0].main }).setOrigin(1, 0.5), 2) as Phaser.GameObjects.Text;
+    this.nameR = ui(txt(this, 832, 34, names[1], { title: true, size: 26, color: TEAM[1].main }).setOrigin(0, 0.5), 2) as Phaser.GameObjects.Text;
+    this.roundText = ui(txt(this, 640, 34, '', { title: true, size: 22, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
+    this.windText = ui(txt(this, 584, 140, '', { title: true, size: 20, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
+    this.aimText = ui(txt(this, 172, 646, '', { title: true, size: 28, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
+    this.fireText = ui(txt(this, FIRE_X, FIRE_Y, t('fire'), { title: true, size: 30, color: '#ffffff' }), 3) as Phaser.GameObjects.Text;
+    this.turnText = ui(txt(this, 640, 192, '', { title: true, size: 30, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
     this.banner = ui(txt(this, 640, 300, '', { title: true, size: 60, color: '#ffd23f', wrap: 1100 }), 40) as Phaser.GameObjects.Text;
-    this.hint = ui(txt(this, 640, 690, '', { size: 22, color: '#ffffff', wrap: 860 }), 2) as Phaser.GameObjects.Text;
-    this.edgeText = ui(txt(this, 0, 0, '', { title: true, size: 16, color: '#ffffff' }), 3) as Phaser.GameObjects.Text;
+    this.hint = ui(txt(this, 640, 256, '', { size: 24, color: '#ffffff', wrap: 900 }), 2) as Phaser.GameObjects.Text;
+    this.edgeText = ui(txt(this, 0, 0, '', { title: true, size: 20, color: '#ffffff' }), 3) as Phaser.GameObjects.Text;
   }
 
   private updateBoard(): void {
@@ -863,16 +864,16 @@ export class PlayScene extends ArcadeScene {
     const g = this.uiG;
     g.clear();
     // scoreboard pill
-    g.fillStyle(0x0b1020, 0.62).fillRoundedRect(300, 8, 680, 46, 23);
+    g.fillStyle(0x0b1020, 0.62).fillRoundedRect(290, 8, 700, 52, 26);
     for (let i = 0; i < WIN; i++) {
-      g.fillStyle(i < this.scores[0] ? TEAM[0].hex : 0xffffff, i < this.scores[0] ? 1 : 0.18).fillCircle(480 + i * 26, 31, 9);
-      g.fillStyle(i < this.scores[1] ? TEAM[1].hex : 0xffffff, i < this.scores[1] ? 1 : 0.18).fillCircle(800 - i * 26, 31, 9);
+      g.fillStyle(i < this.scores[0] ? TEAM[0].hex : 0xffffff, i < this.scores[0] ? 1 : 0.18).fillCircle(474 + i * 26, 34, 9);
+      g.fillStyle(i < this.scores[1] ? TEAM[1].hex : 0xffffff, i < this.scores[1] ? 1 : 0.18).fillCircle(806 - i * 26, 34, 9);
     }
     // wind: an arrow under the minimap, longer for stronger wind
-    g.fillStyle(0x0b1020, 0.55).fillRoundedRect(532, 120, 216, 32, 16);
+    g.fillStyle(0x0b1020, 0.55).fillRoundedRect(512, 120, 256, 40, 20);
     const wl = Phaser.Math.Clamp(this.wind * 1300, -56, 56);
     if (Math.abs(wl) > 2) {
-      const y = 136, x0 = 686 - wl / 2, x1 = 686 + wl / 2, s = Math.sign(wl);
+      const y = 140, x0 = 700 - wl / 2, x1 = 700 + wl / 2, s = Math.sign(wl);
       g.lineStyle(5, 0x9fe3ff, 1).lineBetween(x0, y, x1, y);
       g.fillStyle(0x9fe3ff, 1).fillTriangle(x1 + s * 10, y, x1 - s * 2, y - 8, x1 - s * 2, y + 8);
     }
@@ -880,7 +881,7 @@ export class PlayScene extends ArcadeScene {
     const tk = this.tanks[this.turn];
     const shownPower = this.charging ? this.chargePower() : tk.lastPower || 0;
     this.drawMeter(tk);
-    g.fillStyle(0x0b1020, 0.6).fillRoundedRect(24, 632, 272, 56, 28);
+    g.fillStyle(0x0b1020, 0.6).fillRoundedRect(28, 616, 288, 60, 30);
     const deg = tk.seat === 0 ? tk.deg : 180 - tk.deg;
     this.aimText.setText(`∠ ${Math.round(deg)}°   ⚡ ${shownPower}`);
     // fire button with a power ring and the last shot's power tick
@@ -903,7 +904,7 @@ export class PlayScene extends ArcadeScene {
     // online turn clock
     if (this.online && (this.phase === 'aim' || this.phase === 'wait')) {
       const left = Math.max(0, Math.ceil(this.turnLeft));
-      g.fillStyle(left <= 5 ? 0xff5a5a : 0xffffff, 0.9).fillRoundedRect(600, 205, 80 * (this.turnLeft / TURN_TIME), 6, 3);
+      g.fillStyle(left <= 5 ? 0xff5a5a : 0xffffff, 0.9).fillRoundedRect(600, 218, 80 * (this.turnLeft / TURN_TIME), 6, 3);
     }
     this.drawMap();
     this.drawEdge();
