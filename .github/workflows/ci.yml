@@ -8,7 +8,7 @@ jobs:
   # the two in step: the platform pulls platform/arcade-catalog.ts from main by itself, so it must
   # be current, and the vendored adapter must be the platform's.
   platform-sync:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # Playwright 1.56 does not support the ubuntu-latest image (26.04) yet
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,7 +35,7 @@ jobs:
   # Builds and smoke-tests only the games the change touches; a change to shared code (core,
   # scripts, assets, config) tests every game. Typecheck always covers the whole project.
   build-and-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # Playwright 1.56 does not support the ubuntu-latest image (26.04) yet
     steps:
       - uses: actions/checkout@v4
         with:
