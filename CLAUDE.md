@@ -32,7 +32,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 | `npm run new-game -- <slug> "<Title>"` | scaffold a game |
 | `npm run build` | registry + typecheck + production build into `dist/` |
 | `npm run test:smoke` | full smoke test of every game against `dist/` |
-| `npm run test:changed` | build + smoke + platform check of only the games changed since `origin/main` (every game only when the shared runtime changed: `src/core`, `public/assets`, build config); CI runs the same |
+| `npm run test:changed` | build + smoke + platform check of only the games a change can affect since `origin/main`: a game's own folder tests that game; a changed asset tests the games that load it; character art or `characters.ts` tests the character games; other shared runtime (`src/core`, build config) tests the canary set, one game per runtime variant; a dependency upgrade tests all. Rules in `scripts/changed-games.mjs`. CI runs the same on pull requests, only builds on `main` (the pull request already tested it) and runs every game nightly and on demand (Actions → ci → Run workflow) |
 | `node scripts/smoke-test.mjs --dev --serial <slug>` | smoke-test one game without building |
 | `npm run test:platform` | GHA protocol check of every game embedded like ayvago.com |
 | `npm run platform` | regenerate ayvago.json manifests + `platform/arcade-catalog.ts` |
@@ -78,5 +78,6 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 1. Add the concepts to `docs/GAMES.md`.
 2. Spawn one `ayvago-game-dev` agent per 4–6 games. Each owns only its `games/<slug>` folders.
 3. Run `ayvago-game-qa` over the results.
-4. Test only what changed: `npm run test:changed` (build, smoke and platform check of the new or changed games), then `node scripts/gen-platform.mjs --live`, `node scripts/gen-store-assets.mjs <new slugs>` and `npm run validate:platform`. `npm run release` tests every game; keep it for changes to shared code.
+4. Test only what changed: `npm run test:changed` (build, smoke and platform check of the new or changed games), then `node scripts/gen-platform.mjs --live`, `node scripts/gen-store-assets.mjs <new slugs>` and `npm run validate:platform`. `npm run release` tests every game; the nightly CI run does the same.
 5. Merge to `main`. Vercel deploys the games; the platform's catalog sync then opens its PR (run "Sync arcade catalog" from the platform's Actions tab to do it at once).
+6. Open every pull request against `main`. Stacked pull requests (one based on another's branch) merge into that branch, not `main`, once the first is merged.

@@ -3,6 +3,18 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The full suite: every night, and on demand from Actions -> ci -> Run workflow.
+  schedule:
+    - cron: '23 1 * * *'
+  workflow_dispatch:
+    inputs:
+      games:
+        description: 'Games to smoke-test: all, or slugs separated by spaces'
+        default: all
+# A new push to a pull request cancels its run still in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   # ayvago-games is the studio; ayvago.com (selchook/ayvago) is the platform. These checks keep
   # the two in step: the platform pulls platform/arcade-catalog.ts from main by itself, so it must
@@ -32,10 +44,17 @@ jobs:
             exit 1
           fi
 
-  # Builds and smoke-tests only the games the change touches; a change to shared code (core,
-  # scripts, assets, config) tests every game. Typecheck always covers the whole project.
-  build-and-smoke:
+  # Works out which games a change can affect (scripts/changed-games.mjs explains the rules):
+  #   pull request         -> its own games, games using a changed asset, or the canary set for
+  #                           shared runtime changes (one game per runtime variant)
+  #   push to main         -> none: the pull request already tested it; every game is built instead
+  #   nightly / on demand  -> every game
+  # Typecheck always covers the whole project. Long lists are split over parallel smoke jobs.
+  plan:
     runs-on: ubuntu-24.04   # Playwright 1.56 does not support the ubuntu-latest image (26.04) yet
+    outputs:
+      list: ${{ steps.games.outputs.list }}
+      shards: ${{ steps.games.outputs.shards }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,30 +67,48 @@ jobs:
       - name: Games to test
         id: games
         run: |
-          if [ "${{ github.event_name }}" = pull_request ]; then base="origin/${{ github.base_ref }}"; else base="${{ github.event.before }}"; fi
-          # A new branch or a force push has no usable base: test everything.
-          if git cat-file -e "$base^{commit}" 2>/dev/null; then list=$(node scripts/changed-games.mjs "$base"); else list=all; fi
-          echo "Games: ${list:-none}"
+          case "${{ github.event_name }}" in
+            pull_request)
+              base="origin/${{ github.base_ref }}"
+              if git cat-file -e "$base^{commit}" 2>/dev/null; then list=$(node scripts/changed-games.mjs "$base" --why); else list=all; fi ;;
+            schedule) list=all ;;
+            workflow_dispatch) list="${{ inputs.games }}" ;;
+            *) list= ;;
+          esac
+          if [ "$list" = all ]; then n=99; else n=$(wc -w <<< "$list"); fi
+          if [ "$n" -ge 40 ]; then shards='[1,2,3,4]'; elif [ "$n" -ge 12 ]; then shards='[1,2,3]'; elif [ "$n" -ge 6 ]; then shards='[1,2]'; else shards='[1]'; fi
+          echo "Games: ${list:-none} (shards: $shards)"
           echo "list=$list" >> "$GITHUB_OUTPUT"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
       - run: npm run typecheck
-      - if: steps.games.outputs.list != ''
-        run: npx playwright@1.56.1 install --with-deps chromium
-      - if: steps.games.outputs.list != ''
-        run: npm i --no-save playwright@1.56.1
-      - name: Build and smoke-test the changed games
-        if: steps.games.outputs.list != ''
-        run: |
-          if [ "$GAME_LIST" = all ]; then node scripts/test-changed.mjs all --smoke-only; else node scripts/test-changed.mjs --games "$GAME_LIST" --smoke-only; fi
+      - name: Build every game (push to main)
+        if: github.event_name == 'push'
+        run: node scripts/gen-registry.mjs && npx vite build
+
+  smoke:
+    needs: plan
+    if: needs.plan.outputs.list != ''
+    runs-on: ubuntu-24.04   # Playwright 1.56 does not support the ubuntu-latest image (26.04) yet
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright@1.56.1 install --with-deps chromium
+      - run: npm i --no-save playwright@1.56.1
+      - name: Build and smoke-test
+        run: node scripts/test-changed.mjs --games "$GAME_LIST" --shard ${{ matrix.shard }}/${{ strategy.job-total }} --smoke-only
         env:
           # Not GAMES: vite.config.ts reads that one to pick what to build.
-          GAME_LIST: ${{ steps.games.outputs.list }}
+          GAME_LIST: ${{ needs.plan.outputs.list }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: smoke-report
+          name: smoke-report-${{ matrix.shard }}
           path: reports/
-      - uses: actions/upload-artifact@v4
-        if: steps.games.outputs.list != ''
-        with:
-          name: dist
-          path: dist/
