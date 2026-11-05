@@ -26,7 +26,7 @@ export class PlayScene extends ArcadeScene {
   private sel: Cell | null = null;
   private cursor: Cell = { r: 3, c: 3 };
   private kbMode = false;
-  private drag: (Cell & { x: number; y: number }) | null = null;
+  private drag: (Cell & { x: number; y: number; undo?: boolean }) | null = null;
   private level = 0;
   private moves = 0;
   private levelScore = 0;
@@ -48,6 +48,11 @@ export class PlayScene extends ArcadeScene {
   private board!: Phaser.GameObjects.Image;
   private orbs: Phaser.GameObjects.Image[] = [];
   private theme = -1;
+  // Double move: a swap that matches nothing waits here; a second swap that makes a match turns
+  // both into one move, so 4s and 5s can be built. Nothing matched after both: both go back.
+  private pending: { a: Cell; b: Cell } | null = null;
+  private pendingRings: Phaser.GameObjects.Image[] = [];
+  private hintText!: Phaser.GameObjects.Text;
 
   createGame(): void {
     this.gen++;
@@ -86,7 +91,8 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: this.barTip, scale: 0.55, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const hintY = Y0 + ROWS * S + 70;
     this.add.image(360, hintY, makeGlass(this, 520, 64, 32));
-    txt(this, 360, hintY, t('hint'), { size: 28, color: '#f1e8ff' });
+    this.hintText = txt(this, 360, hintY, t('hint'), { size: 28, color: '#f1e8ff', wrap: 500 });
+    this.pending = null; this.pendingRings = [];
 
     // now and then a gem catches the light
     this.time.addEvent({ delay: 700, loop: true, callback: () => this.glint() });
@@ -97,7 +103,11 @@ export class PlayScene extends ArcadeScene {
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onDown(p));
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p));
-    this.input.on('pointerup', () => (this.drag = null));
+    this.input.on('pointerup', () => {
+      const d = this.drag;
+      this.drag = null;
+      if (d?.undo && this.pending && !this.busy) this.undoPending();
+    });
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.onKey(e));
 
     this.startLevel();
@@ -131,6 +141,7 @@ export class PlayScene extends ArcadeScene {
 
   // ---------- level flow ----------
   private startLevel(): void {
+    this.clearPending();
     const [target, moves, colors] = LEVELS[this.level];
     this.applyTheme(this.level % THEMES.length);
     this.target = target; this.moves = moves; this.colors = colors; this.levelScore = 0;
@@ -237,6 +248,8 @@ export class PlayScene extends ArcadeScene {
     this.idle = 0;
     if (!cell || this.busy) return;
     this.kbMode = false; this.cursorImg.setVisible(false);
+    // a waiting gem: a drag makes the second swap with it, a plain tap (no drag) undoes it
+    if (this.pending && !this.sel && this.isPending(cell)) { this.drag = { ...cell, x: p.x, y: p.y, undo: true }; return; }
     if (this.sel && Math.abs(this.sel.r - cell.r) + Math.abs(this.sel.c - cell.c) === 1) {
       const a = this.sel;
       this.setSel(null);
@@ -265,6 +278,7 @@ export class PlayScene extends ArcadeScene {
       ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1], KeyW: [-1, 0], KeyS: [1, 0], KeyA: [0, -1], KeyD: [0, 1],
     };
     const d = dirs[e.code];
+    if ((e.code === 'Backspace' || e.code === 'KeyX') && this.pending && !this.busy) { this.undoPending(); return; }
     const pick = e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyZ';
     if (!d && !pick) return;
     this.idle = 0;
@@ -326,11 +340,31 @@ export class PlayScene extends ArcadeScene {
       this.sfx('rainbow', { volume: 0.65 });
       flash(this, 0xffffff, 150);
     } else if (!this.findGroups().length) {
+      if (!this.pending) {
+        // the first half of a double move: it stays, waiting for a second swap
+        this.pending = { a, b };
+        this.markPending();
+        this.sfx('select', { volume: 0.5, rate: 1.25 });
+        if (!this.findMove()) { await this.wait(350); if (gen === this.gen) await this.undoPending(); return; }
+        if (gen === this.gen) this.busy = false;
+        return;
+      }
+      // two swaps and still no match: both go back, no move spent
       this.sfx('bad', { volume: 0.45 });
       this.g[a.r][a.c] = ga; this.g[b.r][b.c] = gb;
       await Promise.all([this.moveGem(ga, a.r, a.c, 160), this.moveGem(gb, b.r, b.c, 160)]);
-      if (gen === this.gen) this.busy = false;
+      if (gen !== this.gen) return;
+      await this.undoPending();
       return;
+    }
+    const double = !!this.pending;
+    this.clearPending();
+    if (double) {
+      const pts = 50;
+      this.levelScore += pts;
+      this.addScore(pts);
+      popup(this, 360, Y0 - 20, `${t('double')} +${pts}`, '#7fe9ff', 30);
+      this.sfx('special', { volume: 0.5 });
     }
     this.moves--;
     this.updateUi();
@@ -338,6 +372,52 @@ export class PlayScene extends ArcadeScene {
     await this.resolve(b, forced);
     if (gen !== this.gen || this.isOver) return;
     this.afterMove();
+  }
+
+  private isPending(cell: Cell): boolean {
+    const p = this.pending;
+    return !!p && ((p.a.r === cell.r && p.a.c === cell.c) || (p.b.r === cell.r && p.b.c === cell.c));
+  }
+
+  /** Glowing rings on the two gems of a waiting swap, and the hint asks for the second swap. */
+  private markPending(): void {
+    this.clearRings();
+    const p = this.pending;
+    if (!p) return;
+    for (const cell of [p.a, p.b]) {
+      const ring = this.add.image(this.px(cell.c), this.py(cell.r), 'gm-cursor').setDisplaySize(S * 112 / 84, S * 112 / 84).setDepth(19).setAlpha(0.9);
+      this.tweens.add({ targets: ring, alpha: 0.35, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.pendingRings.push(ring);
+    }
+    this.hintText.setText(t('secondMove')).setColor('#7fe9ff').setFontSize(24);
+    this.tweens.add({ targets: this.hintText, scale: { from: 1.15, to: 1 }, duration: 220, ease: 'Back.easeOut' });
+  }
+
+  private clearRings(): void {
+    for (const r of this.pendingRings) { this.tweens.killTweensOf(r); r.destroy(); }
+    this.pendingRings = [];
+  }
+
+  private clearPending(): void {
+    this.pending = null;
+    this.clearRings();
+    this.hintText?.setText(t('hint')).setColor('#f1e8ff').setFontSize(28);
+  }
+
+  /** Puts the waiting swap back. */
+  private async undoPending(): Promise<void> {
+    const p = this.pending;
+    if (!p) { this.busy = false; return; }
+    const gen = this.gen;
+    this.busy = true;
+    this.clearPending();
+    const ga = this.g[p.a.r][p.a.c], gb = this.g[p.b.r][p.b.c];
+    if (ga && gb) {
+      this.g[p.a.r][p.a.c] = gb; this.g[p.b.r][p.b.c] = ga;
+      this.sfx('swap', { volume: 0.35, rate: 0.85 });
+      await Promise.all([this.moveGem(ga, p.b.r, p.b.c, 160), this.moveGem(gb, p.a.r, p.a.c, 160)]);
+    }
+    if (gen === this.gen) this.busy = false;
   }
 
   private afterMove(): void {
