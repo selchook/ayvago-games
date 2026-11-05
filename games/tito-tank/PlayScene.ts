@@ -589,7 +589,7 @@ export class PlayScene extends ArcadeScene {
     // muzzle flash, smoke, recoil
     const mx = s.path[0], my = s.path[1];
     const a = (tk.deg * Math.PI) / 180;
-    this.sfxAt(rng.pick(['cannon1', 'cannon2', 'cannon3']), this.screenX(mx), { volume: 0.75 });
+    this.sfxAt('cannon', this.screenX(mx), { volume: 0.85 });
     const fl = this.add.image(mx, my, 'tt-glow').setDepth(40).setTint(0xffd27a).setBlendMode(Phaser.BlendModes.ADD).setScale(0.9);
     this.tweens.add({ targets: fl, scale: 0.2, alpha: 0, duration: 160, onComplete: () => fl.destroy() });
     for (let i = 0; i < 4; i++) this.puff(mx + Math.cos(a) * i * 8, my - Math.sin(a) * i * 8, 'smokewhite', 0.25 + i * 0.05, 700 + i * 120);

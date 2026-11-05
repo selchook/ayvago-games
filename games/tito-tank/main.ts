@@ -17,9 +17,8 @@ launch({
     // the commanders standing in the hatches: you, and the computer or your online opponent
     loadCharacter(l, { prefix: 'pc', poses: CREW_POSES });
     loadCharacter(l, { id: peerCharacter(), prefix: 'op', poses: CREW_POSES });
-    loadAudio(l, 'cannon1', J + 'weapons/cannon/sfx-wpn-cannon1');
-    loadAudio(l, 'cannon2', J + 'weapons/cannon/sfx-wpn-cannon2');
-    loadAudio(l, 'cannon3', J + 'weapons/cannon/sfx-wpn-cannon4');
+    // the real cannon shot (the same one Sea Battle fires)
+    loadAudio(l, 'cannon', J + 'weapons/cannon/sfx-wpn-cannon2');
     loadAudio(l, 'boom1', J + 'explosions/medium-length/sfx-exp-medium1');
     loadAudio(l, 'boom2', J + 'explosions/medium-length/sfx-exp-medium3');
     loadAudio(l, 'boom3', J + 'explosions/medium-length/sfx-exp-medium6');
