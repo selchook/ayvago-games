@@ -77,6 +77,7 @@ const COVER_HERO = {
   'platform-hopper': ['explorer', 'jump'],
   'rope-swing': ['adventurer', 'hang'],
   'sky-jumper': ['zombie', 'jump'],
+  'tito-tank': ['soldier', 'cheer1'],
 };
 const heroImage = (slug) => {
   const h = COVER_HERO[slug];
