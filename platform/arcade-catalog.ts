@@ -757,14 +757,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'pinball',
     title: { en: 'Pinball', tr: 'Langırt' },
     description: {
-      en: 'Keep the ball on the table with the flippers; hit bumpers, slingshots and drop targets, light the AYVA lanes to raise the multiplier. You have three balls.',
-      tr: 'Paletlerle topu masada tut; tamponlara, sapanlara ve düşen hedeflere vur, AYVA harflerini yakıp çarpanı büyüt. Üç topun var.',
+      en: "Keep the ball on the table with the flippers; hit bumpers, slingshots and drop targets, light the AYVA lanes to raise the multiplier. Finish each level's goals: the table changes theme, the saucer, a fourth bumper and a moving guard join in, and every third level earns an extra ball.",
+      tr: 'Paletlerle topu masada tut; tamponlara, sapanlara ve düşen hedeflere vur, AYVA harflerini yakıp çarpanı büyüt. Her seviyenin görevlerini bitir: masa yeni bir temaya geçer, kapan, dördüncü tampon ve hareketli engel açılır, her üç seviyede bir ekstra top kazanırsın.',
     },
     category: 'arcade',
     categories: ['arcade', 'retro', 'action'],
     tags: ['pinball', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
     addedAt: '2026-10-30',
   }),
   arcadeGame({
