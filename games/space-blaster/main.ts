@@ -1,6 +1,7 @@
 import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
+import { menuScene } from './menu';
 
 const SS = 'space-shooter/png/';
 
@@ -20,6 +21,10 @@ launch({
     l.image('pu-shield', kenney(SS + 'power-ups/powerupblue_shield.png'));
     l.image('shield', kenney(SS + 'effects/shield1.png'));
     l.image('star', kenney(SS + 'effects/star1.png'));
+    l.image('speed', kenney(SS + 'effects/speed.png'));
+    l.image('impact', kenney(SS + 'lasers/laserred08.png'));
+    l.image('meteor-small', kenney(SS + 'meteors/meteorbrown_small1.png'));
+    l.image('meteor-tiny', kenney(SS + 'meteors/meteorbrown_tiny1.png'));
     // engine flames (tip pointing down) that follow the ship's bank
     l.image('flame1', kenney(SS + 'effects/fire13.png'));
     l.image('flame2', kenney(SS + 'effects/fire16.png'));
@@ -39,10 +44,11 @@ launch({
     loadAudio(l, 'wave', J + 'general-sounds/fanfares/sfx-sounds-fanfare3');
   },
   menuDecor(scene) {
-    const { width, height } = scene.scale;
-    scene.add.image(width / 2, height * 0.83, 'ship').setScale(1.4);
-    scene.add.image(width * 0.2, height * 0.08, 'enemy-black1').setScale(0.8).setAngle(180);
-    scene.add.image(width * 0.8, height * 0.1, 'enemy-blue2').setScale(0.8).setAngle(180);
+    menuScene(scene);
   },
   scenes: [PlayScene],
+  strings: {
+    tr: { pBolt: 'ÇİFT ATIŞ', pShield: 'KALKAN' },
+    en: { pBolt: 'DOUBLE SHOT', pShield: 'SHIELD' },
+  },
 });
