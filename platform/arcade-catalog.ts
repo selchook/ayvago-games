@@ -757,15 +757,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'pinball',
     title: { en: 'Pinball', tr: 'Tilt' },
     description: {
-      en: "Keep the ball alive on a tall scrolling table: ride the ramp, loop the orbits, rip the spinner, hit the saucer and the drop targets and light the AYVA lanes for a bigger multiplier. Finish each level's goals to move to the next theme; every third level earns an extra ball. Nudge too hard and it's TILT!",
-      tr: 'Yukarı kayan uzun bir masada paletlerle topu oyunda tut: rampaya çık, yörüngeleri dolan, fırıldağı döndür, kapana ve düşen hedeflere vur, AYVA harfleriyle çarpanı büyüt. Her seviyenin görevlerini bitir; masa yeni temaya geçer, her üç seviyede bir ekstra top kazanırsın. Masayı çok sallarsan TILT!',
+      en: "Five different tables: Neon Nights, Deep Blue, Jungle Temple, Fire Forge and Star Gate. Each has its own ramps, holes, targets and tricks: a whirlpool, a cannon, a wormhole, a black hole. Reach a table's target score to open the next one, and start from any table you have opened. Finish the missions for a jackpot; nudge too hard and it's TILT!",
+      tr: 'Beş farklı masa: Neon Gece, Derin Mavi, Orman Tapınağı, Ateş Fırını ve Yıldız Geçidi. Her masanın kendi rampaları, delikleri, hedefleri ve sırları var: girdap, top atar, solucan deliği, kara delik. Masanın hedef puanına ulaşınca sıradaki masa açılır; açtığın masalardan istediğinle başlayabilirsin. Görevleri bitir, jackpot topla; masayı çok sallarsan TILT!',
     },
     category: 'arcade',
     categories: ['arcade', 'retro', 'action'],
     tags: ['pinball', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.0',
+    version: '1.3.0',
     addedAt: '2026-10-30',
   }),
   arcadeGame({
