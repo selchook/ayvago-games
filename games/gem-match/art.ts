@@ -245,4 +245,16 @@ export function makeFx(scene: Phaser.Scene): void {
     c.beginPath(); c.arc(36, 36, 26, 0, Math.PI * 2); c.stroke();
     c.fillStyle = '#ffffff'; c.beginPath(); c.arc(36, 36, 8, 0, Math.PI * 2); c.fill();
   });
+  // shockwave ring and a crystal shard for explosions
+  canvas(scene, 'gm-shock', 128, 128, (c) => {
+    c.shadowColor = '#ffffff'; c.shadowBlur = 10;
+    c.strokeStyle = '#ffffff'; c.lineWidth = 7;
+    c.beginPath(); c.arc(64, 64, 52, 0, Math.PI * 2); c.stroke();
+  });
+  canvas(scene, 'gm-shard', 24, 24, (c) => {
+    c.fillStyle = '#ffffff';
+    c.beginPath(); c.moveTo(12, 0); c.lineTo(20, 12); c.lineTo(12, 24); c.lineTo(4, 12); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(0,0,0,0.18)';
+    c.beginPath(); c.moveTo(12, 0); c.lineTo(20, 12); c.lineTo(12, 24); c.closePath(); c.fill();
+  });
 }
