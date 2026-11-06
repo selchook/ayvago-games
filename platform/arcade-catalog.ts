@@ -524,7 +524,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['hoop', 'shot', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.2.0',
   }),
   arcadeGame({
     slug: 'jetpack-rush',
