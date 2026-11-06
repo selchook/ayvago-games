@@ -44,7 +44,6 @@ export class PlayScene extends ArcadeScene {
   private controls!: Controls;
   private player!: Phaser.GameObjects.Image;
   private fish: Fish[] = [];
-  private hearts: Phaser.GameObjects.Image[] = [];
   private barFill!: Phaser.GameObjects.Rectangle;
   private bubbles!: Phaser.GameObjects.Particles.ParticleEmitter;
   private size = START_SIZE;
@@ -61,7 +60,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     const { width, height } = this.scale;
-    this.fish = []; this.hearts = [];
+    this.fish = [];
     this.size = START_SIZE; this.level = 1; this.lives = MAX_LIVES; this.vx = 0; this.vy = 0;
     this.invuln = 0; this.spawnCd = 0.5; this.sharkCd = 0; this.eatenCount = 0; this.transition = false;
     this.target = this.targetFor(1);
@@ -71,7 +70,6 @@ export class PlayScene extends ArcadeScene {
     this.player = this.add.image(width / 2, height / 2, 'ff-player').setDepth(20);
     this.applySize();
 
-    for (let i = 0; i < MAX_LIVES; i++) this.hearts.push(this.add.image(width - 300 + i * 46, 38, 'ff-heart').setDepth(9000));
     txt(this, width / 2, 74, t('growth'), { title: true, size: 14, color: '#bfefff' }).setDepth(9000);
     this.add.rectangle(width / 2, 98, 300, 20, 0x000000, 0.5).setStrokeStyle(3, 0xffffff, 0.7).setDepth(9000);
     this.barFill = this.add.rectangle(width / 2 - 146, 98, 0, 12, 0xffa31a).setOrigin(0, 0.5).setDepth(9000);
@@ -105,15 +103,6 @@ export class PlayScene extends ArcadeScene {
       g.lineStyle(3, 0x2b3a47).lineBetween(204, 72, 232, 66);
       g.fillStyle(0xffffff).fillTriangle(206, 71, 210, 71, 208, 77).fillTriangle(214, 70, 218, 70, 216, 76).fillTriangle(222, 69, 226, 69, 224, 75);
       g.generateTexture('ff-shark', 240, 110);
-      g.clear();
-      g.fillStyle(0x000000).fillCircle(11, 13, 11).fillCircle(29, 13, 11).fillTriangle(1, 18, 39, 18, 20, 38);
-      g.fillStyle(0xec3013).fillCircle(11, 13, 8).fillCircle(29, 13, 8).fillTriangle(4, 16, 36, 16, 20, 34);
-      g.fillStyle(0xffffff, 0.6).fillCircle(9, 10, 3);
-      g.generateTexture('ff-heart', 40, 40);
-      g.clear();
-      g.fillStyle(0x000000).fillCircle(11, 13, 11).fillCircle(29, 13, 11).fillTriangle(1, 18, 39, 18, 20, 38);
-      g.fillStyle(0x334455).fillCircle(11, 13, 8).fillCircle(29, 13, 8).fillTriangle(4, 16, 36, 16, 20, 34);
-      g.generateTexture('ff-heart-empty', 40, 40);
       g.destroy();
     }
     const sea = this.add.graphics().setDepth(-20);
@@ -145,8 +134,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setCenter(`${t('level')} ${this.level}`);
-    this.hearts.forEach((h, i) => h.setTexture(i < this.lives ? 'ff-heart' : 'ff-heart-empty'));
+    this.hud.setLevel(this.level);
+    this.hud.setLives(this.lives, MAX_LIVES);
     const f = Phaser.Math.Clamp((this.size - START_SIZE) / (this.target - START_SIZE), 0, 1);
     this.barFill.width = 292 * f;
   }
@@ -330,7 +319,6 @@ export class PlayScene extends ArcadeScene {
     const a = Phaser.Math.Angle.Between(f.img.x, f.img.y, this.player.x, this.player.y);
     this.vx = Math.cos(a) * 700; this.vy = Math.sin(a) * 700;
     this.updateHud();
-    this.tweens.add({ targets: this.hearts[Math.max(0, this.lives)], scale: 1.6, duration: 120, yoyo: true });
     if (this.lives <= 0) {
       this.player.setVisible(false);
       const bone = this.add.image(this.player.x, this.player.y, 'ff-bone90').setScale(this.size / 50).setDepth(21);

@@ -116,8 +116,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setCenter(`${t('level')} ${this.level}`);
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLevel(this.level);
+    this.hud.setLives(this.lives);
   }
 
   private banner(text: string, color: string, size = 44, hold = 900): void {

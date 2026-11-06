@@ -28,7 +28,6 @@ export class PlayScene extends ArcadeScene {
   private gems: Phaser.GameObjects.Image[] = [];
   private flag!: Phaser.GameObjects.Image;
   private levelObjs: Phaser.GameObjects.GameObject[] = [];
-  private hearts: Phaser.GameObjects.Image[] = [];
   private bg!: Phaser.GameObjects.Image;
   private level = 0;
   private lives = 3;
@@ -49,7 +48,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     this.level = 0; this.lives = 3; this.gemsGot = 0; this.gemsTotal = 0; this.state = 'intro';
-    this.movers = []; this.enemies = []; this.hazards = []; this.springs = []; this.gems = []; this.levelObjs = []; this.hearts = [];
+    this.movers = []; this.enemies = []; this.hazards = []; this.springs = []; this.gems = []; this.levelObjs = [];
     this.coyote = 0; this.jumpBuf = 0; this.prevJump = false; this.walkT = 0; this.wasOnGround = true; this.stompChain = 0; this.boosted = false;
 
     this.bg = this.add.image(0, 720, BGS[0]).setOrigin(0, 1).setScale(1.25).setDepth(-10);
@@ -72,7 +71,6 @@ export class PlayScene extends ArcadeScene {
     this.physics.add.collider(this.enemyGroup, this.solids, undefined, walkerOnly);
     this.physics.add.collider(this.enemyGroup, this.oneways, undefined, walkerOnly);
 
-    for (let i = 0; i < 3; i++) this.hearts.push(this.add.image(42 + i * 50, 92, 'heart').setScale(0.36).setDepth(9000));
 
     // touch: floating stick on the left half runs left/right (analog), A on the right jumps
     this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
@@ -241,9 +239,9 @@ export class PlayScene extends ArcadeScene {
   // ---------- helpers ----------
 
   private updateHud(): void {
-    this.hud.setRight(`${t('level')} ${this.level + 1}`);
-    this.hud.setCenter(`${t('gems')} ${this.gemsGot}/${this.gemsTotal}`);
-    this.hearts.forEach((h, i) => h.setTexture(i < this.lives ? 'heart' : 'heart-empty'));
+    this.hud.setLevel(this.level + 1);
+    this.hud.setRight(`${t('gems')} ${this.gemsGot}/${this.gemsTotal}`);
+    this.hud.setLives(this.lives, 3);
   }
 
   private playerRect(): Rect {

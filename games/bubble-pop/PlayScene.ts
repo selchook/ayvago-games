@@ -246,7 +246,7 @@ export class PlayScene extends ArcadeScene {
     this.cur = this.pickColor();
     this.next = this.pickColor();
     this.refreshShooter();
-    this.hud.setCenter(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     this.refreshShots();
   }
 

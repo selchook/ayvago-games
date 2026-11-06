@@ -147,7 +147,7 @@ export class PlayScene extends ArcadeScene {
   private updateHud(): void {
     const m = Math.floor(this.camX / 10);
     this.hud.setCenter(`${m} m`);
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.hp)}`);
+    this.hud.setLives(this.hp);
   }
 
   private get biome() {

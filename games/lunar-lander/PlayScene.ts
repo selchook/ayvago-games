@@ -102,7 +102,7 @@ export class PlayScene extends ArcadeScene {
     this.level++;
     this.gravity = Math.min(95, 52 + this.level * 5);
     this.wind = this.level >= 3 ? rng.pick([-1, 1]) * Math.min(32, (this.level - 2) * 7) : 0;
-    this.hud.setCenter(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     this.updateLives();
     this.buildTerrain();
     this.spawn();
@@ -189,7 +189,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateLives(): void {
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLives(this.lives);
   }
 
   private drawGauges(): void {

@@ -161,7 +161,7 @@ export class PlayScene extends ArcadeScene {
       this.icons.push(this.add.image(46, 1150 - i * 52, 'axeIcon').setDepth(30).setTint(0xffd23f));
     }
     this.hud.setCenter(`${t('stage')} ${this.stage}`);
-    this.hud.setRight(`${t('lives')} ${this.lives}`);
+    this.hud.setLives(this.lives);
     this.hand.setPosition(CX, THROW_Y + 200).setAlpha(1).setAngle(0);
     this.tweens.add({ targets: this.hand, y: THROW_Y, duration: 220, ease: 'Back.easeOut' });
 
@@ -243,7 +243,7 @@ export class PlayScene extends ArcadeScene {
 
   private fail(axe: Phaser.GameObjects.Image): void {
     this.lives--;
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLives(this.lives);
     this.sfx('clang', { volume: 0.75 });
     this.sfx('hurt', { volume: 0.45, delay: 0.08 });
     if (this.lives === 1) this.sfx('low', { volume: 0.4, delay: 0.5 });

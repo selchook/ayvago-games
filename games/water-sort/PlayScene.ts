@@ -113,7 +113,7 @@ export class PlayScene extends ArcadeScene {
     this.par = Math.ceil(lowerBound(this.tubes) * 1.3) + 2;
     this.timeTotal = Math.round(spec.colours * Math.max(8, 13 - this.level * 0.25) + 15);
     this.timeLeft = this.timeTotal; this.lastTick = 0;
-    this.hud.setCenter(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     this.buildViews(true);
     this.updateUi();
     this.busy = true;

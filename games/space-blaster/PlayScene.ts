@@ -18,7 +18,6 @@ export class PlayScene extends ArcadeScene {
   private layers: { ts: Phaser.GameObjects.TileSprite; speed: number }[] = [];
   private planet!: Phaser.GameObjects.Image;
   private warp = 1;
-  private lifeIcons: Phaser.GameObjects.Image[] = [];
   private timers!: Phaser.GameObjects.Graphics;
   private timerIcons: Phaser.GameObjects.Image[] = [];
   private vig!: Phaser.GameObjects.Image;
@@ -41,7 +40,7 @@ export class PlayScene extends ArcadeScene {
     makeFx(this); makeNebula(this, width, height); makePlanet(this);
     makeStars(this, 'sb-stars-far', width, height, 260, false, 3);
     makeStars(this, 'sb-stars-near', width, height, 90, true, 9);
-    this.warp = 1; this.hurtT = 0; this.lifeIcons = []; this.timerIcons = [];
+    this.warp = 1; this.hurtT = 0; this.timerIcons = [];
     this.layers = [
       { ts: this.add.tileSprite(0, 0, width, height, 'sb-nebula').setOrigin(0).setDepth(-10), speed: 14 },
       { ts: this.add.tileSprite(0, 0, width, height, 'sb-stars-far').setOrigin(0).setDepth(-8), speed: 60 },
@@ -79,19 +78,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    // lives as little ships, top right next to the pause button
-    this.hud.setRight('');
-    while (this.lifeIcons.length < Math.max(0, this.lives)) {
-      const i = this.lifeIcons.length;
-      const im = this.add.image(this.scale.width - 130 - i * 46, 38, 'life').setDepth(9000).setScale(0);
-      this.tweens.add({ targets: im, scale: 1.1, duration: 240, ease: 'Back.easeOut' });
-      this.lifeIcons.push(im);
-    }
-    while (this.lifeIcons.length > Math.max(0, this.lives)) {
-      const im = this.lifeIcons.pop()!;
-      this.glow(im.x, im.y, 0xec3013, 1, 300, 9001);
-      this.tweens.add({ targets: im, scale: 2, alpha: 0, duration: 300, onComplete: () => im.destroy() });
-    }
+    this.hud.setLives(this.lives);
     this.hud.setCenter(`${t('wave')} ${this.wave}`);
   }
 

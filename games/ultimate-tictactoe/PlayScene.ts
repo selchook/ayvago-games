@@ -209,7 +209,7 @@ export class PlayScene extends ArcadeScene {
     this.countX.setText(t('boards', { n: x }));
     this.countO.setText(t('boards', { n: o }));
     if (this.online) { this.info.setText(t('vs', { name: net.peerName || t('opponent') })); return; }
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLives(this.lives);
     this.info.setText(`${t('lv', { n: this.level + 1 })} · ${t('rival', { name: t('d' + this.level) })} · ${t('streak', { n: this.streak })}`);
   }
 

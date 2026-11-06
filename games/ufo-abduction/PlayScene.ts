@@ -135,7 +135,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.hp)}`);
+    this.hud.setLives(this.hp);
     this.infoText.setText(`${t('level')} ${this.level}  ·  ${t('caught')} ${this.caught}/${this.quota}`);
   }
 

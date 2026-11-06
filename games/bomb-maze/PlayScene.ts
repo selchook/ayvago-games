@@ -205,7 +205,7 @@ export class PlayScene extends ArcadeScene {
     ss.setText(String(Math.round((this.pSpeed - 3.6) / 0.5) + 1));
     const bots = this.actors.filter((a) => !a.player && a.alive).length;
     this.botText.setText(`${t('bots')} ${bots}`);
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLives(this.lives);
   }
 
   // ---------------------------------------------------------------- movement

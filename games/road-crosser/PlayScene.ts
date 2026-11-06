@@ -38,14 +38,11 @@ export class PlayScene extends ArcadeScene {
   private stick!: StickDir;
   private queued: Dir | null = null;
   private lastTick = 0;
-  private lifeIcons: Phaser.GameObjects.Image[] = [];
 
   createGame(): void {
     this.lanes = []; this.homes = [false, false, false, false, false]; this.homeImgs = [];
     this.lives = 3; this.level = 1; this.alive = true; this.hopping = false; this.chick = null; this.chickBay = -1; this.chickT = 6;
     this.queued = null; this.lastTick = 0;
-    this.lifeIcons = [];
-    for (let i = 0; i < 3; i++) this.lifeIcons.push(this.add.image(40 + i * 44, 78, 'frog').setScale(0.26).setDepth(9000));
     this.makeTextures();
     this.drawBoard();
     this.frog = this.add.image(0, 0, 'frog').setScale(0.42).setDepth(20);
@@ -389,8 +386,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('level')} ${this.level}`);
-    this.lifeIcons.forEach((im, i) => im.setAlpha(i < this.lives ? 1 : 0.2));
+    this.hud.setLevel(this.level);
+    this.hud.setLives(this.lives, 3);
   }
 
   updateGame(_time: number, delta: number): void {

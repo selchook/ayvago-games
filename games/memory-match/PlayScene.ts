@@ -446,7 +446,7 @@ ${clip(net.peerName || t('opponent'), 12)}: ${them} ${t('pairs')}`, { size: 34 }
       this.infoText.setText(`${t('pairs')}   ${t('you')} ${this.pairsBy[net.seat]}  ·  ${peer} ${this.pairsBy[net.seat === 0 ? 1 : 0]}`);
       return;
     }
-    this.hud.setCenter(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     const f = Phaser.Math.Clamp(this.timeLeft / this.timeMax, 0, 1);
     this.bar.width = 432 * f;
     this.bar.fillColor = f > 0.5 ? 0x5dff7a : f > 0.2 ? 0xffd23f : 0xec3013;

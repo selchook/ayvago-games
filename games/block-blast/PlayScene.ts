@@ -114,7 +114,8 @@ export class PlayScene extends ArcadeScene {
   updateGame(): void { /* event driven */ }
 
   private updateHud(): void {
-    this.hud.setCenter(`${t('level')} ${this.level}`);
+    this.hud.setCenter('');
+    this.hud.setLevel(this.level);
   }
 
   // ---------- pieces ----------

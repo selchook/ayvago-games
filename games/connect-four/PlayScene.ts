@@ -167,7 +167,7 @@ export class PlayScene extends ArcadeScene {
       this.info.setText(t('vs', { name: net.peerName || t('opponent') }));
       return;
     }
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLives(this.lives);
     // the level sits in the info line: in English the centre slot ran into the lives
     this.info.setText(`${t('level')} ${this.level + 1}   ${t('rival', { name: t('d' + Math.min(this.level, LEVELS.length - 1)) })}   ${t('streak', { n: this.streak })}`);
   }

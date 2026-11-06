@@ -104,7 +104,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.hp)}/${this.maxHp}`);
+    this.hud.setLives(this.hp, this.maxHp);
     this.hud.setCenter(this.wave ? `${t('wave')} ${this.wave}` : '');
     this.aimTxt.setText(`${t('autoAim')}: ${this.autoAim ? t('on') : t('off')}  [B]`).setColor(this.autoAim ? '#5dff7a' : '#ffd23f');
   }

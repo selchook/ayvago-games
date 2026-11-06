@@ -295,7 +295,7 @@ export class PlayScene extends ArcadeScene {
     if (this.online) this.info.setText(t('vs', { name: net.peerName || t('opponent') }));
     else {
       this.info.setText(`${t('roundN', { n: this.round })} · ${t('rival', { name: t('d' + Math.min(5, this.round - 1)) })}`);
-      this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+      this.hud.setLives(this.lives);
     }
   }
 
