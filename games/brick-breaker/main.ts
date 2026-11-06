@@ -2,6 +2,7 @@ import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { BRICK_COLORS } from './levels';
+import { menuScene } from './menu';
 
 const P = 'puzzle2/png/';
 
@@ -39,18 +40,15 @@ launch({
     loadSfx(l, 'clear', 'jingles/audio/8-bit_jingles/jingles_nes05');
   },
   menuDecor(scene) {
-    const { width, height } = scene.scale;
-    const cols = ['r', 'o', 'y', 'g', 'b', 'p'];
-    for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) {
-      const img = scene.add.image(width / 2 - 280 + c * 80, 70 + r * 40, `brick-${cols[(r * 2 + c) % 6]}`).setDisplaySize(76, 34).setAlpha(0.85);
-      scene.tweens.add({ targets: img, alpha: 0.45, duration: 900 + c * 90, yoyo: true, repeat: -1 });
-    }
-    scene.add.image(width / 2, height * 0.88, 'paddle').setDisplaySize(180, 43);
-    scene.add.image(width / 2 + 40, height * 0.84, 'ball').setDisplaySize(30, 30);
+    menuScene(scene);
   },
   scenes: [PlayScene],
   strings: {
-    tr: { launch: 'Fırlatmak için dokun', wide: 'GENİŞ RAKET', multi: 'ÇOKLU TOP', slow: 'YAVAŞ TOP', life: '+1 CAN', fast: 'HIZLANDI!' },
-    en: { launch: 'Tap to launch', wide: 'WIDE PADDLE', multi: 'MULTIBALL', slow: 'SLOW BALL', life: '+1 LIFE', fast: 'SPEED UP!' },
+    tr: { launch: 'Fırlatmak için dokun', wide: 'GENİŞ RAKET', multi: 'ÇOKLU TOP', slow: 'YAVAŞ TOP', life: '+1 CAN', fast: 'HIZLANDI!',
+      lv1: 'Gökkuşağı', lv2: 'Piramit', lv3: 'Dama Tahtası', lv4: 'İstilacı', lv5: 'Kalp', lv6: 'Kapılar', lv7: 'Elmas', lv8: 'Sütunlar', lv9: 'Kale', lv10: 'Çekirdek',
+    },
+    en: { launch: 'Tap to launch', wide: 'WIDE PADDLE', multi: 'MULTIBALL', slow: 'SLOW BALL', life: '+1 LIFE', fast: 'SPEED UP!',
+      lv1: 'Rainbow', lv2: 'Pyramid', lv3: 'Checkerboard', lv4: 'Invader', lv5: 'Heart', lv6: 'Gates', lv7: 'Diamond', lv8: 'Columns', lv9: 'Fortress', lv10: 'The Core',
+    },
   },
 });
