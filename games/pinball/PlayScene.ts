@@ -1,33 +1,35 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt, rng, loc, COLORS } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, t, txt, rng, loc, getLang, COLORS } from '@core';
 import {
-  World, Hit, Seg, BALL_R, LANE_X, PLUNGER_Y, DRAIN_Y, LANES, LANE_Y, TARGET_Y, PIVOT_Y,
-  SLING_L, SLING_R, buildWalls, buildTargets, buildBumpers, buildFlippers, step,
+  World, Hit, Seg, BALL_R, W, TH, LANE_X, PLUNGER_Y, DRAIN_Y, LANES, LANE_Y, PIVOT_Y, BANK_X, BANK_Y,
+  SLING_L, SLING_R, ORBIT_L, ORBIT_R, ORBIT_BOT, RAMP, SAUCER, SPINNER, BUMPER4, GUARD,
+  buildWalls, buildTargets, buildBumpers, buildFlippers, rampPath, step,
 } from './table';
-import { makeTextures, paintTable, paintApron, makeButton, css } from './art';
+import { makeTextures, paintTable, paintApron, paintRamp, makeButton, css, INSERTS, RAMP_Y0, APRON_Y } from './art';
 import { THEMES, Theme, Goal, levelGoals, themeOf, tuning, UNLOCK, extraBallFor } from './levels';
 
-const W = 720;
 const BALLS = 3;
 const LETTERS = ['A', 'Y', 'V', 'A'];
-const NUDGE_CD = 3;
 const MAX_MULT = 5;
-const BTN_Y = 1226, BTN_H = 92, BTN_W = 168;
-const NUDGE_X = 96, LAUNCH_X = 624;
-const SAUCER = { x: 560, y: 600, r: 17, hold: 1.1 };
-const GUARD_Y = 770, GUARD_HALF = 44;
-const BUMPER4 = { x: 340, y: 300, r: 30 };
-const ARROW_Y = [860, 814, 768];
-const APRON_Y = 880;
+const TILT_AT = 2.4;          // three quick nudges (the meter drains slowly)
+const BTN_Y = 1232, BTN_H = 84, BTN_W = 164;
+const NUDGE_X = 92, LAUNCH_X = 628;
+const DMD_X = 298, DMD_Y = 58;
+const BAR_TOP = 1180;
+const SCROLL_MIN = -110, SCROLL_MAX = TH - BAR_TOP;
 
 type Zone = 'L' | 'R' | 'P' | 'N' | null;
+type Shot = 'ramp' | 'orbitL' | 'orbitR' | 'saucer' | 'bank';
+const SHOT_GOALS: Record<Shot, Goal[]> = { ramp: ['ramps'], orbitL: ['orbits', 'spinner'], orbitR: ['orbits'], saucer: ['saucer'], bank: ['targets'] };
 
 const darken = (c: number, k: number): number =>
   (Math.round(((c >> 16) & 255) * k) << 16) | (Math.round(((c >> 8) & 255) * k) << 8) | Math.round((c & 255) * k);
 const short = (n: number): string => (n >= 1000 ? `${Math.floor(n / 100) / 10}K`.replace('.0K', 'K') : `${n}`);
+const hexColor = (s: string): number => Phaser.Display.Color.HexStringToColor(s).color;
 
 interface BumperView { body: Phaser.GameObjects.Image; cap: Phaser.GameObjects.Image; halo: Phaser.GameObjects.Image; shadow: Phaser.GameObjects.Image; r: number }
 interface GoalRow { label: Phaser.GameObjects.Text; value: Phaser.GameObjects.Text; y: number }
+interface BallCount { ramps: number; orbits: number; saucers: number; bumpers: number; spins: number }
 
 export class PlayScene extends ArcadeScene {
   private world!: World;
@@ -37,6 +39,8 @@ export class PlayScene extends ArcadeScene {
   private slot = 0;
   private ballImg!: Phaser.GameObjects.Image;
   private ballGlow!: Phaser.GameObjects.Image;
+  private riderImg!: Phaser.GameObjects.Image;
+  private riderGlow!: Phaser.GameObjects.Image;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
   private flipImgs: Phaser.GameObjects.Image[] = [];
   private bumpers: BumperView[] = [];
@@ -45,20 +49,23 @@ export class PlayScene extends ArcadeScene {
   private lamps: Phaser.GameObjects.Image[] = [];
   private lampGlows: Phaser.GameObjects.Image[] = [];
   private laneTexts: Phaser.GameObjects.Text[] = [];
+  private inserts: Partial<Record<Shot, [Phaser.GameObjects.Image, Phaser.GameObjects.Image]>> = {};
   private arrows: Phaser.GameObjects.Image[] = [];
-  private saucerImg!: Phaser.GameObjects.Image;
+  private spinnerImg!: Phaser.GameObjects.Image;
   private saucerGlow!: Phaser.GameObjects.Image;
   private fxGfx!: Phaser.GameObjects.Graphics;
   private plungerGfx!: Phaser.GameObjects.Graphics;
   private saveText!: Phaser.GameObjects.Text;
   private saveGlow!: Phaser.GameObjects.Image;
   private launchHint!: Phaser.GameObjects.Text;
-  private header!: Phaser.GameObjects.Text;
   private barGfx!: Phaser.GameObjects.Graphics;
   private rows: GoalRow[] = [];
   private btnImgs: Phaser.GameObjects.Image[] = [];
   private btnGfx!: Phaser.GameObjects.Graphics;
   private btnLabels: Phaser.GameObjects.Text[] = [];
+  private dmdScore!: Phaser.GameObjects.Text;
+  private dmdInfo!: Phaser.GameObjects.Text;
+  private dmdMsg!: Phaser.GameObjects.Text;
   private keys: Record<string, Phaser.Input.Keyboard.Key> = {};
 
   private balls = BALLS;
@@ -77,6 +84,8 @@ export class PlayScene extends ArcadeScene {
   private ballSave = 0;
   private saveArmed = false;
   private nudgeCd = 0;
+  private tiltWarn = 0;
+  private tilted = false;
   private stall = 0;
   private waiting = 0;
   private inPlay = false;
@@ -87,45 +96,69 @@ export class PlayScene extends ArcadeScene {
   private pulse = [0, 0];
   private guard: Seg | null = null;
   private guardT = 0;
-  private held = 0;              // seconds the saucer still holds the ball
+  private held = 0;
   private saucerCd = 0;
   private combo = 0;
   private lastHit = -9;
-  private bannerQ: [string, string, number][] = [];
-  private bannerBusy = false;
+  private ride: { s: number; v: number } | null = null;
+  private rampPts: [number, number][] = [];
+  private rampLen: number[] = [];
+  private lastRamp = -99;
+  private rampCombo = 0;
+  private orbitFrom: { side: 'L' | 'R'; t: number } | null = null;
+  private prevX = 0;
+  private prevY = 0;
+  private spinPending = 0;
+  private spinPhase = 0;
+  private bc: BallCount = { ramps: 0, orbits: 0, saucers: 0, bumpers: 0, spins: 0 };
+  private msgQ: string[] = [];
+  private msgT = 0;
+  private camY = SCROLL_MAX;
 
   createGame(): void {
     makeTextures(this);
     this.flipImgs = []; this.bumpers = []; this.targetImgs = []; this.targetGlows = []; this.lamps = []; this.lampGlows = [];
-    this.laneTexts = []; this.arrows = []; this.rows = []; this.btnImgs = []; this.btnLabels = []; this.keys = {};
+    this.laneTexts = []; this.inserts = {}; this.arrows = []; this.rows = []; this.btnImgs = []; this.btnLabels = []; this.keys = {};
     this.tableImgs = []; this.apronImgs = []; this.slot = 0;
     this.balls = BALLS; this.ballNo = 1; this.extra = 0; this.mult = 1; this.level = 1; this.theme = THEMES[0];
     this.goals = levelGoals(1); this.prog = {}; this.clearing = false;
     this.lit = [false, false, false, false]; this.inLane = -1; this.charge = 0; this.charging = false;
-    this.ballSave = 0; this.saveArmed = false; this.nudgeCd = 0; this.stall = 0; this.waiting = 0; this.inPlay = false;
+    this.ballSave = 0; this.saveArmed = false; this.nudgeCd = 0; this.tiltWarn = 0; this.tilted = false;
+    this.stall = 0; this.waiting = 0; this.inPlay = false;
     this.slingFlash = [0, 0]; this.bankTimer = 0; this.prevHeld = [false, false]; this.hitCd = {}; this.pulse = [0, 0];
     this.guard = null; this.guardT = 0; this.held = 0; this.saucerCd = 0; this.combo = 0; this.lastHit = -9;
-    this.bannerQ = []; this.bannerBusy = false;
+    this.ride = null; this.lastRamp = -99; this.rampCombo = 0; this.orbitFrom = null; this.spinPending = 0; this.spinPhase = 0;
+    this.bc = { ramps: 0, orbits: 0, saucers: 0, bumpers: 0, spins: 0 };
+    this.msgQ = []; this.msgT = 0; this.camY = SCROLL_MAX;
+    this.useHud = false;   // the score lives on the dot-matrix display
 
     this.world = {
       ball: { x: LANE_X, y: PLUNGER_Y, vx: 0, vy: 0 },
       walls: buildWalls(), targets: buildTargets(), bumpers: buildBumpers(), flippers: buildFlippers(),
       gravity: tuning(1).gravity,
     };
+    this.rampPts = rampPath();
+    this.rampLen = [0];
+    for (let i = 1; i < this.rampPts.length; i++) {
+      const [ax, ay] = this.rampPts[i - 1], [bx, by] = this.rampPts[i];
+      this.rampLen.push(this.rampLen[i - 1] + Math.hypot(bx - ax, by - ay));
+    }
 
     // two thumbs plus the launch button; the pointers live on the game, so add them only once
     const pointers = this.input.manager.pointersTotal;
     if (pointers < 6) this.input.addPointer(6 - pointers);
+    this.cameras.main.setScroll(0, this.camY);
     this.table = this.add.container(0, 0);
     this.buildTable();
     this.buildApron();
+    this.buildOverlay();
     this.bindInput();
     this.applyTheme(false);
     this.applyLevel();
-    this.updateHud();
+    this.updateDmd();
     this.serveBall(true);
-    this.banner(`${t('levelUp', { n: 1 })}\n${loc(this.theme.name)}`, this.theme.accent, 30);
-    const hint = txt(this, W / 2, 700, t('touchHint'), { size: 28, color: '#3ee6ff' }).setDepth(40);
+    this.dmd(`${t('levelUp', { n: 1 })}\n${loc(this.theme.name)}`);
+    const hint = txt(this, W / 2, 1560, t('touchHint'), { size: 28, color: '#3ee6ff' }).setDepth(40);
     this.tweens.add({ targets: hint, alpha: 0, delay: 2600, duration: 500, onComplete: () => hint.destroy() });
   }
 
@@ -136,10 +169,26 @@ export class PlayScene extends ArcadeScene {
     for (let i = 0; i < 2; i++) this.tableImgs.push(this.add.image(0, 0, key).setOrigin(0).setAlpha(i ? 0 : 1));
     this.table.add(this.tableImgs);
 
-    // saucer (from level 2)
-    this.saucerGlow = this.add.image(SAUCER.x, SAUCER.y, 'pb-glow').setScale(0.75).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
-    this.saucerImg = this.add.image(SAUCER.x, SAUCER.y, 'pb-saucer').setVisible(false);
-    this.table.add([this.saucerGlow, this.saucerImg]);
+    // arrow inserts that point at the shots
+    const add = (o: Phaser.GameObjects.GameObject | Phaser.GameObjects.GameObject[]) => this.table.add(o);
+    for (const shot of Object.keys(SHOT_GOALS) as Shot[]) {
+      const [x, y, rot] = INSERTS[shot];
+      const glow = this.add.image(x, y, 'pb-glow').setScale(0.6).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+      const lamp = this.add.image(x, y + 2, 'pb-arrow').setRotation(rot).setScale(0.72);
+      this.inserts[shot] = [lamp, glow];
+      add([glow, lamp]);
+    }
+    for (const [x, y] of INSERTS.progress) {
+      const a = this.add.image(x, y + 2, 'pb-arrow').setScale(0.72).setAlpha(0.25);
+      this.arrows.push(a);
+      add(a);
+    }
+
+    // saucer and spinner
+    this.saucerGlow = this.add.image(SAUCER.x, SAUCER.y, 'pb-glow').setScale(0.75).setBlendMode(Phaser.BlendModes.ADD);
+    const saucer = this.add.image(SAUCER.x, SAUCER.y, 'pb-saucer');
+    this.spinnerImg = this.add.image(SPINNER.x, SPINNER.y, 'pb-spinner');
+    add([this.saucerGlow, saucer, this.spinnerImg]);
 
     // rollover lanes
     LANES.forEach((x, i) => {
@@ -147,30 +196,23 @@ export class PlayScene extends ArcadeScene {
       const lamp = this.add.image(x, LANE_Y + 4, 'pb-lamp');
       const letter = txt(this, x, LANE_Y + 52, LETTERS[i], { title: true, size: 24, color: '#4a4170', strokeThickness: 4 });
       this.lampGlows.push(glow); this.lamps.push(lamp); this.laneTexts.push(letter);
-      this.table.add([glow, lamp, letter]);
+      add([glow, lamp, letter]);
     });
 
-    // progress arrows up the middle
-    for (const y of ARROW_Y) {
-      const a = this.add.image(340, y, 'pb-arrow').setAlpha(0.25);
-      this.arrows.push(a);
-      this.table.add(a);
-    }
-
-    // drop targets
+    // drop targets (a vertical bank, struck from the left)
     for (const s of this.world.targets) {
-      const x = (s.ax + s.bx) / 2;
-      const glow = this.add.image(x, TARGET_Y, 'pb-glow').setScale(0.6, 0.3).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
-      const img = this.add.image(x, TARGET_Y, 'pb-target');
+      const y = (s.ay + s.by) / 2;
+      const glow = this.add.image(BANK_X, y, 'pb-glow').setScale(0.3, 0.6).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+      const img = this.add.image(BANK_X, y, 'pb-target').setAngle(90);
       this.targetGlows.push(glow); this.targetImgs.push(img);
-      this.table.add([glow, img]);
+      add([glow, img]);
     }
 
     for (const b of this.world.bumpers) this.addBumperView(b.x, b.y, b.r);
 
     this.fxGfx = this.add.graphics();
     this.plungerGfx = this.add.graphics();
-    this.table.add([this.fxGfx, this.plungerGfx]);
+    add([this.fxGfx, this.plungerGfx]);
 
     this.trail = this.add.particles(0, 0, 'pb-glow', {
       speed: 0, lifespan: 260, scale: { start: 0.24, end: 0 }, alpha: { start: 0.5, end: 0 },
@@ -178,7 +220,13 @@ export class PlayScene extends ArcadeScene {
     });
     this.ballGlow = this.add.image(LANE_X, PLUNGER_Y, 'pb-glow').setScale(0.42).setAlpha(0.35).setBlendMode(Phaser.BlendModes.ADD);
     this.ballImg = this.add.image(LANE_X, PLUNGER_Y, 'pb-ball');
-    this.table.add([this.trail, this.ballGlow, this.ballImg]);
+    add([this.trail, this.ballGlow, this.ballImg]);
+
+    // the ramp runs over the table; a ball riding it is drawn above it
+    add(this.add.image(0, RAMP_Y0, paintRamp(this)).setOrigin(0));
+    this.riderGlow = this.add.image(0, 0, 'pb-glow').setScale(0.5).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.riderImg = this.add.image(0, 0, 'pb-ball').setScale(1.12).setVisible(false);
+    add([this.riderGlow, this.riderImg]);
   }
 
   private addBumperView(x: number, y: number, r: number): void {
@@ -189,8 +237,8 @@ export class PlayScene extends ArcadeScene {
     const cap = this.add.image(x, y - 2, 'pb-cap').setScale(0.95 * s);
     this.bumpers.push({ body, cap, halo, shadow, r });
     this.table.add([shadow, halo, body, cap]);
-    const ballIdx = this.table.getIndex(this.trail);
-    if (ballIdx >= 0) for (const o of [shadow, halo, body, cap]) this.table.moveBelow(o as Phaser.GameObjects.GameObject, this.trail as Phaser.GameObjects.GameObject);
+    // a bumper added during play (level 4) goes under the ball; on a fresh table the ball comes later
+    if (this.trail && this.table.exists(this.trail as Phaser.GameObjects.GameObject)) for (const o of [shadow, halo, body, cap]) this.table.moveBelow(o as Phaser.GameObjects.GameObject, this.trail as Phaser.GameObjects.GameObject);
   }
 
   private buildApron(): void {
@@ -199,38 +247,45 @@ export class PlayScene extends ArcadeScene {
     this.table.add(this.apronImgs);
     // the flippers stay above the apron, the draining ball goes behind it
     for (const f of this.world.flippers) {
-      const img = this.add.image(f.px, f.py, 'pb-flipper').setOrigin(16 / 148, 0.5).setRotation(f.angle);
-      const piv = this.add.image(f.px, f.py, 'pb-pivot');
+      const img = this.add.image(f.px, f.py, 'pb-flipper').setOrigin(16 / 148, 0.5).setRotation(f.angle).setScale(f.scale);
+      const piv = this.add.image(f.px, f.py, 'pb-pivot').setScale(f.scale);
       this.flipImgs.push(img);
       this.table.add([img, piv]);
     }
-
     // shoot-again lamp between the flippers
-    this.saveGlow = this.add.image(340, 1131, 'pb-glow').setScale(1.4, 0.3).setTint(0x5dff7a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
-    this.saveText = txt(this, 340, 1131, t('ballSave'), { title: true, size: 12, color: '#5dff7a', strokeThickness: 3 });
-    this.launchHint = txt(this, 340, 935, t('holdLaunch'), { size: 24, color: '#f3f2f2', strokeThickness: 5, align: 'center' });
+    this.saveGlow = this.add.image(340, PIVOT_Y + 81, 'pb-glow').setScale(1.4, 0.3).setTint(0x5dff7a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+    this.saveText = txt(this, 340, PIVOT_Y + 81, t('ballSave'), { title: true, size: 12, color: '#5dff7a', strokeThickness: 3 });
+    this.launchHint = txt(this, 340, 1690, t('holdLaunch'), { size: 24, color: '#f3f2f2', strokeThickness: 5, align: 'center' });
     this.table.add([this.saveGlow, this.saveText, this.launchHint]);
+  }
 
-    // goal panel
-    this.barGfx = this.add.graphics();
-    this.header = txt(this, 360, 1168, '', { title: true, size: 13, color: '#ffd23f', strokeThickness: 3 });
-    this.table.add([this.barGfx, this.header]);
+  /** Fixed to the screen: the dot-matrix display at the top, the control bar at the bottom. */
+  private buildOverlay(): void {
+    const fix = <T extends Phaser.GameObjects.Components.ScrollFactor & Phaser.GameObjects.Components.Depth>(o: T, d: number): T => { o.setScrollFactor(0); o.setDepth(d); return o; };
+    fix(this.add.image(DMD_X, DMD_Y, 'pb-dmd'), 50);
+    const dmdText = (y: number, size: number) => {
+      const tx = txt(this, DMD_X, y, '', { title: true, size, color: '#ffb54d', strokeThickness: 0, shadow: false, align: 'center' });
+      tx.setShadow(0, 0, '#ff6a00', 12, false, true);
+      return fix(tx, 51);
+    };
+    this.dmdScore = dmdText(DMD_Y - 13, 34);
+    this.dmdInfo = dmdText(DMD_Y + 27, 15);
+    this.dmdMsg = dmdText(DMD_Y, 22).setLineSpacing(12).setVisible(false);
+    fix(this.add.image(DMD_X, DMD_Y - 1, 'pb-dmdgrid'), 52);
+
+    fix(this.add.image(360, BAR_TOP + 56, 'pb-bar'), 50);
+    this.barGfx = fix(this.add.graphics(), 51);
     for (let i = 0; i < 3; i++) {
-      const label = txt(this, 202, 0, '', { title: true, size: 13, color: '#ffffff', strokeThickness: 3 }).setOrigin(0, 0.5);
-      const value = txt(this, 518, 0, '', { title: true, size: 13, color: '#ffffff', strokeThickness: 3 }).setOrigin(1, 0.5);
+      const label = fix(txt(this, 202, 0, '', { title: true, size: 13, color: '#ffffff', strokeThickness: 3 }).setOrigin(0, 0.5), 52);
+      const value = fix(txt(this, 518, 0, '', { title: true, size: 13, color: '#ffffff', strokeThickness: 3 }).setOrigin(1, 0.5), 52);
       this.rows.push({ label, value, y: 0 });
-      this.table.add([label, value]);
     }
-
-    // buttons
     const bk = makeButton(this, BTN_W, BTN_H);
     for (const [x, tint, key] of [[NUDGE_X, COLORS.purple, 'nudge'], [LAUNCH_X, COLORS.red, 'launch']] as const) {
-      const img = this.add.image(x, BTN_Y + 4, bk).setTint(tint);
-      const label = txt(this, x, BTN_Y, t(key), { title: true, size: 17, color: '#ffffff', strokeThickness: 5 });
-      this.btnImgs.push(img); this.btnLabels.push(label);
+      this.btnImgs.push(fix(this.add.image(x, BTN_Y + 4, bk).setTint(tint), 51));
+      this.btnLabels.push(fix(txt(this, x, BTN_Y, t(key), { title: true, size: 17, color: '#ffffff', strokeThickness: 5 }), 53));
     }
-    this.btnGfx = this.add.graphics();
-    this.table.add([...this.btnImgs, this.btnGfx, ...this.btnLabels]);
+    this.btnGfx = fix(this.add.graphics(), 52);
   }
 
   private bindInput(): void {
@@ -251,6 +306,36 @@ export class PlayScene extends ArcadeScene {
       else if (z === 'L') this.pulse[0] = 0.1;
       else if (z === 'R') this.pulse[1] = 0.1;
     });
+  }
+
+  // ================================================================ dot-matrix display
+
+  /** Shows a message on the display (queued; about 1.5 s each). */
+  private dmd(s: string): void {
+    this.msgQ.push(s);
+  }
+
+  private updateDmd(): void {
+    const n = this.score.toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-US');
+    this.dmdScore.setText(n);
+    this.dmdInfo.setText(`${t('ball')} ${this.ballNo}/${BALLS + this.extra}   ${t('levelUp', { n: this.level })}   x${this.mult}`);
+  }
+
+  private tickDmd(dt: number): void {
+    if (this.msgT > 0) {
+      this.msgT -= dt;
+      this.dmdMsg.setAlpha(this.msgT > 1.15 ? (Math.floor(this.msgT * 12) % 2 ? 1 : 0.25) : 1);
+      if (this.msgT > 0) return;
+    }
+    const next = this.msgQ.shift();
+    const on = next !== undefined;
+    this.dmdMsg.setVisible(on);
+    this.dmdScore.setVisible(!on);
+    this.dmdInfo.setVisible(!on);
+    if (on) {
+      this.dmdMsg.setText(next).setFontSize(Math.max(...next.split('\n').map((l) => l.length)) > 20 ? 18 : 22);
+      this.msgT = this.msgQ.length ? 1.2 : 1.5;
+    }
   }
 
   // ================================================================ themes and levels
@@ -276,9 +361,11 @@ export class PlayScene extends ArcadeScene {
     this.targetGlows.forEach((g) => g.setTint(th.target));
     this.lampGlows.forEach((g) => g.setTint(th.lamp));
     this.arrows.forEach((a) => a.setTint(th.lamp));
+    for (const [lamp, glow] of Object.values(this.inserts)) { lamp.setTint(th.lamp); glow.setTint(th.lamp); }
     this.saucerGlow.setTint(th.lamp);
-    this.ballGlow.setTint(Phaser.Display.Color.HexStringToColor(th.glow).color);
-    this.trail.particleTint = Phaser.Display.Color.HexStringToColor(th.glow).color;
+    this.ballGlow.setTint(hexColor(th.glow));
+    this.riderGlow.setTint(hexColor(th.glow));
+    this.trail.particleTint = hexColor(th.glow);
     this.refreshLanes();
   }
 
@@ -289,15 +376,13 @@ export class PlayScene extends ArcadeScene {
     for (const b of this.world.bumpers) b.kick = tu.kick;
     this.goals = levelGoals(this.level);
     this.prog = {};
-    this.saucerImg.setVisible(this.level >= UNLOCK.saucer);
-    this.saucerGlow.setVisible(this.level >= UNLOCK.saucer);
     if (this.level >= UNLOCK.bumper4 && this.world.bumpers.length < 4) {
       this.world.bumpers.push({ x: BUMPER4.x, y: BUMPER4.y, r: BUMPER4.r, kick: tu.kick, id: 3 });
       this.addBumperView(BUMPER4.x, BUMPER4.y, BUMPER4.r);
       this.bumpers[3].body.setTint(this.theme.bumper); this.bumpers[3].halo.setTint(this.theme.bumper);
     }
     if (this.level >= UNLOCK.guard && !this.guard) {
-      this.guard = { ax: 340 - GUARD_HALF, ay: GUARD_Y, bx: 340 + GUARD_HALF, by: GUARD_Y, r: 7, e: 0.7, kind: 'post' };
+      this.guard = { ax: GUARD.cx - GUARD.half, ay: GUARD.y, bx: GUARD.cx + GUARD.half, by: GUARD.y, r: 7, e: 0.7, kind: 'post' };
       this.world.walls.push(this.guard);
     }
     this.layoutGoals();
@@ -306,7 +391,7 @@ export class PlayScene extends ArcadeScene {
 
   private layoutGoals(): void {
     const n = this.goals.length;
-    const ys = n === 3 ? [1198, 1225, 1252] : n === 2 ? [1206, 1240] : [1222];
+    const ys = n === 3 ? [1208, 1236, 1264] : n === 2 ? [1220, 1252] : [1236];
     this.rows.forEach((r, i) => {
       const on = i < n;
       r.label.setVisible(on); r.value.setVisible(on);
@@ -322,9 +407,13 @@ export class PlayScene extends ArcadeScene {
     return Math.min(1, (this.prog[g] ?? 0) / need);
   }
 
+  private goalOpen(goal: Goal): boolean {
+    const i = this.goals.findIndex(([g]) => g === goal);
+    return i >= 0 && this.goalFrac(i) < 1;
+  }
+
   private updateGoals(): void {
     const th = this.theme;
-    this.header.setText(`${t('levelUp', { n: this.level })} · ${loc(th.name)}  x${this.mult}`).setColor(th.accent);
     const g = this.barGfx;
     g.clear();
     this.goals.forEach(([goal, need], i) => {
@@ -345,10 +434,9 @@ export class PlayScene extends ArcadeScene {
     if (i < 0) return;
     const before = this.goalFrac(i);
     this.prog[goal] = (this.prog[goal] ?? 0) + n;
-    const after = this.goalFrac(i);
-    if (before < 1 && after >= 1) {
+    if (before < 1 && this.goalFrac(i) >= 1) {
       this.sfx('saved', { volume: 0.45 });
-      popup(this, 360, 1110 - 40, t('goalDone', { g: t(`g_${goal}`) }), this.theme.accent, 18);
+      this.dmd(t('goalDone', { g: t(`g_${goal}`) }));
       const row = this.rows[i];
       this.tweens.add({ targets: [row.label, row.value], scale: 1.25, duration: 120, yoyo: true });
     }
@@ -359,38 +447,36 @@ export class PlayScene extends ArcadeScene {
   private levelClear(): void {
     this.clearing = true;
     const cleared = this.level;
-    const bonus = 5000 * cleared;
+    const bonus = 10000 * cleared;
     this.sfx('bank', { volume: 0.75, exact: true });
     this.time.delayedCall(350, () => this.sfx('lanes', { volume: 0.6, exact: true }));
-    flash(this, Phaser.Display.Color.HexStringToColor(this.theme.glow).color, 220, 0.35);
+    flash(this, hexColor(this.theme.glow), 220, 0.35);
     shake(this, 0.012, 260);
-    this.award(bonus, W / 2, 520, this.theme.accent, false);
-    this.banner(`${t('levelClear', { n: cleared })}\n${t('bonus', { n: bonus * this.mult })}`, this.theme.accent, 30);
-    for (let i = 0; i < 4; i++) this.time.delayedCall(i * 140, () => burst(this, rng.int(120, 600), rng.int(250, 800), [0xffffff, this.theme.lamp, this.theme.bumper], 22, 380));
+    this.award(bonus, W / 2, this.camY + 600, this.theme.accent, false);
+    this.dmd(`${t('levelClear', { n: cleared })}\n${t('bonus', { n: (bonus * this.mult).toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-US') })}`);
+    for (let i = 0; i < 4; i++) this.time.delayedCall(i * 140, () => burst(this, rng.int(120, 600), this.camY + rng.int(250, 900), [0xffffff, this.theme.lamp, this.theme.bumper], 22, 380));
     this.time.delayedCall(900, () => {
       if (this.isOver) return;
       this.level++;
       this.theme = THEMES[themeOf(this.level)];
       this.applyTheme(true);
       const unlocks: string[] = [];
-      if (this.level === UNLOCK.saucer) unlocks.push(t('unlockSaucer'));
       if (this.level === UNLOCK.bumper4) unlocks.push(t('unlockBumper'));
       if (this.level === UNLOCK.guard) unlocks.push(t('unlockGuard'));
       this.applyLevel();
-      // a fresh table: drop targets up, lanes dark
       for (const s of this.world.targets) s.active = true;
       this.refreshTargets();
       this.lit = [false, false, false, false];
       this.refreshLanes();
-      this.banner(`${t('levelUp', { n: this.level })}\n${loc(this.theme.name)}`, this.theme.accent, 30);
-      for (const u of unlocks) this.banner(u, '#3ee6ff', 26);
+      this.dmd(`${t('levelUp', { n: this.level })}\n${loc(this.theme.name)}`);
+      for (const u of unlocks) this.dmd(u);
       if (extraBallFor(cleared)) {
         this.extra++; this.balls++;
         this.sfx('newball', { volume: 0.6 });
-        this.banner(t('extraBall'), '#5dff7a', 32);
-        this.updateHud();
+        this.dmd(t('extraBall'));
       }
       if (this.inPlay) this.ballSave = Math.max(this.ballSave, 5);
+      this.updateDmd();
       this.clearing = false;
     });
   }
@@ -403,16 +489,16 @@ export class PlayScene extends ArcadeScene {
       this.applyLevel();
     }
     this.applyTheme(true);
-    this.updateHud();
+    this.updateDmd();
   }
 
   // ================================================================ input
 
   private zoneAt(x: number, y: number): Zone {
     if (x > W - 130 && y < 130) return null;                       // pause button
-    if (Math.abs(y - BTN_Y) <= BTN_H / 2 + 10) {
-      if (Math.abs(x - NUDGE_X) <= BTN_W / 2 + 10) return 'N';
-      if (Math.abs(x - LAUNCH_X) <= BTN_W / 2 + 10) return 'P';
+    if (Math.abs(y - BTN_Y) <= BTN_H / 2 + 8) {
+      if (Math.abs(x - NUDGE_X) <= BTN_W / 2 + 8) return 'N';
+      if (Math.abs(x - LAUNCH_X) <= BTN_W / 2 + 8) return 'P';
     }
     return x < W / 2 ? 'L' : 'R';
   }
@@ -433,19 +519,32 @@ export class PlayScene extends ArcadeScene {
     return { left, right, plunger };
   }
 
+  /** A nudge shakes the ball loose; three close together tilt the machine. */
   private nudge(): void {
-    if (this.isOver || !this.inPlay) return;
-    if (this.nudgeCd > 0) { this.sfx('deny', { volume: 0.35 }); return; }
-    this.nudgeCd = NUDGE_CD;
+    if (this.isOver || !this.inPlay || this.tilted) return;
+    if (this.nudgeCd > 0) return;
+    this.nudgeCd = 0.45;
+    this.tiltWarn += 1;
     const b = this.world.ball;
-    if (b.x < 650 && this.held <= 0) {
+    if (b.x < 650 && this.held <= 0 && !this.ride) {
       b.vx += (b.x < 340 ? 1 : -1) * rng.int(90, 170);
       b.vy -= rng.int(260, 360);
     }
     this.sfx('nudge', { volume: 0.7 });
     shake(this, 0.008, 160);
     this.tweens.add({ targets: this.table, x: rng.pick([-10, 10]), y: -6, duration: 50, yoyo: true });
-    popup(this, W / 2, 820, t('shake'), '#b9a2ff', 22);
+    if (this.tiltWarn >= TILT_AT) this.tilt();
+    else if (this.tiltWarn >= TILT_AT - 1) { this.msgQ = []; this.msgT = 0; this.dmd(t('danger')); this.sfx('deny', { volume: 0.5 }); }
+  }
+
+  private tilt(): void {
+    this.tilted = true;
+    this.ballSave = 0;
+    this.msgQ = []; this.msgT = 0;
+    this.dmd(t('tilt')); this.dmd(t('tilt'));
+    this.sfx('drain', { volume: 0.6 });
+    flash(this, COLORS.red, 300, 0.35);
+    for (const f of this.world.flippers) f.held = false;
   }
 
   // ================================================================ balls
@@ -453,16 +552,20 @@ export class PlayScene extends ArcadeScene {
   private serveBall(first = false): void {
     const b = this.world.ball;
     b.x = LANE_X; b.y = PLUNGER_Y; b.vx = 0; b.vy = 0;
-    this.held = 0;
+    this.prevX = b.x; this.prevY = b.y;
+    this.held = 0; this.ride = null; this.tilted = false; this.tiltWarn = 0; this.orbitFrom = null;
+    this.bc = { ramps: 0, orbits: 0, saucers: 0, bumpers: 0, spins: 0 };
     this.ballImg.setVisible(true).setPosition(b.x, b.y).setScale(0.2);
     this.ballGlow.setVisible(true);
+    this.riderImg.setVisible(false); this.riderGlow.setVisible(false);
     this.tweens.add({ targets: this.ballImg, scale: 1, duration: 260, ease: 'Back.easeOut' });
     this.inPlay = true;
     this.waiting = 0;
     this.saveArmed = true;
     this.ballSave = 0;
+    this.updateDmd();
     if (!first) this.sfx('newball', { volume: 0.5 });
-    if (this.balls === 1 && !first) this.banner(t('lastBall'), '#ff4fa3', 36);
+    if (this.balls === 1 && !first) this.dmd(t('lastBall'));
   }
 
   private drain(): void {
@@ -472,47 +575,31 @@ export class PlayScene extends ArcadeScene {
     this.ballGlow.setVisible(false);
     this.trail.stop();
     this.combo = 0;
-    if (this.ballSave > 0) {
+    if (this.ballSave > 0 && !this.tilted) {
       this.ballSave = 0;
       this.sfx('saved', { volume: 0.6 });
-      this.banner(t('saved'), '#5dff7a', 34);
+      this.dmd(t('saved'));
       this.time.delayedCall(700, () => { if (!this.isOver) this.serveBall(true); });
       return;
     }
     this.sfx('drain', { volume: 0.7 });
     shake(this, 0.014, 280);
     flash(this, COLORS.red, 180, 0.25);
-    burst(this, Phaser.Math.Clamp(b.x, 200, 480), 1140, [COLORS.red, 0xffd23f], 24, 300);
+    burst(this, Phaser.Math.Clamp(b.x, 200, 480), PIVOT_Y + 90, [COLORS.red, 0xffd23f], 24, 300);
+    // end-of-ball bonus (lost to a tilt)
+    const c = this.bc;
+    const bonus = (c.ramps * 2000 + c.orbits * 1500 + c.saucers * 1000 + c.bumpers * 50 + c.spins * 10) * this.mult;
+    if (!this.tilted && bonus > 0) {
+      this.addScore(bonus);
+      this.bump('points', bonus);
+      this.dmd(`${t('ballBonus')}\n${bonus.toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-US')}`);
+    } else if (!this.tilted) this.dmd(t('lost'));
     this.balls--;
     if (this.balls <= 0) {
-      this.endGame({ delay: 1200 });
+      this.endGame({ delay: 1600 });
       return;
     }
-    this.banner(t('lost'), '#ec3013', 34);
-    this.waiting = 1.4;
-  }
-
-  /** Big centred messages, one after another. */
-  private banner(s: string, color: string, size: number): void {
-    this.bannerQ.push([s, color, size]);
-    if (!this.bannerBusy) this.nextBanner();
-  }
-
-  private nextBanner(): void {
-    const item = this.bannerQ.shift();
-    if (!item) { this.bannerBusy = false; return; }
-    this.bannerBusy = true;
-    const [s, color, size] = item;
-    const tx = txt(this, 0, 0, s, { title: true, size, color, strokeThickness: 6, wrap: 600 });
-    const w = Math.min(680, tx.width + 60), h = tx.height + 36;
-    const bg = this.add.graphics();
-    bg.fillStyle(0x05040f, 0.8).fillRoundedRect(-w / 2, -h / 2, w, h, 18);
-    bg.lineStyle(3, Phaser.Display.Color.HexStringToColor(color).color, 0.9).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
-    bg.lineStyle(9, Phaser.Display.Color.HexStringToColor(color).color, 0.18).strokeRoundedRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8, 22);
-    const box = this.add.container(W / 2, 560, [bg, tx]).setDepth(40).setScale(0.3).setAlpha(0);
-    this.tweens.add({ targets: box, scale: 1, alpha: 1, duration: 240, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: box, alpha: 0, y: 520, delay: 1100, duration: 300, onComplete: () => box.destroy() });
-    this.time.delayedCall(this.bannerQ.length ? 900 : 1300, () => this.nextBanner());
+    this.waiting = bonus > 0 ? 2 : 1.4;
   }
 
   // ================================================================ scoring
@@ -528,8 +615,8 @@ export class PlayScene extends ArcadeScene {
     this.combo = this.elapsed - this.lastHit < 1.1 ? this.combo + 1 : 1;
     this.lastHit = this.elapsed;
     if (this.combo >= 5 && this.combo % 5 === 0) {
-      this.award(50 * this.combo, W / 2, 470, '#ff8cf0');
-      popup(this, W / 2, 430, t('combo', { n: this.combo }), '#ff8cf0', 26);
+      this.award(50 * this.combo, this.world.ball.x, this.world.ball.y - 40, '#ff8cf0');
+      this.dmd(t('combo', { n: this.combo }));
       this.sfx('lane', { volume: 0.5 });
     }
   }
@@ -558,6 +645,7 @@ export class PlayScene extends ArcadeScene {
         burst(this, h.x, h.y, [th.bumper, 0xffffff, th.lamp], 10, 260);
         this.sfxAt(`bumper${(h.id % 3) + 1}`, h.x, { volume: 0.55 });
         this.award(100 + (this.level - 1) * 20, v.body.x, v.body.y - 30);
+        this.bc.bumpers++;
         this.bump('bumpers');
         this.chain();
         break;
@@ -568,7 +656,6 @@ export class PlayScene extends ArcadeScene {
         burst(this, h.x, h.y, [th.sling, 0xffffff], 8, 200);
         this.sfxAt('sling', h.x, { volume: 0.6 });
         this.award(30, h.x, h.y);
-        this.bump('slings');
         this.chain();
         break;
       case 'target': {
@@ -579,9 +666,9 @@ export class PlayScene extends ArcadeScene {
         const g = this.targetGlows[h.id];
         g.setAlpha(1);
         this.tweens.add({ targets: g, alpha: 0, duration: 450 });
-        burst(this, h.x, TARGET_Y, [th.target, 0xffd23f, 0xffffff], 14, 240);
+        burst(this, BANK_X, h.y, [th.target, 0xffd23f, 0xffffff], 14, 240);
         this.sfxAt('target', h.x, { volume: 0.6 });
-        this.award(500, h.x, TARGET_Y);
+        this.award(500, BANK_X - 30, h.y);
         this.chain();
         if (this.world.targets.every((tg) => !tg.active)) this.bankDown();
         break;
@@ -604,8 +691,8 @@ export class PlayScene extends ArcadeScene {
     this.sfx('bank', { volume: 0.7, exact: true });
     shake(this, 0.01, 220);
     flash(this, this.theme.target, 150, 0.25);
-    this.award(5000, W / 2, TARGET_Y - 40, css(this.theme.target));
-    this.banner(t('bank'), css(this.theme.target), 30);
+    this.award(5000, BANK_X - 60, BANK_Y[1], css(this.theme.target));
+    this.dmd(t('bank'));
     this.bankTimer = 2.2;
     this.bump('targets');
   }
@@ -634,8 +721,8 @@ export class PlayScene extends ArcadeScene {
     this.sfx('lanes', { volume: 0.7, exact: true });
     flash(this, this.theme.lamp, 150, 0.25);
     this.award(2500, W / 2, LANE_Y + 90);
-    this.banner(t('multUp', { n: this.mult }), this.theme.accent, 30);
-    this.updateHud();
+    this.dmd(t('multUp', { n: this.mult }));
+    this.updateDmd();
     this.lamps.forEach((l, i) => {
       this.tweens.add({ targets: l, scale: 1.5, duration: 120, yoyo: true, repeat: 2, delay: i * 60 });
       this.tweens.add({ targets: this.lampGlows[i], scale: 0.85, duration: 120, yoyo: true, repeat: 2, delay: i * 60 });
@@ -653,12 +740,7 @@ export class PlayScene extends ArcadeScene {
     });
   }
 
-  private updateHud(): void {
-    this.hud.setRight(`${t('ball')} ${this.ballNo}/${BALLS + this.extra}`);
-    this.updateGoals();
-  }
-
-  // ================================================================ saucer
+  // ================================================================ shots: saucer, ramp, orbits, spinner
 
   private saucerCheck(dt: number): void {
     const b = this.world.ball;
@@ -675,18 +757,109 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     this.saucerCd = Math.max(0, this.saucerCd - dt);
-    if (this.level < UNLOCK.saucer || this.saucerCd > 0) return;
+    if (this.saucerCd > 0) return;
     if (Math.hypot(b.x - SAUCER.x, b.y - SAUCER.y) < SAUCER.r && Math.hypot(b.vx, b.vy) < 1600) {
       this.held = SAUCER.hold;
-      const value = 1500 * this.level;
       this.sfxAt('target', SAUCER.x, { volume: 0.7 });
       this.time.delayedCall(150, () => this.sfx('lanes', { volume: 0.5, exact: true }));
       this.ring(SAUCER.x, SAUCER.y, this.theme.lamp, 0.2, 1.1, 500);
-      this.award(value, SAUCER.x, SAUCER.y - 30, this.theme.accent);
-      popup(this, SAUCER.x - 40, SAUCER.y - 80, t('g_saucer'), this.theme.accent, 20);
+      this.award(1500 * this.level, SAUCER.x, SAUCER.y - 30, this.theme.accent);
+      this.dmd(`${t('g_saucer')}\n${(1500 * this.level * this.mult).toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-US')}`);
+      this.bc.saucers++;
       this.bump('saucer');
       this.chain();
     }
+  }
+
+  /** A fast ball reaching the top of the ramp lane rides the ramp. */
+  private rampCheck(): void {
+    const b = this.world.ball;
+    if (b.x > RAMP.x0 + 4 && b.x < RAMP.x1 - 4 && b.y < RAMP.top + 50 && b.y > RAMP.top && b.vy < -380) {
+      this.ride = { s: 0, v: Phaser.Math.Clamp(-b.vy, 900, 1500) };
+      this.ballImg.setVisible(false); this.ballGlow.setVisible(false);
+      this.riderImg.setVisible(true); this.riderGlow.setVisible(true);
+      this.trail.stop();
+      this.sfxAt('launch', b.x, { volume: 0.5 });
+    }
+  }
+
+  private rideStep(dt: number): void {
+    const r = this.ride!;
+    const pts = this.rampPts, len = this.rampLen;
+    r.v = Math.max(650, r.v - 250 * dt);
+    r.s += r.v * dt;
+    const total = len[len.length - 1];
+    let i = 1;
+    while (i < len.length - 1 && len[i] < r.s) i++;
+    const f = Phaser.Math.Clamp((r.s - len[i - 1]) / Math.max(1e-6, len[i] - len[i - 1]), 0, 1);
+    const x = pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, y = pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f;
+    this.riderImg.setPosition(x, y);
+    this.riderGlow.setPosition(x, y);
+    const b = this.world.ball;
+    b.x = x; b.y = y;
+    if (r.s >= total) this.rideEnd();
+  }
+
+  private rideEnd(): void {
+    const b = this.world.ball;
+    const [x, y] = this.rampPts[this.rampPts.length - 1];
+    b.x = x; b.y = y + 4; b.vx = -60; b.vy = 280;
+    this.prevX = b.x; this.prevY = b.y;
+    this.ride = null;
+    this.riderImg.setVisible(false); this.riderGlow.setVisible(false);
+    this.ballImg.setVisible(true); this.ballGlow.setVisible(true);
+    this.rampCombo = this.elapsed - this.lastRamp < 7 ? this.rampCombo + 1 : 0;
+    this.lastRamp = this.elapsed;
+    const value = 2500 * (1 + this.rampCombo);
+    this.award(value, x - 40, y - 60, this.theme.accent);
+    this.sfx('lanes', { volume: 0.55, exact: true });
+    this.dmd(this.rampCombo ? `${t('rampCombo')}\nx${this.rampCombo + 1}` : `${t('ramp')}\n${(value * this.mult).toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-US')}`);
+    this.bc.ramps++;
+    this.bump('ramps');
+    this.chain();
+  }
+
+  /** Orbits (in one side lane and out of the other) and the spinner in the left lane. */
+  private laneSensors(): void {
+    const b = this.world.ball;
+    const inL = b.x > 30 && b.x < ORBIT_L && b.y > ORBIT_BOT - 70 && b.y < ORBIT_BOT;
+    const inR = b.x > ORBIT_R && b.x < 650 && b.y > ORBIT_BOT - 70 && b.y < ORBIT_BOT;
+    if (inL || inR) {
+      const side = inL ? 'L' : 'R';
+      if (b.vy < -150 && (!this.orbitFrom || this.orbitFrom.side !== side)) this.orbitFrom = { side, t: this.elapsed };
+      else if (b.vy > 150 && this.orbitFrom && this.orbitFrom.side !== side) {
+        if (this.elapsed - this.orbitFrom.t < 4) this.orbit();
+        this.orbitFrom = null;
+      } else if (b.vy > 150 && this.orbitFrom?.side === side && this.elapsed - this.orbitFrom.t > 0.3) this.orbitFrom = null;
+    }
+    // spinner: the ball crossing its line spins it in proportion to the speed
+    if (b.x > 34 && b.x < 90 && (this.prevY - SPINNER.y) * (b.y - SPINNER.y) < 0) {
+      this.spinPending += Phaser.Math.Clamp(Math.round(Math.abs(b.vy) / 140), 2, 22);
+    }
+  }
+
+  private orbit(): void {
+    this.award(2000, W / 2, this.world.ball.y - 80, this.theme.accent);
+    this.sfx('bank', { volume: 0.5, exact: true });
+    this.dmd(`${t('orbit')}\n${(2000 * this.mult).toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-US')}`);
+    this.bc.orbits++;
+    this.bump('orbits');
+    this.chain();
+  }
+
+  private spinStep(dt: number): void {
+    if (this.spinPending <= 0) { this.spinPhase = 0; this.spinnerImg.setScale(1, 1); return; }
+    this.spinPhase += dt * 22;
+    while (this.spinPhase >= Math.PI && this.spinPending > 0) {
+      this.spinPhase -= Math.PI;
+      this.spinPending--;
+      this.addScore(100 * this.mult);
+      this.bump('points', 100 * this.mult);
+      this.bc.spins++;
+      this.bump('spinner');
+      if (this.spinPending % 2 === 0) this.sfxAt('flipdown', SPINNER.x, { volume: 0.25 });
+    }
+    this.spinnerImg.setScale(1, Math.max(0.12, Math.abs(Math.cos(this.spinPhase))));
   }
 
   // ================================================================ frame
@@ -696,9 +869,9 @@ export class PlayScene extends ArcadeScene {
     const w = this.world, b = w.ball;
     const inp = this.readInput();
 
-    const held = [inp.left, inp.right];
+    const held = this.tilted ? [false, false] : [inp.left, inp.right];
+    w.flippers[0].held = held[0]; w.flippers[2].held = held[0]; w.flippers[1].held = held[1];
     for (let i = 0; i < 2; i++) {
-      w.flippers[i].held = held[i];
       if (held[i] && !this.prevHeld[i]) {
         this.sfxAt('flip', w.flippers[i].px, { volume: 0.45 });
         if (this.inPlay && !this.lit.every(Boolean)) {
@@ -712,7 +885,7 @@ export class PlayScene extends ArcadeScene {
     this.pulse = this.pulse.map((v) => v - dt);
 
     // plunger
-    const inShooter = this.inPlay && b.x > 652 && b.y > PLUNGER_Y - 40;
+    const inShooter = this.inPlay && !this.ride && b.x > 652 && b.y > PLUNGER_Y - 40;
     if (inp.plunger && this.inPlay) {
       if (!this.charging) { this.charging = true; this.charge = 0; this.sfx('charge', { volume: 0.4 }); }
       this.charge = Math.min(1, this.charge + dt / 1.1);
@@ -721,7 +894,7 @@ export class PlayScene extends ArcadeScene {
       if (inShooter) {
         b.vy = -(1000 + 1700 * this.charge);
         this.sfxAt('launch', LANE_X, { volume: 0.4 + this.charge * 0.4 });
-        burst(this, LANE_X, PLUNGER_Y + 10, [0xffffff, Phaser.Display.Color.HexStringToColor(this.theme.glow).color], 10, 200);
+        burst(this, LANE_X, PLUNGER_Y + 10, [0xffffff, hexColor(this.theme.glow)], 10, 200);
         this.ring(LANE_X, PLUNGER_Y, 0xffffff, 0.15, 0.5, 260);
       }
       this.charge = 0;
@@ -730,50 +903,56 @@ export class PlayScene extends ArcadeScene {
 
     for (const k of Object.keys(this.hitCd)) this.hitCd[k] -= dt;
     this.slingFlash = this.slingFlash.map((v) => Math.max(0, v - dt));
+    this.tiltWarn = Math.max(0, this.tiltWarn - dt * 0.25);
 
-    // the moving guard
     const tu = tuning(this.level);
     if (this.guard) {
       this.guardT += dt * tu.guard;
-      const cx = 340 + Math.sin(this.guardT) * 150;
-      this.guard.ax = cx - GUARD_HALF; this.guard.bx = cx + GUARD_HALF;
+      const cx = GUARD.cx + Math.sin(this.guardT) * GUARD.sweep;
+      this.guard.ax = cx - GUARD.half; this.guard.bx = cx + GUARD.half;
     }
 
     if (this.inPlay) {
       if (inShooter && this.charging) { b.vy = Math.min(b.vy, 0); b.y = Math.min(b.y, PLUNGER_Y + this.charge * 26); }
-      const hits = step(w, dt);
+      const free = !this.ride && this.held <= 0;
+      this.prevX = b.x; this.prevY = b.y;
+      const hits = step(w, dt, free);
       for (const h of hits) this.onHit(h);
-      this.saucerCheck(dt);
-      this.laneCheck();
+      if (this.ride) this.rideStep(dt);
+      else {
+        this.saucerCheck(dt);
+        if (this.held <= 0) {
+          this.rampCheck();
+          this.laneSensors();
+          this.laneCheck();
+        }
+      }
       if (this.saveArmed && b.x < 640) { this.saveArmed = false; this.ballSave = tu.save; }
       this.ballSave = Math.max(0, this.ballSave - dt);
       // anti-stall: a ball resting anywhere but on a flipper, the plunger or the saucer gets a shove
       const slow = Math.hypot(b.vx, b.vy) < 25;
-      if (slow && this.held <= 0 && !inShooter && !w.flippers.some((f) => f.held) && b.y < PIVOT_Y - 60) {
+      if (slow && free && this.held <= 0 && !inShooter && !w.flippers.some((f) => f.held) && b.y < PIVOT_Y - 60) {
         this.stall += dt;
         if (this.stall > 1.5) { this.stall = 0; b.vx += rng.pick([-1, 1]) * 120; b.vy -= 200; this.sfx('nudge', { volume: 0.3 }); }
       } else this.stall = 0;
-      if (b.y > DRAIN_Y) this.drain();
+      if (!this.ride && b.y > DRAIN_Y) this.drain();
     } else {
-      for (const f of w.flippers) {
-        const target = f.held ? f.up : f.rest;
-        f.angle += Phaser.Math.Clamp(target - f.angle, -26 * dt, 26 * dt);
-      }
+      step(w, dt, false);
       if (this.waiting > 0) {
         this.waiting -= dt;
         if (this.waiting <= 0 && !this.isOver) {
           this.ballNo++;
-          this.updateHud();
           this.serveBall();
         }
       }
     }
+    this.spinStep(dt);
 
     // drop targets pop back up once the ball is clear of them
     if (this.bankTimer > 0) {
       this.bankTimer -= dt;
       if (this.bankTimer <= 0) {
-        if (Math.abs(b.y - TARGET_Y) < 50 && b.x > 220 && b.x < 460) this.bankTimer = 0.3;
+        if (Math.abs(b.x - BANK_X) < 60 && b.y > BANK_Y[0] - 40 && b.y < BANK_Y[3] + 40) this.bankTimer = 0.3;
         else {
           for (const s of w.targets) s.active = true;
           this.refreshTargets();
@@ -783,25 +962,32 @@ export class PlayScene extends ArcadeScene {
     }
 
     this.nudgeCd = Math.max(0, this.nudgeCd - dt);
-    this.render(inShooter);
+    this.tickDmd(dt);
+    this.render(inShooter, dt);
   }
 
-  private render(inShooter: boolean): void {
+  private render(inShooter: boolean, dt: number): void {
     const w = this.world, b = w.ball, th = this.theme;
     this.ballImg.setPosition(b.x, b.y);
     this.ballGlow.setPosition(b.x, b.y);
     const fast = Math.hypot(b.vx, b.vy) > 800;
-    if (this.inPlay && fast) { this.trail.setPosition(b.x, b.y); if (!this.trail.emitting) this.trail.start(); }
+    if (this.inPlay && fast && !this.ride && this.held <= 0) { this.trail.setPosition(b.x, b.y); if (!this.trail.emitting) this.trail.start(); }
     else if (this.trail.emitting) this.trail.stop();
     this.flipImgs.forEach((img, i) => img.setRotation(w.flippers[i].angle));
 
-    // kickers, guard, saucer lamp
+    // the camera follows the ball up and down the table
+    const focus = this.inPlay ? b.y : PLUNGER_Y;
+    const target = Phaser.Math.Clamp(focus - 640, SCROLL_MIN, SCROLL_MAX);
+    this.camY += (target - this.camY) * (1 - Math.exp(-dt * 7));
+    this.cameras.main.setScroll(0, Math.round(this.camY));
+
+    // sling rubbers and the guard
     const g = this.fxGfx;
     g.clear();
     [SLING_L, SLING_R].forEach((s, i) => {
       const lit = this.slingFlash[i] > 0;
-      g.lineStyle(lit ? 22 : 14, th.sling, lit ? 0.5 : 0.22).lineBetween(s.a[0], s.a[1], s.c[0], s.c[1]);
-      g.lineStyle(lit ? 10 : 7, lit ? 0xffffff : th.sling, 1).lineBetween(s.a[0], s.a[1], s.c[0], s.c[1]);
+      g.lineStyle(lit ? 22 : 14, th.sling, lit ? 0.55 : 0.2).lineBetween(s.a[0], s.a[1], s.c[0], s.c[1]);
+      g.lineStyle(lit ? 9 : 7, lit ? 0xffffff : 0xf2f2f2, 1).lineBetween(s.a[0], s.a[1], s.c[0], s.c[1]);
     });
     if (this.guard) {
       const gd = this.guard;
@@ -809,12 +995,19 @@ export class PlayScene extends ArcadeScene {
       g.lineStyle(14, th.bumper, 1).lineBetween(gd.ax, gd.ay, gd.bx, gd.by);
       g.lineStyle(4, 0xffffff, 0.85).lineBetween(gd.ax + 4, gd.ay - 3, gd.bx - 4, gd.by - 3);
     }
-    if (this.saucerImg.visible) this.saucerGlow.setAlpha(this.held > 0 ? 1 : 0.35 + Math.sin(this.elapsed * 5) * 0.2);
+    this.saucerGlow.setAlpha(this.held > 0 ? 1 : this.goalOpen('saucer') ? 0.35 + Math.sin(this.elapsed * 5) * 0.2 : 0.15);
 
-    // progress arrows: one per third of the level's goals, the next one blinks
+    // inserts: a shot that counts for an open goal blinks
+    const blink = (Math.sin(this.elapsed * 7) + 1) / 2;
+    for (const [shot, goals] of Object.entries(SHOT_GOALS) as [Shot, Goal[]][]) {
+      const [lamp, glow] = this.inserts[shot]!;
+      const open = goals.some((gl) => this.goalOpen(gl));
+      lamp.setAlpha(open ? 0.4 + blink * 0.6 : 0.2);
+      glow.setAlpha(open ? blink * 0.7 : 0);
+    }
     const total = this.goals.reduce((s, _, i) => s + this.goalFrac(i), 0) / Math.max(1, this.goals.length);
     const on = Math.floor(total * 3 + 1e-6);
-    this.arrows.forEach((a, i) => a.setAlpha(i < on ? 1 : i === on ? 0.3 + (Math.sin(this.elapsed * 6) + 1) * 0.3 : 0.18));
+    this.arrows.forEach((a, i) => a.setAlpha(i < on ? 1 : i === on ? 0.3 + blink * 0.6 : 0.18));
 
     // plunger spring
     const p = this.plungerGfx;
@@ -825,11 +1018,11 @@ export class PlayScene extends ArcadeScene {
     p.fillStyle(0xffffff, 1).fillRoundedRect(LANE_X - 19, top - 1, 38, 10, 3);
     p.fillStyle(th.flipper, 1).fillRoundedRect(LANE_X - 18, top, 36, 8, 3);
 
-    // shoot-again lamp
     const save = this.ballSave > 0 ? (this.ballSave < 2 ? (Math.floor(this.elapsed * 8) % 2 ? 1 : 0.3) : 1) : 0.15;
     this.saveText.setAlpha(save);
     this.saveGlow.setAlpha(this.ballSave > 0 ? save * 0.5 : 0);
 
+    if (!this.dmdMsg.visible) this.updateDmd();
     this.drawButtons();
   }
 
@@ -838,10 +1031,10 @@ export class PlayScene extends ArcadeScene {
     g.clear();
     const [nudge, launch] = this.btnImgs;
     const top = (img: Phaser.GameObjects.Image) => img.y - BTN_H / 2 - 4;
-    nudge.setTint(this.nudgeCd > 0 ? 0x5a4a8a : COLORS.purple);
-    if (this.nudgeCd > 0) {
-      const f = 1 - this.nudgeCd / NUDGE_CD;
-      g.fillStyle(COLORS.purple, 0.55).fillRoundedRect(NUDGE_X - BTN_W / 2 + 4, top(nudge) + BTN_H * (1 - f), BTN_W - 8, BTN_H * f - 4, 12);
+    nudge.setTint(this.tilted ? 0x4a3a3a : COLORS.purple);
+    if (this.tiltWarn > 0.05) {
+      const f = Math.min(1, this.tiltWarn / TILT_AT);
+      g.fillStyle(f > 0.6 ? COLORS.red : 0xffd23f, 0.55).fillRoundedRect(NUDGE_X - BTN_W / 2 + 4, top(nudge) + BTN_H * (1 - f), BTN_W - 8, BTN_H * f - 4, 12);
     }
     launch.setY(BTN_Y + 4 + (this.charging ? 4 : 0));
     this.btnLabels[1].setY(BTN_Y + (this.charging ? 4 : 0));

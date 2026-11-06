@@ -38,12 +38,6 @@ launch({
     const { width, height } = scene.scale;
     scene.add.image(0, 0, paintTable(scene, THEMES[0], 0)).setOrigin(0).setAlpha(0.55);
     scene.add.rectangle(0, 0, width, height, 0x05040f, 0.5).setOrigin(0);
-    const flip = (x: number, rot: number) => scene.add.image(x, height * 0.82, 'pb-flipper').setOrigin(16 / 148, 0.5).setRotation(rot).setTint(THEMES[0].flipper);
-    const left = flip(width / 2 - 130, 0.4), right = flip(width / 2 + 130, Math.PI - 0.4);
-    scene.add.image(width / 2 - 130, height * 0.82, 'pb-pivot');
-    scene.add.image(width / 2 + 130, height * 0.82, 'pb-pivot');
-    scene.tweens.add({ targets: left, rotation: -0.35, duration: 120, yoyo: true, repeat: -1, repeatDelay: 1300 });
-    scene.tweens.add({ targets: right, rotation: Math.PI + 0.35, duration: 120, yoyo: true, repeat: -1, repeatDelay: 1300, delay: 700 });
     for (const [x, y] of [[width * 0.18, height * 0.11], [width * 0.82, height * 0.11]]) {
       const halo = scene.add.image(x, y, 'pb-glow').setTint(THEMES[0].bumper).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.4).setScale(1.1);
       const body = scene.add.image(x, y, 'pb-bumper').setTint(THEMES[0].bumper).setScale(0.82);
@@ -65,6 +59,8 @@ launch({
       levelClear: 'SEVİYE {n} TAMAM!', bonus: 'BONUS +{n}', extraBall: 'EKSTRA TOP!', done: 'TAMAM', goalDone: '{g} TAMAM!',
       unlockSaucer: 'YENİ: KAPAN!', unlockBumper: 'YENİ: 4. TAMPON!', unlockGuard: 'YENİ: HAREKETLİ ENGEL!', combo: 'KOMBO {n}!',
       g_bumpers: 'TAMPON', g_lanes: 'AYVA', g_targets: 'HEDEF SETİ', g_slings: 'SAPAN', g_saucer: 'KAPAN', g_points: 'PUAN',
+      g_ramps: 'RAMPA', g_orbits: 'YÖRÜNGE', g_spinner: 'FIRILDAK', ramp: 'RAMPA!', orbit: 'YÖRÜNGE!', rampCombo: 'RAMPA KOMBO!',
+      tilt: 'TILT', danger: 'DİKKAT!', ballBonus: 'TOP BONUSU',
     },
     en: {
       launch: 'LAUNCH', nudge: 'NUDGE', ball: 'BALL', ballSave: 'BALL SAVE', saved: 'BALL SAVED!', lost: 'BALL LOST!',
@@ -73,6 +69,8 @@ launch({
       levelClear: 'LEVEL {n} CLEAR!', bonus: 'BONUS +{n}', extraBall: 'EXTRA BALL!', done: 'DONE', goalDone: '{g} DONE!',
       unlockSaucer: 'NEW: SAUCER!', unlockBumper: 'NEW: 4TH BUMPER!', unlockGuard: 'NEW: MOVING GUARD!', combo: 'COMBO {n}!',
       g_bumpers: 'BUMPERS', g_lanes: 'AYVA', g_targets: 'TARGET BANK', g_slings: 'SLINGS', g_saucer: 'SAUCER', g_points: 'POINTS',
+      g_ramps: 'RAMPS', g_orbits: 'ORBITS', g_spinner: 'SPINNER', ramp: 'RAMP!', orbit: 'ORBIT!', rampCombo: 'RAMP COMBO!',
+      tilt: 'TILT', danger: 'DANGER!', ballBonus: 'BALL BONUS',
     },
   },
 });
