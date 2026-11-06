@@ -93,23 +93,86 @@ function paintStadium(c: CanvasRenderingContext2D): void {
     c.fillStyle = 'rgba(255,255,255,0.92)'; c.font = '700 18px Fredoka, Nunito, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText(k % 2 ? 'AYVAGO GAMES' : 'AYVAGO', x + 80, 422);
   }
-  // grass: mown stripes and a soft light from the floodlights
+  // The pitch seen from the side stand: the far touchline runs along the foot of the boards, the
+  // near one is just below the screen, and the players run along the middle of the pitch (GROUND),
+  // where the goals stand on their goal lines. Lines across the pitch lean in with perspective.
+  // World units: 1 m = 10.2 px along the pitch (goal line to goal line = 105 m), 5.5 px across it.
+  const MID = GROUND, FAR = 452, PXM = (W / 2 - GOAL_W) / 52.5, DYM = (MID - FAR) / 34;
+  const sc = (y: number) => 1 + (y - MID) * 0.0008;                 // perspective scale at a screen row
+  const P = (X: number, y: number): [number, number] => [W / 2 + X * sc(y), y];
+  const yAt = (d: number) => MID + d * DYM;                           // d metres towards the viewer
+  const GL = 52.5 * PXM;                                              // goal line, px from the centre
+  // grass: a darker strip under the stands, then the pitch in mown stripes that follow the perspective
   const grass = c.createLinearGradient(0, 440, 0, 720);
-  grass.addColorStop(0, '#2b8a3a'); grass.addColorStop(1, '#3fae4d');
+  grass.addColorStop(0, '#24793a'); grass.addColorStop(0.3, '#2e8f40'); grass.addColorStop(1, '#3faf4e');
   c.fillStyle = grass; c.fillRect(0, 440, W, 280);
-  for (let k = 0; k < 10; k++) { c.fillStyle = 'rgba(255,255,255,0.07)'; c.fillRect(k * 128, 440, 64, GROUND - 440); }
-  c.fillStyle = 'rgba(0,0,0,0.18)'; c.fillRect(0, GROUND, W, 720 - GROUND);
-  // lines: touchline, halfway line, centre circle and the arcs before both goals
-  c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 4; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(0, GROUND - 1); c.lineTo(W, GROUND - 1); c.stroke();
-  c.beginPath(); c.moveTo(W / 2, 444); c.lineTo(W / 2, GROUND); c.stroke();
-  c.beginPath(); c.ellipse(W / 2, GROUND - 1, 150, 22, 0, Math.PI, Math.PI * 2); c.stroke();
-  c.beginPath(); c.ellipse(W / 2, GROUND - 1, 150, 22, 0, 0, Math.PI); c.stroke();
-  c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(W / 2, GROUND - 1, 7, 3, 0, 0, Math.PI * 2); c.fill();
-  for (const left of [true, false]) {
-    const gx = left ? GOAL_W : W - GOAL_W;
-    c.beginPath(); c.ellipse(gx, GROUND - 1, 210, 26, 0, left ? -Math.PI / 2 : Math.PI / 2, left ? Math.PI / 2 : Math.PI * 1.5, false); c.stroke();
+  for (let i = -10; i < 10; i++) {
+    if (i % 2) continue;
+    const X0 = i * 5.25 * PXM, X1 = (i + 1) * 5.25 * PXM;
+    const [a0x] = P(X0, 440), [a1x] = P(X1, 440), [b0x] = P(X0, 720), [b1x] = P(X1, 720);
+    c.fillStyle = 'rgba(255,255,255,0.06)';
+    c.beginPath(); c.moveTo(a0x, 440); c.lineTo(a1x, 440); c.lineTo(b1x, 720); c.lineTo(b0x, 720); c.closePath(); c.fill();
   }
+  // fine grass texture
+  for (let k = 0; k < 2200; k++) {
+    const x = r() * W, y = 444 + r() * 276;
+    c.fillStyle = r() < 0.5 ? 'rgba(0,40,0,0.12)' : 'rgba(200,255,180,0.07)';
+    c.fillRect(x, y, 2, 1 + (y - 440) / 90);
+  }
+  // pools of light from the floodlights, and the stands' shadow along the far touchline
+  for (const x of [380, W - 380]) {
+    c.save(); c.translate(x, 600); c.scale(1, 0.32);
+    const g = c.createRadialGradient(0, 0, 0, 0, 0, 380);
+    g.addColorStop(0, 'rgba(255,250,215,0.16)'); g.addColorStop(1, 'rgba(255,250,215,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, 380, 0, Math.PI * 2); c.fill(); c.restore();
+  }
+  const shade = c.createLinearGradient(0, 440, 0, 470);
+  shade.addColorStop(0, 'rgba(0,0,0,0.35)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = shade; c.fillRect(0, 440, W, 30);
+
+  // worn grass in the goal mouths and round the centre spot
+  for (const [X, rx] of [[-GL + 4 * PXM, 70], [GL - 4 * PXM, 70], [0, 46]] as const) {
+    const [wx, wy] = P(X, MID);
+    c.save(); c.translate(wx, wy); c.scale(1, 0.3);
+    const g = c.createRadialGradient(0, 0, 0, 0, 0, rx);
+    g.addColorStop(0, 'rgba(120,96,50,0.38)'); g.addColorStop(1, 'rgba(120,96,50,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, rx, 0, Math.PI * 2); c.fill(); c.restore();
+  }
+  // markings
+  c.strokeStyle = 'rgba(255,255,255,0.85)'; c.lineCap = 'round'; c.lineJoin = 'round';
+  const line = (pts: [number, number][], w = 3) => {
+    c.lineWidth = w; c.beginPath();
+    pts.forEach(([X, y], i) => { const [x, yy] = P(X, y); if (i) c.lineTo(x, yy); else c.moveTo(x, yy); });
+    c.stroke();
+  };
+  const ellipseOn = (CX: number, CD: number, rM: number, t0: number, t1: number, filter?: (X: number) => boolean) => {
+    c.lineWidth = 3; c.beginPath(); let open = false;
+    for (let i = 0; i <= 64; i++) {
+      const t = t0 + ((t1 - t0) * i) / 64;
+      const X = CX + Math.cos(t) * rM * PXM, y = yAt(CD + Math.sin(t) * rM);
+      if (filter && !filter(X)) { open = false; continue; }
+      const [x, yy] = P(X, y);
+      if (open) c.lineTo(x, yy); else { c.moveTo(x, yy); open = true; }
+    }
+    c.stroke();
+  };
+  line([[-GL, FAR], [GL, FAR]]);                                       // far touchline
+  line([[-GL, FAR], [-GL, 720]]); line([[GL, FAR], [GL, 720]]);       // goal lines
+  line([[0, FAR], [0, 720]]);                                          // halfway line
+  ellipseOn(0, 0, 9.15, 0, Math.PI * 2);                               // centre circle
+  for (const side of [-1, 1]) {
+    const g = side * GL, inw = -side;                                  // towards the centre
+    const box = (depth: number, half: number) => line([[g, yAt(-half)], [g + inw * depth * PXM, yAt(-half)], [g + inw * depth * PXM, Math.min(720, yAt(half))]]);
+    box(16.5, 20.16);                                                  // penalty area
+    box(5.5, 9.16);                                                    // goal area
+    const spot = g + inw * 11 * PXM;
+    const [sx, sy] = P(spot, MID);
+    c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(sx, sy, 5, 2.5, 0, 0, Math.PI * 2); c.fill();   // penalty spot
+    ellipseOn(spot, 0, 9.15, 0, Math.PI * 2, (X) => inw > 0 ? X > g + inw * 16.5 * PXM : X < g + inw * 16.5 * PXM);   // the arc outside the box
+    ellipseOn(g, -34, 1, side < 0 ? 0 : Math.PI / 2, side < 0 ? Math.PI / 2 : Math.PI);                                // corner arc
+  }
+  const [cx0, cy0] = P(0, MID);
+  c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(cx0, cy0, 6, 3, 0, 0, Math.PI * 2); c.fill();      // centre spot
   // vignette
   const v = c.createRadialGradient(W / 2, 400, 300, W / 2, 400, 820);
   v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.42)');
