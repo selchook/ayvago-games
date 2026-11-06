@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, ensurePixel } from '@core';
+import { makeFx, makeNebula, makePlanet, makeStars } from './art';
 
 type Img = Phaser.GameObjects.Image;
 
@@ -16,6 +17,8 @@ const ROCK = [
 const SHIP_R = 22;
 const PAD = 60;            // wrap margin outside the screen
 const EXTRA_LIFE = 10000;
+const ADD = Phaser.BlendModes.ADD;
+const ROCK_TINT = [0xb0b0b8, 0x9a9aa6, 0x8a8a96];
 
 export class PlayScene extends ArcadeScene {
   private controls!: Controls;
@@ -24,6 +27,11 @@ export class PlayScene extends ArcadeScene {
   private shieldFx!: Img;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
+  private layers: { ts: Phaser.GameObjects.TileSprite; speed: number }[] = [];
+  private planet!: Img;
+  private engine!: Img;
+  private vig!: Img;
+  private hurtT = 0;
   private rocks: Rock[] = [];
   private shots: Shot[] = [];
   private eshots: Shot[] = [];
@@ -51,17 +59,29 @@ export class PlayScene extends ArcadeScene {
     this.lives = 3; this.wave = 0; this.alive = true; this.respawnIn = 0; this.invuln = 2;
     this.fireCd = 0; this.hyperCd = 0; this.waveCd = 0; this.ufoCd = 18; this.nextLife = EXTRA_LIFE; this.beat = 0;
 
-    // static starfield with a few twinkling stars
-    for (let i = 0; i < 90; i++) {
-      const s = this.add.image(rng.int(0, width), rng.int(0, height), 'star').setScale(0.08 + Math.random() * 0.22).setAlpha(0.25 + Math.random() * 0.5);
-      if (i % 6 === 0) this.tweens.add({ targets: s, alpha: 0.1, duration: rng.int(600, 1600), yoyo: true, repeat: -1 });
+    // deep space: a drifting nebula, two star layers, a far planet and a few twinkling stars
+    makeFx(this); makeNebula(this, width, height); makePlanet(this);
+    makeStars(this, 'as-stars-far', width, height, 240, false, 5);
+    makeStars(this, 'as-stars-near', width, height, 70, true, 13);
+    this.layers = [
+      { ts: this.add.tileSprite(0, 0, width, height, 'as-nebula').setOrigin(0).setDepth(-10), speed: 6 },
+      { ts: this.add.tileSprite(0, 0, width, height, 'as-stars-far').setOrigin(0).setDepth(-8), speed: 12 },
+      { ts: this.add.tileSprite(0, 0, width, height, 'as-stars-near').setOrigin(0).setDepth(-7), speed: 26 },
+    ];
+    this.planet = this.add.image(width * 0.2, height * 0.3, 'as-planet').setDepth(-9).setAlpha(0.7).setScale(0.75);
+    for (let i = 0; i < 10; i++) {
+      const s = this.add.image(rng.int(0, width), rng.int(0, height), 'star').setScale(0.12 + Math.random() * 0.2).setAlpha(0).setDepth(-6);
+      this.tweens.add({ targets: s, alpha: 0.9, duration: rng.int(500, 1200), yoyo: true, repeat: -1, delay: rng.int(0, 3000), repeatDelay: rng.int(800, 4000) });
     }
+    this.hurtT = 0;
+    this.vig = this.add.image(width / 2, height / 2, 'as-vig').setDisplaySize(width, height).setDepth(50).setAlpha(0);
 
     this.trail = this.add.particles(0, 0, ensurePixel(this), {
       speed: { min: 40, max: 120 }, lifespan: 380, scale: { start: 1.6, end: 0 }, tint: [0xffd23f, 0xff7b00, 0xec3013],
       frequency: 22, emitting: false,
     }).setDepth(8);
     this.flame = this.add.image(0, 0, 'flame').setDepth(9).setVisible(false);
+    this.engine = this.add.image(0, 0, 'as-glow').setBlendMode(ADD).setTint(0xff9a3d).setScale(0.5).setDepth(8).setVisible(false);
     this.ship = this.add.image(width / 2, height / 2, 'ship').setScale(0.7).setDepth(10);
     this.shieldFx = this.add.image(0, 0, 'shield').setScale(0.55).setDepth(11).setAlpha(0.7).setVisible(false);
 
@@ -82,11 +102,50 @@ export class PlayScene extends ArcadeScene {
     while (this.lifeIcons.length > n) this.lifeIcons.pop()!.destroy();
   }
 
-  private banner(s: string, color = '#ffd23f'): void {
+  /** A ribbon across the screen with a title that slides in, holds and slides out. */
+  private banner(s: string, color = '#ffd23f', tint = 0x3ee6ff): void {
     const { width, height } = this.scale;
-    const b = txt(this, width / 2, height * 0.38, s, { title: true, size: 40, color }).setDepth(7000).setScale(0.3);
-    this.tweens.add({ targets: b, scale: 1, duration: 350, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: b, alpha: 0, delay: 1300, duration: 400, onComplete: () => b.destroy() });
+    const y = height * 0.38;
+    const band = this.add.image(width / 2, y, 'as-ribbon').setDisplaySize(width, 110).setTint(tint).setDepth(6999);
+    const sy = band.scaleY;
+    band.scaleY = 0;
+    const b = txt(this, width + 320, y, s, { title: true, size: 40, color }).setDepth(7000);
+    this.tweens.add({ targets: band, scaleY: sy, duration: 160 });
+    this.tweens.add({ targets: b, x: width / 2, duration: 340, ease: 'Back.easeOut' });
+    this.time.delayedCall(1250, () => {
+      this.tweens.add({ targets: b, x: -320, duration: 260, ease: 'Cubic.easeIn', onComplete: () => b.destroy() });
+      this.tweens.add({ targets: band, scaleY: 0, delay: 140, duration: 180, onComplete: () => band.destroy() });
+    });
+  }
+
+  // ---------- effects ----------
+  private glow(x: number, y: number, tint: number, scale: number, ms: number, depth = 20): void {
+    const g = this.add.image(x, y, 'as-glow').setBlendMode(ADD).setTint(tint).setScale(scale * 0.4).setDepth(depth);
+    this.tweens.add({ targets: g, scale, alpha: 0, duration: ms, ease: 'Quad.easeOut', onComplete: () => g.destroy() });
+  }
+
+  private ring(x: number, y: number, tint: number, scale: number, ms: number): void {
+    const r = this.add.image(x, y, 'as-ring').setBlendMode(ADD).setTint(tint).setScale(0.1).setDepth(21);
+    this.tweens.add({ targets: r, scale, alpha: 0, duration: ms, ease: 'Cubic.easeOut', onComplete: () => r.destroy() });
+  }
+
+  /** The image breaks into four tumbling pieces that drift on with its speed. */
+  private pieces(img: Img, vx: number, vy: number, tint: number, power = 1): void {
+    const key = img.texture.key, fw = img.width, fh = img.height;
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      const p = this.add.image(img.x, img.y, key).setScale(img.scaleX, img.scaleY).setAngle(img.angle).setCrop(i * fw / 2, j * fh / 2, fw / 2, fh / 2).setDepth(5).setTint(tint);
+      const a = Math.atan2(j - 0.5, i - 0.5) + rng.int(-50, 50) / 100, d = rng.int(40, 110) * power;
+      this.tweens.add({ targets: p, x: img.x + Math.cos(a) * d + vx * 0.5, y: img.y + Math.sin(a) * d + vy * 0.5, angle: p.angle + rng.int(-200, 200), duration: 700, ease: 'Quad.easeOut' });
+      this.tweens.add({ targets: p, alpha: 0, delay: 320, duration: 380, onComplete: () => p.destroy() });
+    }
+  }
+
+  /** Soft grey dust left where a rock breaks. */
+  private dust(x: number, y: number, n: number, scale: number): void {
+    for (let i = 0; i < n; i++) {
+      const d = this.add.image(x + rng.int(-14, 14), y + rng.int(-14, 14), 'as-glow').setTint(0x8a8a9a).setAlpha(0.35).setScale(scale * 0.3).setDepth(4);
+      this.tweens.add({ targets: d, scale: scale * (0.7 + Math.random() * 0.4), alpha: 0, x: d.x + rng.int(-30, 30), y: d.y + rng.int(-30, 30), duration: rng.int(600, 900), ease: 'Quad.easeOut', onComplete: () => d.destroy() });
+    }
   }
 
   private nextWave(): void {
@@ -94,6 +153,7 @@ export class PlayScene extends ArcadeScene {
     this.updateHud();
     this.banner(`${t('wave')} ${this.wave}`);
     this.sfx('wave', { volume: 0.45 });
+    this.ring(this.ship.x, this.ship.y, 0x3ee6ff, 6, 900);
     const { width, height } = this.scale;
     const n = Math.min(3 + this.wave, 11);
     for (let i = 0; i < n; i++) {
@@ -123,6 +183,11 @@ export class PlayScene extends ArcadeScene {
     const { img } = rock;
     if (scored) this.addScore(ROCK[rock.size].pts, img.x, img.y);
     burst(this, img.x, img.y, [0xb0b0b8, 0x7d7d88, 0xffd23f], 14 + (2 - rock.size) * 10, 200 + (2 - rock.size) * 90);
+    const big = 2 - rock.size;
+    this.glow(img.x, img.y, 0xffb36b, 0.9 + big * 0.6, 260 + big * 60);
+    this.dust(img.x, img.y, 2 + big * 2, 0.8 + big * 0.5);
+    if (rock.size === 2) this.pieces(img, rock.vx, rock.vy, ROCK_TINT[2], 0.8);
+    if (rock.size === 0) this.ring(img.x, img.y, 0xffd2a0, 2.2, 420);
     this.sfxAt(`boom${rock.size}${rng.pick(['a', 'b'])}`, img.x, { volume: [0.65, 0.5, 0.4][rock.size] });
     if (rock.size === 0) shake(this, 0.006, 120);
     if (rock.size < 2) for (let k = 0; k < 2; k++) this.spawnRock(img.x, img.y, rock.size + 1, rock.vx, rock.vy);
@@ -136,13 +201,16 @@ export class PlayScene extends ArcadeScene {
     this.lives++;
     this.updateHud();
     this.sfx('life', { volume: 0.7, exact: true });
-    this.banner(t('extraLife'), '#5dff7a');
+    this.banner(t('extraLife'), '#5dff7a', 0x5dff7a);
+    this.glow(this.ship.x, this.ship.y, 0x5dff7a, 2.2, 500, 12);
   }
 
   private fire(): void {
     if (this.shots.length >= 6) return;
     const c = Math.cos(this.heading), s = Math.sin(this.heading);
-    const img = this.add.image(this.ship.x + c * 30, this.ship.y + s * 30, 'shot').setRotation(this.heading + Math.PI / 2).setScale(0.75).setDepth(7);
+    const img = this.add.image(this.ship.x + c * 30, this.ship.y + s * 30, 'shot').setRotation(this.heading + Math.PI / 2).setScale(0.75).setDepth(7).setBlendMode(ADD);
+    const m = this.add.image(this.ship.x + c * 30, this.ship.y + s * 30, 'as-glow').setBlendMode(ADD).setTint(0x6fd8ff).setScale(0.3).setDepth(12);
+    this.tweens.add({ targets: m, scale: 0.1, alpha: 0, duration: 90, onComplete: () => m.destroy() });
     this.shots.push({ img, vx: c * 820 + this.vx, vy: s * 820 + this.vy, life: 0.85 });
     this.sfxAt(rng.pick(['shoot1', 'shoot2']), this.ship.x, { volume: 0.3 });
   }
@@ -152,7 +220,12 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     this.hyperCd = 3;
     burst(this, this.ship.x, this.ship.y, [0x3ee6ff, 0xffffff], 24, 260);
+    this.ring(this.ship.x, this.ship.y, 0x3ee6ff, 1.6, 320);
+    this.glow(this.ship.x, this.ship.y, 0x3ee6ff, 1.6, 300);
     this.ship.setPosition(rng.int(60, width - 60), rng.int(140, height - 80));
+    this.ring(this.ship.x, this.ship.y, 0x3ee6ff, 1.6, 320);
+    this.ship.setScale(0);
+    this.tweens.add({ targets: this.ship, scale: 0.7, duration: 220, ease: 'Back.easeOut' });
     this.vx = this.vy = 0;
     this.invuln = Math.max(this.invuln, 0.6);
     burst(this, this.ship.x, this.ship.y, [0x3ee6ff, 0xffffff], 24, 260);
@@ -167,9 +240,19 @@ export class PlayScene extends ArcadeScene {
     this.updateHud();
     burst(this, this.ship.x, this.ship.y, [0x3ee6ff, 0xffd23f, 0xec3013, 0xffffff], 50, 420);
     shake(this, 0.02, 300);
-    flash(this, 0xec3013, 160);
+    this.hurtT = 0.5;
+    this.glow(this.ship.x, this.ship.y, 0xffa040, 2.6, 420, 22);
+    this.ring(this.ship.x, this.ship.y, 0xffd2a0, 2.6, 460);
+    this.pieces(this.ship, this.vx, this.vy, 0xffffff, 1.3);
+    if (this.lives <= 0) {
+      flash(this, 0xffffff, 160);
+      for (let i = 0; i < 4; i++) {
+        const ox = this.ship.x + rng.int(-50, 50), oy = this.ship.y + rng.int(-50, 50);
+        this.time.delayedCall(i * 120, () => { this.glow(ox, oy, 0xffa040, 2, 380, 22); burst(this, ox, oy, [0xffd23f, 0xec3013, 0xffffff], 14, 300); });
+      }
+    }
     this.sfxAt(this.lives <= 0 ? 'death' : 'hurt', this.ship.x, { volume: this.lives <= 0 ? 0.9 : 0.8 });
-    this.ship.setVisible(false); this.flame.setVisible(false); this.trail.emitting = false;
+    this.ship.setVisible(false); this.flame.setVisible(false); this.engine.setVisible(false); this.trail.emitting = false;
     if (this.lives <= 0) { this.endGame({ delay: 1200 }); return; }
     this.respawnIn = 1.6;
   }
@@ -178,6 +261,7 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     this.alive = true;
     this.ship.setPosition(width / 2, height / 2).setVisible(true).setScale(0);
+    this.ring(width / 2, height / 2, 0x3ee6ff, 2, 500);
     this.tweens.add({ targets: this.ship, scale: 0.7, duration: 300, ease: 'Back.easeOut' });
     this.heading = -Math.PI / 2; this.vx = this.vy = 0;
     this.invuln = 2.5;
@@ -191,6 +275,9 @@ export class PlayScene extends ArcadeScene {
     const y0 = rng.int(220, height - 220);
     const img = this.add.image(fromLeft ? -50 : width + 50, y0, small ? 'ufo-small' : 'ufo-big').setScale(small ? 0.5 : 0.85).setDepth(6);
     this.tweens.add({ targets: img, angle: 360, duration: 1800, repeat: -1 });
+    const halo = this.add.image(img.x, img.y, 'as-glow').setBlendMode(ADD).setTint(small ? 0xffd23f : 0xff4f6a).setScale(small ? 0.9 : 1.3).setAlpha(0.45).setDepth(5);
+    this.tweens.add({ targets: halo, alpha: 0.2, duration: 300, yoyo: true, repeat: -1 });
+    img.setData('halo', halo);
     this.ufo = { img, small, vx: (fromLeft ? 1 : -1) * (small ? 210 : 140), t: 0, y0, fireCd: 1, r: small ? 22 : 38 };
     this.sfx('ufo', { volume: 0.4 });
     popup(this, width / 2, 140, t('ufoAlert'), '#ff4fa3', 32);
@@ -205,6 +292,10 @@ export class PlayScene extends ArcadeScene {
     }
     burst(this, u.img.x, u.img.y, [0xff4fa3, 0xffd23f, 0x3ee6ff], 40, 380);
     shake(this, 0.012, 200);
+    this.glow(u.img.x, u.img.y, 0xff8a3d, 2.4, 420);
+    this.ring(u.img.x, u.img.y, 0xffd2a0, 2.4, 420);
+    this.pieces(u.img, u.vx, 0, 0xffffff, 1.2);
+    (u.img.getData('halo') as Img | undefined)?.destroy();
     this.sfxAt('ufo-boom', u.img.x, { volume: 0.8 });
     u.img.destroy();
     this.ufo = null;
@@ -240,6 +331,11 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     const c = this.controls;
     this.fireCd -= dt; this.hyperCd -= dt; this.invuln = Math.max(0, this.invuln - dt);
+    for (const l of this.layers) { l.ts.tilePositionY -= l.speed * dt; l.ts.tilePositionX += l.speed * 0.4 * dt; }
+    this.planet.y += 3 * dt; this.planet.x += 1.2 * dt;
+    if (this.planet.y > height + 160) this.planet.setPosition(rng.int(80, width - 80), -160);
+    this.hurtT = Math.max(0, this.hurtT - dt * 1.5);
+    this.vig.setAlpha(0.75 * Math.max(this.hurtT, this.lives === 1 && this.alive && !this.isOver ? 0.16 + 0.1 * Math.sin(this.time.now / 180) : 0));
 
     // --- ship ---
     if (this.alive) {
@@ -258,6 +354,7 @@ export class PlayScene extends ArcadeScene {
       this.ship.setAlpha(this.invuln > 0 ? (Math.floor(this.elapsed * 12) % 2 ? 0.35 : 1) : 1);
       const bx = this.ship.x - Math.cos(this.heading) * 32, by = this.ship.y - Math.sin(this.heading) * 32;
       this.flame.setVisible(thrust).setPosition(bx, by).setRotation(this.heading + Math.PI / 2).setScale(1, 0.8 + Math.random() * 0.6);
+      this.engine.setVisible(thrust).setPosition(bx, by).setScale(0.45 + Math.random() * 0.15);
       this.trail.setPosition(bx, by);
       this.trail.emitting = thrust;
       this.shieldFx.setVisible(this.invuln > 0).setPosition(this.ship.x, this.ship.y);
@@ -312,14 +409,15 @@ export class PlayScene extends ArcadeScene {
         u.fireCd = u.small ? Math.max(0.6, 1.2 - this.wave * 0.05) : 1.4;
         let a = Math.random() * Math.PI * 2;
         if (u.small) a = Phaser.Math.Angle.Between(u.img.x, u.img.y, this.ship.x, this.ship.y) + (Math.random() - 0.5) * Math.max(0.15, 0.7 - this.wave * 0.06);
-        const img = this.add.image(u.img.x, u.img.y, 'eshot').setScale(0.6).setDepth(7);
+        const img = this.add.image(u.img.x, u.img.y, 'eshot').setScale(0.6).setDepth(7).setBlendMode(ADD);
         this.eshots.push({ img, vx: Math.cos(a) * 380, vy: Math.sin(a) * 380, life: 1.6 });
         this.sfxAt('eshoot', u.img.x, { volume: 0.25 });
       }
       for (const r of this.rocks) {
         if (Phaser.Math.Distance.Between(u.img.x, u.img.y, r.img.x, r.img.y) < r.r + u.r - 6) { this.breakRock(r, false); this.killUfo(false); break; }
       }
-      if (this.ufo && (u.img.x < -80 || u.img.x > width + 80)) { u.img.destroy(); this.ufo = null; }
+      (u.img.getData('halo') as Img | undefined)?.setPosition(u.img.x, u.img.y);
+      if (this.ufo && (u.img.x < -80 || u.img.x > width + 80)) { (u.img.getData('halo') as Img | undefined)?.destroy(); u.img.destroy(); this.ufo = null; }
     } else if (this.wave >= 2) {
       this.ufoCd -= dt;
       if (this.ufoCd <= 0) { this.ufoCd = rng.int(14, 22) - Math.min(6, this.wave); this.spawnUfo(); }
@@ -338,12 +436,14 @@ export class PlayScene extends ArcadeScene {
     if (this.rocks.length && this.beat <= 0) {
       this.beat = Phaser.Math.Clamp(0.25 + this.rocks.length * 0.05, 0.3, 1.0);
       this.sfx('beat', { volume: 0.1, rate: 0.5, exact: true });
+      // the space pulses with the heartbeat
+      for (const l of this.layers.slice(1)) this.tweens.add({ targets: l.ts, alpha: { from: 1, to: 0.7 }, duration: 120, yoyo: true });
     }
     if (this.rocks.length === 0 && !this.ufo) {
       if (this.waveCd <= 0) {
         this.waveCd = 2.2;
         this.addScore(this.wave * 100, width / 2, height * 0.46);
-        this.banner(t('waveClear'), '#5dff7a');
+        this.banner(t('waveClear'), '#5dff7a', 0x5dff7a);
         this.sfx('clear', { volume: 0.65, exact: true });
       } else {
         this.waveCd -= dt;
