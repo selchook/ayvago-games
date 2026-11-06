@@ -44,7 +44,7 @@ launch({
     scene.time.addEvent({ delay: 110, loop: true, callback: () => runner.setTexture(++f % 2 ? 'pc-walk2' : 'pc-walk1') });
     scene.tweens.add({ targets: runner, x: width - 140, duration: 5200, yoyo: true, repeat: -1, onYoyo: () => runner.setFlipX(true), onRepeat: () => runner.setFlipX(false) });
     for (let i = 0; i < 5; i++) {
-      const c = scene.add.image(300 + i * 160, height - 140, 'pp', F.coin).setScale(3);
+      const c = scene.add.image(300 + i * 160, height - 110, 'pp', F.coin).setScale(3);
       scene.tweens.add({ targets: c, scaleX: 0.4, duration: 300, yoyo: true, repeat: -1, delay: i * 90 });
     }
   },

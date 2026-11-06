@@ -1,6 +1,37 @@
 import Phaser from 'phaser';
 import { ArcadeScene, CHARACTER_FRAME, burst, shake, flash, popup, t, txt, rng } from '@core';
 
+/** A banded pixel sky with a sun (drawn small, shown 8x for chunky pixels), pixel clouds and a ground shadow. */
+export function makeSky(scene: Phaser.Scene): void {
+  const tex = (key: string, w: number, h: number, draw: (c: CanvasRenderingContext2D) => void) => {
+    if (scene.textures.exists(key)) return;
+    const ct = scene.textures.createCanvas(key, w, h);
+    if (!ct) return;
+    draw(ct.getContext());
+    ct.refresh();
+  };
+  tex('pr-sky', 160, 90, (c) => {
+    const bands = ['#4a8fd6', '#5a9ddd', '#6aabe3', '#7cb9e8', '#8fc6ec', '#a3d2ef', '#b7ddf1', '#c9e7f3', '#d6eef4'];
+    bands.forEach((col, i) => { c.fillStyle = col; c.fillRect(0, i * 7, 160, 7); });
+    c.fillStyle = '#d6eef4'; c.fillRect(0, 63, 160, 27);
+    // the sun with a ring of light
+    c.fillStyle = 'rgba(255,240,180,0.35)'; c.fillRect(118, 6, 20, 20); c.fillRect(114, 10, 28, 12); c.fillRect(122, 2, 12, 28);
+    c.fillStyle = '#fff3b0'; c.fillRect(121, 9, 14, 14); c.fillRect(119, 11, 18, 10); c.fillRect(123, 7, 10, 18);
+    c.fillStyle = '#ffffff'; c.fillRect(124, 11, 4, 3);
+  });
+  tex('pr-clouds', 80, 25, (c) => {
+    const cloud = (x: number, y: number, w: number) => {
+      c.fillStyle = '#ffffff';
+      c.fillRect(x, y + 3, w, 4); c.fillRect(x + 2, y + 1, w - 6, 3); c.fillRect(x + 4, y, w - 12, 2);
+      c.fillStyle = '#dceef6'; c.fillRect(x + 1, y + 6, w - 2, 1);
+    };
+    cloud(4, 4, 22); cloud(40, 12, 16); cloud(60, 2, 14);
+  });
+  tex('pr-shadow', 16, 4, (c) => {
+    c.fillStyle = 'rgba(0,0,0,1)'; c.fillRect(2, 0, 12, 4); c.fillRect(0, 1, 16, 2);
+  });
+}
+
 /** pixel-platformer tilemap_packed frames (21 px tiles, 30 per row). */
 export const F = {
   run: [19, 20], jump: 21, hurt: 22,
@@ -11,6 +42,9 @@ export const F = {
   bee: [354, 355], beeDead: 356,
   spike: 70,
   heart: 373, heartEmpty: 375,
+  tuft: 46, rock: 48, shroom: 108, star: 106,
+  flag: [311, 341],
+  gems: [285, 286, 376, 377, 378],
 };
 const S = 3, T = 21 * S;                     // scale and tile size in world px
 const PX = 300;                              // runner's screen x
@@ -24,7 +58,7 @@ const SLIME_HW = 26;
 const TOPS = [720 - 2 * T, 720 - 3 * T, 720 - 4 * T];
 
 interface Seg { x: number; w: number; top: number; float: boolean; objs: Phaser.GameObjects.GameObject[] }
-interface Coin { img: Phaser.GameObjects.Image; x: number; y: number }
+interface Coin { img: Phaser.GameObjects.Image; x: number; y: number; gem?: boolean }
 interface Enemy { kind: 'slime' | 'bee' | 'spike'; img: Phaser.GameObjects.Sprite; x: number; y: number; vx: number; baseY: number; t: number; alive: boolean; minX: number; maxX: number }
 
 export class PlayScene extends ArcadeScene {
@@ -54,6 +88,13 @@ export class PlayScene extends ArcadeScene {
   private animT = 0;
   private dead = false;
   private stompChain = 0;
+  private flags: { x: number; img: Phaser.GameObjects.Sprite; pole: Phaser.GameObjects.Rectangle; m: number; done: boolean }[] = [];
+  private nextFlag = 250;
+  private dustT = 0;
+  private shadow!: Phaser.GameObjects.Image;
+  private lines: Phaser.GameObjects.Rectangle[] = [];
+  private clouds!: Phaser.GameObjects.TileSprite;
+  private barG!: Phaser.GameObjects.Graphics;
 
   createGame(): void {
     const { width, height } = this.scale;
@@ -61,9 +102,13 @@ export class PlayScene extends ArcadeScene {
     this.scroll = 0; this.speed = 380; this.vy = 0; this.grounded = true; this.jumps = 0; this.coyote = 0; this.buffer = 0;
     this.holding = false; this.invuln = 0; this.lives = 3; this.coinCount = 0; this.meters = 0; this.nextMilestone = 250;
     this.genX = 0; this.lastTop = TOPS[0]; this.animT = 0; this.dead = false; this.stompChain = 0;
+    this.flags = []; this.nextFlag = 250; this.dustT = 0; this.lines = [];
+    makeSky(this);
     this.cameras.main.setScroll(0, 0);
 
-    this.add.rectangle(0, 0, width, height, 0xd3f3f7).setOrigin(0).setScrollFactor(0).setDepth(-10);
+    // a banded pixel sky with a sun, drifting clouds, then the two hill layers
+    this.add.image(0, 0, 'pr-sky').setOrigin(0).setScale(8).setScrollFactor(0).setDepth(-12);
+    this.clouds = this.add.tileSprite(0, 40, width, 200, 'pr-clouds').setOrigin(0).setTileScale(8).setScrollFactor(0).setDepth(-11);
     this.bgFar = this.add.tileSprite(0, 230, width, 189, 'ppbg', 0).setOrigin(0).setTileScale(3).setScrollFactor(0).setDepth(-9);
     this.bgNear = this.add.tileSprite(0, 395, width, 189, 'ppbg', 1).setOrigin(0).setTileScale(3).setScrollFactor(0).setDepth(-8).setAlpha(0.85);
     // dark pit below the horizon so gaps read as holes
@@ -76,8 +121,13 @@ export class PlayScene extends ArcadeScene {
     while (this.genX < width * 2) this.generate();
 
     this.py = TOPS[0] - HH;
+    this.shadow = this.add.image(PX, TOPS[0], 'pr-shadow').setScale(3).setDepth(19).setAlpha(0.35);
     this.player = this.add.sprite(PX, this.py, 'pc-walk1').setScale(HERO_SCALE).setDepth(20);
+    // speed lines that streak past once the run gets fast
+    for (let i = 0; i < 10; i++) this.lines.push(this.add.rectangle(0, 0, 60, 3, 0xffffff, 0.5).setOrigin(0, 0.5).setScrollFactor(0).setDepth(30).setVisible(false));
+    this.barG = this.add.graphics().setScrollFactor(0).setDepth(9000);
 
+    this.add.rectangle(20, 70, 172, 46, 0x1d2a3a, 0.55).setOrigin(0).setScrollFactor(0).setDepth(8999).setStrokeStyle(3, 0xffffff, 0.35);
     for (let i = 0; i < 3; i++) this.hearts.push(this.add.image(40 + i * 54, 92, 'pp', F.heart).setScale(2.4).setScrollFactor(0).setDepth(9000));
     this.updateHud();
 
@@ -114,6 +164,22 @@ export class PlayScene extends ArcadeScene {
         objs.push(this.add.image(x + i * T, top, 'pp', f).setOrigin(0).setScale(S).setDepth(5));
       }
       objs.push(this.add.tileSprite(x, top + T, tiles * T, 720 - top, 'pp', F.fill).setOrigin(0).setTileScale(S).setDepth(5));
+      // grass tufts, rocks and mushrooms standing on the top tiles
+      for (let i = 1; i < tiles - 1; i++) {
+        if (!rng.chance(0.28)) continue;
+        const f = rng.pick([F.tuft, F.tuft, F.tuft, F.rock, F.shroom]);
+        objs.push(this.add.image(x + i * T + rng.int(4, T - 4), top + 6, 'pp', f).setOrigin(0.5, 1).setScale(S * (f === F.tuft ? 1 : 0.8)).setDepth(4));
+      }
+      // a checkpoint flag on the ground every 250 m
+      const m0 = x / T, m1 = (x + tiles * T) / T;
+      if (this.nextFlag > m0 + 1 && this.nextFlag < m1 - 1) {
+        const fx = this.nextFlag * T;
+        const pole = this.add.rectangle(fx - 22, top, 9, T * 1.6, 0xa9b4b8).setOrigin(0.5, 1).setDepth(6).setStrokeStyle(3, 0x6b7478);
+        const flag = this.add.sprite(fx, top - T * 1.6 + 30, 'pp', F.flag[0]).setOrigin(0.5, 0.5).setScale(S).setDepth(6);
+        this.flags.push({ x: fx, img: flag, pole, m: this.nextFlag, done: false });
+        objs.push(pole, flag);
+        this.nextFlag += 250;
+      }
     }
     const s: Seg = { x, w: tiles * T, top, float, objs };
     this.segs.push(s);
@@ -135,10 +201,10 @@ export class PlayScene extends ArcadeScene {
     // coin arc over the gap
     const gapStart = this.genX;
     if (rng.chance(0.6)) {
-      const n = gap + 1;
+      const n = gap + 1, gemAt = rng.chance(0.18) ? Math.floor(n / 2) : -1;
       for (let i = 0; i < n; i++) {
         const k = (i + 0.5) / n;
-        this.addCoin(gapStart + k * gap * T, Math.min(this.lastTop, top) - 70 - Math.sin(k * Math.PI) * 120);
+        this.addCoin(gapStart + k * gap * T, Math.min(this.lastTop, top) - 70 - Math.sin(k * Math.PI) * 120, i === gemAt);
       }
     }
     // long gaps get a floating platform in the middle
@@ -176,7 +242,14 @@ export class PlayScene extends ArcadeScene {
     this.genX += len * T;
   }
 
-  private addCoin(x: number, y: number): void {
+  private addCoin(x: number, y: number, gem = false): void {
+    if (gem) {
+      // a rare gem at the top of an arc: worth five coins
+      const img = this.add.image(x, y, 'pp', rng.pick(F.gems)).setScale(S).setDepth(8);
+      this.tweens.add({ targets: img, y: y - 8, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.coins.push({ img, x, y, gem: true });
+      return;
+    }
     const img = this.add.image(x, y, 'pp', F.coin).setScale(S).setDepth(8);
     this.tweens.add({ targets: img, scaleX: 0.6, duration: 260, yoyo: true, repeat: -1, delay: (x % 500) });
     this.coins.push({ img, x, y });
@@ -213,6 +286,10 @@ export class PlayScene extends ArcadeScene {
     this.jumps = double ? 2 : 1;
     this.grounded = false; this.coyote = 0; this.buffer = 0;
     this.sfx(double ? 'jump2' : 'jump', { volume: 0.4 });
+    this.tweens.killTweensOf(this.player);
+    this.player.setAngle(0);
+    this.player.setScale(HERO_SCALE * 0.85, HERO_SCALE * 1.18);
+    this.tweens.add({ targets: this.player, scaleX: HERO_SCALE, scaleY: HERO_SCALE, duration: 220, ease: 'Quad.easeOut' });
     const wx = this.scroll + PX;
     if (double) {
       burst(this, wx, this.py + HH, [0xffffff, 0x3ee6ff], 12, 200);
@@ -323,7 +400,9 @@ export class PlayScene extends ArcadeScene {
     if (this.grounded) {
       if (!wasGrounded) {
         this.sfx(rng.pick(['land', 'land2']), { volume: 0.55 });
-        burst(this, wx - 12, this.py + HH, 0xe6d3a3, 5, 100);
+        burst(this, wx - 12, this.py + HH, 0xe6d3a3, 8, 120);
+        this.player.setScale(HERO_SCALE * 1.2, HERO_SCALE * 0.8);
+        this.tweens.add({ targets: this.player, scaleX: HERO_SCALE, scaleY: HERO_SCALE, duration: 180, ease: 'Back.easeOut' });
         this.stompChain = 0;
         if (this.buffer > 0) this.jump(false);
       }
@@ -340,13 +419,50 @@ export class PlayScene extends ArcadeScene {
     this.cameras.main.scrollX = this.scroll;
     this.bgFar.tilePositionX = this.scroll * 0.05;
     this.bgNear.tilePositionX = this.scroll * 0.12;
+    this.clouds.tilePositionX += dt * 2 + dx * 0.004;
+    // shadow on the ground under the runner
+    const under = this.segs.find((sg) => wx >= sg.x && wx <= sg.x + sg.w && sg.top >= this.py + HH - 2);
+    if (under) {
+      const h = under.top - (this.py + HH);
+      this.shadow.setVisible(true).setPosition(wx, under.top + 2).setScale(3 * Math.max(0.4, 1 - h / 400), 3).setAlpha(0.35 * Math.max(0.2, 1 - h / 400));
+    } else this.shadow.setVisible(false);
+    // kicked-up dust while running
+    this.dustT -= dt;
+    if (this.grounded && this.dustT <= 0) { this.dustT = 0.11; burst(this, wx - 14, this.py + HH - 2, [0xe6d3a3, 0xc9b27a], 2, 70); }
+    // speed lines once the run is fast
+    const fast = Phaser.Math.Clamp((this.speed - 560) / 300, 0, 1);
+    for (const ln of this.lines) {
+      if (fast <= 0) { ln.setVisible(false); continue; }
+      if (!ln.visible || ln.x < -80) ln.setVisible(true).setPosition(width + rng.int(0, 600), rng.int(150, 560)).setSize(rng.int(40, 120), 3);
+      ln.x -= this.speed * 2.2 * dt;
+      ln.setAlpha(0.25 + fast * 0.35);
+    }
+    // checkpoint flags wave, and cheer when passed
+    this.flags = this.flags.filter((fl) => fl.img.active);
+    for (const fl of this.flags) {
+      if (!fl.img.active) continue;
+      fl.img.setFrame(F.flag[Math.floor(this.elapsed * 6) % 2]);
+      if (!fl.done && wx > fl.x) {
+        fl.done = true;
+        burst(this, fl.x, fl.img.y - 30, [0xffd23f, 0x5dff7a, 0xffffff, 0xff4fa3], 24, 320);
+        this.tweens.add({ targets: fl.img, y: fl.img.y - 10, duration: 120, yoyo: true, repeat: 2 });
+      }
+    }
+    // progress to the next milestone (top centre)
+    const prev = this.nextMilestone - 250, k = Phaser.Math.Clamp((this.meters - prev) / 250, 0, 1);
+    this.barG.clear();
+    this.barG.fillStyle(0x1d2a3a, 0.6).fillRect(width / 2 - 124, 52, 248, 14);
+    this.barG.fillStyle(0x5dff7a, 1).fillRect(width / 2 - 121, 55, 242 * k, 8);
+    this.barG.fillStyle(0xffffff, 0.5).fillRect(width / 2 - 121, 55, 242 * k, 2);
+    this.barG.lineStyle(2, 0xffffff, 0.6).strokeRect(width / 2 - 124, 52, 248, 14);
 
     // coins
     for (const c of this.coins) {
       if (!c.img.active) continue;
       if (Math.abs(c.x - wx) < 34 && Math.abs(c.y - this.py) < 46) {
-        this.coinCount++;
-        this.addScore(10);
+        this.coinCount += c.gem ? 5 : 1;
+        this.addScore(c.gem ? 50 : 10);
+        if (c.gem) { popup(this, c.x, c.y - 30, '+50', '#3ee6ff', 22); this.sfx('coin10', { volume: 0.5, rate: 1.2 }); burst(this, c.x, c.y, [0x3ee6ff, 0xffffff, 0xff8ad8], 18, 240); }
         this.sfx('coin', { volume: 0.35, rate: 1 + Math.min(0.5, (this.coinCount % 10) * 0.05) });
         if (this.coinCount % 10 === 0) this.sfx('coin10', { volume: 0.5 });
         burst(this, c.x, c.y, [0xffd23f, 0xffffff], 8, 160);
