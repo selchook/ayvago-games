@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, CHARACTER_FRAME, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, CHARACTER_FRAME, FONT_TITLE, burst, shake, flash, popup, t, txt, rng } from '@core';
 
 /** A banded pixel sky with a sun (drawn small, shown 8x for chunky pixels), pixel clouds and a ground shadow. */
 export function makeSky(scene: Phaser.Scene): void {
@@ -95,6 +95,8 @@ export class PlayScene extends ArcadeScene {
   private lines: Phaser.GameObjects.Rectangle[] = [];
   private clouds!: Phaser.GameObjects.TileSprite;
   private barG!: Phaser.GameObjects.Graphics;
+  private coinText!: Phaser.GameObjects.Text;
+  private coinIcon!: Phaser.GameObjects.Sprite;
 
   createGame(): void {
     const { width, height } = this.scale;
@@ -129,6 +131,11 @@ export class PlayScene extends ArcadeScene {
 
     this.add.rectangle(20, 70, 172, 46, 0x1d2a3a, 0.55).setOrigin(0).setScrollFactor(0).setDepth(8999).setStrokeStyle(3, 0xffffff, 0.35);
     for (let i = 0; i < 3; i++) this.hearts.push(this.add.image(40 + i * 54, 92, 'pp', F.heart).setScale(2.4).setScrollFactor(0).setDepth(9000));
+    this.coinText = this.add.text(width - 120, 24, '0', { fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffd23f', stroke: '#000000', strokeThickness: 6 })
+      .setOrigin(1, 0).setScrollFactor(0).setDepth(9000);
+    this.coinIcon = this.add.sprite(width - 160, 36, 'pp', F.coin).setScale(2.2).setScrollFactor(0).setDepth(9000);
+    this.tweens.add({ targets: this.coinIcon, scaleX: 0.5, duration: 320, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.coinText.setText('');
     this.updateHud();
 
     const go = txt(this, width / 2, height * 0.35, t('go'), { title: true, size: 64, color: '#ffd23f' }).setScrollFactor(0).setDepth(9000).setScale(0.2);
@@ -301,7 +308,11 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setCenter(t('meters', { n: Math.floor(this.meters) }));
-    this.hud.setRight(`${t('coins')} ${this.coinCount}`);
+    // coins: a spinning coin icon and the count, in the HUD's right slot
+    if (this.coinText.text !== String(this.coinCount)) {
+      this.coinText.setText(String(this.coinCount));
+      this.coinIcon.setX(this.coinText.x - this.coinText.width - 26);
+    }
     this.hearts.forEach((h, i) => h.setFrame(i < this.lives ? F.heart : F.heartEmpty));
   }
 
@@ -461,6 +472,7 @@ export class PlayScene extends ArcadeScene {
       if (!c.img.active) continue;
       if (Math.abs(c.x - wx) < 34 && Math.abs(c.y - this.py) < 46) {
         this.coinCount += c.gem ? 5 : 1;
+        this.tweens.add({ targets: this.coinText, scale: 1.3, duration: 80, yoyo: true });
         this.addScore(c.gem ? 50 : 10);
         if (c.gem) { popup(this, c.x, c.y - 30, '+50', '#3ee6ff', 22); this.sfx('coin10', { volume: 0.5, rate: 1.2 }); burst(this, c.x, c.y, [0x3ee6ff, 0xffffff, 0xff8ad8], 18, 240); }
         this.sfx('coin', { volume: 0.35, rate: 1 + Math.min(0.5, (this.coinCount % 10) * 0.05) });
