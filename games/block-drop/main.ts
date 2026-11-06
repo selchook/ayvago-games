@@ -1,6 +1,7 @@
 import { launch, loadAudio, kenney, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene, PIECES } from './PlayScene';
+import { PlayScene } from './PlayScene';
+import { menuScene } from './menu';
 
 const J = 'oga/junkala-sfx/';
 
@@ -29,18 +30,7 @@ launch({
     loadAudio(l, 'topout', J + 'movement/falling-sounds/sfx-sounds-falling1');
   },
   menuDecor(scene) {
-    const { width, height } = scene.scale;
-    // a little well of messy rows that shimmer
-    const rows = ['ZZ.OO.TTT.', 'JZZOOLLTSS', 'JJJ.LLSSII'];
-    const size = 44, x0 = width / 2 - 5 * size + size / 2, y0 = height * 0.845;
-    const idx = (ch: string) => PIECES.findIndex((p) => p.name === ch);
-    rows.forEach((row, r) => [...row].forEach((ch, c) => {
-      if (ch === '.') return;
-      const def = PIECES[idx(ch)];
-      const im = scene.add.image(x0 + c * size, y0 + r * size, def.tex).setDisplaySize(size - 2, size - 2);
-      if (def.tint) im.setTint(def.tint);
-      scene.tweens.add({ targets: im, alpha: 0.6, duration: 700, delay: (r + c) * 90, yoyo: true, repeat: -1 });
-    }));
+    menuScene(scene);
   },
   scenes: [PlayScene],
   strings: {
