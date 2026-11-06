@@ -12,6 +12,7 @@ import { installMasterBus, isMuted, isSilenced, setHostMuted } from './audio';
 import type { PlatformAdapter } from './ayvago/adapter';
 import { GameDefinition, setCurrentGame, gameSize } from './registry';
 import { BootScene, MenuScene, PauseScene, GameOverScene, setIntroPromise } from './scenes';
+import { setHostScanlines, themeHasScanlines } from './fx';
 
 declare global {
   interface Window {
@@ -26,6 +27,7 @@ function bindPlatform(game: Phaser.Game, adapter: PlatformAdapter): void {
     if (play?.scene.isActive()) play.pauseGame?.();
   });
   adapter.onMute((muted) => setHostMuted(game, muted));
+  adapter.onThemeChange((th) => setHostScanlines(themeHasScanlines(th.theme)));
   adapter.onLocaleChange((locale) => {
     setLang(locale.toLowerCase().startsWith('tr') ? 'tr' : 'en');
     document.documentElement.lang = getLang();
@@ -72,6 +74,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   setIntroPromise(intro);
   const [adapter] = await Promise.all([platform, fontsReady()]);
   if (adapter.name === 'ayvago') setLang(adapter.locale.toLowerCase().startsWith('tr') ? 'tr' : 'en');
+  setHostScanlines(themeHasScanlines(adapter.config?.theme));
   wireNet();
   document.documentElement.lang = getLang();
   document.title = `${loc(def.meta.title)} · Ayvago Games`;
