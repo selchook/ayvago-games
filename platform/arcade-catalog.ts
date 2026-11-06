@@ -320,6 +320,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['color', 'gate', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
     addedAt: '2026-10-28',
   }),
   arcadeGame({

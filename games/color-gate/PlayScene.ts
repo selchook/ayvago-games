@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, popup, txt, t, rng, ensurePixel } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng } from '@core';
+import { makeArt, glass, neonArc, neonBar } from './art';
 
 /** Cyan, magenta, yellow, purple: the four gate colours. */
 export const PALETTE = [0x3ee6ff, 0xff4fa3, 0xffd23f, 0x8b5cff];
@@ -35,7 +36,9 @@ interface Gate {
   rings: Ring[];
   bars: Bar[];
   star?: Phaser.GameObjects.Image;
-  sw?: Phaser.GameObjects.Graphics;
+  starGlow?: Phaser.GameObjects.Image;
+  sw?: Phaser.GameObjects.Image;
+  swGlow?: Phaser.GameObjects.Image;
   passed: boolean;
 }
 
@@ -48,9 +51,11 @@ function softFlash(scene: Phaser.Scene, color: number, ms = 120): void {
 }
 
 export class PlayScene extends ArcadeScene {
-  private ball!: Phaser.GameObjects.Arc;
+  private ball!: Phaser.GameObjects.Image;
+  private ballGlow!: Phaser.GameObjects.Image;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
   private bg!: Phaser.GameObjects.TileSprite;
+  private bgNear!: Phaser.GameObjects.TileSprite;
   private hint!: Phaser.GameObjects.Text;
   private starText!: Phaser.GameObjects.Text;
   private gates: Gate[] = [];
@@ -77,16 +82,7 @@ export class PlayScene extends ArcadeScene {
     this.colorIdx = rng.int(0, 3);
     this.cameras.main.setScroll(0, 0);
 
-    if (!this.textures.exists('cg-dots')) {
-      const g = this.make.graphics({ x: 0, y: 0 }, false);
-      for (let i = 0; i < 60; i++) {
-        g.fillStyle(rng.pick(PALETTE), rng.int(15, 45) / 100);
-        const s = rng.chance(0.25) ? 4 : 2;
-        g.fillRect(rng.int(0, 254), rng.int(0, 254), s, s);
-      }
-      g.generateTexture('cg-dots', 256, 256);
-      g.destroy();
-    }
+    makeArt(this, PALETTE);
     if (!this.textures.exists('cg-heart')) {
       const g = this.make.graphics({ x: 0, y: 0 }, false);
       for (const [key, fill] of [['cg-heart', 0xec3013], ['cg-heart-empty', 0x3a3550]] as const) {
@@ -97,27 +93,35 @@ export class PlayScene extends ArcadeScene {
       }
       g.destroy();
     }
+    this.add.image(width - 192, 88, glass(this, 150, 50)).setScrollFactor(0).setDepth(8990);
+    this.add.image(88, 92, glass(this, 120, 50)).setScrollFactor(0).setDepth(8990);
     for (let i = 0; i < MAX_LIVES; i++) {
       this.hearts.push(this.add.image(width - 150 - (MAX_LIVES - 1 - i) * 42, 88, 'cg-heart').setScale(0.9).setScrollFactor(0).setDepth(9000));
     }
-    this.bg = this.add.tileSprite(0, 0, width, height, 'cg-dots').setOrigin(0).setScrollFactor(0).setDepth(-10);
+    // a night sky fixed to the screen and two star layers drifting at different speeds
+    this.add.image(0, 0, 'cg-sky').setOrigin(0).setScrollFactor(0).setDepth(-12);
+    this.bg = this.add.tileSprite(0, 0, width, height, 'cg-stars-far').setOrigin(0).setScrollFactor(0).setDepth(-11);
+    this.bgNear = this.add.tileSprite(0, 0, width, height, 'cg-stars-near').setOrigin(0).setScrollFactor(0).setDepth(-10);
 
     const startY = height * 0.8;
     this.restY = startY;
     // starting pad
     const pad = this.add.graphics({ x: width / 2, y: startY + BALL_R + 10 });
-    pad.fillStyle(0xffffff, 0.15).fillRoundedRect(-70, 0, 140, 14, 7);
-    this.ball = this.add.circle(width / 2, startY, BALL_R, PALETTE[this.colorIdx]).setStrokeStyle(4, 0xffffff, 0.9).setDepth(20);
-    this.trail = this.add.particles(0, 0, ensurePixel(this), {
-      follow: this.ball, lifespan: 320, frequency: 22, speed: { min: 0, max: 20 },
-      scale: { start: 3.5, end: 0 }, alpha: { start: 0.6, end: 0 }, tint: PALETTE[this.colorIdx],
+    pad.fillStyle(0xffffff, 0.08).fillRoundedRect(-84, -6, 168, 26, 13);
+    pad.fillStyle(0xffffff, 0.22).fillRoundedRect(-70, 0, 140, 14, 7);
+    pad.fillStyle(0xffffff, 0.5).fillRoundedRect(-56, 2, 112, 3, 2);
+    this.ballGlow = this.add.image(width / 2, startY, 'cg-glow').setScale(0.75).setAlpha(0.6).setTint(PALETTE[this.colorIdx]).setBlendMode(Phaser.BlendModes.ADD).setDepth(19);
+    this.ball = this.add.image(width / 2, startY, 'cg-ball').setDisplaySize(BALL_R * 2 + 4, BALL_R * 2 + 4).setTint(PALETTE[this.colorIdx]).setDepth(20);
+    this.trail = this.add.particles(0, 0, 'cg-glow', {
+      follow: this.ball, lifespan: 360, frequency: 18, speed: { min: 0, max: 20 },
+      scale: { start: 0.32, end: 0 }, alpha: { start: 0.7, end: 0 }, tint: PALETTE[this.colorIdx], blendMode: Phaser.BlendModes.ADD,
     }).setDepth(19);
 
     this.hint = txt(this, width / 2, height * 0.9, t('tapHop'), { size: 34, color: '#f3f2f2' }).setScrollFactor(0).setDepth(50);
     this.tweens.add({ targets: this.hint, alpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
 
-    this.add.image(44, 92, 'cg-star').setScale(0.3).setScrollFactor(0).setDepth(9000);
-    this.starText = txt(this, 72, 92, '0', { title: true, size: 22, color: '#ffd23f' }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(9000);
+    this.add.image(50, 92, 'cg-star').setScale(0.3).setScrollFactor(0).setDepth(9000);
+    this.starText = txt(this, 78, 92, '0', { title: true, size: 22, color: '#ffd23f' }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(9000);
 
     this.lastY = startY - 60;
     this.fillGates();
@@ -148,7 +152,8 @@ export class PlayScene extends ArcadeScene {
     }
     this.vy = HOP_V;
     this.sfx(rng.pick(['hop1', 'hop2', 'hop3']), { volume: 0.3 });
-    this.tweens.add({ targets: this.ball, scaleX: 0.8, scaleY: 1.2, duration: 70, yoyo: true });
+    const s0 = this.ballScale();
+    this.tweens.add({ targets: this.ball, scaleX: s0 * 0.8, scaleY: s0 * 1.2, duration: 70, yoyo: true, onComplete: () => this.ball.setScale(s0) });
   }
 
   // ---------- gate generation ----------
@@ -193,16 +198,17 @@ export class PlayScene extends ArcadeScene {
       gate.bars.push(this.makeBar(y - 75, slide));
       gate.bars.push(this.makeBar(y + 75, -slide * 0.85));
     }
+    gate.starGlow = this.add.image(width / 2, starY, 'cg-glow').setScale(0.6).setTint(0xffd23f).setAlpha(0.55).setBlendMode(Phaser.BlendModes.ADD).setDepth(9);
     gate.star = this.add.image(width / 2, starY, 'cg-star').setScale(0.42).setDepth(10);
     this.tweens.add({ targets: gate.star, scale: 0.5, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: gate.starGlow, alpha: 0.25, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     // colour switcher halfway between the previous gate and this one
     if (this.made > 0) {
-      const sw = this.add.graphics({ x: width / 2, y: this.lastY - gap / 2 }).setDepth(10);
-      PALETTE.forEach((c, i) => {
-        sw.fillStyle(c, 1).slice(0, 0, 26, Phaser.Math.DegToRad(i * 90), Phaser.Math.DegToRad((i + 1) * 90)).fillPath();
-      });
-      sw.lineStyle(3, 0xffffff, 0.8).strokeCircle(0, 0, 26);
+      const swy = this.lastY - gap / 2;
+      gate.swGlow = this.add.image(width / 2, swy, 'cg-glow').setScale(0.8).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(9);
+      this.tweens.add({ targets: gate.swGlow, scale: 1, alpha: 0.2, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      const sw = this.add.image(width / 2, swy, 'cg-orb').setDepth(10);
       this.tweens.add({ targets: sw, angle: 360, duration: 1800, repeat: -1 });
       gate.sw = sw;
     }
@@ -223,9 +229,7 @@ export class PlayScene extends ArcadeScene {
     const g = this.add.graphics({ x, y }).setDepth(5);
     cols.forEach((c, i) => {
       const a0 = mirrorOf ? 180 - (i + 1) * 90 : i * 90;
-      g.lineStyle(RING_T, c, 1).beginPath();
-      g.arc(0, 0, r, Phaser.Math.DegToRad(a0 + 1.5), Phaser.Math.DegToRad(a0 + 90 - 1.5));
-      g.strokePath();
+      neonArc(g, r, a0 + 1.5, a0 + 90 - 1.5, RING_T, c);
     });
     g.angle = mirrorOf ? -mirrorOf.g.angle : rng.int(0, 3) * 90 + 45;
     return { g, r, cols, speed, wobble, mirrorOf };
@@ -242,9 +246,7 @@ export class PlayScene extends ArcadeScene {
   private makeBar(y: number, speed: number): Bar {
     const cols = rng.shuffle([...PALETTE]);
     const g = this.add.graphics({ x: 0, y }).setDepth(5);
-    for (let i = 0; i < 8; i++) {
-      g.fillStyle(cols[i % 4], 1).fillRoundedRect(i * SEG_W + 3, -BAR_T / 2, SEG_W - 6, BAR_T, 8);
-    }
+    for (let i = 0; i < 8; i++) neonBar(g, i * SEG_W + 6, SEG_W - 12, BAR_T, cols[i % 4]);
     const phase = rng.int(0, 719);
     g.x = -phase;
     return { g, y, cols, phase, speed };
@@ -282,7 +284,9 @@ export class PlayScene extends ArcadeScene {
     // camera only climbs
     const target = this.ball.y - height * 0.56;
     if (target < cam.scrollY) cam.scrollY += (target - cam.scrollY) * Math.min(1, dt * 10);
-    this.bg.tilePositionY = cam.scrollY * 0.35;
+    this.bg.tilePositionY = cam.scrollY * 0.18;
+    this.bgNear.tilePositionY = cam.scrollY * 0.4;
+    this.ballGlow.setPosition(this.ball.x, this.ball.y).setVisible(this.ball.visible).setAlpha(0.5 * this.ball.alpha + Math.sin(this.clock * 6) * 0.08);
 
     if (this.started && this.ball.y - cam.scrollY > height + BALL_R) {
       this.die(t('fell'));
@@ -319,15 +323,28 @@ export class PlayScene extends ArcadeScene {
       if (g.top < bottom) return true;
       for (const r of g.rings) r.g.destroy();
       for (const b of g.bars) b.g.destroy();
-      g.star?.destroy(); g.sw?.destroy();
+      g.star?.destroy(); g.sw?.destroy(); g.starGlow?.destroy(); g.swGlow?.destroy();
       return false;
     });
     this.fillGates();
   }
 
+  /** The ball image's resting scale. */
+  private ballScale(): number {
+    return (BALL_R * 2 + 4) / 64;
+  }
+
+  /** An expanding ring of light. */
+  private shock(x: number, y: number, tint: number, to: number): void {
+    const r = this.add.image(x, y, 'cg-ring').setTint(tint).setScale(to * 0.3).setAlpha(0.9).setBlendMode(Phaser.BlendModes.ADD).setDepth(15);
+    this.tweens.add({ targets: r, scale: to, alpha: 0, duration: 420, ease: 'Cubic.easeOut', onComplete: () => r.destroy() });
+  }
+
   private collectStar(gate: Gate): void {
     const s = gate.star!;
     gate.star = undefined;
+    gate.starGlow?.destroy(); gate.starGlow = undefined;
+    this.shock(s.x, s.y, 0xffd23f, 0.6);
     this.stars++;
     this.addScore(10 * this.level, s.x + 70, s.y);
     this.sfxAt('star', s.x, { volume: 0.5 });
@@ -341,15 +358,19 @@ export class PlayScene extends ArcadeScene {
   private switchColour(gate: Gate): void {
     const sw = gate.sw!;
     gate.sw = undefined;
+    gate.swGlow?.destroy(); gate.swGlow = undefined;
     let n = rng.int(0, 3);
     if (n === this.colorIdx) n = (n + rng.int(1, 3)) % 4;
     this.colorIdx = n;
     const c = PALETTE[n];
-    this.ball.setFillStyle(c);
+    this.ball.setTint(c);
+    this.ballGlow.setTint(c);
     this.trail.particleTint = c;
     this.sfx('switch', { volume: 0.5 });
     burst(this, sw.x, sw.y, PALETTE, 24, 280);
-    this.tweens.add({ targets: this.ball, scale: 1.5, duration: 90, yoyo: true });
+    this.shock(sw.x, sw.y, c, 0.8);
+    const s0 = this.ballScale();
+    this.tweens.add({ targets: this.ball, scale: s0 * 1.5, duration: 90, yoyo: true, onComplete: () => this.ball.setScale(s0) });
     this.tweens.killTweensOf(sw);
     this.tweens.add({ targets: sw, scale: 2, alpha: 0, duration: 250, onComplete: () => sw.destroy() });
   }
@@ -359,18 +380,22 @@ export class PlayScene extends ArcadeScene {
     this.passed++;
     if (this.passed % LEVEL_EVERY !== 0) this.sfx('pass', { volume: 0.25, exact: true, rate: 1 + (this.passed % LEVEL_EVERY) * 0.05 });
     for (const o of [...gate.rings.map((r) => r.g), ...gate.bars.map((b) => b.g)]) {
-      this.tweens.add({ targets: o, alpha: 0.35, duration: 400 });
+      this.tweens.add({ targets: o, alpha: 0.3, duration: 500 });
     }
+    // a ring of light spreads from the gate
+    const rr = gate.rings[0]?.r ?? 200;
+    this.shock(this.scale.width / 2, gate.rings.length ? gate.y : this.ball.y, PALETTE[this.colorIdx], rr / 110);
     if (this.passed % LEVEL_EVERY === 0) {
       this.level++;
       const { width, height } = this.scale;
       this.addScore(25 * this.level);
       this.sfx('level', { volume: 0.65, exact: true });
       softFlash(this, 0xffffff, 90);
+      const pill = this.add.image(width / 2, height * 0.3, glass(this, 360, 100)).setScrollFactor(0).setDepth(59).setScale(0.3);
       const banner = txt(this, width / 2, height * 0.3, `${t('level')} ${this.level}`, { title: true, size: 48, color: '#ffd23f' })
         .setScrollFactor(0).setDepth(60).setScale(0.3);
-      this.tweens.add({ targets: banner, scale: 1, duration: 350, ease: 'Back.easeOut' });
-      this.tweens.add({ targets: banner, alpha: 0, delay: 900, duration: 400, onComplete: () => banner.destroy() });
+      this.tweens.add({ targets: [banner, pill], scale: 1, duration: 350, ease: 'Back.easeOut' });
+      this.tweens.add({ targets: [banner, pill], alpha: 0, delay: 900, duration: 400, onComplete: () => { banner.destroy(); pill.destroy(); } });
       popup(this, width / 2, this.ball.y + 60, `+${25 * this.level}`, '#5dff7a');
       this.updateHud();
     }
@@ -384,6 +409,7 @@ export class PlayScene extends ArcadeScene {
     this.trail.stop();
     burst(this, x, y, PALETTE, 50, 520);
     burst(this, x, y, PALETTE[this.colorIdx], 30, 300);
+    this.shock(x, y, 0xec3013, 1.2);
     this.sfxAt('shatter', x, { volume: 0.6 });
     this.sfx('die', { volume: 0.5 });
     shake(this, 0.025, 320);
@@ -406,8 +432,9 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     const gate = this.gates.find((g) => !g.passed);
     this.restY = gate ? gate.bottom + 70 : this.ball.y;
-    this.ball.setPosition(width / 2, this.restY).setVisible(true).setScale(0.2);
-    this.tweens.add({ targets: this.ball, scale: 1, duration: 300, ease: 'Back.easeOut' });
+    const s0 = this.ballScale();
+    this.ball.setPosition(width / 2, this.restY).setVisible(true).setScale(s0 * 0.2);
+    this.tweens.add({ targets: this.ball, scale: s0, duration: 300, ease: 'Back.easeOut' });
     this.vy = 0;
     this.started = false;
     this.dead = false;

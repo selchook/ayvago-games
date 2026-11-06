@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, PALETTE } from './PlayScene';
+import { makeArt, neonArc } from './art';
 
 const J = 'oga/junkala-sfx/';
 
@@ -26,18 +27,20 @@ launch({
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;
-    // a spinning four-colour ring with a ball in it, under the title
-    const g = scene.add.graphics({ x: width / 2, y: height * 0.84 });
-    PALETTE.forEach((c, i) => {
-      g.lineStyle(22, c, 1).beginPath();
-      g.arc(0, 0, 88, Phaser.Math.DegToRad(i * 90), Phaser.Math.DegToRad((i + 1) * 90));
-      g.strokePath();
-    });
+    makeArt(scene, PALETTE);
+    scene.add.image(0, 0, 'cg-sky').setOrigin(0);
+    const far = scene.add.tileSprite(0, 0, width, height, 'cg-stars-far').setOrigin(0);
+    const near = scene.add.tileSprite(0, 0, width, height, 'cg-stars-near').setOrigin(0);
+    scene.tweens.addCounter({ from: 0, to: 2560, duration: 60000, repeat: -1, onUpdate: (tw) => { const v = tw.getValue() ?? 0; far.tilePositionY = -v * 0.4; near.tilePositionY = -v; } });
+    // a spinning neon four-colour ring with a glossy ball hopping in it, under the title
+    const g = scene.add.graphics({ x: width / 2, y: height * 0.115 });
+    PALETTE.forEach((c, i) => neonArc(g, 62, i * 90 + 1.5, (i + 1) * 90 - 1.5, 16, c));
     scene.tweens.add({ targets: g, angle: 360, duration: 4000, repeat: -1 });
-    const ball = scene.add.circle(width / 2, height * 0.84 + 30, 18, PALETTE[0]).setStrokeStyle(4, 0xffffff, 0.8);
-    scene.tweens.add({ targets: ball, y: ball.y - 60, duration: 420, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
+    const glow = scene.add.image(width / 2, height * 0.115 + 22, 'cg-glow').setScale(0.7).setTint(PALETTE[0]).setAlpha(0.6).setBlendMode(Phaser.BlendModes.ADD);
+    const ball = scene.add.image(width / 2, height * 0.115 + 22, 'cg-ball').setDisplaySize(30, 30).setTint(PALETTE[0]);
+    scene.tweens.add({ targets: [ball, glow], y: ball.y - 44, duration: 420, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
     for (let i = 0; i < 4; i++) {
-      const s = scene.add.image(width * (0.12 + i * 0.25), height * 0.08 + (i % 2) * 40, 'cg-star').setScale(0.35).setAlpha(0.8);
+      const s = scene.add.image(width * [0.08, 0.22, 0.78, 0.92][i], height * 0.08 + (i % 2) * 40, 'cg-star').setScale(0.35).setAlpha(0.8);
       scene.tweens.add({ targets: s, angle: 360, duration: 3000 + i * 400, repeat: -1 });
     }
   },
