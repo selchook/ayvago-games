@@ -54,17 +54,14 @@ export class PlayScene extends ArcadeScene {
   private pendingRings: Phaser.GameObjects.Image[] = [];
   private hintText!: Phaser.GameObjects.Text;
   // Combo move: after a swap that matches, one more swap is free while the matches clear and fall
-  // (it runs at the next step of the chain) and for a moment after; its matches keep the chain going.
+  // (it plays at once, as soon as both gems are at rest); its matches keep the chain going.
   private resolving = false;
   private comboOpen = false;
   private comboUsed = false;
-  private comboTimer = 0;
   private comboQueued: { ga: Gem; gb: Gem } | null = null;
   private comboFocus: Cell | null = null;
   private swapUntil = 0;
   private comboRings: Phaser.GameObjects.Image[] = [];
-  private comboBar!: Phaser.GameObjects.Graphics;
-  private lastChain = 0;
 
   createGame(): void {
     this.gen++;
@@ -105,8 +102,7 @@ export class PlayScene extends ArcadeScene {
     this.add.image(360, hintY, makeGlass(this, 520, 64, 32));
     this.hintText = txt(this, 360, hintY, t('hint'), { size: 28, color: '#f1e8ff', wrap: 500 });
     this.pending = null; this.pendingRings = [];
-    this.resolving = false; this.comboOpen = false; this.comboUsed = false; this.comboTimer = 0; this.comboQueued = null; this.comboRings = []; this.lastChain = 0; this.comboFocus = null;
-    this.comboBar = this.add.graphics().setDepth(5);
+    this.resolving = false; this.comboOpen = false; this.comboUsed = false; this.comboQueued = null; this.comboRings = []; this.comboFocus = null;
 
     // now and then a gem catches the light
     this.time.addEvent({ delay: 700, loop: true, callback: () => this.glint() });
@@ -356,14 +352,12 @@ export class PlayScene extends ArcadeScene {
     const ga = this.g[a.r][a.c], gb = this.g[b.r][b.c];
     if (!ga || !gb || this.isOver) return;
     if (this.busy) { if (this.canComboQueue()) this.queueCombo(ga, gb); return; }
-    const comboMove = this.comboOpen && !this.comboUsed;
     this.busy = true;
     const gen = this.gen;
     this.sfx('swap', { volume: 0.45 });
     this.g[a.r][a.c] = gb; this.g[b.r][b.c] = ga;
     await Promise.all([this.moveGem(ga, b.r, b.c, 160), this.moveGem(gb, a.r, a.c, 160)]);
     if (gen !== this.gen) return;
-    if (comboMove) { await this.comboSwap(a, b, ga, gb); return; }
     this.closeCombo();
 
     let forced: Set<string> | null = null;
@@ -470,30 +464,6 @@ export class PlayScene extends ArcadeScene {
     return null;
   }
 
-  /** The free swap after a chain has settled: it matches and the chain goes on, or it goes back. */
-  private async comboSwap(a: Cell, b: Cell, ga: Gem, gb: Gem): Promise<void> {
-    const gen = this.gen;
-    this.closeCombo();
-    this.comboUsed = true;
-    if (ga.special !== 'rainbow' && gb.special !== 'rainbow' && !this.findGroups().length) {
-      this.sfx('bad', { volume: 0.45 });
-      this.g[a.r][a.c] = ga; this.g[b.r][b.c] = gb;
-      await Promise.all([this.moveGem(ga, a.r, a.c, 160), this.moveGem(gb, b.r, b.c, 160)]);
-      if (gen === this.gen) this.busy = false;
-      return;
-    }
-    this.comboBonus();
-    let forced: Set<string> | null = null;
-    if (ga.special === 'rainbow' || gb.special === 'rainbow') {
-      const other = ga.special === 'rainbow' ? gb : ga;
-      forced = new Set<string>([`${a.r},${a.c}`, `${b.r},${b.c}`]);
-      for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (this.g[r][c]?.color === other.color) forced.add(`${r},${c}`);
-    }
-    await this.resolve(b, forced, this.lastChain);
-    if (gen !== this.gen || this.isOver) return;
-    this.afterMove();
-  }
-
   private comboBonus(): void {
     const pts = 100;
     this.levelScore += pts;
@@ -503,19 +473,10 @@ export class PlayScene extends ArcadeScene {
     flash(this, 0xffd23f, 90);
   }
 
-  /** After the chain: the free swap stays open for a moment, with a shrinking bar under the hint. */
-  private openComboWindow(): void {
-    if (this.comboUsed || !this.comboOpen) { this.closeCombo(); return; }
-    this.comboTimer = 1.8;
-    this.hintText.setText(t('comboNow')).setColor('#ffd23f').setFontSize(26);
-  }
-
   private closeCombo(): void {
     this.comboOpen = false;
-    this.comboTimer = 0;
     this.comboQueued = null;
     this.clearComboRings();
-    this.comboBar?.clear();
     if (!this.pending) this.hintText?.setText(t('hint')).setColor('#f1e8ff').setFontSize(28);
   }
 
@@ -582,8 +543,8 @@ export class PlayScene extends ArcadeScene {
       this.reshuffleColors();
       this.sfx('shuffle', { volume: 0.45 });
       for (const row of this.g) for (const gem of row) if (gem) gem.img.setTexture(gem.special === 'rainbow' ? 'gm-rainbow' : `gem${gem.color}`);
-      this.closeCombo();
-    } else this.openComboWindow();
+    }
+    this.closeCombo();
     this.busy = false;
   }
 
@@ -716,7 +677,6 @@ export class PlayScene extends ArcadeScene {
       await this.dropAll();
       if (gen !== this.gen) return;
     }
-    this.lastChain = chain;
     this.resolving = false;
   }
 
@@ -881,12 +841,6 @@ export class PlayScene extends ArcadeScene {
   updateGame(_time: number, delta: number): void {
     if (this.comboQueued) this.playQueued();
     for (const r of this.comboRings) { const gem = r.getData('gem') as Gem; if (gem.img.active) r.setPosition(gem.img.x, gem.img.y); }
-    if (this.comboTimer > 0 && !this.busy) {
-      this.comboTimer -= delta / 1000;
-      const hy = Y0 + ROWS * S + 70;
-      this.comboBar.clear().fillStyle(0xffd23f, 0.85).fillRoundedRect(360 - 240 * (this.comboTimer / 1.8), hy + 26, 480 * (this.comboTimer / 1.8), 6, 3);
-      if (this.comboTimer <= 0) this.closeCombo();
-    }
     const fw = 648 * this.barK;
     this.barFill.setCrop(0, 0, fw, 22);
     this.barTip.setPosition(36 + fw, 280).setAlpha(this.barK > 0.01 ? 0.9 : 0).setTint(this.barK >= 1 ? 0xffd23f : 0xb8ffd0);
