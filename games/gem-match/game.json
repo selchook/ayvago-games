@@ -6,7 +6,7 @@
   "genres": ["puzzle", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard", "mouse"],
-  "version": "1.4.0",
+  "version": "1.4.1",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
   "platform": { "featured": true }
 }
