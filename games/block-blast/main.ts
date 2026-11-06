@@ -1,6 +1,7 @@
 import { launch, loadAudio, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, BLOCK_TILES } from './PlayScene';
+import { makeBackdrop } from './art';
 
 const J = 'oga/junkala-sfx/';
 
@@ -29,11 +30,18 @@ launch({
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;
-    const cells = [[0, 0], [1, 0], [2, 0], [1, 1], [0, 3], [0, 4], [1, 4]];
+    makeBackdrop(scene);
+    scene.add.image(0, 0, 'bb-bg').setOrigin(0);
+    // two little pieces in the corners, and blocks falling softly behind the menu
+    const cells = [[0, 0], [1, 0], [2, 0], [1, 1]];
     cells.forEach(([c, r], i) => {
-      scene.add.image(70 + c * 56, height * 0.06 + r * 56, `blk${i % 6}`).setDisplaySize(54, 54).setAlpha(0.8);
-      scene.add.image(width - 70 - c * 56, height * 0.8 + r * 56, `blk${(i + 3) % 6}`).setDisplaySize(54, 54).setAlpha(0.8);
+      scene.add.image(70 + c * 56, height * 0.05 + r * 56, `blk${i % 6}`).setDisplaySize(54, 54).setAlpha(0.85);
+      scene.add.image(width - 70 - c * 56, height * 0.79 + r * 56, `blk${(i + 3) % 6}`).setDisplaySize(54, 54).setAlpha(0.85);
     });
+    for (let i = 0; i < 8; i++) {
+      const b = scene.add.image(80 + i * 80, -60, `blk${i % 6}`).setDisplaySize(48, 48).setAlpha(0.18);
+      scene.tweens.add({ targets: b, y: height + 60, angle: 90, duration: 7000 + i * 700, delay: i * 900, repeat: -1 });
+    }
   },
   scenes: [PlayScene],
   strings: {

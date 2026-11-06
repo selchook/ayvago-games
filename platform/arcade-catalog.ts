@@ -159,7 +159,7 @@ export const ARCADE_GAMES: SeedGame[] = [
   }),
   arcadeGame({
     slug: 'block-blast',
-    title: { en: 'Block Blast', tr: 'Blok Patlat' },
+    title: { en: 'Block Burst', tr: 'Blok Patlaması' },
     description: {
       en: 'Fit three pieces onto the 8x8 board and blast full rows and columns. Chain combos and score until nothing fits!',
       tr: 'Üç parçayı 8x8 tahtaya yerleştir, dolan satır ve sütunları patlat. Kombo yap, parçalar sığmayana kadar puan topla!',
@@ -169,6 +169,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['block', 'blast', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
   }),
   arcadeGame({
     slug: 'block-drop',

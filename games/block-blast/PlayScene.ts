@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ArcadeScene, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { makeBackdrop, makeBoard, makeFx, glass } from './art';
 
 /** puzzle2 square tiles (the orange set is numbered one higher). */
 export const BLOCK_TILES = [
@@ -68,25 +69,38 @@ export class PlayScene extends ArcadeScene {
   private sinceClear = 0;
   private level = 1;
   private locked = false;
+  private shades: Phaser.GameObjects.Image[] = [];
+  private comboPill!: Phaser.GameObjects.Container;
+  private comboText!: Phaser.GameObjects.Text;
 
   createGame(): void {
     this.board = []; this.tiles = []; this.tray = [null, null, null]; this.drag = null; this.sel = -1;
     this.combo = 0; this.sinceClear = 0; this.level = 1; this.locked = false; this.ghost = [];
 
-    const g = this.add.graphics();
-    g.fillStyle(0x000000, 0.45).fillRoundedRect(LEFT - 14, TOP - 14, N * CELL + 28, N * CELL + 28, 18);
-    g.lineStyle(5, 0x8b5cff, 1).strokeRoundedRect(LEFT - 14, TOP - 14, N * CELL + 28, N * CELL + 28, 18);
+    makeBackdrop(this); makeFx(this);
+    this.add.image(0, 0, 'bb-bg').setOrigin(0).setDepth(-10);
+    // a few big blocks drift slowly in the background
+    for (let i = 0; i < 6; i++) {
+      const b = this.add.image(rng.int(40, 680), rng.int(80, 1240), `blk${i % 6}`).setDisplaySize(90, 90).setAlpha(0.07).setAngle(rng.int(-30, 30)).setDepth(-9);
+      this.tweens.add({ targets: b, y: b.y - rng.int(60, 140), angle: b.angle + rng.int(-20, 20), duration: rng.int(8000, 14000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
+    this.add.image(LEFT - 38, TOP - 38, makeBoard(this, N, CELL)).setOrigin(0).setDepth(-1);
     for (let r = 0; r < N; r++) {
       this.board.push(new Array(N).fill(-1));
       this.tiles.push(new Array(N).fill(null));
-      for (let c = 0; c < N; c++) {
-        g.fillStyle((r + c) % 2 ? 0x221d3a : 0x2a2448, 1).fillRoundedRect(LEFT + c * CELL + 3, TOP + r * CELL + 3, CELL - 6, CELL - 6, 8);
-      }
     }
-    g.fillStyle(0x000000, 0.35).fillRoundedRect(20, TRAY_Y - 130, 680, 260, 22);
+    this.add.image(360, TRAY_Y, glass(this, 680, 250, 28)).setDepth(-1);
+    for (const x of SLOTS) this.add.image(x, TRAY_Y, glass(this, 200, 200, 22)).setDepth(-1).setAlpha(0.55);
+    this.shades = [];
+    for (let i = 0; i < 25; i++) this.shades.push(this.add.image(0, 0, 'bb-shade').setDisplaySize(CELL - 4, CELL - 4).setDepth(9).setVisible(false));
+    // combo badge above the board
+    const pillBg = this.add.image(0, 0, glass(this, 240, 54, 27));
+    this.comboText = txt(this, 0, 0, '', { title: true, size: 26, color: '#ffd23f' });
+    this.comboPill = this.add.container(360, TOP - 52, [pillBg, this.comboText]).setDepth(30).setAlpha(0);
     this.hilite = this.add.graphics().setDepth(3);
     for (let i = 0; i < 25; i++) this.ghost.push(this.add.image(0, 0, 'blk0').setDisplaySize(CELL - 4, CELL - 4).setAlpha(0.4).setVisible(false).setDepth(5));
-    this.selMark = this.add.rectangle(0, TRAY_Y, 220, 240).setStrokeStyle(5, 0xffd23f).setVisible(false);
+    this.selMark = this.add.rectangle(0, TRAY_Y, 210, 210).setStrokeStyle(4, 0xffd23f).setVisible(false);
+    this.tweens.add({ targets: this.selMark, alpha: 0.5, duration: 400, yoyo: true, repeat: -1 });
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onDown(p));
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p));
@@ -177,6 +191,8 @@ export class PlayScene extends ArcadeScene {
   private follow(p: Phaser.Input.Pointer): void {
     const pc = this.drag!;
     pc.box.setPosition(p.x - (pc.w * CELL) / 2, p.y - pc.h * CELL - 70);
+    // the lifted piece casts a soft shadow just below it
+    pc.shape.forEach(([x, y], i) => this.shades[i].setVisible(true).setPosition(pc.box.x + x * CELL + CELL / 2 + 8, pc.box.y + y * CELL + CELL / 2 + 12).setAlpha(0.45));
     const c = Math.round((pc.box.x - LEFT) / CELL), r = Math.round((pc.box.y - TOP) / CELL);
     this.cur = { r, c };
     this.showGhost(pc, r, c);
@@ -186,6 +202,7 @@ export class PlayScene extends ArcadeScene {
     const pc = this.drag;
     if (!pc) return;
     this.drag = null;
+    this.shades.forEach((s) => s.setVisible(false));
     pc.box.setDepth(10);
     if (!this.isOver && this.fits(pc.shape, this.cur.r, this.cur.c)) this.place(pc, this.cur.r, this.cur.c);
     else { this.toTray(pc, true); this.clearGhost(); this.sfx('back', { volume: 0.35 }); }
@@ -245,9 +262,9 @@ export class PlayScene extends ArcadeScene {
     });
     if (!ok) return;
     const { rows, cols } = this.fullLines(pc.shape, r, c);
-    this.hilite.fillStyle(0xffffff, 0.18);
-    rows.forEach((rr) => this.hilite.fillRect(LEFT, TOP + rr * CELL, N * CELL, CELL));
-    cols.forEach((cc) => this.hilite.fillRect(LEFT + cc * CELL, TOP, CELL, N * CELL));
+    const tint = TINTS[pc.color];
+    rows.forEach((rr) => { this.hilite.fillStyle(tint, 0.22).fillRoundedRect(LEFT, TOP + rr * CELL, N * CELL, CELL, 10); this.hilite.lineStyle(3, tint, 0.9).strokeRoundedRect(LEFT, TOP + rr * CELL, N * CELL, CELL, 10); });
+    cols.forEach((cc) => { this.hilite.fillStyle(tint, 0.22).fillRoundedRect(LEFT + cc * CELL, TOP, CELL, N * CELL, 10); this.hilite.lineStyle(3, tint, 0.9).strokeRoundedRect(LEFT + cc * CELL, TOP, CELL, N * CELL, 10); });
   }
 
   private clearGhost(): void {
@@ -283,6 +300,8 @@ export class PlayScene extends ArcadeScene {
       this.tiles[r + y][c + x] = img;
     }
     this.sfxAt(rng.pick(['place1', 'place2', 'place3']), LEFT + (c + pc.w / 2) * CELL, { volume: 0.6 });
+    const ring = this.add.image(LEFT + (c + pc.w / 2) * CELL, TOP + (r + pc.h / 2) * CELL, 'bb-ring').setTint(TINTS[pc.color]).setScale(0.3).setBlendMode(Phaser.BlendModes.ADD).setDepth(6);
+    this.tweens.add({ targets: ring, scale: 0.6 + Math.max(pc.w, pc.h) * 0.35, alpha: 0, duration: 340, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
     this.addScore(pc.shape.length);
 
     const { rows, cols } = this.fullLines(null, 0, 0);
@@ -295,8 +314,13 @@ export class PlayScene extends ArcadeScene {
       const cx = LEFT + (c + pc.w / 2) * CELL, cy = TOP + (r + pc.h / 2) * CELL;
       this.addScore(pts, cx, cy);
       const word = lines >= 3 ? t('amazing') : lines === 2 ? t('great') : t('good');
-      popup(this, 360, TOP - 50 + 420, word, '#5dff7a', 34);
+      this.banner(word, lines >= 3 ? '#ff79c6' : lines === 2 ? '#3ea8ff' : '#5dff7a');
       if (this.combo > 1) {
+        this.comboText.setText(`${t('combo')} x${this.combo}`);
+        this.tweens.killTweensOf(this.comboPill);
+        this.comboPill.setAlpha(1).setScale(0.6);
+        this.tweens.add({ targets: this.comboPill, scale: 1, duration: 260, ease: 'Back.easeOut' });
+        this.tweens.add({ targets: this.comboPill, alpha: 0, delay: 1400, duration: 400 });
         this.hud.setCenter(`${t('combo')} x${this.combo}`);
         this.sfx('combo', { volume: 0.6, exact: true, rate: Math.min(1.4, 1 + (this.combo - 2) * 0.07), delay: 0.12 });
         this.time.delayedCall(1200, () => !this.isOver && this.updateHud());
@@ -308,6 +332,15 @@ export class PlayScene extends ArcadeScene {
 
     if (this.tray.every((x) => !x)) this.refill();
     this.time.delayedCall(lines ? 420 : 50, () => this.checkStuck());
+  }
+
+  /** A glass pill with a word that pops up over the board and fades. */
+  private banner(word: string, color: string): void {
+    const tx = txt(this, 0, 0, word, { title: true, size: 40, color });
+    const bg = this.add.image(0, 0, glass(this, Math.ceil((tx.width + 70) / 10) * 10, 80, 40));
+    const box = this.add.container(360, TOP + (N * CELL) / 2, [bg, tx]).setDepth(40).setScale(0.3);
+    this.tweens.add({ targets: box, scale: 1, duration: 260, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: box, alpha: 0, y: box.y - 40, delay: 700, duration: 350, onComplete: () => box.destroy() });
   }
 
   private clearLines(rows: number[], cols: number[], color: number): void {
@@ -329,6 +362,14 @@ export class PlayScene extends ArcadeScene {
         onComplete: () => img.destroy(),
       });
     }
+    // a beam of light sweeps along every cleared line
+    const beam = (x: number, y: number, horiz: boolean) => {
+      const b = this.add.image(x, y, 'bb-beam').setDisplaySize(N * CELL + 40, CELL * 1.3).setAngle(horiz ? 0 : 90).setTint(TINTS[color]).setBlendMode(Phaser.BlendModes.ADD).setDepth(25);
+      const core = this.add.image(x, y, 'bb-beam').setDisplaySize(N * CELL + 40, CELL * 0.4).setAngle(horiz ? 0 : 90).setBlendMode(Phaser.BlendModes.ADD).setDepth(26);
+      this.tweens.add({ targets: [b, core], alpha: 0, scaleY: 0.05, duration: 420, ease: 'Quad.easeIn', onComplete: () => { b.destroy(); core.destroy(); } });
+    };
+    rows.forEach((r) => beam(LEFT + (N * CELL) / 2, TOP + r * CELL + CELL / 2, true));
+    cols.forEach((c) => beam(LEFT + c * CELL + CELL / 2, TOP + (N * CELL) / 2, false));
     const n = rows.length + cols.length;
     this.sfx(n >= 3 ? 'clear3' : n === 2 ? 'clear2' : 'clear1', { volume: n >= 3 ? 0.75 : n === 2 ? 0.65 : 0.55 });
     shake(this, 0.004 + 0.003 * (rows.length + cols.length), 180);
