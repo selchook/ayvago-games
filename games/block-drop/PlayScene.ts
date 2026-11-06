@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
 import { ArcadeScene, burst, shake, flash, popup, t, txt } from '@core';
+import { THEMES, makeBackdrop, makeButton, makeFx, makeGlass, makeRim, makeWell } from './art';
 
 const W = 10, H = 22, HIDDEN = 2;            // 20 visible rows + 2 spawn rows
 const CELL = 46, BX = 24, BY = 100 - HIDDEN * CELL;
 const PANEL_X = 602;
+const ADD = Phaser.BlendModes.ADD;
+const TOP = BY + HIDDEN * CELL;                // top edge of the visible well
 
 interface PieceDef { name: string; tex: string; tint?: number; box: number; cells: Array<[number, number]> }
 export const PIECES: PieceDef[] = [
@@ -72,6 +75,13 @@ export class PlayScene extends ArcadeScene {
   private linesText!: Phaser.GameObjects.Text;
   private drag: { x: number; y: number; t: number; mx: number; my: number; moved: boolean } | null = null;
   private keys: Record<string, Phaser.Input.Keyboard.Key> = {};
+  private bg!: Phaser.GameObjects.Image;
+  private rim!: Phaser.GameObjects.Image;
+  private theme = 0;
+  private lanes: Phaser.GameObjects.Image[] = [];
+  private glows: Phaser.GameObjects.Image[] = [];
+  private ghostLine!: Phaser.GameObjects.Graphics;
+  private dangerGlow!: Phaser.GameObjects.Image;
 
   createGame(): void {
     this.grid = []; this.cells = []; this.pieceImgs = []; this.ghostImgs = []; this.nextImgs = []; this.holdImgs = [];
@@ -82,6 +92,9 @@ export class PlayScene extends ArcadeScene {
     this.held = { left: null, right: null, down: null };
     this.touchHeld = { left: false, right: false, down: false };
 
+    makeFx(this);
+    this.theme = 0; this.lanes = []; this.glows = [];
+    this.bg = this.add.image(0, 0, makeBackdrop(this, 0)).setOrigin(0).setDepth(-10);
     this.drawFrame();
     for (let y = 0; y < H; y++) {
       this.grid.push(new Array(W).fill(-1));
@@ -90,9 +103,13 @@ export class PlayScene extends ArcadeScene {
       this.cells.push(row);
     }
     for (let i = 0; i < 4; i++) {
-      this.ghostImgs.push(this.add.image(0, 0, 'sq-grey').setDisplaySize(CELL - 2, CELL - 2).setAlpha(0.22).setDepth(1));
+      this.lanes.push(this.add.image(0, 0, 'bd-lane').setOrigin(0.5, 0).setBlendMode(ADD).setAlpha(0.1).setDepth(0.5).setVisible(false));
+      this.ghostImgs.push(this.add.image(0, 0, 'sq-grey').setDisplaySize(CELL - 2, CELL - 2).setAlpha(0.14).setDepth(1));
+      this.glows.push(this.add.image(0, 0, 'bd-glow').setBlendMode(ADD).setDisplaySize(CELL * 2.1, CELL * 2.1).setAlpha(0.3).setDepth(2.5).setVisible(false));
       this.pieceImgs.push(this.add.image(0, 0, 'sq-grey').setDisplaySize(CELL - 2, CELL - 2).setDepth(3));
     }
+    this.ghostLine = this.add.graphics().setDepth(1.5);
+    this.dangerGlow = this.add.image(BX + (W * CELL) / 2, TOP, 'bd-danger').setOrigin(0.5, 0).setDisplaySize(W * CELL, 240).setBlendMode(ADD).setAlpha(0).setDepth(0.6);
     for (let i = 0; i < 12; i++) this.nextImgs.push(this.add.image(0, 0, 'sq-grey').setDepth(3).setVisible(false));
     for (let i = 0; i < 4; i++) this.holdImgs.push(this.add.image(0, 0, 'sq-grey').setDepth(3).setVisible(false));
 
@@ -111,27 +128,33 @@ export class PlayScene extends ArcadeScene {
   private py(y: number): number { return BY + y * CELL + CELL / 2; }
 
   private drawFrame(): void {
-    const g = this.add.graphics();
-    const top = BY + HIDDEN * CELL;
-    g.fillStyle(0x000000, 0.55).fillRect(BX - 8, top - 8, W * CELL + 16, (H - HIDDEN) * CELL + 16);
-    g.lineStyle(4, 0x8b5cff, 0.9).strokeRect(BX - 8, top - 8, W * CELL + 16, (H - HIDDEN) * CELL + 16);
-    g.lineStyle(1, 0xffffff, 0.05);
-    for (let x = 1; x < W; x++) g.lineBetween(BX + x * CELL, top, BX + x * CELL, top + (H - HIDDEN) * CELL);
-    for (let y = 1; y < H - HIDDEN; y++) g.lineBetween(BX, top + y * CELL, BX + W * CELL, top + y * CELL);
+    const w = W * CELL + 20, h = (H - HIDDEN) * CELL + 20;
+    this.add.image(BX - 10, TOP - 10, makeWell(this, W, H - HIDDEN, CELL)).setOrigin(0).setDepth(-1);
+    this.rim = this.add.image(BX - 32, TOP - 32, makeRim(this, 'bd-rim', w, h)).setOrigin(0).setDepth(4).setTint(THEMES[0].rim);
+  }
+
+  /** Every level moves the backdrop and the rim to the next colour theme. */
+  private applyTheme(i: number): void {
+    const k = i % THEMES.length;
+    if (k === this.theme) return;
+    this.theme = k;
+    const old = this.add.image(0, 0, this.bg.texture.key).setOrigin(0).setDepth(-9.5);
+    this.bg.setTexture(makeBackdrop(this, k));
+    this.tweens.add({ targets: old, alpha: 0, duration: 900, onComplete: () => old.destroy() });
+    this.rim.setTint(THEMES[k].rim);
+    this.tweens.add({ targets: this.rim, alpha: { from: 0.2, to: 1 }, duration: 500, ease: 'Quad.easeOut' });
   }
 
   private buildPanel(): void {
-    const g = this.add.graphics();
-    const box = (y: number, h: number) => {
-      g.fillStyle(0x000000, 0.45).fillRoundedRect(PANEL_X - 96, y, 192, h, 12);
-      g.lineStyle(3, 0x8b5cff, 0.8).strokeRoundedRect(PANEL_X - 96, y, 192, h, 12);
-    };
+    const box = (y: number, h: number) => this.add.image(PANEL_X, y + h / 2, makeGlass(this, 192, h)).setDepth(-0.5);
     txt(this, PANEL_X, 128, t('hold'), { title: true, size: 18, color: '#ff4fa3' });
     box(146, 120);
     const holdZone = this.add.zone(PANEL_X, 206, 192, 150).setInteractive();
     holdZone.on('pointerdown', () => this.hold());
     txt(this, PANEL_X, 300, t('next'), { title: true, size: 18, color: '#3ee6ff' });
     box(318, 360);
+    box(706, 98);
+    box(816, 98);
     txt(this, PANEL_X, 730, t('level'), { title: true, size: 18, color: '#ffd23f' });
     this.levelText = txt(this, PANEL_X, 772, '1', { title: true, size: 34 });
     txt(this, PANEL_X, 840, t('lines'), { title: true, size: 18, color: '#5dff7a' });
@@ -151,7 +174,9 @@ export class PlayScene extends ArcadeScene {
     const x0 = (720 - (specs.length * w + (specs.length - 1) * gap)) / 2 + w / 2;
     specs.forEach((s, i) => {
       const x = x0 + i * (w + gap);
-      const bg = this.add.rectangle(x, y, w, h, s.color, 0.2).setStrokeStyle(4, s.color, 0.9).setInteractive();
+      const css = '#' + s.color.toString(16).padStart(6, '0');
+      const bg = this.add.image(x, y + 3, makeButton(this, 'bd-btn-' + css, w, h, css)).setInteractive();
+      const lit = this.add.image(x, y, 'bd-glow').setBlendMode(ADD).setTint(s.color).setDisplaySize(w * 1.4, h * 1.2).setAlpha(0);
       const ic = this.add.graphics({ x, y });
       ic.fillStyle(0xffffff, 0.9).lineStyle(7, 0xffffff, 0.9);
       if (s.icon === 'left') ic.fillTriangle(-22, 0, 16, -24, 16, 24);
@@ -161,11 +186,15 @@ export class PlayScene extends ArcadeScene {
       if (s.icon === 'rot') { ic.beginPath(); ic.arc(0, 2, 20, Phaser.Math.DegToRad(-60), Phaser.Math.DegToRad(220)); ic.strokePath(); ic.fillTriangle(6, -30, 24, -16, 4, -6); }
       if (s.icon === 'hold') txt(this, x, y, t('hold'), { title: true, size: 15, strokeThickness: 0, shadow: false });
       const press = () => {
-        bg.setFillStyle(s.color, 0.55);
+        lit.setAlpha(0.45); bg.setScale(0.95);
         this.tweens.add({ targets: ic, scale: 0.85, duration: 60, yoyo: true });
         if (s.act) { this.touchHeld[s.act] = true; this.held[s.act] = null; } else s.down?.();
       };
-      const release = () => { bg.setFillStyle(s.color, 0.2); if (s.act) this.touchHeld[s.act] = false; };
+      const release = () => {
+        bg.setScale(1);
+        this.tweens.add({ targets: lit, alpha: 0, duration: 160 });
+        if (s.act) this.touchHeld[s.act] = false;
+      };
       bg.on('pointerdown', press);
       bg.on('pointerup', release);
       bg.on('pointerout', release);
@@ -302,6 +331,18 @@ export class PlayScene extends ArcadeScene {
       const tr = this.add.rectangle(this.px(a.x + cx), (this.py(y0 + cy) + this.py(a.y + cy)) / 2, CELL - 10, Math.max(CELL, n * CELL), COLORS_FX[a.p], 0.25).setDepth(1);
       this.tweens.add({ targets: tr, alpha: 0, scaleX: 0.2, duration: 220, onComplete: () => tr.destroy() });
     }
+    // impact: dust under the bottom cells and a flash along the landing edge
+    const cells = SHAPES[a.p][a.rot];
+    let minX = 9, maxX = 0, bottom = 0;
+    for (const [cx, cy] of cells) {
+      minX = Math.min(minX, a.x + cx); maxX = Math.max(maxX, a.x + cx); bottom = Math.max(bottom, a.y + cy);
+      if (!cells.some(([ox, oy]) => ox === cx && oy === cy + 1)) burst(this, this.px(a.x + cx), this.py(a.y + cy) + CELL / 2, [0xffffff, COLORS_FX[a.p]], 6, 180);
+    }
+    if (n > 1) {
+      const beam = this.add.image((this.px(minX) + this.px(maxX)) / 2, this.py(bottom) + CELL / 2, 'bd-beam').setBlendMode(ADD).setTint(COLORS_FX[a.p])
+        .setDisplaySize((maxX - minX + 1) * CELL + 40, 40).setDepth(5);
+      this.tweens.add({ targets: beam, alpha: 0, scaleY: 0.1, duration: 240, onComplete: () => beam.destroy() });
+    }
     this.sfx('harddrop', { volume: 0.55 });
     shake(this, 0.004 + Math.min(0.006, n * 0.0004), 90);
     this.lock();
@@ -355,10 +396,25 @@ export class PlayScene extends ArcadeScene {
       this.clearRows = full;
       this.phase = 'clearing';
       this.phaseT = 0.28;
-      for (const y of full) for (let x = 0; x < W; x++) {
-        const im = this.cells[y][x];
-        im.setTintFill(0xffffff);
-        this.tweens.add({ targets: im, scaleX: 0, duration: 260, delay: Math.abs(x - 4.5) * 14, ease: 'Back.easeIn' });
+      const quad = full.length === 4;
+      for (const y of full) {
+        const beam = this.add.image(BX + (W * CELL) / 2, this.py(y), 'bd-beam').setBlendMode(ADD).setTint(quad ? 0xffd23f : 0xffffff)
+          .setDisplaySize(W * CELL + 60, CELL * 1.6).setDepth(6).setScale(0.2, 1);
+        const sx = (W * CELL + 60) / 256;
+        this.tweens.add({ targets: beam, scaleX: sx, duration: 120, ease: 'Quad.easeOut' });
+        this.tweens.add({ targets: beam, alpha: 0, scaleY: 0.05, delay: 140, duration: 220, onComplete: () => beam.destroy() });
+        for (let x = 0; x < W; x++) {
+          const im = this.cells[y][x];
+          const p = this.grid[y][x];
+          im.setTintFill(0xffffff);
+          this.tweens.add({ targets: im, scaleX: 0, duration: 260, delay: Math.abs(x - 4.5) * 14, ease: 'Back.easeIn' });
+          // a shard of the block tumbles away
+          const sh = this.add.image(this.px(x), this.py(y), 'bd-shard').setTint(COLORS_FX[p] ?? 0xffffff).setDepth(7).setScale(1.2);
+          const dir = x < 4.5 ? -1 : 1;
+          this.tweens.add({ targets: sh, x: sh.x + dir * Phaser.Math.Between(20, 90), duration: 600, ease: 'Quad.easeOut' });
+          this.tweens.add({ targets: sh, y: sh.y + Phaser.Math.Between(120, 260), angle: dir * Phaser.Math.Between(90, 360), duration: 600, ease: 'Back.easeIn' });
+          this.tweens.add({ targets: sh, alpha: 0, delay: 320, duration: 280, onComplete: () => sh.destroy() });
+        }
       }
       this.scoreLines(full);
     } else {
@@ -383,9 +439,22 @@ export class PlayScene extends ArcadeScene {
     this.addScore(pts, BX + W * CELL / 2, midY - 40);
     const label = t(['', 'single', 'double', 'triple', 'tetris'][n]);
     const extra = b2b ? `\n${t('b2b')}` : this.combo > 0 ? `\n${t('combo')} x${this.combo}` : '';
+    const big = quad || b2b || this.combo >= 2;
     const msg = txt(this, BX + W * CELL / 2, midY + 20, label + extra, { title: true, size: quad ? 34 : 26, color: quad ? '#ffd23f' : '#3ee6ff' }).setDepth(50).setScale(0.3);
     this.tweens.add({ targets: msg, scale: 1, duration: 260, ease: 'Back.easeOut' });
     this.tweens.add({ targets: msg, alpha: 0, y: midY - 60, delay: 700, duration: 400, onComplete: () => msg.destroy() });
+    if (big) {
+      const rib = this.add.image(BX + W * CELL / 2, midY + 20, 'bd-ribbon').setDisplaySize(W * CELL + 16, extra ? 130 : 96)
+        .setTint(quad ? 0xffd23f : 0x3ee6ff).setDepth(49);
+      const sy = rib.scaleY;
+      rib.scaleY = 0;
+      this.tweens.add({ targets: rib, scaleY: sy, duration: 160, ease: 'Quad.easeOut' });
+      this.tweens.add({ targets: rib, alpha: 0, y: midY - 60, delay: 700, duration: 400, onComplete: () => rib.destroy() });
+    }
+    if (quad) {
+      const ring = this.add.image(BX + W * CELL / 2, midY, 'bd-ring').setBlendMode(ADD).setTint(0xffd23f).setScale(0.2).setDepth(48);
+      this.tweens.add({ targets: ring, scale: 6, alpha: 0, duration: 600, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+    }
     for (const y of full) for (let x = 0; x < W; x += 2) burst(this, this.px(x), this.py(y), [COLORS_FX[this.grid[y][x]], 0xffffff], 6, 260);
     if (quad) { shake(this, 0.014, 260); flash(this, 0xffd23f, 160); this.sfx('tetris', { volume: 0.75, exact: true }); }
     else { shake(this, 0.004 * n, 140); this.sfx('line', { volume: 0.55, rate: 1 + (n - 1) * 0.12 }); }
@@ -397,8 +466,9 @@ export class PlayScene extends ArcadeScene {
     if (this.level > before) {
       this.time.delayedCall(350, () => {
         this.sfx('levelup', { volume: 0.65 });
-        flash(this, 0x8b5cff, 200);
+        flash(this, THEMES[(this.level - 1) % THEMES.length].rim, 200);
         popup(this, BX + W * CELL / 2, 520, t('levelUp'), '#ff4fa3', 30);
+        this.applyTheme(this.level - 1);
       });
       this.tweens.add({ targets: this.levelText, scale: 1.6, duration: 180, yoyo: true });
     }
@@ -406,13 +476,25 @@ export class PlayScene extends ArcadeScene {
   }
 
   private collapse(): void {
-    const rows = new Set(this.clearRows);
+    const cleared = this.clearRows;
+    const rows = new Set(cleared);
     const kept = this.grid.filter((_, y) => !rows.has(y));
     while (kept.length < H) kept.unshift(new Array(W).fill(-1));
     this.grid = kept;
     this.clearRows = [];
-    for (const row of this.cells) for (const im of row) im.setScale((CELL - 2) / 32);
+    this.cells.forEach((row, y) => row.forEach((im) => { this.tweens.killTweensOf(im); im.setScale((CELL - 2) / 32).setY(this.py(y)); }));
     this.renderBoard();
+    // the stack above the cleared rows drops into place
+    for (let old = 0; old < H; old++) {
+      if (rows.has(old)) continue;
+      const k = cleared.filter((r) => r > old).length;
+      if (!k) continue;
+      for (const im of this.cells[old + k]) {
+        if (!im.visible) continue;
+        im.setY(this.py(old));
+        this.tweens.add({ targets: im, y: this.py(old + k), duration: 110 + k * 35, ease: 'Bounce.easeOut' });
+      }
+    }
     this.checkDanger();
   }
 
@@ -456,19 +538,39 @@ export class PlayScene extends ArcadeScene {
 
   private render(): void {
     const a = this.active;
+    this.ghostLine.clear();
     if (!a) {
-      for (const im of [...this.pieceImgs, ...this.ghostImgs]) im.setVisible(false);
+      for (const im of [...this.pieceImgs, ...this.ghostImgs, ...this.lanes, ...this.glows]) im.setVisible(false);
       return;
     }
     let gy = a.y;
     while (this.fits(a.p, a.rot, a.x, gy + 1)) gy++;
+    const col = COLORS_FX[a.p];
+    // a lane of light from the piece down to where it will land
+    const cols = new Map<number, [number, number]>();
+    for (const [cx, cy] of SHAPES[a.p][a.rot]) {
+      const x = a.x + cx, prev = cols.get(x);
+      cols.set(x, [Math.min(prev?.[0] ?? 99, a.y + cy), Math.max(prev?.[1] ?? -1, gy + cy)]);
+    }
+    let li = 0;
+    for (const [x, [y0, y1]] of cols) {
+      const top = Math.max(TOP, this.py(y0) - CELL / 2);
+      const h = this.py(y1) + CELL / 2 - top;
+      const lane = this.lanes[li++];
+      lane.setPosition(this.px(x), top).setDisplaySize(CELL - 4, Math.max(1, h)).setTint(col).setVisible(h > 0);
+    }
+    for (; li < this.lanes.length; li++) this.lanes[li].setVisible(false);
+    this.ghostLine.lineStyle(3, col, 0.85);
     SHAPES[a.p][a.rot].forEach(([cx, cy], i) => {
       const im = this.pieceImgs[i];
       this.styleCell(im, a.p);
       im.setPosition(this.px(a.x + cx), this.py(a.y + cy)).setVisible(a.y + cy >= HIDDEN);
+      this.glows[i].setPosition(im.x, im.y).setTint(col).setVisible(im.visible);
       const gh = this.ghostImgs[i];
       this.styleCell(gh, a.p);
-      gh.setPosition(this.px(a.x + cx), this.py(gy + cy)).setVisible(gy + cy >= HIDDEN && gy !== a.y);
+      const showGhost = gy + cy >= HIDDEN && gy !== a.y;
+      gh.setPosition(this.px(a.x + cx), this.py(gy + cy)).setVisible(showGhost);
+      if (showGhost) this.ghostLine.strokeRoundedRect(gh.x - CELL / 2 + 4, gh.y - CELL / 2 + 4, CELL - 8, CELL - 8, 7);
     });
   }
 
@@ -515,6 +617,7 @@ export class PlayScene extends ArcadeScene {
 
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
+    this.dangerGlow.setAlpha(this.danger && !this.isOver ? 0.22 + 0.14 * Math.sin(this.time.now / 140) : Math.max(0, this.dangerGlow.alpha - dt));
     if (this.phase === 'clearing') {
       this.phaseT -= dt;
       if (this.phaseT <= 0) { this.collapse(); this.phase = 'spawn'; this.phaseT = 0.08; }
