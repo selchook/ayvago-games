@@ -1,6 +1,7 @@
 import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
+import { menuScene } from './menu';
 
 const SS = 'space-shooter/png/';
 
@@ -47,14 +48,7 @@ launch({
     loadSfx(l, 'beat', 'sfx-digital/audio/tone1');
   },
   menuDecor(scene) {
-    const { width, height } = scene.scale;
-    for (let i = 0; i < 70; i++) scene.add.image(Math.random() * width, Math.random() * height, 'star').setScale(0.1 + Math.random() * 0.25).setAlpha(0.3 + Math.random() * 0.5);
-    const rocks: Array<[number, number, string, number]> = [[0.15, 0.08, 'rock0-1', 1.1], [0.85, 0.12, 'rock-brown', 1], [0.2, 0.86, 'rock1-1', 1.4], [0.82, 0.9, 'rock0-3', 1.2]];
-    for (const [x, y, k, s] of rocks) {
-      const r = scene.add.image(width * x, height * y, k).setScale(s);
-      scene.tweens.add({ targets: r, angle: 360, duration: 9000 + Math.random() * 6000, repeat: -1 });
-    }
-    scene.add.image(width / 2, height * 0.8, 'ship').setScale(1.1).setAngle(-20);
+    menuScene(scene);
   },
   scenes: [PlayScene],
   strings: {
