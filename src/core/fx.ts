@@ -32,7 +32,27 @@ export function ensurePixel(scene: Phaser.Scene): string {
   return PX;
 }
 
-/** Subtle CRT scanlines over the whole camera (retro style only; hidden in the modern style). */
+// The Ayvago page draws its own CRT scanlines over everything in its retro and arcade themes.
+// Under those themes the game's scanlines are hidden, so the two sets do not stack up.
+const HOST_SCANLINE_THEMES = ['retro', 'arcade'];
+let hostScanlines = false;
+const crts = new Set<Phaser.GameObjects.TileSprite>();
+
+/** True when the platform theme already puts scanlines over the game frame. */
+export function themeHasScanlines(theme: string | null | undefined): boolean {
+  return !!theme && HOST_SCANLINE_THEMES.includes(theme);
+}
+
+/** Follows the platform theme: hides (or shows again) the scanlines of every live scene. */
+export function setHostScanlines(on: boolean): void {
+  hostScanlines = on;
+  for (const c of crts) if (c.active) c.setVisible(!isModern() && !on);
+}
+
+/**
+ * Subtle CRT scanlines over the whole camera (retro style only; hidden in the modern style and
+ * while the platform theme draws its own).
+ */
 export function addCrt(scene: Phaser.Scene, alpha = 0.12): Phaser.GameObjects.TileSprite {
   if (!scene.textures.exists(SCAN)) {
     const g = scene.make.graphics({ x: 0, y: 0 }, false);
@@ -41,8 +61,11 @@ export function addCrt(scene: Phaser.Scene, alpha = 0.12): Phaser.GameObjects.Ti
     g.destroy();
   }
   const { width, height } = scene.scale;
-  return scene.add.tileSprite(0, 0, width, height, SCAN).setOrigin(0).setAlpha(alpha).setScrollFactor(0).setDepth(100000)
-    .setVisible(!isModern());
+  const crt = scene.add.tileSprite(0, 0, width, height, SCAN).setOrigin(0).setAlpha(alpha).setScrollFactor(0).setDepth(100000)
+    .setVisible(!isModern() && !hostScanlines);
+  crts.add(crt);
+  crt.once(Phaser.GameObjects.Events.DESTROY, () => crts.delete(crt));
+  return crt;
 }
 
 /** Burst of particles at (x, y): square pixels in the retro style, soft dots in the modern one. */
