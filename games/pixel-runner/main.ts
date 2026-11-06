@@ -50,7 +50,7 @@ launch({
   },
   scenes: [PlayScene],
   strings: {
-    tr: { coins: 'ALTIN', meters: '{n} m', stomp: 'EZDİN!', fell: 'DÜŞTÜN!', faster: 'HIZLANIYOR!' },
-    en: { coins: 'COINS', meters: '{n} m', stomp: 'STOMP!', fell: 'YOU FELL!', faster: 'SPEEDING UP!' },
+    tr: { meters: '{n} m', stomp: 'EZDİN!', fell: 'DÜŞTÜN!', faster: 'HIZLANIYOR!' },
+    en: { meters: '{n} m', stomp: 'STOMP!', fell: 'YOU FELL!', faster: 'SPEEDING UP!' },
   },
 });
