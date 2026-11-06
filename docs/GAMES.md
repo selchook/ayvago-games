@@ -94,7 +94,7 @@ Columns: slug · EN title / TR title · concept · suggested assets (`public/ass
 | slug | title | concept | assets | o |
 |---|---|---|---|---|
 | bubble-pop | Bubble Pop / Balon Patlat | bubble shooter: aim, wall bounces, match 3, ceiling drops | puzzle2 balls | P |
-| block-blast | Block Blast / Blok Patlat | place 3 pieces on 8x8, clear rows/cols, game over when no fit | puzzle tiles | P |
+| block-blast | Block Burst / Blok Patlaması | place 3 pieces on 8x8, clear rows/cols, game over when no fit | puzzle tiles | P |
 | lights-out | Lights Out / Işıkları Söndür | toggle cross patterns, solvable generated levels | drawn | P |
 | pipe-flow | Pipe Flow / Boru Akışı | rotate pipes to connect source to drain before water flows | puzzle2 pipes | P |
 | hex-merge | Hex Merge / Altıgen Birleştir | drop numbered hex pieces on hex board, merge 3 of a kind | hexagon / drawn | P |

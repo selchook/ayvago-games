@@ -2,8 +2,8 @@
   "$schema": "https://ayvago.com/schemas/manifest.v1.json",
   "id": "blockblast",
   "title": {
-    "en": "Block Blast",
-    "tr": "Blok Patlat"
+    "en": "Block Burst",
+    "tr": "Blok Patlaması"
   },
   "description": {
     "en": "Fit three pieces onto the 8x8 board and blast full rows and columns. Chain combos and score until nothing fits!",
@@ -53,5 +53,5 @@
     "cover": "/games/block-blast/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/block-blast/ayvago/screenshot.jpg"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
