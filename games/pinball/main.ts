@@ -1,9 +1,9 @@
-import { launch, loadAudio, type GameMeta } from '@core';
+import { launch, loadAudio, getLang, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import Phaser from 'phaser';
 import { makeTextures, paintTable } from './art';
-import { THEMES } from './levels';
+import { TABLES } from './tables';
 
 const J = 'oga/junkala-sfx/';
 const G = J + 'general-sounds/';
@@ -36,11 +36,12 @@ launch({
   menuDecor(scene) {
     makeTextures(scene);
     const { width, height } = scene.scale;
-    scene.add.image(0, 0, paintTable(scene, THEMES[0], 0)).setOrigin(0).setAlpha(0.55);
+    const th = TABLES[0].theme;
+    scene.add.image(0, 0, paintTable(scene, TABLES[0], getLang() === 'tr' ? 'tr' : 'en')).setOrigin(0).setAlpha(0.55);
     scene.add.rectangle(0, 0, width, height, 0x05040f, 0.5).setOrigin(0);
     for (const [x, y] of [[width * 0.18, height * 0.11], [width * 0.82, height * 0.11]]) {
-      const halo = scene.add.image(x, y, 'pb-glow').setTint(THEMES[0].bumper).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.4).setScale(1.1);
-      const body = scene.add.image(x, y, 'pb-bumper').setTint(THEMES[0].bumper).setScale(0.82);
+      const halo = scene.add.image(x, y, 'pb-glow').setTint(th.bumper).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.4).setScale(1.1);
+      const body = scene.add.image(x, y, 'pb-bumper').setTint(th.bumper).setScale(0.82);
       const cap = scene.add.image(x, y - 2, 'pb-cap').setScale(0.95);
       scene.tweens.add({ targets: [body, cap], scaleX: '+=0.1', scaleY: '+=0.1', duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       scene.tweens.add({ targets: halo, alpha: 0.8, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -53,23 +54,29 @@ launch({
   scenes: [PlayScene],
   strings: {
     tr: {
+      tableN: 'MASA {n}', target: 'HEDEF', tableClear: 'MASA TAMAM!', newTable: 'YENİ MASA AÇILDI!', round: 'TUR {n}', jackpot: 'JACKPOT!',
+      pickTable: 'MASA SEÇ', locked: 'KİLİTLİ', pickHint: 'Bir masaya dokun ya da ↑↓ ve Enter',
+      m_ramps: 'RAMPA', m_orbits: 'YÖRÜNGE', m_spinner: 'FIRILDAK', m_bumpers: 'TAMPON', m_lanes: 'AYVA', m_banks: 'HEDEF SETİ',
+      m_saucer: 'KAPAN', m_vortex: 'GİRDAP', m_wormhole: 'SOLUCAN DELİĞİ', m_cannon: 'TOP ATAR',
       launch: 'FIRLAT', nudge: 'SALLA', ball: 'TOP', ballSave: 'TOP KORUMA', saved: 'TOP KURTARILDI!', lost: 'TOP KAÇTI!',
-      bank: 'HEDEFLER DÜŞTÜ!', multUp: 'ÇARPAN x{n}!', holdLaunch: 'FIRLAT ya da Boşluk:\nbasılı tut, bırak', levelUp: 'SEVİYE {n}',
-      lastBall: 'SON TOP!', touchHint: 'Sol / sağ yarı: paletler', shake: 'SARSINTI!',
-      levelClear: 'SEVİYE {n} TAMAM!', bonus: 'BONUS +{n}', extraBall: 'EKSTRA TOP!', done: 'TAMAM', goalDone: '{g} TAMAM!',
-      unlockSaucer: 'YENİ: KAPAN!', unlockBumper: 'YENİ: 4. TAMPON!', unlockGuard: 'YENİ: HAREKETLİ ENGEL!', combo: 'KOMBO {n}!',
-      g_bumpers: 'TAMPON', g_lanes: 'AYVA', g_targets: 'HEDEF SETİ', g_slings: 'SAPAN', g_saucer: 'KAPAN', g_points: 'PUAN',
-      g_ramps: 'RAMPA', g_orbits: 'YÖRÜNGE', g_spinner: 'FIRILDAK', ramp: 'RAMPA!', orbit: 'YÖRÜNGE!', rampCombo: 'RAMPA KOMBO!',
+      bank: 'HEDEFLER DÜŞTÜ!', multUp: 'ÇARPAN x{n}!', holdLaunch: 'FIRLAT ya da Boşluk:\nbasılı tut, bırak',
+      lastBall: 'SON TOP!',
+      extraBall: 'EKSTRA TOP!', done: 'TAMAM', goalDone: '{g} TAMAM!',
+      combo: 'KOMBO {n}!',
+      ramp: 'RAMPA!', orbit: 'YÖRÜNGE!', rampCombo: 'RAMPA KOMBO!',
       tilt: 'TILT', danger: 'DİKKAT!', ballBonus: 'TOP BONUSU',
     },
     en: {
+      tableN: 'TABLE {n}', target: 'TARGET', tableClear: 'TABLE CLEAR!', newTable: 'NEW TABLE UNLOCKED!', round: 'ROUND {n}', jackpot: 'JACKPOT!',
+      pickTable: 'PICK A TABLE', locked: 'LOCKED', pickHint: 'Tap a table, or ↑↓ and Enter',
+      m_ramps: 'RAMPS', m_orbits: 'ORBITS', m_spinner: 'SPINNER', m_bumpers: 'BUMPERS', m_lanes: 'AYVA', m_banks: 'TARGET BANKS',
+      m_saucer: 'SAUCER', m_vortex: 'VORTEX', m_wormhole: 'WORMHOLE', m_cannon: 'CANNON',
       launch: 'LAUNCH', nudge: 'NUDGE', ball: 'BALL', ballSave: 'BALL SAVE', saved: 'BALL SAVED!', lost: 'BALL LOST!',
-      bank: 'TARGETS DOWN!', multUp: 'MULTIPLIER x{n}!', holdLaunch: 'LAUNCH or Space:\nhold, then release', levelUp: 'LEVEL {n}',
-      lastBall: 'LAST BALL!', touchHint: 'Left / right half: flippers', shake: 'NUDGE!',
-      levelClear: 'LEVEL {n} CLEAR!', bonus: 'BONUS +{n}', extraBall: 'EXTRA BALL!', done: 'DONE', goalDone: '{g} DONE!',
-      unlockSaucer: 'NEW: SAUCER!', unlockBumper: 'NEW: 4TH BUMPER!', unlockGuard: 'NEW: MOVING GUARD!', combo: 'COMBO {n}!',
-      g_bumpers: 'BUMPERS', g_lanes: 'AYVA', g_targets: 'TARGET BANK', g_slings: 'SLINGS', g_saucer: 'SAUCER', g_points: 'POINTS',
-      g_ramps: 'RAMPS', g_orbits: 'ORBITS', g_spinner: 'SPINNER', ramp: 'RAMP!', orbit: 'ORBIT!', rampCombo: 'RAMP COMBO!',
+      bank: 'TARGETS DOWN!', multUp: 'MULTIPLIER x{n}!', holdLaunch: 'LAUNCH or Space:\nhold, then release',
+      lastBall: 'LAST BALL!',
+      extraBall: 'EXTRA BALL!', done: 'DONE', goalDone: '{g} DONE!',
+      combo: 'COMBO {n}!',
+      ramp: 'RAMP!', orbit: 'ORBIT!', rampCombo: 'RAMP COMBO!',
       tilt: 'TILT', danger: 'DANGER!', ballBonus: 'BALL BONUS',
     },
   },
