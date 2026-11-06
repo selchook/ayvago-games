@@ -12,8 +12,9 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    // the player's chosen character: pc-stand on the menu; in play the armless pc-archer with arms posed on the bow
-    loadCharacter(l, { poses: ['stand', 'archer', 'arm', 'hand'] });
+    // the player's chosen character: pc-stand on the menu; in play side-on in hold1 (bow arm out),
+    // with the character's own arm drawing the string
+    loadCharacter(l, { poses: ['stand', 'hold1', 'arm', 'hand'] });
     l.image('cloud1', kenney(SG + 'cloud1.png'));
     l.image('cloud2', kenney(SG + 'cloud2.png'));
     l.image('tree_oak', kenney(SG + 'tree_oak.png'));
@@ -32,7 +33,9 @@ launch({
   },
   menuDecor(scene) {
     makeArcheryTextures(scene);
-    scene.add.image(0, 0, 'sky').setOrigin(0).setDisplaySize(W, H).setAlpha(0.5);
+    scene.add.image(0, 0, 'ar-sky').setOrigin(0).setAlpha(0.6);
+    scene.add.image(0, 0, 'ar-hills-far').setOrigin(0).setAlpha(0.6);
+    scene.add.image(0, 0, 'ar-hills-near').setOrigin(0).setAlpha(0.6);
     scene.add.tileSprite(0, GROUND - 12, W, 112, 'turf').setOrigin(0).setAlpha(0.85);
     // above the how-to text, which reaches the right side of the menu at y 515-580
     const face = scene.add.image(W * 0.85, GROUND - 250, 'face').setScale(0.7);

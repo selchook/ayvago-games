@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { ArcadeScene, CHARACTER_FRAME, Controls, burst, characterRig, playerCharacter, shake, flash, popup, txt, t, rng } from '@core';
-import { W, H, GROUND, RING_COLORS, ARCHER_SCALE, ARCHER_ORIGIN_Y, makeArcheryTextures } from './art';
+import { W, H, GROUND, RING_COLORS, ARCHER_SCALE, ARCHER_ORIGIN_Y, BACK_SHOULDER, makeArcheryTextures, makeDrawBody, glass } from './art';
 
 const BX = 214;            // bow hand
 const BY = GROUND - 74;
@@ -52,12 +52,19 @@ export class PlayScene extends ArcadeScene {
   private clouds: Phaser.GameObjects.Image[] = [];
   private offMark!: Phaser.GameObjects.Triangle;
   private archer!: Phaser.GameObjects.Image;
-  // The archer is the character without arms (pc-archer); these arms hold the bow and draw the
-  // string, posed every frame from the shoulders (character rig) to the grip and the nock.
-  private bowArm!: Phaser.GameObjects.Image;
+  // The archer stands side-on in the character's `hold1` pose, bow arm out in front. While the
+  // bow is drawn the hanging back arm is left out (pc-hold1-draw) and the character's own `arm`
+  // runs from that shoulder to the string; after the release it follows through past the ear.
   private drawArm!: Phaser.GameObjects.Image;
-  private bowHand!: Phaser.GameObjects.Image;
   private drawHand!: Phaser.GameObjects.Image;
+  private drawBody = 'pc-hold1';
+  private grip: [number, number] = [124, 106];   // bow hand on the pose frame
+  private gx = BX; private gy = BY;               // bow hand in the world
+  private lean = 0;
+  private releaseT = 0;
+  private trailG!: Phaser.GameObjects.Graphics;
+  private trail: { x: number; y: number }[] = [];
+  private arrowShadow!: Phaser.GameObjects.Image;
   private rig = characterRig(playerCharacter());
   private wave = 0;
 
@@ -67,7 +74,10 @@ export class PlayScene extends ArcadeScene {
     this.angle = Phaser.Math.DegToRad(-12); this.power = 0; this.drawing = false; this.dragFrom = null; this.kbDraw = false;
     this.wind = 0; this.windBase = 0; this.stuck = []; this.quiver = []; this.dots = []; this.clouds = []; this.flying = undefined; this.wave = 0;
 
-    this.add.image(0, 0, 'sky').setOrigin(0).setDisplaySize(W, H).setDepth(-20);
+    this.add.image(0, 0, 'ar-sky').setOrigin(0).setDepth(-20);
+    this.add.image(0, 0, 'ar-hills-far').setOrigin(0).setDepth(-16);
+    this.add.image(0, 0, 'ar-hills-near').setOrigin(0).setDepth(-12);
+    this.lean = 0; this.releaseT = 0; this.trail = [];
     for (let i = 0; i < 4; i++) {
       const c = this.add.image(rng.int(0, W), rng.int(150, 300), i % 2 ? 'cloud1' : 'cloud2').setDepth(-15).setAlpha(0.9).setScale(rng.int(70, 110) / 100);
       this.clouds.push(c);
@@ -79,23 +89,29 @@ export class PlayScene extends ArcadeScene {
 
     this.stand = this.add.graphics().setDepth(1);
     this.face = this.add.image(this.tx, this.ty, 'face').setDepth(2);
-    this.archer = this.add.image(ARCHER_X, GROUND + 2, 'pc-archer').setOrigin(0.5, ARCHER_ORIGIN_Y).setScale(ARCHER_SCALE).setDepth(5);
+    const made = makeDrawBody(this);
+    this.drawBody = made.body; this.grip = made.grip;
+    this.archer = this.add.image(ARCHER_X, GROUND + 2, 'pc-hold1').setOrigin(0.5, ARCHER_ORIGIN_Y).setScale(ARCHER_SCALE).setDepth(5);
+    this.add.image(ARCHER_X, GROUND + 4, 'ar-glow').setTint(0x000000).setAlpha(0.35).setDisplaySize(90, 18).setDepth(4);
     this.rig = characterRig(playerCharacter());
     const shoulderY = 4 / this.rig.arm[1];   // pivot a few px below the top of the arm
-    this.drawArm = this.add.image(0, 0, 'pc-arm').setOrigin(0.5, shoulderY).setDepth(4);   // far arm, behind the body
     this.bowG = this.add.graphics().setDepth(7);
-    this.bowArm = this.add.image(0, 0, 'pc-arm').setOrigin(0.5, shoulderY).setDepth(8);
-    this.drawHand = this.add.image(0, 0, 'pc-hand').setScale(ARCHER_SCALE).setDepth(9);
-    this.bowHand = this.add.image(0, 0, 'pc-hand').setScale(ARCHER_SCALE).setDepth(9);
+    this.drawArm = this.add.image(0, 0, 'pc-arm').setOrigin(0.5, shoulderY).setDepth(8).setVisible(false);
+    this.drawHand = this.add.image(0, 0, 'pc-hand').setScale(ARCHER_SCALE).setDepth(9).setVisible(false);
+    this.trailG = this.add.graphics().setDepth(7);
+    this.arrowShadow = this.add.image(0, GROUND + 4, 'ar-glow').setTint(0x000000).setAlpha(0).setDisplaySize(60, 8).setDepth(-4);
     this.flagG = this.add.graphics().setDepth(3);
     for (let i = 0; i < 9; i++) this.dots.push(this.add.image(0, 0, 'dot').setDepth(7).setVisible(false));
     this.offMark = this.add.triangle(0, 30, 0, 18, 12, 0, 24, 18, 0xec3013).setDepth(50).setVisible(false);
 
-    this.windText = txt(this, W / 2, 196, '', { size: 26, color: '#ffffff' }).setDepth(40);
+    this.windText = txt(this, W / 2, 196, '', { size: 24, color: '#ffffff' }).setDepth(40);
     this.distText = txt(this, 0, GROUND + 40, '', { title: true, size: 18, color: '#ffffff' }).setDepth(40);
+    this.add.image(W / 2, 82, glass(this, 380, 46)).setDepth(39);
+    this.add.image(92, 90, glass(this, 150, 56)).setDepth(39);
+    this.add.image(W / 2, 190, glass(this, 330, 42)).setDepth(2.5);
     this.needText = txt(this, W / 2, 82, '', { title: true, size: 20, color: '#ffd23f' }).setDepth(40);
     for (let i = 0; i < ARROWS; i++) {
-      this.quiver.push(this.add.image(40 + i * 26, 90, 'arrow').setAngle(-90).setScale(0.55).setDepth(40));
+      this.quiver.push(this.add.image(40 + i * 26, 90, 'arrow').setAngle(-90).setScale(0.5).setDepth(40));
     }
 
     this.controls = new Controls(this);
@@ -210,8 +226,10 @@ export class PlayScene extends ArcadeScene {
 
   private shoot(): void {
     const v = MIN_V + (MAX_V - MIN_V) * this.power;
-    this.ax = BX + Math.cos(this.angle) * 30;
-    this.ay = BY + Math.sin(this.angle) * 30;
+    this.ax = this.gx + Math.cos(this.angle) * 30;
+    this.ay = this.gy + Math.sin(this.angle) * 30;
+    this.releaseT = 0.42;
+    this.trail = [];
     this.avx = Math.cos(this.angle) * v;
     this.avy = Math.sin(this.angle) * v;
     this.flying = this.add.image(this.ax, this.ay, 'arrow').setOrigin(1, 0.5).setDepth(8).setRotation(this.angle);
@@ -278,7 +296,7 @@ export class PlayScene extends ArcadeScene {
   private failRound(): void {
     this.phase = 'between';
     this.sfx('fail', { volume: 0.7 });
-    for (const o of [this.archer, this.bowArm, this.drawArm, this.bowHand, this.drawHand]) o.setTint(0xff9a9a);
+    for (const o of [this.archer, this.drawArm, this.drawHand]) o.setTint(0xff9a9a);
     shake(this, 0.01, 250);
     this.endGame({ title: t('roundFail'), delay: 900 });
   }
@@ -322,9 +340,21 @@ export class PlayScene extends ArcadeScene {
       if (cl.x < -120) cl.x = W + 120;
     }
 
-    this.drawBow();
+    this.releaseT = Math.max(0, this.releaseT - dt);
+    this.drawBow(dt);
     this.drawFlag();
     this.drawPreview();
+    // a fading streak behind the arrow and its shadow on the grass
+    const tg = this.trailG;
+    tg.clear();
+    if (this.phase === 'flight') {
+      for (let i = 1; i < this.trail.length; i++) {
+        const a = this.trail[i - 1], b = this.trail[i], f = i / this.trail.length;
+        tg.lineStyle(1 + f * 3, 0xffffff, 0.45 * f).lineBetween(a.x, a.y, b.x, b.y);
+      }
+      const h = Math.max(0, GROUND - this.ay);
+      this.arrowShadow.setPosition(this.ax - 30, GROUND + 4).setAlpha(Math.max(0.08, 0.4 - h / 1200)).setDisplaySize(70 + h * 0.08, 8);
+    } else this.arrowShadow.setAlpha(0);
   }
 
   private fly(dt: number): void {
@@ -352,6 +382,9 @@ export class PlayScene extends ArcadeScene {
           this.tweens.add({ targets: a, scaleX: { from: 1.08, to: 1 }, duration: 120, yoyo: true });
           this.tweens.add({ targets: this.face, x: this.tx + 6, duration: 50, yoyo: true });
           burst(this, this.tx, yc, [0xc9a26b, 0xffffff, RING_COLORS[pts - 1]], 14, 220);
+          const ring = this.add.image(this.tx, yc, 'ar-ring').setScale(0.1).setDepth(6).setTint(pts >= 9 ? 0xffd23f : 0xffffff);
+          this.tweens.add({ targets: ring, scale: this.tr / 40, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+          this.trail = [];
           this.sfx('thunk', { volume: 0.7 });
           shake(this, 0.004, 120);
           this.resolve(pts, this.tx, yc, x ? 'X' : undefined);
@@ -362,6 +395,7 @@ export class PlayScene extends ArcadeScene {
         a.setPosition(this.ax, GROUND + 6).setRotation(Math.atan2(this.avy, this.avx));
         this.stuck.push({ img: a, dy: 0, onTarget: false });
         burst(this, this.ax, GROUND, [0x6b4a2b, 0x58b947], 12, 200);
+        this.trail = [];
         this.sfx('ground', { volume: 0.6 });
         this.resolve(0, this.ax, GROUND);
         return;
@@ -373,56 +407,87 @@ export class PlayScene extends ArcadeScene {
       }
     }
     a.setPosition(this.ax, this.ay).setRotation(Math.atan2(this.avy, this.avx));
+    this.trail.push({ x: this.ax, y: this.ay });
+    if (this.trail.length > 14) this.trail.shift();
     // off the top of the screen: a marker shows where the arrow is
     this.offMark.setVisible(this.ay < 0).setPosition(Phaser.Math.Clamp(this.ax, 20, W - 20), 26);
     if (this.ay >= 0) this.offMark.setVisible(false);
   }
 
-  private drawBow(): void {
+  /** A point of the pose frame (px) in the world, with the archer's position, scale and lean. */
+  private framePt(fx: number, fy: number): [number, number] {
+    const lx = (fx - CHARACTER_FRAME.width / 2) * ARCHER_SCALE, ly = (fy - CHARACTER_FRAME.height * CHARACTER_FRAME.originY) * ARCHER_SCALE;
+    const c = Math.cos(this.lean), s = Math.sin(this.lean);
+    return [this.archer.x + lx * c - ly * s, this.archer.y + lx * s + ly * c];
+  }
+
+  private drawBow(dt: number): void {
     const g = this.bowG;
     g.clear();
+    const drawing = this.phase === 'aim' && (this.power > 0 || !!this.dragFrom || this.kbDraw);
+    const follow = this.releaseT > 0;
+    // the archer leans back a little to shoot high, and steps into it with the draw
+    const target = this.phase === 'aim' || follow ? Phaser.Math.Clamp(this.angle * 0.42, -0.36, 0.1) : 0;
+    this.lean += (target - this.lean) * Math.min(1, dt * 10);
+    this.archer.setRotation(this.lean).setTexture(drawing || follow ? this.drawBody : 'pc-hold1');
+    const [gx, gy] = this.framePt(this.grip[0], this.grip[1]);
+    this.gx = gx; this.gy = gy;
     const ang = this.angle;
     const cos = Math.cos(ang), sin = Math.sin(ang);
-    const P = (lx: number, ly: number): [number, number] => [BX + lx * cos - ly * sin, BY + lx * sin + ly * cos];
-    const pull = 4 + this.power * 42;
+    const P = (lx: number, ly: number): [number, number] => [gx + lx * cos - ly * sin, gy + lx * sin + ly * cos];
+    // the string comes back to the anchor by the jaw at once, then a little further with power
+    const pull = drawing ? (30 + this.power * 12) * ARCHER_SCALE / 0.76 : follow ? 2 : 4;
     const shakeAmt = this.power > 0.95 ? Math.sin(this.wave * 60) * 1.2 : 0;
-    // limbs
-    const curve = new Phaser.Curves.QuadraticBezier(new Phaser.Math.Vector2(...P(-6, -52)), new Phaser.Math.Vector2(...P(26, 0)), new Phaser.Math.Vector2(...P(-6, 52)));
-    g.lineStyle(9, 0x5a3010).strokePoints(curve.getPoints(16));
-    g.lineStyle(4, 0xb5793c).strokePoints(curve.getPoints(16));
-    // string
-    const [sx1, sy1] = P(-6, -52), [sx2, sy2] = P(-6, 52), [nx, ny] = P(-pull, shakeAmt);
+    // after the release the string thrums
+    const thrum = follow ? Math.sin(this.releaseT * 90) * 6 * (this.releaseT / 0.42) : 0;
+    // limbs bend more as the string comes back
+    const bend = 26 + (drawing ? this.power * 8 : 0);
+    const curve = new Phaser.Curves.QuadraticBezier(new Phaser.Math.Vector2(...P(-6, -52)), new Phaser.Math.Vector2(...P(bend, 0)), new Phaser.Math.Vector2(...P(-6, 52)));
+    g.lineStyle(9, 0x4a2608).strokePoints(curve.getPoints(16));
+    g.lineStyle(4, 0xc08546).strokePoints(curve.getPoints(16));
+    const [sx1, sy1] = P(-6, -52), [sx2, sy2] = P(-6, 52), [nx, ny] = P(-pull + thrum, shakeAmt);
     g.lineStyle(2, 0xffffff, 0.9).lineBetween(sx1, sy1, nx, ny).lineBetween(nx, ny, sx2, sy2);
-    // arms: the front shoulder holds the grip, the back shoulder draws the string at the nock
-    const [gx, gy] = P(2, 0);
-    this.poseArm(this.bowArm, this.bowHand, this.rig.shoulders[1], gx, gy);
-    this.poseArm(this.drawArm, this.drawHand, this.rig.shoulders[0], nx, ny);
-    // nocked arrow
-    if (this.phase === 'aim' || this.phase === 'between') {
-      if (this.phase === 'aim') {
-        const [tx, ty] = P(-pull + 92, shakeAmt);
-        g.lineStyle(4, 0x8a5a2b).lineBetween(nx, ny, tx, ty);
-        g.fillStyle(0xc9cdd8).fillCircle(tx, ty, 5);
-        g.fillStyle(0xec3013).fillCircle(nx, ny, 5);
+    // grip wrap over the bow hand
+    const [wx, wy] = P(4, 0);
+    g.fillStyle(0x2a1405).fillCircle(wx, wy, 5);
+    // the drawing arm: from the back shoulder to the string, or flung back after the release
+    if (drawing || follow) {
+      const shoulder = this.framePt(BACK_SHOULDER[0], BACK_SHOULDER[1]);
+      let hx = nx, hy = ny;
+      if (follow) {
+        const k = 1 - this.releaseT / 0.42;
+        const [ax, ay] = P(-34, 0);
+        const back = Phaser.Math.Easing.Cubic.Out(Math.min(1, k * 2.5));
+        hx = ax - back * 26 * ARCHER_SCALE / 0.76; hy = ay - back * 14 * ARCHER_SCALE / 0.76;
       }
+      this.drawArm.setVisible(true); this.drawHand.setVisible(true);
+      this.poseArm(this.drawArm, this.drawHand, shoulder, hx, hy);
+    } else { this.drawArm.setVisible(false); this.drawHand.setVisible(false); }
+    // nocked arrow
+    if (this.phase === 'aim') {
+      const [tx, ty] = P(-pull + 92, shakeAmt);
+      g.lineStyle(4, 0x8a5a2b).lineBetween(nx, ny, tx, ty);
+      g.fillStyle(0xc9cdd8).fillTriangle(tx + cos * 8, ty + sin * 8, tx - sin * 5, ty + cos * 5, tx + sin * 5, ty - cos * 5);
+      const [fx1, fy1] = P(-pull + 4, -5), [fx2, fy2] = P(-pull + 4, 5), [fx3, fy3] = P(-pull + 16, 0);
+      g.fillStyle(0xec3013).fillTriangle(fx1, fy1, fx2, fy2, fx3, fy3);
     }
     // power gauge
     if (this.phase === 'aim' && this.power > 0) {
-      g.fillStyle(0x000000, 0.5).fillRect(BX - 80, GROUND + 24, 160, 18);
+      g.fillStyle(0x000000, 0.5).fillRoundedRect(BX - 82, GROUND + 22, 164, 22, 8);
       const col = this.power > 0.85 ? 0xec3013 : this.power > 0.5 ? 0xffd23f : 0x5dff7a;
-      g.fillStyle(col).fillRect(BX - 78, GROUND + 26, 156 * this.power, 14);
+      g.fillStyle(col).fillRoundedRect(BX - 78, GROUND + 26, 156 * this.power, 14, 6);
+      g.fillStyle(0xffffff, 0.35).fillRoundedRect(BX - 76, GROUND + 27, 152 * this.power, 4, 2);
     }
   }
 
-  /** Points an arm from a shoulder (frame px of the rig) to a hand position in the world. */
+  /** Points an arm from a shoulder (world) to a hand position in the world. */
   private poseArm(arm: Phaser.GameObjects.Image, hand: Phaser.GameObjects.Image, shoulder: [number, number], hx: number, hy: number): void {
-    const sx = this.archer.x + (shoulder[0] - CHARACTER_FRAME.width / 2) * ARCHER_SCALE;
-    const sy = this.archer.y + (shoulder[1] - CHARACTER_FRAME.height * CHARACTER_FRAME.originY) * ARCHER_SCALE;
+    const [sx, sy] = shoulder;
     const dist = Math.hypot(hx - sx, hy - sy);
-    // the arm image hangs down from the shoulder; it stretches or shortens to reach the hand
+    // the arm image hangs down from the shoulder; it shortens a little when the hand comes close
     const length = this.rig.arm[1] * ARCHER_SCALE;
     arm.setPosition(sx, sy).setRotation(Math.atan2(hy - sy, hx - sx) - Math.PI / 2)
-      .setScale(ARCHER_SCALE, ARCHER_SCALE * Phaser.Math.Clamp(dist / length, 0.45, 2.2));
+      .setScale(ARCHER_SCALE, ARCHER_SCALE * Phaser.Math.Clamp(dist / length, 0.6, 1.25));
     hand.setPosition(hx, hy).setRotation(arm.rotation);
   }
 
@@ -433,8 +498,8 @@ export class PlayScene extends ArcadeScene {
     this.dots.forEach((d, i) => {
       if (!show) { d.setVisible(false); return; }
       const tt = ((i + 1) / this.dots.length) * span;
-      const x = BX + Math.cos(this.angle) * (30 + v * tt);
-      const y = BY + Math.sin(this.angle) * 30 + Math.sin(this.angle) * v * tt + 0.5 * GRAV * tt * tt;
+      const x = this.gx + Math.cos(this.angle) * (30 + v * tt);
+      const y = this.gy + Math.sin(this.angle) * 30 + Math.sin(this.angle) * v * tt + 0.5 * GRAV * tt * tt;
       d.setVisible(true).setPosition(x, y).setAlpha(1 - i / this.dots.length).setScale(0.9 - i * 0.06);
     });
   }
