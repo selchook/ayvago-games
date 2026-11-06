@@ -144,7 +144,7 @@ Same rules as batch J: a full solo mode against an AI and an online mode (`"mult
 | slug | title | concept | assets | o |
 |---|---|---|---|---|
 | water-sort | Water Sort / Su Sıralama | pour coloured layers between tubes until each tube holds one colour; generated solvable levels that grow, undo, extra empty tube as a help | drawn | P |
-| pinball | Pinball / Langırt | one table with flippers, bumpers, slingshots, drop targets and lanes, 3 balls, multipliers, tilt-free nudge; left/right keys or screen halves | drawn + particles | P |
+| pinball | Pinball / Tilt | a tall scrolling table: ramp, two orbits, spinner, saucer, drop bank, pop bumpers, top lanes, upper flipper, dot-matrix display, tilt; levels with goals and six themes; left/right keys or screen halves | drawn + particles | P |
 | rope-swing | Rope Swing / İp Salıncağı | hold to fire a rope at the ceiling and swing, release to fly; distance score, coins, gaps and spikes, speed ramps; the hero is the player's character | characters + pixel-platformer | L |
 
 ## Batch N — wave 5 two-player (online + vs AI)

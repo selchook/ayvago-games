@@ -1,9 +1,8 @@
 // Levels: every level has two or three goals; finishing them all clears the level, pays a
-// bonus, repaints the table in the next theme and turns the difficulty up. New table parts
-// unlock on the way (the saucer, a fourth bumper, the moving guard), and every third level
-// earns an extra ball.
+// bonus, repaints the table in the next theme and turns the difficulty up. A fourth bumper and a
+// moving guard join in on the way, and every third level earns an extra ball.
 
-export type Goal = 'bumpers' | 'lanes' | 'targets' | 'slings' | 'saucer' | 'points';
+export type Goal = 'ramps' | 'orbits' | 'spinner' | 'bumpers' | 'lanes' | 'targets' | 'saucer' | 'points';
 
 export interface Theme {
   name: { tr: string; en: string };
@@ -24,16 +23,16 @@ export const THEMES: Theme[] = [
 ];
 
 const DEFS: [Goal, number][][] = [
-  [['bumpers', 10], ['lanes', 1]],
-  [['targets', 1], ['slings', 6]],
-  [['saucer', 2], ['lanes', 1]],
-  [['bumpers', 25], ['targets', 1]],
-  [['lanes', 2], ['saucer', 2]],
-  [['targets', 2], ['slings', 10], ['bumpers', 20]],
-  [['points', 60000], ['saucer', 3]],
-  [['lanes', 3], ['targets', 2]],
-  [['bumpers', 40], ['saucer', 3], ['slings', 12]],
-  [['lanes', 3], ['targets', 3], ['saucer', 4]],
+  [['ramps', 2], ['bumpers', 12]],
+  [['orbits', 2], ['lanes', 1]],
+  [['targets', 1], ['spinner', 30]],
+  [['saucer', 2], ['ramps', 3]],
+  [['orbits', 3], ['targets', 1], ['bumpers', 20]],
+  [['ramps', 4], ['lanes', 2]],
+  [['points', 250000], ['saucer', 3]],
+  [['spinner', 60], ['orbits', 4]],
+  [['ramps', 5], ['targets', 2], ['lanes', 2]],
+  [['ramps', 6], ['orbits', 5], ['saucer', 4]],
 ];
 
 /** Goals of level n (1-based). After the tenth level the last set repeats with bigger counts. */
@@ -46,7 +45,7 @@ export function levelGoals(n: number): [Goal, number][] {
 export const themeOf = (n: number): number => (n - 1) % THEMES.length;
 
 /** Level at which each table part joins in. */
-export const UNLOCK = { saucer: 2, bumper4: 4, guard: 5 } as const;
+export const UNLOCK = { bumper4: 4, guard: 5 } as const;
 
 /** Every third level cleared gives an extra ball. */
 export const extraBallFor = (cleared: number): boolean => cleared % 3 === 0;

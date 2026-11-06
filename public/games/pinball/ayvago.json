@@ -3,11 +3,11 @@
   "id": "pinball",
   "title": {
     "en": "Pinball",
-    "tr": "Langırt"
+    "tr": "Tilt"
   },
   "description": {
-    "en": "Keep the ball on the table with the flippers; hit bumpers, slingshots and drop targets, light the AYVA lanes to raise the multiplier. Finish each level's goals: the table changes theme, the saucer, a fourth bumper and a moving guard join in, and every third level earns an extra ball.",
-    "tr": "Paletlerle topu masada tut; tamponlara, sapanlara ve düşen hedeflere vur, AYVA harflerini yakıp çarpanı büyüt. Her seviyenin görevlerini bitir: masa yeni bir temaya geçer, kapan, dördüncü tampon ve hareketli engel açılır, her üç seviyede bir ekstra top kazanırsın."
+    "en": "Keep the ball alive on a tall scrolling table: ride the ramp, loop the orbits, rip the spinner, hit the saucer and the drop targets and light the AYVA lanes for a bigger multiplier. Finish each level's goals to move to the next theme; every third level earns an extra ball. Nudge too hard and it's TILT!",
+    "tr": "Yukarı kayan uzun bir masada paletlerle topu oyunda tut: rampaya çık, yörüngeleri dolan, fırıldağı döndür, kapana ve düşen hedeflere vur, AYVA harfleriyle çarpanı büyüt. Her seviyenin görevlerini bitir; masa yeni temaya geçer, her üç seviyede bir ekstra top kazanırsın. Masayı çok sallarsan TILT!"
   },
   "category": "arcade",
   "categories": [
@@ -53,5 +53,5 @@
     "cover": "/games/pinball/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/pinball/ayvago/screenshot.jpg"
   },
-  "version": "1.1.0"
+  "version": "1.2.0"
 }
