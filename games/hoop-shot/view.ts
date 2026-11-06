@@ -132,6 +132,8 @@ export class Arena {
   private floor: Prim[] = [];
   private lines: V3[][] = [];
   private props: Prim[] = [];
+  /** Screen positions of the crowd from the last draw (for camera flashes). */
+  seen: { x: number; y: number; s: number }[] = [];
 
   constructor() {
     const rnd = rand(7);
@@ -169,6 +171,11 @@ export class Arena {
     // planks: alternating tone strips running toward half court
     for (let x = -COURT_X, i = 0; x < COURT_X - 0.01; x += 0.75, i++) {
       if (i % 2) this.floor.push({ pts: floorQuad(x, BASELINE_Z, x + 0.75, HALF_Z + 6, 0.001), color: 0xc68d4f, alpha: 1 });
+    }
+    for (let x = -COURT_X + 0.75; x < COURT_X - 0.01; x += 0.75) this.floor.push({ pts: floorQuad(x - 0.012, BASELINE_Z, x + 0.012, HALF_Z + 6, 0.0012), color: 0x8a5a30, alpha: 0.35 });
+    for (let i = 0; i < 70; i++) {
+      const x = -COURT_X + rnd() * COURT_X * 2, z = BASELINE_Z + rnd() * 18, l = 0.6 + rnd() * 1.6;
+      this.floor.push({ pts: floorQuad(x, z, x + 0.02, z + l, 0.0013), color: 0x9a6634, alpha: 0.25 });
     }
     this.floor.push({ pts: floorQuad(-2.45, BASELINE_Z, 2.45, BASELINE_Z + 5.8, 0.002), color: 0xb0322a, alpha: 1 });
     // three-point zone tint: the arc area is a slightly lighter wood
@@ -214,11 +221,13 @@ export class Arena {
     g.fillGradientStyle(0x0b0818, 0x0b0818, 0x221a36, 0x221a36).fillRect(0, 0, SCREEN_W, SCREEN_H);
     const sorted = this.stands.map((p) => ({ p, d: cam.depth(centroid(p.pts)) })).sort((a, b) => b.d - a.d);
     for (const { p } of sorted) fillPoly(g, cam.poly(p.pts), p.color, p.alpha);
+    this.seen = [];
     for (const c of this.crowd) {
       const pr = cam.project(c.p);
       if (!pr || pr.y < -20 || pr.y > SCREEN_H + 20 || pr.x < -20 || pr.x > SCREEN_W + 20) continue;
       const r = c.r * pr.s;
       if (r < 0.6) continue;
+      this.seen.push({ x: pr.x, y: pr.y, s: r });
       g.fillStyle(c.color, 0.8).fillRect(pr.x - r * 1.1, pr.y + r * 0.6, r * 2.2, r * 2.2);
       g.fillStyle(0xe0b48a, 0.85).fillCircle(pr.x, pr.y, r * 0.8);
     }

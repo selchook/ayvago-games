@@ -4,6 +4,13 @@ import {
   type V3, type Ball, v3, add, mul, norm, len, dot, launch, stepBall, preview, SPOTS, BALL_R, RIM_Y, RIM_R,
 } from './sim';
 import { Cam, Arena, camFor, camBetween, drawHoop, drawBall, drawShadow, type NetState, type BallLook } from './view';
+import { makeHoopTextures, glass } from './fx';
+
+/** Arena lights hanging over the court (world), and where each one points. */
+const LIGHTS: [V3, V3][] = [
+  [v3(-7, 12, -1), v3(-2.5, 0, 2.5)], [v3(7, 12, -1), v3(2.5, 0, 2.5)],
+  [v3(-7, 12, 9), v3(-3, 0, 6.5)], [v3(7, 12, 9), v3(3, 0, 6.5)], [v3(0, 12.5, 4), v3(0, 0, 1.5)],
+];
 
 const RACK = 5;
 const IDEAL = 0.7;             // the meter value of a perfect shot
@@ -18,6 +25,9 @@ type Phase = 'intro' | 'shoot' | 'move' | 'wait' | 'between';
 interface Flying {
   b: Ball;
   g: Phaser.GameObjects.Graphics;
+  shade: Phaser.GameObjects.Image;
+  trail: { x: number; y: number; r: number }[];
+  fire: boolean;
   look: BallLook;
   spot: number;
   idx: number;
@@ -58,6 +68,7 @@ export class PlayScene extends ArcadeScene {
   private spotText!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Text;
   private sub!: Phaser.GameObjects.Text;
+  private bannerBg!: Phaser.GameObjects.Image;
   private hintText!: Phaser.GameObjects.Text;
   private flying: Flying[] = [];
   private pool: Phaser.GameObjects.Graphics[] = [];
@@ -91,6 +102,13 @@ export class PlayScene extends ArcadeScene {
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private touchUi = false;
   private shotsTaken = 0;
+  private beams: Phaser.GameObjects.Image[] = [];
+  private lamps: Phaser.GameObjects.Image[] = [];
+  private sheens: Phaser.GameObjects.Image[] = [];
+  private heldShade!: Phaser.GameObjects.Image;
+  private fire!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private flashT = 0;
+  private shadePool: Phaser.GameObjects.Image[] = [];
 
   createGame(): void {
     this.flying = []; this.pool = [];
@@ -102,6 +120,8 @@ export class PlayScene extends ArcadeScene {
     this.aim = 0; this.aimStart = 0; this.downX = 0; this.driftPhase = 0; this.driftW = 2.6; this.wasGreen = false; this.shotsTaken = 0;
     this.touchUi = this.sys.game.device.input.touch;
 
+    makeHoopTextures(this);
+    this.beams = []; this.lamps = []; this.sheens = []; this.shadePool = []; this.flashT = 0;
     this.arena = new Arena();
     // the arena is baked into a texture and only redrawn when the camera moves
     this.bg = this.make.graphics({}, false);
@@ -111,16 +131,33 @@ export class PlayScene extends ArcadeScene {
     this.gBoard = this.add.graphics();
     this.gBack = this.add.graphics();
     this.gFront = this.add.graphics();
+    // arena lights: beams from the roof, the lamps themselves and their reflections in the varnish
+    for (let i = 0; i < LIGHTS.length; i++) {
+      this.beams.push(this.add.image(0, 0, 'hs-beam').setOrigin(0.5, 0).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.2).setDepth(2));
+      this.lamps.push(this.add.image(0, 0, 'hs-glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xfff2cc).setDepth(2));
+      this.sheens.push(this.add.image(0, 0, 'hs-glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xfff2cc).setAlpha(0.38).setDepth(1.5));
+    }
+    this.fire = this.add.particles(0, 0, 'hs-glow', {
+      speed: { min: 10, max: 60 }, angle: { min: 240, max: 300 }, lifespan: 380, scale: { start: 0.42, end: 0 }, alpha: { start: 0.8, end: 0 },
+      tint: [0xffe27a, 0xff9a2a, 0xff4a1a], blendMode: Phaser.BlendModes.ADD, frequency: 14, emitting: false,
+    }).setDepth(79);
     this.gHeld = this.add.graphics().setDepth(80);
+    this.heldShade = this.add.image(0, 0, 'hs-shade').setDepth(80.5).setVisible(false);
     this.gHint = this.add.graphics().setDepth(78);
     this.gMeter = this.add.graphics().setDepth(90);
     this.gRack = this.add.graphics().setDepth(90);
     this.gBoardHud = this.add.graphics().setDepth(90);
 
-    // scoreboard: shot clock, points against the target
+    // scoreboard: shot clock, points against the target, on glass with LED-style glowing digits
+    this.add.image(110, 106, glass(this, 180, 80, '#ff6a4a')).setDepth(89);
+    this.add.image(520, 106, glass(this, 140, 80, '#ffd23f')).setDepth(89);
+    this.add.image(360, 1198, glass(this, 360, 80, '#9aa3b4')).setDepth(89);
     this.clockText = txt(this, 110, 106, '', { title: true, size: 34, color: '#ec3013', strokeThickness: 0 }).setDepth(92);
+    this.clockText.setShadow(0, 0, '#ff2a1a', 14, false, true);
     this.ptsText = txt(this, 520, 106, '', { title: true, size: 15, color: '#ffd23f', strokeThickness: 0 }).setDepth(92);
+    this.ptsText.setShadow(0, 0, '#ffb020', 10, false, true);
     this.spotText = txt(this, 360, 760, '', { title: true, size: 28, color: '#f3f2f2' }).setDepth(92);
+    this.bannerBg = this.add.image(360, 594, glass(this, 600, 170, '#ffd23f')).setDepth(94).setVisible(false);
     this.banner = txt(this, 360, 560, '', { title: true, size: 40, color: '#ffd23f', wrap: 660 }).setDepth(95).setVisible(false);
     this.sub = txt(this, 360, 630, '', { size: 32, color: '#ffffff', wrap: 660 }).setDepth(95).setVisible(false);
     this.hintText = txt(this, 360, 1258, '', { size: 22, color: '#cfc6e6' }).setDepth(92);
@@ -234,10 +271,13 @@ export class PlayScene extends ArcadeScene {
     const b = launch(from, { power: this.power, ideal: IDEAL, spread: this.rules.spread, aimDeg: this.aim + this.drift(), angleDeg: ANGLE, spin: SPIN }, money);
     const g = this.pool.pop() ?? this.add.graphics();
     g.setVisible(true).setAlpha(1);
-    this.flying.push({ b, g, look: { phase: 0, roll: 0, money }, spot: this.spot, idx: this.ball, resolved: false, fade: 1, label: false });
+    const shade = this.shadePool.pop() ?? this.add.image(0, 0, 'hs-shade');
+    shade.setVisible(true).setAlpha(1);
+    this.flying.push({ b, g, shade, trail: [], fire: this.streak >= 3, look: { phase: 0, roll: 0, money }, spot: this.spot, idx: this.ball, resolved: false, fade: 1, label: false });
     this.shotsTaken++;
     this.holding = false;
     this.gHeld.clear();
+    this.heldShade.setVisible(false);
     this.sfx('throw', { volume: 0.5, rate: 1.05 });
     const s = this.cam.project(from);
     if (s) burst(this, s.x, s.y, [0xffffff, 0xffd23f], 6, 120);
@@ -332,7 +372,11 @@ export class PlayScene extends ArcadeScene {
       this.arena.draw(this.bg, this.cam);
       this.bgRT.clear().draw(this.bg);
       this.camDirty = false;
+      this.placeLights();
     }
+    // camera flashes in the crowd now and then
+    this.flashT -= dt;
+    if (this.flashT <= 0) { this.flashT = 0.25 + Math.random() * 0.5; this.flashes(1); }
 
     // the ball in hand
     if (this.holding) {
@@ -372,7 +416,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.net.bulge = bulge ? { p: bulge } : null;
     for (const f of this.flying) {
-      if (f.fade <= 0) { f.g.clear().setVisible(false); this.pool.push(f.g); }
+      if (f.fade <= 0) { f.g.clear().setVisible(false); this.pool.push(f.g); f.shade.setVisible(false); this.shadePool.push(f.shade); }
     }
     this.flying = this.flying.filter((f) => f.fade > 0);
     for (const f of this.flying) {
@@ -381,9 +425,19 @@ export class PlayScene extends ArcadeScene {
       if (!pr) continue;
       drawShadow(this.shadows, this.cam, f.b.p, BALL_R);
       f.g.setDepth(this.depthOf(pr.z));
-      drawBall(f.g, pr.x, pr.y, BALL_R * pr.s, f.look, Math.max(0, Math.min(1, f.fade)));
+      const r = BALL_R * pr.s, a = Math.max(0, Math.min(1, f.fade));
+      // a fading trail behind a ball in the air
+      if (!f.b.made && f.b.floor === 0) { f.trail.push({ x: pr.x, y: pr.y, r }); if (f.trail.length > 7) f.trail.shift(); } else if (f.trail.length) f.trail.shift();
+      f.trail.forEach((p, i) => f.g.fillStyle(f.fire ? 0xff8a2a : 0xffe2c0, (0.22 * (i + 1)) / f.trail.length * a).fillCircle(p.x, p.y, p.r * (0.45 + 0.5 * (i / f.trail.length))));
+      drawBall(f.g, pr.x, pr.y, r, f.look, a);
+      f.shade.setPosition(pr.x, pr.y).setDisplaySize(r * 2.02, r * 2.02).setDepth(f.g.depth + 0.01).setAlpha(a);
       if (f.look.money && !f.b.made && f.b.t < 2 && rng.chance(0.4)) burst(this, pr.x, pr.y, [0xffd23f, 0xffffff], 1, 40);
     }
+    // a ball shot on a hot streak burns
+    const hot = this.flying.find((f) => f.fire && !f.b.made && f.b.floor === 0 && f.fade > 0.5);
+    const hp = hot ? this.cam.project(hot.b.p) : null;
+    if (hp) { this.fire.setPosition(hp.x, hp.y); this.fire.setDepth(this.depthOf(hp.z) - 0.1); if (!this.fire.emitting) this.fire.start(); }
+    else if (this.fire.emitting) this.fire.stop();
     if (this.holding) {
       const hp = this.holdPos();
       if (this.pickT >= 1) drawShadow(this.shadows, this.cam, hp, BALL_R);
@@ -460,6 +514,10 @@ export class PlayScene extends ArcadeScene {
     this.sfxAt(swish ? 'swish' : 'score', ax, { volume: 0.55, rate: 1 + Math.min(6, this.streak - 1) * 0.04 });
     burst(this, ax, ay + 30, swish ? [0xffffff, 0x5dff7a, 0x3ee6ff] : [0xffd23f, 0xff7a1a, 0xffffff], swish ? 26 : 16, swish ? 320 : 240);
     if (swish) this.swishRing(ax, ay);
+    const glow = this.add.image(ax, ay + 20, 'hs-glow').setDepth(86).setBlendMode(Phaser.BlendModes.ADD).setTint(swish ? 0xbfffd8 : 0xffd27a).setScale(0.8);
+    this.tweens.add({ targets: glow, scale: 3.2, alpha: 0, duration: 450, ease: 'Quad.easeOut', onComplete: () => glow.destroy() });
+    this.flashes(f.b.money ? 26 : swish ? 14 : 8);
+    if (this.streak === 3) { popup(this, ax, ay + 250, t('onFire'), '#ff8a2a', 30); this.sfx('swish', { volume: 0.4, rate: 0.8 }); }
     // the big call goes under the hoop
     let msg = '', color = '#ffffff';
     if (f.b.money) { msg = t('moneyBall'); color = '#ffd23f'; }
@@ -507,11 +565,40 @@ export class PlayScene extends ArcadeScene {
     this.updateBoard();
   }
 
+  // ---------------------------------------------------------------- lights and crowd
+  /** Lines the beams, lamps and floor reflections up with the camera (called when it moves). */
+  private placeLights(): void {
+    LIGHTS.forEach(([L, T], i) => {
+      const top = this.cam.project(L), bot = this.cam.project(T);
+      const beam = this.beams[i], lamp = this.lamps[i], sheen = this.sheens[i];
+      if (top && bot) {
+        const dx = bot.x - top.x, dy = bot.y - top.y;
+        beam.setVisible(true).setPosition(top.x, top.y).setRotation(Math.atan2(dy, dx) - Math.PI / 2).setDisplaySize(Math.max(80, 6 * bot.s), Math.hypot(dx, dy));
+      } else beam.setVisible(false);
+      if (top) lamp.setVisible(true).setPosition(top.x, top.y).setScale(Math.max(0.25, Math.min(1.2, top.s / 120)));
+      else lamp.setVisible(false);
+      // the pool of light where the beam meets the varnished floor
+      if (bot && bot.y > 0 && bot.y < 1280) sheen.setVisible(true).setPosition(bot.x, bot.y).setDisplaySize(Math.min(520, 4.5 * bot.s), Math.min(170, 1.3 * bot.s));
+      else sheen.setVisible(false);
+    });
+  }
+
+  /** Camera flashes popping in the stands. */
+  private flashes(n: number): void {
+    const seen = this.arena.seen;
+    if (!seen.length) return;
+    for (let i = 0; i < n; i++) {
+      const p = seen[Math.floor(Math.random() * seen.length)];
+      const st = this.add.image(p.x, p.y, 'hs-star').setBlendMode(Phaser.BlendModes.ADD).setDepth(3).setScale(0).setAngle(Math.random() * 45);
+      this.tweens.add({ targets: st, scale: Math.min(0.7, 0.2 + p.s * 0.08), duration: 70, delay: i * 25, yoyo: true, hold: 40, onComplete: () => st.destroy() });
+    }
+  }
+
   // ---------------------------------------------------------------- drawing
   private drawHeld(): void {
     const g = this.gHeld;
     g.clear();
-    if (!this.holding) return;
+    if (!this.holding) { this.heldShade.setVisible(false); return; }
     const hp = this.holdPos();
     const pr = this.cam.project(hp);
     if (!pr) return;
@@ -524,6 +611,12 @@ export class PlayScene extends ArcadeScene {
     }
     const money = this.ball === RACK - 1;
     drawBall(g, x, y, r, { phase: 0.7, roll: -0.25, money });
+    this.heldShade.setVisible(true).setPosition(x, y).setDisplaySize(r * 2.02, r * 2.02);
+    if (this.streak >= 3 && this.pickT >= 1) {
+      const a = 0.35 + Math.sin(this.elapsed * 10) * 0.2;
+      g.lineStyle(6, 0xff8a2a, a).strokeCircle(x, y, r + 6);
+      g.lineStyle(3, 0xffe27a, a).strokeCircle(x, y, r + 12);
+    }
     if (money && this.pickT >= 1) {
       const a = 0.35 + Math.sin(this.elapsed * 8) * 0.2;
       g.lineStyle(4, 0xffd23f, a).strokeCircle(x, y, r + 8);
@@ -598,10 +691,6 @@ export class PlayScene extends ArcadeScene {
     const g = this.gBoardHud;
     g.clear();
     // clock on the left, points against the target on the right: the middle stays free for the arc
-    g.fillStyle(0x000000, 0.6).fillRoundedRect(20, 66, 180, 80, 12);
-    g.lineStyle(3, 0x55525e, 1).strokeRoundedRect(20, 66, 180, 80, 12);
-    g.fillStyle(0x000000, 0.6).fillRoundedRect(450, 66, 140, 80, 12);
-    g.lineStyle(3, 0x55525e, 1).strokeRoundedRect(450, 66, 140, 80, 12);
     this.ptsText.setText(`${t('ptsLabel')} ${this.pts}\n${t('needLabel')} ${this.rules.need}`).setColor(this.pts >= this.rules.need ? '#5dff7a' : '#ffd23f');
     // rack grid (one column per spot)
     for (let s = 0; s < SPOTS.length; s++) {
@@ -615,7 +704,6 @@ export class PlayScene extends ArcadeScene {
     // the rack at the bottom: balls still to shoot
     const r = this.gRack;
     r.clear();
-    r.fillStyle(0x000000, 0.45).fillRoundedRect(180, 1158, 360, 80, 16);
     r.lineStyle(6, 0x8a8f9e, 1).lineBetween(196, 1222, 524, 1222);
     r.lineStyle(4, 0x6c7180, 1).lineBetween(206, 1222, 200, 1240).lineBetween(514, 1222, 520, 1240);
     for (let i = 0; i < RACK; i++) {
@@ -630,13 +718,14 @@ export class PlayScene extends ArcadeScene {
   private showBanner(title: string, color: string, sub: string): void {
     this.banner.setText(title).setColor(color).setVisible(true).setScale(0.3).setAlpha(1);
     this.sub.setText(sub).setVisible(!!sub).setAlpha(0);
-    this.tweens.killTweensOf([this.banner, this.sub]);
-    this.tweens.add({ targets: this.banner, scale: 1, duration: 280, ease: 'Back.easeOut' });
+    this.tweens.killTweensOf([this.banner, this.sub, this.bannerBg]);
+    this.bannerBg.setVisible(true).setAlpha(1).setScale(0.4, 0.4);
+    this.tweens.add({ targets: [this.banner, this.bannerBg], scale: 1, duration: 280, ease: 'Back.easeOut' });
     this.tweens.add({ targets: this.sub, alpha: 1, duration: 300, delay: 150 });
   }
 
   private hideBanner(): void {
-    this.tweens.add({ targets: [this.banner, this.sub], alpha: 0, duration: 250 });
+    this.tweens.add({ targets: [this.banner, this.sub, this.bannerBg], alpha: 0, duration: 250 });
   }
 }
 
