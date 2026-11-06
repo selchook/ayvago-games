@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
 import { ArcadeScene, burst, shake, flash, t, rng, COLORS } from '@core';
 import { ftxt as txt, fpopup as popup, freshTextCanvases } from './fasttext';
+import { makeField, makeFx, makeGate, makeHeart, makeSidebar, makeTopBar } from './art';
 
 const CELL = 80, COLS = 13, ROWS = 8, TOP = 80, FIELD_W = COLS * CELL; // 1040 x 640 field
 const SIDE = FIELD_W + 120;                                               // sidebar centre x
+const GOLD_Y = 124;                                                       // gold counter row
+const ADD = Phaser.BlendModes.ADD;
 const PATH: [number, number][] = [[-1, 1], [3, 1], [3, 6], [6, 6], [6, 1], [9, 1], [9, 6], [12, 6], [12, 8.7]];
 const WAVES = 15;
 const START_GOLD = 170, START_LIVES = 20;
@@ -26,10 +29,19 @@ const TOWERS: TDef[] = [
   { name: 'tMissile', base: 'td-b2', head: 'td-h2', cost: 125, dmg: 60, rate: 1.6, range: 280, air: true, splash: 45, shot: 'td-rocket', speed: 480, homing: true, sfx: 'missile' },
 ];
 
-interface Enemy { kind: Kind; spr: Phaser.GameObjects.Image; top?: Phaser.GameObjects.Image; shadow?: Phaser.GameObjects.Image; hp: number; max: number; speed: number; wp: number; dist: number; air: boolean; alive: boolean; vy: number }
-interface Tower { def: TDef; lv: number; c: number; r: number; x: number; y: number; base: Phaser.GameObjects.Image; head: Phaser.GameObjects.Image; cd: number; spent: number }
-interface Shot { spr: Phaser.GameObjects.Image; tw: Tower; target: Enemy; tx: number; ty: number; dmg: number }
-interface SideBtn { box: Phaser.GameObjects.Container; bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text }
+interface Enemy { kind: Kind; spr: Phaser.GameObjects.Image; top?: Phaser.GameObjects.Image; shadow?: Phaser.GameObjects.Image; shade?: Phaser.GameObjects.Image; hp: number; max: number; speed: number; wp: number; dist: number; air: boolean; alive: boolean; vy: number }
+interface Tower { def: TDef; lv: number; c: number; r: number; x: number; y: number; base: Phaser.GameObjects.Image; head: Phaser.GameObjects.Image; shade: Phaser.GameObjects.Image; cd: number; spent: number }
+interface Shot { spr: Phaser.GameObjects.Image; tw: Tower; target: Enemy; tx: number; ty: number; dmg: number; trail: number }
+interface SideBtn { box: Phaser.GameObjects.Container; face: Phaser.GameObjects.Container; bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text; icons: Phaser.GameObjects.Image[] }
+interface Slot { box: Phaser.GameObjects.Container; a: Phaser.GameObjects.Image; b: Phaser.GameObjects.Image; n: Phaser.GameObjects.Text }
+
+/** Enemy groups shown in the sidebar's wave preview. */
+const GROUPS: { kinds: Kind[]; a: string; b?: string; scale: number; tint?: number }[] = [
+  { kinds: ['soldier', 'runner', 'heavy'], a: 'td-e0', scale: 1 },
+  { kinds: ['tank', 'tank2'], a: 'td-tank', b: 'td-tank-t', scale: 0.62 },
+  { kinds: ['plane'], a: 'td-plane', scale: 0.6 },
+  { kinds: ['boss'], a: 'td-tank2', b: 'td-tank2-t', scale: 0.7, tint: 0xff7070 },
+];
 
 export class PlayScene extends ArcadeScene {
   private grid: number[][] = [];          // 0 grass, 1 path, 2 decor, 3 tower
@@ -57,18 +69,50 @@ export class PlayScene extends ArcadeScene {
   private sellBtn!: SideBtn;
   private waveBtn!: SideBtn;
   private lastSfx: Record<string, number> = {};
+  private nextQueue: { kind: Kind; gap: number }[] = [];
+  private waveTotal = 1;
+  private countdownMax = 20;
+  private slots: Slot[] = [];
+  private goldIcon!: Phaser.GameObjects.Image;
+  private livesText!: Phaser.GameObjects.Text;
+  private heart!: Phaser.GameObjects.Image;
+  private prog!: Phaser.GameObjects.Graphics;
+  private ghostBase!: Phaser.GameObjects.Image;
+  private ghostHead!: Phaser.GameObjects.Image;
+  private vig!: Phaser.GameObjects.Image;
+  private gate!: Phaser.GameObjects.Image;
+  private clouds: Phaser.GameObjects.Image[] = [];
+  private hurt = 0;
+  private coinsFlying = 0;
 
   createGame(): void {
     freshTextCanvases(this);
     this.enemies = []; this.towers = []; this.shots = []; this.queue = []; this.cards = []; this.lastSfx = {};
-    this.gold = START_GOLD; this.lives = START_LIVES; this.wave = 0; this.phase = 'build'; this.countdown = 20;
+    this.slots = []; this.clouds = []; this.hurt = 0; this.coinsFlying = 0;
+    this.gold = START_GOLD; this.lives = START_LIVES; this.wave = 0; this.phase = 'build'; this.countdown = 20; this.countdownMax = 20;
     this.spawnT = 0; this.selType = 0; this.selTower = null; this.cur = { c: 1, r: 3 }; this.cursorOn = false;
+    this.nextQueue = this.buildWave(1);
 
+    makeFx(this); makeGate(this); makeHeart(this);
+    makeSidebar(this, this.scale.width - FIELD_W, this.scale.height - TOP);
+    makeTopBar(this, this.scale.width, TOP);
     this.buildMap();
     this.fx = this.add.graphics().setDepth(40);
     this.bars = this.add.graphics().setDepth(60);
+    this.ghostBase = this.add.image(0, 0, 'td-b0').setDepth(19).setAlpha(0.5).setVisible(false);
+    this.ghostHead = this.add.image(0, 0, 'td-h0').setDepth(19).setAlpha(0.5).setVisible(false);
+    for (let i = 0; i < 2; i++) {
+      this.clouds.push(this.add.image(rng.int(0, FIELD_W), rng.int(TOP + 120, TOP + ROWS * CELL - 120), 'td-cloud')
+        .setDepth(70).setScale(2.6 + i * 0.6).setAlpha(0.13));
+    }
+    this.vig = this.add.image(FIELD_W / 2, TOP + (ROWS * CELL) / 2, 'td-vig').setDisplaySize(FIELD_W, ROWS * CELL).setDepth(75).setAlpha(0);
     this.buildSidebar();
-    this.add.rectangle(0, 0, FIELD_W, TOP, 0x0e0d12, 0.85).setOrigin(0).setDepth(80);
+    this.add.image(0, 0, 'td-top').setOrigin(0).setDepth(80);
+    this.prog = this.add.graphics().setDepth(81);
+    // lives: a heart icon instead of a text label
+    this.hud.setRight('');
+    this.livesText = txt(this, this.scale.width - 120, 24, '', { title: true, size: 22, shadow: false }).setOrigin(1, 0).setDepth(9000);
+    this.heart = this.add.image(0, 35, 'td-heart').setDepth(9000);
 
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (p.x < FIELD_W && p.y >= TOP) { this.cur = this.cellAt(p.x, p.y); this.cursorOn = true; }
@@ -98,21 +142,19 @@ export class PlayScene extends ArcadeScene {
       }
       if (c >= 0 && c < COLS && r >= 0 && r < ROWS) this.grid[Math.floor(r)][c] = 1;
     }
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      const x = c * CELL + CELL / 2, y = TOP + r * CELL + CELL / 2;
-      this.add.image(x, y, this.grid[r][c] === 1 ? 'td-dirt' : 'td-grass').setDisplaySize(CELL + 1, CELL + 1);
-    }
+    makeField(this, 'td-field', COLS, ROWS, CELL, this.pts.map((p) => ({ x: p.x, y: p.y - TOP })), (c, r) => this.grid[r][c] === 1);
+    this.add.image(0, TOP, 'td-field').setOrigin(0);
     // a few decorations block building and add life to the map
-    const spots = [[0, 0], [12, 0], [0, 7], [5, 3], [7, 7], [11, 2], [1, 4]];
-    for (const [c, r] of spots) {
+    const spots: [number, number, string][] = [[0, 0, 'td-bush'], [12, 0, 'td-rock2'], [0, 7, 'td-bush'], [5, 3, 'td-rock'], [7, 7, 'td-bush2'], [11, 2, 'td-bush'], [1, 4, 'td-rock2']];
+    for (const [c, r, key] of spots) {
       if (this.grid[r][c] !== 0) continue;
       this.grid[r][c] = 2;
-      this.add.image(c * CELL + CELL / 2, TOP + r * CELL + CELL / 2, rng.pick(['td-bush', 'td-bush2', 'td-rock', 'td-rock2'])).setScale(1.1);
+      const x = c * CELL + CELL / 2, y = TOP + r * CELL + CELL / 2;
+      this.add.image(x + 4, y + 18, 'td-shade').setDepth(5).setScale(1.2, 1);
+      this.add.image(x, y, key).setScale(1.1).setDepth(6).setTint(key.startsWith('td-bush') ? 0xb8dcb8 : 0xffffff).setAngle(rng.int(-20, 20)).setFlipX(rng.chance(0.5));
     }
-    // entry / exit markers
-    const g = this.add.graphics().setDepth(5);
-    g.fillStyle(COLORS.green, 0.5).fillTriangle(8, TOP + 1.5 * CELL - 18, 8, TOP + 1.5 * CELL + 18, 34, TOP + 1.5 * CELL);
-    g.fillStyle(COLORS.red, 0.6).fillRect(12 * CELL + 6, TOP + ROWS * CELL - 10, CELL - 12, 10);
+    // the barrier guarding the base where the road leaves the map
+    this.gate = this.add.image(12 * CELL + CELL / 2, TOP + ROWS * CELL - 18, 'td-gate').setDepth(7);
   }
 
   private cellAt(x: number, y: number): { c: number; r: number } {
@@ -122,68 +164,112 @@ export class PlayScene extends ArcadeScene {
   // ---------- sidebar ----------
   private sideBtn(y: number, h: number, color: number, label: string, size: number, onClick: () => void): SideBtn {
     const box = this.add.container(SIDE, y).setDepth(90);
-    const shadow = this.add.rectangle(0, 6, 224, h, 0x000000, 0.5);
-    const bg = this.add.rectangle(0, 0, 224, h, color).setStrokeStyle(4, 0x000000);
+    const face = this.add.container(0, 0);
+    const shadow = this.add.rectangle(0, 5, 220, h, 0x000000, 0.55);
+    const bg = this.add.rectangle(0, 0, 220, h, color).setStrokeStyle(3, 0x000000);
+    const hi = this.add.rectangle(0, -h / 2 + 5, 206, 4, 0xffffff, 0.18);
+    const lo = this.add.rectangle(0, h / 2 - 5, 206, 4, 0x000000, 0.25);
     const lbl = txt(this, 0, 0, label, { title: true, size, strokeThickness: 0, shadow: false });
-    box.add([shadow, bg, lbl]).setSize(224, h).setInteractive({ useHandCursor: true });
-    box.on('pointerdown', () => { bg.y = 3; lbl.y = 3; });
-    box.on('pointerout', () => { bg.y = 0; lbl.y = 0; });
-    box.on('pointerup', () => { bg.y = 0; lbl.y = 0; onClick(); });
-    return { box, bg, label: lbl };
+    face.add([bg, hi, lo, lbl]);
+    box.add([shadow, face]).setSize(220, h + 5).setInteractive({ useHandCursor: true });
+    box.on('pointerdown', () => { face.y = 3; });
+    box.on('pointerout', () => { face.y = 0; });
+    box.on('pointerup', () => { face.y = 0; onClick(); });
+    return { box, face, bg, label: lbl, icons: [] };
   }
 
   private buildSidebar(): void {
-    this.add.rectangle(FIELD_W, 0, 240, 720, 0x16141c).setOrigin(0).setDepth(85);
-    this.add.rectangle(FIELD_W, 0, 4, 720, 0x000000).setOrigin(0).setDepth(86);
-    this.add.image(FIELD_W + 40, 140, 'td-coin').setScale(1.3).setDepth(90);
-    this.goldText = txt(this, FIELD_W + 70, 142, '0', { title: true, size: 26, color: '#ffd23f' }).setOrigin(0, 0.5).setDepth(90);
+    this.add.image(FIELD_W, TOP, 'td-side').setOrigin(0).setDepth(85);
+    // gold counter
+    this.add.rectangle(SIDE, GOLD_Y, 220, 58, 0x0a0910).setStrokeStyle(3, 0x000000).setDepth(86);
+    this.add.rectangle(SIDE, GOLD_Y + 24, 210, 3, 0xffffff, 0.08).setDepth(86);
+    this.goldIcon = this.add.image(SIDE - 78, GOLD_Y, 'td-coin').setScale(1.15).setDepth(90);
+    this.tweens.add({ targets: this.goldIcon, scaleX: 0.25, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.goldText = txt(this, SIDE - 46, GOLD_Y + 2, '0', { title: true, size: 26, color: '#ffd23f' }).setOrigin(0, 0.5).setDepth(90);
+    // tower cards
     TOWERS.forEach((d, i) => {
-      const b = this.sideBtn(215 + i * 100, 90, 0x2a2638, '', 1, () => this.pickType(i));
+      const b = this.sideBtn(205 + i * 90, 80, 0x2a2638, '', 1, () => this.pickType(i));
       b.label.destroy();
-      const base = this.add.image(-70, 0, d.base).setScale(0.95);
-      const head = this.add.image(-70, 0, d.head).setScale(0.95);
-      const name = txt(this, -26, -16, t(d.name), { size: 26 }).setOrigin(0, 0.5);
-      const cost = txt(this, -26, 18, '$' + d.cost, { title: true, size: 16, color: '#ffd23f' }).setOrigin(0, 0.5);
-      b.box.add([base, head, name, cost]);
+      const plate = this.add.circle(-70, 0, 31, 0x000000, 0.35).setStrokeStyle(2, 0xffffff, 0.12);
+      const base = this.add.image(-70, 0, d.base).setScale(0.82);
+      const head = this.add.image(-70, 0, d.head).setScale(0.82);
+      const name = txt(this, -30, -14, t(d.name), { size: 24 }).setOrigin(0, 0.5);
+      const coin = this.add.image(-20, 17, 'td-coin').setScale(0.42);
+      const cost = txt(this, -6, 18, String(d.cost), { title: true, size: 16, color: '#ffd23f' }).setOrigin(0, 0.5);
+      const keyBg = this.add.rectangle(-99, -29, 20, 20, 0x000000, 0.6).setStrokeStyle(2, 0xffffff, 0.25);
+      const key = txt(this, -98, -28, String(i + 1), { title: true, size: 12, strokeThickness: 0, shadow: false, color: '#bdb8d0' });
+      b.face.add([plate, base, head, name, coin, cost, keyBg, key]);
+      if (d.air) b.face.add(this.add.image(86, -20, 'td-plane').setScale(0.34).setAngle(-45).setAlpha(0.9));
       b.label = cost;
+      b.icons = [base, head];
       this.cards.push(b);
     });
-    this.info = txt(this, SIDE, 505, '', { size: 22, color: '#bdb8d0', wrap: 220 }).setDepth(90);
+    // info line / wave preview
+    this.info = txt(this, SIDE, 458, '', { size: 20, color: '#bdb8d0', wrap: 220 }).setDepth(90);
+    for (let i = 0; i < GROUPS.length; i++) {
+      const box = this.add.container(SIDE - 81 + i * 54, 500).setDepth(90);
+      const plate = this.add.rectangle(0, 0, 48, 48, 0x000000, 0.35).setStrokeStyle(2, 0xffffff, 0.1);
+      const a = this.add.image(0, -2, 'td-e0');
+      const b = this.add.image(0, -2, 'td-tank-t');
+      const n = txt(this, 14, 18, '', { title: true, size: 12, strokeThickness: 4, shadow: false });
+      box.add([plate, a, b, n]);
+      this.slots.push({ box, a, b, n });
+    }
     this.upBtn = this.sideBtn(575, 80, COLORS.purple, '', 16, () => this.upgrade());
-    this.sellBtn = this.sideBtn(670, 70, 0x6b3a2a, '', 16, () => this.sell());
-    this.waveBtn = this.sideBtn(625, 110, COLORS.red, '', 16, () => this.startWave(true));
+    this.sellBtn = this.sideBtn(670, 64, 0x6b3a2a, '', 16, () => this.sell());
+    this.waveBtn = this.sideBtn(630, 104, COLORS.red, '', 16, () => this.startWave(true));
   }
 
   private refreshUi(): void {
     this.goldText.setText(String(this.gold));
     this.cards.forEach((b, i) => {
       const on = i === this.selType && !this.selTower;
-      b.bg.setStrokeStyle(on ? 6 : 4, on ? COLORS.yellow : 0x000000).setFillStyle(on ? 0x3d3756 : 0x2a2638);
-      b.label.setColor(this.gold >= TOWERS[i].cost ? '#ffd23f' : '#ec3013');
+      const can = this.gold >= TOWERS[i].cost;
+      b.bg.setStrokeStyle(on ? 5 : 3, on ? COLORS.yellow : 0x000000).setFillStyle(on ? 0x433b62 : 0x2a2638);
+      b.label.setColor(can ? '#ffd23f' : '#ec3013');
+      b.icons.forEach((o) => o.setAlpha(can ? 1 : 0.45));
     });
     const tw = this.selTower;
     this.upBtn.box.setVisible(!!tw); this.sellBtn.box.setVisible(!!tw); this.waveBtn.box.setVisible(!tw);
     if (tw) {
       const cost = this.upCost(tw);
-      this.info.setText(`${t(tw.def.name)} ${t('lvl')}${tw.lv}\n${tw.def.air ? t('airGround') : t('groundOnly')}`);
+      this.info.setText(`${t(tw.def.name)} ${t('lvl')}${tw.lv}\n${tw.def.air ? t('airGround') : t('groundOnly')}`).setY(470);
       this.upBtn.label.setText(cost ? `${t('upgrade')}\n$${cost}` : t('max'));
       this.upBtn.bg.setFillStyle(cost && this.gold >= cost ? COLORS.purple : 0x444455);
       this.sellBtn.label.setText(`${t('sell')} $${this.sellValue(tw)}`);
+    } else if (this.phase === 'build') {
+      this.waveBtn.label.setText(`${t('nextWave')} ${this.wave + 1}\n${t('nextIn', { n: Math.ceil(this.countdown) })}`);
+      this.waveBtn.bg.setFillStyle(COLORS.red);
     } else {
-      const d = TOWERS[this.selType];
-      this.info.setText(`${t(d.name)} · ${d.air ? t('airGround') : t('groundOnly')}`);
-      if (this.phase === 'build') {
-        this.waveBtn.label.setText(`${t('nextWave')} ${this.wave + 1}\n${t('nextIn', { n: Math.ceil(this.countdown) })}`);
-        this.waveBtn.bg.setFillStyle(COLORS.red);
-      } else {
-        this.waveBtn.label.setText(t('waveOf', { n: this.wave, m: WAVES }));
-        this.waveBtn.bg.setFillStyle(0x444455);
-      }
+      this.waveBtn.label.setText(t('waveOf', { n: this.wave, m: WAVES }));
+      this.waveBtn.bg.setFillStyle(0x444455);
     }
+    this.updatePreview();
+  }
+
+  /** Sidebar preview: what the next wave brings (between waves) or what is still coming (during one). */
+  private updatePreview(): void {
+    const show = !this.selTower;
+    const kinds: Kind[] = this.phase === 'build' ? this.nextQueue.map((q) => q.kind) : [...this.queue.map((q) => q.kind), ...this.enemies.map((e) => e.kind)];
+    if (show) this.info.setText(kinds.length ? t(this.phase === 'build' ? 'nextLbl' : 'incoming') : '').setY(458);
+    let i = 0;
+    GROUPS.forEach((g) => {
+      const n = kinds.filter((k) => g.kinds.includes(k)).length;
+      if (!n || !show) return;
+      const s = this.slots[i++];
+      s.a.setTexture(g.a).setScale(g.scale).setAngle(-90);
+      if (g.tint) s.a.setTint(g.tint); else s.a.clearTint();
+      s.b.setVisible(!!g.b);
+      if (g.b) { s.b.setTexture(g.b).setScale(g.scale).setAngle(-90); if (g.tint) s.b.setTint(g.tint); else s.b.clearTint(); }
+      s.n.setText('×' + n);
+      s.box.setVisible(true);
+    });
+    for (; i < this.slots.length; i++) this.slots[i].box.setVisible(false);
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.livesText.setText(String(Math.max(0, this.lives))).setColor(this.lives <= 5 ? '#ff6a4d' : '#ffffff');
+    this.heart.setX(this.livesText.x - this.livesText.width - 24);
     this.hud.setCenter(t('waveOf', { n: Math.max(1, this.wave), m: WAVES }));
   }
 
@@ -228,11 +314,13 @@ export class PlayScene extends ArcadeScene {
     if (this.gold < d.cost) { this.warn(t('noGold'), cx, cy); return; }
     this.gold -= d.cost;
     this.grid[r][c] = 3;
-    const base = this.add.image(cx, cy, d.base).setDepth(20).setScale(0.2);
-    const head = this.add.image(cx, cy, d.head).setDepth(30).setScale(0.2).setAngle(-90);
-    this.tweens.add({ targets: [base, head], scale: 1, duration: 280, ease: 'Back.easeOut' });
-    this.towers.push({ def: d, lv: 1, c, r, x: cx, y: cy, base, head, cd: 0.2, spent: d.cost });
-    burst(this, cx, cy, [0xbfc7cc, 0x8a6a3a], 14, 160);
+    const shade = this.add.image(cx + 3, cy + 16, 'td-shade').setDepth(19).setScale(1.25, 1.1);
+    const base = this.add.image(cx, cy - 60, d.base).setDepth(20).setScale(0.6);
+    const head = this.add.image(cx, cy - 60, d.head).setDepth(30).setScale(0.6).setAngle(-90);
+    this.tweens.add({ targets: [base, head], y: cy, scale: 1, duration: 260, ease: 'Bounce.easeOut' });
+    this.towers.push({ def: d, lv: 1, c, r, x: cx, y: cy, base, head, shade, cd: 0.2, spent: d.cost });
+    this.time.delayedCall(120, () => this.ring(cx, cy + 10, 0xd9c7a0, 0.9, 260));
+    burst(this, cx, cy + 10, [0xbfc7cc, 0x8a6a3a, 0x6b4a2a], 16, 170);
     this.sfxAt('build', cx, { volume: 0.55 });
     this.refreshUi();
   }
@@ -262,6 +350,8 @@ export class PlayScene extends ArcadeScene {
     tw.base.setTint(tint);
     this.tweens.add({ targets: [tw.base, tw.head], scale: { from: 1.35, to: 1 + (tw.lv - 1) * 0.06 }, duration: 300, ease: 'Back.easeOut' });
     burst(this, tw.x, tw.y, [COLORS.yellow, COLORS.cyan, 0xffffff], 24, 240);
+    this.glow(tw.x, tw.y, tw.lv === 2 ? 0x7fd8ff : 0xffd23f, 1.6, 380);
+    this.ring(tw.x, tw.y, tw.lv === 2 ? 0x7fd8ff : 0xffd23f, 1.3, 420);
     this.sfxAt('upgrade', tw.x, { volume: 0.55 });
     this.refreshUi();
   }
@@ -274,7 +364,8 @@ export class PlayScene extends ArcadeScene {
     this.grid[tw.r][tw.c] = 0;
     popup(this, tw.x, tw.y - 20, '+$' + v, '#ffd23f', 20);
     burst(this, tw.x, tw.y, [0xbfc7cc, COLORS.yellow], 18, 220);
-    tw.base.destroy(); tw.head.destroy();
+    tw.base.destroy(); tw.head.destroy(); tw.shade.destroy();
+    this.ring(tw.x, tw.y, COLORS.yellow, 0.9, 260);
     this.towers = this.towers.filter((o) => o !== tw);
     this.shots = this.shots.filter((s) => { if (s.tw === tw) s.spr.destroy(); return s.tw !== tw; });
     this.selTower = null;
@@ -292,13 +383,14 @@ export class PlayScene extends ArcadeScene {
     }
     this.wave++;
     this.phase = 'wave';
-    this.queue = this.buildWave(this.wave);
+    this.queue = this.nextQueue;
+    this.waveTotal = Math.max(1, this.queue.length);
+    this.nextQueue = this.wave < WAVES ? this.buildWave(this.wave + 1) : [];
     this.spawnT = 0.3;
     if (this.wave === WAVES) this.sfx('final', { volume: 0.5 });
     else this.sfx('wave', { volume: 0.4 });
-    const title = this.wave === WAVES ? t('finalWave') : `${t('wave')} ${this.wave}`;
-    const b = txt(this, FIELD_W / 2, 360, title, { title: true, size: 48, color: this.wave === WAVES ? '#ec3013' : '#ffd23f' }).setDepth(200).setScale(0.3);
-    this.tweens.add({ targets: b, scale: 1, duration: 350, ease: 'Back.easeOut', hold: 700, yoyo: true, onComplete: () => b.destroy() });
+    const final = this.wave === WAVES;
+    this.banner(final ? t('finalWave') : `${t('wave')} ${this.wave}`, final ? '#ec3013' : '#ffd23f', final ? 0xec3013 : 0xffd23f);
     this.updateHud();
     this.refreshUi();
   }
@@ -337,7 +429,9 @@ export class PlayScene extends ArcadeScene {
       shake(this, 0.01, 400);
     }
     if (air) e.shadow = this.add.image(x + 18, y + 26, 'td-shadow').setDepth(34).setAlpha(0.3).setScale(0.9);
+    else e.shade = this.add.image(x, y + 6, 'td-shade').setDepth(33).setScale(kind === 'boss' ? 1.7 : kind.startsWith('tank') ? 1.05 : 0.55).setAlpha(0.8);
     this.enemies.push(e);
+    this.updatePreview();
   }
 
   // ---------- update ----------
@@ -359,6 +453,14 @@ export class PlayScene extends ArcadeScene {
     this.fireTowers(dt);
     this.moveShots(dt);
     this.drawOverlay();
+
+    for (const c of this.clouds) {
+      c.x += (10 + c.scale * 2) * dt;
+      if (c.x - c.displayWidth / 2 > FIELD_W) { c.x = -c.displayWidth / 2; c.y = rng.int(TOP + 120, TOP + ROWS * CELL - 120); }
+    }
+    this.hurt = Math.max(0, this.hurt - dt * 1.6);
+    const low = this.lives > 0 && this.lives <= 5 ? 0.22 + 0.12 * Math.sin(this.time.now / 160) : 0;
+    this.vig.setAlpha(Math.max(this.hurt, low));
 
     if (this.phase === 'wave' && !this.queue.length && this.enemies.length === 0 && !this.isOver) this.waveCleared();
   }
@@ -386,6 +488,7 @@ export class PlayScene extends ArcadeScene {
         }
       }
       e.top?.setPosition(e.spr.x, e.spr.y).setRotation(e.spr.rotation);
+      e.shade?.setPosition(e.spr.x + 2, e.spr.y + 8);
     }
     this.enemies = this.enemies.filter((e) => e.alive);
   }
@@ -398,7 +501,9 @@ export class PlayScene extends ArcadeScene {
     const before = this.lives + ENEMY[e.kind].lives;
     if (before > 5 && this.lives <= 5 && this.lives > 0) this.time.delayedCall(250, () => this.sfx('lowhp', { volume: 0.55 }));
     shake(this, 0.012, 200);
-    flash(this, 0xec3013, 120);
+    this.hurt = 0.75;
+    this.gate.setTintFill(0xffffff);
+    this.tweens.add({ targets: this.gate, scale: { from: 1.25, to: 1 }, duration: 260, ease: 'Back.easeOut', onComplete: () => this.gate.clearTint() });
     this.updateHud();
     if (this.lives <= 0) {
       this.lives = 0; this.updateHud();
@@ -408,7 +513,7 @@ export class PlayScene extends ArcadeScene {
 
   private removeEnemy(e: Enemy): void {
     e.alive = false;
-    e.spr.destroy(); e.top?.destroy(); e.shadow?.destroy();
+    e.spr.destroy(); e.top?.destroy(); e.shadow?.destroy(); e.shade?.destroy();
   }
 
   private fireTowers(dt: number): void {
@@ -421,7 +526,7 @@ export class PlayScene extends ArcadeScene {
         if (Phaser.Math.Distance.Between(tw.x, tw.y, e.spr.x, e.spr.y) > range) continue;
         if (!best || e.dist > best.dist) best = e;
       }
-      if (!best) continue;
+      if (!best) { tw.head.rotation += Math.sin(this.time.now / 900 + tw.c * 1.7 + tw.r) * 0.5 * dt; continue; }
       const ang = Phaser.Math.Angle.Between(tw.x, tw.y, best.spr.x, best.spr.y) + Math.PI / 2;
       tw.head.rotation = Phaser.Math.Angle.RotateTo(tw.head.rotation, ang, 10 * dt);
       if (tw.cd > 0) continue;
@@ -429,8 +534,15 @@ export class PlayScene extends ArcadeScene {
       const dmg = tw.def.dmg * (1 + 0.6 * (tw.lv - 1));
       const mx = tw.x + Math.sin(tw.head.rotation) * 30, my = tw.y - Math.cos(tw.head.rotation) * 30;
       const spr = this.add.image(mx, my, tw.def.shot).setDepth(50).setScale(tw.def.name === 'tMissile' ? 0.8 : 1);
-      this.shots.push({ spr, tw, target: best, tx: best.spr.x, ty: best.spr.y, dmg });
-      this.tweens.add({ targets: tw.head, scale: { from: 0.88, to: tw.head.scale }, duration: 90 });
+      this.shots.push({ spr, tw, target: best, tx: best.spr.x, ty: best.spr.y, dmg, trail: 0 });
+      const gun = tw.def.name === 'tGun';
+      const fl = this.add.image(mx, my, 'td-flash').setDepth(51).setBlendMode(ADD).setRotation(tw.head.rotation).setScale(gun ? 0.5 : 0.85);
+      this.tweens.add({ targets: fl, alpha: 0, scale: fl.scale * 1.5, duration: gun ? 70 : 120, onComplete: () => fl.destroy() });
+      if (!gun) this.puff(mx, my, 0.5, 0.35);
+      // recoil: the head kicks back and settles
+      const kick = gun ? 3 : 7;
+      tw.head.setPosition(tw.x - Math.sin(tw.head.rotation) * kick, tw.y + Math.cos(tw.head.rotation) * kick);
+      this.tweens.add({ targets: tw.head, x: tw.x, y: tw.y, duration: gun ? 90 : 180, ease: 'Quad.easeOut' });
       this.throttledSfx(tw.def.sfx, tw.def.name === 'tGun' ? 0.16 : 0.3, tw.x);
     }
   }
@@ -440,6 +552,10 @@ export class PlayScene extends ArcadeScene {
       if (s.tw.def.homing && s.target.alive) { s.tx = s.target.spr.x; s.ty = s.target.spr.y; }
       const dx = s.tx - s.spr.x, dy = s.ty - s.spr.y, len = Math.hypot(dx, dy), step = s.tw.def.speed * dt;
       s.spr.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+      if (s.tw.def.name === 'tMissile') {
+        s.trail -= dt;
+        if (s.trail <= 0) { s.trail = 0.03; this.puff(s.spr.x, s.spr.y, 0.28, 0.5, 380); }
+      }
       if (len > step + 6) { s.spr.x += (dx / len) * step; s.spr.y += (dy / len) * step; continue; }
       this.impact(s);
       s.spr.destroy();
@@ -457,8 +573,11 @@ export class PlayScene extends ArcadeScene {
         const dist = Phaser.Math.Distance.Between(s.tx, s.ty, e.spr.x, e.spr.y);
         if (dist <= r) this.damage(e, dist < 20 || e === s.target ? s.dmg : s.dmg * 0.6);
       }
-      const blast = this.add.image(s.tx, s.ty, 'td-blast').setDepth(45).setScale(0.4).setTint(0xffa040);
-      this.tweens.add({ targets: blast, scale: r / 40, alpha: 0, duration: 320, onComplete: () => blast.destroy() });
+      const blast = this.add.image(s.tx, s.ty, 'td-blast').setDepth(45).setScale(0.4).setTint(0x605040);
+      this.tweens.add({ targets: blast, scale: r / 34, alpha: 0, duration: 520, onComplete: () => blast.destroy() });
+      this.glow(s.tx, s.ty, 0xff9a30, r / 40, 260);
+      this.ring(s.tx, s.ty, 0xffe0a0, r / 56, 300);
+      for (let i = 0; i < 2; i++) this.puff(s.tx + rng.int(-14, 14), s.ty + rng.int(-14, 14), 0.6, 0.45, 700);
       const scorch = this.add.image(s.tx, s.ty, 'td-scorch').setDepth(8).setAlpha(0.45).setScale(0.6);
       this.tweens.add({ targets: scorch, alpha: 0, delay: 1200, duration: 800, onComplete: () => scorch.destroy() });
       burst(this, s.tx, s.ty, [0xffd23f, 0xff8a3d, 0x555555], 12, 200);
@@ -467,6 +586,7 @@ export class PlayScene extends ArcadeScene {
     } else if (s.target.alive) {
       this.damage(s.target, s.dmg);
       burst(this, s.tx, s.ty, 0xffd23f, 3, 90);
+      this.glow(s.tx, s.ty, 0xffd23f, 0.28, 90);
     }
   }
 
@@ -480,12 +600,15 @@ export class PlayScene extends ArcadeScene {
     this.gold += d.gold;
     this.addScore(d.gold * 10);
     popup(this, e.spr.x, e.spr.y - 20, '+' + d.gold * 10, '#ffd23f', 18);
+    this.flyCoin(e.spr.x, e.spr.y);
     burst(this, e.spr.x, e.spr.y, e.air ? [0xbbbbbb, 0xffd23f, 0xec3013] : [0x5dff7a, 0xec3013, 0xffd23f], e.kind === 'boss' ? 70 : e.kind.startsWith('tank') ? 30 : 14, e.kind === 'boss' ? 420 : 240);
     if (e.kind === 'boss' || e.kind.startsWith('tank')) {
       shake(this, e.kind === 'boss' ? 0.025 : 0.008, e.kind === 'boss' ? 500 : 160);
       const s = this.add.image(e.spr.x, e.spr.y, 'td-scorch').setDepth(8).setAlpha(0.6);
       this.tweens.add({ targets: s, alpha: 0, delay: 2000, duration: 1000, onComplete: () => s.destroy() });
+      this.wreck(e.spr.x, e.spr.y, e.kind === 'boss' ? 1.6 : 1);
     }
+    if (e.air) this.glow(e.spr.x, e.spr.y, 0xff8a3d, 0.9, 260);
     if (e.kind === 'boss') this.sfxAt('killboss', e.spr.x, { volume: 0.8 });
     else if (e.kind.startsWith('tank')) this.throttledSfx('killtank', 0.45, e.spr.x);
     else if (e.air) this.throttledSfx('killplane', 0.4, e.spr.x);
@@ -499,8 +622,7 @@ export class PlayScene extends ArcadeScene {
     this.gold += bonus;
     this.addScore(this.wave * 100);
     this.sfx('clear', { volume: 0.6, exact: true });
-    const b = txt(this, FIELD_W / 2, 330, `${t('clearBonus')}\n+$${bonus}`, { title: true, size: 32, color: '#5dff7a' }).setDepth(200);
-    this.tweens.add({ targets: b, y: 290, alpha: 0, delay: 900, duration: 600, onComplete: () => b.destroy() });
+    this.banner(`${t('clearBonus')}  +$${bonus}`, '#5dff7a', 0x5dff7a);
     if (this.wave >= WAVES) {
       this.addScore(this.lives * 250);
       burst(this, FIELD_W / 2, 360, [COLORS.yellow, COLORS.green, COLORS.cyan], 80, 500);
@@ -509,7 +631,7 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     this.phase = 'build';
-    this.countdown = 12;
+    this.countdown = 12; this.countdownMax = 12;
     this.refreshUi();
   }
 
@@ -520,33 +642,132 @@ export class PlayScene extends ArcadeScene {
     this.sfx(key, { volume, x });
   }
 
+  // ---------- effects ----------
+  private glow(x: number, y: number, tint: number, scale: number, ms: number): void {
+    const g = this.add.image(x, y, 'td-glow').setDepth(46).setBlendMode(ADD).setTint(tint).setScale(scale * 0.4);
+    this.tweens.add({ targets: g, scale, alpha: 0, duration: ms, ease: 'Quad.easeOut', onComplete: () => g.destroy() });
+  }
+
+  private ring(x: number, y: number, tint: number, scale: number, ms: number): void {
+    const r = this.add.image(x, y, 'td-ring').setDepth(46).setTint(tint).setScale(0.1).setAlpha(0.85);
+    this.tweens.add({ targets: r, scale, alpha: 0, duration: ms, ease: 'Cubic.easeOut', onComplete: () => r.destroy() });
+  }
+
+  private puff(x: number, y: number, scale: number, alpha: number, ms = 500): void {
+    const p = this.add.image(x, y, 'td-puff').setDepth(44).setScale(scale * 0.5).setAlpha(alpha);
+    this.tweens.add({ targets: p, scale: scale * 1.4, alpha: 0, y: y - 10, duration: ms, ease: 'Quad.easeOut', onComplete: () => p.destroy() });
+  }
+
+  /** A burning wreck where a tank died: flames that flicker and a column of smoke. */
+  private wreck(x: number, y: number, k: number): void {
+    const f = this.add.image(x, y - 4, 'td-fire').setDepth(37).setScale(0.8 * k).setOrigin(0.5, 0.8);
+    this.tweens.add({ targets: f, scaleY: 1.05 * k, scaleX: 0.65 * k, duration: 110, yoyo: true, repeat: 6 });
+    this.tweens.add({ targets: f, alpha: 0, delay: 1100, duration: 500, onComplete: () => f.destroy() });
+    this.time.addEvent({ delay: 140, repeat: 8, callback: () => this.puff(x + rng.int(-6, 6), y - 10, 0.5 * k, 0.4, 900) });
+    this.glow(x, y, 0xff7a20, 1.6 * k, 380);
+  }
+
+  /** A coin flies from a kill to the gold counter. */
+  private flyCoin(x: number, y: number): void {
+    if (this.coinsFlying >= 10) return;
+    this.coinsFlying++;
+    const c = this.add.image(x, y, 'td-coin').setDepth(7000).setScale(0.55);
+    this.tweens.add({ targets: c, x: this.goldIcon.x, duration: 560, ease: 'Sine.easeIn' });
+    this.tweens.add({
+      targets: c, y: { from: y, to: GOLD_Y }, scale: 0.9, duration: 560, ease: 'Back.easeIn',
+      onComplete: () => {
+        c.destroy(); this.coinsFlying--;
+        this.tweens.add({ targets: this.goldText, scale: { from: 1.25, to: 1 }, duration: 160, ease: 'Quad.easeOut' });
+      },
+    });
+  }
+
+  /** A ribbon across the battlefield with a title that slides in, holds and slides out. */
+  private banner(title: string, color: string, tint: number): void {
+    const y = TOP + (ROWS * CELL) / 2 - 40;
+    const band = this.add.image(FIELD_W / 2, y, 'td-banner').setDisplaySize(FIELD_W, 96).setTint(tint).setDepth(199);
+    const sy = band.scaleY;
+    band.scaleY = 0;
+    const lbl = txt(this, FIELD_W + 320, y + 2, title, { title: true, size: 40, color }).setDepth(200);
+    this.tweens.add({ targets: band, scaleY: sy, duration: 160, ease: 'Quad.easeOut' });
+    this.tweens.add({ targets: lbl, x: FIELD_W / 2, duration: 340, ease: 'Back.easeOut' });
+    this.time.delayedCall(1250, () => {
+      this.tweens.add({ targets: lbl, x: -320, duration: 260, ease: 'Cubic.easeIn', onComplete: () => lbl.destroy() });
+      this.tweens.add({ targets: band, scaleY: 0, delay: 140, duration: 180, onComplete: () => band.destroy() });
+    });
+  }
+
   private drawOverlay(): void {
     const g = this.fx;
     g.clear();
+    const now = this.time.now;
     const show = (x: number, y: number, range: number, ok: boolean) => {
-      g.fillStyle(ok ? 0xffffff : 0xec3013, 0.1).fillCircle(x, y, range);
-      g.lineStyle(3, ok ? 0xffffff : 0xec3013, 0.5).strokeCircle(x, y, range);
+      const col = ok ? 0xffffff : 0xec3013;
+      g.fillStyle(col, 0.08).fillCircle(x, y, range);
+      g.lineStyle(3, col, 0.55);
+      const n = 32, off = now / 2400;
+      for (let i = 0; i < n; i += 2) {
+        g.beginPath();
+        g.arc(x, y, range, off + (i / n) * Math.PI * 2, off + ((i + 1) / n) * Math.PI * 2);
+        g.strokePath();
+      }
     };
+    let ghost = false;
     if (this.selTower) {
       const tw = this.selTower;
       show(tw.x, tw.y, tw.def.range * (1 + 0.12 * (tw.lv - 1)), true);
-      g.lineStyle(4, COLORS.yellow, 1).strokeRect(tw.c * CELL + 2, TOP + tw.r * CELL + 2, CELL - 4, CELL - 4);
+      const p = 2 + Math.sin(now / 150) * 2;
+      g.lineStyle(4, COLORS.yellow, 1).strokeRect(tw.c * CELL + p, TOP + tw.r * CELL + p, CELL - p * 2, CELL - p * 2);
     } else if (this.cursorOn) {
       const { c, r } = this.cur;
-      const ok = this.grid[r][c] === 0 && this.gold >= TOWERS[this.selType].cost;
-      if (this.grid[r][c] === 0) show(c * CELL + CELL / 2, TOP + r * CELL + CELL / 2, TOWERS[this.selType].range, ok);
+      const d = TOWERS[this.selType];
+      const ok = this.grid[r][c] === 0 && this.gold >= d.cost;
+      if (this.grid[r][c] === 0) {
+        const x = c * CELL + CELL / 2, y = TOP + r * CELL + CELL / 2;
+        show(x, y, d.range, ok);
+        ghost = true;
+        this.ghostBase.setTexture(d.base).setPosition(x, y);
+        this.ghostHead.setTexture(d.head).setPosition(x, y);
+        for (const o of [this.ghostBase, this.ghostHead]) if (ok) o.clearTint(); else o.setTint(0xff6050);
+      }
     }
-    if (this.cursorOn) g.lineStyle(3, COLORS.cyan, 0.9).strokeRect(this.cur.c * CELL + 4, TOP + this.cur.r * CELL + 4, CELL - 8, CELL - 8);
-    // level pips
-    for (const tw of this.towers) for (let i = 1; i < tw.lv; i++) g.fillStyle(COLORS.yellow, 1).fillRect(tw.x - 14 + (i - 1) * 16, tw.y + 28, 12, 8);
+    this.ghostBase.setVisible(ghost); this.ghostHead.setVisible(ghost);
+    if (this.cursorOn) {
+      const x = this.cur.c * CELL, y = TOP + this.cur.r * CELL, L = 18;
+      g.lineStyle(4, COLORS.cyan, 0.95);
+      for (const [cx, cy, sx, sy] of [[x + 4, y + 4, 1, 1], [x + CELL - 4, y + 4, -1, 1], [x + 4, y + CELL - 4, 1, -1], [x + CELL - 4, y + CELL - 4, -1, -1]]) {
+        g.beginPath(); g.moveTo(cx, cy + sy * L); g.lineTo(cx, cy); g.lineTo(cx + sx * L, cy); g.strokePath();
+      }
+    }
+    // rank chevrons under upgraded towers
+    for (const tw of this.towers) for (let i = 1; i < tw.lv; i++) {
+      const y = tw.y + 24 + (i - 1) * 7;
+      for (const [w, col] of [[7, 0x000000], [3, 0xffd23f]] as const) {
+        g.lineStyle(w, col, 1);
+        g.beginPath(); g.moveTo(tw.x - 9, y); g.lineTo(tw.x, y + 5); g.lineTo(tw.x + 9, y); g.strokePath();
+      }
+    }
 
     const b = this.bars;
     b.clear();
     for (const e of this.enemies) {
-      if (e.hp >= e.max) continue;
+      if (e.hp >= e.max && e.kind !== 'boss') continue;
       const w = e.kind === 'boss' ? 90 : 46, x = e.spr.x - w / 2, y = e.spr.y - (e.kind === 'boss' ? 64 : 38);
-      b.fillStyle(0x000000, 0.7).fillRect(x - 2, y - 2, w + 4, 10);
-      b.fillStyle(e.hp / e.max > 0.4 ? 0x5dff7a : 0xec3013, 1).fillRect(x, y, w * Math.max(0, e.hp / e.max), 6);
+      const f = Math.max(0, e.hp / e.max);
+      b.fillStyle(0x000000, 0.8).fillRect(x - 2, y - 2, w + 4, 10);
+      b.fillStyle(f > 0.6 ? 0x5dff7a : f > 0.3 ? 0xffd23f : 0xec3013, 1).fillRect(x, y, w * f, 6);
+      b.fillStyle(0xffffff, 0.35).fillRect(x, y, w * f, 2);
     }
+
+    // wave progress under the wave counter: countdown between waves, enemies dealt with during one
+    const pg = this.prog;
+    pg.clear();
+    const pw = 240, px = this.scale.width / 2 - pw / 2, py = 56;
+    const frac = this.phase === 'build'
+      ? Phaser.Math.Clamp(this.countdown / this.countdownMax, 0, 1)
+      : Phaser.Math.Clamp(1 - (this.queue.length + this.enemies.length) / this.waveTotal, 0, 1);
+    pg.fillStyle(0x000000, 0.9).fillRect(px - 3, py - 3, pw + 6, 12);
+    pg.fillStyle(this.phase === 'build' ? 0xffd23f : 0xec3013, 1).fillRect(px, py, pw * frac, 6);
+    pg.fillStyle(0xffffff, 0.3).fillRect(px, py, pw * frac, 2);
   }
 }

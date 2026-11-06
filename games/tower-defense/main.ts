@@ -2,6 +2,7 @@ import { launch, kenney, loadAudio, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { warmText } from './fasttext';
+import { menuScene } from './menu';
 
 const TILE = (n: number) => kenney(`tower-defense/png/default_size/towerdefense_tile${String(n).padStart(3, '0')}.png`);
 
@@ -45,16 +46,8 @@ launch({
     loadAudio(l, 'select', J + 'general-sounds/menu-sounds/sfx-menu-select2');
   },
   menuDecor(scene) {
-    warmText(scene, [[26, true], [16, true], [1, true], [26, false], [22, false], [18, true], [20, true], [48, true], [36, true], [32, true]]);
-    const { width, height } = scene.scale;
-    for (let x = 0; x < width; x += 80) scene.add.image(x + 40, height - 40, 'td-dirt').setDisplaySize(80, 80).setAlpha(0.35);
-    scene.add.image(width * 0.12, height * 0.55, 'td-b2').setScale(1.6);
-    scene.add.image(width * 0.12, height * 0.55, 'td-h2').setScale(1.6).setAngle(30);
-    scene.add.image(width * 0.88, height * 0.55, 'td-b0').setScale(1.6);
-    scene.add.image(width * 0.88, height * 0.55, 'td-h0').setScale(1.6).setAngle(-40);
-    scene.add.image(width * 0.25, height * 0.86, 'td-tank').setScale(1.3);
-    scene.add.image(width * 0.25, height * 0.86, 'td-tank-t').setScale(1.3);
-    scene.add.image(width * 0.75, height * 0.15, 'td-plane').setScale(1.2).setAngle(-10);
+    warmText(scene, [[26, true], [16, true], [1, true], [24, false], [22, false], [20, false], [18, true], [20, true], [22, true], [12, true], [40, true], [36, true]]);
+    menuScene(scene);
   },
   scenes: [PlayScene],
   strings: {
@@ -62,13 +55,13 @@ launch({
       tGun: 'Taret', tCannon: 'Top', tMissile: 'Füze', groundOnly: 'Sadece kara', airGround: 'Kara + hava',
       upgrade: 'GELİŞTİR', sell: 'SAT', max: 'MAKS', nextWave: 'DALGA', nextIn: 'BAŞLAT {n}', waveOf: 'DALGA {n}/{m}',
       finalWave: 'SON DALGA!', bossIn: 'DEV TANK!', noGold: 'Altın yetmiyor!', cantBuild: 'Buraya kurulmaz', clearBonus: 'DALGA TEMİZ',
-      lvl: 'Sv.', victory: 'ÜS KURTULDU!',
+      lvl: 'Sv.', victory: 'ÜS KURTULDU!', nextLbl: 'SIRADAKİ DALGA', incoming: 'GELİYOR',
     },
     en: {
       tGun: 'Turret', tCannon: 'Cannon', tMissile: 'Missile', groundOnly: 'Ground only', airGround: 'Ground + air',
       upgrade: 'UPGRADE', sell: 'SELL', max: 'MAX', nextWave: 'WAVE', nextIn: 'START {n}', waveOf: 'WAVE {n}/{m}',
       finalWave: 'FINAL WAVE!', bossIn: 'GIANT TANK!', noGold: 'Not enough gold!', cantBuild: "Can't build here", clearBonus: 'WAVE CLEAR',
-      lvl: 'Lv.', victory: 'BASE SAVED!',
+      lvl: 'Lv.', victory: 'BASE SAVED!', nextLbl: 'NEXT WAVE', incoming: 'INCOMING',
     },
   },
 });
