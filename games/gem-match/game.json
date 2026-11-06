@@ -2,11 +2,11 @@
   "id": "gem-match",
   "title": { "tr": "Mücevher Eşle", "en": "Gem Match" },
   "description": { "tr": "Mücevherlerin yerini değiştir, 3 veya daha fazlasını eşle, zincirleme patlamalar ve özel taşlarla hedef puana ulaş.", "en": "Swap gems to match 3 or more, trigger cascades and special gems, and hit the target score before your moves run out." },
-  "howTo": { "tr": "Bir taşı komşusuna kaydır ya da iki taşa sırayla dokun. Eşleşmeyen kaydırma bekler: ikinci kaydırmayla 4'lü, 5'li yap, tek hamle sayılır. Eşleşme olunca taşlar düşerken bir taş daha kaydırabilirsin: kombo hamlesi bedava, zinciri büyütür. Klavye: oklar, Boşluk seç, X geri al. 4'lü: çizgi, L/T: bomba, 5'li: gökkuşağı. Özel taşlar bir sonraki bölüme geçer.", "en": "Swipe a gem onto a neighbour or tap two gems. A swap that matches nothing waits: add a second swap to build a 4 or 5, all as one move. After a match, swap one more while the gems fall: the combo move is free and grows the chain. Keys: arrows, Space picks, X undoes. Match 4: line, L/T: bomb, 5: rainbow. Specials carry over to the next level." },
+  "howTo": { "tr": "Bir taşı komşusuna kaydır ya da iki taşa sırayla dokun. Eşleşmeyen kaydırma kendiliğinden geri döner; hemen ardından ikinci bir kaydırma yaparsan ikisi tek hamle sayılır, 4'lü ve 5'li kurabilirsin. Eşleşme olunca taşlar düşerken bir taş daha kaydırabilirsin: kombo hamlesi bedava, zinciri büyütür. Klavye: oklar, Boşluk seç. 4'lü: çizgi, L/T: bomba, 5'li: gökkuşağı. Özel taşlar bir sonraki bölüme geçer.", "en": "Swipe a gem onto a neighbour or tap two gems. A swap that matches nothing slides back by itself; swap again right away and the two count as one move, so you can build a 4 or 5. After a match, swap one more while the gems fall: the combo move is free and grows the chain. Keys: arrows, Space picks. Match 4: line, L/T: bomb, 5: rainbow. Specials carry over to the next level." },
   "genres": ["puzzle", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard", "mouse"],
-  "version": "1.4.2",
+  "version": "1.4.3",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
   "platform": { "featured": true }
 }

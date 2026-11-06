@@ -8,7 +8,8 @@ const GEM_SIZE = [70, 70, 58, 70, 70, 58];
 
 const COLS = 8, ROWS = 8, S = 84;
 const X0 = (720 - COLS * S) / 2, Y0 = 350;
-const PAD = 14;                 // glass border around the cells
+const PAD = 14;
+const AUTO_BACK_MS = 380;       // a swap that matches nothing waits this long for a second swap                 // glass border around the cells
 
 type Special = '' | 'h' | 'v' | 'bomb' | 'rainbow';
 interface Gem { color: number; special: Special; img: Phaser.GameObjects.Image; ov?: Phaser.GameObjects.Image }
@@ -51,7 +52,7 @@ export class PlayScene extends ArcadeScene {
   // Double move: a swap that matches nothing waits here; a second swap that makes a match turns
   // both into one move, so 4s and 5s can be built. Nothing matched after both: both go back.
   private pending: { a: Cell; b: Cell } | null = null;
-  private pendingRings: Phaser.GameObjects.Image[] = [];
+  private pendingTimer: Phaser.Time.TimerEvent | null = null;
   // A second swap made while the first is still sliding is not dropped: it plays the moment the
   // first one lands (as the second half of a double move, or as a combo move if the first matched).
   private swapping = false;
@@ -105,7 +106,7 @@ export class PlayScene extends ArcadeScene {
     const hintY = Y0 + ROWS * S + 70;
     this.add.image(360, hintY, makeGlass(this, 520, 64, 32));
     this.hintText = txt(this, 360, hintY, t('hint'), { size: 28, color: '#f1e8ff', wrap: 500 });
-    this.pending = null; this.pendingRings = []; this.swapping = false; this.buffered = null;
+    this.pending = null; this.pendingTimer = null; this.swapping = false; this.buffered = null;
     this.resolving = false; this.comboOpen = false; this.comboUsed = false; this.comboQueued = null; this.comboRings = []; this.comboFocus = null;
 
     // now and then a gem catches the light
@@ -378,6 +379,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.busy = true;
     this.swapping = true;
+    this.pendingTimer?.remove(); this.pendingTimer = null;
     const gen = this.gen;
     this.sfx('swap', { volume: 0.45 });
     this.g[a.r][a.c] = gb; this.g[b.r][b.c] = ga;
@@ -400,12 +402,20 @@ export class PlayScene extends ArcadeScene {
       flash(this, 0xffffff, 150);
     } else if (!this.findGroups().length) {
       if (!this.pending) {
-        // the first half of a double move: it stays, waiting for a second swap
-        this.pending = { a, b };
-        this.markPending();
-        this.sfx('select', { volume: 0.5, rate: 1.25 });
-        if (!this.findMove() && !this.buffered) { await this.wait(350); if (gen === this.gen) await this.undoPending(); return; }
-        if (gen === this.gen) { this.busy = false; this.playBuffered(); }
+        // A swap that matches nothing goes back by itself in a moment. A second swap made right
+        // away (during the slide or just after) turns the two into one double move.
+        const p = { a, b };
+        this.pending = p;
+        if (gen !== this.gen) return;
+        this.busy = false;
+        const back = (): void => {
+          if (gen !== this.gen || this.pending !== p) return;
+          // something else is running (a hint, a slide): try again a moment later
+          if (this.busy) { this.pendingTimer = this.time.delayedCall(100, back); return; }
+          this.undoPending();
+        };
+        this.pendingTimer = this.time.delayedCall(AUTO_BACK_MS, back);
+        this.playBuffered();
         return;
       }
       // two swaps and still no match: both go back, no move spent
@@ -513,29 +523,9 @@ export class PlayScene extends ArcadeScene {
     return !!p && ((p.a.r === cell.r && p.a.c === cell.c) || (p.b.r === cell.r && p.b.c === cell.c));
   }
 
-  /** Glowing rings on the two gems of a waiting swap, and the hint asks for the second swap. */
-  private markPending(): void {
-    this.clearRings();
-    const p = this.pending;
-    if (!p) return;
-    for (const cell of [p.a, p.b]) {
-      const ring = this.add.image(this.px(cell.c), this.py(cell.r), 'gm-cursor').setDisplaySize(S * 112 / 84, S * 112 / 84).setDepth(19).setAlpha(0.9);
-      this.tweens.add({ targets: ring, alpha: 0.35, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-      this.pendingRings.push(ring);
-    }
-    this.hintText.setText(t('secondMove')).setColor('#7fe9ff').setFontSize(24);
-    this.tweens.add({ targets: this.hintText, scale: { from: 1.15, to: 1 }, duration: 220, ease: 'Back.easeOut' });
-  }
-
-  private clearRings(): void {
-    for (const r of this.pendingRings) { this.tweens.killTweensOf(r); r.destroy(); }
-    this.pendingRings = [];
-  }
-
   private clearPending(): void {
     this.pending = null;
-    this.clearRings();
-    this.hintText?.setText(t('hint')).setColor('#f1e8ff').setFontSize(28);
+    this.pendingTimer?.remove(); this.pendingTimer = null;
   }
 
   /** Puts the waiting swap back. */

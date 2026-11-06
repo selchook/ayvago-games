@@ -49,13 +49,13 @@ launch({
     tr: {
       target: 'HEDEF', shuffle: 'KARIŞTIRILIYOR', outOfMoves: 'HAMLE BİTTİ', nice: 'GÜZEL!', great: 'SÜPER!',
       awesome: 'MÜTHİŞ!', bonus: 'BONUS', hint: 'Taşları kaydır, 3 tane eşle!',
-      secondMove: 'Bir taş daha kaydır · Dokun: geri al', double: 'ÇİFT HAMLE!',
+      double: 'ÇİFT HAMLE!',
       comboNow: 'Kombo hamlesi: bir taş daha kaydır!', comboMove: 'KOMBO HAMLESİ',
     },
     en: {
       target: 'TARGET', shuffle: 'SHUFFLE', outOfMoves: 'OUT OF MOVES', nice: 'NICE!', great: 'GREAT!',
       awesome: 'AWESOME!', bonus: 'BONUS', hint: 'Swap gems to match 3!',
-      secondMove: 'Swap one more · Tap it to undo', double: 'DOUBLE MOVE!',
+      double: 'DOUBLE MOVE!',
       comboNow: 'Combo move: swap one more!', comboMove: 'COMBO MOVE',
     },
   },
