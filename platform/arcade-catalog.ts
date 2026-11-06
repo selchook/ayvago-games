@@ -1103,6 +1103,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['tower', 'defense', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
   }),
   arcadeGame({
     slug: 'traffic-racer',
