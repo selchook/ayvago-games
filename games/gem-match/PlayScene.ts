@@ -52,6 +52,10 @@ export class PlayScene extends ArcadeScene {
   // both into one move, so 4s and 5s can be built. Nothing matched after both: both go back.
   private pending: { a: Cell; b: Cell } | null = null;
   private pendingRings: Phaser.GameObjects.Image[] = [];
+  // A second swap made while the first is still sliding is not dropped: it plays the moment the
+  // first one lands (as the second half of a double move, or as a combo move if the first matched).
+  private swapping = false;
+  private buffered: { a: Cell; b: Cell } | null = null;
   private hintText!: Phaser.GameObjects.Text;
   // Combo move: after a swap that matches, one more swap is free while the matches clear and fall
   // (it plays at once, as soon as both gems are at rest); its matches keep the chain going.
@@ -101,7 +105,7 @@ export class PlayScene extends ArcadeScene {
     const hintY = Y0 + ROWS * S + 70;
     this.add.image(360, hintY, makeGlass(this, 520, 64, 32));
     this.hintText = txt(this, 360, hintY, t('hint'), { size: 28, color: '#f1e8ff', wrap: 500 });
-    this.pending = null; this.pendingRings = [];
+    this.pending = null; this.pendingRings = []; this.swapping = false; this.buffered = null;
     this.resolving = false; this.comboOpen = false; this.comboUsed = false; this.comboQueued = null; this.comboRings = []; this.comboFocus = null;
 
     // now and then a gem catches the light
@@ -277,7 +281,7 @@ export class PlayScene extends ArcadeScene {
     if (this.isOver) return;
     const cell = this.cellAt(p.x, p.y);
     this.idle = 0;
-    if (!cell || (this.busy && !this.canComboQueue())) return;
+    if (!cell || !this.takesInput()) return;
     this.kbMode = false; this.cursorImg.setVisible(false);
     // a waiting gem: a drag makes the second swap with it, a plain tap (no drag) undoes it
     if (this.pending && !this.sel && this.isPending(cell)) { this.drag = { ...cell, x: p.x, y: p.y, undo: true }; return; }
@@ -293,7 +297,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
-    if (!this.drag || !p.isDown || (this.busy && !this.canComboQueue()) || this.isOver) return;
+    if (!this.drag || !p.isDown || !this.takesInput() || this.isOver) return;
     const dx = p.x - this.drag.x, dy = p.y - this.drag.y;
     if (Math.hypot(dx, dy) < 28) return;
     const from = { r: this.drag.r, c: this.drag.c };
@@ -314,7 +318,7 @@ export class PlayScene extends ArcadeScene {
     if (!d && !pick) return;
     this.idle = 0;
     if (!this.kbMode) { this.kbMode = true; this.placeCursor(); if (!pick) return; }
-    if (this.busy && !this.canComboQueue()) return;
+    if (!this.takesInput()) return;
     if (pick) {
       if (this.sel && this.sel.r === this.cursor.r && this.sel.c === this.cursor.c) this.setSel(null);
       else this.setSel({ ...this.cursor });
@@ -347,17 +351,39 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
+  /** Input is taken when idle, while a chain clears (combo move) and while a swap slides. */
+  private takesInput(): boolean {
+    return !this.busy || this.canComboQueue() || (this.swapping && !this.buffered);
+  }
+
+  /** Plays a swap that was made while the previous one was still sliding. */
+  private playBuffered(): void {
+    const q = this.buffered;
+    this.buffered = null;
+    if (!q || this.isOver) return;
+    if (this.canComboQueue()) {
+      const ga = this.g[q.a.r][q.a.c], gb = this.g[q.b.r][q.b.c];
+      if (ga && gb) this.queueCombo(ga, gb);
+    } else if (!this.busy) this.trySwap(q.a, q.b);
+  }
+
   // ---------- core match logic ----------
   private async trySwap(a: Cell, b: Cell): Promise<void> {
     const ga = this.g[a.r][a.c], gb = this.g[b.r][b.c];
     if (!ga || !gb || this.isOver) return;
-    if (this.busy) { if (this.canComboQueue()) this.queueCombo(ga, gb); return; }
+    if (this.busy) {
+      if (this.canComboQueue()) this.queueCombo(ga, gb);
+      else if (this.swapping && !this.buffered) this.buffered = { a, b };
+      return;
+    }
     this.busy = true;
+    this.swapping = true;
     const gen = this.gen;
     this.sfx('swap', { volume: 0.45 });
     this.g[a.r][a.c] = gb; this.g[b.r][b.c] = ga;
-    await Promise.all([this.moveGem(ga, b.r, b.c, 160), this.moveGem(gb, a.r, a.c, 160)]);
+    await Promise.all([this.moveGem(ga, b.r, b.c, 130), this.moveGem(gb, a.r, a.c, 130)]);
     if (gen !== this.gen) return;
+    this.swapping = false;
     this.closeCombo();
 
     let forced: Set<string> | null = null;
@@ -378,11 +404,12 @@ export class PlayScene extends ArcadeScene {
         this.pending = { a, b };
         this.markPending();
         this.sfx('select', { volume: 0.5, rate: 1.25 });
-        if (!this.findMove()) { await this.wait(350); if (gen === this.gen) await this.undoPending(); return; }
-        if (gen === this.gen) this.busy = false;
+        if (!this.findMove() && !this.buffered) { await this.wait(350); if (gen === this.gen) await this.undoPending(); return; }
+        if (gen === this.gen) { this.busy = false; this.playBuffered(); }
         return;
       }
       // two swaps and still no match: both go back, no move spent
+      this.buffered = null;
       this.sfx('bad', { volume: 0.45 });
       this.g[a.r][a.c] = ga; this.g[b.r][b.c] = gb;
       await Promise.all([this.moveGem(ga, a.r, a.c, 160), this.moveGem(gb, b.r, b.c, 160)]);
@@ -403,6 +430,7 @@ export class PlayScene extends ArcadeScene {
     this.updateUi();
     if (this.moves === 3 && this.levelScore < this.target) this.sfx('low', { volume: 0.35 });
     this.comboOpen = true; this.comboUsed = false;
+    if (this.buffered) this.time.delayedCall(0, () => this.playBuffered());
     await this.resolve(b, forced, 0);
     if (gen !== this.gen || this.isOver) return;
     this.afterMove();
