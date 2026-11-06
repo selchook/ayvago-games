@@ -255,7 +255,7 @@ export class PlayScene extends ArcadeScene {
       const base = t('vs', { name: net.peerName || t('opponent') });
       this.info.setText(this.phase === 'place' ? `${base}   ${t('timeLeft', { n: this.placeLeft })}` : base);
     } else {
-      this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+      this.hud.setLives(this.lives);
       // the level sits in the info line: the HUD centre slot collides with LIVES in English
       this.info.setText(`${t('lv', { n: this.level + 1 })} · ${t('rival', { name: t('d' + this.level) })} · ${t('streak', { n: this.streak })}`);
     }

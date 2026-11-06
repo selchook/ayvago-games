@@ -73,7 +73,12 @@ export class PlayScene extends ArcadeScene {          // key defaults to 'Play'
 What the base class gives you:
 
 - **Score.** `this.score`, `addScore(n, x?, y?)`, `setScore(n)`.
-- **HUD.** `this.hud.setRight(str)` for lives/level/time and `this.hud.setCenter(str)` for wave/moves. The score is drawn top-left automatically. Set `protected useHud = false` to draw your own.
+- **HUD.** The score is drawn top-left automatically. Lives and levels always use the standard widgets, never a text label or a game-made icon row:
+  - `this.hud.setLives(lives, max?)` draws hearts in the right slot (one heart and the number above five lives; with `max`, lost lives show as empty hearts). A lost heart pops and the last one beats.
+  - `this.hud.setLevel(level)` draws a flag badge with the number in the centre slot.
+  - `this.hud.setCenter(str)` is for other centre info (wave, moves, distance); while it is not empty it takes the badge's place.
+  - `this.hud.setRight(str)` is for other right-slot info (time, coins); hearts sit left of it.
+  - Set `protected useHud = false` to draw your own.
 - **Round state.** `this.elapsed` (seconds in round), `this.isOver`.
 - **Ending.** `endGame({ win?, title?, delay? })` shows the result overlay, saves the best score and emits SDK `gameOver`.
 - **Sound.** `this.sfx(key, config?)` plays a sound and respects mute. The core mixes for you:

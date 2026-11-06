@@ -112,7 +112,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
   }
 
   private drawBorder(): void {

@@ -376,7 +376,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setCenter(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     this.maxText?.setText(`${t('maxTile')}: ${this.best}`).setColor(Phaser.Display.Color.IntegerToColor(HEX_COLORS[this.best]).rgba);
     if (this.hintText) {
       const bombNow = this.cur === BOMB;

@@ -179,29 +179,6 @@ export function makeTopBar(scene: Phaser.Scene, w: number, h: number): void {
   });
 }
 
-/** A retro pixel heart for the lives counter. */
-export function makeHeart(scene: Phaser.Scene): void {
-  const rows = [
-    '.XX...XX.',
-    'XHHX.XRRX',
-    'XHRRXRRRX',
-    'XRRRRRRRX',
-    'XRRRRRRDX',
-    '.XRRRRDX.',
-    '..XRRDX..',
-    '...XDX...',
-    '....X....',
-  ];
-  const p = 4;
-  make(scene, 'td-heart', rows[0].length * p, rows.length * p, (c) => {
-    const col: Record<string, string> = { X: '#1a0a0a', R: '#ec3013', H: '#ffb3a6', D: '#a21d10' };
-    rows.forEach((row, y) => [...row].forEach((ch, x) => {
-      if (ch === '.') return;
-      c.fillStyle = col[ch]; c.fillRect(x * p, y * p, p, p);
-    }));
-  });
-}
-
 export function makeFx(scene: Phaser.Scene): void {
   make(scene, 'td-glow', 128, 128, (c) => {
     const g = c.createRadialGradient(64, 64, 0, 64, 64, 64);

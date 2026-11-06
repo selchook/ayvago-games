@@ -491,7 +491,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private refreshHud(): void {
-    this.hud.setCenter(`${t('level')} ${this.levelIdx + 1}`);
+    this.hud.setLevel(this.levelIdx + 1);
     this.hintBtn.setText(`${t('hint')} (${this.hints})`);
     this.hintBtn.setAlpha(this.hints > 0 ? 1 : 0.5);
   }

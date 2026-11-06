@@ -595,7 +595,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     this.levelText.setText(String(this.level));
     this.linesText.setText(String(this.lines));
   }

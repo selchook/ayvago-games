@@ -23,7 +23,6 @@ export class PlayScene extends ArcadeScene {
   private shots: Bullet[] = [];
   private bombs: Bullet[] = [];
   private bunkers: Bunker[] = [];
-  private lifeIcons: Img[] = [];
   private ufo: { img: Img; vx: number } | null = null;
   private fx = 0;
   private fy = 0;
@@ -43,7 +42,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     const { width } = this.scale;
-    this.aliens = []; this.shots = []; this.bombs = []; this.bunkers = []; this.lifeIcons = []; this.ufo = null;
+    this.aliens = []; this.shots = []; this.bombs = []; this.bunkers = []; this.ufo = null;
     this.lives = 3; this.level = 0; this.frozen = 0; this.invuln = 0; this.note = 0; this.dead = false; this.clearing = false;
     this.fireCd = 0; this.ufoCd = rng.int(14, 20);
     this.ufoLoop = null;
@@ -77,7 +76,7 @@ export class PlayScene extends ArcadeScene {
   private nextLevel(): void {
     this.level++;
     this.clearing = false;
-    this.hud.setCenter(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     for (const a of this.aliens) a.img.destroy();
     for (const b of this.bombs) b.img.destroy();
     this.aliens = []; this.bombs = [];
@@ -174,9 +173,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateLives(): void {
-    const n = Math.max(0, this.lives);
-    while (this.lifeIcons.length < n) this.lifeIcons.push(this.add.image(40 + this.lifeIcons.length * 44, GROUND_Y + 50, 'life').setDepth(20));
-    while (this.lifeIcons.length > n) this.lifeIcons.pop()!.destroy();
+    this.hud.setLives(this.lives);
   }
 
   private living(): Alien[] {

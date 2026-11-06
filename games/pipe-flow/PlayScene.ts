@@ -54,7 +54,6 @@ export class PlayScene extends ArcadeScene {
   private showCursor = false;
   private cursorBox!: Phaser.GameObjects.Rectangle;
   private timerText!: Phaser.GameObjects.Text;
-  private livesText!: Phaser.GameObjects.Text;
   private bar!: Phaser.GameObjects.Rectangle;
   private flowBtn!: Button;
   private srcStub!: Phaser.GameObjects.Image;
@@ -73,7 +72,6 @@ export class PlayScene extends ArcadeScene {
     this.layer = this.add.container(0, 0);
     this.add.rectangle(60, 112, 440, 24, 0x000000, 0.6).setOrigin(0, 0.5).setStrokeStyle(4, 0xffffff, 0.8);
     this.bar = this.add.rectangle(64, 112, 432, 16, 0x3ee6ff).setOrigin(0, 0.5);
-    this.livesText = txt(this, 516, 112, '', { title: true, size: 18, color: '#ff4fa3' }).setOrigin(0, 0.5).setDepth(9);
     this.timerText = txt(this, 280, 150, '', { title: true, size: 18, color: '#3ee6ff' }).setDepth(9);
     this.cursorBox = this.add.rectangle(0, 0, 10, 10).setStrokeStyle(6, 0xffd23f).setDepth(20).setVisible(false);
     this.tweens.add({ targets: this.cursorBox, alpha: 0.4, duration: 400, yoyo: true, repeat: -1 });
@@ -425,7 +423,6 @@ export class PlayScene extends ArcadeScene {
     shake(this, 0.02, 350);
     softFlash(this, 0xec3013);
     this.updateHud();
-    this.tweens.add({ targets: this.livesText, scale: { from: 1.6, to: 1 }, duration: 400, ease: 'Back.easeOut' });
     const band = this.add.rectangle(360, 620, 720, 130, 0x000000, 0.75).setDepth(29);
     const msg = txt(this, 360, 620, t('blocked'), { title: true, size: 34, color: '#ec3013' }).setDepth(30).setScale(0);
     this.tweens.add({ targets: msg, scale: 1, duration: 360, ease: 'Back.easeOut' });
@@ -456,8 +453,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setCenter(`${t('level')} ${this.level}`);
-    this.livesText.setText(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLevel(this.level);
+    this.hud.setLives(this.lives);
     const f = Phaser.Math.Clamp(this.countdown / this.countMax, 0, 1);
     this.bar.width = 432 * f;
     this.bar.fillColor = f > 0.3 ? 0x3ee6ff : 0xec3013;

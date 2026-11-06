@@ -50,11 +50,10 @@ export class PlayScene extends ArcadeScene {
   private ufoCd = 0;
   private nextLife = EXTRA_LIFE;
   private beat = 0;
-  private lifeIcons: Img[] = [];
 
   createGame(): void {
     const { width, height } = this.scale;
-    this.rocks = []; this.shots = []; this.eshots = []; this.ufo = null; this.lifeIcons = [];
+    this.rocks = []; this.shots = []; this.eshots = []; this.ufo = null;
     this.heading = -Math.PI / 2; this.vx = this.vy = 0;
     this.lives = 3; this.wave = 0; this.alive = true; this.respawnIn = 0; this.invuln = 2;
     this.fireCd = 0; this.hyperCd = 0; this.waveCd = 0; this.ufoCd = 18; this.nextLife = EXTRA_LIFE; this.beat = 0;
@@ -96,10 +95,7 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setCenter(`${t('wave')} ${this.wave}`);
-    // lives as little ship icons under the score
-    const n = Math.max(0, this.lives);
-    while (this.lifeIcons.length < Math.min(n, 8)) this.lifeIcons.push(this.add.image(40 + this.lifeIcons.length * 42, 82, 'life').setDepth(9000).setScrollFactor(0));
-    while (this.lifeIcons.length > n) this.lifeIcons.pop()!.destroy();
+    this.hud.setLives(this.lives);
   }
 
   /** A ribbon across the screen with a title that slides in, holds and slides out. */

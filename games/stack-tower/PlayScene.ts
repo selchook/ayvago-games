@@ -44,7 +44,6 @@ export class PlayScene extends ArcadeScene {
   private dead = false;
   private lives = MAX_LIVES;
   private armT = 0;
-  private hearts: Phaser.GameObjects.Image[] = [];
   private started = false;
   private bigNum!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
@@ -56,7 +55,7 @@ export class PlayScene extends ArcadeScene {
     this.stack = []; this.clouds = [];
     this.dir = 1; this.speed = 300; this.floors = 0; this.level = 1; this.streak = 0;
     this.dead = false; this.started = false;
-    this.lives = MAX_LIVES; this.armT = 0; this.hearts = [];
+    this.lives = MAX_LIVES; this.armT = 0;
     const cam = this.cameras.main;
     cam.setScroll(0, 0).setBackgroundColor(SKY[0]);
     ensurePixel(this);
@@ -90,19 +89,6 @@ export class PlayScene extends ArcadeScene {
     this.hint = txt(this, width / 2, 330, t('tapDrop'), { size: 34 }).setScrollFactor(0).setDepth(50);
     this.tweens.add({ targets: this.hint, alpha: 0.3, duration: 600, yoyo: true, repeat: -1 });
 
-    if (!this.textures.exists('st-heart')) {
-      const g = this.make.graphics({ x: 0, y: 0 }, false);
-      for (const [key, fill] of [['st-heart', 0xec3013], ['st-heart-empty', 0x3a3550]] as const) {
-        g.clear();
-        g.fillStyle(0x000000).fillCircle(11, 13, 11).fillCircle(29, 13, 11).fillTriangle(1, 18, 39, 18, 20, 38);
-        g.fillStyle(fill).fillCircle(11, 13, 8).fillCircle(29, 13, 8).fillTriangle(4, 16, 36, 16, 20, 34);
-        g.generateTexture(key, 40, 40);
-      }
-      g.destroy();
-    }
-    for (let i = 0; i < MAX_LIVES; i++) {
-      this.hearts.push(this.add.image(width - 150 - (MAX_LIVES - 1 - i) * 42, 88, 'st-heart').setScale(0.9).setScrollFactor(0).setDepth(9000));
-    }
 
     this.spawnNext();
 
@@ -117,9 +103,9 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     this.bigNum.setText(String(this.floors));
-    this.hearts.forEach((h, i) => h.setTexture(i < this.lives ? 'st-heart' : 'st-heart-empty'));
+    this.hud.setLives(this.lives, MAX_LIVES);
   }
 
   private makeBlock(x: number, y: number, w: number, color: number): Block {
@@ -262,7 +248,6 @@ export class PlayScene extends ArcadeScene {
       this.tweens.add({ targets: b.c, angle: (i % 2 ? 2 : -2), duration: 90, yoyo: true, repeat: 3 });
     });
     this.updateHud();
-    this.tweens.add({ targets: this.hearts[Math.max(0, this.lives)], scale: 1.5, duration: 120, yoyo: true });
     if (this.lives <= 0) {
       this.endGame({ title: t('down'), delay: 1300 });
       return;

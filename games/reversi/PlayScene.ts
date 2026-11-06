@@ -136,7 +136,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLives(this.lives);
     // the level sits in the info line: in English the centre slot ran into the lives
     if (this.online) this.info.setText(t('vs', { name: net.peerName || t('opponent') }));
     else this.info.setText(`${t('level')} ${this.level + 1}   ${t('rival', { name: t('d' + this.level) })}   ${t('streak', { n: this.streak })}`);

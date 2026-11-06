@@ -323,7 +323,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLives(this.lives);
     this.hud.setCenter(this.wave ? `${t('wave')} ${this.wave}` : '');
   }
 

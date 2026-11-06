@@ -38,7 +38,6 @@ export class PlayScene extends ArcadeScene {
   private basket!: Phaser.GameObjects.Image;
   private magnetFx!: Phaser.GameObjects.Arc;
   private sparks!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private hearts: Phaser.GameObjects.Image[] = [];
   private comboText!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
   private items: Item[] = [];
@@ -54,7 +53,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     const { width, height } = this.scale;
-    this.items = []; this.hearts = [];
+    this.items = [];
     this.lives = MAX_LIVES; this.level = 1; this.catches = 0; this.combo = 0;
     this.spawnCd = 1; this.magnet = 0; this.hurtT = 0; this.walkT = 0; this.rainT = 0;
 
@@ -83,7 +82,6 @@ export class PlayScene extends ArcadeScene {
       tint: [0xffd23f, 0xffffff], blendMode: 'ADD', emitting: false,
     }).setDepth(20);
 
-    for (let i = 0; i < MAX_LIVES; i++) this.hearts.push(this.add.image(44 + i * 50, 92, 'cc-heart').setScale(0.36).setScrollFactor(0).setDepth(9000));
     this.comboText = txt(this, width - 130, 92, '', { title: true, size: 26, color: '#ffd23f' }).setOrigin(1, 0.5).setDepth(9000);
     // touch: floating joystick anywhere on the screen, read as axisX
     this.controls = new Controls(this, { joystick: true });
@@ -98,8 +96,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('level')} ${this.level}`);
-    this.hearts.forEach((h, i) => h.setTexture(i < this.lives ? 'cc-heart' : 'cc-heart-empty'));
+    this.hud.setLevel(this.level);
+    this.hud.setLives(this.lives, MAX_LIVES);
     this.comboText.setText(this.mult > 1 ? `x${this.mult}` : '');
   }
 
@@ -283,7 +281,6 @@ export class PlayScene extends ArcadeScene {
     if (this.lives === 1) this.sfx('low', { volume: 0.45, delay: 0.7 });
     shake(this, 0.022, 320);
     softFlash(this, 0xec3013, 160);
-    this.tweens.add({ targets: this.hearts[this.lives], scale: 0.6, duration: 120, yoyo: true });
     this.updateHud();
     if (this.lives <= 0) {
       this.player.setTexture('cc-hero-hit');

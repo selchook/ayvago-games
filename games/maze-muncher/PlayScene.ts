@@ -114,7 +114,6 @@ export class PlayScene extends ArcadeScene {
   private fruitsShown = 0;
   private extraGiven = false;
   private banner!: Phaser.GameObjects.Text;
-  private livesGfx!: Phaser.GameObjects.Graphics;
   private levelIcons: Phaser.GameObjects.Image[] = [];
   private controls!: Controls;
   private stick!: StickDir;
@@ -136,7 +135,6 @@ export class PlayScene extends ArcadeScene {
       this.ghosts.push({ id: i, x: 0, y: 0, dx: 0, dy: 0, state: 'house', scared: false, release: 0, homeX: 9, body, eyes });
     }
     this.banner = txt(this, cx(9), cy(11), '', { title: true, size: 26, color: '#ffd23f' }).setDepth(20);
-    this.livesGfx = this.add.graphics().setDepth(5);
 
     this.bindInput();
     this.startLevel(true);
@@ -198,11 +196,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('level')} ${this.level}`);
-    this.livesGfx.clear();
-    for (let i = 0; i < this.lives - 1; i++) {
-      this.livesGfx.fillStyle(0xffd23f).slice(36 + i * 44, 1236, 16, Phaser.Math.DegToRad(210), Phaser.Math.DegToRad(150), false).fillPath();
-    }
+    this.hud.setLevel(this.level);
+    this.hud.setLives(this.lives);
   }
 
   // ---------- drawing ----------

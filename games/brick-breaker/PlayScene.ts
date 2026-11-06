@@ -34,7 +34,6 @@ export class PlayScene extends ArcadeScene {
   private stuckT = 0;
   private busy = false;
   private hint!: Phaser.GameObjects.Text;
-  private lifeIcons: Phaser.GameObjects.Image[] = [];
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
   private padGlow!: Phaser.GameObjects.Image;
   private danger!: Phaser.GameObjects.Graphics;
@@ -46,7 +45,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     const { width, height } = this.scale;
-    this.bricks = []; this.balls = []; this.drops = []; this.lifeIcons = [];
+    this.bricks = []; this.balls = []; this.drops = [];
     this.lives = 3; this.level = 0; this.wideT = 0; this.slowT = 0; this.combo = 0; this.hits = 0;
     this.targetX = null; this.stuckT = 0; this.busy = false; this.paddleW = 150;
 
@@ -88,18 +87,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('level')} ${this.level + 1}`);
-    // lives as little paddles along the bottom edge
-    while (this.lifeIcons.length < this.lives) {
-      const i = this.lifeIcons.length;
-      const img = this.add.image(FIELD_L + 50 + i * 76, 1232, 'paddle').setDisplaySize(64, 16).setDepth(10).setScale(0);
-      this.tweens.add({ targets: img, scaleX: 64 / img.width, scaleY: 16 / img.height, duration: 250, ease: 'Back.easeOut' });
-      this.lifeIcons.push(img);
-    }
-    while (this.lifeIcons.length > Math.max(0, this.lives)) {
-      const img = this.lifeIcons.pop()!;
-      this.tweens.add({ targets: img, alpha: 0, y: img.y + 30, duration: 300, onComplete: () => img.destroy() });
-    }
+    this.hud.setLevel(this.level + 1);
+    this.hud.setLives(this.lives);
   }
 
   private setPaddleWidth(w: number): void {

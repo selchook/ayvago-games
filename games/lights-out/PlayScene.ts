@@ -148,10 +148,11 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setCenter(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     const left = this.maxMoves - this.moves;
     this.movesText.setText(`${t('moves')}: ${left}`).setColor(left <= 2 ? '#ec3013' : '#ffd23f');
-    this.parText.setText(`${t('par')}: ${this.par}   ${t('lives')}: ${Math.max(0, this.lives)}`);
+    this.parText.setText(`${t('par')}: ${this.par}`);
+    this.hud.setLives(this.lives);
   }
 
   private toggleCross(i: number, arr: boolean[]): number[] {

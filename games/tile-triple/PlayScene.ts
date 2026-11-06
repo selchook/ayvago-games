@@ -245,7 +245,7 @@ export class PlayScene extends ArcadeScene {
 
   private refreshUi(): void {
     const left = this.tiles.filter((x) => x.onBoard || x.inTray).length;
-    this.hud.setRight(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     this.progress.width = (this.scale.width - 52) * (this.totalTiles ? left / this.totalTiles : 0);
     this.undoBtn.setText(`${t('undo')} ${this.undos}`).setAlpha(this.undos > 0 ? 1 : 0.45);
     this.shuffleBtn.setText(`${t('shuffle')} ${this.shuffles}`).setAlpha(this.shuffles > 0 ? 1 : 0.45);

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { ArcadeScene, burst, shake, flash, t, rng, COLORS } from '@core';
 import { ftxt as txt, fpopup as popup, freshTextCanvases } from './fasttext';
-import { makeField, makeFx, makeGate, makeHeart, makeSidebar, makeTopBar } from './art';
+import { makeField, makeFx, makeGate, makeSidebar, makeTopBar } from './art';
 
 const CELL = 80, COLS = 13, ROWS = 8, TOP = 80, FIELD_W = COLS * CELL; // 1040 x 640 field
 const SIDE = FIELD_W + 120;                                               // sidebar centre x
@@ -74,8 +74,6 @@ export class PlayScene extends ArcadeScene {
   private countdownMax = 20;
   private slots: Slot[] = [];
   private goldIcon!: Phaser.GameObjects.Image;
-  private livesText!: Phaser.GameObjects.Text;
-  private heart!: Phaser.GameObjects.Image;
   private prog!: Phaser.GameObjects.Graphics;
   private ghostBase!: Phaser.GameObjects.Image;
   private ghostHead!: Phaser.GameObjects.Image;
@@ -93,7 +91,7 @@ export class PlayScene extends ArcadeScene {
     this.spawnT = 0; this.selType = 0; this.selTower = null; this.cur = { c: 1, r: 3 }; this.cursorOn = false;
     this.nextQueue = this.buildWave(1);
 
-    makeFx(this); makeGate(this); makeHeart(this);
+    makeFx(this); makeGate(this);
     makeSidebar(this, this.scale.width - FIELD_W, this.scale.height - TOP);
     makeTopBar(this, this.scale.width, TOP);
     this.buildMap();
@@ -109,10 +107,6 @@ export class PlayScene extends ArcadeScene {
     this.buildSidebar();
     this.add.image(0, 0, 'td-top').setOrigin(0).setDepth(80);
     this.prog = this.add.graphics().setDepth(81);
-    // lives: a heart icon instead of a text label
-    this.hud.setRight('');
-    this.livesText = txt(this, this.scale.width - 120, 24, '', { title: true, size: 22, shadow: false }).setOrigin(1, 0).setDepth(9000);
-    this.heart = this.add.image(0, 35, 'td-heart').setDepth(9000);
 
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (p.x < FIELD_W && p.y >= TOP) { this.cur = this.cellAt(p.x, p.y); this.cursorOn = true; }
@@ -268,8 +262,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.livesText.setText(String(Math.max(0, this.lives))).setColor(this.lives <= 5 ? '#ff6a4d' : '#ffffff');
-    this.heart.setX(this.livesText.x - this.livesText.width - 24);
+    this.hud.setLives(this.lives);
     this.hud.setCenter(t('waveOf', { n: Math.max(1, this.wave), m: WAVES }));
   }
 

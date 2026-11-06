@@ -296,7 +296,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateInfo(): void {
-    this.hud.setRight(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     this.info.setText(`${t('moves')} ${this.moves}  ·  ${t('par')} ${this.lv.par}`);
     this.info.setColor(this.moves > this.lv.par ? '#ff8a1f' : '#f3f2f2');
   }

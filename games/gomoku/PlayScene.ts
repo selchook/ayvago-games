@@ -176,7 +176,7 @@ export class PlayScene extends ArcadeScene {
     this.nameB.setText(this.mine === 1 ? t('you') : other);
     this.nameW.setText(this.mine === 2 ? t('you') : other);
     if (this.online) { this.info.setText(t('vs', { name: net.peerName || t('opponent') })); return; }
-    this.hud.setRight(`${t('lives')} ${Math.max(0, this.lives)}`);
+    this.hud.setLives(this.lives);
     // the level sits in the info line: the HUD centre slot collides with LIVES in English
     this.info.setText(`${t('lv', { n: this.level + 1 })} · ${t('rival', { name: t('d' + this.level) })} · ${t('streak', { n: this.streak })}`);
   }

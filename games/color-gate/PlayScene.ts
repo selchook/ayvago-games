@@ -72,32 +72,17 @@ export class PlayScene extends ArcadeScene {
   private lives = MAX_LIVES;
   private invuln = 0;
   private restY = 0;          // where the ball waits before the first hop (start / respawn point)
-  private hearts: Phaser.GameObjects.Image[] = [];
 
   createGame(): void {
     const { width, height } = this.scale;
     this.gates = []; this.vy = 0; this.started = false; this.dead = false;
     this.made = 0; this.passed = 0; this.level = 1; this.stars = 0; this.clock = 0;
-    this.lives = MAX_LIVES; this.invuln = 0; this.hearts = [];
+    this.lives = MAX_LIVES; this.invuln = 0;
     this.colorIdx = rng.int(0, 3);
     this.cameras.main.setScroll(0, 0);
 
     makeArt(this, PALETTE);
-    if (!this.textures.exists('cg-heart')) {
-      const g = this.make.graphics({ x: 0, y: 0 }, false);
-      for (const [key, fill] of [['cg-heart', 0xec3013], ['cg-heart-empty', 0x3a3550]] as const) {
-        g.clear();
-        g.fillStyle(0x000000).fillCircle(11, 13, 11).fillCircle(29, 13, 11).fillTriangle(1, 18, 39, 18, 20, 38);
-        g.fillStyle(fill).fillCircle(11, 13, 8).fillCircle(29, 13, 8).fillTriangle(4, 16, 36, 16, 20, 34);
-        g.generateTexture(key, 40, 40);
-      }
-      g.destroy();
-    }
-    this.add.image(width - 192, 88, glass(this, 150, 50)).setScrollFactor(0).setDepth(8990);
     this.add.image(88, 92, glass(this, 120, 50)).setScrollFactor(0).setDepth(8990);
-    for (let i = 0; i < MAX_LIVES; i++) {
-      this.hearts.push(this.add.image(width - 150 - (MAX_LIVES - 1 - i) * 42, 88, 'cg-heart').setScale(0.9).setScrollFactor(0).setDepth(9000));
-    }
     // a night sky fixed to the screen and two star layers drifting at different speeds
     this.add.image(0, 0, 'cg-sky').setOrigin(0).setScrollFactor(0).setDepth(-12);
     this.bg = this.add.tileSprite(0, 0, width, height, 'cg-stars-far').setOrigin(0).setScrollFactor(0).setDepth(-11);
@@ -137,9 +122,9 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateHud(): void {
-    this.hud.setRight(`${t('level')} ${this.level}`);
+    this.hud.setLevel(this.level);
     this.starText.setText(String(this.stars));
-    this.hearts.forEach((h, i) => h.setTexture(i < this.lives ? 'cg-heart' : 'cg-heart-empty'));
+    this.hud.setLives(this.lives, MAX_LIVES);
   }
 
   private hop(): void {
@@ -416,8 +401,6 @@ export class PlayScene extends ArcadeScene {
     softFlash(this, 0xec3013, 160);
     this.lives--;
     this.updateHud();
-    const heart = this.hearts[Math.max(0, this.lives)];
-    this.tweens.add({ targets: heart, scale: 1.5, duration: 120, yoyo: true });
     if (this.lives <= 0) {
       this.endGame({ title: reason, delay: 1000 });
       return;
