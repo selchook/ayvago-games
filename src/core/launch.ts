@@ -13,6 +13,7 @@ import type { PlatformAdapter } from './ayvago/adapter';
 import { GameDefinition, setCurrentGame, gameSize } from './registry';
 import { BootScene, MenuScene, PauseScene, GameOverScene, setIntroPromise } from './scenes';
 import { setHostScanlines, themeHasScanlines } from './fx';
+import { adoptPlatformBest } from './storage';
 
 declare global {
   interface Window {
@@ -75,6 +76,9 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   const [adapter] = await Promise.all([platform, fontsReady()]);
   if (adapter.name === 'ayvago') setLang(adapter.locale.toLowerCase().startsWith('tr') ? 'tr' : 'en');
   setHostScanlines(themeHasScanlines(adapter.config?.theme));
+  // The platform's record wins over this browser's (absent = the platform does not know).
+  const platformBest = adapter.config?.best;
+  if (platformBest !== undefined) adoptPlatformBest(def.meta.id, platformBest);
   wireNet();
   document.documentElement.lang = getLang();
   document.title = `${loc(def.meta.title)} · Ayvago Games`;

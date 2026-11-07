@@ -23,6 +23,15 @@ export function getBest(gameId: string): number {
   return storage.get<number>(`best:${gameId}`, 0);
 }
 
+/**
+ * Takes the player's record from ayvago.com (protocol 2.4, GHA_START `best`) as this browser's
+ * best, so "NEW BEST" matches the platform on every device and after an origin change.
+ * null means the player has no score yet.
+ */
+export function adoptPlatformBest(gameId: string, best: number | null): void {
+  storage.set(`best:${gameId}`, Math.max(0, best ?? 0));
+}
+
 /** Stores the score if it beats the best; returns true on a new record. */
 export function submitBest(gameId: string, score: number): boolean {
   if (score > getBest(gameId)) {
