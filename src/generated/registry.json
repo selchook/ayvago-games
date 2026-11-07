@@ -1,5 +1,5 @@
 {
-  "count": 81,
+  "count": 82,
   "games": [
     {
       "id": "air-hockey",
@@ -2003,6 +2003,40 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/sky-jumper.png"
+    },
+    {
+      "id": "sky-road",
+      "title": {
+        "tr": "Gök Yolu",
+        "en": "Sky Road"
+      },
+      "description": {
+        "tr": "Bulutların üstündeki blok yolda arabanla son sürat ilerle! Boşlukların üstünden atla, kasalardan ve dikenlerden kaç, altınları topla. Yol uzadıkça hız artar.",
+        "en": "Race your car along a road of floating blocks above the clouds! Jump the gaps, dodge crates and spikes, grab the coins. The further you go, the faster it gets."
+      },
+      "howTo": {
+        "tr": "Sol başparmakla direksiyonu çevir, sağdaki tuşla zıpla. Klavye: ←/→ ya da A/D ile yön, Boşluk veya ↑ ile zıpla.",
+        "en": "Steer with your left thumb and jump with the button on the right. Keys: ←/→ or A/D to steer, Space or ↑ to jump."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Kenney Car Kit and Platformer Kit (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-11-07"
+      },
+      "thumb": "thumbs/sky-road.png"
     },
     {
       "id": "slide-puzzle",

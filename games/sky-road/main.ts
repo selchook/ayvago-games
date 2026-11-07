@@ -40,8 +40,8 @@ launch({
     stage.add(block, car);
     world.scene.add(stage);
     // looking above the car puts it in the lower part of the screen, under the buttons
-    world.camera.position.set(0, 1.6, 12);
-    world.camera.lookAt(0, 2.6, 0);
+    world.camera.position.set(0, 1.6, 16);
+    world.camera.lookAt(0, 4.5, 0);
     world.onFrame = (dt) => {
       stage.rotation.y += dt * 0.6;
       stage.position.y = Math.sin(performance.now() / 700) * 0.08;
