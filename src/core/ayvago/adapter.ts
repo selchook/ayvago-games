@@ -10,7 +10,7 @@
  * Update vendored copies by copying this file; do not edit them in place.
  */
 
-export const ADAPTER_VERSION = '2.2.0';
+export const ADAPTER_VERSION = '2.3.0';
 export const PROTOCOL_VERSION = 2;
 
 /** Origins allowed to host games. "*" matches one DNS label segment (letters, digits, "-"). */
@@ -30,6 +30,16 @@ export type ThemeInfo = {
   tokens: Record<string, string>;
 };
 
+/** Protocol 2.3: one seat at a table game (up to four players, empty seats taken by bots). */
+export type SeatInfo = {
+  /** Display name: the player's name, or the bot's name chosen by the platform. */
+  name: string;
+  /** The seat's character id, when its player chose one (never set for bots). */
+  character?: string;
+  /** A bot seat: the host's game plays it. */
+  bot: boolean;
+};
+
 export type StartConfig = ThemeInfo & {
   mode: 'solo' | 'multiplayer';
   isHost: boolean;
@@ -44,6 +54,11 @@ export type StartConfig = ThemeInfo & {
   character?: string;
   /** Protocol 2.2, multiplayer only: the other player's character. */
   peerCharacter?: string;
+  /**
+   * Protocol 2.3, table games only: every seat in order (`playerCount` entries; this player sits
+   * at `playerIndex`, the host at 0). Two-player rooms leave it out.
+   */
+  seats?: SeatInfo[];
   locale: string;
   adsEnabled: boolean;
   protocol: number;
@@ -55,27 +70,35 @@ export type GameResult = { score?: number; won?: boolean; message?: string };
 export const MAX_MOVE_SIZE = 16_000;
 
 /**
- * Two-player online play (protocol 2.1). The platform owns the room and the connection
- * (WebRTC, relayed through TURN or the database when needed); the game only exchanges moves.
- * Messages: GHA_MOVE_OUT { data } game → platform, GHA_MOVE_IN { data } platform → game,
- * GHA_PEER_LEAVE / GHA_PEER_JOIN { name } when the other player drops out or comes back.
+ * Online play. Two-player rooms (protocol 2.1) and, since protocol 2.3, tables of up to four
+ * seats where the host fills empty seats with bots. The platform owns the room and the
+ * connection; the game only exchanges moves.
+ * Messages: GHA_MOVE_OUT { data } game → platform (sent to every other player),
+ * GHA_MOVE_IN { data, from? } platform → game, GHA_PEER_LEAVE { seat? } / GHA_PEER_JOIN
+ * { name, seat? } when a player drops out or comes back. `from` and `seat` are seat indexes;
+ * two-player rooms leave them out and mean the other player.
  */
 export interface Multiplayer {
   /** True when the platform started this game for an online match. */
   readonly active: boolean;
   /** The room creator; by convention the host runs authoritative simulations. */
   readonly isHost: boolean;
-  /** 0 for the host, 1 for the guest. */
+  /** This player's seat: 0 for the host, 1 for the guest (up to 3 at a table). */
   readonly playerIndex: number;
+  /** Protocol 2.3, table games: every seat in order; empty in two-player rooms and offline. */
+  readonly seats: readonly SeatInfo[];
   /** The other player's display name ('' when unknown). */
   readonly peerName: string;
   /** The other player's character id ('' when unknown, protocol 2.2). */
   readonly peerCharacter: string;
-  /** Sends a JSON-serializable move to the other player (dropped above MAX_MOVE_SIZE). */
+  /** Sends a JSON-serializable move to the other players (dropped above MAX_MOVE_SIZE). */
   send(data: unknown): void;
-  onMove(callback: (data: unknown) => void): () => void;
-  onPeerLeave(callback: () => void): () => void;
-  onPeerJoin(callback: (name: string) => void): () => void;
+  /** A move from another player; `from` is the sender's seat. */
+  onMove(callback: (data: unknown, from: number) => void): () => void;
+  /** A player dropped out; `seat` is their seat. */
+  onPeerLeave(callback: (seat: number) => void): () => void;
+  /** A player came back (or took a seat); `seat` is their seat. */
+  onPeerJoin(callback: (name: string, seat: number) => void): () => void;
 }
 
 export interface PlatformAdapter {
@@ -205,6 +228,7 @@ const OFFLINE: Multiplayer = {
   playerIndex: 0,
   peerName: '',
   peerCharacter: '',
+  seats: [],
   send: () => {},
   onMove: () => () => {},
   onPeerLeave: () => () => {},
@@ -269,9 +293,9 @@ class AyvagoAdapter implements PlatformAdapter {
   private mute = new Emitter<boolean>();
   private theme = new Emitter<ThemeInfo>();
   private localeChange = new Emitter<string>();
-  private moveIn = new Emitter<unknown>();
-  private peerLeave = new Emitter<void>();
-  private peerJoin = new Emitter<string>();
+  private moveIn = new Emitter<[unknown, number]>();
+  private peerLeave = new Emitter<number>();
+  private peerJoin = new Emitter<[string, number]>();
   readonly multiplayer: Multiplayer;
 
   constructor(
@@ -299,14 +323,17 @@ class AyvagoAdapter implements PlatformAdapter {
       get peerCharacter() {
         return self.currentConfig.peerCharacter ?? '';
       },
+      get seats() {
+        return self.currentConfig.seats ?? [];
+      },
       send: (data: unknown) => {
         if (self.currentConfig.mode !== 'multiplayer') return;
         if (moveFits(data)) self.send('GHA_MOVE_OUT', { data });
         else console.warn('[ayvago] move dropped: not JSON or larger than', MAX_MOVE_SIZE);
       },
-      onMove: (callback) => self.moveIn.add(callback),
+      onMove: (callback) => self.moveIn.add(([data, from]) => callback(data, from)),
       onPeerLeave: (callback) => self.peerLeave.add(callback),
-      onPeerJoin: (callback) => self.peerJoin.add(callback),
+      onPeerJoin: (callback) => self.peerJoin.add(([name, seat]) => callback(name, seat)),
     };
     env.listen((data, messageOrigin, fromParent) => {
       if (fromParent && messageOrigin === origin) this.handle(data);
@@ -319,6 +346,14 @@ class AyvagoAdapter implements PlatformAdapter {
 
   get locale(): string {
     return this.currentLocale;
+  }
+
+  /** A seat index from the platform; two-player rooms send none, which means the other player. */
+  private seatOf(value: unknown): number {
+    const count = Math.max(2, this.currentConfig.playerCount);
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < count
+      ? value
+      : 1 - Math.min(1, this.currentConfig.playerIndex);
   }
 
   private send(type: string, payload: Record<string, unknown> = {}): void {
@@ -359,13 +394,13 @@ class AyvagoAdapter implements PlatformAdapter {
         }
         break;
       case 'GHA_MOVE_IN':
-        if ('data' in msg) this.moveIn.emit(msg.data);
+        if ('data' in msg) this.moveIn.emit([msg.data, this.seatOf(msg.from)]);
         break;
       case 'GHA_PEER_LEAVE':
-        this.peerLeave.emit();
+        this.peerLeave.emit(this.seatOf(msg.seat));
         break;
       case 'GHA_PEER_JOIN':
-        this.peerJoin.emit(typeof msg.name === 'string' ? msg.name : '');
+        this.peerJoin.emit([typeof msg.name === 'string' ? msg.name : '', this.seatOf(msg.seat)]);
         break;
       case 'GHA_AD_RESULT': {
         const settle = typeof msg.id === 'number' ? this.pendingAds.get(msg.id) : undefined;

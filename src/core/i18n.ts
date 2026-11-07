@@ -14,6 +14,7 @@ const common: Strings = {
     next: 'SONRAKİ', ready: 'HAZIR', go: 'BAŞLA!', wave: 'DALGA', combo: 'KOMBO',
     online: 'ÇEVRİMİÇİ MAÇ', vs: 'Rakip: {name}', opponent: 'Rakip', waitHost: 'Oda sahibinin başlatması bekleniyor…',
     rematch: 'RÖVANŞ', youLose: 'KAYBETTİN', draw: 'BERABERE', peerLeft: 'Rakip ayrıldı', peerBack: 'Rakip geri döndü', nextFirst: 'Sonraki turu başlatan: {name}',
+    atTable: 'Masada: {names}', seatLeft: '{name} ayrıldı, yerine bot oynuyor', seatBack: '{name} geri döndü',
     yourTurn: 'SIRA SENDE', theirTurn: 'RAKİBİN SIRASI', you: 'SEN',
   },
   en: {
@@ -24,6 +25,7 @@ const common: Strings = {
     next: 'NEXT', ready: 'READY', go: 'GO!', wave: 'WAVE', combo: 'COMBO',
     online: 'ONLINE MATCH', vs: 'Opponent: {name}', opponent: 'Opponent', waitHost: 'Waiting for the host to start…',
     rematch: 'REMATCH', youLose: 'YOU LOSE', draw: 'DRAW', peerLeft: 'Your opponent left', peerBack: 'Your opponent is back', nextFirst: 'Next round starts with: {name}',
+    atTable: 'At the table: {names}', seatLeft: '{name} left; a bot plays their seat', seatBack: '{name} is back',
     yourTurn: 'YOUR TURN', theirTurn: "THEIR TURN", you: 'YOU',
   },
 };
