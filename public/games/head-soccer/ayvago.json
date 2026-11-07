@@ -21,7 +21,7 @@
     "soccer",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/head-soccer/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/head-soccer/",
   "orientation": "landscape",
   "input": [
     "touch",

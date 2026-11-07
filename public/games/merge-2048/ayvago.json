@@ -19,7 +19,7 @@
     "2048",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/merge-2048/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/merge-2048/",
   "orientation": "portrait",
   "input": [
     "touch",

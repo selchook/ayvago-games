@@ -19,7 +19,7 @@
     "solitaire",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/solitaire/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/solitaire/",
   "orientation": "portrait",
   "input": [
     "touch",

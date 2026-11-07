@@ -20,7 +20,7 @@
     "merge",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/hex-merge/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/hex-merge/",
   "orientation": "portrait",
   "input": [
     "touch",

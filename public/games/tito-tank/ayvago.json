@@ -21,7 +21,7 @@
     "tank",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/tito-tank/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/tito-tank/",
   "orientation": "landscape",
   "input": [
     "touch",

@@ -19,7 +19,7 @@
     "archery",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/archery/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/archery/",
   "orientation": "landscape",
   "input": [
     "touch",

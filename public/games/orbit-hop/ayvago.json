@@ -19,7 +19,7 @@
     "hop",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/orbit-hop/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/orbit-hop/",
   "orientation": "portrait",
   "input": [
     "touch",

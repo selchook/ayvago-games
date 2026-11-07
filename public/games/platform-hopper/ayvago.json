@@ -20,7 +20,7 @@
     "hopper",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/platform-hopper/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/platform-hopper/",
   "orientation": "landscape",
   "input": [
     "touch",

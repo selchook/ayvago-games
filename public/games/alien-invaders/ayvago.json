@@ -20,7 +20,7 @@
     "invaders",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/alien-invaders/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/alien-invaders/",
   "orientation": "portrait",
   "input": [
     "touch",

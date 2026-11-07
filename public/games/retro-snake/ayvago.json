@@ -19,7 +19,7 @@
     "retro",
     "snake"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/retro-snake/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/retro-snake/",
   "orientation": "portrait",
   "input": [
     "touch",

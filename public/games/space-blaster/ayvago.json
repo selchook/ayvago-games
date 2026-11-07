@@ -20,7 +20,7 @@
     "blaster",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/space-blaster/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/space-blaster/",
   "orientation": "portrait",
   "input": [
     "touch",

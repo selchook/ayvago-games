@@ -19,7 +19,7 @@
     "road",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/color-road/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/color-road/",
   "orientation": "portrait",
   "input": [
     "touch",

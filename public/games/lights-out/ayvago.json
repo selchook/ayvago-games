@@ -19,7 +19,7 @@
     "out",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/lights-out/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/lights-out/",
   "orientation": "portrait",
   "input": [
     "touch",

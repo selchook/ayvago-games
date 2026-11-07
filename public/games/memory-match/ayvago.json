@@ -21,7 +21,7 @@
     "match",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/memory-match/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/memory-match/",
   "orientation": "portrait",
   "input": [
     "touch",

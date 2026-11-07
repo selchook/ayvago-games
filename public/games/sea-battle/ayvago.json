@@ -21,7 +21,7 @@
     "battle",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/sea-battle/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/sea-battle/",
   "orientation": "portrait",
   "input": [
     "touch",

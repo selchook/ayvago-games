@@ -19,7 +19,7 @@
     "jumper",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/sky-jumper/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/sky-jumper/",
   "orientation": "portrait",
   "input": [
     "touch",

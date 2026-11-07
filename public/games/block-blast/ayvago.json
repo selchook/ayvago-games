@@ -19,7 +19,7 @@
     "blast",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/block-blast/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/block-blast/",
   "orientation": "portrait",
   "input": [
     "touch",

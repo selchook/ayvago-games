@@ -20,7 +20,7 @@
     "runner",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/pixel-runner/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/pixel-runner/",
   "orientation": "landscape",
   "input": [
     "touch",

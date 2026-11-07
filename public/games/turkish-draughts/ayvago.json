@@ -21,7 +21,7 @@
     "draughts",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/turkish-draughts/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/turkish-draughts/",
   "orientation": "portrait",
   "input": [
     "touch",

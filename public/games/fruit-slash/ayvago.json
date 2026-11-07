@@ -20,7 +20,7 @@
     "slash",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/fruit-slash/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/fruit-slash/",
   "orientation": "portrait",
   "input": [
     "touch",

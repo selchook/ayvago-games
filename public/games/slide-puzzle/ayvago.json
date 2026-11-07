@@ -20,7 +20,7 @@
     "puzzle",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/slide-puzzle/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/slide-puzzle/",
   "orientation": "portrait",
   "input": [
     "touch",

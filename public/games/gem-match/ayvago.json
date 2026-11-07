@@ -19,7 +19,7 @@
     "match",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/gem-match/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/gem-match/",
   "orientation": "portrait",
   "input": [
     "touch",

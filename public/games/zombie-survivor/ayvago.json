@@ -20,7 +20,7 @@
     "survivor",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/zombie-survivor/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/zombie-survivor/",
   "orientation": "landscape",
   "input": [
     "touch",

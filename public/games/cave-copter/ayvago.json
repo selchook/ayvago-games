@@ -20,7 +20,7 @@
     "copter",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/cave-copter/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/cave-copter/",
   "orientation": "portrait",
   "input": [
     "touch",

@@ -21,7 +21,7 @@
     "push",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/sumo-push/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/sumo-push/",
   "orientation": "portrait",
   "input": [
     "touch",

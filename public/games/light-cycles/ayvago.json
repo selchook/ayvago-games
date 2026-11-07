@@ -21,7 +21,7 @@
     "cycles",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/light-cycles/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/light-cycles/",
   "orientation": "portrait",
   "input": [
     "touch",

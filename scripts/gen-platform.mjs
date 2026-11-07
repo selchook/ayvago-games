@@ -14,7 +14,7 @@ import { format } from 'prettier';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const arg = (name, def) => (args.includes(name) ? args[args.indexOf(name) + 1] : def);
-const ORIGIN = (arg('--origin', process.env.AYVAGO_GAMES_ORIGIN) ?? 'https://ayvago-games.vercel.app').replace(/\/$/, '');
+const ORIGIN = (arg('--origin', process.env.AYVAGO_GAMES_ORIGIN) ?? 'https://ayvago-games-nine.vercel.app').replace(/\/$/, '');
 const REPO = 'selchook/ayvago-games';
 // The launch date of the catalog; games added later carry their own date in game.json.
 const ADDED_AT = arg('--added-at', '2026-10-27');

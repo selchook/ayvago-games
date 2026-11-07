@@ -20,7 +20,7 @@
     "frenzy",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/fish-frenzy/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/fish-frenzy/",
   "orientation": "landscape",
   "input": [
     "touch",

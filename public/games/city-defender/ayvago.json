@@ -20,7 +20,7 @@
     "defender",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/city-defender/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/city-defender/",
   "orientation": "portrait",
   "input": [
     "touch",

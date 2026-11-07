@@ -20,7 +20,7 @@
     "bridge",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/hex-bridge/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/hex-bridge/",
   "orientation": "portrait",
   "input": [
     "touch",

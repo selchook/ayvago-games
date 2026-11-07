@@ -70,7 +70,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
   - `genres` become the platform categories (first genre = primary category; the game is listed under all of them). Optional overrides in `game.json` under `platform: { ageRating, scoring, featured, addedAt }` (`featured` puts the game in the ayvago.com home spotlight; `addedAt` is the date the game joined the catalog, written by `new-game`, and drives the platform's New shelf and badge).
 - **Store art.** `npm run store-assets` writes `public/games/<slug>/ayvago/cover-1920x1080.jpg`, `icon-512.png` and the portal thumbnails.
 - **Platform harness.** `npm run test:platform` embeds every game cross-origin from `http://localhost:3000` and checks the full GHA flow.
-- **Deployment.** One Vercel project serves everything: `vercel.json` sets `frame-ancestors` for ayvago.com and `Cross-Origin-Resource-Policy: cross-origin`. Each game's entry is `https://<origin>/games/<slug>/`; the default origin is `https://ayvago-games.vercel.app`. Pass `--origin` to `gen-platform.mjs` if the domain differs.
+- **Deployment.** One Vercel project serves everything: `vercel.json` sets `frame-ancestors` for ayvago.com and `Cross-Origin-Resource-Policy: cross-origin`. Each game's entry is `https://<origin>/games/<slug>/`; the default origin is `https://ayvago-games-nine.vercel.app` (the Vercel project under the ayvagogames account). Pass `--origin` to `gen-platform.mjs` if the domain differs.
 - **Release.** `npm run release` builds, tests (smoke + platform) and regenerates manifests and art.
 - **Adapter.** CI compares `src/core/ayvago/adapter.ts` with the platform's `packages/platform-adapter/src/adapter.ts` on `main` and fails when they differ: copy the platform's file over verbatim.
 

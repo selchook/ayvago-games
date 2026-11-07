@@ -21,7 +21,7 @@
     "four",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/connect-four/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/connect-four/",
   "orientation": "portrait",
   "input": [
     "touch",

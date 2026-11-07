@@ -19,7 +19,7 @@
     "catcher",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/coin-catcher/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/coin-catcher/",
   "orientation": "portrait",
   "input": [
     "touch",

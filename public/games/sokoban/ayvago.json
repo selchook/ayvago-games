@@ -19,7 +19,7 @@
     "sokoban",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/sokoban/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/sokoban/",
   "orientation": "portrait",
   "input": [
     "touch",

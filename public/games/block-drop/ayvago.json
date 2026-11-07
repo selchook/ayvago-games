@@ -20,7 +20,7 @@
     "drop",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/block-drop/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/block-drop/",
   "orientation": "portrait",
   "input": [
     "touch",
