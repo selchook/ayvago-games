@@ -208,7 +208,7 @@ export class PlayScene extends ArcadeScene {
 
     // the starting grid, behind the line: rivals by speed, the player on the second row
     const tk = this.track, hw = tk.half, terrain = this.arena.terrain;
-    const base = Math.min(1.26, 0.93 + 0.04 * (this.raceNo - 1));
+    const base = Math.min(1.26, 0.9 + 0.045 * (this.raceNo - 1));
     const rivals = this.trucks.filter((x) => !x.isPlayer);
     rivals.forEach((r, i) => {
       r.skill = base - i * 0.035;

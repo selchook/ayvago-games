@@ -13,8 +13,8 @@ export const SURF_GRASS = 4;
 /** Height of the berm crest and of the outfield. */
 const BERM = 0.85;
 const OUT = 0.28;
-const RAMP_H = 1.35;
-const RAMP_UP = 3.6;
+const RAMP_H = 1.6;
+const RAMP_UP = 4;
 const RAMP_DOWN = 2.8;
 const HUMP_H = 0.55;
 const HUMP_LEN = 4.6;

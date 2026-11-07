@@ -12,9 +12,12 @@ export function price(u: Upgrade, level: number): number {
   return Math.round((BASE_PRICE[u] * Math.pow(1.6, level)) / 100) * 100;
 }
 
-const DEPTH = 8000;
+// The dim backdrop sits under the HUD (score and hearts stay bright); the panel itself sits
+// over the touch controls (9500) and under the pause button (9600).
+const DIM_DEPTH = 8000;
+const DEPTH = 9550;
 
-function card(scene: Phaser.Scene, x: number, y: number, w: number, h: number, fill = 0x151b30, alpha = 0.94, r = 30): Phaser.GameObjects.Graphics {
+function card(scene: Phaser.Scene, x: number, y: number, w: number, h: number, fill = 0x151b30, alpha = 0.97, r = 30): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics({ x, y });
   g.fillStyle(0x000000, 0.3).fillRoundedRect(-w / 2, -h / 2 + 10, w, h, r);
   g.fillStyle(fill, alpha).fillRoundedRect(-w / 2, -h / 2, w, h, r);
@@ -25,6 +28,7 @@ function card(scene: Phaser.Scene, x: number, y: number, w: number, h: number, f
 /** Base for a modal panel: a dim backdrop, a container and key handling that cleans up. */
 class Panel {
   readonly root: Phaser.GameObjects.Container;
+  private dim: Phaser.GameObjects.Rectangle;
   private keyHandler: (e: KeyboardEvent) => void;
   private armed = false;
   closed = false;
@@ -32,10 +36,10 @@ class Panel {
   constructor(protected scene: Phaser.Scene, onKey: (code: string) => void) {
     const { width, height } = scene.scale;
     this.root = scene.add.container(0, 0).setDepth(DEPTH).setScrollFactor(0);
-    const dim = scene.add.rectangle(0, 0, width, height, 0x0b1020, 0.5).setOrigin(0).setInteractive();
-    this.root.add(dim);
+    this.dim = scene.add.rectangle(0, 0, width, height, 0x0b1020, 0.5).setOrigin(0).setDepth(DIM_DEPTH).setScrollFactor(0).setInteractive();
     this.root.setAlpha(0);
-    scene.tweens.add({ targets: this.root, alpha: 1, duration: 220 });
+    this.dim.setAlpha(0);
+    scene.tweens.add({ targets: [this.root, this.dim], alpha: 1, duration: 220 });
     scene.time.delayedCall(350, () => (this.armed = true));
     this.keyHandler = (e: KeyboardEvent) => {
       if (!this.armed || this.closed || e.repeat || !this.scene.scene.isActive()) return;
@@ -52,7 +56,10 @@ class Panel {
     if (this.closed) return;
     this.closed = true;
     this.scene.input.keyboard?.off('keydown', this.keyHandler);
-    this.scene.tweens.add({ targets: this.root, alpha: 0, duration: 160, onComplete: () => this.root.destroy() });
+    this.scene.tweens.add({
+      targets: [this.root, this.dim], alpha: 0, duration: 160,
+      onComplete: () => { this.root.destroy(); this.dim.destroy(); },
+    });
   }
 }
 
