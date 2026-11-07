@@ -1,5 +1,5 @@
 {
-  "count": 81,
+  "count": 82,
   "games": [
     {
       "id": "air-hockey",
@@ -1057,6 +1057,41 @@
         "addedAt": "2026-10-29"
       },
       "thumb": "thumbs/jetpack-rush.png"
+    },
+    {
+      "id": "letter-loop",
+      "title": {
+        "tr": "Harf Çemberi",
+        "en": "Letter Loop"
+      },
+      "description": {
+        "tr": "Çemberdeki harfleri birleştir, kelimeleri bul ve bulmacayı süre bitmeden doldur. Bölümler ilerledikçe çember büyür; gizli bonus kelimeler sana ipucu kazandırır!",
+        "en": "Link the letters on the wheel, find the words and fill the crossword before time runs out. The wheel grows level by level, and hidden bonus words earn you hints!"
+      },
+      "howTo": {
+        "tr": "Parmağını harflerin üzerinde gezdirip bırak. Klavye: harfleri yaz, Enter ile gönder, Boşluk karıştırır, 1 ipucu verir.",
+        "en": "Swipe across the letters and let go. Keys: type the letters, Enter to send, Space to shuffle, 1 for a hint."
+      },
+      "genres": [
+        "word",
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org",
+        "Word lists written for Ayvago"
+      ],
+      "platform": {
+        "addedAt": "2026-11-07"
+      },
+      "thumb": null
     },
     {
       "id": "light-cycles",
