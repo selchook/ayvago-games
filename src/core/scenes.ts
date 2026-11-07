@@ -3,7 +3,7 @@ import { Button, backdrop, iconButton, overlayCard } from './ui';
 import { t, loc, upper, getLang, setLang } from './i18n';
 import { txt, COLORS } from './theme';
 import { getBest, submitBest } from './storage';
-import { isMuted, isSilenced, setMuted, playSfx } from './audio';
+import { isMuted, isSilenced, setMuted, onMuteChange, playSfx } from './audio';
 import { duckMusic, menuTrack, MUSIC_VOLUME, playMusic, restoreMusic } from './music';
 import { addCrt, burst } from './fx';
 import { sdk } from './sdk';
@@ -94,10 +94,7 @@ export class MenuScene extends Phaser.Scene {
     txt(this, width / 2, howY + 24, loc(meta.howTo), { size: land ? 23 : 28, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
 
     // sound + language toggles
-    const snd = iconButton(this, 60, height - 60, isMuted() ? 'icon-audiooff' : 'icon-audioon', () => {
-      setMuted(this.game, !isMuted());
-      (snd.getData('icon') as Phaser.GameObjects.Image).setTexture(isMuted() ? 'icon-audiooff' : 'icon-audioon');
-    });
+    soundButton(this, 60, height - 60);
     if (sdk.embedded) {
       // Inside Ayvago the platform owns the locale; offer its leaderboard instead.
       iconButton(this, width - 60, height - 60, 'icon-trophy', () => sdk.openLeaderboard());
@@ -148,10 +145,7 @@ export class MenuScene extends Phaser.Scene {
     const howY = height * (land ? 0.7 : 0.66);
     txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
     txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
-    const snd = iconButton(this, 60, height - 60, isMuted() ? 'icon-audiooff' : 'icon-audioon', () => {
-      setMuted(this.game, !isMuted());
-      (snd.getData('icon') as Phaser.GameObjects.Image).setTexture(isMuted() ? 'icon-audiooff' : 'icon-audioon');
-    });
+    soundButton(this, 60, height - 60);
     if (def.crt !== false) addCrt(this);
   }
 
@@ -223,10 +217,7 @@ export class PauseScene extends Phaser.Scene {
       this.scene.stop('Play');
       this.scene.start('Menu');
     }, { color: 0x333344 });
-    const snd = iconButton(this, land ? width - 70 : width / 2, land ? height - 70 : top + gap * 2 + 130, isMuted() ? 'icon-audiooff' : 'icon-audioon', () => {
-      setMuted(this.game, !isMuted());
-      (snd.getData('icon') as Phaser.GameObjects.Image).setTexture(isMuted() ? 'icon-audiooff' : 'icon-audioon');
-    });
+    soundButton(this, land ? width - 70 : width / 2, land ? height - 70 : top + gap * 2 + 130);
     this.input.keyboard?.once('keydown-ESC', resume);
     this.input.keyboard?.once('keydown-P', resume);
   }
@@ -352,3 +343,16 @@ export class GameOverScene extends Phaser.Scene {
     });
   }
 }
+
+/**
+ * The sound toggle on the menu, pause and result screens. Its icon follows the one sound switch,
+ * also when the platform's toolbar button changes it.
+ */
+function soundButton(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Container {
+  const icon = () => (isMuted() ? 'icon-audiooff' : 'icon-audioon');
+  const snd = iconButton(scene, x, y, icon(), () => setMuted(scene.game, !isMuted()));
+  const off = onMuteChange(() => (snd.getData('icon') as Phaser.GameObjects.Image).setTexture(icon()));
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, off);
+  return snd;
+}
+
