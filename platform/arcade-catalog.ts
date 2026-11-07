@@ -155,6 +155,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'backgammon', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
     addedAt: '2026-10-30',
     multiplayer: true,
   }),
