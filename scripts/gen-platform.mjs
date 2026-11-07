@@ -67,8 +67,9 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
     entry: `${ORIGIN}/games/${slug}/`,
     orientation: m.orientation,
     input: [...new Set([...m.controls, 'mouse'])].filter((i) => ['touch', 'mouse', 'keyboard', 'gamepad'].includes(i)),
-    // game.json "multiplayer": true → online two-player matches on the platform (src/core/net.ts).
-    players: { min: 1, max: m.multiplayer ? 2 : 1 },
+    // game.json "multiplayer": true → online two-player matches on the platform (src/core/net.ts);
+    // a number (3 or 4) → a table for that many seats, bots included (protocol 2.3).
+    players: { min: 1, max: typeof m.multiplayer === 'number' ? m.multiplayer : m.multiplayer ? 2 : 1 },
     scoring: { ...DEFAULT_SCORING, ...(m.platform?.scoring ?? {}) },
     ads: { rewarded: [], interstitial: [] },
     ageRating: m.platform?.ageRating ?? '3+',
@@ -99,7 +100,8 @@ const entries = games.map(({ slug, manifest: m }) => {
   const p = platformOf(slug);
   if (p.addedAt && p.addedAt !== ADDED_AT) e.addedAt = p.addedAt;
   if (p.featured) e.featured = true;
-  if (m.players.max > 1) e.multiplayer = true;
+  if (m.players.max > 2) e.multiplayer = m.players.max;
+  else if (m.players.max > 1) e.multiplayer = true;
   return e;
 });
 const catalogTs = `import type { GameManifestInput } from './manifest';
@@ -128,8 +130,8 @@ type ArcadeEntry = Pick<
     slug: string;
     addedAt?: string;
     featured?: boolean;
-    /** Online two-player matches (rooms with an invite link). */
-    multiplayer?: boolean;
+    /** Online play: true = two-player rooms; a number = a table with that many seats (bots allowed). */
+    multiplayer?: boolean | number;
   };
 
 function arcadeGame({ slug, addedAt, featured, multiplayer, ageRating, scoring, version, ...text }: ArcadeEntry): SeedGame {
@@ -143,7 +145,7 @@ function arcadeGame({ slug, addedAt, featured, multiplayer, ageRating, scoring, 
       id: slug.replace(/-/g, ''),
       ...text,
       entry: \`\${ARCADE_ORIGIN}/games/\${slug}/\`,
-      players: { min: 1, max: multiplayer ? 2 : 1 },
+      players: { min: 1, max: typeof multiplayer === 'number' ? multiplayer : multiplayer ? 2 : 1 },
       scoring: scoring ?? ARCADE_SCORING,
       ads: { rewarded: [], interstitial: [] },
       ageRating: ageRating ?? '3+',

@@ -1,19 +1,23 @@
-// Online two-player play. The platform owns the room and the connection; a game only exchanges
-// small JSON messages with the other player through the adapter (GHA_MOVE_OUT / GHA_MOVE_IN).
+// Online play. The platform owns the room and the connection; a game only exchanges small JSON
+// messages with the other players through the adapter (GHA_MOVE_OUT / GHA_MOVE_IN).
+// Two-player rooms (protocol 2.1) and, since protocol 2.3, tables of up to four seats: the
+// platform lists the seats (`net.seats`, bots included) and says which seat sent each message;
+// the host's game plays the bot seats.
 //
 // Every message is { t: type, d: payload }. Types starting with "__" belong to the core flow
 // (round start, back to menu); games use their own short types ('move', 'input', 'state', …).
 // Seats: the host (playerIndex 0) created the room. In real-time games the host runs the
 // authoritative simulation and the guest sends its input; turn-based games alternate seats.
 import Phaser from 'phaser';
-import type { Multiplayer } from './ayvago/adapter';
+import type { Multiplayer, SeatInfo } from './ayvago/adapter';
 import { sdk } from './sdk';
 
-export type NetHandler = (data: any) => void;
+/** `from` is the sender's seat (the other player in a two-player room). */
+export type NetHandler = (data: any, from: number) => void;
 
 const handlers = new Map<string, Set<NetHandler>>();
-const leaveHandlers = new Set<() => void>();
-const joinHandlers = new Set<(name: string) => void>();
+const leaveHandlers = new Set<(seat: number) => void>();
+const joinHandlers = new Set<(name: string, seat: number) => void>();
 let wired: Multiplayer | null = null;
 let roundSeed = 0;
 // Turn order (a platform rule for every online game): the room's host takes the first turn of
@@ -27,14 +31,14 @@ let pendingStart: { seed?: number; starter?: number } | null = null;
 // Game messages that arrived while nothing listened for their type, e.g. the host's first move
 // landing before the guest's Play scene has started. Delivered to the first listener; dropped
 // when a new round starts or the players go back to the menu.
-const early = new Map<string, unknown[]>();
+const early = new Map<string, Array<[unknown, number]>>();
 const EARLY_LIMIT = 64;
 
 function mp(): Multiplayer | null {
   const m = sdk.adapter?.multiplayer ?? null;
   if (m && m.active && wired !== m) {
     wired = m;
-    m.onMove((raw) => {
+    m.onMove((raw, from) => {
       const msg = raw as { t?: unknown; d?: unknown } | null;
       if (!msg || typeof msg.t !== 'string') return;
       if (msg.t === '__start' || msg.t === '__menu') {
@@ -45,21 +49,21 @@ function mp(): Multiplayer | null {
       if (msg.t === '__start' && !listeners?.size) pendingStart = (msg.d ?? {}) as { seed?: number; starter?: number };
       if (!msg.t.startsWith('__') && !listeners?.size) {
         const queue = early.get(msg.t) ?? [];
-        queue.push(msg.d);
+        queue.push([msg.d, from]);
         if (queue.length > EARLY_LIMIT) queue.shift();
         early.set(msg.t, queue);
         return;
       }
       listeners?.forEach((h) => {
         try {
-          h(msg.d);
+          h(msg.d, from);
         } catch (error) {
           console.error('[ayvago] net handler failed', msg.t, error);
         }
       });
     });
-    m.onPeerLeave(() => leaveHandlers.forEach((h) => h()));
-    m.onPeerJoin((name) => joinHandlers.forEach((h) => h(name)));
+    m.onPeerLeave((seat) => leaveHandlers.forEach((h) => h(seat)));
+    m.onPeerJoin((name, seat) => joinHandlers.forEach((h) => h(name, seat)));
   }
   return m && m.active ? m : null;
 }
@@ -84,6 +88,18 @@ export const net = {
   },
   get peerName(): string {
     return mp()?.peerName ?? '';
+  },
+  /** Protocol 2.3: true at a table (up to four seats, bots allowed). */
+  get isTable(): boolean {
+    return (mp()?.seats.length ?? 0) > 0;
+  },
+  /** Protocol 2.3: every seat at the table in order; empty in two-player rooms and solo. */
+  get seats(): readonly SeatInfo[] {
+    return mp()?.seats ?? [];
+  },
+  /** This player's seat index (0 = host; up to 3 at a table). */
+  get playerIndex(): number {
+    return mp()?.playerIndex ?? 0;
   },
   /** Shared random seed of the current round (set by the host when the round starts). */
   get seed(): number {
@@ -135,9 +151,9 @@ export const net = {
       // After the caller's create() has finished setting up its state.
       setTimeout(() => {
         if (!set.has(handler)) return;
-        for (const data of waiting) {
+        for (const [data, from] of waiting) {
           try {
-            handler(data);
+            handler(data, from);
           } catch (error) {
             console.error('[ayvago] net handler failed', type, error);
           }
@@ -151,12 +167,12 @@ export const net = {
     const off = net.on(type, handler);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, off);
   },
-  onPeerLeave(scene: Phaser.Scene, handler: () => void): void {
+  onPeerLeave(scene: Phaser.Scene, handler: (seat: number) => void): void {
     mp();
     leaveHandlers.add(handler);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => leaveHandlers.delete(handler));
   },
-  onPeerJoin(scene: Phaser.Scene, handler: (name: string) => void): void {
+  onPeerJoin(scene: Phaser.Scene, handler: (name: string, seat: number) => void): void {
     mp();
     joinHandlers.add(handler);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => joinHandlers.delete(handler));

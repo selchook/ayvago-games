@@ -36,6 +36,12 @@ export abstract class ArcadeScene extends Phaser.Scene {
   abstract createGame(): void;
   abstract updateGame(time: number, delta: number): void;
 
+  /** Table games (protocol 2.3): a player left; the host's game may play their seat meanwhile. */
+  protected onSeatLeave(_seat: number): void {}
+
+  /** Table games (protocol 2.3): a player came back to their seat (their game restarted). */
+  protected onSeatJoin(_seat: number): void {}
+
   /** Set false in subclasses that draw their own HUD. */
   protected useHud = true;
   /** Set false to disable scanlines for this game. */
@@ -56,11 +62,24 @@ export abstract class ArcadeScene extends Phaser.Scene {
       const pauseBtn = iconButton(this, this.scale.width - 52, 52, 'icon-pause', () => this.pauseGame(), 72);
       pauseBtn.setScrollFactor(0).setDepth(9600);
     } else {
-      net.onPeerLeave(this, () => {
+      net.onPeerLeave(this, (seat) => {
+        // A table goes on: the host's game plays the empty seat (onSeatLeave).
+        if (net.isTable) {
+          this.notice(t('seatLeft', { name: net.seats[seat]?.name ?? '' }));
+          this.onSeatLeave(seat);
+          return;
+        }
         this.notice(t('peerLeft'));
         if (!this.isOver) this.endGame({ win: true, title: t('peerLeft'), delay: 300 });
       });
-      net.onPeerJoin(this, () => this.notice(t('peerBack')));
+      net.onPeerJoin(this, (name, seat) => {
+        if (net.isTable) {
+          this.notice(t('seatBack', { name }));
+          this.onSeatJoin(seat);
+          return;
+        }
+        this.notice(t('peerBack'));
+      });
       // The host restarting or leaving while this side is still playing (guest only; once the
       // round is over the result screen handles it).
       if (!net.isHost) {

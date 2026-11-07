@@ -32,8 +32,8 @@ type ArcadeEntry = Pick<
     slug: string;
     addedAt?: string;
     featured?: boolean;
-    /** Online two-player matches (rooms with an invite link). */
-    multiplayer?: boolean;
+    /** Online play: true = two-player rooms; a number = a table with that many seats (bots allowed). */
+    multiplayer?: boolean | number;
   };
 
 function arcadeGame({
@@ -56,7 +56,7 @@ function arcadeGame({
       id: slug.replace(/-/g, ''),
       ...text,
       entry: `${ARCADE_ORIGIN}/games/${slug}/`,
-      players: { min: 1, max: multiplayer ? 2 : 1 },
+      players: { min: 1, max: typeof multiplayer === 'number' ? multiplayer : multiplayer ? 2 : 1 },
       scoring: scoring ?? ARCADE_SCORING,
       ads: { rewarded: [], interstitial: [] },
       ageRating: ageRating ?? '3+',
@@ -700,6 +700,22 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-28',
+  }),
+  arcadeGame({
+    slug: 'okey',
+    title: { en: 'Okey', tr: 'Okey' },
+    description: {
+      en: 'Classic Turkish Okey: find the okey from the indicator, arrange your tiles into runs and sets, then throw your last tile to finish. Play three bots on your own, or up to four people at an online table where bots take the empty seats.',
+      tr: 'Klasik Türk okeyi: göstergeyle okeyi bul, taşlarını seri ve perlere diz, son taşı atıp eli aç. Tek başına üç bota karşı ya da çevrimiçi masada dört kişiye kadar oyna; boş koltuklara bot oturur.',
+    },
+    category: 'card',
+    categories: ['card', 'strategy', 'casual'],
+    tags: ['multiplayer', 'okey', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-06',
+    featured: true,
+    multiplayer: 4,
   }),
   arcadeGame({
     slug: 'orbit-hop',

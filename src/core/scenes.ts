@@ -117,7 +117,9 @@ export class MenuScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: title, y: title.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     txt(this, width / 2, height * (land ? 0.33 : 0.32), t('online'), { title: true, size: 26, color: '#3ee6ff' });
-    if (net.peerName) txt(this, width / 2, height * (land ? 0.41 : 0.38), t('vs', { name: net.peerName }), { size: 34, color: '#f3f2f2' });
+    if (net.isTable) {
+      txt(this, width / 2, height * (land ? 0.41 : 0.38), t('atTable', { names: net.seats.map((s) => s.name).join(' · ') }), { size: 28, color: '#f3f2f2', wrap: width - 80 });
+    } else if (net.peerName) txt(this, width / 2, height * (land ? 0.41 : 0.38), t('vs', { name: net.peerName }), { size: 34, color: '#f3f2f2' });
 
     if (net.isHost) {
       const play = new Button(this, width / 2, height * (land ? 0.56 : 0.52), t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
@@ -308,9 +310,14 @@ export class GameOverScene extends Phaser.Scene {
     this.tweens.add({ targets: h, scale: 1, duration: 450, ease: 'Back.easeOut' });
     if (data.win) this.time.delayedCall(300, () => burst(this, width / 2, height * 0.26, [0xffd23f, 0xff4fa3, 0x3ee6ff], 40, 420));
     playSfx(this, data.win ? 'jingle-win' : 'jingle-over', { exact: true });
-    if (net.peerName) txt(this, width / 2, height * 0.38, t('vs', { name: net.peerName }), { size: 30, color: '#f3f2f2' });
-    const first = net.nextStarter === net.seat ? t('you') : net.peerName || t('opponent');
-    txt(this, width / 2, height * 0.44, t('nextFirst', { name: first }), { size: 26, color: '#3ee6ff', wrap: width - 80 });
+    if (net.isTable) {
+      // A table game decides who starts each hand itself.
+      txt(this, width / 2, height * 0.4, t('atTable', { names: net.seats.map((s) => s.name).join(' · ') }), { size: 26, color: '#f3f2f2', wrap: width - 80 });
+    } else {
+      if (net.peerName) txt(this, width / 2, height * 0.38, t('vs', { name: net.peerName }), { size: 30, color: '#f3f2f2' });
+      const first = net.nextStarter === net.seat ? t('you') : net.peerName || t('opponent');
+      txt(this, width / 2, height * 0.44, t('nextFirst', { name: first }), { size: 26, color: '#3ee6ff', wrap: width - 80 });
+    }
 
     const by = height * (land ? 0.6 : 0.56);
     if (net.isHost) {

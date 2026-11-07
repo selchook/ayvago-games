@@ -15,8 +15,11 @@ export interface GameMeta {
   controls: Array<'touch' | 'keyboard' | 'mouse'>;
   version: string;
   credits?: string[];
-  /** Supports online two-player matches (core/net.ts); the platform lists it as multiplayer. */
-  multiplayer?: boolean;
+  /**
+   * Online play (core/net.ts): true = two-player rooms; a number (3 or 4) = a table with that many
+   * seats where the host fills empty seats with bots (protocol 2.3).
+   */
+  multiplayer?: boolean | number;
 }
 
 export interface GameDefinition {
