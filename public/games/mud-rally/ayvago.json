@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "mudrally",
+  "title": {
+    "en": "Mud Rally",
+    "tr": "Çamur Rallisi"
+  },
+  "description": {
+    "en": "Four pickup trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster.",
+    "tr": "Dört kamyonet, tek ekranlık toprak bir pist! Rampalardan uç, çamur çukurlarında kaymamaya çalış, nitroyu doğru anda ateşle ve dört turu herkesten önce bitir. Kazandığın parayla garajda motoru, lastikleri, amortisörleri ve nitroyu geliştir; her yeni pistte rakipler daha hızlı."
+  },
+  "category": "sports",
+  "categories": [
+    "sports",
+    "arcade",
+    "action"
+  ],
+  "tags": [
+    "mud",
+    "rally",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/mud-rally/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/mud-rally/ayvago/icon-512.png",
+    "cover": "/games/mud-rally/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/mud-rally/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

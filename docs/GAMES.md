@@ -1,9 +1,9 @@
 # Ayvago launch catalogue
 
-## Status (83 shipped)
+## Status (84 shipped)
 
-**Shipped.** 83 games (Color Race was retired on 2026-11-06). Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
-air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, block-blast, block-drop, bomb-maze, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-bounce, color-gate, color-road, color-wheel, connect-four, dots-and-boxes, dungeon-dash, fish-frenzy, fruit-slash, gem-match, gomoku, head-soccer, hex-bridge, hex-merge, hoop-shot, jetpack-rush, letter-loop, light-cycles, lights-out, lunar-lander, mangala, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, neon-pong, nine-mens-morris, nonogram, okey, orbit-hop, paint-roll, penalty-kick, pinball, pipe-flow, pixel-runner, platform-hopper, plinko-drop, retro-snake, reversi, road-crosser, rope-swing, sea-battle, shooting-gallery, simon-says, sky-jumper, sky-road, slide-puzzle, sokoban, solitaire, space-blaster, stack-tower, sudoku, sumo-push, tank-arena, tappy-plane, tile-triple, tito-tank, tower-defense, traffic-racer, turkish-draughts, ufo-abduction, ultimate-tictactoe, water-sort, whack-a-mole, word-hunt, zombie-survivor.
+**Shipped.** 84 games (Color Race was retired on 2026-11-06). Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
+air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, block-blast, block-drop, bomb-maze, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-bounce, color-gate, color-road, color-wheel, connect-four, dots-and-boxes, dungeon-dash, fish-frenzy, fruit-slash, gem-match, gomoku, head-soccer, hex-bridge, hex-merge, hoop-shot, jetpack-rush, letter-loop, light-cycles, lights-out, lunar-lander, mangala, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, mud-rally, neon-pong, nine-mens-morris, nonogram, okey, orbit-hop, paint-roll, penalty-kick, pinball, pipe-flow, pixel-runner, platform-hopper, plinko-drop, retro-snake, reversi, road-crosser, rope-swing, sea-battle, shooting-gallery, simon-says, sky-jumper, sky-road, slide-puzzle, sokoban, solitaire, space-blaster, stack-tower, sudoku, sumo-push, tank-arena, tappy-plane, tile-triple, tito-tank, tower-defense, traffic-racer, turkish-draughts, ufo-abduction, ultimate-tictactoe, water-sort, whack-a-mole, word-hunt, zombie-survivor.
 
 - **Launch wave (2026-10-27):** 26 games.
 - **Second wave (2026-10-28):** 28 games. These are the former backlog plus dungeon-dash and nonogram, finished from `wip/`. Each carries `platform.addedAt` in its `game.json`.
@@ -14,6 +14,7 @@ air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, bloc
 - **Okey (2026-11-06):** classic Turkish Okey, the first table game: on your own against three bots, or online at a table of up to four (protocol 2.3, `"multiplayer": 4` in `game.json`) where the host fills the empty seats with bots. Rules in `games/okey/logic.ts`; the host plays the bots and the seats of players who drop out, and a player who comes back gets the hand so far from the host.
 - **Letter Loop / Harf Çemberi (2026-11-07):** a letter-wheel crossword. Swipe across the wheel letters to spell words that fill the grid before the clock runs out; other valid words are bonus words (every five earn a hint). Levels are generated from word lists written for the game (`games/letter-loop/words-tr.ts`, `words-en.ts`: about 3,800 Turkish and 7,400 English answer words plus bonus-only extras), in the platform's language. Check the lists with `node scripts/check-letter-loop-words.mjs tr|en`. Typing works too; on a keyboard without Turkish letters, S also types Ş, C types Ç and so on.
 - **Sky Road / Gök Yolu (2026-11-07):** the first 3D game and the pilot for `@core/three`. A car races along a road of floating blocks above the clouds: steer between three lanes, jump gaps, dodge crates and spikes, collect coins and hearts; speed and level rise every 250 m. Built from the Kenney Car Kit and Platformer Kit (GLB), drawn by three.js under the usual Phaser HUD and menus.
+- **Mud Rally / Çamur Rallisi (2026-11-07):** the second 3D game, a single-screen off-road truck championship (landscape). Four lifted trucks race four laps of a dirt arena seen whole from one high camera, over humps and jump ramps, through mud pits and puddles; the stick (or the arrow keys) points where to drive and A fires nitro. Prize money and track pickups are the score; between races the garage sells engine, tires, shocks and nitro upgrades, the six arenas cycle and the rivals get faster. Finishing 4th costs one of three lives. The ground is a vertex-coloured height grid built per track (`games/mud-rally/terrain.ts`); trucks from the Car Kit, dressing from the Racing, Nature and Platformer kits.
 
 **Work in progress:** none.
 
@@ -83,6 +84,7 @@ Columns: slug · EN title / TR title · concept · suggested assets (`public/ass
 | plinko-drop | Plinko Drop / Plinko | drop balls through pegs (matter physics) into scoring slots, limited balls | puzzle2 balls | P |
 | bowling-strike | Bowling Strike / Bowling | aim + power + spin, 10 frames with real scoring | sports + drawn | P |
 | air-hockey | Air Hockey / Hava Hokeyi | vs AI, first to 7, physics puck | drawn | P |
+| mud-rally | Mud Rally / Çamur Rallisi | 3D single-screen off-road truck racing: 4 laps, jumps, mud, nitro, prize money and garage upgrades between races, 6 arenas | car-kit + racing-kit + nature-kit + platformer-kit (3D) | L |
 
 ## Batch G — puzzle I
 | slug | title | concept | assets | o |
