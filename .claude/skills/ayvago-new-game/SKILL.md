@@ -79,6 +79,7 @@ What the base class gives you:
   - `this.hud.setCenter(str)` is for other centre info (wave, moves, distance); while it is not empty it takes the badge's place.
   - `this.hud.setRight(str)` is for other right-slot info (time, coins); hearts sit left of it.
   - Set `protected useHud = false` to draw your own.
+- **Typing games.** Esc and P pause the game; a game where the player types words sets `protected pauseOnP = false` so P is a letter (Esc still pauses).
 - **Round state.** `this.elapsed` (seconds in round), `this.isOver`.
 - **Ending.** `endGame({ win?, title?, delay? })` shows the result overlay, saves the best score and emits SDK `gameOver`.
 - **Sound.** `this.sfx(key, config?)` plays a sound and respects mute. The core mixes for you:
