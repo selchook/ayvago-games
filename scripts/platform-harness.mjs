@@ -2,6 +2,8 @@
 // origin) and checks the GHA_* protocol end to end:
 //   GHA_READY → GHA_START(locale) → GHA_LOADING → intro → menu → GHA_SESSION_START
 //   → GHA_PAUSE pauses → GHA_MUTE mutes → forced game over → GHA_END{score}
+// GHA_START carries a platform best (protocol 2.4) above the forced score: the game must adopt
+// it as its own best and must not celebrate the lower score as a new record.
 // Usage: node scripts/platform-harness.mjs [--dev] [slug ...]   (default: dist/ via vite preview)
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
@@ -44,9 +46,10 @@ const hostPage = (slug, locale) => `<!doctype html><html><body style="margin:0;b
     window.log.push(e.data);
     if (e.data && e.data.type === 'GHA_READY') send({ type: 'GHA_START', config: {
       mode: 'solo', isHost: true, playerIndex: 0, playerCount: 1, protocol: 2,
-      theme: 'retro', colorMode: 'dark', tokens: { '--accent': '#ec3013' }, locale: '${locale}', adsEnabled: false } });
+      theme: 'retro', colorMode: 'dark', tokens: { '--accent': '#ec3013' }, locale: '${locale}', adsEnabled: false, best: ${PLATFORM_BEST} } });
   });
 </script></body></html>`;
+const PLATFORM_BEST = 1000000;
 const host = createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   res.writeHead(200, { 'content-type': 'text/html' });
@@ -76,6 +79,7 @@ async function check(slug) {
     await page.mouse.click(270, 40);    // skip intro (away from the menu's PLAY button)
     await frame().waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: 15000 });
     step.locale = await frame().evaluate(() => document.documentElement.lang);
+    step.best = await frame().evaluate((id) => Number(localStorage.getItem(`ayvago:best:${id}`)), slug);
     await page.waitForTimeout(400);
     await page.keyboard.press('Enter');
     await frame().waitForFunction(() => window.__ayvago?.game.scene.isActive('Play'), null, { timeout: 5000 });
@@ -100,11 +104,13 @@ async function check(slug) {
     const end = await page.evaluate(() => window.log.find((m) => m.type === 'GHA_END'));
     step.endScore = end.score;
     step.end = typeof end.score === 'number' && end.score >= 123;
+    await page.waitForTimeout(300);
+    step.noFalseBest = !(await page.evaluate(() => window.log.some((m) => m.type === 'GHA_HAPPY_TIME')));
   } catch (e) {
     errors.push('flow: ' + String(e.message).split('\n')[0] + ' | messages=' + (await types().catch(() => '?')));
   }
   await page.close();
-  const ok = step.ready && step.loading && step.locale === 'tr' && step.sessionStart && step.pause && step.mute && step.end && errors.length === 0;
+  const ok = step.ready && step.loading && step.locale === 'tr' && step.sessionStart && step.pause && step.mute && step.end && step.best === PLATFORM_BEST && step.noFalseBest && errors.length === 0;
   return { slug, ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
 }
 
