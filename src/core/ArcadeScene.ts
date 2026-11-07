@@ -44,6 +44,8 @@ export abstract class ArcadeScene extends Phaser.Scene {
 
   /** Set false in subclasses that draw their own HUD. */
   protected useHud = true;
+  /** Typing games turn this off so the P key spells a letter instead of pausing (Esc still pauses). */
+  protected pauseOnP = true;
   /** Set false to disable scanlines for this game. */
   protected useCrt = true;
 
@@ -96,7 +98,9 @@ export abstract class ArcadeScene extends Phaser.Scene {
 
     const kb = this.input.keyboard;
     kb?.on('keydown-ESC', () => this.pauseGame());
-    kb?.on('keydown-P', () => this.pauseGame());
+    kb?.on('keydown-P', () => {
+      if (this.pauseOnP) this.pauseGame();
+    });
     const onHidden = () => {
       if (document.hidden) this.pauseGame();
     };
