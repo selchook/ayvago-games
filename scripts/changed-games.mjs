@@ -8,6 +8,7 @@
 //   public/assets/kenney/<pack>/...           -> the games that load that pack
 //   public/assets/oga/<pack>/<dir>/...        -> the games that load sounds from that folder
 //   public/assets/characters/, characters.ts  -> the games with player characters
+//   src/core/three/                           -> the 3D games (they import '@core/three')
 //   any other shared runtime (src/core, ...)  -> the canary set: one game for every combination of
 //                                               style, orientation, online, physics, pixel art and
 //                                               characters (an error in shared code shows up in
@@ -32,6 +33,7 @@ const source = (dir) => readdirSync(dir).filter((f) => /\.(ts|json)$/.test(f)).m
 const gameSrc = new Map(slugsAll.map((s) => [s, source(join(root, 'games', s))]));
 const coreSrc = source(join(root, 'src', 'core'));
 const usesCharacters = (s) => /loadCharacter\(/.test(gameSrc.get(s));
+const uses3d = (s) => /from '@core\/three'/.test(gameSrc.get(s));
 
 /** One game per combination of the properties that change how the shared runtime behaves. */
 function canary() {
@@ -46,6 +48,7 @@ function canary() {
       (src.match(/physics: '(\w+)'/) || [])[1] ?? 'arcade',
       /pixelArt: true/.test(src) ? 'pixel' : 'smooth',
       usesCharacters(s) ? 'characters' : 'plain',
+      uses3d(s) ? '3d' : '2d',
     ].join(' ');
     if (!pick.has(sig)) pick.set(sig, s);
   }
@@ -65,10 +68,14 @@ for (const f of files) {
     all = true; say(f, 'all');
   } else if (/^public\/assets\/characters\//.test(f) || /^src\/core\/(characters\.ts|character-rig\.json)$/.test(f)) {
     add(f, slugsAll.filter(usesCharacters), 'character games');
+  } else if (/^src\/core\/three\//.test(f)) {
+    add(f, slugsAll.filter(uses3d), '3D games');
   } else if ((m = f.match(/^public\/assets\/kenney\/([^/]+)\//))) {
     const key = `${m[1]}/`;
+    // 2D art is loaded by path ('pack/…'); 3D kits by name (loadKenney3d(load, key, 'pack', …))
+    const usesPack = (s) => gameSrc.get(s).includes(key) || gameSrc.get(s).includes(`'${m[1]}'`);
     if (coreSrc.includes(`'${key}`) || coreSrc.includes(`\`${key}`)) add(f, canary(), 'canary (the core loads it)');
-    else add(f, slugsAll.filter((s) => gameSrc.get(s).includes(key)), `games using kenney/${m[1]}`);
+    else add(f, slugsAll.filter(usesPack), `games using kenney/${m[1]}`);
   } else if ((m = f.match(/^public\/assets\/oga\/([^/]+)\/(.+)\/[^/]+$/))) {
     const key = `${m[2]}/`;
     if (coreSrc.includes(`oga/${m[1]}`)) add(f, canary(), 'canary (the core loads it)');

@@ -49,6 +49,19 @@ Load Kenney art with `kenney('<pack>/<path>')`; Kenney audio with
 | tower-defense | 299 | 0 |
 | ui | 151 | 6 |
 
+## Kenney 3D kits (`public/assets/kenney`, GLB models)
+
+For 3D games (`@core/three`). Load a model in preload with
+`loadKenney3d(load, key, '<kit>', '<name>')`, then `model(key)` gives a copy. The lists in
+`docs/assets/<kit>.txt` give every model's file size and bounding box (in model units; one
+platformer-kit block is about 1.27 wide). Regenerate them with `node tools/index-3d.mjs <kit>`.
+
+| kit | models | source |
+|---|---|---|
+| car-kit | 28 | Kenney Car Kit: cars, trucks, a tractor, loose wheels |
+| platformer-kit | 74 | Kenney Platformer Kit: grass and snow blocks, coins, crates, spikes, hearts, trees, fences, flags |
+| nature-kit | 329 | Kenney Nature Kit: trees, rocks, plants, cliffs, paths, tents, log bridges |
+
 ## OpenGameArt CC0 (`public/assets/oga`)
 
 | pack | sounds | list |

@@ -13,6 +13,11 @@ import { kenney, loadSfx } from './assets';
 import { isModern } from './style';
 
 let introDone: Promise<void> = Promise.resolve();
+const bootWork: Promise<unknown>[] = [];
+/** Boot waits for this before the menu opens (used by the 3D runtime to parse its models). */
+export function addBootWork(p: Promise<unknown>): void {
+  bootWork.push(p);
+}
 export function setIntroPromise(p: Promise<void>): void {
   introDone = p;
 }
@@ -48,6 +53,8 @@ export class BootScene extends Phaser.Scene {
     this.sound.mute = isSilenced();
     sdk.loading(1);
     await introDone;
+    // work started during preload that the game needs before the menu (3D models being parsed)
+    await Promise.all(bootWork);
     sdk.emit('ready');
     this.scene.start('Menu');
   }

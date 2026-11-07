@@ -1,6 +1,7 @@
 """Copy curated Kenney CC0 packs from a local checkout of the ETdoFresh/kenney.nl mirror
 into public/assets/kenney/<short>/, normalising paths (lowercase, no spaces) and
-adding .mp3 twins for every .ogg (Safari). Usage: python3 tools/import-kenney.py <mirror-dir>"""
+adding .mp3 twins for every .ogg (Safari). 3D kits keep only their GLB models.
+Usage: python3 tools/import-kenney.py <mirror-dir> [short-name ...]   (names limit the run to those packs)"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -22,9 +23,13 @@ PACKS = {
     'kenney_uiaudio': 'sfx-ui', 'onscreencontrols': 'onscreen-controls', 'hexagon-pack': 'hexagon',
     'platformer-pack-redux-360-assets': 'platformer', 'gameicons': 'game-icons',
     'kenney_emotespack': 'emotes', 'kenneymedals': 'medals', 'kenney_foliagepack': 'foliage',
+    # 3D kits (GLB only)
+    'carkit_v1.4': 'car-kit', 'kenney_platformerkit': 'platformer-kit', 'kenney_natureKit_2.1': 'nature-kit',
 }
-KEEP = {'.png', '.ogg', '.ttf', '.xml', '.json', '.txt', '.tsx'}
-SKIP = re.compile(r'(^|/)(preview|sample|information|instructions?)[^/]*$|desktop\.ini|/vector/|/spritesheets?/.*\.(swf)$', re.I)
+ONLY = set(sys.argv[2:])
+KEEP = {'.png', '.ogg', '.ttf', '.xml', '.json', '.txt', '.tsx', '.glb'}
+SKIP = re.compile(r'(^|/)(preview|sample|information|instructions?)[^/]*$|desktop\.ini|/vector/|/spritesheets?/.*\.(swf)$'
+                  r'|^/(isometric|side|topdown)/|/models/(fbx|obj|dae) format/', re.I)
 
 def norm(p):
     p = p.replace('(', '').replace(')', '').replace('&', 'and')
@@ -33,6 +38,8 @@ def norm(p):
 
 count = 0
 for pack, short in PACKS.items():
+    if ONLY and short not in ONLY:
+        continue
     root = os.path.join(SRC, pack)
     for dp, _, files in os.walk(root):
         for f in files:

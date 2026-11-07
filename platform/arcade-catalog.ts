@@ -957,6 +957,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'sky-road',
+    title: { en: 'Sky Road', tr: 'Gök Yolu' },
+    description: {
+      en: 'Race your car along a road of floating blocks above the clouds! Jump the gaps, dodge crates and spikes, grab the coins. The further you go, the faster it gets.',
+      tr: 'Bulutların üstündeki blok yolda arabanla son sürat ilerle! Boşlukların üstünden atla, kasalardan ve dikenlerden kaç, altınları topla. Yol uzadıkça hız artar.',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action', 'casual'],
+    tags: ['sky', 'road', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-07',
+  }),
+  arcadeGame({
     slug: 'slide-puzzle',
     title: { en: 'Slide Puzzle', tr: 'Kaydırmalı Bulmaca' },
     description: {

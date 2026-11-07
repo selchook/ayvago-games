@@ -227,6 +227,41 @@ Verify with the two-player bench, which needs no platform:
 - **Screenshots:** they go to `reports/mp/`. Look at them: both screens must show the same game
   state. The solo smoke test must still pass.
 
+## 7b. 3D games (optional)
+
+A 3D game is still an ordinary Ayvago game: `launch()`, an `ArcadeScene` named `Play`, the HUD,
+`Controls`, `t()` and the result screen all work as usual. Only the world is drawn by three.js,
+through `@core/three` (`src/core/three/index.ts`). The pilot is `games/sky-road`; start from it.
+
+- **Import.** Import from `@core/three` only in 3D games, never from `@core`, so 2D games do not
+  bundle three.js. `THREE` is re-exported from there.
+- **Models.** CC0 GLB kits under `public/assets/kenney`: `car-kit`, `platformer-kit` and
+  `nature-kit`. `docs/assets/<kit>.txt` lists every model with its size and bounding box.
+  - In preload: `loadKenney3d(load, 'car', 'car-kit', 'race')`, or `loadModel(load, key, url)`.
+    Models load under the intro and are parsed before the menu opens.
+  - `model(key)` returns a fresh copy; skinned models keep their own skeleton.
+  - `grounded(obj)` wraps a model so it is centred on x/z and stands on y = 0, because Kenney
+    pivots sit in a corner.
+  - `modelClips(key)` returns its animations for `THREE.AnimationMixer`.
+- **World.** In `createGame()` call `this.world = new World3D(this, { fov, background, fog })`,
+  then `world.addLights()` for sky light plus a sun with soft shadows.
+  - Move the camera and objects in `updateGame()`. The world renders itself after every update
+    and cleans up when the scene restarts or shuts down.
+  - `world.followSun(p)` keeps the shadow area on the player.
+  - `world.toScreen(v)` gives game pixels for `popup()` over 3D objects.
+  - `world.onFrame` is for things that move even while the game logic is idle, such as menu decor.
+- **Menu decor** can be 3D as well: create a `World3D` in `menuDecor(scene)` with
+  `background: null`, so the menu colour shows through.
+- **Budget.** Three.js renders into its own canvas, and Phaser shows that canvas as an image at
+  depth `WORLD_DEPTH` (-100).
+  - Keep scenes small: a few hundred meshes, one shadow-casting sun, fog to hide the far end.
+  - Recycle rows and objects instead of growing the scene.
+  - `quality: 0.75` renders at a lower resolution when a scene is heavy.
+- **Controls.** The standard rules apply: steering uses `Controls` with the joystick and buttons.
+- **Tests.** The smoke test and the screenshot step are the same. Headless Chromium renders WebGL
+  in software, so frame rates there say nothing about real devices; judge layout and visuals
+  from the screenshots.
+
 ## 8. Ship
 
 - Run `npm run registry` (validates `game.json`).
