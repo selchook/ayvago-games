@@ -1,0 +1,12 @@
+{
+  "id": "letter-rain",
+  "title": { "tr": "Harf Yağmuru", "en": "Letter Rain" },
+  "description": { "tr": "Gökten harf yağıyor! Yan yana duran harfleri birleştirip kelime kur, kelimeleri patlat ve sütunlar tepeye ulaşmadan tahtayı temiz tut. Altın harfler puanı ikiye katlar, bombalar çevresini temizler, çatlak harfler ise çabuk kullanılmazsa taşa döner. Her seviyede yağmur biraz daha hızlanır!", "en": "Letters are raining down! Link neighbouring letters into words, pop them off the board and keep the columns from reaching the top. Gold letters double your score, bombs clear their neighbours, and cracked letters turn to stone if you wait too long. Every level the rain gets a little faster!" },
+  "howTo": { "tr": "Yan yana harflerin üzerinde sürükleyip bırak ya da harflere tek tek dokunup GÖNDER'e bas. Klavye: harfleri yaz, Enter gönderir, Geri siler, Boşluk karıştırır, 1 ipucu verir.", "en": "Drag across neighbouring letters and let go, or tap them one by one and press SEND. Keys: type the letters, Enter sends, Backspace deletes, Space shuffles, 1 gives a hint." },
+  "genres": ["word", "puzzle", "arcade"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["Sound effects: Juhani Junkala (CC0) — opengameart.org", "Word lists written for Ayvago"],
+  "platform": { "addedAt": "2026-11-07" }
+}

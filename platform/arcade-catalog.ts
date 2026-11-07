@@ -547,6 +547,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-11-07',
   }),
   arcadeGame({
+    slug: 'letter-rain',
+    title: { en: 'Letter Rain', tr: 'Harf Yağmuru' },
+    description: {
+      en: 'Letters are raining down! Link neighbouring letters into words, pop them off the board and keep the columns from reaching the top. Gold letters double your score, bombs clear their neighbours, and cracked letters turn to stone if you wait too long. Every level the rain gets a little faster!',
+      tr: 'Gökten harf yağıyor! Yan yana duran harfleri birleştirip kelime kur, kelimeleri patlat ve sütunlar tepeye ulaşmadan tahtayı temiz tut. Altın harfler puanı ikiye katlar, bombalar çevresini temizler, çatlak harfler ise çabuk kullanılmazsa taşa döner. Her seviyede yağmur biraz daha hızlanır!',
+    },
+    category: 'word',
+    categories: ['word', 'puzzle', 'arcade'],
+    tags: ['letter', 'rain', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-07',
+  }),
+  arcadeGame({
     slug: 'light-cycles',
     title: { en: 'Light Cycles', tr: 'Işık Motorları' },
     description: {
