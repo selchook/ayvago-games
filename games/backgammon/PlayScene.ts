@@ -4,6 +4,7 @@ import {
   BAR, OFF, LEVELS, initial, apply, legalSteps, rollDice, diceList, removeDie, playTurn, result, chooseTurn, pips, other,
   type Pos, type Side, type Step,
 } from './rules';
+import { makeArt, makeBoard, CK_FILL, DIE_FILL } from './art';
 
 // Board geometry (1280 x 720). Points are drawn in the local player's own numbering: 1..6 bottom
 // right (home), 7..12 bottom left, 13..18 top left, 19..24 top right; the local player moves
@@ -17,6 +18,12 @@ export const G = {
   PW: 77, TRI: 250, CK: 64, MIDY: 400,
 };
 const MATCH = 5;
+/** Display sizes: the textures carry a soft shadow around the piece. */
+const CKD = G.CK / CK_FILL;
+const DIED = 58 / DIE_FILL;
+const GOLD = 0xffd23f;
+const GREEN = 0x5dff7a;
+const CYAN = 0x3ee6ff;
 
 export function pointX(v: number): number {
   if (v <= 6) return G.IX1 - (v - 0.5) * G.PW;
@@ -26,36 +33,15 @@ export function pointX(v: number): number {
 }
 const isTop = (v: number) => v >= 13;
 
-/** Wooden board with felt, 24 points, bar, bear-off tray and point numbers (local numbering). */
+/** The painted board (walnut box, felt, inlaid points, bar with hinges, trays, numbers). */
 export function drawBoard(scene: Phaser.Scene, numbers = true): void {
-  const g = scene.add.graphics();
-  g.fillStyle(0x000000, 0.5).fillRoundedRect(G.FX0 + 8, G.FY0 + 10, G.TRAY1 + 18 - G.FX0, G.FY1 - G.FY0, 18);
-  g.fillStyle(0x5a3214).fillRoundedRect(G.FX0, G.FY0, G.TRAY1 + 18 - G.FX0, G.FY1 - G.FY0, 18);
-  g.lineStyle(4, 0x2e1606).strokeRoundedRect(G.FX0, G.FY0, G.TRAY1 + 18 - G.FX0, G.FY1 - G.FY0, 18);
-  // felt
-  g.fillStyle(0x1f5a3a).fillRect(G.IX0, G.IY0, G.BAR0 - G.IX0, G.IY1 - G.IY0);
-  g.fillStyle(0x1f5a3a).fillRect(G.BAR1, G.IY0, G.IX1 - G.BAR1, G.IY1 - G.IY0);
-  for (let k = 0; k < 20; k++) g.fillStyle(0x000000, 0.04).fillRect(G.IX0, G.IY0 + k * 29, G.IX1 - G.IX0, 14);
-  // points
-  for (let v = 1; v <= 24; v++) {
-    const x = pointX(v), top = isTop(v), half = G.PW / 2 - 3;
-    const base = top ? G.IY0 : G.IY1, tip = top ? G.IY0 + G.TRI : G.IY1 - G.TRI;
-    const dark = v % 2 === 0;
-    g.fillStyle(dark ? 0x9c2f22 : 0xe9d3a3, 1).fillTriangle(x - half, base, x + half, base, x, tip);
-    g.fillStyle(dark ? 0xbf4632 : 0xf7e6c0, 1).fillTriangle(x - half * 0.55, base, x + half * 0.55, base, x, base + (tip - base) * 0.82);
-  }
-  // bar and tray
-  g.fillStyle(0x3e220c).fillRect(G.BAR0, G.FY0, G.BAR1 - G.BAR0, G.FY1 - G.FY0);
-  g.lineStyle(2, 0x7a4a24).strokeRect(G.BAR0 + 6, G.IY0, G.BAR1 - G.BAR0 - 12, G.IY1 - G.IY0);
-  g.fillStyle(0x2a1508).fillRect(G.TRAY0, G.IY0, G.TRAY1 - G.TRAY0, G.MIDY - 8 - G.IY0);
-  g.fillStyle(0x2a1508).fillRect(G.TRAY0, G.MIDY + 8, G.TRAY1 - G.TRAY0, G.IY1 - G.MIDY - 8);
-  g.lineStyle(2, 0x7a4a24).strokeRect(G.TRAY0, G.IY0, G.TRAY1 - G.TRAY0, G.MIDY - 8 - G.IY0).strokeRect(G.TRAY0, G.MIDY + 8, G.TRAY1 - G.TRAY0, G.IY1 - G.MIDY - 8);
-  if (!numbers) return;
-  for (let v = 1; v <= 24; v++) {
-    scene.add.text(pointX(v), isTop(v) ? G.FY0 + 9 : G.FY1 - 9, String(v), {
-      fontFamily: '"Pixelify Sans", sans-serif', fontSize: '14px', color: '#d9a56a',
-    }).setOrigin(0.5);
-  }
+  makeArt(scene);
+  scene.add.image(0, 0, makeBoard(scene, G, pointX, numbers)).setOrigin(0).setDepth(0);
+}
+
+/** Size a checker sprite (its texture has room for a shadow). */
+export function checkerSize(img: Phaser.GameObjects.Image): Phaser.GameObjects.Image {
+  return img.setDisplaySize(CKD, CKD);
 }
 
 type State = 'wait' | 'move' | 'done' | 'ai' | 'remote' | 'busy';
@@ -78,6 +64,12 @@ export class PlayScene extends ArcadeScene {
   private targets = new Map<number, Step[]>();
   private cur = -1;
   private hl!: Phaser.GameObjects.Graphics;
+  private hlTop!: Phaser.GameObjects.Graphics;
+  private hlImgs: Array<Phaser.GameObjects.Image | Phaser.GameObjects.Text> = [];
+  private bannerBand!: Phaser.GameObjects.Graphics;
+  private rowGlow!: Phaser.GameObjects.Image;
+  private dotsMe: Phaser.GameObjects.Arc[] = [];
+  private dotsThem: Phaser.GameObjects.Arc[] = [];
   private status!: Phaser.GameObjects.Text;
   private diceImgs: Phaser.GameObjects.Image[] = [];
   private undoBtn!: Phaser.GameObjects.Container;
@@ -102,30 +94,43 @@ export class PlayScene extends ArcadeScene {
     this.stacks = [0, 1].map(() => Array.from({ length: 26 }, () => [] as Phaser.GameObjects.Image[]));
     this.counts = [];
     this.state = 'wait'; this.turn = 0; this.roll = [1, 1]; this.dice = []; this.history = []; this.legal = [];
-    this.sel = -1; this.targets = new Map(); this.cur = -1; this.diceImgs = [];
+    this.sel = -1; this.targets = new Map(); this.cur = -1; this.diceImgs = []; this.hlImgs = []; this.dotsMe = []; this.dotsThem = [];
     this.match = [0, 0]; this.gameNo = 0; this.level = 0;
     this.online = net.active;
     this.mine = this.online ? (net.seat as Side) : 0;
     this.turnNo = 0; this.inbox = []; this.remoteRoll = null; this.rolling = false;
     this.cameras.main.setBackgroundColor('#160d07');
-    this.makeTextures();
     drawBoard(this);
     this.hl = this.add.graphics().setDepth(5);
+    this.hlTop = this.add.graphics().setDepth(12);
+    this.tweens.add({ targets: [this.hl], alpha: { from: 1, to: 0.55 }, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.bannerBand = this.add.graphics().setDepth(79).setVisible(false);
 
     this.status = txt(this, 560, 48, '', { title: true, size: 22, color: '#ffd23f' }).setDepth(30);
     this.banner = txt(this, (G.IX0 + G.IX1) / 2, G.MIDY, '', { title: true, size: 46, strokeThickness: 10 }).setDepth(80).setVisible(false);
 
     // right panel: match score, pips, undo and done
     const px = 1210;
-    txt(this, px, 148, t('matchTo', { n: MATCH }), { title: true, size: 13, color: '#d9a56a', wrap: 150 });
-    this.add.image(px - 40, 196, this.tex(this.mine)).setDisplaySize(30, 30);
+    const plaque = this.add.graphics();
+    plaque.fillStyle(0x000000, 0.45).fillRoundedRect(px - 62, 124, 124, 300, 16);
+    plaque.fillStyle(0x3a1e0b, 1).fillRoundedRect(px - 64, 120, 124, 300, 16);
+    plaque.lineStyle(2, 0xf0c98f, 0.35).strokeRoundedRect(px - 63, 121, 122, 298, 15);
+    this.rowGlow = this.add.image(px, 236, 'tv-glow').setDisplaySize(170, 120).setTint(GOLD).setAlpha(0);
+    this.tweens.add({ targets: this.rowGlow, scale: { from: this.rowGlow.scale * 0.92, to: this.rowGlow.scale * 1.05 }, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    txt(this, px, 148, t('matchTo', { n: MATCH }), { title: true, size: 13, color: '#f0c98f', wrap: 150 });
+    this.add.image(px - 40, 196, this.tex(this.mine)).setDisplaySize(34, 34);
     txt(this, px + 14, 196, t('you'), { size: 22, color: '#ffffff' }).setOrigin(0.5);
     this.ptsMe = txt(this, px, 236, '0', { title: true, size: 32, color: '#ffd23f' });
-    this.pipMe = txt(this, px, 270, '', { size: 20, color: '#c49a6a' });
-    this.add.image(px - 40, 316, this.tex(other(this.mine))).setDisplaySize(30, 30);
+    this.pipMe = txt(this, px, 266, '', { size: 18, color: '#d9b48a' });
+    this.add.image(px - 40, 316, this.tex(other(this.mine))).setDisplaySize(34, 34);
+    for (let i = 0; i < MATCH; i++) {
+      const dx = px - 32 + i * 16;
+      this.dotsMe.push(this.add.circle(dx, 290, 5, 0x000000, 0.4).setStrokeStyle(1.5, GOLD, 0.7));
+      this.dotsThem.push(this.add.circle(dx, 410, 5, 0x000000, 0.4).setStrokeStyle(1.5, 0x7fd8ff, 0.7));
+    }
     this.nameThem = txt(this, px + 14, 316, '', { size: 20, color: '#ffffff', wrap: 100 }).setOrigin(0.5);
     this.ptsThem = txt(this, px, 356, '0', { title: true, size: 32, color: '#7fd8ff' });
-    this.pipThem = txt(this, px, 390, '', { size: 20, color: '#c49a6a' });
+    this.pipThem = txt(this, px, 386, '', { size: 18, color: '#d9b48a' });
     this.undoBtn = this.panelButton(px, 480, 'bg-undo', t('undo'), () => this.undo());
     this.doneBtn = this.panelButton(px, 610, 'bg-ok', t('done'), () => this.confirm());
     this.setButtons();
@@ -152,48 +157,46 @@ export class PlayScene extends ArcadeScene {
       this.time.delayedCall(4000, go);
     } else {
       if (this.online) net.send('rdy', {});
-      this.startGame(this.online ? (net.starter as Side) : this.mine);
+      // solo: the first game opens with one die each, the higher die starts
+      this.startGame(this.online ? (net.starter as Side) : null);
     }
   }
 
   private tex(side: Side): string { return side === 0 ? 'bg-w' : 'bg-b'; }
 
-  private makeTextures(): void {
-    if (this.textures.exists('bg-slab-w')) return;
-    const g = this.make.graphics({ x: 0, y: 0 }, false);
-    for (const [k, c, d] of [['w', 0xf3efe6, 0x9a948a], ['b', 0x3a3a40, 0x111114]] as const) {
-      g.clear();
-      g.fillStyle(d, 1).fillRoundedRect(0, 0, 58, 14, 5);
-      g.fillStyle(c, 1).fillRoundedRect(2, 1, 54, 10, 4);
-      g.generateTexture(`bg-slab-${k}`, 58, 14);
-    }
-    g.destroy();
-  }
-
   private panelButton(x: number, y: number, icon: string, label: string, onClick: () => void): Phaser.GameObjects.Container {
     const c = this.add.container(x, y).setDepth(40);
-    const shadow = this.add.rectangle(0, 6, 124, 104, 0x000000, 0.5);
-    const face = this.add.rectangle(0, 0, 124, 104, 0x7a4a24).setStrokeStyle(4, 0x2e1606);
-    const img = this.add.image(0, -14, icon).setDisplaySize(52, 52);
-    const lab = txt(this, 0, 32, label, { title: true, size: 14, color: '#ffffff', strokeThickness: 4 });
-    c.add([shadow, face, img, lab]);
+    const face = this.add.graphics();
+    const img = this.add.image(0, -14, icon).setDisplaySize(48, 48);
+    const lab = txt(this, 0, 30, label, { title: true, size: 15, color: '#ffffff', strokeThickness: 0, shadow: false });
+    c.add([face, img, lab]);
     c.setSize(124, 110).setInteractive({ useHandCursor: true });
-    c.on('pointerdown', () => { face.y = img.y = 3; lab.y = 35; });
-    const up = () => { face.y = 0; img.y = -14; lab.y = 32; };
+    c.on('pointerdown', () => this.tweens.add({ targets: c, scale: 0.94, duration: 70 }));
+    const up = () => this.tweens.add({ targets: c, scale: 1, duration: 160, ease: 'Back.easeOut' });
     c.on('pointerout', up);
     c.on('pointerup', () => { up(); if (c.getData('on')) onClick(); });
     c.setData('face', face);
     return c;
   }
 
+  private paintButton(b: Phaser.GameObjects.Container, color: number): void {
+    const g = b.getData('face') as Phaser.GameObjects.Graphics;
+    const lighter = Phaser.Display.Color.IntegerToColor(color).lighten(18).color;
+    g.clear();
+    g.fillStyle(0x000000, 0.45).fillRoundedRect(-62, -50, 124, 106, 18);
+    g.fillStyle(color, 1).fillRoundedRect(-62, -54, 124, 104, 18);
+    g.fillStyle(lighter, 0.45).fillRoundedRect(-56, -50, 112, 40, { tl: 14, tr: 14, bl: 6, br: 6 });
+    g.lineStyle(2, 0xffffff, 0.25).strokeRoundedRect(-62, -54, 124, 104, 18);
+  }
+
   private setButtons(): void {
     const mineNow = this.turn === this.mine && (this.state === 'move' || this.state === 'done');
     const undo = mineNow && this.history.length > 0;
     const done = mineNow && this.state === 'done';
-    for (const [b, on, col] of [[this.undoBtn, undo, 0x7a4a24], [this.doneBtn, done, 0x2f8a3e]] as const) {
+    for (const [b, on, col] of [[this.undoBtn, undo, 0x8a5428], [this.doneBtn, done, 0x2f9a48]] as const) {
       b.setData('on', on);
-      b.setAlpha(on ? 1 : 0.35);
-      (b.getData('face') as Phaser.GameObjects.Rectangle).setFillStyle(on ? col : 0x4a3020);
+      b.setAlpha(on ? 1 : 0.4);
+      this.paintButton(b, on ? col : 0x4a3020);
     }
     this.tweens.killTweensOf(this.doneBtn);
     this.doneBtn.setScale(1);
@@ -216,7 +219,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private makeChecker(side: Side): Phaser.GameObjects.Image {
-    return this.add.image(G.BARX, G.MIDY, this.tex(side)).setDisplaySize(G.CK, G.CK).setDepth(10);
+    return checkerSize(this.add.image(G.BARX, G.MIDY, this.tex(side))).setDepth(10);
   }
 
   /** Moves checker sprites so they match the position (moves, hits, undo, new game). */
@@ -236,7 +239,7 @@ export class PlayScene extends ArcadeScene {
           const wasOff = s.texture.key.startsWith('bg-slab');
           if (Math.abs(s.x - p.x) < 0.5 && Math.abs(s.y - p.y) < 0.5 && off === wasOff) { s.setDepth(10 + k * 0.1); return; }
           const far = Math.hypot(s.x - p.x, s.y - p.y) > 90;
-          if (!off && wasOff) s.setTexture(this.tex(side)).setDisplaySize(G.CK, G.CK);
+          if (!off && wasOff) checkerSize(s.setTexture(this.tex(side)));
           this.tweens.killTweensOf(s);
           s.setDepth(far ? 60 : 10 + k * 0.1);
           if (ms <= 0) {
@@ -244,13 +247,29 @@ export class PlayScene extends ArcadeScene {
             if (off) s.setTexture(`bg-slab-${side ? 'b' : 'w'}`).setDisplaySize(58, 14);
             return;
           }
-          this.tweens.add({
-            targets: s, x: p.x, y: p.y, duration: far ? ms : ms * 0.6, ease: 'Cubic.easeInOut',
+          // the checker is lifted off the board: it grows a little on the way and lands
+          // a new move of the same checker replaces the running arc
+          (s.getData('arc') as Phaser.Tweens.Tween | undefined)?.stop();
+          if (!wasOff) checkerSize(s);
+          const sx = s.x, sy = s.y, base = s.scaleX;
+          const dist = Math.hypot(p.x - sx, p.y - sy);
+          const lift = Math.min(0.22, dist / 1400);
+          const arcTween = this.tweens.addCounter({
+            from: 0, to: 1, duration: far ? ms : ms * 0.6, ease: 'Cubic.easeInOut',
+            onUpdate: (tw) => {
+              const f = tw.getValue() ?? 0;
+              const arc = Math.sin(f * Math.PI);
+              s.setPosition(sx + (p.x - sx) * f, sy + (p.y - sy) * f - arc * Math.min(40, dist * 0.12));
+              if (!off || f < 0.98) s.setScale(base * (1 + lift * arc));
+            },
             onComplete: () => {
               s.setDepth(10 + k * 0.1);
+              s.setPosition(p.x, p.y);
               if (off) s.setTexture(`bg-slab-${side ? 'b' : 'w'}`).setDisplaySize(58, 14);
+              else s.setScale(base);
             },
           });
+          s.setData('arc', arcTween);
         });
       }
     }
@@ -276,6 +295,8 @@ export class PlayScene extends ArcadeScene {
     this.pipThem.setText(t('pips', { n: pips(this.pos, other(this.mine)) }));
     const name = this.online ? clip(net.peerName || t('opponent'), 10) : t('d' + this.level);
     this.nameThem.setText(name);
+    this.dotsMe.forEach((d, i) => d.setFillStyle(i < this.match[this.mine] ? GOLD : 0x000000, i < this.match[this.mine] ? 1 : 0.4));
+    this.dotsThem.forEach((d, i) => d.setFillStyle(i < this.match[other(this.mine)] ? 0x7fd8ff : 0x000000, i < this.match[other(this.mine)] ? 1 : 0.4));
   }
 
   // ---------------------------------------------------------------- dice
@@ -290,16 +311,19 @@ export class PlayScene extends ArcadeScene {
     this.sfx('roll', { volume: 0.7 });
     vals.forEach((v, i) => {
       const x = cx + (i - (vals.length - 1) / 2) * gap;
-      const d = this.add.image(x + (me ? 140 : -140), G.MIDY + rng.int(-30, 30), `die-${col}-${rng.int(1, 6)}`).setDisplaySize(58, 58).setDepth(50);
+      const d = this.add.image(x + (me ? 160 : -160), G.MIDY + rng.int(-40, 40), `die-${col}-${rng.int(1, 6)}`).setDisplaySize(DIED, DIED).setDepth(50);
       this.diceImgs.push(d);
+      const size = d.scale;
       let n = 0;
-      const spin = this.time.addEvent({ delay: 50, repeat: 6, callback: () => { n++; d.setTexture(`die-${col}-${n === 7 ? v : rng.int(1, 6)}`).setDisplaySize(58, 58); } });
+      const spin = this.time.addEvent({ delay: 55, repeat: 6, callback: () => { n++; d.setTexture(`die-${col}-${n === 7 ? v : rng.int(1, 6)}`); } });
+      // thrown in, it bounces once and settles slightly askew
       this.tweens.add({
-        targets: d, x, y: G.MIDY, angle: rng.int(-1, 1) * 360 + rng.int(-12, 12), duration: 380, ease: 'Cubic.easeOut',
-        onComplete: () => { spin.remove(); d.setTexture(`die-${col}-${v}`).setDisplaySize(58, 58); },
+        targets: d, x, y: G.MIDY, angle: (me ? -1 : 1) * 540 + rng.int(-14, 14), duration: 420, delay: i * 40, ease: 'Cubic.easeOut',
+        onComplete: () => { spin.remove(); d.setTexture(`die-${col}-${v}`); },
       });
+      this.tweens.add({ targets: d, scale: { from: size * 1.35, to: size }, duration: 420, delay: i * 40, ease: 'Bounce.easeOut' });
     });
-    this.time.delayedCall(410, () => {
+    this.time.delayedCall(450, () => {
       this.sfx('land', { volume: 0.5 });
       if (roll[0] === roll[1]) popup(this, cx, G.MIDY - 70, t('doubles'), '#ffd23f', 26);
       then();
@@ -315,12 +339,12 @@ export class PlayScene extends ArcadeScene {
       const d = this.diceImgs[i];
       if (!d) continue;
       const k = rest.indexOf(vals[i]);
-      if (k >= 0) { rest.splice(k, 1); d.setAlpha(1); } else d.setAlpha(0.3);
+      if (k >= 0) { rest.splice(k, 1); d.setAlpha(1).clearTint(); } else d.setAlpha(0.35).setTint(0x888888);
     }
   }
 
   // ---------------------------------------------------------------- game flow
-  private startGame(first: Side): void {
+  private startGame(first: Side | null): void {
     this.gameNo++;
     this.pos = initial();
     this.history = [];
@@ -332,15 +356,58 @@ export class PlayScene extends ArcadeScene {
       this.tweens.add({ targets: s, y, alpha: 1, duration: 420, delay: rng.int(0, 300), ease: 'Back.easeOut' });
     }
     this.banner.setVisible(false);
+    this.bannerBand.setVisible(false);
     this.diceImgs.forEach((d) => d.destroy());
     this.diceImgs = [];
     this.updatePanel();
-    this.time.delayedCall(450, () => this.beginTurn(first));
+    this.time.delayedCall(450, () => (first === null ? this.openingRoll() : this.beginTurn(first)));
+  }
+
+  /** One die each; the higher one plays first (a tie rolls again). */
+  private openingRoll(): void {
+    if (this.isOver) return;
+    this.state = 'busy';
+    this.status.setText(t('openRoll')).setColor('#f0c98f');
+    const mine = rng.int(1, 6), theirs = rng.int(1, 6);
+    this.diceImgs.forEach((d) => d.destroy());
+    this.diceImgs = [];
+    this.sfx('roll', { volume: 0.7 });
+    const throwDie = (side: Side, v: number) => {
+      const me = side === this.mine;
+      const x = me ? (G.BAR1 + G.IX1) / 2 : (G.IX0 + G.BAR0) / 2;
+      const col = side === 0 ? 'white' : 'red';
+      const d = this.add.image(x + (me ? 160 : -160), G.MIDY, `die-${col}-${rng.int(1, 6)}`).setDisplaySize(DIED, DIED).setDepth(50);
+      const size = d.scale;
+      this.diceImgs.push(d);
+      let n = 0;
+      const spin = this.time.addEvent({ delay: 55, repeat: 6, callback: () => { n++; d.setTexture(`die-${col}-${n === 7 ? v : rng.int(1, 6)}`); } });
+      this.tweens.add({ targets: d, x, angle: (me ? -1 : 1) * 540, duration: 420, ease: 'Cubic.easeOut', onComplete: () => { spin.remove(); d.setTexture(`die-${col}-${v}`); } });
+      this.tweens.add({ targets: d, scale: { from: size * 1.35, to: size }, duration: 420, ease: 'Bounce.easeOut' });
+    };
+    throwDie(this.mine, mine);
+    throwDie(other(this.mine), theirs);
+    this.time.delayedCall(480, () => {
+      if (this.isOver) return;
+      this.sfx('land', { volume: 0.5 });
+      if (mine === theirs) {
+        popup(this, (G.IX0 + G.IX1) / 2, G.MIDY - 80, t('openTie'), '#ffd23f', 28);
+        this.time.delayedCall(900, () => this.openingRoll());
+        return;
+      }
+      const first: Side = mine > theirs ? this.mine : other(this.mine);
+      const win = this.diceImgs[first === this.mine ? 0 : 1];
+      if (win) this.tweens.add({ targets: win, scale: win.scale * 1.18, duration: 160, yoyo: true, repeat: 1 });
+      popup(this, (G.IX0 + G.IX1) / 2, G.MIDY - 80, first === this.mine ? t('youStart') : t('theyStart'), first === this.mine ? '#5dff7a' : '#7fd8ff', 30);
+      this.time.delayedCall(1100, () => this.beginTurn(first));
+    });
   }
 
   private beginTurn(side: Side): void {
     if (this.isOver) return;
     this.turn = side;
+    // a warm glow behind whoever is to play
+    this.rowGlow.setY(side === this.mine ? 236 : 356).setTint(side === this.mine ? GOLD : 0x7fd8ff);
+    this.tweens.add({ targets: this.rowGlow, alpha: 0.35, duration: 250 });
     this.history = [];
     this.sel = -1;
     this.clearHl();
@@ -538,6 +605,9 @@ export class PlayScene extends ArcadeScene {
 
   private clearHl(): void {
     this.hl.clear();
+    this.hlTop.clear();
+    this.hlImgs.forEach((o) => o.destroy());
+    this.hlImgs = [];
   }
 
   private colRect(loc: number): { x: number; y: number; w: number; h: number } {
@@ -547,35 +617,63 @@ export class PlayScene extends ArcadeScene {
     return isTop(loc) ? { x, y: G.IY0, w: G.PW, h: G.TRI + 20 } : { x, y: G.IY1 - G.TRI - 20, w: G.PW, h: G.TRI + 20 };
   }
 
-  private drawHl(): void {
+  /** Lights up a point's triangle (or the tray) in a colour. */
+  private lightPoint(loc: number, color: number, alpha: number): void {
     const g = this.hl;
-    g.clear();
+    if (loc === OFF || loc === BAR) {
+      const r = this.colRect(loc);
+      g.fillStyle(color, alpha).fillRoundedRect(r.x + 3, r.y + 3, r.w - 6, r.h - 6, 8);
+      return;
+    }
+    const x = pointX(loc), half = G.PW / 2 - 4;
+    const base = isTop(loc) ? G.IY0 : G.IY1, tip = isTop(loc) ? G.IY0 + G.TRI : G.IY1 - G.TRI;
+    g.fillStyle(color, alpha).fillTriangle(x - half, base, x + half, base, x, tip);
+  }
+
+  private glowAt(x: number, y: number, color: number, size: number, alpha = 0.8): void {
+    this.hlImgs.push(this.add.image(x, y, 'tv-glow').setDisplaySize(size, size).setTint(color).setAlpha(alpha).setDepth(9).setBlendMode(Phaser.BlendModes.ADD));
+  }
+
+  private drawHl(): void {
+    this.clearHl();
     if (this.state !== 'move') return;
+    const top = this.hlTop;
     if (this.sel < 0) {
+      // every checker that can move glows softly
       for (const f of this.sources()) {
-        const st = this.stacks[this.mine][f];
         const n = this.pos.p[this.mine][f];
         const p = this.slot(this.mine, f, n - 1, n);
-        g.lineStyle(5, 0x5dff7a, 0.9).strokeCircle(p.x, p.y, G.CK / 2 + 3);
-        void st;
+        this.glowAt(p.x, p.y, GREEN, G.CK * 1.9, 0.75);
+        top.lineStyle(3, GREEN, 0.9).strokeCircle(p.x, p.y, G.CK / 2 + 3);
       }
     } else {
       const n = this.pos.p[this.mine][this.sel];
       const p = this.slot(this.mine, this.sel, n - 1, n);
-      g.lineStyle(6, 0xffd23f, 1).strokeCircle(p.x, p.y, G.CK / 2 + 4);
+      this.glowAt(p.x, p.y, GOLD, G.CK * 2.1, 0.9);
+      top.lineStyle(4, GOLD, 1).strokeCircle(p.x, p.y, G.CK / 2 + 4);
       for (const [to, chain] of this.targets) {
-        const r = this.colRect(to);
-        g.fillStyle(chain.length > 1 ? 0x3ee6ff : 0x5dff7a, 0.22).fillRect(r.x + 4, r.y, r.w - 8, r.h);
+        const col = chain.length > 1 ? CYAN : GREEN;
+        this.lightPoint(to, col, 0.3);
+        // a ghost of the checker where it would land
         const m = this.pos.p[this.mine][to];
         const q = to === OFF ? { x: G.TRAYX, y: G.IY1 - 10 - this.pos.p[this.mine][OFF] * 17 } : this.slot(this.mine, to, m, m + 1);
-        g.fillStyle(chain.length > 1 ? 0x3ee6ff : 0x5dff7a, 0.85).fillCircle(q.x, q.y, 13);
-        g.lineStyle(3, 0x000000, 0.5).strokeCircle(q.x, q.y, 13);
+        if (to !== OFF) {
+          const ghost = checkerSize(this.add.image(q.x, q.y, this.tex(this.mine))).setAlpha(0.42).setDepth(11);
+          this.hlImgs.push(ghost);
+        }
+        top.lineStyle(3, col, 0.95).strokeCircle(q.x, q.y, to === OFF ? 16 : G.CK / 2 + 2);
+        if (chain.length > 1) {
+          // the dice this landing uses, as a small number badge
+          const sum = chain.reduce((a, c) => a + c.die, 0);
+          const b = txt(this, q.x, q.y, String(sum), { title: true, size: 18, color: '#0b2a33', strokeThickness: 0, shadow: false }).setDepth(13);
+          this.hlImgs.push(b);
+        }
       }
     }
     // keyboard cursor
     if (this.cur >= 0 && !this.sys.game.device.input.touch) {
       const r = this.colRect(this.cur);
-      g.lineStyle(4, 0xff4fa3, 0.95).strokeRect(r.x + 2, r.y + 2, r.w - 4, r.h - 4);
+      top.lineStyle(3, 0xffffff, 0.9).strokeRoundedRect(r.x + 3, r.y + 3, r.w - 6, r.h - 6, 10);
     }
   }
 
@@ -694,6 +792,16 @@ export class PlayScene extends ArcadeScene {
   private showBanner(s: string, color: string): void {
     this.banner.setText(s).setColor(color).setVisible(true).setAlpha(1).setScale(0.3);
     this.tweens.add({ targets: this.banner, scale: 1, duration: 400, ease: 'Back.easeOut' });
+    const w = Math.max(420, this.banner.width + 120);
+    const cx = (G.IX0 + G.IX1) / 2;
+    this.bannerBand.clear().setVisible(true).setAlpha(0);
+    this.bannerBand.fillStyle(0x0b0705, 0.82).fillRoundedRect(cx - w / 2, G.MIDY - 56, w, 112, 28);
+    this.bannerBand.lineStyle(3, Phaser.Display.Color.HexStringToColor(color).color, 0.8).strokeRoundedRect(cx - w / 2, G.MIDY - 56, w, 112, 28);
+    this.tweens.add({ targets: this.bannerBand, alpha: 1, duration: 200 });
+  }
+
+  private hideBanner(): void {
+    this.tweens.add({ targets: [this.banner, this.bannerBand], alpha: 0, duration: 250 });
   }
 
   private gameWon(side: Side, pts: number): void {
@@ -730,14 +838,14 @@ export class PlayScene extends ArcadeScene {
         this.showBanner(matchWin ? t('matchWin') : t('matchLose'), matchWin ? '#ffd23f' : '#ff4f5e');
         if (matchWin) this.sfx('fanfare', { volume: 0.7 });
       });
-      this.time.delayedCall(2850, () => this.tweens.add({ targets: this.banner, alpha: 0, duration: 250 }));
+      this.time.delayedCall(2850, () => this.hideBanner());
       this.endGame({ win: matchWin, title: matchWin ? t('youWin') : t('youLose'), delay: 3200 });
       return;
     }
     // the winner of a game opens the next one
     this.time.delayedCall(2600, () => {
       if (this.isOver) return;
-      this.tweens.add({ targets: this.banner, alpha: 0, duration: 250 });
+      this.hideBanner();
       this.sfx('clear', { volume: 0.6 });
       this.startGame(side);
     });
