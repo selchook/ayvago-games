@@ -1,6 +1,9 @@
 /**
  * Ayvago platform adapter (protocol 2, v1-compatible GHA_* messages).
  *
+ * Minor protocol versions add optional GHA_START fields only: 2.1 online rooms, 2.2 the player's
+ * character, 2.3 tables of up to four seats, 2.4 the player's server best (`config.best`).
+ *
  * A single, dependency-free file that games vendor (copy) into their own repository. At runtime
  * it decides whether the game runs inside Ayvago (embedded in an iframe on an allowed platform
  * origin that answers the handshake) or standalone (its own URL), and exposes the same API in
@@ -10,7 +13,7 @@
  * Update vendored copies by copying this file; do not edit them in place.
  */
 
-export const ADAPTER_VERSION = '2.3.0';
+export const ADAPTER_VERSION = '2.4.0';
 export const PROTOCOL_VERSION = 2;
 
 /** Origins allowed to host games. "*" matches one DNS label segment (letters, digits, "-"). */
@@ -59,6 +62,13 @@ export type StartConfig = ThemeInfo & {
    * at `playerIndex`, the host at 0). Two-player rooms leave it out.
    */
   seats?: SeatInfo[];
+  /**
+   * Protocol 2.4: the player's best score for this game on the platform (its leaderboard order:
+   * the lowest for games where lower is better). `null`: the player has no recorded score yet,
+   * so any finished run is their first. Absent: the platform does not know (signed out of
+   * Firebase, slow or failed read); the game keeps its own stored best.
+   */
+  best?: number | null;
   locale: string;
   adsEnabled: boolean;
   protocol: number;
@@ -304,7 +314,7 @@ class AyvagoAdapter implements PlatformAdapter {
     config: StartConfig,
     private adTimeoutMs: number,
   ) {
-    this.currentConfig = config;
+    this.currentConfig = withBest(config);
     this.currentLocale = config.locale;
     const self = this;
     this.multiplayer = {
@@ -365,7 +375,7 @@ class AyvagoAdapter implements PlatformAdapter {
     const msg = data as Record<string, unknown>;
     switch (msg.type) {
       case 'GHA_START':
-        if (isStartConfig(msg.config)) this.currentConfig = msg.config;
+        if (isStartConfig(msg.config)) this.currentConfig = withBest(msg.config);
         break;
       case 'GHA_PAUSE':
         this.pause.emit();
@@ -505,6 +515,15 @@ function isTokenMap(value: unknown): value is Record<string, string> {
     value !== null &&
     Object.values(value as Record<string, unknown>).every((v) => typeof v === 'string')
   );
+}
+
+/** Protocol 2.4: keeps `best` only as a finite number or null; anything else means unknown. */
+function withBest(config: StartConfig): StartConfig {
+  const best: unknown = config.best;
+  if (best === null || (typeof best === 'number' && Number.isFinite(best))) return config;
+  const rest = { ...config };
+  delete rest.best;
+  return rest;
 }
 
 function isStartConfig(value: unknown): value is StartConfig {
