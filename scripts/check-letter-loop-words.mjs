@@ -1,4 +1,4 @@
-// Checks the Letter Loop word lists (games/letter-loop/words-<lang>.ts).
+// Checks the shared word lists (src/words/<lang>.ts) used by Letter Loop and Letter Rain.
 // Usage: node scripts/check-letter-loop-words.mjs <tr|en> [--list-bases]
 // Reports bad characters, duplicates, the length histogram and how many level base words
 // (5–7 common letters whose letters spell at least 5 common words of 3+ letters) the list gives.
@@ -12,7 +12,7 @@ if (lang !== 'tr' && lang !== 'en') {
   console.error('usage: check-letter-loop-words.mjs <tr|en>');
   process.exit(2);
 }
-const src = readFileSync(join(root, 'games/letter-loop', `words-${lang}.ts`), 'utf8');
+const src = readFileSync(join(root, 'src/words', `${lang}.ts`), 'utf8');
 const block = (name) => {
   const m = src.match(new RegExp(`export const ${name}\\s*=\\s*\`([^\`]*)\``));
   if (!m) throw new Error(`missing export ${name}`);

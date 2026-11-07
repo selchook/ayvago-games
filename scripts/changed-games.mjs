@@ -9,6 +9,7 @@
 //   public/assets/oga/<pack>/<dir>/...        -> the games that load sounds from that folder
 //   public/assets/characters/, characters.ts  -> the games with player characters
 //   src/core/three/                           -> the 3D games (they import '@core/three')
+//   src/words/<file>                          -> the games that import that word list
 //   any other shared runtime (src/core, ...)  -> the canary set: one game for every combination of
 //                                               style, orientation, online, physics, pixel art and
 //                                               characters (an error in shared code shows up in
@@ -70,6 +71,12 @@ for (const f of files) {
     add(f, slugsAll.filter(usesCharacters), 'character games');
   } else if (/^src\/core\/three\//.test(f)) {
     add(f, slugsAll.filter(uses3d), '3D games');
+  } else if ((m = f.match(/^src\/words\/([^/]+)\.ts$/))) {
+    // shared word lists: the games that import them (`from '../../src/words/tr'`)
+    const re = new RegExp(`from '[./]*src/words/${m[1]}'`);
+    add(f, slugsAll.filter((s) => re.test(gameSrc.get(s))), `games using src/words/${m[1]}`);
+  } else if (/^src\/words\//.test(f)) {
+    add(f, slugsAll.filter((s) => /from '[./]*src\/words\//.test(gameSrc.get(s))), 'games using src/words');
   } else if ((m = f.match(/^public\/assets\/kenney\/([^/]+)\//))) {
     const key = `${m[1]}/`;
     // 2D art is loaded by path ('pack/…'); 3D kits by name (loadKenney3d(load, key, 'pack', …))

@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { ArcadeScene, burst, shake, popup, txt, t, getLang, upper, type Lang } from '@core';
 import { buildDict, makePuzzle, shapeFor, fold, type Dict, type Placed, type Puzzle } from './logic';
-import { COMMON as TR_COMMON, EXTRA as TR_EXTRA } from './words-tr';
-import { COMMON as EN_COMMON, EXTRA as EN_EXTRA } from './words-en';
+import { COMMON as TR_COMMON, EXTRA as TR_EXTRA } from '../../src/words/tr';
+import { COMMON as EN_COMMON, EXTRA as EN_EXTRA } from '../../src/words/en';
 
 // ---------------------------------------------------------------- layout (720x1280)
 const W = 720;
