@@ -329,21 +329,6 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
-    slug: 'color-race',
-    title: { en: 'Color Race', tr: 'Renk Yarışı' },
-    description: {
-      en: 'Climb through rotating colour rings, passing only through your own colour, and beat your rival to the top! A wrong colour sends you back to the last checkpoint. First to the top, or higher when the 90 seconds run out, wins. Race an AI ghost that gets faster every round, or a friend online on the same course.',
-      tr: 'Dönen renkli halkaların arasından yalnızca kendi renginden geçerek zirveye tırman ve rakibini geç! Yanlış renk seni son kontrol noktasına geri gönderir. Zirveye ilk varan ya da 90 saniye bittiğinde daha yukarıda olan kazanır. Tek başına her turda hızlanan bir hayalete karşı yarış, çevrimiçi bir arkadaşınla aynı parkurda kapış.',
-    },
-    category: 'arcade',
-    categories: ['arcade', 'casual'],
-    tags: ['multiplayer', 'color', 'race', 'retro'],
-    orientation: 'portrait',
-    input: ['touch', 'keyboard', 'mouse'],
-    addedAt: '2026-11-04',
-    multiplayer: true,
-  }),
-  arcadeGame({
     slug: 'color-road',
     title: { en: 'Color Road', tr: 'Renk Yolu' },
     description: {
