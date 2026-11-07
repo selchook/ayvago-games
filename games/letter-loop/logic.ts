@@ -170,7 +170,7 @@ function bounds(words: Placed[]): { rows: number; cols: number } {
  * Builds one level: picks a base word of the shape's length that spells enough common words,
  * lays the words out as a crossword and lists the rest as bonus words.
  */
-export function makePuzzle(dict: Dict, shape: Shape, used: Set<string>, rnd: Rnd, maxCols = 9, maxRows = 9): Puzzle | null {
+export function makePuzzle(dict: Dict, shape: Shape, used: Set<string>, rnd: Rnd, maxCols = 9, maxRows = 8): Puzzle | null {
   const candidates = shuffled(dict.common.filter((w) => w.length === shape.len && !used.has(w)), rnd);
   let tries = 0;
   for (const base of candidates) {
