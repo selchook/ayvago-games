@@ -9,7 +9,7 @@ const W = 720;
 const TIME_Y = 100;
 const GRID_TOP = 136;
 const GRID_H = 500;
-const GRID_W = 660;
+const GRID_W = 636;
 const PREVIEW_Y = 690;
 const WHEEL_X = 360;
 const WHEEL_Y = 930;
@@ -474,13 +474,14 @@ export class PlayScene extends ArcadeScene {
     const mid = this.cells.get(gw.keys[Math.floor(gw.keys.length / 2)])!;
     this.time.delayedCall(300 + word.length * 55, () => {
       this.addScore(pts, mid.x, mid.y - 30);
-      if (full) {
+      this.autoComplete();
+      const last = this.words.every((w) => w.found);
+      if (full && !last) {
         this.banner(t('fullWord'), GOLD);
         shake(this, 0.006, 160);
-      } else if (this.streak >= 3) {
+      } else if (this.streak >= 3 && !last) {
         this.banner(t(this.streak >= 5 ? 'praise3' : this.streak >= 4 ? 'praise2' : 'praise1'), 0xffffff);
       }
-      this.autoComplete();
       this.checkClear();
     });
     this.time.delayedCall(260, () => this.clearChain());
@@ -635,13 +636,18 @@ export class PlayScene extends ArcadeScene {
       this.tweens.add({ targets, y: '-=18', duration: 160, delay: i++ * 25, yoyo: true, ease: 'Sine.easeOut' });
       this.time.delayedCall(i * 25, () => burst(this, cell.x, cell.y, [GOLD, GOOD, 0xffffff], 4, 140));
     }
+    const cy = GRID_TOP + GRID_H / 2;
+    const band = this.add.graphics().setDepth(29).setAlpha(0);
+    band.fillStyle(0x10132e, 0.82).fillRoundedRect(40, cy - 70, W - 80, 170, 34);
+    band.lineStyle(3, GOLD, 0.6).strokeRoundedRect(40, cy - 70, W - 80, 170, 34);
+    this.tweens.add({ targets: band, alpha: 1, duration: 200 });
     const title = txt(this, W / 2, GRID_TOP + GRID_H / 2, t('levelClear'), { title: true, size: 58, color: '#ffd23f' }).setDepth(30).setScale(0.3);
     const sub = txt(this, W / 2, GRID_TOP + GRID_H / 2 + 64, `${t('timeBonus')} +${bonus}`, { size: 30, color: '#ffffff' }).setDepth(30).setAlpha(0);
     this.tweens.add({ targets: title, scale: 1, duration: 360, ease: 'Back.easeOut' });
     this.tweens.add({ targets: sub, alpha: 1, duration: 300, delay: 300 });
     this.time.delayedCall(500, () => this.addScore(bonus));
     this.time.delayedCall(1700, () => {
-      this.tweens.add({ targets: [title, sub], alpha: 0, duration: 250, onComplete: () => { title.destroy(); sub.destroy(); } });
+      this.tweens.add({ targets: [title, sub, band], alpha: 0, duration: 250, onComplete: () => { title.destroy(); sub.destroy(); band.destroy(); } });
       this.tweens.add({
         targets: [this.gridLayer, this.wheelLayer], alpha: 0, duration: 250,
         onComplete: () => {
