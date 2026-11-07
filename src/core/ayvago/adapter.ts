@@ -1,8 +1,9 @@
 /**
  * Ayvago platform adapter (protocol 2, v1-compatible GHA_* messages).
  *
- * Minor protocol versions add optional GHA_START fields only: 2.1 online rooms, 2.2 the player's
- * character, 2.3 tables of up to four seats, 2.4 the player's server best (`config.best`).
+ * Minor protocol versions add optional fields and messages only: 2.1 online rooms, 2.2 the player's
+ * character, 2.3 tables of up to four seats, 2.4 the player's server best (`config.best`), 2.5 the
+ * game's own sound switch reported to the platform (`reportMute`, GHA_MUTE_STATE).
  *
  * A single, dependency-free file that games vendor (copy) into their own repository. At runtime
  * it decides whether the game runs inside Ayvago (embedded in an iframe on an allowed platform
@@ -13,7 +14,7 @@
  * Update vendored copies by copying this file; do not edit them in place.
  */
 
-export const ADAPTER_VERSION = '2.4.0';
+export const ADAPTER_VERSION = '2.5.0';
 export const PROTOCOL_VERSION = 2;
 
 /** Origins allowed to host games. "*" matches one DNS label segment (letters, digits, "-"). */
@@ -130,6 +131,11 @@ export interface PlatformAdapter {
   requestInterstitial(placement: string): Promise<void>;
   /** A highlight moment (personal best, level cleared). */
   celebrate(): void;
+  /**
+   * Protocol 2.5: the game's own sound switch (its menu button) changed, or its state at start.
+   * The platform shows the same state on its sound button, so the two never disagree.
+   */
+  reportMute(muted: boolean): void;
   openLeaderboard(): void;
   onPause(callback: () => void): () => void;
   onResume(callback: () => void): () => void;
@@ -273,6 +279,7 @@ class StandaloneAdapter implements PlatformAdapter {
     return Promise.resolve();
   }
   celebrate(): void {}
+  reportMute(): void {}
   openLeaderboard(): void {}
   onPause(): () => void {
     return () => {};
@@ -471,6 +478,10 @@ class AyvagoAdapter implements PlatformAdapter {
 
   celebrate(): void {
     this.send('GHA_HAPPY_TIME');
+  }
+
+  reportMute(muted: boolean): void {
+    this.send('GHA_MUTE_STATE', { muted: !!muted });
   }
 
   openLeaderboard(): void {

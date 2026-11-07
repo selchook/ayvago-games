@@ -2,6 +2,8 @@
 // origin) and checks the GHA_* protocol end to end:
 //   GHA_READY → GHA_START(locale) → GHA_LOADING → intro → menu → GHA_SESSION_START
 //   → GHA_PAUSE pauses → GHA_MUTE mutes → forced game over → GHA_END{score}
+// The game reports its own sound switch after the handshake and on every change of its menu button
+// and never echoes GHA_MUTE back.
 // GHA_START carries a platform best (protocol 2.4) above the forced score: the game must adopt
 // it as its own best and must not celebrate the lower score as a new record.
 // Usage: node scripts/platform-harness.mjs [--dev] [slug ...]   (default: dist/ via vite preview)
@@ -80,6 +82,13 @@ async function check(slug) {
     await frame().waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: 15000 });
     step.locale = await frame().evaluate(() => document.documentElement.lang);
     step.best = await frame().evaluate((id) => Number(localStorage.getItem(`ayvago:best:${id}`)), slug);
+    // the menu's own sound button: off and on again, both reported to the platform
+    const box = await frame().locator('canvas').first().boundingBox();
+    const [gw, gh] = await frame().evaluate(() => [window.__ayvago.game.scale.width, window.__ayvago.game.scale.height]);
+    for (let i = 0; i < 2; i++) {
+      await page.mouse.click(box.x + (60 * box.width) / gw, box.y + ((gh - 60) * box.height) / gh);
+      await page.waitForTimeout(250);
+    }
     await page.waitForTimeout(400);
     await page.keyboard.press('Enter');
     await frame().waitForFunction(() => window.__ayvago?.game.scene.isActive('Play'), null, { timeout: 5000 });
@@ -92,6 +101,10 @@ async function check(slug) {
     await page.evaluate(() => send({ type: 'GHA_MUTE', muted: true }));
     await page.waitForTimeout(200);
     step.mute = await frame().evaluate(() => window.__ayvago.silenced());
+    // protocol 2.5: one sound switch. The game reported its switch after the handshake and does
+    // not echo the platform's own GHA_MUTE back.
+    const states = await page.evaluate(() => window.log.filter((m) => m.type === 'GHA_MUTE_STATE').map((m) => m.muted));
+    step.muteState = states.join() === 'false,true,false';
     await frame().evaluate(() => {
       const g = window.__ayvago.game;
       g.scene.stop('Pause');
@@ -110,7 +123,7 @@ async function check(slug) {
     errors.push('flow: ' + String(e.message).split('\n')[0] + ' | messages=' + (await types().catch(() => '?')));
   }
   await page.close();
-  const ok = step.ready && step.loading && step.locale === 'tr' && step.sessionStart && step.pause && step.mute && step.end && step.best === PLATFORM_BEST && step.noFalseBest && errors.length === 0;
+  const ok = step.ready && step.loading && step.locale === 'tr' && step.sessionStart && step.pause && step.mute && step.end && step.best === PLATFORM_BEST && step.noFalseBest && step.muteState && errors.length === 0;
   return { slug, ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
 }
 

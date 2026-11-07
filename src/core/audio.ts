@@ -1,29 +1,45 @@
 import Phaser from 'phaser';
 import { storage } from './storage';
 
-// Two independent switches: the player's own toggle (persisted) and the host platform's
-// GHA_MUTE. Sound plays only when neither is on.
+// One sound switch. The player's sound button in the game and, inside Ayvago, the toolbar's sound
+// button on the platform page are the same switch (protocol 2.5): the platform's GHA_MUTE sets it,
+// and a change made in the game is reported back with GHA_MUTE_STATE. It is kept in the game's
+// storage, so the choice carries over between visits.
 let muted = storage.get<boolean>('muted', false);
-let hostMuted = false;
+const listeners = new Set<(m: boolean) => void>();
+let reporter: ((m: boolean) => void) | null = null;
 
 export function isMuted(): boolean {
   return muted;
 }
 
-/** True when nothing should be heard (player or platform muted). */
+/** True when nothing should be heard. */
 export function isSilenced(): boolean {
-  return muted || hostMuted;
+  return muted;
 }
 
-export function setMuted(game: Phaser.Game, m: boolean): void {
+/**
+ * Sets the switch. `from: 'host'` is a change made on the platform page; it is not reported back,
+ * so the two sides never echo each other.
+ */
+export function setMuted(game: Phaser.Game, m: boolean, from: 'player' | 'host' = 'player'): void {
+  const changed = muted !== m;
   muted = m;
   storage.set('muted', m);
-  game.sound.mute = isSilenced();
+  game.sound.mute = m;
+  if (changed) listeners.forEach((cb) => cb(m));
+  if (from === 'player') reporter?.(m);
 }
 
-export function setHostMuted(game: Phaser.Game, m: boolean): void {
-  hostMuted = m;
-  game.sound.mute = isSilenced();
+/** Called on every change of the switch (sound buttons keep their icon in step). */
+export function onMuteChange(cb: (m: boolean) => void): () => void {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+}
+
+/** The platform hook: launch() passes the adapter's reportMute here. */
+export function setMuteReporter(fn: ((m: boolean) => void) | null): void {
+  reporter = fn;
 }
 
 export type SfxConfig = Phaser.Types.Sound.SoundConfig & {

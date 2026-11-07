@@ -8,7 +8,7 @@ import { playAyvagoIntro } from './intro';
 import { registerStrings, loc, getLang, setLang } from './i18n';
 import { sdk } from './sdk';
 import { wireNet } from './net';
-import { installMasterBus, isMuted, isSilenced, setHostMuted } from './audio';
+import { installMasterBus, isMuted, isSilenced, setMuted, setMuteReporter } from './audio';
 import type { PlatformAdapter } from './ayvago/adapter';
 import { GameDefinition, setCurrentGame, gameSize } from './registry';
 import { BootScene, MenuScene, PauseScene, GameOverScene, setIntroPromise } from './scenes';
@@ -27,7 +27,11 @@ function bindPlatform(game: Phaser.Game, adapter: PlatformAdapter): void {
     const play = game.scene.getScene('Play') as Phaser.Scene & { pauseGame?: () => void };
     if (play?.scene.isActive()) play.pauseGame?.();
   });
-  adapter.onMute((muted) => setHostMuted(game, muted));
+  // One sound switch with the platform's toolbar button (protocol 2.5): its GHA_MUTE sets the
+  // game's switch, and the game tells the platform its own state now and after every change.
+  adapter.onMute((muted) => setMuted(game, muted, 'host'));
+  setMuteReporter((muted) => adapter.reportMute(muted));
+  adapter.reportMute(isMuted());
   adapter.onThemeChange((th) => setHostScanlines(themeHasScanlines(th.theme)));
   adapter.onLocaleChange((locale) => {
     setLang(locale.toLowerCase().startsWith('tr') ? 'tr' : 'en');

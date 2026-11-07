@@ -62,7 +62,8 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
   - Boot reports GHA_LOADING.
   - Every round sends GHA_SESSION_START.
   - The result screen sends GHA_END `{score, won}` and `celebrate()` on a new best.
-  - GHA_PAUSE opens the pause overlay, GHA_MUTE silences, and GHA_LOCALE_CHANGE re-renders the menu.
+  - GHA_PAUSE opens the pause overlay, and GHA_LOCALE_CHANGE re-renders the menu.
+  - One sound switch (protocol 2.5): the platform's toolbar button (GHA_MUTE) and the game's own sound buttons set the same switch; the game reports its state with GHA_MUTE_STATE after the handshake and on every change (`setMuted` / `onMuteChange` in `src/core/audio.ts`).
   - Under the platform's retro and arcade themes (in GHA_START or GHA_THEME_CHANGE) the page draws its own CRT scanlines over the frame, so the game hides its scanlines (`setHostScanlines` in `src/core/fx.ts`).
   - The menu shows the platform leaderboard button.
   - GHA_START `best` (protocol 2.4) is the player's record on ayvago.com; it replaces the browser's stored best, so "NEW BEST" matches the platform on every device (`adoptPlatformBest` in `src/core/storage.ts`).
