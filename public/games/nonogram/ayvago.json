@@ -18,7 +18,7 @@
     "nonogram",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/nonogram/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/nonogram/",
   "orientation": "portrait",
   "input": [
     "touch",

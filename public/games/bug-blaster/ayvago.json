@@ -20,7 +20,7 @@
     "blaster",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/bug-blaster/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/bug-blaster/",
   "orientation": "portrait",
   "input": [
     "touch",

@@ -20,7 +20,7 @@
     "mangala",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/mangala/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/mangala/",
   "orientation": "portrait",
   "input": [
     "touch",

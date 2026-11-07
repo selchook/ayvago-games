@@ -20,7 +20,7 @@
     "pop",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/bubble-pop/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/bubble-pop/",
   "orientation": "portrait",
   "input": [
     "touch",

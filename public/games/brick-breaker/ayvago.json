@@ -20,7 +20,7 @@
     "breaker",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/brick-breaker/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/brick-breaker/",
   "orientation": "portrait",
   "input": [
     "touch",

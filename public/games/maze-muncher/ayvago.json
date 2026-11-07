@@ -20,7 +20,7 @@
     "muncher",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/maze-muncher/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/maze-muncher/",
   "orientation": "portrait",
   "input": [
     "touch",

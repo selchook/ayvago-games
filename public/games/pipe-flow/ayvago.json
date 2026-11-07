@@ -20,7 +20,7 @@
     "flow",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/pipe-flow/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/pipe-flow/",
   "orientation": "portrait",
   "input": [
     "touch",

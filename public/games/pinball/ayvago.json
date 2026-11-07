@@ -19,7 +19,7 @@
     "pinball",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/pinball/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/pinball/",
   "orientation": "portrait",
   "input": [
     "touch",

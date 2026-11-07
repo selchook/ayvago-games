@@ -19,7 +19,7 @@
     "gate",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/color-gate/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/color-gate/",
   "orientation": "portrait",
   "input": [
     "touch",

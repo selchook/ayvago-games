@@ -21,7 +21,7 @@
     "morris",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/nine-mens-morris/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/nine-mens-morris/",
   "orientation": "portrait",
   "input": [
     "touch",

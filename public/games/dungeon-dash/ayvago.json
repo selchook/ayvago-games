@@ -20,7 +20,7 @@
     "dash",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/dungeon-dash/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/dungeon-dash/",
   "orientation": "portrait",
   "input": [
     "touch",

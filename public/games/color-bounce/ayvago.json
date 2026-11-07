@@ -19,7 +19,7 @@
     "bounce",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/color-bounce/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/color-bounce/",
   "orientation": "portrait",
   "input": [
     "touch",

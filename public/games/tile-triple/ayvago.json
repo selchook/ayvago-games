@@ -19,7 +19,7 @@
     "triple",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/tile-triple/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/tile-triple/",
   "orientation": "portrait",
   "input": [
     "touch",

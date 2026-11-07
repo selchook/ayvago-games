@@ -18,7 +18,7 @@
     "sudoku",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/sudoku/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/sudoku/",
   "orientation": "portrait",
   "input": [
     "touch",

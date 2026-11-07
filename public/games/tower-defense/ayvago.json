@@ -20,7 +20,7 @@
     "defense",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/tower-defense/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/tower-defense/",
   "orientation": "landscape",
   "input": [
     "touch",

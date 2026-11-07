@@ -21,7 +21,7 @@
     "pong",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/neon-pong/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/neon-pong/",
   "orientation": "portrait",
   "input": [
     "touch",

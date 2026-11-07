@@ -19,7 +19,7 @@
     "throw",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/axe-throw/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/axe-throw/",
   "orientation": "portrait",
   "input": [
     "touch",

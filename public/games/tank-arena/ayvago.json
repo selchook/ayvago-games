@@ -20,7 +20,7 @@
     "arena",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/tank-arena/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/tank-arena/",
   "orientation": "landscape",
   "input": [
     "touch",

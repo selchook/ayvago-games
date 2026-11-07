@@ -20,7 +20,7 @@
     "plane",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/tappy-plane/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/tappy-plane/",
   "orientation": "portrait",
   "input": [
     "touch",

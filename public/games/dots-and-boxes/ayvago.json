@@ -22,7 +22,7 @@
     "boxes",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/dots-and-boxes/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/dots-and-boxes/",
   "orientation": "portrait",
   "input": [
     "touch",

@@ -20,7 +20,7 @@
     "lander",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/lunar-lander/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/lunar-lander/",
   "orientation": "portrait",
   "input": [
     "touch",

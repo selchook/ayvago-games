@@ -19,7 +19,7 @@
     "roll",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/paint-roll/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/paint-roll/",
   "orientation": "portrait",
   "input": [
     "touch",

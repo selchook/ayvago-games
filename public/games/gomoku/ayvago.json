@@ -20,7 +20,7 @@
     "gomoku",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/gomoku/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/gomoku/",
   "orientation": "portrait",
   "input": [
     "touch",

@@ -19,7 +19,7 @@
     "backgammon",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/backgammon/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/backgammon/",
   "orientation": "landscape",
   "input": [
     "touch",

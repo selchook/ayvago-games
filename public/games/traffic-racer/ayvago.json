@@ -20,7 +20,7 @@
     "racer",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/traffic-racer/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/traffic-racer/",
   "orientation": "portrait",
   "input": [
     "touch",

@@ -20,7 +20,7 @@
     "maze",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/bomb-maze/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/bomb-maze/",
   "orientation": "portrait",
   "input": [
     "touch",

@@ -19,7 +19,7 @@
     "mole",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/whack-a-mole/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/whack-a-mole/",
   "orientation": "portrait",
   "input": [
     "touch",

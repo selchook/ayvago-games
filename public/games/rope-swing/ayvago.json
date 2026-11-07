@@ -19,7 +19,7 @@
     "swing",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/rope-swing/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/rope-swing/",
   "orientation": "landscape",
   "input": [
     "touch",

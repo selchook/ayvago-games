@@ -20,7 +20,7 @@
     "sweeper",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/mine-sweeper/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/mine-sweeper/",
   "orientation": "portrait",
   "input": [
     "touch",

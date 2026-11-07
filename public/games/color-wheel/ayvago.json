@@ -19,7 +19,7 @@
     "wheel",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/color-wheel/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/color-wheel/",
   "orientation": "portrait",
   "input": [
     "touch",

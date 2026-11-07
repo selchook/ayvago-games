@@ -19,7 +19,7 @@
     "reversi",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/reversi/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/reversi/",
   "orientation": "portrait",
   "input": [
     "touch",

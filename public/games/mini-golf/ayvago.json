@@ -21,7 +21,7 @@
     "golf",
     "retro"
   ],
-  "entry": "https://ayvago-games.vercel.app/games/mini-golf/",
+  "entry": "https://ayvago-games-nine.vercel.app/games/mini-golf/",
   "orientation": "portrait",
   "input": [
     "touch",
