@@ -866,14 +866,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'plinko-drop',
     title: { en: 'Plinko Drop', tr: 'Plinko' },
     description: {
-      en: "Drop balls through a field of pegs, ping the gold pegs and land in multiplier slots. Hit each round's target!",
-      tr: 'Topları çivilerin arasından bırak, altın çivilere çarptır ve çarpanlı ceplere düşür. Her turun hedefini tuttur!',
+      en: 'Drop balls through ever-changing peg boards! Aim golden, heavy, splitting and ghost balls at multiplier pockets, chain combos and earn three stars on every board.',
+      tr: 'Topları değişen çivi tahtalarından aşağı bırak! Altın, ağır, bölünen ve hayalet toplarla çarpanlı ceplere nişan al, kombo yap, her tahtada üç yıldız topla.',
     },
     category: 'casual',
     categories: ['casual', 'arcade'],
     tags: ['plinko', 'drop', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
     addedAt: '2026-10-28',
   }),
   arcadeGame({
