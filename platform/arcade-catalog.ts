@@ -946,6 +946,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'secret-word',
+    title: { en: 'Secret Word', tr: 'Gizli Kelime' },
+    description: {
+      en: 'Find the secret word in six guesses! Green letters are in the right place, amber ones are in the word but elsewhere, grey ones are not in it. Words come one after another, the clock gets shorter and the words get longer; keep your streak going to grow the score multiplier.',
+      tr: 'Gizli kelimeyi altı tahminde bul! Yeşil harf doğru yerde, turuncu harf kelimede ama başka yerde, gri harf kelimede yok. Kelimeler art arda gelir, süre kısalır, harfler uzar; seriyi sürdürdükçe puan çarpanın büyür.',
+    },
+    category: 'word',
+    categories: ['word', 'puzzle', 'casual'],
+    tags: ['secret', 'word', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-08',
+  }),
+  arcadeGame({
     slug: 'shooting-gallery',
     title: { en: 'Shooting Gallery', tr: 'Atış Poligonu' },
     description: {
