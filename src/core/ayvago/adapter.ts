@@ -3,7 +3,8 @@
  *
  * Minor protocol versions add optional fields and messages only: 2.1 online rooms, 2.2 the player's
  * character, 2.3 tables of up to four seats, 2.4 the player's server best (`config.best`), 2.5 the
- * game's own sound switch reported to the platform (`reportMute`, GHA_MUTE_STATE).
+ * game's own sound switch reported to the platform (`reportMute`, GHA_MUTE_STATE), 2.6 the run's
+ * difficulty in GHA_END (`difficulty: 'easy'` runs are practice and stay off the leaderboards).
  *
  * A single, dependency-free file that games vendor (copy) into their own repository. At runtime
  * it decides whether the game runs inside Ayvago (embedded in an iframe on an allowed platform
@@ -14,7 +15,7 @@
  * Update vendored copies by copying this file; do not edit them in place.
  */
 
-export const ADAPTER_VERSION = '2.5.0';
+export const ADAPTER_VERSION = '2.6.0';
 export const PROTOCOL_VERSION = 2;
 
 /** Origins allowed to host games. "*" matches one DNS label segment (letters, digits, "-"). */
@@ -75,7 +76,15 @@ export type StartConfig = ThemeInfo & {
   protocol: number;
 };
 
-export type GameResult = { score?: number; won?: boolean; message?: string };
+/** Protocol 2.6: the difficulty a run was played at. Easy runs are practice (no leaderboard). */
+export type Difficulty = 'easy' | 'normal';
+
+export type GameResult = {
+  score?: number;
+  won?: boolean;
+  message?: string;
+  difficulty?: Difficulty;
+};
 
 /** Largest move payload (serialized JSON, in characters); larger moves are dropped. */
 export const MAX_MOVE_SIZE = 16_000;
@@ -465,7 +474,11 @@ class AyvagoAdapter implements PlatformAdapter {
   endGame(result: GameResult): void {
     const score =
       typeof result.score === 'number' && Number.isFinite(result.score) ? result.score : null;
-    this.send('GHA_END', { score, won: result.won, message: result.message });
+    const end: Record<string, unknown> = { score, won: result.won, message: result.message };
+    // only a valid value is sent; games that do not offer difficulty send nothing (normal)
+    if (result.difficulty === 'easy' || result.difficulty === 'normal')
+      end.difficulty = result.difficulty;
+    this.send('GHA_END', end);
   }
 
   async requestRewarded(placement: string): Promise<boolean> {
