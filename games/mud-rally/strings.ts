@@ -1,0 +1,91 @@
+import { getLang, t } from '@core';
+
+export const STRINGS = {
+  tr: {
+    lap: 'TUR',
+    raceN: '{n}. YARIŞ',
+    finalLap: 'SON TUR!',
+    lapN: '{n}. TUR',
+    nitroGo: 'NİTRO!',
+    results: '{n}. YARIŞ SONUÇLARI',
+    driverRed: 'KIRMIZI',
+    driverYellow: 'SARI',
+    driverGreen: 'YEŞİL',
+    prize: 'ÖDÜL',
+    pickups: 'Yoldan toplanan',
+    earned: 'Bu yarışta kazandığın',
+    lostLife: '4. oldun: bir can gitti!',
+    lastLife: 'Son canın kaldı, dikkat!',
+    cont: 'DEVAM',
+    garage: 'GARAJ',
+    bank: 'Kasa',
+    engine: 'MOTOR',
+    engineInfo: 'Son hız ve hızlanma',
+    tires: 'LASTİK',
+    tiresInfo: 'Yol tutuş, daha az kayma',
+    shocks: 'AMORTİSÖR',
+    shocksInfo: 'Yumuşak iniş, tümseklerde az kayıp',
+    nitroUp: 'NİTRO',
+    nitroInfo: 'Her yarışa +1 nitro',
+    maxed: 'MAKS',
+    nextRace: 'SONRAKİ YARIŞ',
+    champOver: 'ŞAMPİYONA BİTTİ',
+    shopHint: '← → seç · Enter / Boşluk satın al',
+    noMoney: 'Para yetmiyor!',
+    placeShout: '{p} OLDUN!',
+    trackOf: 'Pist: {name}',
+    nextTrack: 'Sıradaki pist: {name}',
+    wrongWay: 'TERS YÖN!',
+    missedCp: 'Kontrol noktasını kaçırdın, tur sayılmadı!',
+  },
+  en: {
+    lap: 'LAP',
+    raceN: 'RACE {n}',
+    finalLap: 'FINAL LAP!',
+    lapN: 'LAP {n}',
+    nitroGo: 'NITRO!',
+    results: 'RACE {n} RESULTS',
+    driverRed: 'RED',
+    driverYellow: 'YELLOW',
+    driverGreen: 'GREEN',
+    prize: 'PRIZE',
+    pickups: 'Picked up on track',
+    earned: 'Earned this race',
+    lostLife: '4th place: you lost a life!',
+    lastLife: 'Last life left, careful!',
+    cont: 'CONTINUE',
+    garage: 'GARAGE',
+    bank: 'Bank',
+    engine: 'ENGINE',
+    engineInfo: 'Top speed and acceleration',
+    tires: 'TIRES',
+    tiresInfo: 'Grip, less sliding',
+    shocks: 'SHOCKS',
+    shocksInfo: 'Soft landings, less bump slowdown',
+    nitroUp: 'NITRO',
+    nitroInfo: '+1 nitro every race',
+    maxed: 'MAX',
+    nextRace: 'NEXT RACE',
+    champOver: 'CHAMPIONSHIP OVER',
+    shopHint: '← → choose · Enter / Space buy',
+    noMoney: 'Not enough money!',
+    placeShout: '{p} PLACE!',
+    trackOf: 'Track: {name}',
+    nextTrack: 'Next track: {name}',
+    wrongWay: 'WRONG WAY!',
+    missedCp: 'Checkpoint missed: lap not counted!',
+  },
+};
+
+/** 1st 2nd 3rd 4th, or 1. 2. 3. 4. in Turkish. */
+export function ordinal(n: number): string {
+  if (getLang() === 'tr') return `${n}.`;
+  const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  return `${n}${s}`;
+}
+
+/** $12,500 (en) or $12.500 (tr). */
+export function money(n: number): string {
+  return '$' + Math.round(n).toLocaleString(getLang() === 'tr' ? 'tr-TR' : 'en-US');
+}
+

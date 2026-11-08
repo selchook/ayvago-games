@@ -688,6 +688,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'mud-rally',
+    title: { en: 'Mud Rally', tr: 'Çamur Rallisi' },
+    description: {
+      en: 'Four pickup trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster.',
+      tr: 'Dört kamyonet, tek ekranlık toprak bir pist! Rampalardan uç, çamur çukurlarında kaymamaya çalış, nitroyu doğru anda ateşle ve dört turu herkesten önce bitir. Kazandığın parayla garajda motoru, lastikleri, amortisörleri ve nitroyu geliştir; her yeni pistte rakipler daha hızlı.',
+    },
+    category: 'sports',
+    categories: ['sports', 'arcade', 'action'],
+    tags: ['mud', 'rally', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-07',
+  }),
+  arcadeGame({
     slug: 'neon-pong',
     title: { en: 'Neon Pong', tr: 'Neon Pong' },
     description: {
@@ -1024,6 +1038,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['solitaire', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
   }),
   arcadeGame({
     slug: 'space-blaster',

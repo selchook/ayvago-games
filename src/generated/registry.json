@@ -1,5 +1,5 @@
 {
-  "count": 84,
+  "count": 85,
   "games": [
     {
       "id": "air-hockey",
@@ -1421,6 +1421,40 @@
       "thumb": "thumbs/mini-golf.png"
     },
     {
+      "id": "mud-rally",
+      "title": {
+        "tr": "Çamur Rallisi",
+        "en": "Mud Rally"
+      },
+      "description": {
+        "tr": "Dört kamyonet, tek ekranlık toprak bir pist! Rampalardan uç, çamur çukurlarında kaymamaya çalış, nitroyu doğru anda ateşle ve dört turu herkesten önce bitir. Kazandığın parayla garajda motoru, lastikleri, amortisörleri ve nitroyu geliştir; her yeni pistte rakipler daha hızlı.",
+        "en": "Four pickup trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster."
+      },
+      "howTo": {
+        "tr": "Sol başparmağını kamyonun gitmesini istediğin yöne çek; sağdaki A tuşu nitro. Klavye: yön tuşları ya da WASD ile sür, Boşluk, Z veya Enter ile nitro.",
+        "en": "Pull the left stick the way you want the truck to go; the A button on the right fires nitro. Keys: arrows or WASD to drive, Space, Z or Enter for nitro."
+      },
+      "genres": [
+        "sports",
+        "arcade",
+        "action"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Kenney Car Kit, Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-11-07"
+      },
+      "thumb": "thumbs/mud-rally.png"
+    },
+    {
       "id": "neon-pong",
       "title": {
         "tr": "Neon Pong",
@@ -2183,8 +2217,8 @@
         "en": "Classic Klondike patience: build every suit from Ace to King. Tap a card and it jumps to the best spot."
       },
       "howTo": {
-        "tr": "Karta dokun ya da sürükle; desteye dokunup kart çek. Klavye: oklar seç, Enter oyna, Boşluk kart çek, X geri al.",
-        "en": "Tap or drag cards; tap the deck to draw. Keys: arrows select, Enter plays, Space draws, X undoes."
+        "tr": "Karta dokun ya da sürükle; desteye dokunup kart çek. Klavye: oklar seç, Enter oyna, Boşluk çek, X geri al, H ipucu.",
+        "en": "Tap or drag a card; tap the deck to draw. Keys: arrows select, Enter plays, Space draws, X undoes, H hints."
       },
       "genres": [
         "card",
@@ -2197,9 +2231,10 @@
         "keyboard",
         "mouse"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
-        "Art & audio: Kenney (CC0) — kenney.nl"
+        "Audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
       ],
       "thumb": "thumbs/solitaire.png"
     },
