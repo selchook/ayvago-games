@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "letterrain",
+  "title": {
+    "en": "Letter Rain",
+    "tr": "Harf Yağmuru"
+  },
+  "description": {
+    "en": "Letters are raining down! Link neighbouring letters into words, pop them off the board and keep the columns from reaching the top. Gold letters double your score, bombs clear their neighbours, and cracked letters turn to stone if you wait too long. Every level the rain gets a little faster!",
+    "tr": "Gökten harf yağıyor! Yan yana duran harfleri birleştirip kelime kur, kelimeleri patlat ve sütunlar tepeye ulaşmadan tahtayı temiz tut. Altın harfler puanı ikiye katlar, bombalar çevresini temizler, çatlak harfler ise çabuk kullanılmazsa taşa döner. Her seviyede yağmur biraz daha hızlanır!"
+  },
+  "category": "word",
+  "categories": [
+    "word",
+    "puzzle",
+    "arcade"
+  ],
+  "tags": [
+    "letter",
+    "rain",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/letter-rain/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/letter-rain/ayvago/icon-512.png",
+    "cover": "/games/letter-rain/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/letter-rain/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}
