@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, txt, t, rng, net } from '@core';
+import { ArcadeScene, burst, shake, flash, txt, t, rng, net, isEasy } from '@core';
 import { Brain, COLS, ROWS, winLine } from './ai';
 
 const CELL = 96;
@@ -9,6 +9,8 @@ const CHIP = 84;
 const AI_TINT = 0xffd23f;
 // [search depth, random-move chance] per difficulty level
 const LEVELS: Array<[number, number]> = [[1, 0.45], [2, 0.25], [3, 0.12], [4, 0.05], [5, 0], [6, 0], [9, 0]];
+// Easy (practice): a short, gentle ladder that never searches deeper than 2 and often plays at random
+const EASY_LEVELS: Array<[number, number]> = [[1, 0.6], [1, 0.45], [2, 0.35]];
 
 type State = 'player' | 'ai' | 'busy';
 /** Online move message: column + move number (guards against stale messages after a rematch). */
@@ -25,6 +27,7 @@ export class PlayScene extends ArcadeScene {
   private info!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Text;
   private level = 0;
+  private levels = LEVELS;
   private lives = 3;
   private streak = 0;
   private round = 0;
@@ -41,6 +44,7 @@ export class PlayScene extends ArcadeScene {
     this.chips = new Array(COLS * ROWS).fill(null);
     this.state = 'busy'; this.hoverCol = 3;
     this.level = 0; this.lives = 3; this.streak = 0; this.round = 0; this.playerMoves = 0;
+    this.levels = isEasy() ? EASY_LEVELS : LEVELS;
     this.online = net.active;
     this.mine = this.online && net.seat === 1 ? 2 : 1;
     this.moveNo = 0; this.inbox = [];
@@ -169,7 +173,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.hud.setLives(this.lives);
     // the level sits in the info line: in English the centre slot ran into the lives
-    this.info.setText(`${t('level')} ${this.level + 1}   ${t('rival', { name: t('d' + Math.min(this.level, LEVELS.length - 1)) })}   ${t('streak', { n: this.streak })}`);
+    this.info.setText(`${t('level')} ${this.level + 1}   ${t('rival', { name: t('d' + Math.min(this.level, this.levels.length - 1)) })}   ${t('streak', { n: this.streak })}`);
   }
 
   private setTurn(s: State): void {
@@ -212,10 +216,16 @@ export class PlayScene extends ArcadeScene {
     this.drop(this.hoverCol, this.mine);
   }
 
+  /** The AI at the current level: search depth and the chance of a random move. */
+  ai(): { depth: number; random: number } {
+    const [depth, random] = this.levels[Math.min(this.level, this.levels.length - 1)];
+    return { depth, random };
+  }
+
   private aiMove(): void {
     if (this.isOver || this.state !== 'ai') return;
-    const [depth, rnd] = LEVELS[Math.min(this.level, LEVELS.length - 1)];
-    const col = new Brain(this.cells).choose(2, depth, rnd, 90);
+    const { depth, random } = this.ai();
+    const col = new Brain(this.cells).choose(2, depth, random, 90);
     if (col < 0) return this.finishRound(0, null);
     this.hoverCol = col;
     this.drop(col, 2);
@@ -269,7 +279,7 @@ export class PlayScene extends ArcadeScene {
       this.streak++;
       const bonus = Math.max(0, 22 - this.playerMoves) * 10;
       this.addScore(100 * (this.level + 1) + bonus + this.streak * 25, this.scale.width / 2, BY - 20);
-      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.level = Math.min(this.level + 1, this.levels.length - 1);
       msg = t('roundWin'); color = '#5dff7a';
       this.sfx('win'); flash(this, 0x5dff7a, 150);
     } else if (winner === 2) {

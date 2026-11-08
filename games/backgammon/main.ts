@@ -6,6 +6,7 @@ launch({
   meta: meta as GameMeta,
   background: '#160d07',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     // board, checkers and dice are painted in art.ts

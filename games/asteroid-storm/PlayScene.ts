@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, ensurePixel } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, ensurePixel, isEasy } from '@core';
 import { makeFx, makeNebula, makePlanet, makeStars } from './art';
 
 type Img = Phaser.GameObjects.Image;
@@ -16,7 +16,16 @@ const ROCK = [
 ];
 const SHIP_R = 22;
 const PAD = 60;            // wrap margin outside the screen
-const EXTRA_LIFE = 10000;
+/**
+ * Normal and Easy (practice). Easy: two more lives, slower rocks, a ramp at half speed, an extra
+ * life every 5000 points instead of 10000, UFOs from wave 3 that fire 60% slower, and a longer
+ * shield after a respawn. `ramp` scales how fast the waves get harder: wave w plays like wave
+ * 1 + (w - 1) * ramp.
+ */
+const TUNING = {
+  normal: { lives: 3, speed: 1, ramp: 1, extraLife: 10000, ufoWave: 2, ufoFire: 1, shield: 2.5 },
+  easy: { lives: 5, speed: 0.7, ramp: 0.5, extraLife: 5000, ufoWave: 3, ufoFire: 1.6, shield: 3.5 },
+};
 const ADD = Phaser.BlendModes.ADD;
 const ROCK_TINT = [0xb0b0b8, 0x9a9aa6, 0x8a8a96];
 
@@ -48,15 +57,17 @@ export class PlayScene extends ArcadeScene {
   private hyperCd = 0;
   private waveCd = 0;
   private ufoCd = 0;
-  private nextLife = EXTRA_LIFE;
+  private nextLife = TUNING.normal.extraLife;
   private beat = 0;
+  tune = TUNING.normal;
 
   createGame(): void {
     const { width, height } = this.scale;
     this.rocks = []; this.shots = []; this.eshots = []; this.ufo = null;
     this.heading = -Math.PI / 2; this.vx = this.vy = 0;
-    this.lives = 3; this.wave = 0; this.alive = true; this.respawnIn = 0; this.invuln = 2;
-    this.fireCd = 0; this.hyperCd = 0; this.waveCd = 0; this.ufoCd = 18; this.nextLife = EXTRA_LIFE; this.beat = 0;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.lives = this.tune.lives; this.wave = 0; this.alive = true; this.respawnIn = 0; this.invuln = 2;
+    this.fireCd = 0; this.hyperCd = 0; this.waveCd = 0; this.ufoCd = 18; this.nextLife = this.tune.extraLife; this.beat = 0;
 
     // deep space: a drifting nebula, two star layers, a far planet and a few twinkling stars
     makeFx(this); makeNebula(this, width, height); makePlanet(this);
@@ -151,7 +162,7 @@ export class PlayScene extends ArcadeScene {
     this.sfx('wave', { volume: 0.45 });
     this.ring(this.ship.x, this.ship.y, 0x3ee6ff, 6, 900);
     const { width, height } = this.scale;
-    const n = Math.min(3 + this.wave, 11);
+    const n = Math.min(3 + Math.floor(this.lvl()), 11);
     for (let i = 0; i < n; i++) {
       // spawn along the edges, away from the ship
       let x = 0, y = 0;
@@ -163,9 +174,14 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
+  /** How hard the current wave plays (equals the wave number in Normal). */
+  private lvl(): number {
+    return 1 + (this.wave - 1) * this.tune.ramp;
+  }
+
   private spawnRock(x: number, y: number, size: number, baseVx = 0, baseVy = 0): void {
     const def = ROCK[size];
-    const speed = (60 + size * 45 + this.wave * 9) * (0.7 + Math.random() * 0.6);
+    const speed = (60 + size * 45 + this.lvl() * 9) * (0.7 + Math.random() * 0.6) * this.tune.speed;
     const a = Math.random() * Math.PI * 2;
     const img = this.add.image(x, y, rng.pick(def.keys)).setScale(0).setAngle(rng.int(0, 360)).setDepth(5);
     this.tweens.add({ targets: img, scale: def.scale, duration: 220, ease: 'Back.easeOut' });
@@ -193,7 +209,7 @@ export class PlayScene extends ArcadeScene {
 
   private checkExtraLife(): void {
     if (this.score < this.nextLife) return;
-    this.nextLife += EXTRA_LIFE;
+    this.nextLife += this.tune.extraLife;
     this.lives++;
     this.updateHud();
     this.sfx('life', { volume: 0.7, exact: true });
@@ -260,7 +276,7 @@ export class PlayScene extends ArcadeScene {
     this.ring(width / 2, height / 2, 0x3ee6ff, 2, 500);
     this.tweens.add({ targets: this.ship, scale: 0.7, duration: 300, ease: 'Back.easeOut' });
     this.heading = -Math.PI / 2; this.vx = this.vy = 0;
-    this.invuln = 2.5;
+    this.invuln = this.tune.shield;
     if (this.lives === 1) this.sfx('low', { volume: 0.45 });
   }
 
@@ -402,7 +418,7 @@ export class PlayScene extends ArcadeScene {
       u.img.y = u.y0 + Math.sin(u.t * 1.6) * 90;
       u.fireCd -= dt;
       if (u.fireCd <= 0 && this.alive && u.img.x > 0 && u.img.x < width) {
-        u.fireCd = u.small ? Math.max(0.6, 1.2 - this.wave * 0.05) : 1.4;
+        u.fireCd = (u.small ? Math.max(0.6, 1.2 - this.wave * 0.05) : 1.4) * this.tune.ufoFire;
         let a = Math.random() * Math.PI * 2;
         if (u.small) a = Phaser.Math.Angle.Between(u.img.x, u.img.y, this.ship.x, this.ship.y) + (Math.random() - 0.5) * Math.max(0.15, 0.7 - this.wave * 0.06);
         const img = this.add.image(u.img.x, u.img.y, 'eshot').setScale(0.6).setDepth(7).setBlendMode(ADD);
@@ -414,7 +430,7 @@ export class PlayScene extends ArcadeScene {
       }
       (u.img.getData('halo') as Img | undefined)?.setPosition(u.img.x, u.img.y);
       if (this.ufo && (u.img.x < -80 || u.img.x > width + 80)) { (u.img.getData('halo') as Img | undefined)?.destroy(); u.img.destroy(); this.ufo = null; }
-    } else if (this.wave >= 2) {
+    } else if (this.wave >= this.tune.ufoWave) {
       this.ufoCd -= dt;
       if (this.ufoCd <= 0) { this.ufoCd = rng.int(14, 22) - Math.min(6, this.wave); this.spawnUfo(); }
     }

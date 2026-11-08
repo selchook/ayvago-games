@@ -8,6 +8,7 @@ launch({
   meta: meta as GameMeta,
   background: '#101a3a',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     l.image('chip-p', kenney(BG + 'chipredwhite_border.png'));

@@ -8,6 +8,7 @@ launch({
   meta: meta as GameMeta,
   background: '#0d2418',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     l.image('disc-b', kenney(BG + 'chipblackwhite_border.png'));

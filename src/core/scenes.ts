@@ -11,6 +11,7 @@ import { net } from './net';
 import { currentGame } from './registry';
 import { kenney, loadSfx } from './assets';
 import { isModern } from './style';
+import { difficulty, isEasy, offersDifficulty, setDifficulty, type Difficulty } from './difficulty';
 
 let introDone: Promise<void> = Promise.resolve();
 const bootWork: Promise<unknown>[] = [];
@@ -61,6 +62,9 @@ export class BootScene extends Phaser.Scene {
 }
 
 export class MenuScene extends Phaser.Scene {
+  /** Where the Easy/Normal toggle's segments are (world coordinates); read by the test harnesses. */
+  difficultyHit: { easy: { x: number; y: number }; normal: { x: number; y: number } } | null = null;
+
   constructor() {
     super('Menu');
   }
@@ -73,6 +77,7 @@ export class MenuScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(def.background ?? '#0e0d12');
     def.menuDecor?.(this);
     playMusic(this, menuTrack(), MUSIC_VOLUME.menu);
+    this.difficultyHit = null;
     if (net.active) {
       this.onlineMenu();
       return;
@@ -83,11 +88,20 @@ export class MenuScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: title, y: title.y - 12, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
+    // Games that offer Easy/Normal: portrait stacks the toggle under PLAY (best and PLAY move up a
+    // little to make room); landscape puts it beside PLAY.
+    const diff = offersDifficulty();
     const best = getBest(meta.id);
-    txt(this, width / 2, height * (land ? 0.36 : 0.36), `${t('best')}: ${best}`, { title: true, size: 22, color: '#3ee6ff' });
+    txt(this, width / 2, height * (diff && !land ? 0.31 : 0.36), `${t('best')}: ${best}`, { title: true, size: 22, color: '#3ee6ff' });
 
-    const play = new Button(this, width / 2, height * (land ? 0.52 : 0.5), t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
+    const playX = diff && land ? width / 2 - 180 : width / 2;
+    const playY = height * (land ? 0.52 : diff ? 0.44 : 0.5);
+    const play = new Button(this, playX, playY, t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
     this.tweens.add({ targets: play, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    if (diff) {
+      if (land) this.difficultyToggle(width / 2 + 200, playY);
+      else this.difficultyToggle(width / 2, height * 0.535);
+    }
 
     const howY = height * (land ? 0.68 : 0.64);
     txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
@@ -147,6 +161,67 @@ export class MenuScene extends Phaser.Scene {
     txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
     soundButton(this, 60, height - 60);
     if (def.crt !== false) addCrt(this);
+  }
+
+  /**
+   * Two-segment Easy | Normal switch. Tap a segment, or Left/Right on the keyboard. The selected
+   * segment carries a bright knob that slides across; in Easy a caption says the run is not ranked.
+   */
+  private difficultyToggle(x: number, y: number): void {
+    const SEG = 160, H = 80, W = SEG * 2, modern = isModern();
+    const KNOB: Record<Difficulty, number> = { easy: COLORS.green, normal: COLORS.yellow };
+    const bg = modern
+      ? this.add.graphics().fillStyle(0x000000, 0.28).fillRoundedRect(x - W / 2, y - H / 2 + 6, W, H, H / 2)
+        .fillStyle(0x0b1020, 0.72).fillRoundedRect(x - W / 2, y - H / 2, W, H, H / 2)
+        .lineStyle(2, 0xffffff, 0.35).strokeRoundedRect(x - W / 2, y - H / 2, W, H, H / 2)
+      : this.add.graphics().fillStyle(0x000000, 0.55).fillRect(x - W / 2, y - H / 2 + 6, W, H)
+        .fillStyle(0x16141c, 0.92).fillRect(x - W / 2, y - H / 2, W, H)
+        .lineStyle(4, 0xffffff, 0.8).strokeRect(x - W / 2, y - H / 2, W, H);
+    const knob = this.add.graphics({ x: x - SEG / 2, y });
+    const drawKnob = (d: Difficulty) => {
+      knob.clear();
+      const w = SEG - 12, h = H - 12;
+      if (modern) {
+        knob.fillStyle(KNOB[d], 1).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+        knob.fillStyle(0xffffff, 0.3).fillRoundedRect(-w / 2 + 6, -h / 2 + 4, w - 12, h * 0.4, { tl: h / 2 - 6, tr: h / 2 - 6, bl: 6, br: 6 });
+      } else {
+        knob.fillStyle(KNOB[d], 1).fillRect(-w / 2, -h / 2, w, h).lineStyle(4, 0x000000, 1).strokeRect(-w / 2, -h / 2, w, h);
+        knob.fillStyle(0xffffff, 0.35).fillRect(-w / 2 + 6, -h / 2 + 6, w - 12, 5);
+      }
+    };
+    const labels: Record<Difficulty, Phaser.GameObjects.Text> = {
+      easy: txt(this, x - SEG / 2, y + 2, t('diffEasy'), { title: true, size: 20, strokeThickness: 0, shadow: false }),
+      normal: txt(this, x + SEG / 2, y + 2, t('diffNormal'), { title: true, size: 20, strokeThickness: 0, shadow: false }),
+    };
+    const note = txt(this, x, y + H / 2 + 24, t('diffEasyNote'), { size: 22, color: '#5dff7a' });
+    const segX = (d: Difficulty) => (d === 'easy' ? x - SEG / 2 : x + SEG / 2);
+    this.difficultyHit = { easy: { x: segX('easy'), y }, normal: { x: segX('normal'), y } };
+
+    let cur = difficulty();
+    const show = (animate: boolean) => {
+      drawKnob(cur);
+      this.tweens.killTweensOf(knob);
+      if (animate) this.tweens.add({ targets: knob, x: segX(cur), duration: 180, ease: 'Back.easeOut' });
+      else knob.x = segX(cur);
+      for (const d of ['easy', 'normal'] as Difficulty[]) labels[d].setColor(d === cur ? '#14121c' : '#b9b6cc');
+      note.setVisible(cur === 'easy');
+      if (animate) this.tweens.add({ targets: labels[cur], scale: { from: 1.25, to: 1 }, duration: 220, ease: 'Back.easeOut' });
+    };
+    const choose = (d: Difficulty) => {
+      if (d === cur || !this.scene.isActive()) return;
+      cur = d;
+      setDifficulty(d);
+      playSfx(this, 'ui-click');
+      show(true);
+    };
+    for (const d of ['easy', 'normal'] as Difficulty[]) {
+      this.add.zone(segX(d), y, SEG, H).setInteractive({ useHandCursor: true }).on('pointerup', () => choose(d));
+    }
+    bg.setDepth(1); knob.setDepth(2); labels.easy.setDepth(3); labels.normal.setDepth(3); note.setDepth(3);
+    const kb = this.input.keyboard;
+    kb?.on('keydown-LEFT', () => choose('easy'));
+    kb?.on('keydown-RIGHT', () => choose('normal'));
+    show(false);
   }
 
   private languageToggle(width: number, height: number): void {
@@ -243,11 +318,13 @@ export class GameOverScene extends Phaser.Scene {
       this.onlineResult(data);
       return;
     }
-    const newBest = submitBest(def.meta.id, score);
+    // Easy runs are practice: the best (like the platform's leaderboard) counts Normal runs only.
+    const easy = isEasy();
+    const newBest = !easy && submitBest(def.meta.id, score);
     const best = getBest(def.meta.id);
-    sdk.end(score, !!data.win);
+    sdk.end(score, !!data.win, difficulty());
     if (newBest && score > 0) sdk.celebrate();
-    sdk.emit('gameOver', { score, best, win: !!data.win, newBest });
+    sdk.emit('gameOver', { score, best, win: !!data.win, newBest, difficulty: difficulty() });
 
     backdrop(this, 0.78);
     if (def.meta.orientation === 'landscape') overlayCard(this, 0.07, 0.93, 900);
@@ -258,6 +335,7 @@ export class GameOverScene extends Phaser.Scene {
     });
     h.setScale(0.2);
     this.tweens.add({ targets: h, scale: 1, duration: 450, ease: 'Back.easeOut' });
+    if (easy) easyTag(this, width / 2, h.y - h.height / 2 - 26);
 
     txt(this, width / 2, height * 0.34, t('score'), { title: true, size: 22, color: '#f3f2f2' });
     const sc = txt(this, width / 2, height * 0.34 + 60, '0', { title: true, size: 56, color: '#ffd23f' });
@@ -296,8 +374,8 @@ export class GameOverScene extends Phaser.Scene {
     const def = currentGame();
     const { width, height } = this.scale;
     const land = def.meta.orientation === 'landscape';
-    sdk.end(data.score ?? 0, !!data.win);
-    sdk.emit('gameOver', { score: data.score ?? 0, win: !!data.win, online: true });
+    sdk.end(data.score ?? 0, !!data.win, difficulty());
+    sdk.emit('gameOver', { score: data.score ?? 0, win: !!data.win, online: true, difficulty: difficulty() });
     backdrop(this, 0.78);
     if (land) overlayCard(this, 0.1, 0.92, 760);
     else overlayCard(this, 0.17, 0.8);
@@ -342,6 +420,18 @@ export class GameOverScene extends Phaser.Scene {
       this.scene.start('Menu');
     });
   }
+}
+
+/** Small "EASY" pill on the result screen of an Easy run. */
+function easyTag(scene: Phaser.Scene, x: number, y: number): void {
+  const label = txt(scene, 0, 1, t('diffEasy'), { title: true, size: 16, color: '#14121c', strokeThickness: 0, shadow: false });
+  const w = label.width + 36, h = 34;
+  const g = scene.add.graphics();
+  if (isModern()) g.fillStyle(COLORS.green, 1).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+  else g.fillStyle(COLORS.green, 1).fillRect(-w / 2, -h / 2, w, h).lineStyle(3, 0x000000, 1).strokeRect(-w / 2, -h / 2, w, h);
+  const tag = scene.add.container(x, y, [g, label]);
+  tag.setScale(0);
+  scene.tweens.add({ targets: tag, scale: 1, duration: 320, delay: 250, ease: 'Back.easeOut' });
 }
 
 /**

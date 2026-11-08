@@ -2,7 +2,7 @@
 // vendored verbatim from selchook/ayvago packages/platform-adapter) so every game speaks the
 // GHA_* protocol: inside the Ayvago iframe it talks to the platform (score sessions,
 // leaderboards, pause/mute/locale), on its own URL it falls back to standalone no-ops.
-import { createPlatformAdapter, type PlatformAdapter } from './ayvago/adapter';
+import { createPlatformAdapter, type Difficulty, type PlatformAdapter } from './ayvago/adapter';
 
 export type GameEvent = 'loaded' | 'ready' | 'start' | 'gameOver' | 'pause' | 'resume';
 
@@ -36,9 +36,12 @@ export const sdk = {
   gameplayStop(): void {
     adapter?.gameplayStop();
   },
-  /** End of a run: the platform validates and records the score. */
-  end(score: number, won: boolean): void {
-    adapter?.endGame({ score, won });
+  /**
+   * End of a run: the platform validates and records the score. `difficulty` (protocol 2.6):
+   * easy runs are practice and stay off the leaderboards.
+   */
+  end(score: number, won: boolean, difficulty?: Difficulty): void {
+    adapter?.endGame({ score, won, difficulty });
   },
   celebrate(): void {
     adapter?.celebrate();

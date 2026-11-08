@@ -1,10 +1,20 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng, isEasy } from '@core';
 import { BankedShip } from './BankedShip';
 import { makeFx, makeNebula, makePlanet, makeStars } from './art';
 
 type Body = Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
 const ADD = Phaser.BlendModes.ADD;
+
+/**
+ * Normal and Easy (practice). Easy: two more lives, slower enemies and meteors, half as many
+ * enemy shots (and slower ones), a ramp at half speed and twice the power-up drops.
+ * `ramp` scales how fast the waves get harder: wave w plays like wave 1 + (w - 1) * ramp.
+ */
+const TUNING = {
+  normal: { lives: 3, speed: 1, ramp: 1, fire: 1, shot: 320, drop: 0.08 },
+  easy: { lives: 5, speed: 0.7, ramp: 0.5, fire: 0.5, shot: 240, drop: 0.16 },
+};
 
 export class PlayScene extends ArcadeScene {
   private controls!: Controls;
@@ -30,10 +40,12 @@ export class PlayScene extends ArcadeScene {
   private doubleShot = 0;
   private shield = 0;
   private invuln = 0;
+  tune = TUNING.normal;
 
   createGame(): void {
     const { width, height } = this.scale;
-    this.lives = 3; this.wave = 0; this.pending = 0; this.fireCd = 0; this.spawnCd = 1.2;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.lives = this.tune.lives; this.wave = 0; this.pending = 0; this.fireCd = 0; this.spawnCd = 1.2;
     this.doubleShot = 0; this.shield = 0; this.invuln = 0;
 
     // parallax space: nebula, a far planet now and then, two star layers
@@ -137,30 +149,36 @@ export class PlayScene extends ArcadeScene {
     });
   }
 
+  /** How hard the current wave plays (equals the wave number in Normal). */
+  private lvl(): number {
+    return 1 + (this.wave - 1) * this.tune.ramp;
+  }
+
   private nextWave(): void {
     this.wave++;
     this.updateHud();
     if (this.wave > 1) this.sfx('wave', { volume: 0.5, exact: true });
     this.waveBanner();
     const { width } = this.scale;
-    const n = 4 + Math.min(10, this.wave * 2);
+    const lvl = this.lvl(), speed = this.tune.speed;
+    const n = 4 + Math.min(10, Math.round(lvl * 2));
     const pattern = this.wave % 3;
     for (let i = 0; i < n; i++) {
       this.pending++;
-      this.time.delayedCall(i * Math.max(180, 450 - this.wave * 20), () => {
+      this.time.delayedCall(i * Math.max(180, 450 - lvl * 20), () => {
         this.pending--;
         if (this.isOver) return;
-        const tier = Math.min(3, 1 + Math.floor(rng.int(0, this.wave) / 3));
+        const tier = Math.min(3, 1 + Math.floor(rng.int(0, Math.floor(lvl)) / 3));
         const color = rng.pick(['black', 'blue', 'green']);
         const x = pattern === 0 ? rng.int(60, width - 60) : pattern === 1 ? 80 + ((i * 110) % (width - 160)) : width / 2 + Math.sin(i) * (width / 2 - 80);
         const e = this.enemies.create(x, -60, `enemy-${color}${tier}`) as Body;
         e.setAngle(180).setScale(0.75);
         e.setData('hp', tier).setData('pts', tier * 50).setData('t', 0).setData('pattern', pattern).setData('x0', x);
-        e.setVelocityY(110 + this.wave * 12 + rng.int(0, 60));
+        e.setVelocityY((110 + lvl * 12 + rng.int(0, 60)) * speed);
       });
     }
     // meteors join from wave 2
-    if (this.wave >= 2) for (let i = 0; i < Math.min(6, this.wave); i++) {
+    if (this.wave >= 2) for (let i = 0; i < Math.min(6, Math.floor(lvl)); i++) {
       this.pending++;
       this.time.delayedCall(rng.int(0, 4000), () => {
         this.pending--;
@@ -168,7 +186,7 @@ export class PlayScene extends ArcadeScene {
         const big = rng.chance(0.4);
         const m = this.enemies.create(rng.int(40, width - 40), -80, big ? 'meteor-big' : 'meteor-med') as Body;
         m.setData('hp', big ? 4 : 2).setData('pts', big ? 80 : 30).setData('meteor', true).setData('t', 0);
-        m.setVelocity(rng.int(-60, 60), rng.int(160, 260)).setAngularVelocity(rng.int(-90, 90));
+        m.setVelocity(rng.int(-60, 60) * speed, rng.int(160, 260) * speed).setAngularVelocity(rng.int(-90, 90));
       });
     }
   }
@@ -219,7 +237,7 @@ export class PlayScene extends ArcadeScene {
     }
     if (e.getData('meteor')) this.sfxAt('rock', e.x, { volume: 0.5 });
     else this.sfxAt(rng.pick(['boom1', 'boom2', 'boom3']), e.x, { volume: 0.45 });
-    if (scored && rng.chance(0.08)) {
+    if (scored && rng.chance(this.tune.drop)) {
       const bolt = rng.chance(0.5);
       const it = this.items.create(e.x, e.y, bolt ? 'pu-bolt' : 'pu-shield') as Body;
       it.setVelocityY(160);
@@ -304,11 +322,11 @@ export class PlayScene extends ArcadeScene {
       obj.setData('t', tt);
       if (!obj.getData('meteor')) {
         if (obj.getData('pattern') === 2) obj.x = (obj.getData('x0') as number) + Math.sin(tt * 2.2) * 90;
-        if (rng.chance(dt * (0.15 + this.wave * 0.03)) && obj.y > 0 && obj.y < height * 0.6) {
+        if (rng.chance(dt * (0.15 + this.lvl() * 0.03) * this.tune.fire) && obj.y > 0 && obj.y < height * 0.6) {
           const b = this.enemyShots.create(obj.x, obj.y + 30, 'elaser') as Body;
           b.setBlendMode(ADD);
           const a = Phaser.Math.Angle.Between(obj.x, obj.y, this.ship.x, this.ship.y);
-          b.setVelocity(Math.cos(a) * 320, Math.sin(a) * 320).setRotation(a - Math.PI / 2);
+          b.setVelocity(Math.cos(a) * this.tune.shot, Math.sin(a) * this.tune.shot).setRotation(a - Math.PI / 2);
           this.sfxAt('eshot', obj.x, { volume: 0.14 });
         }
       }
