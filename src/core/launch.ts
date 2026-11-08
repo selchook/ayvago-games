@@ -13,6 +13,7 @@ import type { PlatformAdapter } from './ayvago/adapter';
 import { GameDefinition, setCurrentGame, gameSize } from './registry';
 import { BootScene, MenuScene, PauseScene, GameOverScene, setIntroPromise } from './scenes';
 import { setHostScanlines, themeHasScanlines } from './fx';
+import { installKeyboardOnce } from './keyboard-once';
 import { adoptPlatformBest } from './storage';
 
 declare global {
@@ -94,6 +95,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
         ? { default: 'matter', matter: { gravity: { x: 0, y: (def.gravityY ?? 0) / 1000 }, debug: false } }
         : { default: 'arcade', arcade: { gravity: { x: 0, y: def.gravityY ?? 0 }, debug: false } };
 
+  installKeyboardOnce();
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
