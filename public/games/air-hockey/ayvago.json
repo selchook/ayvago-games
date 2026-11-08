@@ -6,8 +6,8 @@
     "tr": "Hava Hokeyi"
   },
   "description": {
-    "en": "Neon air hockey against an AI that adapts to you. Bank shots off the walls, smash it hard, first to 7 goals wins!",
-    "tr": "Neon masada sana göre uyum sağlayan yapay zekâya karşı hava hokeyi. Duvardan sektir, sert vur, 7 golü ilk atan kazanır!"
+    "en": "Glossy neon air hockey! Bank shots off the rails, smash it hard and grab rare power-ups against an AI that levels up with every goal you score. First to 7 wins, and you can play a friend online too.",
+    "tr": "Parlak neon masada hava hokeyi! Her golünde güçlenen yapay zekâya karşı bantlardan sektir, sert vur, nadir güçlendirmeleri kap. 7 golü ilk atan kazanır; çevrimiçi bir arkadaşınla da oynayabilirsin."
   },
   "category": "sports",
   "categories": [
@@ -55,5 +55,5 @@
     "cover": "/games/air-hockey/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/air-hockey/ayvago/screenshot.jpg"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
