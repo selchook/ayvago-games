@@ -1,5 +1,5 @@
 {
-  "count": 85,
+  "count": 86,
   "games": [
     {
       "id": "air-hockey",
@@ -2014,6 +2014,41 @@
         "addedAt": "2026-10-29"
       },
       "thumb": "thumbs/sea-battle.png"
+    },
+    {
+      "id": "secret-word",
+      "title": {
+        "tr": "Gizli Kelime",
+        "en": "Secret Word"
+      },
+      "description": {
+        "tr": "Gizli kelimeyi altı tahminde bul! Yeşil harf doğru yerde, turuncu harf kelimede ama başka yerde, gri harf kelimede yok. Kelimeler art arda gelir, süre kısalır, harfler uzar; seriyi sürdürdükçe puan çarpanın büyür.",
+        "en": "Find the secret word in six guesses! Green letters are in the right place, amber ones are in the word but elsewhere, grey ones are not in it. Words come one after another, the clock gets shorter and the words get longer; keep your streak going to grow the score multiplier."
+      },
+      "howTo": {
+        "tr": "Harflere dokunup ya da klavyeden yazıp Enter ile tahmin et. Jokerler: 1 bir harfi açar, 2 kelimede olmayan 5 harfi atar.",
+        "en": "Tap the letters or type, then press Enter to guess. Jokers: 1 reveals a letter, 2 drops 5 letters that are not in the word."
+      },
+      "genres": [
+        "word",
+        "puzzle",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard",
+        "mouse"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org",
+        "Word lists written for Ayvago"
+      ],
+      "platform": {
+        "addedAt": "2026-11-08"
+      },
+      "thumb": null
     },
     {
       "id": "shooting-gallery",

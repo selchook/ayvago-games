@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "secretword",
+  "title": {
+    "en": "Secret Word",
+    "tr": "Gizli Kelime"
+  },
+  "description": {
+    "en": "Find the secret word in six guesses! Green letters are in the right place, amber ones are in the word but elsewhere, grey ones are not in it. Words come one after another, the clock gets shorter and the words get longer; keep your streak going to grow the score multiplier.",
+    "tr": "Gizli kelimeyi altı tahminde bul! Yeşil harf doğru yerde, turuncu harf kelimede ama başka yerde, gri harf kelimede yok. Kelimeler art arda gelir, süre kısalır, harfler uzar; seriyi sürdürdükçe puan çarpanın büyür."
+  },
+  "category": "word",
+  "categories": [
+    "word",
+    "puzzle",
+    "casual"
+  ],
+  "tags": [
+    "secret",
+    "word",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/secret-word/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/secret-word/ayvago/icon-512.png",
+    "cover": "/games/secret-word/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/secret-word/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}
