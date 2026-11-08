@@ -106,7 +106,9 @@ async function check(slug) {
     await waitScene(0, 'Menu', 20000);
     await waitScene(1, 'Menu', 20000);
     step.menus = true;
-    step.noToggle = (await Promise.all([0, 1].map((i) => frames()[i].evaluate(() => window.__ayvago.game.scene.getScene('Menu').difficultyHit == null)))).every(Boolean);
+    // Easy is stored in both frames, yet the online menus show no toggle
+    step.noToggle = (await Promise.all([0, 1].map((i) => frames()[i].evaluate((id) => localStorage.getItem(`ayvago:difficulty:${id}`) === '"easy"'
+      && window.__ayvago.game.scene.getScene('Menu').difficultyHit == null, slug)))).every(Boolean);
     await shot('1-menu');
 
     // The host starts the round; the guest follows on "__start".
