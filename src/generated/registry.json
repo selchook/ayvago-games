@@ -2182,8 +2182,8 @@
         "en": "Classic Klondike patience: build every suit from Ace to King. Tap a card and it jumps to the best spot."
       },
       "howTo": {
-        "tr": "Karta dokun ya da sürükle; desteye dokunup kart çek. Klavye: oklar seç, Enter oyna, Boşluk kart çek, X geri al.",
-        "en": "Tap or drag cards; tap the deck to draw. Keys: arrows select, Enter plays, Space draws, X undoes."
+        "tr": "Karta dokun ya da sürükle; desteye dokunup kart çek. Klavye: oklar seç, Enter oyna, Boşluk çek, X geri al, H ipucu.",
+        "en": "Tap or drag a card; tap the deck to draw. Keys: arrows select, Enter plays, Space draws, X undoes, H hints."
       },
       "genres": [
         "card",
@@ -2196,9 +2196,10 @@
         "keyboard",
         "mouse"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
-        "Art & audio: Kenney (CC0) — kenney.nl"
+        "Audio: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
       ],
       "thumb": "thumbs/solitaire.png"
     },

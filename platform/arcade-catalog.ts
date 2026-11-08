@@ -1024,6 +1024,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['solitaire', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
   }),
   arcadeGame({
     slug: 'space-blaster',
