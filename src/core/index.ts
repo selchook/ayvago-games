@@ -28,3 +28,8 @@ export { playAyvagoIntro, INTRO_DURATION } from './intro';
 export type { GameDefinition, GameMeta, Genre } from './registry';
 export { currentGame } from './registry';
 export * as rng from './rng';
+export { quickChat, loadQuickChat, phraseText, phraseOf, QUICK_PHRASES, QUICK_CHAT_COOLDOWN } from './quickchat';
+export type { QuickChat, QuickChatOptions, QuickPhrase, SeatAnchor } from './quickchat';
+export { openPlayerCard, closePlayerCard, isPlayerCardOpen, avatar, portraitKey, characterName, lifetimeStats, lifetimeRows, recordMatch } from './playercard';
+export type { PlayerCardInfo, StatRow, LifetimeStats } from './playercard';
+export { isModalOpen, pushModal } from './modal';

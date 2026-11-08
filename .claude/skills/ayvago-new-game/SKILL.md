@@ -218,6 +218,28 @@ Your PlayScene only implements the match, in `createGame()`:
   `t('opponent')`, `t('youLose')` and `t('draw')`.
 - **HUD:** show whose turn it is or the match score, and the opponent's name.
 
+**Quick chat** (`src/core/quickchat.ts`): preset phrases instead of free text, so there is nothing
+to moderate. Twelve phrases (Merhaba/Hello, İyi oyunlar/Good game, Hızlı lütfen/Hurry up please …)
+each have an id; only `__qc { id }` goes over the wire, the sender's seat comes from the platform, and
+every player reads the phrase in their own language. To add it to an online game:
+- preload: `loadQuickChat(scene.load)` (the bubble's pop sound);
+- `createGame()`: `this.chat = quickChat(this, { button: { x, y }, seatAnchor: (seat) => ({ x, y, dir }) })`.
+  `seatAnchor` maps a seat (numbered like `net.playerIndex`; solo: the game's own seats) to where its
+  bubble points (`dir`: `up`, `down`, `left`, `right`). Pass `mySeat` when the local seat is not
+  `net.playerIndex`, and `bots` (the bot seats) so bots may answer in solo play;
+- solo flavour: `this.chat.botSay(seat, 'welldone', 0.5)` on game events. It is rare by design (a
+  chance and a shared cooldown) and does nothing online;
+- the button opens a panel of chips (C on the keyboard, arrows and Enter inside). One message per
+  1.5 s; unknown ids and floods are dropped. While the panel (or a player card) is open,
+  `isModalOpen(this)` is true: skip your own key and tap handling then; Esc closes it instead of pausing.
+
+**Player cards** (`src/core/playercard.ts`): tap a seat or nameplate to open
+`openPlayerCard(this, { name, color, portrait, bot, match: [{ label, value }], lifetime })`.
+`portraitKey(this, 'ch-<id>-front', color)` makes a round portrait from a character pose (load
+`loadCharacter(l, { id, prefix: 'ch-' + id, poses: ['front'] })` for every id); `lifetimeRows(id)`
+and `recordMatch(id, { won, score })` keep the local player's record in the core storage. See
+`games/okey` and `games/backgammon`.
+
 Verify with the two-player bench, which needs no platform:
 `node scripts/mp-harness.mjs --dev --shots <slug>`.
 - **What it does:** it embeds two copies side by side, relays the moves with 60 ms latency

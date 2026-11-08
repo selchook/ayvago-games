@@ -239,29 +239,52 @@ export function pairCount(ids: number[], tiles: Tile[], okey: { color: number; n
 
 export type WinKind = 'normal' | 'pairs';
 
-/** Whether 14 tiles form a finished hand, and how. */
+/** Whether 14 tiles form a finished hand, and how. Seven pairs scores double, so it wins a tie. */
 export function winKind(ids: number[], tiles: Tile[], okey: { color: number; num: number }): WinKind | null {
   if (ids.length !== HAND) return null;
+  if (pairCount(ids, tiles, okey) >= 7) return 'pairs';
   const plainCount = ids.filter((id) => !faceOf(tiles[id], okey).wild).length;
   const a = analyse(ids, tiles, okey);
   // every plain tile in a group; left-over wilds can always extend one of them
   if (a.covered === plainCount && (a.groups.length > 0 || plainCount === 0)) return 'normal';
-  if (pairCount(ids, tiles, okey) >= 7) return 'pairs';
   return null;
 }
 
-/** A finishing discard from 15 tiles: the tile to throw and how the hand wins, or null. */
-export function findFinish(ids: number[], tiles: Tile[], okey: { color: number; num: number }): { discard: number; kind: WinKind; withOkey: boolean } | null {
-  let found: { discard: number; kind: WinKind; withOkey: boolean } | null = null;
+export interface Finish {
+  /** The tile thrown to finish. */
+  discard: number;
+  kind: WinKind;
+  /** The thrown tile is an okey (wild): the hand scores double. */
+  withOkey: boolean;
+  points: number;
+}
+
+/**
+ * The best finishing discard from 15 tiles, or null. Every finish is scored and the highest
+ * wins, so when an okey is spare (the other 14 tiles finish without it) the okey is the tile
+ * thrown: that doubles the hand. On a tie the `prefer` tile (the one the player picked) is kept.
+ */
+export function findFinish(ids: number[], tiles: Tile[], okey: { color: number; num: number }, prefer?: number | null): Finish | null {
+  let found: Finish | null = null;
+  const tried = new Set<string>();
   for (const id of ids) {
-    const rest = ids.filter((x) => x !== id);
-    const kind = winKind(rest, tiles, okey);
+    // two identical tiles give the same finish: test one of them
+    const f = faceOf(tiles[id], okey);
+    const sig = `${tiles[id].num === FALSE_JOKER ? 'j' : ''}${f.wild ? 'w' : ''}${f.color}:${f.num}`;
+    if (tried.has(sig) && id !== prefer) continue;
+    tried.add(sig);
+    const kind = winKind(ids.filter((x) => x !== id), tiles, okey);
     if (!kind) continue;
-    const withOkey = faceOf(tiles[id], okey).wild;
-    // throwing the okey to finish doubles the score: prefer it
-    if (!found || (withOkey && !found.withOkey)) found = { discard: id, kind, withOkey };
+    const withOkey = f.wild;
+    const points = handPoints(kind, withOkey);
+    if (!found || points > found.points || (points === found.points && id === prefer)) found = { discard: id, kind, withOkey, points };
   }
   return found;
+}
+
+/** True when the hand can finish by throwing an okey (the okey is spare). */
+export function okeySpare(ids: number[], tiles: Tile[], okey: { color: number; num: number }): boolean {
+  return !!findFinish(ids, tiles, okey)?.withOkey;
 }
 
 /** Points for a finished hand: 2, doubled for seven pairs and doubled for throwing the okey. */

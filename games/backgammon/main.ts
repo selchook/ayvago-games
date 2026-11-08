@@ -1,4 +1,4 @@
-import { launch, kenney, loadAudio, loadSfx, rng, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, loadSfx, loadCharacter, loadQuickChat, rng, CHARACTER_IDS, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, drawBoard, pointX, checkerSize, G } from './PlayScene';
 
@@ -28,6 +28,9 @@ launch({
     loadAudio(l, 'win', J + 'positive-sounds/sfx-sounds-powerup12');
     loadAudio(l, 'fanfare', J + 'fanfares/sfx-sounds-fanfare2');
     loadAudio(l, 'lose', J + 'negative-sounds/sfx-sounds-negative1');
+    // player-card portraits: every character's front pose
+    for (const id of CHARACTER_IDS) loadCharacter(l, { id, prefix: `ch-${id}`, poses: ['front'] });
+    loadQuickChat(l);
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;
@@ -53,6 +56,8 @@ launch({
       mars: 'MARS!', gameWin: 'EL SENİN!', gameLose: 'ELİ VERDİN', matchWin: 'MAÇI KAZANDIN!', matchLose: 'MAÇI KAYBETTİN',
       d0: 'Acemi', d1: 'Heveskâr', d2: 'Kahveci', d3: 'Usta', d4: 'Tavla Üstadı',
       openRoll: 'İLK ZAR', openTie: 'BERABERE, TEKRAR!', youStart: 'SEN BAŞLIYORSUN!', theyStart: 'RAKİP BAŞLIYOR',
+      gameNo: '{n}. OYUN', pipsLabel: 'PİP', cpuName: 'Bilgisayar',
+      stPoints: 'Maç puanı', stGames: 'Kazanılan oyun', stGammons: 'Mars', stHits: 'Kırma', stPips: 'Pip', stOff: 'Toplanan taş',
     },
     en: {
       matchTo: 'MATCH TO {n}', waitPeer: 'WAITING FOR OPPONENT…', undo: 'UNDO', done: 'DONE', pips: 'Pips: {n}', doubles: 'DOUBLES!', noMoves: 'NO MOVES',
@@ -60,6 +65,8 @@ launch({
       mars: 'GAMMON!', gameWin: 'GAME WON!', gameLose: 'GAME LOST', matchWin: 'MATCH WON!', matchLose: 'MATCH LOST',
       d0: 'Rookie', d1: 'Amateur', d2: 'Café Regular', d3: 'Pro', d4: 'Grandmaster',
       openRoll: 'OPENING ROLL', openTie: 'A TIE, ROLL AGAIN!', youStart: 'YOU GO FIRST!', theyStart: 'CPU GOES FIRST',
+      gameNo: 'GAME {n}', pipsLabel: 'PIPS', cpuName: 'Computer',
+      stPoints: 'Match points', stGames: 'Games won', stGammons: 'Gammons', stHits: 'Hits', stPips: 'Pips', stOff: 'Borne off',
     },
   },
 });

@@ -1,4 +1,4 @@
-import { launch, loadSfx, net, type GameMeta } from '@core';
+import { launch, loadSfx, loadAudio, loadCharacter, loadQuickChat, net, CHARACTER_IDS, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, setPendingSync, type SyncData } from './PlayScene';
 import { makeTable, makeTiles as makeTileArt, tileKey } from './art';
@@ -17,6 +17,14 @@ launch({
     loadSfx(l, 'chips', 'sfx-casino/audio/chipscollide2');
     loadSfx(l, 'win', 'sfx-casino/audio/chipshandle1');
     loadSfx(l, 'bad', 'sfx-interface/audio/error_004');
+    loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
+    const J = 'oga/junkala-sfx/general-sounds/';
+    loadAudio(l, 'turn', J + 'simple-bleeps/sfx-sounds-blip7');
+    loadAudio(l, 'okeyfin', J + 'fanfares/sfx-sounds-fanfare3');
+    loadAudio(l, 'coins', J + 'coins/sfx-coin-cluster3');
+    // seat portraits: every character's front pose
+    for (const id of CHARACTER_IDS) loadCharacter(l, { id, prefix: `ch-${id}`, poses: ['front'] });
+    loadQuickChat(l);
   },
   menuDecor(scene) {
     const { width, height } = scene.scale;
@@ -56,24 +64,30 @@ launch({
       indicator: 'Gösterge', sortRuns: 'Seri diz', sortPairs: 'Çift diz', discard: 'AT', finish: 'BİTİR',
       handOf: 'EL {n}/{m}', left: '{n} taş', pts: '{n} puan',
       yourDraw: 'Sıra sende: ortadan ya da soldaki yığından taş çek', yourDiscard: 'Bir taş seç ve at',
-      canFinish: 'Elin hazır! BİTİR ile el aç', waitingFor: '{name} oynuyor…',
+      canFinish: 'Elin hazır! BİTİR ile el aç', canFinishOkey: 'Okey boşta! BİTİR: okeyi atarak bitir, puan ×2', waitingFor: '{name} oynuyor…',
       pickTile: 'Önce atacağın taşı seç', cantFinish: 'Elin henüz bitmedi',
-      pileOut: 'Ortada taş kalmadı: el berabere', handWon: '{name} eli kazandı!',
+      pileOut: 'Ortada taş kalmadı: el berabere', handWon: '{name} eli kazandı!', handWonYou: 'Eli sen kazandın!',
       normalWin: 'Seri ve perlerle', withPairs: 'Çiftle', withOkey: 'Okey atarak',
       lastTile: 'son taş', results: 'SONUÇLAR', nextHand: 'SONRAKİ EL', waitHostHand: 'Masa sahibi sonraki eli başlatacak…',
       matchWon: 'MAÇI KAZANDIN!', matchWonBy: 'Kazanan: {name}', noWinner: 'Kimse el açamadı',
+      okeyFinish: 'OKEY ATARAK BİTİRDİ! ×2', okeyFinishYou: 'Okeyi atarak bitirdin, puanın iki katı!', okeyFinishBy: '{name} okeyi atarak bitirdi',
+      player: 'OYUNCU', thisHand: 'BU EL', total: 'TOPLAM', timeUp: 'Süre doldu: hamle senin yerine yapıldı',
+      botLevel: 'Orta', stPoints: 'Puan', stHands: 'Kazanılan el', stOkey: 'Okeyle bitiş', stPairs: 'Çiftle bitiş', stStreak: 'Seri', stTiles: 'Elindeki taş',
     },
     en: {
       bot0: 'Ayşe', bot1: 'Mehmet', bot2: 'Zeynep', botTag: 'BOT',
       indicator: 'Indicator', sortRuns: 'Sort runs', sortPairs: 'Sort pairs', discard: 'THROW', finish: 'FINISH',
       handOf: 'HAND {n}/{m}', left: '{n} tiles', pts: '{n} pts',
       yourDraw: 'Your turn: draw from the middle or the pile on your left', yourDiscard: 'Pick a tile and throw it',
-      canFinish: 'Your hand is ready! Press FINISH', waitingFor: '{name} is playing…',
+      canFinish: 'Your hand is ready! Press FINISH', canFinishOkey: 'The okey is spare! FINISH throws it for ×2', waitingFor: '{name} is playing…',
       pickTile: 'Pick the tile to throw first', cantFinish: 'Your hand is not finished yet',
-      pileOut: 'The middle ran out: no winner', handWon: '{name} won the hand!',
+      pileOut: 'The middle ran out: no winner', handWon: '{name} won the hand!', handWonYou: 'You won the hand!',
       normalWin: 'Sets and runs', withPairs: 'Seven pairs', withOkey: 'Finished with the okey',
       lastTile: 'last tile', results: 'RESULTS', nextHand: 'NEXT HAND', waitHostHand: 'The host starts the next hand…',
       matchWon: 'YOU WON THE MATCH!', matchWonBy: 'Winner: {name}', noWinner: 'Nobody finished a hand',
+      okeyFinish: 'FINISHED WITH THE OKEY! ×2', okeyFinishYou: 'You threw the okey to finish: double points!', okeyFinishBy: '{name} threw the okey to finish',
+      player: 'PLAYER', thisHand: 'THIS HAND', total: 'TOTAL', timeUp: 'Time is up: your move was played for you',
+      botLevel: 'Medium', stPoints: 'Points', stHands: 'Hands won', stOkey: 'Okey finishes', stPairs: 'Pairs finishes', stStreak: 'Streak', stTiles: 'Tiles in hand',
     },
   },
 });
