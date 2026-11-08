@@ -1,5 +1,10 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net } from '@core';
+import {
+  ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, currentGame,
+  quickChat, isModalOpen, openPlayerCard, isPlayerCardOpen, portraitKey, lifetimeRows, recordMatch,
+  playerCharacter, peerCharacter, otherCharacters,
+  type QuickChat, type CharacterId,
+} from '@core';
 import {
   BAR, OFF, LEVELS, initial, apply, legalSteps, rollDice, diceList, removeDie, playTurn, result, chooseTurn, pips, other,
   type Pos, type Side, type Step,
@@ -24,6 +29,14 @@ const DIED = 58 / DIE_FILL;
 const GOLD = 0xffd23f;
 const GREEN = 0x5dff7a;
 const CYAN = 0x3ee6ff;
+const THEM = 0x7fd8ff;
+/** The scoreboard pill at the top (Tito's Tank style): names, match dots, game and turn. */
+const HUD = { x: 640, y: 36, w: 860, h: 58 };
+/** Each side's half of the pill (name and dots) and the room left for the middle label. */
+const SIDE_W = 336;
+const MID_W = 176;
+/** Solo: after this long on a turn the CPU may ask the player to hurry. */
+const SLOW_MS = 25000;
 
 export function pointX(v: number): number {
   if (v <= 6) return G.IX1 - (v - 0.5) * G.PW;
@@ -48,8 +61,10 @@ type State = 'wait' | 'move' | 'done' | 'ai' | 'remote' | 'busy';
 type Wire = [number, number, number];
 interface DiceMsg { d: [number, number]; n: number }
 interface TurnMsg { m: Wire[]; n: number }
+interface SideStats { games: number; gammons: number; hits: number }
 
 export class PlayScene extends ArcadeScene {
+  protected useHud = false;
   private pos: Pos = initial();
   private stacks: Phaser.GameObjects.Image[][][] = [];
   private counts: Phaser.GameObjects.Text[] = [];
@@ -88,6 +103,16 @@ export class PlayScene extends ArcadeScene {
   private inbox: Array<{ t: 'dice'; d: DiceMsg } | { t: 'turn'; d: TurnMsg }> = [];
   private remoteRoll: [number, number] | null = null;
   private rolling = false;
+  private stats: [SideStats, SideStats] = [{ games: 0, gammons: 0, hits: 0 }, { games: 0, gammons: 0, hits: 0 }];
+  private chat!: QuickChat;
+  private hudG!: Phaser.GameObjects.Graphics;
+  private gameText!: Phaser.GameObjects.Text;
+  private nameMe!: Phaser.GameObjects.Text;
+  private scoreText!: Phaser.GameObjects.Text;
+  private portraits: [string, string] = ['', ''];
+  private looks: [CharacterId, CharacterId] = ['adventurer', 'explorer'];
+  private turnAt = 0;
+  private slowSaid = false;
 
   createGame(): void {
     this.pos = initial();
@@ -106,42 +131,79 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: [this.hl], alpha: { from: 1, to: 0.55 }, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.bannerBand = this.add.graphics().setDepth(79).setVisible(false);
 
-    this.status = txt(this, 560, 48, '', { title: true, size: 22, color: '#ffd23f' }).setDepth(30);
     this.banner = txt(this, (G.IX0 + G.IX1) / 2, G.MIDY, '', { title: true, size: 46, strokeThickness: 10 }).setDepth(80).setVisible(false);
+    this.stats = [{ games: 0, gammons: 0, hits: 0 }, { games: 0, gammons: 0, hits: 0 }];
+    this.slowSaid = false;
+    this.turnAt = 0;
+    // who sits where: the player's character, the opponent's (online) or another one for the CPU
+    const me = playerCharacter();
+    const them = this.online ? peerCharacter() : otherCharacters(me)[0];
+    this.looks = this.mine === 0 ? [me, them] : [them, me];
+    this.portraits = [0, 1].map((side) => portraitKey(this, `ch-${this.looks[side]}-front`, side === this.mine ? GOLD : THEM)) as [string, string];
 
-    // right panel: match score, pips, undo and done
+    // the scoreboard pill: my name and dots left, the opponent right, game and turn in the middle
+    this.hudG = this.add.graphics().setDepth(30);
+    const L = HUD.x - HUD.w / 2, R = HUD.x + HUD.w / 2;
+    this.add.image(L + 34, HUD.y, this.tex(this.mine)).setDisplaySize(34, 34).setDepth(31);
+    this.nameMe = txt(this, L + 60, HUD.y, t('you'), { title: true, size: 26, color: '#ffd23f' }).setOrigin(0, 0.5).setDepth(31);
+    this.add.image(R - 34, HUD.y, this.tex(other(this.mine))).setDisplaySize(34, 34).setDepth(31);
+    this.nameThem = txt(this, R - 60, HUD.y, '', { title: true, size: 26, color: '#7fd8ff' }).setOrigin(1, 0.5).setDepth(31);
+    for (let i = 0; i < MATCH; i++) {
+      this.dotsMe.push(this.add.circle(L + 232 + i * 22, HUD.y, 7, 0xffffff, 0.18).setDepth(31));
+      this.dotsThem.push(this.add.circle(R - 232 - i * 22, HUD.y, 7, 0xffffff, 0.18).setDepth(31));
+    }
+    this.gameText = txt(this, HUD.x, HUD.y - 13, '', { size: 16, color: '#b9c2dc', strokeThickness: 0 }).setDepth(31);
+    this.status = txt(this, HUD.x, HUD.y + 11, '', { title: true, size: 20, color: '#ffd23f' }).setDepth(31);
+    for (const [x, side] of [[L + SIDE_W / 2, this.mine], [R - SIDE_W / 2, other(this.mine)]] as const) {
+      const z = this.add.zone(x, HUD.y, SIDE_W, HUD.h).setInteractive({ useHandCursor: true }).setDepth(32);
+      z.on('pointerup', () => this.openCard(side));
+    }
+
+    // right panel: the race (pips), the score, undo and done
     const px = 1210;
     const plaque = this.add.graphics();
     plaque.fillStyle(0x000000, 0.45).fillRoundedRect(px - 62, 124, 124, 300, 16);
     plaque.fillStyle(0x3a1e0b, 1).fillRoundedRect(px - 64, 120, 124, 300, 16);
     plaque.lineStyle(2, 0xf0c98f, 0.35).strokeRoundedRect(px - 63, 121, 122, 298, 15);
-    this.rowGlow = this.add.image(px, 236, 'tv-glow').setDisplaySize(170, 120).setTint(GOLD).setAlpha(0);
+    this.rowGlow = this.add.image(px, 210, 'tv-glow').setDisplaySize(170, 110).setTint(GOLD).setAlpha(0);
     this.tweens.add({ targets: this.rowGlow, scale: { from: this.rowGlow.scale * 0.92, to: this.rowGlow.scale * 1.05 }, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    txt(this, px, 148, t('matchTo', { n: MATCH }), { title: true, size: 13, color: '#f0c98f', wrap: 150 });
-    this.add.image(px - 40, 196, this.tex(this.mine)).setDisplaySize(34, 34);
-    txt(this, px + 14, 196, t('you'), { size: 22, color: '#ffffff' }).setOrigin(0.5);
-    this.ptsMe = txt(this, px, 236, '0', { title: true, size: 32, color: '#ffd23f' });
-    this.pipMe = txt(this, px, 266, '', { size: 18, color: '#d9b48a' });
-    this.add.image(px - 40, 316, this.tex(other(this.mine))).setDisplaySize(34, 34);
-    for (let i = 0; i < MATCH; i++) {
-      const dx = px - 32 + i * 16;
-      this.dotsMe.push(this.add.circle(dx, 290, 5, 0x000000, 0.4).setStrokeStyle(1.5, GOLD, 0.7));
-      this.dotsThem.push(this.add.circle(dx, 410, 5, 0x000000, 0.4).setStrokeStyle(1.5, 0x7fd8ff, 0.7));
+    txt(this, px, 146, t('matchTo', { n: MATCH }), { title: true, size: 13, color: '#f0c98f', wrap: 150 });
+    this.add.image(px - 36, 186, this.tex(this.mine)).setDisplaySize(30, 30);
+    txt(this, px + 14, 186, t('pipsLabel'), { size: 18, color: '#d9b48a' }).setOrigin(0.5);
+    this.ptsMe = txt(this, px, 224, '', { title: true, size: 30, color: '#ffd23f' });
+    this.add.image(px - 36, 276, this.tex(other(this.mine))).setDisplaySize(30, 30);
+    txt(this, px + 14, 276, t('pipsLabel'), { size: 18, color: '#d9b48a' }).setOrigin(0.5);
+    this.ptsThem = txt(this, px, 314, '', { title: true, size: 30, color: '#7fd8ff' });
+    this.pipMe = txt(this, px, 364, t('score'), { size: 17, color: '#d9b48a' });
+    this.scoreText = txt(this, px, 392, '0', { title: true, size: 22, color: '#ffffff' });
+    this.pipThem = this.pipMe;
+    for (const [y, side] of [[230, this.mine], [300, other(this.mine)]] as const) {
+      const z = this.add.zone(px, y, 124, 90).setInteractive({ useHandCursor: true });
+      z.on('pointerup', () => this.openCard(side));
     }
-    this.nameThem = txt(this, px + 14, 316, '', { size: 20, color: '#ffffff', wrap: 100 }).setOrigin(0.5);
-    this.ptsThem = txt(this, px, 356, '0', { title: true, size: 32, color: '#7fd8ff' });
-    this.pipThem = txt(this, px, 386, '', { size: 18, color: '#d9b48a' });
     this.undoBtn = this.panelButton(px, 480, 'bg-undo', t('undo'), () => this.undo());
     this.doneBtn = this.panelButton(px, 610, 'bg-ok', t('done'), () => this.confirm());
     this.setButtons();
 
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.tapAt(p.x, p.y));
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (!isModalOpen(this)) this.tapAt(p.x, p.y); });
     const kb = this.input.keyboard;
-    kb?.on('keydown-LEFT', () => this.cycle(-1)); kb?.on('keydown-A', () => this.cycle(-1));
-    kb?.on('keydown-RIGHT', () => this.cycle(1)); kb?.on('keydown-D', () => this.cycle(1));
-    for (const k of ['SPACE', 'ENTER', 'UP', 'W', 'Z']) kb?.on(`keydown-${k}`, () => this.act());
-    kb?.on('keydown-DOWN', () => this.deselect()); kb?.on('keydown-S', () => this.deselect());
-    for (const k of ['X', 'BACKSPACE', 'U']) kb?.on(`keydown-${k}`, () => this.undo());
+    const on = (keys: string[], fn: () => void) => { for (const k of keys) kb?.on(`keydown-${k}`, () => { if (!isModalOpen(this)) fn(); }); };
+    on(['LEFT', 'A'], () => this.cycle(-1));
+    on(['RIGHT', 'D'], () => this.cycle(1));
+    on(['SPACE', 'ENTER', 'UP', 'W', 'Z'], () => this.act());
+    on(['DOWN', 'S'], () => this.deselect());
+    on(['X', 'BACKSPACE', 'U'], () => this.undo());
+    on(['TAB', 'I'], () => this.openCard(this.mine));
+    kb?.addCapture('TAB');
+
+    // quick chat: bubbles under the names in the pill
+    this.chat = quickChat(this, {
+      button: { x: 54, y: 48, size: 76 },
+      mySeat: () => this.mine,
+      bots: () => (this.online ? [] : [other(this.mine)]),
+      seatAnchor: (seat) => seat === this.mine ? { x: L + 120, y: HUD.y + HUD.h / 2, dir: 'down' } : { x: R - 120, y: HUD.y + HUD.h / 2, dir: 'down' },
+    });
+    if (!this.online) this.time.delayedCall(1800, () => this.chat.botSay(other(this.mine), 'hello', 0.4));
 
     if (this.online) {
       net.onScene(this, 'dice', (d: DiceMsg) => { if (d && Array.isArray(d.d)) { this.inbox.push({ t: 'dice', d }); this.takeRemote(); } });
@@ -150,7 +212,7 @@ export class PlayScene extends ArcadeScene {
     if (this.online && net.isHost) {
       // the host rolls the first dice once the guest's board is up (or after a short wait), so
       // the guest always sees the opening roll
-      this.status.setText(t('waitPeer')).setColor('#7fd8ff');
+      this.setStatus(t('waitPeer'), '#7fd8ff');
       let started = false;
       const go = () => { if (!started && !this.isOver) { started = true; this.startGame(net.starter as Side); } };
       net.onScene(this, 'rdy', go);
@@ -289,14 +351,66 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updatePanel(): void {
-    this.ptsMe.setText(String(this.match[this.mine]));
-    this.ptsThem.setText(String(this.match[other(this.mine)]));
-    this.pipMe.setText(t('pips', { n: pips(this.pos, this.mine) }));
-    this.pipThem.setText(t('pips', { n: pips(this.pos, other(this.mine)) }));
-    const name = this.online ? clip(net.peerName || t('opponent'), 10) : t('d' + this.level);
-    this.nameThem.setText(name);
-    this.dotsMe.forEach((d, i) => d.setFillStyle(i < this.match[this.mine] ? GOLD : 0x000000, i < this.match[this.mine] ? 1 : 0.4));
-    this.dotsThem.forEach((d, i) => d.setFillStyle(i < this.match[other(this.mine)] ? 0x7fd8ff : 0x000000, i < this.match[other(this.mine)] ? 1 : 0.4));
+    this.ptsMe.setText(String(pips(this.pos, this.mine)));
+    this.ptsThem.setText(String(pips(this.pos, other(this.mine))));
+    this.scoreText.setText(String(this.score));
+    this.nameThem.setText(this.opponentName(14));
+    fit(this.nameThem, 150);
+    const fill = (dots: Phaser.GameObjects.Arc[], n: number, col: number) =>
+      dots.forEach((d, i) => d.setFillStyle(i < n ? col : 0xffffff, i < n ? 1 : 0.18));
+    fill(this.dotsMe, this.match[this.mine], GOLD);
+    fill(this.dotsThem, this.match[other(this.mine)], THEM);
+    this.gameText.setText(t('gameNo', { n: Math.max(1, this.gameNo) }));
+    this.drawHud();
+  }
+
+  /** The turn label in the middle of the pill, shrunk to fit. */
+  private setStatus(s: string, color: string): void {
+    this.status.setText(s).setColor(color);
+    fit(this.status, MID_W);
+  }
+
+  private opponentName(max = 14): string {
+    return this.online ? clip(net.peerName || t('opponent'), max) : t('d' + this.level);
+  }
+
+  /** The pill behind the scoreboard; the side to play is lit in its colour. */
+  private drawHud(): void {
+    const g = this.hudG;
+    if (!g) return;
+    const L = HUD.x - HUD.w / 2;
+    g.clear();
+    g.fillStyle(0x0b1020, 0.66).fillRoundedRect(L, HUD.y - HUD.h / 2, HUD.w, HUD.h, HUD.h / 2);
+    g.lineStyle(2, 0xffffff, 0.1).strokeRoundedRect(L, HUD.y - HUD.h / 2, HUD.w, HUD.h, HUD.h / 2);
+    if (this.turnAt <= 0 || this.isOver) return;
+    const mineTurn = this.turn === this.mine;
+    const x = mineTurn ? L + 4 : HUD.x + HUD.w / 2 - 4 - SIDE_W;
+    g.fillStyle(mineTurn ? GOLD : THEM, 0.2).fillRoundedRect(x, HUD.y - HUD.h / 2 + 4, SIDE_W, HUD.h - 8, (HUD.h - 8) / 2);
+    g.lineStyle(2, mineTurn ? GOLD : THEM, 0.9).strokeRoundedRect(x, HUD.y - HUD.h / 2 + 4, SIDE_W, HUD.h - 8, (HUD.h - 8) / 2);
+  }
+
+  /** A player's card: who they are, this match, and (for me) my record. */
+  private openCard(side: Side): void {
+    if (this.isOver || (isModalOpen(this) && !isPlayerCardOpen(this))) return;
+    const you = side === this.mine;
+    const st = this.stats[side];
+    openPlayerCard(this, {
+      name: you ? t('you') : this.online ? this.opponentName(18) : t('cpuName'),
+      color: you ? GOLD : THEM,
+      portrait: this.portraits[side],
+      character: you || this.online ? this.looks[side] : null,
+      bot: !you && !this.online ? t('d' + this.level) : false,
+      you,
+      match: [
+        { label: t('stPoints'), value: this.match[side] },
+        { label: t('stGames'), value: st.games },
+        { label: t('stGammons'), value: st.gammons },
+        { label: t('stHits'), value: st.hits },
+        { label: t('stPips'), value: pips(this.pos, side) },
+        { label: t('stOff'), value: this.pos.p[side][OFF] },
+      ],
+      lifetime: you ? lifetimeRows(currentGame().meta.id) : undefined,
+    }, { onNext: () => this.openCard(other(side)) });
   }
 
   // ---------------------------------------------------------------- dice
@@ -367,7 +481,7 @@ export class PlayScene extends ArcadeScene {
   private openingRoll(): void {
     if (this.isOver) return;
     this.state = 'busy';
-    this.status.setText(t('openRoll')).setColor('#f0c98f');
+    this.setStatus(t('openRoll'), '#f0c98f');
     const mine = rng.int(1, 6), theirs = rng.int(1, 6);
     this.diceImgs.forEach((d) => d.destroy());
     this.diceImgs = [];
@@ -406,7 +520,8 @@ export class PlayScene extends ArcadeScene {
     if (this.isOver) return;
     this.turn = side;
     // a warm glow behind whoever is to play
-    this.rowGlow.setY(side === this.mine ? 236 : 356).setTint(side === this.mine ? GOLD : 0x7fd8ff);
+    this.rowGlow.setY(side === this.mine ? 206 : 296).setTint(side === this.mine ? GOLD : THEM);
+    this.turnAt = this.time.now;
     this.tweens.add({ targets: this.rowGlow, alpha: 0.35, duration: 250 });
     this.history = [];
     this.sel = -1;
@@ -414,9 +529,15 @@ export class PlayScene extends ArcadeScene {
     this.remoteRoll = null;
     if (side === this.mine) {
       this.state = 'wait';
-      this.status.setText(t('yourTurn')).setColor('#ffd23f');
-      this.tweens.add({ targets: this.status, scale: { from: 1.3, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+      this.setStatus(t('yourTurn'), '#ffd23f');
+      const sc = this.status.scale;
+      this.tweens.add({ targets: this.status, scale: { from: sc * 1.3, to: sc }, duration: 260, ease: 'Back.easeOut' });
+      this.tweens.add({ targets: this.nameMe, scale: { from: 1.25, to: 1 }, duration: 320, ease: 'Back.easeOut' });
       this.sfx('turn', { volume: 0.4 });
+      // a big "your turn" over my half of the board
+      const cue = txt(this, (G.BAR1 + G.IX1) / 2, G.MIDY - 120, t('yourTurn'), { title: true, size: 40, color: '#ffd23f' }).setDepth(75).setScale(0.3).setAlpha(0);
+      this.tweens.add({ targets: cue, scale: 1, alpha: 1, duration: 240, ease: 'Back.easeOut' });
+      this.tweens.add({ targets: cue, alpha: 0, y: cue.y - 30, delay: 700, duration: 350, onComplete: () => cue.destroy() });
       this.time.delayedCall(150, () => {
         if (this.isOver) return;
         this.roll = rollDice();
@@ -428,14 +549,15 @@ export class PlayScene extends ArcadeScene {
       });
     } else if (this.online) {
       this.state = 'remote';
-      this.status.setText(t('theirTurn')).setColor('#7fd8ff');
+      this.setStatus(t('theirTurn'), '#7fd8ff');
       this.takeRemote();
     } else {
       this.state = 'ai';
-      this.status.setText(t('aiTurn')).setColor('#7fd8ff');
+      this.setStatus(t('aiTurn'), '#7fd8ff');
       this.time.delayedCall(300, () => this.aiTurn());
     }
     this.setButtons();
+    this.drawHud();
   }
 
   private aiTurn(): void {
@@ -514,6 +636,9 @@ export class PlayScene extends ArcadeScene {
     const p = this.slot(side, m.to, Math.max(0, this.pos.p[side][m.to] - 1), this.pos.p[side][m.to]);
     this.time.delayedCall(220, () => {
       if (m.hit) {
+        this.stats[side].hits++;
+        // solo: the CPU reacts now and then
+        if (!this.online) this.chat.botSay(other(this.mine), side === this.mine ? 'ohno' : 'haha', side === this.mine ? 0.35 : 0.2);
         this.sfxAt('hit', p.x, { volume: 0.7 });
         burst(this, p.x, p.y, side === 0 ? [0xffffff, 0xffd23f] : [0x333333, 0xff4f5e], 20, 280);
         shake(this, 0.008, 160);
@@ -544,13 +669,13 @@ export class PlayScene extends ArcadeScene {
         return;
       }
       if (result(this.pos, this.mine)) { this.clearHl(); this.setButtons(); this.time.delayedCall(400, () => this.confirm()); return; }
-      this.status.setText(t('confirm')).setColor('#5dff7a');
+      this.setStatus(t('confirm'), '#5dff7a');
       this.clearHl();
       this.setButtons();
       return;
     }
     this.state = 'move';
-    this.status.setText(t('yourTurn')).setColor('#ffd23f');
+    this.setStatus(t('yourTurn'), '#ffd23f');
     const froms = this.sources();
     if (!froms.includes(this.cur)) this.cur = froms[0];
     if (froms.length === 1 && froms[0] === BAR) this.select(BAR, false);
@@ -764,6 +889,7 @@ export class PlayScene extends ArcadeScene {
     if (!h) return;
     this.pos = h.pos;
     this.dice = h.dice;
+    if (h.step.hit) this.stats[this.mine].hits = Math.max(0, this.stats[this.mine].hits - 1);
     this.sfx('undo', { volume: 0.5 });
     this.sync(220);
     this.cur = h.step.from;
@@ -809,6 +935,9 @@ export class PlayScene extends ArcadeScene {
     this.status.setText('');
     this.clearHl();
     this.match[side] += pts;
+    this.stats[side].games++;
+    if (pts === 2) this.stats[side].gammons++;
+    this.turnAt = 0;
     this.updatePanel();
     const win = side === this.mine;
     const label = pts === 2 ? t('mars') : win ? t('gameWin') : t('gameLose');
@@ -825,15 +954,19 @@ export class PlayScene extends ArcadeScene {
       shake(this, 0.012, 300);
       this.sfx('lose', { volume: 0.6 });
     }
-    const t0 = win ? this.ptsMe : this.ptsThem;
-    t0.setScale(1.8);
-    this.tweens.add({ targets: t0, scale: 1, duration: 500, ease: 'Back.easeOut' });
+    // the new match dots pop in the pill
+    const dots = win ? this.dotsMe : this.dotsThem;
+    for (let i = this.match[side] - pts; i < Math.min(MATCH, this.match[side]); i++) {
+      this.tweens.add({ targets: dots[i], scale: { from: 2.2, to: 1 }, duration: 520, delay: 120 * (i - this.match[side] + pts), ease: 'Back.easeOut' });
+    }
+    if (!this.online) this.chat.botSay(other(this.mine), win ? (pts === 2 ? 'lucky' : 'welldone') : 'gg', win ? 0.6 : 0.3);
     if (!this.online && win) this.level = Math.min(this.level + 1, LEVELS.length - 1);
 
     const me = this.match[this.mine], them = this.match[other(this.mine)];
     if (me >= MATCH || them >= MATCH) {
       const matchWin = me >= MATCH;
       if (matchWin) this.addScore(300 + 50 * (me - them));
+      recordMatch(currentGame().meta.id, { won: matchWin, score: this.score });
       this.time.delayedCall(1600, () => {
         this.showBanner(matchWin ? t('matchWin') : t('matchLose'), matchWin ? '#ffd23f' : '#ff4f5e');
         if (matchWin) this.sfx('fanfare', { volume: 0.7 });
@@ -851,9 +984,24 @@ export class PlayScene extends ArcadeScene {
     });
   }
 
-  updateGame(): void {
-    /* turn-based: driven by input, timers and tweens */
+  addScore(n: number, x?: number, y?: number): void {
+    super.addScore(n, x, y);
+    this.scoreText?.setText(String(this.score));
   }
+
+  updateGame(): void {
+    // turn-based: driven by input, timers and tweens; solo, a slow player may hear from the CPU
+    if (!this.online && !this.slowSaid && this.turn === this.mine && this.turnAt > 0 && this.state === 'move' && this.time.now - this.turnAt > SLOW_MS) {
+      this.slowSaid = true;
+      this.chat.botSay(other(this.mine), 'hurry', 0.6);
+    }
+  }
+}
+
+/** Shrinks a text to a width (labels in the pill). */
+function fit(o: Phaser.GameObjects.Text, w: number): void {
+  o.setScale(1);
+  if (o.width > w) o.setScale(w / o.width);
 }
 
 function clip(s: string, n: number): string {

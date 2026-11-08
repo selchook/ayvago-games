@@ -7,6 +7,7 @@ import { playSfx, type SfxConfig } from './audio';
 import { MUSIC_VOLUME, playMusic, playTrack } from './music';
 import { addCrt, popup } from './fx';
 import { currentGame } from './registry';
+import { isModalOpen } from './modal';
 
 export interface EndOptions {
   win?: boolean;
@@ -97,9 +98,12 @@ export abstract class ArcadeScene extends Phaser.Scene {
     }
 
     const kb = this.input.keyboard;
-    kb?.on('keydown-ESC', () => this.pauseGame());
+    // Esc / P close an open overlay (quick chat, player card) instead of pausing
+    kb?.on('keydown-ESC', () => {
+      if (!isModalOpen(this)) this.pauseGame();
+    });
     kb?.on('keydown-P', () => {
-      if (this.pauseOnP) this.pauseGame();
+      if (this.pauseOnP && !isModalOpen(this)) this.pauseGame();
     });
     const onHidden = () => {
       if (document.hidden) this.pauseGame();

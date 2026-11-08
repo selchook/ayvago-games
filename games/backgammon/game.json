@@ -9,8 +9,8 @@
     "en": "Classic backgammon: roll the dice, race your checkers around the board into your home and bear them off first. Hit blots, build points, win a gammon! In a match to 5 the AI plays sharper after every game you win. Play a friend online too."
   },
   "howTo": {
-    "tr": "Yeşil halkalı taşa, sonra parlayan hedefe dokun; bitince TAMAM'a bas. Klavyede oklar seçer, Boşluk oynar, X geri alır.",
-    "en": "Tap a checker with a green ring, then a glowing target; press DONE when finished. Keys: arrows pick, Space plays, X undoes."
+    "tr": "Yeşil halkalı taşa, sonra parlayan hedefe dokun; bitince TAMAM'a bas. Klavyede oklar seçer, Boşluk oynar, X geri alır, C sohbet açar.",
+    "en": "Tap a checker with a green ring, then a glowing target; press DONE when finished. Keys: arrows pick, Space plays, X undoes, C opens chat."
   },
   "genres": [
     "strategy",
@@ -23,7 +23,7 @@
     "mouse"
   ],
   "multiplayer": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "credits": [
     "Art & audio: Kenney (CC0) — kenney.nl",
     "Sound effects: Juhani Junkala (CC0) — opengameart.org"
