@@ -451,6 +451,29 @@ export const ARCADE_GAMES: SeedGame[] = [
     featured: true,
   }),
   arcadeGame({
+    slug: 'golden-podium',
+    title: { en: 'Golden Podium', tr: 'Altın Kürsü' },
+    description: {
+      en: 'Take on three rivals in five events at the Ayvago Cup: 100 m sprint, 100 m hurdles, long jump, 50 m freestyle and archery. Win medals and points in every event, top the final standings and climb the golden podium!',
+      tr: "Ayvago Kupası'nda beş branşta üç rakibe karşı yarış: 100 m koşu, 100 m engelli, uzun atlama, 50 m serbest yüzme ve okçuluk. Her yarışta madalya ve puan topla, toplamda zirveye çık ve altın kürsüye çık!",
+    },
+    category: 'sports',
+    categories: ['sports', 'arcade', 'action'],
+    tags: ['golden', 'podium', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    scoring: {
+      metric: 'points',
+      order: 'desc',
+      format: 'number',
+      label: { en: 'Score', tr: 'Puan' },
+      minDurationMs: 45000,
+      maxPerSecond: 1000,
+      maxScore: 10000,
+    },
+    addedAt: '2026-11-09',
+  }),
+  arcadeGame({
     slug: 'gomoku',
     title: { en: 'Five in a Row', tr: 'Beşli Taş' },
     description: {
