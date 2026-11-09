@@ -507,17 +507,21 @@ export class PlayScene extends ArcadeScene {
   }
 
   // ---------- animation ----------
-  /** Moves an object along a soft arc (and calls done at the end). */
+  /**
+   * Moves an object along a soft arc (and calls done at the end). The flight stops quietly when
+   * the object goes away on the way (a tile just drawn can be thrown before it lands).
+   */
   private arc(obj: Phaser.GameObjects.Image, to: { x: number; y: number }, ms: number, lift: number, extra: (f: number) => void, done: () => void): void {
     const sx = obj.x, sy = obj.y;
-    this.tweens.addCounter({
+    const tween = this.tweens.addCounter({
       from: 0, to: 1, duration: ms, ease: 'Cubic.easeInOut',
       onUpdate: (tw) => {
+        if (!obj.scene) { tween.stop(); return; }
         const f = tw.getValue() ?? 0;
         obj.setPosition(sx + (to.x - sx) * f, sy + (to.y - sy) * f - Math.sin(f * Math.PI) * lift);
         extra(f);
       },
-      onComplete: done,
+      onComplete: () => { if (obj.scene) done(); },
     });
   }
 
