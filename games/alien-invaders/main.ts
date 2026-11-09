@@ -7,6 +7,7 @@ const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
+  difficulty: true,
   background: '#090814',
   preload(scene) {
     const l = scene.load;
@@ -53,7 +54,7 @@ launch({
   },
   scenes: [PlayScene],
   strings: {
-    tr: { invaded: 'İSTİLA EDİLDİ!', mystery: 'GİZEMLİ UFO!' },
-    en: { invaded: 'INVADED!', mystery: 'MYSTERY UFO!' },
+    tr: { invaded: 'İSTİLA EDİLDİ!', mystery: 'GİZEMLİ UFO!', oneUp: '+1 CAN' },
+    en: { invaded: 'INVADED!', mystery: 'MYSTERY UFO!', oneUp: '1UP!' },
   },
 });
