@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, CHARACTER_FRAME, COLORS, Controls, burst, shake, t, rng, StickDir, type Dir4 } from '@core';
+import { ArcadeScene, Button, CHARACTER_FRAME, COLORS, Controls, burst, shake, t, rng, StickDir, isEasy, type Dir4 } from '@core';
 import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Grid: 11 x 15 tiles of 8 px art scaled x8 = 64 px
@@ -44,6 +44,17 @@ const MONSTERS: MonsterDef[] = [
   { frame: 25, hp: 14, atk: 5, def: 1, score: 80, beh: 'chase', minFloor: 8 },    // demon
 ];
 const BOSS: MonsterDef = { frame: 13, hp: 20, atk: 4, def: 1, score: 300, beh: 'chase', minFloor: 5 };
+
+/**
+ * Normal and Easy (practice). Easy: 24 health instead of 16, three potions instead of two, a ramp
+ * at half speed (floor f is stocked like floor 1 + (f - 1) * ramp: fewer, weaker monsters, tougher
+ * kinds and traps later), potions and hearts on most floors, and health back every 8 turns
+ * instead of 12. Guardians still wait on every fifth floor.
+ */
+const TUNING = {
+  normal: { hp: 16, potions: 2, ramp: 1, potionChance: 0.65, heartChance: 0.4, regen: 12 },
+  easy: { hp: 24, potions: 3, ramp: 0.5, potionChance: 0.9, heartChance: 0.7, regen: 8 },
+};
 
 type ItemKind = 'potion' | 'chest' | 'coin' | 'heart' | 'fire';
 interface Item { kind: ItemKind; c: number; r: number; img: Phaser.GameObjects.Image }
@@ -94,12 +105,14 @@ export class PlayScene extends ArcadeScene {
   private stick!: StickDir;
   private stickWant: Dir4 | null = null;   // a stick step waiting for the current turn to finish
   private stickWantAt = 0;
+  tune = TUNING.normal;
 
   createGame(): void {
     freshTextCanvases(this);
     this.stepFoot = 0; this.lowWarned = false;
     this.grid = []; this.seen = []; this.vis = []; this.tiles = []; this.items = []; this.monsters = [];
-    this.hp = 16; this.maxHp = 16; this.atk = 3; this.def = 0; this.potions = 2; this.floor = 1; this.xp = 0; this.lvl = 1;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.hp = this.maxHp = this.tune.hp; this.atk = 3; this.def = 0; this.potions = this.tune.potions; this.floor = 1; this.xp = 0; this.lvl = 1;
     this.busyUntil = 0; this.bossAlive = false; this.dead = false; this.turn = 0; this.holdDir = null; this.holdT = 0;
     this.stickWant = null; this.stickWantAt = 0;
 
@@ -200,9 +213,9 @@ export class PlayScene extends ArcadeScene {
     };
 
     // monsters
-    const f = this.floor;
-    const pool = MONSTERS.filter((m) => m.minFloor <= f).slice(-5);   // the five toughest unlocked kinds
-    const count = Math.min(10, 2 + Math.floor(f * 0.9));
+    const f = this.floor, d = this.depth();
+    const pool = MONSTERS.filter((m) => m.minFloor <= d).slice(-5);   // the five toughest unlocked kinds
+    const count = Math.min(10, 2 + Math.floor(d * 0.9));
     for (let i = 0; i < count; i++) {
       const spot = free();
       if (!spot) break;
@@ -232,10 +245,10 @@ export class PlayScene extends ArcadeScene {
       }
     };
     place('coin', F.coin, rng.int(2, 4));
-    place('potion', F.potion, rng.chance(0.65) ? 1 : 0);
+    place('potion', F.potion, rng.chance(this.tune.potionChance) ? 1 : 0);
     place('chest', F.chest, 1 + (rng.chance(0.3) ? 1 : 0));
-    place('heart', F.heart, rng.chance(0.4) ? 1 : 0);
-    if (f >= 3) place('fire', F.fire, Math.min(4, f - 2));
+    place('heart', F.heart, rng.chance(this.tune.heartChance) ? 1 : 0);
+    if (d >= 3) place('fire', F.fire, Math.min(4, Math.floor(d) - 2));
 
     // paint tiles
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
@@ -286,10 +299,16 @@ export class PlayScene extends ArcadeScene {
     return d;
   }
 
+  /** How hard the current floor plays (equals the floor number in Normal). */
+  private depth(): number {
+    return 1 + (this.floor - 1) * this.tune.ramp;
+  }
+
   private spawnMonster(def: MonsterDef, c: number, r: number, boss: boolean): void {
-    const scaleHp = 1 + (this.floor - 1) * 0.14;
-    const hp = boss ? 8 + this.floor * 2 : Math.round(def.hp * scaleHp);
-    const atk = boss ? 2 + Math.floor(this.floor / 5) : def.atk + Math.floor((this.floor - def.minFloor) / 3);
+    const d = this.depth();
+    const scaleHp = 1 + (d - 1) * 0.14;
+    const hp = boss ? Math.round(8 + d * 2) : Math.round(def.hp * scaleHp);
+    const atk = boss ? 2 + Math.floor(d / 5) : def.atk + Math.floor((d - def.minFloor) / 3);
     const img = this.add.image(tileX(c), tileY(r), 'mrk', def.frame).setScale(SC).setDepth(depthAt(tileY(r) + TS / 2 - 1)).setVisible(false);
     if (boss) img.setTint(0xff9090).setScale(SC * 1.15);
     // idle breathing, out of step with the others
@@ -481,7 +500,7 @@ export class PlayScene extends ArcadeScene {
     const x = it.img.x, y = it.img.y;
     if (it.kind === 'fire') {
       // traps stay put
-      const dmg = 2 + Math.floor(this.floor / 4);
+      const dmg = 2 + Math.floor(this.depth() / 4);
       this.sfxAt('trap', x, { volume: 0.45 });
       this.hurt(dmg, 0xff8c00);
       burst(this, x, y, [0xff8c00, 0xffd23f], 14, 200);
@@ -629,7 +648,7 @@ export class PlayScene extends ArcadeScene {
   private endTurn(lock: number): void {
     this.turn++;
     // slow natural regeneration
-    if (this.turn % 12 === 0 && this.hp < this.maxHp) this.hp++;
+    if (this.turn % this.tune.regen === 0 && this.hp < this.maxHp) this.hp++;
     this.busyUntil = this.time.now + lock;
     this.monstersAct();
     this.updateVision();
