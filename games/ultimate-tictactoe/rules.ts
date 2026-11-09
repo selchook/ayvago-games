@@ -96,13 +96,20 @@ interface Node {
 }
 
 /** Search budget per level (ms) and the chance of a careless random move. */
-export const LEVELS = [
+export interface AiLevel { ms: number; slip: number }
+export const LEVELS: AiLevel[] = [
   { ms: 60, slip: 0.3 },
   { ms: 160, slip: 0.12 },
   { ms: 350, slip: 0.04 },
   { ms: 650, slip: 0 },
   { ms: 1000, slip: 0 },
   { ms: 1500, slip: 0 },
+];
+/** Easy (practice): a short ladder with a tiny search budget and many careless moves. */
+export const EASY_LEVELS: AiLevel[] = [
+  { ms: 25, slip: 0.5 },
+  { ms: 40, slip: 0.4 },
+  { ms: 80, slip: 0.3 },
 ];
 
 export class Mcts {
