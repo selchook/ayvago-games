@@ -22,12 +22,17 @@ export interface Stats {
 }
 
 export interface DriveInput {
-  /** Direction to drive towards (world angle on x/z), or null to coast. */
-  angle: number | null;
+  /** Steering relative to the truck itself: -1 full left .. 1 full right (0 = straight). */
+  steer: number;
+  /** -1..1. Above 0 is gas; below 0 brakes and, once the truck has stopped, reverses. */
   throttle: number;
   /** Ease off (AI before a bend). */
   brake?: boolean;
 }
+
+/** Hard braking (units/s²) and the share of top speed available in reverse. */
+const BRAKE = 30;
+const REVERSE_TOP = 0.42;
 
 /** Events of one physics step, for sounds and particles. */
 export interface StepEvents {
@@ -80,7 +85,12 @@ export class Truck {
   heading = 0;
   airborne = false;
   airTime = 0;
+  /** Front wheel angle for the model (follows the steering input). */
   steer = 0;
+  /** Sideways slide speed after the last step (skid marks, spray). */
+  slip = 0;
+  /** Hard braking this step (skid marks, brake sound). */
+  braking = false;
   surface = SURF_DIRT;
   private lastGround = 0;
   private lastRate = 0;
@@ -175,6 +185,8 @@ export class Truck {
     this.susp = this.suspV = 0;
     this.nitroT = 0;
     this.steer = 0;
+    this.slip = 0;
+    this.braking = false;
   }
 
   /** One physics step. */
@@ -188,34 +200,48 @@ export class Truck {
     let vf = this.vx * fx + this.vz * fz;
     let vl = -this.vx * fz + this.vz * fx;
 
-    // steering: turn towards the wanted direction at the turn rate
-    let diff = 0;
-    if (input.angle !== null) {
-      diff = Math.atan2(Math.sin(input.angle - this.heading), Math.cos(input.angle - this.heading));
-      const k = this.airborne ? 0.2 : turnFactor(vf);
-      const max = st.turn * k * dt * (mud ? 0.8 : 1);
-      this.heading += Math.max(-max, Math.min(max, diff));
-    }
-    this.steer += (Math.max(-0.55, Math.min(0.55, diff)) - this.steer) * Math.min(1, dt * 12);
+    // steering, relative to the truck: the yaw rate grows with speed (a little even when nearly
+    // stopped, so a truck can turn round) and flips when rolling backwards, like a real car
+    const steer = Math.max(-1, Math.min(1, input.steer));
+    const throttle = Math.max(-1, Math.min(1, input.throttle));
+    const backing = vf < -0.4 || (vf < 0.4 && throttle < 0);
+    // power slide: hard lock at speed on the gas lets the tail step out
+    const slide = !this.airborne && throttle > 0 && vf > 6 ? Math.abs(steer) * Math.min(1, (vf - 6) / 6) : 0;
+    const k = this.airborne ? 0.2 : turnFactor(vf);
+    this.heading += steer * st.turn * k * dt * (mud ? 0.8 : 1) * (backing ? -1 : 1) * (1 + 0.22 * slide);
+    this.steer += (steer * 0.55 - this.steer) * Math.min(1, dt * 12);
+    this.braking = false;
 
     if (!this.airborne) {
       const surfTop = mud ? 0.55 : wet ? 0.86 : rough ? 0.72 : 1;
       const top = st.top * surfTop * (boosting ? 1.45 : 1);
-      let throttle = input.throttle;
-      if (Math.abs(diff) > 1.9) throttle *= 0.35;   // hard about-turn: slow down first
-      if (throttle > 0 && vf < top) vf = Math.min(top, vf + st.accel * throttle * (boosting ? 1.9 : 1) * dt);
+      if (throttle > 0) {
+        if (vf < 0) vf = Math.min(0, vf + BRAKE * throttle * dt);
+        else if (vf < top) vf = Math.min(top, vf + st.accel * throttle * (boosting ? 1.9 : 1) * dt);
+      } else if (throttle < 0) {
+        if (vf > 0.4) {
+          vf = Math.max(0, vf - BRAKE * -throttle * dt);
+          this.braking = vf > 3;
+        } else if (vf > -top * REVERSE_TOP) {
+          vf = Math.max(-top * REVERSE_TOP, vf - st.accel * 0.7 * -throttle * dt);
+        }
+      }
       if (vf > top) vf += (top - vf) * Math.min(1, dt * (mud ? 3.5 : 2));
-      if (throttle <= 0) vf *= 1 - Math.min(1, dt * (mud ? 2.6 : 1.3));
+      if (vf < -top * REVERSE_TOP) vf += (-top * REVERSE_TOP - vf) * Math.min(1, dt * 3);
+      if (throttle === 0) vf *= 1 - Math.min(1, dt * (mud ? 2.6 : 1.3));
       if (input.brake) vf *= 1 - Math.min(1, dt * 2.2);
-      const grip = st.grip * (mud ? 0.18 : wet ? 0.55 : 1);
+      const grip = st.grip * (mud ? 0.18 : wet ? 0.55 : 1) * (1 - 0.45 * slide) * (this.braking ? 0.7 : 1);
       const kill = 1 - Math.exp(-grip * dt);
       // part of the sideways slide carries on as forward speed: drifts stay fast
-      vf += Math.abs(vl) * kill * (mud ? 0.15 : 0.35);
+      vf += Math.abs(vl) * kill * (mud ? 0.15 : 0.35) * (vf < 0 ? -1 : 1);
       vl -= vl * kill;
+      this.slip = Math.abs(vl);
       // bumpy ground costs speed, less with good shocks
       vf -= Math.abs(this.lastRate) * 0.06 * (1 - st.shocks) * vf * dt;
       this.vx = fx * vf - fz * vl;
       this.vz = fz * vf + fx * vl;
+    } else {
+      this.slip = 0;
     }
 
     this.x += this.vx * dt;

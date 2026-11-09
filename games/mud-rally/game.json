@@ -2,11 +2,11 @@
   "id": "mud-rally",
   "title": { "tr": "Çamur Rallisi", "en": "Mud Rally" },
   "description": { "tr": "Dört kamyonet, tek ekranlık toprak bir pist! Rampalardan uç, çamur çukurlarında kaymamaya çalış, nitroyu doğru anda ateşle ve dört turu herkesten önce bitir. Kazandığın parayla garajda motoru, lastikleri, amortisörleri ve nitroyu geliştir; her yeni pistte rakipler daha hızlı.", "en": "Four pickup trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster." },
-  "howTo": { "tr": "Sol başparmağını kamyonun gitmesini istediğin yöne çek; sağdaki A tuşu nitro. Klavye: yön tuşları ya da WASD ile sür, Boşluk, Z veya Enter ile nitro.", "en": "Pull the left stick the way you want the truck to go; the A button on the right fires nitro. Keys: arrows or WASD to drive, Space, Z or Enter for nitro." },
+  "howTo": { "tr": "Kamyonu gerçek bir araba gibi sür. Dokunmatik: soldaki oklar direksiyon; sağda GAZ, FREN (dururken geri vites) ve NİTRO. Klavye: ←\u00a0→\u00a0direksiyon, ↑\u00a0gaz, ↓\u00a0fren\u00a0/\u00a0geri, Boşluk, Z ya da Enter nitro.", "en": "Drive it like a real truck. Touch: the arrows on the left steer; GAS, BRAKE (reverse when stopped) and NITRO are on the right. Keys: ←\u00a0→\u00a0steer, ↑\u00a0gas, ↓\u00a0brake\u00a0/\u00a0reverse, Space, Z or Enter nitro." },
   "genres": ["sports", "arcade", "action"],
   "orientation": "landscape",
   "controls": ["touch", "keyboard"],
-  "version": "1.0.0",
+  "version": "1.1.0",
   "credits": ["3D models: Kenney Car Kit, Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org"],
   "platform": { "addedAt": "2026-11-07" }
 }

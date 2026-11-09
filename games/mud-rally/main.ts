@@ -62,6 +62,7 @@ launch({
     loadAudio(l, 'buy', J + 'general-sounds/coins/sfx-coin-cluster3');
     loadAudio(l, 'nope', J + 'general-sounds/negative-sounds/sfx-sounds-error2');
     loadAudio(l, 'move', J + 'general-sounds/menu-sounds/sfx-menu-move2');
+    loadAudio(l, 'skid', J + 'movement/vehicles/sfx-vehicle-breaks');
   },
   menuDecor(scene) {
     // two trucks turning slowly on dirt mounds, either side of the menu

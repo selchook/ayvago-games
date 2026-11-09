@@ -140,6 +140,8 @@ export interface ShopState {
   bank: number;
   levels: Record<Upgrade, number>;
   nextTrack: string;
+  /** Touch screen: no key hint under the cards. */
+  touch?: boolean;
 }
 
 function drawIcon(g: Phaser.GameObjects.Graphics, u: Upgrade): void {
@@ -193,10 +195,10 @@ export class ShopPanel extends Panel {
     UPGRADES.forEach((u, i) => {
       const x = cx + (i - 1.5) * 284, y = cy - 8;
       const frame = scene.add.graphics({ x, y });
-      const icon = scene.add.graphics({ x, y: y - 106 });
+      const icon = scene.add.graphics({ x, y: y - 112 });
       drawIcon(icon, u);
-      const name = txt(scene, x, y - 58, names[u], { title: true, size: 26 });
-      const info = txt(scene, x, y - 36, infos[u], { size: 18, color: '#c9d4ee', wrap: 236 }).setOrigin(0.5, 0).setLineSpacing(0);
+      const name = txt(scene, x, y - 64, names[u], { title: true, size: 26 });
+      const info = txt(scene, x, y - 43, infos[u], { size: 18, color: '#c9d4ee', wrap: 236 }).setOrigin(0.5, 0).setLineSpacing(0);
       const pips = scene.add.graphics({ x, y: y + 36 });
       const buy = new Button(scene, x, y + 96, '', () => this.buy(i), { width: 224, height: 84, size: 26, color: 0x2f7dff });
       r.add([frame, icon, name, info, pips, buy]);
@@ -207,7 +209,7 @@ export class ShopPanel extends Panel {
       frame.setScale(0.9).setAlpha(0);
       scene.tweens.add({ targets: frame, scale: 1, alpha: 1, duration: 260, delay: 60 * i, ease: 'Back.easeOut' });
     });
-    r.add(txt(scene, cx, cy + 178, t('shopHint') + '  ·  ' + state.nextTrack, { size: 18, color: '#9fb3d9' }));
+    r.add(txt(scene, cx, cy + 178, state.touch ? state.nextTrack : t('shopHint') + '  ·  ' + state.nextTrack, { size: 18, color: '#9fb3d9' }));
     this.next = new Button(scene, cx, cy + H / 2 - 58, t('nextRace'), () => this.go(), { width: 400, height: 88, size: 30, color: 0x2fae5a });
     r.add(this.next);
     r.add(this.ring);
