@@ -2,12 +2,12 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, Button, burst, flash, shake, net, t, txt, popup, COLORS, upper, currentGame,
   quickChat, isModalOpen, openPlayerCard, isPlayerCardOpen, portraitKey, avatar, lifetimeRows, recordMatch,
-  playerCharacter, peerCharacter, otherCharacters, isCharacterId,
+  playerCharacter, peerCharacter, otherCharacters, isCharacterId, isEasy,
   type QuickChat, type CharacterId,
 } from '@core';
 import {
-  analyse, botDiscard, botTakesDiscard, deal, faceOf, findFinish, makeTiles, rng, winKind,
-  type Finish, type Tile, type WinKind,
+  analyse, botDiscard, botTakesDiscard, deal, faceOf, findFinish, makeTiles, rng, winKind, BOT_EASY, BOT_NORMAL,
+  type BotSkill, type Finish, type Tile, type WinKind,
 } from './logic';
 import { TILE_H, TILE_W, makeRack, makeTable, makeTiles as makeTileArt, tileKey } from './art';
 
@@ -87,6 +87,7 @@ export class PlayScene extends ArcadeScene {
   private away = new Set<number>();
   private botTimer: Phaser.Time.TimerEvent | null = null;
   private rand: () => number = Math.random;
+  private easy = false;
   private turnSeat = -1;
   private turnStarted = 0;
   private autoAt = 0;
@@ -122,6 +123,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     this.tiles = makeTiles();
+    this.easy = isEasy();
     makeTileArt(this, '"Fredoka", "Nunito", sans-serif');
     this.add.image(0, 0, makeTable(this, W, 720)).setOrigin(0).setDepth(-10);
     this.add.image(W / 2, (ROW_Y[0] + ROW_Y[1]) / 2 + 2, makeRack(this, SLOTS * SLOT + 36, 196)).setDepth(-5);
@@ -418,20 +420,28 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: cue, alpha: 0, y: 470, delay: 750, duration: 380, onComplete: () => cue.destroy() });
   }
 
+  /** How the bots play: Easy bots (solo practice) are weaker; online is always Normal. */
+  ai(): BotSkill {
+    return this.easy ? BOT_EASY : BOT_NORMAL;
+  }
+
   private botMove(): void {
     if (this.phase === 'over' || !this.controls(this.turn)) return;
     const seat = this.turn;
     const hand = this.hands[seat];
+    const skill = this.ai();
     if (this.phase === 'draw') {
       const top = this.discards[this.prev(seat)].at(-1);
-      if (top !== undefined && botTakesDiscard(hand, top, this.tiles, this.okey)) this.doAct({ s: seat, a: 'take', n: this.log.length });
+      if (top !== undefined && botTakesDiscard(hand, top, this.tiles, this.okey, skill, this.rand)) this.doAct({ s: seat, a: 'take', n: this.log.length });
       else this.doAct({ s: seat, a: 'draw', n: this.log.length });
       return;
     }
-    // findFinish scores every finish, so a spare okey is always the tile thrown
+    // findFinish scores every finish, so a spare okey is always the tile thrown; an Easy bot
+    // mostly passes up that finish and plays on (the okey then usually ends in a plain finish)
     const fin = findFinish(hand, this.tiles, this.okey);
-    if (fin) { this.doAct({ s: seat, a: 'finish', id: fin.discard, n: this.log.length }); return; }
-    this.doAct({ s: seat, a: 'discard', id: botDiscard(hand, this.tiles, this.okey, this.rand), n: this.log.length });
+    const passUp = fin?.withOkey && skill.okeyFinish < 1 && this.rand() >= skill.okeyFinish;
+    if (fin && !passUp) { this.doAct({ s: seat, a: 'finish', id: fin.discard, n: this.log.length }); return; }
+    this.doAct({ s: seat, a: 'discard', id: botDiscard(hand, this.tiles, this.okey, this.rand, skill), n: this.log.length });
   }
 
   /** Applies an action here and tells the other players. */

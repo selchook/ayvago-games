@@ -294,6 +294,15 @@ export function handPoints(kind: WinKind, withOkey: boolean): number {
 
 // ---------- bots ----------
 
+/**
+ * How well a bot plays: discard noise, how much a discard must improve the hand before it is
+ * taken, the chance of ignoring a discard it wants, and the chance of finishing with a spare okey.
+ * Normal is the full-strength bot (online seats always use it); Easy is the practice bot.
+ */
+export interface BotSkill { noise: number; takeEdge: number; takeMiss: number; okeyFinish: number }
+export const BOT_NORMAL: BotSkill = { noise: 0.2, takeEdge: 1.5, takeMiss: 0, okeyFinish: 1 };
+export const BOT_EASY: BotSkill = { noise: 2.5, takeEdge: 3, takeMiss: 0.35, okeyFinish: 0.1 };
+
 /** How promising a hand is: tiles in groups, plus partial groups and pairs. */
 export function handValue(ids: number[], tiles: Tile[], okey: { color: number; num: number }): number {
   const a = analyse(ids, tiles, okey);
@@ -312,20 +321,24 @@ export function handValue(ids: number[], tiles: Tile[], okey: { color: number; n
 }
 
 /** Bot: take the previous player's discard if it improves the hand clearly. */
-export function botTakesDiscard(hand: number[], discard: number, tiles: Tile[], okey: { color: number; num: number }): boolean {
+export function botTakesDiscard(
+  hand: number[], discard: number, tiles: Tile[], okey: { color: number; num: number },
+  skill: BotSkill = BOT_NORMAL, rand: () => number = Math.random,
+): boolean {
+  if (skill.takeMiss && rand() < skill.takeMiss) return false;
   if (faceOf(tiles[discard], okey).wild) return true;
   const withIt = [...hand, discard];
   // best value after also throwing one tile
   const best = Math.max(...withIt.filter((id) => id !== discard).map((out) => handValue(withIt.filter((x) => x !== out), tiles, okey)));
-  return best > handValue(hand, tiles, okey) + 1.5;
+  return best > handValue(hand, tiles, okey) + skill.takeEdge;
 }
 
 /** Bot: the tile to throw from 15 (never a wild unless it finishes). */
-export function botDiscard(hand: number[], tiles: Tile[], okey: { color: number; num: number }, rand: () => number): number {
+export function botDiscard(hand: number[], tiles: Tile[], okey: { color: number; num: number }, rand: () => number, skill: BotSkill = BOT_NORMAL): number {
   let best = -Infinity, pick = hand[0];
   for (const id of hand) {
     if (faceOf(tiles[id], okey).wild) continue;
-    const v = handValue(hand.filter((x) => x !== id), tiles, okey) + rand() * 0.2;
+    const v = handValue(hand.filter((x) => x !== id), tiles, okey) + rand() * skill.noise;
     if (v > best) { best = v; pick = id; }
   }
   return pick;

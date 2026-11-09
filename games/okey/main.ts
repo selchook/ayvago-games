@@ -8,6 +8,7 @@ launch({
   meta: meta as GameMeta,
   background: '#0a4227',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     loadSfx(l, 'shuffle', 'sfx-casino/audio/cardshuffle');
