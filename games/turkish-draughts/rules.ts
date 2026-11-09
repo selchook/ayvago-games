@@ -161,11 +161,14 @@ function negamax(b: Int8Array, side: number, depth: number, alpha: number, beta:
 
 /** [search depth, chance of a random move] per rival level. */
 export const LEVELS: Array<[number, number]> = [[1, 0.45], [2, 0.2], [3, 0.08], [4, 0], [5, 0], [6, 0]];
+/** Easy (practice): a short ladder that barely looks ahead and often plays a random move. */
+export const EASY_LEVELS: Array<[number, number]> = [[1, 0.6], [1, 0.45], [2, 0.35]];
 
-export function choose(board: Int8Array, side: number, level: number): Move | null {
+/** Picks a move at a rival level (an index into LEVELS, or a [depth, random] pair itself). */
+export function choose(board: Int8Array, side: number, level: number | [number, number]): Move | null {
   const moves = legalMoves(board, side);
   if (!moves.length) return null;
-  const [depth, rnd] = LEVELS[Math.min(level, LEVELS.length - 1)];
+  const [depth, rnd] = typeof level === 'number' ? LEVELS[Math.min(level, LEVELS.length - 1)] : level;
   if (moves.length === 1) return moves[0];
   if (Math.random() < rnd) return moves[Math.floor(Math.random() * moves.length)];
   const b = Int8Array.from(board);

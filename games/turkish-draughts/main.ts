@@ -6,6 +6,7 @@ launch({
   meta: meta as GameMeta,
   background: '#22140b',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     l.image('pc-w', kenney('boardgame/png/pieces_white/piecewhite_border11.png'));
