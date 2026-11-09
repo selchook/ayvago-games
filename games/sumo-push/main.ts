@@ -6,6 +6,7 @@ launch({
   meta: meta as GameMeta,
   background: '#1b1420',
   physics: 'none',
+  difficulty: true,
   music: { play: 'boss' },
   preload(scene) {
     const l = scene.load;
