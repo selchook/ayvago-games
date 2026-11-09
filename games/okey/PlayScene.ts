@@ -29,6 +29,8 @@ const SEAT_COL = [0x3ec7e6, 0xff7a6b, 0xffc83d, 0xb18cff];
 const SEAT_HEX = ['#3ec7e6', '#ff7a6b', '#ffc83d', '#b18cff'];
 const AVATAR = 78;
 const HUD_Y = 36;
+/** Widest the turn hint may be: the discard piles on the left and right sit at its height. */
+const HINT_MAX = 640;
 /** HUD chips in turn order from me: me, right, top, left (play passes to the right). */
 const CHIP_W = 162;
 const CHIP_X = [640 - 78 - 8 - CHIP_W * 1.5, 640 - 78 - CHIP_W / 2, 640 + 78 + CHIP_W / 2, 640 + 78 + 8 + CHIP_W * 1.5];
@@ -423,7 +425,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private myTurnCue(): void {
-    this.sfx('turn', { volume: 0.5, exact: true });
+    this.sfx('turn', { volume: 0.6, exact: true });
     const cue = txt(this, W / 2, 506, t('yourTurn'), { title: true, size: 44, color: '#ffd23f' }).setDepth(60).setScale(0.3).setAlpha(0);
     this.tweens.add({ targets: cue, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut' });
     this.tweens.add({ targets: cue, alpha: 0, y: 470, delay: 750, duration: 380, onComplete: () => cue.destroy() });
@@ -976,10 +978,12 @@ export class PlayScene extends ArcadeScene {
         hint = this.phase === 'draw' ? t('yourDraw') : fin ? (fin.withOkey ? t('canFinishOkey') : t('canFinish')) : t('yourDiscard');
       } else hint = t('waitingFor', { name: this.seats[this.turn].name });
     }
-    this.hint.setText(hint).setColor(col);
+    // the hint stays between the discard piles on either side (a long translation shrinks)
+    this.hint.setText(hint).setColor(col).setScale(1);
+    if (this.hint.width > HINT_MAX) this.hint.setScale(HINT_MAX / this.hint.width);
     const g = this.hintBg.clear();
     if (hint) {
-      const w = this.hint.width + 48;
+      const w = this.hint.displayWidth + 48;
       g.fillStyle(myTurn ? 0x3a2a05 : 0x0b1020, myTurn ? 0.82 : 0.5).fillRoundedRect(W / 2 - w / 2, 398 - 22, w, 44, 22);
       if (myTurn) g.lineStyle(2, fin?.withOkey ? 0xffc83d : 0xffd23f, 0.9).strokeRoundedRect(W / 2 - w / 2, 398 - 22, w, 44, 22);
     }

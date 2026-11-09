@@ -20,7 +20,8 @@ launch({
     loadSfx(l, 'bad', 'sfx-interface/audio/error_004');
     loadSfx(l, 'tick', 'sfx-interface/audio/tick_002');
     const J = 'oga/junkala-sfx/general-sounds/';
-    loadAudio(l, 'turn', J + 'simple-bleeps/sfx-sounds-blip7');
+    // a soft two-note chime (Kenney Interface Sounds, CC0) when it becomes my turn
+    loadSfx(l, 'turn', 'sfx-interface/audio/confirmation_004');
     loadAudio(l, 'okeyfin', J + 'fanfares/sfx-sounds-fanfare3');
     loadAudio(l, 'coins', J + 'coins/sfx-coin-cluster3');
     // seat portraits: every character's front pose
@@ -71,8 +72,8 @@ launch({
       bot0: 'Ayşe', bot1: 'Mehmet', bot2: 'Zeynep', botTag: 'BOT',
       indicator: 'Gösterge', sortRuns: 'Seri diz', sortPairs: 'Çift diz', discard: 'AT', finish: 'BİTİR',
       handOf: 'EL {n}/{m}', left: '{n} taş', pts: '{n} puan',
-      yourDraw: 'Sıra sende: ortadan ya da soldaki yığından bir taşı ıstakana sürükle', yourDiscard: 'Bir taş seç ve at',
-      canFinish: 'Elin hazır! BİTİR ile el aç', canFinishOkey: 'Okey boşta! BİTİR: okeyi atarak bitir, puan ×2', waitingFor: '{name} oynuyor…',
+      yourDraw: 'Sıra sende! Ortadan ya da soldan taş çek', yourDiscard: 'Bir taş seç ve at',
+      canFinish: 'Elin hazır! BİTİR ile el aç', canFinishOkey: 'Okey boşta! BİTİR ile ×2 puan', waitingFor: '{name} oynuyor…',
       pickTile: 'Önce atacağın taşı seç', cantFinish: 'Elin henüz bitmedi',
       pileOut: 'Ortada taş kalmadı: el berabere', handWon: '{name} eli kazandı!', handWonYou: 'Eli sen kazandın!',
       normalWin: 'Seri ve perlerle', withPairs: 'Çiftle', withOkey: 'Okey atarak',
@@ -86,8 +87,8 @@ launch({
       bot0: 'Ayşe', bot1: 'Mehmet', bot2: 'Zeynep', botTag: 'BOT',
       indicator: 'Indicator', sortRuns: 'Sort runs', sortPairs: 'Sort pairs', discard: 'THROW', finish: 'FINISH',
       handOf: 'HAND {n}/{m}', left: '{n} tiles', pts: '{n} pts',
-      yourDraw: 'Your turn: drag a tile from the middle or the left pile to your rack', yourDiscard: 'Pick a tile and throw it',
-      canFinish: 'Your hand is ready! Press FINISH', canFinishOkey: 'The okey is spare! FINISH throws it for ×2', waitingFor: '{name} is playing…',
+      yourDraw: 'Your turn! Draw from the middle or the left', yourDiscard: 'Pick a tile and throw it',
+      canFinish: 'Your hand is ready! Press FINISH', canFinishOkey: 'Spare okey! FINISH for ×2', waitingFor: '{name} is playing…',
       pickTile: 'Pick the tile to throw first', cantFinish: 'Your hand is not finished yet',
       pileOut: 'The middle ran out: no winner', handWon: '{name} won the hand!', handWonYou: 'You won the hand!',
       normalWin: 'Sets and runs', withPairs: 'Seven pairs', withOkey: 'Finished with the okey',
