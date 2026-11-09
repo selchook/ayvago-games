@@ -35,25 +35,43 @@ const HINT_MAX = 640;
 const CHIP_W = 162;
 const CHIP_X = [640 - 78 - 8 - CHIP_W * 1.5, 640 - 78 - CHIP_W / 2, 640 + 78 + CHIP_W / 2, 640 + 78 + 8 + CHIP_W * 1.5];
 const PILL = { x: CHIP_X[0] - CHIP_W / 2 - 12, w: (CHIP_X[3] - CHIP_X[0]) + CHIP_W + 24 };
+/** Hands per match: solo and rooms; an online table plays its settings' number (5 or 11). */
 const HANDS_PER_MATCH = 5;
 const BOT_DELAY = [650, 1150];
-/** Online: a human's turn; when it runs out their own game plays the turn for them. */
+/**
+ * Online: a human's turn (a table's settings say 15, 30 or 60 s); when it runs out their own game
+ * plays the turn for them.
+ */
 const TURN_MS = 30000;
-/** Solo: after this long a bot may ask the player to hurry. */
-const SLOW_MS = 22000;
+/** The host plays the automatic move this long after the turn ran out, if the player's game did not (a throttled tab). */
+const GRACE_MS = 5000;
+/** Solo: after this share of the turn (22 s of 30) a bot may ask the player to hurry. */
+const SLOW_FRAC = 0.73;
 
-type Act = { s: number; a: 'draw' | 'take' | 'discard' | 'finish'; id?: number; n: number };
+/**
+ * One move. `n` is its place in the hand's log, `h` the hand. `x` marks a move the host played on
+ * someone else's behalf: 1 = the automatic move of a player whose game missed the clock, 2 = a bot
+ * standing in for a player who left. The current host's `x` moves win over a late move of the
+ * player for the same place in the log, so every screen keeps the same game.
+ */
+type Act = { s: number; a: 'draw' | 'take' | 'discard' | 'finish'; id?: number; n: number; h?: number; x?: 1 | 2 };
 type Phase = 'draw' | 'discard' | 'over';
 
 /** A table that a re-joining player receives from the host (set by the menu, read by Play). */
 export let pendingSync: SyncData | null = null;
 export function setPendingSync(s: SyncData | null): void { pendingSync = s; }
-export interface SyncData { seat: number; base: number; hand: number; startDealer: number; scores: number[]; log: Act[]; stats?: SeatStats[] }
+export interface SyncData {
+  seat: number; base: number; hand: number; startDealer: number; scores: number[]; log: Act[]; stats?: SeatStats[];
+  /** Seats the host plays for absent players, and those handed back when the current turn ends. */
+  away?: number[]; back?: number[];
+}
 
 interface Seat { name: string; bot: boolean; character: CharacterId | null; portrait: string }
 interface SeatStats { won: number; okey: number; pairs: number; streak: number }
 interface SeatUi {
   avatar: Phaser.GameObjects.Container;
+  /** "BOT · disconnected" under a player whose seat a bot plays meanwhile. */
+  note: Phaser.GameObjects.Text;
   plate: Phaser.GameObjects.Graphics;
   name: Phaser.GameObjects.Text;
   count: Phaser.GameObjects.Text;
@@ -86,7 +104,21 @@ export class PlayScene extends ArcadeScene {
   private turn = 0;
   private phase: Phase = 'draw';
   private log: Act[] = [];
+  /** Players who left: the host's game plays their seats with the bot AI meanwhile. */
   private away = new Set<number>();
+  /** Players who came back while their seat was on turn: they take it again when that turn ends. */
+  private back = new Set<number>();
+  private handsPerMatch = HANDS_PER_MATCH;
+  private turnMs = TURN_MS;
+  /** Whether this game acted as the host the last time it looked (to notice a hand-over). */
+  private wasHost = false;
+  private syncAsked = 0;
+  private replaying = false;
+  /** The host started the automatic move of my turn (my game missed the clock): the rest of the turn is theirs. */
+  private yielded = false;
+  /** The NEXT HAND button or the "the host starts…" line on the hand panel. */
+  private panelCtl: Phaser.GameObjects.GameObject[] = [];
+  private panelOpen = false;
   private botTimer: Phaser.Time.TimerEvent | null = null;
   private rand: () => number = Math.random;
   private easy = false;
@@ -166,6 +198,15 @@ export class PlayScene extends ArcadeScene {
       const look = s.character ?? (s.bot ? spare[k++ % spare.length] : null);
       s.portrait = look ? portraitKey(this, `ch-${look}-front`, SEAT_COL[this.rel(seat)]) : '';
     });
+    // protocol 2.7: a table's settings (hands per match, seconds per turn); solo and rooms keep the defaults
+    const table = net.isTable ? net.table : null;
+    this.handsPerMatch = table ? Phaser.Math.Clamp(Math.round(table.hands), 1, 21) : HANDS_PER_MATCH;
+    this.turnMs = table ? Phaser.Math.Clamp(table.turnSeconds, 5, 300) * 1000 : TURN_MS;
+    this.wasHost = net.isHost;
+    this.syncAsked = 0;
+    this.back = new Set();
+    this.panelCtl = [];
+    this.panelOpen = false;
     this.startDealer = this.base % 4;
     this.scores = [0, 0, 0, 0];
     this.stats = newStats();
@@ -209,13 +250,18 @@ export class PlayScene extends ArcadeScene {
   private prev(seat: number): number { return (seat + 3) % 4; }
   private isMine(seat: number): boolean { return seat === this.me; }
   private nameOf(seat: number): string { return seat === this.me ? t('you') : this.seats[seat].name; }
-  /** Seats this game plays: bots and away players on the host (or solo) side. */
+  /**
+   * Seats this game plays: bots and away players on the host (or solo) side. Asked at every move,
+   * so a host hand-over moves them to the new host's game at once.
+   */
   private controls(seat: number): boolean {
     if (seat === this.me) return false;
     if (!net.active) return true;
     return net.isHost && (this.seats[seat].bot || this.away.has(seat));
   }
   private isHuman(seat: number): boolean { return !this.seats[seat].bot && !this.away.has(seat); }
+  /** My turn, and mine to play (not while a bot still finishes it after I came back). */
+  private myTurn(): boolean { return this.turn === this.me && !this.away.has(this.me) && !this.yielded; }
   private slotPos(i: number): { x: number; y: number } {
     return { x: RACK_X0 + (i % SLOTS) * SLOT, y: ROW_Y[Math.floor(i / SLOTS)] };
   }
@@ -256,6 +302,11 @@ export class PlayScene extends ArcadeScene {
       const name = txt(this, p.x, p.y + 64, '', { size: 22, color: '#ffffff' }).setDepth(6);
       const countBg = this.add.graphics().setDepth(6);
       const count = txt(this, p.x + 34, p.y - 32, '', { size: 18, color: '#1b1d2e', strokeThickness: 0, shadow: false }).setDepth(7);
+      // a player who left: a bot plays the seat until they come back
+      const note = txt(this, p.x, p.y + 104, `${t('botTag')}\n${t('standIn')}`, { size: 16, color: '#ffd27a' }).setDepth(6).setVisible(false);
+      note.setAlign('center').setLineSpacing(-4);
+      // across the table it sits beside the avatar, clear of the middle pile
+      if (r === 2) note.setPosition(p.x + 54, p.y + 8).setOrigin(0, 0.5).setAlign('left');
       if (r === 0) { av.setVisible(false); name.setVisible(false); count.setVisible(false); }
       else {
         // a little fan of face-down tiles beside the avatar
@@ -275,7 +326,7 @@ export class PlayScene extends ArcadeScene {
         const zone = this.add.zone(p.x, p.y + 18, 150, 140).setInteractive({ useHandCursor: true }).setDepth(8);
         zone.on('pointerup', () => this.openCard(seat));
       }
-      this.seatUi.push({ avatar: av, plate, name, count, countBg, backs });
+      this.seatUi.push({ avatar: av, note, plate, name, count, countBg, backs });
     }
     // the discard corners
     for (let r = 0; r < 4; r++) {
@@ -342,7 +393,7 @@ export class PlayScene extends ArcadeScene {
       this.chips[r].pts.setText(String(this.scores[seat]));
       this.chips[r].name.setAlpha(this.away.has(seat) ? 0.5 : 1);
     }
-    this.handText.setText(t('handOf', { n: this.hand + 1, m: HANDS_PER_MATCH }));
+    this.handText.setText(t('handOf', { n: this.hand + 1, m: this.handsPerMatch }));
   }
 
   // ---------- hand flow ----------
@@ -364,6 +415,9 @@ export class PlayScene extends ArcadeScene {
     this.log = [];
     this.selected = null;
     this.turnSeat = -1;
+    this.panelCtl = [];
+    this.yielded = false;
+    this.flushBack();
     this.slowSaid = false;
     this.handStart = { scores: [...this.scores], stats: this.stats.map((s) => ({ ...s })) };
     for (const s of this.sprites.values()) s.destroy();
@@ -410,12 +464,16 @@ export class PlayScene extends ArcadeScene {
   private nextAction(): void {
     if (this.phase === 'over' || this.isOver) return;
     if (this.turn !== this.turnSeat) {
-      // a new turn: restart the clock, and tell me when it is mine
+      // a new turn: players who came back take their seats again, the clock restarts, and I hear
+      // when it is mine
+      // (a replay keeps the table's view of who is back until the turn really changes)
+      if (!this.replaying) this.flushBack();
+      this.yielded = false;
       this.turnSeat = this.turn;
       this.turnStarted = this.time.now;
       this.autoAt = 0;
       this.lastTick = 0;
-      if (this.turn === this.me) this.myTurnCue();
+      if (this.myTurn() && !this.replaying) this.myTurnCue();
     }
     this.refresh();
     if (this.controls(this.turn)) {
@@ -441,22 +499,26 @@ export class PlayScene extends ArcadeScene {
     const seat = this.turn;
     const hand = this.hands[seat];
     const skill = this.ai();
+    // online, a bot standing in for a player who left is marked as the host's move
+    const x = net.active && !this.seats[seat].bot ? 2 as const : undefined;
     if (this.phase === 'draw') {
       const top = this.discards[this.prev(seat)].at(-1);
-      if (top !== undefined && botTakesDiscard(hand, top, this.tiles, this.okey, skill, this.rand)) this.doAct({ s: seat, a: 'take', n: this.log.length });
-      else this.doAct({ s: seat, a: 'draw', n: this.log.length });
+      if (top !== undefined && botTakesDiscard(hand, top, this.tiles, this.okey, skill, this.rand)) this.doAct({ s: seat, a: 'take', n: this.log.length, x });
+      else this.doAct({ s: seat, a: 'draw', n: this.log.length, x });
       return;
     }
     // findFinish scores every finish, so a spare okey is always the tile thrown; an Easy bot
     // mostly passes up that finish and plays on (the okey then usually ends in a plain finish)
     const fin = findFinish(hand, this.tiles, this.okey);
     const passUp = fin?.withOkey && skill.okeyFinish < 1 && this.rand() >= skill.okeyFinish;
-    if (fin && !passUp) { this.doAct({ s: seat, a: 'finish', id: fin.discard, n: this.log.length }); return; }
-    this.doAct({ s: seat, a: 'discard', id: botDiscard(hand, this.tiles, this.okey, this.rand, skill), n: this.log.length });
+    if (fin && !passUp) { this.doAct({ s: seat, a: 'finish', id: fin.discard, n: this.log.length, x }); return; }
+    this.doAct({ s: seat, a: 'discard', id: botDiscard(hand, this.tiles, this.okey, this.rand, skill), n: this.log.length, x });
   }
 
   /** Applies an action here and tells the other players. */
   private doAct(a: Act): void {
+    if (net.active) a.h = this.hand;
+    if (a.x === undefined) delete a.x;
     if (!this.apply(a)) return;
     if (net.active) net.send('act', a);
   }
@@ -668,7 +730,7 @@ export class PlayScene extends ArcadeScene {
 
   // ---------- drawing by drag ----------
   private canDraw(kind: 'draw' | 'take'): boolean {
-    if (this.isOver || this.phase !== 'draw' || this.turn !== this.me || isModalOpen(this)) return false;
+    if (this.isOver || this.phase !== 'draw' || !this.myTurn() || isModalOpen(this)) return false;
     return kind === 'draw' ? this.pile.length > 0 : this.discards[this.prev(this.me)].length > 0;
   }
 
@@ -884,11 +946,11 @@ export class PlayScene extends ArcadeScene {
   }
 
   private canDiscard(): boolean {
-    return !this.isOver && this.phase === 'discard' && this.turn === this.me && this.hands[this.me].length === 15;
+    return !this.isOver && this.phase === 'discard' && this.myTurn() && this.hands[this.me].length === 15;
   }
 
   private humanDraw(kind: 'draw' | 'take'): void {
-    if (this.isOver || this.phase !== 'draw' || this.turn !== this.me || isModalOpen(this)) return;
+    if (this.isOver || this.phase !== 'draw' || !this.myTurn() || isModalOpen(this)) return;
     if (kind === 'take' && this.discards[this.prev(this.me)].length === 0) return;
     this.doAct({ s: this.me, a: kind, n: this.log.length });
   }
@@ -909,16 +971,23 @@ export class PlayScene extends ArcadeScene {
     this.doAct({ s: this.me, a: 'finish', id: fin.discard, n: this.log.length });
   }
 
-  /** Online: my time ran out, so my own game plays the turn (draw from the middle, then the best throw). */
-  private autoPlay(): void {
-    if (this.turn !== this.me || this.phase === 'over' || this.isOver) return;
-    if (this.autoAt === 0) this.notice(t('timeUp'));
+  /**
+   * Online: a turn's time ran out. My own game plays my turn (draw from the middle, then the best
+   * throw); the host's game plays the same automatic move for a player whose game missed it by
+   * GRACE_MS (a throttled background tab), so the table never stalls.
+   */
+  private autoPlay(seat = this.me): void {
+    if (this.turn !== seat || this.phase === 'over' || this.isOver) return;
+    const mine = seat === this.me;
+    if (mine && (this.away.has(seat) || this.yielded)) return;
+    if (mine && this.autoAt === 0) this.notice(t('timeUp'));
     this.autoAt = this.time.now;
-    if (this.phase === 'draw') { this.doAct({ s: this.me, a: 'draw', n: this.log.length }); return; }
-    const hand = this.hands[this.me];
+    const x = mine ? undefined : 1 as const;
+    if (this.phase === 'draw') { this.doAct({ s: seat, a: 'draw', n: this.log.length, x }); return; }
+    const hand = this.hands[seat];
     const fin = findFinish(hand, this.tiles, this.okey);
-    if (fin) this.doAct({ s: this.me, a: 'finish', id: fin.discard, n: this.log.length });
-    else this.doAct({ s: this.me, a: 'discard', id: this.selected ?? botDiscard(hand, this.tiles, this.okey, this.rand), n: this.log.length });
+    if (fin) this.doAct({ s: seat, a: 'finish', id: fin.discard, n: this.log.length, x });
+    else this.doAct({ s: seat, a: 'discard', id: (mine ? this.selected : null) ?? botDiscard(hand, this.tiles, this.okey, this.rand), n: this.log.length, x });
   }
 
   private onKey(e: KeyboardEvent): void {
@@ -965,8 +1034,9 @@ export class PlayScene extends ArcadeScene {
       ui.countBg.clear().fillStyle(0xfff3c4, 1).fillCircle(p.x + 34, p.y - 32, 15).lineStyle(2, 0x1b1d2e, 0.5).strokeCircle(p.x + 34, p.y - 32, 15);
       ui.name.setColor(this.away.has(seat) ? '#9aa4b2' : '#ffffff');
       ui.avatar.setAlpha(this.away.has(seat) ? 0.55 : 1);
+      ui.note.setVisible(this.away.has(seat) && !this.seats[seat].bot);
     }
-    const myTurn = this.turn === this.me && this.phase !== 'over';
+    const myTurn = this.myTurn() && this.phase !== 'over';
     const fin = myTurn && this.phase === 'discard' ? this.myFinish() : null;
     this.finishBtn.setVisible(!!fin);
     this.discardBtn.setVisible(myTurn && this.phase === 'discard' && !fin).setAlpha(this.selected === null ? 0.55 : 1);
@@ -976,7 +1046,8 @@ export class PlayScene extends ArcadeScene {
       if (myTurn) {
         col = '#fff3c4';
         hint = this.phase === 'draw' ? t('yourDraw') : fin ? (fin.withOkey ? t('canFinishOkey') : t('canFinish')) : t('yourDiscard');
-      } else hint = t('waitingFor', { name: this.seats[this.turn].name });
+      } else if (this.turn === this.me) hint = this.yielded ? t('timeUp') : t('backNextTurn');
+      else hint = t('waitingFor', { name: this.seats[this.turn].name });
     }
     // the hint stays between the discard piles on either side (a long translation shrinks)
     this.hint.setText(hint).setColor(col).setScale(1);
@@ -1196,34 +1267,47 @@ export class PlayScene extends ArcadeScene {
       if (this.lastGain[seat]) this.tweens.add({ targets: tot, scale: { from: 1.6, to: 1 }, duration: 420, delay: 300, ease: 'Back.easeOut' });
     });
 
-    const last = this.hand + 1 >= HANDS_PER_MATCH;
-    const proceed = () => {
-      if (last) this.finishMatch();
-      else { this.hand++; this.startHand(); }
-    };
-    const by = 640;
-    if (!net.active || net.isHost) {
-      const btn = new Button(this, W / 2, by, last ? t('results') : t('nextHand'), () => {
-        if (this.phase !== 'over' || this.isOver) return;
-        if (net.active) net.send('next', { hand: this.hand + 1, last });
-        proceed();
-      }, { width: 300, height: 66, size: 24, color: COLORS.red });
-      btn.setDepth(D + 2);
-      ov.push(btn);
-      this.input.keyboard?.once('keydown-ENTER', () => { if (btn.active && !isModalOpen(this)) btn.press(); });
-    } else {
-      ov.push(txt(this, W / 2, by, t('waitHostHand'), { size: 22, color: '#cfe9d8' }).setDepth(D + 1));
-    }
     for (const o of ov) if ('setAlpha' in o) {
       const v = o as unknown as Phaser.GameObjects.Components.Alpha;
       if (v.alpha === 1) { v.setAlpha(0); this.tweens.add({ targets: v, alpha: 1, duration: 200 }); }
     }
     this.overlay = ov;
+    this.panelOpen = true;
+    this.drawPanelControls();
+  }
+
+  /**
+   * The bottom of the hand panel: the host (or solo player) gets NEXT HAND / RESULTS, everyone
+   * else waits for the host. Drawn again when a table's host changes.
+   */
+  private drawPanelControls(): void {
+    for (const o of this.panelCtl) o.destroy();
+    this.overlay = this.overlay.filter((o) => !this.panelCtl.includes(o));
+    this.panelCtl = [];
+    if (this.phase !== 'over' || this.isOver || !this.panelOpen) return;
+    const D = 101, by = 640;
+    const last = this.hand + 1 >= this.handsPerMatch;
+    if (!net.active || net.isHost) {
+      const btn = new Button(this, W / 2, by, last ? t('results') : t('nextHand'), () => {
+        if (this.phase !== 'over' || this.isOver || (net.active && !net.isHost)) return;
+        if (net.active) net.send('next', { hand: this.hand + 1, last });
+        if (last) this.finishMatch();
+        else { this.hand++; this.startHand(); }
+      }, { width: 300, height: 66, size: 24, color: COLORS.red });
+      btn.setDepth(D + 2);
+      this.panelCtl.push(btn);
+      this.input.keyboard?.once('keydown-ENTER', () => { if (btn.active && !isModalOpen(this)) btn.press(); });
+    } else {
+      this.panelCtl.push(txt(this, W / 2, by, t('waitHostHand'), { size: 22, color: '#cfe9d8' }).setDepth(D + 1));
+    }
+    this.overlay.push(...this.panelCtl);
   }
 
   private clearOverlay(): void {
     for (const o of this.overlay) { this.tweens.killTweensOf(o); o.destroy(); }
     this.overlay = [];
+    this.panelCtl = [];
+    this.panelOpen = false;
   }
 
   private finishMatch(): void {
@@ -1239,44 +1323,111 @@ export class PlayScene extends ArcadeScene {
   // ---------- online ----------
   private bindNet(): void {
     if (!net.active) return;
-    net.onScene(this, 'act', (a: Act) => {
-      if (!a || typeof a.s !== 'number') return;
-      this.apply(a);
+    net.onScene(this, 'act', (a: Act, from: number) => {
+      if (!a || typeof a.s !== 'number' || typeof a.n !== 'number') return;
+      if (typeof a.h === 'number' && a.h !== this.hand) {
+        // a move of a later hand: this game missed the start of it
+        if (a.h > this.hand) this.askSync();
+        return;
+      }
+      if (this.apply(a)) {
+        // the host's bot played my seat: the table took me for gone, so take it back and resync
+        if (a.s === this.me && a.x === 2 && from !== this.me && !this.away.has(this.me)) this.askSync();
+        // the host plays my late turn to its end: my game must not throw a tile of its own now
+        if (a.s === this.me && a.x === 1 && this.turn === this.me && this.phase !== 'over') {
+          this.yielded = true;
+          this.notice(t('timeUp'));
+          this.refresh();
+        }
+        return;
+      }
+      if (this.phase === 'over') return;
+      if (a.n > this.log.length) { this.askSync(); return; }
+      // The same place in the log holds another move: the current host's move for a late player
+      // wins (their own game may have played it too, a moment too late). Replay the hand with it.
+      const mine = this.log[a.n];
+      if (a.x && from === net.hostSeat && mine && mine.s === a.s && (mine.a !== a.a || mine.id !== a.id)) {
+        this.replay([...this.log.slice(0, a.n), a]);
+      }
     });
     net.onScene(this, 'next', (d: { hand: number; last: boolean }) => {
-      if (net.isHost || !d) return;
+      if (net.isHost || !d || this.isOver || typeof d.hand !== 'number' || d.hand <= this.hand) return;
       if (d.last) this.finishMatch();
       else { this.hand = d.hand; this.startHand(); }
     });
-    // the host answers a player who came back with the whole table so far
+    // a player who came back (their menu) or who lost track asks for the table; every game takes
+    // them back, the host answers with the whole table so far
     net.onScene(this, 'hello', (_d: unknown, from: number) => {
+      if (typeof from !== 'number' || from === this.me) return;
+      this.seatBack(from);
       if (!net.isHost) return;
-      this.away.delete(from);
       const over = this.phase === 'over';
       net.send('sync', {
         seat: from, base: this.base, hand: this.hand, startDealer: this.startDealer,
         // the replayed log scores a finished hand again, so send the totals from before it
         scores: over ? this.handStart.scores : this.scores, stats: over ? this.handStart.stats : this.stats, log: this.log,
+        away: [...this.away], back: [...this.back],
       } satisfies SyncData);
-      this.refresh();
     });
     net.onScene(this, 'sync', (d: SyncData) => {
-      if (!d || d.seat !== this.me) return;
+      if (!d || d.seat !== this.me || !Array.isArray(d.log)) return;
       this.applySync(d);
     });
+    // protocol 2.7: the host left and another player took over
+    net.onHostChange(this, () => {
+      const was = this.wasHost;
+      this.wasHost = net.isHost;
+      if (net.isHost && !was) {
+        // I host now: from my own copy of the table (every game applied the same moves) I play
+        // the bots and the absent seats, run their clocks and start the next hand
+        if (this.phase === 'over') this.drawPanelControls();
+        else this.nextAction();
+      } else if (!net.isHost && was) {
+        // another player hosts now (I was cut off for a while): stop playing anyone else's seat
+        // and take the table from the new host, in case moves crossed meanwhile
+        this.botTimer?.remove(); this.botTimer = null;
+        this.drawPanelControls();
+        this.askSync(true);
+      }
+    });
+  }
+
+  /** Asks the host for the whole table (at most every 3 s). */
+  private askSync(now = false): void {
+    if (net.isHost || this.isOver) return;
+    const at = this.time.now;
+    if (!now && at - this.syncAsked < 3000) return;
+    this.syncAsked = at;
+    net.send('hello', { seat: this.me });
+  }
+
+  /** A player is back: their seat is theirs again now, or when their current turn ends. */
+  private seatBack(seat: number): void {
+    if (!this.away.has(seat)) return;
+    if (this.turn === seat && this.phase !== 'over') this.back.add(seat);
+    else this.away.delete(seat);
+    this.refresh();
+  }
+
+  private flushBack(): void {
+    if (!this.back.size) return;
+    for (const seat of this.back) this.away.delete(seat);
+    this.back.clear();
   }
 
   protected onSeatLeave(seat: number): void {
+    if (seat === this.me) return;
     this.away.add(seat);
+    this.back.delete(seat);
     this.refresh();
     // the host plays the empty seat until its player comes back
-    if (net.isHost && this.turn === seat) this.nextAction();
+    if (net.isHost && this.turn === seat && this.phase !== 'over') this.nextAction();
   }
 
   protected onSeatJoin(seat: number): void {
-    // their game starts over and says "hello"; until then the host keeps playing the seat
-    this.refresh();
-    void seat;
+    // their page is back: from the next turn on the seat is theirs again; their game restarts
+    // and says "hello" for the table (seatBack runs again then, harmlessly)
+    this.seatBack(seat);
   }
 
   /** Replays the host's table: the same seed and the same actions. */
@@ -1286,9 +1437,39 @@ export class PlayScene extends ArcadeScene {
     this.hand = d.hand;
     this.scores = [...d.scores];
     if (Array.isArray(d.stats) && d.stats.length === 4) this.stats = d.stats.map((s) => ({ ...s }));
+    // the totals from before the hand (scores only change when a hand ends)
+    this.handStart = { scores: [...this.scores], stats: this.stats.map((s) => ({ ...s })) };
+    this.away = new Set(Array.isArray(d.away) ? d.away.filter((x) => typeof x === 'number') : []);
+    this.back = new Set(Array.isArray(d.back) ? d.back.filter((x) => typeof x === 'number') : []);
+    this.replay(d.log);
+  }
+
+  /** Deals the hand again from its seed and applies the moves; the totals are those from before the hand. */
+  private replay(log: Act[]): void {
+    this.scores = [...this.handStart.scores];
+    this.stats = this.handStart.stats.map((s) => ({ ...s }));
+    const away = new Set(this.away), back = new Set(this.back);
     this.startHand();
+    // startHand hands back the returning seats; the replay keeps the table's view of them
+    this.away = away; this.back = back;
     this.botTimer?.remove();
-    for (const a of d.log) this.apply(a);
+    this.turnSeat = -1;
+    this.yielded = false;
+    this.replaying = true;
+    try {
+      for (const a of log) this.apply(a);
+    } finally {
+      this.replaying = false;
+    }
+    if (this.turnSeat !== this.turn) {
+      // no move yet (or the turn did not change): the current turn starts now, without handing
+      // back a seat whose turn a bot is still finishing
+      this.turnSeat = this.turn;
+      this.turnStarted = this.time.now;
+      this.autoAt = 0;
+      this.lastTick = 0;
+    }
+    if (this.myTurn() && this.phase !== 'over') this.myTurnCue();
     this.layoutRack();
     this.refresh();
   }
@@ -1312,7 +1493,9 @@ export class PlayScene extends ArcadeScene {
     const now = this.time.now;
     const spent = now - this.turnStarted;
     const timed = net.active && this.isHuman(seat);
-    const left = timed ? Math.max(0, 1 - spent / TURN_MS) : 1;
+    const left = timed ? Math.max(0, 1 - spent / this.turnMs) : 1;
+    // the host plays the automatic move for a player whose own game missed the clock (a throttled tab)
+    if (timed && seat !== this.me && net.isHost && spent > this.turnMs + GRACE_MS && now - this.autoAt > 450) this.autoPlay(seat);
     const col = left < 0.2 ? 0xff5a5a : left < 0.45 ? 0xffd23f : 0x5dff7a;
     if (r !== 0) {
       const p = SEAT_POS[r], rad = AVATAR / 2 + 10;
@@ -1334,10 +1517,10 @@ export class PlayScene extends ArcadeScene {
       // my clock under the hint, ticking in the last five seconds
       g.fillStyle(0x000000, 0.35).fillRoundedRect(W / 2 - 120, 424, 240, 8, 4);
       g.fillStyle(col, 1).fillRoundedRect(W / 2 - 120, 424, 240 * left, 8, 4);
-      const secs = Math.ceil((TURN_MS - spent) / 1000);
+      const secs = Math.ceil((this.turnMs - spent) / 1000);
       if (secs <= 5 && secs > 0 && secs !== this.lastTick) { this.lastTick = secs; this.sfx('tick', { volume: 0.45, exact: true }); }
       if (left <= 0 && now - this.autoAt > 450) this.autoPlay();
-    } else if (!net.active && !this.slowSaid && spent > SLOW_MS) {
+    } else if (!net.active && !this.slowSaid && spent > this.turnMs * SLOW_FRAC) {
       // solo: a bot gently asks me to hurry (once a hand, and not always)
       this.slowSaid = true;
       this.chat.botSay(this.next(this.me), 'hurry', 0.6);

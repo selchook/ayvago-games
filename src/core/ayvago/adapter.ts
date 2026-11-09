@@ -4,7 +4,8 @@
  * Minor protocol versions add optional fields and messages only: 2.1 online rooms, 2.2 the player's
  * character, 2.3 tables of up to four seats, 2.4 the player's server best (`config.best`), 2.5 the
  * game's own sound switch reported to the platform (`reportMute`, GHA_MUTE_STATE), 2.6 the run's
- * difficulty in GHA_END (`difficulty: 'easy'` runs are practice and stay off the leaderboards).
+ * difficulty in GHA_END (`difficulty: 'easy'` runs are practice and stay off the leaderboards),
+ * 2.7 table settings and the host's seat (`config.table`) and host hand-over (GHA_HOST_CHANGE).
  *
  * A single, dependency-free file that games vendor (copy) into their own repository. At runtime
  * it decides whether the game runs inside Ayvago (embedded in an iframe on an allowed platform
@@ -15,7 +16,7 @@
  * Update vendored copies by copying this file; do not edit them in place.
  */
 
-export const ADAPTER_VERSION = '2.6.0';
+export const ADAPTER_VERSION = '2.7.0';
 export const PROTOCOL_VERSION = 2;
 
 /** Origins allowed to host games. "*" matches one DNS label segment (letters, digits, "-"). */
@@ -45,6 +46,26 @@ export type SeatInfo = {
   bot: boolean;
 };
 
+/** Protocol 2.7: what the host chose when opening the table. */
+export type TableSettings = {
+  /** Hands (rounds) per match: 5 or 11. */
+  hands: number;
+  /** Seconds a player has for a turn: 15 (fast), 30 (normal) or 60 (relaxed). */
+  turnSeconds: number;
+  /** Empty seats may be bots. False: every seat was taken by a player when the game started. */
+  bots: boolean;
+};
+
+/** Protocol 2.7, table games only: the table's settings and who hosts it now. */
+export type TableConfig = {
+  settings: TableSettings;
+  /**
+   * The host's seat. 0 when the table starts; after a hand-over (GHA_HOST_CHANGE) another seat.
+   * The host's game plays the bot seats and resyncs players who come back.
+   */
+  hostSeat: number;
+};
+
 export type StartConfig = ThemeInfo & {
   mode: 'solo' | 'multiplayer';
   isHost: boolean;
@@ -64,6 +85,11 @@ export type StartConfig = ThemeInfo & {
    * at `playerIndex`, the host at 0). Two-player rooms leave it out.
    */
   seats?: SeatInfo[];
+  /**
+   * Protocol 2.7, table games only: settings and the host's seat. Absent in two-player rooms,
+   * solo runs and on platforms before 2.7 (then: host at seat 0, the game's own defaults).
+   */
+  table?: TableConfig;
   /**
    * Protocol 2.4: the player's best score for this game on the platform (its leaderboard order:
    * the lowest for games where lower is better). `null`: the player has no recorded score yet,
@@ -96,13 +122,21 @@ export const MAX_MOVE_SIZE = 16_000;
  * Messages: GHA_MOVE_OUT { data } game → platform (sent to every other player),
  * GHA_MOVE_IN { data, from? } platform → game, GHA_PEER_LEAVE { seat? } / GHA_PEER_JOIN
  * { name, seat? } when a player drops out or comes back. `from` and `seat` are seat indexes;
- * two-player rooms leave them out and mean the other player.
+ * two-player rooms leave them out and mean the other player. Protocol 2.7: GHA_HOST_CHANGE
+ * { hostSeat } platform → game when another player took over as the table's host.
  */
 export interface Multiplayer {
   /** True when the platform started this game for an online match. */
   readonly active: boolean;
-  /** The room creator; by convention the host runs authoritative simulations. */
+  /**
+   * The room creator; by convention the host runs authoritative simulations (and, at a table,
+   * plays the bots). At a table it follows hand-overs: true once this player's seat is `hostSeat`.
+   */
   readonly isHost: boolean;
+  /** Protocol 2.7: the host's seat (0 in two-player rooms, offline and before any hand-over). */
+  readonly hostSeat: number;
+  /** Protocol 2.7, table games: the settings and host seat; null in rooms, solo and offline. */
+  readonly table: TableConfig | null;
   /** This player's seat: 0 for the host, 1 for the guest (up to 3 at a table). */
   readonly playerIndex: number;
   /** Protocol 2.3, table games: every seat in order; empty in two-player rooms and offline. */
@@ -119,6 +153,11 @@ export interface Multiplayer {
   onPeerLeave(callback: (seat: number) => void): () => void;
   /** A player came back (or took a seat); `seat` is their seat. */
   onPeerJoin(callback: (name: string, seat: number) => void): () => void;
+  /**
+   * Protocol 2.7, table games: the host left and the player in `hostSeat` took over. `isHost`
+   * and `hostSeat` already have the new values when the callback runs.
+   */
+  onHostChange(callback: (hostSeat: number) => void): () => void;
 }
 
 export interface PlatformAdapter {
@@ -250,6 +289,8 @@ class Emitter<T> {
 const OFFLINE: Multiplayer = {
   active: false,
   isHost: true,
+  hostSeat: 0,
+  table: null,
   playerIndex: 0,
   peerName: '',
   peerCharacter: '',
@@ -258,6 +299,7 @@ const OFFLINE: Multiplayer = {
   onMove: () => () => {},
   onPeerLeave: () => () => {},
   onPeerJoin: () => () => {},
+  onHostChange: () => () => {},
 };
 
 function moveFits(data: unknown): boolean {
@@ -322,6 +364,7 @@ class AyvagoAdapter implements PlatformAdapter {
   private moveIn = new Emitter<[unknown, number]>();
   private peerLeave = new Emitter<number>();
   private peerJoin = new Emitter<[string, number]>();
+  private hostChange = new Emitter<number>();
   readonly multiplayer: Multiplayer;
 
   constructor(
@@ -330,7 +373,7 @@ class AyvagoAdapter implements PlatformAdapter {
     config: StartConfig,
     private adTimeoutMs: number,
   ) {
-    this.currentConfig = withBest(config);
+    this.currentConfig = withTable(withBest(config));
     this.currentLocale = config.locale;
     const self = this;
     this.multiplayer = {
@@ -339,6 +382,12 @@ class AyvagoAdapter implements PlatformAdapter {
       },
       get isHost() {
         return self.currentConfig.isHost;
+      },
+      get hostSeat() {
+        return self.currentConfig.table?.hostSeat ?? 0;
+      },
+      get table() {
+        return self.currentConfig.table ?? null;
       },
       get playerIndex() {
         return self.currentConfig.playerIndex;
@@ -360,6 +409,7 @@ class AyvagoAdapter implements PlatformAdapter {
       onMove: (callback) => self.moveIn.add(([data, from]) => callback(data, from)),
       onPeerLeave: (callback) => self.peerLeave.add(callback),
       onPeerJoin: (callback) => self.peerJoin.add(([name, seat]) => callback(name, seat)),
+      onHostChange: (callback) => self.hostChange.add(callback),
     };
     env.listen((data, messageOrigin, fromParent) => {
       if (fromParent && messageOrigin === origin) this.handle(data);
@@ -391,7 +441,7 @@ class AyvagoAdapter implements PlatformAdapter {
     const msg = data as Record<string, unknown>;
     switch (msg.type) {
       case 'GHA_START':
-        if (isStartConfig(msg.config)) this.currentConfig = withBest(msg.config);
+        if (isStartConfig(msg.config)) this.currentConfig = withTable(withBest(msg.config));
         break;
       case 'GHA_PAUSE':
         this.pause.emit();
@@ -428,6 +478,20 @@ class AyvagoAdapter implements PlatformAdapter {
       case 'GHA_PEER_JOIN':
         this.peerJoin.emit([typeof msg.name === 'string' ? msg.name : '', this.seatOf(msg.seat)]);
         break;
+      case 'GHA_HOST_CHANGE': {
+        // Tables only; a seat outside the table or no change is ignored.
+        const table = this.currentConfig.table;
+        const seat = msg.hostSeat;
+        if (!table || !isSeatIndex(seat, this.currentConfig.playerCount)) break;
+        if (seat === table.hostSeat) break;
+        this.currentConfig = {
+          ...this.currentConfig,
+          isHost: seat === this.currentConfig.playerIndex,
+          table: { ...table, hostSeat: seat },
+        };
+        this.hostChange.emit(seat);
+        break;
+      }
       case 'GHA_AD_RESULT': {
         const settle = typeof msg.id === 'number' ? this.pendingAds.get(msg.id) : undefined;
         if (settle) settle(msg.rewarded === true, msg.shown === true);
@@ -547,6 +611,35 @@ function withBest(config: StartConfig): StartConfig {
   if (best === null || (typeof best === 'number' && Number.isFinite(best))) return config;
   const rest = { ...config };
   delete rest.best;
+  return rest;
+}
+
+function isSeatIndex(value: unknown, count: number): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < count;
+}
+
+/**
+ * Protocol 2.7: keeps `table` only when it is well formed (settings with a number of hands, turn
+ * seconds and bots, and a host seat inside the table); anything else is dropped, as if absent.
+ */
+function withTable(config: StartConfig): StartConfig {
+  const table: unknown = config.table;
+  if (table === undefined) return config;
+  const t = table as { settings?: Record<string, unknown> | null; hostSeat?: unknown } | null;
+  const s = t?.settings;
+  const valid =
+    !!s &&
+    typeof s.hands === 'number' &&
+    Number.isInteger(s.hands) &&
+    s.hands > 0 &&
+    typeof s.turnSeconds === 'number' &&
+    Number.isFinite(s.turnSeconds) &&
+    s.turnSeconds > 0 &&
+    typeof s.bots === 'boolean' &&
+    isSeatIndex(t?.hostSeat, config.playerCount);
+  if (valid) return config;
+  const rest = { ...config };
+  delete rest.table;
   return rest;
 }
 

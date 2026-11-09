@@ -15,6 +15,7 @@ const common: Strings = {
     online: 'ÇEVRİMİÇİ MAÇ', vs: 'Rakip: {name}', opponent: 'Rakip', waitHost: 'Oda sahibinin başlatması bekleniyor…',
     rematch: 'RÖVANŞ', youLose: 'KAYBETTİN', draw: 'BERABERE', peerLeft: 'Rakip ayrıldı', peerBack: 'Rakip geri döndü', nextFirst: 'Sonraki turu başlatan: {name}',
     atTable: 'Masada: {names}', seatLeft: '{name} ayrıldı, yerine bot oynuyor', seatBack: '{name} geri döndü',
+    hostYou: 'Masanın yeni sahibi sensin', hostNow: 'Masanın yeni sahibi: {name}',
     yourTurn: 'SIRA SENDE', theirTurn: 'RAKİBİN SIRASI', you: 'SEN',
     diffEasy: 'KOLAY', diffNormal: 'NORMAL', diffEasyNote: 'Kolay: sıralamaya girmez',
     // driving games (src/core/steering)
@@ -32,6 +33,7 @@ const common: Strings = {
     online: 'ONLINE MATCH', vs: 'Opponent: {name}', opponent: 'Opponent', waitHost: 'Waiting for the host to start…',
     rematch: 'REMATCH', youLose: 'YOU LOSE', draw: 'DRAW', peerLeft: 'Your opponent left', peerBack: 'Your opponent is back', nextFirst: 'Next round starts with: {name}',
     atTable: 'At the table: {names}', seatLeft: '{name} left; a bot plays their seat', seatBack: '{name} is back',
+    hostYou: 'You are the host now', hostNow: '{name} is the host now',
     yourTurn: 'YOUR TURN', theirTurn: "THEIR TURN", you: 'YOU',
     diffEasy: 'EASY', diffNormal: 'NORMAL', diffEasyNote: 'Easy: not ranked',
     // driving games (src/core/steering)

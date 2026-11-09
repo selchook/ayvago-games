@@ -81,6 +81,7 @@ launch({
       matchWon: 'MAÇI KAZANDIN!', matchWonBy: 'Kazanan: {name}', noWinner: 'Kimse el açamadı',
       okeyFinish: 'OKEY ATARAK BİTİRDİ! ×2', okeyFinishYou: 'Okeyi atarak bitirdin, puanın iki katı!', okeyFinishBy: '{name} okeyi atarak bitirdi',
       player: 'OYUNCU', thisHand: 'BU EL', total: 'TOPLAM', timeUp: 'Süre doldu: hamle senin yerine yapıldı',
+      standIn: 'bağlantı koptu', backNextTurn: 'Bu tur bitince yerine dönüyorsun…',
       botLevel: 'Orta', stPoints: 'Puan', stHands: 'Kazanılan el', stOkey: 'Okeyle bitiş', stPairs: 'Çiftle bitiş', stStreak: 'Seri', stTiles: 'Elindeki taş',
     },
     en: {
@@ -96,6 +97,7 @@ launch({
       matchWon: 'YOU WON THE MATCH!', matchWonBy: 'Winner: {name}', noWinner: 'Nobody finished a hand',
       okeyFinish: 'FINISHED WITH THE OKEY! ×2', okeyFinishYou: 'You threw the okey to finish: double points!', okeyFinishBy: '{name} threw the okey to finish',
       player: 'PLAYER', thisHand: 'THIS HAND', total: 'TOTAL', timeUp: 'Time is up: your move was played for you',
+      standIn: 'disconnected', backNextTurn: 'You take your seat back after this turn…',
       botLevel: 'Medium', stPoints: 'Points', stHands: 'Hands won', stOkey: 'Okey finishes', stPairs: 'Pairs finishes', stStreak: 'Streak', stTiles: 'Tiles in hand',
     },
   },
