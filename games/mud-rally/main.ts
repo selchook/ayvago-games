@@ -79,8 +79,9 @@ launch({
       truck.root.scale.setScalar(1.35);
       truck.root.rotation.y = i ? 0.6 : -0.6;
       stage.add(hill, truck.root);
-      // with the steering switch beside PLAY (touch screens) the trucks stand a little wider
-      const x = touchScreen(scene) ? 12.9 : 10.8;
+      // the switches beside PLAY push the trucks wide (wider still on touch screens, where the
+      // steering switch joins the difficulty switch)
+      const x = touchScreen(scene) ? 12.9 : 11.8;
       stage.position.set(i ? x : -x, -0.5, 0);
       world.scene.add(stage);
       stages.push(stage);
@@ -95,6 +96,7 @@ launch({
       stages[1].position.y = -0.5 + Math.sin(t + 1.5) * 0.07;
     };
   },
+  difficulty: true,
   menuOption: steeringOption,
   scenes: [PlayScene],
   strings: STRINGS,

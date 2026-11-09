@@ -12,13 +12,19 @@ const JUMP_V = 8.2;
 const START_LIVES = 3;
 const CAR_HALF_W = 0.36;
 const CAR_HALF_L = 0.62;
-/** Sideways speed at full lock (keys, arrows, the wheel or the phone's tilt). */
-const STEER_SPEED = 7.5;
 /**
- * Phone tilt for full lock. Lower than a racing game's 24 degrees: a lane change wants a quick,
+ * Sideways speed at full lock (keys, arrows, the wheel or the phone's tilt) at top speed; slower
+ * roads get a calmer car (STEER_SLOW of it at the start). 7.5 at every speed before v1.1.1.
+ */
+const STEER_SPEED = 7.2;
+const STEER_SLOW = 0.85;
+/**
+ * Phone tilt for full lock. Lower than a racing game's 34 degrees: a lane change wants a quick,
  * small turn, and a tall portrait phone is awkward to turn far like a wheel.
  */
-const TILT_LOCK = 18;
+const TILT_LOCK = 26;
+/** Seconds the keys and arrows take to full lock: shorter than a racing game's, for lane changes. */
+const STEER_RAMP = 0.12;
 
 type ObjKind = 'coin' | 'crate' | 'spikes' | 'heart';
 
@@ -70,6 +76,8 @@ export class PlayScene extends ArcadeScene {
   private invuln = 0;
   private respawnAt = 0;
   private upWasDown = false;
+  /** Sideways speed at full lock (exposed for tests). */
+  steerSpeed = STEER_SPEED;
 
   createGame(): void {
     this.rows = new Map();
@@ -88,6 +96,7 @@ export class PlayScene extends ArcadeScene {
     this.invuln = 0;
     this.respawnAt = 0;
     this.upWasDown = false;
+    this.steerSpeed = STEER_SPEED;
 
     this.world = new World3D(this, { fov: 62, background: 0x8fd3ff, fog: { color: 0xbfe6ff, near: 26, far: 70 } });
     this.world.addLights({ sky: 0xeaf6ff, ground: 0x8a7a64, ambient: 1.7, intensity: 2.4, dir: [-0.6, 1, 0.35], extent: 16 });
@@ -99,8 +108,8 @@ export class PlayScene extends ArcadeScene {
       touch: this.controls.touchUi,
       buttons: [{ id: 'jump', shape: 'round', x: width - 136, y: height - 130, r: 96, color: 0xec3013, label: t('jump'), labelY: 34, labelSize: 26, icon: 'up', hit: 34 }],
       tiltLock: TILT_LOCK,
-      // the car already eases its sideways speed, so keys and arrows give full lock at once
-      ramp: false,
+      // the car eases its sideways speed as well, so the keys and arrows ramp only briefly
+      ramp: STEER_RAMP,
     });
     this.steering.begin();
     this.steering.centre();
@@ -302,7 +311,8 @@ export class PlayScene extends ArcadeScene {
     }
 
     // steering
-    const target = this.steering.steer(dt, this.controls.axisX) * STEER_SPEED;
+    const lateral = this.steerSpeed * (STEER_SLOW + (1 - STEER_SLOW) * Math.min(1, (this.speed - 11) / 15));
+    const target = this.steering.steer(dt, this.controls.axisX) * lateral;
     this.vx += (target - this.vx) * Math.min(1, dt * 10);
     this.x = Phaser.Math.Clamp(this.x + this.vx * dt, -EDGE, EDGE);
     this.z -= this.speed * dt;

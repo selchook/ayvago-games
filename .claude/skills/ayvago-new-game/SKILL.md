@@ -293,7 +293,9 @@ Games against an AI and action games may offer **Easy / Normal**. Word and puzzl
 
 - **Opt in.** Set `difficulty: true` in the `launch({...})` definition. The menu then shows a
   two-segment toggle, KOLAY | NORMAL / EASY | NORMAL: under PLAY in portrait, beside it in
-  landscape. A tap on a segment or Left/Right on the keyboard switches it. In Easy a caption says
+  landscape. A driving game with its steering switch (`menuOption`) gets both, stacked with the
+  difficulty first: under PLAY in portrait, right of PLAY in landscape (see `games/mud-rally`,
+  `games/traffic-racer`). A tap on a segment or Left/Right on the keyboard switches it. In Easy a caption says
   "Kolay: sıralamaya girmez" / "Easy: not ranked".
 - **Read it.** In `createGame()`, call `isEasy()` (or `difficulty()`, which returns `'easy' | 'normal'`)
   from `@core` and pick your tuning from it. The choice is stored per game
@@ -320,11 +322,13 @@ Games against an AI and action games may offer **Easy / Normal**. Word and puzzl
 Every game where the player drives a car, truck, kart or bike uses the shared car steering in
 `src/core/steering/` (exported from `@core`, also for 3D games). Players choose how they steer once,
 and the choice carries over to every car game. References: `games/mud-rally` (landscape, gas /
-brake / nitro, analogue racing) and `games/sky-road` (portrait, lateral steering + JUMP).
+brake / nitro, analogue racing, Easy / Normal), `games/sky-road` (portrait 3D, lateral steering +
+JUMP) and `games/traffic-racer` (portrait 2D, lane weaving with BOOST / BRAKE pedals, Easy / Normal).
 
 - **Menu.** `menuOption: steeringOption` in `launch({...})`. On touch screens the menu shows the
   STEERING / KONTROL switch ARROWS | WHEEL | TILT (OKLAR | DİREKSİYON | EĞİM) beside PLAY in
-  landscape, under it in portrait. Desktops see the usual menu. Choosing TILT asks for the motion
+  landscape, under it in portrait; with `difficulty: true` as well, the Easy/Normal switch sits
+  above it. Desktops see the usual menu. Choosing TILT asks for the motion
   sensors from inside the tap (iOS); when they are refused or missing, the choice stays as it was.
   The mode is stored once for all driving games (`steerMode()` / `setSteerMode()`, storage key `steer`).
 - **The pad.** In `createGame()`:
@@ -336,14 +340,21 @@ brake / nitro, analogue racing) and `games/sky-road` (portrait, lateral steering
       { id: 'gas', shape: 'pedal', x: 1180, y: 566, w: 150, h: 220, color: 0x2fae5a, label: t('gas') },
       { id: 'nitro', shape: 'round', x: 1018, y: 448, r: 64, color: 0xff7a1a, icon: 'bolt', count: true, holds: 'gas' },
     ],
-    tiltLock: 24,   // degrees of tilt for full lock (default 24; Sky Road uses 18 for quick lane changes)
-    ramp: true,     // keys and arrows ease to full lock (false when the game smooths steering itself)
+    tiltLock: 34,   // degrees of tilt for full lock (default 34; Sky Road uses 26 for quick lane changes)
+    ramp: true,     // keys and arrows ease to full lock in RAMP_TIME (0.4 s); a number sets the seconds
   });
   ```
   - The left thumb steers in the chosen mode: two arrow buttons, an on-screen wheel turned by
-    dragging round its centre (analogue, full lock at 100°, springs back), or the phone's tilt
-    (the same wheel follows the phone; a tap on it re-centres; a pulsing TURN TILT ON button when
-    iOS needs a tap again). The steering group sits bottom-left (`steer: { x, y }` moves it).
+    dragging round its centre (analogue, full lock at `WHEEL_LOCK` 155°, springs back), or the
+    phone's tilt (the same wheel follows the phone; a tap on it re-centres; a pulsing TURN TILT ON
+    button when iOS needs a tap again). The steering group sits bottom-left (`steer: { x, y }`
+    moves it).
+  - **Calm steering.** Players found quick steering twitchy, so the defaults are deliberately slow:
+    the wheel and tilt share a gentle centre curve (`steerCurve`: steering = input^1.35, so a
+    quarter input steers about 0.15), keys and arrows take 0.4 s to full lock (a 0.1 s tap is a
+    0.25 nudge) and come back in 0.15 s. A lane game that needs quicker changes may pass a
+    shorter `ramp` (Sky Road 0.22 s, Traffic Racer 0.25 s) and a smaller `tiltLock`; tune the
+    vehicle's own turn rate (yaw rate, sideways speed) so full lock is not too sharp either.
   - Right-thumb buttons: `shape: 'pedal' | 'round'`, `color`, `label` (localized in the game),
     `labelY`, `icon: 'bolt' | 'up'`, `count` (a ×n badge, `pad.setCount(id, n)`), `hit` (extra
     touch room; `Infinity` runs a side to the screen edge) and `holds` (another button this one also
@@ -365,7 +376,7 @@ brake / nitro, analogue racing) and `games/sky-road` (portrait, lateral steering
 - **Test** on emulated phones (Playwright `hasTouch: true, isMobile: true`), in the game's
   orientation and with `screen.orientation.angle` 90 for landscape:
   - the switch shows on touch only, and each mode can be picked;
-  - WHEEL: a quarter turn clockwise gives about +0.9, release returns to 0;
+  - WHEEL: a quarter turn clockwise gives about +0.48 (full lock at 155°), release returns to 0;
   - TILT: dispatch `new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta, gamma })`
     repeatedly; right edge down steers right (portrait: gamma > 0; landscape angle 90: beta > 0);
     with `DeviceOrientationEvent.requestPermission` returning `'denied'`, the menu stays on ARROWS;

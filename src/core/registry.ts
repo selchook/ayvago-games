@@ -60,7 +60,8 @@ export interface GameDefinition {
   /**
    * A game's own setting on the menu (e.g. the driving games' `steeringOption`), drawn by `build` in the
    * slot the Easy/Normal switch uses: beside PLAY in landscape, under it in portrait. `show`
-   * decides per device (e.g. touch screens only). Not offered together with `difficulty`.
+   * decides per device (e.g. touch screens only). With `difficulty` as well, the two are stacked
+   * (difficulty first): under PLAY in portrait, right of PLAY in landscape.
    */
   menuOption?: { show?: (scene: Phaser.Scene) => boolean; build: (scene: Phaser.Scene, x: number, y: number) => void };
 }

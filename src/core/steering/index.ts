@@ -3,5 +3,6 @@
 export { Tilt, tilt, TILT_FULL_LOCK, type TiltResult } from './tilt';
 export { STEER_MODES, steerMode, setSteerMode, touchScreen, type SteerMode } from './mode';
 export { steeringMenu, steeringOption } from './menu';
-export { CarPad, type CarPadButton, type CarPadOptions } from './pad';
-export { CarSteering, type CarSteeringOptions } from './steering';
+export { CarPad, WHEEL_LOCK, type CarPadButton, type CarPadOptions } from './pad';
+export { CarSteering, RAMP_TIME, type CarSteeringOptions } from './steering';
+export { steerCurve, STEER_CURVE } from './curve';
