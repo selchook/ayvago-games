@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net } from '@core';
-import { B, LINES, BOXES, LEVELS, choose, completes, isH, hLine, vLine } from './ai';
+import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, isEasy } from '@core';
+import { B, LINES, BOXES, LEVELS, EASY_LEVELS, choose, completes, isH, hLine, vLine, type Level } from './ai';
 
 const CELL = 120;
 const BX = (720 - B * CELL) / 2;   // first dot x
@@ -28,6 +28,7 @@ export class PlayScene extends ArcadeScene {
   private theirCount!: Phaser.GameObjects.Text;
   private dots: Phaser.GameObjects.Arc[] = [];
   private level = 0;
+  private levels = LEVELS;
   private lives = 3;
   private streak = 0;
   private round = 0;
@@ -44,6 +45,7 @@ export class PlayScene extends ArcadeScene {
     this.boxGfx = []; this.dots = [];
     this.state = 'busy'; this.hover = -1; this.keyCur = { r: 0, c: 0, h: true };
     this.level = 0; this.lives = 3; this.streak = 0; this.round = 0; this.chain = 0;
+    this.levels = isEasy() ? EASY_LEVELS : LEVELS;
     this.online = net.active;
     this.moveNo = 0; this.inbox = [];
     this.useHud = !this.online;
@@ -231,9 +233,14 @@ export class PlayScene extends ArcadeScene {
     this.draw(l, 1);
   }
 
+  /** The AI at the current level (take chance, safe-line preference, giveaway care, chain control, endgame). */
+  ai(): Level {
+    return this.levels[Math.min(this.level, this.levels.length - 1)];
+  }
+
   private aiMove(): void {
     if (this.isOver || this.state !== 'ai') return;
-    const l = choose(this.lines, LEVELS[Math.min(this.level, LEVELS.length - 1)]);
+    const l = choose(this.lines, this.ai());
     if (l < 0) return;
     this.draw(l, 2);
   }
@@ -323,7 +330,7 @@ export class PlayScene extends ArcadeScene {
     if (win) {
       this.streak++;
       this.addScore(100 * (this.level + 1) + (me - them) * 10 + this.streak * 25, cx, BY - 30);
-      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.level = Math.min(this.level + 1, this.levels.length - 1);
     } else if (them > me) { this.lives--; this.streak = 0; }
     this.updateHud();
     if (this.lives <= 0) { this.endGame({ delay: 2000 }); return; }
