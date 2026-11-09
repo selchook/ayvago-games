@@ -117,13 +117,20 @@ export function play(src: Board, s: Side, pit: number): Result {
 // ---------------------------------------------------------------- AI
 
 /** Search depth and the chance of a careless random move, per AI level. */
-export const LEVELS = [
+export interface AiLevel { depth: number; slip: number }
+export const LEVELS: AiLevel[] = [
   { depth: 1, slip: 0.4 },
   { depth: 2, slip: 0.2 },
   { depth: 3, slip: 0.1 },
   { depth: 4, slip: 0.04 },
   { depth: 6, slip: 0 },
   { depth: 8, slip: 0 },
+];
+/** Easy (practice): a short ladder that barely looks ahead and often plays a random pit. */
+export const EASY_LEVELS: AiLevel[] = [
+  { depth: 1, slip: 0.6 },
+  { depth: 1, slip: 0.45 },
+  { depth: 2, slip: 0.35 },
 ];
 
 function evaluate(b: Board, me: Side): number {
@@ -151,10 +158,10 @@ function search(b: Board, turn: Side, me: Side, depth: number, alpha: number, be
   return best;
 }
 
-/** Picks a pit for side `s` at AI level `level`; `rand` gives 0..1. */
-export function choose(b: Board, s: Side, level: number, rand: () => number = Math.random): number {
+/** Picks a pit for side `s` at AI level `level` (an index into LEVELS, or a level itself); `rand` gives 0..1. */
+export function choose(b: Board, s: Side, level: number | AiLevel, rand: () => number = Math.random): number {
   const moves = legal(b, s);
-  const L = LEVELS[Math.max(0, Math.min(LEVELS.length - 1, level))];
+  const L = typeof level === 'number' ? LEVELS[Math.max(0, Math.min(LEVELS.length - 1, level))] : level;
   if (moves.length === 1) return moves[0];
   if (rand() < L.slip) return moves[Math.floor(rand() * moves.length)];
   let best = -Infinity;
