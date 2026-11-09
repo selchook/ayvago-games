@@ -1483,7 +1483,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.3.1",
+      "version": "1.4.0",
       "credits": [
         "3D models: Kenney Car Kit, Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -2207,7 +2207,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "credits": [
         "3D models: Kenney Car Kit and Platformer Kit (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -2614,12 +2614,12 @@
         "en": "Traffic Racer"
       },
       "description": {
-        "tr": "Yoğun otoyolda arabaların arasından sıyrıl, kıl payı geçişlerle kombo yap, altın topla ve benzinin bitmeden gidebildiğin kadar uzağa git!",
-        "en": "Weave through busy highway traffic, chain near misses for combos, grab coins and fuel, and drive as far as you can before the tank runs dry!"
+        "tr": "Yoğun otoyolda arabaların arasından sıyrıl! Kıl payı geçişlerle kombo yap, turboyla puanını ikiye katla ama benzinin daha hızlı biter. Altın ve benzin bidonu topla, gidebildiğin kadar uzağa git.",
+        "en": "Weave through busy highway traffic! Chain near misses for combos, hit the boost to double your points while it drinks your fuel, grab coins and fuel cans and drive as far as you can."
       },
       "howTo": {
-        "tr": "Joystick ya da sol/sağ ok tuşlarıyla direksiyonu çevir; çubuğu ne kadar itersen o kadar sert dönersin. Benzin bidonlarını topla, araçlara çarpma.",
-        "en": "Steer with the joystick or the left/right arrow keys; the further you push the stick, the harder you turn. Grab fuel cans and don't hit the traffic."
+        "tr": "Dokunmatik: direksiyonu menüden seç (oklar, direksiyon simidi ya da eğim); sağda TURBO ve FREN. Klavye: ← → direksiyon, ↑ ya da Boşluk turbo, ↓ fren.",
+        "en": "Touch: pick the steering on the menu (arrows, a wheel or tilt); BOOST and BRAKE are on the right. Keys: ← → steer, ↑ or Space boost, ↓ brake."
       },
       "genres": [
         "arcade",
@@ -2631,9 +2631,10 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
-        "Art & audio: Kenney (CC0) — kenney.nl"
+        "Art: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org"
       ],
       "platform": {
         "addedAt": "2026-10-28"

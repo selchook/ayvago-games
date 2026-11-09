@@ -37,5 +37,6 @@ export type { PlayerCardInfo, StatRow, LifetimeStats } from './playercard';
 export { isModalOpen, pushModal } from './modal';
 export {
   CarSteering, CarPad, Tilt, tilt, TILT_FULL_LOCK, STEER_MODES, steerMode, setSteerMode, touchScreen, steeringMenu, steeringOption,
+  RAMP_TIME, WHEEL_LOCK, STEER_CURVE, steerCurve,
 } from './steering';
 export type { SteerMode, TiltResult, CarPadButton, CarPadOptions, CarSteeringOptions } from './steering';
