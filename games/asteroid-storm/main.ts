@@ -10,6 +10,7 @@ const J = 'oga/junkala-sfx/';
 launch({
   meta: meta as GameMeta,
   background: '#07060f',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     l.image('ship', kenney(SS + 'playership1_blue.png'));

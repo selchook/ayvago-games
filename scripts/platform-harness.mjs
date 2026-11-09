@@ -6,6 +6,9 @@
 // and never echoes GHA_MUTE back.
 // GHA_START carries a platform best (protocol 2.4) above the forced score: the game must adopt
 // it as its own best and must not celebrate the lower score as a new record.
+// Difficulty (protocol 2.6): a game with `difficulty: true` gets Easy picked on its menu toggle
+// before PLAY, and its GHA_END must carry difficulty 'easy'; every other game's GHA_END carries
+// 'normal' or no difficulty at all.
 // Usage: node scripts/platform-harness.mjs [--dev] [slug ...]   (default: dist/ via vite preview)
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
@@ -89,6 +92,15 @@ async function check(slug) {
       await page.mouse.click(box.x + (60 * box.width) / gw, box.y + ((gh - 60) * box.height) / gh);
       await page.waitForTimeout(250);
     }
+    // difficulty: games that offer it get Easy from a tap on the menu toggle
+    step.offersDifficulty = await frame().evaluate(() => !!window.__ayvago.def.difficulty);
+    if (step.offersDifficulty) {
+      const hit = await frame().evaluate(() => window.__ayvago.game.scene.getScene('Menu').difficultyHit?.easy);
+      if (!hit) throw new Error('difficulty toggle missing on the menu');
+      await page.mouse.click(box.x + (hit.x * box.width) / gw, box.y + (hit.y * box.height) / gh);
+      await page.waitForTimeout(250);
+      step.easyPicked = await frame().evaluate((id) => localStorage.getItem(`ayvago:difficulty:${id}`) === '"easy"', slug);
+    }
     await page.waitForTimeout(400);
     await page.keyboard.press('Enter');
     await frame().waitForFunction(() => window.__ayvago?.game.scene.isActive('Play'), null, { timeout: 5000 });
@@ -117,13 +129,15 @@ async function check(slug) {
     const end = await page.evaluate(() => window.log.find((m) => m.type === 'GHA_END'));
     step.endScore = end.score;
     step.end = typeof end.score === 'number' && end.score >= 123;
+    step.difficulty = end.difficulty ?? null;
+    step.difficultyOk = step.offersDifficulty ? step.easyPicked && end.difficulty === 'easy' : end.difficulty === undefined || end.difficulty === 'normal';
     await page.waitForTimeout(300);
     step.noFalseBest = !(await page.evaluate(() => window.log.some((m) => m.type === 'GHA_HAPPY_TIME')));
   } catch (e) {
     errors.push('flow: ' + String(e.message).split('\n')[0] + ' | messages=' + (await types().catch(() => '?')));
   }
   await page.close();
-  const ok = step.ready && step.loading && step.locale === 'tr' && step.sessionStart && step.pause && step.mute && step.end && step.best === PLATFORM_BEST && step.noFalseBest && step.muteState && errors.length === 0;
+  const ok = step.ready && step.loading && step.locale === 'tr' && step.sessionStart && step.pause && step.mute && step.end && step.best === PLATFORM_BEST && step.noFalseBest && step.muteState && step.difficultyOk && errors.length === 0;
   return { slug, ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
 }
 

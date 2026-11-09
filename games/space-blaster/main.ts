@@ -8,6 +8,7 @@ const SS = 'space-shooter/png/';
 launch({
   meta: meta as GameMeta,
   background: '#0b0a1a',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     l.image('ship', kenney(SS + 'playership1_red.png'));

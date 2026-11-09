@@ -17,6 +17,8 @@ export { t, loc, upper, getLang, registerStrings } from './i18n';
 export type { Lang, Strings, Localized } from './i18n';
 export { storage, getBest } from './storage';
 export { sdk } from './sdk';
+export { difficulty, isEasy, setDifficulty, offersDifficulty } from './difficulty';
+export type { Difficulty } from './difficulty';
 export { net } from './net';
 export {
   CHARACTER_IDS, CHARACTER_POSES, CHARACTER_PARTS, CHARACTER_FRAME, DEFAULT_CHARACTER,

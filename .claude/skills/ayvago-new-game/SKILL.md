@@ -284,6 +284,34 @@ through `@core/three` (`src/core/three/index.ts`). The pilot is `games/sky-road`
   in software, so frame rates there say nothing about real devices; judge layout and visuals
   from the screenshots.
 
+## 7c. Difficulty (optional)
+
+Games against an AI and action games may offer **Easy / Normal**. Word and puzzle games do not.
+
+- **Opt in.** Set `difficulty: true` in the `launch({...})` definition. The menu then shows a
+  two-segment toggle, KOLAY | NORMAL / EASY | NORMAL: under PLAY in portrait, beside it in
+  landscape. A tap on a segment or Left/Right on the keyboard switches it. In Easy a caption says
+  "Kolay: sıralamaya girmez" / "Easy: not ranked".
+- **Read it.** In `createGame()`, call `isEasy()` (or `difficulty()`, which returns `'easy' | 'normal'`)
+  from `@core` and pick your tuning from it. The choice is stored per game
+  (`storage` key `difficulty:<gameId>`; `setDifficulty(d)` sets it). Normal is the default.
+- **Online.** `difficulty()` is always `'normal'` when `net.active`, and the online menu has no
+  toggle, so online code needs nothing.
+- **What the core does.** `GHA_END` carries `difficulty` (protocol 2.6), and the result screen shows
+  a small EASY tag. Easy runs are practice: the platform keeps them off the leaderboards and gives
+  less XP, and the core does not update the local best in Easy.
+- **What Easy should change.** Make it genuinely easier, but keep it fun, and leave Normal exactly as
+  it was. Keep the Normal and Easy values side by side in one table (see `TUNING` in
+  `games/space-blaster`).
+  - **AI games:** a weaker AI. Use a lower search depth, more random or noisy moves, or a cap on
+    the AI level instead of the full ramp (`EASY_LEVELS` in `games/connect-four` and `games/reversi`,
+    `EASY_TOP` in `games/backgammon`).
+  - **Action games:** more lives, slower enemies, fewer or slower enemy shots, a slower ramp
+    (wave `w` plays like `1 + (w - 1) * ramp`) and more generous pickups or extra lives.
+- **Test it.** Expose the tuning on the scene (`tune`, or `ai()` for AI games) so a Playwright check
+  can compare Easy with Normal. `scripts/platform-harness.mjs` picks Easy on the menu toggle of
+  every game that opts in and checks that `GHA_END` says `'easy'`.
+
 ## 8. Ship
 
 - Run `npm run registry` (validates `game.json`).

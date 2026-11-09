@@ -128,7 +128,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['asteroid', 'storm', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.2.0',
   }),
   arcadeGame({
     slug: 'axe-throw',
@@ -156,7 +156,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'backgammon', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.0',
+    version: '1.3.0',
     addedAt: '2026-10-30',
     multiplayer: true,
   }),
@@ -370,6 +370,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'connect', 'four', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
     multiplayer: true,
   }),
   arcadeGame({
@@ -903,6 +904,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'reversi', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
     multiplayer: true,
   }),
   arcadeGame({
@@ -1069,7 +1071,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['space', 'blaster', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.2.0',
     featured: true,
   }),
   arcadeGame({

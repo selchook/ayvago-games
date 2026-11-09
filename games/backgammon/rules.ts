@@ -232,3 +232,6 @@ export function chooseTurn(pos: Pos, s: Side, roll: [number, number], noise: num
 
 /** AI levels: evaluation noise (lower = stronger). */
 export const LEVELS = [16, 9, 5, 2, 0];
+/** Easy (practice): the AI stays at the two lowest levels and plays even sloppier. */
+export const EASY_TOP = 1;
+export const EASY_NOISE = 8;

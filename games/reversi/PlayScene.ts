@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, txt, t, rng, net } from '@core';
+import { ArcadeScene, burst, shake, flash, txt, t, rng, net, isEasy } from '@core';
 import { Brain, N, flips, legalMoves, count } from './ai';
 
 const CELL = 82;
@@ -8,6 +8,8 @@ const BY = 290;
 const DISC = 70;
 // [search depth, random-move chance] per level
 const LEVELS: Array<[number, number]> = [[1, 0.4], [2, 0.15], [3, 0], [4, 0], [5, 0], [7, 0]];
+// Easy (practice): a short ladder that never searches deeper than 2 and often plays at random
+const EASY_LEVELS: Array<[number, number]> = [[1, 0.65], [1, 0.5], [2, 0.4]];
 
 type State = 'player' | 'ai' | 'busy';
 /** Online move message: square + move number (guards against stale messages after a rematch). */
@@ -26,6 +28,7 @@ export class PlayScene extends ArcadeScene {
   private countB!: Phaser.GameObjects.Text;
   private countW!: Phaser.GameObjects.Text;
   private level = 0;
+  private levels = LEVELS;
   private lives = 2;
   private streak = 0;
   private round = 0;
@@ -43,6 +46,7 @@ export class PlayScene extends ArcadeScene {
     this.hints = [];
     this.state = 'busy'; this.cur = 19;
     this.level = 0; this.lives = 2; this.streak = 0; this.round = 0;
+    this.levels = isEasy() ? EASY_LEVELS : LEVELS;
     this.online = net.active;
     this.mine = this.online && !net.myTurnFirst ? 2 : 1;
     this.moveNo = 0; this.inbox = [];
@@ -232,10 +236,16 @@ export class PlayScene extends ArcadeScene {
     this.addScore(f.length * 2, this.cx(i), this.cy(i) - 40);
   }
 
+  /** The AI at the current level: search depth and the chance of a random move. */
+  ai(): { depth: number; random: number } {
+    const [depth, random] = this.levels[this.level];
+    return { depth, random };
+  }
+
   private aiMove(): void {
     if (this.isOver || this.state !== 'ai') return;
-    const [depth, rnd] = LEVELS[this.level];
-    const m = new Brain().choose(this.board, 2, depth, rnd, 80);
+    const { depth, random } = this.ai();
+    const m = new Brain().choose(this.board, 2, depth, random, 80);
     if (m < 0) return this.nextTurn(1, true);
     this.play(m, 2, flips(this.board, m, 2));
   }
@@ -296,7 +306,7 @@ export class PlayScene extends ArcadeScene {
     if (b > w) {
       this.streak++;
       this.addScore(150 * (this.level + 1) + (b - w) * 10 + this.streak * 50, cx, BY - 10);
-      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.level = Math.min(this.level + 1, this.levels.length - 1);
       this.showBanner(t('roundWin'), '#5dff7a');
       this.sfx('win'); flash(this, 0x5dff7a, 150);
       for (let k = 0; k < 6; k++) this.time.delayedCall(k * 120, () => burst(this, rng.int(BX, BX + N * CELL), rng.int(BY, BY + N * CELL), [0xffd23f, 0xffffff, 0x5dff7a], 20, 300));

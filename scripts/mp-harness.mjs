@@ -7,6 +7,8 @@
 // Checks per game: both frames reach the online menu → the host starts the round → both play
 // → moves flow both ways during random play → no errors, canvases not blank → GHA_PEER_LEAVE
 // ends the guest's round. With --shots, screenshots of both frames go to reports/mp/.
+// Difficulty: both frames start with Easy stored for the game; online play ignores it, so the
+// menus show no Easy/Normal toggle and every GHA_END carries difficulty 'normal' (or none).
 // Usage: node scripts/mp-harness.mjs [--dev] [--shots] [--latency 120] <slug> [slug ...]
 //        (only games whose game.json has "multiplayer": true when no slug is given)
 import { createRequire } from 'node:module';
@@ -52,6 +54,7 @@ const hostPage = (slug, land) => {
   const names = ['Host', 'Guest'];
   window.relayed = [[], []];          // messages sent by player i
   window.log = [[], []];
+  window.ends = [];                   // GHA_END payloads from both frames
   // Different characters per seat, as on ayvago.com (protocol 2.2), so both screens agree on who is who.
   const chars = ['zombie', 'rookie'];
   window.send = (i, m) => frames[i].contentWindow.postMessage(m, '${GAME_ORIGIN}');
@@ -60,6 +63,7 @@ const hostPage = (slug, land) => {
     if (i < 0 || e.origin !== '${GAME_ORIGIN}') return;
     const m = e.data || {};
     window.log[i].push(m.type);
+    if (m.type === 'GHA_END') window.ends.push(m);
     if (m.type === 'GHA_READY') send(i, { type: 'GHA_START', config: {
       mode: 'multiplayer', isHost: i === 0, playerIndex: i, playerCount: 2, peerName: names[1 - i], protocol: 2,
       character: chars[i], peerCharacter: chars[1 - i],
@@ -92,7 +96,9 @@ async function check(slug) {
   const active = (i, key) => frames()[i].evaluate((k) => !!window.__ayvago?.game.scene.isActive(k), key).catch(() => false);
   const waitScene = (i, key, ms) => frames()[i].waitForFunction((k) => window.__ayvago?.game.scene.isActive(k), key, { timeout: ms });
   const shot = async (name) => { if (shots) await page.screenshot({ path: join(root, 'reports', 'mp', `${slug}-${name}.png`) }); };
-  const step = { menus: false, start: false, hostToGuest: 0, guestToHost: 0, nonBlank: false, peerLeave: false };
+  const step = { menus: false, start: false, hostToGuest: 0, guestToHost: 0, nonBlank: false, peerLeave: false, noToggle: false, normal: false };
+  // a player who picked Easy for solo play: online matches are Normal all the same
+  await page.addInitScript((id) => { try { localStorage.setItem(`ayvago:difficulty:${id}`, '"easy"'); } catch {} }, slug);
   try {
     await page.goto(`http://localhost:${HOST_PORT}/?slug=${slug}&land=${land ? 1 : 0}`);
     gameFrames = await Promise.all([0, 1].map(async (i) => (await page.$(`#f${i}`)).contentFrame()));
@@ -100,6 +106,9 @@ async function check(slug) {
     await waitScene(0, 'Menu', 20000);
     await waitScene(1, 'Menu', 20000);
     step.menus = true;
+    // Easy is stored in both frames, yet the online menus show no toggle
+    step.noToggle = (await Promise.all([0, 1].map((i) => frames()[i].evaluate((id) => localStorage.getItem(`ayvago:difficulty:${id}`) === '"easy"'
+      && window.__ayvago.game.scene.getScene('Menu').difficultyHit == null, slug)))).every(Boolean);
     await shot('1-menu');
 
     // The host starts the round; the guest follows on "__start".
@@ -138,13 +147,15 @@ async function check(slug) {
       await waitScene(1, 'GameOver', 20000);
     }
     step.peerLeave = true;
+    await page.waitForFunction(() => window.ends.length > 0, null, { timeout: 5000 });
+    step.normal = await page.evaluate(() => window.ends.every((m) => m.difficulty === undefined || m.difficulty === 'normal'));
     await shot('4-end');
   } catch (e) {
     const scenes = await Promise.all([0, 1].map((i) => frames()[i]?.evaluate(() => window.__ayvago?.game.scene.getScenes(true).map((x) => x.scene.key).join('+')).catch(() => '?')));
     errors.push('flow: ' + String(e.message).split('\n')[0] + ` | host=${scenes[0]} guest=${scenes[1]}`);
   }
   await page.close();
-  const ok = step.menus && step.start && step.hostToGuest > 0 && step.guestToHost > 0 && step.nonBlank && step.peerLeave && errors.length === 0;
+  const ok = step.menus && step.start && step.hostToGuest > 0 && step.guestToHost > 0 && step.nonBlank && step.peerLeave && step.noToggle && step.normal && errors.length === 0;
   return { slug, ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
 }
 

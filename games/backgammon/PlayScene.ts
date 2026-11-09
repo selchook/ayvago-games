@@ -2,11 +2,11 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, currentGame,
   quickChat, isModalOpen, openPlayerCard, isPlayerCardOpen, portraitKey, lifetimeRows, recordMatch,
-  playerCharacter, peerCharacter, otherCharacters,
+  playerCharacter, peerCharacter, otherCharacters, isEasy,
   type QuickChat, type CharacterId,
 } from '@core';
 import {
-  BAR, OFF, LEVELS, initial, apply, legalSteps, rollDice, diceList, removeDie, playTurn, result, chooseTurn, pips, other,
+  BAR, OFF, LEVELS, EASY_TOP, EASY_NOISE, initial, apply, legalSteps, rollDice, diceList, removeDie, playTurn, result, chooseTurn, pips, other,
   type Pos, type Side, type Step,
 } from './rules';
 import { makeArt, makeBoard, CK_FILL, DIE_FILL } from './art';
@@ -98,6 +98,7 @@ export class PlayScene extends ArcadeScene {
   private match: [number, number] = [0, 0];
   private gameNo = 0;
   private level = 0;
+  private easy = false;
   private online = false;
   private turnNo = 0;
   private inbox: Array<{ t: 'dice'; d: DiceMsg } | { t: 'turn'; d: TurnMsg }> = [];
@@ -121,6 +122,7 @@ export class PlayScene extends ArcadeScene {
     this.state = 'wait'; this.turn = 0; this.roll = [1, 1]; this.dice = []; this.history = []; this.legal = [];
     this.sel = -1; this.targets = new Map(); this.cur = -1; this.diceImgs = []; this.hlImgs = []; this.dotsMe = []; this.dotsThem = [];
     this.match = [0, 0]; this.gameNo = 0; this.level = 0;
+    this.easy = isEasy();
     this.online = net.active;
     this.mine = this.online ? (net.seat as Side) : 0;
     this.turnNo = 0; this.inbox = []; this.remoteRoll = null; this.rolling = false;
@@ -560,12 +562,17 @@ export class PlayScene extends ArcadeScene {
     this.drawHud();
   }
 
+  /** The AI at the current level: evaluation noise (lower = stronger). */
+  ai(): { level: number; noise: number } {
+    return { level: this.level, noise: LEVELS[this.level] + (this.easy ? EASY_NOISE : 0) };
+  }
+
   private aiTurn(): void {
     if (this.isOver || this.state !== 'ai') return;
     const side = other(this.mine);
     this.roll = rollDice();
     this.showDice(side, this.roll, () => {
-      const seq = chooseTurn(this.pos, side, this.roll, LEVELS[this.level]);
+      const seq = chooseTurn(this.pos, side, this.roll, this.ai().noise);
       this.time.delayedCall(350, () => this.playSteps(side, seq, () => this.endTurn(side)));
     });
   }
@@ -960,7 +967,7 @@ export class PlayScene extends ArcadeScene {
       this.tweens.add({ targets: dots[i], scale: { from: 2.2, to: 1 }, duration: 520, delay: 120 * (i - this.match[side] + pts), ease: 'Back.easeOut' });
     }
     if (!this.online) this.chat.botSay(other(this.mine), win ? (pts === 2 ? 'lucky' : 'welldone') : 'gg', win ? 0.6 : 0.3);
-    if (!this.online && win) this.level = Math.min(this.level + 1, LEVELS.length - 1);
+    if (!this.online && win) this.level = Math.min(this.level + 1, this.easy ? EASY_TOP : LEVELS.length - 1);
 
     const me = this.match[this.mine], them = this.match[other(this.mine)];
     if (me >= MATCH || them >= MATCH) {

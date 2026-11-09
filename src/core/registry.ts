@@ -49,6 +49,12 @@ export interface GameDefinition {
    * picked from the game's genre during rounds; `false` turns a slot off.
    */
   music?: { menu?: Track | false; play?: Track | false };
+  /**
+   * Offers Easy / Normal (src/core/difficulty.ts): the menu shows the toggle in solo play, the
+   * game reads `isEasy()` in createGame(), and GHA_END reports the difficulty. Easy runs are
+   * practice (off the leaderboards, no local best). For AI opponents and action games only.
+   */
+  difficulty?: boolean;
   /** Optional decoration for the menu (sprites behind the title). */
   menuDecor?: (scene: Phaser.Scene) => void;
 }
