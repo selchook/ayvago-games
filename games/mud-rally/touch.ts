@@ -1,9 +1,11 @@
 // Car controls for touch screens: steer left / right under the left thumb, GAS, BRAKE and NITRO
 // under the right one. Every finger is read on every frame, so any mix of buttons can be held
 // at once (steer + gas, gas + nitro) and a thumb may slide from one button onto the next.
+// The TILT chip above the steer buttons switches to tilt steering (tilt.ts): the buttons give way
+// to a wheel that turns with the phone; a tap on the wheel takes the current hold as straight.
 import { Phaser, txt, t } from '@core';
 
-type Zone = 'left' | 'right' | 'gas' | 'brake' | 'nitro';
+type Zone = 'left' | 'right' | 'gas' | 'brake' | 'nitro' | 'wheel';
 
 const DEPTH = 9400;
 const STEER_Y = 606;
@@ -13,6 +15,8 @@ const RIGHT_X = 276;
 const GAS = { x: 1180, y: 566, w: 150, h: 220 };
 const BRAKE = { x: 1018, y: 610, w: 132, h: 132 };
 const NITRO = { x: 1018, y: 448, r: 64 };
+const CHIP = { x: (LEFT_X + RIGHT_X) / 2, y: 438, w: 200, h: 50 };
+const WHEEL_R = 70;
 
 interface Btn {
   zone: Zone;
@@ -32,6 +36,14 @@ export class TouchPad {
   private btns: Btn[] = [];
   private nitroCount!: Phaser.GameObjects.Text;
   readonly root: Phaser.GameObjects.Container;
+  /** Tilt steering is on: the steer buttons are replaced by the wheel. */
+  tiltMode = false;
+  private wheelHit = false;
+  private wheel!: Phaser.GameObjects.Container;
+  private chipFace!: Phaser.GameObjects.Graphics;
+  private chipLabel!: Phaser.GameObjects.Text;
+  private chipZone!: Phaser.GameObjects.Zone;
+  private chipPulse: Phaser.Tweens.Tween | null = null;
 
   constructor(private scene: Phaser.Scene) {
     scene.input.addPointer(3);
@@ -64,6 +76,78 @@ export class TouchPad {
     const n = this.add('nitro', NITRO.x, NITRO.y, nitro);
     this.nitroCount = txt(scene, 40, 44, '', { title: true, size: 26, color: '#ffffff', strokeThickness: 6 }).setOrigin(0.5);
     n.root.add(this.nitroCount);
+    this.buildTilt();
+  }
+
+  /** The TILT chip (a real tap target: iOS only asks for the sensors from a tap) and the wheel. */
+  private buildTilt(): void {
+    const s = this.scene;
+    this.chipFace = s.add.graphics();
+    this.chipLabel = txt(s, 18, 0, t('tilt'), { title: true, size: 21, color: '#ffffff', strokeThickness: 5 }).setOrigin(0.5);
+    const icon = s.add.graphics();
+    // a phone tipped to one side
+    icon.lineStyle(3, 0xffffff, 0.95).strokeRoundedRect(-9, -15, 18, 30, 4).fillStyle(0xffffff, 0.95).fillCircle(0, 10, 2);
+    icon.setPosition(-CHIP.w / 2 + 26, 0).setAngle(-18);
+    const chip = s.add.container(CHIP.x, CHIP.y, [this.chipFace, icon, this.chipLabel]);
+    this.root.add(chip);
+    this.drawChip();
+    this.chipZone = s.add.zone(CHIP.x, CHIP.y, CHIP.w + 24, CHIP.h + 24).setScrollFactor(0).setDepth(DEPTH + 1).setInteractive();
+    this.chipZone.on('pointerup', () => this.onTiltTap?.());
+
+    const g = s.add.graphics();
+    // a three-spoke steering wheel with a top marker, so the turn is easy to read
+    g.fillStyle(0x0b1020, 0.4).fillCircle(0, 0, WHEEL_R + 8);
+    g.lineStyle(12, 0xffffff, 0.85).strokeCircle(0, 0, WHEEL_R - 6);
+    g.lineStyle(10, 0xffffff, 0.75).lineBetween(-WHEEL_R + 8, 4, WHEEL_R - 8, 4).lineBetween(0, 4, 0, WHEEL_R - 8);
+    g.fillStyle(0xffffff, 0.9).fillCircle(0, 4, 16);
+    g.fillStyle(0xffd23f, 1).fillRoundedRect(-7, -WHEEL_R - 2, 14, 18, 4);
+    const tip = txt(s, 0, WHEEL_R + 30, t('tiltCentre'), { size: 18, color: '#ffffff', strokeThickness: 5 }).setOrigin(0.5);
+    this.wheel = s.add.container((LEFT_X + RIGHT_X) / 2, STEER_Y - 4, [g]);
+    const wrap = s.add.container(0, 0, [this.wheel, tip.setPosition((LEFT_X + RIGHT_X) / 2, STEER_Y + WHEEL_R - 6)]);
+    wrap.setVisible(false).setName('wheelWrap');
+    this.root.add(wrap);
+  }
+
+  /** Called on a tap on the TILT chip (from inside the tap, as iOS wants). */
+  onTiltTap: (() => void) | null = null;
+
+  private drawChip(): void {
+    const on = this.tiltMode;
+    this.chipFace.clear();
+    this.chipFace.fillStyle(on ? 0x2fae5a : 0x0b1020, on ? 0.85 : 0.5).fillRoundedRect(-CHIP.w / 2, -CHIP.h / 2, CHIP.w, CHIP.h, CHIP.h / 2);
+    this.chipFace.lineStyle(3, 0xffffff, on ? 0.95 : 0.5).strokeRoundedRect(-CHIP.w / 2, -CHIP.h / 2, CHIP.w, CHIP.h, CHIP.h / 2);
+    this.chipLabel.setText(on ? t('tiltOnShort') : t('tilt'));
+  }
+
+  /** Switches between the steer buttons and the tilt wheel. */
+  setTiltMode(on: boolean): void {
+    this.tiltMode = on;
+    for (const b of this.btns) if (b.zone === 'left' || b.zone === 'right') b.root.setVisible(!on);
+    (this.root.getByName('wheelWrap') as Phaser.GameObjects.Container).setVisible(on);
+    this.wheel.setAngle(0);
+    this.attention(false);
+    this.drawChip();
+  }
+
+  /** The wheel follows the steering (-1 .. 1). */
+  setWheel(steer: number): void {
+    if (this.tiltMode) this.wheel.setAngle(steer * 90);
+  }
+
+  /** A gentle pulse on the TILT chip, when tilt steering waits for a tap to start (iOS). */
+  attention(on: boolean): void {
+    this.chipPulse?.stop();
+    this.chipPulse = null;
+    const chip = this.chipFace.parentContainer;
+    chip.setScale(1);
+    if (on) this.chipPulse = this.scene.tweens.add({ targets: chip, scale: 1.1, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+
+  /** True once per tap on the wheel (it re-centres tilt steering). */
+  takeWheel(): boolean {
+    const v = this.wheelHit;
+    this.wheelHit = false;
+    return v;
   }
 
   private add(zone: Zone, x: number, y: number, draw: Btn['draw'], label?: string, ly = 0): Btn {
@@ -79,7 +163,10 @@ export class TouchPad {
 
   private zoneAt(x: number, y: number): Zone | null {
     // generous areas around the drawn buttons, so a thumb that drifts a little still counts
-    if (y > STEER_Y - STEER_R - 40 && x < RIGHT_X + STEER_R + 50) return x < (LEFT_X + RIGHT_X) / 2 ? 'left' : 'right';
+    if (y > STEER_Y - STEER_R - 40 && x < RIGHT_X + STEER_R + 50) {
+      if (this.tiltMode) return 'wheel';
+      return x < (LEFT_X + RIGHT_X) / 2 ? 'left' : 'right';
+    }
     if (Math.hypot(x - NITRO.x, y - NITRO.y) < NITRO.r + 18) return 'nitro';
     if (x > GAS.x - GAS.w / 2 - 8 && y > GAS.y - GAS.h / 2 - 20) return 'gas';
     if (x > BRAKE.x - BRAKE.w / 2 - 30 && y > BRAKE.y - BRAKE.h / 2 - 16) return 'brake';
@@ -96,6 +183,7 @@ export class TouchPad {
       const z = this.root.visible ? this.zoneAt(p.x, p.y) : null;
       const before = this.held.get(p.id);
       if (z === 'nitro' && before !== 'nitro') this.nitroHit = true;
+      if (z === 'wheel' && before !== 'wheel') this.wheelHit = true;
       this.held.set(p.id, z);
       if (z === 'left') l = true;
       else if (z === 'right') r = true;
@@ -108,7 +196,7 @@ export class TouchPad {
     // a thumb on NITRO keeps the gas on: firing the boost never lifts off the pedal
     this.gas = gas || nitro;
     this.brake = brake;
-    const state: Record<Zone, boolean> = { left: l, right: r, gas, brake, nitro };
+    const state: Record<Zone, boolean> = { left: l, right: r, gas, brake, nitro, wheel: false };
     for (const b of this.btns) {
       const d = state[b.zone];
       if (d === b.down) continue;
@@ -133,6 +221,8 @@ export class TouchPad {
 
   setVisible(v: boolean): void {
     this.root.setVisible(v);
+    if (v) this.chipZone.setInteractive();
+    else this.chipZone.disableInteractive();
     if (!v) {
       this.steer = 0;
       this.gas = this.brake = false;
