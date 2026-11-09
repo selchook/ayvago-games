@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, isEasy } from '@core';
 
 interface Missile { x0: number; y0: number; x: number; y: number; vx: number; vy: number; ty: number; target: Site; splitAt: number; head: Phaser.GameObjects.Image }
 interface Interceptor { x0: number; y0: number; x: number; y: number; tx: number; ty: number; vx: number; vy: number; marker: Phaser.GameObjects.Image }
@@ -9,7 +9,16 @@ interface Site { kind: 'city' | 'base'; x: number; alive: boolean; img: Phaser.G
 const GROUND_Y = 1150;
 const BASE_X = [70, 360, 650];
 const CITY_X = [150, 220, 290, 430, 500, 570];
-const AMMO = 10;
+/**
+ * Normal and Easy (practice). Easy: 14 interceptors per base instead of 10, bigger blasts, enemy
+ * missiles 30% slower, a ramp at half speed, a spare city waiting from the start and a bonus city
+ * every 6000 points instead of 10000. `ramp` scales how fast the waves get harder: wave w plays
+ * like wave 1 + (w - 1) * ramp.
+ */
+const TUNING = {
+  normal: { ammo: 10, blast: 78, speed: 1, ramp: 1, bonusEvery: 10000, spareCities: 0 },
+  easy: { ammo: 14, blast: 92, speed: 0.7, ramp: 0.5, bonusEvery: 6000, spareCities: 1 },
+};
 const BLAST_COLORS = [0xffffff, 0xffd23f, 0xff7b00, 0xec3013, 0xff4fa3, 0x3ee6ff];
 
 /** City/ruin/hill textures drawn once with Graphics (no matching Kenney art). */
@@ -49,12 +58,15 @@ export class PlayScene extends ArcadeScene {
   private tallying = false;
   private nextBonus = 10000;
   private bonusCities = 0;
+  tune = TUNING.normal;
 
   createGame(): void {
     const { width, height } = this.scale;
     makeTextures(this);
     this.sites = []; this.missiles = []; this.shots = []; this.blasts = [];
-    this.wave = 0; this.toSpawn = 0; this.spawnCd = 0; this.tallying = false; this.nextBonus = 10000; this.bonusCities = 0;
+    this.wave = 0; this.toSpawn = 0; this.spawnCd = 0; this.tallying = false;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.nextBonus = this.tune.bonusEvery; this.bonusCities = this.tune.spareCities;
 
     // night sky
     const sky = this.add.graphics();
@@ -70,8 +82,8 @@ export class PlayScene extends ArcadeScene {
       this.add.image(x, GROUND_Y + 2, 'hill').setOrigin(0.5, 1);
       const img = this.add.image(x, GROUND_Y - 52, 'turret').setDepth(3);
       const gun = this.add.image(x, GROUND_Y - 52, 'gun').setOrigin(0.5, 0.85).setDepth(2);
-      const label = txt(this, x, GROUND_Y + 40, String(AMMO), { title: true, size: 18, color: '#3ee6ff' }).setDepth(20);
-      this.sites.push({ kind: 'base', x, alive: true, img, ammo: AMMO, gun, label });
+      const label = txt(this, x, GROUND_Y + 40, String(this.tune.ammo), { title: true, size: 18, color: '#3ee6ff' }).setDepth(20);
+      this.sites.push({ kind: 'base', x, alive: true, img, ammo: this.tune.ammo, gun, label });
     }
     for (const x of CITY_X) {
       const img = this.add.image(x, GROUND_Y + 2, 'city').setOrigin(0.5, 1).setDepth(3);
@@ -91,6 +103,11 @@ export class PlayScene extends ArcadeScene {
   }
 
   private get mult(): number { return Math.min(6, 1 + Math.floor((this.wave - 1) / 2)); }
+
+  /** How hard the current wave plays (equals the wave number in Normal). */
+  private lvl(): number {
+    return 1 + (this.wave - 1) * this.tune.ramp;
+  }
 
   private cityCount(): number { return this.sites.filter((s) => s.kind === 'city' && s.alive).length; }
 
@@ -117,12 +134,12 @@ export class PlayScene extends ArcadeScene {
     this.wave++;
     this.tallying = false;
     for (const s of this.sites) if (s.kind === 'base') {
-      s.alive = true; s.ammo = AMMO;
+      s.alive = true; s.ammo = this.tune.ammo;
       s.img.setVisible(true); s.gun!.setVisible(true);
     }
     this.refreshAmmo();
     this.updateHud();
-    this.toSpawn = Math.min(34, 8 + this.wave * 3);
+    this.toSpawn = Math.min(34, 8 + Math.round(this.lvl() * 3));
     this.spawnCd = 1.6;
     this.banner(`${t('wave')} ${this.wave}`, '#ffd23f');
     if (this.mult > 1) popup(this, this.scale.width / 2, this.scale.height * 0.47, `x${this.mult}`, '#ff4fa3', 30);
@@ -148,7 +165,7 @@ export class PlayScene extends ArcadeScene {
     this.sfxAt('launch', x0, { volume: 0.3 });
   }
 
-  private blast(x: number, y: number, player: boolean, max = 78, chain = 0): void {
+  private blast(x: number, y: number, player: boolean, max = this.tune.blast, chain = 0): void {
     this.blasts.push({ x, y, r: 4, max, t: 0, grow: 0.32, hold: 0.25, fade: 0.45, player, kills: 0, chain });
     burst(this, x, y, player ? [0xffffff, 0xffd23f, 0x3ee6ff] : [0xec3013, 0xff7b00, 0xffd23f], player ? 14 : 22, 220);
     if (player) this.sfxAt(rng.pick(['boom1', 'boom2', 'boom3']), x, { volume: 0.45 });
@@ -168,9 +185,9 @@ export class PlayScene extends ArcadeScene {
     const tgt = target ?? this.pickTarget();
     const sx = x0 ?? rng.int(20, this.scale.width - 20), sy = y0 ?? 60;
     const tx = tgt.x + rng.int(-10, 10), ty = GROUND_Y - 10;
-    const speed = Math.min(240, 66 + this.wave * 13) * (0.85 + Math.random() * 0.3);
+    const speed = Math.min(240, 66 + this.lvl() * 13) * (0.85 + Math.random() * 0.3) * this.tune.speed;
     const a = Math.atan2(ty - sy, tx - sx);
-    const canSplit = x0 === undefined && this.wave >= 3 && rng.chance(Math.min(0.35, 0.08 + this.wave * 0.03));
+    const canSplit = x0 === undefined && this.lvl() >= 3 && rng.chance(Math.min(0.35, 0.08 + this.lvl() * 0.03));
     const head = this.add.image(sx, sy, 'warhead').setScale(0.35).setDepth(8);
     this.missiles.push({ x0: sx, y0: sy, x: sx, y: sy, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, ty, target: tgt, splitAt: canSplit ? rng.int(300, 650) : Infinity, head });
   }
@@ -229,7 +246,7 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(delay + 500, () => {
       if (this.isOver) return;
       // bonus cities rebuild a ruin
-      while (this.score >= this.nextBonus) { this.nextBonus += 10000; this.bonusCities++; }
+      while (this.score >= this.nextBonus) { this.nextBonus += this.tune.bonusEvery; this.bonusCities++; }
       const ruin = this.sites.find((s) => s.kind === 'city' && !s.alive);
       if (this.bonusCities > 0 && ruin) {
         this.bonusCities--;
@@ -260,10 +277,10 @@ export class PlayScene extends ArcadeScene {
     if (this.toSpawn > 0 && !this.tallying) {
       this.spawnCd -= dt;
       if (this.spawnCd <= 0) {
-        const salvo = Math.min(this.toSpawn, rng.int(1, Math.min(4, 1 + Math.floor(this.wave / 2))));
+        const salvo = Math.min(this.toSpawn, rng.int(1, Math.min(4, 1 + Math.floor(this.lvl() / 2))));
         for (let i = 0; i < salvo; i++) this.spawnMissile();
         this.toSpawn -= salvo;
-        this.spawnCd = Math.max(0.9, 3.2 - this.wave * 0.18) * (0.6 + Math.random() * 0.6);
+        this.spawnCd = Math.max(0.9, 3.2 - this.lvl() * 0.18) * (0.6 + Math.random() * 0.6);
       }
     }
 
