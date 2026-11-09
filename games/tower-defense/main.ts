@@ -16,6 +16,7 @@ const IMAGES: Record<string, number> = {
 
 launch({
   meta: meta as GameMeta,
+  difficulty: true,
   background: '#14261a',
   physics: 'none',
   preload(scene) {

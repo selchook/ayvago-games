@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, t, rng, COLORS } from '@core';
+import { ArcadeScene, burst, shake, flash, t, rng, COLORS, isEasy } from '@core';
 import { ftxt as txt, fpopup as popup, freshTextCanvases } from './fasttext';
 import { makeField, makeFx, makeGate, makeSidebar, makeTopBar } from './art';
 
@@ -9,7 +9,15 @@ const GOLD_Y = 124;                                                       // gol
 const ADD = Phaser.BlendModes.ADD;
 const PATH: [number, number][] = [[-1, 1], [3, 1], [3, 6], [6, 6], [6, 1], [9, 1], [9, 6], [12, 6], [12, 8.7]];
 const WAVES = 15;
-const START_GOLD = 170, START_LIVES = 20;
+/**
+ * Normal and Easy (practice). Easy: 260 starting gold instead of 170, 30 lives instead of 20,
+ * enemies with 20% less health that move 15% slower, and enemy health that ramps at 85% speed
+ * (wave w is as tough as wave 1 + (w - 1) * ramp). The waves bring the same enemies.
+ */
+const TUNING = {
+  normal: { gold: 170, lives: 20, hp: 1, speed: 1, ramp: 1 },
+  easy: { gold: 260, lives: 30, hp: 0.8, speed: 0.85, ramp: 0.85 },
+};
 
 type Kind = 'soldier' | 'runner' | 'heavy' | 'tank' | 'tank2' | 'plane' | 'boss';
 const ENEMY: Record<Kind, { tex: string; top?: string; hp: number; speed: number; gold: number; lives: number; air?: boolean; scale?: number }> = {
@@ -82,12 +90,14 @@ export class PlayScene extends ArcadeScene {
   private clouds: Phaser.GameObjects.Image[] = [];
   private hurt = 0;
   private coinsFlying = 0;
+  tune = TUNING.normal;
 
   createGame(): void {
     freshTextCanvases(this);
     this.enemies = []; this.towers = []; this.shots = []; this.queue = []; this.cards = []; this.lastSfx = {};
     this.slots = []; this.clouds = []; this.hurt = 0; this.coinsFlying = 0;
-    this.gold = START_GOLD; this.lives = START_LIVES; this.wave = 0; this.phase = 'build'; this.countdown = 20; this.countdownMax = 20;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.gold = this.tune.gold; this.lives = this.tune.lives; this.wave = 0; this.phase = 'build'; this.countdown = 20; this.countdownMax = 20;
     this.spawnT = 0; this.selType = 0; this.selTower = null; this.cur = { c: 1, r: 3 }; this.cursorOn = false;
     this.nextQueue = this.buildWave(1);
 
@@ -407,13 +417,14 @@ export class PlayScene extends ArcadeScene {
 
   private spawn(kind: Kind): void {
     const d = ENEMY[kind];
-    const hpMul = 1 + (this.wave - 1) * 0.4 + Math.max(0, this.wave - 5) ** 2 * 0.1;
+    const w = 1 + (this.wave - 1) * this.tune.ramp;   // equals the wave number in Normal
+    const hpMul = (1 + (w - 1) * 0.4 + Math.max(0, w - 5) ** 2 * 0.1) * this.tune.hp;
     const air = !!d.air;
     const p0 = this.pts[0];
     const x = air ? -60 : p0.x, y = air ? rng.int(TOP + 60, TOP + ROWS * CELL - 60) : p0.y;
     const scale = d.scale ?? 1;
     const spr = this.add.image(x, y, d.tex).setDepth(air ? 55 : 35).setScale(scale * (air ? 1.1 : kind.startsWith('tank') || kind === 'boss' ? 1 : 1.25));
-    const e: Enemy = { kind, spr, hp: d.hp * hpMul, max: d.hp * hpMul, speed: d.speed * (1 + this.wave * 0.01), wp: 1, dist: 0, air, alive: true, vy: air ? rng.int(-30, 30) : 0 };
+    const e: Enemy = { kind, spr, hp: d.hp * hpMul, max: d.hp * hpMul, speed: d.speed * (1 + w * 0.01) * this.tune.speed, wp: 1, dist: 0, air, alive: true, vy: air ? rng.int(-30, 30) : 0 };
     if (d.top) e.top = this.add.image(x, y, d.top).setDepth(36).setScale(scale);
     if (kind === 'boss') {
       spr.setTint(0xff7070); e.top!.setTint(0xff7070);
