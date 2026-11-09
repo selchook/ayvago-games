@@ -342,6 +342,7 @@ JUMP) and `games/traffic-racer` (portrait 2D, lane weaving with BOOST / BRAKE pe
     ],
     tiltLock: 34,   // degrees of tilt for full lock (default 34; Sky Road uses 26 for quick lane changes)
     ramp: true,     // keys and arrows ease to full lock in RAMP_TIME (0.4 s); a number sets the seconds
+    keyRamp: true,  // the keyboard alone (default: as ramp); false = keys answer at once
   });
   ```
   - The left thumb steers in the chosen mode: two arrow buttons, an on-screen wheel turned by
@@ -353,8 +354,10 @@ JUMP) and `games/traffic-racer` (portrait 2D, lane weaving with BOOST / BRAKE pe
     the wheel and tilt share a gentle centre curve (`steerCurve`: steering = input^1.35, so a
     quarter input steers about 0.15), keys and arrows take 0.4 s to full lock (a 0.1 s tap is a
     0.25 nudge) and come back in 0.15 s. A lane game that needs quicker changes may pass a
-    shorter `ramp` (Sky Road 0.22 s, Traffic Racer 0.25 s) and a smaller `tiltLock`; tune the
+    shorter `ramp` (Sky Road 0.12 s, Traffic Racer 0.25 s) and a smaller `tiltLock`; tune the
     vehicle's own turn rate (yaw rate, sideways speed) so full lock is not too sharp either.
+    Keyboard players may want instant keys in a lane game: `keyRamp: false` (Sky Road, owner
+    request) keeps the arrow buttons on `ramp` while the keys answer at once.
   - Right-thumb buttons: `shape: 'pedal' | 'round'`, `color`, `label` (localized in the game),
     `labelY`, `icon: 'bolt' | 'up'`, `count` (a ×n badge, `pad.setCount(id, n)`), `hit` (extra
     touch room; `Infinity` runs a side to the screen edge) and `holds` (another button this one also

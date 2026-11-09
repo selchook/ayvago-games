@@ -21,6 +21,11 @@ export interface CarSteeringOptions extends CarPadOptions {
    * to full lock; a number sets that time in seconds; false gives -1 / 0 / 1 at once.
    */
   ramp?: boolean | number;
+  /**
+   * The same for the keyboard alone (default: as `ramp`). A game whose car already eases its
+   * sideways motion may want the keys at once (`false`) while the arrow buttons keep `ramp`.
+   */
+  keyRamp?: boolean | number;
   /** Where messages about tilt appear (default: centred, 32 % down the screen). */
   messageY?: number;
 }
@@ -36,6 +41,8 @@ export class CarSteering {
   private value = 0;
   /** Seconds to full lock for keys and arrows (0: at once). */
   private ramp: number;
+  /** The same for the keyboard alone. */
+  private keyRamp: number;
   private dead = false;
   private msgY: number;
   /** Narrow (portrait) screens get the long tilt messages a little smaller. */
@@ -44,7 +51,9 @@ export class CarSteering {
   constructor(private scene: Phaser.Scene, o: CarSteeringOptions) {
     const touch = o.touch ?? touchScreen(scene);
     this.pad = touch ? new CarPad(scene, o) : null;
-    this.ramp = o.ramp === false ? 0 : typeof o.ramp === 'number' ? o.ramp : RAMP_TIME;
+    const seconds = (r: boolean | number | undefined) => (r === false ? 0 : typeof r === 'number' ? r : RAMP_TIME);
+    this.ramp = seconds(o.ramp);
+    this.keyRamp = o.keyRamp === undefined ? this.ramp : seconds(o.keyRamp);
     this.msgY = o.messageY ?? Math.round(scene.scale.height * 0.32);
     this.msgK = scene.scale.width >= 1000 ? 1 : 0.75;
     // the sensor reader lives for the whole visit (menu and races), so it is not stopped here
@@ -115,12 +124,14 @@ export class CarSteering {
       // the on-screen wheel is analogue too: the car follows the thumb
       this.value = tp.steer;
     } else {
-      const want = tp && tp.steer !== 0 ? tp.steer : keys;
-      if (this.ramp <= 0) this.value = want;
+      const fromPad = !!tp && tp.steer !== 0;
+      const want = fromPad ? tp.steer : keys;
+      const ramp = fromPad ? this.ramp : this.keyRamp;
+      if (ramp <= 0) this.value = want;
       else {
         // the wheel follows the keys steadily, not at once; letting go centres it quicker
         const back = want === 0 || want * this.value < 0;
-        const step = (back ? 1 / Math.min(this.ramp, RETURN_TIME) : 1 / this.ramp) * dt;
+        const step = (back ? 1 / Math.min(ramp, RETURN_TIME) : 1 / ramp) * dt;
         this.value += Phaser.Math.Clamp(want - this.value, -step, step);
       }
     }
