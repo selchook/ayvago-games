@@ -1,4 +1,4 @@
-import { Phaser, ArcadeScene, Controls, shake, flash, popup, t, loc, txt } from '@core';
+import { Phaser, ArcadeScene, Controls, shake, flash, popup, t, loc, txt, storage } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { LAYOUTS, Track } from './tracks';
 import { buildArena, type Arena } from './scenery';
@@ -8,6 +8,8 @@ import { SURF_MUD, SURF_PUDDLE, SURF_BERM, SURF_GRASS } from './terrain';
 import { ResultsPanel, ShopPanel, MAX_LEVEL, price, type Upgrade, type ResultRow } from './panels';
 import { money, ordinal } from './strings';
 import { matte } from './look';
+import { TouchPad } from './touch';
+import { SkidMarks } from './marks';
 
 const LAPS = 4;
 const NCP = 4;                 // checkpoints per lap (besides the line)
@@ -16,10 +18,15 @@ const PRIZES = [10000, 6000, 3000, 0];
 const BASE_TOP = 13.5;
 const BASE_ACCEL = 15;
 const NITRO_TIME = 1.6;
+/** AI: steering gain (steer per radian of heading error) and corner speed margin. */
+const AI_STEER_GAIN = 3;
+const AI_CORNER = 0.85;
 const FOV = 38;
 const CAM_POS = new THREE.Vector3(0, 47, 30.5);
 const CAM_LOOK = new THREE.Vector3(0, 0, 1.6);
 const PLAYER_COLOR = 0x2f7dff;
+/** Storage key: the controls hint has been shown once (first race only). */
+const HINT_KEY = 'mud-rally:controlsHint';
 const RIVALS = [
   { model: 'suvLux', color: 0xe8402f, name: 'driverRed' },
   { model: 'truck', color: 0xf5c52b, name: 'driverYellow' },
@@ -57,6 +64,14 @@ export class PlayScene extends ArcadeScene {
   private dtNow = 0;
   private dustAcc = new Map<Truck, number>();
   private aiDelay = new Map<Truck, number>();
+  private touch: TouchPad | null = null;
+  private marks!: SkidMarks;
+  private steerIn = 0;
+  private wrongArrow!: THREE.Mesh;
+  private hint: Phaser.GameObjects.Container | null = null;
+  private skidCd = 0;
+  private wasBraking = false;
+  private fovKick = 0;
 
   private phase: Phase = 'intro';
   private phaseT = 0;
@@ -88,6 +103,11 @@ export class PlayScene extends ArcadeScene {
     this.wrongShown = -9;
     this.dustAcc = new Map();
     this.aiDelay = new Map();
+    this.steerIn = 0;
+    this.hint = null;
+    this.skidCd = 0;
+    this.wasBraking = false;
+    this.fovKick = 0;
     this.phase = 'intro';
     this.phaseT = 0;
     this.count = 0;
@@ -110,11 +130,15 @@ export class PlayScene extends ArcadeScene {
     sun.shadow.camera.far = 140;
     this.world.camera.position.copy(CAM_POS);
     this.world.camera.lookAt(CAM_LOOK);
-    this.controls = new Controls(this, { joystick: true, buttons: ['A'], buttonPos: { A: [1178, 600] }, buttonScale: 0.95 });
+    // keys from the core (arrows / WASD, Space / Z / Enter); on touch screens the scene draws its
+    // own car controls (steer left / right, GAS, BRAKE, NITRO) instead of the stick
+    this.controls = new Controls(this, {});
+    this.touch = this.controls.touchUi ? new TouchPad(this) : null;
 
     this.dust = new Particles(900, false, this.scale.height, FOV);
     this.glow = new Particles(320, true, this.scale.height, FOV);
-    this.world.scene.add(this.dust.points, this.glow.points);
+    this.marks = new SkidMarks();
+    this.world.scene.add(this.marks.mesh, this.dust.points, this.glow.points);
 
     this.player = new Truck('suv', PLAYER_COLOR, true);
     this.trucks.push(this.player);
@@ -133,6 +157,17 @@ export class PlayScene extends ArcadeScene {
     this.marker = new THREE.Mesh(mgeo, mmat);
     this.marker.userData.ownMaterial = true;
     this.world.scene.add(this.marker);
+
+    // wrong way: a red arrow on the ground under the player, pointing the way the race goes
+    const shape = new THREE.Shape();
+    shape.moveTo(1.6, 0).lineTo(0.1, 1.25).lineTo(0.1, 0.5).lineTo(-1.4, 0.5).lineTo(-1.4, -0.5).lineTo(0.1, -0.5).lineTo(0.1, -1.25).closePath();
+    const ageo = new THREE.ShapeGeometry(shape);
+    ageo.rotateX(-Math.PI / 2);
+    this.wrongArrow = new THREE.Mesh(ageo, new THREE.MeshBasicMaterial({ color: 0xff4a3a, transparent: true, opacity: 0.85, depthWrite: false }));
+    this.wrongArrow.userData.ownMaterial = true;
+    this.wrongArrow.renderOrder = 2;
+    this.wrongArrow.visible = false;
+    this.world.scene.add(this.wrongArrow);
 
     this.buildNitroHud();
     this.hud.setLives(this.lives, START_LIVES);
@@ -156,7 +191,9 @@ export class PlayScene extends ArcadeScene {
       this.arena = null;
       this.dust.dispose();
       this.glow.dispose();
+      this.marks.dispose();
       mgeo.dispose();
+      ageo.dispose();
     });
 
     this.startRace();
@@ -201,6 +238,7 @@ export class PlayScene extends ArcadeScene {
     this.pickups = [];
     this.dust.clear();
     this.glow.clear();
+    this.marks.clear();
     this.finishOrder = [];
     this.raceTime = 0;
     this.lateT = -1;
@@ -208,7 +246,8 @@ export class PlayScene extends ArcadeScene {
 
     // the starting grid, behind the line: rivals by speed, the player on the second row
     const tk = this.track, hw = tk.half, terrain = this.arena.terrain;
-    const base = Math.min(1.26, 0.9 + 0.045 * (this.raceNo - 1));
+    // race 1 is a gentle start for the car controls; the field gets faster every race after
+    const base = Math.min(1.26, 0.86 + 0.047 * (this.raceNo - 1));
     const rivals = this.trucks.filter((x) => !x.isPlayer);
     rivals.forEach((r, i) => {
       r.skill = base - i * 0.035;
@@ -232,8 +271,12 @@ export class PlayScene extends ArcadeScene {
       this.dustAcc.set(tr, 0);
     });
     this.player.nitro = 1 + this.levels.nitro;
+    this.shown = -1;
     this.updateNitroHud();
-    this.nitroIcon.setVisible(true);
+    this.nitroIcon.setVisible(!this.touch);
+    this.touch?.setVisible(true);
+    this.steerIn = 0;
+    this.wrongT = 0;
     this.nitroSpawned = 0;
 
     for (let k = 0; k < 3; k++) this.spawnPickup('cash');
@@ -248,6 +291,70 @@ export class PlayScene extends ArcadeScene {
     this.world.camera.position.set(CAM_POS.x - 26, CAM_POS.y - 22, CAM_POS.z + 20);
     this.world.camera.lookAt(CAM_LOOK);
     this.banner(t('raceN', { n: this.raceNo }), loc(layout.name));
+    if (this.raceNo === 1 && !storage.get<boolean>(HINT_KEY, false)) this.showHint();
+  }
+
+  /** The first race ever: how the car controls work, over the grid until the start. */
+  private showHint(): void {
+    const c = this.add.container(0, 0).setDepth(7100).setScrollFactor(0);
+    const pill = (x: number, y: number, w: number, h: number) =>
+      this.add.graphics().fillStyle(0x0b1020, 0.72).fillRoundedRect(x - w / 2, y - h / 2, w, h, h / 2)
+        .lineStyle(2, 0xffffff, 0.25).strokeRoundedRect(x - w / 2, y - h / 2, w, h, h / 2);
+    if (this.touch) {
+      const a = TouchPad.anchors;
+      const steer = txt(this, a.steer.x, a.steer.y - 34, t('hintSteer'), { title: true, size: 26, color: '#ffd23f', strokeThickness: 6 });
+      const ped = txt(this, a.pedals.x, a.pedals.y - 50, t('hintPedals'), { size: 22, color: '#ffffff', strokeThickness: 6, wrap: 400 });
+      c.add([pill(a.steer.x, a.steer.y - 34, steer.width + 44, 52), steer, pill(a.pedals.x, a.pedals.y - 50, ped.width + 44, ped.height + 22), ped]);
+      this.touch.pulse();
+    } else {
+      // key caps: arrows drawn as triangles (they read the same in every font)
+      const cap = (x: number, y: number, w: number, dir: number | null, label = '') => {
+        const g = this.add.graphics();
+        g.fillStyle(0x000000, 0.35).fillRoundedRect(x - w / 2, y - 21, w, 48, 10);
+        g.fillStyle(0xf3f2f2, 1).fillRoundedRect(x - w / 2, y - 24, w, 46, 10);
+        g.fillStyle(0x24324a, 1);
+        if (dir !== null) {
+          const ux = Math.cos(dir), uy = Math.sin(dir);
+          g.fillTriangle(x + ux * 11, y - 1 + uy * 11, x - ux * 8 - uy * 10, y - 1 - uy * 8 + ux * 10, x - ux * 8 + uy * 10, y - 1 - uy * 8 - ux * 10);
+        }
+        c.add(g);
+        if (label) c.add(txt(this, x, y - 1, label, { title: true, size: 16, color: '#24324a', strokeThickness: 0 }));
+      };
+      // laid out left to right from the label widths, then centred
+      const y = 520;
+      const groups: [Array<number | string>, string][] = [
+        [[Math.PI, 0], t('hintSteer')], [[-Math.PI / 2], t('gas')], [[Math.PI / 2], t('hintBrake')], [[t('keySpace')], t('nitroUp')],
+      ];
+      const labels = groups.map(([, l]) => txt(this, 0, y, l, { title: true, size: 22, color: '#ffd23f', strokeThickness: 0 }).setOrigin(0, 0.5));
+      const capW = (k: number | string) => (typeof k === 'string' ? 34 + k.length * 12 : 46);
+      const widths = groups.map(([keys], i) => keys.reduce<number>((w, k) => w + capW(k) + 6, 0) + 8 + labels[i].width);
+      const gap = 44;
+      const total = widths.reduce((a, b) => a + b, 0) + gap * (groups.length - 1);
+      c.add(pill(640, y + 2, total + 64, 96));
+      let x = 640 - total / 2;
+      groups.forEach(([keys], i) => {
+        for (const k of keys) {
+          const w = capW(k);
+          if (typeof k === 'string') cap(x + w / 2, y, w, null, k);
+          else cap(x + w / 2, y, w, k);
+          x += w + 6;
+        }
+        labels[i].setX(x + 8);
+        c.add(labels[i]);
+        x += 8 + labels[i].width + gap;
+      });
+    }
+    c.setAlpha(0);
+    this.tweens.add({ targets: c, alpha: 1, duration: 300, delay: 600 });
+    this.hint = c;
+  }
+
+  private dropHint(): void {
+    const c = this.hint;
+    if (!c) return;
+    this.hint = null;
+    storage.set(HINT_KEY, true);
+    this.tweens.add({ targets: c, alpha: 0, duration: 400, delay: 900, onComplete: () => c.destroy() });
   }
 
   private banner(title: string, sub: string): void {
@@ -281,6 +388,7 @@ export class PlayScene extends ArcadeScene {
     const dt = delta / 1000;
     this.phaseT += dt;
     const terrain = this.arena!.terrain;
+    this.touch?.update();
 
     if (this.phase === 'intro') {
       const k = Phaser.Math.Easing.Cubic.InOut(Math.min(1, this.phaseT / 1.7));
@@ -305,6 +413,7 @@ export class PlayScene extends ArcadeScene {
           this.phase = 'race';
           this.phaseT = 0;
           for (const tr of this.trucks) if (!tr.isPlayer) this.aiDelay.set(tr, 0.05 + Math.random() * 0.3);
+          this.dropHint();
         }
         this.count++;
       }
@@ -329,6 +438,7 @@ export class PlayScene extends ArcadeScene {
 
     this.dust.update(dt);
     this.glow.update(dt);
+    this.marks.update(dt);
     this.updateEngine();
     this.updateMarker();
     this.updateCamera(dt);
@@ -340,7 +450,7 @@ export class PlayScene extends ArcadeScene {
     const tk = this.track;
     for (const tr of this.trucks) {
       let input: DriveInput;
-      if (tr.isPlayer && !tr.finished) input = this.playerInput();
+      if (tr.isPlayer && !tr.finished) input = this.playerInput(dt);
       else input = this.aiInput(tr, dt);
       const ev = tr.drive(dt, input, this.stats(tr), terrain, tk);
       this.onEvents(tr, ev);
@@ -363,21 +473,29 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  private playerInput(): DriveInput {
-    const c = this.controls;
-    const ax = c.axisX, ay = c.axisY;
-    const mag = Math.hypot(ax, ay);
-    const tr = this.player;
-    if (c.justA() && tr.nitro > 0 && tr.nitroT <= 0) this.fireNitro(tr);
-    if (mag < 0.25) return { angle: null, throttle: 0 };
-    return { angle: Math.atan2(ay, ax), throttle: Math.min(1, mag * 1.25) };
+  private playerInput(dt: number): DriveInput {
+    const c = this.controls, tp = this.touch, tr = this.player;
+    const keyNitro = c.justA();
+    const padNitro = tp?.takeNitro() ?? false;
+    if ((keyNitro || padNitro) && tr.nitro > 0 && tr.nitroT <= 0) this.fireNitro(tr);
+    // car controls, relative to the truck: left / right turn it, up is gas, down brakes and
+    // reverses once stopped. The wheel follows the keys quickly but not at once, so a tap is a
+    // small correction and a held key is full lock.
+    const want = tp && tp.steer !== 0 ? tp.steer : Math.sign(c.axisX) * (Math.abs(c.axisX) > 0.3 ? 1 : 0);
+    const back = want === 0 || Math.sign(want) !== Math.sign(this.steerIn);
+    const step = (back ? 9 : 5.5) * dt;
+    this.steerIn += Phaser.Math.Clamp(want - this.steerIn, -step, step);
+    const gas = c.axisY < -0.3 || !!tp?.gas;
+    const brake = c.axisY > 0.3 || !!tp?.brake;
+    return { steer: this.steerIn, throttle: brake ? -1 : gas ? 1 : 0 };
   }
 
+  /** The AI picks a point to drive at, then steers and uses the pedals under the player's rules. */
   private aiInput(tr: Truck, dt: number): DriveInput {
     const delay = this.aiDelay.get(tr) ?? 0;
     if (delay > 0) {
       this.aiDelay.set(tr, delay - dt);
-      return { angle: null, throttle: 0 };
+      return { steer: 0, throttle: 0 };
     }
     const tk = this.track, hw = tk.half;
     const sp = tr.speed;
@@ -399,17 +517,22 @@ export class PlayScene extends ArcadeScene {
       }
     }
     const angle = Math.atan2(target.z - tr.z, target.x - tr.x);
+    const diff = Math.atan2(Math.sin(angle - tr.heading), Math.cos(angle - tr.heading));
     const st = this.stats(tr);
     // the fastest speed that still makes the bend ahead at this truck's turn rate
     const radius = ahead / Math.max(0.05, turn);
-    const want = Math.min(st.top, Math.max(5, radius * st.turn * turnFactor(st.top) * 0.85));
+    const want = Math.min(st.top, Math.max(5, radius * st.turn * turnFactor(st.top) * AI_CORNER));
     const vf = tr.forward;
     tr.aiNitroCd -= dt;
     if (this.phase === 'race' && !tr.isPlayer && tr.nitro > 0 && tr.nitroT <= 0 && tr.aiNitroCd <= 0 && turn < 0.3 && !tr.airborne && Math.random() < dt * 0.9) {
       this.fireNitro(tr);
       tr.aiNitroCd = 5 + Math.random() * 5;
     }
-    return { angle, throttle: vf < want ? 1 : 0, brake: vf > want + 1.2 };
+    // steering: proportional to the angle still to turn, full lock beyond about 20 degrees
+    const steer = Phaser.Math.Clamp(diff * AI_STEER_GAIN, -1, 1);
+    let throttle = vf < want ? 1 : 0;
+    if (Math.abs(diff) > 1.9) throttle *= 0.35;   // facing the wrong way: slow down and turn first
+    return { steer, throttle, brake: vf > want + 1.2 };
   }
 
   private fireNitro(tr: Truck): void {
@@ -421,6 +544,7 @@ export class PlayScene extends ArcadeScene {
       this.updateNitroHud();
       popup(this, p.x, p.y - 40, t('nitroGo'), '#ffb02e', 30);
       this.camShake = Math.max(this.camShake, 0.18);
+      this.fovKick = 1;
     }
     for (let k = 0; k < 14; k++) {
       const e = tr.local((Math.random() - 0.5) * 0.6, 1.25, 0.5);
@@ -629,6 +753,8 @@ export class PlayScene extends ArcadeScene {
     }
     this.setCenter('');
     this.nitroIcon.setVisible(false);
+    this.touch?.setVisible(false);
+    this.wrongArrow.visible = false;
     new ResultsPanel(this, this.raceNo, rows, this.raceCash, prize + this.raceCash, note, () => {
       if (this.lives <= 0) {
         this.endGame({ title: t('champOver'), delay: 200 });
@@ -641,7 +767,7 @@ export class PlayScene extends ArcadeScene {
   private openShop(): void {
     this.phase = 'shop';
     const next = LAYOUTS[this.raceNo % LAYOUTS.length];
-    const state = { bank: this.bank, levels: this.levels, nextTrack: t('nextTrack', { name: loc(next.name) }) };
+    const state = { bank: this.bank, levels: this.levels, nextTrack: t('nextTrack', { name: loc(next.name) }), touch: !!this.touch };
     new ShopPanel(this, state, (u) => {
       const lvl = this.levels[u];
       const p = price(u, lvl);
@@ -774,9 +900,12 @@ export class PlayScene extends ArcadeScene {
         this.glow.emit({ x: e.x, y: e.y, z: e.z, vx: -fx * 5 + (Math.random() - 0.5), vy: Math.random() * 0.8, vz: -fz * 5 + (Math.random() - 0.5), life: 0.28, size: 1.0, grow: 0.25, color: Math.random() < 0.5 ? 0xff7a1a : 0xffd23f, alpha: 0.95 });
       }
     }
-    if (tr.airborne || sp < 2) return;
     const surf = tr.surface;
-    const rate = sp * (surf === SURF_MUD ? 2.2 : surf === SURF_PUDDLE ? 2.6 : 1.1);
+    this.skidMarks(tr, dt);
+    if (tr.airborne || sp < 2) return;
+    // a slide throws up more dirt than rolling straight
+    const slideDust = tr.slip > 2.5 && surf !== SURF_PUDDLE ? tr.slip * 1.6 : 0;
+    const rate = sp * (surf === SURF_MUD ? 2.2 : surf === SURF_PUDDLE ? 2.6 : 1.1) + slideDust;
     let acc = (this.dustAcc.get(tr) ?? 0) + rate * dt;
     const fx = Math.cos(tr.heading), fz = Math.sin(tr.heading);
     while (acc >= 1) {
@@ -800,6 +929,33 @@ export class PlayScene extends ArcadeScene {
     this.dustAcc.set(tr, acc);
   }
 
+  /** Tyre marks under the rear wheels while a truck slides or brakes hard, and the screech. */
+  private skidMarks(tr: Truck, dt: number): void {
+    const id = this.trucks.indexOf(tr);
+    const surf = tr.surface;
+    const sliding = !tr.airborne && surf !== SURF_PUDDLE && surf !== SURF_GRASS && (tr.slip > 2.6 || tr.braking);
+    if (!sliding) {
+      if (tr.airborne) { this.marks.lift(id + 'l'); this.marks.lift(id + 'r'); }
+      if (tr.isPlayer) this.wasBraking = false;
+      return;
+    }
+    const k = tr.braking ? 0.85 : Phaser.Math.Clamp((tr.slip - 2.6) / 4, 0.3, 1);
+    const strength = k * (surf === SURF_MUD ? 1.3 : surf === SURF_BERM ? 0.7 : 1);
+    for (const side of [-0.6, 0.6]) {
+      const w = tr.local(side, 0.85, 0);
+      this.marks.mark(id + (side < 0 ? 'l' : 'r'), w.x, w.y, w.z, strength, surf === SURF_MUD ? 0.42 : 0.3);
+    }
+    if (!tr.isPlayer) return;
+    this.skidCd -= dt;
+    const start = (tr.braking && !this.wasBraking && tr.speed > 7) || (!tr.braking && tr.slip > 4.5);
+    this.wasBraking = tr.braking;
+    if (start && this.skidCd <= 0 && surf !== SURF_MUD) {
+      this.skidCd = tr.braking ? 0.9 : 2.2;
+      const x = this.world.toScreen(new THREE.Vector3(tr.x, tr.y, tr.z)).x;
+      this.sfxAt('skid', x, { volume: tr.braking ? 0.45 : 0.3 });
+    }
+  }
+
   private mudSplash(tr: Truck, n: number): void {
     for (let k = 0; k < n; k++) {
       const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 4;
@@ -815,7 +971,7 @@ export class PlayScene extends ArcadeScene {
     const racing = this.phase === 'race' || this.phase === 'finish' || this.phase === 'count' || this.phase === 'intro';
     const top = BASE_TOP * (1 + 0.075 * this.levels.engine);
     let k = Phaser.Math.Clamp(tr.speed / top, 0, 1.5);
-    if (this.phase === 'count' || this.phase === 'intro') k = Math.hypot(this.controls.axisX, this.controls.axisY) * 0.6;
+    if (this.phase === 'count' || this.phase === 'intro') k = this.controls.axisY < -0.3 || this.touch?.gas ? 0.7 : 0;
     const rate = 0.7 + k * 0.8 + (tr.nitroT > 0 ? 0.2 : 0) + (tr.airborne ? 0.15 : 0);
     try {
       e.setRate(rate);
@@ -828,6 +984,16 @@ export class PlayScene extends ArcadeScene {
     this.marker.position.set(tr.x, tr.y + 2.6 + Math.sin(performance.now() / 220) * 0.2, tr.z);
     this.marker.rotation.y += 0.05;
     this.marker.visible = this.phase !== 'results' && this.phase !== 'shop';
+    // wrong way: the ground arrow shows which way the race goes
+    const show = this.phase === 'race' && this.wrongT > 0.5 && !tr.finished;
+    this.wrongArrow.visible = show;
+    if (show) {
+      const p = this.track.sampleAt(tr.s);
+      const pulse = 1.4 + Math.sin(performance.now() / 120) * 0.15;
+      this.wrongArrow.position.set(tr.x + p.tx * 2.4, this.arena!.terrain.heightAt(tr.x + p.tx * 2.4, tr.z + p.tz * 2.4) + 0.12, tr.z + p.tz * 2.4);
+      this.wrongArrow.rotation.y = Math.atan2(-p.tz, p.tx);
+      this.wrongArrow.scale.setScalar(pulse);
+    }
   }
 
   private updateCamera(dt: number): void {
@@ -836,6 +1002,13 @@ export class PlayScene extends ArcadeScene {
     this.camShake *= Math.exp(-dt * 7);
     const a = this.camShake;
     cam.position.set(CAM_POS.x + (Math.random() - 0.5) * a, CAM_POS.y + (Math.random() - 0.5) * a, CAM_POS.z + (Math.random() - 0.5) * a);
+    // nitro: a short widening of the lens, eased back while the boost lasts
+    this.fovKick *= Math.exp(-dt * (this.player.nitroT > 0 ? 1.2 : 4));
+    const fov = FOV + this.fovKick * 2.2;
+    if (Math.abs(cam.fov - fov) > 0.01) {
+      cam.fov = fov;
+      cam.updateProjectionMatrix();
+    }
     cam.lookAt(CAM_LOOK.x + (Math.random() - 0.5) * a * 0.5, CAM_LOOK.y, CAM_LOOK.z + (Math.random() - 0.5) * a * 0.5);
   }
 
@@ -858,6 +1031,7 @@ export class PlayScene extends ArcadeScene {
     this.shown = this.player.nitro;
     this.nitroText.setText(`×${this.player.nitro}`);
     this.nitroIcon.setAlpha(this.player.nitro > 0 ? 1 : 0.55);
+    this.touch?.setNitro(this.player.nitro);
   }
 }
 

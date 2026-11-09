@@ -1431,8 +1431,8 @@
         "en": "Four pickup trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster."
       },
       "howTo": {
-        "tr": "Sol başparmağını kamyonun gitmesini istediğin yöne çek; sağdaki A tuşu nitro. Klavye: yön tuşları ya da WASD ile sür, Boşluk, Z veya Enter ile nitro.",
-        "en": "Pull the left stick the way you want the truck to go; the A button on the right fires nitro. Keys: arrows or WASD to drive, Space, Z or Enter for nitro."
+        "tr": "Kamyonu gerçek bir araba gibi sür. Dokunmatik: soldaki oklar direksiyon; sağda GAZ, FREN (dururken geri vites) ve NİTRO. Klavye: ← → direksiyon, ↑ gaz, ↓ fren / geri, Boşluk, Z ya da Enter nitro.",
+        "en": "Drive it like a real truck. Touch: the arrows on the left steer; GAS, BRAKE (reverse when stopped) and NITRO are on the right. Keys: ← → steer, ↑ gas, ↓ brake / reverse, Space, Z or Enter nitro."
       },
       "genres": [
         "sports",
@@ -1444,7 +1444,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "3D models: Kenney Car Kit, Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
