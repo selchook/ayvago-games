@@ -2,11 +2,11 @@
   "id": "mud-rally",
   "title": { "tr": "Çamur Rallisi", "en": "Mud Rally" },
   "description": { "tr": "Dört kamyonet, tek ekranlık toprak bir pist! Rampalardan uç, çamur çukurlarında kaymamaya çalış, nitroyu doğru anda ateşle ve dört turu herkesten önce bitir. Kazandığın parayla garajda motoru, lastikleri, amortisörleri ve nitroyu geliştir; her yeni pistte rakipler daha hızlı.", "en": "Four pickup trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster." },
-  "howTo": { "tr": "Kamyonu gerçek bir araba gibi sür. Dokunmatik: soldaki oklar direksiyon (EĞİM ile telefonu çevirerek de sürebilirsin); sağda GAZ, FREN ve NİTRO. Klavye: ←\u00a0→\u00a0direksiyon, ↑\u00a0gaz, ↓\u00a0fren\u00a0/\u00a0geri, Boşluk, Z ya da Enter nitro.", "en": "Drive it like a real truck. Touch: the arrows on the left steer (or tap TILT and turn the phone); GAS, BRAKE and NITRO are on the right. Keys: ←\u00a0→\u00a0steer, ↑\u00a0gas, ↓\u00a0brake\u00a0/\u00a0reverse, Space, Z or Enter nitro." },
+  "howTo": { "tr": "Kamyonu gerçek bir araba gibi sür. Dokunmatik: direksiyonu menüden seç (oklar, direksiyon simidi ya da eğim); sağda GAZ, FREN ve NİTRO. Klavye: ←\u00a0→\u00a0direksiyon, ↑\u00a0gaz, ↓\u00a0fren\u00a0/\u00a0geri, Boşluk, Z ya da Enter nitro.", "en": "Drive it like a real truck. Touch: pick the steering on the menu (arrows, a wheel or tilt); GAS, BRAKE and NITRO are on the right. Keys: ←\u00a0→\u00a0steer, ↑\u00a0gas, ↓\u00a0brake\u00a0/\u00a0reverse, Space, Z or Enter nitro." },
   "genres": ["sports", "arcade", "action"],
   "orientation": "landscape",
   "controls": ["touch", "keyboard"],
-  "version": "1.2.0",
+  "version": "1.3.0",
   "credits": ["3D models: Kenney Car Kit, Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org"],
   "platform": { "addedAt": "2026-11-07" }
 }

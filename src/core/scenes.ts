@@ -88,19 +88,23 @@ export class MenuScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: title, y: title.y - 12, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    // Games that offer Easy/Normal: portrait stacks the toggle under PLAY (best and PLAY move up a
-    // little to make room); landscape puts it beside PLAY.
+    // Games that offer Easy/Normal (or their own menu option): portrait stacks the control under
+    // PLAY (best and PLAY move up a little to make room); landscape puts it beside PLAY.
     const diff = offersDifficulty();
+    const option = !diff && def.menuOption && (def.menuOption.show?.(this) ?? true) ? def.menuOption : null;
+    const side = diff || !!option;
     const best = getBest(meta.id);
-    txt(this, width / 2, height * (diff && !land ? 0.31 : 0.36), `${t('best')}: ${best}`, { title: true, size: 22, color: '#3ee6ff' });
+    txt(this, width / 2, height * (side && !land ? 0.31 : 0.36), `${t('best')}: ${best}`, { title: true, size: 22, color: '#3ee6ff' });
 
-    const playX = diff && land ? width / 2 - 180 : width / 2;
-    const playY = height * (land ? 0.52 : diff ? 0.44 : 0.5);
+    const playX = side && land ? width / 2 - 180 : width / 2;
+    const playY = height * (land ? 0.52 : side ? 0.44 : 0.5);
     const play = new Button(this, playX, playY, t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
     this.tweens.add({ targets: play, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    if (diff) {
-      if (land) this.difficultyToggle(width / 2 + 200, playY);
-      else this.difficultyToggle(width / 2, height * 0.535);
+    if (side) {
+      const x = land ? width / 2 + 200 : width / 2;
+      const y = land ? playY : height * 0.535;
+      if (diff) this.difficultyToggle(x, y);
+      else option!.build(this, x, y);
     }
 
     const howY = height * (land ? 0.68 : 0.64);

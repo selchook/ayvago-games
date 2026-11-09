@@ -3,6 +3,7 @@ import { World3D, THREE, loadKenney3d } from '@core/three';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { STRINGS } from './strings';
+import { steeringMenu, touchScreen } from './steering';
 import { Truck } from './truck';
 import { noise2 } from './terrain';
 
@@ -79,7 +80,9 @@ launch({
       truck.root.scale.setScalar(1.35);
       truck.root.rotation.y = i ? 0.6 : -0.6;
       stage.add(hill, truck.root);
-      stage.position.set(i ? 10.8 : -10.8, -0.5, 0);
+      // with the steering switch beside PLAY (touch screens) the trucks stand a little wider
+      const x = touchScreen(scene) ? 12.9 : 10.8;
+      stage.position.set(i ? x : -x, -0.5, 0);
       world.scene.add(stage);
       stages.push(stage);
     });
@@ -93,6 +96,7 @@ launch({
       stages[1].position.y = -0.5 + Math.sin(t + 1.5) * 0.07;
     };
   },
+  menuOption: { show: touchScreen, build: steeringMenu },
   scenes: [PlayScene],
   strings: STRINGS,
 });

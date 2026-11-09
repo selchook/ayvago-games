@@ -9,7 +9,8 @@ import { ResultsPanel, ShopPanel, MAX_LEVEL, price, type Upgrade, type ResultRow
 import { money, ordinal } from './strings';
 import { matte } from './look';
 import { TouchPad } from './touch';
-import { Tilt } from './tilt';
+import { tilt } from './tilt';
+import { steerMode, setSteerMode } from './steering';
 import { SkidMarks } from './marks';
 
 const LAPS = 4;
@@ -28,8 +29,6 @@ const CAM_LOOK = new THREE.Vector3(0, 0, 1.6);
 const PLAYER_COLOR = 0x2f7dff;
 /** Storage key: the controls hint has been shown once (first race only). */
 const HINT_KEY = 'mud-rally:controlsHint';
-/** The player's choice of tilt steering (touch screens), kept between visits. */
-const TILT_KEY = 'mud-rally:tilt';
 const RIVALS = [
   { model: 'suvLux', color: 0xe8402f, name: 'driverRed' },
   { model: 'truck', color: 0xf5c52b, name: 'driverYellow' },
@@ -68,7 +67,6 @@ export class PlayScene extends ArcadeScene {
   private dustAcc = new Map<Truck, number>();
   private aiDelay = new Map<Truck, number>();
   private touch: TouchPad | null = null;
-  private tilt = new Tilt();
   private marks!: SkidMarks;
   private steerIn = 0;
   private wrongArrow!: THREE.Mesh;
@@ -138,8 +136,8 @@ export class PlayScene extends ArcadeScene {
     // own car controls (steer left / right, GAS, BRAKE, NITRO) instead of the stick
     this.controls = new Controls(this, {});
     this.touch = this.controls.touchUi ? new TouchPad(this) : null;
-    if (this.touch) this.touch.onTiltTap = () => this.toggleTilt();
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.tilt.disable());
+    // the sensor reader lives for the whole visit (menu and races), so it is not stopped here
+    if (this.touch) this.touch.onAskTilt = () => this.askTilt();
 
     this.dust = new Particles(900, false, this.scale.height, FOV);
     this.glow = new Particles(320, true, this.scale.height, FOV);
@@ -281,7 +279,7 @@ export class PlayScene extends ArcadeScene {
     this.updateNitroHud();
     this.nitroIcon.setVisible(!this.touch);
     this.touch?.setVisible(true);
-    this.resumeTilt();
+    this.applySteerMode();
     this.steerIn = 0;
     this.wrongT = 0;
     this.nitroSpawned = 0;
@@ -395,14 +393,14 @@ export class PlayScene extends ArcadeScene {
     const dt = delta / 1000;
     this.phaseT += dt;
     const terrain = this.arena!.terrain;
-    this.touch?.update();
-    if (this.tilt.active) {
-      this.tilt.update(dt);
+    this.touch?.update(dt);
+    if (tilt.active) {
+      tilt.update(dt);
       if (this.touch?.takeWheel()) {
-        this.tilt.calibrate();
+        tilt.calibrate();
         popup(this, 191, 440, t('tiltCentred'), '#7dff9a', 24);
       }
-      this.touch?.setWheel(this.tilt.steer);
+      this.touch?.setWheel(tilt.steer);
     }
 
     if (this.phase === 'intro') {
@@ -430,7 +428,7 @@ export class PlayScene extends ArcadeScene {
           for (const tr of this.trucks) if (!tr.isPlayer) this.aiDelay.set(tr, 0.05 + Math.random() * 0.3);
           this.dropHint();
           // the way the phone is held at the start is straight ahead
-          if (this.tilt.active) this.tilt.calibrate();
+          if (tilt.active) tilt.calibrate();
         }
         this.count++;
       }
@@ -490,46 +488,47 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  // ---------- tilt steering (touch screens) ----------
-  /** The TILT chip: turns tilt steering on (asking for the sensors on iOS) or back off. */
-  private toggleTilt(): void {
-    if (!this.touch) return;
-    if (this.touch.tiltMode) {
-      this.tilt.disable();
-      this.touch.setTiltMode(false);
-      storage.set(TILT_KEY, false);
-      popup(this, 640, 230, t('tiltOff'), '#ffffff', 28);
+  // ---------- steering mode (touch screens, chosen on the menu) ----------
+  /** At each race start: shows the controls for the chosen mode, starting the sensors for TILT. */
+  private applySteerMode(): void {
+    const tp = this.touch;
+    if (!tp) return;
+    const mode = steerMode();
+    if (mode !== 'tilt') {
+      tp.setMode(mode);
       return;
     }
-    void this.tilt.enable().then((r) => {
-      if (!this.touch || !this.sys.isActive()) return;
-      if (r === 'on') {
-        this.touch.setTiltMode(true);
-        storage.set(TILT_KEY, true);
-        popup(this, 640, 230, t('tiltOn'), '#7dff9a', 28);
-        this.sfx('buy', { volume: 0.4 });
-      } else {
-        this.touch.setTiltMode(false);
-        storage.set(TILT_KEY, false);
-        popup(this, 640, 230, t(r === 'denied' ? 'tiltDenied' : 'tiltNone'), '#ff9a7a', 26);
-      }
+    if (tilt.active) {
+      tp.setMode('tilt');
+      return;
+    }
+    // where the sensors may start without a tap (Android) they just do; where the browser wants a
+    // tap first (iOS after a reload) the arrows stand in and a button asks for that tap
+    tp.setMode('tilt', true);
+    void tilt.enable().then((r) => {
+      if (this.touch !== tp || !this.sys.isActive()) return;
+      if (r === 'on') tp.setMode('tilt');
+      else if (r === 'unsupported') this.dropTilt('tiltNone');
     });
   }
 
-  /** At each race start: brings tilt steering back when the player chose it before. */
-  private resumeTilt(): void {
-    if (!this.touch || !storage.get<boolean>(TILT_KEY, false)) return;
-    if (this.tilt.active) {
-      this.touch.setTiltMode(true);
-      return;
-    }
-    // where the sensors may start without a tap (Android) they just do; iOS only lets them start
-    // from a tap, so there the chip pulses and asks for one
-    void this.tilt.enable().then((r) => {
+  /** The "turn tilt on" button: asks for the sensors from inside the tap. */
+  private askTilt(): void {
+    void tilt.enable().then((r) => {
       if (!this.touch || !this.sys.isActive()) return;
-      this.touch.setTiltMode(r === 'on');
-      if (r === 'denied') this.touch.attention(true);
+      if (r === 'on') {
+        this.touch.setMode('tilt');
+        tilt.calibrate();
+        popup(this, 640, 230, t('tiltOn'), '#7dff9a', 28);
+      } else this.dropTilt(r === 'denied' ? 'tiltDenied' : 'tiltNone');
     });
+  }
+
+  /** Tilt cannot work here: back to the arrows, and the menu shows that choice from now on. */
+  private dropTilt(why: 'tiltDenied' | 'tiltNone'): void {
+    setSteerMode('arrows');
+    this.touch?.setMode('arrows');
+    popup(this, 640, 230, t(why), '#ff9a7a', 26);
   }
 
   private playerInput(dt: number): DriveInput {
@@ -541,9 +540,12 @@ export class PlayScene extends ArcadeScene {
     // reverses once stopped. The wheel follows the keys quickly but not at once, so a tap is a
     // small correction and a held key is full lock.
     const keys = Math.sign(c.axisX) * (Math.abs(c.axisX) > 0.3 ? 1 : 0);
-    if (tp?.tiltMode && this.tilt.active && keys === 0) {
+    if (tp?.mode === 'tilt' && tilt.active && keys === 0) {
       // tilt steering is analogue and already smoothed: the wheel follows the phone
-      this.steerIn = this.tilt.steer;
+      this.steerIn = tilt.steer;
+    } else if (tp?.mode === 'wheel' && keys === 0) {
+      // the on-screen wheel is analogue too: the truck follows the thumb
+      this.steerIn = tp.steer;
     } else {
       const want = tp && tp.steer !== 0 ? tp.steer : keys;
       const back = want === 0 || Math.sign(want) !== Math.sign(this.steerIn);
