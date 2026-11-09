@@ -1,5 +1,5 @@
 {
-  "count": 86,
+  "count": 87,
   "games": [
     {
       "id": "air-hockey",
@@ -853,6 +853,45 @@
         "featured": true
       },
       "thumb": "thumbs/gem-match.png"
+    },
+    {
+      "id": "golden-podium",
+      "title": {
+        "tr": "Altın Kürsü",
+        "en": "Golden Podium"
+      },
+      "description": {
+        "tr": "Ayvago Kupası'nda beş branşta üç rakibe karşı yarış: 100 m koşu, 100 m engelli, uzun atlama, 50 m serbest yüzme ve okçuluk. Her yarışta madalya ve puan topla, toplamda zirveye çık ve altın kürsüye çık!",
+        "en": "Take on three rivals in five events at the Ayvago Cup: 100 m sprint, 100 m hurdles, long jump, 50 m freestyle and archery. Win medals and points in every event, top the final standings and climb the golden podium!"
+      },
+      "howTo": {
+        "tr": "Her yarışın kendi kısa ipucu var. Dokunmatik: ekrandaki büyük tuşlar. Klavye: ← / → ile ritimle koş, Boşluk ile atla, kulaç at ya da ok bırak, ↑ ile nefes al.",
+        "en": "Every event shows a short hint. Touch: the big on-screen buttons. Keys: ← / → to run in rhythm, Space to jump, stroke or release an arrow, ↑ to breathe."
+      },
+      "genres": [
+        "sports",
+        "arcade",
+        "action"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Kenney Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl",
+        "Characters and medals: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact Sounds (CC0)"
+      ],
+      "platform": {
+        "addedAt": "2026-11-09",
+        "scoring": {
+          "maxScore": 10000,
+          "minDurationMs": 45000
+        }
+      },
+      "thumb": "thumbs/golden-podium.png"
     },
     {
       "id": "gomoku",
