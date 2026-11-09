@@ -286,7 +286,7 @@ export class PlayScene extends ArcadeScene {
 
     this.fxG = this.add.graphics().setDepth(4);
     this.rackGlow = this.add.graphics().setDepth(-4);
-    this.dropMark = this.add.graphics().setDepth(9);
+    this.dropMark = this.add.graphics().setDepth(45);
     this.hintBg = this.add.graphics().setDepth(19);
     this.hint = txt(this, W / 2, 398, '', { size: 25, color: '#fff3c4' }).setDepth(20);
     const by = 462;
@@ -638,6 +638,7 @@ export class PlayScene extends ArcadeScene {
       if (!d.moved && Phaser.Math.Distance.Between(p.downX, p.downY, p.x, p.y) < 8) return;
       d.moved = true;
       img.setPosition(p.x + d.dx, p.y + d.dy);
+      this.markRackTarget(d.id, img.x, img.y);
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
       if (this.pull) { this.endPull(p); return; }
@@ -647,20 +648,14 @@ export class PlayScene extends ArcadeScene {
       const img = this.sprites.get(d.id);
       if (!img) return;
       img.setDepth(10);
+      this.dropMark.clear();
       if (!d.moved) { this.select(this.selected === d.id ? null : d.id); this.sfx('slide', { volume: 0.2 }); return; }
       // dropped on my discard corner: throw it; on the centre: finish with it
       const myCorner = CORNER[0];
       if (Phaser.Math.Distance.Between(p.x, p.y, myCorner.x, myCorner.y) < 80 && this.canDiscard()) { this.select(d.id); this.humanDiscard(); return; }
       if (Phaser.Math.Distance.Between(p.x, p.y, MID.x, MID.y) < 90 && this.canDiscard()) { this.select(d.id); this.humanFinish(); return; }
-      // otherwise: move it to the nearest slot (swapping with a tile there)
-      const slot = this.nearestSlot(img.x, img.y);
-      const from = this.rack.indexOf(d.id);
-      if (slot >= 0 && from >= 0 && slot !== from) {
-        const other = this.rack[slot];
-        this.rack[slot] = d.id;
-        this.rack[from] = other;
-        this.sfx('slide', { volume: 0.3 });
-      }
+      // otherwise: into the gap between two tiles (the others make room), or onto a tile (swap)
+      if (this.placeOnRack(d.id, img.x, img.y)) this.sfx('slide', { volume: 0.3 });
       this.layoutRack();
       this.refresh();
     });
@@ -748,11 +743,82 @@ export class PlayScene extends ArcadeScene {
     return best;
   }
 
-  private nearestSlot(x: number, y: number): number {
+  /**
+   * Where a rack tile dropped at (x, y) goes. Over the middle of the gap between two slots it goes
+   * between them; elsewhere onto the nearest slot.
+   */
+  private rackTarget(x: number, y: number): { row: number; between: boolean; col: number } | null {
+    if (y < ROW_Y[0] - 90 || y > ROW_Y[1] + 70) return null;
     const row = Math.abs(y - ROW_Y[0]) < Math.abs(y - ROW_Y[1]) ? 0 : 1;
-    const col = Phaser.Math.Clamp(Math.round((x - RACK_X0) / SLOT), 0, SLOTS - 1);
-    if (y < ROW_Y[0] - 90) return -1;
-    return row * SLOTS + col;
+    const fx = (x - RACK_X0) / SLOT; // slot centres at whole numbers
+    const c = Math.floor(fx), f = fx - c;
+    if (f > 0.3 && f < 0.7 && c >= 0 && c < SLOTS - 1) return { row, between: true, col: c };
+    return { row, between: false, col: Phaser.Math.Clamp(Math.round(fx), 0, SLOTS - 1) };
+  }
+
+  /** True when the gap between `left` and the slot after it lies between two other tiles. */
+  private gapBetweenTiles(id: number, row: number, left: number): boolean {
+    const a = this.rack[row * SLOTS + left], b = this.rack[row * SLOTS + left + 1];
+    return a !== null && b !== null && a !== id && b !== id;
+  }
+
+  /**
+   * Moves a rack tile to where it was dropped: between two tiles it slides in and its neighbours
+   * shift towards the nearest free slot in that row; on a tile the two swap; on a free slot it
+   * just moves. False when nothing changed.
+   */
+  private placeOnRack(id: number, x: number, y: number): boolean {
+    const target = this.rackTarget(x, y);
+    const from = this.rack.indexOf(id);
+    if (!target || from < 0) return false;
+    const start = target.row * SLOTS, end = start + SLOTS - 1;
+    if (target.between && this.gapBetweenTiles(id, target.row, target.col)) {
+      const rack = [...this.rack];
+      rack[from] = null;
+      const L = start + target.col, R = L + 1;
+      // room to the right: the tiles from R onwards move one slot right
+      for (let j = R + 1; j <= end; j++) {
+        if (rack[j] !== null) continue;
+        for (let k = j; k > R; k--) rack[k] = rack[k - 1];
+        rack[R] = id;
+        this.rack = rack;
+        return true;
+      }
+      // otherwise to the left: the tiles up to L move one slot left
+      for (let j = L - 1; j >= start; j--) {
+        if (rack[j] !== null) continue;
+        for (let k = j; k < L; k++) rack[k] = rack[k + 1];
+        rack[L] = id;
+        this.rack = rack;
+        return true;
+      }
+      // the row is full: fall back to a swap with the nearer tile
+    }
+    const slot = target.between ? start + target.col + (x - (RACK_X0 + (target.col + 0.5) * SLOT) < 0 ? 0 : 1) : start + target.col;
+    if (slot === from) return false;
+    const other = this.rack[slot];
+    this.rack[slot] = id;
+    this.rack[from] = other;
+    return true;
+  }
+
+  /** While a rack tile is dragged: a bar where it would slide in, or a frame on the tile it would swap with. */
+  private markRackTarget(id: number, x: number, y: number): void {
+    const g = this.dropMark.clear();
+    const t = this.rackTarget(x, y);
+    if (!t) return;
+    if (t.between && this.gapBetweenTiles(id, t.row, t.col)) {
+      const bx = RACK_X0 + (t.col + 0.5) * SLOT, by = ROW_Y[t.row];
+      g.fillStyle(0xffd23f, 1).fillRoundedRect(bx - 4, by - 44, 8, 88, 4);
+      // the dragged tile hides the bar itself, so arrow tips above and below point at the gap
+      g.fillTriangle(bx - 16, by - 62, bx + 16, by - 62, bx, by - 44).fillTriangle(bx - 16, by + 62, bx + 16, by + 62, bx, by + 44);
+      return;
+    }
+    const col = t.between ? t.col + (x - (RACK_X0 + (t.col + 0.5) * SLOT) < 0 ? 0 : 1) : t.col;
+    const slot = t.row * SLOTS + col;
+    if (this.rack[slot] === id) return;
+    const q = this.slotPos(slot);
+    g.lineStyle(4, 0xffd23f, 0.95).strokeRoundedRect(q.x - SLOT / 2 + 4, q.y - 40, SLOT - 8, 80, 10);
   }
 
   private layoutRack(): void {
