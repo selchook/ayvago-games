@@ -9,8 +9,8 @@
     "en": "Classic Turkish Okey: find the okey from the indicator, arrange your tiles into runs and sets, then throw your last tile to finish. Play three bots on your own, or up to four people at an online table where bots take the empty seats."
   },
   "howTo": {
-    "tr": "Sıran gelince ortadan ya da soldaki yığından taş çek, sonra bir taş at. 14 taşın seri ve perlere ya da 7 çifte dizilince BİTİR. Okey her taşın yerine geçer; okey boştaysa onu atarak bitirirsin ve puan iki katına çıkar. Klavye: oklar, 1 çek, Boşluk at, F bitir, C sohbet, I oyuncu kartı.",
-    "en": "On your turn draw from the middle or the pile on your left, then throw a tile. When your 14 tiles form runs and sets, or seven pairs, press FINISH. The okey stands for any tile; when it is spare you finish by throwing it, for double points. Keys: arrows, 1 draws, Space throws, F finishes, C chats, I shows player cards."
+    "tr": "Taş çek, sonra bir taş at. 14 taşın seri ve perlere ya da 7 çifte dizilince BİTİR. Okey her taşın yerine geçer; boştaki okeyi atarak bitirirsen puan ×2. Klavye: 1 çek, Boşluk at, F bitir.",
+    "en": "Draw a tile, then throw one. When your 14 tiles form runs and sets, or seven pairs, press FINISH. The okey is wild; finish by throwing a spare okey for double points. Keys: 1 draws, Space throws, F finishes."
   },
   "genres": [
     "card",

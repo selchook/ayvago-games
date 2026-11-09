@@ -31,14 +31,21 @@ launch({
     scene.add.image(0, 0, makeTable(scene, width, height)).setOrigin(0);
     scene.add.rectangle(0, 0, width, height, 0x000000, 0.28).setOrigin(0);
     makeTileArt(scene, '"Fredoka", "Nunito", sans-serif');
-    // a fanned hand of tiles at the bottom, and a winning run on each side
+    // a fanned hand on each side of the play button and a winning run in each top corner; the
+    // bottom stays clear for the how-to text and the footer
     const tiles = makeTiles();
     const pick = (c: number, n: number) => tiles.find((t) => t.color === c && t.num === n)!;
-    const fan = [pick(0, 7), pick(1, 7), pick(2, 7), pick(3, 7), tiles[104], pick(2, 10), pick(2, 11), pick(2, 12)];
-    fan.forEach((tile, i) => {
-      const a = (i - (fan.length - 1) / 2) * 7;
-      const img = scene.add.image(width / 2 + (i - (fan.length - 1) / 2) * 52, height + 30, tileKey(tile)).setAngle(a).setOrigin(0.5, 1);
-      scene.tweens.add({ targets: img, y: height - 18 - Math.abs(i - 3.5) * 4, duration: 500, delay: 60 * i, ease: 'Back.easeOut' });
+    const hands = [
+      [pick(0, 7), pick(1, 7), pick(2, 7), pick(3, 7)],
+      [tiles[104], pick(2, 10), pick(2, 11), pick(2, 12)],
+    ];
+    hands.forEach((hand, k) => {
+      const cx = k === 0 ? 215 : width - 215;
+      hand.forEach((tile, i) => {
+        const o = i - (hand.length - 1) / 2;
+        const img = scene.add.image(cx + o * 50, height + 90, tileKey(tile)).setScale(0.9).setAngle(o * 8).setOrigin(0.5, 1);
+        scene.tweens.add({ targets: img, y: 430 + Math.abs(o) * 6, duration: 520, delay: 60 * i + 140 * k, ease: 'Back.easeOut' });
+      });
     });
     [[0, 3], [3, 9]].forEach(([c, start], k) => {
       for (let i = 0; i < 3; i++) {
