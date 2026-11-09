@@ -1,4 +1,4 @@
-import { launch, loadAudio, type GameMeta } from '@core';
+import { launch, loadAudio, steeringOption, type GameMeta } from '@core';
 import { World3D, THREE, loadKenney3d, model, grounded } from '@core/three';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
@@ -47,9 +47,11 @@ launch({
       stage.position.y = Math.sin(performance.now() / 700) * 0.08;
     };
   },
+  // touch screens choose ARROWS | WHEEL | TILT under PLAY (the shared driving-game switch)
+  menuOption: steeringOption,
   scenes: [PlayScene],
   strings: {
-    tr: { levelUp: 'HIZ ARTIYOR!' },
-    en: { levelUp: 'SPEED UP!' },
+    tr: { levelUp: 'HIZ ARTIYOR!', jump: 'ZIPLA' },
+    en: { levelUp: 'SPEED UP!', jump: 'JUMP' },
   },
 });

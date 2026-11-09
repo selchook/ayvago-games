@@ -1,4 +1,4 @@
-import { Phaser, ArcadeScene, Controls, shake, flash, popup, t, rng } from '@core';
+import { Phaser, ArcadeScene, Controls, CarSteering, shake, flash, popup, t, rng } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 
 // A lane-based track of floating blocks, driven along -z.
@@ -12,6 +12,13 @@ const JUMP_V = 8.2;
 const START_LIVES = 3;
 const CAR_HALF_W = 0.36;
 const CAR_HALF_L = 0.62;
+/** Sideways speed at full lock (keys, arrows, the wheel or the phone's tilt). */
+const STEER_SPEED = 7.5;
+/**
+ * Phone tilt for full lock. Lower than a racing game's 24 degrees: a lane change wants a quick,
+ * small turn, and a tall portrait phone is awkward to turn far like a wheel.
+ */
+const TILT_LOCK = 18;
 
 type ObjKind = 'coin' | 'crate' | 'spikes' | 'heart';
 
@@ -38,6 +45,7 @@ interface RowPlan {
 export class PlayScene extends ArcadeScene {
   private world!: World3D;
   private controls!: Controls;
+  private steering!: CarSteering;
   private car!: THREE.Group;
   private body!: THREE.Object3D;
   private wheels: THREE.Object3D[] = [];
@@ -83,7 +91,19 @@ export class PlayScene extends ArcadeScene {
 
     this.world = new World3D(this, { fov: 62, background: 0x8fd3ff, fog: { color: 0xbfe6ff, near: 26, far: 70 } });
     this.world.addLights({ sky: 0xeaf6ff, ground: 0x8a7a64, ambient: 1.7, intensity: 2.4, dir: [-0.6, 1, 0.35], extent: 16 });
-    this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
+    // keys from the core (arrows / WASD, Space / Z / Enter); on touch screens the shared car pad:
+    // the steering chosen on the menu under the left thumb, a big JUMP button under the right one
+    this.controls = new Controls(this, {});
+    const { width, height } = this.scale;
+    this.steering = new CarSteering(this, {
+      touch: this.controls.touchUi,
+      buttons: [{ id: 'jump', shape: 'round', x: width - 136, y: height - 130, r: 96, color: 0xec3013, label: t('jump'), labelY: 34, labelSize: 26, icon: 'up', hit: 34 }],
+      tiltLock: TILT_LOCK,
+      // the car already eases its sideways speed, so keys and arrows give full lock at once
+      ramp: false,
+    });
+    this.steering.begin();
+    this.steering.centre();
     this.hud.setLives(this.lives, START_LIVES);
     this.hud.setLevel(this.level);
 
@@ -255,6 +275,9 @@ export class PlayScene extends ArcadeScene {
 
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
+    this.steering.update(dt);
+    // read every frame, so a tap during a respawn does not jump later
+    const padJump = this.steering.take('jump');
     this.updateShards(dt);
     for (const row of this.rows.values()) {
       for (const o of row.objs) if (!o.done && (o.kind === 'coin' || o.kind === 'heart')) o.mesh.rotation.y += dt * 3.2;
@@ -279,14 +302,14 @@ export class PlayScene extends ArcadeScene {
     }
 
     // steering
-    const target = this.controls.axisX * 7.5;
+    const target = this.steering.steer(dt, this.controls.axisX) * STEER_SPEED;
     this.vx += (target - this.vx) * Math.min(1, dt * 10);
     this.x = Phaser.Math.Clamp(this.x + this.vx * dt, -EDGE, EDGE);
     this.z -= this.speed * dt;
 
-    // jump: A (Space / Z / Enter / the touch button) or Up
+    // jump: A (Space / Z / Enter), Up or the JUMP button
     const up = this.controls.up;
-    const jump = this.controls.justA() || (up && !this.upWasDown);
+    const jump = this.controls.justA() || (up && !this.upWasDown) || padJump;
     this.upWasDown = up;
     if (jump && !this.airborne && !this.falling) {
       this.vy = JUMP_V;
@@ -377,6 +400,7 @@ export class PlayScene extends ArcadeScene {
     shake(this, 0.012, 260);
     flash(this, 0xff4d6d, 160, 0.35);
     if (this.lives <= 0) {
+      this.steering.end();
       this.endGame({ delay: 900 });
       this.respawnAt = 99;   // freeze the car while the result screen comes up
       return;

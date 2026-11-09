@@ -6,7 +6,7 @@
   "genres": ["sports", "arcade", "action"],
   "orientation": "landscape",
   "controls": ["touch", "keyboard"],
-  "version": "1.3.0",
+  "version": "1.3.1",
   "credits": ["3D models: Kenney Car Kit, Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org"],
   "platform": { "addedAt": "2026-11-07" }
 }
