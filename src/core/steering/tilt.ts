@@ -5,9 +5,14 @@
 // browser has a permission step (iOS asks the player once, and only from a tap), the first
 // enable() must come from a tap; later ones may succeed without it.
 
-/** Degrees of tilt ignored around the centre, and the default tilt that gives full lock. */
+import { steerCurve } from './curve';
+
+/**
+ * Degrees of tilt ignored around the centre, and the default tilt that gives full lock: wide, so
+ * the car turns calmly (with the gentle centre curve, a small wobble is only a small correction).
+ */
 const DEADZONE = 3;
-export const TILT_FULL_LOCK = 24;
+export const TILT_FULL_LOCK = 34;
 /** The centre taken at calibration never strays further than this from level. */
 const MAX_NEUTRAL = 18;
 
@@ -81,7 +86,7 @@ export class Tilt {
     let d = this.angle - this.neutral;
     const s = Math.sign(d);
     d = Math.max(0, Math.abs(d) - DEADZONE) / (this.fullLock - DEADZONE);
-    const want = s * Math.min(1, d);
+    const want = steerCurve(s * d);
     // a light filter takes the shake out of the sensor without making the wheel feel late
     this.steer += (want - this.steer) * Math.min(1, dt * 14);
   }

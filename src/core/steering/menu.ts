@@ -49,12 +49,15 @@ export function steeringMenu(scene: Phaser.Scene, x: number, y0: number): void {
     ic: scene.add.graphics().setPosition(segX(i), y - 14).setAngle(m === 'tilt' ? -22 : 0),
     lb: txt(scene, segX(i), y + 22, t(`steer_${m}`), { title: true, size: 15, color: '#ffffff', strokeThickness: 4 }),
   }));
+  // long labels (DİREKSİYON in the wide pixel font of retro games) are shrunk to fit their segment
+  for (const p of parts) if (p.lb.width > SEG - 10) p.lb.setScale((SEG - 10) / p.lb.width);
   // the chosen mode is drawn dark on the yellow knob
   const paint = () => {
     STEER_MODES.forEach((m, i) => {
       const on = m === mode;
       drawIcon(parts[i].ic, m, on ? 0x1a1320 : 0xffffff);
-      parts[i].lb.setColor(on ? '#1a1320' : '#ffffff').setStroke('#000000', on ? 0 : 4);
+      // dark on the knob, without the shadow (a hard pixel shadow doubles the letters there)
+      parts[i].lb.setColor(on ? '#1a1320' : '#ffffff').setStroke('#000000', on ? 0 : 4).setShadowFill(!on).setShadowStroke(!on);
     });
   };
   paint();

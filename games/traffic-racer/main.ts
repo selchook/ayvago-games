@@ -1,4 +1,4 @@
-import { launch, kenney, loadAudio, type GameMeta } from '@core';
+import { launch, kenney, loadAudio, steeringOption, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, makeRacerTextures, TRAFFIC } from './PlayScene';
 import { warmText } from './fasttext';
@@ -33,29 +33,41 @@ launch({
     loadAudio(l, 'low', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop1');
     loadAudio(l, 'skid', J + 'movement/vehicles/sfx-vehicle-breaks');
     loadAudio(l, 'empty', J + 'general-sounds/weird-sounds/sfx-sound-shutdown1');
+    loadAudio(l, 'engine', J + 'movement/vehicles/sfx-vehicle-carloop2');
+    loadAudio(l, 'boost', J + 'movement/portals-and-transitions/sfx-movement-portal3');
   },
   menuDecor(scene) {
-    warmText(scene, [[18, true], [20, true], [22, true], [26, true], [28, true], [40, true], [44, true], [48, true], [56, true], [72, true], [24, false]]);
+    warmText(scene, [[16, true], [18, true], [20, true], [22, true], [26, true], [28, true], [40, true], [44, true], [48, true], [56, true], [72, true], [24, false]]);
     makeRacerTextures(scene);
     const { width, height } = scene.scale;
-    const g = scene.add.graphics();
-    g.fillStyle(0x3a3d45, 1).fillRect(width / 2 - 200, height * 0.72, 400, height * 0.28);
-    g.fillStyle(0xffffff, 0.8);
-    for (let y = height * 0.72; y < height; y += 60) { g.fillRect(width / 2 - 70, y, 8, 34); g.fillRect(width / 2 + 62, y, 8, 34); }
-    const p = scene.add.image(width / 2, height * 0.9, 'player');
-    scene.tweens.add({ targets: p, x: width / 2 + 130, angle: 8, duration: 700, yoyo: true, repeat: -1, hold: 300, repeatDelay: 300, ease: 'Sine.easeInOut' });
-    const c = scene.add.image(width / 2 - 130, height * 0.76, 'car_blue_3');
-    scene.tweens.add({ targets: c, y: height * 1.1, duration: 2200, repeat: -1 });
+    // the highway runs under the whole menu, dimmed so the text stays readable
+    scene.add.tileSprite(0, 0, width, height, 'grass').setOrigin(0);
+    const roadL = width / 2 - 240;
+    scene.add.rectangle(roadL, 0, 480, height, 0x3a3d45).setOrigin(0);
+    const lines = scene.add.tileSprite(roadL, 0, 480, height, 'tr-lines').setOrigin(0);
+    scene.tweens.add({ targets: lines, tilePositionY: -1200, duration: 2400, repeat: -1 });
+    // traffic slips by under the dimming, the player's car weaves between it at the bottom
+    const lanes = [roadL + 60, roadL + 180, roadL + 300, roadL + 420];
+    const keys = ['car_blue_3', 'car_yellow_2', 'car_green_4', 'car_black_1', 'motorcycle_yellow'];
+    lanes.forEach((x, i) => {
+      const c = scene.add.image(x, -120, keys[i % keys.length]);
+      scene.tweens.add({ targets: c, y: height + 120, duration: 3200 + i * 700, delay: i * 900, repeat: -1, repeatDelay: 400 + i * 300 });
+    });
+    scene.add.rectangle(0, 0, width, height, 0x0b1408, 0.62).setOrigin(0);
+    const p = scene.add.image(lanes[1], height * 0.86, 'player');
+    scene.tweens.add({ targets: p, x: lanes[2], angle: 8, duration: 700, yoyo: true, repeat: -1, hold: 900, repeatDelay: 900, ease: 'Sine.easeInOut' });
   },
+  difficulty: true,
+  menuOption: steeringOption,
   scenes: [PlayScene],
   strings: {
     tr: {
       level: 'SEVİYE', near: 'KIL PAYI!', fuel: 'BENZİN', fuelUp: '+BENZİN', lowFuel: 'BENZİN AZ!', outOfFuel: 'BENZİN BİTTİ!', crash: 'KAZA!',
-      kmh: 'KM/SA', km: 'KM', oil: 'YAĞ!', go: 'GAZLA!',
+      kmh: 'KM/SA', km: 'KM', oil: 'YAĞ!', go: 'GAZLA!', boost: 'TURBO', brake: 'FREN', combo: 'KOMBO',
     },
     en: {
       level: 'LEVEL', near: 'NEAR MISS!', fuel: 'FUEL', fuelUp: '+FUEL', lowFuel: 'LOW FUEL!', outOfFuel: 'OUT OF FUEL!', crash: 'CRASH!',
-      kmh: 'KM/H', km: 'KM', oil: 'OIL!', go: 'GO!',
+      kmh: 'KM/H', km: 'KM', oil: 'OIL!', go: 'GO!', boost: 'BOOST', brake: 'BRAKE', combo: 'COMBO',
     },
   },
 });

@@ -88,26 +88,37 @@ export class MenuScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: title, y: title.y - 12, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    // Games that offer Easy/Normal (or their own menu option): portrait stacks the control under
-    // PLAY (best and PLAY move up a little to make room); landscape puts it beside PLAY.
+    // Games that offer Easy/Normal or their own menu option (the steering switch of driving games):
+    // portrait stacks the control under PLAY (best and PLAY move up a little to make room);
+    // landscape puts it beside PLAY. A game with both gets the two stacked: under PLAY in
+    // portrait; in landscape PLAY stands on the left and the switches on the right, difficulty
+    // above the game's own option.
     const diff = offersDifficulty();
-    const option = !diff && def.menuOption && (def.menuOption.show?.(this) ?? true) ? def.menuOption : null;
+    const option = def.menuOption && (def.menuOption.show?.(this) ?? true) ? def.menuOption : null;
     const side = diff || !!option;
+    const both = diff && !!option;
     const best = getBest(meta.id);
-    txt(this, width / 2, height * (side && !land ? 0.31 : 0.36), `${t('best')}: ${best}`, { title: true, size: 22, color: '#3ee6ff' });
-
     const playX = side && land ? width / 2 - 180 : width / 2;
-    const playY = height * (land ? 0.52 : side ? 0.44 : 0.5);
+    const playY = height * (both ? (land ? 0.485 : 0.42) : land ? 0.52 : side ? 0.44 : 0.5);
+    // with both switches stacked on the right (landscape), the best score sits over PLAY
+    const bestX = both && land ? playX : width / 2;
+    const bestY = both ? (land ? 0.35 : 0.335) : side && !land ? 0.31 : 0.36;
+    txt(this, bestX, height * bestY, `${t('best')}: ${best}`, { title: true, size: 22, color: '#3ee6ff' });
+
     const play = new Button(this, playX, playY, t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
     this.tweens.add({ targets: play, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    if (side) {
+    if (both) {
+      const x = land ? width / 2 + 200 : width / 2;
+      this.difficultyToggle(x, height * (land ? 0.37 : 0.505));
+      option!.build(this, x, height * (land ? 0.6 : 0.61));
+    } else if (side) {
       const x = land ? width / 2 + 200 : width / 2;
       const y = land ? playY : height * 0.535;
       if (diff) this.difficultyToggle(x, y);
       else option!.build(this, x, y);
     }
 
-    const howY = height * (land ? 0.68 : 0.64);
+    const howY = height * (both ? (land ? 0.69 : 0.7) : land ? 0.68 : 0.64);
     txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
     txt(this, width / 2, howY + 24, loc(meta.howTo), { size: land ? 23 : 28, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
 

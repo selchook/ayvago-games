@@ -19,6 +19,8 @@ export interface Stats {
   turn: number;
   /** 0..1: how much of a landing or bump the suspension soaks up. */
   shocks: number;
+  /** 0..1: how much of the mud's pull is taken away (Easy: the player's truck). Default 0. */
+  mudEase?: number;
 }
 
 export interface DriveInput {
@@ -196,6 +198,8 @@ export class Truck {
     if (boosting) this.nitroT -= dt;
     this.surface = terrain.surfaceAt(this.x, this.z);
     const mud = this.surface === SURF_MUD, wet = this.surface === SURF_PUDDLE, rough = this.surface > SURF_PUDDLE;
+    // how strongly the mud holds this truck (1 = fully, 0 = like dry dirt)
+    const mk = mud ? 1 - (st.mudEase ?? 0) : 0;
     const fx = Math.cos(this.heading), fz = Math.sin(this.heading);
     let vf = this.vx * fx + this.vz * fz;
     let vl = -this.vx * fz + this.vz * fx;
@@ -208,12 +212,12 @@ export class Truck {
     // power slide: hard lock at speed on the gas lets the tail step out
     const slide = !this.airborne && throttle > 0 && vf > 6 ? Math.abs(steer) * Math.min(1, (vf - 6) / 6) : 0;
     const k = this.airborne ? 0.2 : turnFactor(vf);
-    this.heading += steer * st.turn * k * dt * (mud ? 0.8 : 1) * (backing ? -1 : 1) * (1 + 0.22 * slide);
+    this.heading += steer * st.turn * k * dt * (1 - 0.2 * mk) * (backing ? -1 : 1) * (1 + 0.22 * slide);
     this.steer += (steer * 0.55 - this.steer) * Math.min(1, dt * 12);
     this.braking = false;
 
     if (!this.airborne) {
-      const surfTop = mud ? 0.55 : wet ? 0.86 : rough ? 0.72 : 1;
+      const surfTop = mud ? 1 - 0.45 * mk : wet ? 0.86 : rough ? 0.72 : 1;
       const top = st.top * surfTop * (boosting ? 1.45 : 1);
       if (throttle > 0) {
         if (vf < 0) vf = Math.min(0, vf + BRAKE * throttle * dt);
@@ -228,9 +232,9 @@ export class Truck {
       }
       if (vf > top) vf += (top - vf) * Math.min(1, dt * (mud ? 3.5 : 2));
       if (vf < -top * REVERSE_TOP) vf += (-top * REVERSE_TOP - vf) * Math.min(1, dt * 3);
-      if (throttle === 0) vf *= 1 - Math.min(1, dt * (mud ? 2.6 : 1.3));
+      if (throttle === 0) vf *= 1 - Math.min(1, dt * (1.3 + 1.3 * mk));
       if (input.brake) vf *= 1 - Math.min(1, dt * 2.2);
-      const grip = st.grip * (mud ? 0.18 : wet ? 0.55 : 1) * (1 - 0.45 * slide) * (this.braking ? 0.7 : 1);
+      const grip = st.grip * (mud ? 1 - 0.82 * mk : wet ? 0.55 : 1) * (1 - 0.45 * slide) * (this.braking ? 0.7 : 1);
       const kill = 1 - Math.exp(-grip * dt);
       // part of the sideways slide carries on as forward speed: drifts stay fast
       vf += Math.abs(vl) * kill * (mud ? 0.15 : 0.35) * (vf < 0 ? -1 : 1);

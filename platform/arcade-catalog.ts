@@ -709,7 +709,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['mud', 'rally', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.3.1',
+    version: '1.4.0',
     addedAt: '2026-11-07',
   }),
   arcadeGame({
@@ -1028,7 +1028,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['sky', 'road', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-11-07',
   }),
   arcadeGame({
@@ -1206,14 +1206,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'traffic-racer',
     title: { en: 'Traffic Racer', tr: 'Trafik Yarışçısı' },
     description: {
-      en: 'Weave through busy highway traffic, chain near misses for combos, grab coins and fuel, and drive as far as you can before the tank runs dry!',
-      tr: 'Yoğun otoyolda arabaların arasından sıyrıl, kıl payı geçişlerle kombo yap, altın topla ve benzinin bitmeden gidebildiğin kadar uzağa git!',
+      en: 'Weave through busy highway traffic! Chain near misses for combos, hit the boost to double your points while it drinks your fuel, grab coins and fuel cans and drive as far as you can.',
+      tr: 'Yoğun otoyolda arabaların arasından sıyrıl! Kıl payı geçişlerle kombo yap, turboyla puanını ikiye katla ama benzinin daha hızlı biter. Altın ve benzin bidonu topla, gidebildiğin kadar uzağa git.',
     },
     category: 'arcade',
     categories: ['arcade', 'action', 'retro'],
     tags: ['traffic', 'racer', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
     addedAt: '2026-10-28',
   }),
   arcadeGame({

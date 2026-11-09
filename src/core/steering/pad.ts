@@ -8,6 +8,7 @@ import Phaser from 'phaser';
 import { txt } from '../theme';
 import { t } from '../i18n';
 import type { SteerMode } from './mode';
+import { steerCurve, steerCurveInverse } from './curve';
 
 /** One right-thumb button. Positions are world pixels; the label is already localized. */
 export interface CarPadButton {
@@ -44,7 +45,7 @@ export interface CarPadOptions {
   buttons: CarPadButton[];
   /** Centre of the left-thumb steering group (default: x 191, 114 px above the bottom edge). */
   steer?: { x?: number; y?: number };
-  /** Degrees the thumb turns the on-screen wheel for full lock (default 100). */
+  /** Degrees the thumb turns the on-screen wheel for full lock (default `WHEEL_LOCK`, 155). */
   wheelLock?: number;
 }
 
@@ -53,8 +54,13 @@ const STEER_R = 78;
 /** Half the distance between the two arrow buttons. */
 const ARROW_GAP = 85;
 const WHEEL_R = 78;
-/** The most the wheel turns at all, in degrees. */
-const WHEEL_MAX = 130;
+/**
+ * Degrees the thumb turns the wheel for full lock. Wide on purpose: a car wants calm, small
+ * corrections, and the response curve (curve.ts) keeps the first part of the turn gentle.
+ */
+export const WHEEL_LOCK = 155;
+/** How far the wheel turns past full lock before it stops, in degrees. */
+const WHEEL_OVER = 15;
 const ASK_W = 230;
 const ASK_H = 54;
 const STEER_IDS = ['left', 'right'];
@@ -108,7 +114,7 @@ export class CarPad {
     this.rightX = this.steerX + ARROW_GAP;
     this.wheelX = this.steerX;
     this.wheelY = this.steerY - 4;
-    this.wheelLock = o.wheelLock ?? 100;
+    this.wheelLock = o.wheelLock ?? WHEEL_LOCK;
     // round buttons sit on top of pedals, so they are hit-tested first
     this.order = [...o.buttons.filter((b) => b.shape === 'round'), ...o.buttons.filter((b) => b.shape !== 'round')];
     this.root = scene.add.container(0, 0).setDepth(DEPTH).setScrollFactor(0);
@@ -212,9 +218,9 @@ export class CarPad {
     return this.ask.visible;
   }
 
-  /** Tilt drives the wheel picture (-1 .. 1). */
+  /** Tilt drives the wheel picture (-1 .. 1): drawn where a thumb would hold it for that steering. */
   setWheel(steer: number): void {
-    if (this.mode === 'tilt' && this.wheel.visible) this.wheel.setAngle(steer * 90);
+    if (this.mode === 'tilt' && this.wheel.visible) this.wheel.setAngle(steerCurveInverse(steer) * this.wheelLock);
   }
 
   /** True once per tap on the wheel in TILT mode (it re-centres tilt steering). */
@@ -278,7 +284,8 @@ export class CarPad {
         if (Math.hypot(p.x - this.wheelX, p.y - this.wheelY) > 16) {
           let d = this.thumbAngle(p) - this.grab.a0;
           d = ((d + 540) % 360) - 180;
-          this.wheelAngle = Phaser.Math.Clamp(this.grab.r0 + d, -WHEEL_MAX, WHEEL_MAX);
+          const max = this.wheelLock + WHEEL_OVER;
+          this.wheelAngle = Phaser.Math.Clamp(this.grab.r0 + d, -max, max);
           // past half a turn the angle would wrap: carry on from here instead
           if (Math.abs(d) > 150) this.grab = { id: p.id, a0: this.thumbAngle(p), r0: this.wheelAngle };
         }
@@ -294,7 +301,7 @@ export class CarPad {
       // let go, the wheel springs back to straight
       if (!turning) this.wheelAngle *= Math.exp(-dt * 10);
       this.wheel.setAngle(this.wheelAngle);
-      this.steer = Phaser.Math.Clamp(this.wheelAngle / this.wheelLock, -1, 1);
+      this.steer = steerCurve(this.wheelAngle / this.wheelLock);
     } else this.steer = (down.has('right') ? 1 : 0) - (down.has('left') ? 1 : 0);
     // the drawn state shows the fingers; `holds` only adds to what `isDown` reports
     for (const b of this.btns) {

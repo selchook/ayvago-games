@@ -1,4 +1,4 @@
-import { Phaser, ArcadeScene, Controls, CarSteering, shake, flash, popup, t, loc, txt, storage, type CarPadButton } from '@core';
+import { Phaser, ArcadeScene, Controls, CarSteering, RAMP_TIME, shake, flash, popup, t, loc, txt, storage, isEasy, type CarPadButton } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { LAYOUTS, Track } from './tracks';
 import { buildArena, type Arena } from './scenery';
@@ -12,14 +12,46 @@ import { SkidMarks } from './marks';
 
 const LAPS = 4;
 const NCP = 4;                 // checkpoints per lap (besides the line)
-const START_LIVES = 3;
 const PRIZES = [10000, 6000, 3000, 0];
 const BASE_TOP = 13.5;
 const BASE_ACCEL = 15;
 const NITRO_TIME = 1.6;
-/** AI: steering gain (steer per radian of heading error) and corner speed margin. */
+/** AI: steering gain (steer per radian of heading error). */
 const AI_STEER_GAIN = 3;
-const AI_CORNER = 0.85;
+/** Seconds the rivals take to bring the wheel back to straight (the keys' RAMP_TIME the other way). */
+const AI_RETURN = 0.15;
+/**
+ * Yaw rate at full lock (rad/s, before the speed factor), the same rule for every truck: the
+ * player's grows with the tires. 3.5 before steering was calmed down for touch players.
+ */
+const TURN = 3.1;
+const TURN_PER_TIRE = 0.1;
+
+/** Normal and Easy side by side (new-game skill §7c). Normal is the game as it always was. */
+const TUNING = {
+  normal: {
+    lives: 3,
+    /** Rival pace (share of BASE_TOP) in race 1, its rise per race and its cap. */
+    rivalBase: 0.86, rivalStep: 0.047, rivalCap: 1.26,
+    /** Rubber band on rival pace: ahead of the player .. behind the player. */
+    bandMin: 0.9, bandMax: 1.12,
+    /** AI corner speed margin (share of the fastest speed that still makes the bend). */
+    aiCorner: 0.85,
+    /** Rival nitro: cans at the start (cap), chance per second to fire one, chasing nitro cans. */
+    rivalNitroCap: 3, aiNitroRate: 0.9, aiChaseNitro: true,
+    /** Share of the mud's pull taken off the player's truck. */
+    mudEase: 0,
+  },
+  easy: {
+    lives: 4,
+    rivalBase: 0.8, rivalStep: 0.03, rivalCap: 1.08,
+    bandMin: 0.86, bandMax: 1.04,
+    aiCorner: 0.8,
+    rivalNitroCap: 1, aiNitroRate: 0.45, aiChaseNitro: false,
+    mudEase: 0.45,
+  },
+};
+type Tuning = typeof TUNING.normal;
 const FOV = 38;
 const CAM_POS = new THREE.Vector3(0, 47, 30.5);
 const CAM_LOOK = new THREE.Vector3(0, 0, 1.6);
@@ -68,6 +100,8 @@ export class PlayScene extends ArcadeScene {
   private wrongShown = -9;
   private dtNow = 0;
   private dustAcc = new Map<Truck, number>();
+  /** The rivals' current steering (they turn the wheel at the keys' pace). */
+  private aiSteer = new Map<Truck, number>();
   private aiDelay = new Map<Truck, number>();
   private steering!: CarSteering;
   private marks!: SkidMarks;
@@ -84,7 +118,9 @@ export class PlayScene extends ArcadeScene {
   private raceTime = 0;
   private lateT = -1;
   private finishOrder: Truck[] = [];
-  private lives = START_LIVES;
+  private lives = 3;
+  /** Normal or Easy tuning for this run (exposed for tests). */
+  tune: Tuning = TUNING.normal;
   private bank = 0;
   private earned = 0;
   private raceCash = 0;
@@ -107,6 +143,7 @@ export class PlayScene extends ArcadeScene {
     this.wrongShown = -9;
     this.dustAcc = new Map();
     this.aiDelay = new Map();
+    this.aiSteer = new Map();
     this.hint = null;
     this.skidCd = 0;
     this.wasBraking = false;
@@ -118,7 +155,8 @@ export class PlayScene extends ArcadeScene {
     this.raceTime = 0;
     this.lateT = -1;
     this.finishOrder = [];
-    this.lives = START_LIVES;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.lives = this.tune.lives;
     this.bank = 0;
     this.earned = 0;
     this.raceCash = 0;
@@ -179,7 +217,7 @@ export class PlayScene extends ArcadeScene {
     this.world.scene.add(this.wrongArrow);
 
     this.buildNitroHud();
-    this.hud.setLives(this.lives, START_LIVES);
+    this.hud.setLives(this.lives, this.tune.lives);
     this.setScore(0);
 
     if (this.cache.audio.exists('engine')) {
@@ -217,18 +255,19 @@ export class PlayScene extends ArcadeScene {
         top: BASE_TOP * (1 + 0.075 * L.engine),
         accel: BASE_ACCEL * (1 + 0.1 * L.engine),
         grip: 7 + 1.6 * L.tires,
-        turn: 3.5 + 0.1 * L.tires,
+        turn: TURN + TURN_PER_TIRE * L.tires,
         shocks: 0.14 * L.shocks,
+        mudEase: this.tune.mudEase,
       };
     }
     // rubber band: a little faster behind the player, a little slower ahead
     const gap = this.key(this.player) - this.key(tr);
-    const rb = tr.isPlayer ? 1 : Phaser.Math.Clamp(1 + gap * 0.004, 0.9, 1.12);
+    const rb = tr.isPlayer ? 1 : Phaser.Math.Clamp(1 + gap * 0.004, this.tune.bandMin, this.tune.bandMax);
     return {
       top: BASE_TOP * tr.skill * rb,
       accel: BASE_ACCEL * (0.92 + 0.12 * tr.skill),
       grip: Math.min(13, 8 + this.raceNo * 0.35),
-      turn: 3.5,
+      turn: TURN,
       shocks: 0.3,
     };
   }
@@ -249,6 +288,7 @@ export class PlayScene extends ArcadeScene {
     this.glow.clear();
     this.marks.clear();
     this.finishOrder = [];
+    this.aiSteer.clear();
     this.raceTime = 0;
     this.lateT = -1;
     this.raceCash = 0;
@@ -256,13 +296,14 @@ export class PlayScene extends ArcadeScene {
     // the starting grid, behind the line: rivals by speed, the player on the second row
     const tk = this.track, hw = tk.half, terrain = this.arena.terrain;
     // race 1 is a gentle start for the car controls; the field gets faster every race after
-    const base = Math.min(1.26, 0.86 + 0.047 * (this.raceNo - 1));
+    const tu = this.tune;
+    const base = Math.min(tu.rivalCap, tu.rivalBase + tu.rivalStep * (this.raceNo - 1));
     const rivals = this.trucks.filter((x) => !x.isPlayer);
     rivals.forEach((r, i) => {
       r.skill = base - i * 0.035;
       r.lane = [-0.3, 0.28, 0.02][i] * hw;
       r.phase = Math.random() * 6;
-      r.nitro = Math.min(3, 1 + Math.floor((this.raceNo - 1) / 2));
+      r.nitro = Math.min(tu.rivalNitroCap, 1 + Math.floor((this.raceNo - 1) / 2));
       r.aiNitroCd = 3 + Math.random() * 4;
     });
     const order = [rivals[0], rivals[1], this.player, rivals[2]];
@@ -514,7 +555,7 @@ export class PlayScene extends ArcadeScene {
     let target = tk.pointAt(tr.s + look, lane);
     // go for a nitro can (or now and then a coin) just ahead
     for (const p of this.pickups) {
-      if (!p.alive || (p.kind === 'cash' && tr.phase > 3)) continue;
+      if (!p.alive || (p.kind === 'cash' && tr.phase > 3) || (p.kind === 'nitro' && !this.tune.aiChaseNitro)) continue;
       const n = tk.nearest(p.x, p.z, tr.near.i, 60);
       let ds = n.s - tr.s;
       if (ds < -tk.length / 2) ds += tk.length;
@@ -528,15 +569,25 @@ export class PlayScene extends ArcadeScene {
     const st = this.stats(tr);
     // the fastest speed that still makes the bend ahead at this truck's turn rate
     const radius = ahead / Math.max(0.05, turn);
-    const want = Math.min(st.top, Math.max(5, radius * st.turn * turnFactor(st.top) * AI_CORNER));
+    const want = Math.min(st.top, Math.max(5, radius * st.turn * turnFactor(st.top) * this.tune.aiCorner));
     const vf = tr.forward;
     tr.aiNitroCd -= dt;
-    if (this.phase === 'race' && !tr.isPlayer && tr.nitro > 0 && tr.nitroT <= 0 && tr.aiNitroCd <= 0 && turn < 0.3 && !tr.airborne && Math.random() < dt * 0.9) {
+    if (this.phase === 'race' && !tr.isPlayer && tr.nitro > 0 && tr.nitroT <= 0 && tr.aiNitroCd <= 0 && turn < 0.3 && !tr.airborne && Math.random() < dt * this.tune.aiNitroRate) {
       this.fireNitro(tr);
       tr.aiNitroCd = 5 + Math.random() * 5;
     }
-    // steering: proportional to the angle still to turn, full lock beyond about 20 degrees
-    const steer = Phaser.Math.Clamp(diff * AI_STEER_GAIN, -1, 1);
+    // steering: proportional to the angle still to turn, full lock beyond about 20 degrees. Rivals
+    // turn their wheel no faster than the player's keys and arrows do (RAMP_TIME to full lock,
+    // quicker back to straight), so the calmer steering costs everyone the same
+    const aim = Phaser.Math.Clamp(diff * AI_STEER_GAIN, -1, 1);
+    let steer = aim;
+    if (!tr.isPlayer) {
+      const cur = this.aiSteer.get(tr) ?? 0;
+      const back = aim * cur < 0 || Math.abs(aim) < Math.abs(cur);
+      const step = dt / (back ? AI_RETURN : RAMP_TIME);
+      steer = cur + Phaser.Math.Clamp(aim - cur, -step, step);
+      this.aiSteer.set(tr, steer);
+    }
     let throttle = vf < want ? 1 : 0;
     if (Math.abs(diff) > 1.9) throttle *= 0.35;   // facing the wrong way: slow down and turn first
     return { steer, throttle, brake: vf > want + 1.2 };
@@ -746,7 +797,7 @@ export class PlayScene extends ArcadeScene {
     let note = '';
     if (place === 4) {
       this.lives--;
-      this.hud.setLives(this.lives, START_LIVES);
+      this.hud.setLives(this.lives, this.tune.lives);
       note = this.lives === 1 ? t('lastLife') : this.lives > 1 ? t('lostLife') : '';
       shake(this, 0.01, 260);
       if (this.lives <= 0) note = t('lostLife');
