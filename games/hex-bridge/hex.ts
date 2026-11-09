@@ -155,7 +155,8 @@ function candidates(board: Int8Array, me: Pot, op: Pot, k: number): number[] {
   return list.slice(0, k).map((x) => x[0]);
 }
 
-export interface Level { depth: number; width: number[]; noise: number }
+/** Search depth, candidate width per ply, the chance of a non-best move and how many top moves it picks from (default 4). */
+export interface Level { depth: number; width: number[]; noise: number; pool?: number }
 export const LEVELS: Level[] = [
   { depth: 1, width: [8], noise: 0.45 },
   { depth: 1, width: [12], noise: 0.15 },
@@ -163,6 +164,12 @@ export const LEVELS: Level[] = [
   { depth: 2, width: [16, 12], noise: 0 },
   { depth: 3, width: [16, 12, 9], noise: 0 },
   { depth: 4, width: [18, 12, 9, 7], noise: 0 },
+];
+/** Easy (practice): a short ladder that looks one move ahead and often plays a lesser candidate. */
+export const EASY_LEVELS: Level[] = [
+  { depth: 1, width: [8], noise: 0.7, pool: 8 },
+  { depth: 1, width: [8], noise: 0.55, pool: 6 },
+  { depth: 1, width: [10], noise: 0.45, pool: 5 },
 ];
 
 class Timeout extends Error {}
@@ -218,7 +225,7 @@ export function chooseMove(board: Int8Array, p: number, lvl: Level, budgetMs = 6
   }
   // weaker levels sometimes pick one of the next-best candidates
   if (lvl.noise && rand() < lvl.noise) {
-    const pool = order.slice(0, Math.min(4, order.length));
+    const pool = order.slice(0, Math.min(lvl.pool ?? 4, order.length));
     best = pool[(rand() * pool.length) | 0];
   }
   return best;
