@@ -13,7 +13,7 @@
   "orientation": "landscape",
   "controls": ["touch", "keyboard"],
   "multiplayer": true,
-  "version": "1.0.1",
+  "version": "1.1.0",
   "credits": [
     "Based on Tito's Tank by selchook",
     "Characters & smoke: Kenney (CC0) — kenney.nl",

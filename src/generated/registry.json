@@ -26,7 +26,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.1.0",
+      "version": "1.2.0",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org",
         "Art: drawn in code"
@@ -60,7 +60,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
@@ -416,7 +416,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl"
       ],
@@ -483,7 +483,7 @@
         "keyboard",
         "mouse"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
@@ -709,7 +709,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Art: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -743,7 +743,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.1.0",
+      "version": "1.2.0",
       "credits": [
         "Art, characters & audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -880,7 +880,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -915,7 +915,7 @@
         "keyboard"
       ],
       "multiplayer": true,
-      "version": "1.2.0",
+      "version": "1.3.0",
       "credits": [
         "Characters, art & audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -950,7 +950,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -1153,7 +1153,7 @@
         "keyboard"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Art: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -1248,7 +1248,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -1480,7 +1480,7 @@
         "keyboard",
         "mouse"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
@@ -1511,7 +1511,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -1580,7 +1580,7 @@
         "mouse"
       ],
       "multiplayer": 4,
-      "version": "1.1.0",
+      "version": "1.2.0",
       "credits": [
         "Art: painted in code. Audio: Kenney (CC0) — kenney.nl"
       ],
@@ -2006,7 +2006,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Art: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -2397,7 +2397,7 @@
         "keyboard"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -2432,7 +2432,7 @@
         "keyboard",
         "mouse"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
@@ -2526,7 +2526,7 @@
         "keyboard"
       ],
       "multiplayer": true,
-      "version": "1.0.1",
+      "version": "1.1.0",
       "credits": [
         "Based on Tito's Tank by selchook",
         "Characters & smoke: Kenney (CC0) — kenney.nl",
@@ -2562,7 +2562,7 @@
         "keyboard",
         "mouse"
       ],
-      "version": "1.1.0",
+      "version": "1.2.0",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
@@ -2627,7 +2627,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -2696,7 +2696,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -2830,7 +2830,7 @@
         "keyboard",
         "mouse"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
