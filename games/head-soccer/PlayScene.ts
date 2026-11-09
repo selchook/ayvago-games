@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, CHARACTER_FRAME, Controls, burst, shake, flash, txt, t, rng, net, loadCharacter, otherCharacters, playerCharacter, peerCharacter,
-  characterRig, type CharacterId,
+  characterRig, isEasy, type CharacterId,
 } from '@core';
 import {
   W, GROUND, GOAL_W, GOAL_TOP, BALL_R, CHAR_SCALE, KICK_ON, KICK_POSE_END, AI_LEVELS,
-  footOffset, newWorld, newPlayer, resetPlayers, dropBall, step, think, movePlayer, separate, type World, type Input, type Events, type Player,
+  footOffset, newWorld, newPlayer, resetPlayers, dropBall, step, think, movePlayer, separate, type World, type Input, type Events, type Player, type AiLevel,
 } from './sim';
 import { makeTextures, drawPitch, drawNets, TEAM } from './art';
 
@@ -41,6 +41,16 @@ interface InMsg { x: number; u: number; k: number; q: number }
 
 interface ViewPlayer { x: number; y: number; vx: number; vy: number; kickT: number; ground: boolean; face: 1 | -1; mood: number }
 
+/**
+ * Normal and Easy (practice). The rival plays AI level min(floor(level * ramp), top). Easy: it
+ * climbs at half the pace and stops at the third level, runs 15% slower, reacts 50% later, lines
+ * up shots 25% worse and jumps 30% less keenly.
+ */
+const TUNING = {
+  normal: { ramp: 1, top: AI_LEVELS.length - 1, speed: 1, think: 1, aim: 1, jump: 1 },
+  easy: { ramp: 0.5, top: 2, speed: 0.85, think: 1.5, aim: 0.75, jump: 0.7 },
+};
+
 export class PlayScene extends ArcadeScene {
   private world!: World;
   private phase: Phase = 'ready';
@@ -67,6 +77,7 @@ export class PlayScene extends ArcadeScene {
   private kickQueued = false;
   private jumpQueued = false;
   private aiT = 0;
+  tune = TUNING.normal;
   private aiIn: Input = { x: 0, jump: false, kick: false };
   // online
   private sendT = 0;
@@ -116,6 +127,7 @@ export class PlayScene extends ArcadeScene {
     this.setFoot(0, guest ? peerCharacter() : playerCharacter());
     this.setFoot(1, guest ? playerCharacter() : peerCharacter());
     this.phase = 'ready'; this.phaseT = 0; this.clock = MATCH_S; this.golden = false; this.goals = [0, 0]; this.goalCount = 0; this.winner = -1;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
     this.kickoffSide = 0; this.mood = [0, 0]; this.level = 0; this.matchNo = 0; this.rivalPrefix = 'p2';
     this.online = net.active; this.host = net.isHost;
     this.kickPresses = 0; this.kickWas = false; this.kickQueued = false; this.jumpQueued = false; this.aiT = 0; this.aiIn = { x: 0, jump: false, kick: false };
@@ -223,8 +235,7 @@ export class PlayScene extends ArcadeScene {
     this.goals = [0, 0]; this.goalCount = 0; this.clock = MATCH_S; this.golden = false; this.winner = -1; this.lastTick = -1;
     this.kickoffSide = this.online ? (net.starter as 0 | 1) : 0;
     if (!this.online) {
-      const lv = AI_LEVELS[Math.min(this.level, AI_LEVELS.length - 1)];
-      this.world.p[1].speed = lv.speed;
+      this.world.p[1].speed = this.ai().speed;
       this.nameThem.setText(t('d' + Math.min(this.level, AI_LEVELS.length - 1)));
       this.hud.setRight(t('matchN', { n: this.matchNo }));
     }
@@ -232,6 +243,12 @@ export class PlayScene extends ArcadeScene {
     const intro = this.online ? t('vs', { name: net.peerName || t('opponent') }) : t('matchIntro', { n: this.matchNo, name: t('d' + Math.min(this.level, AI_LEVELS.length - 1)) });
     this.showBanner(this.online ? t('kickoff') : t('matchN', { n: this.matchNo }), '#ffd23f', intro);
     this.ensureRival(() => this.kickoff());
+  }
+
+  /** The solo rival now: run speed, reaction time (s), shot aim and keenness to jump (0..1). */
+  ai(): AiLevel {
+    const k = this.tune, lv = AI_LEVELS[Math.min(Math.floor(this.level * k.ramp), k.top)];
+    return { speed: lv.speed * k.speed, think: lv.think * k.think, aim: lv.aim * k.aim, jump: lv.jump * k.jump };
   }
 
   /** Solo: every new match brings a different rival character (loaded on demand). */
@@ -257,7 +274,7 @@ export class PlayScene extends ArcadeScene {
   private kickoff(): void {
     if (this.isOver) return;
     resetPlayers(this.world);
-    if (!this.online) this.world.p[1].speed = AI_LEVELS[Math.min(this.level, AI_LEVELS.length - 1)].speed;
+    if (!this.online) this.world.p[1].speed = this.ai().speed;
     dropBall(this.world, this.kickoffSide);
     this.mood = [0, 0];
     this.phase = 'ready';
@@ -337,7 +354,7 @@ export class PlayScene extends ArcadeScene {
       other = { x: -this.remote.x, jump: !!this.remote.u, kick: k };
     } else {
       this.aiT -= dt;
-      const lv = AI_LEVELS[Math.min(this.level, AI_LEVELS.length - 1)];
+      const lv = this.ai();
       if (this.aiT <= 0 && this.phase !== 'end') {
         this.aiT = lv.think;
         this.aiIn = this.phase === 'play' || this.phase === 'goal' ? think(this.world, 1, lv, Math.random) : { x: 0, jump: false, kick: false };
@@ -380,7 +397,7 @@ export class PlayScene extends ArcadeScene {
     if (this.phase === 'ready') {
       // everyone waits on their spot until the whistle
       resetPlayers(this.world);
-      if (!this.online) this.world.p[1].speed = AI_LEVELS[Math.min(this.level, AI_LEVELS.length - 1)].speed;
+      if (!this.online) this.world.p[1].speed = this.ai().speed;
     }
     this.effects(this.world.ev);
     this.render(this.viewPlayers(), this.world.b.x, this.world.b.y, this.world.b.vx, this.world.b.vy, this.world.b.a, dt);

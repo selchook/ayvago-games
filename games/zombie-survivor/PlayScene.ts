@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, Button, burst, shake, flash, popup, t, txt, rng, type EndOptions } from '@core';
+import { ArcadeScene, Controls, Button, burst, shake, flash, popup, t, txt, rng, isEasy, type EndOptions } from '@core';
 
 type Body = Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
 
@@ -9,6 +9,17 @@ const Z: Record<string, ZType> = {
   runner: { hp: 1, speed: 125, scale: 1.1, tint: 0xff9a8a, pts: 15 },
   brute: { hp: 9, speed: 42, scale: 1.8, tint: 0x9fc29a, pts: 50 },
   boss: { hp: 60, speed: 48, scale: 3, tint: 0xc77dff, pts: 500 },
+};
+
+/**
+ * Normal and Easy (practice). Easy: 8 health instead of 5, zombies 25% slower, a ramp at half
+ * speed (fewer, weaker zombies per wave), medkits from 8% of kills instead of 3.5% and a longer
+ * grace after a hit. `ramp` scales how fast the waves get harder: wave w plays like wave
+ * 1 + (w - 1) * ramp.
+ */
+const TUNING = {
+  normal: { hp: 5, speed: 1, ramp: 1, medkit: 0.035, grace: 1 },
+  easy: { hp: 8, speed: 0.75, ramp: 0.5, medkit: 0.08, grace: 1.4 },
 };
 
 type UpKey = 'upRate' | 'upDmg' | 'upMulti' | 'upPierce' | 'upSpeed' | 'upHeal';
@@ -39,10 +50,12 @@ export class PlayScene extends ArcadeScene {
   private multi = 1;
   private pierce = 0;
   private speed = 240;
+  tune = TUNING.normal;
 
   createGame(): void {
     const { width, height } = this.scale;
-    this.hp = this.maxHp = 5; this.wave = 0; this.toSpawn = 0; this.spawnCd = 0; this.fireCd = 0; this.invuln = 0;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.hp = this.maxHp = this.tune.hp; this.wave = 0; this.toSpawn = 0; this.spawnCd = 0; this.fireCd = 0; this.invuln = 0;
     this.aim = 0; this.autoAim = true; this.manual = null; this.choosing = false; this.nextWaveIn = 1;
     this.rate = 0.32; this.dmg = 1; this.multi = 1; this.pierce = 0; this.speed = 240;
 
@@ -116,9 +129,14 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: b, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut', hold: 900, yoyo: true, onComplete: () => b.destroy() });
   }
 
+  /** How hard the current wave plays (equals the wave number in Normal). */
+  private lvl(): number {
+    return 1 + (this.wave - 1) * this.tune.ramp;
+  }
+
   private startWave(): void {
     this.wave++;
-    this.toSpawn = 8 + this.wave * 4;
+    this.toSpawn = 8 + Math.round(this.lvl() * 4);
     this.spawnCd = 0.5;
     this.updateHud();
     if (this.wave % 5 === 0) this.sfx('boss', { volume: 0.5 });
@@ -131,9 +149,9 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     if (!kind) {
       const pool = ['walker', 'walker', 'walker'];
-      if (this.wave >= 2) pool.push('runner', 'runner');
-      if (this.wave >= 3) pool.push('brute');
-      if (this.wave >= 6) pool.push('runner', 'brute');
+      if (this.lvl() >= 2) pool.push('runner', 'runner');
+      if (this.lvl() >= 3) pool.push('brute');
+      if (this.lvl() >= 6) pool.push('runner', 'brute');
       kind = rng.pick(pool);
     }
     const zt = Z[kind];
@@ -141,10 +159,10 @@ export class PlayScene extends ArcadeScene {
     const x = side === 0 ? -40 : side === 1 ? width + 40 : rng.int(0, width);
     const y = side === 2 ? -40 : side === 3 ? height + 40 : rng.int(0, height);
     const z = this.zombies.create(x, y, 'zombie') as Body;
-    const hp = Math.ceil(zt.hp * (1 + (this.wave - 1) * 0.12));
+    const hp = Math.ceil(zt.hp * (1 + (this.lvl() - 1) * 0.12));
     z.setScale(zt.scale).setTint(zt.tint).setDepth(kind === 'boss' ? 12 : 9);
     z.body.setCircle(14, 4, 7);
-    z.setData('hp', hp).setData('kind', kind).setData('speed', zt.speed * (1 + Math.min(0.6, this.wave * 0.04)) * rng.int(90, 110) / 100).setData('wob', rng.int(0, 100));
+    z.setData('hp', hp).setData('kind', kind).setData('speed', zt.speed * (1 + Math.min(0.6, this.lvl() * 0.04)) * rng.int(90, 110) / 100 * this.tune.speed).setData('wob', rng.int(0, 100));
     if (kind === 'boss') shake(this, 0.01, 400);
   }
 
@@ -196,7 +214,7 @@ export class PlayScene extends ArcadeScene {
     else if (kind === 'brute') this.sfxAt('brutedie', z.x, { volume: 0.5 });
     else this.sfxAt(rng.pick(['splat1', 'splat2']), z.x, { volume: 0.4 });
     if (kind === 'boss' || kind === 'brute') shake(this, kind === 'boss' ? 0.02 : 0.006, kind === 'boss' ? 400 : 120);
-    if (kind === 'boss' || rng.chance(0.035)) this.dropMedkit(z.x, z.y);
+    if (kind === 'boss' || rng.chance(this.tune.medkit)) this.dropMedkit(z.x, z.y);
     z.destroy();
   }
 
@@ -221,7 +239,7 @@ export class PlayScene extends ArcadeScene {
     if (this.invuln > 0 || this.isOver || this.choosing) return;
     const dmg = z.getData('kind') === 'boss' ? 2 : 1;
     this.hp -= dmg;
-    this.invuln = 1;
+    this.invuln = this.tune.grace;
     const a = Phaser.Math.Angle.Between(z.x, z.y, this.hero.x, this.hero.y);
     this.hero.x += Math.cos(a) * 30; this.hero.y += Math.sin(a) * 30;
     if (this.hp > 0) this.sfxAt('hurt', this.hero.x, { volume: 0.6 });
@@ -356,7 +374,7 @@ export class PlayScene extends ArcadeScene {
       if (this.spawnCd <= 0) {
         this.toSpawn--;
         this.spawnZombie();
-        this.spawnCd = Math.max(0.18, 1.0 - this.wave * 0.07) * rng.int(60, 140) / 100;
+        this.spawnCd = Math.max(0.18, 1.0 - this.lvl() * 0.07) * rng.int(60, 140) / 100;
       }
     } else if (this.zombies.countActive() === 0) {
       if (this.wave > 0 && this.nextWaveIn <= 0) {

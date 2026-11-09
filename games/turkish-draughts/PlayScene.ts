@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net } from '@core';
-import { W, BL, LEVELS, initial, legalMoves, apply, choose, count, sameMove, type Move } from './rules';
+import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, isEasy } from '@core';
+import { W, BL, LEVELS, EASY_LEVELS, initial, legalMoves, apply, choose, count, sameMove, type Move } from './rules';
 
 const CELL = 82;
 const BX = (720 - 8 * CELL) / 2;
@@ -30,6 +30,7 @@ export class PlayScene extends ArcadeScene {
   private countMe!: Phaser.GameObjects.Text;
   private countThem!: Phaser.GameObjects.Text;
   private level = 0;
+  private levels = LEVELS;
   private lives = 2;
   private streak = 0;
   private round = 0;
@@ -46,6 +47,7 @@ export class PlayScene extends ArcadeScene {
     this.state = 'busy'; this.legal = []; this.sel = -1; this.prefix = []; this.cur = 52;
     this.marks = []; this.lastFx = [];
     this.level = 0; this.lives = 2; this.streak = 0; this.round = 0; this.quiet = 0; this.captured = 0;
+    this.levels = isEasy() ? EASY_LEVELS : LEVELS;
     this.online = net.active;
     this.mine = W; this.flip = false;
     this.moveNo = 0; this.inbox = [];
@@ -249,9 +251,16 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
+  /** The AI at the current level: search depth and the chance of a random move. */
+  ai(): { depth: number; random: number } {
+    const [depth, random] = this.levels[Math.min(this.level, this.levels.length - 1)];
+    return { depth, random };
+  }
+
   private aiMove(): void {
     if (this.isOver || this.state !== 'ai') return;
-    const m = choose(this.board, -this.mine, this.level);
+    const { depth, random } = this.ai();
+    const m = choose(this.board, -this.mine, [depth, random]);
     if (!m) return this.finish(this.mine);
     this.play(m);
   }
@@ -470,7 +479,7 @@ export class PlayScene extends ArcadeScene {
     if (win) {
       this.streak++;
       this.addScore(200 * (this.level + 1) + (me.men + me.kings * 2) * 15 + this.streak * 50, cx, BY - 20);
-      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.level = Math.min(this.level + 1, this.levels.length - 1);
     } else if (winner) { this.lives--; this.streak = 0; }
     else this.addScore(60, cx, BY - 20);
     this.updateHud();

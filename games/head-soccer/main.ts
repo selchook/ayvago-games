@@ -10,6 +10,7 @@ launch({
   meta: meta as GameMeta,
   background: '#0b1030',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     // you: your platform character; the rival: the online opponent's, or another one in solo

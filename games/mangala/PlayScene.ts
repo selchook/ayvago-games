@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, upper } from '@core';
-import { LEVELS, initial, legal, play, store, pitsOf, other, choose, isStore, type Board, type Side, type Result } from './rules';
+import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, upper, isEasy } from '@core';
+import { LEVELS, EASY_LEVELS, initial, legal, play, store, pitsOf, other, choose, isStore, type Board, type Side, type Result, type AiLevel } from './rules';
 import { makeStoneTextures, drawBoard } from './art';
 
 // Layout (720 x 1280). View cells: 0..5 my pits (bottom, left to right), 6 my store (right),
@@ -51,6 +51,7 @@ export class PlayScene extends ArcadeScene {
   private plateMe!: Phaser.GameObjects.Container;
   private plateThem!: Phaser.GameObjects.Container;
   private level = 0;
+  private levels = LEVELS;
   private lives = 2;
   private streak = 0;
   private round = 0;
@@ -67,6 +68,7 @@ export class PlayScene extends ArcadeScene {
     this.labels = [];
     this.state = 'busy'; this.mine = 0; this.turn = 0; this.cur = 0;
     this.level = 0; this.lives = 2; this.streak = 0; this.round = 0; this.captured = 0;
+    this.levels = isEasy() ? EASY_LEVELS : LEVELS;
     this.online = net.active;
     this.moveNo = 0; this.inbox = [];
     this.mine = this.online ? (net.seat as Side) : 0;
@@ -254,9 +256,14 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
+  /** The AI at the current level: search depth and the chance of a random pit. */
+  ai(): AiLevel {
+    return this.levels[Math.min(this.level, this.levels.length - 1)];
+  }
+
   private aiMove(): void {
     if (this.isOver || this.state !== 'ai') return;
-    this.move(other(this.mine), choose(this.board, other(this.mine), this.level));
+    this.move(other(this.mine), choose(this.board, other(this.mine), this.ai()));
   }
 
   private takeRemote(): void {
@@ -478,7 +485,7 @@ export class PlayScene extends ArcadeScene {
     if (win) {
       this.streak++;
       this.addScore(100 * (this.level + 1) + (me - them) * 10 + this.streak * 25, cx, BY - 80);
-      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.level = Math.min(this.level + 1, this.levels.length - 1);
     } else if (!draw) { this.lives--; this.streak = 0; }
     else this.addScore(50, cx, BY - 80);
     this.updateInfo();

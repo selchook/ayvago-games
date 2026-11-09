@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, isEasy } from '@core';
 import { BankedShip } from './BankedShip';
 
 type Img = Phaser.GameObjects.Image;
@@ -15,6 +15,15 @@ const ROW_TINT = [0xec7a2c, 0x3e9ec4, 0x3e9ec4, 0x6fa35a, 0x6fa35a];
 const CELL = 8, BW = 15, BH = 10;
 const PLAYER_Y = 1110, BUNKER_Y = 950, GROUND_Y = 1165;
 const MARCH_RATES = [0.62, 0.56, 0.5, 0.45];
+/**
+ * Normal and Easy (practice). Easy: two more lives, a fleet that marches 25% slower, bombs 40%
+ * rarer and 25% slower, a ramp at half speed and an extra life (up to 6) after every second level.
+ * `ramp` scales how fast the levels get harder: level l plays like level 1 + (l - 1) * ramp.
+ */
+const TUNING = {
+  normal: { lives: 3, march: 1, ramp: 1, bombs: 1, bombSpeed: 1, lifeEvery: 0 },
+  easy: { lives: 5, march: 1.25, ramp: 0.5, bombs: 1.6, bombSpeed: 0.75, lifeEvery: 2 },
+};
 
 export class PlayScene extends ArcadeScene {
   private controls!: Controls;
@@ -39,11 +48,13 @@ export class PlayScene extends ArcadeScene {
   private note = 0;
   private dead = false;
   private clearing = false;
+  tune = TUNING.normal;
 
   createGame(): void {
     const { width } = this.scale;
     this.aliens = []; this.shots = []; this.bombs = []; this.bunkers = []; this.ufo = null;
-    this.lives = 3; this.level = 0; this.frozen = 0; this.invuln = 0; this.note = 0; this.dead = false; this.clearing = false;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.lives = this.tune.lives; this.level = 0; this.frozen = 0; this.invuln = 0; this.note = 0; this.dead = false; this.clearing = false;
     this.fireCd = 0; this.ufoCd = rng.int(14, 20);
     this.ufoLoop = null;
     const onPause = () => this.ufoLoop?.pause();
@@ -72,6 +83,11 @@ export class PlayScene extends ArcadeScene {
     this.nextLevel();
   }
 
+  /** How hard the current level plays (equals the level number in Normal). */
+  private lvl(): number {
+    return 1 + (this.level - 1) * this.tune.ramp;
+  }
+
   // ---------- setup ----------
   private nextLevel(): void {
     this.level++;
@@ -81,7 +97,7 @@ export class PlayScene extends ArcadeScene {
     for (const b of this.bombs) b.img.destroy();
     this.aliens = []; this.bombs = [];
     this.buildBunkers();
-    this.fx = 80; this.fy = 220 + Math.min(6, this.level - 1) * 28; this.dir = 1;
+    this.fx = 80; this.fy = 220 + Math.min(6, this.lvl() - 1) * 28; this.dir = 1;
     this.stepCd = 1.2; this.bombCd = 2;
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       const img = this.add.image(this.fx + c * SPX, this.fy + r * SPY, ROW_KEYS[r][0]).setScale(0).setDepth(5);
@@ -206,6 +222,11 @@ export class PlayScene extends ArcadeScene {
     this.banner(t('levelClear'), '#5dff7a');
     this.sfx('level', { volume: 0.75, exact: true });
     flash(this, 0x5dff7a, 120);
+    if (this.tune.lifeEvery && this.level % this.tune.lifeEvery === 0 && this.lives < 6) {
+      this.lives++;
+      this.updateLives();
+      popup(this, this.player.x, this.player.y - 60, t('oneUp'), '#5dff7a', 26);
+    }
     for (const b of this.bombs) b.img.destroy();
     this.bombs = [];
     this.time.delayedCall(2200, () => { if (!this.isOver) this.nextLevel(); });
@@ -252,7 +273,7 @@ export class PlayScene extends ArcadeScene {
     if (!alive.length) return;
     let minX = Infinity, maxX = -Infinity;
     for (const a of alive) { minX = Math.min(minX, a.col); maxX = Math.max(maxX, a.col); }
-    const step = 12 + Math.min(6, this.level);
+    const step = 12 + Math.min(6, this.lvl());
     const left = this.fx + minX * SPX - 26, right = this.fx + maxX * SPX + 26;
     if ((this.dir > 0 && right + step > this.scale.width - 10) || (this.dir < 0 && left - step < 10)) {
       this.fy += 28; this.dir *= -1;
@@ -284,11 +305,11 @@ export class PlayScene extends ArcadeScene {
     for (const a of alive) { const cur = cols.get(a.col); if (!cur || a.row > cur.row) cols.set(a.col, a); }
     const shooters = [...cols.values()];
     let s = rng.pick(shooters);
-    if (rng.chance(Math.min(0.6, 0.15 + this.level * 0.07))) {
+    if (rng.chance(Math.min(0.6, 0.15 + this.lvl() * 0.07))) {
       s = shooters.reduce((best, a) => (Math.abs(a.img.x - this.player.x) < Math.abs(best.img.x - this.player.x) ? a : best), s);
     }
     const img = this.add.image(s.img.x, s.img.y + 24, 'bomb').setScale(0.55).setDepth(8);
-    this.bombs.push({ img, vy: 330 + Math.min(10, this.level) * 25 });
+    this.bombs.push({ img, vy: (330 + Math.min(10, this.lvl()) * 25) * this.tune.bombSpeed });
     this.sfxAt('bomb', s.img.x, { volume: 0.18 });
   }
 
@@ -316,13 +337,13 @@ export class PlayScene extends ArcadeScene {
     else if (alive && !this.clearing) {
       this.stepCd -= dt;
       if (this.stepCd <= 0) {
-        const speedUp = 1 - Math.min(0.45, (this.level - 1) * 0.07);
-        this.stepCd = (0.035 + 0.6 * (alive / (ROWS * COLS))) * speedUp;
+        const speedUp = 1 - Math.min(0.45, (this.lvl() - 1) * 0.07);
+        this.stepCd = (0.035 + 0.6 * (alive / (ROWS * COLS))) * speedUp * this.tune.march;
         this.marchStep();
       }
       this.bombCd -= dt;
       if (this.bombCd <= 0) {
-        this.bombCd = Math.max(0.3, 1.25 - this.level * 0.1) * (0.6 + Math.random() * 0.8);
+        this.bombCd = Math.max(0.3, 1.25 - this.lvl() * 0.1) * (0.6 + Math.random() * 0.8) * this.tune.bombs;
         this.dropBomb();
       }
     }
@@ -390,7 +411,7 @@ export class PlayScene extends ArcadeScene {
         this.ufoCd = rng.int(15, 25);
         const fromLeft = rng.chance(0.5);
         const img = this.add.image(fromLeft ? -70 : width + 70, 135, 'mystery').setScale(0.7).setDepth(6);
-        this.ufo = { img, vx: (fromLeft ? 1 : -1) * (170 + this.level * 10) };
+        this.ufo = { img, vx: (fromLeft ? 1 : -1) * (170 + this.lvl() * 10) };
         this.startUfoLoop();
       }
     }

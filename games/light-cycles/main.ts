@@ -6,6 +6,7 @@ launch({
   meta: meta as GameMeta,
   background: '#05040f',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     l.image('glow', kenney('particles/png_transparent/circle_05.png'));

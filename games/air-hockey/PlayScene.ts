@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, shake, t, rng, net, upper } from '@core';
+import { ArcadeScene, Controls, shake, t, rng, net, upper, isEasy } from '@core';
 import { ftxt, freshTextCanvases, softFlash } from './fasttext';
 import {
   W, L, R, T, B, MID, CR, GOAL_L, GOAL_R, POST_R, POCKET, PUCK_R, MAL_R, BIG_R,
@@ -24,6 +24,15 @@ const STEP_PX = 9;              // sub-steps: nothing moves further than this pe
 const MAX_STEPS = 40;
 const WIN_GOALS = 7;
 const MAX_LEVEL = 7;
+/**
+ * Normal and Easy (practice). The AI's skill s runs 0 (level 1) to `ramp` (level 7). Easy: skill
+ * tops out at 0.45 (between levels 3 and 4), it thinks and reacts to fresh shots 50% later, aims and
+ * places itself with 60% more noise and moves at 80% of its speed.
+ */
+const TUNING = {
+  normal: { ramp: 1, react: 1, noise: 1, speed: 1 },
+  easy: { ramp: 0.45, react: 1.5, noise: 1.6, speed: 0.8 },
+};
 // Goal sequence (real seconds)
 const SLOWMO = 0.7, SLOW_K = 0.18;
 const GOAL_SHOW = 1.95;
@@ -90,6 +99,7 @@ export class PlayScene extends ArcadeScene {
   private replay: { pts: number[]; col: number } | null = null;
   private replayFlashed = false;
   private level = 1;
+  tune = TUNING.normal;
   private goalFlash = 0;
   private goalFlashTop = true;
   private shock: Array<{ x: number; y: number; t: number; col: number; max: number }> = [];
@@ -134,6 +144,7 @@ export class PlayScene extends ArcadeScene {
     makeHockeyTextures(this);
     this.useHud = false;
     this.online = net.active; this.host = !this.online || net.isHost;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
     this.myGoals = 0; this.opGoals = 0; this.phase = 'serve'; this.phaseT = 0; this.goalAge = 99; this.countShown = -1;
     this.serveTo = 0; this.slowT = 0; this.replay = null; this.replayFlashed = true; this.level = 1;
     this.goalFlash = 0; this.goalFlashTop = true; this.shock = [];
@@ -418,8 +429,14 @@ export class PlayScene extends ArcadeScene {
 
   // ================================================================ AI (solo)
   /** 0 (level 1) … 1 (level 7). */
-  private get aiS(): number { return (this.level - 1) / (MAX_LEVEL - 1); }
-  private get aiReact(): number { return 0.24 - 0.16 * this.aiS; }
+  private get aiS(): number { return (this.level - 1) / (MAX_LEVEL - 1) * this.tune.ramp; }
+  private get aiReact(): number { return (0.24 - 0.16 * this.aiS) * this.tune.react; }
+
+  /** The solo AI now: skill (0..1), seconds between decisions, aim noise (px, max) and top speed. */
+  ai(): { skill: number; react: number; noise: number; speed: number } {
+    const s = this.aiS;
+    return { skill: s, react: this.aiReact, noise: (8 + 64 * (1 - s)) * this.tune.noise, speed: (540 + 1310 * s) * this.tune.speed };
+  }
 
   /** The puck that matters most to the AI: nearest its goal, weighted by how fast it comes. */
   private aiFocus(): Puck {
@@ -460,7 +477,7 @@ export class PlayScene extends ArcadeScene {
       this.aiTx = op.x + (Math.random() - 0.5) * 50; this.aiTy = op.y - 10;
       return;
     }
-    const noise = (Math.random() * 2 - 1) * (8 + 64 * (1 - s));
+    const noise = (Math.random() * 2 - 1) * (8 + 64 * (1 - s)) * this.tune.noise;
     const coming = p.vy < -150;
     if (!coming) { this.aiCounter = -1; this.aiLagged = false; }
 
@@ -469,7 +486,7 @@ export class PlayScene extends ArcadeScene {
       if (this.aiCounter < 0 && !this.aiLagged) {
         // a fresh shot: it takes the AI a moment to react, longer at low levels
         this.aiLagged = true;
-        this.aiThink = 0.05 + 0.2 * (1 - s);
+        this.aiThink = (0.05 + 0.2 * (1 - s)) * this.tune.react;
         return;
       }
       this.aiMode = 'goalie';
@@ -565,7 +582,7 @@ export class PlayScene extends ArcadeScene {
     this.aiStrike = Math.max(0, this.aiStrike - dt);
     if (this.aiThink <= 0 && this.aiHes <= 0) { this.aiThink = this.aiReact; this.thinkAI(); }
     const slow = this.slowT > 0 ? SLOW_K : 1;
-    const maxSp = (540 + 1310 * s) * (this.aiStrike > 0 ? 1.3 + 0.3 * s : 1) * (this.aiHes > 0 ? 0.3 : 1);
+    const maxSp = (540 + 1310 * s) * this.tune.speed * (this.aiStrike > 0 ? 1.3 + 0.3 * s : 1) * (this.aiHes > 0 ? 0.3 : 1);
     const acc = (4200 + 9000 * s) * (this.aiStrike > 0 ? 1.6 : 1);
     const dx = this.aiTx - op.x, dy = this.aiTy - op.y, d = Math.hypot(dx, dy);
     const want = Math.min(maxSp, d * 9);

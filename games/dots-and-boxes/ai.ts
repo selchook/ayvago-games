@@ -104,6 +104,12 @@ export const LEVELS: Level[] = [
   { take: 1, safe: 1, minGive: true, control: true, exact: 11 },
   { take: 1, safe: 1, minGive: true, control: true, exact: 16 },
 ];
+/** Easy (practice): a short ladder that often leaves boxes on offer and often hands out a third side. */
+export const EASY_LEVELS: Level[] = [
+  { take: 0.45, safe: 0.25, minGive: false, control: false, exact: 0 },
+  { take: 0.6, safe: 0.35, minGive: false, control: false, exact: 0 },
+  { take: 0.8, safe: 0.6, minGive: false, control: false, exact: 0 },
+];
 
 const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 

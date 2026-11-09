@@ -6,6 +6,7 @@ const J = 'oga/junkala-sfx/';
 
 launch({
   meta: meta as GameMeta,
+  difficulty: true,
   background: '#07060f',
   physics: 'none',
   preload(scene) {

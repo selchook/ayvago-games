@@ -7,6 +7,7 @@ launch({
   meta: meta as GameMeta,
   background: '#1d120b',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     const J = 'oga/junkala-sfx/general-sounds/';

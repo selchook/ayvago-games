@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net } from '@core';
-import { State, newState, play, legal, isLegal, winLine, Mcts, LEVELS, tactical } from './rules';
+import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, isEasy } from '@core';
+import { State, newState, play, legal, isLegal, winLine, Mcts, LEVELS, EASY_LEVELS, tactical, type AiLevel } from './rules';
 
 // Board layout (720 x 1280 world)
 const BX = 15, BY = 280;          // top-left of the big board
@@ -48,6 +48,7 @@ export class PlayScene extends ArcadeScene {
   private countX!: Phaser.GameObjects.Text;
   private countO!: Phaser.GameObjects.Text;
   private level = 0;
+  private levels = LEVELS;
   private lives = 3;
   private streak = 0;
   private round = 0;
@@ -67,6 +68,7 @@ export class PlayScene extends ArcadeScene {
     this.bigMarks = []; this.highlights = [];
     this.turn = 'busy'; this.cur = 40;
     this.level = 0; this.lives = 3; this.streak = 0; this.round = 0; this.myMoves = 0;
+    this.levels = isEasy() ? EASY_LEVELS : LEVELS;
     this.online = net.active; this.mine = 1; this.moveNo = 0; this.inbox = [];
     this.mcts = null; this.aiAt = 0; this.dots = 0;
     this.useHud = !this.online;
@@ -285,9 +287,14 @@ export class PlayScene extends ArcadeScene {
     this.place(this.cur);
   }
 
+  /** The AI at the current level: search budget (ms) and the chance of a careless move. */
+  ai(): AiLevel {
+    return this.levels[Math.min(this.level, this.levels.length - 1)];
+  }
+
   private aiChoose(): void {
     if (!this.mcts || this.isOver || this.turn !== 'ai') return;
-    const lvl = LEVELS[Math.min(this.level, LEVELS.length - 1)];
+    const lvl = this.ai();
     let m = tactical(this.st);
     if (m < 0) m = this.mcts.best();
     if (lvl.slip && rng.chance(lvl.slip)) m = rng.pick(legal(this.st));
@@ -378,7 +385,7 @@ export class PlayScene extends ArcadeScene {
       this.streak++;
       const pts = 100 * (this.level + 1) + Math.max(0, 40 - this.myMoves) * 5 + this.streak * 25;
       this.time.delayedCall(500, () => { this.addScore(pts, cx, BY - 40); this.sfx('win'); });
-      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.level = Math.min(this.level + 1, this.levels.length - 1);
       this.showBanner(t('roundWin'), '#5dff7a'); flash(this, 0x5dff7a, 150);
       if (this.streak >= 2) popup(this, cx, BY + 120, t('streak', { n: this.streak }), '#ffd23f', 34);
     } else if (winner) {
@@ -413,7 +420,7 @@ export class PlayScene extends ArcadeScene {
 
   updateGame(time: number): void {
     if (this.mcts && this.turn === 'ai' && !this.online) {
-      const lvl = LEVELS[Math.min(this.level, LEVELS.length - 1)];
+      const lvl = this.ai();
       // the search runs in slices of a frame; the top levels also stop at AI_WALL_MS of wall
       // time, so a slow phone answers in about a second with a shallower search
       const waited = time - this.aiAt;

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, net } from '@core';
-import { N, CELLS, RED, BLUE, LEVELS, chooseMove, winPath, openingMove, wantsSwap, swapCell } from './hex';
+import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, net, isEasy } from '@core';
+import { N, CELLS, RED, BLUE, LEVELS, EASY_LEVELS, chooseMove, winPath, openingMove, wantsSwap, swapCell, type Level } from './hex';
 import { think, nextToken } from './ai-client';
 
 // The rhombus stands upright: r runs to the right, c runs down (flat-top hexes).
@@ -45,6 +45,7 @@ export class PlayScene extends ArcadeScene {
   private nameB!: Phaser.GameObjects.Text;
   private swapBtn!: Button;
   private level = 0;
+  private levels = LEVELS;
   private lives = 3;
   private streak = 0;
   private round = 0;
@@ -64,6 +65,7 @@ export class PlayScene extends ArcadeScene {
     this.stones = new Array(CELLS).fill(null);
     this.turn = 'busy'; this.cur = 60;
     this.level = 0; this.lives = 3; this.streak = 0; this.round = 0; this.myStones = 0;
+    this.levels = isEasy() ? EASY_LEVELS : LEVELS;
     this.online = net.active; this.mine = RED; this.moveNo = 0; this.inbox = []; this.swapped = false; this.extras = []; this.aiToken = 0;
     this.useHud = !this.online;
     this.cameras.main.setBackgroundColor('#0f1424');
@@ -276,6 +278,11 @@ export class PlayScene extends ArcadeScene {
     this.doSwap();
   }
 
+  /** The AI at the current level: search depth, width, noise and the pool it picks lesser moves from. */
+  ai(): Level {
+    return this.levels[Math.min(this.level, this.levels.length - 1)];
+  }
+
   /** Solo: the AI's turn. The search runs in a worker while a short "thinking" pause plays. */
   private aiMove(): void {
     if (this.isOver || this.turn !== 'ai') return;
@@ -290,9 +297,9 @@ export class PlayScene extends ArcadeScene {
       const first = this.board.findIndex((v) => v === RED);
       if (first >= 0 && wantsSwap(first, this.level)) { act(() => this.doSwap()); return; }
     }
-    const level = Math.min(this.level, LEVELS.length - 1), budget = 600;
+    const lvl = this.ai(), budget = 600;
     const board = this.board.slice();
-    think<number>({ board: Array.from(board), p, level, budget }, () => chooseMove(board, p, LEVELS[level], budget), budget + 1500)
+    think<number>({ board: Array.from(board), p, lvl, budget }, () => chooseMove(board, p, lvl, budget), budget + 1500)
       .then((i) => {
         if (token !== this.aiToken || (!this.sys.isActive() && !this.sys.isPaused())) return;
         act(() => { if (i >= 0 && !this.board[i]) this.place(i); });
@@ -387,7 +394,7 @@ export class PlayScene extends ArcadeScene {
       this.streak++;
       const pts = 100 * (this.level + 1) + Math.max(0, 60 - this.myStones) * 4 + this.streak * 25 + (this.swapped && this.mine === BLUE ? 25 : 0);
       this.time.delayedCall(500, () => { this.addScore(pts, cx, 260); this.sfx('win'); });
-      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.level = Math.min(this.level + 1, this.levels.length - 1);
       this.showBanner(t('roundWin'), '#5dff7a'); flash(this, 0x5dff7a, 150);
       if (this.streak >= 2) popup(this, cx, 330, t('streak', { n: this.streak }), '#ffd23f', 34);
     } else {

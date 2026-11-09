@@ -6,6 +6,7 @@ launch({
   meta: meta as GameMeta,
   background: '#0f1029',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     l.image('glow', kenney('puzzle2/png/particles_white/particlewhite_4.png'));

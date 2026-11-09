@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, net, upper, StickDir, type Dir4 } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, net, upper, StickDir, isEasy, type Dir4 } from '@core';
 import { Arena, COLS, ROWS, DX, DY, aiDir, makeObstacles } from './arena';
 
 const STICK_DIR: Record<Dir4, number> = { up: 0, right: 1, down: 2, left: 3 };
@@ -13,6 +13,16 @@ const OPP = 0xff8a2a;
 const RIVAL_COLORS = [0xff8a2a, 0xffd23f, 0xff4fa3, 0xec3013, 0xb48cff];
 const RIVALS = 5;
 const TO_WIN = 3;                    // best of 5
+/**
+ * Normal and Easy (practice). Solo speed (cells/s) = base + rival * perRival + (round - 1) * perRound,
+ * capped at max; the rival thinks like brain level floor(rival * brain); with `lapse` chance a tick
+ * it does not look ahead at all and rides straight on (a slow reaction).
+ * Easy: rivals 1-5 think like levels 0,0,1,1,2, ride 8-12.4 instead of 9-18 cells/s and lapse 6% of ticks.
+ */
+const TUNING = {
+  normal: { base: 9, perRival: 0.7, perRound: 1.2, max: 18, brain: 1, lapse: 0 },
+  easy: { base: 8, perRival: 0.4, perRound: 0.6, max: 14, brain: 0.5, lapse: 0.06 },
+};
 
 type Phase = 'count' | 'run' | 'gap' | 'over';
 interface Rider { from: [number, number]; to: [number, number]; d: number; alive: boolean; color: number }
@@ -47,9 +57,11 @@ export class PlayScene extends ArcadeScene {
   private host = true;
   private aimDir = 0;
   private aimAt = 0;
+  tune = TUNING.normal;
 
   createGame(): void {
     this.online = net.active;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
     this.host = !this.online || net.isHost;
     this.useHud = !this.online;
     this.phase = 'count';
@@ -213,8 +225,14 @@ export class PlayScene extends ArcadeScene {
   private oppColor(): number { return this.online ? OPP : RIVAL_COLORS[this.rival]; }
 
   private speedFor(round: number): number {
-    const base = this.online ? 10 : 9 + this.rival * 0.7;
-    return Math.min(18, base + (round - 1) * 1.2);
+    if (this.online) return Math.min(18, 10 + (round - 1) * 1.2);
+    const k = this.tune;
+    return Math.min(k.max, k.base + this.rival * k.perRival + (round - 1) * k.perRound);
+  }
+
+  /** The solo rival now: brain level (0-4), chance of a missed look-ahead, speed this round. */
+  ai(): { level: number; lapse: number; speed: number } {
+    return { level: Math.floor(this.rival * this.tune.brain), lapse: this.tune.lapse, speed: this.speedFor(Math.max(1, this.round)) };
   }
 
   /** Host / solo: sets up the next round and tells the guest. */
@@ -335,7 +353,7 @@ export class PlayScene extends ArcadeScene {
 
   /** Host / solo: one simulation step. */
   private hostTick(): void {
-    if (!this.online) this.arena.turn(1, aiDir(this.arena, 1, this.rival));
+    if (!this.online && !(this.tune.lapse && rng.chance(this.tune.lapse))) this.arena.turn(1, aiDir(this.arena, 1, this.ai().level));
     const crashed = this.arena.step();
     this.tickNo++;
     this.lastTick = this.time.now;
