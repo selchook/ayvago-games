@@ -91,10 +91,12 @@ export class Tilt {
     // "up" in the phone's own axes (x right, y towards the top, z out of the screen)
     const ux = -Math.sin(g) * Math.cos(b);
     const uy = Math.sin(b);
-    // turned into the screen's axes as the player sees them (landscape turns the phone)
+    // turned into the screen's axes as the player sees them. At an angle of 90 the phone lies
+    // turned a quarter anticlockwise (its top on the player's left), so the screen's right is the
+    // phone's -y; at 270 it is +y.
     const o = ((screenAngle() % 360) + 360) % 360;
     const r = (o * Math.PI) / 180;
-    const sx = ux * Math.cos(r) + uy * Math.sin(r);
+    const sx = ux * Math.cos(r) - uy * Math.sin(r);
     // the right edge dipping (a turn to the right) tips "up" towards the screen's left
     this.angle = (Math.asin(Math.max(-1, Math.min(1, -sx))) * 180) / Math.PI;
   }
@@ -106,3 +108,6 @@ function screenAngle(): number {
   const legacy = (window as unknown as { orientation?: number }).orientation;
   return typeof legacy === 'number' ? legacy : 0;
 }
+
+/** One sensor reader for the whole game: the menu turns it on (from a tap), the race reads it. */
+export const tilt = new Tilt();
