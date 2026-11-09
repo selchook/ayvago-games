@@ -768,7 +768,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'okey', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.0',
+    version: '1.3.0',
     addedAt: '2026-11-06',
     featured: true,
     multiplayer: 4,

@@ -100,6 +100,11 @@ export class PlayScene extends ArcadeScene {
   private sprites = new Map<number, Phaser.GameObjects.Image>();
   private selected: number | null = null;
   private drag: { id: number; dx: number; dy: number; moved: boolean } | null = null;
+  /** A tile being pulled from the middle ('draw') or the left pile ('take') towards my rack. */
+  private pull: { kind: 'draw' | 'take'; ghost: Phaser.GameObjects.Image; home: { x: number; y: number }; dx: number; dy: number; moved: boolean } | null = null;
+  /** Where a pulled tile was dropped: the draw that follows lands it in that slot. */
+  private dropAt: { slot: number; x: number; y: number } | null = null;
+  private dropMark!: Phaser.GameObjects.Graphics;
   // table furniture
   private pileImg!: Phaser.GameObjects.Image;
   private pileText!: Phaser.GameObjects.Text;
@@ -174,6 +179,8 @@ export class PlayScene extends ArcadeScene {
     this.cornerUnder = [null, null, null, null];
     this.selected = null;
     this.drag = null;
+    this.pull = null;
+    this.dropAt = null;
 
     this.buildTable();
     this.buildHud();
@@ -232,7 +239,8 @@ export class PlayScene extends ArcadeScene {
     this.pileText = txt(this, PILE.x - 4, PILE.y + 64, '', { size: 22, color: '#f3f2f2' }).setDepth(3);
     this.indImg = this.add.image(IND.x, IND.y, 'ok-t-back').setDepth(2).setAngle(8);
     txt(this, IND.x + 4, IND.y + 64, t('indicator'), { size: 22, color: '#ffe8a3' }).setDepth(3);
-    this.pileImg.on('pointerup', () => this.humanDraw('draw'));
+    // tap to draw, or drag the tile onto the rack (see startPull)
+    this.pileImg.on('pointerdown', (p: Phaser.Input.Pointer) => this.startPull('draw', p));
 
     // seats around the table (I sit at the rack)
     this.seatUi = [];
@@ -274,10 +282,11 @@ export class PlayScene extends ArcadeScene {
       g.lineStyle(2, SEAT_COL[r], 0.28).strokeRoundedRect(c.x - TILE_W / 2 - 6, c.y - TILE_H / 2 - 6, TILE_W + 12, TILE_H + 12, 10);
     }
     const take = this.add.zone(CORNER[3].x, CORNER[3].y, TILE_W + 30, TILE_H + 30).setInteractive({ useHandCursor: true });
-    take.on('pointerup', () => this.humanDraw('take'));
+    take.on('pointerdown', (p: Phaser.Input.Pointer) => this.startPull('take', p));
 
     this.fxG = this.add.graphics().setDepth(4);
     this.rackGlow = this.add.graphics().setDepth(-4);
+    this.dropMark = this.add.graphics().setDepth(9);
     this.hintBg = this.add.graphics().setDepth(19);
     this.hint = txt(this, W / 2, 398, '', { size: 25, color: '#fff3c4' }).setDepth(20);
     const by = 462;
@@ -498,26 +507,32 @@ export class PlayScene extends ArcadeScene {
   }
 
   // ---------- animation ----------
-  /** Moves an object along a soft arc (and calls done at the end). */
+  /**
+   * Moves an object along a soft arc (and calls done at the end). The flight stops quietly when
+   * the object goes away on the way (a tile just drawn can be thrown before it lands).
+   */
   private arc(obj: Phaser.GameObjects.Image, to: { x: number; y: number }, ms: number, lift: number, extra: (f: number) => void, done: () => void): void {
     const sx = obj.x, sy = obj.y;
-    this.tweens.addCounter({
+    const tween = this.tweens.addCounter({
       from: 0, to: 1, duration: ms, ease: 'Cubic.easeInOut',
       onUpdate: (tw) => {
+        if (!obj.scene) { tween.stop(); return; }
         const f = tw.getValue() ?? 0;
         obj.setPosition(sx + (to.x - sx) * f, sy + (to.y - sy) * f - Math.sin(f * Math.PI) * lift);
         extra(f);
       },
-      onComplete: done,
+      onComplete: () => { if (obj.scene) done(); },
     });
   }
 
   private animateDraw(seat: number, id: number, fromCorner: number | null): void {
-    const from = fromCorner === null ? { x: PILE.x - 6, y: PILE.y - 10 } : CORNER[this.rel(fromCorner)];
+    const drop = this.isMine(seat) ? this.dropAt : null;
+    this.dropAt = null;
+    const from = drop ?? (fromCorner === null ? { x: PILE.x - 6, y: PILE.y - 10 } : CORNER[this.rel(fromCorner)]);
     if (fromCorner !== null) this.refreshCorner(fromCorner);
     this.sfx('draw', { volume: 0.5 });
     if (this.isMine(seat)) {
-      const slot = this.rack.findIndex((x) => x === null);
+      const slot = drop && this.rack[drop.slot] === null ? drop.slot : this.rack.findIndex((x) => x === null);
       this.rack[slot] = id;
       const p = this.slotPos(slot);
       const img = this.tileSprite(id, from.x, from.y);
@@ -526,7 +541,8 @@ export class PlayScene extends ArcadeScene {
       const face = img.texture.key;
       if (fromCorner === null) img.setTexture('ok-t-back');
       let flipped = fromCorner !== null;
-      this.arc(img, { x: p.x, y: p.y - 18 }, 420, 70, (f) => {
+      // a dropped tile is already over the rack: it just flips and settles
+      this.arc(img, { x: p.x, y: p.y - 18 }, drop ? 220 : 420, drop ? 12 : 70, (f) => {
         if (!flipped) {
           img.scaleX = Math.abs(Math.cos(f * Math.PI));
           if (f >= 0.5) { flipped = true; img.setTexture(face); }
@@ -614,6 +630,7 @@ export class PlayScene extends ArcadeScene {
       img.setDepth(50);
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (this.pull) { this.movePull(p); return; }
       const d = this.drag;
       if (!d || !p.isDown) return;
       const img = this.sprites.get(d.id);
@@ -623,6 +640,7 @@ export class PlayScene extends ArcadeScene {
       img.setPosition(p.x + d.dx, p.y + d.dy);
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (this.pull) { this.endPull(p); return; }
       const d = this.drag;
       this.drag = null;
       if (!d) return;
@@ -649,6 +667,85 @@ export class PlayScene extends ArcadeScene {
     const kb = this.input.keyboard;
     kb?.on('keydown', (e: KeyboardEvent) => this.onKey(e));
     kb?.addCapture('TAB');
+  }
+
+  // ---------- drawing by drag ----------
+  private canDraw(kind: 'draw' | 'take'): boolean {
+    if (this.isOver || this.phase !== 'draw' || this.turn !== this.me || isModalOpen(this)) return false;
+    return kind === 'draw' ? this.pile.length > 0 : this.discards[this.prev(this.me)].length > 0;
+  }
+
+  /** Picks up the middle tile (face down) or the top of the left pile; a tap still just draws. */
+  private startPull(kind: 'draw' | 'take', p: Phaser.Input.Pointer): void {
+    if (this.pull || this.drag || !this.canDraw(kind)) return;
+    const top = this.discards[this.prev(this.me)].at(-1);
+    const home = kind === 'draw' ? { x: PILE.x - 6, y: PILE.y - 10 } : CORNER[3];
+    const key = kind === 'draw' || top === undefined ? 'ok-t-back' : tileKey(this.tiles[top]);
+    const ghost = this.add.image(home.x, home.y, key).setDepth(55).setAlpha(0);
+    if (kind === 'take') this.cornerImgs[3]?.setAlpha(0.35);
+    this.pull = { kind, ghost, home, dx: home.x - p.x, dy: home.y - p.y, moved: false };
+  }
+
+  private movePull(p: Phaser.Input.Pointer): void {
+    const u = this.pull!;
+    if (!p.isDown) return;
+    if (!u.moved && Phaser.Math.Distance.Between(p.downX, p.downY, p.x, p.y) < 8) return;
+    if (!u.moved) {
+      u.moved = true;
+      u.ghost.setAlpha(1).setScale(1.08);
+      this.sfx('slide', { volume: 0.25 });
+    }
+    u.ghost.setPosition(p.x + u.dx, p.y + u.dy).setAngle(Phaser.Math.Clamp((p.velocity?.x ?? 0) * 0.08, -8, 8));
+    // show the slot it would land in
+    this.dropMark.clear();
+    const slot = this.dropSlot(u.ghost.x, u.ghost.y);
+    if (slot >= 0) {
+      const q = this.slotPos(slot);
+      this.dropMark.lineStyle(4, 0xffd23f, 0.95).strokeRoundedRect(q.x - SLOT / 2 + 4, q.y - 40, SLOT - 8, 80, 10);
+      this.dropMark.fillStyle(0xffd23f, 0.16).fillRoundedRect(q.x - SLOT / 2 + 4, q.y - 40, SLOT - 8, 80, 10);
+    }
+  }
+
+  private endPull(_p: Phaser.Input.Pointer): void {
+    const u = this.pull!;
+    this.pull = null;
+    this.dropMark.clear();
+    if (!u.moved) {
+      u.ghost.destroy();
+      if (u.kind === 'take') this.cornerImgs[3]?.setAlpha(1);
+      this.humanDraw(u.kind);
+      return;
+    }
+    const slot = this.canDraw(u.kind) ? this.dropSlot(u.ghost.x, u.ghost.y) : -1;
+    if (slot >= 0) {
+      this.dropAt = { slot, x: u.ghost.x, y: u.ghost.y };
+      u.ghost.destroy();
+      this.humanDraw(u.kind);
+      this.dropAt = null;
+      return;
+    }
+    // not on the rack: the tile slides back where it came from
+    this.tweens.add({
+      targets: u.ghost, x: u.home.x, y: u.home.y, angle: 0, scale: 1, duration: 200, ease: 'Quad.easeOut',
+      onComplete: () => {
+        u.ghost.destroy();
+        if (u.kind === 'take') this.cornerImgs[3]?.setAlpha(1);
+      },
+    });
+  }
+
+  /** The free rack slot nearest to a dropped tile, or -1 when it is not over the rack. */
+  private dropSlot(x: number, y: number): number {
+    if (y < ROW_Y[0] - 110 || y > ROW_Y[1] + 70) return -1;
+    if (x < RACK_X0 - SLOT || x > RACK_X0 + SLOTS * SLOT) return -1;
+    let best = -1, bd = Infinity;
+    this.rack.forEach((id, i) => {
+      if (id !== null) return;
+      const q = this.slotPos(i);
+      const d = Math.hypot(q.x - x, (q.y - y) * 1.6);
+      if (d < bd) { bd = d; best = i; }
+    });
+    return best;
   }
 
   private nearestSlot(x: number, y: number): number {
