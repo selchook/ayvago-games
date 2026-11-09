@@ -8,6 +8,7 @@ const SS = 'space-shooter/png/';
 launch({
   meta: meta as GameMeta,
   background: '#2a2416',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     for (const c of ['blue', 'green', 'red', 'black', 'beige']) {
