@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, isEasy } from '@core';
 import {
-  POS, MILLS, DRAW_PLIES, LEVELS, State, Move, newState, clone, count, apply, result, moves,
-  targets, closesMill, removable, flying, millsAt, choose,
+  POS, MILLS, DRAW_PLIES, LEVELS, EASY_LEVELS, State, Move, newState, clone, count, apply, result, moves,
+  targets, closesMill, removable, flying, millsAt, choose, type Level,
 } from './rules';
 import { think, nextToken } from './ai-client';
 
@@ -54,6 +54,7 @@ export class PlayScene extends ArcadeScene {
   private nameMe!: Phaser.GameObjects.Text;
   private nameOpp!: Phaser.GameObjects.Text;
   private level = 0;
+  private levels = LEVELS;
   private lives = 3;
   private streak = 0;
   private round = 0;
@@ -74,6 +75,7 @@ export class PlayScene extends ArcadeScene {
     this.hands = [[], [], []];
     this.turn = 'busy'; this.step = 'pick'; this.sel = -1; this.pending = null; this.cur = 0;
     this.level = 0; this.lives = 3; this.streak = 0; this.round = 0; this.captures = 0; this.myMoves = 0;
+    this.levels = isEasy() ? EASY_LEVELS : LEVELS;
     this.online = net.active; this.mine = 1; this.moveNo = 0; this.inbox = []; this.extras = []; this.aiToken = 0;
     this.useHud = !this.online;
     this.cameras.main.setBackgroundColor('#1a1410');
@@ -364,21 +366,26 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
+  /** The AI at the current level: search depth, time budget and the chance of a near-best move. */
+  ai(): Level {
+    return this.levels[Math.min(this.level, this.levels.length - 1)];
+  }
+
   /** Solo: the AI's turn. The search runs in a worker while a short "thinking" pause plays. */
   private aiMove(): void {
     if (this.isOver || this.turn !== 'ai') return;
     const token = (this.aiToken = nextToken());
     const delay = rng.int(350, 550), t0 = this.time.now;
-    const level = Math.min(this.level, LEVELS.length - 1);
+    const lvl = this.ai();
     const s = clone(this.st);
-    const req = { board: Array.from(s.board), hand: s.hand, turn: s.turn, quiet: s.quiet, level };
-    think<Move | null>(req, () => choose(clone(s), LEVELS[level]), LEVELS[level].ms + 1500).then((m) => {
+    const req = { board: Array.from(s.board), hand: s.hand, turn: s.turn, quiet: s.quiet, lvl };
+    think<Move | null>(req, () => choose(clone(s), lvl), lvl.ms + 1500).then((m) => {
       if (token !== this.aiToken || (!this.sys.isActive() && !this.sys.isPaused())) return;
       this.time.delayedCall(Math.max(0, delay - (this.time.now - t0)), () => {
         if (token !== this.aiToken || this.isOver || this.turn !== 'ai') return;
         // the worker's answer is plain data: check it against the rules before playing it
         const ok = m && moves(this.st).some((k) => k.f === m.f && k.t === m.t && k.x === m.x);
-        const mv = ok ? m : choose(clone(this.st), LEVELS[0]);
+        const mv = ok ? m : choose(clone(this.st), this.levels[0]);
         if (mv) this.perform({ f: mv.f, t: mv.t, x: mv.x }, false);
       });
     });
@@ -493,7 +500,7 @@ export class PlayScene extends ArcadeScene {
       this.streak++;
       const pts = 100 * (this.level + 1) + count(this.st, this.mine) * 15 + this.streak * 25;
       this.time.delayedCall(500, () => { this.addScore(pts, cx, BY - 60); this.sfx('win'); });
-      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.level = Math.min(this.level + 1, this.levels.length - 1);
       this.showBanner(t('roundWin'), '#5dff7a'); flash(this, 0x5dff7a, 150);
       if (this.streak >= 2) popup(this, cx, BY + 140, t('streak', { n: this.streak }), '#ffd23f', 34);
     } else if (winner) {

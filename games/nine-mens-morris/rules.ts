@@ -182,6 +182,12 @@ export const LEVELS: Level[] = [
   { depth: 5, ms: 600, noise: 0 },
   { depth: 7, ms: 700, noise: 0 },
 ];
+/** Easy (practice): a short ladder that looks one or two plies ahead and often plays a near-best move. */
+export const EASY_LEVELS: Level[] = [
+  { depth: 1, ms: 80, noise: 0.65 },
+  { depth: 1, ms: 80, noise: 0.5 },
+  { depth: 2, ms: 150, noise: 0.35 },
+];
 
 const WIN = 100000;
 class Timeout extends Error {}
