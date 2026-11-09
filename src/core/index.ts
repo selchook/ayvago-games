@@ -35,3 +35,7 @@ export type { QuickChat, QuickChatOptions, QuickPhrase, SeatAnchor } from './qui
 export { openPlayerCard, closePlayerCard, isPlayerCardOpen, avatar, portraitKey, characterName, lifetimeStats, lifetimeRows, recordMatch } from './playercard';
 export type { PlayerCardInfo, StatRow, LifetimeStats } from './playercard';
 export { isModalOpen, pushModal } from './modal';
+export {
+  CarSteering, CarPad, Tilt, tilt, TILT_FULL_LOCK, STEER_MODES, steerMode, setSteerMode, touchScreen, steeringMenu, steeringOption,
+} from './steering';
+export type { SteerMode, TiltResult, CarPadButton, CarPadOptions, CarSteeringOptions } from './steering';

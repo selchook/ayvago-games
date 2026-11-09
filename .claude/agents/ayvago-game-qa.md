@@ -13,6 +13,7 @@ You are the QA engineer for Ayvago Games. For each assigned `games/<slug>/`:
    - wrong Turkish characters;
    - unreadable contrast;
    - anything sitting under the pause button (top-right 120 px);
+   - in driving games (skill §7d), the STEERING switch on touch screens only, and a race in each mode (ARROWS, WHEEL, TILT) without overlaps;
    - in games with a player character, limbs drawn on top of the character (a third foot or hand): moves must use its own poses. Check this with `?character=adventurer` and `?character=zombie`.
 3. Read the code and check for:
    - state that is not reset in `createGame()`;

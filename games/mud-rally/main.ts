@@ -1,9 +1,8 @@
-import { launch, loadAudio, type GameMeta } from '@core';
+import { launch, loadAudio, steeringOption, touchScreen, type GameMeta } from '@core';
 import { World3D, THREE, loadKenney3d } from '@core/three';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { STRINGS } from './strings';
-import { steeringMenu, touchScreen } from './steering';
 import { Truck } from './truck';
 import { noise2 } from './terrain';
 
@@ -96,7 +95,7 @@ launch({
       stages[1].position.y = -0.5 + Math.sin(t + 1.5) * 0.07;
     };
   },
-  menuOption: { show: touchScreen, build: steeringMenu },
+  menuOption: steeringOption,
   scenes: [PlayScene],
   strings: STRINGS,
 });

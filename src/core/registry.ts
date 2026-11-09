@@ -58,7 +58,7 @@ export interface GameDefinition {
   /** Optional decoration for the menu (sprites behind the title). */
   menuDecor?: (scene: Phaser.Scene) => void;
   /**
-   * A game's own setting on the menu (e.g. Mud Rally's steering choice), drawn by `build` in the
+   * A game's own setting on the menu (e.g. the driving games' `steeringOption`), drawn by `build` in the
    * slot the Easy/Normal switch uses: beside PLAY in landscape, under it in portrait. `show`
    * decides per device (e.g. touch screens only). Not offered together with `difficulty`.
    */

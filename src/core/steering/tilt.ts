@@ -5,9 +5,9 @@
 // browser has a permission step (iOS asks the player once, and only from a tap), the first
 // enable() must come from a tap; later ones may succeed without it.
 
-/** Degrees of tilt ignored around the centre, and the tilt that gives full lock. */
+/** Degrees of tilt ignored around the centre, and the default tilt that gives full lock. */
 const DEADZONE = 3;
-const FULL_LOCK = 24;
+export const TILT_FULL_LOCK = 24;
 /** The centre taken at calibration never strays further than this from level. */
 const MAX_NEUTRAL = 18;
 
@@ -20,6 +20,8 @@ export class Tilt {
   active = false;
   /** Smoothed steering, -1 (left) .. 1 (right). */
   steer = 0;
+  /** Degrees of tilt for full lock (a game may set its own, see CarSteering's `tiltLock`). */
+  fullLock = TILT_FULL_LOCK;
   private angle = 0;
   private neutral = 0;
   private fresh = false;
@@ -78,7 +80,7 @@ export class Tilt {
     if (!this.active) return;
     let d = this.angle - this.neutral;
     const s = Math.sign(d);
-    d = Math.max(0, Math.abs(d) - DEADZONE) / (FULL_LOCK - DEADZONE);
+    d = Math.max(0, Math.abs(d) - DEADZONE) / (this.fullLock - DEADZONE);
     const want = s * Math.min(1, d);
     // a light filter takes the shake out of the sensor without making the wheel feel late
     this.steer += (want - this.steer) * Math.min(1, dt * 14);
@@ -109,5 +111,5 @@ function screenAngle(): number {
   return typeof legacy === 'number' ? legacy : 0;
 }
 
-/** One sensor reader for the whole game: the menu turns it on (from a tap), the race reads it. */
+/** One sensor reader for the whole page: the menu turns it on (from a tap), the race reads it. */
 export const tilt = new Tilt();

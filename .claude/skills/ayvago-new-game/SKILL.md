@@ -108,6 +108,8 @@ Other helpers from `@core`:
     - When the buttons' default spot on the right edge would cover play (a goal, a lane), move them with `buttonPos` / `buttonScale` instead of moving the created objects. The stick never starts on the pause button (top-right 120 px).
     - Left/right-only games read `axisX`. Grid games use `StickDir` from `@core` (`new StickDir(controls, delay, rate)`, then `update(delta)` each frame): `pressed` for turning games (snake, maze), `step` to move one cell and repeat while held (Sokoban, frog hops), `latch()` after a death or a new level so a held thumb does not move on by itself. It has a dead zone with hysteresis and an axis lock, so a thumb near a diagonal never zig-zags. Keys stay on the game's own handlers or `dir4()`.
     - Do not add swipe gestures, on-screen arrow pads or "tap the left or right half" schemes for movement.
+    - **Driving games** (the player drives a car, truck or kart) are the one exception: they use the
+      shared car steering from `@core` instead of the stick (§7d).
   - **Exceptions:** games where the finger directly is the control keep pointer events (`this.input.on('pointerdown', …)`): a paddle that follows the finger, aiming or slingshot drags, slicing, and tapping cells or cards in board and puzzle games. Whole-board swipes (2048, slide puzzle) are also exceptions. Add a keyboard path where it makes sense.
 
 ## 5. Assets
@@ -280,6 +282,7 @@ through `@core/three` (`src/core/three/index.ts`). The pilot is `games/sky-road`
   - Recycle rows and objects instead of growing the scene.
   - `quality: 0.75` renders at a lower resolution when a scene is heavy.
 - **Controls.** The standard rules apply: steering uses `Controls` with the joystick and buttons.
+  A 3D driving game uses the car steering of §7d instead (see `games/sky-road`, `games/mud-rally`).
 - **Tests.** The smoke test and the screenshot step are the same. Headless Chromium renders WebGL
   in software, so frame rates there say nothing about real devices; judge layout and visuals
   from the screenshots.
@@ -311,6 +314,64 @@ Games against an AI and action games may offer **Easy / Normal**. Word and puzzl
 - **Test it.** Expose the tuning on the scene (`tune`, or `ai()` for AI games) so a Playwright check
   can compare Easy with Normal. `scripts/platform-harness.mjs` picks Easy on the menu toggle of
   every game that opts in and checks that `GHA_END` says `'easy'`.
+
+## 7d. Driving games (required for every car game)
+
+Every game where the player drives a car, truck, kart or bike uses the shared car steering in
+`src/core/steering/` (exported from `@core`, also for 3D games). Players choose how they steer once,
+and the choice carries over to every car game. References: `games/mud-rally` (landscape, gas /
+brake / nitro, analogue racing) and `games/sky-road` (portrait, lateral steering + JUMP).
+
+- **Menu.** `menuOption: steeringOption` in `launch({...})`. On touch screens the menu shows the
+  STEERING / KONTROL switch ARROWS | WHEEL | TILT (OKLAR | DİREKSİYON | EĞİM) beside PLAY in
+  landscape, under it in portrait. Desktops see the usual menu. Choosing TILT asks for the motion
+  sensors from inside the tap (iOS); when they are refused or missing, the choice stays as it was.
+  The mode is stored once for all driving games (`steerMode()` / `setSteerMode()`, storage key `steer`).
+- **The pad.** In `createGame()`:
+  ```ts
+  this.controls = new Controls(this, {});                  // keys only: no stick on touch
+  this.steering = new CarSteering(this, {
+    touch: this.controls.touchUi,
+    buttons: [                                             // the game's own right-thumb buttons
+      { id: 'gas', shape: 'pedal', x: 1180, y: 566, w: 150, h: 220, color: 0x2fae5a, label: t('gas') },
+      { id: 'nitro', shape: 'round', x: 1018, y: 448, r: 64, color: 0xff7a1a, icon: 'bolt', count: true, holds: 'gas' },
+    ],
+    tiltLock: 24,   // degrees of tilt for full lock (default 24; Sky Road uses 18 for quick lane changes)
+    ramp: true,     // keys and arrows ease to full lock (false when the game smooths steering itself)
+  });
+  ```
+  - The left thumb steers in the chosen mode: two arrow buttons, an on-screen wheel turned by
+    dragging round its centre (analogue, full lock at 100°, springs back), or the phone's tilt
+    (the same wheel follows the phone; a tap on it re-centres; a pulsing TURN TILT ON button when
+    iOS needs a tap again). The steering group sits bottom-left (`steer: { x, y }` moves it).
+  - Right-thumb buttons: `shape: 'pedal' | 'round'`, `color`, `label` (localized in the game),
+    `labelY`, `icon: 'bolt' | 'up'`, `count` (a ×n badge, `pad.setCount(id, n)`), `hit` (extra
+    touch room; `Infinity` runs a side to the screen edge) and `holds` (another button this one also
+    holds). Every finger is read each frame: steer + gas + nitro together, and thumbs may slide
+    from one button onto the next. Keep them clear of the pause corner and the HUD; size tap
+    targets at least 80 px; check portrait (720×1280) and landscape (1280×720) layouts.
+- **Lifecycle.** `steering.begin()` at every race or run start (shows the pad, applies the mode,
+  starts or asks for the sensors, falls back to ARROWS with a message when tilt is impossible);
+  `steering.update(dt)` every frame in every phase; `steering.centre()` at the start signal (the
+  way the phone is held is straight ahead); `steering.end()` on results, shops and game over.
+- **Reading it.** `steering.steer(dt, this.controls.axisX)` returns -1..1 (keyboard wins while a key
+  is held; arrows ramp like the keys; wheel and tilt are analogue). Buttons: `steering.isDown(id)`
+  (held) and `steering.take(id)` (once per finger landing). `steering.pad` is null without touch.
+- **Keyboard.** ←/→ (A/D) steer; ↑ (W) gas or the game's main action (jump); ↓ (S) brake or reverse
+  when the game has them; Space / Z / Enter for the extra action (nitro, jump). Say so in `howTo`,
+  next to "Touch: pick the steering on the menu (arrows, a wheel or tilt)".
+- **Strings.** The switch, tilt messages and hints come from the core (`steerTitle`, `steer_*`,
+  `tilt*`); only the game's own button labels (GAS / GAZ, BRAKE / FREN, JUMP / ZIPLA...) live in the game.
+- **Test** on emulated phones (Playwright `hasTouch: true, isMobile: true`), in the game's
+  orientation and with `screen.orientation.angle` 90 for landscape:
+  - the switch shows on touch only, and each mode can be picked;
+  - WHEEL: a quarter turn clockwise gives about +0.9, release returns to 0;
+  - TILT: dispatch `new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta, gamma })`
+    repeatedly; right edge down steers right (portrait: gamma > 0; landscape angle 90: beta > 0);
+    with `DeviceOrientationEvent.requestPermission` returning `'denied'`, the menu stays on ARROWS;
+  - ARROWS give ±1; steering and a right-thumb button work together (multi-touch through CDP
+    `Input.dispatchTouchEvent`);
+  - screenshots of the menu (TR and EN) and of a race in each mode: nothing overlaps.
 
 ## 8. Ship
 

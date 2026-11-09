@@ -17,7 +17,7 @@ Rules:
 - **Intro and runtime.** Every game starts through `launch()`, which plays the Ayvago intro. Never bypass it.
 - **Assets.** Use only the local CC0 assets in `public/assets/` (`kenney/` and the `oga/` packs in `docs/assets/LICENSES.md`), listed in `docs/assets/*.txt`. Prefer `oga/junkala-sfx` for game sounds. Look at images with Read before choosing frames. No network loads.
 - **Scope.** Build a complete, polished, fun game, not a demo. Difficulty must ramp or levels must progress. Add juice: particles, shake, tweens and sounds.
-- **Controls and text.** Touch and keyboard must both work fully. All text comes in both TR and EN, and the Turkish must be correct.
+- **Controls and text.** Touch and keyboard must both work fully. Car and other driving games use the shared `@core` car steering (`steeringOption`, `CarSteering`; skill §7d). All text comes in both TR and EN, and the Turkish must be correct.
 - **Gate.** Do not report done until `node scripts/smoke-test.mjs --dev --serial <slug>` prints PASS and you have looked at a gameplay screenshot. Other agents work in parallel, so ignore type errors outside your folder.
 
 Final report (short): per game — slug, what was built (mechanics, levels/difficulty), assets used, smoke result, and any runtime limitation you hit.

@@ -1,4 +1,4 @@
-import { Phaser, ArcadeScene, Controls, shake, flash, popup, t, loc, txt, storage } from '@core';
+import { Phaser, ArcadeScene, Controls, CarSteering, shake, flash, popup, t, loc, txt, storage, type CarPadButton } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { LAYOUTS, Track } from './tracks';
 import { buildArena, type Arena } from './scenery';
@@ -8,9 +8,6 @@ import { SURF_MUD, SURF_PUDDLE, SURF_BERM, SURF_GRASS } from './terrain';
 import { ResultsPanel, ShopPanel, MAX_LEVEL, price, type Upgrade, type ResultRow } from './panels';
 import { money, ordinal } from './strings';
 import { matte } from './look';
-import { TouchPad } from './touch';
-import { tilt } from './tilt';
-import { steerMode, setSteerMode } from './steering';
 import { SkidMarks } from './marks';
 
 const LAPS = 4;
@@ -27,6 +24,12 @@ const FOV = 38;
 const CAM_POS = new THREE.Vector3(0, 47, 30.5);
 const CAM_LOOK = new THREE.Vector3(0, 0, 1.6);
 const PLAYER_COLOR = 0x2f7dff;
+/** The right-thumb pedals and NITRO on touch screens (the steering is the core CarPad's). */
+const GAS = { x: 1180, y: 566, w: 150, h: 220 };
+const BRAKE = { x: 1018, y: 610, w: 132, h: 132 };
+const NITRO = { x: 1018, y: 448, r: 64 };
+/** Where the first-race hint about the pedals sits. */
+const PEDALS_HINT = { x: 1050, y: NITRO.y - NITRO.r - 6 };
 /** Storage key: the controls hint has been shown once (first race only). */
 const HINT_KEY = 'mud-rally:controlsHint';
 const RIVALS = [
@@ -66,9 +69,8 @@ export class PlayScene extends ArcadeScene {
   private dtNow = 0;
   private dustAcc = new Map<Truck, number>();
   private aiDelay = new Map<Truck, number>();
-  private touch: TouchPad | null = null;
+  private steering!: CarSteering;
   private marks!: SkidMarks;
-  private steerIn = 0;
   private wrongArrow!: THREE.Mesh;
   private hint: Phaser.GameObjects.Container | null = null;
   private skidCd = 0;
@@ -105,7 +107,6 @@ export class PlayScene extends ArcadeScene {
     this.wrongShown = -9;
     this.dustAcc = new Map();
     this.aiDelay = new Map();
-    this.steerIn = 0;
     this.hint = null;
     this.skidCd = 0;
     this.wasBraking = false;
@@ -135,9 +136,13 @@ export class PlayScene extends ArcadeScene {
     // keys from the core (arrows / WASD, Space / Z / Enter); on touch screens the scene draws its
     // own car controls (steer left / right, GAS, BRAKE, NITRO) instead of the stick
     this.controls = new Controls(this, {});
-    this.touch = this.controls.touchUi ? new TouchPad(this) : null;
-    // the sensor reader lives for the whole visit (menu and races), so it is not stopped here
-    if (this.touch) this.touch.onAskTilt = () => this.askTilt();
+    const buttons: CarPadButton[] = [
+      { id: 'gas', shape: 'pedal', ...GAS, color: 0x2fae5a, label: t('gas'), labelY: -40, hit: { left: 8, top: 20, right: Infinity, bottom: Infinity } },
+      { id: 'brake', shape: 'pedal', ...BRAKE, color: 0xe8402f, label: t('brake'), labelY: -22, hit: { left: 30, top: 16, right: Infinity, bottom: Infinity } },
+      // a thumb on NITRO keeps the gas on: firing the boost never lifts off the pedal
+      { id: 'nitro', shape: 'round', ...NITRO, color: 0xff7a1a, icon: 'bolt', count: true, holds: 'gas' },
+    ];
+    this.steering = new CarSteering(this, { touch: this.controls.touchUi, buttons });
 
     this.dust = new Particles(900, false, this.scale.height, FOV);
     this.glow = new Particles(320, true, this.scale.height, FOV);
@@ -277,10 +282,8 @@ export class PlayScene extends ArcadeScene {
     this.player.nitro = 1 + this.levels.nitro;
     this.shown = -1;
     this.updateNitroHud();
-    this.nitroIcon.setVisible(!this.touch);
-    this.touch?.setVisible(true);
-    this.applySteerMode();
-    this.steerIn = 0;
+    this.nitroIcon.setVisible(!this.steering.pad);
+    this.steering.begin();
     this.wrongT = 0;
     this.nitroSpawned = 0;
 
@@ -305,12 +308,13 @@ export class PlayScene extends ArcadeScene {
     const pill = (x: number, y: number, w: number, h: number) =>
       this.add.graphics().fillStyle(0x0b1020, 0.72).fillRoundedRect(x - w / 2, y - h / 2, w, h, h / 2)
         .lineStyle(2, 0xffffff, 0.25).strokeRoundedRect(x - w / 2, y - h / 2, w, h, h / 2);
-    if (this.touch) {
-      const a = TouchPad.anchors;
+    const pad = this.steering.pad;
+    if (pad) {
+      const a = { steer: pad.steerAnchor, pedals: PEDALS_HINT };
       const steer = txt(this, a.steer.x, a.steer.y - 34, t('hintSteer'), { title: true, size: 26, color: '#ffd23f', strokeThickness: 6 });
       const ped = txt(this, a.pedals.x, a.pedals.y - 50, t('hintPedals'), { size: 22, color: '#ffffff', strokeThickness: 6, wrap: 400 });
       c.add([pill(a.steer.x, a.steer.y - 34, steer.width + 44, 52), steer, pill(a.pedals.x, a.pedals.y - 50, ped.width + 44, ped.height + 22), ped]);
-      this.touch.pulse();
+      pad.pulse();
     } else {
       // key caps: arrows drawn as triangles (they read the same in every font)
       const cap = (x: number, y: number, w: number, dir: number | null, label = '') => {
@@ -393,15 +397,7 @@ export class PlayScene extends ArcadeScene {
     const dt = delta / 1000;
     this.phaseT += dt;
     const terrain = this.arena!.terrain;
-    this.touch?.update(dt);
-    if (tilt.active) {
-      tilt.update(dt);
-      if (this.touch?.takeWheel()) {
-        tilt.calibrate();
-        popup(this, 191, 440, t('tiltCentred'), '#7dff9a', 24);
-      }
-      this.touch?.setWheel(tilt.steer);
-    }
+    this.steering.update(dt);
 
     if (this.phase === 'intro') {
       const k = Phaser.Math.Easing.Cubic.InOut(Math.min(1, this.phaseT / 1.7));
@@ -428,7 +424,7 @@ export class PlayScene extends ArcadeScene {
           for (const tr of this.trucks) if (!tr.isPlayer) this.aiDelay.set(tr, 0.05 + Math.random() * 0.3);
           this.dropHint();
           // the way the phone is held at the start is straight ahead
-          if (tilt.active) tilt.calibrate();
+          this.steering.centre();
         }
         this.count++;
       }
@@ -488,73 +484,17 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  // ---------- steering mode (touch screens, chosen on the menu) ----------
-  /** At each race start: shows the controls for the chosen mode, starting the sensors for TILT. */
-  private applySteerMode(): void {
-    const tp = this.touch;
-    if (!tp) return;
-    const mode = steerMode();
-    if (mode !== 'tilt') {
-      tp.setMode(mode);
-      return;
-    }
-    if (tilt.active) {
-      tp.setMode('tilt');
-      return;
-    }
-    // where the sensors may start without a tap (Android) they just do; where the browser wants a
-    // tap first (iOS after a reload) the arrows stand in and a button asks for that tap
-    tp.setMode('tilt', true);
-    void tilt.enable().then((r) => {
-      if (this.touch !== tp || !this.sys.isActive()) return;
-      if (r === 'on') tp.setMode('tilt');
-      else if (r === 'unsupported') this.dropTilt('tiltNone');
-    });
-  }
-
-  /** The "turn tilt on" button: asks for the sensors from inside the tap. */
-  private askTilt(): void {
-    void tilt.enable().then((r) => {
-      if (!this.touch || !this.sys.isActive()) return;
-      if (r === 'on') {
-        this.touch.setMode('tilt');
-        tilt.calibrate();
-        popup(this, 640, 230, t('tiltOn'), '#7dff9a', 28);
-      } else this.dropTilt(r === 'denied' ? 'tiltDenied' : 'tiltNone');
-    });
-  }
-
-  /** Tilt cannot work here: back to the arrows, and the menu shows that choice from now on. */
-  private dropTilt(why: 'tiltDenied' | 'tiltNone'): void {
-    setSteerMode('arrows');
-    this.touch?.setMode('arrows');
-    popup(this, 640, 230, t(why), '#ff9a7a', 26);
-  }
-
   private playerInput(dt: number): DriveInput {
-    const c = this.controls, tp = this.touch, tr = this.player;
+    const c = this.controls, st = this.steering, tr = this.player;
     const keyNitro = c.justA();
-    const padNitro = tp?.takeNitro() ?? false;
+    const padNitro = st.take('nitro');
     if ((keyNitro || padNitro) && tr.nitro > 0 && tr.nitroT <= 0) this.fireNitro(tr);
     // car controls, relative to the truck: left / right turn it, up is gas, down brakes and
-    // reverses once stopped. The wheel follows the keys quickly but not at once, so a tap is a
-    // small correction and a held key is full lock.
-    const keys = Math.sign(c.axisX) * (Math.abs(c.axisX) > 0.3 ? 1 : 0);
-    if (tp?.mode === 'tilt' && tilt.active && keys === 0) {
-      // tilt steering is analogue and already smoothed: the wheel follows the phone
-      this.steerIn = tilt.steer;
-    } else if (tp?.mode === 'wheel' && keys === 0) {
-      // the on-screen wheel is analogue too: the truck follows the thumb
-      this.steerIn = tp.steer;
-    } else {
-      const want = tp && tp.steer !== 0 ? tp.steer : keys;
-      const back = want === 0 || Math.sign(want) !== Math.sign(this.steerIn);
-      const step = (back ? 9 : 5.5) * dt;
-      this.steerIn += Phaser.Math.Clamp(want - this.steerIn, -step, step);
-    }
-    const gas = c.axisY < -0.3 || !!tp?.gas;
-    const brake = c.axisY > 0.3 || !!tp?.brake;
-    return { steer: this.steerIn, throttle: brake ? -1 : gas ? 1 : 0 };
+    // reverses once stopped. Keys and arrow buttons ease to full lock; the wheel and tilt are analogue.
+    const steer = st.steer(dt, c.axisX);
+    const gas = c.axisY < -0.3 || st.isDown('gas');
+    const brake = c.axisY > 0.3 || st.isDown('brake');
+    return { steer, throttle: brake ? -1 : gas ? 1 : 0 };
   }
 
   /** The AI picks a point to drive at, then steers and uses the pedals under the player's rules. */
@@ -820,7 +760,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.setCenter('');
     this.nitroIcon.setVisible(false);
-    this.touch?.setVisible(false);
+    this.steering.end();
     this.wrongArrow.visible = false;
     new ResultsPanel(this, this.raceNo, rows, this.raceCash, prize + this.raceCash, note, () => {
       if (this.lives <= 0) {
@@ -834,7 +774,7 @@ export class PlayScene extends ArcadeScene {
   private openShop(): void {
     this.phase = 'shop';
     const next = LAYOUTS[this.raceNo % LAYOUTS.length];
-    const state = { bank: this.bank, levels: this.levels, nextTrack: t('nextTrack', { name: loc(next.name) }), touch: !!this.touch };
+    const state = { bank: this.bank, levels: this.levels, nextTrack: t('nextTrack', { name: loc(next.name) }), touch: !!this.steering.pad };
     new ShopPanel(this, state, (u) => {
       const lvl = this.levels[u];
       const p = price(u, lvl);
@@ -1038,7 +978,7 @@ export class PlayScene extends ArcadeScene {
     const racing = this.phase === 'race' || this.phase === 'finish' || this.phase === 'count' || this.phase === 'intro';
     const top = BASE_TOP * (1 + 0.075 * this.levels.engine);
     let k = Phaser.Math.Clamp(tr.speed / top, 0, 1.5);
-    if (this.phase === 'count' || this.phase === 'intro') k = this.controls.axisY < -0.3 || this.touch?.gas ? 0.7 : 0;
+    if (this.phase === 'count' || this.phase === 'intro') k = this.controls.axisY < -0.3 || this.steering.isDown('gas') ? 0.7 : 0;
     const rate = 0.7 + k * 0.8 + (tr.nitroT > 0 ? 0.2 : 0) + (tr.airborne ? 0.15 : 0);
     try {
       e.setRate(rate);
@@ -1098,7 +1038,7 @@ export class PlayScene extends ArcadeScene {
     this.shown = this.player.nitro;
     this.nitroText.setText(`×${this.player.nitro}`);
     this.nitroIcon.setAlpha(this.player.nitro > 0 ? 1 : 0.55);
-    this.touch?.setNitro(this.player.nitro);
+    this.steering.pad?.setCount('nitro', this.player.nitro);
   }
 }
 

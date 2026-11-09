@@ -11,7 +11,7 @@ Decision record: ADR 0011 in the platform repo.
 ## Layout
 
 ```
-src/core/          shared runtime (@core): intro, launch, flow scenes, ArcadeScene, controls, i18n, sdk, fx, ui
+src/core/          shared runtime (@core): intro, launch, flow scenes, ArcadeScene, controls, i18n, sdk, fx, ui, steering (car games)
 src/core/three/    3D runtime (@core/three): World3D, GLB models via the Phaser loader (3D games only)
 games/<slug>/      one game each: index.html, game.json, main.ts, *.ts
 templates/game/    scaffold used by `npm run new-game`
@@ -47,6 +47,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 - **TR and EN.** Every user-visible string is in both languages; the Turkish must be correct (ç ğ ı İ ö ş ü). Fonts: retro-genre games use Press Start 2P (titles) + Pixelify Sans (body); every other game is drawn in the modern style (`src/core/style.ts`: Fredoka + Nunito, smooth scaling, rounded UI, no scanlines). All four fonts cover Turkish; the core puts "Ayvago Pixel TR" (`src/core/turkish-font.ts`, one glyph) in front of Press Start 2P because its own İ looks like a lowercase i. The Kenney fonts do not cover Turkish.
 - **Assets.** CC0 only, from `public/assets`: Kenney (`kenney/`) and the CC0 packs recorded in `docs/assets/LICENSES.md` (`oga/`: Juhani Junkala's 512 retro effects and chiptune music). A new pack is added to that register (source, author, license) before it is used; CC-BY and other attribution licenses are not allowed. No runtime network loads.
 - **3D games.** three.js through `@core/three` (never `@core`), Kenney GLB kits, everything else as in a 2D game. Pilot: `games/sky-road`; rules in the new-game skill (§7b).
+- **Driving games.** Every car / truck / kart game steers through the shared `@core` car steering (`src/core/steering`): `menuOption: steeringOption` (ARROWS | WHEEL | TILT on touch screens, one choice for all car games), a `CarSteering` pad with the game's own right-thumb buttons, and ←/→ on the keyboard. Rules and tests: new-game skill §7d; references `games/mud-rally`, `games/sky-road`.
 - **Music.** The core plays background music (`src/core/music.ts`): the title theme on the menu and a track picked from the game's genre during rounds, ducked under pause and result screens. A game may choose with `music: { menu, play }` in its definition (`false` turns a slot off).
 - **Player characters.** Players pick one of five human characters on ayvago.com; the platform sends it in GHA_START (protocol 2.2).
   - Games with a hero whose art fits the Kenney vector style use it through `loadCharacter()` / `playerCharacter()` in `src/core/characters.ts`. The art is in `public/assets/characters` (31 poses each, built by `tools/import-characters.py`; the walking-up/down and kick-from-behind poses are derived there from `front`/`back`).
