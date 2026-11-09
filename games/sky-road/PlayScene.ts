@@ -108,8 +108,10 @@ export class PlayScene extends ArcadeScene {
       touch: this.controls.touchUi,
       buttons: [{ id: 'jump', shape: 'round', x: width - 136, y: height - 130, r: 96, color: 0xec3013, label: t('jump'), labelY: 34, labelSize: 26, icon: 'up', hit: 34 }],
       tiltLock: TILT_LOCK,
-      // the car eases its sideways speed as well, so the keys and arrows ramp only briefly
+      // the car eases its sideways speed as well, so the arrow buttons ramp only briefly and the
+      // keyboard answers at once (owner request: keys as before)
       ramp: STEER_RAMP,
+      keyRamp: false,
     });
     this.steering.begin();
     this.steering.centre();
