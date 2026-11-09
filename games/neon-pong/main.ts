@@ -8,6 +8,7 @@ launch({
   meta: meta as GameMeta,
   background: '#07041a',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     l.image('paddle-me', kenney(P + 'paddles/paddle_05.png'));
@@ -29,11 +30,11 @@ launch({
     const { width, height } = scene.scale;
     const g = scene.add.graphics();
     g.lineStyle(4, 0xff4fa3, 0.35);
-    for (let x = 30; x < width; x += 50) g.lineBetween(x, height * 0.79, x + 25, height * 0.79);
-    scene.add.image(width / 2 - 120, height * 0.73, 'paddle-ai').setDisplaySize(170, 40).setBlendMode('ADD');
-    scene.add.image(width / 2 + 120, height * 0.86, 'paddle-me').setDisplaySize(170, 40).setBlendMode('ADD');
-    const ball = scene.add.image(width / 2 - 60, height * 0.77, 'ball').setDisplaySize(34, 34);
-    scene.tweens.add({ targets: ball, x: width / 2 + 90, y: height * 0.83, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    for (let x = 30; x < width; x += 50) g.lineBetween(x, height * 0.85, x + 25, height * 0.85);
+    scene.add.image(width / 2 - 120, height * 0.8, 'paddle-ai').setDisplaySize(170, 40).setBlendMode('ADD');
+    scene.add.image(width / 2 + 120, height * 0.9, 'paddle-me').setDisplaySize(170, 40).setBlendMode('ADD');
+    const ball = scene.add.image(width / 2 - 60, height * 0.83, 'ball').setDisplaySize(34, 34);
+    scene.tweens.add({ targets: ball, x: width / 2 + 90, y: height * 0.87, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   },
   scenes: [PlayScene],
   strings: {
