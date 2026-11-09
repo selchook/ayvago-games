@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, flash, shake, t, txt, rng, net, playerCharacter, CHARACTER_FRAME } from '@core';
+import { ArcadeScene, burst, flash, shake, t, txt, rng, net, playerCharacter, CHARACTER_FRAME, isEasy } from '@core';
 import {
   WORLD_W, PAD, makeRound, fly, crater, tankPose, groundAt, aiAim, type Shot, type TreeSpec,
 } from './world';
@@ -16,6 +16,16 @@ const CREW_S = 0.34;                // commander scale in the hatch
 // kept clear of the screen's edges, which a rounded or cropped frame may hide
 const FIRE_X = 1162, FIRE_Y = 600, FIRE_R = 70;
 const MAP = { x: 460, y: 64, w: 360, h: 46 };
+/**
+ * Normal and Easy (practice). The CPU's skill is base + round * perRound + shots * perShot, capped;
+ * skill 0 misses by up to ±8° and ±13 power, skill 1 by ±1° and ±1. Easy: it starts wild (0), learns
+ * about half as fast from round to round and shot to shot and never sharpens past 0.55 (instead of 0.9);
+ * the wind blows at half strength and your aim guide is 11 dots long instead of 7.
+ */
+const TUNING = {
+  normal: { base: 0.1, perRound: 0.1, perShot: 0.13, cap: 0.9, wind: 1, guide: 7 },
+  easy: { base: 0, perRound: 0.05, perShot: 0.07, cap: 0.55, wind: 0.5, guide: 11 },
+};
 
 export const CREW_POSES = ['stand', 'front', 'action1', 'action2', 'hit', 'cheer1', 'cheer2'] as const;
 
@@ -118,9 +128,11 @@ export class PlayScene extends ArcadeScene {
   private hint!: Phaser.GameObjects.Text;
   private edgeText!: Phaser.GameObjects.Text;
   private engine: Phaser.Sound.BaseSound | null = null;
+  tune = TUNING.normal;
 
   createGame(): void {
     this.online = net.active;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
     this.useHud = !this.online;
     this.mySeat = this.online ? net.seat : 0;
     this.routed = new WeakSet();
@@ -368,7 +380,7 @@ export class PlayScene extends ArcadeScene {
 
   private nextWind(): number {
     const v = this.online ? rng.seeded((this.roundSeed ^ Math.imul(this.shotNo + 1, 2654435761)) >>> 0)() : Math.random();
-    const strength = 0.025 + Math.min(this.round, 4) * 0.006;
+    const strength = (0.025 + Math.min(this.round, 4) * 0.006) * this.tune.wind;
     return Math.round((v - 0.5) * 2 * strength * 1000) / 1000;
   }
 
@@ -402,11 +414,17 @@ export class PlayScene extends ArcadeScene {
   }
 
   // ------------------------------------------------------------------ AI
+  /** The CPU's aim skill (0 = wild, 1 = sharp) for a tank that has fired `shots` times this round. */
+  ai(shots = 0): { skill: number } {
+    const k = this.tune;
+    return { skill: Math.min(k.cap, k.base + this.round * k.perRound + shots * k.perShot) };
+  }
+
   private aiTurn(tk: Tank): void {
     const delay = 650 + rng.int(0, 350);
     this.time.delayedCall(delay, () => {
       if (this.isOver || this.phase !== 'ai') return;
-      const skill = Math.min(0.9, 0.1 + this.round * 0.1 + tk.shots * 0.13);
+      const { skill } = this.ai(tk.shots);
       const aim = aiAim(this.heights, this.tanks.map((o) => o.x), tk.seat, this.wind, skill, Math.random);
       // turn the barrel, then charge with the meter visible, then fire
       const turnMs = Math.min(900, 250 + Math.abs(aim.deg - tk.deg) * 12);
@@ -973,9 +991,9 @@ export class PlayScene extends ArcadeScene {
     // a short dotted guide from the muzzle along the aim, without wind or gravity's full fall
     const a = (tk.deg * Math.PI) / 180;
     const px = tk.x + 38 * Math.sin(tk.rot), py = tk.y - 38 * Math.cos(tk.rot);
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= this.tune.guide; i++) {
       const d = 46 + i * 16;
-      g.fillStyle(0xffffff, 0.55 - i * 0.06).fillCircle(px + Math.cos(a) * d, py - Math.sin(a) * d, 3.2);
+      g.fillStyle(0xffffff, Math.max(0.1, 0.55 - i * 0.06)).fillCircle(px + Math.cos(a) * d, py - Math.sin(a) * d, 3.2);
     }
     // where your last shot went, to adjust from
     const lp = tk.lastPath;

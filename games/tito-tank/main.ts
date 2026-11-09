@@ -9,6 +9,7 @@ launch({
   meta: meta as GameMeta,
   background: '#0d1b33',
   physics: 'none',
+  difficulty: true,
   music: { play: 'stage2' },
   preload(scene) {
     const l = scene.load;

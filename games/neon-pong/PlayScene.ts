@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng, net, upper } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng, net, upper, isEasy } from '@core';
 
 const L = 24, R = 696, TOP_GOAL = 120, BOT_GOAL = 1210;
 const ME_Y = 1110, AI_Y = 210, PW = 170, PH = 40, BALL_R = 17;
@@ -12,6 +12,15 @@ const AI = [
   { speed: 560, err: 124, react: 0.15, vision: 880 },
   { speed: 650, err: 112, react: 0.1, vision: 1000 },
 ];
+/**
+ * Normal and Easy (practice). Easy: the CPU climbs the AI table at half the pace (rounds 1-5 play
+ * tiers 1,1,2,2,3), moves at 75% speed, aims 40% wider, reacts 60% later and sees the ball 15% later;
+ * the ball serves and tops out 15% slower.
+ */
+const TUNING = {
+  normal: { ramp: 1, aiSpeed: 1, err: 1, react: 1, vision: 1, ball: 1 },
+  easy: { ramp: 0.5, aiSpeed: 0.75, err: 1.4, react: 1.6, vision: 0.85, ball: 0.85 },
+};
 
 // Online match: the field is symmetric around the two paddles (ME_Y / AI_Y), so the guest sees the
 // host's field mirrored (x' = 720 - x, y' = MIRROR_Y - y) with its own paddle at the bottom.
@@ -63,9 +72,11 @@ export class PlayScene extends ArcadeScene {
   private corrY = 0;
   private localHitT = -1e9;
   private seenRally = 0;
+  tune = TUNING.normal;
 
   createGame(): void {
     const { width, height } = this.scale;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
     this.round = 1; this.myPts = 0; this.aiPts = 0; this.rally = 0; this.spin = 0;
     this.live = false; this.targetX = null; this.meVel = 0; this.aiVel = 0; this.aiTarget = 360; this.aiThink = 0;
     this.online = net.active; this.host = net.isHost;
@@ -132,7 +143,7 @@ export class PlayScene extends ArcadeScene {
     this.live = false;
     this.spin = 0;
     this.rally = 0;
-    this.speed = 500 + this.round * 40;
+    this.speed = (500 + this.round * 40) * this.tune.ball;
     this.ball.setPosition(360, this.mid).setScale(0);
     this.tweens.add({ targets: this.ball, displayWidth: BALL_R * 2, displayHeight: BALL_R * 2, duration: 300, ease: 'Back.easeOut' });
     this.time.delayedCall(delay * 1000, () => {
@@ -147,8 +158,14 @@ export class PlayScene extends ArcadeScene {
     });
   }
 
+  /** The CPU this round (the paddle is `ai`): max speed, aim error (px), reaction delay (s) and vision (px). */
+  cpu(): { speed: number; err: number; react: number; vision: number } {
+    const a = AI[Math.floor((this.round - 1) * this.tune.ramp)], k = this.tune;
+    return { speed: a.speed * k.aiSpeed, err: a.err * k.err, react: a.react * k.react, vision: a.vision * k.vision };
+  }
+
   private newAiErr(): void {
-    const e = AI[this.round - 1].err;
+    const e = Math.round(this.cpu().err);
     this.aiErr = rng.int(-e, e);
   }
 
@@ -187,7 +204,7 @@ export class PlayScene extends ArcadeScene {
     this.movePlayer(dt);
 
     // CPU paddle
-    const ai = AI[this.round - 1];
+    const ai = this.cpu();
     this.aiThink -= dt;
     if (this.aiThink <= 0) {
       this.aiThink = ai.react;
@@ -241,7 +258,7 @@ export class PlayScene extends ArcadeScene {
 
   private paddleHit(p: Phaser.GameObjects.Image, py: number, dir: number, pvel: number, mine: boolean): void {
     const off = Phaser.Math.Clamp((this.ball.x - p.x) / (PW / 2), -1, 1);
-    this.speed = Math.min(850 + this.round * 80, this.speed * 1.045);
+    this.speed = Math.min((850 + this.round * 80) * this.tune.ball, this.speed * 1.045);
     const a = Phaser.Math.DegToRad(off * 52);
     this.vx = Math.sin(a) * this.speed;
     this.vy = Math.cos(a) * this.speed * dir;

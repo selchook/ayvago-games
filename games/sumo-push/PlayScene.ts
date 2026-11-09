@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, popup, txt, t, net, upper } from '@core';
+import { ArcadeScene, Controls, burst, shake, popup, txt, t, net, upper, isEasy } from '@core';
 
 // Dohyo (720 x 1280 world)
 const CX = 360, CY = 700;
@@ -27,6 +27,15 @@ interface Snap {
   r: number; k: [number, number]; ph: number; pt: number; n: number; adv: number; w: number;
 }
 const PHASES: Phase[] = ['count', 'live', 'over', 'done'];
+/**
+ * Normal and Easy (practice). The rival's skill is base + level * step (capped).
+ * Easy: it starts dumber (0.15), learns at half the pace and tops out at 0.6 instead of 1,
+ * thinks 60% less often and pushes with 85% of its strength.
+ */
+const TUNING = {
+  normal: { base: 0.25, step: 0.15, cap: 1, think: 1, power: 1 },
+  easy: { base: 0.15, step: 0.075, cap: 0.6, think: 1.6, power: 0.85 },
+};
 
 export function makeSumoTextures(scene: Phaser.Scene): void {
   if (scene.textures.exists('sm-red')) return;
@@ -118,6 +127,7 @@ export class PlayScene extends ArcadeScene {
   private adv = 0;             // 0 = me, 1 = rival has the dash ready at GO
   private level = 0;
   private skill = 0.25;
+  tune = TUNING.normal;
   private aiThink = 0;
   private aiIn: In = { x: 0, y: 0, dash: false };
   private bumpT = 0;
@@ -141,8 +151,9 @@ export class PlayScene extends ArcadeScene {
   createGame(): void {
     makeSumoTextures(this);
     this.online = net.active; this.host = net.isHost;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
     this.phase = 'count'; this.phaseT = 0; this.boutT = 0; this.ring = R0;
-    this.kMe = 0; this.kOp = 0; this.bout = 1; this.level = 0; this.skill = 0.25; this.aiThink = 0;
+    this.kMe = 0; this.kOp = 0; this.bout = 1; this.level = 0; this.skill = this.tune.base; this.aiThink = 0;
     this.aiIn = { x: 0, y: 0, dash: false }; this.bumpT = 0; this.lastCount = -1; this.shrinkWarned = false;
     this.sendT = 0; this.pingT = 0; this.lat = 0.05; this.remoteIn = { x: 0, y: 0, dash: false }; this.remoteSeq = 0; this.dashSeq = 0;
     this.snaps = []; this.corrX = this.corrY = 0; this.lastPh = -1; this.lastN = 0;
@@ -300,7 +311,7 @@ export class PlayScene extends ArcadeScene {
     this.addScore(300 * (this.level + 1), CX, CY - 220);
     this.sfx('win', { volume: 0.7 });
     this.level++;
-    this.skill = Math.min(1, 0.25 + this.level * 0.15);
+    this.skill = Math.min(this.tune.cap, this.tune.base + this.level * this.tune.step);
     this.time.delayedCall(900, () => {
       if (this.isOver) return;
       this.showBanner(t('nextRival'), '#ffd23f', 34);
@@ -383,6 +394,11 @@ export class PlayScene extends ArcadeScene {
   }
 
   // ---------------------------------------------------------------- AI
+  /** The rival now: skill (0..1), seconds between decisions and push strength. */
+  ai(): { skill: number; think: number; power: number } {
+    return { skill: this.skill, think: (0.22 - this.skill * 0.15) * this.tune.think, power: this.tune.power };
+  }
+
   private think(): In {
     const s = this.skill, ai = this.op, pl = this.me;
     const dcx = ai.x - CX, dcy = ai.y - CY, dc = Math.hypot(dcx, dcy);
@@ -398,7 +414,7 @@ export class PlayScene extends ArcadeScene {
     let ix = tx - ai.x, iy = ty - ai.y;
     const l = Math.hypot(ix, iy) || 1;
     ix /= l; iy /= l;
-    const sp = 0.7 + 0.3 * s;
+    const sp = (0.7 + 0.3 * s) * this.tune.power;
     ix *= sp; iy *= sp;
     // wobble for weaker rivals
     const wob = (1 - s) * 0.5;
@@ -455,7 +471,7 @@ export class PlayScene extends ArcadeScene {
         this.remoteIn.dash = false;
       } else {
         this.aiThink -= dt;
-        if (this.aiThink <= 0) { this.aiThink = 0.22 - this.skill * 0.15; this.aiIn = this.think(); }
+        if (this.aiThink <= 0) { this.aiThink = this.ai().think; this.aiIn = this.think(); }
         inOp = this.aiIn;
         this.aiIn = { ...this.aiIn, dash: false };
       }

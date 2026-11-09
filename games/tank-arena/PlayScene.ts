@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng, type EndOptions } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng, isEasy, type EndOptions } from '@core';
 
 type Body = Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
 type Static = Phaser.Types.Physics.Arcade.ImageWithStaticBody;
@@ -18,6 +18,17 @@ interface Tank {
 }
 
 const CELL = 80, COLS = 16, ROWS = 9;
+
+/**
+ * Normal and Easy (practice). `ramp` scales how fast the waves get harder: wave w plays like
+ * 1 + (w - 1) * ramp. Easy: five lives (up to six with repairs), enemy tanks at 80% speed that turn
+ * their guns 30% slower, fire 40% less often and miss wider (±0.15 rad instead of ±0.06), the ramp at
+ * half speed, and more drops from wrecks (25% instead of 14%) and crates (40% instead of 28%).
+ */
+const TUNING = {
+  normal: { lives: 3, maxLives: 5, ramp: 1, speed: 1, turn: 1, fire: 1, spread: 0.12, drop: 0.14, crateDrop: 0.28 },
+  easy: { lives: 5, maxLives: 6, ramp: 0.5, speed: 0.8, turn: 0.7, fire: 0.6, spread: 0.3, drop: 0.25, crateDrop: 0.4 },
+};
 
 export class PlayScene extends ArcadeScene {
   private controls!: Controls;
@@ -41,11 +52,13 @@ export class PlayScene extends ArcadeScene {
   private invuln = 0;
   private pointerAim: { x: number; y: number } | null = null;
   private banners: Phaser.GameObjects.Text[] = [];
+  tune = TUNING.normal;
 
   createGame(): void {
     const { width, height } = this.scale;
     this.enemies = []; this.banners = [];
-    this.lives = 3; this.wave = 0; this.toSpawn = 0; this.spawnCd = 0; this.betweenWaves = 1.2;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.lives = this.tune.lives; this.wave = 0; this.toSpawn = 0; this.spawnCd = 0; this.betweenWaves = 1.2;
     this.rapid = 0; this.triple = 0; this.shield = 0; this.invuln = 0; this.pointerAim = null; this.waveDamage = false;
     this.physics.world.setBounds(0, 0, width, height);
 
@@ -152,13 +165,18 @@ export class PlayScene extends ArcadeScene {
     return tk;
   }
 
+  /** How hard the current wave plays (equals the wave number in Normal). */
+  private lvl(): number {
+    return 1 + (this.wave - 1) * this.tune.ramp;
+  }
+
   private spawnEnemy(): void {
     const { width, height } = this.scale;
-    const pool = ['green'];
-    if (this.wave >= 2) pool.push('beige');
-    if (this.wave >= 3) pool.push('red', 'green');
-    if (this.wave >= 5) pool.push('black');
-    if (this.wave >= 8) pool.push('red', 'black');
+    const pool = ['green'], lvl = this.lvl();
+    if (lvl >= 2) pool.push('beige');
+    if (lvl >= 3) pool.push('red', 'green');
+    if (lvl >= 5) pool.push('black');
+    if (lvl >= 8) pool.push('red', 'black');
     const spots = [[CELL / 2, height / 2], [width - CELL / 2, height / 2], [width / 2, height - CELL / 2], [CELL / 2, height - CELL / 2], [width - CELL / 2, height - CELL / 2], [width / 2 - 200, CELL / 2]];
     const far = spots.filter(([x, y]) => Phaser.Math.Distance.Between(x, y, this.player.b.x, this.player.b.y) > 300 &&
       !this.enemies.some((e) => Phaser.Math.Distance.Between(x, y, e.b.x, e.b.y) < 80));
@@ -244,7 +262,7 @@ export class PlayScene extends ArcadeScene {
       this.sfxAt('crate', x, { volume: 0.5 });
       burst(this, x, y, [0x9c6b3c, 0xd9a066, 0x5a3a1e], 18, 260);
       if (scored) this.addScore(25, x, y);
-      if (rng.chance(0.28)) this.dropItem(x, y);
+      if (rng.chance(this.tune.crateDrop)) this.dropItem(x, y);
     }
   }
 
@@ -267,7 +285,7 @@ export class PlayScene extends ArcadeScene {
     if (e.hp > 0) { this.sfxAt(rng.pick(['clang1', 'clang2']), e.b.x, { volume: 0.45 }); return; }
     this.explode(e.b.x, e.b.y, true);
     this.addScore(e.kind.pts, e.b.x, e.b.y - 30);
-    if (rng.chance(0.14)) this.dropItem(e.b.x, e.b.y);
+    if (rng.chance(this.tune.drop)) this.dropItem(e.b.x, e.b.y);
     const wreck = this.add.image(e.b.x, e.b.y, `tank-${e.kind.color}`).setTint(0x222222).setAlpha(0.6).setRotation(e.b.rotation).setScale(e.kind.scale).setDepth(2);
     this.tweens.add({ targets: wreck, alpha: 0, delay: 2500, duration: 800, onComplete: () => wreck.destroy() });
     e.b.destroy(); e.barrel.destroy();
@@ -290,7 +308,7 @@ export class PlayScene extends ArcadeScene {
     if (key === 'pu-rapid') { this.rapid = 8; label = t('rapid'); }
     if (key === 'pu-triple') { this.triple = 8; label = t('triple'); }
     if (key === 'pu-shield') { this.shield = 8; label = t('shieldOn'); }
-    if (key === 'pu-repair') { this.lives = Math.min(5, this.lives + 1); label = t('repair'); this.updateHud(); }
+    if (key === 'pu-repair') { this.lives = Math.min(this.tune.maxLives, this.lives + 1); label = t('repair'); this.updateHud(); }
     popup(this, it.x, it.y - 30, label, '#5dff7a', 22);
     this.addScore(30);
     this.sfxAt(key === 'pu-repair' ? 'repair' : 'power', it.x, { volume: 0.6 });
@@ -337,7 +355,8 @@ export class PlayScene extends ArcadeScene {
   private startWave(): void {
     this.wave++;
     this.waveDamage = false;
-    this.toSpawn = 2 + this.wave + Math.floor(this.wave / 3);
+    const lvl = this.lvl();
+    this.toSpawn = Math.round(2 + lvl + Math.floor(lvl / 3));
     this.spawnCd = 0.6;
     this.refillCrates();
     this.updateHud();
@@ -405,27 +424,28 @@ export class PlayScene extends ArcadeScene {
     this.shieldFx.setVisible(this.shield > 0).setPosition(p.b.x, p.b.y).setRotation(this.elapsed * 2);
 
     // enemies
+    const lvl = this.lvl(), k = this.tune;
     for (const e of this.enemies) {
       e.thinkCd -= dt; e.fireCd -= dt;
       const blocked = !e.b.body.blocked.none || !e.b.body.touching.none;
       const dGoal = Phaser.Math.Distance.Between(e.b.x, e.b.y, e.gx, e.gy);
       if (e.thinkCd <= 0 || dGoal < 30 || (blocked && e.thinkCd < 1.2)) {
         e.thinkCd = rng.int(15, 30) / 10;
-        if (rng.chance(0.55 + Math.min(0.3, this.wave * 0.03))) {
+        if (rng.chance(0.55 + Math.min(0.3, lvl * 0.03))) {
           const a = rng.int(0, 628) / 100, r = rng.int(140, 280);
           e.gx = p.b.x + Math.cos(a) * r; e.gy = p.b.y + Math.sin(a) * r;
         } else { e.gx = rng.int(80, width - 80); e.gy = rng.int(80, height - 80); }
         e.gx = Phaser.Math.Clamp(e.gx, 60, width - 60); e.gy = Phaser.Math.Clamp(e.gy, 60, height - 60);
       }
       const ga = Phaser.Math.Angle.Between(e.b.x, e.b.y, e.gx, e.gy);
-      const sp = e.kind.speed * (1 + Math.min(0.5, this.wave * 0.04));
+      const sp = e.kind.speed * (1 + Math.min(0.5, lvl * 0.04)) * k.speed;
       this.moveTank(e, dGoal > 20 ? Math.cos(ga) * sp : 0, dGoal > 20 ? Math.sin(ga) * sp : 0, dt);
       const want = Phaser.Math.Angle.Between(e.b.x, e.b.y, p.b.x, p.b.y);
-      e.aim = Phaser.Math.Angle.RotateTo(e.aim, want, (1.5 + Math.min(1.5, this.wave * 0.12)) * dt);
+      e.aim = Phaser.Math.Angle.RotateTo(e.aim, want, (1.5 + Math.min(1.5, lvl * 0.12)) * k.turn * dt);
       const dist = Phaser.Math.Distance.Between(e.b.x, e.b.y, p.b.x, p.b.y);
       if (e.fireCd <= 0 && dist < 650 && Math.abs(Phaser.Math.Angle.Wrap(e.aim - want)) < 0.25 && p.b.visible) {
-        e.fireCd = e.kind.rate * (0.8 + Math.random() * 0.5) / (1 + Math.min(0.6, this.wave * 0.05));
-        this.fireFrom(e, this.eBullets, 'bullet-e', e.kind.bullet, e.aim + (Math.random() - 0.5) * 0.12);
+        e.fireCd = e.kind.rate * (0.8 + Math.random() * 0.5) / (1 + Math.min(0.6, lvl * 0.05)) / k.fire;
+        this.fireFrom(e, this.eBullets, 'bullet-e', e.kind.bullet, e.aim + (Math.random() - 0.5) * k.spread);
         this.sfxAt('efire', e.b.x, { volume: 0.25 });
       }
     }
@@ -437,8 +457,8 @@ export class PlayScene extends ArcadeScene {
     // wave flow
     if (this.toSpawn > 0) {
       this.spawnCd -= dt;
-      if (this.spawnCd <= 0 && this.enemies.length < 4 + Math.floor(this.wave / 2)) {
-        this.spawnCd = Math.max(0.6, 1.6 - this.wave * 0.08);
+      if (this.spawnCd <= 0 && this.enemies.length < 4 + Math.floor(lvl / 2)) {
+        this.spawnCd = Math.max(0.6, 1.6 - lvl * 0.08);
         this.toSpawn--;
         this.spawnEnemy();
       }
