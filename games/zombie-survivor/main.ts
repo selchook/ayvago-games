@@ -6,6 +6,7 @@ const P = 'topdown-shooter/png/';
 
 launch({
   meta: meta as GameMeta,
+  difficulty: true,
   background: '#1b2a1a',
   preload(scene) {
     const l = scene.load;
