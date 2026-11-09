@@ -50,6 +50,7 @@ launch({
   meta: meta as GameMeta,
   background: '#070b1e',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     loadSfx(l, 'hit', 'sfx-impact/audio/impactplate_light_001');
