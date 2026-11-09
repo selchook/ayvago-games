@@ -30,6 +30,7 @@ function keyedSheet(scene: Phaser.Scene): void {
 
 launch({
   meta: meta as GameMeta,
+  difficulty: true,
   music: { play: 'stage1' },
   background: '#141018',
   pixelArt: true,
