@@ -140,6 +140,12 @@ export const LEVELS: Level[] = [
   { noise: 0.04, defW: 1, blunder: 0, look: true, vcf: 8 },
   { noise: 0, defW: 1, blunder: 0, look: true, vcf: 12 },
 ];
+/** Easy (practice): a short, gentle ladder; noisy, careless with defence and no forcing search. */
+export const EASY_LEVELS: Level[] = [
+  { noise: 2, defW: 0.25, blunder: 0.45, look: false, vcf: 0 },
+  { noise: 1.6, defW: 0.3, blunder: 0.35, look: false, vcf: 0 },
+  { noise: 1.2, defW: 0.45, blunder: 0.25, look: false, vcf: 0 },
+];
 
 /** Picks a move for p. */
 export function choose(board: number[], p: number, lv: Level): number {

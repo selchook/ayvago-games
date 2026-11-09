@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net } from '@core';
-import { N, LEVELS, choose, winLine } from './ai';
+import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, isEasy } from '@core';
+import { N, LEVELS, EASY_LEVELS, choose, winLine, type Level } from './ai';
 
 const GAP = 44;                          // distance between intersections
 const BX = (720 - (N - 1) * GAP) / 2;     // first intersection x
@@ -26,6 +26,7 @@ export class PlayScene extends ArcadeScene {
   private nameB!: Phaser.GameObjects.Text;
   private nameW!: Phaser.GameObjects.Text;
   private level = 0;
+  private levels = LEVELS;
   private lives = 3;
   private streak = 0;
   private round = 0;
@@ -43,6 +44,7 @@ export class PlayScene extends ArcadeScene {
     this.stones = new Array(N * N).fill(null);
     this.state = 'busy'; this.cur = 112;
     this.level = 0; this.lives = 3; this.streak = 0; this.round = 0; this.moves = 0; this.playerMoves = 0;
+    this.levels = isEasy() ? EASY_LEVELS : LEVELS;
     this.online = net.active;
     this.mine = 1;
     this.moveNo = 0; this.inbox = [];
@@ -222,9 +224,14 @@ export class PlayScene extends ArcadeScene {
     this.place(this.cur, this.mine);
   }
 
+  /** The AI at the current level (noise, defence weight, blunder chance, look-ahead, forcing search). */
+  ai(): Level {
+    return this.levels[Math.min(this.level, this.levels.length - 1)];
+  }
+
   private aiMove(): void {
     if (this.isOver || this.state !== 'ai') return;
-    const i = choose(this.board, 3 - this.mine, LEVELS[Math.min(this.level, LEVELS.length - 1)]);
+    const i = choose(this.board, 3 - this.mine, this.ai());
     if (i < 0 || this.board[i]) return this.finish(0, null);
     this.place(i, 3 - this.mine);
   }
@@ -295,7 +302,7 @@ export class PlayScene extends ArcadeScene {
       this.streak++;
       const pts = 100 * (this.level + 1) + Math.max(0, 40 - this.playerMoves) * 5 + this.streak * 25;
       this.time.delayedCall(500, () => { this.addScore(pts, cx, BY - 40); this.sfx('win'); });
-      this.level = Math.min(this.level + 1, LEVELS.length - 1);
+      this.level = Math.min(this.level + 1, this.levels.length - 1);
       this.showBanner(t('roundWin'), '#5dff7a'); flash(this, 0x5dff7a, 150);
       if (this.streak >= 2) popup(this, cx, BY + 120, t('streak', { n: this.streak }), '#ffd23f', 34);
     } else if (winner) {
