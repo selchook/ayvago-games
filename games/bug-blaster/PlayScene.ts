@@ -1,11 +1,21 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng, isEasy } from '@core';
 
 const W = 720, H = 1280;
 const CELL = 40, COLS = 18;
 const ROW0 = 3;          // first playfield row (y = 120)
 const ZONE = 25;         // first row of the player zone
 const MAXR = 30;         // last row (y = 1200..1240)
+
+/**
+ * Normal and Easy (practice). Easy: two more lives, an extra life every 4000 points instead of
+ * 6000, a centipede that steps 30% slower, slower spiders and fleas, and a ramp at half speed.
+ * `ramp` scales how fast the waves get harder: wave w plays like wave 1 + (w - 1) * ramp.
+ */
+const TUNING = {
+  normal: { lives: 3, extraLife: 6000, step: 1, speed: 1, ramp: 1 },
+  easy: { lives: 5, extraLife: 4000, step: 1.3, speed: 0.75, ramp: 0.5 },
+};
 
 export const PALETTES = [
   { mush: 0xec3013, seg: 0x5dff7a },
@@ -117,11 +127,13 @@ export class PlayScene extends ArcadeScene {
   private zoneT = 0;
   private spiderCd = 5;
   private dead = false;
+  tune = TUNING.normal;
 
   createGame(): void {
     makeTextures(this);
     this.boltOn = false; this.fireCd = 0; this.chains = []; this.spider = null; this.flea = null;
-    this.wave = 1; this.lives = 3; this.nextLife = 6000; this.acc = 0; this.zoneT = 0; this.spiderCd = 6;
+    this.tune = isEasy() ? TUNING.easy : TUNING.normal;
+    this.wave = 1; this.lives = this.tune.lives; this.nextLife = this.tune.extraLife; this.acc = 0; this.zoneT = 0; this.spiderCd = 6;
     this.dead = false;
     this.add.tileSprite(0, ROW0 * CELL, W, (MAXR + 1 - ROW0) * CELL, 'gridbg').setOrigin(0);
     this.add.rectangle(0, ZONE * CELL, W, (MAXR + 1 - ZONE) * CELL, 0x3ee6ff, 0.05).setOrigin(0);
@@ -141,6 +153,11 @@ export class PlayScene extends ArcadeScene {
     // touch: floating stick anywhere on the screen (auto-fire, so no buttons)
     this.controls = new Controls(this, { joystick: true });
     this.startWave(true);
+  }
+
+  /** How hard the current wave plays (equals the wave number in Normal). */
+  private lvl(): number {
+    return 1 + (this.wave - 1) * this.tune.ramp;
   }
 
   private get pal() {
@@ -171,7 +188,7 @@ export class PlayScene extends ArcadeScene {
   private gain(n: number, x?: number, y?: number): void {
     this.addScore(n, x, y);
     if (this.score >= this.nextLife) {
-      this.nextLife += 6000;
+      this.nextLife += this.tune.extraLife;
       this.lives++;
       this.updateHud();
       this.sfx('oneup', { volume: 0.7, exact: true });
@@ -186,14 +203,14 @@ export class PlayScene extends ArcadeScene {
 
   private startWave(first: boolean): void {
     this.updateHud();
-    this.stepT = Math.max(0.05, 0.1 - (this.wave - 1) * 0.006);
+    this.stepT = Math.max(0.05, 0.1 - (this.lvl() - 1) * 0.006) * this.tune.step;
     // recolour the field
     for (const row of this.grid) for (const m of row) if (m) m.img.setTint(this.pal.mush);
-    const len = Math.min(16, 9 + this.wave);
+    const len = Math.min(16, 9 + Math.floor(this.lvl()));
     const fromLeft = rng.chance(0.5);
     this.spawnChain(len, fromLeft ? 0 : COLS - 1, fromLeft ? 1 : -1);
     // from wave 3 extra single heads join the main body
-    for (let i = 0; i < Math.min(4, Math.floor((this.wave - 1) / 2)); i++) {
+    for (let i = 0; i < Math.min(4, Math.floor((this.lvl() - 1) / 2)); i++) {
       this.spawnChain(1, rng.int(2, COLS - 3), rng.pick([-1, 1]));
     }
     const b = txt(this, W / 2, 560, t('waveN', { n: this.wave }), { title: true, size: 44, color: '#ffd23f' }).setDepth(9000).setScale(0.3);
@@ -347,8 +364,8 @@ export class PlayScene extends ArcadeScene {
     const fromLeft = rng.chance(0.5);
     const y = rng.int(cy(ZONE - 2), cy(MAXR));
     const img = this.add.image(fromLeft ? -40 : W + 40, y, 'spider').setDepth(15);
-    const sp = 120 + Math.min(10, this.wave) * 12;
-    this.spider = { img, vx: fromLeft ? sp : -sp, vy: rng.pick([-1, 1]) * rng.int(180, 300) };
+    const sp = (120 + Math.min(10, this.lvl()) * 12) * this.tune.speed;
+    this.spider = { img, vx: fromLeft ? sp : -sp, vy: rng.pick([-1, 1]) * rng.int(180, 300) * this.tune.speed };
     this.sfxAt('spiderIn', fromLeft ? 0 : W, { volume: 0.35 });
   }
 
@@ -392,7 +409,7 @@ export class PlayScene extends ArcadeScene {
     const inZone = this.chains.some((ch) => ch.segs.some((s) => s.r >= ZONE));
     if (inZone) {
       this.zoneT += dt;
-      if (this.zoneT > Math.max(3, 7 - this.wave * 0.4)) {
+      if (this.zoneT > Math.max(3, 7 - this.lvl() * 0.4)) {
         this.zoneT = 0;
         const fromLeft = rng.chance(0.5);
         const img = this.add.image(fromLeft ? -20 : W + 20, cy(ZONE), 'head').setTint(this.pal.seg).setDepth(10);
@@ -411,7 +428,7 @@ export class PlayScene extends ArcadeScene {
       const top = cy(ZONE - 3), bot = cy(MAXR);
       if (s.img.y < top) { s.img.y = top; s.vy = Math.abs(s.vy); }
       if (s.img.y > bot) { s.img.y = bot; s.vy = -Math.abs(s.vy); }
-      if (rng.chance(dt * 0.8)) s.vy = rng.pick([-1, 1]) * rng.int(150, 320);
+      if (rng.chance(dt * 0.8)) s.vy = rng.pick([-1, 1]) * rng.int(150, 320) * this.tune.speed;
       // eats mushrooms it passes over
       const mc = Math.floor(s.img.x / CELL), mr = Math.floor(s.img.y / CELL);
       const m = this.grid[mr]?.[mc];
@@ -425,10 +442,10 @@ export class PlayScene extends ArcadeScene {
     if (this.wave >= 2 && !this.flea) {
       let n = 0;
       for (let r = ZONE; r <= MAXR; r++) for (let cc = 0; cc < COLS; cc++) if (this.grid[r][cc]) n++;
-      if (n < 3 + this.wave && rng.chance(dt * 0.5)) {
+      if (n < 3 + this.lvl() && rng.chance(dt * 0.5)) {
         const col = rng.int(0, COLS - 1);
         const img = this.add.image(cx(col), 80, 'flea').setDepth(15);
-        this.flea = { img, hp: 2, vy: 420 + this.wave * 20, lastRow: 1 };
+        this.flea = { img, hp: 2, vy: (420 + this.lvl() * 20) * this.tune.speed, lastRow: 1 };
         this.sfxAt('flea', cx(col), { volume: 0.35 });
       }
     }
