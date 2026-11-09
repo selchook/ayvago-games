@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, net } from '@core';
-import { N, FLEET, cellsOf, fits, randomFleet, occupancy, resolve, newGunner, aim, learn, type Ship, type ShotResult, type Gunner } from './fleet';
+import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, net, isEasy } from '@core';
+import { N, FLEET, LEVEL_TOP, EASY_TOP, EASY_WILD, cellsOf, fits, randomFleet, occupancy, resolve, newGunner, aim, learn, type Ship, type ShotResult, type Gunner } from './fleet';
 
 interface Grid { x: number; y: number; cell: number }
 const BIG: Grid = { x: 100, y: 250, cell: 58 };     // placement sea, then the target sea
@@ -37,6 +37,7 @@ export class PlayScene extends ArcadeScene {
   private banner!: Phaser.GameObjects.Text;
   private fleetList: Phaser.GameObjects.Container[] = [];
   private level = 0;
+  private easy = false;
   private lives = 2;
   private streak = 0;
   private round = 0;
@@ -60,6 +61,7 @@ export class PlayScene extends ArcadeScene {
     this.shipImgs = []; this.phaseObjs = []; this.fires = []; this.fleetList = [];
     this.sel = 0; this.drag = null; this.cur = 44;
     this.level = 0; this.lives = 2; this.streak = 0; this.round = 0;
+    this.easy = isEasy();
     this.shots = 0; this.hits = 0; this.combo = 0;
     this.online = net.active;
     this.myReady = false; this.theirReady = false; this.shotNo = 0; this.shotsIn = []; this.resIn = []; this.landAt = 0;
@@ -348,7 +350,8 @@ export class PlayScene extends ArcadeScene {
       this.enemy = randomFleet();
       this.enemyOcc = occupancy(this.enemy);
       this.enemyShots = new Int8Array(N * N);
-      this.gunner = newGunner(Math.min(this.level, 4));
+      const { level, wild } = this.ai();
+      this.gunner = newGunner(level, wild);
       this.time.delayedCall(350, () => this.startBattle(this.round % 2 === 1));
     }
   }
@@ -552,6 +555,11 @@ export class PlayScene extends ArcadeScene {
 
   // ---- incoming shots (CPU or opponent)
 
+  /** The AI at the current level: gunnery level and the chance of a wild shot. */
+  ai(): { level: number; wild: number } {
+    return { level: Math.min(this.level, this.easy ? EASY_TOP : LEVEL_TOP), wild: this.easy ? EASY_WILD : 0 };
+  }
+
   private aiShoot(): void {
     if (this.isOver || this.turn !== 'theirs' || this.phase !== 'battle') return;
     const i = aim(this.gunner);
@@ -714,7 +722,7 @@ export class PlayScene extends ArcadeScene {
     if (win) {
       this.streak++;
       this.addScore(300 * (this.level + 1) + acc * 5 + this.streak * 50, 360, BIG.y + 40);
-      this.level = Math.min(this.level + 1, 4);
+      this.level = Math.min(this.level + 1, this.easy ? EASY_TOP : LEVEL_TOP);
     } else { this.lives--; this.streak = 0; }
     this.updateInfo();
     if (this.lives <= 0) { this.endGame({ delay: 2600 }); return; }

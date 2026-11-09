@@ -82,10 +82,16 @@ export function resolve(ships: Ship[], occ: Int8Array, shots: Int8Array, i: numb
 // ------------------------------------------------------------------ AI gunner
 // knowledge per cell: 0 unknown, 1 miss, 2 hit (ship still afloat), 3 sunk
 
-export interface Gunner { level: number; know: Int8Array; left: number[] }
+/** Rival levels run 0..LEVEL_TOP. Easy (practice) stops at EASY_TOP and fires some wild shots. */
+export const LEVEL_TOP = 4;
+export const EASY_TOP = 1;
+export const EASY_WILD = 0.3;
 
-export function newGunner(level: number): Gunner {
-  return { level, know: new Int8Array(N * N), left: [...FLEET] };
+/** The rival's gunnery: its level (0..4) and the chance of a wild shot at any unknown cell (Easy only). */
+export interface Gunner { level: number; wild: number; know: Int8Array; left: number[] }
+
+export function newGunner(level: number, wild = 0): Gunner {
+  return { level, wild, know: new Int8Array(N * N), left: [...FLEET] };
 }
 
 export function learn(g: Gunner, i: number, res: ShotResult): void {
@@ -137,6 +143,7 @@ export function aim(g: Gunner): number {
   const unknown: number[] = [];
   for (let i = 0; i < N * N; i++) if (!g.know[i]) unknown.push(i);
   if (!unknown.length) return -1;
+  if (g.wild && Math.random() < g.wild) return pick(unknown);
   const hits: number[] = [];
   for (let i = 0; i < N * N; i++) if (g.know[i] === 2) hits.push(i);
   const lv = g.level;

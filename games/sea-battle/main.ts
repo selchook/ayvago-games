@@ -6,6 +6,7 @@ launch({
   meta: meta as GameMeta,
   background: '#06172e',
   physics: 'none',
+  difficulty: true,
   preload(scene) {
     const l = scene.load;
     const P = 'particles/png_transparent/';
