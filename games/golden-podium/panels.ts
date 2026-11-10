@@ -3,14 +3,14 @@
 // call-outs). Jumbotron look: a dark screen with a frame of bulbs. Touch and keys (Space / Enter).
 import Phaser from 'phaser';
 import { Button, txt, t, playSfx } from '@core';
-import type { CharacterId } from '@core';
 import { ordinal } from './strings';
 
 export const PANEL_DEPTH = 9550;
 const DIM_DEPTH = 8000;
 
 export interface Row {
-  id: CharacterId;
+  /** Texture of the athlete's 3D portrait (portraits.ts). */
+  face: string;
   name: string;
   color: number;
   player: boolean;
@@ -106,7 +106,7 @@ export class Panel {
 
 /** Before each event: its name, the one-line hint, the cup record and READY. */
 export class EventCard extends Panel {
-  constructor(scene: Phaser.Scene, o: { n: number; name: string; hint: string; record: string; picture: string; touch: boolean; swim?: boolean }, onGo: () => void) {
+  constructor(scene: Phaser.Scene, o: { n: number; name: string; hint: string; record: string; picture: string; touch: boolean }, onGo: () => void) {
     super(scene, onGo, 0.25);
     const cx = 640, cy = 372, w = 860, h = 430;
     const r = this.root;
@@ -114,8 +114,7 @@ export class EventCard extends Panel {
     r.add(txt(scene, cx, cy - h / 2 + 46, `${t('cup')}  ·  ${t('eventN', { n: o.n })}`, { size: 22, color: '#9fb3d9', strokeThickness: 0 }));
     const title = txt(scene, cx + 70, cy - 92, o.name, { title: true, size: 58, color: '#ffd23f', strokeThickness: 8 });
     r.add(title);
-    const pic = scene.add.image(cx - w / 2 + 120, cy - 40, o.picture).setScale(0.9);
-    if (o.swim) pic.setRotation(Math.PI / 2).setFlipY(false);
+    const pic = scene.add.image(cx - w / 2 + 120, cy - 40, o.picture).setScale(0.8);
     r.add(pic);
     scene.tweens.add({ targets: pic, y: pic.y - 8, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     r.add(txt(scene, cx + 70, cy + 4, o.hint, { size: 26, wrap: w - 260, color: '#f3f2f2', strokeThickness: 0 }));
@@ -165,7 +164,7 @@ export class ResultsBoard extends Panel {
       items.push(txt(scene, col.place + 8, y, ordinal(row.place + 1), { title: true, size: 28, color: row.place === 0 ? '#ffd23f' : '#f3f2f2' }).setOrigin(0, 0.5));
       const mk = medalKey(row.place);
       if (mk) items.push(scene.add.image(col.medal, y, mk).setScale(0.62));
-      items.push(scene.add.image(col.pic, y + 2, `ch-${row.id}-front`).setScale(0.36));
+      items.push(scene.add.image(col.pic, y, row.face).setScale(0.5));
       items.push(txt(scene, col.name, y, row.name, { title: true, size: 26, color: row.player ? '#3ee6ff' : '#f3f2f2' }).setOrigin(0, 0.5));
       items.push(txt(scene, col.mark, y - (row.record ? 9 : 0), row.mark, { size: 28, color: '#ffffff' }).setOrigin(1, 0.5));
       if (row.record) items.push(txt(scene, col.mark, y + 17, t('record'), { size: 15, color: '#ffd23f', strokeThickness: 3 }).setOrigin(1, 0.5));
@@ -212,7 +211,7 @@ export class MedalTable extends Panel {
       if (row.player) items.push(scene.add.graphics().fillStyle(0x3ee6ff, 0.16).fillRoundedRect(cx - w / 2 + 24, y - 30, w - 48, 60, 16));
       items.push(scene.add.graphics().fillStyle(row.color, 1).fillRoundedRect(col.place - 12, y - 24, 8, 48, 4));
       items.push(txt(scene, col.place + 8, y, ordinal(i + 1), { title: true, size: 30, color: i === 0 ? '#ffd23f' : '#f3f2f2' }).setOrigin(0, 0.5));
-      items.push(scene.add.image(col.pic, y + 2, `ch-${row.id}-front`).setScale(0.36));
+      items.push(scene.add.image(col.pic, y, row.face).setScale(0.5));
       items.push(txt(scene, col.name, y, row.name, { title: true, size: 26, color: row.player ? '#3ee6ff' : '#f3f2f2' }).setOrigin(0, 0.5));
       row.medals.forEach((m, k) => items.push(txt(scene, [col.g, col.s, col.b][k], y, String(m), { title: true, size: 28, color: m ? '#ffffff' : '#56607e' })));
       items.push(txt(scene, col.pts, y, String(row.total), { title: true, size: 28, color: '#7dff9a' }).setOrigin(1, 0.5));

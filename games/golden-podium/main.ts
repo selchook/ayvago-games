@@ -1,9 +1,10 @@
-import { launch, loadAudio, loadSfx, kenney, loadCharacter, playerCharacter, otherCharacters, CHARACTER_IDS, t, type GameMeta } from '@core';
-import { World3D, THREE, loadKenney3d } from '@core/three';
+import { launch, loadAudio, loadSfx, kenney, t, type GameMeta } from '@core';
+import { World3D, loadKenney3d, loadModel, kenney3d, MINI_CHARACTERS_KIT } from '@core/three';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { STRINGS } from './strings';
-import { Athlete, POSES } from './athlete';
+import { Athlete, celebrate } from './athlete';
+import { loadCast, playerKey, pickRivals } from './cast';
 import { buildVenues, TEAM_COLORS } from './stadium';
 import { Confetti } from './fx3d';
 import { makeCrowdSounds } from './crowd-audio';
@@ -15,8 +16,9 @@ launch({
   difficulty: true,
   preload(scene) {
     const l = scene.load;
-    // every character: the player is one of them, the rivals are three of the others
-    for (const id of CHARACTER_IDS) loadCharacter(l, { id, prefix: `ch-${id}`, poses: POSES });
+    // rigged 3D athletes (Kenney Mini Characters): the player's model and every male rival
+    loadCast(l);
+    loadModel(l, 'bow', kenney3d(MINI_CHARACTERS_KIT, 'weapon-bow'));
     for (const [key, name] of [['light', 'lightPostLarge'], ['flagRed', 'flagRed'], ['flagGreen', 'flagGreen'], ['tent', 'tentLong']]) {
       loadKenney3d(l, key, 'racing-kit', name);
     }
@@ -61,40 +63,37 @@ launch({
     world.addLights({ ambient: 1.8, intensity: 2.4, extent: 14, dir: [-0.45, 1, 0.55] });
     const v = buildVenues(world.scene, t('cup'));
     const pod = v.podium.position;
-    const me = playerCharacter();
-    const ids = [me, ...otherCharacters(me).slice(0, 2)];
+    const keys = [playerKey(), ...pickRivals(2).map((r) => r.key)];
     const xs = [0, -2.1, 2.1], hs = [1.0, 0.7, 0.45];
-    const athletes = ids.map((id, i) => {
-      const a = new Athlete(scene, id, TEAM_COLORS[i]);
+    const athletes = keys.map((key, i) => {
+      const a = new Athlete(key, TEAM_COLORS[i]);
       a.showMarks(false);
       a.root.position.set(pod.x + xs[i], hs[i], pod.z);
-      a.setPose(i === 0 ? 'cheer1' : 'stand');
-      a.sync();
+      a.face(Math.PI / 2 + (i === 1 ? -0.25 : i === 2 ? 0.25 : 0));
       v.track.add(a.root);
       return a;
     });
+    scene.events.once('shutdown', () => athletes.forEach((a) => a.dispose()));
     const confetti = new Confetti(v.track, pod.clone(), 6, 160);
     confetti.start();
     // the podium stands on the left, beside PLAY and above the how-to text
     world.camera.position.set(pod.x + 10.8, 3.6, pod.z + 22);
     world.camera.lookAt(pod.x + 10.8, 3.25, pod.z);
     scene.add.rectangle(0, 0, 1280, 720, 0x0b1430, 0.28).setOrigin(0).setDepth(-90);
-    let k = 0;
+    const t0 = performance.now() / 1000;
     world.onFrame = (dt) => {
       const time = performance.now() / 1000;
       for (const c of v.crowds) if (c.venue.visible) c.crowd.update(dt, time);
       confetti.update(dt, time);
-      const nk = Math.floor(time * 2.5);
-      if (nk !== k) {
-        k = nk;
-        athletes[0].setPose(k % 2 ? 'cheer2' : 'cheer1');
-        athletes[1].setPose(k % 3 ? 'stand' : 'cheer1');
-        athletes[2].setPose((k + 1) % 3 ? 'stand' : 'cheer1');
-      }
+      // the champion hops and cheers, the others clap along now and then
+      const tt = time - t0;
+      celebrate(athletes[0], tt);
+      athletes[1].play(Math.floor(tt / 2.2) % 2 ? 'emote-yes' : 'idle', { fade: 0.3 });
+      athletes[2].play(Math.floor(tt / 2.2 + 0.5) % 2 ? 'emote-yes' : 'idle', { fade: 0.3 });
+      for (const a of athletes) a.update(dt);
       for (const c of v.crowds) c.crowd.cheer(0.6);
       world.camera.position.x = pod.x + 10.8 + Math.sin(time * 0.25) * 0.3;
     };
-    void THREE;
   },
   scenes: [PlayScene],
   strings: STRINGS,

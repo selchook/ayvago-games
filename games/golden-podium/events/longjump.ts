@@ -11,6 +11,7 @@ import { rivalMark, type EventId } from '../scoring';
 import { metres, num } from '../strings';
 import { box } from '../look';
 import type { PadButton } from '../pad';
+import type { Shot } from '../portraits';
 
 export const LONGJUMP_TUNE = {
   normal: { useful: 5.0, vmax: 10.6, acc: 1.25, angleRate: 78, eff: 0.78, foulSlack: 0.1 },
@@ -57,8 +58,8 @@ export class LongJump extends SportEvent {
     ];
   }
 
-  picture(): string {
-    return `ch-${this.s.player.id}-jump`;
+  picture(): Shot {
+    return { clip: 'sit', at: 0, yaw: 0.35 };
   }
 
   setup(): void {
@@ -67,8 +68,9 @@ export class LongJump extends SportEvent {
     s.entrants.forEach((e, i) => {
       const a = e.athlete;
       if (i === 0) a.root.position.set(BOARD_X - RUNUP, 0, JUMP_Z);
-      else a.root.position.set(BOARD_X + 11.6 + i * 0.95, 0, JUMP_Z - 2.25 - (i % 2) * 0.35);
-      a.setPose(i === 0 ? 'stand' : 'front');
+      else a.root.position.set(BOARD_X + 10.8 + i * 1.5, 0, JUMP_Z - 2.3 - (i % 2) * 0.5);
+      // the rivals wait beside the pit, turned towards the runway and the camera
+      a.face(i === 0 ? 0 : Math.PI * 0.75).play('idle', { fade: 0 });
     });
     s.cut(new THREE.Vector3(BOARD_X + 6, 2.6, JUMP_Z + 9), new THREE.Vector3(BOARD_X + 2, 0.6, JUMP_Z));
     s.fov(50, true);
@@ -128,7 +130,7 @@ export class LongJump extends SportEvent {
     const a = s.player.athlete;
     a.root.position.set(this.x, 0, JUMP_Z);
     a.lift = 0;
-    a.setPose('stand');
+    a.face(0).play('idle', { fade: 0.2 });
     this.gauge.clear();
     this.gaugeText.setText('');
     this.meter.set(0);
@@ -160,7 +162,7 @@ export class LongJump extends SportEvent {
         const target = tn.vmax * stride(this.cad.rate(this.t), tn.useful, this.cad.evenness());
         this.v += (target - this.v) * Math.min(1, dt * (target > this.v ? tn.acc : 1.2));
         this.x += this.v * dt;
-        a.run(this.x, 1.15);
+        a.run(this.v);
         this.meter.set(this.v / tn.vmax);
         if (this.x > BOARD_X + 0.6) {
           // ran through the board
@@ -170,7 +172,7 @@ export class LongJump extends SportEvent {
           this.landX = this.x + 1.2;
           this.state = 'land';
           this.stateT = 0;
-          a.setPose('skid');
+          a.play('crouch', { fade: 0.12 });
           this.callFoul();
         }
       } else {
@@ -189,20 +191,24 @@ export class LongJump extends SportEvent {
       const p = Math.min(1, this.t / this.flightT);
       this.x = this.takeoffX + (this.landX - this.takeoffX) * p;
       a.lift = 0.5 * (1 - p) + 4 * this.peak * p * (1 - p);
-      a.setPose(p < 0.55 ? 'jump' : 'fall');
+      // tucked in the jump clip, then the legs swing forward (the sit clip) for the landing
+      a.play(p < 0.55 ? 'jump' : 'sit', { fade: 0.3 });
       s.camTo(new THREE.Vector3(this.x + 0.5, 2.0 + a.lift * 0.6, JUMP_Z + 7.4), new THREE.Vector3(this.x + 2.2, 0.9 + a.lift * 0.75, JUMP_Z), 5);
       if (p >= 1) this.land();
     } else if (this.state === 'land') {
       if (this.foul && this.x < this.landX) {
         this.x = Math.min(this.landX, this.x + Math.max(1, this.v *= 0.9) * dt);
-        a.setPose('skid');
+        a.play('crouch', { fade: 0.12 });
+      } else if (this.stateT > 1.1) {
+        // up from the sand: a nod for a good jump, a shake of the head for a foul
+        a.play(this.foul ? 'emote-no' : this.mine[this.mine.length - 1] >= this.goodMark() ? 'emote-yes' : 'idle', { fade: 0.3 });
       }
       s.camTo(new THREE.Vector3(this.landX - 1.5, 1.9, JUMP_Z + 6), new THREE.Vector3(this.landX - 2, 0.3, JUMP_Z), 3);
       if (this.stateT > 2.4) this.afterJump();
     }
     a.root.position.x = this.x;
     s.entrants.forEach((e, i) => {
-      if (i > 0) e.athlete.setPose(this.state === 'land' && !this.foul && this.stateT > 0.4 ? (Math.floor(this.stateT * 3 + i) % 2 ? 'cheer1' : 'front') : 'front');
+      if (i > 0) e.athlete.play(this.state === 'land' && !this.foul && this.stateT > 0.4 + i * 0.15 && this.stateT < 2.2 ? 'emote-yes' : 'idle', { fade: 0.3 });
     });
   }
 
@@ -214,7 +220,7 @@ export class LongJump extends SportEvent {
     this.state = 'angle';
     this.stateT = 0;
     this.angle = 8;
-    s.player.athlete.setPose('jump');
+    s.player.athlete.play('jump', { fade: 0.1 });
     s.sfx('jump', { volume: 0.6 });
     s.slowMo(0.22, 4000);
     this.meter.set(0);
@@ -245,7 +251,7 @@ export class LongJump extends SportEvent {
     this.stateT = 0;
     this.s.slowMo(0.45, 2600);
     this.gaugeText.setText(t('angle', { a: Math.round(this.angle) }));
-    this.s.tweens.add({ targets: [this.gaugeText, this.gauge], alpha: 0, delay: 700, duration: 300, onComplete: () => { this.gauge.clear(); this.gauge.setAlpha(1); this.gaugeText.setText('').setAlpha(1); } });
+    this.s.tweens.add({ targets: [this.gaugeText, this.gauge], alpha: 0, delay: 700, duration: 300, onComplete: () => { if (!this.gaugeText.active) return; this.gauge.clear(); this.gauge.setAlpha(1); this.gaugeText.setText('').setAlpha(1); } });
   }
 
   private land(): void {
@@ -254,7 +260,8 @@ export class LongJump extends SportEvent {
     this.stateT = 0;
     const a = s.player.athlete;
     a.lift = 0;
-    a.setPose('duck');
+    // sitting in the sand, legs forward
+    a.play('sit', { fade: 0.1 });
     const inPit = this.landX > BOARD_X + 0.5;
     s.emit(new THREE.Vector3(this.landX, 0.1, JUMP_Z), 26, [0xe8cf95, 0xd9b979, 0xfff2cc], { speed: 2.2, up: 2.6, life: 0.7, size: 0.16 });
     s.sfx(inPit ? 'sand' : 'step', { volume: 0.8 });
@@ -286,7 +293,7 @@ export class LongJump extends SportEvent {
       const m = this.rivals[i][r];
       const row = this.boardRows[i];
       row.setColor(Number.isNaN(m) ? '#ff9a7a' : '#7dff9a');
-      s.tweens.add({ targets: row, scale: 1.25, duration: 160, yoyo: true, delay: i * 180, onComplete: () => row.setColor('#ffffff') });
+      s.tweens.add({ targets: row, scale: 1.25, duration: 160, yoyo: true, delay: i * 180, onComplete: () => { if (row.active) row.setColor('#ffffff'); } });
     }
     s.sfx('tick', { volume: 0.5 });
     if (this.attempt >= 3) {
@@ -309,6 +316,12 @@ export class LongJump extends SportEvent {
     g.lineStyle(7, 0xffd23f, 1).lineBetween(cx, cy, cx + Math.cos(a) * r, cy + Math.sin(a) * r);
     g.fillStyle(0xffffff, 1).fillCircle(cx, cy, 8);
     this.gaugeText.setPosition(cx + 70, cy + 30).setText(`${Math.round(this.angle)}°`).setColor(hexs(this.angle >= zone[0] && this.angle <= zone[1] ? 0x7dff9a : 0xffffff));
+  }
+
+  /** A jump worth a nod: within 40 cm of the best rival's mark. */
+  private goodMark(): number {
+    const r = [1, 2, 3].flatMap((i) => this.rivals[i].filter((m) => !Number.isNaN(m)));
+    return (r.length ? Math.max(...r) : 7) - 0.4;
   }
 
   marks(): number[] {

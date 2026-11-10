@@ -62,6 +62,7 @@ platformer-kit block is about 1.27 wide). Regenerate them with `node tools/index
 | platformer-kit | 74 | Kenney Platformer Kit: grass and snow blocks, coins, crates, spikes, hearts, trees, fences, flags |
 | nature-kit | 329 | Kenney Nature Kit: trees, rocks, plants, cliffs, paths, tents, log bridges |
 | racing-kit | 112 | Kenney Racing Kit: grandstands, tents, flags, banners, barriers, fences, pylons, light towers, ramps, road pieces, trees, race cars |
+| mini-characters | 11 | Kenney Mini Characters 2.0: rigged people with 32 animation clips each (idle, walk, sprint, jump, fall, crouch, sit, die, emote-yes/no, holding-*, attack-*, interact-* …) on one skeleton, plus the bow. The models share `models/gltf_format/Textures/colormap.png` (external, loaded next to the GLB). Only the files a game uses are imported: `character-male-a` … `g`, `character-female-f`, `character-soldier`, `character-zombie`, `weapon-bow`. Load with `loadMiniCharacter()` or, for the player's platform character, `loadCharacter3d()` (`@core/three`, mapping in `CHARACTER_MODELS`) |
 
 ## OpenGameArt CC0 (`public/assets/oga`)
 

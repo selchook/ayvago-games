@@ -281,6 +281,15 @@ through `@core/three` (`src/core/three/index.ts`). The pilot is `games/sky-road`
   - `grounded(obj)` wraps a model so it is centred on x/z and stands on y = 0, because Kenney
     pivots sit in a corner.
   - `modelClips(key)` returns its animations for `THREE.AnimationMixer`.
+- **3D people.** Use Kenney Mini Characters (`kenney/mini-characters`): rigged, with 32 clips
+  (`idle`, `walk`, `sprint`, `jump`, `fall`, `crouch`, `sit`, `emote-yes`, `holding-*` …).
+  - In preload, `loadCharacter3d(load)` loads the player's model: it maps the platform character
+    (adventurer, explorer, rookie, soldier, zombie) to its 3D model through `CHARACTER_MODELS`.
+    In the scene, `model(playerCharacter3d())` gives a copy of it. Load others with
+    `loadMiniCharacter(load, name)`; `MINI_MALES` lists the male models.
+  - Play every move with the model's own clips through one `AnimationMixer` per figure, never
+    with added limbs. Tie the clip speed to the real speed so feet don't slide.
+  - The reference is `games/golden-podium` (`athlete.ts`).
 - **World.** In `createGame()` call `this.world = new World3D(this, { fov, background, fog })`,
   then `world.addLights()` for sky light plus a sun with soft shadows.
   - Move the camera and objects in `updateGame()`. The world renders itself after every update

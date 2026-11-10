@@ -4,6 +4,7 @@ import { t } from '@core';
 import type { PlayScene } from '../PlayScene';
 import type { PadButton } from '../pad';
 import type { EventId } from '../scoring';
+import type { Shot } from '../portraits';
 
 export abstract class SportEvent {
   abstract readonly id: EventId;
@@ -21,8 +22,8 @@ export abstract class SportEvent {
   /** Every entrant's mark (index 0 = the player); NaN = no mark. */
   abstract marks(): number[];
   abstract buttons(): PadButton[];
-  /** A texture key for the event card. */
-  abstract picture(): string;
+  /** How the event card pictures the player's athlete. */
+  abstract picture(): Shot;
   /** While the card is up. */
   idle(_rdt: number): void {}
   /** Every rendered frame (water, flags …). */
