@@ -1,0 +1,12 @@
+{
+  "id": "putt-park",
+  "title": { "tr": "Golf Parkı", "en": "Putt Park" },
+  "description": { "tr": "Üç boyutlu mini golf: çayırdaki ve kaledeki iki parkurda 18 el yapımı delik. Rampalardan tırman, tümseklerden sek, boşlukların üstünden atla, tünellerden geç, yel değirmeninin kanatlarını zamanla. Pardan az vuruşla birdie ve eagle topla, tek vuruşta deliği bul!", "en": "3D mini golf: 18 handcrafted holes on a meadow course and a castle course. Climb ramps, ride the bumps, jump the gaps, thread the tunnels and time the windmill's sails. Beat par for birdies and eagles, and go for the hole in one!" },
+  "howTo": { "tr": "Topun arkasından parmağını geri çek ve bırak; ne kadar çekersen o kadar güçlü. Boş yeri sürükleyerek kamerayı çevir, iki parmakla yakınlaş. Klavye: ←/→ nişan, ↑/↓ güç, Boşluk vuruş, Q/E kamera.", "en": "Drag back from the ball and let go; the further you pull, the harder the putt. Drag empty space to turn the camera, pinch to zoom. Keys: ←/→ aim, ↑/↓ power, Space to putt, Q/E camera." },
+  "genres": ["sports", "casual", "puzzle"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["3D models: Kenney Minigolf Kit and Nature Kit (CC0) — kenney.nl", "Sound effects: Kenney Impact and Interface Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-11-10", "scoring": { "maxScore": 5400, "minDurationMs": 30000 } }
+}
