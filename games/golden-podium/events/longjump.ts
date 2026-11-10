@@ -2,11 +2,11 @@
 // foul), keep holding to raise the take-off angle and let go near 45°. Three jumps; the best
 // counts. The flight plays in slow motion.
 import Phaser from 'phaser';
-import { t, txt } from '@core';
+import { t, txt, hudChip, HUD_ROW2_Y, type HudChip } from '@core';
 import { THREE } from '@core/three';
 import { SportEvent, Cadence, stride } from './base';
 import { BOARD_X, JUMP_Z } from '../stadium';
-import { Meter, hexs } from '../panels';
+import { Meter, ChipBoard, hexs } from '../panels';
 import { rivalMark, type EventId } from '../scoring';
 import { metres, num } from '../strings';
 import { box } from '../look';
@@ -43,7 +43,9 @@ export class LongJump extends SportEvent {
   private meter!: Meter;
   private gauge!: Phaser.GameObjects.Graphics;
   private gaugeText!: Phaser.GameObjects.Text;
-  private board!: Phaser.GameObjects.Container;
+  private board!: ChipBoard;
+  /** JUMP n / 3, under the event title. */
+  private attemptChip!: HudChip;
   private boardRows: Phaser.GameObjects.Text[] = [];
   private zone: THREE.Mesh | null = null;
 
@@ -99,18 +101,10 @@ export class LongJump extends SportEvent {
     this.meter = new Meter(s, 640, 636, 340, t('speed'));
     this.gauge = s.add.graphics().setDepth(9000);
     this.gaugeText = txt(s, 640, 330, '', { title: true, size: 30, color: '#ffffff' }).setDepth(9001);
-    this.board = s.add.container(0, 0).setDepth(9000);
-    const bg = s.add.graphics().fillStyle(0x0b1028, 0.72).fillRoundedRect(1004, 128, 252, 200, 22);
-    this.board.add([bg, txt(s, 1130, 152, t('best'), { size: 18, color: '#9fb3d9', strokeThickness: 0 })]);
-    this.boardRows = s.entrants.map((e, i) => {
-      const y = 190 + i * 38;
-      this.board.add(s.add.circle(1028, y, 8, e.color).setStrokeStyle(2, 0xffffff));
-      this.board.add(txt(s, 1044, y, e.name, { size: 20, color: e.player ? '#3ee6ff' : '#ffffff', strokeThickness: 3 }).setOrigin(0, 0.5));
-      const v = txt(s, 1240, y, '–', { title: true, size: 20, color: '#ffffff', strokeThickness: 3 }).setOrigin(1, 0.5);
-      this.board.add(v);
-      return v;
-    });
-    s.ui.add([this.meter.root, this.gauge, this.gaugeText, this.board]);
+    this.board = new ChipBoard(s, t('best'), s.entrants, '–');
+    this.boardRows = this.board.values;
+    this.attemptChip = hudChip(s, 640, HUD_ROW2_Y, { align: 'center' });
+    s.ui.add([this.meter.root, this.gauge, this.gaugeText, this.board.root, this.attemptChip]);
     this.attempt = 0;
     this.mine = [];
     this.nextAttempt();
@@ -135,6 +129,7 @@ export class LongJump extends SportEvent {
     this.gaugeText.setText('');
     this.meter.set(0);
     s.call(t('attempt', { n: this.attempt }), '#ffffff', { size: 48, hold: 900 });
+    this.attemptChip.setText(t('attempt', { n: this.attempt }));
     s.cut(new THREE.Vector3(this.x - 1, 2.6, JUMP_Z + 7.5), new THREE.Vector3(this.x + 5, 0.9, JUMP_Z));
     s.crowdLoop.level(0.12, 600);
   }
