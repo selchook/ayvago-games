@@ -61,6 +61,7 @@ platformer-kit block is about 1.27 wide). Regenerate them with `node tools/index
 | car-kit | 28 | Kenney Car Kit: cars, trucks, a tractor, loose wheels |
 | platformer-kit | 74 | Kenney Platformer Kit: grass and snow blocks, coins, crates, spikes, hearts, trees, fences, flags |
 | nature-kit | 329 | Kenney Nature Kit: trees, rocks, plants, cliffs, paths, tents, log bridges |
+| minigolf-kit | 57 | Kenney Minigolf Kit 2.0: course tiles (straights, corners, ramps, hills, bumps, gaps, tunnels, splits, holes), a castle, a windmill with separate sails, flags, balls, clubs |
 | racing-kit | 112 | Kenney Racing Kit: grandstands, tents, flags, banners, barriers, fences, pylons, light towers, ramps, road pieces, trees, race cars |
 
 ## OpenGameArt CC0 (`public/assets/oga`)

@@ -25,7 +25,7 @@ PACKS = {
     'kenney_emotespack': 'emotes', 'kenneymedals': 'medals', 'kenney_foliagepack': 'foliage',
     # 3D kits (GLB only)
     'carkit_v1.4': 'car-kit', 'kenney_platformerkit': 'platformer-kit', 'kenney_natureKit_2.1': 'nature-kit',
-    'kenney_racingkit2': 'racing-kit',
+    'kenney_racingkit2': 'racing-kit', 'minigolf-kit-2.0': 'minigolf-kit',
 }
 ONLY = set(sys.argv[2:])
 KEEP = {'.png', '.ogg', '.ttf', '.xml', '.json', '.txt', '.tsx', '.glb'}
