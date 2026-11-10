@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, popup, txt, t, rng } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng, hudChip, HudChip, HUD_ROW2_Y } from '@core';
 
 const SIZE = 60;                     // hex circumradius
 const SQ3 = Math.sqrt(3);
@@ -68,7 +68,7 @@ export class PlayScene extends ArcadeScene {
   private showCursor = false;
   private cursorImg!: Phaser.GameObjects.Image;
   private hintText!: Phaser.GameObjects.Text;
-  private maxText!: Phaser.GameObjects.Text;
+  private maxChip!: HudChip;
   private downX = 0;
   private downY = 0;
   private over = false;
@@ -94,7 +94,8 @@ export class PlayScene extends ArcadeScene {
     this.cursor = this.cells.findIndex((c) => c.q === 0 && c.r === 0);
     this.cursorImg = this.add.image(0, 0, 'hx-slot').setTint(0xffd23f).setScale(1.08).setDepth(8).setVisible(false).setBlendMode(Phaser.BlendModes.ADD);
 
-    this.maxText = txt(this, 360, 112, '', { title: true, size: 20, color: '#ffd23f' }).setDepth(9);
+    // the biggest tile so far, in a chip on the second HUD row
+    this.maxChip = hudChip(this, 360, HUD_ROW2_Y, { align: 'center', label: t('maxTile'), text: '1', color: '#ffd23f', minWidth: 140 });
     // tray
     const tray = this.add.graphics();
     tray.fillStyle(0x000000, 0.45).fillRoundedRect(150, TRAY_Y - 80, 420, 160, 20);
@@ -254,7 +255,7 @@ export class PlayScene extends ArcadeScene {
         popup(this, CX, CY - 380, `${t('chain')} x${chain}`, '#ff4fa3', 26);
         shake(this, 0.004 * chain, 140);
       }
-      if (nv > this.best) { this.best = nv; this.updateHud(); this.tweens.add({ targets: this.maxText, scale: { from: 1.5, to: 1 }, duration: 300, ease: 'Back.easeOut' }); }
+      if (nv > this.best) { this.best = nv; this.updateHud(); this.tweens.add({ targets: this.maxChip, scale: { from: 1.3, to: 1 }, duration: 300, ease: 'Back.easeOut' }); }
       this.time.delayedCall(240, () => this.resolve(i, chain + 1));
     });
   }
@@ -377,7 +378,7 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setLevel(this.level);
-    this.maxText?.setText(`${t('maxTile')}: ${this.best}`).setColor(Phaser.Display.Color.IntegerToColor(HEX_COLORS[this.best]).rgba);
+    this.maxChip?.setText(this.best).setTextColor('#' + (HEX_COLORS[this.best] ?? 0xffd23f).toString(16).padStart(6, '0'));
     if (this.hintText) {
       const bombNow = this.cur === BOMB;
       this.hintText.setText(bombNow ? t('bombHint') : t('swap')).setAlpha(this.swapUsed && !bombNow ? 0.35 : 1);

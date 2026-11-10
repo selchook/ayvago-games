@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, popup, txt, t, rng, ensurePixel } from '@core';
+import { ArcadeScene, Controls, burst, shake, popup, txt, t, rng, ensurePixel, hudChip, HudChip, HUD_ROW2_Y } from '@core';
 import { PALETTE, makeSymbols, softFlash, banner } from './symbols';
 
 // ---- pseudo-3D projection: world x in px at depth z = 1 (the ball), z grows into the screen ----
@@ -53,7 +53,7 @@ export class PlayScene extends ArcadeScene {
   private shadow!: Phaser.GameObjects.Ellipse;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
   private hint!: Phaser.GameObjects.Text;
-  private multText!: Phaser.GameObjects.Text;
+  private multChip!: HudChip;
   private rows: Row[] = [];
   private gates: Gate[] = [];
   private bx = 0;
@@ -110,7 +110,8 @@ export class PlayScene extends ArcadeScene {
     this.trail.startFollow(this.ball, 0, BALL_R - 6);
     this.drawBall();
 
-    this.multText = txt(this, CX, 132, '', { title: true, size: 24, color: '#5dff7a' }).setDepth(9000);
+    // the score multiplier in a chip on the second HUD row, shown from x2
+    this.multChip = hudChip(this, CX, HUD_ROW2_Y, { align: 'center', text: '', color: '#5dff7a' }).setVisible(false);
     this.hint = txt(this, CX, 1200, t('hint'), { size: 30, wrap: 640 }).setDepth(9000);
     this.tweens.add({ targets: this.hint, alpha: 0.4, duration: 650, yoyo: true, repeat: -1 });
     this.time.delayedCall(4500, () => { this.tweens.killTweensOf(this.hint); this.tweens.add({ targets: this.hint, alpha: 0, duration: 400 }); });
@@ -121,7 +122,7 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setLevel(this.level);
-    this.multText.setText(this.mult > 1 ? `x${this.mult}` : '');
+    this.multChip.setText(`x${this.mult}`).setVisible(this.mult > 1);
   }
 
   // ---------- generation ----------

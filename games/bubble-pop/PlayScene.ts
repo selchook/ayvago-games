@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, hudChip, HudChip } from '@core';
 
 export const BUBBLE_COLORS = ['red', 'blue', 'green', 'yellow', 'pink', 'orange'] as const;
 const TINTS = [0xff4f4f, 0x3ea8ff, 0x5dd65d, 0xffd23f, 0xff79c6, 0xff9a3c];
@@ -54,6 +54,8 @@ export class PlayScene extends ArcadeScene {
   private bg: Phaser.GameObjects.Image | null = null;
   private stage = -1;
   private shotDots: Phaser.GameObjects.Image[] = [];
+  private ammo!: Phaser.GameObjects.Container;
+  private ammoChip!: HudChip;
   private busy = false;
 
   createGame(): void {
@@ -167,6 +169,9 @@ export class PlayScene extends ArcadeScene {
 
     txt(this, HOLD_X, HOLD_Y + 58, t('next'), { title: true, size: 13, color: '#3ee6ff' }).setDepth(6);
     txt(this, AMMO_X + 75, HOLD_Y + 58, t('shots'), { title: true, size: 13, color: '#ffd23f' }).setDepth(6);
+    // the shots left before the next row drops: a readout, so the bullets sit in a HUD chip
+    this.ammo = this.add.container(0, 0);
+    this.ammoChip = hudChip(this, AMMO_X + 75, HOLD_Y + 4, { align: 'center', height: 54, minWidth: 120, depth: 6, items: [this.ammo] });
 
     this.curImg = this.add.image(SHOOT_X, SHOOT_Y, 'b0').setDisplaySize(D, D).setDepth(7);
     this.nextImg = this.add.image(HOLD_X, HOLD_Y, 'b0').setDisplaySize(52, 52).setDepth(6);
@@ -270,12 +275,15 @@ export class PlayScene extends ArcadeScene {
     this.shotDots.forEach((d) => d.destroy());
     this.shotDots = [];
     const left = this.shotsPerRow - this.misses;
-    const step = Math.min(24, 168 / Math.max(1, this.shotsPerRow - 1));
+    const step = Math.min(24, 150 / Math.max(1, this.shotsPerRow - 1));
+    const span = step * (this.shotsPerRow - 1);
     for (let i = 0; i < this.shotsPerRow; i++) {
-      const d = this.add.image(AMMO_X + 6 + i * step, HOLD_Y + 6, i < left ? 'ammo' : 'ammo-empty').setDisplaySize(19, 33).setDepth(6);
+      const d = this.add.image(-span / 2 + i * step, 0, i < left ? 'ammo' : 'ammo-empty').setDisplaySize(19, 33);
       if (i >= left) d.setAlpha(0.55);
       this.shotDots.push(d);
     }
+    this.ammo.add(this.shotDots).setData('chipWidth', span + 19);
+    this.ammoChip.layout();
   }
 
   // ---------- input ----------

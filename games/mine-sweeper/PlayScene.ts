@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, popup, txt, t, rng, storage, COLORS } from '@core';
+import { ArcadeScene, Button, burst, shake, popup, txt, t, rng, storage, COLORS, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y } from '@core';
 
 /** Frames in the onebit colored_transparent_packed sheet (16 px tiles, 48 per row). */
 export const OB = { bomb: 477, flag: 401, heart: 519, hourglass: 615, spark: 564 };
@@ -77,8 +77,8 @@ export class PlayScene extends ArcadeScene {
   private downY = 0;
   private longPressed = false;
   private pressTimer?: Phaser.Time.TimerEvent;
-  private timerText!: Phaser.GameObjects.Text;
-  private mineText!: Phaser.GameObjects.Text;
+  private timerChip!: HudChip;
+  private mineChip!: HudChip;
   private infoText!: Phaser.GameObjects.Text;
   private lastTick = 0;
   private stun = 0;
@@ -96,11 +96,10 @@ export class PlayScene extends ArcadeScene {
     this.cursorBox = this.add.rectangle(0, 0, CELL - 4, CELL - 4).setStrokeStyle(6, 0xffd23f).setDepth(8).setVisible(false);
     this.tweens.add({ targets: this.cursorBox, alpha: 0.4, duration: 400, yoyo: true, repeat: -1 });
 
-    // timer + mines counter row
-    this.add.image(70, 112, 'ob', OB.hourglass).setScale(3).setTint(0xffd23f).setDepth(9);
-    this.timerText = txt(this, 100, 112, '0:00', { title: true, size: 26, color: '#ffd23f' }).setOrigin(0, 0.5).setDepth(9);
-    this.add.image(470, 112, 'ob', OB.bomb).setScale(3).setDepth(9);
-    this.mineText = txt(this, 500, 112, '0', { title: true, size: 26, color: '#ff5a5a' }).setOrigin(0, 0.5).setDepth(9);
+    // second HUD row: the clock on the left, the mines left on the right
+    this.timerChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { icon: 'ob', iconFrame: OB.hourglass, iconSize: 32, text: '0:00', color: '#ffd23f', minWidth: 150 });
+    this.timerChip.icon?.setTint(0xffd23f);
+    this.mineChip = hudChip(this, 720 - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', icon: 'ob', iconFrame: OB.bomb, iconSize: 32, text: '0', color: '#ff5a5a', minWidth: 110 });
     this.infoText = txt(this, 360, 1144, '', { size: 24, color: '#aab0d0' }).setDepth(9);
 
     this.modeBtn = new Button(this, 360, 1205, t('modeDig'), () => this.toggleMode(), { width: 420, height: 84, size: 24, color: 0x3b4188 });
@@ -122,7 +121,7 @@ export class PlayScene extends ArcadeScene {
 
   private showSelect(): void {
     this.phase = 'select';
-    this.timerText.setVisible(false); this.mineText.setVisible(false);
+    this.timerChip.setVisible(false); this.mineChip.setVisible(false);
     const title = txt(this, 360, 260, t('chooseDiff'), { title: true, size: 32, color: '#ffd23f' }).setDepth(20);
     this.selectLayer.push(title);
     this.selectRing = this.add.rectangle(360, 0, 500, 150).setStrokeStyle(6, 0xffd23f).setDepth(19);
@@ -154,7 +153,7 @@ export class PlayScene extends ArcadeScene {
     this.diff = i;
     this.selectLayer.forEach((o) => o.destroy());
     this.selectLayer = [];
-    this.timerText.setVisible(true); this.mineText.setVisible(true);
+    this.timerChip.setVisible(true); this.mineChip.setVisible(true);
     this.modeBtn.setVisible(true);
     this.sfx('pick', { volume: 0.6 });
     this.buildBoard();
@@ -418,8 +417,8 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(180, () => this.sfx('penalty', { volume: 0.5 }));
     this.timeLeft = Math.max(0, this.timeLeft - PENALTY);
     popup(this, Phaser.Math.Clamp(x, 140, 580), Math.max(200, y - 40), t('penalty'), '#ff5a5a', 30);
-    this.tweens.add({ targets: this.timerText, scale: { from: 1.5, to: 1 }, duration: 400, ease: 'Back.easeOut' });
-    this.timerText.setColor('#ff5a5a');
+    this.tweens.add({ targets: this.timerChip, scale: { from: 1.3, to: 1 }, duration: 400, ease: 'Back.easeOut' });
+    this.timerChip.setTextColor('#ff5a5a');
     this.addScore(-25 * DIFFS[this.diff].mult);
     this.stun = 0.9;
     this.updateHud();
@@ -502,7 +501,7 @@ export class PlayScene extends ArcadeScene {
     if (this.timeLeft <= 10 && Math.ceil(this.timeLeft) !== this.lastTick) {
       this.lastTick = Math.ceil(this.timeLeft);
       this.sfx('tick', { volume: this.lastTick <= 3 ? 0.6 : 0.45, rate: this.lastTick <= 3 ? 1.15 : 1 });
-      this.tweens.add({ targets: this.timerText, scale: { from: 1.3, to: 1 }, duration: 250 });
+      this.tweens.add({ targets: this.timerChip, scale: { from: 1.15, to: 1 }, duration: 250 });
     }
     if (this.timeLeft <= 0) { this.timeLeft = 0; this.updateHud(); this.timeUp(); return; }
     this.updateHud();
@@ -516,11 +515,11 @@ export class PlayScene extends ArcadeScene {
   private updateHud(): void {
     this.hud.setCenter(this.phase === 'select' ? '' : `${t('field')} ${this.level}`);
     this.hud.setRight('');
-    if (!this.timerText) return;
-    this.timerText.setText(this.fmt(this.timeLeft));
-    if (this.stun <= 0) this.timerText.setColor(this.timeLeft <= 10 && this.seeded ? '#ff5a5a' : '#ffd23f');
+    if (!this.timerChip) return;
+    this.timerChip.setText(this.fmt(this.timeLeft));
+    if (this.stun <= 0) this.timerChip.setTextColor(this.timeLeft <= 10 && this.seeded ? '#ff5a5a' : '#ffd23f');
     const flagsUsed = this.flags.filter(Boolean).length + this.blown.filter(Boolean).length;
-    this.mineText.setText(String(this.mineCount - flagsUsed));
+    this.mineChip.setText(this.mineCount - flagsUsed);
   }
 }
 

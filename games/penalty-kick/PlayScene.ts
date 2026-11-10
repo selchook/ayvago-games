@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, burst, shake, flash, popup, t, txt, rng, net, CHARACTER_FRAME, loadCharacter,
   playerCharacter, peerCharacter, otherCharacters, type CharacterId,
+  hudChip, hudText, HudChip, HUD_ROW_Y, HUD_ROW2_Y, HUD_CHIP_H,
 } from '@core';
 
 // Goal frame (front view)
@@ -175,8 +176,10 @@ export class PlayScene extends ArcadeScene {
   private reticle!: Phaser.GameObjects.Graphics;
   private trail!: Phaser.GameObjects.Graphics;
   private netG!: Phaser.GameObjects.Graphics;
-  private board!: Phaser.GameObjects.Graphics;
-  private boardText!: Phaser.GameObjects.Text;
+  /** The shoot-out board: one chip per side (name, goals, the last five kicks). */
+  private sides: { chip: HudChip; name: Phaser.GameObjects.Text; goals: Phaser.GameObjects.Text; pips: Phaser.GameObjects.Graphics }[] = [];
+  /** Online the HUD is off: the match head (kick n/5, sudden death) gets its own chip. */
+  private headChip: HudChip | null = null;
   private banner!: Phaser.GameObjects.Text;
   private curlText!: Phaser.GameObjects.Text;
   private hintText!: Phaser.GameObjects.Text;
@@ -241,8 +244,7 @@ export class PlayScene extends ArcadeScene {
     this.ballScale(1);
     this.trail = this.add.graphics().setDepth(5);
     this.reticle = this.add.graphics().setDepth(8);
-    this.board = this.add.graphics().setDepth(8);
-    this.boardText = txt(this, 360, 140, '', { title: true, size: 22 }).setDepth(9);
+    this.buildBoard();
     this.banner = txt(this, 360, 760, '', { title: true, size: 36, color: '#ffd23f', wrap: 660 }).setDepth(20);
     this.curlText = txt(this, 560, 1150, '', { size: 30, color: '#3ee6ff' }).setDepth(9);
     this.hintText = txt(this, 360, 1226, '', { size: 22, color: '#ffffff', wrap: 660 }).setDepth(9);
@@ -480,24 +482,34 @@ export class PlayScene extends ArcadeScene {
     post(GL - 14, GT - 14, GR - GL + 28, 14);
   }
 
+  /** Two chips under the top HUD row, one per side: name, goals and the last five kicks. */
+  private buildBoard(): void {
+    const NAME_W = 124;
+    this.sides = [0, 1].map((i) => {
+      const name = hudText(this, '', 20, i === 0 ? '#3ee6ff' : '#ff6b5a').setOrigin(0, 0.5).setPosition(-NAME_W / 2, 1);
+      const nameBox = this.add.container(0, 0, [name]).setData('chipWidth', NAME_W);
+      const goals = hudText(this, '0', 30).setData('chipWidth', 40);
+      const pips = this.add.graphics().setData('chipWidth', 4 * 46 + 34);
+      const chip = hudChip(this, 360, HUD_ROW2_Y + i * (HUD_CHIP_H + 10), { align: 'center', items: [nameBox, goals, pips] });
+      return { chip, name, goals, pips };
+    });
+    this.headChip = this.online ? hudChip(this, 360, HUD_ROW_Y, { align: 'center', text: '', color: '#ffd23f' }) : null;
+    if (!this.online) this.hud.centerChip.setTextColor('#ffd23f');
+  }
+
   private drawBoard(): void {
-    const g = this.board;
-    g.clear();
-    g.fillStyle(0x000000, 0.25).fillRoundedRect(112, 100, 500, 160, 24);
-    g.fillStyle(0x0b1020, 0.78).fillRoundedRect(110, 96, 500, 160, 24);
-    g.lineStyle(2, 0xffffff, 0.14).strokeRoundedRect(110, 96, 500, 160, 24);
-    g.lineStyle(2, 0xffffff, 0.08).lineBetween(130, 203, 590, 203);
     // whose kick is next: that row's next slot gets a gold ring
     const youNext = this.online ? this.iShoot() : this.you.length <= this.them.length;
-    const row = (arr: boolean[], y: number, next: boolean) => {
+    const row = (g: Phaser.GameObjects.Graphics, arr: boolean[], next: boolean) => {
+      g.clear();
       const start = Math.max(0, arr.length - (arr.length >= 5 ? 4 : 5));
       for (let i = 0; i < 5; i++) {
         const v = arr[start + i];
-        const x = 392 + i * 46;
+        const x = (i - 2) * 46, y = 0;
         if (v === undefined) {
-          g.fillStyle(0xffffff, 0.06).fillCircle(x, y, 15);
+          g.fillStyle(0xffffff, 0.08).fillCircle(x, y, 15);
           const now = next && start + i === arr.length;
-          g.lineStyle(now ? 4 : 2, now ? 0xffd23f : 0xffffff, now ? 1 : 0.25).strokeCircle(x, y, 15);
+          g.lineStyle(now ? 4 : 2, now ? 0xffd23f : 0xffffff, now ? 1 : 0.3).strokeCircle(x, y, 15);
         } else if (v) {
           g.fillStyle(0x23c466).fillCircle(x, y, 16);
           g.lineStyle(4, 0xffffff, 1).beginPath().moveTo(x - 7, y).lineTo(x - 2, y + 6).lineTo(x + 8, y - 6).strokePath();
@@ -507,23 +519,16 @@ export class PlayScene extends ArcadeScene {
         }
       }
     };
-    row(this.you, 178, youNext); row(this.them, 228, !youNext);
-    const yg = this.you.filter(Boolean).length, tg = this.them.filter(Boolean).length;
+    const [me, op] = this.sides;
+    row(me.pips, this.you, youNext); row(op.pips, this.them, !youNext);
+    me.name.setText(t('you'));
+    op.name.setText(this.online ? clip(net.peerName || t('them'), 9) : t('them'));
+    me.goals.setText(`${this.you.filter(Boolean).length}`);
+    op.goals.setText(`${this.them.filter(Boolean).length}`);
     const head = !this.online ? t('m' + this.match)
       : this.kick >= 10 ? t('sudden') : `${t('kickN')} ${Math.floor(this.kick / 2) + 1}/5`;
-    this.boardText.setText(head).setPosition(360, 128).setColor('#ffd23f').setFontSize(22);
-    this.boardLabels(yg, tg);
-  }
-
-  private labels: Phaser.GameObjects.Text[] = [];
-  private boardLabels(yg: number, tg: number): void {
-    for (const l of this.labels) l.destroy();
-    this.labels = [
-      txt(this, 140, 178, t('you'), { title: true, size: 20, color: '#3ee6ff' }).setOrigin(0, 0.5).setDepth(9),
-      txt(this, 140, 228, this.online ? clip(net.peerName || t('them'), 9) : t('them'), { title: true, size: 20, color: '#ff6b5a' }).setOrigin(0, 0.5).setDepth(9),
-      txt(this, 338, 178, `${yg}`, { title: true, size: 30, color: '#ffffff' }).setOrigin(0.5).setDepth(9),
-      txt(this, 338, 228, `${tg}`, { title: true, size: 30, color: '#ffffff' }).setOrigin(0.5).setDepth(9),
-    ];
+    if (this.headChip) this.headChip.setText(head);
+    else this.hud.setCenter(head);
   }
 
   // ---------- characters ----------

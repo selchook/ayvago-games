@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, ensurePixel } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, ensurePixel, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y } from '@core';
 
 interface Pad { x0: number; x1: number; y: number; mult: number }
 
@@ -8,6 +8,7 @@ const TOP_TERRAIN = 720, BOTTOM_TERRAIN = 1000;
 const LS = 1.3;                         // lander display scale
 const FOOT_X = 27 * LS, FOOT_Y = 29 * LS; // feet offset from the lander centre
 const SAFE_VY = 60, SAFE_VX = 40, SAFE_ANGLE = 12;
+const GAUGE_W = 120;   // fuel gauge in its HUD chip
 const FUEL_MAX = 1000;
 
 /** Retro lunar module drawn once with Graphics (64x64, feet at y=59). */
@@ -39,8 +40,10 @@ export class PlayScene extends ArcadeScene {
   private terrainG!: Phaser.GameObjects.Graphics;
   private padLabels: Phaser.GameObjects.Text[] = [];
   private gauge!: Phaser.GameObjects.Graphics;
-  private info: Phaser.GameObjects.Text[] = [];
-  private windText!: Phaser.GameObjects.Text;
+  private fuelChip!: HudChip;
+  private hChip!: HudChip;
+  private vChip!: HudChip;
+  private windChip!: HudChip;
   private thrustSnd?: Phaser.Sound.BaseSound;
   private pts: number[] = [];      // terrain heights every STEP px
   private pads: Pad[] = [];
@@ -60,7 +63,7 @@ export class PlayScene extends ArcadeScene {
   createGame(): void {
     const { width, height } = this.scale;
     makeLanderTexture(this);
-    this.padLabels = []; this.pts = []; this.pads = []; this.info = [];
+    this.padLabels = []; this.pts = []; this.pads = [];
     this.fuel = FUEL_MAX; this.lives = 3; this.level = 0; this.flying = false; this.warnCd = 0;
 
     for (let i = 0; i < 110; i++) this.add.image(rng.int(0, width), rng.int(60, BOTTOM_TERRAIN), 'star').setScale(0.05 + Math.random() * 0.16).setAlpha(0.2 + Math.random() * 0.5);
@@ -76,9 +79,13 @@ export class PlayScene extends ArcadeScene {
     this.flame = this.add.image(0, 0, 'flame').setOrigin(0.5, 0).setDepth(9).setVisible(false);
     this.lander = this.add.image(width / 2, 160, 'lander').setDepth(10);
 
-    this.gauge = this.add.graphics().setDepth(9000);
-    this.info = [0, 1, 2].map((i) => txt(this, 24, 176 + i * 30, '', { size: 26, align: 'left' }).setOrigin(0, 0).setDepth(9000));
-    this.windText = txt(this, width - 24, 140, '', { size: 24, align: 'right', color: '#3ee6ff' }).setOrigin(1, 0).setDepth(9000);
+    // second HUD row: fuel (gauge and number) on the left, horizontal and vertical speed on the
+    // right, green while safe to land. The wind (from level 3) sits in a chip on the ground.
+    this.gauge = this.add.graphics().setData('chipWidth', GAUGE_W);
+    this.fuelChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { label: t('fuel'), text: String(FUEL_MAX), items: [this.gauge] });
+    this.vChip = hudChip(this, width - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', label: t('vspeed'), text: '0', minWidth: 150 });
+    this.hChip = hudChip(this, this.vChip.left - HUD_GAP, HUD_ROW2_Y, { align: 'right', label: t('hspeed'), text: '0', minWidth: 150 });
+    this.windChip = hudChip(this, width / 2, height - 52, { align: 'center', label: t('wind'), text: '', color: '#3ee6ff' }).setVisible(false);
 
     // touch: floating stick on the left half rotates (analog), A on the right thrusts
     this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
@@ -169,7 +176,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private spawn(): void {
-    this.lander.setPosition(rng.int(120, W - 120), 170).setAngle(0).setVisible(true).setScale(0);
+    this.lander.setPosition(rng.int(120, W - 120), 196).setAngle(0).setVisible(true).setScale(0);
     this.tweens.add({ targets: this.lander, scale: LS, duration: 400, ease: 'Back.easeOut' });
     this.vx = rng.int(-50, 50); this.vy = 10; this.ang = 0;
     this.flying = true;
@@ -196,18 +203,18 @@ export class PlayScene extends ArcadeScene {
     const g = this.gauge;
     g.clear();
     const f = this.fuel / FUEL_MAX;
-    g.fillStyle(0x000000, 0.5).fillRect(24, 150, 220, 18);
-    g.fillStyle(f > 0.3 ? 0x5dff7a : f > 0.12 ? 0xffd23f : 0xec3013).fillRect(26, 152, 216 * Math.min(1, f), 14);
-    g.lineStyle(2, 0xffffff, 0.7).strokeRect(24, 150, 220, 18);
+    const w = GAUGE_W, h = 14;
+    g.fillStyle(0x000000, 0.6).fillRect(-w / 2, -h / 2, w, h);
+    g.fillStyle(f > 0.3 ? 0x5dff7a : f > 0.12 ? 0xffd23f : 0xec3013).fillRect(-w / 2 + 2, -h / 2 + 2, (w - 4) * Phaser.Math.Clamp(f, 0, 1), h - 4);
     const hs = Math.round(this.vx / 2), vs = Math.round(this.vy / 2);
     const okH = Math.abs(this.vx) < SAFE_VX, okV = this.vy < SAFE_VY, okA = Math.abs(this.ang) < SAFE_ANGLE;
     const col = (ok: boolean) => (ok ? '#5dff7a' : '#ff6a4f');
-    this.info[0].setText(`${t('hspeed')} ${hs}`).setColor(col(okH));
-    this.info[1].setText(`${t('vspeed')} ${vs}`).setColor(col(okV));
-    this.info[2].setText(`${t('fuel')} ${Math.ceil(this.fuel)}`).setColor(f > 0.15 ? '#f3f2f2' : '#ff6a4f');
+    this.vChip.setText(vs).setTextColor(col(okV));
+    this.hChip.setText(hs).setTextColor(col(okH)).setAnchor(this.vChip.left - HUD_GAP, HUD_ROW2_Y);
+    this.fuelChip.setText(Math.ceil(this.fuel)).setTextColor(f > 0.15 ? '#f3f2f2' : '#ff6a4f');
     this.lander.setTint(this.flying && okH && okV && okA ? 0xffffff : this.flying ? 0xffe0d0 : 0xffffff);
-    if (this.wind) this.windText.setText(`${t('wind')} ${this.wind > 0 ? '>>' : '<<'} ${Math.abs(Math.round(this.wind))}`);
-    else this.windText.setText('');
+    if (this.wind) this.windChip.setText(`${this.wind > 0 ? '>>' : '<<'} ${Math.abs(Math.round(this.wind))}`);
+    this.windChip.setVisible(!!this.wind);
   }
 
   // ---------- outcomes ----------

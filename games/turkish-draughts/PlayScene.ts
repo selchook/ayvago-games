@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, isEasy } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, isEasy, HudChip, hudChip, HUD_ROW_Y, HUD_ROW2_Y, HUD_GAP } from '@core';
 import { W, BL, LEVELS, EASY_LEVELS, initial, legalMoves, apply, choose, count, sameMove, type Move } from './rules';
 
 const CELL = 82;
@@ -24,8 +24,9 @@ export class PlayScene extends ArcadeScene {
   private cursor!: Phaser.GameObjects.Rectangle;
   private marks: Phaser.GameObjects.GameObject[] = [];
   private lastFx: Phaser.GameObjects.Rectangle[] = [];
-  private status!: Phaser.GameObjects.Text;
-  private info!: Phaser.GameObjects.Text;
+  private status!: TurnChip;
+  private rivalChip!: HudChip;
+  private streakChip!: HudChip;
   private banner!: Phaser.GameObjects.Text;
   private countMe!: Phaser.GameObjects.Text;
   private countThem!: Phaser.GameObjects.Text;
@@ -69,8 +70,11 @@ export class PlayScene extends ArcadeScene {
     this.cursor = this.add.rectangle(0, 0, CELL - 6, CELL - 6).setStrokeStyle(5, 0xffd23f).setDepth(15).setVisible(false);
     this.tweens.add({ targets: this.cursor, alpha: 0.45, duration: 420, yoyo: true, repeat: -1 });
 
-    this.status = txt(this, width / 2, 140, '', { title: true, size: 26, color: '#ffd23f' }).setDepth(30);
-    this.info = txt(this, width / 2, 196, '', { size: 30, color: '#f0c890' }).setDepth(30);
+    // HUD: whose turn in a highlighted chip over the board; the rival and the streak (online: the
+    // opponent's name, on the top row as there is no core HUD) in chips
+    this.status = new TurnChip(this, width / 2, 196, { align: 'center', size: 26, height: 52, minWidth: 200, depth: 30 }).setText('');
+    this.rivalChip = hudChip(this, width / 2, this.online ? HUD_ROW_Y : HUD_ROW2_Y, { align: 'center', color: '#f0c890' });
+    this.streakChip = hudChip(this, width / 2, HUD_ROW2_Y, { align: 'center', color: '#ffd23f' }).setVisible(!this.online);
     this.banner = txt(this, width / 2, BY + S / 2, '', { title: true, size: 50, strokeThickness: 10 }).setDepth(40).setVisible(false);
 
     // piece counters
@@ -198,10 +202,14 @@ export class PlayScene extends ArcadeScene {
     const me = count(this.board, this.mine), them = count(this.board, -this.mine);
     this.countMe.setText(String(me.men + me.kings));
     this.countThem.setText(String(them.men + them.kings));
-    if (this.online) { this.info.setText(t('vs', { name: net.peerName || t('opponent') })); return; }
+    if (this.online) { this.rivalChip.setText(t('vs', { name: net.peerName || t('opponent') })); return; }
     this.hud.setLives(this.lives);
-    // the level sits in the info line: the HUD centre slot collides with LIVES in English
-    this.info.setText(`${t('lv', { n: this.level + 1 })} · ${t('rival', { name: t('d' + this.level) })} · ${t('streak', { n: this.streak })}`);
+    this.hud.setLevel(this.level + 1);
+    this.rivalChip.setText(t('rival', { name: t('d' + this.level) }));
+    this.streakChip.setText(t('streak', { n: this.streak }));
+    const w = this.rivalChip.chipWidth + HUD_GAP + this.streakChip.chipWidth, x0 = this.scale.width / 2 - w / 2;
+    this.rivalChip.setAnchor(x0, HUD_ROW2_Y, 'left');
+    this.streakChip.setAnchor(x0 + this.rivalChip.chipWidth + HUD_GAP, HUD_ROW2_Y, 'left');
   }
 
   private startRound(): void {
@@ -235,7 +243,7 @@ export class PlayScene extends ArcadeScene {
       this.sel = -1; this.prefix = [];
       const forced = moves[0].caps.length > 0;
       this.status.setText(forced ? t('mustTake') : t('yourTurn')).setColor(forced ? '#ff7a4a' : '#ffd23f');
-      this.tweens.add({ targets: this.status, scale: { from: 1.25, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+      this.status.setIcon(this.mine === W ? 'pc-w' : 'pc-b', undefined, 30);
       if (this.online && this.moveNo > 0) this.sfx('turn', { volume: 0.45 });
       if (!moves.some((m) => m.from === this.cur)) this.cur = moves[0].from;
       this.placeCursor();
@@ -246,6 +254,7 @@ export class PlayScene extends ArcadeScene {
       this.cursor.setVisible(false);
       this.clearMarks();
       this.status.setText(this.online ? t('theirTurn') : t('aiTurn')).setColor('#c49a6a');
+      this.status.setIcon(this.mine === W ? 'pc-b' : 'pc-w', undefined, 30);
       if (this.online) this.takeRemote();
       else this.time.delayedCall(rng.int(350, 600), () => this.aiMove());
     }
@@ -391,7 +400,7 @@ export class PlayScene extends ArcadeScene {
     this.cursor.setVisible(false);
     this.clearMarks();
     const mover = this.board[m.from] > 0 ? W : BL;
-    if (this.online && mover === this.mine) this.status.setText(t('theirTurn')).setColor('#c49a6a');
+    if (this.online && mover === this.mine) this.status.setText(t('theirTurn')).setColor('#c49a6a').setIcon(this.mine === W ? 'pc-b' : 'pc-w', undefined, 30);
     const wasMan = Math.abs(this.board[m.from]) === 1;
     const sprite = this.sprites[m.from]!;
     this.sprites[m.from] = null;
@@ -500,4 +509,23 @@ export class PlayScene extends ArcadeScene {
 
 function clip(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+
+/**
+ * Whose turn it is, in a HUD chip over the board: hidden while empty, it pops when the text
+ * changes; its icon shows the side to move.
+ */
+class TurnChip extends HudChip {
+  setText(s: string | number): this {
+    const v = String(s), changed = v !== this.text.text;
+    super.setText(v);
+    this.setVisible(v !== '');
+    if (changed && v) this.scene.tweens.add({ targets: this, scale: { from: 1.18, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+    return this;
+  }
+
+  /** Same as setTextColor, so the turn line keeps the Text API it had. */
+  setColor(color: string): this {
+    return this.setTextColor(color);
+  }
 }

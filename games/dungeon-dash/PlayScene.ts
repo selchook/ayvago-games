@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, CHARACTER_FRAME, COLORS, Controls, burst, shake, t, rng, StickDir, isEasy, type Dir4 } from '@core';
+import { ArcadeScene, Button, CHARACTER_FRAME, COLORS, Controls, burst, shake, t, rng, StickDir, isEasy, type Dir4, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y } from '@core';
 import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 // Grid: 11 x 15 tiles of 8 px art scaled x8 = 64 px
 const COLS = 11, ROWS = 15, TS = 64, SC = 8;
-const OX = (720 - COLS * TS) / 2, OY = 140;
-const VIEW = 4.5;                       // light radius in tiles
+const OX = (720 - COLS * TS) / 2, OY = 148;   // below the second HUD row
+const VIEW = 4.5;
+const HP_W = 150, XP_W = 72;           // HUD bars: health, experience                       // light radius in tiles
 
 // The hero is the player's own character (textures 'pc-*'), posed by the way it faces: right and
 // left use the side poses (mirrored for left), down `front`, up `back`.
@@ -83,9 +84,11 @@ export class PlayScene extends ArcadeScene {
   private stairsImg!: Phaser.GameObjects.Image;
   private uiG!: Phaser.GameObjects.Graphics;
   private hpText!: Phaser.GameObjects.Text;
-  private atkText!: Phaser.GameObjects.Text;
-  private defText!: Phaser.GameObjects.Text;
-  private lvlText!: Phaser.GameObjects.Text;
+  private hpBar!: Phaser.GameObjects.Graphics;
+  private xpBar!: Phaser.GameObjects.Graphics;
+  private atkChip!: HudChip;
+  private defChip!: HudChip;
+  private lvlChip!: HudChip;
   private msg!: Phaser.GameObjects.Text;
   private potionBtn!: Button;
   private pc = 0; private pr = 0;
@@ -132,13 +135,17 @@ export class PlayScene extends ArcadeScene {
     this.fxG = this.add.graphics().setDepth(6);
     this.facing = 'down'; this.poseUntil = 0; this.walkStep = 0; this.moveEnd = 0;
     this.uiG = this.add.graphics().setDepth(20);
-    this.hpText = ftxt(this, 154, 100, '', { title: true, size: 18 }).setDepth(21);
-    this.add.image(330, 100, 'mrk', F.sword).setScale(5).setDepth(21);
-    this.atkText = ftxt(this, 372, 100, '', { title: true, size: 22 }).setDepth(21);
-    this.add.image(440, 100, 'mrk', F.shield).setScale(5).setDepth(21);
-    this.defText = ftxt(this, 482, 100, '', { title: true, size: 22 }).setDepth(21);
-    this.lvlText = ftxt(this, 560, 100, '', { title: true, size: 18, color: '#3ee6ff' }).setDepth(21);
-    this.msg = ftxt(this, 360, 1126, '', { title: true, size: 20, color: '#ffd23f' }).setDepth(21);
+    // second HUD row, in chips: health (bar and number), attack, armour, hero level and XP
+    this.hpBar = this.add.graphics();
+    this.hpText = ftxt(this, 0, 1, '', { title: true, size: 16, strokeThickness: 5, shadow: false });
+    const hpBox = this.add.container(0, 0, [this.hpBar, this.hpText]).setData('chipWidth', HP_W);
+    const row = HUD_ROW2_Y;
+    const hpChip = hudChip(this, HUD_MARGIN, row, { icon: 'mrk', iconFrame: F.heart, iconSize: 32, items: [hpBox] });
+    this.atkChip = hudChip(this, hpChip.right + HUD_GAP, row, { icon: 'mrk', iconFrame: F.sword, iconSize: 32, text: '3', minWidth: 96 });
+    this.defChip = hudChip(this, this.atkChip.right + HUD_GAP, row, { icon: 'mrk', iconFrame: F.shield, iconSize: 32, text: '0', minWidth: 96 });
+    this.xpBar = this.add.graphics().setData('chipWidth', XP_W);
+    this.lvlChip = hudChip(this, 720 - HUD_MARGIN, row, { align: 'right', text: '', color: '#3ee6ff', items: [this.xpBar] });
+    this.msg = ftxt(this, 360, 1136, '', { title: true, size: 20, color: '#ffd23f' }).setDepth(21);
 
     new Button(this, 190, 1206, t('wait'), () => this.act('wait'), { width: 300, height: 92, size: 24, color: 0x333344 });
     this.potionBtn = new Button(this, 530, 1206, '', () => this.act('potion'), { width: 300, height: 92, size: 24, color: COLORS.red });
@@ -727,15 +734,15 @@ export class PlayScene extends ArcadeScene {
   private updateUi(): void {
     const g = this.uiG;
     g.clear();
-    g.fillStyle(0x000000, 0.6).fillRoundedRect(24, 84, 262, 32, 8);
     const k = Math.max(0, this.hp) / this.maxHp;
-    g.fillStyle(k > 0.5 ? 0x5dff7a : k > 0.25 ? 0xffd23f : 0xec3013, 1).fillRoundedRect(28, 88, 254 * k, 24, 6);
-    g.fillStyle(0x000000, 0.6).fillRect(24, 120, 262, 8);
-    g.fillStyle(0x3ee6ff, 1).fillRect(25, 121, 260 * Math.min(1, this.xp / (5 + this.lvl * 5)), 6);
+    this.hpBar.clear().fillStyle(0x000000, 0.7).fillRect(-HP_W / 2, -12, HP_W, 24);
+    if (k > 0) this.hpBar.fillStyle(k > 0.5 ? 0x5dff7a : k > 0.25 ? 0xffd23f : 0xec3013, 1).fillRect(-HP_W / 2 + 2, -10, Math.max(2, (HP_W - 4) * k), 20);
+    this.xpBar.clear().fillStyle(0x000000, 0.7).fillRect(-XP_W / 2, -6, XP_W, 12);
+    this.xpBar.fillStyle(0x3ee6ff, 1).fillRect(-XP_W / 2 + 2, -4, (XP_W - 4) * Math.min(1, this.xp / (5 + this.lvl * 5)), 8);
     this.hpText.setText(`${Math.max(0, this.hp)}/${this.maxHp}`);
-    this.atkText.setText(String(this.atk));
-    this.defText.setText(String(this.def));
-    this.lvlText.setText(`${t('lv')}${this.lvl}`);
+    this.atkChip.setText(this.atk);
+    this.defChip.setText(this.def);
+    this.lvlChip.setText(`${t('lv')}${this.lvl}`);
     this.potionBtn.setText(`${t('potion')} ${this.potions}`);
     // health bars over wounded visible monsters
     for (const m of this.monsters) {

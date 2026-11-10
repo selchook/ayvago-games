@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, net, upper, StickDir, isEasy, type Dir4 } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, net, upper, StickDir, isEasy, type Dir4, hudChip, hudText, HudChip, HUD_MARGIN, HUD_ROW2_Y } from '@core';
 import { Arena, COLS, ROWS, DX, DY, aiDir, makeObstacles } from './arena';
 
 const STICK_DIR: Record<Dir4, number> = { up: 0, right: 1, down: 2, left: 3 };
 
 const CELL = 20;
 const X0 = (720 - COLS * CELL) / 2;
-const Y0 = 126;
+const Y0 = 148;   // below the second HUD row (the match score)
 const FW = COLS * CELL, FH = ROWS * CELL;
 const ME = 0x3ee6ff;
 const OPP = 0xff8a2a;
@@ -41,6 +41,7 @@ export class PlayScene extends ArcadeScene {
   private walls!: Phaser.GameObjects.Graphics;
   private pips: Phaser.GameObjects.Arc[][] = [[], []];
   private oppName!: Phaser.GameObjects.Text;
+  private oppChip!: HudChip;
   private banner!: Phaser.GameObjects.Text;
   private interval = 100;
   private acc = 0;
@@ -91,14 +92,15 @@ export class PlayScene extends ArcadeScene {
       this.heads.push(this.add.image(0, 0, 'bike').setDepth(6));
     }
 
-    // match score: pips for each side
+    // match score on the second HUD row: my name and pips on the left, the rival's on the right
     const name = this.online ? upper((net.peerName || t('opponent')).slice(0, 14)) : '';
-    txt(this, X0, 102, t('you'), { title: true, size: 16, color: '#3ee6ff' }).setOrigin(0, 0.5);
-    this.oppName = txt(this, X0 + FW, 102, name, { title: true, size: 16, color: '#ff8a2a' }).setOrigin(1, 0.5);
     for (let k = 0; k < TO_WIN; k++) {
-      this.pips[0].push(this.add.circle(X0 + 96 + k * 30, 102, 9).setStrokeStyle(3, ME));
-      this.pips[1].push(this.add.circle(0, 102, 9).setStrokeStyle(3, OPP));
+      this.pips[0].push(this.add.circle(0, 0, 9).setStrokeStyle(3, ME).setData('chipWidth', 18));
+      this.pips[1].push(this.add.circle(0, 0, 9).setStrokeStyle(3, OPP).setData('chipWidth', 18));
     }
+    hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { text: t('you'), color: '#3ee6ff', size: 16, items: this.pips[0] });
+    this.oppName = hudText(this, name, 16, '#ff8a2a');
+    this.oppChip = hudChip(this, 720 - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', items: [...[...this.pips[1]].reverse(), this.oppName] });
     this.banner = txt(this, 360, Y0 + FH / 2, '', { title: true, size: 54, strokeThickness: 10 }).setDepth(40).setVisible(false);
 
     this.setupInput();
@@ -212,10 +214,13 @@ export class PlayScene extends ArcadeScene {
   // ------------------------------------------------------------------ rounds
 
   private updateHud(): void {
-    if (!this.online) this.oppName.setText(upper(t('r' + this.rival))).setColor(Phaser.Display.Color.IntegerToColor(this.oppColor()).rgba);
+    if (!this.online) {
+      this.oppName.setText(upper(t('r' + this.rival))).setColor('#' + this.oppColor().toString(16).padStart(6, '0'));
+      this.oppChip.layout();
+    }
     for (let k = 0; k < 2; k++) this.pips[k].forEach((p, i) => {
       p.setFillStyle(i < this.pts[k] ? (k ? this.oppColor() : ME) : 0x000000, i < this.pts[k] ? 1 : 0.3);
-      if (k) p.setStrokeStyle(3, this.oppColor()).setX(X0 + FW - this.oppName.width - 26 - i * 30);
+      if (k) p.setStrokeStyle(3, this.oppColor());
     });
     if (this.online) return;
     this.hud.setCenter(`${t('round')} ${this.round}`);

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, popup, txt, t, loc, upper, COLORS } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, loc, upper, COLORS, hudChip, HudChip } from '@core';
 import { PUZZLES, PALETTE } from './puzzles';
 
 const EMPTY = 0, FILLED = 1, MARKED = 2, MISTAKE = 3;
@@ -56,8 +56,7 @@ export class PlayScene extends ArcadeScene {
   private bandR!: Phaser.GameObjects.Rectangle;
   private bandC!: Phaser.GameObjects.Rectangle;
   private cursorBox!: Phaser.GameObjects.Rectangle;
-  private titleText!: Phaser.GameObjects.Text;
-  private infoText!: Phaser.GameObjects.Text;
+  private infoChip!: HudChip;
   private fillBtn!: Phaser.GameObjects.Container;
   private markBtn!: Phaser.GameObjects.Container;
   private flashRect!: Phaser.GameObjects.Rectangle;
@@ -77,8 +76,8 @@ export class PlayScene extends ArcadeScene {
     this.colClues = [];
 
     const { width, height } = this.scale;
-    this.titleText = txt(this, width / 2, 110, '', { title: true, size: 24, color: '#ffd23f' });
-    this.infoText = txt(this, width / 2, 1010, '', { size: 30, color: '#f3f2f2' });
+    // the puzzle's title goes in the HUD's centre chip; the mistakes in a chip under the board
+    this.infoChip = hudChip(this, width / 2, 1010, { align: 'center', text: '', size: 24 });
     this.bandR = this.add.rectangle(0, 0, 10, 10, 0xffffff, 0.07).setOrigin(0).setDepth(2).setVisible(false);
     this.bandC = this.add.rectangle(0, 0, 10, 10, 0xffffff, 0.07).setOrigin(0).setDepth(2).setVisible(false);
     this.linesG = this.add.graphics().setDepth(3);
@@ -213,8 +212,9 @@ export class PlayScene extends ArcadeScene {
 
     this.bandR.setSize(gw, this.cs);
     this.bandC.setSize(this.cs, gw);
-    this.titleText.setText(`${t('puzzle', { n: this.idx + 1, m: PUZZLES.length })}  ${n}x${n}`).setScale(0.4);
-    this.tweens.add({ targets: this.titleText, scale: 1, duration: 360, ease: 'Back.easeOut' });
+    this.hud.setCenter(`${t('puzzle', { n: this.idx + 1, m: PUZZLES.length })} · ${n}x${n}`);
+    this.hud.centerChip.setTextColor('#ffd23f');
+    this.tweens.add({ targets: this.hud.centerChip, scale: { from: 0.4, to: 1 }, duration: 360, ease: 'Back.easeOut' });
     this.timeLeft += ALLOWANCE[n] ?? 120;
     popup(this, this.scale.width - 140, 90, `+${ALLOWANCE[n] ?? 120}s`, '#5dff7a', 22);
     this.setMode(this.mode, true);
@@ -453,7 +453,7 @@ export class PlayScene extends ArcadeScene {
     const name = txt(this, this.scale.width / 2, this.y0 + n * this.cs + 70, upper(loc(P.name)) + '!', { title: true, size: 40, color: '#5dff7a' }).setDepth(30).setScale(0);
     this.boardObjs.push(name);
     this.tweens.add({ targets: name, scale: 1, duration: 420, delay: 300, ease: 'Back.easeOut' });
-    this.infoText.setText(this.mistakes === 0 ? t('perfect') : t('solved'));
+    this.infoChip.setText(this.mistakes === 0 ? t('perfect') : t('solved')).setTextColor(this.mistakes === 0 ? '#5dff7a' : '#f3f2f2');
     this.time.delayedCall(500, () => this.addScore(bonus, cx, cy));
 
     this.time.delayedCall(2400, () => {
@@ -469,7 +469,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private refreshInfo(): void {
-    this.infoText.setText(`${t('mistakes')}: ${this.mistakes}`).setColor(this.mistakes ? '#ff8080' : '#f3f2f2');
+    this.infoChip.setText(`${t('mistakes')}: ${this.mistakes}`).setTextColor(this.mistakes ? '#ff8080' : '#f3f2f2');
   }
 
   private showTime(): number {

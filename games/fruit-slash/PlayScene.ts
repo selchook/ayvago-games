@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, txt, t, rng, hudChip, hudRightEdge, HUD_ROW_Y } from '@core';
 import { FRUITS, ICE, STAR, makeFruitTextures, type FruitKind } from './art';
 
 const W = 720;
@@ -8,6 +8,7 @@ const G = 1500;                 // gravity, px/s²
 const TRAIL_MS = 140;           // how long trail points live
 const MIN_SPEED = 260;          // px/s the blade must move to cut
 const MAX_MISSES = 3;
+const MARK_SCALE = 0.6;   // the X marks in the HUD chip
 const KB_SLASH = 0.7;           // seconds one Space press keeps the keyboard blade cutting
 
 interface Item {
@@ -71,9 +72,11 @@ export class PlayScene extends ArcadeScene {
 
     this.missMarks = [];
     for (let i = 0; i < MAX_MISSES; i++) {
-      const m = this.add.image(452 + i * 56, 46, 'xmark').setScale(0.8).setTint(0x555566).setDepth(9001);
+      const m = this.add.image(0, 0, 'xmark').setScale(MARK_SCALE).setTint(0x8a8a9a).setData('chipWidth', 52 * MARK_SCALE);
       this.missMarks.push(m);
     }
+    // the misses left, as X marks in a chip in the right slot of the HUD
+    hudChip(this, hudRightEdge(this), HUD_ROW_Y, { align: 'right', items: this.missMarks });
 
     this.controls = new Controls(this);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -305,7 +308,7 @@ export class PlayScene extends ArcadeScene {
     const mark = this.missMarks[this.misses - 1];
     if (mark) {
       mark.setTint(0xff3b3b);
-      this.tweens.add({ targets: mark, scale: 1.3, duration: 140, yoyo: true });
+      this.tweens.add({ targets: mark, scale: MARK_SCALE * 1.5, duration: 140, yoyo: true });
     }
     this.sfxAt('miss', x, { volume: 0.6 });
     shake(this, 0.006, 140);

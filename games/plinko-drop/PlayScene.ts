@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, t } from '@core';
+import { ArcadeScene, Controls, burst, shake, t, hudChip, hudText, HudChip, HUD_ROW2_Y, HUD_MARGIN } from '@core';
 import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 import { BALL_LOOK, paintTextures } from './textures';
 import {
@@ -9,7 +9,8 @@ import {
 
 // Layout of the screen around the board (720 x 1280 world)
 const PANEL_Y = 156, PANEL_H = 1036;
-const INFO_Y = 104, BAR_Y = 134, BAR_X = 30, BAR_W = 640;
+/** HUD row 2: the next balls, the combo and the goal with its bar (BAR_W wide, three stars on it). */
+const BAR_W = 136, STAR_S = 24;
 const HINT_Y = 1230;
 const BAR_FULL = STAR_AT[2];
 
@@ -49,8 +50,8 @@ export class PlayScene extends ArcadeScene {
   private holder!: Phaser.GameObjects.Image;
   private dropper!: Phaser.GameObjects.Image;
   private nextIcons: Phaser.GameObjects.Image[] = [];
-  private nextLabel!: Phaser.GameObjects.Text;
-  private goalText!: Phaser.GameObjects.Text;
+  private nextChip!: HudChip;
+  private goalText!: HudChip;
   private comboText!: Phaser.GameObjects.Text;
   private hintText!: Phaser.GameObjects.Text;
   private gateText!: Phaser.GameObjects.Text;
@@ -85,7 +86,7 @@ export class PlayScene extends ArcadeScene {
     this.boardG = this.add.graphics().setDepth(1);
     this.trailG = this.add.graphics().setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
     this.fxG = this.add.graphics().setDepth(7);
-    this.barG = this.add.graphics().setDepth(10);
+    this.barG = this.add.graphics();
 
     // slots: a bucket container per pocket, anchored at the floor so it squashes when hit
     for (let i = 0; i < SLOTS; i++) {
@@ -101,19 +102,20 @@ export class PlayScene extends ArcadeScene {
     this.dropper = this.add.image(this.dropX, DROP_Y - 30, 'pk-dropper').setDepth(6);
     this.holder = this.add.image(this.dropX, DROP_Y, 'pk-ball-normal').setDepth(6);
 
-    // info row: next balls, combo, goal; then the goal bar with its three stars
-    this.nextLabel = ftxt(this, 30, INFO_Y, t('nextBalls'), { title: true, size: 18, color: '#b9b4d6' }).setOrigin(0, 0.5).setDepth(10);
-    const nx = 30 + this.nextLabel.width + 26;
+    // HUD row 2: the next balls left (and, while a streak runs, the combo the next ball earns),
+    // the goal with its bar and three stars right
     for (let k = 0; k < 3; k++) {
-      const s = 34 - k * 5;
-      this.nextIcons.push(this.add.image(nx + k * 36, INFO_Y, 'pk-ball-normal').setDisplaySize(s, s).setDepth(10).setData('size', s));
+      const sz = 30 - k * 4;
+      this.nextIcons.push(this.add.image(0, 0, 'pk-ball-normal').setDisplaySize(sz, sz).setData('size', sz).setData('chipWidth', sz));
     }
-    this.comboText = ftxt(this, 360, INFO_Y, '', { title: true, size: 22, color: '#ff9f1c' }).setDepth(10).setVisible(false);
-    this.goalText = ftxt(this, 690, INFO_Y, '', { title: true, size: 20, color: '#ffd23f' }).setOrigin(1, 0.5).setDepth(10);
+    this.comboText = hudText(this, '', 19, '#ff9f1c').setVisible(false);
+    this.nextChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { label: t('nextBalls'), items: [...this.nextIcons, this.comboText] });
     for (let s = 0; s < 3; s++) {
-      const x = BAR_X + (BAR_W * STAR_AT[s]) / BAR_FULL;
-      this.starIcons.push(this.add.image(x, BAR_Y, 'pk-star-off').setDisplaySize(34, 34).setDepth(11));
+      const x = -BAR_W / 2 + (BAR_W * STAR_AT[s]) / BAR_FULL;
+      this.starIcons.push(this.add.image(x, 0, 'pk-star-off').setDisplaySize(STAR_S, STAR_S));
     }
+    const bar = this.add.container(0, 0, [this.barG, ...this.starIcons]).setData('chipWidth', BAR_W + STAR_S / 2);
+    this.goalText = hudChip(this, 720 - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', label: t('goal'), text: '0/0', size: 20, color: '#ffd23f', items: [bar] });
     this.hintText = ftxt(this, 360, HINT_Y, t('hint'), { size: 24, color: '#b9b4d6', wrap: 680 }).setDepth(10);
 
     this.controls = new Controls(this);
@@ -157,7 +159,7 @@ export class PlayScene extends ArcadeScene {
     const acc = this.accent();
     this.glowBg.setTint(acc);
     this.drawFrame(acc);
-    for (const s of this.starIcons) s.setTexture('pk-star-off').setDisplaySize(34, 34);
+    for (const s of this.starIcons) s.setTexture('pk-star-off').setDisplaySize(STAR_S, STAR_S);
 
     // pegs and their glows fall into place row by row
     for (const p of r.pegs) {
@@ -347,8 +349,8 @@ export class PlayScene extends ArcadeScene {
     const r = this.round;
     if (!r) return;
     this.hud.setRight(`${t('balls')} ${r.ballsLeft}`);
-    this.goalText.setText(`${t('goal')} ${r.score}/${r.cfg.goal}`);
-    this.goalText.setColor(r.score >= r.cfg.goal ? '#5dff7a' : '#ffd23f');
+    this.goalText.setText(`${r.score}/${r.cfg.goal}`);
+    this.goalText.setTextColor(r.score >= r.cfg.goal ? '#5dff7a' : '#ffd23f');
     // the ball in the dropper and the next three
     const cur = r.queue[0];
     this.holder.setVisible(!!cur);
@@ -360,15 +362,16 @@ export class PlayScene extends ArcadeScene {
     }
     this.nextIcons.forEach((ic, k) => {
       const kind = r.queue[k + 1];
-      ic.setVisible(!!kind);
+      ic.setAlpha(kind ? 1 : 0);   // an empty slot keeps its place, so the chip does not jump
       if (kind) ic.setTexture(`pk-ball-${kind}`).setDisplaySize(ic.getData('size'), ic.getData('size'));
     });
-    this.nextLabel.setAlpha(r.queue.length > 1 ? 1 : 0.4);
+    this.nextChip.caption?.setAlpha(r.queue.length > 1 ? 0.78 : 0.35);
     const special = cur && cur !== 'normal';
     this.hintText.setText(special ? t(`desc_${cur}`) : t('hint'));
     this.hintText.setColor(special ? Phaser.Display.Color.IntegerToColor(BALL_LOOK[cur].trail).rgba : '#b9b4d6');
     const nextCombo = COMBO[Math.min(r.streak + 1, COMBO.length - 1)];
     this.comboText.setVisible(r.streak >= 1 && nextCombo > 1).setText(t('comboX', { n: nextCombo }));
+    this.nextChip.layout();
   }
 
   // ---------------------------------------------------------------- dropping
@@ -522,12 +525,13 @@ export class PlayScene extends ArcadeScene {
     const img = this.starIcons[s];
     if (!img) return;
     this.starsLit = Math.max(this.starsLit, s + 1);
-    img.setTexture('pk-star').setDisplaySize(34, 34);
+    img.setTexture('pk-star').setDisplaySize(STAR_S, STAR_S);
     const base = img.scale;
     img.setScale(base * 2.2);
     this.tweens.add({ targets: img, scale: base, duration: 380, ease: 'Back.easeOut' });
     this.sfx('star', { volume: 0.7, rate: 1 + s * 0.2 });
-    burst(this, img.x, img.y, [0xffd23f, 0xffffff], 18, 220);
+    const m = img.getWorldTransformMatrix();   // the star sits in the goal chip
+    burst(this, m.tx, m.ty, [0xffd23f, 0xffffff], 18, 220);
   }
 
   private landFx(b: Ball, i: number): void {
@@ -563,7 +567,7 @@ export class PlayScene extends ArcadeScene {
     if (tag) fpopup(this, cx, FLOOR - 186, tag, '#ff4fa3', 20);
     if (combo > 1) {
       this.tweens.killTweensOf(this.comboText);
-      this.comboText.setScale(1.5);
+      this.comboText.setScale(1.3);
       this.tweens.add({ targets: this.comboText, scale: 1, duration: 260, ease: 'Back.easeOut' });
     }
     if (jackpot) this.jackpot(cx);
@@ -693,7 +697,8 @@ export class PlayScene extends ArcadeScene {
     this.shownScore += (r.score - this.shownScore) * Math.min(1, dt * 8);
     const bg = this.barG;
     bg.clear();
-    bg.fillStyle(0x000000, 0.5).fillRoundedRect(BAR_X, BAR_Y - 7, BAR_W, 14, 7);
+    const BAR_X = -BAR_W / 2, BAR_Y = 0;
+    bg.fillStyle(0x000000, 0.35).fillRoundedRect(BAR_X, BAR_Y - 7, BAR_W, 14, 7);
     const pr = Math.min(1, this.shownScore / (r.cfg.goal * BAR_FULL));
     const reached = r.score >= r.cfg.goal;
     if (pr > 0.005) {

@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng, hudChip, HudChip, HUD_ROW2_Y, HUD_MARGIN } from '@core';
+
+/** Width of the beam's energy bar in its HUD chip. */
+const BAR_W = 220;
 
 /** Animal kinds: key, points, weight (heavier = slower lift), level they appear from. */
 export const ANIMALS = [
@@ -78,7 +81,7 @@ export class PlayScene extends ArcadeScene {
   private ufo!: Phaser.GameObjects.Image;
   private beamG!: Phaser.GameObjects.Graphics;
   private barG!: Phaser.GameObjects.Graphics;
-  private infoText!: Phaser.GameObjects.Text;
+  private infoText!: HudChip;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
   private animals: Animal[] = [];
   private missiles: Missile[] = [];
@@ -112,7 +115,7 @@ export class PlayScene extends ArcadeScene {
     this.add.image(0, 0, 'sky').setOrigin(0);
     this.add.tileSprite(0, GROUND, W, H - GROUND, 'grass').setOrigin(0).setTileScale(0.8);
     this.beamG = this.add.graphics().setDepth(5);
-    this.barG = this.add.graphics().setDepth(9000);
+    this.barG = this.add.graphics().setData('chipWidth', BAR_W);
     this.ufo = this.add.image(W / 2, 470, 'ufo0').setDepth(20);
     this.trail = this.add.particles(0, 0, 'puff', {
       lifespan: 600, speed: { min: 5, max: 30 }, scale: { start: 0.9, end: 0.2 }, alpha: { start: 0.7, end: 0 },
@@ -124,7 +127,9 @@ export class PlayScene extends ArcadeScene {
     }
 
     this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
-    this.infoText = txt(this, 24, 70, '', { title: true, size: 18, color: '#7dffb0' }).setOrigin(0, 0).setDepth(9000);
+    // second HUD row: animals caught (the level is the HUD's flag) and the beam's energy
+    this.infoText = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { label: t('caught'), text: '0/0', color: '#7dffb0', minWidth: 210 });
+    hudChip(this, W - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', label: t('energy'), items: [this.barG] });
     for (let i = 0; i < 4; i++) this.spawnAnimal(rng.int(80, W - 80));
     this.updateHud();
     this.banner(t('levelUp', { n: 1 }), t('goal', { n: this.quota }));
@@ -136,7 +141,8 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setLives(this.hp);
-    this.infoText.setText(`${t('level')} ${this.level}  ·  ${t('caught')} ${this.caught}/${this.quota}`);
+    this.hud.setLevel(this.level);
+    this.infoText.setText(`${this.caught}/${this.quota}`);
   }
 
   private banner(title: string, sub?: string): void {
@@ -326,10 +332,11 @@ export class PlayScene extends ArcadeScene {
     // --- energy bar
     const bg = this.barG;
     bg.clear();
-    bg.fillStyle(0x000000, 0.6).fillRect(24, 104, 284, 26);
+    const x0 = -BAR_W / 2, h = 18;
+    bg.fillStyle(0x000000, 0.35).fillRoundedRect(x0, -h / 2, BAR_W, h, h / 2);
     const col = this.overheated ? (Math.floor(this.elapsed * 8) % 2 ? 0xec3013 : 0x661111) : this.energy < 30 ? 0xffd23f : 0x7dffb0;
-    bg.fillStyle(col, 1).fillRect(28, 108, 276 * (this.energy / 100), 18);
-    bg.lineStyle(3, 0xffffff, 0.8).strokeRect(24, 104, 284, 26);
+    const fw = BAR_W * (this.energy / 100);
+    if (fw > 1) bg.fillStyle(col, 1).fillRoundedRect(x0, -h / 2, Math.max(h, fw), h, h / 2);
 
     // --- animals
     const target = Math.min(4 + this.level, 9);

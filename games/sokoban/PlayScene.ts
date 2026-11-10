@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, loc, t, txt, rng, StickDir } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, loc, t, txt, rng, StickDir, hudChip, HudChip, HUD_ROW2_Y } from '@core';
 import { LEVELS } from './levels';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
@@ -37,15 +37,14 @@ export class PlayScene extends ArcadeScene {
   private gen = 0;
   private controls!: Controls;
   private stick!: StickDir;
-  private levelTxt!: Phaser.GameObjects.Text;
-  private movesTxt!: Phaser.GameObjects.Text;
+  private movesTxt!: HudChip;
 
   createGame(): void {
     this.gen++;
     this.level = 0; this.queue = []; this.moving = false; this.won = false;
     this.hud.setCenter('');
-    this.levelTxt = txt(this, 360, 118, '', { title: true, size: 26, color: '#ffd23f' });
-    this.movesTxt = txt(this, 360, 164, '', { size: 30, color: '#f3f2f2' });
+    // the level is the HUD's flag chip; moves and par sit in a chip on the second row
+    this.movesTxt = hudChip(this, 360, HUD_ROW2_Y, { align: 'center' });
     // touch: the standard floating stick, anywhere on the screen. A push takes one step and
     // holding it keeps walking; UNDO and RESTART stay as buttons on the right.
     this.controls = new Controls(this, { joystick: true });
@@ -80,9 +79,9 @@ export class PlayScene extends ArcadeScene {
 
   private updateInfo(): void {
     const lv = LEVELS[this.level];
-    this.levelTxt.setText(`${t('level')} ${this.level + 1}/${LEVELS.length}`);
-    this.movesTxt.setText(`${t('moves')}: ${this.moves}   ${t('par')}: ${lv.par}`);
-    this.movesTxt.setColor(this.moves > lv.par ? '#ffb38a' : '#f3f2f2');
+    this.hud.setLevel(`${this.level + 1}/${LEVELS.length}`);
+    this.movesTxt.setText(`${t('moves')} ${this.moves} · ${t('par')} ${lv.par}`);
+    this.movesTxt.setTextColor(this.moves > lv.par ? '#ffb38a' : '#f3f2f2');
   }
 
   // ---------- level ----------

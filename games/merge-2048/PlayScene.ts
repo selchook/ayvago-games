@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, t, txt, rng, COLORS, FONT_TITLE } from '@core';
+import { ArcadeScene, Button, burst, shake, flash, t, txt, rng, COLORS, FONT_TITLE, hudChip, HudChip, HUD_ROW_Y } from '@core';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
 interface Tile { v: number; r: number; c: number; obj: Phaser.GameObjects.Container; dead?: boolean; merged?: boolean }
@@ -25,7 +25,7 @@ export class PlayScene extends ArcadeScene {
   private maxTile = 2;
   private swipe: { x: number; y: number } | null = null;
   private undoTxt!: Phaser.GameObjects.Text;
-  private maxTxt!: Phaser.GameObjects.Text;
+  private maxTxt!: HudChip;
   private layer!: Phaser.GameObjects.Container;
   private overlay?: Phaser.GameObjects.Container;
   private gen = 0;
@@ -44,11 +44,9 @@ export class PlayScene extends ArcadeScene {
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) g.fillStyle(0x3a3354, 1).fillRoundedRect(this.cx(c) - CELL / 2, this.cy(r) - CELL / 2, CELL, CELL, 14);
     this.layer = this.add.container(0, 0);
 
-    // top: max tile + undo
-    this.add.rectangle(200, 200, 300, 120, 0x000000, 0.4).setStrokeStyle(3, 0xffffff, 0.25);
-    txt(this, 200, 168, t('maxTile'), { title: true, size: 16, color: '#3ee6ff' });
-    this.maxTxt = txt(this, 200, 218, '2', { title: true, size: 34, color: '#ffd23f' });
-    const ub = this.add.container(520, 200);
+    // top: the max tile in a HUD chip, the undo button under it
+    this.maxTxt = hudChip(this, 360, HUD_ROW_Y, { align: 'center', label: t('maxTile'), text: '2', color: '#ffd23f', minWidth: 150 });
+    const ub = this.add.container(360, 200);
     const ubg = this.add.rectangle(0, 0, 300, 120, COLORS.purple, 0.85).setStrokeStyle(4, 0x000000);
     const uic = this.add.image(-90, 0, 'icon-return').setDisplaySize(52, 52);
     this.undoTxt = txt(this, 30, 2, '', { title: true, size: 22, strokeThickness: 0, shadow: false });
@@ -210,7 +208,7 @@ export class PlayScene extends ArcadeScene {
         if (biggest > this.maxTile) {
           this.maxTile = biggest;
           this.maxTxt.setText(String(biggest));
-          this.tweens.add({ targets: this.maxTxt, scale: 1.4, duration: 120, yoyo: true });
+          this.tweens.add({ targets: this.maxTxt, scale: 1.2, duration: 120, yoyo: true });
           if (biggest >= 128) { this.sfx('level', { volume: 0.55 }); flash(this, PALETTE[biggest] ?? 0xffffff, 90); }
         }
       }

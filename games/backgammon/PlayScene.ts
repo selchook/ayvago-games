@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, currentGame,
   quickChat, isModalOpen, openPlayerCard, isPlayerCardOpen, portraitKey, lifetimeRows, recordMatch,
-  playerCharacter, peerCharacter, otherCharacters, isEasy,
+  playerCharacter, peerCharacter, otherCharacters, isEasy, hudChip,
   type QuickChat, type CharacterId,
 } from '@core';
 import {
@@ -143,7 +143,9 @@ export class PlayScene extends ArcadeScene {
     this.looks = this.mine === 0 ? [me, them] : [them, me];
     this.portraits = [0, 1].map((side) => portraitKey(this, `ch-${this.looks[side]}-front`, side === this.mine ? GOLD : THEM)) as [string, string];
 
-    // the scoreboard pill: my name and dots left, the opponent right, game and turn in the middle
+    // the scoreboard pill, a HUD chip: my name and dots left, the opponent right, game and turn in
+    // the middle; the side to play is lit on top of it
+    hudChip(this, HUD.x, HUD.y, { align: 'center', height: HUD.h, minWidth: HUD.w, depth: 29 });
     this.hudG = this.add.graphics().setDepth(30);
     const L = HUD.x - HUD.w / 2, R = HUD.x + HUD.w / 2;
     this.add.image(L + 34, HUD.y, this.tex(this.mine)).setDisplaySize(34, 34).setDepth(31);
@@ -376,14 +378,12 @@ export class PlayScene extends ArcadeScene {
     return this.online ? clip(net.peerName || t('opponent'), max) : t('d' + this.level);
   }
 
-  /** The pill behind the scoreboard; the side to play is lit in its colour. */
+  /** The side to play is lit in its colour on the scoreboard chip. */
   private drawHud(): void {
     const g = this.hudG;
     if (!g) return;
     const L = HUD.x - HUD.w / 2;
     g.clear();
-    g.fillStyle(0x0b1020, 0.66).fillRoundedRect(L, HUD.y - HUD.h / 2, HUD.w, HUD.h, HUD.h / 2);
-    g.lineStyle(2, 0xffffff, 0.1).strokeRoundedRect(L, HUD.y - HUD.h / 2, HUD.w, HUD.h, HUD.h / 2);
     if (this.turnAt <= 0 || this.isOver) return;
     const mineTurn = this.turn === this.mine;
     const x = mineTurn ? L + 4 : HUD.x + HUD.w / 2 - 4 - SIDE_W;
