@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, COLORS, storage } from '@core';
+import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, COLORS, storage, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y } from '@core';
 import { generate, rowOf, colOf, boxOf, candidates, popcount } from './generator';
 
 const CELL = 78;
@@ -49,9 +49,9 @@ export class PlayScene extends ArcadeScene {
   private notesKey!: PadKey;
   private eraseKey!: PadKey;
   private hintKey!: PadKey;
-  private timerText!: Phaser.GameObjects.Text;
-  private mistakeText!: Phaser.GameObjects.Text;
-  private infoText!: Phaser.GameObjects.Text;
+  private timerText!: HudChip;
+  private mistakeText!: HudChip;
+  private infoText!: HudChip;
   private gameLayer: Phaser.GameObjects.GameObject[] = [];
   private selectLayer: Phaser.GameObjects.GameObject[] = [];
   private selectFocus = 0;
@@ -137,10 +137,11 @@ export class PlayScene extends ArcadeScene {
       this.digits.push(d); this.noteTexts.push(n);
       this.gameLayer.push(d, n);
     }
-    this.timerText = txt(this, 30, 128, '0:00', { title: true, size: 22, color: '#ffd23f' }).setOrigin(0, 0.5);
-    // EN "MISTAKES 0/3" is wide: the puzzle number sits left of centre so the two never touch.
-    this.mistakeText = txt(this, 690, 128, '', { title: true, size: 20, color: '#ff5a5a' }).setOrigin(1, 0.5);
-    this.infoText = txt(this, 300, 128, '', { size: 26, color: '#aab0d0' });
+    // second HUD row: the clock left, the puzzle number in the middle, mistakes right
+    const y = HUD_ROW2_Y;
+    this.timerText = hudChip(this, HUD_MARGIN, y, { text: '0:00', color: '#ffd23f', minWidth: 96 });
+    this.mistakeText = hudChip(this, 720 - HUD_MARGIN, y, { align: 'right', color: '#ff7a7a' });
+    this.infoText = hudChip(this, 360, y, { align: 'center', color: '#d4d8f0' });
     this.gameLayer.push(this.timerText, this.mistakeText, this.infoText);
   }
 
@@ -216,6 +217,7 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'play';
     this.hud.setCenter(t(d.key));
     this.infoText.setText(`${t('puzzle')} ${this.puzzleNo}`);
+    this.placeInfo();
     for (let i = 0; i < 81; i++) {
       const tx = this.digits[i];
       tx.setScale(0);
@@ -269,6 +271,13 @@ export class PlayScene extends ArcadeScene {
     this.hintKey.label.setText(`${t('hint')} ${this.hintsLeft}`);
     this.hintKey.box.setAlpha(this.hintsLeft > 0 ? 1 : 0.4);
     this.mistakeText.setText(`${t('mistakes')} ${this.mistakes}/${MAX_MISTAKES}`);
+    this.placeInfo();
+  }
+
+  /** EN "MISTAKES 0/3" is wide: the puzzle number moves left of centre when the two would touch. */
+  private placeInfo(): void {
+    const x = Math.min(360, this.mistakeText.left - 10 - this.infoText.chipWidth / 2);
+    this.infoText.setAnchor(Math.max(this.timerText.right + 10 + this.infoText.chipWidth / 2, x), HUD_ROW2_Y);
   }
 
   // ---------------------------------------------------------------- input

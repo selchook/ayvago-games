@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS, txt, FONT_TITLE } from './theme';
 import { playSfx } from './audio';
-import { isModern } from './style';
+import { isModern, MODERN_TITLE, MODERN_BODY } from './style';
 
 export interface ButtonOptions {
   width?: number;
@@ -105,8 +105,9 @@ export class Button extends Phaser.GameObjects.Container {
 /** Small square icon button using a Kenney game-icon texture key. */
 export function iconButton(scene: Phaser.Scene, x: number, y: number, icon: string, onClick: () => void, size = 72): Phaser.GameObjects.Container {
   const c = scene.add.container(x, y);
+  // modern: a round piece of the HUD glass
   const bg = isModern()
-    ? scene.add.circle(0, 0, size / 2, 0x0b1020, 0.55).setStrokeStyle(2, 0xffffff, 0.35)
+    ? scene.add.image(0, 0, chipTexture(scene, size, size))
     : scene.add.rectangle(0, 0, size, size, 0x000000, 0.45).setStrokeStyle(4, 0xffffff, 0.8);
   const img = scene.add.image(0, 0, icon).setDisplaySize(size * 0.62, size * 0.62);
   c.add([bg, img]);
@@ -200,68 +201,386 @@ function hudIcons(scene: Phaser.Scene): { heart: string; empty: string; flag: st
   };
 }
 
+// ---------- HUD chips ----------
+
+/** Height of a HUD chip. */
+export const HUD_CHIP_H = 44;
+/** Centre line of the top HUD row: level with the pause button. */
+export const HUD_ROW_Y = 50;
+/** Centre line of the second HUD row, for readouts that do not fit the first. */
+export const HUD_ROW2_Y = HUD_ROW_Y + HUD_CHIP_H + 20;
+/** Distance of the left and right chips from the screen edges. */
+export const HUD_MARGIN = 16;
+/** Space between neighbouring chips. */
+export const HUD_GAP = 10;
+/** Right edge of the right-most chip in the top row: clear of the pause button (72 px at w-52). */
+export const hudRightEdge = (scene: Phaser.Scene): number => scene.scale.width - 100;
+
+export type HudChipAlign = 'left' | 'center' | 'right';
+
+export interface HudChipOptions {
+  /** Which part of the chip sits at x: its left edge (default), centre or right edge. */
+  align?: HudChipAlign;
+  /** The readout. */
+  text?: string;
+  /** A small caption before the text ("SCORE"), dimmed in the modern style, yellow in retro. */
+  label?: string;
+  /** Texture key of an icon before the text (coin, gem, clock ...). */
+  icon?: string;
+  /** Frame of the icon texture (spritesheets, atlases). */
+  iconFrame?: string | number;
+  /** Icon height in px (default 30). */
+  iconSize?: number;
+  /** Text colour (default white). */
+  color?: string;
+  /** Font size of the text (default 26 modern, 18 retro). */
+  size?: number;
+  /** Chips never get narrower than this. */
+  minWidth?: number;
+  /** Chip height (default HUD_CHIP_H). */
+  height?: number;
+  /** Retro style: border colour (default the HUD yellow). */
+  accent?: number;
+  /** Display depth (default 9000, the HUD's). */
+  depth?: number;
+  /** Other objects to put in the chip, after the icon/label/text (a chip around existing objects). */
+  items?: Phaser.GameObjects.GameObject[];
+}
+
+/** The HUD text style: no heavy outline; a soft shadow (modern) or a hard 2 px one (retro). */
+export function hudText(scene: Phaser.Scene, s: string, size?: number, color = '#ffffff'): Phaser.GameObjects.Text {
+  const modern = isModern();
+  const t = scene.add.text(0, 0, s, {
+    fontFamily: modern ? `"${MODERN_TITLE}", sans-serif` : FONT_TITLE,
+    fontStyle: modern ? '700' : 'normal',
+    fontSize: `${size ?? (modern ? 26 : 18)}px`,
+    color,
+  }).setOrigin(0.5);
+  if (modern) t.setShadow(0, 1, 'rgba(0,0,0,0.5)', 4, false, true);
+  else t.setShadow(2, 2, '#000000', 0, false, true);
+  return t;
+}
+
+function hudCaption(scene: Phaser.Scene, s: string): Phaser.GameObjects.Text {
+  const modern = isModern();
+  const t = scene.add.text(0, 0, s, {
+    fontFamily: modern ? `"${MODERN_BODY}", sans-serif` : FONT_TITLE,
+    fontStyle: modern ? '800' : 'normal',
+    fontSize: modern ? '15px' : '12px',
+    color: modern ? '#ffffff' : '#ffd23f',
+  }).setOrigin(0.5);
+  if (modern) t.setAlpha(0.78).setLetterSpacing(1).setShadow(0, 1, 'rgba(0,0,0,0.4)', 3, false, true);
+  else t.setShadow(2, 2, '#000000', 0, false, true);
+  return t;
+}
+
+/** Room around a modern chip in its texture for the soft drop shadow. */
+const GLASS_PAD = 12;
+
+function roundRectPath(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  c.beginPath();
+  c.roundRect(x, y, w, h, r);
+}
+
+/**
+ * Draws a chip background of `w` x `h` (plus the shadow pad in the modern style) into `c`.
+ * Modern: frosted glass, i.e. a soft shadow, a dark translucent body under a white veil, a top
+ * sheen and a hairline rim that is bright on top. Retro: a square dark box with a 3 px border.
+ */
+function drawChip(c: CanvasRenderingContext2D, w: number, h: number, accent: number): void {
+  if (!isModern()) {
+    c.fillStyle = 'rgba(0,0,0,0.62)';
+    c.fillRect(0, 0, w, h);
+    c.fillStyle = '#' + accent.toString(16).padStart(6, '0');
+    c.fillRect(0, 0, w, 3); c.fillRect(0, h - 3, w, 3);
+    c.fillRect(0, 0, 3, h); c.fillRect(w - 3, 0, 3, h);
+    return;
+  }
+  const x = GLASS_PAD, y = GLASS_PAD, r = h / 2;
+  // drop shadow, outside the glass only (the body is translucent)
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.42)'; c.shadowBlur = 10; c.shadowOffsetY = 3;
+  roundRectPath(c, x, y, w, h, r); c.fillStyle = '#000'; c.fill();
+  c.restore();
+  c.save();
+  c.globalCompositeOperation = 'destination-out';
+  roundRectPath(c, x, y, w, h, r); c.fill();
+  c.restore();
+  // body: a dark tint, a little deeper at the bottom, under a white veil
+  const body = c.createLinearGradient(0, y, 0, y + h);
+  body.addColorStop(0, 'rgba(30,36,60,0.42)');
+  body.addColorStop(1, 'rgba(10,13,28,0.52)');
+  roundRectPath(c, x, y, w, h, r); c.fillStyle = body; c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.07)'; c.fill();
+  // top sheen
+  c.save();
+  roundRectPath(c, x, y, w, h, r); c.clip();
+  const sheen = c.createLinearGradient(0, y, 0, y + h * 0.6);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.26)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = sheen; c.fillRect(x, y, w, h * 0.6);
+  c.restore();
+  // hairline rim, bright on top
+  const rim = c.createLinearGradient(0, y, 0, y + h);
+  rim.addColorStop(0, 'rgba(255,255,255,0.75)');
+  rim.addColorStop(0.45, 'rgba(255,255,255,0.22)');
+  rim.addColorStop(1, 'rgba(255,255,255,0.14)');
+  roundRectPath(c, x + 0.75, y + 0.75, w - 1.5, h - 1.5, r - 0.75);
+  c.lineWidth = 1.5; c.strokeStyle = rim; c.stroke();
+}
+
+/** Bakes a chip background of w x h (modern: plus the shadow pad) once and returns its texture key. */
+function chipTexture(scene: Phaser.Scene, w: number, h: number, accent: number = COLORS.yellow): string {
+  const modern = isModern(), pad = modern ? GLASS_PAD : 0;
+  const key = `hud-chip-${modern ? 'm' : 'r'}-${h}-${accent.toString(16)}-${w}`;
+  if (scene.textures.exists(key)) return key;
+  const tex = scene.textures.createCanvas(key, w + pad * 2, h + pad * 2);
+  if (!tex) return key;
+  drawChip(tex.getContext(), w, h, accent);
+  tex.refresh();
+  tex.setFilter(modern ? Phaser.Textures.FilterMode.LINEAR : Phaser.Textures.FilterMode.NEAREST);
+  return key;
+}
+
+/** Chip background: a 3-slice in WebGL (cheap to resize, crisp corners), a baked image in Canvas mode. */
+class ChipBg {
+  readonly obj: Phaser.GameObjects.NineSlice | Phaser.GameObjects.Image;
+  private readonly pad: number;
+  private readonly cap: number;
+  private w = -1;
+
+  constructor(private scene: Phaser.Scene, private h: number, private accent: number) {
+    const modern = isModern();
+    this.pad = modern ? GLASS_PAD : 0;
+    this.cap = modern ? h / 2 + this.pad : 6;
+    if (scene.sys.renderer.type === Phaser.WEBGL) {
+      const tw = this.cap * 2 + 4, th = h + this.pad * 2;
+      const key = this.bake(tw - this.pad * 2);
+      this.obj = scene.add.nineslice(0, 0, key, undefined, tw, th, this.cap, this.cap, 0, 0);
+    } else {
+      this.obj = scene.add.image(0, 0, this.bake(h));
+    }
+  }
+
+  private bake(w: number): string {
+    return chipTexture(this.scene, w, this.h, this.accent);
+  }
+
+  /** Width of the chip itself, without the shadow pad. */
+  setWidth(w: number): void {
+    if (w === this.w) return;
+    this.w = w;
+    if (this.obj instanceof Phaser.GameObjects.NineSlice) this.obj.setSize(w + this.pad * 2, this.h + this.pad * 2);
+    else this.obj.setTexture(this.bake(Math.round(w / 4) * 4));
+  }
+}
+
+/**
+ * One HUD readout in its own chip: frosted glass in the modern style, a plain box in retro.
+ * The chip lays its content out in a row (icon, caption, text, then any extra items) and fits
+ * its width to it; `x` stays at the chosen edge (`align`) as the content changes.
+ */
+export class HudChip extends Phaser.GameObjects.Container {
+  readonly text: Phaser.GameObjects.Text;
+  readonly caption?: Phaser.GameObjects.Text;
+  icon?: Phaser.GameObjects.Image;
+  /** Current chip width (without the shadow). */
+  chipWidth = 0;
+  private bg: ChipBg;
+  private extra: Phaser.GameObjects.GameObject[] = [];
+  private align: HudChipAlign;
+  private readonly chipH: number;
+  private readonly minW: number;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, o: HudChipOptions = {}) {
+    super(scene, x, y);
+    this.align = o.align ?? 'left';
+    this.chipH = o.height ?? HUD_CHIP_H;
+    this.minW = Math.max(o.minWidth ?? 0, this.chipH);
+    this.bg = new ChipBg(scene, this.chipH, o.accent ?? COLORS.yellow);
+    this.add(this.bg.obj);
+    if (o.label) { this.caption = hudCaption(scene, o.label); this.add(this.caption); }
+    this.text = hudText(scene, o.text ?? '', o.size, o.color);
+    this.add(this.text);
+    if (o.icon) this.setIcon(o.icon, o.iconFrame, o.iconSize);
+    this.setDepth(o.depth ?? 9000);
+    scene.add.existing(this);
+    this.setItems(o.items ?? []);
+  }
+
+  /** Replaces the extra content (hearts, a second icon ...) after the icon, caption and text. */
+  setItems(items: Phaser.GameObjects.GameObject[]): this {
+    for (const it of this.extra) if (!items.includes(it)) this.remove(it);
+    this.extra = items;
+    for (const it of items) if (it.parentContainer !== this) this.add(it);
+    // children follow the camera-fixed container (Phaser applies each child's own scroll factor)
+    this.setScrollFactor(0, 0, true);
+    return this.layout();
+  }
+
+  /**
+   * Sets (or with `null` removes) the icon before the text, `size` px high. The icon keeps its
+   * slot width while it is tweened (a spinning coin), so the chip does not jitter.
+   */
+  setIcon(key: string | null, frame?: string | number, size = 30): this {
+    if (!key) {
+      this.icon?.destroy();
+      this.icon = undefined;
+      return this.layout();
+    }
+    if (!this.icon) {
+      this.icon = this.scene.add.image(0, 0, key, frame);
+      this.addAt(this.icon, 1);
+      this.icon.setScrollFactor(0);
+    } else this.icon.setTexture(key, frame);
+    this.icon.setScale(size / this.icon.height);
+    this.icon.setData('chipWidth', this.icon.width * this.icon.scaleX);
+    return this.layout();
+  }
+
+  setText(s: string | number): this {
+    const v = String(s);
+    if (v !== this.text.text) { this.text.setText(v); this.layout(); }
+    return this;
+  }
+
+  setCaption(s: string): this {
+    if (this.caption && this.caption.text !== s) { this.caption.setText(s); this.layout(); }
+    return this;
+  }
+
+  setTextColor(color: string): this {
+    this.text.setColor(color);
+    return this;
+  }
+
+  /** Moves the chip; `align` changes which edge sits at x. */
+  setAnchor(x: number, y: number, align: HudChipAlign = this.align): this {
+    this.setPosition(x, y);
+    if (align === this.align) return this;
+    this.align = align;
+    return this.layout();
+  }
+
+  /** Left and right screen edges of the chip. */
+  get left(): number { return this.x + this.offset(); }
+  get right(): number { return this.left + this.chipWidth; }
+
+  private offset(): number {
+    return this.align === 'left' ? 0 : this.align === 'right' ? -this.chipWidth : -this.chipWidth / 2;
+  }
+
+  /** Lays the content out again (call after changing an item's size yourself). */
+  layout(): this {
+    const modern = isModern();
+    const row: [Phaser.GameObjects.GameObject, number][] = [];
+    const widthOf = (o: Phaser.GameObjects.GameObject): number => {
+      const fixed = o.getData?.('chipWidth') as number | undefined;
+      if (fixed !== undefined) return fixed;
+      const c = o as unknown as { width?: number; scaleX?: number };
+      return (c.width ?? 0) * Math.abs(c.scaleX ?? 1);
+    };
+    if (this.icon?.visible) row.push([this.icon, widthOf(this.icon)]);
+    if (this.caption?.text) row.push([this.caption, this.caption.width]);
+    if (this.text.text) row.push([this.text, this.text.width]);
+    for (const it of this.extra) if ((it as unknown as { visible: boolean }).visible !== false) row.push([it, widthOf(it)]);
+    const gap = modern ? 8 : 10;
+    const inner = row.reduce((s, [, w]) => s + w, 0) + gap * Math.max(0, row.length - 1);
+    const padX = modern ? 18 : 14;
+    let w = Math.max(this.minW, Math.ceil(inner + padX * 2));
+    if (!modern) w += w % 2;
+    this.chipWidth = w;
+    const off = this.offset();
+    this.bg.setWidth(w);
+    this.bg.obj.setPosition(off + w / 2, 0);
+    let cx = off + (w - inner) / 2;
+    for (const [o, ow] of row) {
+      const t = o as unknown as Phaser.GameObjects.Components.Transform & { setOrigin?: (x: number, y: number) => unknown };
+      t.setOrigin?.(0.5, 0.5);
+      let x = cx + ow / 2;
+      if (!modern) x = Math.round(x);
+      // the title fonts sit a little high in their boxes
+      t.setPosition(x, o === this.text ? (modern ? 1 : 2) : o === this.caption ? (modern ? 1 : 1) : 0);
+      cx += ow + gap;
+    }
+    return this;
+  }
+}
+
+/**
+ * A HUD readout in a chip at (x, y), y being the chip's centre line (use `HUD_ROW_Y` for the top
+ * row). Every always-visible game readout (coins, gems, timer, shots, combo ...) uses one, so the
+ * HUD matches the core's score, lives and level chips. Fixed to the camera, depth 9000.
+ */
+export function hudChip(scene: Phaser.Scene, x: number, y: number, o: HudChipOptions = {}): HudChip {
+  return new HudChip(scene, x, y, o);
+}
+
 /** Most hearts drawn one by one; above this the HUD shows one heart and the number. */
 const MAX_HEARTS = 5;
 
 /**
- * Game HUD, fixed to the camera: score left, a centre slot and a right slot (which leaves room
- * for the pause button). Games with lives or levels use the standard widgets:
- * - `setLives(n, max?)`: hearts in the right slot (one heart and the number above five lives;
- *   with `max`, lost lives show as empty hearts).
- * - `setLevel(n)`: a flag badge with the level number in the centre slot. A centre text set
+ * Game HUD, fixed to the camera, every readout in its own chip: the score on the left, a centre
+ * slot and a right slot (clear of the pause button). Games with lives or levels use the standard
+ * widgets:
+ * - `setLives(n, max?)`: hearts in a chip left of the right slot (one heart and the number above
+ *   five lives; with `max`, lost lives show as empty hearts).
+ * - `setLevel(n)`: a flag chip with the level number in the centre slot. A centre text set
  *   with `setCenter()` takes its place while it is not empty.
+ * When the top row is too full, the right text and then the centre move to a second row.
  */
 export class Hud {
-  private scoreText: Phaser.GameObjects.Text;
-  private rightText: Phaser.GameObjects.Text;
-  private centerText: Phaser.GameObjects.Text;
+  /** The chips, for a game that wants to pulse or tint one (`hud.rightChip.icon` ...). */
+  readonly scoreChip: HudChip;
+  readonly rightChip: HudChip;
+  readonly centerChip: HudChip;
+  readonly livesChip: HudChip;
+  readonly levelChip: HudChip;
   private icons: { heart: string; empty: string; flag: string };
   private hearts: Phaser.GameObjects.Image[] = [];
   private livesNum: Phaser.GameObjects.Text;
+  private centerRaw = '';
   private lives = -1;
   private livesMax = 0;
-  private level: Phaser.GameObjects.Container;
-  private levelBg: Phaser.GameObjects.Graphics;
-  private levelText: Phaser.GameObjects.Text;
   private levelSet = false;
   private visible = true;
   private label: string;
-  private readonly rightX: number;
 
   constructor(private scene: Phaser.Scene, label: string) {
-    const w = scene.scale.width;
-    const style = { fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffffff', stroke: '#000000', strokeThickness: 6 };
-    this.rightX = w - 120;
-    this.scoreText = scene.add.text(24, 24, `${label} 0`, style).setScrollFactor(0).setDepth(9000);
-    this.centerText = scene.add.text(w / 2, 24, '', style).setOrigin(0.5, 0).setScrollFactor(0).setDepth(9000);
-    this.rightText = scene.add.text(this.rightX, 24, '', style).setOrigin(1, 0).setScrollFactor(0).setDepth(9000);
     this.label = label;
     this.icons = hudIcons(scene);
-    this.livesNum = scene.add.text(this.rightX, 24, '', style).setOrigin(1, 0).setScrollFactor(0).setDepth(9000).setVisible(false);
-    // level badge: a dark pill with the flag and the number
-    this.levelBg = scene.add.graphics();
-    const flag = scene.add.image(0, 0, this.icons.flag).setOrigin(0, 0.5);
-    this.levelText = scene.add.text(0, 1, '', style).setOrigin(0, 0.5);
-    this.level = scene.add.container(w / 2, 36, [this.levelBg, flag, this.levelText]).setScrollFactor(0).setDepth(9000).setVisible(false);
-    this.level.setData('flag', flag);
+    const y = HUD_ROW_Y;
+    this.scoreChip = hudChip(scene, HUD_MARGIN, y, { label, text: '0' });
+    this.centerChip = hudChip(scene, scene.scale.width / 2, y, { align: 'center' });
+    this.rightChip = hudChip(scene, hudRightEdge(scene), y, { align: 'right' });
+    this.livesNum = hudText(scene, '').setVisible(false);
+    this.livesChip = hudChip(scene, hudRightEdge(scene), y, { align: 'right' });
+    this.levelChip = hudChip(scene, scene.scale.width / 2, y, { align: 'center', icon: this.icons.flag, iconSize: isModern() ? 26 : 24 });
+    this.layout();
   }
 
   setScore(v: number): void {
-    this.scoreText.setText(`${this.label} ${v}`);
+    this.scoreChip.setText(v);
+    this.layout();
   }
 
-  /** Right-aligned slot (timer, coins ...). Leaves room for the pause button. */
-  setRight(s: string): void {
-    this.rightText.setText(s);
-    this.layoutLives();
+  /**
+   * Right-aligned slot (timer, coins ...). Leaves room for the pause button. `icon` (a texture
+   * key, with `frame`) goes before the text: a coin before the coin count.
+   */
+  setRight(s: string, icon?: string, frame?: string | number): void {
+    if (icon && (this.rightChip.icon?.texture.key !== icon || this.rightChip.icon.frame.name !== String(frame ?? '__BASE'))) this.rightChip.setIcon(icon, frame);
+    this.rightChip.setText(s);
+    this.layout();
   }
 
   setCenter(s: string): void {
-    this.centerText.setText(s);
-    this.level.setVisible(this.visible && this.levelSet && !s);
+    this.centerRaw = s;
+    this.centerChip.setText(s.trim());
+    this.layout();
   }
 
-  /** Lives as hearts in the right slot; the lost heart pops, the last one beats. */
+  /** Lives as hearts in a chip; the lost heart pops, the last one beats. */
   setLives(n: number, max = 0): void {
     n = Math.max(0, Math.floor(n));
     const prev = this.lives;
@@ -274,18 +593,24 @@ export class Hud {
     if (prev > n && !compact && prev <= MAX_HEARTS) {
       for (let i = n; i < Math.min(prev, this.hearts.length); i++) {
         const h = this.hearts[i];
-        const ghost = s.add.image(h.x, h.y, this.icons.heart).setScrollFactor(0).setDepth(9001).setScale(h.scale);
+        const m = h.getWorldTransformMatrix();
+        const ghost = s.add.image(m.tx, m.ty, this.icons.heart).setScrollFactor(0).setDepth(9001).setScale(h.scale);
         s.tweens.add({ targets: ghost, scale: h.scale * 2, alpha: 0, angle: 25, duration: 380, ease: 'Quad.easeOut', onComplete: () => ghost.destroy() });
       }
     }
-    while (this.hearts.length < count) this.hearts.push(s.add.image(0, 36, this.icons.heart).setScrollFactor(0).setDepth(9000));
+    const step = isModern() ? 36 : 32;
+    while (this.hearts.length < count) {
+      this.hearts.push(s.add.image(0, 0, this.icons.heart).setScrollFactor(0).setData('chipWidth', step - (isModern() ? 8 : 10)));
+    }
     while (this.hearts.length > count) this.hearts.pop()!.destroy();
-    this.livesNum.setVisible(this.visible && compact).setText(compact ? String(n) : '');
+    this.livesNum.setText(compact ? String(n) : '').setVisible(compact);
     this.hearts.forEach((h, i) => {
       s.tweens.killTweensOf(h);
-      h.setScale(1).setAngle(0).setTexture(compact || i < n ? this.icons.heart : this.icons.empty).setVisible(this.visible);
+      h.setScale(1).setAngle(0).setTexture(compact || i < n ? this.icons.heart : this.icons.empty);
     });
-    this.layoutLives();
+    // index 0 sits rightmost, so a lost life empties the leftmost heart
+    this.livesChip.setItems([...[...this.hearts].reverse(), this.livesNum]);
+    this.layout();
     // a gained heart pops in
     if (n > prev && prev >= 0) {
       const h = compact ? this.hearts[0] : this.hearts[n - 1];
@@ -295,46 +620,65 @@ export class Hud {
     if (n === 1 && this.hearts[0]) s.tweens.add({ targets: this.hearts[0], scale: 1.25, duration: 320, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
-  /** Hearts sit at the right end of the right slot, left of any right-slot text. */
-  private layoutLives(): void {
-    if (!this.hearts.length) return;
-    let right = this.rightX - (this.rightText.text ? this.rightText.width + 18 : 0);
-    if (this.livesNum.text) { this.livesNum.setX(right); right -= this.livesNum.width + 6; }
-    const step = isModern() ? 36 : 32;
-    // index 0 sits rightmost, so a lost life empties the leftmost heart
-    this.hearts.forEach((h, i) => h.setPosition(right - h.width / 2 - i * step, 36));
-  }
-
-  /** The level as a flag badge in the centre slot. */
+  /** The level as a flag chip in the centre slot. */
   setLevel(n: number | string): void {
     const text = String(n);
-    const changed = this.levelSet && this.levelText.text !== text;
+    const changed = this.levelSet && this.levelChip.text.text !== text;
     this.levelSet = true;
-    this.levelText.setText(text);
-    const flag = this.level.getData('flag') as Phaser.GameObjects.Image;
-    const w = flag.width + 10 + this.levelText.width, pad = 16, h = 42;
-    flag.setX(-w / 2);
-    this.levelText.setX(-w / 2 + flag.width + 10);
-    const g = this.levelBg.clear();
-    if (isModern()) {
-      g.fillStyle(0x0b1020, 0.55).fillRoundedRect(-w / 2 - pad, -h / 2, w + pad * 2, h, h / 2);
-      g.lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(-w / 2 - pad, -h / 2, w + pad * 2, h, h / 2);
-    } else {
-      g.fillStyle(0x000000, 0.6).fillRect(-w / 2 - pad, -h / 2, w + pad * 2, h);
-      g.lineStyle(3, 0xffd23f, 1).strokeRect(-w / 2 - pad, -h / 2, w + pad * 2, h);
-    }
-    this.level.setVisible(this.visible && !this.centerText.text);
-    if (changed) this.scene.tweens.add({ targets: this.level, scale: { from: 1.35, to: 1 }, duration: 300, ease: 'Back.easeOut' });
+    this.levelChip.setText(text);
+    this.layout();
+    if (changed) this.scene.tweens.add({ targets: this.levelChip, scale: { from: 1.35, to: 1 }, duration: 300, ease: 'Back.easeOut' });
   }
 
   setVisible(v: boolean): void {
     this.visible = v;
-    this.scoreText.setVisible(v);
-    this.rightText.setVisible(v);
-    this.centerText.setVisible(v);
-    for (const h of this.hearts) h.setVisible(v);
-    this.livesNum.setVisible(v && this.lives > MAX_HEARTS && !(this.livesMax && this.livesMax <= MAX_HEARTS));
-    this.level.setVisible(v && this.levelSet && !this.centerText.text);
+    this.layout();
+  }
+
+  /**
+   * Places the chips: score left, lives and the right text right (clear of the pause button),
+   * the centre chip between them. A right text that would run into the score moves under the
+   * pause button on the second row; a centre chip with no room left moves to the second row too.
+   * Call it after changing one of the chips directly (`hud.rightChip.setIcon(...)`).
+   */
+  layout(): void {
+    const s = this.scene, W = s.scale.width, v = this.visible;
+    const showRight = v && !!this.rightChip.text.text;
+    const showLives = v && this.hearts.length > 0;
+    const center = this.centerRaw ? this.centerChip : this.levelChip;
+    const showCenter = v && (this.centerRaw ? !!this.centerChip.text.text : this.levelSet);
+    this.scoreChip.setVisible(v);
+    this.rightChip.setVisible(showRight);
+    this.livesChip.setVisible(showLives);
+    this.centerChip.setVisible(showCenter && center === this.centerChip);
+    this.levelChip.setVisible(showCenter && center === this.levelChip);
+    if (!v) return;
+
+    const top = HUD_ROW_Y, edge = hudRightEdge(s);
+    const scoreR = this.scoreChip.right;
+    // the right group, from the pause button leftwards
+    const place = (rightOnRow2: boolean): number => {
+      let x = edge;
+      if (showRight) {
+        if (rightOnRow2) this.rightChip.setAnchor(W - HUD_MARGIN, HUD_ROW2_Y, 'right');
+        else { this.rightChip.setAnchor(x, top, 'right'); x = this.rightChip.left - HUD_GAP; }
+      }
+      if (showLives) { this.livesChip.setAnchor(x, top, 'right'); x = this.livesChip.left - HUD_GAP; }
+      return x + HUD_GAP;
+    };
+    let groupL = place(false);
+    let rightOnRow2 = false;
+    if (showRight && showLives && groupL < scoreR + HUD_GAP) { groupL = place(true); rightOnRow2 = true; }
+    if (!showCenter) return;
+    const cw = center.chipWidth;
+    const lo = scoreR + HUD_GAP + cw / 2, hi = groupL - HUD_GAP - cw / 2;
+    if (lo <= hi) {
+      center.setAnchor(Phaser.Math.Clamp(W / 2, lo, hi), top, 'center');
+      return;
+    }
+    let x = W / 2;
+    if (rightOnRow2) x = Math.min(x, this.rightChip.left - HUD_GAP - cw / 2);
+    center.setAnchor(Math.max(HUD_MARGIN + cw / 2, x), HUD_ROW2_Y, 'center');
   }
 }
 

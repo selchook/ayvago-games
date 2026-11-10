@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, Button, txt, t, loc, burst, shake, flash, popup, storage, isEasy, COLORS } from '@core';
+import { ArcadeScene, Controls, Button, txt, t, loc, burst, shake, flash, popup, storage, isEasy, COLORS, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y } from '@core';
 import { World3D, THREE } from '@core/three';
 import { LEVELS, WORLDS, LEVELS_PER_WORLD } from './levels';
 import { THEMES, type Theme } from './look';
@@ -55,13 +55,10 @@ export class PlayScene extends ArcadeScene {
   private playUi: Phaser.GameObjects.GameObject[] = [];
   private panelUi: Phaser.GameObjects.GameObject[] = [];
   private focusRing: Phaser.GameObjects.Graphics | null = null;
-  private infoGems!: Phaser.GameObjects.Text;
-  private infoKeys!: Phaser.GameObjects.Text;
-  private infoPar!: Phaser.GameObjects.Text;
-  private infoTime!: Phaser.GameObjects.Text;
-  private keyIcon!: Phaser.GameObjects.Image;
-  private gemIcon!: Phaser.GameObjects.Image;
-  private parStar!: Phaser.GameObjects.Image;
+  private infoGems!: HudChip;
+  private infoKeys!: HudChip;
+  private infoPar!: HudChip;
+  private infoTime!: HudChip;
   private previewTimer: Phaser.Time.TimerEvent | null = null;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
   private trailClock = 0;
@@ -116,14 +113,13 @@ export class PlayScene extends ArcadeScene {
       lifespan: 420, speed: { min: 6, max: 30 }, scale: { start: 0.55, end: 0 }, alpha: { start: 0.8, end: 0 }, emitting: false,
     }).setDepth(-60);
 
-    // second HUD row: gems, keys and the time for the star
-    this.gemIcon = this.add.image(40, 92, 'mm-gem').setScrollFactor(0).setDepth(9000);
-    this.infoGems = txt(this, 62, 92, '', { size: 26 }).setOrigin(0, 0.5).setDepth(9000);
-    this.keyIcon = this.add.image(170, 92, 'mm-key').setDepth(9000);
-    this.infoKeys = txt(this, 192, 92, '', { size: 26, color: '#ffd23f' }).setOrigin(0, 0.5).setDepth(9000);
-    this.infoTime = txt(this, 520, 92, '', { size: 28 }).setOrigin(1, 0.5).setDepth(9000);
-    this.infoPar = txt(this, 690, 92, '', { size: 24, color: '#ffe9a8' }).setOrigin(1, 0.5).setDepth(9000);
-    this.parStar = this.add.image(560, 92, 'icon-star').setScale(0.42).setTint(0xffd23f).setDepth(9000);
+    // second HUD row: gems and keys on the left, the time and the time for the star on the right
+    const row = HUD_ROW2_Y, width = this.scale.width;
+    this.infoGems = hudChip(this, HUD_MARGIN, row, { icon: 'mm-gem', iconSize: 26, text: '0/0', minWidth: 112 });
+    this.infoKeys = hudChip(this, this.infoGems.right + HUD_GAP, row, { icon: 'mm-key', iconSize: 26, text: '0/0', color: '#ffd23f', minWidth: 112 });
+    this.infoPar = hudChip(this, width - HUD_MARGIN, row, { align: 'right', icon: 'icon-star', iconSize: 26, text: '0:00', color: '#ffe9a8' });
+    this.infoPar.icon?.setTint(0xffd23f);
+    this.infoTime = hudChip(this, this.infoPar.left - HUD_GAP, row, { align: 'right', text: '0:00', minWidth: 96 });
     this.hud.setLives(this.marbles, this.marbles);
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.onKey(e));
     (window as unknown as { __mm?: PlayScene }).__mm = this;
@@ -397,8 +393,7 @@ export class PlayScene extends ArcadeScene {
 
   private setInfoVisible(v: boolean): void {
     const keys = v && !!this.sim?.L.keys.length;
-    for (const o of [this.infoGems, this.infoPar, this.infoTime, this.gemIcon, this.parStar]) o.setVisible(v);
-    this.keyIcon.setVisible(keys);
+    for (const o of [this.infoGems, this.infoPar, this.infoTime]) o.setVisible(v);
     this.infoKeys.setVisible(keys);
   }
 
@@ -494,8 +489,8 @@ export class PlayScene extends ArcadeScene {
     this.infoGems.setText(`${this.sim.gems}/${L.gems.length}`);
     this.infoKeys.setText(`${this.sim.keys}/${L.keys.length}`);
     const par = this.par(this.li);
-    this.infoPar.setText(clock(par)).setColor(this.levelTime <= par ? '#ffe9a8' : '#8a849c');
-    this.infoTime.setText(clock(this.levelTime));
+    this.infoPar.setText(clock(par)).setTextColor(this.levelTime <= par ? '#ffe9a8' : '#8a849c');
+    this.infoTime.setText(clock(this.levelTime)).setAnchor(this.infoPar.left - HUD_GAP, HUD_ROW2_Y);
   }
 
   /** Input from the keys, the stick or the phone's tilt (or the bot in tests). */
@@ -684,10 +679,10 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  private pulse(o: Phaser.GameObjects.Text): void {
+  private pulse(o: HudChip): void {
     this.tweens.killTweensOf(o);
     o.setScale(1);
-    this.tweens.add({ targets: o, scale: 1.4, duration: 120, yoyo: true });
+    this.tweens.add({ targets: o, scale: 1.18, duration: 120, yoyo: true });
   }
 
   // ------------------------------------------------------------------ falling
