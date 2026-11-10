@@ -83,18 +83,22 @@ export abstract class ArcadeScene extends Phaser.Scene {
         }
         this.notice(t('peerBack'));
       });
-      // The host restarting or leaving while this side is still playing (guest only; once the
-      // round is over the result screen handles it).
-      if (!net.isHost) {
-        net.onScene(this, '__start', (d: { seed?: number; starter?: number } | undefined) => {
-          if (this.isOver) return;
-          net.applyStart(d);
-          this.scene.restart();
-        });
-        net.onScene(this, '__menu', () => {
-          if (!this.isOver) this.scene.start('Menu');
-        });
-      }
+      // Protocol 2.7: a table's host left and another player took over.
+      net.onHostChange(this, (seat) => {
+        if (!net.isTable) return;
+        this.notice(net.isHost ? t('hostYou') : t('hostNow', { name: net.seats[seat]?.name ?? '' }));
+      });
+      // The host restarting or leaving while this side is still playing (guests only; once the
+      // round is over the result screen handles it). Checked when the message arrives: at a table
+      // the host may change during the round.
+      net.onScene(this, '__start', (d: { seed?: number; starter?: number } | undefined) => {
+        if (this.isOver || net.isHost) return;
+        net.applyStart(d);
+        this.scene.restart();
+      });
+      net.onScene(this, '__menu', () => {
+        if (!this.isOver && !net.isHost) this.scene.start('Menu');
+      });
     }
 
     const kb = this.input.keyboard;

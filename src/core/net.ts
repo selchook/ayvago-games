@@ -2,14 +2,18 @@
 // messages with the other players through the adapter (GHA_MOVE_OUT / GHA_MOVE_IN).
 // Two-player rooms (protocol 2.1) and, since protocol 2.3, tables of up to four seats: the
 // platform lists the seats (`net.seats`, bots included) and says which seat sent each message;
-// the host's game plays the bot seats.
+// the host's game plays the bot seats. Protocol 2.7 adds the table's settings (`net.table`: hands
+// per match, seconds per turn, bots allowed) and host hand-over: when the host's page is gone the
+// platform makes another seated player the host (`net.hostSeat`, `net.onHostChange`), and
+// `net.isHost` follows it, so the new host's game takes over the bots and the resyncs.
 //
 // Every message is { t: type, d: payload }. Types starting with "__" belong to the core flow
 // (round start, back to menu); games use their own short types ('move', 'input', 'state', …).
-// Seats: the host (playerIndex 0) created the room. In real-time games the host runs the
-// authoritative simulation and the guest sends its input; turn-based games alternate seats.
+// Seats: the host (playerIndex 0) created the room; at a table the host may later sit elsewhere.
+// In real-time games the host runs the authoritative simulation and the guest sends its input;
+// turn-based games alternate seats.
 import Phaser from 'phaser';
-import type { Multiplayer, SeatInfo } from './ayvago/adapter';
+import type { Multiplayer, SeatInfo, TableSettings } from './ayvago/adapter';
 import { sdk } from './sdk';
 
 /** `from` is the sender's seat (the other player in a two-player room). */
@@ -18,6 +22,7 @@ export type NetHandler = (data: any, from: number) => void;
 const handlers = new Map<string, Set<NetHandler>>();
 const leaveHandlers = new Set<(seat: number) => void>();
 const joinHandlers = new Set<(name: string, seat: number) => void>();
+const hostHandlers = new Set<(hostSeat: number) => void>();
 let wired: Multiplayer | null = null;
 let roundSeed = 0;
 // Turn order (a platform rule for every online game): the room's host takes the first turn of
@@ -64,6 +69,14 @@ function mp(): Multiplayer | null {
     });
     m.onPeerLeave((seat) => leaveHandlers.forEach((h) => h(seat)));
     m.onPeerJoin((name, seat) => joinHandlers.forEach((h) => h(name, seat)));
+    // Protocol 2.7: isHost and hostSeat already hold the new values when this runs.
+    m.onHostChange((seat) => hostHandlers.forEach((h) => {
+      try {
+        h(seat);
+      } catch (error) {
+        console.error('[ayvago] host change handler failed', error);
+      }
+    }));
   }
   return m && m.active ? m : null;
 }
@@ -78,9 +91,23 @@ export const net = {
   get active(): boolean {
     return mp() !== null;
   },
-  /** The room creator (seat 0). Solo play counts as host. */
+  /**
+   * The room creator (seat 0), or at a table the current host after a hand-over (protocol 2.7).
+   * Read it when acting, not once: it changes with GHA_HOST_CHANGE. Solo play counts as host.
+   */
   get isHost(): boolean {
     return mp()?.isHost ?? true;
+  },
+  /** Protocol 2.7: the host's seat (0 in two-player rooms, solo and before any hand-over). */
+  get hostSeat(): number {
+    return mp()?.hostSeat ?? 0;
+  },
+  /**
+   * Protocol 2.7: the table's settings (hands per match, seconds per turn, bots allowed); null in
+   * two-player rooms, solo play and on platforms before 2.7 (use the game's own defaults then).
+   */
+  get table(): TableSettings | null {
+    return mp()?.table?.settings ?? null;
   },
   /** 0 = host, 1 = guest. */
   get seat(): 0 | 1 {
@@ -176,5 +203,15 @@ export const net = {
     mp();
     joinHandlers.add(handler);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => joinHandlers.delete(handler));
+  },
+  /**
+   * Protocol 2.7, tables: another player became the host (GHA_HOST_CHANGE). `net.isHost` and
+   * `net.hostSeat` already hold the new values. The new host's game takes over what the host did
+   * (bots, absent seats, resyncs, starting the next round); a game that lost the host role stops.
+   */
+  onHostChange(scene: Phaser.Scene, handler: (hostSeat: number) => void): void {
+    mp();
+    hostHandlers.add(handler);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => hostHandlers.delete(handler));
   },
 };

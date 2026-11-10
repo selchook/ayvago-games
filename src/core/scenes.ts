@@ -176,6 +176,10 @@ export class MenuScene extends Phaser.Scene {
     txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
     soundButton(this, 60, height - 60);
     if (def.crt !== false) addCrt(this);
+    // Protocol 2.7: the table's host changed; the new host gets PLAY, everyone else waits.
+    net.onHostChange(this, () => {
+      if (this.scene.isActive()) this.scene.restart();
+    });
   }
 
   /**
@@ -411,26 +415,39 @@ export class GameOverScene extends Phaser.Scene {
     }
 
     const by = height * (land ? 0.6 : 0.56);
-    if (net.isHost) {
-      const rematch = () => startOnlineRound(this);
-      new Button(this, width / 2, by, t('rematch'), rematch, { color: COLORS.red, width: 380, height: 104, size: 34 });
-      new Button(this, width / 2, by + 140, t('menu'), () => {
-        net.send('__menu');
-        this.scene.stop('Play');
-        this.scene.start('Menu');
-      }, { color: 0x333344 });
-      this.time.delayedCall(400, () => this.input.keyboard?.once('keydown-ENTER', rematch));
-    } else {
-      const wait = txt(this, width / 2, by, t('waitHost'), { size: 30, color: '#f3f2f2', wrap: width - 120 });
-      this.tweens.add({ targets: wait, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
-    }
+    // The host's choices (or the guest's wait), drawn again when a table's host changes.
+    let controls: Phaser.GameObjects.GameObject[] = [];
+    const rematch = () => {
+      if (net.isHost && this.scene.isActive()) startOnlineRound(this);
+    };
+    this.time.delayedCall(400, () => this.input.keyboard?.on('keydown-ENTER', rematch));
+    const drawControls = () => {
+      for (const o of controls) o.destroy();
+      controls = [];
+      if (net.isHost) {
+        controls.push(new Button(this, width / 2, by, t('rematch'), rematch, { color: COLORS.red, width: 380, height: 104, size: 34 }));
+        controls.push(new Button(this, width / 2, by + 140, t('menu'), () => {
+          net.send('__menu');
+          this.scene.stop('Play');
+          this.scene.start('Menu');
+        }, { color: 0x333344 }));
+      } else {
+        const wait = txt(this, width / 2, by, t('waitHost'), { size: 30, color: '#f3f2f2', wrap: width - 120 });
+        this.tweens.add({ targets: wait, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
+        controls.push(wait);
+      }
+    };
+    drawControls();
+    net.onHostChange(this, drawControls);
     // The guest follows the host: a rematch restarts Play, "menu" goes back to the menu.
     net.onScene(this, '__start', (d: { seed?: number; starter?: number } | undefined) => {
+      if (net.isHost) return;
       net.applyStart(d);
       this.scene.stop();
       this.scene.get('Play').scene.restart();
     });
     net.onScene(this, '__menu', () => {
+      if (net.isHost) return;
       this.scene.stop('Play');
       this.scene.start('Menu');
     });

@@ -251,6 +251,20 @@ Verify with the two-player bench, which needs no platform:
 - **Screenshots:** they go to `reports/mp/`. Look at them: both screens must show the same game
   state. The solo smoke test must still pass.
 
+**Tables** (`"multiplayer": 3 | 4`, protocol 2.3; reference `games/okey`): `net.isTable`,
+`net.seats` (bots included) and `net.playerIndex`; the host's game plays the bot seats.
+- **Settings** (protocol 2.7): `net.table` is `{ hands, turnSeconds, bots }` or null (rooms, solo,
+  older platforms: use the game's defaults). Play `hands` rounds and give each turn `turnSeconds`.
+- **Host hand-over** (2.7): when the host's page is gone the platform makes another player host.
+  `net.isHost` and `net.hostSeat` follow it; `net.onHostChange(scene, cb)` runs after they changed.
+  Read `net.isHost` at every decision, never cache it: the new host's game takes over the bots,
+  absent seats, resyncs and starting the next round from its own copy of the state (every game
+  applies the same moves from the same seed), and a game that lost the role stops at once.
+- **Leaving** (`onSeatLeave` / `onSeatJoin` in your `ArcadeScene`): a bot (the host's game) plays
+  the seat until the player is back; even with `bots: false` the table must not freeze.
+- **Verify** with `node scripts/table-harness.mjs --dev --shots` (Okey: three pages at one table,
+  settings, a stalled tab, a leaving player, a host hand-over, no double moves).
+
 ## 7b. 3D games (optional)
 
 A 3D game is still an ordinary Ayvago game: `launch()`, an `ArcadeScene` named `Play`, the HUD,

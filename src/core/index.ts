@@ -26,6 +26,7 @@ export {
 } from './characters';
 export type { CharacterId, CharacterPose, CharacterPart, CharacterRig } from './characters';
 export type { NetHandler } from './net';
+export type { TableSettings } from './ayvago/adapter';
 export { playAyvagoIntro, INTRO_DURATION } from './intro';
 export type { GameDefinition, GameMeta, Genre } from './registry';
 export { currentGame } from './registry';
