@@ -77,8 +77,13 @@ What the base class gives you:
   - `this.hud.setLives(lives, max?)` draws hearts in the right slot (one heart and the number above five lives; with `max`, lost lives show as empty hearts). A lost heart pops and the last one beats.
   - `this.hud.setLevel(level)` draws a flag badge with the number in the centre slot.
   - `this.hud.setCenter(str)` is for other centre info (wave, moves, distance); while it is not empty it takes the badge's place.
-  - `this.hud.setRight(str)` is for other right-slot info (time, coins); hearts sit left of it.
+  - `this.hud.setRight(str, icon?, frame?)` is for other right-slot info (time, coins), with an optional icon before the text; hearts sit left of it.
   - Set `protected useHud = false` to draw your own.
+- **HUD chips (rule).** Every always-visible HUD readout sits in its own chip: frosted glass in the modern style (rounded, translucent, top sheen, hairline rim, soft shadow), a plain dark box with a 3 px border in retro. No bare floating text in the HUD.
+  - `Hud` draws score, lives, level, centre and right text as chips and keeps them clear of the pause button; when the top row is full it moves the right text, then the centre, to a second row.
+  - Anything game-specific (gems, keys, timer, shots, combo, a target bar) uses `hudChip(this, x, y, { align, text, icon, iconFrame, iconSize, label, color, minWidth })` from `@core`. It returns a `HudChip` (a container fixed to the camera, depth 9000): `setText`, `setIcon`, `setTextColor`, `setAnchor(x, y, align)`, `left` / `right` / `chipWidth`, and `items` to put existing objects (a bar, a row of pips) inside a chip.
+  - Place them with `HUD_ROW_Y` (top row, level with the pause button), `HUD_ROW2_Y` (second row), `HUD_MARGIN`, `HUD_GAP`, `HUD_CHIP_H` and `hudRightEdge(this)`. Examples: `games/marble-maze` (gem, key, time and star chips), `games/sudoku`, `games/whack-a-mole` (a target bar in a chip), `games/pixel-runner` (a spinning coin in the right chip).
+  - Transient text (banners, "+50" popups, hints, turn prompts) is not a readout and stays free.
 - **Typing games.** Esc and P pause the game; a game where the player types words sets `protected pauseOnP = false` so P is a letter (Esc still pauses).
 - **Round state.** `this.elapsed` (seconds in round), `this.isOver`.
 - **Ending.** `endGame({ win?, title?, delay? })` shows the result overlay, saves the best score and emits SDK `gameOver`.
@@ -169,7 +174,8 @@ Other helpers from `@core`:
 6. **No console errors, no 404s.** `npx tsc --noEmit` shows no errors in your files.
 7. **Smoke test passes.** `node scripts/smoke-test.mjs --dev --serial <slug>` prints PASS. It checks: intro shown → menu → play with random input → game over → retry, with no errors and a non-blank canvas.
 8. **Visual check.** Take at least one gameplay screenshot with Playwright and look at it; layout must fit the 720×1280 (or 1280×720) world.
-9. **Characters move with their own limbs.** In a game with a player character, every move uses one of its poses (no extra limbs drawn on top). Screenshots with two characters show the ball, rope or tool meeting the real foot or hand.
+9. **HUD in chips.** Score, lives and level use `Hud`; every other always-visible readout sits in a `hudChip` (glass in modern, plain box in retro). The screenshot shows no bare HUD text and nothing under the pause button.
+10. **Characters move with their own limbs.** In a game with a player character, every move uses one of its poses (no extra limbs drawn on top). Screenshots with two characters show the ball, rope or tool meeting the real foot or hand.
 
 ## 7. Verify
 

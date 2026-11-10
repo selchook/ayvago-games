@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, t, rng, COLORS, isEasy } from '@core';
+import { ArcadeScene, burst, shake, flash, t, rng, COLORS, isEasy, hudChip, hudText, HudChip, HUD_ROW_Y } from '@core';
 import { ftxt as txt, fpopup as popup, freshTextCanvases } from './fasttext';
 import { makeField, makeFx, makeGate, makeSidebar, makeTopBar } from './art';
 
 const CELL = 80, COLS = 13, ROWS = 8, TOP = 80, FIELD_W = COLS * CELL; // 1040 x 640 field
 const SIDE = FIELD_W + 120;                                               // sidebar centre x
 const GOLD_Y = 124;                                                       // gold counter row
+const PROG_W = 140;                                                       // wave progress bar in the wave chip
 const ADD = Phaser.BlendModes.ADD;
 const PATH: [number, number][] = [[-1, 1], [3, 1], [3, 6], [6, 6], [6, 1], [9, 1], [9, 6], [12, 6], [12, 8.7]];
 const WAVES = 15;
@@ -71,6 +72,8 @@ export class PlayScene extends ArcadeScene {
   private fx!: Phaser.GameObjects.Graphics;
   private bars!: Phaser.GameObjects.Graphics;
   private goldText!: Phaser.GameObjects.Text;
+  private goldChip!: HudChip;
+  private waveChip!: HudChip;
   private cards: SideBtn[] = [];
   private info!: Phaser.GameObjects.Text;
   private upBtn!: SideBtn;
@@ -116,7 +119,9 @@ export class PlayScene extends ArcadeScene {
     this.vig = this.add.image(FIELD_W / 2, TOP + (ROWS * CELL) / 2, 'td-vig').setDisplaySize(FIELD_W, ROWS * CELL).setDepth(75).setAlpha(0);
     this.buildSidebar();
     this.add.image(0, 0, 'td-top').setOrigin(0).setDepth(80);
-    this.prog = this.add.graphics().setDepth(81);
+    // the wave counter with its progress bar in a chip in the middle of the top HUD row
+    this.prog = this.add.graphics().setData('chipWidth', PROG_W);
+    this.waveChip = hudChip(this, this.scale.width / 2, HUD_ROW_Y, { align: 'center', text: '', items: [this.prog] });
 
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (p.x < FIELD_W && p.y >= TOP) { this.cur = this.cellAt(p.x, p.y); this.cursorOn = true; }
@@ -184,12 +189,11 @@ export class PlayScene extends ArcadeScene {
 
   private buildSidebar(): void {
     this.add.image(FIELD_W, TOP, 'td-side').setOrigin(0).setDepth(85);
-    // gold counter
-    this.add.rectangle(SIDE, GOLD_Y, 220, 58, 0x0a0910).setStrokeStyle(3, 0x000000).setDepth(86);
-    this.add.rectangle(SIDE, GOLD_Y + 24, 210, 3, 0xffffff, 0.08).setDepth(86);
-    this.goldIcon = this.add.image(SIDE - 78, GOLD_Y, 'td-coin').setScale(1.15).setDepth(90);
+    // gold counter: a chip with a spinning coin
+    this.goldIcon = this.add.image(0, 0, 'td-coin').setScale(1.15).setData('chipWidth', 30);
     this.tweens.add({ targets: this.goldIcon, scaleX: 0.25, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.goldText = txt(this, SIDE - 46, GOLD_Y + 2, '0', { title: true, size: 26, color: '#ffd23f' }).setOrigin(0, 0.5).setDepth(90);
+    this.goldText = hudText(this, '0', 26, '#ffd23f');
+    this.goldChip = hudChip(this, SIDE, GOLD_Y, { align: 'center', minWidth: 220, height: 56, items: [this.goldIcon, this.goldText] });
     // tower cards
     TOWERS.forEach((d, i) => {
       const b = this.sideBtn(205 + i * 90, 80, 0x2a2638, '', 1, () => this.pickType(i));
@@ -226,6 +230,7 @@ export class PlayScene extends ArcadeScene {
 
   private refreshUi(): void {
     this.goldText.setText(String(this.gold));
+    this.goldChip.layout();
     this.cards.forEach((b, i) => {
       const on = i === this.selType && !this.selTower;
       const can = this.gold >= TOWERS[i].cost;
@@ -273,7 +278,7 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setLives(this.lives);
-    this.hud.setCenter(t('waveOf', { n: Math.max(1, this.wave), m: WAVES }));
+    this.waveChip.setText(t('waveOf', { n: Math.max(1, this.wave), m: WAVES }));
   }
 
   // ---------- input ----------
@@ -675,10 +680,11 @@ export class PlayScene extends ArcadeScene {
   private flyCoin(x: number, y: number): void {
     if (this.coinsFlying >= 10) return;
     this.coinsFlying++;
-    const c = this.add.image(x, y, 'td-coin').setDepth(7000).setScale(0.55);
-    this.tweens.add({ targets: c, x: this.goldIcon.x, duration: 560, ease: 'Sine.easeIn' });
+    const c = this.add.image(x, y, 'td-coin').setDepth(9001).setScale(0.55);
+    const coinAt = this.goldIcon.getWorldTransformMatrix();   // the coin in the gold chip
+    this.tweens.add({ targets: c, x: coinAt.tx, duration: 560, ease: 'Sine.easeIn' });
     this.tweens.add({
-      targets: c, y: { from: y, to: GOLD_Y }, scale: 0.9, duration: 560, ease: 'Back.easeIn',
+      targets: c, y: { from: y, to: coinAt.ty }, scale: 0.9, duration: 560, ease: 'Back.easeIn',
       onComplete: () => {
         c.destroy(); this.coinsFlying--;
         this.tweens.add({ targets: this.goldText, scale: { from: 1.25, to: 1 }, duration: 160, ease: 'Quad.easeOut' });
@@ -766,7 +772,7 @@ export class PlayScene extends ArcadeScene {
     // wave progress under the wave counter: countdown between waves, enemies dealt with during one
     const pg = this.prog;
     pg.clear();
-    const pw = 240, px = this.scale.width / 2 - pw / 2, py = 56;
+    const pw = PROG_W, px = -pw / 2, py = -3;
     const frac = this.phase === 'build'
       ? Phaser.Math.Clamp(this.countdown / this.countdownMax, 0, 1)
       : Phaser.Math.Clamp(1 - (this.queue.length + this.enemies.length) / this.waveTotal, 0, 1);

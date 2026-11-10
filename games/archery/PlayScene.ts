@@ -1,7 +1,12 @@
 import Phaser from 'phaser';
-import { ArcadeScene, CHARACTER_FRAME, Controls, burst, characterRig, playerCharacter, shake, flash, popup, txt, t, rng } from '@core';
-import { W, H, GROUND, RING_COLORS, ARCHER_SCALE, ARCHER_ORIGIN_Y, BACK_SHOULDER, makeArcheryTextures, makeDrawBody, glass } from './art';
+import {
+  ArcadeScene, CHARACTER_FRAME, Controls, burst, characterRig, playerCharacter, shake, flash, popup, txt, t, rng,
+  hudChip, HudChip, HUD_ROW2_Y, HUD_MARGIN,
+} from '@core';
+import { W, H, GROUND, RING_COLORS, ARCHER_SCALE, ARCHER_ORIGIN_Y, BACK_SHOULDER, makeArcheryTextures, makeDrawBody } from './art';
 
+/** Width of the wind chip (its flag flies under its middle). */
+const WIND_W = 300;
 const BX = 214;            // bow hand
 const BY = GROUND - 74;
 const ARCHER_X = BX - 44;
@@ -44,9 +49,9 @@ export class PlayScene extends ArcadeScene {
   private stand!: Phaser.GameObjects.Graphics;
   private bowG!: Phaser.GameObjects.Graphics;
   private flagG!: Phaser.GameObjects.Graphics;
-  private windText!: Phaser.GameObjects.Text;
+  private windText!: HudChip;
   private distText!: Phaser.GameObjects.Text;
-  private needText!: Phaser.GameObjects.Text;
+  private needText!: HudChip;
   private quiver: Phaser.GameObjects.Image[] = [];
   private dots: Phaser.GameObjects.Image[] = [];
   private clouds: Phaser.GameObjects.Image[] = [];
@@ -104,15 +109,15 @@ export class PlayScene extends ArcadeScene {
     for (let i = 0; i < 9; i++) this.dots.push(this.add.image(0, 0, 'dot').setDepth(7).setVisible(false));
     this.offMark = this.add.triangle(0, 30, 0, 18, 12, 0, 24, 18, 0xec3013).setDepth(50).setVisible(false);
 
-    this.windText = txt(this, W / 2, 196, '', { size: 24, color: '#ffffff' }).setDepth(40);
     this.distText = txt(this, 0, GROUND + 40, '', { title: true, size: 18, color: '#ffffff' }).setDepth(40);
-    this.add.image(W / 2, 82, glass(this, 380, 46)).setDepth(39);
-    this.add.image(92, 90, glass(this, 150, 56)).setDepth(39);
-    this.add.image(W / 2, 190, glass(this, 330, 42)).setDepth(2.5);
-    this.needText = txt(this, W / 2, 82, '', { title: true, size: 20, color: '#ffd23f' }).setDepth(40);
+    // HUD row 2: the quiver left, the round's points needed in the middle, the wind right (its
+    // flag flies under the wind chip)
     for (let i = 0; i < ARROWS; i++) {
-      this.quiver.push(this.add.image(40 + i * 26, 90, 'arrow').setAngle(-90).setScale(0.5).setDepth(40));
+      this.quiver.push(this.add.image(0, 0, 'arrow').setAngle(-90).setScale(0.42).setData('chipWidth', 14));
     }
+    hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { items: this.quiver });
+    this.needText = hudChip(this, W / 2, HUD_ROW2_Y, { align: 'center', text: '', size: 24, color: '#ffd23f' });
+    this.windText = hudChip(this, W - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', text: '', size: 22, minWidth: WIND_W });
 
     this.controls = new Controls(this);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -200,7 +205,7 @@ export class PlayScene extends ArcadeScene {
 
   private updatePanel(): void {
     this.needText.setText(`${t('roundPts')} ${this.roundScore} / ${this.need}`);
-    this.needText.setColor(this.roundScore >= this.need ? '#5dff7a' : '#ffd23f');
+    this.needText.setTextColor(this.roundScore >= this.need ? '#5dff7a' : '#ffd23f');
     this.quiver.forEach((q, i) => q.setAlpha(i < this.arrowsLeft ? 1 : 0.2));
     this.hud.setRight(`${t('arrows')} ${this.arrowsLeft}`);
   }
@@ -507,7 +512,7 @@ export class PlayScene extends ArcadeScene {
   private drawFlag(): void {
     const g = this.flagG;
     g.clear();
-    const px = W / 2, top = 118, bottom = 178;
+    const px = W - HUD_MARGIN - WIND_W / 2, top = HUD_ROW2_Y + 40, bottom = top + 60;
     g.fillStyle(0x6b7398).fillRect(px - 3, top, 6, bottom - top);
     g.fillStyle(0xffd23f).fillCircle(px, top, 5);
     const strength = Math.min(1, Math.abs(this.wind) / 260);

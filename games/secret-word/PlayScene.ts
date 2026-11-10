@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, txt, t, getLang, upper, type Lang } from '@core';
+import { ArcadeScene, burst, shake, flash, txt, t, getLang, upper, type Lang, hudChip, HudChip, HUD_ROW2_Y, HUD_MARGIN } from '@core';
 import {
   ALPHABET, KEY_ROWS, LIVES, MAX_JOKERS, REMOVE_COUNT, SOLVES_PER_JOKER, START_JOKERS, TRIES,
   buildDict, chars, evaluate, lengthFor, multiplierFor, pickAnswer, pointsFor, resolveGuess, timeFor,
@@ -11,9 +11,9 @@ import { COMMON as EN_COMMON, EXTRA as EN_EXTRA } from '../../src/words/en';
 
 // ---------------------------------------------------------------- layout (720x1280)
 const W = 720;
-const TIMER_Y = 104;
-const TIMER_X0 = 36;
-const TIMER_W = 556;
+// the clock bar sits in a chip on the second HUD row, the multiplier chip right of it
+const TIMER_W = 532;
+const TIMER_X0 = -TIMER_W / 2;
 const BOARD_TOP = 156;
 const TILE = 96;
 const GAP = 10;
@@ -95,7 +95,7 @@ export class PlayScene extends ArcadeScene {
   private timer!: Phaser.GameObjects.Container;
   private timerFill!: Phaser.GameObjects.Graphics;
   private timerText!: Phaser.GameObjects.Text;
-  private multText!: Phaser.GameObjects.Text;
+  private multText!: HudChip;
   private lastFillW = -1;
   private lastFillColor = -1;
   private seenKeys = new WeakSet<KeyboardEvent>();
@@ -147,14 +147,11 @@ export class PlayScene extends ArcadeScene {
     g.fillStyle(0x000000, 0.3).fillRoundedRect(TIMER_X0 - 4, -15, TIMER_W + 8, 30, 15);
     g.lineStyle(2, 0xffffff, 0.18).strokeRoundedRect(TIMER_X0 - 4, -15, TIMER_W + 8, 30, 15);
     this.timerFill = this.add.graphics();
-    this.timerText = txt(this, TIMER_X0 + TIMER_W / 2, 0, '', { title: true, size: 20, color: '#ffffff', strokeThickness: 4 });
-    this.timer = this.add.container(0, TIMER_Y, [g, this.timerFill, this.timerText]).setDepth(3);
+    this.timerText = txt(this, 0, 0, '', { title: true, size: 20, color: '#ffffff', strokeThickness: 4 });
+    this.timer = this.add.container(0, 0, [g, this.timerFill, this.timerText]).setData('chipWidth', TIMER_W + 8);
+    hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { items: [this.timer] });
     // the multiplier the next solved word earns
-    const chip = this.add.graphics();
-    chip.fillStyle(0x000000, 0.3).fillRoundedRect(-44, -20, 88, 40, 20);
-    chip.lineStyle(2, GOLD, 0.5).strokeRoundedRect(-44, -20, 88, 40, 20);
-    this.multText = txt(this, 0, 0, '', { title: true, size: 22, color: '#ffd04a', strokeThickness: 4 });
-    this.add.container(W - 64, TIMER_Y, [chip, this.multText]).setDepth(3);
+    this.multText = hudChip(this, W - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', text: '×1', color: '#ffd04a', minWidth: 108 });
   }
 
   private buildJokers(): void {

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, t, txt, rng, hudChip, HudChip, HUD_ROW2_Y } from '@core';
 import { THEMES, makeBackdrop, makeBoard, makeFx, makeGlass } from './art';
 
 export const GEM_FILES = ['red_diamond', 'blue_polygon', 'green_square', 'yellow_polygon', 'purple_diamond', 'grey_square'];
@@ -7,8 +7,9 @@ const GEM_TINTS = [0xff4a3a, 0x3eb4ff, 0x8be03a, 0xffd23f, 0xb07cff, 0xe0e0e0];
 const GEM_SIZE = [70, 70, 58, 70, 70, 58];
 
 const COLS = 8, ROWS = 8, S = 84;
-const X0 = (720 - COLS * S) / 2, Y0 = 350;
+const X0 = (720 - COLS * S) / 2, Y0 = 310;
 const PAD = 14;
+const BAR_Y = Y0 - 70;
 const AUTO_BACK_MS = 380;       // a swap that matches nothing waits this long for a second swap                 // glass border around the cells
 
 type Special = '' | 'h' | 'v' | 'bomb' | 'rainbow';
@@ -38,9 +39,8 @@ export class PlayScene extends ArcadeScene {
   private hinting = false;
   private cursorImg!: Phaser.GameObjects.Image;
   private selImg!: Phaser.GameObjects.Image;
-  private levelTxt!: Phaser.GameObjects.Text;
-  private movesTxt!: Phaser.GameObjects.Text;
-  private targetTxt!: Phaser.GameObjects.Text;
+  private movesTxt!: HudChip;
+  private targetTxt!: HudChip;
   private barFill!: Phaser.GameObjects.Image;
   private barTip!: Phaser.GameObjects.Image;
   private barK = 0;
@@ -89,19 +89,13 @@ export class PlayScene extends ArcadeScene {
     const mask = this.make.graphics({}, false).fillRect(X0, Y0, COLS * S, ROWS * S).createGeometryMask();
     this.layer.setMask(mask);
 
-    // top panel: level | target | moves, as glass cards
-    const panel = (x: number, label: string, color: string): Phaser.GameObjects.Text => {
-      this.add.image(x, 190, makeGlass(this, 200, 104));
-      txt(this, x, 162, label, { title: true, size: 16, color });
-      return txt(this, x, 208, '', { title: true, size: 28 });
-    };
-    this.levelTxt = panel(130, t('level'), '#7fe9ff');
-    this.targetTxt = panel(360, t('target'), '#ffd23f');
-    this.movesTxt = panel(590, t('moves'), '#ff8ad8');
+    // HUD: the level is the flag chip; the target and the moves left sit in chips on the second row
+    this.targetTxt = hudChip(this, 352, HUD_ROW2_Y, { align: 'right', label: t('target'), color: '#ffd23f', minWidth: 170 });
+    this.movesTxt = hudChip(this, 368, HUD_ROW2_Y, { align: 'left', label: t('moves'), minWidth: 170 });
     // progress towards the target: a glossy bar with a light at its tip
-    this.add.image(360, 280, 'gm-track');
-    this.barFill = this.add.image(36, 280, 'gm-fill').setOrigin(0, 0.5).setCrop(0, 0, 0, 22);
-    this.barTip = this.add.image(36, 280, 'gm-glow').setScale(0.42).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+    this.add.image(360, BAR_Y, 'gm-track');
+    this.barFill = this.add.image(36, BAR_Y, 'gm-fill').setOrigin(0, 0.5).setCrop(0, 0, 0, 22);
+    this.barTip = this.add.image(36, BAR_Y, 'gm-glow').setScale(0.42).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
     this.tweens.add({ targets: this.barTip, scale: 0.55, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const hintY = Y0 + ROWS * S + 70;
     this.add.image(360, hintY, makeGlass(this, 520, 64, 32));
@@ -204,10 +198,10 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateUi(): void {
-    this.levelTxt.setText(`${this.level + 1}/${LEVELS.length}`);
+    this.hud.setLevel(`${this.level + 1}/${LEVELS.length}`);
     this.targetTxt.setText(String(this.target));
     this.movesTxt.setText(String(this.moves));
-    this.movesTxt.setColor(this.moves <= 3 ? '#ec3013' : '#ffffff');
+    this.movesTxt.setTextColor(this.moves <= 3 ? '#ff5a4a' : '#ffffff');
     const k = Math.min(1, this.levelScore / this.target);
     this.tweens.add({ targets: this, barK: k, duration: 300, ease: 'Sine.easeOut' });
   }
@@ -861,7 +855,7 @@ export class PlayScene extends ArcadeScene {
     for (const r of this.comboRings) { const gem = r.getData('gem') as Gem; if (gem.img.active) r.setPosition(gem.img.x, gem.img.y); }
     const fw = 648 * this.barK;
     this.barFill.setCrop(0, 0, fw, 22);
-    this.barTip.setPosition(36 + fw, 280).setAlpha(this.barK > 0.01 ? 0.9 : 0).setTint(this.barK >= 1 ? 0xffd23f : 0xb8ffd0);
+    this.barTip.setPosition(36 + fw, BAR_Y).setAlpha(this.barK > 0.01 ? 0.9 : 0).setTint(this.barK >= 1 ? 0xffd23f : 0xb8ffd0);
     if (this.busy) { this.idle = 0; return; }
     this.idle += delta / 1000;
     if (this.idle > 6 && !this.hinting) {

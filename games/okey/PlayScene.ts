@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, Button, burst, flash, shake, net, t, txt, popup, COLORS, upper, currentGame,
   quickChat, isModalOpen, openPlayerCard, isPlayerCardOpen, portraitKey, avatar, lifetimeRows, recordMatch,
-  playerCharacter, peerCharacter, otherCharacters, isCharacterId, isEasy,
+  playerCharacter, peerCharacter, otherCharacters, isCharacterId, isEasy, hudChip, HudChip,
   type QuickChat, type CharacterId,
 } from '@core';
 import {
@@ -141,7 +141,7 @@ export class PlayScene extends ArcadeScene {
   private dropMark!: Phaser.GameObjects.Graphics;
   // table furniture
   private pileImg!: Phaser.GameObjects.Image;
-  private pileText!: Phaser.GameObjects.Text;
+  private pileText!: HudChip;
   private indImg!: Phaser.GameObjects.Image;
   private cornerImgs: (Phaser.GameObjects.Image | null)[] = [null, null, null, null];
   private cornerUnder: (Phaser.GameObjects.Image | null)[] = [null, null, null, null];
@@ -284,9 +284,10 @@ export class PlayScene extends ArcadeScene {
     // centre pile and indicator
     for (let i = 0; i < 4; i++) this.add.image(PILE.x - i * 1.5, PILE.y - i * 2.5, 'ok-t-back').setDepth(1);
     this.pileImg = this.add.image(PILE.x - 6, PILE.y - 10, 'ok-t-back').setDepth(2).setInteractive({ useHandCursor: true });
-    this.pileText = txt(this, PILE.x - 4, PILE.y + 64, '', { size: 22, color: '#f3f2f2' }).setDepth(3);
+    // the tiles left in the pile, and the indicator's caption beside it, in small chips
+    this.pileText = hudChip(this, PILE.x - 4, PILE.y + 60, { align: 'center', size: 20, height: 34, depth: 3 });
     this.indImg = this.add.image(IND.x, IND.y, 'ok-t-back').setDepth(2).setAngle(8);
-    txt(this, IND.x + 4, IND.y + 64, t('indicator'), { size: 22, color: '#ffe8a3' }).setDepth(3);
+    hudChip(this, IND.x + 4, IND.y + 60, { align: 'center', text: t('indicator'), size: 20, height: 34, color: '#ffe8a3', depth: 3 });
     // tap to draw, or drag the tile onto the rack (see startPull)
     this.pileImg.on('pointerdown', (p: Phaser.Input.Pointer) => this.startPull('draw', p));
 
@@ -352,8 +353,9 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: this.finishBtn, scale: 1.08, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
-  /** The scoreboard pill at the top: a chip per player in turn order, the hand in the middle. */
+  /** The scoreboard pill at the top (a HUD chip): a chip per player in turn order, the hand in the middle. */
   private buildHud(): void {
+    hudChip(this, PILL.x + PILL.w / 2, HUD_Y, { align: 'center', height: 56, minWidth: PILL.w, depth: 8999 });
     this.hudG = this.add.graphics().setDepth(9000);
     this.handText = txt(this, W / 2, HUD_Y, '', { title: true, size: 24, color: '#ffffff' }).setDepth(9002);
     this.chips = [];
@@ -375,8 +377,6 @@ export class PlayScene extends ArcadeScene {
   private drawHud(): void {
     const g = this.hudG;
     g.clear();
-    g.fillStyle(0x0b1020, 0.66).fillRoundedRect(PILL.x, HUD_Y - 28, PILL.w, 56, 28);
-    g.lineStyle(2, 0xffffff, 0.1).strokeRoundedRect(PILL.x, HUD_Y - 28, PILL.w, 56, 28);
     const leader = Math.max(...this.scores);
     for (let r = 0; r < 4; r++) {
       const seat = (this.me + r) % 4;

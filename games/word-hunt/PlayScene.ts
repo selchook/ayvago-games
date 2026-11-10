@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, popup, txt, t, loc, getLang, rng, COLORS } from '@core';
+import { ArcadeScene, Button, burst, shake, popup, txt, t, loc, getLang, rng, COLORS, hudChip, hudText, HUD_ROW2_Y, HUD_MARGIN } from '@core';
 import { THEMES, ALPHABET, type Theme } from './words';
 
 type Cell = [number, number];
@@ -25,6 +25,8 @@ const DIRS: Cell[] = [[0, 1], [1, 0], [1, 1], [-1, 1], [0, -1], [-1, 0], [-1, -1
 const FOUND_COLORS = [0xff4fa3, 0x5dff7a, 0xffd23f, 0x3ee6ff, 0x8b5cff, 0xff9a2e, 0xec3013, 0x4fd1c5];
 
 const GRID_TOP = 176;
+/** Width of the theme slot in the HUD chip. */
+const SLOT_W = 200;
 const GRID_SIZE = 664;
 const LIST_TOP = GRID_TOP + GRID_SIZE + 24;
 
@@ -67,6 +69,7 @@ export class PlayScene extends ArcadeScene {
   private themeText!: Phaser.GameObjects.Text;
   private timeBar!: Phaser.GameObjects.Rectangle;
   private selText!: Phaser.GameObjects.Text;
+  private timeBarW = 0;
   private hintBtn!: Button;
   private flashRect!: Phaser.GameObjects.Rectangle;
 
@@ -94,15 +97,21 @@ export class PlayScene extends ArcadeScene {
     g.lineStyle(4, 0x3ee6ff, 0.5).strokeRoundedRect(20, GRID_TOP - 14, width - 40, GRID_SIZE + 28, 22);
     g.fillStyle(0x000000, 0.3).fillRoundedRect(20, LIST_TOP - 6, width - 40, 250, 18);
 
-    this.themeText = txt(this, width / 2, 118, '', { title: true, size: 30, color: '#ffd23f' });
-    this.add.rectangle(width / 2, 156, width - 40, 12, 0x000000, 0.6).setStrokeStyle(2, 0xffffff, 0.4);
-    this.timeBar = this.add.rectangle(22, 156, width - 44, 8, COLORS.green).setOrigin(0, 0.5);
+    // HUD row 2: one chip with the theme (or the letters being selected) and the time bar
+    this.themeText = hudText(this, '', 28, '#ffd23f');
+    this.selText = hudText(this, '', 24).setVisible(false);
+    const slot = this.add.container(0, 0, [this.themeText, this.selText]).setData('chipWidth', SLOT_W);
+    const barW = width - HUD_MARGIN * 2 - 36 - 8 - SLOT_W;
+    const track = this.add.rectangle(-barW / 2, 0, barW, 14, 0x000000, 0.35).setOrigin(0, 0.5);
+    this.timeBar = this.add.rectangle(-barW / 2 + 2, 0, barW - 4, 10, COLORS.green).setOrigin(0, 0.5);
+    this.timeBarW = barW - 4;
+    const bar = this.add.container(0, 0, [track, this.timeBar]).setData('chipWidth', barW);
+    hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { items: [slot, bar] });
 
     this.selG = this.add.graphics().setDepth(3);
     this.cursorBox = this.add.rectangle(0, 0, 10, 10).setStrokeStyle(5, 0xff4fa3).setDepth(5).setVisible(false);
     this.hintRing = this.add.circle(0, 0, 10).setStrokeStyle(6, 0x5dff7a).setDepth(5).setVisible(false);
     this.tweens.add({ targets: this.hintRing, scale: 1.2, duration: 300, yoyo: true, repeat: -1 });
-    this.selText = txt(this, width / 2, 118, '', { title: true, size: 22, color: '#ffffff' }).setDepth(8).setVisible(false);
 
     this.hintBtn = new Button(this, width / 2, height - 76, '', () => this.useHint(), { width: 340, height: 88, size: 24, color: COLORS.purple });
     this.flashRect = this.add.rectangle(0, 0, width, height, 0xffffff, 0).setOrigin(0).setDepth(7000);
@@ -501,7 +510,7 @@ export class PlayScene extends ArcadeScene {
     this.timeLeft -= delta / 1000;
     const L = LEVELS[this.levelIdx];
     const frac = Phaser.Math.Clamp(this.timeLeft / L.time, 0, 1);
-    this.timeBar.width = (this.scale.width - 44) * frac;
+    this.timeBar.width = this.timeBarW * frac;
     this.timeBar.fillColor = frac > 0.5 ? COLORS.green : frac > 0.2 ? COLORS.yellow : COLORS.red;
     const secs = Math.max(0, Math.ceil(this.timeLeft));
     this.hud.setRight(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, txt, t, isMuted } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, txt, t, isMuted, hudChip, HudChip } from '@core';
 
 const CX = 360, CY = 660;
 const R_OUT = 310, R_IN = 120;
@@ -25,7 +25,7 @@ export class PlayScene extends ArcadeScene {
   private ring!: Phaser.GameObjects.Graphics;
   private centerTxt!: Phaser.GameObjects.Text;
   private status!: Phaser.GameObjects.Text;
-  private progress!: Phaser.GameObjects.Text;
+  private progress!: HudChip;
 
   createGame(): void {
     this.seq = []; this.pos = 0; this.round = 0; this.lives = 3; this.state = 'busy';
@@ -46,7 +46,8 @@ export class PlayScene extends ArcadeScene {
     txt(this, CX, CY - 46, t('round'), { title: true, size: 18, color: '#9a94a8' }).setDepth(5);
     this.centerTxt = txt(this, CX, CY + 12, '0', { title: true, size: 52, color: '#ffd23f' }).setDepth(5);
     this.status = txt(this, CX, 200, '', { title: true, size: 34, color: '#f3f2f2' });
-    this.progress = txt(this, CX, 1090, '', { title: true, size: 30, color: '#f3f2f2' });
+    // the steps entered so far: a chip under the pads while it is the player's turn
+    this.progress = hudChip(this, CX, 1090, { align: 'center', size: 26, height: 56, minWidth: 160 }).setVisible(false);
     txt(this, CX, 1180, t('keys'), { size: 26, color: '#6f6880' });
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -129,7 +130,7 @@ export class PlayScene extends ArcadeScene {
     this.state = 'show';
     this.ring.clear();
     this.status.setText(t('watch')).setColor('#ffd23f');
-    this.progress.setText('');
+    this.progress.setText('').setVisible(false);
     const step = this.stepMs();
     this.seq.forEach((pad, i) => this.time.delayedCall(500 + i * step * 1.5, () => {
       if (!this.isOver) this.flashPad(pad, step);
@@ -143,7 +144,7 @@ export class PlayScene extends ArcadeScene {
       this.hurried = false;
       this.sfx('go', { volume: 0.3, exact: true });
       this.status.setText(t('yourTurn')).setColor('#5dff7a');
-      this.progress.setText(`0 / ${this.seq.length}`);
+      this.progress.setText(`0 / ${this.seq.length}`).setVisible(true);
     });
   }
 

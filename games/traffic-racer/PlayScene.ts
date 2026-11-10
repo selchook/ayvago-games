@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, CarSteering, burst, shake, t, rng, ensurePixel, isEasy, type CarPadButton } from '@core';
+import {
+  ArcadeScene, Controls, CarSteering, burst, shake, t, rng, ensurePixel, isEasy, type CarPadButton,
+  hudChip, HudChip, HUD_ROW_Y, HUD_ROW2_Y, HUD_MARGIN, HUD_GAP,
+} from '@core';
 import { ftxt, fpopup, freshTextCanvases, softFlash } from './fasttext';
 
 const ROAD_L = 120, ROAD_R = 600, LANE_W = 120, LANES = 4;
@@ -8,6 +11,8 @@ const LANE_X = [180, 300, 420, 540];
 const PY = 960;
 const PW = 54, PH = 112;                 // player hitbox
 const MAX_SPEED = 1150;
+/** Width of the fuel gauge (can + bar) inside its HUD chip. */
+const FUEL_W = 236;
 /**
  * Sideways speed at full lock (px/s), and how quickly the car follows the steering. 640 and an
  * instant key response before v1.1: the shared car steering now eases keys and arrows in.
@@ -114,12 +119,13 @@ export class PlayScene extends ArcadeScene {
   private lines!: Phaser.GameObjects.TileSprite;
   private marksG!: Phaser.GameObjects.Graphics;
   private fxG!: Phaser.GameObjects.Graphics;
-  private uiG!: Phaser.GameObjects.Graphics;
   private edge!: Phaser.GameObjects.Image;
   private car!: Phaser.GameObjects.Image;
-  private speedText!: Phaser.GameObjects.Text;
-  private distText!: Phaser.GameObjects.Text;
-  private comboText!: Phaser.GameObjects.Text;
+  private speedText!: HudChip;
+  private distText!: HudChip;
+  private comboText!: HudChip;
+  private fuelG!: Phaser.GameObjects.Graphics;
+  private comboG!: Phaser.GameObjects.Graphics;
   private exhaust!: Phaser.GameObjects.Particles.ParticleEmitter;
   private flame!: Phaser.GameObjects.Particles.ParticleEmitter;
   private smoke!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -168,7 +174,6 @@ export class PlayScene extends ArcadeScene {
     this.marksG = this.add.graphics().setDepth(0.5);
     this.lines = this.add.tileSprite(ROAD_L, 0, ROAD_R - ROAD_L, 1280, 'tr-lines').setOrigin(0).setDepth(1);
     this.fxG = this.add.graphics().setDepth(6);
-    this.uiG = this.add.graphics().setDepth(20);
     this.edge = this.add.image(360, 640, 'tr-edge').setDisplaySize(720, 1280).setDepth(19).setAlpha(0);
     for (let i = 0; i < 6; i++) this.spawnTree(rng.int(0, 1200));
 
@@ -190,10 +195,15 @@ export class PlayScene extends ArcadeScene {
     this.car = this.add.image(this.px, PY + 400, 'player').setDepth(5);
     this.tweens.add({ targets: this.car, y: PY, duration: 700, ease: 'Cubic.easeOut' });
 
-    // speed + distance in a small panel under the pause button, combo under the fuel gauge
-    this.speedText = ftxt(this, 692, 150, '', { title: true, size: 20, color: '#3ee6ff' }).setOrigin(1, 0.5).setDepth(21);
-    this.distText = ftxt(this, 692, 182, '', { title: true, size: 16, color: '#ffffff' }).setOrigin(1, 0.5).setDepth(21);
-    this.comboText = ftxt(this, 24, 146, '', { title: true, size: 18, color: '#3ee6ff' }).setOrigin(0, 0.5).setDepth(21).setVisible(false);
+    // second HUD row: the fuel gauge left, distance and speed right; the combo (while it runs)
+    // in a chip under the fuel gauge
+    const row3 = HUD_ROW2_Y + (HUD_ROW2_Y - HUD_ROW_Y);
+    this.fuelG = this.add.graphics().setData('chipWidth', FUEL_W);
+    hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { items: [this.fuelG] });
+    this.speedText = hudChip(this, 720 - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', text: '0', color: '#3ee6ff', minWidth: 196 });
+    this.distText = hudChip(this, this.speedText.left - HUD_GAP, HUD_ROW2_Y, { align: 'right', text: '0.00', size: 16, minWidth: 146 });
+    this.comboG = this.add.graphics().setData('chipWidth', 70);
+    this.comboText = hudChip(this, HUD_MARGIN, row3, { text: '', size: 16, color: '#3ee6ff', items: [this.comboG] }).setVisible(false);
 
     // keys from the core (arrows / WASD, Space / Z / Enter); on touch screens the shared car pad:
     // the steering chosen on the menu under the left thumb, BOOST and BRAKE under the right one
@@ -371,9 +381,9 @@ export class PlayScene extends ArcadeScene {
     // a rush of air between the two cars: white streaks along the gap
     for (let i = 0; i < 6; i++) this.streaks.push({ x: mx + rng.int(-10, 10), y: PY - 80 + i * 30, len: 70 + rng.int(0, 60), a: 0.8 });
     // the combo label pops
-    this.comboText.setVisible(true).setText(`${t('combo')} x${this.combo}`);
+    this.comboText.setVisible(true).setAlpha(1).setText(`${t('combo')} x${this.combo}`);
     this.tweens.killTweensOf(this.comboText);
-    this.comboText.setScale(1.4);
+    this.comboText.setScale(1.25);
     this.tweens.add({ targets: this.comboText, scale: 1, duration: 260, ease: 'Back.easeOut' });
   }
 
@@ -606,25 +616,26 @@ export class PlayScene extends ArcadeScene {
   }
 
   private drawUi(blink: boolean): void {
-    const u = this.uiG;
+    // fuel gauge (in its chip): the can, then the bar
+    const u = this.fuelG;
     u.clear();
-    // fuel gauge
     const low = this.fuel < 25;
-    u.fillStyle(0x000000, 0.55).fillRoundedRect(20, 84, 300, 32, 10);
-    if (low) u.lineStyle(3, 0xec3013, blink ? 1 : 0.4).strokeRoundedRect(20, 84, 300, 32, 10);
-    u.fillStyle(low ? (blink ? 0xec3013 : 0x8f1020) : this.fuel < 50 ? 0xffd23f : 0x5dff7a, 1).fillRoundedRect(64, 90, 250 * (this.fuel / 100), 20, 6);
+    const x0 = -FUEL_W / 2, bx = x0 + 38, bw = FUEL_W - 38;
+    u.fillStyle(0x000000, 0.55).fillRect(bx, -10, bw, 20);
+    if (low) u.lineStyle(2, 0xec3013, blink ? 1 : 0.4).strokeRect(bx - 2, -12, bw + 4, 24);
+    u.fillStyle(low ? (blink ? 0xec3013 : 0x8f1020) : this.fuel < 50 ? 0xffd23f : 0x5dff7a, 1).fillRect(bx + 2, -8, (bw - 4) * (this.fuel / 100), 16);
     const wob = low ? Math.sin(this.elapsed * 30) * 2 : 0;
-    u.fillStyle(0xd62828, 1).fillRoundedRect(28 + wob, 88, 26, 24, 4);
-    u.fillStyle(0xffd23f, 1).fillRect(34 + wob, 98, 14, 4);
+    u.fillStyle(0xd62828, 1).fillRoundedRect(x0 + 2 + wob, -12, 26, 24, 4);
+    u.fillStyle(0xffd23f, 1).fillRect(x0 + 8 + wob, -2, 14, 4);
+    const cg = this.comboG;
+    cg.clear();
     if (this.combo > 0) {
       const k = Math.max(0, this.comboT / 3);
-      u.fillStyle(0x000000, 0.45).fillRoundedRect(20, 164, 160, 10, 4);
-      u.fillStyle(0x3ee6ff, 0.9).fillRoundedRect(20, 164, 160 * k, 10, 4);
+      cg.fillStyle(0x000000, 0.55).fillRect(-35, -5, 70, 10);
+      cg.fillStyle(0x3ee6ff, 0.9).fillRect(-35, -5, 70 * k, 10);
     }
-    // speed panel
-    u.fillStyle(0x000000, 0.45).fillRoundedRect(548, 130, 160, 70, 12);
-    this.speedText.setText(`${Math.round(this.speed * 0.2)} ${t('kmh')}`).setColor(this.boosting ? '#ff9a2a' : this.braking ? '#ff6a6a' : '#3ee6ff');
-    this.distText.setText(`${(this.dist / 1000).toFixed(2)} ${t('km')}`);
+    this.speedText.setText(`${Math.round(this.speed * 0.2)} ${t('kmh')}`).setTextColor(this.boosting ? '#ff9a2a' : this.braking ? '#ff6a6a' : '#3ee6ff');
+    this.distText.setText(`${(this.dist / 1000).toFixed(2)} ${t('km')}`).setAnchor(this.speedText.left - HUD_GAP, HUD_ROW2_Y);
     // the screen edges pulse red while the tank runs low
     const want = low && this.started && !this.isOver ? 0.55 + Math.sin(this.elapsed * 7) * 0.35 : 0;
     this.edge.setAlpha(this.edge.alpha + (want - this.edge.alpha) * 0.2);

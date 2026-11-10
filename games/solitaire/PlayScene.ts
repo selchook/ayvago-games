@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, COLORS, burst, shake, flash, popup, txt, t, rng } from '@core';
+import { ArcadeScene, Button, COLORS, burst, shake, flash, popup, txt, t, rng, hudChip, HudChip } from '@core';
 import { CW, CH, PAD, BACK, SHADOW, GLOW, SEL, faceKey, makeArt, makeFelt } from './art';
 
 const W = 720, H = 1280;
@@ -39,9 +39,8 @@ export class PlayScene extends ArcadeScene {
   private selRing!: Phaser.GameObjects.NineSlice;
   private glows: Phaser.GameObjects.GameObject[] = [];
   private stockSlot!: Phaser.GameObjects.Image;
-  private stockText!: Phaser.GameObjects.Text;
-  private passText!: Phaser.GameObjects.Text;
-  private pips!: Phaser.GameObjects.Graphics;
+  private stockText!: HudChip;
+  private passText!: HudChip;
   private hintBtn!: Button;
   private autoBtn!: Button;
   private autoGlow!: Phaser.GameObjects.Graphics;
@@ -70,11 +69,10 @@ export class PlayScene extends ArcadeScene {
     for (let s = 0; s < 4; s++) this.add.image(colX(3 + s), TOP_Y, `sol-slot-f${s}`).setDepth(5);
     for (let c = 0; c < 7; c++) this.add.image(colX(c), TAB_Y, 'sol-slot-k').setDepth(5);
 
-    // stock counter and deck passes in the free spot between the waste and the foundations
-    this.stockText = txt(this, colX(2), TOP_Y - 34, '', { title: true, size: 30, color: '#f4fff6' }).setDepth(20);
-    txt(this, colX(2), TOP_Y - 4, t('cards'), { size: 17, color: '#a8d8b8' }).setDepth(20);
-    this.pips = this.add.graphics().setDepth(20);
-    this.passText = txt(this, colX(2), TOP_Y + 54, '', { size: 17, color: '#a8d8b8' }).setDepth(20);
+    // stock counter (a card back and the cards left) and the deck pass, in two chips in the free
+    // spot between the waste and the foundations; under the cards in hand (depth 20)
+    this.stockText = hudChip(this, colX(2), TOP_Y - 30, { align: 'center', icon: BACK, iconSize: 26, text: '', size: 24, color: '#f4fff6', depth: 20 });
+    this.passText = hudChip(this, colX(2), TOP_Y + 30, { align: 'center', text: '', size: 16, color: '#ffe9a8', depth: 20 });
 
     this.selRing = this.add.nineslice(0, 0, SEL, undefined, CW + PAD * 2, CH + PAD * 2, RING, RING, RING, RING)
       .setDepth(3400).setVisible(false);
@@ -216,12 +214,6 @@ export class PlayScene extends ArcadeScene {
     const n = this.piles[STOCK].length;
     this.stockText.setText(String(n));
     this.passText.setText(t('passN', { n: this.passes, m: MAX_PASSES }));
-    const g = this.pips.clear();
-    for (let k = 0; k < MAX_PASSES; k++) {
-      const x = colX(2) + (k - 1) * 22, y = TOP_Y + 28;
-      if (k >= this.passes - 1) g.fillStyle(0xffd23f, 1).fillCircle(x, y, 7);
-      g.lineStyle(2, 0xffe9a8, 0.7).strokeCircle(x, y, 7);
-    }
     this.hud.setCenter(`${t('moves')} ${this.moves}`);
   }
 

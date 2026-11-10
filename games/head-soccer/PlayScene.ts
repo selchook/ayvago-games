@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, CHARACTER_FRAME, Controls, burst, shake, flash, txt, t, rng, net, loadCharacter, otherCharacters, playerCharacter, peerCharacter,
-  characterRig, isEasy, type CharacterId,
+  characterRig, isEasy, type CharacterId, hudChip, hudText, HudChip, HUD_ROW_Y, HUD_GAP,
 } from '@core';
 import {
   W, GROUND, GOAL_W, GOAL_TOP, BALL_R, CHAR_SCALE, KICK_ON, KICK_POSE_END, AI_LEVELS,
@@ -110,7 +110,9 @@ export class PlayScene extends ArcadeScene {
   private walkT: [number, number] = [0, 0];
   private scoreMe!: Phaser.GameObjects.Text;
   private scoreThem!: Phaser.GameObjects.Text;
-  private clockText!: Phaser.GameObjects.Text;
+  private clockText!: HudChip;
+  private sideMe!: HudChip;
+  private sideThem!: HudChip;
   private nameThem!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Text;
   private sub!: Phaser.GameObjects.Text;
@@ -151,27 +153,23 @@ export class PlayScene extends ArcadeScene {
     this.ball = this.add.image(W / 2, 200, 'hs-ball').setDepth(15);
     this.nets = drawNets(this, 20);
 
-    // scoreboard
-    // scoreboard: a glass panel with each side's colour, the clock in a pill between the scores
-    const sb = this.add.graphics().setDepth(30);
-    sb.fillStyle(0x000000, 0.28).fillRoundedRect(W / 2 - 246, 14, 500, 92, 22);
-    sb.fillStyle(0x0b1030, 0.78).fillRoundedRect(W / 2 - 250, 10, 500, 92, 22);
-    sb.fillStyle(0xffffff, 0.06).fillRoundedRect(W / 2 - 246, 14, 492, 38, 18);
-    sb.fillStyle(Phaser.Display.Color.HexStringToColor(TEAM[0]).color, 1).fillRoundedRect(W / 2 - 236, 22, 8, 68, 4);
-    sb.fillStyle(Phaser.Display.Color.HexStringToColor(TEAM[1]).color, 1).fillRoundedRect(W / 2 + 228, 22, 8, 68, 4);
-    sb.fillStyle(0x000000, 0.45).fillRoundedRect(W / 2 - 52, 38, 104, 36, 18);
-    sb.lineStyle(2, 0xffffff, 0.18).strokeRoundedRect(W / 2 - 250, 10, 500, 92, 22);
-    txt(this, W / 2 - 170, 36, t('you'), { title: true, size: 18, color: TEAM[0] }).setDepth(31);
-    this.nameThem = txt(this, W / 2 + 170, 36, '', { size: 22, color: TEAM[1] }).setDepth(31);
-    this.scoreMe = txt(this, W / 2 - 110, 66, '0', { title: true, size: 40, color: '#ffffff' }).setDepth(31);
-    this.scoreThem = txt(this, W / 2 + 110, 66, '0', { title: true, size: 40, color: '#ffffff' }).setDepth(31);
-    this.clockText = txt(this, W / 2, 56, '1:00', { title: true, size: 24, color: '#ffd23f' }).setDepth(31);
+    // scoreboard in the top HUD row: a chip per side (name in the side's colour and goals) with
+    // the clock in a chip between them
+    const nameMe = hudText(this, t('you'), 22, TEAM[0]);
+    this.nameThem = hudText(this, '', 22, TEAM[1]);
+    this.scoreMe = hudText(this, '0', 32);
+    this.scoreThem = hudText(this, '0', 32);
+    this.clockText = hudChip(this, W / 2, HUD_ROW_Y, { align: 'center', text: '1:00', size: 26, color: '#ffd23f', minWidth: 104 });
+    this.sideMe = hudChip(this, W / 2, HUD_ROW_Y, { align: 'right', items: [nameMe, this.scoreMe] });
+    this.sideThem = hudChip(this, W / 2, HUD_ROW_Y, { align: 'left', items: [this.scoreThem, this.nameThem] });
+    this.placeBoard();
     this.banner = txt(this, W / 2, 290, '', { title: true, size: 60, strokeThickness: 10 }).setDepth(60).setVisible(false);
     this.sub = txt(this, W / 2, 352, '', { size: 30, color: '#ffffff' }).setDepth(60).setVisible(false);
 
     this.setupInput();
     if (this.online) this.setupOnline();
     this.nameThem.setText(this.online ? clip(net.peerName || t('opponent'), 12) : t('d0'));
+    this.placeBoard();
     this.startMatch();
   }
 
@@ -237,6 +235,7 @@ export class PlayScene extends ArcadeScene {
     if (!this.online) {
       this.world.p[1].speed = this.ai().speed;
       this.nameThem.setText(t('d' + Math.min(this.level, AI_LEVELS.length - 1)));
+      this.placeBoard();
       this.hud.setRight(t('matchN', { n: this.matchNo }));
     }
     this.updateScoreboard();
@@ -465,13 +464,26 @@ export class PlayScene extends ArcadeScene {
     const me = this.online && !this.host ? 1 : 0;
     this.scoreMe.setText(String(this.goals[me]));
     this.scoreThem.setText(String(this.goals[1 - me]));
+    this.placeBoard();
+  }
+
+  /** The side chips hug the clock chip, whose width changes for the golden goal. */
+  private placeBoard(): void {
+    this.sideThem.layout();
+    this.sideMe.layout().setAnchor(this.clockText.left - HUD_GAP, HUD_ROW_Y);
+    this.sideThem.setAnchor(this.clockText.right + HUD_GAP, HUD_ROW_Y);
   }
 
   private updateClock(): void {
-    if (this.golden) { this.clockText.setText(t('goldenShort')).setColor('#ffd23f').setFontSize(16); return; }
+    if (this.golden) {
+      if (this.clockText.text.text !== t('goldenShort')) { this.clockText.text.setFontSize(20); this.clockText.setText(t('goldenShort')).setTextColor('#ffd23f'); this.placeBoard(); }
+      return;
+    }
     const c = Math.ceil(Math.max(0, this.clock));
-    this.clockText.setText(`${Math.floor(c / 60)}:${String(c % 60).padStart(2, '0')}`).setFontSize(24);
-    this.clockText.setColor(c <= 10 ? '#ff4f5e' : '#ffd23f');
+    if (this.clockText.text.style.fontSize !== '26px') { this.clockText.text.setFontSize(26); this.clockText.layout(); }
+    this.clockText.setText(`${Math.floor(c / 60)}:${String(c % 60).padStart(2, '0')}`);
+    this.clockText.setTextColor(c <= 10 ? '#ff4f5e' : '#ffd23f');
+    this.placeBoard();
     if (c <= 5 && c > 0 && c !== this.lastTick && (this.phase === 'play')) {
       this.lastTick = c;
       this.sfx('tick', { volume: 0.4, exact: true });
@@ -542,7 +554,7 @@ export class PlayScene extends ArcadeScene {
     this.showBanner(t('goalBanner'), mine ? '#ffd23f' : '#7fd8ff', mine ? t('goalYou') : t('goalThem'));
     this.time.delayedCall(1700, () => { if (this.phase !== 'end' && !this.isOver) this.hideBanner(); });
     const txtObj = mine ? this.scoreMe : this.scoreThem;
-    txtObj.setScale(2);
+    txtObj.setScale(1.8);
     this.tweens.add({ targets: txtObj, scale: 1, duration: 600, ease: 'Back.easeOut' });
     if (mine) for (let k = 0; k < 5; k++) this.time.delayedCall(k * 140, () => burst(this, rng.int(200, W - 200), rng.int(120, 300), [0xffd23f, 0xff4fa3, 0x5dff7a, 0x3ee6ff], 18, 260));
   }

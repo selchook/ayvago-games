@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt, rng, loc, getLang, COLORS } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, t, txt, rng, loc, getLang, COLORS, hudChip } from '@core';
 import {
   World, Hit, Seg, Pt, BALL_R, W, TH, LANE_X, PLUNGER_Y, DRAIN_Y, LANES, LANE_Y, PIVOT_Y,
   SLING_L, SLING_R, ORBIT_L, ORBIT_R, ORBIT_BOT, step,
@@ -301,6 +301,8 @@ export class PlayScene extends ArcadeScene {
     fix(this.add.image(DMD_X, DMD_Y - 1, 'pb-dmdgrid'), 52);
 
     fix(this.add.image(360, BAR_TOP + 56, 'pb-bar'), 50);
+    // the target and mission readouts between the buttons sit in a HUD chip
+    hudChip(this, 360, BAR_TOP + 54, { align: 'center', height: 88, minWidth: 344, depth: 50.5 });
     this.barGfx = fix(this.add.graphics(), 51);
     for (let i = 0; i < 4; i++) {
       const label = fix(txt(this, 202, 0, '', { title: true, size: 12, color: '#ffffff', strokeThickness: 3 }).setOrigin(0, 0.5), 52);

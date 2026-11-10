@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, popup, txt, t, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, popup, txt, t, rng, hudChip, HUD_ROW2_Y } from '@core';
+
+const GROW_W = 260;   // growth bar in the HUD
 
 /** Swimming species: texture key, fish tile number and the fish's visible width inside the 64px tile. */
 export const SPECIES = [
@@ -44,7 +46,7 @@ export class PlayScene extends ArcadeScene {
   private controls!: Controls;
   private player!: Phaser.GameObjects.Image;
   private fish: Fish[] = [];
-  private barFill!: Phaser.GameObjects.Rectangle;
+  private barFill!: Phaser.GameObjects.Graphics;
   private bubbles!: Phaser.GameObjects.Particles.ParticleEmitter;
   private size = START_SIZE;
   private target = 140;
@@ -70,9 +72,9 @@ export class PlayScene extends ArcadeScene {
     this.player = this.add.image(width / 2, height / 2, 'ff-player').setDepth(20);
     this.applySize();
 
-    txt(this, width / 2, 74, t('growth'), { title: true, size: 14, color: '#bfefff' }).setDepth(9000);
-    this.add.rectangle(width / 2, 98, 300, 20, 0x000000, 0.5).setStrokeStyle(3, 0xffffff, 0.7).setDepth(9000);
-    this.barFill = this.add.rectangle(width / 2 - 146, 98, 0, 12, 0xffa31a).setOrigin(0, 0.5).setDepth(9000);
+    // growth towards the next level: a caption and a bar in a chip on the second HUD row
+    this.barFill = this.add.graphics().setData('chipWidth', GROW_W);
+    hudChip(this, width / 2, HUD_ROW2_Y, { align: 'center', label: t('growth'), items: [this.barFill] });
 
     // touch: floating joystick anywhere on the screen; swim speed scales with the push
     this.controls = new Controls(this, { joystick: true });
@@ -137,7 +139,9 @@ export class PlayScene extends ArcadeScene {
     this.hud.setLevel(this.level);
     this.hud.setLives(this.lives, MAX_LIVES);
     const f = Phaser.Math.Clamp((this.size - START_SIZE) / (this.target - START_SIZE), 0, 1);
-    this.barFill.width = 292 * f;
+    const w = GROW_W, h = 16;
+    this.barFill.clear().fillStyle(0x000000, 0.3).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+    if (f > 0) this.barFill.fillStyle(f >= 1 ? 0xffd23f : 0xffa31a, 1).fillRoundedRect(-w / 2, -h / 2, Math.max(h, w * f), h, h / 2);
   }
 
   private banner(s: string, color: string): void {

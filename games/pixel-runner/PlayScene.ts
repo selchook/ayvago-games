@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, CHARACTER_FRAME, FONT_TITLE, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, CHARACTER_FRAME, burst, shake, flash, popup, t, txt, rng } from '@core';
 
 /** A banded pixel sky with a sun (drawn small, shown 8x for chunky pixels), pixel clouds and a ground shadow. */
 export function makeSky(scene: Phaser.Scene): void {
@@ -68,7 +68,6 @@ export class PlayScene extends ArcadeScene {
   private enemies: Enemy[] = [];
   private bgFar!: Phaser.GameObjects.TileSprite;
   private bgNear!: Phaser.GameObjects.TileSprite;
-  private hearts: Phaser.GameObjects.Image[] = [];
   private scroll = 0;
   private speed = 380;
   private py = 0;
@@ -95,12 +94,11 @@ export class PlayScene extends ArcadeScene {
   private lines: Phaser.GameObjects.Rectangle[] = [];
   private clouds!: Phaser.GameObjects.TileSprite;
   private barG!: Phaser.GameObjects.Graphics;
-  private coinText!: Phaser.GameObjects.Text;
-  private coinIcon!: Phaser.GameObjects.Sprite;
+  private coinShown = -1;
 
   createGame(): void {
     const { width, height } = this.scale;
-    this.segs = []; this.coins = []; this.enemies = []; this.hearts = [];
+    this.segs = []; this.coins = []; this.enemies = []; this.coinShown = -1;
     this.scroll = 0; this.speed = 380; this.vy = 0; this.grounded = true; this.jumps = 0; this.coyote = 0; this.buffer = 0;
     this.holding = false; this.invuln = 0; this.lives = 3; this.coinCount = 0; this.meters = 0; this.nextMilestone = 250;
     this.genX = 0; this.lastTop = TOPS[0]; this.animT = 0; this.dead = false; this.stompChain = 0;
@@ -129,13 +127,10 @@ export class PlayScene extends ArcadeScene {
     for (let i = 0; i < 10; i++) this.lines.push(this.add.rectangle(0, 0, 60, 3, 0xffffff, 0.5).setOrigin(0, 0.5).setScrollFactor(0).setDepth(30).setVisible(false));
     this.barG = this.add.graphics().setScrollFactor(0).setDepth(9000);
 
-    this.add.rectangle(20, 70, 172, 46, 0x1d2a3a, 0.55).setOrigin(0).setScrollFactor(0).setDepth(8999).setStrokeStyle(3, 0xffffff, 0.35);
-    for (let i = 0; i < 3; i++) this.hearts.push(this.add.image(40 + i * 54, 92, 'pp', F.heart).setScale(2.4).setScrollFactor(0).setDepth(9000));
-    this.coinText = this.add.text(width - 120, 24, '0', { fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffd23f', stroke: '#000000', strokeThickness: 6 })
-      .setOrigin(1, 0).setScrollFactor(0).setDepth(9000);
-    this.coinIcon = this.add.sprite(width - 160, 36, 'pp', F.coin).setScale(2.2).setScrollFactor(0).setDepth(9000);
-    this.tweens.add({ targets: this.coinIcon, scaleX: 0.5, duration: 320, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.coinText.setText('');
+    // coins: a spinning coin and the count in the HUD's right chip; lives as the HUD's hearts
+    this.hud.setRight('0', 'pp', F.coin);
+    const coin = this.hud.rightChip.setIcon('pp', F.coin, 44).icon!;   // the frame has a wide transparent margin
+    this.tweens.add({ targets: coin, scaleX: coin.scaleY * 0.25, duration: 320, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.updateHud();
 
     const go = txt(this, width / 2, height * 0.35, t('go'), { title: true, size: 64, color: '#ffd23f' }).setScrollFactor(0).setDepth(9000).setScale(0.2);
@@ -308,12 +303,11 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setCenter(t('meters', { n: Math.floor(this.meters) }));
-    // coins: a spinning coin icon and the count, in the HUD's right slot
-    if (this.coinText.text !== String(this.coinCount)) {
-      this.coinText.setText(String(this.coinCount));
-      this.coinIcon.setX(this.coinText.x - this.coinText.width - 26);
+    if (this.coinShown !== this.coinCount) {
+      this.coinShown = this.coinCount;
+      this.hud.setRight(String(this.coinCount));
     }
-    this.hearts.forEach((h, i) => h.setFrame(i < this.lives ? F.heart : F.heartEmpty));
+    this.hud.setLives(this.lives, 3);
   }
 
   private hurt(fell = false): void {
@@ -321,8 +315,6 @@ export class PlayScene extends ArcadeScene {
     this.lives--;
     this.invuln = 1.6;
     this.stompChain = 0;
-    const h = this.hearts[this.lives];
-    if (h) this.tweens.add({ targets: h, scale: 3.4, duration: 120, yoyo: true });
     this.updateHud();
     this.sfx(fell ? 'fall' : 'hurt', { volume: fell ? 0.6 : 0.65 });
     shake(this, 0.015, 250);
@@ -462,17 +454,19 @@ export class PlayScene extends ArcadeScene {
     // progress to the next milestone (top centre)
     const prev = this.nextMilestone - 250, k = Phaser.Math.Clamp((this.meters - prev) / 250, 0, 1);
     this.barG.clear();
-    this.barG.fillStyle(0x1d2a3a, 0.6).fillRect(width / 2 - 124, 52, 248, 14);
-    this.barG.fillStyle(0x5dff7a, 1).fillRect(width / 2 - 121, 55, 242 * k, 8);
-    this.barG.fillStyle(0xffffff, 0.5).fillRect(width / 2 - 121, 55, 242 * k, 2);
-    this.barG.lineStyle(2, 0xffffff, 0.6).strokeRect(width / 2 - 124, 52, 248, 14);
+    // the next-milestone bar, just under the HUD chips
+    const by = 86;
+    this.barG.fillStyle(0x1d2a3a, 0.6).fillRect(width / 2 - 124, by, 248, 14);
+    this.barG.fillStyle(0x5dff7a, 1).fillRect(width / 2 - 121, by + 3, 242 * k, 8);
+    this.barG.fillStyle(0xffffff, 0.5).fillRect(width / 2 - 121, by + 3, 242 * k, 2);
+    this.barG.lineStyle(2, 0xffffff, 0.6).strokeRect(width / 2 - 124, by, 248, 14);
 
     // coins
     for (const c of this.coins) {
       if (!c.img.active) continue;
       if (Math.abs(c.x - wx) < 34 && Math.abs(c.y - this.py) < 46) {
         this.coinCount += c.gem ? 5 : 1;
-        this.tweens.add({ targets: this.coinText, scale: 1.3, duration: 80, yoyo: true });
+        this.tweens.add({ targets: this.hud.rightChip.text, scale: 1.3, duration: 80, yoyo: true });
         this.addScore(c.gem ? 50 : 10);
         if (c.gem) { popup(this, c.x, c.y - 30, '+50', '#3ee6ff', 22); this.sfx('coin10', { volume: 0.5, rate: 1.2 }); burst(this, c.x, c.y, [0x3ee6ff, 0xffffff, 0xff8ad8], 18, 240); }
         this.sfx('coin', { volume: 0.35, rate: 1 + Math.min(0.5, (this.coinCount % 10) * 0.05) });

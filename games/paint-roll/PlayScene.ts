@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, Controls, burst, shake, txt, t, storage, COLORS, ensurePixel, StickDir, type Dir4 } from '@core';
+import {
+  ArcadeScene, Button, Controls, burst, shake, txt, t, storage, COLORS, ensurePixel, StickDir, type Dir4,
+  hudChip, HudChip, HUD_ROW_Y, HUD_ROW2_Y, HUD_MARGIN,
+} from '@core';
 import { PALETTE, makeSymbols, softFlash, banner } from './symbols';
 import { generate, slide, DIRS, type Level } from './logic';
 
@@ -15,9 +18,8 @@ const KEY_STARS = 'paint-roll:stars';
 const SET_LEN = 5;
 /** Points per second left on the level's bonus clock (the clock never ends the run). */
 const BONUS_PER_SEC = 2;
-const BAR_X = 60;
-const BAR_W = 380;
-const PIP_Y = 1117;
+/** Width of the bonus clock's bar in its HUD chip. */
+const BAR_W = 420;
 /** Stick direction to the slide direction index of `logic.ts` (right, left, down, up). */
 const STICK_DIR: Record<Dir4, number> = { right: 0, left: 1, down: 2, up: 3 };
 
@@ -47,9 +49,10 @@ export class PlayScene extends ArcadeScene {
   private paintRects = new Map<number, Phaser.GameObjects.Container>();
   private ball!: Phaser.GameObjects.Container;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private info!: Phaser.GameObjects.Text;
+  private info!: HudChip;
+  private setChip!: HudChip;
+  private bonusChip!: HudChip;
   private timerBar!: Phaser.GameObjects.Graphics;
-  private bonusText!: Phaser.GameObjects.Text;
   private pips!: Phaser.GameObjects.Graphics;
   private ui: Phaser.GameObjects.GameObject[] = [];
   private selectUi: Phaser.GameObjects.GameObject[] = [];
@@ -67,10 +70,15 @@ export class PlayScene extends ArcadeScene {
 
     this.add.rectangle(0, 0, 720, 1280, 0x17122b).setOrigin(0).setDepth(-20);
     this.board = this.add.container(0, 0).setDepth(5);
-    this.info = txt(this, 360, 122, '', { size: 30, color: '#f3f2f2' }).setDepth(50);
-    this.timerBar = this.add.graphics().setDepth(50);
-    this.bonusText = txt(this, 660, 169, '', { size: 24, color: '#5dff7a' }).setOrigin(1, 0.5).setDepth(50);
-    this.pips = this.add.graphics().setDepth(50);
+    // HUD rows 2 and 3 (while a level is on): moves and par, the set's progress pips, and the
+    // bonus clock with its bar
+    this.info = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { text: '' }).setVisible(false);
+    this.pips = this.add.graphics().setData('chipWidth', SET_LEN * 26 + (SET_LEN - 1) * 12);
+    this.setChip = hudChip(this, 720 - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', label: t('set'), items: [this.pips] }).setVisible(false);
+    this.timerBar = this.add.graphics().setData('chipWidth', BAR_W);
+    this.bonusChip = hudChip(this, 360, HUD_ROW2_Y + (HUD_ROW2_Y - HUD_ROW_Y), {
+      align: 'center', label: t('timeBonus'), text: '+0', color: '#5dff7a', minWidth: 720 - HUD_MARGIN * 2, items: [this.timerBar],
+    }).setVisible(false);
 
     // touch: the standard floating stick, anywhere on the screen; each flick sends the ball
     this.controls = new Controls(this, { joystick: true });
@@ -88,10 +96,7 @@ export class PlayScene extends ArcadeScene {
     this.clearBoard();
     this.ui.forEach((o) => o.destroy());
     this.ui = [];
-    this.info.setText('');
-    this.timerBar.clear();
-    this.bonusText.setText('');
-    this.pips.clear();
+    for (const c of [this.info, this.setChip, this.bonusChip]) c.setVisible(false);
     this.hud.setRight('');
     const max = this.maxLevel();
     this.focus = Math.min(max, this.focus > 1 ? this.focus : max);
@@ -282,11 +287,11 @@ export class PlayScene extends ArcadeScene {
   private drawPips(): void {
     const g = this.pips;
     g.clear();
-    const s = 26, gap = 12, x0 = 360 - (SET_LEN * s + (SET_LEN - 1) * gap) / 2;
+    const s = 26, gap = 12, x0 = -(SET_LEN * s + (SET_LEN - 1) * gap) / 2;
     for (let i = 0; i < SET_LEN; i++) {
       const x = x0 + i * (s + gap);
-      g.fillStyle(i < this.cleared ? PALETTE[i % PALETTE.length] : 0x2c2545, 1).fillRect(x, PIP_Y - s / 2, s, s);
-      g.lineStyle(3, i < this.cleared ? 0xffffff : 0x4a4370, i < this.cleared ? 0.9 : 1).strokeRect(x, PIP_Y - s / 2, s, s);
+      g.fillStyle(i < this.cleared ? PALETTE[i % PALETTE.length] : 0x2c2545, 1).fillRoundedRect(x, -s / 2, s, s, 6);
+      g.lineStyle(3, i < this.cleared ? 0xffffff : 0x6b6488, i < this.cleared ? 0.9 : 1).strokeRoundedRect(x, -s / 2, s, s, 6);
     }
   }
 
@@ -297,8 +302,10 @@ export class PlayScene extends ArcadeScene {
 
   private updateInfo(): void {
     this.hud.setLevel(this.level);
-    this.info.setText(`${t('moves')} ${this.moves}  ·  ${t('par')} ${this.lv.par}`);
-    this.info.setColor(this.moves > this.lv.par ? '#ff8a1f' : '#f3f2f2');
+    this.info.setVisible(true).setText(`${t('moves')} ${this.moves} · ${t('par')} ${this.lv.par}`);
+    this.info.setTextColor(this.moves > this.lv.par ? '#ff8a1f' : '#f3f2f2');
+    this.setChip.setVisible(true);
+    this.bonusChip.setVisible(true);
   }
 
   // ---------- moves ----------
@@ -425,7 +432,7 @@ export class PlayScene extends ArcadeScene {
     const pts = stars * 100 + this.level * 20 + bonus;
     this.cleared++;
     this.drawPips();
-    this.bonusText.setText(`${t('timeBonus')} +${bonus}`);
+    this.bonusChip.setText(`+${bonus}`);
     // save progress
     const all = this.starsOf();
     all[this.level - 1] = Math.max(all[this.level - 1] ?? 0, stars);
@@ -480,8 +487,8 @@ export class PlayScene extends ArcadeScene {
     const f = this.timeLeft / this.timeMax;
     const g = this.timerBar;
     g.clear();
-    g.fillStyle(0x000000, 0.5).fillRoundedRect(BAR_X, 158, BAR_W, 22, 11);
-    if (f > 0) g.fillStyle(f < 0.35 ? COLORS.yellow : COLORS.green, 1).fillRoundedRect(BAR_X + 2, 160, Math.max(18, (BAR_W - 4) * f), 18, 9);
-    this.bonusText.setText(`${t('timeBonus')} +${Math.ceil(this.timeLeft) * BONUS_PER_SEC}`).setColor(f > 0 ? '#5dff7a' : '#6b6488');
+    g.fillStyle(0x000000, 0.35).fillRoundedRect(-BAR_W / 2, -11, BAR_W, 22, 11);
+    if (f > 0) g.fillStyle(f < 0.35 ? COLORS.yellow : COLORS.green, 1).fillRoundedRect(-BAR_W / 2 + 2, -9, Math.max(18, (BAR_W - 4) * f), 18, 9);
+    this.bonusChip.setText(`+${Math.ceil(this.timeLeft) * BONUS_PER_SEC}`).setTextColor(f > 0 ? '#5dff7a' : '#8a84a8');
   }
 }

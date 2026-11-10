@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Button, backdrop, iconButton, overlayCard } from './ui';
+import { Button, backdrop, hudChip, iconButton, overlayCard } from './ui';
 import { t, loc, upper, getLang, setLang } from './i18n';
 import { txt, COLORS } from './theme';
 import { getBest, submitBest } from './storage';
@@ -244,13 +244,18 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private languageToggle(width: number, height: number): void {
-    const langBtn = this.add.container(width - 70, height - 60);
-    const lb = isModern()
-      ? this.add.graphics().fillStyle(0x0b1020, 0.55).fillRoundedRect(-50, -36, 100, 72, 36)
-        .lineStyle(2, 0xffffff, 0.35).strokeRoundedRect(-50, -36, 100, 72, 36)
-      : this.add.rectangle(0, 0, 100, 72, 0x000000, 0.45).setStrokeStyle(4, 0xffffff, 0.8);
-    const lt = txt(this, 0, 2, getLang() === 'tr' ? 'TR' : 'EN', { title: true, size: 24, strokeThickness: 0, shadow: false });
-    langBtn.add([lb, lt]).setSize(100, 72).setInteractive({ useHandCursor: true });
+    const label = getLang() === 'tr' ? 'TR' : 'EN';
+    let langBtn: Phaser.GameObjects.Container;
+    if (isModern()) {
+      // the same frosted glass as the sound button next to it
+      langBtn = hudChip(this, width - 70, height - 60, { align: 'center', text: label, size: 24, height: 72, minWidth: 100, depth: 0 });
+    } else {
+      langBtn = this.add.container(width - 70, height - 60);
+      const lb = this.add.rectangle(0, 0, 100, 72, 0x000000, 0.45).setStrokeStyle(4, 0xffffff, 0.8);
+      const lt = txt(this, 0, 2, label, { title: true, size: 24, strokeThickness: 0, shadow: false });
+      langBtn.add([lb, lt]);
+    }
+    langBtn.setSize(100, 72).setInteractive({ useHandCursor: true });
     langBtn.on('pointerup', () => {
       playSfx(this, 'ui-click');
       setLang(getLang() === 'tr' ? 'en' : 'tr');

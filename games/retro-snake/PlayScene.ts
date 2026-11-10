@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, Controls, COLORS, burst, shake, flash, popup, t, txt, rng, StickDir, type Dir4 } from '@core';
+import { ArcadeScene, Button, Controls, COLORS, burst, shake, flash, popup, t, txt, rng, StickDir, type Dir4, hudChip, HudChip, HUD_ROW_Y, hudRightEdge } from '@core';
 
 /** onebit frames: apple, pear, carrot, meat, cheese */
 export const FOODS = [897, 898, 994, 801, 802];
 const BONUS_FRAME = 140;  // golden crown
+const BONUS_W = 110;      // the bonus timer bar in its HUD chip
 
 const CELL = 40, COLS = 17, ROWS = 26, OX = 20, OY = 150;
 type Dir = { x: number; y: number };
@@ -31,18 +32,19 @@ export class PlayScene extends ArcadeScene {
   private bonusCell = { x: -1, y: -1 };
   private bonusT = 0;
   private bonusBar!: Phaser.GameObjects.Graphics;
+  private bonusChip!: HudChip;
   private rocks: { x: number; y: number }[] = [];
   private rockGfx!: Phaser.GameObjects.Graphics;
   private chooser: Phaser.GameObjects.GameObject[] = [];
   private controls!: Controls;
   private stick!: StickDir;
-  private modeText?: Phaser.GameObjects.Text;
+  private modeText!: HudChip;
 
   createGame(): void {
     this.textures.get('onebit').setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.snake = []; this.queue = []; this.rocks = []; this.chooser = [];
     this.dir = RIGHT; this.grow = 0; this.stepT = 0; this.interval = 0.16; this.level = 1; this.eaten = 0;
-    this.started = false; this.dead = false; this.modeText = undefined; this.bonus = null; this.bonusT = 0;
+    this.started = false; this.dead = false; this.bonus = null; this.bonusT = 0;
     this.mode = lastMode;
 
     // checkerboard field
@@ -53,7 +55,12 @@ export class PlayScene extends ArcadeScene {
     this.add.graphics().setName('border');
     this.rockGfx = this.add.graphics().setDepth(2);
     this.gfx = this.add.graphics().setDepth(3);
-    this.bonusBar = this.add.graphics().setDepth(4);
+    // while a bonus crown is on the board: the crown and the time left to grab it, in the top
+    // HUD row's right slot (clear of the field's top wall)
+    this.bonusBar = this.add.graphics().setData('chipWidth', BONUS_W);
+    this.bonusChip = hudChip(this, hudRightEdge(this), HUD_ROW_Y, { align: 'right', icon: 'onebit', iconFrame: BONUS_FRAME, iconSize: 36, items: [this.bonusBar] }).setVisible(false);
+    // the mode (and its rule) in a chip under the field
+    this.modeText = hudChip(this, 360, 1236, { align: 'center', text: '', size: 14 }).setVisible(false);
     this.food = this.add.image(0, 0, 'onebit', FOODS[0]).setScale(CELL / 16 * 0.9).setDepth(2).setVisible(false);
 
     for (let i = 0; i < 4; i++) this.snake.push({ x: 6 - i, y: 13 });
@@ -121,8 +128,7 @@ export class PlayScene extends ArcadeScene {
     const walls = this.mode === 'walls' && this.started;
     g.lineStyle(walls ? 10 : 4, walls ? 0xec3013 : 0x3fbf3f, walls ? 1 : 0.5);
     g.strokeRect(OX - 5, OY - 5, COLS * CELL + 10, ROWS * CELL + 10);
-    this.modeText?.destroy();
-    if (this.started) this.modeText = txt(this, 360, 1236, `${t(this.mode)} · ${t(this.mode + 'Info')}`, { size: 26, color: walls ? '#ff7a5c' : '#9dff6a' });
+    this.modeText.setVisible(this.started).setText(`${t(this.mode)} · ${t(this.mode + 'Info')}`).setTextColor(walls ? '#ff7a5c' : '#9dff6a');
   }
 
   private turn(d: Dir): void {
@@ -161,6 +167,8 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: this.bonus, scale: (CELL / 16) * 1.05, duration: 300, ease: 'Back.easeOut' });
     this.tweens.add({ targets: this.bonus, angle: { from: -12, to: 12 }, duration: 300, yoyo: true, repeat: -1 });
     this.bonusT = 7;
+    this.bonusChip.setVisible(true).setScale(0.6);
+    this.tweens.add({ targets: this.bonusChip, scale: 1, duration: 260, ease: 'Back.easeOut' });
     this.sfxAt('spawn', p.x, { volume: 0.45 });
   }
 
@@ -171,6 +179,7 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: b, scale: 0, duration: 200, onComplete: () => b.destroy() });
     this.bonus = null;
     this.bonusBar.clear();
+    this.bonusChip.setVisible(false);
   }
 
   private addRocks(n: number): void {
@@ -304,9 +313,9 @@ export class PlayScene extends ArcadeScene {
     if (this.bonus) {
       this.bonusT -= dt;
       const g = this.bonusBar.clear();
-      const w = 36 * Math.max(0, this.bonusT / 7);
-      g.fillStyle(0x000000, 0.6).fillRect(this.bonus.x - 19, this.bonus.y - 30, 38, 7);
-      g.fillStyle(this.bonusT < 2 ? 0xec3013 : 0xffd23f).fillRect(this.bonus.x - 18, this.bonus.y - 29, w, 5);
+      const w = (BONUS_W - 4) * Math.max(0, this.bonusT / 7);
+      g.fillStyle(0x000000, 0.6).fillRect(-BONUS_W / 2, -8, BONUS_W, 16);
+      g.fillStyle(this.bonusT < 2 ? 0xec3013 : 0xffd23f).fillRect(-BONUS_W / 2 + 2, -6, w, 12);
       this.bonus.setAlpha(this.bonusT < 2 ? (Math.floor(this.bonusT * 8) % 2 ? 0.4 : 1) : 1);
       if (this.bonusT <= 0) { this.sfxAt('expire', this.bonus.x, { volume: 0.35 }); this.clearBonus(); }
     }

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, popup, txt, t, rng, ensurePixel } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng, ensurePixel, hudChip, HudChip, HUD_ROW2_Y } from '@core';
 
 const BLOCK_H = 56;
 const START_W = 420;
@@ -45,7 +45,7 @@ export class PlayScene extends ArcadeScene {
   private lives = MAX_LIVES;
   private armT = 0;
   private started = false;
-  private bigNum!: Phaser.GameObjects.Text;
+  private bigNum!: HudChip;
   private hint!: Phaser.GameObjects.Text;
   private stars!: Phaser.GameObjects.TileSprite;
   private clouds: Phaser.GameObjects.Ellipse[] = [];
@@ -84,8 +84,8 @@ export class PlayScene extends ArcadeScene {
     const base = this.makeBlock(width / 2, baseY, START_W, 0x4b4b5c);
     this.stack.push(base);
 
-    this.bigNum = txt(this, width / 2, 210, '0', { title: true, size: 80, color: '#ffffff', strokeThickness: 0, shadow: false })
-      .setScrollFactor(0).setDepth(50).setAlpha(0.9);
+    // the floor count: a big HUD chip under the top row
+    this.bigNum = hudChip(this, width / 2, HUD_ROW2_Y + 14, { align: 'center', label: t('floor'), text: '0', size: 40, height: 64, minWidth: 150 });
     this.hint = txt(this, width / 2, 330, t('tapDrop'), { size: 34 }).setScrollFactor(0).setDepth(50);
     this.tweens.add({ targets: this.hint, alpha: 0.3, duration: 600, yoyo: true, repeat: -1 });
 
@@ -211,7 +211,7 @@ export class PlayScene extends ArcadeScene {
 
     if (this.floors % FLOORS_PER_LEVEL === 0) this.levelUp();
     this.updateHud();
-    this.tweens.add({ targets: this.bigNum, scale: 1.25, duration: 80, yoyo: true });
+    this.tweens.add({ targets: this.bigNum, scale: 1.15, duration: 80, yoyo: true });
 
     // camera climbs so the top of the tower sits in the upper middle
     const { height } = this.scale;

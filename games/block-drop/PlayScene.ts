@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, t, txt, hudChip, HudChip } from '@core';
 import { THEMES, makeBackdrop, makeButton, makeFx, makeGlass, makeRim, makeWell } from './art';
 
 const W = 10, H = 22, HIDDEN = 2;            // 20 visible rows + 2 spawn rows
@@ -71,8 +71,7 @@ export class PlayScene extends ArcadeScene {
   private clearRows: number[] = [];
   private held: Record<Act, number | null> = { left: null, right: null, down: null };
   private touchHeld: Record<Act, boolean> = { left: false, right: false, down: false };
-  private levelText!: Phaser.GameObjects.Text;
-  private linesText!: Phaser.GameObjects.Text;
+  private linesChip!: HudChip;
   private drag: { x: number; y: number; t: number; mx: number; my: number; moved: boolean } | null = null;
   private keys: Record<string, Phaser.Input.Keyboard.Key> = {};
   private bg!: Phaser.GameObjects.Image;
@@ -153,12 +152,8 @@ export class PlayScene extends ArcadeScene {
     holdZone.on('pointerdown', () => this.hold());
     txt(this, PANEL_X, 300, t('next'), { title: true, size: 18, color: '#3ee6ff' });
     box(318, 360);
-    box(706, 98);
-    box(816, 98);
-    txt(this, PANEL_X, 730, t('level'), { title: true, size: 18, color: '#ffd23f' });
-    this.levelText = txt(this, PANEL_X, 772, '1', { title: true, size: 34 });
-    txt(this, PANEL_X, 840, t('lines'), { title: true, size: 18, color: '#5dff7a' });
-    this.linesText = txt(this, PANEL_X, 882, '0', { title: true, size: 34 });
+    // the level is the HUD's flag chip; the cleared lines get a chip of their own under NEXT
+    this.linesChip = hudChip(this, PANEL_X, 730, { align: 'center', label: t('lines'), text: '0', size: 24, minWidth: 192, height: 56, accent: 0x5dff7a });
   }
 
   private buildButtons(): void {
@@ -470,7 +465,6 @@ export class PlayScene extends ArcadeScene {
         popup(this, BX + W * CELL / 2, 520, t('levelUp'), '#ff4fa3', 30);
         this.applyTheme(this.level - 1);
       });
-      this.tweens.add({ targets: this.levelText, scale: 1.6, duration: 180, yoyo: true });
     }
     this.updateHud();
   }
@@ -596,8 +590,10 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setLevel(this.level);
-    this.levelText.setText(String(this.level));
-    this.linesText.setText(String(this.lines));
+    if (this.linesChip.text.text !== String(this.lines)) {
+      this.linesChip.setText(this.lines);
+      this.tweens.add({ targets: this.linesChip, scale: { from: 1.15, to: 1 }, duration: 200, ease: 'Back.easeOut' });
+    }
   }
 
   private gravity(): number {
