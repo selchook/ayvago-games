@@ -1,0 +1,12 @@
+{
+  "id": "marble-maze",
+  "title": { "tr": "Bilye Labirenti", "en": "Marble Maze" },
+  "description": { "tr": "Tahtayı eğ, cam bilyeyi deliklere düşürmeden bayrağa yuvarla! Ahşap Atölye, Nilüfer Bahçesi, Buz Mağarası ve Gök Harabeleri'nde 24 el yapımı bölüm: dar köprüler, zıp zıp tamponlar, zıplama pedleri, hareketli sallar, renkli düğmeli kapılar, kaygan buz, yavaşlatan kum ve kar, hedefi açan anahtarlar. Mücevherleri topla, süreyi yen, her bölümde üç yıldız kazan.", "en": "Tilt the board and roll the glass marble to the flag without dropping it into a hole! 24 handcrafted levels across the Wood Workshop, Lily Garden, Ice Cave and Sky Ruins: narrow bridges, bouncy bumpers, jump pads, moving rafts, colour-coded button doors, slippery ice, sticky sand and snow, and keys that unlock the goal. Grab the gems, beat the clock and earn three stars on every level." },
+  "howTo": { "tr": "Tahtayı eğerek bilyeyi bayrağa ulaştır; deliklere ve boşluğa düşme. Dokunmatik: ekranın herhangi bir yerinde çubuğu sürükle ya da menüden EĞİM seçip telefonu eğ. Klavye: oklar / WASD.", "en": "Tilt the board to roll the marble to the flag without falling into holes or off the edge. Touch: drag the stick anywhere on the screen, or pick TILT on the menu and tilt the phone. Keys: arrows / WASD." },
+  "genres": ["puzzle", "arcade", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["3D models: Kenney Platformer Kit and Nature Kit (CC0) — kenney.nl", "Sound effects: Kenney Impact Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org"],
+  "platform": { "addedAt": "2026-11-10" }
+}

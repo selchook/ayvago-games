@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "marblemaze",
+  "title": {
+    "en": "Marble Maze",
+    "tr": "Bilye Labirenti"
+  },
+  "description": {
+    "en": "Tilt the board and roll the glass marble to the flag without dropping it into a hole! 24 handcrafted levels across the Wood Workshop, Lily Garden, Ice Cave and Sky Ruins: narrow bridges, bouncy bumpers, jump pads, moving rafts, colour-coded button doors, slippery ice, sticky sand and snow, and keys that unlock the goal. Grab the gems, beat the clock and earn three stars on every level.",
+    "tr": "Tahtayı eğ, cam bilyeyi deliklere düşürmeden bayrağa yuvarla! Ahşap Atölye, Nilüfer Bahçesi, Buz Mağarası ve Gök Harabeleri'nde 24 el yapımı bölüm: dar köprüler, zıp zıp tamponlar, zıplama pedleri, hareketli sallar, renkli düğmeli kapılar, kaygan buz, yavaşlatan kum ve kar, hedefi açan anahtarlar. Mücevherleri topla, süreyi yen, her bölümde üç yıldız kazan."
+  },
+  "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "arcade",
+    "casual"
+  ],
+  "tags": [
+    "marble",
+    "maze",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/marble-maze/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/marble-maze/ayvago/icon-512.png",
+    "cover": "/games/marble-maze/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/marble-maze/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}
