@@ -928,6 +928,29 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'putt-park',
+    title: { en: 'Putt Park', tr: 'Golf Parkı' },
+    description: {
+      en: "3D mini golf: 18 handcrafted holes on a meadow course and a castle course. Climb ramps, ride the bumps, jump the gaps, thread the tunnels and time the windmill's sails. Beat par for birdies and eagles, and go for the hole in one!",
+      tr: 'Üç boyutlu mini golf: çayırdaki ve kaledeki iki parkurda 18 el yapımı delik. Rampalardan tırman, tümseklerden sek, boşlukların üstünden atla, tünellerden geç, yel değirmeninin kanatlarını zamanla. Pardan az vuruşla birdie ve eagle topla, tek vuruşta deliği bul!',
+    },
+    category: 'sports',
+    categories: ['sports', 'casual', 'puzzle'],
+    tags: ['putt', 'park', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    scoring: {
+      metric: 'points',
+      order: 'desc',
+      format: 'number',
+      label: { en: 'Score', tr: 'Puan' },
+      minDurationMs: 30000,
+      maxPerSecond: 1000,
+      maxScore: 5400,
+    },
+    addedAt: '2026-11-10',
+  }),
+  arcadeGame({
     slug: 'retro-snake',
     title: { en: 'Retro Snake', tr: 'Retro Yılan' },
     description: {
