@@ -7,6 +7,6 @@
   "orientation": "landscape",
   "controls": ["touch", "keyboard"],
   "version": "1.0.0",
-  "credits": ["3D models: Kenney Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl", "Characters and medals: Kenney (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact Sounds (CC0)"],
+  "credits": ["3D models: Kenney Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl", "3D athletes: Kenney Mini Characters 2.0 (CC0) — kenney.nl", "Medals: Kenney (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact Sounds (CC0)"],
   "platform": { "addedAt": "2026-11-09", "scoring": { "maxScore": 10000, "minDurationMs": 45000 } }
 }

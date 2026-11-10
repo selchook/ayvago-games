@@ -96,7 +96,7 @@ Columns: slug · EN title / TR title · concept · suggested assets (`public/ass
 | bowling-strike | Bowling Strike / Bowling | aim + power + spin, 10 frames with real scoring | sports + drawn | P |
 | air-hockey | Air Hockey / Hava Hokeyi | vs AI, first to 7, physics puck | drawn | P |
 | mud-rally | Mud Rally / Çamur Rallisi | 3D single-screen off-road truck racing: 4 laps, jumps, mud, nitro, prize money and garage upgrades between races, 6 arenas | car-kit + racing-kit + nature-kit + platformer-kit (3D) | L |
-| golden-podium | Golden Podium / Altın Kürsü | 3D five-event athletics cup vs three AI rivals (sprint, hurdles, long jump, 50 m swim, archery), medals and points per event, medal table and podium; platform characters as billboard sprites | racing-kit + nature-kit (3D) + characters + medals | L |
+| golden-podium | Golden Podium / Altın Kürsü | 3D five-event athletics cup vs three AI rivals (sprint, hurdles, long jump, 50 m swim, archery), medals and points per event, medal table and podium; the athletes are rigged 3D models from Kenney Mini Characters (the player's platform character mapped to its closest model, rivals the male models), animated with the models' own clips (sprint, jump, fall, sit, emote-yes …; swimming drives the arm and leg bones) | racing-kit + nature-kit + mini-characters (3D) + medals | L |
 
 ## Batch G — puzzle I
 | slug | title | concept | assets | o |

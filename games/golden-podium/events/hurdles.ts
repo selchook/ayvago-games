@@ -4,6 +4,7 @@ import { t } from '@core';
 import { THREE } from '@core/three';
 import { Sprint } from './sprint';
 import { canvasTex, type Athlete } from '../athlete';
+import type { Shot } from '../portraits';
 import { box, mesh } from '../look';
 import { LANE_W } from '../stadium';
 import type { EventId } from '../scoring';
@@ -49,8 +50,8 @@ export class Hurdles extends Sprint {
     ];
   }
 
-  picture(): string {
-    return `ch-${this.s.player.id}-jump`;
+  picture(): Shot {
+    return { clip: 'jump', at: 0.4, yaw: 0.35 };
   }
 
   protected placeExtras(): void {
@@ -176,9 +177,10 @@ export class Hurdles extends Sprint {
 
   protected animate(i: number, a: Athlete, speed: number, x: number): void {
     if (i === 0) {
-      if (this.air) a.setPose('jump');
-      else if (this.hitT > 0) a.setPose('hit');
-      else a.run(x, 1.1);
+      // the jump clip in the air, the fall clip after a clipped hurdle, else the sprint
+      if (this.air) a.play('jump', { fade: 0.08 });
+      else if (this.hitT > 0) a.play('fall', { fade: 0.06 });
+      else a.run(speed);
       return;
     }
     // rivals hop each hurdle (2.3 m before to 2.3 m after it)
@@ -191,9 +193,8 @@ export class Hurdles extends Sprint {
       }
     }
     a.lift = lift;
-    if (lift > 0.05) a.setPose('jump');
-    else a.run(x, 1.1);
-    void speed;
+    if (lift > 0.05) a.play('jump', { fade: 0.08 });
+    else a.run(speed);
   }
 
   cleanup(): void {

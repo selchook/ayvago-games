@@ -10,12 +10,20 @@ import { Meter, RaceStrip } from '../panels';
 import { rivalMark, type EventId } from '../scoring';
 import { secs, num } from '../strings';
 import type { PadButton } from '../pad';
+import type { Shot } from '../portraits';
+import { HIP, celebrate } from '../athlete';
 
 export const SWIM_TUNE = {
   normal: { beat: 0.5, win: [0.065, 0.125, 0.19], vmax: 2.45, airSecs: 7 },
   easy: { beat: 0.6, win: [0.09, 0.16, 0.24], vmax: 2.45, airSecs: 9.5 },
 };
 const BLOCK_Y = 0.62;
+/** Metres per arm stroke (the arms turn over with the swimmer's speed). */
+const STROKE_M = 1.2;
+/** How deep the body lies: the back and the head just break the surface. */
+const FLOAT = -HIP - 0.14;
+/** Treading water at the wall after the finish: head and shoulders out. */
+const TREAD = -0.85;
 const DIVE = 0.55;
 const DIVE_X = 3.6;
 
@@ -49,6 +57,9 @@ export class Swim extends SportEvent {
   private ring!: Phaser.GameObjects.Graphics;
   private judgeText!: Phaser.GameObjects.Text;
   private warnT = 0;
+  private inWater = [false, false, false, false];
+  private breaths = [0, 0, 0, 0];
+  private doneT = [NaN, NaN, NaN, NaN];
 
   private get tune() {
     return this.easy ? SWIM_TUNE.easy : SWIM_TUNE.normal;
@@ -61,8 +72,8 @@ export class Swim extends SportEvent {
     ];
   }
 
-  picture(): string {
-    return `ch-${this.s.player.id}-swim1`;
+  picture(): Shot {
+    return { clip: 'static', swim: true, yaw: 0.25 };
   }
 
   private lane(i: number): number {
@@ -74,7 +85,7 @@ export class Swim extends SportEvent {
     s.useVenue(s.venues.pool);
     s.entrants.forEach((e, i) => {
       e.athlete.root.position.set(-0.45, BLOCK_Y, this.lane(i));
-      e.athlete.setPose('stand');
+      e.athlete.face(0).play('idle', { fade: 0 });
       e.athlete.showMarks(false);
     });
     s.cut(new THREE.Vector3(-9, 3.2, this.lane(0) + 9), new THREE.Vector3(3, 0, this.lane(2)));
@@ -101,7 +112,8 @@ export class Swim extends SportEvent {
     this.judgeText = txt(s, 1110, 270, '', { title: true, size: 30 }).setDepth(9001);
     s.ui.add([this.strip.root, this.airMeter.root, this.ring, this.judgeText]);
     this.calls = new StartCalls(s, (st) => {
-      for (const e of s.entrants) e.athlete.setPose(st === 'marks' ? 'stand' : 'duck');
+      // on the blocks, then bent forward ready to dive
+      for (const e of s.entrants) e.athlete.play(st === 'marks' ? 'idle' : 'crouch', { fade: 0.35 });
       if (st === 'marks') {
         s.camTo(new THREE.Vector3(-6.5, 2.4, this.lane(0) + 6.5), new THREE.Vector3(2, 0.2, this.lane(2)), 1.5);
         this.reset();
@@ -124,9 +136,13 @@ export class Swim extends SportEvent {
     this.lastTick = 0;
     this.strokeN = 0;
     this.s.pad.reset();
+    this.inWater = [false, false, false, false];
+    this.doneT = [NaN, NaN, NaN, NaN];
     this.s.entrants.forEach((e, i) => {
-      e.athlete.root.position.set(-0.45, BLOCK_Y, this.lane(i));
-      e.athlete.setSwim(false);
+      const a = e.athlete;
+      a.root.position.set(-0.45, BLOCK_Y, this.lane(i));
+      a.setSwim(false);
+      a.lift = 0;
     });
   }
 
@@ -168,7 +184,10 @@ export class Swim extends SportEvent {
         const target = tn.vmax * (0.3 + 0.7 * this.q) * airF;
         this.v += (target - this.v) * Math.min(1, dt * 1.6);
         this.x[0] += this.v * dt;
-        me.root.position.set(this.x[0], WATER_Y, this.lane(0));
+        // the race distance counts from the block; the body is drawn from where it went in
+        me.root.position.set(DIVE_X + this.x[0] * (POOL_LEN - DIVE_X) / POOL_LEN, WATER_Y, this.lane(0));
+        // the arms turn over with the speed: one arm stroke per STROKE_M metres
+        me.setStroke(this.breathT > 0 ? 0.6 : this.v / STROKE_M);
         if (this.x[0] >= POOL_LEN) {
           this.x[0] = POOL_LEN;
           const over = 0;
@@ -178,7 +197,8 @@ export class Swim extends SportEvent {
       }
       s.eventHud(secs(now));
       if (now > 60) this.dq = true;
-    }
+    } else if (!this.dq) this.atWall(0);
+    else if (!this.inWater[0]) me.play(now < 1.4 ? 'emote-no' : 'idle', { fade: 0.3 });
     // ---- the rivals
     for (let i = 1; i < 4; i++) {
       const a = s.entrants[i].athlete;
@@ -188,18 +208,18 @@ export class Swim extends SportEvent {
         this.diveStep(i, since);
         continue;
       }
-      if (a.pose === 'jump' || a.pose === 'duck' || a.pose === 'stand') this.splashIn(i);
+      if (!this.inWater[i]) this.splashIn(i);
       const xr = Math.min(POOL_LEN, DIVE_X + this.plans[i](since - DIVE));
       this.x[i] = xr;
       a.root.position.set(xr, WATER_Y, this.lane(i));
       if (xr < POOL_LEN) {
-        const k = Math.floor((since - DIVE) / 0.5);
-        const pose = k % 2 ? 'swim2' : 'swim1';
-        if (a.pose !== pose) {
-          a.setPose(pose);
-          if (planSpeed(this.plans[i], since - DIVE) > 0.5) s.emit(new THREE.Vector3(xr + 0.8, WATER_Y + 0.1, this.lane(i)), 4, [0xffffff, 0xcdeeff], { speed: 0.9, up: 1.6, life: 0.45, size: 0.13 });
-        }
-      }
+        const v = planSpeed(this.plans[i], since - DIVE);
+        a.setStroke(v / STROKE_M);
+        // a breath every few strokes
+        const k = Math.floor((since - DIVE) / 1.6 + i * 0.37);
+        if (k !== this.breaths[i]) { this.breaths[i] = k; if (k % 2) a.breath(); }
+        if (Math.random() < dt * 4 && v > 0.5) s.emit(new THREE.Vector3(xr + 0.8, WATER_Y + 0.1, this.lane(i)), 3, [0xffffff, 0xcdeeff], { speed: 0.9, up: 1.6, life: 0.45, size: 0.13 });
+      } else this.atWall(i);
     }
     s.entrants.forEach((_, i) => this.strip.set(i, this.x[i] / POOL_LEN));
     // camera follows the player (or the leader once the player is out)
@@ -214,21 +234,41 @@ export class Swim extends SportEvent {
     }
   }
 
-  /** From the block into the water. */
+  /** From the block into the water: the jump clip, the body tipping forward over the arc. */
   private diveStep(i: number, since: number): void {
     const a = this.s.entrants[i].athlete;
     const p = Math.min(1, since / DIVE);
-    a.setPose('jump');
+    a.play('jump', { fade: 0.08 });
+    a.pitch = (0.35 + 0.65 * p) * Math.PI / 2 + Math.sin(p * Math.PI) * 0.25;
+    a.lift = FLOAT * p;
     a.root.position.set(-0.3 + (DIVE_X + 0.3) * p, BLOCK_Y + (WATER_Y - BLOCK_Y) * p + Math.sin(p * Math.PI) * 0.7, this.lane(i));
   }
 
   private splashIn(i: number): void {
     const a = this.s.entrants[i].athlete;
+    this.inWater[i] = true;
     a.setSwim(true);
-    a.setPose('swim1');
+    a.lift = FLOAT;
     a.root.position.y = WATER_Y;
     this.s.emit(new THREE.Vector3(DIVE_X, WATER_Y + 0.1, this.lane(i)), 18, [0xffffff, 0xcdeeff, 0x9fdcff], { speed: 1.8, up: 3, life: 0.6, size: 0.2 });
     this.s.sfx('splash', { volume: i === 0 ? 0.7 : 0.3 });
+  }
+
+  /** At the wall: up out of the flat stroke, treading water; the winner celebrates. */
+  private atWall(i: number): void {
+    const a = this.s.entrants[i].athlete;
+    if (Number.isNaN(this.doneT[i])) {
+      this.doneT[i] = this.raceT;
+      a.setSwim(false);
+      a.face(Math.PI / 2 + 0.6);
+      a.lift = TREAD;
+      a.play('idle', { fade: 0.2 });
+    }
+    const first = [0, 1, 2, 3].every((k) => k === i || !(this.doneT[k] < this.doneT[i]));
+    if (first) {
+      celebrate(a, this.raceT - this.doneT[i], false);
+    }
+    a.lift = TREAD;
   }
 
   private beatTime(k: number): number {
@@ -255,6 +295,7 @@ export class Swim extends SportEvent {
         this.breathT = 0.42;
         this.skipBeat = Math.round((now - this.entry) / tn.beat + 0.5);
         s.sfx('breath', { volume: 0.5 });
+        me.breath();
         s.emit(new THREE.Vector3(this.x[0] + 0.7, WATER_Y + 0.2, this.lane(0)), 6, [0xffffff], { speed: 0.4, up: 1.2, life: 0.6, size: 0.1, gravity: -1 });
       }
     }
@@ -275,7 +316,6 @@ export class Swim extends SportEvent {
       this.judge(j);
       if (j !== 'miss') {
         this.strokeN++;
-        me.setPose(this.strokeN % 2 ? 'swim2' : 'swim1');
         s.emit(new THREE.Vector3(this.x[0] + 0.8, WATER_Y + 0.1, this.lane(0)), j === 'perfect' ? 8 : 5, [0xffffff, 0xcdeeff], { speed: 1.1, up: 1.9, life: 0.5, size: 0.14 });
         s.sfx('stroke', { volume: 0.4 });
       } else s.sfx('missbeat', { volume: 0.3 });
@@ -328,7 +368,7 @@ export class Swim extends SportEvent {
   frame(_dt: number, time: number): void {
     if (!this.s.venues.pool.visible) return;
     const wakes = this.s.entrants
-      .map((e, i) => ({ x: this.x[i], z: this.lane(i), s: e.athlete.root.position.y <= WATER_Y + 0.01 && this.x[i] < POOL_LEN ? 1 : 0 }))
+      .map((e, i) => ({ x: e.athlete.root.position.x, z: this.lane(i), s: this.inWater[i] && Number.isNaN(this.doneT[i]) ? 1 : 0 }))
       .filter((w) => w.s > 0);
     waveWater(this.s.venues, time, wakes);
   }
@@ -341,6 +381,9 @@ export class Swim extends SportEvent {
 
   cleanup(): void {
     this.s.eventHud('');
-    for (const e of this.s.entrants) e.athlete.setSwim(false);
+    for (const e of this.s.entrants) {
+      e.athlete.setSwim(false);
+      e.athlete.lift = 0;
+    }
   }
 }

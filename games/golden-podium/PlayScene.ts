@@ -2,12 +2,11 @@
 // the podium ceremony. The 3D world (venues, athletes) lives for the whole session; each event
 // is a small state machine in events/*.ts driven from here.
 import Phaser from 'phaser';
-import {
-  ArcadeScene, t, isEasy, playerCharacter, otherCharacters, characterName, burst, flash, shake, txt,
-  type CharacterId,
-} from '@core';
+import { ArcadeScene, t, isEasy, burst, flash, shake, txt } from '@core';
 import { World3D, THREE } from '@core/three';
-import { Athlete } from './athlete';
+import { Athlete, celebrate } from './athlete';
+import { playerKey, pickRivals } from './cast';
+import { portrait } from './portraits';
 import { ordinal } from './strings';
 import { buildVenues, TEAM_COLORS, type Venues } from './stadium';
 import { Pad } from './pad';
@@ -25,7 +24,10 @@ import { Swim, SWIM_TUNE } from './events/swim';
 import { Archery, ARCHERY_TUNE } from './events/archery';
 
 export interface Entrant {
-  id: CharacterId;
+  /** Model key of the athlete's Mini Character. */
+  model: string;
+  /** Texture of the athlete's portrait on the boards (drawn when first needed: faceOf()). */
+  face: string;
   name: string;
   color: number;
   player: boolean;
@@ -103,21 +105,22 @@ export class PlayScene extends ArcadeScene {
     this.pad = new Pad(this);
     this.crowdLoop = new CrowdLoop(this);
 
-    // the player and three rivals with team colours; rivals differ in class
-    const me = playerCharacter();
-    const rivals = otherCharacters(me);
-    Phaser.Utils.Array.Shuffle(rivals);
+    // the player (their ayvago.com character in 3D) and three rivals with team colours; rivals
+    // differ in class
+    const rivals = pickRivals(3);
     const bases = [0.08, 0.4, 0.72];
-    this.entrants = [me, ...rivals.slice(0, 3)].map((id, i) => ({
-      id,
-      name: i === 0 ? t('you') : characterName(id),
+    this.entrants = [{ key: playerKey(), name: t('you') }, ...rivals.map((r) => ({ key: r.key, name: r.name }))].map((c, i) => ({
+      model: c.key,
+      face: `face:${c.key}`,
+      name: c.name,
       color: TEAM_COLORS[i],
       player: i === 0,
       base: i === 0 ? 0 : bases[i - 1],
-      athlete: new Athlete(this, id, TEAM_COLORS[i]),
+      athlete: new Athlete(c.key, TEAM_COLORS[i]),
       medals: [0, 0, 0] as [number, number, number],
       total: 0,
     }));
+    this.events.once('shutdown', () => this.entrants.forEach((e) => e.athlete.dispose()));
     this.confetti = new Confetti(this.venues.track, this.venues.podium.position.clone(), 7);
 
     this.ui = this.add.container(0, 0).setDepth(9000);
@@ -151,11 +154,15 @@ export class PlayScene extends ArcadeScene {
     for (const g of [this.venues.track, this.venues.pool, this.venues.range]) g.visible = g === v;
     for (const e of this.entrants) {
       v.add(e.athlete.root);
-      e.athlete.root.visible = true;
-      e.athlete.setSwim(false);
-      e.athlete.showMarks(true);
-      e.athlete.lift = 0;
-      e.athlete.setTint(0xffffff);
+      const a = e.athlete;
+      a.root.visible = true;
+      a.setSwim(false);
+      a.holdBow(false);
+      a.showMarks(true);
+      a.lift = 0;
+      a.pitch = 0;
+      a.face(0);
+      a.play('idle', { fade: 0 });
     }
     this.fx.clear();
   }
@@ -248,6 +255,11 @@ export class PlayScene extends ArcadeScene {
     flash(this, c, 120, alpha);
   }
 
+  /** The athlete's portrait for the boards, drawn by the 3D renderer the first time. */
+  private faceOf(e: Entrant): string {
+    return portrait(this, this.world.renderer, e.face, e.model, { clip: 'idle', at: 0, bust: true });
+  }
+
   // ---------------------------------------------------------------- the session
 
   private startEvent(i: number): void {
@@ -265,15 +277,21 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'card';
     const touch = this.pad.touch;
     const rec = RECORDS[id];
-    this.panel = new EventCard(this, {
-      n: i + 1,
-      name: t('ev_' + id),
-      hint: t(`h_${id}_${touch ? 't' : 'k'}`),
-      record: `${t('record').replace('!', '')}: ${markText(id, rec)}`,
-      picture: ev.picture(),
-      touch,
-      swim: id === 'swim',
-    }, () => this.beginEvent());
+    const card = () => {
+      if (this.event !== ev || this.isOver) return;
+      this.panel = new EventCard(this, {
+        n: i + 1,
+        name: t('ev_' + id),
+        hint: t(`h_${id}_${touch ? 't' : 'k'}`),
+        record: `${t('record').replace('!', '')}: ${markText(id, rec)}`,
+        picture: portrait(this, this.world.renderer, `pic:${id}:${this.player.model}`, this.player.model, { w: 192, h: 224, ...ev.picture() }),
+        touch,
+      }, () => this.beginEvent());
+    };
+    // the first card comes in after a short look at the start: drawing its 3D picture waits for
+    // the GPU, which is still busy with the new world's shaders in the first frames
+    if (i === 0) this.time.delayedCall(450, card);
+    else card();
   }
 
   private beginEvent(): void {
@@ -305,7 +323,7 @@ export class PlayScene extends ArcadeScene {
       const bonus = valid ? MEDAL_BONUS[places[i]] + (record ? RECORD_BONUS : 0) : 0;
       if (valid && places[i] < 3) e.medals[places[i]]++;
       e.total += pts + bonus;
-      return { id: e.id, name: e.name, color: e.color, player: e.player, place: places[i], mark: markText(id, marks[i]), points: pts, bonus, record };
+      return { face: this.faceOf(e), name: e.name, color: e.color, player: e.player, place: places[i], mark: markText(id, marks[i]), points: pts, bonus, record };
     });
     const mine = lines[0];
     this.setScore(this.player.total);
@@ -361,7 +379,7 @@ export class PlayScene extends ArcadeScene {
     this.teardownEventUi(true);
     this.hud.setCenter(t('medalTable'));
     const order = this.standings();
-    const lines: TableLine[] = order.map((e) => ({ id: e.id, name: e.name, color: e.color, player: e.player, medals: e.medals, total: e.total }));
+    const lines: TableLine[] = order.map((e) => ({ face: this.faceOf(e), name: e.name, color: e.color, player: e.player, medals: e.medals, total: e.total }));
     this.sfx('tick');
     this.panel = new MedalTable(this, lines, () => this.startPodium(order));
   }
@@ -378,15 +396,17 @@ export class PlayScene extends ArcadeScene {
     order.forEach((e, i) => {
       const a = e.athlete;
       a.setSwim(false);
+      a.holdBow(false);
+      a.lift = 0;
       a.showMarks(i === 3, i === 3);
       if (i < 3) {
         a.root.position.set(pod.x + xs[i], hs[i], pod.z);
-        a.setPose(i === 0 ? 'cheer1' : 'stand');
+        a.face(Math.PI / 2 + (i === 1 ? -0.2 : i === 2 ? 0.2 : 0));
       } else {
         a.root.position.set(pod.x + 4.6, 0, pod.z + 0.6);
-        a.setPose('stand');
+        a.face(Math.PI / 2 + 0.5);
       }
-      a.sync();
+      a.play('idle', { fade: 0 });
     });
     this.cut(new THREE.Vector3(pod.x + 0.4, 2.6, pod.z + 11), new THREE.Vector3(pod.x, 1.6, pod.z), this.venues.track);
     this.camTo(new THREE.Vector3(pod.x, 2.3, pod.z + 7.2), new THREE.Vector3(pod.x, 1.9, pod.z), 0.6, this.venues.track);
@@ -433,16 +453,17 @@ export class PlayScene extends ArcadeScene {
     else if (this.event && this.phase === 'results') this.event.update(dt, rdt);
     else if (this.event && this.phase === 'card') this.event.idle(rdt);
     if (this.phase === 'podium' || this.phase === 'end') this.updatePodium(rdt);
-    for (const e of this.entrants) e.athlete.sync();
+    for (const e of this.entrants) e.athlete.update(dt);
   }
 
   private updatePodium(dt: number): void {
     this.podiumTime += dt;
-    const k = Math.floor(this.podiumTime * 3);
+    const tt = this.podiumTime;
     this.podiumOrder.forEach((e, i) => {
-      if (i === 0) e.athlete.setPose(k % 2 ? 'cheer2' : 'cheer1');
-      else if (i < 3 && this.podiumTime > 1.6) e.athlete.setPose((k + i) % 2 ? 'cheer1' : 'stand');
-      else if (i === 3) e.athlete.setPose('stand');
+      const a = e.athlete;
+      if (i === 0) celebrate(a, tt);
+      else if (i < 3) a.play(tt > 1.6 && Math.floor((tt - 1.6) / 2.4 + i * 0.5) % 2 === 0 ? 'emote-yes' : 'idle', { fade: 0.3 });
+      else a.play(tt > 0.8 && tt < 2.2 ? 'emote-no' : 'idle', { fade: 0.3 });
     });
     for (const m of this.podiumMedals) {
       const p = m.e.athlete.root.position.clone().add(new THREE.Vector3(0, 2.25, 0));

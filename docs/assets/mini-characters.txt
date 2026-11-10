@@ -1,0 +1,11 @@
+mini-characters/models/gltf_format/character-female-f.glb 251KB 0.77x0.67x0.44
+mini-characters/models/gltf_format/character-male-a.glb 239KB 0.77x0.67x0.34
+mini-characters/models/gltf_format/character-male-b.glb 233KB 0.77x0.66x0.39
+mini-characters/models/gltf_format/character-male-c.glb 254KB 0.77x0.79x0.46
+mini-characters/models/gltf_format/character-male-d.glb 238KB 0.77x0.72x0.34
+mini-characters/models/gltf_format/character-male-e.glb 230KB 0.77x0.68x0.34
+mini-characters/models/gltf_format/character-male-f.glb 242KB 0.77x0.67x0.34
+mini-characters/models/gltf_format/character-male-g.glb 257KB 0.77x0.67x0.40
+mini-characters/models/gltf_format/character-soldier.glb 275KB 0.77x0.75x0.59
+mini-characters/models/gltf_format/character-zombie.glb 234KB 0.77x0.67x0.34
+mini-characters/models/gltf_format/weapon-bow.glb 9KB 0.12x0.48x0.21

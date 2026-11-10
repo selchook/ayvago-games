@@ -9,13 +9,17 @@ import { Meter, RaceStrip } from '../panels';
 import { rivalMark, type EventId } from '../scoring';
 import { secs, num } from '../strings';
 import type { PadButton } from '../pad';
-import type { Athlete } from '../athlete';
+import { celebrate, type Athlete } from '../athlete';
+import type { Shot } from '../portraits';
 
 /** Normal and Easy side by side. */
 export const SPRINT_TUNE = {
   normal: { useful: 6.0, vmax: 11.2, acc: 1.7 },
   easy: { useful: 4.8, vmax: 11.2, acc: 1.9 },
 };
+
+/** Slowing down past the line, m/s². */
+const EASE_OFF = 4.5;
 
 export class Sprint extends SportEvent {
   readonly id: EventId = 'sprint';
@@ -53,8 +57,8 @@ export class Sprint extends SportEvent {
     ];
   }
 
-  picture(): string {
-    return `ch-${this.s.player.id}-walk1`;
+  picture(): Shot {
+    return { clip: 'sprint', at: 0.2, yaw: 0.35 };
   }
 
   setup(): void {
@@ -62,7 +66,7 @@ export class Sprint extends SportEvent {
     s.useVenue(s.venues.track);
     s.entrants.forEach((e, i) => {
       e.athlete.root.position.set(-0.6, 0, this.lane(i));
-      e.athlete.setPose('stand');
+      e.athlete.face(0).play('idle', { fade: 0 });
     });
     this.placeExtras();
     s.cut(new THREE.Vector3(-7, 2.2, this.lane(0) + 7), new THREE.Vector3(2, 0.9, this.lane(2)));
@@ -93,9 +97,11 @@ export class Sprint extends SportEvent {
     this.meter = new Meter(s, 640, 636, 340, t('speed'));
     s.ui.add([this.strip.root, this.meter.root]);
     this.calls = new StartCalls(s, (st) => {
-      for (const e of s.entrants) e.athlete.setPose(st === 'marks' ? 'duck' : 'duck');
+      // on your marks: standing at the blocks; set: down in the crouch
+      for (const e of s.entrants) e.athlete.play(st === 'marks' ? 'idle' : 'crouch', { fade: 0.35 });
       if (st === 'marks') {
-        s.camTo(new THREE.Vector3(-4.5, 1.7, this.lane(0) + 5.5), new THREE.Vector3(3, 0.8, this.lane(2)), 1.5);
+        // the TV start shot: from down the track, the athletes' faces in their lanes
+        s.camTo(new THREE.Vector3(7.5, 2.3, this.lane(0) + 4.2), new THREE.Vector3(-0.2, 0.7, this.lane(1.6)), 1.5);
         this.reset();
       }
     });
@@ -154,7 +160,7 @@ export class Sprint extends SportEvent {
         this.dq = true;
         this.state = 'run';
         this.raceT = 0;
-        s.entrants[0].athlete.setPose('stand');
+        s.entrants[0].athlete.play('emote-no');
       }
       return;
     }
@@ -192,18 +198,22 @@ export class Sprint extends SportEvent {
       }
     } else if (!this.dq) {
       // past the line: ease off
-      this.v = Math.max(0, this.v - dt * 4);
+      this.v = Math.max(0, this.v - dt * EASE_OFF);
       this.x[0] += this.v * dt;
     }
     // ---- the rivals
-    for (let i = 1; i < 4; i++) this.x[i] = this.plans[i](now);
+    for (let i = 1; i < 4; i++) this.x[i] = this.rivalAt(i, now).x;
     // ---- animation and positions
     s.entrants.forEach((e, i) => {
       const a = e.athlete;
-      const speed = i === 0 ? this.v : planSpeed(this.plans[i], now);
-      if (i === 0 && this.dq) a.setPose('stand');
-      else if (i === 0 && !Number.isNaN(this.times[0]) && speed < 1.5) a.setPose(this.place() === 1 ? (Math.floor(now * 3) % 2 ? 'cheer2' : 'cheer1') : 'stand');
-      else if (speed < 0.3 && this.x[i] < 0.5) a.setPose('duck');
+      const speed = i === 0 ? this.v : this.rivalAt(i, now).v;
+      const done = !Number.isNaN(this.times[i]) && this.x[i] >= this.len;
+      if (i === 0 && this.dq) a.play(this.raceT < 1.4 ? 'emote-no' : 'idle', { fade: 0.3 });
+      else if (done && speed < 2.2) {
+        // past the line and stopped: the winner celebrates, the rest get their breath back
+        if (this.finishOrder(i) === 1) celebrate(a, this.raceT - this.times[i]);
+        else a.play('idle', { fade: 0.4 });
+      } else if (speed < 0.3 && this.x[i] < 0.5) a.play('crouch', { fade: 0.2 });
       else this.animate(i, a, speed, this.x[i]);
       a.root.position.x = this.x[i];
       this.strip.set(i, this.x[i] / this.len);
@@ -234,8 +244,24 @@ export class Sprint extends SportEvent {
   /** Hurdles: hurdle checks. */
   protected afterMove(_prev: number, _x: number, _now: number): void {}
 
-  protected animate(_i: number, a: Athlete, _speed: number, x: number): void {
-    a.run(x, 1.15);
+  /** The running animation: the sprint clip at the athlete's speed; a stumble shows the fall clip. */
+  protected animate(i: number, a: Athlete, speed: number, _x: number): void {
+    if (i === 0 && this.stumbleT > 0.3) a.play('fall', { fade: 0.08 });
+    else a.run(speed);
+  }
+
+  /** A rival's place and speed: the race plan up to the line, then easing off. */
+  protected rivalAt(i: number, now: number): { x: number; v: number } {
+    const T = this.times[i];
+    if (now <= T) return { x: this.plans[i](now), v: planSpeed(this.plans[i], now) };
+    const v0 = planSpeed(this.plans[i], T - 0.02);
+    const d = Math.min(now - T, v0 / EASE_OFF);
+    return { x: this.len + v0 * d - (EASE_OFF / 2) * d * d, v: Math.max(0, v0 - EASE_OFF * d) };
+  }
+
+  /** Place of entrant i among the finished times (1 = first). */
+  protected finishOrder(i: number): number {
+    return 1 + [0, 1, 2, 3].filter((k) => k !== i && this.times[k] < this.times[i]).length;
   }
 
   /** The player's place among the finished times (1 = first). */

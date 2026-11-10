@@ -373,7 +373,13 @@ export function buildVenues(scene: THREE.Scene, cup: string): Venues {
     track.add(box(0.05, 0.02, 0.4, 0xffffff, BOARD_X + m, 0.13, JUMP_Z - 1.6, 'none'));
   }
   track.add(prop('tent', 4, 20, JUMP_Z + 6, Math.PI), prop('tent', 4, 86, JUMP_Z + 6, Math.PI));
-  trees(track, ['treeA', 'treeB'], 6, () => [-40 + Math.random() * 190, JUMP_Z + 18 + Math.random() * 14]);
+  // (none right in front of the menu's camera, which stands near x = -3, z = JUMP_Z + 21.5)
+  trees(track, ['treeA', 'treeB'], 6, () => {
+    for (;;) {
+      const x = -40 + Math.random() * 190, z = JUMP_Z + 18 + Math.random() * 14;
+      if (Math.abs(x + 3) > 16 || z > JUMP_Z + 25) return [x, z];
+    }
+  });
 
   // podium beside the start, in front of the crowd
   const podium = new THREE.Group();

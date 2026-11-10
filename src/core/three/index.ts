@@ -17,6 +17,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { kenney } from '../assets';
 import { addBootWork } from '../scenes';
+import { playerCharacter, type CharacterId } from '../characters';
 
 export { THREE };
 
@@ -41,7 +42,8 @@ export function loadModel(load: Phaser.Loader.LoaderPlugin, key: string, url: st
   load.binary(cacheKey, url);
   load.once(`filecomplete-binary-${cacheKey}`, (_k: string, _t: string, data: ArrayBuffer) => {
     addBootWork(new Promise<void>((resolve) => {
-      loader.parse(data, '', (gltf) => {
+      // external files (Mini Characters' Textures/colormap.png) resolve next to the model
+      loader.parse(data, THREE.LoaderUtils.extractUrlBase(url), (gltf) => {
         models.set(key, gltf);
         resolve();
       }, (err) => {
@@ -92,6 +94,52 @@ export const modelClips = (key: string): THREE.AnimationClip[] => models.get(key
 export function modelSize(key: string): THREE.Vector3 {
   return new THREE.Box3().setFromObject(model(key, { shadows: false })).getSize(new THREE.Vector3());
 }
+
+// ---------------------------------------------------------------- 3D characters
+
+/**
+ * Kenney Mini Characters 2.0 (`kenney/mini-characters`): rigged people with 32 animation clips
+ * each (idle, walk, sprint, jump, fall, crouch, sit, die, emote-yes, emote-no, holding-*,
+ * attack-*, interact-* …), sharing one skeleton (root, torso, head, arm-left/right,
+ * leg-left/right) and one texture. About 0.67 units tall; they face +z.
+ */
+export const MINI_CHARACTERS_KIT = 'mini-characters';
+
+/** The male Mini Characters (rivals, crowds, bots). */
+export const MINI_MALES = [
+  'character-male-a', 'character-male-b', 'character-male-c', 'character-male-d',
+  'character-male-e', 'character-male-f', 'character-male-g',
+] as const;
+
+/**
+ * The platform's five player characters as their closest Mini Character, so 3D games keep the
+ * player's identity from ayvago.com.
+ */
+export const CHARACTER_MODELS: Record<CharacterId, string> = {
+  adventurer: 'character-male-g',
+  explorer: 'character-female-f',
+  rookie: 'character-male-f',
+  soldier: 'character-soldier',
+  zombie: 'character-zombie',
+};
+
+/** Model key of a Mini Character: miniKey('character-male-a') → 'mini:character-male-a'. */
+export const miniKey = (name: string): string => 'mini:' + name;
+
+/** Queues a Mini Character by file name ('character-male-c') and returns its model key. */
+export function loadMiniCharacter(load: Phaser.Loader.LoaderPlugin, name: string): string {
+  const key = miniKey(name);
+  loadModel(load, key, kenney3d(MINI_CHARACTERS_KIT, name));
+  return key;
+}
+
+/** Queues the 3D model of a platform character (default: the player's) and returns its key. */
+export function loadCharacter3d(load: Phaser.Loader.LoaderPlugin, id: CharacterId = playerCharacter()): string {
+  return loadMiniCharacter(load, CHARACTER_MODELS[id]);
+}
+
+/** Model key of the player's 3D character (load it with loadCharacter3d). */
+export const playerCharacter3d = (): string => miniKey(CHARACTER_MODELS[playerCharacter()]);
 
 // ---------------------------------------------------------------- the world
 

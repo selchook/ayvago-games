@@ -9,8 +9,8 @@ import { FACE_R, RANGE, TARGET_Y, rangeZ } from '../stadium';
 import { hexs } from '../panels';
 import { rivalMark, type EventId } from '../scoring';
 import { mesh, lambert } from '../look';
-import { bowTexture } from '../athlete';
 import type { PadButton } from '../pad';
+import type { Shot } from '../portraits';
 
 export const ARCHERY_TUNE = {
   normal: { sway: 0.085, maxWind: 4, drift: 0.06, aimSpeed: 0.32, ghost: false, time: 15 },
@@ -20,7 +20,10 @@ const RING = FACE_R / 10;
 const FLIGHT = 0.55;
 const ZOOM_FOV = 3.4;
 const PX_PER_M = 720 / (2 * RANGE * Math.tan(Phaser.Math.DegToRad(ZOOM_FOV / 2)));
-const EYE = new THREE.Vector3(0.7, 1.55, 0);
+// the sight line, in front of the archer's bow
+const EYE = new THREE.Vector3(1.3, 1.55, 0);
+/** Archers stand side-on, the left (bow) side towards the targets. */
+const ARCHER_YAW = Math.PI / 2;
 
 type State = 'wide' | 'aim' | 'flight' | 'hit' | 'over';
 
@@ -60,8 +63,8 @@ export class Archery extends SportEvent {
     ];
   }
 
-  picture(): string {
-    return bowTexture(this.s, this.s.player.id);
+  picture(): Shot {
+    return { clip: 'holding-right', at: 0, yaw: Math.PI / 2 - 0.5, bow: true };
   }
 
   private z0(i = 0): number {
@@ -72,8 +75,11 @@ export class Archery extends SportEvent {
     const s = this.s;
     s.useVenue(s.venues.range);
     s.entrants.forEach((e, i) => {
-      e.athlete.root.position.set(-0.4, 0, this.z0(i));
-      e.athlete.setPose('bow');
+      const a = e.athlete;
+      a.root.position.set(-0.4, 0, this.z0(i));
+      // side-on to the targets (facing the camera side), the bow arm out towards them
+      a.face(ARCHER_YAW).holdBow(true);
+      a.play('holding-right', { fade: 0 });
     });
     s.venues.range.add(this.group);
     this.wideShot(true);
@@ -99,13 +105,14 @@ export class Archery extends SportEvent {
   }
 
   private wideShot(now = false): void {
-    const pos = new THREE.Vector3(-5.2, 2.2, this.z0(0) + 3.4), look = new THREE.Vector3(14, 1.3, this.z0(1.2));
+    // from the side: the archers face the camera, bow arms out towards the targets
+    const pos = new THREE.Vector3(-2.6, 2.3, this.z0(0) + 5.6), look = new THREE.Vector3(9, 1.2, this.z0(1.4));
     if (now) this.s.cut(pos, look);
     else this.s.camTo(pos, look, 3);
   }
 
   idle(): void {
-    this.s.camTo(new THREE.Vector3(-4.6, 2.1, this.z0(0) + 3.0), new THREE.Vector3(14, 1.3, this.z0(1.2)), 0.4);
+    this.s.camTo(new THREE.Vector3(-2.2, 2.2, this.z0(0) + 5.2), new THREE.Vector3(9, 1.2, this.z0(1.4)), 0.4);
   }
 
   begin(): void {
@@ -214,6 +221,8 @@ export class Archery extends SportEvent {
       f.visible = p > 0.35;
       if (p >= 1) this.impact();
     } else if (this.state === 'hit') {
+      // the bows come up again for the next arrow; a cheer for a ten
+      for (const e of s.entrants) if (!e.athlete.busy && e.athlete.clip === 'holding-right-shoot') e.athlete.play('holding-right', { fade: 0.25 });
       if (this.stT > 1.5) {
         if (this.n >= 6) {
           this.state = 'over';
@@ -278,6 +287,7 @@ export class Archery extends SportEvent {
     this.group.add(this.flying);
     this.arrows.push(this.flying);
     s.sfx('release', { volume: 0.6 });
+    s.player.athlete.play('holding-right-shoot', { fade: 0.05 });
     s.eventHud('');
   }
 
@@ -307,6 +317,7 @@ export class Archery extends SportEvent {
     s.popAt(p, String(score), score >= 9 ? '#ffd23f' : '#ffffff', 46);
     // the rivals shoot alongside: their arrows appear in their targets
     for (let i = 1; i < 4; i++) {
+      s.entrants[i].athlete.play('holding-right-shoot', { fade: 0.05 });
       const sc = this.rivalArrows[i][this.n - 1];
       const rr = (10 - sc + 0.15 + Math.random() * 0.7) * RING;
       const ang = Math.random() * Math.PI * 2;
@@ -333,6 +344,7 @@ export class Archery extends SportEvent {
   }
 
   cleanup(): void {
+    for (const e of this.s.entrants) e.athlete.holdBow(false);
     this.s.pad.dragArea = false;
     this.s.eventHud('');
     this.s.venues.range.remove(this.group);
