@@ -1,4 +1,4 @@
-import { Phaser, ArcadeScene, Controls, CarSteering, RAMP_TIME, shake, flash, popup, t, loc, txt, storage, isEasy, type CarPadButton } from '@core';
+import { Phaser, ArcadeScene, Controls, CarSteering, RAMP_TIME, shake, flash, popup, t, loc, txt, storage, isEasy, hudChip, HudChip, HUD_MARGIN, type CarPadButton } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { LAYOUTS, Track } from './tracks';
 import { buildArena, type Arena } from './scenery';
@@ -128,8 +128,7 @@ export class PlayScene extends ArcadeScene {
   private camShake = 0;
   private centerText = '';
   private engine: Phaser.Sound.BaseSound | null = null;
-  private nitroText!: Phaser.GameObjects.Text;
-  private nitroIcon!: Phaser.GameObjects.Container;
+  private nitroIcon!: HudChip;
   private shown = -1;
 
   createGame(): void {
@@ -1074,20 +1073,22 @@ export class PlayScene extends ArcadeScene {
 
   private buildNitroHud(): void {
     const { height } = this.scale;
-    const g = this.add.graphics();
-    g.fillStyle(0x0b1020, 0.55).fillRoundedRect(-30, -30, 132, 60, 30);
-    g.lineStyle(2, 0xffffff, 0.3).strokeRoundedRect(-30, -30, 132, 60, 30);
-    g.fillStyle(0xe8402f).fillRoundedRect(-12, -18, 24, 36, 7);
-    g.fillStyle(0x9a2418).fillRect(-5, -24, 10, 7);
-    g.fillStyle(0xffd23f).fillTriangle(-6, 3, 2, -11, 0, 0).fillTriangle(6, -3, -2, 11, 0, 0);
-    this.nitroText = txt(this, 24, 1, '', { title: true, size: 28, color: '#ffffff' }).setOrigin(0, 0.5);
-    this.nitroIcon = this.add.container(58, height - 52, [g, this.nitroText]).setDepth(9000).setScrollFactor(0);
+    // the nitro bottle, drawn once into a texture for the chip's icon
+    if (!this.textures.exists('mr-nitro')) {
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      g.fillStyle(0xe8402f).fillRoundedRect(2, 8, 24, 36, 7);
+      g.fillStyle(0x9a2418).fillRect(9, 2, 10, 7);
+      g.fillStyle(0xffd23f).fillTriangle(8, 29, 16, 15, 14, 26).fillTriangle(20, 23, 12, 37, 14, 26);
+      g.generateTexture('mr-nitro', 28, 46);
+      g.destroy();
+    }
+    this.nitroIcon = hudChip(this, HUD_MARGIN + 12, height - 52, { icon: 'mr-nitro', iconSize: 36, text: '×0', height: 56, size: 30 });
   }
 
   private updateNitroHud(): void {
     if (this.shown === this.player.nitro) return;
     this.shown = this.player.nitro;
-    this.nitroText.setText(`×${this.player.nitro}`);
+    this.nitroIcon.setText(`×${this.player.nitro}`);
     this.nitroIcon.setAlpha(this.player.nitro > 0 ? 1 : 0.55);
     this.steering.pad?.setCount('nitro', this.player.nitro);
   }

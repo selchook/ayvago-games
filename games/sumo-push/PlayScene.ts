@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, popup, txt, t, net, upper, isEasy } from '@core';
+import { ArcadeScene, Controls, burst, shake, popup, txt, t, net, upper, isEasy, hudChip, HudChip, HUD_ROW_Y, HUD_ROW2_Y, HUD_MARGIN } from '@core';
 
 // Dohyo (720 x 1280 world)
 const CX = 360, CY = 700;
@@ -111,10 +111,11 @@ export class PlayScene extends ArcadeScene {
   private op!: W;          // the rival (AI or remote)
   private dust!: Phaser.GameObjects.Particles.ParticleEmitter;
   private banner!: Phaser.GameObjects.Text;
-  private boutText!: Phaser.GameObjects.Text;
-  private info!: Phaser.GameObjects.Text;
-  private nameMe!: Phaser.GameObjects.Text;
-  private nameOp!: Phaser.GameObjects.Text;
+  private boutText!: HudChip;
+  private info!: HudChip;
+  private nameMe!: HudChip;
+  private nameOp!: HudChip;
+  private pipsOp!: Phaser.GameObjects.Graphics;
   private pips!: Phaser.GameObjects.Graphics;
   private dashLabel?: Phaser.GameObjects.Text;
   private phase: Phase = 'count';
@@ -174,13 +175,17 @@ export class PlayScene extends ArcadeScene {
     this.me = this.makeW(CX, CY + 95, -Math.PI / 2, 'sm-red', RED);
     this.op = this.makeW(CX, CY - 95, Math.PI / 2, 'sm-blue', BLUE);
 
-    // scoreboard
-    this.nameMe = txt(this, 40, 140, t('you'), { title: true, size: 20, color: '#ff8a7a' }).setOrigin(0, 0.5);
+    // scoreboard: a chip per side (name and bouts won), the bout between them, the rival under it.
+    // Online there is no HUD row (no score, no pause), so the board moves up a row.
+    const row = this.online ? HUD_ROW_Y : HUD_ROW2_Y, row2 = row + (HUD_ROW2_Y - HUD_ROW_Y);
+    const pipsW = (WINS - 1) * 34 + 30;
+    this.pips = this.add.graphics().setData('chipWidth', pipsW);
+    this.pipsOp = this.add.graphics().setData('chipWidth', pipsW);
+    this.nameMe = hudChip(this, HUD_MARGIN, row, { text: t('you'), size: 22, color: '#ff8a7a', items: [this.pips] });
     const opName = this.online ? upper((net.peerName || t('opponent')).slice(0, 10)) : t('cpu');
-    this.nameOp = txt(this, width - 40, 140, opName, { title: true, size: 20, color: '#8ac4ff' }).setOrigin(1, 0.5);
-    this.pips = this.add.graphics().setDepth(30);
-    this.boutText = txt(this, width / 2, 140, '', { title: true, size: 20, color: '#ffd23f' });
-    this.info = txt(this, width / 2, 196, '', { size: 28, color: '#d8c0e8' });
+    this.nameOp = hudChip(this, width - HUD_MARGIN, row, { align: 'right', text: opName, size: 22, color: '#8ac4ff', items: [this.pipsOp] });
+    this.boutText = hudChip(this, width / 2, row, { align: 'center', text: '', size: 22, color: '#ffd23f' });
+    this.info = hudChip(this, width / 2, row2, { align: 'center', text: '', size: 22, color: '#e6d4f0' });
     this.banner = txt(this, CX, CY, '', { title: true, size: 56, strokeThickness: 10 }).setDepth(40).setVisible(false);
 
     this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
@@ -219,15 +224,14 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateBoard(): void {
-    const g = this.pips;
-    g.clear();
-    const { width } = this.scale;
+    const g = this.pips.clear(), go = this.pipsOp.clear();
     for (let k = 0; k < WINS; k++) {
-      const x1 = 52 + k * 34, x2 = width - 52 - k * 34;
-      g.fillStyle(k < this.kMe ? RED : 0x000000, k < this.kMe ? 1 : 0.4).fillCircle(x1, 178, 12);
-      g.lineStyle(3, RED, 1).strokeCircle(x1, 178, 12);
-      g.fillStyle(k < this.kOp ? BLUE : 0x000000, k < this.kOp ? 1 : 0.4).fillCircle(x2, 178, 12);
-      g.lineStyle(3, BLUE, 1).strokeCircle(x2, 178, 12);
+      // your wins fill from the left, the rival's from the right
+      const x1 = (k - (WINS - 1) / 2) * 34, x2 = -x1;
+      g.fillStyle(k < this.kMe ? RED : 0x000000, k < this.kMe ? 1 : 0.3).fillCircle(x1, 0, 12);
+      g.lineStyle(3, RED, 1).strokeCircle(x1, 0, 12);
+      go.fillStyle(k < this.kOp ? BLUE : 0x000000, k < this.kOp ? 1 : 0.3).fillCircle(x2, 0, 12);
+      go.lineStyle(3, BLUE, 1).strokeCircle(x2, 0, 12);
     }
     this.boutText.setText(t('bout', { n: Math.min(this.bout, WINS * 2 - 1) }));
     if (this.online) this.info.setText(t('vs', { name: net.peerName || t('opponent') }));

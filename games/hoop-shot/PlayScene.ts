@@ -1,10 +1,13 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, t, txt, rng, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y } from '@core';
 import {
   type V3, type Ball, v3, add, mul, norm, len, dot, launch, stepBall, preview, SPOTS, BALL_R, RIM_Y, RIM_R,
 } from './sim';
 import { Cam, Arena, camFor, camBetween, drawHoop, drawBall, drawShadow, type NetState, type BallLook } from './view';
 import { makeHoopTextures, glass } from './fx';
+
+/** Width of the rack dots in the HUD (five spots of five balls). */
+const RACK_DOTS_W = 168;
 
 /** Arena lights hanging over the court (world), and where each one points. */
 const LIGHTS: [V3, V3][] = [
@@ -62,9 +65,9 @@ export class PlayScene extends ArcadeScene {
   private gHint!: Phaser.GameObjects.Graphics;
   private gMeter!: Phaser.GameObjects.Graphics;
   private gRack!: Phaser.GameObjects.Graphics;
-  private gBoardHud!: Phaser.GameObjects.Graphics;
-  private clockText!: Phaser.GameObjects.Text;
-  private ptsText!: Phaser.GameObjects.Text;
+  private clockChip!: HudChip;
+  private ptsChip!: HudChip;
+  private rackDots!: Phaser.GameObjects.Graphics;
   private spotText!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Text;
   private sub!: Phaser.GameObjects.Text;
@@ -146,16 +149,17 @@ export class PlayScene extends ArcadeScene {
     this.gHint = this.add.graphics().setDepth(78);
     this.gMeter = this.add.graphics().setDepth(90);
     this.gRack = this.add.graphics().setDepth(90);
-    this.gBoardHud = this.add.graphics().setDepth(90);
 
-    // scoreboard: shot clock, points against the target, on glass with LED-style glowing digits
-    this.add.image(110, 106, glass(this, 180, 80, '#ff6a4a')).setDepth(89);
-    this.add.image(520, 106, glass(this, 140, 80, '#ffd23f')).setDepth(89);
+    // scoreboard on the second HUD row, in chips: the shot clock (glowing LED digits) and the five
+    // racks (made / missed / to come) on the left, points against the target on the right; the
+    // middle stays free for the ball's arc
+    const row = HUD_ROW2_Y;
+    this.rackDots = this.add.graphics().setData('chipWidth', RACK_DOTS_W);
+    this.clockChip = hudChip(this, HUD_MARGIN, row, { text: '0:00', size: 30, color: '#ec3013', items: [this.rackDots] });
+    this.clockChip.text.setShadow(0, 0, '#ff2a1a', 12, false, true);
+    this.ptsChip = hudChip(this, 720 - HUD_MARGIN, row, { align: 'right', label: t('ptsLabel'), text: '0/0', color: '#ffd23f' });
+    this.ptsChip.text.setShadow(0, 0, '#ffb020', 8, false, true);
     this.add.image(360, 1198, glass(this, 360, 80, '#9aa3b4')).setDepth(89);
-    this.clockText = txt(this, 110, 106, '', { title: true, size: 34, color: '#ec3013', strokeThickness: 0 }).setDepth(92);
-    this.clockText.setShadow(0, 0, '#ff2a1a', 14, false, true);
-    this.ptsText = txt(this, 520, 106, '', { title: true, size: 15, color: '#ffd23f', strokeThickness: 0 }).setDepth(92);
-    this.ptsText.setShadow(0, 0, '#ffb020', 10, false, true);
     this.spotText = txt(this, 360, 760, '', { title: true, size: 28, color: '#f3f2f2' }).setDepth(92);
     this.bannerBg = this.add.image(360, 594, glass(this, 600, 170, '#ffd23f')).setDepth(94).setVisible(false);
     this.banner = txt(this, 360, 560, '', { title: true, size: 40, color: '#ffd23f', wrap: 660 }).setDepth(95).setVisible(false);
@@ -332,8 +336,9 @@ export class PlayScene extends ArcadeScene {
       if (s <= 5 && s > 0 && s !== this.lastTick) {
         this.lastTick = s;
         this.sfx('tick', { volume: s <= 2 ? 0.6 : 0.45, rate: s <= 2 ? 1.12 : 1 });
-        this.clockText.setScale(1.25);
-        this.tweens.add({ targets: this.clockText, scale: 1, duration: 200 });
+        this.tweens.killTweensOf(this.clockChip);
+        this.clockChip.setScale(1.15);
+        this.tweens.add({ targets: this.clockChip, scale: 1, duration: 200 });
       }
       if (this.timeLeft === 0) {
         this.sfx('buzzer', { volume: 0.6, exact: true });
@@ -346,7 +351,7 @@ export class PlayScene extends ArcadeScene {
     const clock = this.clockStr();
     if (clock !== this.clockShown) {
       this.clockShown = clock;
-      this.clockText.setText(clock).setColor(this.timeLeft <= 5 ? '#ffd23f' : '#ec3013');
+      this.clockChip.setText(clock).setTextColor(this.timeLeft <= 5 ? '#ffd23f' : '#ec3013');
     }
 
     // camera between racks
@@ -688,17 +693,16 @@ export class PlayScene extends ArcadeScene {
 
   /** Scoreboard: clock, points, the five racks (made / missed / to come) and the current rack. */
   private updateBoard(): void {
-    const g = this.gBoardHud;
-    g.clear();
-    // clock on the left, points against the target on the right: the middle stays free for the arc
-    this.ptsText.setText(`${t('ptsLabel')} ${this.pts}\n${t('needLabel')} ${this.rules.need}`).setColor(this.pts >= this.rules.need ? '#5dff7a' : '#ffd23f');
-    // rack grid (one column per spot)
+    this.ptsChip.setText(`${this.pts}/${this.rules.need}`).setTextColor(this.pts >= this.rules.need ? '#5dff7a' : '#ffd23f');
+    // rack grid (one group per spot) in its chip
+    const d = this.rackDots;
+    d.clear();
     for (let s = 0; s < SPOTS.length; s++) {
       for (let i = 0; i < RACK; i++) {
-        const x = 32 + s * 34 + i * 6, y = 160;
+        const x = -RACK_DOTS_W / 2 + 4 + s * 34 + i * 6, y = 0;
         const v = this.racks[s]?.[i];
         const col = v === true ? 0x5dff7a : v === false ? 0xec3013 : s === this.spot && this.phase !== 'between' ? 0xffffff : 0x55525e;
-        g.fillStyle(col, v === null && s !== this.spot ? 0.6 : 1).fillCircle(x, y, i === RACK - 1 ? 3.2 : 2.5);
+        d.fillStyle(col, v === null && s !== this.spot ? 0.6 : 1).fillCircle(x, y, i === RACK - 1 ? 3.6 : 2.8);
       }
     }
     // the rack at the bottom: balls still to shoot

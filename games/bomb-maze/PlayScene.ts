@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, loc, txt, t, rng, StickDir } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, loc, txt, t, rng, StickDir, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y } from '@core';
 import { ACTOR_SCALE, ACTOR_ORIGIN_Y, BOT_PREFIXES } from './cast';
 import { CELL, makeMazeTextures } from './art';
 
 const COLS = 13;
 const ROWS = 15;
 const X0 = (720 - COLS * CELL) / 2;
-const Y0 = 112;
+const Y0 = 150;   // below the second HUD row
 const FUSE = 2.3;
 const FLAME = 0.5;
 const INF = 1e9;
@@ -64,8 +64,8 @@ export class PlayScene extends ArcadeScene {
   private respawnAt = -1;
   private marker!: Phaser.GameObjects.Triangle;
   private stick!: StickDir;
-  private stats: Phaser.GameObjects.Text[] = [];
-  private botText!: Phaser.GameObjects.Text;
+  private stats: HudChip[] = [];
+  private botChip!: HudChip;
   // carried power-ups
   private pRange = 2;
   private pBombs = 1;
@@ -82,16 +82,13 @@ export class PlayScene extends ArcadeScene {
     this.marker = this.add.triangle(0, 0, 0, 0, 22, 0, 11, 14, 0xffd23f).setDepth(900).setStrokeStyle(3, 0x000000);
     this.tweens.add({ targets: this.marker, scaleY: 0.7, duration: 300, yoyo: true, repeat: -1 });
 
-    this.add.image(40, 86, 'pu-bomb').setScale(0.62).setDepth(9000);
-    this.add.image(120, 86, 'pu-range').setScale(0.62).setDepth(9000);
-    this.add.image(200, 86, 'pu-speed').setScale(0.62).setDepth(9000);
-    const st = { fontFamily: '"Press Start 2P", monospace', fontSize: '18px', color: '#ffffff', stroke: '#000', strokeThickness: 5 };
-    const sb = this.add.text(64, 86, '', st).setOrigin(0, 0.5).setDepth(9000);
-    const sr = this.add.text(144, 86, '', st).setOrigin(0, 0.5).setDepth(9000);
-    const ss = this.add.text(224, 86, '', st).setOrigin(0, 0.5).setDepth(9000);
-    const sl = this.add.text(278, 86, '', { ...st, color: '#ffd23f' }).setOrigin(0, 0.5).setDepth(9000);
-    this.stats = [sb, sr, ss, sl];
-    this.botText = this.add.text(604, 86, '', { ...st, color: '#ff8ac0' }).setOrigin(1, 0.5).setDepth(9000);
+    // second HUD row: the carried power-ups on the left, the robots left on the right
+    const row = HUD_ROW2_Y;
+    const sb = hudChip(this, HUD_MARGIN, row, { icon: 'pu-bomb', iconSize: 30, text: '1', minWidth: 84 });
+    const sr = hudChip(this, sb.right + HUD_GAP, row, { icon: 'pu-range', iconSize: 30, text: '2', minWidth: 84 });
+    const ss = hudChip(this, sr.right + HUD_GAP, row, { icon: 'pu-speed', iconSize: 30, text: '1', minWidth: 84 });
+    this.stats = [sb, sr, ss];
+    this.botChip = hudChip(this, 720 - HUD_MARGIN, row, { align: 'right', label: t('bots'), text: '0', color: '#ff8ac0' });
 
     // touch: the standard floating stick on the left half walks, the A button drops a bomb
     this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
@@ -198,13 +195,13 @@ export class PlayScene extends ArcadeScene {
   }
 
   private updateStats(): void {
-    const [sb, sr, ss, sl] = this.stats;
-    sl.setText(`${t('level')} ${this.level}`);
+    const [sb, sr, ss] = this.stats;
+    this.hud.setLevel(this.level);
     sb.setText(String(this.pBombs));
     sr.setText(String(this.pRange));
     ss.setText(String(Math.round((this.pSpeed - 3.6) / 0.5) + 1));
     const bots = this.actors.filter((a) => !a.player && a.alive).length;
-    this.botText.setText(`${t('bots')} ${bots}`);
+    this.botChip.setText(bots);
     this.hud.setLives(this.lives);
   }
 
@@ -267,6 +264,10 @@ export class PlayScene extends ArcadeScene {
     const img = pw.img;
     this.tweens.add({ targets: img, scale: 1.4, alpha: 0, duration: 200, onComplete: () => img.destroy() });
     this.updateStats();
+    const chip = this.stats[pw.kind === 'bomb' ? 0 : pw.kind === 'range' ? 1 : 2];
+    this.tweens.killTweensOf(chip);
+    chip.setScale(1);
+    this.tweens.add({ targets: chip, scale: 1.18, duration: 120, yoyo: true });
   }
 
   // ---------------------------------------------------------------- bombs

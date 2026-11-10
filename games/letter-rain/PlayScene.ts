@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, getLang, upper } from '@core';
+import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, getLang, upper, hudText } from '@core';
 import { makeArt, tileKey, INK, type Kind } from './art';
 import {
   dictFor, findWords, fold, lengthMultiplier, LetterBag, valueOf, MIN_WORD, RARE,
@@ -18,7 +18,7 @@ const BOARD_H = ROWS * CELL;
 const LANE_Y = BY - 46;
 const PREVIEW_Y = BY + BOARD_H + 62;
 const BTN_Y = 1186;
-const LEVEL_BAR_Y = 78;
+const LEVEL_BAR_W = 110;   // level progress, in the HUD's level chip after the badge
 
 const ACCENT = 0xff8a3d;
 const GOOD = 0x2fbf71;
@@ -237,9 +237,10 @@ export class PlayScene extends ArcadeScene {
     this.nextBox = this.add.container(cellX(3), LANE_Y, [this.nextRing, chev, this.nextBg, this.nextLabel, this.nextAlert]).setDepth(8);
     this.tweens.add({ targets: chev, y: 42, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    // level progress under the HUD's level badge
-    this.levelBar = this.add.graphics().setDepth(9000);
-    this.levelText = txt(this, 466, LEVEL_BAR_Y, '', { size: 18, color: '#dfe6ff', strokeThickness: 0 }).setOrigin(0, 0.5).setDepth(9000);
+    // level progress in the HUD's level chip, after the badge: a bar and the words found / needed
+    this.levelBar = this.add.graphics().setData('chipWidth', LEVEL_BAR_W);
+    this.levelText = hudText(this, '', 20, '#dfe6ff');
+    this.hud.levelChip.setItems([this.levelBar, this.levelText]);
 
     // the word being spelled
     this.previewG = this.add.graphics();
@@ -289,11 +290,16 @@ export class PlayScene extends ArcadeScene {
   private refreshLevelBar(): void {
     const need = wordsToNext(this.level);
     const f = Phaser.Math.Clamp(this.levelWords / need, 0, 1);
-    const x = 254, w = 200, h = 10;
+    const w = LEVEL_BAR_W, h = 12;
     const g = this.levelBar.clear();
-    g.fillStyle(0x0b1020, 0.55).fillRoundedRect(x - 2, LEVEL_BAR_Y - h / 2 - 2, w + 4, h + 4, 7);
-    if (f > 0) g.fillStyle(GOLD, 1).fillRoundedRect(x, LEVEL_BAR_Y - h / 2, Math.max(h, w * f), h, 5);
-    this.levelText.setText(t('levelWords', { n: this.levelWords, m: need }));
+    g.fillStyle(0x0b1020, 0.45).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+    if (f > 0) g.fillStyle(GOLD, 1).fillRoundedRect(-w / 2, -h / 2, Math.max(h, w * f), h, h / 2);
+    const text = t('levelWords', { n: this.levelWords, m: need });
+    if (text !== this.levelText.text) {
+      this.levelText.setText(text);
+      this.hud.levelChip.layout();
+      this.hud.layout();
+    }
   }
 
   // ---------------------------------------------------------------- tiles

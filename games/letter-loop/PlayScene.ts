@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, popup, txt, t, getLang, upper, type Lang } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, getLang, upper, type Lang, hudChip, HudChip } from '@core';
 import { buildDict, makePuzzle, shapeFor, fold, type Dict, type Placed, type Puzzle } from './logic';
 import { COMMON as TR_COMMON, EXTRA as TR_EXTRA } from '../../src/words/tr';
 import { COMMON as EN_COMMON, EXTRA as EN_EXTRA } from '../../src/words/en';
 
 // ---------------------------------------------------------------- layout (720x1280)
 const W = 720;
-const TIME_Y = 100;
+const TIME_W = 96;   // the time bar, in the HUD's right chip after the clock
 const GRID_TOP = 136;
 const GRID_H = 500;
 const GRID_W = 636;
@@ -17,6 +17,7 @@ const WHEEL_R = 205;
 const LETTER_RING = 142;
 const LETTER_R = 52;
 const BTN_Y = 1196;
+const BONUS_DY = -12;   // the bonus star and its ring sit a little above the button row, the count under them
 
 const INK = 0x24263a;
 const CREAM = 0xfff6e2;
@@ -86,11 +87,11 @@ export class PlayScene extends ArcadeScene {
   private previewG!: Phaser.GameObjects.Graphics;
   private preview!: Phaser.GameObjects.Container;
   private previewText!: Phaser.GameObjects.Text;
-  private timeBar!: Phaser.GameObjects.Rectangle;
+  private timeBar!: Phaser.GameObjects.Graphics;
   private hintBadge!: Phaser.GameObjects.Text;
   private hintBtn!: Phaser.GameObjects.Container;
   private bonusRing!: Phaser.GameObjects.Graphics;
-  private bonusText!: Phaser.GameObjects.Text;
+  private bonusChip!: HudChip;
   private bonusBtn!: Phaser.GameObjects.Container;
 
   createGame(): void {
@@ -115,9 +116,9 @@ export class PlayScene extends ArcadeScene {
     this.makeTextures();
     this.drawBackdrop();
 
-    // time bar
-    this.add.rectangle(W / 2, TIME_Y, W - 80, 14, 0x000000, 0.35).setStrokeStyle(2, 0xffffff, 0.2);
-    this.timeBar = this.add.rectangle(42, TIME_Y, W - 84, 10, GOOD).setOrigin(0, 0.5);
+    // time bar: in the HUD's right chip, after the clock
+    this.timeBar = this.add.graphics().setData('chipWidth', TIME_W);
+    this.hud.rightChip.setItems([this.timeBar]);
 
     this.gridLayer = this.add.container(0, 0).setDepth(2);
 
@@ -227,9 +228,10 @@ export class PlayScene extends ArcadeScene {
 
     // bonus words: a star with a ring that fills up to the next free hint
     this.bonusRing = this.add.graphics();
-    const star = this.add.image(0, -4, 'll-star').setDisplaySize(64, 64).setTint(GOLD);
-    this.bonusText = txt(this, 0, 46, '', { size: 20, color: '#ffffff' });
-    this.bonusBtn = this.add.container(W / 2, BTN_Y, [this.bonusRing, star, this.bonusText]).setDepth(7);
+    const star = this.add.image(0, BONUS_DY, 'll-star').setDisplaySize(64, 64).setTint(GOLD);
+    this.bonusBtn = this.add.container(W / 2, BTN_Y, [this.bonusRing, star]).setDepth(7);
+    // the bonus words found, in a chip under the star
+    this.bonusChip = hudChip(this, W / 2, BTN_Y + 48, { align: 'center', label: t('bonus'), text: '0', size: 20, height: 34, depth: 8 });
     this.refreshButtons();
   }
 
@@ -238,14 +240,14 @@ export class PlayScene extends ArcadeScene {
     this.hintBtn.setAlpha(this.hints > 0 ? 1 : 0.55);
     const k = this.bonusCount % BONUS_PER_HINT;
     this.bonusRing.clear();
-    this.bonusRing.lineStyle(8, 0x000000, 0.3).strokeCircle(0, -4, 44);
+    this.bonusRing.lineStyle(8, 0x000000, 0.3).strokeCircle(0, BONUS_DY, 44);
     if (k > 0) {
       this.bonusRing.lineStyle(8, GOLD, 1);
       this.bonusRing.beginPath();
-      this.bonusRing.arc(0, -4, 44, -Math.PI / 2, -Math.PI / 2 + (k / BONUS_PER_HINT) * Math.PI * 2, false);
+      this.bonusRing.arc(0, BONUS_DY, 44, -Math.PI / 2, -Math.PI / 2 + (k / BONUS_PER_HINT) * Math.PI * 2, false);
       this.bonusRing.strokePath();
     }
-    this.bonusText.setText(`${t('bonus')} ${this.bonusCount}`);
+    this.bonusChip.setText(this.bonusCount);
   }
 
   // ---------------------------------------------------------------- levels
@@ -523,7 +525,7 @@ export class PlayScene extends ArcadeScene {
     this.sfx('bonus');
     const star = this.add.image(W / 2, PREVIEW_Y, 'll-star').setTint(GOLD).setDisplaySize(56, 56).setDepth(20);
     this.tweens.add({
-      targets: star, x: this.bonusBtn.x, y: this.bonusBtn.y - 4, angle: 360, duration: 520, ease: 'Cubic.easeIn',
+      targets: star, x: this.bonusBtn.x, y: this.bonusBtn.y + BONUS_DY, angle: 360, duration: 520, ease: 'Cubic.easeIn',
       onComplete: () => {
         star.destroy();
         burst(this, this.bonusBtn.x, this.bonusBtn.y, [GOLD, 0xffffff], 10, 160);
@@ -663,8 +665,9 @@ export class PlayScene extends ArcadeScene {
 
   private updateTimeUi(): void {
     const f = Phaser.Math.Clamp(this.timeLeft / this.timeMax, 0, 1);
-    this.timeBar.width = (W - 84) * f;
-    this.timeBar.fillColor = this.timeLeft <= 10 ? BAD : f < 0.4 ? GOLD : GOOD;
+    const h = 12;
+    this.timeBar.clear().fillStyle(0x000000, 0.3).fillRoundedRect(-TIME_W / 2, -h / 2, TIME_W, h, h / 2);
+    if (f > 0) this.timeBar.fillStyle(this.timeLeft <= 10 ? BAD : f < 0.4 ? GOLD : GOOD, 1).fillRoundedRect(-TIME_W / 2, -h / 2, Math.max(h, TIME_W * f), h, h / 2);
     const s = Math.max(0, Math.ceil(this.timeLeft));
     this.hud.setRight(`${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
   }

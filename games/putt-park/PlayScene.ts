@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, t, loc, upper, txt, shake, flash, popup, playSfx } from '@core';
+import { ArcadeScene, t, loc, upper, txt, shake, flash, popup, playSfx, hudChip, HudChip, HUD_ROW2_Y } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { HOLES } from './holes';
 import { parseHole, buildField, type HoleDef, type ParsedHole } from './kit';
@@ -89,7 +89,7 @@ export class PlayScene extends ArcadeScene {
   private overview = false;
 
   // ui
-  private info!: Phaser.GameObjects.Text;
+  private info!: HudChip;
   private hint!: Phaser.GameObjects.Text;
   private band!: Phaser.GameObjects.Graphics;
   private meter!: Phaser.GameObjects.Graphics;
@@ -158,7 +158,7 @@ export class PlayScene extends ArcadeScene {
 
     // UI
     const { width, height } = this.scale;
-    this.info = txt(this, width / 2, 92, '', { size: 24, color: '#ffffff', strokeThickness: 5 }).setDepth(9000).setScrollFactor(0);
+    this.info = hudChip(this, width / 2, HUD_ROW2_Y, { align: 'center', size: 22 }).setVisible(false);
     this.hint = txt(this, width / 2, 170, '', { size: 26, color: '#ffffff', strokeThickness: 6, wrap: 640 }).setDepth(9000).setScrollFactor(0);
     this.band = this.add.graphics().setDepth(8800);
     this.meter = this.add.graphics().setDepth(8800);
@@ -298,8 +298,8 @@ export class PlayScene extends ArcadeScene {
 
   private updateInfo(): void {
     const left = this.limit - this.strokes;
-    this.info.setText(`${t('strokeN', { n: this.strokes })}   ·   ${t('limit', { n: this.limit })}`);
-    this.info.setColor(left <= 1 ? '#ffb36b' : '#ffffff');
+    this.info.setText(`${t('strokeN', { n: this.strokes })}  ·  ${t('limit', { n: this.limit })}`).setVisible(true);
+    this.info.setTextColor(left <= 1 ? '#ffb36b' : '#ffffff');
   }
 
   private finishHole(holed: boolean): void {

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, popup, txt, t, rng, storage, COLORS } from '@core';
+import { ArcadeScene, Button, burst, shake, popup, txt, t, rng, storage, COLORS, hudChip, HudChip } from '@core';
 
 const BOARD = 640;
 const CY = 660;
@@ -46,8 +46,7 @@ export class PlayScene extends ArcadeScene {
   private selectFocus = 0;
   private selectRing!: Phaser.GameObjects.Rectangle;
   private frame!: Phaser.GameObjects.Graphics;
-  private infoText!: Phaser.GameObjects.Text;
-  private timeText!: Phaser.GameObjects.Text;
+  private infoText!: HudChip;
   private downX = 0;
   private downY = 0;
   private downPos = -1;
@@ -57,8 +56,7 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'select'; this.n = 3; this.startSize = 3; this.puzzle = 1; this.grid = []; this.tiles = new Map();
     this.moves = 0; this.puzzleTime = 0; this.selectLayer = []; this.selectFocus = 0; this.downPos = -1;
     this.frame = this.add.graphics();
-    this.timeText = txt(this, 360, 118, '', { title: true, size: 24, color: '#ffd23f' });
-    this.infoText = txt(this, 360, 1060, '', { size: 28, color: '#aab0d0' });
+    this.infoText = hudChip(this, 360, 1060, { align: 'center', size: 16, color: '#aab0d0' }).setVisible(false);
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.phase !== 'play') return;
@@ -75,8 +73,8 @@ export class PlayScene extends ArcadeScene {
 
   private showSelect(): void {
     this.phase = 'select';
-    this.timeText.setText('');
-    this.infoText.setText('');
+    this.hud.setRight('');
+    this.infoText.setVisible(false);
     this.selectLayer.push(txt(this, 360, 250, t('chooseSize'), { title: true, size: 34, color: '#ffd23f' }));
     this.selectRing = this.add.rectangle(360, 0, 500, 160).setStrokeStyle(6, 0xffd23f);
     this.selectLayer.push(this.selectRing);
@@ -328,7 +326,7 @@ export class PlayScene extends ArcadeScene {
   updateGame(_time: number, delta: number): void {
     if (this.phase !== 'play') return;
     this.puzzleTime += delta / 1000;
-    this.timeText.setText(`${t('time')} ${this.fmt(this.puzzleTime)}`);
+    this.hud.setRight(`${t('time')} ${this.fmt(this.puzzleTime)}`);
   }
 
   private fmt(s: number): string {
@@ -340,7 +338,7 @@ export class PlayScene extends ArcadeScene {
     if (this.phase === 'select') { this.hud.setCenter(''); return; }
     this.hud.setCenter(`${t('moves')} ${this.moves}`);
     const bm = storage.get<number>(`sp-moves-${this.n}`, 0);
-    this.infoText.setText(`${t('puzzle')} ${this.puzzle} · ${this.n}×${this.n} · ${t('best')}: ${bm || t('none')}`);
+    this.infoText.setVisible(true).setText(`${t('puzzle')} ${this.puzzle} · ${this.n}×${this.n} · ${t('best')}: ${bm || t('none')}`);
   }
 }
 

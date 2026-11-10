@@ -243,9 +243,7 @@ export function makeTextures(scene: Phaser.Scene): void {
     c.fillStyle = edge; c.fillRect(0, 0, 720, 3);
     c.strokeStyle = 'rgba(255,255,255,0.03)'; c.lineWidth = 2;
     for (let x = -120; x < 720; x += 10) { c.beginPath(); c.moveTo(x, 112); c.lineTo(x + 112, 0); c.stroke(); }
-    c.save(); c.shadowColor = 'rgba(0,0,0,0.8)'; c.shadowBlur = 8;
-    c.beginPath(); round(c, 188, 10, 344, 94, 12); c.fillStyle = '#07080c'; c.fill(); c.restore();
-    c.beginPath(); round(c, 188, 10, 344, 94, 12); c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 1.5; c.stroke();
+    // the readout well between the buttons is a HUD chip drawn by the play scene
   });
 }
 

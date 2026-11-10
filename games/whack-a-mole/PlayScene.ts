@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, popup, txt, t, rng } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng, hudChip, HUD_ROW2_Y } from '@core';
 
 export const ANIMALS = ['bear', 'chick', 'cow', 'dog', 'duck', 'frog', 'monkey', 'panda', 'penguin', 'pig', 'rabbit', 'owl', 'hippo', 'zebra'];
 
@@ -38,11 +38,9 @@ function softFlash(scene: Phaser.Scene, color: number, ms = 120): void {
 
 export class PlayScene extends ArcadeScene {
   private holes: Hole[] = [];
-  private hearts: Phaser.GameObjects.Image[] = [];
   private mallet!: Phaser.GameObjects.Image;
   private cursor!: Phaser.GameObjects.Ellipse;
-  private roundText!: Phaser.GameObjects.Text;
-  private barFill!: Phaser.GameObjects.Rectangle;
+  private barFill!: Phaser.GameObjects.Graphics;
   private barText!: Phaser.GameObjects.Text;
   private sparks!: Phaser.GameObjects.Particles.ParticleEmitter;
   private leaves!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -59,7 +57,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     const { width, height } = this.scale;
-    this.holes = []; this.hearts = [];
+    this.holes = [];
     this.round = 0; this.quota = 0; this.hits = 0; this.timeLeft = ROUND_TIME; this.lives = MAX_LIVES;
     this.combo = 0; this.spawnCd = 0; this.playing = false; this.cursorIdx = 4; this.lastTick = 0;
 
@@ -103,12 +101,10 @@ export class PlayScene extends ArcadeScene {
       scale: { start: 0.5, end: 0.2 }, lifespan: 700, emitting: false,
     }).setDepth(25);
 
-    // HUD row 2: hearts left, round + target bar centre
-    for (let i = 0; i < MAX_LIVES; i++) this.hearts.push(this.add.image(44 + i * 48, 92, 'wm-heart').setDepth(9000));
-    this.roundText = txt(this, width / 2, 92, '', { title: true, size: 20, color: '#ffd23f' }).setDepth(9000);
-    this.add.rectangle(width / 2, 134, 380, 26, 0x000000, 0.5).setStrokeStyle(3, 0xffffff, 0.7).setDepth(9000);
-    this.barFill = this.add.rectangle(width / 2 - 186, 134, 0, 18, 0x5dff7a).setOrigin(0, 0.5).setDepth(9000);
-    this.barText = txt(this, width / 2, 135, '', { size: 20 }).setDepth(9001);
+    // HUD: lives as the HUD's hearts; row 2: the round and the target bar in a chip
+    hudChip(this, width / 2, HUD_ROW2_Y, { align: 'center', minWidth: 420, height: 44 });
+    this.barFill = this.add.graphics({ x: width / 2 - 190, y: HUD_ROW2_Y - 11 }).setDepth(9001);
+    this.barText = txt(this, width / 2, HUD_ROW2_Y + 1, '', { size: 20 }).setDepth(9002);
 
     // input: tap a hole
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -138,18 +134,6 @@ export class PlayScene extends ArcadeScene {
   }
 
   private buildScenery(width: number, height: number): void {
-    if (!this.textures.exists('wm-heart')) {
-      const g = this.make.graphics({ x: 0, y: 0 }, false);
-      g.fillStyle(0x000000).fillCircle(11, 13, 11).fillCircle(29, 13, 11).fillTriangle(1, 18, 39, 18, 20, 38);
-      g.fillStyle(0xec3013).fillCircle(11, 13, 8).fillCircle(29, 13, 8).fillTriangle(4, 16, 36, 16, 20, 34);
-      g.fillStyle(0xffffff, 0.6).fillCircle(9, 10, 3);
-      g.generateTexture('wm-heart', 40, 40);
-      g.clear();
-      g.fillStyle(0x000000).fillCircle(11, 13, 11).fillCircle(29, 13, 11).fillTriangle(1, 18, 39, 18, 20, 38);
-      g.fillStyle(0x444455).fillCircle(11, 13, 8).fillCircle(29, 13, 8).fillTriangle(4, 16, 36, 16, 20, 34);
-      g.generateTexture('wm-heart-empty', 40, 40);
-      g.destroy();
-    }
     this.cameras.main.setBackgroundColor(0x6cbf4f);
     this.add.rectangle(width / 2, 140, width, 280, 0x9ed8f5).setDepth(-10);
     this.add.rectangle(width / 2, 300, width, 60, 0x5aa83f).setDepth(-9);
@@ -170,12 +154,11 @@ export class PlayScene extends ArcadeScene {
   private updateHud(): void {
     const { width } = this.scale;
     this.hud.setRight(`${t('time')} ${Math.max(0, Math.ceil(this.timeLeft))}`);
-    this.hearts.forEach((h, i) => h.setTexture(i < this.lives ? 'wm-heart' : 'wm-heart-empty'));
-    this.roundText.setText(`${t('round')} ${Math.max(1, this.round)}`);
+    this.hud.setLives(this.lives, MAX_LIVES);
     const f = this.quota ? Math.min(1, this.hits / this.quota) : 0;
-    this.barFill.width = 372 * f;
-    this.barFill.fillColor = f >= 1 ? 0xffd23f : 0x5dff7a;
-    this.barText.setText(`${t('target')} ${Math.min(this.hits, this.quota)}/${this.quota}`);
+    this.barFill.clear().fillStyle(0x000000, 0.25).fillRoundedRect(0, 0, 380, 22, 11);
+    if (f > 0) this.barFill.fillStyle(f >= 1 ? 0xffd23f : 0x5dff7a, 0.95).fillRoundedRect(0, 0, Math.max(22, 380 * f), 22, 11);
+    this.barText.setText(`${t('round')} ${Math.max(1, this.round)}  ·  ${t('target')} ${Math.min(this.hits, this.quota)}/${this.quota}`);
     void width;
   }
 
@@ -350,7 +333,6 @@ export class PlayScene extends ArcadeScene {
     this.combo = 0;
     this.addScore(-20);
     this.updateHud();
-    this.tweens.add({ targets: this.hearts[Math.max(0, this.lives)], scale: 1.6, duration: 120, yoyo: true });
     if (this.lives <= 0) {
       this.playing = false;
       this.endGame({ delay: 900 });

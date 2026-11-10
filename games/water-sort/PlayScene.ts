@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, popup, t, txt, rng, COLORS } from '@core';
+import { ArcadeScene, Button, burst, shake, flash, popup, t, txt, rng, COLORS, hudChip, HudChip, HUD_ROW_Y, HUD_ROW2_Y, HUD_MARGIN } from '@core';
 import { CAP, Tubes, Move, generate, levelSpec, lowerBound, pour, unpour, pourCount, usefulMoves, solved, isDone, top } from './logic';
 import { LIQUIDS, LAYER_H, TUBE_W, TUBE_H, makeTextures, drawGlass, drawLiquid, surfaceY } from './art';
 
 const W = 720;
+/** Width of the time bar in its HUD chip. */
+const BAR_W = 560;
 const LIFT = 40;
 const UNDOS = 3;
 const MAX_MULT = 5;
@@ -39,7 +41,8 @@ export class PlayScene extends ArcadeScene {
   private perRow = 1;
   private stream!: Phaser.GameObjects.Graphics;
   private cursorMark!: Phaser.GameObjects.Graphics;
-  private info!: Phaser.GameObjects.Text;
+  private info!: HudChip;
+  private timeChip!: HudChip;
   private hint!: Phaser.GameObjects.Text;
   private bar!: Phaser.GameObjects.Graphics;
   private undoBtn!: Button;
@@ -65,8 +68,10 @@ export class PlayScene extends ArcadeScene {
       tint: [0x3ee6ff, 0xff4fa3, 0xffd23f],
     }).setDepth(-9);
 
-    this.info = txt(this, W / 2, 112, '', { size: 30, color: '#f3f2f2' }).setDepth(50);
-    this.bar = this.add.graphics().setDepth(50);
+    // HUD rows 2 and 3: moves, par and multiplier; the time left with its bar
+    this.info = hudChip(this, W / 2, HUD_ROW2_Y, { align: 'center', size: 24 });
+    this.bar = this.add.graphics().setData('chipWidth', BAR_W);
+    this.timeChip = hudChip(this, W / 2, HUD_ROW2_Y + (HUD_ROW2_Y - HUD_ROW_Y), { align: 'center', text: '0s', size: 24, minWidth: W - HUD_MARGIN * 2, items: [this.bar] });
     this.stream = this.add.graphics().setDepth(30);
     this.cursorMark = this.add.graphics().setDepth(5);
     this.hint = txt(this, W / 2, 1035, '', { size: 30, color: '#ffd23f', wrap: 660 }).setDepth(60).setAlpha(0);
@@ -481,9 +486,9 @@ export class PlayScene extends ArcadeScene {
     const k = Phaser.Math.Clamp(this.timeLeft / this.timeTotal, 0, 1);
     const low = this.timeLeft < 10;
     g.clear();
-    g.fillStyle(0x000000, 0.5).fillRoundedRect(60, 146, 600, 18, 9);
-    g.fillStyle(low ? 0xec3013 : k < 0.4 ? 0xffd23f : 0x5dff7a, 1).fillRoundedRect(60, 146, Math.max(18, 600 * k), 18, 9);
-    this.hud.setRight(`${Math.ceil(this.timeLeft)}s`);
+    g.fillStyle(0x000000, 0.35).fillRoundedRect(-BAR_W / 2, -9, BAR_W, 18, 9);
+    g.fillStyle(low ? 0xec3013 : k < 0.4 ? 0xffd23f : 0x5dff7a, 1).fillRoundedRect(-BAR_W / 2, -9, Math.max(18, BAR_W * k), 18, 9);
+    this.timeChip.setText(`${Math.max(0, Math.ceil(this.timeLeft))}s`).setTextColor(low ? '#ff8a7a' : '#ffffff');
   }
 
   updateGame(_time: number, delta: number): void {

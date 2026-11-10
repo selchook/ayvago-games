@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, COLORS } from '@core';
+import { ArcadeScene, Button, burst, shake, flash, popup, txt, t, rng, COLORS, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y } from '@core';
 
 const AREA = 600;          // board square size
 const BOARD_Y = 640;       // board centre y
@@ -45,8 +45,8 @@ export class PlayScene extends ArcadeScene {
   private cursor = 0;
   private cursorBox!: Phaser.GameObjects.Rectangle;
   private hintRing!: Phaser.GameObjects.Arc;
-  private parText!: Phaser.GameObjects.Text;
-  private movesText!: Phaser.GameObjects.Text;
+  private parChip!: HudChip;
+  private movesChip!: HudChip;
   private locked = false;
   private size = 100;
   private x0 = 0;
@@ -64,8 +64,9 @@ export class PlayScene extends ArcadeScene {
     this.cursorBox = this.add.rectangle(0, 0, 10, 10).setStrokeStyle(6, 0xff4fa3).setDepth(6).setVisible(false);
     this.hintRing = this.add.circle(0, 0, 10).setStrokeStyle(8, 0x5dff7a).setDepth(7).setVisible(false);
     this.tweens.add({ targets: this.hintRing, scale: 1.15, duration: 380, yoyo: true, repeat: -1 });
-    this.parText = txt(this, 360, 1000, '', { title: true, size: 20, color: '#3ee6ff' });
-    this.movesText = txt(this, 360, 262, '', { title: true, size: 30, color: '#ffd23f' });
+    // second HUD row: the moves left on the left, the par (fewest moves) on the right
+    this.movesChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { label: t('moves'), text: '0', color: '#ffd23f', minWidth: 120 });
+    this.parChip = hudChip(this, 720 - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', label: t('par'), text: '0', color: '#3ee6ff', minWidth: 120 });
 
     new Button(this, 360, 1110, t('hint'), () => this.hint(), { width: 300, height: 90, size: 28, color: COLORS.purple });
 
@@ -143,15 +144,15 @@ export class PlayScene extends ArcadeScene {
     }
     this.hintRing.setRadius(this.size * 0.42);
     this.moveCursor();
-    this.parText.setText(`${t('par')}: ${this.par}`);
+    this.parChip.setText(this.par);
     this.updateHud();
   }
 
   private updateHud(): void {
     this.hud.setLevel(this.level);
     const left = this.maxMoves - this.moves;
-    this.movesText.setText(`${t('moves')}: ${left}`).setColor(left <= 2 ? '#ec3013' : '#ffd23f');
-    this.parText.setText(`${t('par')}: ${this.par}`);
+    this.movesChip.setText(left).setTextColor(left <= 2 ? '#ec3013' : '#ffd23f');
+    this.parChip.setText(this.par);
     this.hud.setLives(this.lives);
   }
 

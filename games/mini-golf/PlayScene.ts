@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, flash, popup, t, txt, net, upper } from '@core';
+import { ArcadeScene, burst, shake, flash, popup, t, txt, net, upper, hudChip, HudChip, HUD_ROW_Y, HUD_MARGIN } from '@core';
 import { BALL_PX, MOVER_PAD, makeArt, moverTexture, paintBackdrop, paintCourse, pill, type R4 } from './art';
 interface Mover { r: R4; ax: number; ay: number; speed: number; phase: number }
 interface Hole {
@@ -47,8 +47,7 @@ export class PlayScene extends ArcadeScene {
   private ball!: Phaser.GameObjects.Image;
   private ballShadow!: Phaser.GameObjects.Image;
   private flag!: Phaser.GameObjects.Container;
-  private footer!: Phaser.GameObjects.Text;
-  private footerPill!: Phaser.GameObjects.Image;
+  private footer!: HudChip;
   private holeObjs: Phaser.GameObjects.GameObject[] = [];
   private bumperImgs: Phaser.GameObjects.Image[] = [];
   private bumperGlows: Phaser.GameObjects.Image[] = [];
@@ -84,9 +83,9 @@ export class PlayScene extends ArcadeScene {
   private ev = 0;
   private wx = 0; private wy = 0;   // last streamed ball position (watcher)
   private started = false;
-  private topLine!: Phaser.GameObjects.Text;
-  private meLine!: Phaser.GameObjects.Text;
-  private oppLine!: Phaser.GameObjects.Text;
+  private topLine!: HudChip;
+  private meLine!: HudChip;
+  private oppLine!: HudChip;
 
   createGame(): void {
     this.holeIdx = 0; this.strokes = 0; this.totalStrokes = 0; this.moving = false; this.sinking = false; this.between = false;
@@ -101,8 +100,8 @@ export class PlayScene extends ArcadeScene {
     this.ballShadow = this.makeShadow();
     this.ball = this.add.image(0, 0, 'mg-ball').setScale(BALL_S).setDepth(4);
     this.flag = this.makeFlag();
-    this.footerPill = this.add.image(360, 1246, pill(this, 400, 46)).setScrollFactor(0).setDepth(9);
-    this.footer = txt(this, 360, 1246, '', { title: true, size: 22, color: '#f3f2f2' }).setScrollFactor(0).setDepth(10);
+    // par and strokes (online: whose turn and strokes) in a chip under the course
+    this.footer = hudChip(this, 360, 1246, { align: 'center', text: '', size: 22, color: '#f3f2f2', minWidth: 400 });
     this.online = net.active; this.seat = net.seat; this.ps = []; this.cur = 0; this.shotNo = 0;
     this.turnLive = false; this.inShot = false; this.watching = false; this.sendT = 0; this.ev = 0; this.started = false;
     this.useHud = !this.online;
@@ -211,7 +210,7 @@ export class PlayScene extends ArcadeScene {
 
   private updateFooter(): void {
     if (this.online) { this.updateOnlineText(); return; }
-    this.footer.setText(`${t('par')} ${this.hole.par}    ${t('strokes')} ${this.strokes}`);
+    this.footer.setText(`${t('par')} ${this.hole.par} · ${t('strokes')} ${this.strokes}`);
   }
 
   private drawCourse(): void {
@@ -519,12 +518,11 @@ export class PlayScene extends ArcadeScene {
       if (seat !== this.seat) img.setTint(OPP_TINT);
       return { x: 0, y: 0, strokes: 0, total: 0, done: false, img, shadow };
     });
-    this.add.image(360, 42, pill(this, 440, 46)).setScrollFactor(0).setDepth(9);
-    this.add.image(190, 98, pill(this, 290, 40)).setScrollFactor(0).setDepth(9);
-    this.add.image(530, 98, pill(this, 290, 40)).setScrollFactor(0).setDepth(9);
-    this.topLine = txt(this, 360, 42, '', { title: true, size: 22, color: '#ffd23f' }).setDepth(10).setScrollFactor(0);
-    this.meLine = txt(this, 190, 98, '', { title: true, size: 20, color: '#ffffff' }).setDepth(10).setScrollFactor(0);
-    this.oppLine = txt(this, 530, 98, '', { title: true, size: 20, color: '#ffb38a' }).setDepth(10).setScrollFactor(0);
+    // online there is no HUD row (no score, no pause): your total left, the opponent's right,
+    // the hole and its par between them
+    this.meLine = hudChip(this, HUD_MARGIN, HUD_ROW_Y, { text: '', size: 22, color: '#ffffff' });
+    this.oppLine = hudChip(this, 720 - HUD_MARGIN, HUD_ROW_Y, { align: 'right', text: '', size: 22, color: '#ffb38a' });
+    this.topLine = hudChip(this, 360, HUD_ROW_Y, { align: 'center', text: '', size: 22, color: '#ffd23f' });
     net.onScene(this, 'gs', (d: ShotSnap) => this.onShotSnap(d));
     net.onScene(this, 'gd', (d: ShotDone) => this.onShotDone(d));
     this.loadHoleOnline(0);
@@ -591,8 +589,9 @@ export class PlayScene extends ArcadeScene {
     this.topLine.setText(`${t('hole')} ${this.holeIdx + 1}/9 · ${t('par')} ${this.hole.par}`);
     this.meLine.setText(`${t('you')} ${me.total}`);
     this.oppLine.setText(`${this.oppName()} ${op.total}`);
+    this.topLine.setAnchor((this.meLine.right + this.oppLine.left) / 2, HUD_ROW_Y);
     const mine = this.cur === this.seat;
-    this.footer.setText(`${mine ? t('yourTurn') : t('theirTurn')} · ${t('strokes')} ${this.strokes}`).setColor(mine ? '#5dff7a' : '#ffb38a');
+    this.footer.setText(`${mine ? t('yourTurn') : t('theirTurn')} · ${t('strokes')} ${this.strokes}`).setTextColor(mine ? '#5dff7a' : '#ffb38a');
   }
 
   private updateOnline(dt: number): void {

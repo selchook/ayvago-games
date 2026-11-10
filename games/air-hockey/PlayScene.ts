@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, shake, t, rng, net, upper, isEasy } from '@core';
+import { ArcadeScene, Controls, shake, t, rng, net, upper, isEasy, hudChip, HUD_MARGIN } from '@core';
 import { ftxt, freshTextCanvases, softFlash } from './fasttext';
 import {
   W, L, R, T, B, MID, CR, GOAL_L, GOAL_R, POST_R, POCKET, PUCK_R, MAL_R, BIG_R,
@@ -11,6 +11,7 @@ export { makeHockeyTextures } from './table';
 // ---------------------------------------------------------------- tuning
 // Physics
 const MAX_PUCK = 2100;          // puck speed cap (px/s)
+const UI_Y = 52;                // centre line of the scoreboard chips
 const FAST_MAX = 2700;          // cap while the fast-puck power is on
 const FAST_MIN = 620;           // ...and the puck never drops below this then
 const FRICTION = 0.32;          // exponential air-table drag per second
@@ -223,18 +224,22 @@ export class PlayScene extends ArcadeScene {
 
   // ================================================================ HUD
   private buildUi(myCol: number, opCol: number): void {
-    const D = 9000;
-    this.uiG = this.add.graphics().setScrollFactor(0).setDepth(D);
+    // The scoreboard keeps its two-line layout (names and goal pips over the goal count) inside one
+    // HUD chip centred at (360, UI_Y); the solo score sits in a chip of its own on the left.
     const peer = this.online ? upper((net.peerName || t('opponent')).slice(0, 9)) : t('cpu');
-    const s = (o: Phaser.GameObjects.Text) => o.setScrollFactor(0).setDepth(D + 1);
-    this.nameMe = s(ftxt(this, 158, 35, t('you'), { title: true, size: 20, color: css(myCol), strokeThickness: 4, shadow: false }).setOrigin(0, 0.5));
-    this.nameOp = s(ftxt(this, 562, 35, peer, { title: true, size: 20, color: css(opCol), strokeThickness: 4, shadow: false }).setOrigin(1, 0.5));
-    this.centerLbl = s(ftxt(this, 360, 34, '', { title: true, size: 15, color: '#ffffff', strokeThickness: 3, shadow: false }));
-    this.numMe = s(ftxt(this, 330, 67, '0', { title: true, size: 30, color: css(myCol), strokeThickness: 4, shadow: false }));
-    this.numOp = s(ftxt(this, 390, 67, '0', { title: true, size: 30, color: css(opCol), strokeThickness: 4, shadow: false }));
+    this.uiG = this.add.graphics();
+    this.nameMe = ftxt(this, -202, -17, t('you'), { title: true, size: 20, color: css(myCol), strokeThickness: 4, shadow: false }).setOrigin(0, 0.5);
+    this.nameOp = ftxt(this, 202, -17, peer, { title: true, size: 20, color: css(opCol), strokeThickness: 4, shadow: false }).setOrigin(1, 0.5);
+    this.centerLbl = ftxt(this, 0, -18, '', { title: true, size: 15, color: '#ffffff', strokeThickness: 3, shadow: false });
+    this.numMe = ftxt(this, -30, 15, '0', { title: true, size: 30, color: css(myCol), strokeThickness: 4, shadow: false });
+    this.numOp = ftxt(this, 30, 15, '0', { title: true, size: 30, color: css(opCol), strokeThickness: 4, shadow: false });
+    const board = this.add.container(0, 0, [this.uiG, this.nameMe, this.nameOp, this.centerLbl, this.numMe, this.numOp]).setData('chipWidth', 424);
+    hudChip(this, 360, UI_Y, { align: 'center', height: 80, minWidth: 460, items: [board] });
     if (!this.online) {
-      s(ftxt(this, 66, 34, t('score'), { title: true, size: 14, color: '#9fb3ff', strokeThickness: 3, shadow: false }));
-      this.scoreNum = s(ftxt(this, 66, 64, '0', { title: true, size: 26, color: css(GOLD), strokeThickness: 4, shadow: false }));
+      const cap = ftxt(this, 0, -18, t('score'), { title: true, size: 14, color: '#9fb3ff', strokeThickness: 3, shadow: false });
+      this.scoreNum = ftxt(this, 0, 12, '0', { title: true, size: 26, color: css(GOLD), strokeThickness: 4, shadow: false });
+      const box = this.add.container(0, 0, [cap, this.scoreNum]).setData('chipWidth', 72);
+      hudChip(this, HUD_MARGIN - 4, UI_Y, { height: 80, minWidth: 108, items: [box] });
     } else this.scoreNum = undefined;
     this.bannerT = ftxt(this, 360, MID - 40, '', { title: true, size: 64, color: '#ffd23f', strokeThickness: 10 }).setDepth(20).setAlpha(0);
     this.countT = ftxt(this, 360, MID, '', { title: true, size: 96, color: '#ffffff', strokeThickness: 10 }).setDepth(20).setAlpha(0);
@@ -245,19 +250,17 @@ export class PlayScene extends ArcadeScene {
     const g = this.uiG;
     if (this.uiDirty) {
       this.uiDirty = false;
+      // goal pips, in the scoreboard chip's own coordinates (its centre is 0, 0)
       g.clear();
-      g.fillStyle(0x0b1020, 0.74).fillRoundedRect(130, 12, 460, 80, 40);
-      g.lineStyle(2, 0xffffff, 0.12).strokeRoundedRect(130, 12, 460, 80, 40);
       for (let i = 0; i < WIN_GOALS; i++) {
         const dot = (x: number, on: boolean, col: number) => {
-          g.fillStyle(on ? col : 0xffffff, on ? 1 : 0.16).fillCircle(x, 67, 7);
-          if (on) g.fillStyle(0xffffff, 0.55).fillCircle(x - 2, 65, 2.2);
+          g.fillStyle(on ? col : 0xffffff, on ? 1 : 0.16).fillCircle(x, 15, 7);
+          if (on) g.fillStyle(0xffffff, 0.55).fillCircle(x - 2, 13, 2.2);
         };
-        dot(162 + i * 21, i < this.myGoals, this.me.col);
-        dot(558 - i * 21, i < this.opGoals, this.op.col);
+        dot(-198 + i * 21, i < this.myGoals, this.me.col);
+        dot(198 - i * 21, i < this.opGoals, this.op.col);
       }
-      g.fillStyle(0xffffff, 0.6).fillRoundedRect(352, 65, 16, 4, 2);
-      if (this.scoreNum) g.fillStyle(0x0b1020, 0.62).fillRoundedRect(12, 12, 108, 80, 26);
+      g.fillStyle(0xffffff, 0.6).fillRoundedRect(-8, 13, 16, 4, 2);
       this.numMe.setText(String(this.myGoals));
       this.numOp.setText(String(this.opGoals));
     }

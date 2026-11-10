@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, shake, popup, txt, t, rng } from '@core';
+import { ArcadeScene, burst, shake, popup, txt, t, rng, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y } from '@core';
 import { makeArt, glass, neonArc, neonBar } from './art';
 
 /** Cyan, magenta, yellow, purple: the four gate colours. */
@@ -57,7 +57,7 @@ export class PlayScene extends ArcadeScene {
   private bg!: Phaser.GameObjects.TileSprite;
   private bgNear!: Phaser.GameObjects.TileSprite;
   private hint!: Phaser.GameObjects.Text;
-  private starText!: Phaser.GameObjects.Text;
+  private starChip!: HudChip;
   private gates: Gate[] = [];
   private colorIdx = 0;
   private vy = 0;
@@ -82,7 +82,6 @@ export class PlayScene extends ArcadeScene {
     this.cameras.main.setScroll(0, 0);
 
     makeArt(this, PALETTE);
-    this.add.image(88, 92, glass(this, 120, 50)).setScrollFactor(0).setDepth(8990);
     // a night sky fixed to the screen and two star layers drifting at different speeds
     this.add.image(0, 0, 'cg-sky').setOrigin(0).setScrollFactor(0).setDepth(-12);
     this.bg = this.add.tileSprite(0, 0, width, height, 'cg-stars-far').setOrigin(0).setScrollFactor(0).setDepth(-11);
@@ -105,8 +104,8 @@ export class PlayScene extends ArcadeScene {
     this.hint = txt(this, width / 2, height * 0.9, t('tapHop'), { size: 34, color: '#f3f2f2' }).setScrollFactor(0).setDepth(50);
     this.tweens.add({ targets: this.hint, alpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
 
-    this.add.image(50, 92, 'cg-star').setScale(0.3).setScrollFactor(0).setDepth(9000);
-    this.starText = txt(this, 78, 92, '0', { title: true, size: 22, color: '#ffd23f' }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(9000);
+    // stars collected, in a chip on the second HUD row
+    this.starChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { icon: 'cg-star', iconSize: 28, text: '0', color: '#ffd23f', minWidth: 96 });
 
     this.lastY = startY - 60;
     this.fillGates();
@@ -123,7 +122,7 @@ export class PlayScene extends ArcadeScene {
 
   private updateHud(): void {
     this.hud.setLevel(this.level);
-    this.starText.setText(String(this.stars));
+    this.starChip.setText(this.stars);
     this.hud.setLives(this.lives, MAX_LIVES);
   }
 
@@ -337,7 +336,9 @@ export class PlayScene extends ArcadeScene {
     this.tweens.killTweensOf(s);
     this.tweens.add({ targets: s, scale: 0.9, alpha: 0, angle: 180, duration: 300, onComplete: () => s.destroy() });
     this.updateHud();
-    this.tweens.add({ targets: this.starText, scale: 1.4, duration: 90, yoyo: true });
+    this.tweens.killTweensOf(this.starChip);
+    this.starChip.setScale(1);
+    this.tweens.add({ targets: this.starChip, scale: 1.2, duration: 90, yoyo: true });
   }
 
   private switchColour(gate: Gate): void {

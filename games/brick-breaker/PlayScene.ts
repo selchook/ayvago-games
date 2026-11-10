@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng } from '@core';
+import { ArcadeScene, Controls, burst, shake, flash, popup, t, txt, rng, hudChip, HudChip, HUD_GAP, HUD_ROW2_Y } from '@core';
 import { BRICK_COLORS, LEVELS } from './levels';
 import { makeBackdrop, makeBanner, makeCapsule, makeFx } from './art';
 
@@ -9,9 +9,10 @@ interface Drop { kind: Power; obj: Phaser.GameObjects.Container; }
 const ADD = Phaser.BlendModes.ADD;
 const DANGER_Y = 1196;
 type Power = 'wide' | 'multi' | 'slow' | 'life';
+const TIMER_W = 80;
 
-const FIELD_L = 16, FIELD_R = 704, FIELD_T = 100;
-const COLS = 10, CELL_W = 68, CELL_H = 34, BRICK_W = 64, BRICK_H = 30, GRID_X = 360 - (COLS * CELL_W) / 2 + CELL_W / 2, GRID_Y = 190;
+const FIELD_L = 16, FIELD_R = 704, FIELD_T = 146;   // the field starts below the second HUD row
+const COLS = 10, CELL_W = 68, CELL_H = 34, BRICK_W = 64, BRICK_H = 30, GRID_X = 360 - (COLS * CELL_W) / 2 + CELL_W / 2, GRID_Y = 236;
 const PADDLE_Y = 1150, PADDLE_H = 34, BALL_R = 13;
 const POWER_COLORS: Record<Power, number> = { wide: 0x2aa7e0, multi: 0xff4fa3, slow: 0x5dff7a, life: 0xec3013 };
 const POWER_LETTER: Record<Power, string> = { wide: 'W', multi: 'M', slow: 'S', life: '+' };
@@ -38,10 +39,9 @@ export class PlayScene extends ArcadeScene {
   private padGlow!: Phaser.GameObjects.Image;
   private danger!: Phaser.GameObjects.Graphics;
   private dangerFlash = 0;
-  private timers!: Phaser.GameObjects.Graphics;
-  private timerText: Phaser.GameObjects.Text[] = [];
+  private timerChips: { chip: HudChip; bar: Phaser.GameObjects.Graphics }[] = [];
   private wallSfxT = 0;
-  private comboText!: Phaser.GameObjects.Text;
+  private comboChip!: HudChip;
 
   createGame(): void {
     const { width, height } = this.scale;
@@ -49,7 +49,7 @@ export class PlayScene extends ArcadeScene {
     this.lives = 3; this.level = 0; this.wideT = 0; this.slowT = 0; this.combo = 0; this.hits = 0;
     this.targetX = null; this.stuckT = 0; this.busy = false; this.paddleW = 150;
 
-    this.dangerFlash = 0; this.wallSfxT = 0; this.timerText = [];
+    this.dangerFlash = 0; this.wallSfxT = 0; this.timerChips = [];
     // backdrop: night sky, synthwave floor and a neon frame around the field
     makeFx(this); makeBanner(this);
     for (const [k, col] of Object.entries(POWER_COLORS)) makeCapsule(this, 'bk-cap-' + k, '#' + col.toString(16).padStart(6, '0'));
@@ -60,9 +60,15 @@ export class PlayScene extends ArcadeScene {
       this.tweens.add({ targets: st, alpha: 0.8, scale: 0.09, duration: 700, delay: rng.int(0, 4000), yoyo: true, repeat: -1, repeatDelay: rng.int(1500, 5000) });
     }
     this.danger = this.add.graphics().setDepth(2);
-    this.comboText = txt(this, width / 2, 74, '', { title: true, size: 16, color: '#ff4fa3', strokeThickness: 4, shadow: false }).setDepth(9000);
-    this.timers = this.add.graphics().setDepth(20);
-    for (const k of ['wide', 'slow'] as Power[]) this.timerText.push(txt(this, 0, 0, POWER_LETTER[k], { title: true, size: 14, strokeThickness: 4, shadow: false }).setDepth(21).setVisible(false));
+    // the combo in a chip on the second HUD row, shown from x2
+    this.comboChip = hudChip(this, width / 2, HUD_ROW2_Y, { align: 'center', text: '', size: 16 }).setVisible(false);
+    // timed power-ups: a letter and a draining bar in a chip each, bottom right under the paddle
+    for (const k of ['wide', 'slow'] as Power[]) {
+      const bar = this.add.graphics().setData('chipWidth', TIMER_W);
+      const col = '#' + POWER_COLORS[k].toString(16).padStart(6, '0');
+      const chip = hudChip(this, FIELD_R - 12, 1236, { align: 'right', text: POWER_LETTER[k], size: 16, color: col, height: 36, items: [bar] }).setVisible(false);
+      this.timerChips.push({ chip, bar });
+    }
 
     this.trail = this.add.particles(0, 0, 'spark', {
       lifespan: 300, scale: { start: 0.16, end: 0 }, alpha: { start: 0.7, end: 0 }, tint: 0x3ee6ff, frequency: -1, blendMode: 'ADD',
@@ -302,7 +308,7 @@ export class PlayScene extends ArcadeScene {
         this.glowAt(x, y, rng.pick([0xffd23f, 0xff4fa3, 0x3ee6ff]), 1.6, 420);
       });
     }
-    this.comboText.setText('');
+    this.comboChip.setText('').setVisible(false);
     for (const b of this.balls) { b.img.destroy(); b.glow.destroy(); }
     this.balls = [];
     for (const d of this.drops) d.obj.destroy();
@@ -427,10 +433,10 @@ export class PlayScene extends ArcadeScene {
   private updateCombo(): void {
     const n = Math.min(8, this.combo);
     const label = this.combo >= 2 ? `${t('combo')} x${n}` : '';
-    if (label && label !== this.comboText.text) this.tweens.add({ targets: this.comboText, scale: { from: 1.35, to: 1 }, duration: 160, ease: 'Quad.easeOut' });
-    this.comboText.setText(label);
+    if (label && label !== this.comboChip.text.text) this.tweens.add({ targets: this.comboChip, scale: { from: 1.25, to: 1 }, duration: 160, ease: 'Quad.easeOut' });
+    this.comboChip.setText(label).setVisible(!!label);
     const col = this.combo >= 6 ? 0xff4fa3 : this.combo >= 3 ? 0xffd23f : 0x3ee6ff;
-    this.comboText.setColor(this.combo >= 6 ? '#ff4fa3' : this.combo >= 3 ? '#ffd23f' : '#3ee6ff');
+    this.comboChip.setTextColor(this.combo >= 6 ? '#ff4fa3' : this.combo >= 3 ? '#ffd23f' : '#3ee6ff');
     this.trail.particleTint = col;
     for (const b of this.balls) b.glow.setTint(col);
   }
@@ -450,21 +456,20 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  /** Remaining time of the timed power-ups, bottom right. */
+  /** Remaining time of the timed power-ups, bottom right: a chip each with a draining bar. */
   private drawTimers(): void {
-    const g = this.timers;
-    g.clear();
     const list: [Power, number, number][] = [['wide', this.wideT, 12], ['slow', this.slowT, 10]];
-    let x = FIELD_R - 52;
+    let x = FIELD_R - 12;
     list.forEach(([k, v, max], i) => {
-      const lbl = this.timerText[i];
-      if (v <= 0) { lbl.setVisible(false); return; }
-      const w = 80, h = 22, y = 1232, col = POWER_COLORS[k];
-      g.fillStyle(0x000000, 0.7).fillRoundedRect(x - w / 2, y - h / 2, w, h, 11);
-      g.fillStyle(col, 1).fillRoundedRect(x - w / 2 + 3, y - h / 2 + 3, Math.max(16, (w - 6) * (v / max)), h - 6, 8);
-      g.lineStyle(2, 0xffffff, 0.8).strokeRoundedRect(x - w / 2, y - h / 2, w, h, 11);
-      lbl.setPosition(x - w / 2 - 14, y).setVisible(v > 2.5 || Math.floor(this.time.now / 150) % 2 === 0);
-      x -= w + 30;
+      const { chip, bar } = this.timerChips[i];
+      if (v <= 0) { chip.setVisible(false); return; }
+      const w = TIMER_W, h = 14;
+      bar.clear();
+      bar.fillStyle(0x000000, 0.45).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+      bar.fillStyle(POWER_COLORS[k], 1).fillRoundedRect(-w / 2 + 2, -h / 2 + 2, Math.max(10, (w - 4) * (v / max)), h - 4, (h - 4) / 2);
+      chip.setVisible(true).setAnchor(x, chip.y);
+      chip.text.setVisible(v > 2.5 || Math.floor(this.time.now / 150) % 2 === 0);
+      x = chip.left - HUD_GAP;
     });
   }
 }

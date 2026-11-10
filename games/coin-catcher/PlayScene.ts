@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, CHARACTER_FRAME, Controls, burst, shake, popup, txt, t, rng } from '@core';
+import { ArcadeScene, CHARACTER_FRAME, Controls, burst, shake, popup, txt, t, rng, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y } from '@core';
 
 type Kind = 'bronze' | 'silver' | 'gold' | 'gem' | 'star' | 'heart' | 'bomb';
 interface Item {
@@ -38,7 +38,7 @@ export class PlayScene extends ArcadeScene {
   private basket!: Phaser.GameObjects.Image;
   private magnetFx!: Phaser.GameObjects.Arc;
   private sparks!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private comboText!: Phaser.GameObjects.Text;
+  private comboChip!: HudChip;
   private hint!: Phaser.GameObjects.Text;
   private items: Item[] = [];
   private lives = MAX_LIVES;
@@ -82,7 +82,8 @@ export class PlayScene extends ArcadeScene {
       tint: [0xffd23f, 0xffffff], blendMode: 'ADD', emitting: false,
     }).setDepth(20);
 
-    this.comboText = txt(this, width - 130, 92, '', { title: true, size: 26, color: '#ffd23f' }).setOrigin(1, 0.5).setDepth(9000);
+    // the score multiplier in a chip on the second HUD row, right
+    this.comboChip = hudChip(this, width - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', label: t('combo'), text: '', color: '#ffd23f' }).setVisible(false);
     // touch: floating joystick anywhere on the screen, read as axisX
     this.controls = new Controls(this, { joystick: true });
     this.hint = txt(this, width / 2, height * 0.62, t(this.controls.touchUi ? 'stickHint' : 'keysHint'), { size: 40 }).setDepth(50);
@@ -98,7 +99,7 @@ export class PlayScene extends ArcadeScene {
   private updateHud(): void {
     this.hud.setLevel(this.level);
     this.hud.setLives(this.lives, MAX_LIVES);
-    this.comboText.setText(this.mult > 1 ? `x${this.mult}` : '');
+    this.comboChip.setText(`x${this.mult}`).setVisible(this.mult > 1);
   }
 
   // ---------- spawning ----------
@@ -237,7 +238,9 @@ export class PlayScene extends ArcadeScene {
     else this.sfxAt('coin', x, { volume: 0.35, detune: Math.min(this.combo, 20) * 30, exact: true });
     if (this.mult > prevMult) {
       this.sfx('combo', { volume: 0.55, delay: 0.06 });
-      this.tweens.add({ targets: this.comboText, scale: 1.6, duration: 120, yoyo: true });
+      this.tweens.killTweensOf(this.comboChip);
+      this.comboChip.setScale(1);
+      this.tweens.add({ targets: this.comboChip, scale: 1.25, duration: 120, yoyo: true });
       popup(this, this.player.x, this.basket.y - 110, `${t('combo')} x${this.mult}`, '#3ee6ff', 26);
     }
     if (this.catches % CATCHES_PER_LEVEL === 0) this.levelUp();

@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
-import { ArcadeScene, burst, flash, shake, t, txt, rng, net, playerCharacter, CHARACTER_FRAME, isEasy } from '@core';
+import {
+  ArcadeScene, burst, flash, shake, t, txt, rng, net, playerCharacter, CHARACTER_FRAME, isEasy,
+  hudChip, hudText, HudChip, HUD_ROW_Y, HUD_CHIP_H, HUD_GAP,
+} from '@core';
 import {
   WORLD_W, PAD, makeRound, fly, crater, tankPose, groundAt, aiAim, type Shot, type TreeSpec,
 } from './world';
@@ -15,7 +18,11 @@ const UI = 1000;                    // UI objects sit at this depth or above, fi
 const CREW_S = 0.34;                // commander scale in the hatch
 // kept clear of the screen's edges, which a rounded or cropped frame may hide
 const FIRE_X = 1162, FIRE_Y = 600, FIRE_R = 70;
-const MAP = { x: 460, y: 64, w: 360, h: 46 };
+// the minimap sits in a chip under the scoreboard row (its centre line at MAP.y + MAP.h / 2)
+const MAP = { x: 460, y: 90, w: 360, h: 46 };
+const MAP_CHIP_H = MAP.h + 16;
+/** Centre line of the turn chip, under the minimap's. */
+const TURN_Y = MAP.y + MAP.h / 2 + MAP_CHIP_H / 2 + 10 + HUD_CHIP_H / 2;
 /**
  * Normal and Easy (practice). The CPU's skill is base + round * perRound + shots * perShot, capped;
  * skill 0 misses by up to ±8° and ±13 power, skill 1 by ±1° and ±1. Easy: it starts wild (0), learns
@@ -118,12 +125,16 @@ export class PlayScene extends ArcadeScene {
   private uiG!: Phaser.GameObjects.Graphics;
   private mapG!: Phaser.GameObjects.Graphics;
   private banner!: Phaser.GameObjects.Text;
-  private turnText!: Phaser.GameObjects.Text;
-  private nameL!: Phaser.GameObjects.Text;
-  private nameR!: Phaser.GameObjects.Text;
-  private roundText!: Phaser.GameObjects.Text;
-  private windText!: Phaser.GameObjects.Text;
-  private aimText!: Phaser.GameObjects.Text;
+  private turnText!: HudChip;
+  private nameL!: HudChip;
+  private nameR!: HudChip;
+  private roundText!: HudChip;
+  private windText!: HudChip;
+  private pipsL!: Phaser.GameObjects.Graphics;
+  private pipsR!: Phaser.GameObjects.Graphics;
+  private windG!: Phaser.GameObjects.Graphics;
+  private turnG!: Phaser.GameObjects.Graphics;
+  private aimText!: HudChip;
   private fireText!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
   private edgeText!: Phaser.GameObjects.Text;
@@ -394,23 +405,23 @@ export class PlayScene extends ArcadeScene {
     for (const o of this.tanks) if (o.alive) this.crewPose(o, o === tk ? 'stand' : 'front');
     if (tk.ai) {
       this.phase = 'ai';
-      this.turnText.setText(t('cpuTurn')).setColor(TEAM[tk.seat].main);
+      this.turnText.setVisible(true).setText(t('cpuTurn')).setTextColor(TEAM[tk.seat].main);
       this.aiTurn(tk);
     } else if (tk.local) {
       this.phase = 'aim';
-      this.turnText.setText(t('yourTurn')).setColor('#ffffff');
+      this.turnText.setVisible(true).setText(t('yourTurn')).setTextColor('#ffffff');
       this.sfx('turn', { volume: 0.4 });
       if (this.hintShown) this.hint.setText(t(this.touchUi ? 'hintTouch' : 'hintKeys')).setAlpha(1);
     } else {
       this.phase = 'wait';
-      this.turnText.setText(t('theirTurn')).setColor(TEAM[tk.seat].main);
+      this.turnText.setVisible(true).setText(t('theirTurn')).setTextColor(TEAM[tk.seat].main);
       if (this.pendingFire && this.pendingFire.n === this.shotNo) {
         const m = this.pendingFire;
         this.pendingFire = null;
         this.time.delayedCall(200, () => this.applyRemoteFire(m));
       }
     }
-    this.tweens.add({ targets: this.turnText, scale: { from: 1.25, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: this.turnText, scale: { from: 1.15, to: 1 }, duration: 260, ease: 'Back.easeOut' });
   }
 
   // ------------------------------------------------------------------ AI
@@ -853,20 +864,29 @@ export class PlayScene extends ArcadeScene {
   private buildUi(): void {
     const ui = (o: Phaser.GameObjects.Components.ScrollFactor & Phaser.GameObjects.Components.Depth, d = 0) => { o.setScrollFactor(0); o.setDepth(UI + d); return o; };
     this.uiG = ui(this.add.graphics()) as Phaser.GameObjects.Graphics;
-    const mapBg = ui(this.add.graphics(), 0) as Phaser.GameObjects.Graphics;
-    mapBg.fillStyle(0x0b1020, 0.55).fillRoundedRect(MAP.x - 6, MAP.y - 4, MAP.w + 12, MAP.h + 8, 10);
+    // the minimap in a chip (the chip behind it, the map and its marks on top)
+    hudChip(this, MAP.x + MAP.w / 2, MAP.y + MAP.h / 2, { align: 'center', minWidth: MAP.w + 28, height: MAP_CHIP_H, depth: UI - 0.5 });
     if (!this.textures.exists('tt-map')) this.textures.createCanvas('tt-map', MAP.w, MAP.h);
     ui(this.add.image(MAP.x, MAP.y, 'tt-map').setOrigin(0), 0.5);
     this.mapG = ui(this.add.graphics(), 1) as Phaser.GameObjects.Graphics;
+    // scoreboard in the top HUD row: a chip per side (name and rounds won) and the round between
     const peer = this.online ? (net.peerName || t('opponent')).slice(0, 10) : t('cpu');
     const names = this.mySeat === 0 ? [t('you'), peer] : [peer, t('you')];
-    this.nameL = ui(txt(this, 448, 34, names[0], { title: true, size: 26, color: TEAM[0].main }).setOrigin(1, 0.5), 2) as Phaser.GameObjects.Text;
-    this.nameR = ui(txt(this, 832, 34, names[1], { title: true, size: 26, color: TEAM[1].main }).setOrigin(0, 0.5), 2) as Phaser.GameObjects.Text;
-    this.roundText = ui(txt(this, 640, 34, '', { title: true, size: 22, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
-    this.windText = ui(txt(this, 584, 140, '', { title: true, size: 20, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
-    this.aimText = ui(txt(this, 172, 646, '', { title: true, size: 28, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
+    const pipsW = (WIN - 1) * 26 + 18;
+    this.pipsL = this.add.graphics().setData('chipWidth', pipsW);
+    this.pipsR = this.add.graphics().setData('chipWidth', pipsW);
+    this.roundText = hudChip(this, W / 2, HUD_ROW_Y, { align: 'center', text: '', size: 24 });
+    const nameR = hudText(this, names[1], 24, TEAM[1].main);
+    this.nameL = hudChip(this, 0, HUD_ROW_Y, { align: 'right', text: names[0], size: 24, color: TEAM[0].main, items: [this.pipsL] });
+    this.nameR = hudChip(this, 0, HUD_ROW_Y, { align: 'left', items: [this.pipsR, nameR] });
+    // the wind right of the minimap: its strength and an arrow, longer for stronger wind
+    this.windG = this.add.graphics().setData('chipWidth', 70);
+    this.windText = hudChip(this, MAP.x + MAP.w + 14 + HUD_GAP, MAP.y + MAP.h / 2, { text: '', size: 22, items: [this.windG] });
+    this.aimText = hudChip(this, 28, 646, { text: '', size: 28, height: 56, minWidth: 288 });
     this.fireText = ui(txt(this, FIRE_X, FIRE_Y, t('fire'), { title: true, size: 30, color: '#ffffff' }), 3) as Phaser.GameObjects.Text;
-    this.turnText = ui(txt(this, 640, 192, '', { title: true, size: 30, color: '#ffffff' }), 2) as Phaser.GameObjects.Text;
+    // whose turn it is (online with the turn clock's bar after it)
+    this.turnG = this.add.graphics().setData('chipWidth', 80);
+    this.turnText = hudChip(this, W / 2, TURN_Y, { align: 'center', text: '', size: 26, items: this.online ? [this.turnG] : [] }).setVisible(false);
     this.banner = ui(txt(this, 640, 300, '', { title: true, size: 60, color: '#ffd23f', wrap: 1100 }), 40) as Phaser.GameObjects.Text;
     this.hint = ui(txt(this, 640, 256, '', { size: 24, color: '#ffffff', wrap: 900 }), 2) as Phaser.GameObjects.Text;
     this.edgeText = ui(txt(this, 0, 0, '', { title: true, size: 20, color: '#ffffff' }), 3) as Phaser.GameObjects.Text;
@@ -874,6 +894,8 @@ export class PlayScene extends ArcadeScene {
 
   private updateBoard(): void {
     this.roundText.setText(t('round', { n: this.round + 1 }));
+    this.nameL.setAnchor(this.roundText.left - HUD_GAP, HUD_ROW_Y);
+    this.nameR.setAnchor(this.roundText.right + HUD_GAP, HUD_ROW_Y);
     const w = Math.round(Math.abs(this.wind) * 400);
     this.windText.setText(w === 0 ? `${t('wind')} 0` : `${t('wind')} ${w}`);
   }
@@ -881,25 +903,25 @@ export class PlayScene extends ArcadeScene {
   private drawUi(): void {
     const g = this.uiG;
     g.clear();
-    // scoreboard pill
-    g.fillStyle(0x0b1020, 0.62).fillRoundedRect(290, 8, 700, 52, 26);
+    // rounds won: pips in the side chips, filling from the name outwards
+    const pl = this.pipsL.clear(), pr = this.pipsR.clear();
     for (let i = 0; i < WIN; i++) {
-      g.fillStyle(i < this.scores[0] ? TEAM[0].hex : 0xffffff, i < this.scores[0] ? 1 : 0.18).fillCircle(474 + i * 26, 34, 9);
-      g.fillStyle(i < this.scores[1] ? TEAM[1].hex : 0xffffff, i < this.scores[1] ? 1 : 0.18).fillCircle(806 - i * 26, 34, 9);
+      const x = -(WIN - 1) * 13 + i * 26;
+      pl.fillStyle(i < this.scores[0] ? TEAM[0].hex : 0xffffff, i < this.scores[0] ? 1 : 0.22).fillCircle(x, 0, 9);
+      pr.fillStyle(i < this.scores[1] ? TEAM[1].hex : 0xffffff, i < this.scores[1] ? 1 : 0.22).fillCircle(-x, 0, 9);
     }
-    // wind: an arrow under the minimap, longer for stronger wind
-    g.fillStyle(0x0b1020, 0.55).fillRoundedRect(512, 120, 256, 40, 20);
+    // wind: an arrow in the wind chip, longer for stronger wind
+    const wg = this.windG.clear();
     const wl = Phaser.Math.Clamp(this.wind * 1300, -56, 56);
     if (Math.abs(wl) > 2) {
-      const y = 140, x0 = 700 - wl / 2, x1 = 700 + wl / 2, s = Math.sign(wl);
-      g.lineStyle(5, 0x9fe3ff, 1).lineBetween(x0, y, x1, y);
-      g.fillStyle(0x9fe3ff, 1).fillTriangle(x1 + s * 10, y, x1 - s * 2, y - 8, x1 - s * 2, y + 8);
+      const x0 = -wl / 2, x1 = wl / 2, s = Math.sign(wl);
+      wg.lineStyle(5, 0x9fe3ff, 1).lineBetween(x0 - s * 4, 0, x1 - s * 4, 0);
+      wg.fillStyle(0x9fe3ff, 1).fillTriangle(x1 + s * 6, 0, x1 - s * 6, -8, x1 - s * 6, 8);
     }
     // angle and power readout
     const tk = this.tanks[this.turn];
     const shownPower = this.charging ? this.chargePower() : tk.lastPower || 0;
     this.drawMeter(tk);
-    g.fillStyle(0x0b1020, 0.6).fillRoundedRect(28, 616, 288, 60, 30);
     const deg = tk.seat === 0 ? tk.deg : 180 - tk.deg;
     this.aimText.setText(`∠ ${Math.round(deg)}°   ⚡ ${shownPower}`);
     // fire button with a power ring and the last shot's power tick
@@ -920,9 +942,11 @@ export class PlayScene extends ArcadeScene {
     }
     this.fireText.setAlpha(live ? 1 : 0.45).setScale(localCharge ? 1.08 + Math.sin(this.time.now / 60) * 0.03 : 1);
     // online turn clock
+    const tg = this.turnG.clear();
     if (this.online && (this.phase === 'aim' || this.phase === 'wait')) {
       const left = Math.max(0, Math.ceil(this.turnLeft));
-      g.fillStyle(left <= 5 ? 0xff5a5a : 0xffffff, 0.9).fillRoundedRect(600, 218, 80 * (this.turnLeft / TURN_TIME), 6, 3);
+      tg.fillStyle(0x000000, 0.3).fillRoundedRect(-40, -4, 80, 8, 4);
+      tg.fillStyle(left <= 5 ? 0xff5a5a : 0xffffff, 0.9).fillRoundedRect(-40, -4, 80 * (this.turnLeft / TURN_TIME), 8, 4);
     }
     this.drawMap();
     this.drawEdge();
