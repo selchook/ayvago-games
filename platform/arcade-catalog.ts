@@ -650,6 +650,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'marble-maze',
+    title: { en: 'Marble Maze', tr: 'Bilye Labirenti' },
+    description: {
+      en: 'Tilt the board and roll the glass marble to the flag without dropping it into a hole! 24 handcrafted levels across the Wood Workshop, Lily Garden, Ice Cave and Sky Ruins: narrow bridges, bouncy bumpers, jump pads, moving rafts, colour-coded button doors, slippery ice, sticky sand and snow, and keys that unlock the goal. Grab the gems, beat the clock and earn three stars on every level.',
+      tr: "Tahtayı eğ, cam bilyeyi deliklere düşürmeden bayrağa yuvarla! Ahşap Atölye, Nilüfer Bahçesi, Buz Mağarası ve Gök Harabeleri'nde 24 el yapımı bölüm: dar köprüler, zıp zıp tamponlar, zıplama pedleri, hareketli sallar, renkli düğmeli kapılar, kaygan buz, yavaşlatan kum ve kar, hedefi açan anahtarlar. Mücevherleri topla, süreyi yen, her bölümde üç yıldız kazan.",
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'arcade', 'casual'],
+    tags: ['marble', 'maze', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-10',
+  }),
+  arcadeGame({
     slug: 'maze-muncher',
     title: { en: 'Maze Muncher', tr: 'Labirent Yiyici' },
     description: {
