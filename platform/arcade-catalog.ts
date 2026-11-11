@@ -884,6 +884,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'pirate-cove',
+    title: { en: 'Pirate Cove', tr: 'Korsan Koyu' },
+    description: {
+      en: 'Take the helm of a black-sailed pirate ship on a bright sea full of islands! Bring enemies alongside and rake them with port or starboard broadsides, scoop up the gold and repair barrels they leave behind, and limp back to the cove to patch your hull. Ten waves of navy patrols, shore forts, a treasure hunt before the storm, a treasure ship to escort and the Ghost Galleon rising from the fog.',
+      tr: 'Kara yelkenli korsan gemine dümen kır, adalarla dolu masmavi denize açıl! Düşmanı yanına al, iskele ya da sancak bordasından gülle yağdır; batan gemilerin altınlarını, tamir fıçılarını topla, yaralanınca koya dönüp gemini onar. On dalga boyunca devriye gemileri, kıyı kaleleri, fırtına öncesi hazine avı, hazine gemisi eskortu ve sisin içinden çıkan Hayalet Kalyon seni bekliyor.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['pirate', 'cove', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-11',
+  }),
+  arcadeGame({
     slug: 'pixel-runner',
     title: { en: 'Pixel Runner', tr: 'Piksel Koşucu' },
     description: {
