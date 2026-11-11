@@ -36,6 +36,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 | `npm run test:changed` | build + smoke + platform check of only the games a change can affect since `origin/main`: a game's own folder tests that game; a changed asset tests the games that load it; character art or `characters.ts` tests the character games; other shared runtime (`src/core`, build config) tests the canary set, one game per runtime variant; a dependency upgrade tests all. Rules in `scripts/changed-games.mjs`. CI runs the same on pull requests, only builds on `main` (the pull request already tested it) and runs every game nightly and on demand (Actions → ci → Run workflow) |
 | `node scripts/smoke-test.mjs --dev --serial <slug>` | smoke-test one game without building |
 | `npm run test:platform` | GHA protocol check of every game embedded like ayvago.com |
+| `npm run test:three-memory` | GPU memory check of the 3D games: three.js textures and geometries must stay flat across restarts of the Play scene (`World3D` frees what it created) |
 | `npm run platform` | regenerate ayvago.json manifests + `platform/arcade-catalog.ts` |
 | `npm run store-assets` | regenerate platform covers/icons + portal thumbnails |
 | `npm run release` | build + smoke + platform checks + manifests + art |

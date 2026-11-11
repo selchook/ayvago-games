@@ -300,6 +300,11 @@ through `@core/three` (`src/core/three/index.ts`). The pilot is `games/sky-road`
   then `world.addLights()` for sky light plus a sun with soft shadows.
   - Move the camera and objects in `updateGame()`. The world renders itself after every update
     and cleans up when the scene restarts or shuts down.
+  - That cleanup frees everything still in `world.scene` on the GPU: geometries, materials,
+    textures, skeletons, instance buffers and every light's shadow map. Only the loaded models'
+    own resources, shared by every copy, stay. Don't dispose these yourself on shutdown.
+  - Objects you take out of the scene mid-round are yours: dispose their own geometry and
+    materials when you drop them, or recycle them.
   - `world.followSun(p)` keeps the shadow area on the player.
   - `world.toScreen(v)` gives game pixels for `popup()` over 3D objects.
   - `world.onFrame` is for things that move even while the game logic is idle, such as menu decor.
