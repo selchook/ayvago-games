@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "strikealley",
+  "title": {
+    "en": "Strike Alley",
+    "tr": "Strike Salonu"
+  },
+  "description": {
+    "en": "3D bowling in a glossy neon alley. Pick your spot, flick the ball with spin and watch it skid through the oil and hook on the dry back end, while the pins crash into each other with real physics. Ten frames of real scoring: strikes, spares, splits and the perfect 300!",
+    "tr": "Neon ışıklı, cilalı bir bowling salonunda üç boyutlu bowling. Yerini seç, topu falsolu fırlat, yağlı pistte kayıp kuru bölümde dönmesini izle; lobutlar gerçek fizikle birbirine çarpıp devrilir. On çerçevelik gerçek puanlama: strike, spare, split ve 300 puanlık kusursuz oyun!"
+  },
+  "category": "sports",
+  "categories": [
+    "sports",
+    "casual",
+    "arcade"
+  ],
+  "tags": [
+    "strike",
+    "alley",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/strike-alley/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 40000,
+    "maxPerSecond": 1000,
+    "maxScore": 300
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/strike-alley/ayvago/icon-512.png",
+    "cover": "/games/strike-alley/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/strike-alley/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

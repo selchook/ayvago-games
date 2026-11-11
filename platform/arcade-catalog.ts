@@ -1162,6 +1162,29 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'strike-alley',
+    title: { en: 'Strike Alley', tr: 'Strike Salonu' },
+    description: {
+      en: '3D bowling in a glossy neon alley. Pick your spot, flick the ball with spin and watch it skid through the oil and hook on the dry back end, while the pins crash into each other with real physics. Ten frames of real scoring: strikes, spares, splits and the perfect 300!',
+      tr: 'Neon ışıklı, cilalı bir bowling salonunda üç boyutlu bowling. Yerini seç, topu falsolu fırlat, yağlı pistte kayıp kuru bölümde dönmesini izle; lobutlar gerçek fizikle birbirine çarpıp devrilir. On çerçevelik gerçek puanlama: strike, spare, split ve 300 puanlık kusursuz oyun!',
+    },
+    category: 'sports',
+    categories: ['sports', 'casual', 'arcade'],
+    tags: ['strike', 'alley', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    scoring: {
+      metric: 'points',
+      order: 'desc',
+      format: 'number',
+      label: { en: 'Score', tr: 'Puan' },
+      minDurationMs: 40000,
+      maxPerSecond: 1000,
+      maxScore: 300,
+    },
+    addedAt: '2026-11-11',
+  }),
+  arcadeGame({
     slug: 'sudoku',
     title: { en: 'Sudoku', tr: 'Sudoku' },
     description: {

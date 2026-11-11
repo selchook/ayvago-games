@@ -1,5 +1,5 @@
 {
-  "count": 89,
+  "count": 90,
   "games": [
     {
       "id": "air-hockey",
@@ -2450,6 +2450,45 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/stack-tower.png"
+    },
+    {
+      "id": "strike-alley",
+      "title": {
+        "tr": "Strike Salonu",
+        "en": "Strike Alley"
+      },
+      "description": {
+        "tr": "Neon ışıklı, cilalı bir bowling salonunda üç boyutlu bowling. Yerini seç, topu falsolu fırlat, yağlı pistte kayıp kuru bölümde dönmesini izle; lobutlar gerçek fizikle birbirine çarpıp devrilir. On çerçevelik gerçek puanlama: strike, spare, split ve 300 puanlık kusursuz oyun!",
+        "en": "3D bowling in a glossy neon alley. Pick your spot, flick the ball with spin and watch it skid through the oil and hook on the dry back end, while the pins crash into each other with real physics. Ten frames of real scoring: strikes, spares, splits and the perfect 300!"
+      },
+      "howTo": {
+        "tr": "Dokunmatik: sağa sola kaydırarak yerini seç, yukarı fırlatarak at; hızlı fırlatma güçlü atış, kavisli çizim falso verir. Klavye: ←/→ yer, Boşluk nişan, ←/→ yön, Boşluğu basılı tut ve bırak, Z/X falso.",
+        "en": "Touch: slide left or right to pick your spot, then flick up to bowl; a faster flick throws harder, a curved one adds spin. Keys: ←/→ spot, Space to aim, ←/→ direction, hold and release Space, Z/X spin."
+      },
+      "genres": [
+        "sports",
+        "casual",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D bowler and spectators: Kenney Mini Characters 2.0 (CC0) — kenney.nl",
+        "Sound effects: Kenney Impact and Interface Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org",
+        "Alley, pins and ball: procedural geometry and textures made for the game"
+      ],
+      "platform": {
+        "addedAt": "2026-11-11",
+        "scoring": {
+          "maxScore": 300,
+          "minDurationMs": 40000
+        }
+      },
+      "thumb": "thumbs/strike-alley.png"
     },
     {
       "id": "sudoku",
