@@ -6,8 +6,8 @@
     "tr": "Çamur Rallisi"
   },
   "description": {
-    "en": "Four pickup trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster.",
-    "tr": "Dört kamyonet, tek ekranlık toprak bir pist! Rampalardan uç, çamur çukurlarında kaymamaya çalış, nitroyu doğru anda ateşle ve dört turu herkesten önce bitir. Kazandığın parayla garajda motoru, lastikleri, amortisörleri ve nitroyu geliştir; her yeni pistte rakipler daha hızlı."
+    "en": "Four monster trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster.",
+    "tr": "Dört canavar kamyon, tek ekranlık toprak bir pist! Rampalardan uç, çamur çukurlarında kaymamaya çalış, nitroyu doğru anda ateşle ve dört turu herkesten önce bitir. Kazandığın parayla garajda motoru, lastikleri, amortisörleri ve nitroyu geliştir; her yeni pistte rakipler daha hızlı."
   },
   "category": "sports",
   "categories": [
@@ -54,5 +54,5 @@
     "cover": "/games/mud-rally/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/mud-rally/ayvago/screenshot.jpg"
   },
-  "version": "1.4.0"
+  "version": "1.5.0"
 }

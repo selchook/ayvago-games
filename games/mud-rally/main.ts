@@ -1,10 +1,11 @@
 import { launch, loadAudio, steeringOption, touchScreen, type GameMeta } from '@core';
-import { World3D, THREE, loadKenney3d } from '@core/three';
+import { World3D, THREE, loadKenney3d, loadMiniCharacter } from '@core/three';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { STRINGS } from './strings';
-import { Truck } from './truck';
+import { Truck, TRUCK_MODELS } from './truck';
 import { noise2 } from './terrain';
+import { SPECTATORS } from './scenery';
 
 /** A dirt mound with flat-shaded facets, for the menu stage. */
 function mound(radius: number, seed: number): THREE.Mesh {
@@ -33,11 +34,16 @@ launch({
   physics: 'none',
   preload(scene) {
     const l = scene.load;
-    for (const [key, name] of [['suv', 'suv'], ['suvLux', 'suvLuxury'], ['truck', 'truck'], ['truckFlat', 'truckFlat']]) loadKenney3d(l, key, 'car-kit', name);
-    for (const [key, name] of [['barrier', 'barrierWall'], ['fence', 'fenceStraight'], ['flagCheckers', 'flagCheckers'], ['stand', 'grandStandCovered'],
-      ['tent', 'tentLong'], ['light', 'lightPostLarge'], ['pylon', 'pylon']]) {
+    for (const name of Object.values(TRUCK_MODELS)) loadKenney3d(l, name, 'toy-car-kit', name);
+    for (const [key, name] of [['barrier', 'barrierWall'], ['fence', 'fenceStraight'], ['stand', 'grandStandCovered'], ['light', 'lightPostLarge']]) {
       loadKenney3d(l, key, 'racing-kit', name);
     }
+    // the newer, textured Racing Kit: start arch, barrel rows, tents and flags
+    for (const [key, name] of [['arch', 'overhead-arch-striped'], ['barrels', 'barrels'], ['tentBig', 'tent-roof-large'],
+      ['tentWide', 'tent-open-wide'], ['flagG', 'flag-green-tall'], ['flagY', 'flag-yellow-tall']]) {
+      loadKenney3d(l, key, 'racing-kit-ea', name);
+    }
+    for (const name of SPECTATORS) loadMiniCharacter(l, name);
     for (const [key, name] of [['treeA', 'tree_default'], ['treeB', 'tree_oak'], ['treeC', 'tree_pineRoundA'], ['rock', 'stone_largeA'],
       ['cactus', 'cactus_tall'], ['bush', 'plant_bushDetailed'], ['grass', 'grass_large']]) {
       loadKenney3d(l, key, 'nature-kit', name);
@@ -69,14 +75,16 @@ launch({
     const world = new World3D(scene, { background: null, shadows: true, fov: 36 });
     world.addLights({ ambient: 1.7, intensity: 2.3, extent: 16, dir: [-0.4, 1, 0.6] });
     const stages: THREE.Group[] = [];
+    const trucks: Truck[] = [];
     const looks: [number, number][] = [[0x2f7dff, 0], [0xe8402f, 1]];
     looks.forEach(([color, i]) => {
       const stage = new THREE.Group();
       const hill = mound(3.2, 4 + i);
       hill.position.y = -0.67;
-      const truck = new Truck(i ? 'truck' : 'suv', color, false);
+      const truck = new Truck(i ? 'pickup' : 'monster', color, false);
       truck.root.position.y = 0.03;
-      truck.root.scale.setScalar(1.35);
+      truck.root.scale.setScalar(1.15);
+      trucks.push(truck);
       truck.root.rotation.y = i ? 0.6 : -0.6;
       stage.add(hill, truck.root);
       // the switches beside PLAY push the trucks wide (wider still on touch screens, where the
@@ -94,6 +102,7 @@ launch({
       const t = performance.now() / 700;
       stages[0].position.y = -0.5 + Math.sin(t) * 0.07;
       stages[1].position.y = -0.5 + Math.sin(t + 1.5) * 0.07;
+      trucks.forEach((tr, i) => tr.idle(performance.now() / 1000 + i * 2.1));
     };
   },
   difficulty: true,

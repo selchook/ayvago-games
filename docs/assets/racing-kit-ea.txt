@@ -1,0 +1,7 @@
+racing-kit-ea/models/gltf_format/barrels.glb 31KB 1.00x0.30x0.25
+racing-kit-ea/models/gltf_format/flag-green-tall.glb 11KB 0.47x1.49x0.16
+racing-kit-ea/models/gltf_format/flag-yellow-tall.glb 11KB 0.47x1.49x0.16
+racing-kit-ea/models/gltf_format/overhead-arch-striped.glb 16KB 5.53x2.76x1.24
+racing-kit-ea/models/gltf_format/tent-open-wide.glb 26KB 3.81x1.99x1.91
+racing-kit-ea/models/gltf_format/tent-roof-large.glb 55KB 3.91x1.99x3.81
+racing-kit-ea/models/gltf_format/Textures/colormap.png 9KB 512x512 (shared colour map, loaded by the models)
