@@ -6,13 +6,17 @@ attribute float psize;
 attribute float palpha;
 attribute vec3 pcolor;
 uniform float uScale;
+uniform float uNear;
+uniform float uMax;
 varying float vAlpha;
 varying vec3 vColor;
 void main() {
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  gl_PointSize = psize * uScale / -mv.z;
+  gl_PointSize = min(psize * uScale / -mv.z, uMax);
   gl_Position = projectionMatrix * mv;
-  vAlpha = palpha;
+  // in-car view: puffs right at the lens fade out instead of filling the screen
+  float nf = uNear > 0.0 ? clamp((-mv.z - uNear * 0.4) / (uNear * 0.6), 0.0, 1.0) : 1.0;
+  vAlpha = palpha * nf;
   vColor = pcolor;
 }`;
 
@@ -58,6 +62,7 @@ export class Particles {
   private drag: Float32Array;
   private next = 0;
   private c = new THREE.Color();
+  private viewHeight: number;
 
   constructor(private count: number, additive: boolean, viewHeight: number, fov: number) {
     this.pos = new Float32Array(count * 3);
@@ -81,7 +86,11 @@ export class Particles {
     const mat = new THREE.ShaderMaterial({
       vertexShader: VERT,
       fragmentShader: FRAG,
-      uniforms: { uScale: { value: viewHeight / (2 * Math.tan((fov * Math.PI) / 360)) } },
+      uniforms: {
+        uScale: { value: viewHeight / (2 * Math.tan((fov * Math.PI) / 360)) },
+        uNear: { value: 0 },
+        uMax: { value: 4096 },
+      },
       transparent: true,
       depthWrite: false,
       blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
@@ -90,6 +99,18 @@ export class Particles {
     this.points.frustumCulled = false;
     this.points.renderOrder = additive ? 3 : 2;
     this.points.userData.ownMaterial = true;
+    this.viewHeight = viewHeight;
+  }
+
+  /**
+   * The lens the particles are seen through: the field of view sizes them, and the in-car view
+   * fades puffs closer than `near` units and caps their size on screen.
+   */
+  setView(fov: number, near = 0, maxSize = 4096): void {
+    const u = (this.points.material as THREE.ShaderMaterial).uniforms;
+    u.uScale.value = this.viewHeight / (2 * Math.tan((fov * Math.PI) / 360));
+    u.uNear.value = near;
+    u.uMax.value = maxSize;
   }
 
   emit(e: Emit): void {
