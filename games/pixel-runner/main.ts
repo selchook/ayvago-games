@@ -7,6 +7,8 @@ launch({
   background: '#bfe8ee',
   pixelArt: true,
   physics: 'none',
+  // rewarded continue: one more life after a lost run (core ads, only while the platform has ads on)
+  ads: { continue: (play) => (play as PlayScene).revive() },
   preload(scene) {
     const l = scene.load;
     l.spritesheet('pp', kenney('pixel-platformer/tilemap/tilemap_packed.png'), { frameWidth: 21, frameHeight: 21 });

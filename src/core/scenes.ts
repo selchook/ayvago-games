@@ -12,7 +12,10 @@ import { currentGame } from './registry';
 import { kenney, loadSfx } from './assets';
 import { isModern } from './style';
 import { difficulty, isEasy, offersDifficulty, setDifficulty, type Difficulty } from './difficulty';
+import { adBusy, adsAvailable, REPLAY_INTERSTITIAL_EVERY, showInterstitial, showRewarded } from './ads';
 
+/** "Play again" presses from the result screen this session (every Nth may bring an interstitial). */
+let replays = 0;
 let introDone: Promise<void> = Promise.resolve();
 const bootWork: Promise<unknown>[] = [];
 /** Boot waits for this before the menu opens (used by the 3D runtime to parse its models). */
@@ -329,6 +332,11 @@ export interface ResultData {
 }
 
 export class GameOverScene extends Phaser.Scene {
+  /** Where the ad button (continue or 2× reward) is, in world coordinates; read by the test harnesses. */
+  adHit: { placement: 'continue' | 'double'; x: number; y: number } | null = null;
+  /** Where the MENU button is (world coordinates); read by the test harnesses. */
+  menuHit: { x: number; y: number } | null = null;
+
   constructor() {
     super('GameOver');
   }
@@ -338,17 +346,35 @@ export class GameOverScene extends Phaser.Scene {
     const def = currentGame();
     const { width, height } = this.scale;
     const score = data.score ?? 0;
+    this.adHit = null;
+    this.menuHit = null;
     if (net.active) {
       this.onlineResult(data);
       return;
     }
+    // Rewarded continue (src/core/ads.ts): a lost run of a game that opts in, once per run, only
+    // while the platform has ads on. The run is not over yet for the platform, so GHA_END (and
+    // the local best) wait until the player turns the offer down; a continued run reports
+    // `continues: 1` when it ends.
+    const play = this.scene.get('Play') as Phaser.Scene & { continueRun?: () => void };
+    const run = { score, win: !!data.win };
+    const offerContinue = !data.win && !!def.ads?.continue && typeof play?.continueRun === 'function'
+      && sdk.continues === 0 && (def.ads.canContinue?.(play) ?? true) && adsAvailable();
+    const offerDouble = !offerContinue && !!def.ads?.double && (def.ads.double.show?.(run) ?? true) && adsAvailable();
     // Easy runs are practice: the best (like the platform's leaderboard) counts Normal runs only.
     const easy = isEasy();
-    const newBest = !easy && submitBest(def.meta.id, score);
-    const best = getBest(def.meta.id);
-    sdk.end(score, !!data.win, difficulty());
-    if (newBest && score > 0) sdk.celebrate();
-    sdk.emit('gameOver', { score, best, win: !!data.win, newBest, difficulty: difficulty() });
+    const newBest = !easy && (offerContinue ? score > getBest(def.meta.id) : submitBest(def.meta.id, score));
+    const best = offerContinue && newBest ? score : getBest(def.meta.id);
+    let ended = false;
+    const finish = () => {
+      if (ended) return;
+      ended = true;
+      if (offerContinue && !easy) submitBest(def.meta.id, score);
+      sdk.end(score, !!data.win, difficulty());
+      if (newBest && score > 0) sdk.celebrate();
+    };
+    if (!offerContinue) finish();
+    sdk.emit('gameOver', { score, best, win: !!data.win, newBest, difficulty: difficulty(), continueOffered: offerContinue, continues: sdk.continues });
 
     backdrop(this, 0.78);
     if (def.meta.orientation === 'landscape') overlayCard(this, 0.07, 0.93, 900);
@@ -375,19 +401,104 @@ export class GameOverScene extends Phaser.Scene {
       playSfx(this, data.win ? 'jingle-win' : 'jingle-over', { exact: true });
     }
 
-    const retry = () => {
+    // Leaving the result screen: an interstitial may come first ('menu', or 'replay' on every Nth
+    // retry). With ads off nothing waits.
+    let leaving = false;
+    const leave = (placement: 'menu' | 'replay' | null, go: () => void) => {
+      if (leaving || adBusy() || !this.scene.isActive()) return;
+      finish();
+      if (!placement || !adsAvailable()) {
+        go();
+        return;
+      }
+      leaving = true;
+      showInterstitial(placement, this).then(() => {
+        if (this.scene.isActive()) go();
+      });
+    };
+    const retry = () => leave(++replays % REPLAY_INTERSTITIAL_EVERY === 0 ? 'replay' : null, () => {
       this.scene.stop();
       this.scene.get('Play').scene.restart();
-    };
-    // Landscape has no room for two stacked buttons below the score: put them side by side.
-    const land = def.meta.orientation === 'landscape';
-    const by = height * (land ? 0.8 : 0.66);
-    new Button(this, land ? width / 2 - 210 : width / 2, by, t('retry'), retry, { color: COLORS.red, width: 380, height: 104, size: 34 });
-    new Button(this, land ? width / 2 + 210 : width / 2, land ? by : by + 140, t('menu'), () => {
+    });
+    const toMenu = () => leave('menu', () => {
       this.scene.stop('Play');
       this.scene.start('Menu');
-    }, { color: 0x333344 });
+    });
+
+    const land = def.meta.orientation === 'landscape';
+    const offer = offerContinue ? 'continue' : offerDouble ? 'double' : null;
+    if (!offer) {
+      // Landscape has no room for two stacked buttons below the score: put them side by side.
+      const by = height * (land ? 0.8 : 0.66);
+      new Button(this, land ? width / 2 - 210 : width / 2, by, t('retry'), retry, { color: COLORS.red, width: 380, height: 104, size: 34 });
+      new Button(this, land ? width / 2 + 210 : width / 2, land ? by : by + 140, t('menu'), toMenu, { color: 0x333344 });
+      this.menuHit = { x: land ? width / 2 + 210 : width / 2, y: land ? by : by + 140 };
+    } else {
+      // With an ad offer: portrait puts it under the score with RETRY and MENU side by side below;
+      // landscape has the three in one row, the offer in the middle.
+      const ay = height * (land ? 0.765 : 0.6);
+      const ry = land ? ay : height * 0.75;
+      const side = land ? 300 : 158;
+      const bw = land ? 270 : 296;
+      new Button(this, width / 2 - side, ry, t('retry'), retry, { color: COLORS.red, width: bw, height: 96, size: 30 });
+      new Button(this, width / 2 + side, ry, t('menu'), toMenu, { color: 0x333344, width: bw, height: 96, size: 30 });
+      this.menuHit = { x: width / 2 + side, y: ry };
+      this.adOffer(offer, width / 2, ay, land ? 300 : 460, run, () => {
+        // the continue: the run goes on in the same score session
+        sdk.markContinue();
+        ended = true;
+        this.scene.stop();
+        play.continueRun?.();
+      });
+    }
     this.time.delayedCall(400, () => this.input.keyboard?.once('keydown-ENTER', retry));
+  }
+
+  /**
+   * The rewarded-ad button: green, with an "AD" tag on its corner and a line under it saying what
+   * the ad is for. Tap it (or press C) to watch; it is offered once and goes away afterwards.
+   */
+  private adOffer(placement: 'continue' | 'double', x: number, y: number, w: number, run: { score: number; win: boolean }, onContinue: () => void): void {
+    const modern = isModern();
+    const label = placement === 'continue' ? t('adContinue') : t('adDouble');
+    const note = txt(this, x, y + 80, placement === 'continue' ? t('adContinueNote') : t('adDoubleNote'), { size: 24, color: '#d6f5dc', wrap: w + 140 });
+    let used = false;
+    const watch = async () => {
+      if (used || adBusy() || !this.scene.isActive()) return;
+      used = true;
+      this.tweens.killTweensOf(btn);
+      const rewarded = await showRewarded(placement, this);
+      if (!this.scene.isActive()) return;
+      if (rewarded && placement === 'continue') {
+        onContinue();
+        return;
+      }
+      this.adHit = null;
+      btn.destroy();
+      if (rewarded) {
+        currentGame().ads?.double?.grant(this, run);
+        note.setText(t('adDoubled')).setColor('#5dff7a').setFontSize(30);
+        burst(this, x, y, [0x5dff7a, 0xffd23f, 0xffffff], 40, 420);
+        playSfx(this, 'jingle-win', { exact: true });
+      } else {
+        note.setText(t('adFailed')).setColor('#b9b6cc');
+      }
+      this.tweens.add({ targets: note, y: y, duration: 260, ease: 'Back.easeOut' });
+    };
+    const btn = new Button(this, x, y, label, () => void watch(), { color: COLORS.green, textColor: '#10301a', width: w, height: 110, size: placement === 'continue' ? 32 : 30 });
+    // the "AD" tag: a small play-button pill on the button's top-left corner
+    const tagText = txt(this, 0, 1, t('adBadge'), { title: true, size: 13, color: '#14121c', strokeThickness: 0, shadow: false });
+    const tw = tagText.width + 46, th = 30;
+    const tag = this.add.graphics();
+    if (modern) tag.fillStyle(0x000000, 0.25).fillRoundedRect(-tw / 2, -th / 2 + 3, tw, th, th / 2).fillStyle(COLORS.yellow, 1).fillRoundedRect(-tw / 2, -th / 2, tw, th, th / 2);
+    else tag.fillStyle(COLORS.yellow, 1).fillRect(-tw / 2, -th / 2, tw, th).lineStyle(3, 0x000000, 1).strokeRect(-tw / 2, -th / 2, tw, th);
+    tag.fillStyle(0x14121c, 1).fillTriangle(-tw / 2 + 12, -7, -tw / 2 + 12, 7, -tw / 2 + 24, 0);
+    tagText.setX(9);
+    const badge = this.add.container(-w / 2 + tw / 2 - 6, -55, [tag, tagText]).setAngle(-6);
+    btn.add(badge);
+    this.tweens.add({ targets: btn, scale: 1.05, duration: 560, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.adHit = { placement, x, y };
+    this.time.delayedCall(400, () => this.input.keyboard?.once('keydown-C', () => void watch()));
   }
 
   /**

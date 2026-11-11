@@ -252,7 +252,11 @@ export class PlayScene extends ArcadeScene {
       this.endGame({ title: t('down'), delay: 1300 });
       return;
     }
-    // try again on the same floor; a too-thin top block is patched up so the retry is fair
+    this.retryFloor();
+  }
+
+  /** Try again on the same floor; a too-thin top block is patched up so the retry is fair. */
+  private retryFloor(): void {
     this.time.delayedCall(700, () => {
       if (this.isOver) return;
       const top = this.stack[this.stack.length - 1];
@@ -273,6 +277,14 @@ export class PlayScene extends ArcadeScene {
       this.dead = false;
       this.spawnNext();
     });
+  }
+
+  /** Rewarded continue (core ads): one more life, then the same floor again as after any miss. */
+  revive(): void {
+    this.lives = 1;
+    this.streak = 0;
+    this.updateHud();
+    this.retryFloor();
   }
 
   updateGame(_time: number, delta: number): void {

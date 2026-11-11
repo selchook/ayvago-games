@@ -23,6 +23,10 @@ const common: Strings = {
     tiltAsk: 'EĞİMİ AÇ', tiltOn: 'Eğerek sür: telefonu direksiyon gibi çevir',
     tiltDenied: 'Hareket sensörüne izin verilmedi', tiltNone: 'Bu cihazda eğim sensörü yok',
     tiltCentre: 'ortalamak için dokun', tiltCentred: 'Ortalandı',
+    // ads (src/core/ads.ts)
+    adLoading: 'Reklam yükleniyor…', adBadge: 'REKLAM', adContinue: 'DEVAM ET', adContinueNote: 'Reklam izle, devam et',
+    adContinued: 'DEVAM!', adDouble: '2× ÖDÜL', adDoubleNote: 'Reklam izle, ödülünü ikiye katla', adDoubled: 'ÖDÜL 2 KATINA ÇIKTI!',
+    adFailed: 'Reklam tamamlanmadı',
   },
   en: {
     play: 'PLAY', retry: 'RETRY', menu: 'MENU', resume: 'RESUME', paused: 'PAUSED',
@@ -41,6 +45,10 @@ const common: Strings = {
     tiltAsk: 'TURN TILT ON', tiltOn: 'Tilt steering: turn the phone like a wheel',
     tiltDenied: 'Motion sensor access was not allowed', tiltNone: 'No tilt sensor on this device',
     tiltCentre: 'tap to centre', tiltCentred: 'Centred',
+    // ads (src/core/ads.ts)
+    adLoading: 'Loading ad…', adBadge: 'AD', adContinue: 'CONTINUE', adContinueNote: 'Watch an ad to continue',
+    adContinued: 'KEEP GOING!', adDouble: '2× REWARD', adDoubleNote: 'Watch an ad to double your reward', adDoubled: 'REWARD DOUBLED!',
+    adFailed: 'The ad did not finish',
   },
 };
 

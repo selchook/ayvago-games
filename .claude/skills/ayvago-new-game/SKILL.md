@@ -424,6 +424,49 @@ JUMP) and `games/traffic-racer` (portrait 2D, lane weaving with BOOST / BRAKE pe
     `Input.dispatchTouchEvent`);
   - screenshots of the menu (TR and EN) and of a race in each mode: nothing overlaps.
 
+## 7e. Ads (optional: rewarded continue and 2× reward)
+
+The platform can show ads (rewarded and interstitial); the owner switches them on in the admin
+panel. While they are off (the default) the platform sends `adsEnabled: false` and the core shows
+nothing, so a game that opts in looks and plays exactly as before.
+
+- **Only through the core.** `src/core/ads.ts`, exported from `@core`: `adsAvailable()` (the
+  platform said `adsEnabled` and this is a solo run; always false standalone, in the portal and
+  online), `showRewarded(placement)` (resolves true only when the platform confirms the reward) and
+  `showInterstitial(placement)` (always resolves). Never call the adapter's `requestRewarded` /
+  `requestInterstitial` yourself. While an ad runs the core pauses the Play scene, silences the
+  game (the player's sound switch is not touched), blocks input with a "Reklam yükleniyor… /
+  Loading ad…" card and restores everything afterwards.
+- **Rewarded is always the player's choice, never during play.** Ads appear on the result screen
+  only, as a button the player presses. No ad prompts mid-run, between lives or on the menu.
+- **Rewarded continue.** For games with a fail state where going on makes sense (runners,
+  shooters with lives, stackers). Opt in with
+  `ads: { continue: (play) => (play as PlayScene).revive() }` in `launch({...})`. On a lost run the
+  result screen offers DEVAM ET / CONTINUE ("Reklam izle, devam et" / "Watch an ad to continue"),
+  once per run. After the ad the core clears `isOver`, resumes physics, music and the scene and
+  shows a "DEVAM!" banner; your `revive()` puts the player back: one extra life, moved to safety,
+  hazards near them cleared, a short invulnerability (`games/space-blaster`, `games/pixel-runner`,
+  `games/jetpack-rush`, `games/tappy-plane`, `games/stack-tower`). Reset everything a death set
+  (dead flags, tints, flipped sprites, stopped loops). Optional `canContinue: (play) => boolean`
+  skips the offer for runs that cannot go on (a timer ran out).
+- **Continues and the score.** The continued run is the same score session: GHA_END waits until
+  the player turns the offer down (RETRY, MENU, Enter) or the continued run ends, and then carries
+  `continues: 1` (the platform's `finishSession({ continues })`; the vendored adapter 2.7.0 still
+  drops the field, a newer adapter forwards it). Easy runs work the same way and
+  stay practice.
+- **2× reward.** Only for a currency kept between runs (coins, XP), never the score:
+  `ads: { double: { grant: (scene, run) => ..., show?: (run) => boolean } }`. The result screen
+  offers "2× ÖDÜL / 2× REWARD" once; `grant` adds the run's currency again. On a lost run with a
+  continue offer the continue takes the slot.
+- **Interstitials** are the core's job: it asks politely at natural breaks (`'menu'` when the
+  result screen goes to the menu, `'replay'` on every third RETRY); the platform enforces the real
+  frequency caps. Games do not add their own.
+- **Test it.** `?ads=sim` (ad watched) or `?ads=sim-skip` (ad not finished) fakes the platform's
+  answer after a short delay outside the platform; inside the platform's frame the flag is ignored.
+  `node scripts/platform-harness.mjs --dev <slug>` runs a game that opts in a second time with
+  `adsEnabled: true` and checks the whole continue flow and the menu interstitial. Keyboard: C
+  watches the ad on the result screen.
+
 ## 8. Ship
 
 - Run `npm run registry` (validates `game.json`).

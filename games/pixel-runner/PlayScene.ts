@@ -324,7 +324,7 @@ export class PlayScene extends ArcadeScene {
     else { this.vy = -650; this.grounded = false; this.jumps = 1; }
   }
 
-  private respawn(): void {
+  private respawn(fell = true): void {
     const wx = this.scroll + PX;
     const seg = this.segs.find((s) => !s.float && s.x > wx - 10);
     if (!seg) return;
@@ -332,7 +332,7 @@ export class PlayScene extends ArcadeScene {
     // clear hazards near the landing spot
     for (const e of this.enemies) if (e.alive && Math.abs(e.x - (this.scroll + PX)) < T * 4) this.killEnemy(e, false);
     this.py = seg.top - 260; this.vy = 0; this.grounded = false; this.jumps = 1;
-    popup(this, this.scroll + PX, seg.top - 320, t('fell'), '#ec3013', 26);
+    if (fell) popup(this, this.scroll + PX, seg.top - 320, t('fell'), '#ec3013', 26);
   }
 
   private die(): void {
@@ -342,6 +342,22 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(150, () => this.sfx('die', { volume: 0.6, exact: true }));
     burst(this, this.scroll + PX, this.py, [0xec3013, 0xffd23f], 30, 380);
     this.endGame({ delay: 1300 });
+  }
+
+  /**
+   * Rewarded continue (core ads): the runner drops back in on the next solid ground with one
+   * life and a short invulnerability; enemies near the landing spot are cleared.
+   */
+  revive(): void {
+    this.dead = false;
+    this.lives = 1;
+    this.invuln = 2.5;
+    this.stompChain = 0;
+    this.player.setTexture('pc-jump').setFlipY(false).setAngle(0);
+    this.respawn(false);
+    burst(this, this.scroll + PX, this.py, [0x5dff7a, 0xffd23f, 0xffffff], 24, 300);
+    this.sfx('milestone', { volume: 0.5 });
+    this.updateHud();
   }
 
   private killEnemy(e: Enemy, stomped: boolean): void {

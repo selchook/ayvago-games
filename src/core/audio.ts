@@ -6,6 +6,9 @@ import { storage } from './storage';
 // and a change made in the game is reported back with GHA_MUTE_STATE. It is kept in the game's
 // storage, so the choice carries over between visits.
 let muted = storage.get<boolean>('muted', false);
+// While an ad plays (src/core/ads.ts) the game is silent whatever the switch says; the switch
+// itself (and what the platform's button shows) stays as the player set it.
+let adHold = false;
 const listeners = new Set<(m: boolean) => void>();
 let reporter: ((m: boolean) => void) | null = null;
 
@@ -13,9 +16,15 @@ export function isMuted(): boolean {
   return muted;
 }
 
-/** True when nothing should be heard. */
+/** True when nothing should be heard: the switch is off or an ad is playing. */
 export function isSilenced(): boolean {
-  return muted;
+  return muted || adHold;
+}
+
+/** Silences the game for an ad break and brings the sound back after it (src/core/ads.ts). */
+export function setAdSilence(game: Phaser.Game, on: boolean): void {
+  adHold = on;
+  game.sound.mute = isSilenced();
 }
 
 /**
@@ -26,7 +35,7 @@ export function setMuted(game: Phaser.Game, m: boolean, from: 'player' | 'host' 
   const changed = muted !== m;
   muted = m;
   storage.set('muted', m);
-  game.sound.mute = m;
+  game.sound.mute = isSilenced();
   if (changed) listeners.forEach((cb) => cb(m));
   if (from === 'player') reporter?.(m);
 }

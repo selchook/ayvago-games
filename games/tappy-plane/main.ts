@@ -10,6 +10,8 @@ launch({
   music: { play: 'level1' },
   background: '#1d3b4f',
   physics: 'none',
+  // rewarded continue: back in the air after a crash (core ads, only while the platform has ads on)
+  ads: { continue: (play) => (play as PlayScene).revive() },
   preload(scene) {
     const l = scene.load;
     l.image('bg', kenney(TP + 'background.png'));

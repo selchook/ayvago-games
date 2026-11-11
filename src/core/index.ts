@@ -18,6 +18,8 @@ export { t, loc, upper, getLang, registerStrings } from './i18n';
 export type { Lang, Strings, Localized } from './i18n';
 export { storage, getBest } from './storage';
 export { sdk } from './sdk';
+export { adsAvailable, showRewarded, showInterstitial, adBusy, REPLAY_INTERSTITIAL_EVERY } from './ads';
+export type { AdPlacement, AdFormat } from './ads';
 export { difficulty, isEasy, setDifficulty, offersDifficulty } from './difficulty';
 export type { Difficulty } from './difficulty';
 export { net } from './net';
@@ -29,7 +31,7 @@ export type { CharacterId, CharacterPose, CharacterPart, CharacterRig } from './
 export type { NetHandler } from './net';
 export type { TableSettings } from './ayvago/adapter';
 export { playAyvagoIntro, INTRO_DURATION } from './intro';
-export type { GameDefinition, GameMeta, Genre } from './registry';
+export type { GameDefinition, GameMeta, Genre, AdsOptions, RunOutcome } from './registry';
 export { currentGame } from './registry';
 export * as rng from './rng';
 export { quickChat, loadQuickChat, phraseText, phraseOf, QUICK_PHRASES, QUICK_CHAT_COOLDOWN } from './quickchat';
