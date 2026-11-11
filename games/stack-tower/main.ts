@@ -6,6 +6,8 @@ launch({
   meta: meta as GameMeta,
   background: '#1b1830',
   physics: 'none',
+  // rewarded continue: one more life after the tower falls (core ads, only while the platform has ads on)
+  ads: { continue: (play) => (play as PlayScene).revive() },
   preload(scene) {
     const l = scene.load;
     const J = 'oga/junkala-sfx/';

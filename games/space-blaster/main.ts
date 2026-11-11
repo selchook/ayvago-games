@@ -9,6 +9,8 @@ launch({
   meta: meta as GameMeta,
   background: '#0b0a1a',
   difficulty: true,
+  // rewarded continue: one more life after a lost run (core ads, only while the platform has ads on)
+  ads: { continue: (play) => (play as PlayScene).revive() },
   preload(scene) {
     const l = scene.load;
     l.image('ship', kenney(SS + 'playership1_red.png'));

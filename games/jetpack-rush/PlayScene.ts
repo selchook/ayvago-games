@@ -265,6 +265,32 @@ export class PlayScene extends ArcadeScene {
     popup(this, HERO_X + 60, this.hy - 80, `${Math.floor(this.meters)} m`, '#3ee6ff', 30);
   }
 
+  /**
+   * Rewarded continue (core ads): the hero gets up and flies on with a few seconds of
+   * invulnerability; zappers just ahead, missiles and warnings are cleared first.
+   */
+  revive(): void {
+    this.dying = false;
+    this.dieT = 0;
+    this.vy = 0;
+    this.invuln = 3;
+    this.hero.clearTint().setTexture('pc-fall').setAngle(0);
+    for (const z of [...this.zaps]) {
+      if (z.x + z.len < HERO_X - 120 || z.x > HERO_X + 700) continue;
+      burst(this, z.a.x, z.a.y, [0xffe14d, 0xffffff], 10, 220);
+      z.a.destroy(); z.b.destroy();
+      this.zaps.splice(this.zaps.indexOf(z), 1);
+    }
+    for (const ms of this.missiles) { ms.trail.destroy(); ms.img.destroy(); }
+    for (const w of this.warnings) w.icon.destroy();
+    this.missiles = []; this.warnings = [];
+    this.missileCd = Math.max(this.missileCd, 5);
+    this.toNext = Math.max(this.toNext, 500);
+    this.jet?.play();
+    burst(this, HERO_X, this.hy, [0x5dff7a, 0x3ee6ff, 0xffffff], 30, 380);
+    this.sfx('shield', { volume: 0.7 });
+  }
+
   private collectCoin(c: Coin): void {
     this.coins++;
     this.sfxAt('coin', c.img.x, { volume: 0.4 });

@@ -9,6 +9,8 @@ launch({
   meta: meta as GameMeta,
   background: '#0d1020',
   physics: 'none',
+  // rewarded continue: get up and fly on after a crash (core ads, only while the platform has ads on)
+  ads: { continue: (play) => (play as PlayScene).revive() },
   preload(scene) {
     const l = scene.load;
     // the player's chosen character: pc-walk1/2 (running), pc-jump (thrusting), pc-fall (dropping), pc-hit (crash)

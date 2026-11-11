@@ -15,6 +15,7 @@ import { BootScene, MenuScene, PauseScene, GameOverScene, setIntroPromise } from
 import { setHostScanlines, themeHasScanlines } from './fx';
 import { installKeyboardOnce } from './keyboard-once';
 import { adoptPlatformBest } from './storage';
+import { bindAds } from './ads';
 
 declare global {
   interface Window {
@@ -117,6 +118,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   installMasterBus(game);
 
   bindPlatform(game, adapter);
+  bindAds(game);
 
   window.__ayvago = { game, def, silenced: isSilenced };
   return game;

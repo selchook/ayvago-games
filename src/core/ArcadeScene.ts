@@ -4,8 +4,9 @@ import { t } from './i18n';
 import { sdk } from './sdk';
 import { net } from './net';
 import { playSfx, type SfxConfig } from './audio';
-import { MUSIC_VOLUME, playMusic, playTrack } from './music';
-import { addCrt, popup } from './fx';
+import { MUSIC_VOLUME, playMusic, playTrack, restoreMusic } from './music';
+import { addCrt, burst, popup } from './fx';
+import { txt } from './theme';
 import { currentGame } from './registry';
 import { isModalOpen } from './modal';
 
@@ -160,6 +161,30 @@ export abstract class ArcadeScene extends Phaser.Scene {
   /** Like sfx(), panned to where it happens on screen (world x). */
   sfxAt(key: string, x: number, config?: SfxConfig): void {
     playSfx(this, key, { ...config, x });
+  }
+
+  /**
+   * Rewarded continue (src/core/ads.ts): the result screen calls this once the platform confirmed
+   * the ad. The round picks up where it ended, in the same score session: the core clears
+   * `isOver`, turns physics back on and brings the music back, the game's `ads.continue` puts
+   * the player back into the run, then the scene resumes.
+   */
+  continueRun(): void {
+    const revive = currentGame().ads?.continue;
+    if (!revive || !this.isOver || net.active) return;
+    this.isOver = false;
+    this.physics?.world?.resume();
+    revive(this);
+    restoreMusic();
+    this.scene.resume();
+    const { width, height } = this.scale;
+    const banner = txt(this, width / 2, height * 0.3, t('adContinued'), { title: true, size: 48, color: '#5dff7a', strokeThickness: 10 })
+      .setScrollFactor(0).setDepth(9700).setScale(0.2);
+    this.tweens.add({ targets: banner, scale: 1, duration: 380, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: banner, alpha: 0, y: banner.y - 40, delay: 1400, duration: 450, onComplete: () => banner.destroy() });
+    const cam = this.cameras.main;
+    burst(this, cam.scrollX + width / 2, cam.scrollY + height * 0.3, [0x5dff7a, 0xffd23f, 0xffffff], 36, 420);
+    sdk.emit('continue', { score: this.score });
   }
 
   /** Ends the round and shows the result overlay (score saving is handled there). */

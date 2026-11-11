@@ -196,6 +196,28 @@ export class PlayScene extends ArcadeScene {
     this.endGame({ delay: 1100, title: t('crashed') });
   }
 
+  /**
+   * Rewarded continue (core ads): the plane is back in the air, the rocks right in front of it are
+   * cleared and the world waits in "get ready" until the next tap.
+   */
+  revive(): void {
+    const { width, height } = this.scale;
+    this.tweens.killTweensOf(this.plane);
+    this.plane.clearTint().setAngle(0).setScale(1).setY(height * 0.45).play('prop');
+    this.vy = 0;
+    this.obstacles = this.obstacles.filter((o) => {
+      if (o.x < this.plane.x - ROCK_W || o.x > this.plane.x + 360) return true;
+      burst(this, o.x, o.gapY, [0xffffff, 0xd5ecf5], 18, 260);
+      this.tweens.add({ targets: [o.top, o.bot], alpha: 0, duration: 250, onComplete: () => { o.top.destroy(); o.bot.destroy(); } });
+      return false;
+    });
+    const sub = txt(this, width / 2, height * 0.36, t('tapFly'), { size: 34 }).setDepth(40);
+    const tap = this.add.image(width * 0.3, height * 0.58, 'tap').setScale(1.6).setDepth(40);
+    this.tweens.add({ targets: tap, y: tap.y + 18, duration: 420, yoyo: true, repeat: -1 });
+    this.readyGroup = [sub, tap];
+    this.state = 'ready';
+  }
+
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
     const { width, height } = this.scale;

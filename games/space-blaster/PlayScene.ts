@@ -289,6 +289,27 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
+  /**
+   * Rewarded continue (core ads): the ship comes back with one life, a shield and a moment of
+   * invulnerability; enemy shots and anything close to the ship are blown away first.
+   */
+  revive(): void {
+    const { width, height } = this.scale;
+    this.ship.setPosition(width / 2, height * 0.82);
+    for (const b of this.enemyShots.getChildren().slice() as Body[]) b.destroy();
+    for (const e of this.enemies.getChildren().slice() as Body[]) {
+      if (e.y > height * 0.3) this.killEnemy(e, false);
+    }
+    this.lives = 1;
+    this.shield = 4; this.invuln = 3; this.hurtT = 0;
+    this.bank.x = this.ship.x; this.bank.y = this.ship.y;
+    this.bank.setVisible(true);
+    this.ring(this.ship.x, this.ship.y, 0x3ea8ff, 3, 600);
+    this.glow(this.ship.x, this.ship.y, 0x7fd4ff, 2.4, 500, 12);
+    this.sfxAt('power-shield', this.ship.x, { volume: 0.7 });
+    this.updateHud();
+  }
+
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
     const { width, height } = this.scale;

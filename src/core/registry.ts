@@ -64,6 +64,36 @@ export interface GameDefinition {
    * (difficulty first): under PLAY in portrait, right of PLAY in landscape.
    */
   menuOption?: { show?: (scene: Phaser.Scene) => boolean; build: (scene: Phaser.Scene, x: number, y: number) => void };
+  /**
+   * Rewarded ads on the result screen (src/core/ads.ts), offered only while the platform has ads
+   * on, never online. Always the player's choice; never during play.
+   */
+  ads?: AdsOptions;
+}
+
+/** The result of a finished run, as the result screen shows it. */
+export interface RunOutcome {
+  score: number;
+  win: boolean;
+}
+
+export interface AdsOptions {
+  /**
+   * 'continue': a lost run may go on once after a rewarded ad. The core resumes the Play scene
+   * (isOver false, physics on, music back) and calls this to bring the run back: one extra life,
+   * the player moved to safety, a short invulnerability. Same score session; GHA_END is sent when
+   * the player turns the offer down or the continued run ends, with `continues: 1`.
+   */
+  continue?: (play: Phaser.Scene) => void;
+  /** Optional: whether this lost run may continue at all (default: every lost run). */
+  canContinue?: (play: Phaser.Scene) => boolean;
+  /**
+   * '2× reward': for a game with a currency kept between runs (coins, XP). `grant` adds the run's
+   * currency once more; it must never touch the score (the leaderboard number). `show` decides
+   * per run (e.g. only when something was earned). On a lost run with a continue offer the
+   * continue takes the slot.
+   */
+  double?: { grant: (scene: Phaser.Scene, run: RunOutcome) => void; show?: (run: RunOutcome) => boolean };
 }
 
 let current: GameDefinition | null = null;
