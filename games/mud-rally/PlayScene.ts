@@ -1,4 +1,4 @@
-import { Phaser, ArcadeScene, Controls, CarSteering, RAMP_TIME, shake, flash, popup, t, loc, txt, storage, isEasy, hudChip, HudChip, HUD_MARGIN, type CarPadButton } from '@core';
+import { Phaser, ArcadeScene, Controls, CarSteering, RAMP_TIME, shake, flash, popup, t, loc, txt, storage, isEasy, hudChip, HudChip, HUD_MARGIN, iconButton, tilt, type CarPadButton } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { LAYOUTS, Track } from './tracks';
 import { buildArena, type Arena } from './scenery';
@@ -9,6 +9,7 @@ import { ResultsPanel, ShopPanel, MAX_LEVEL, price, type Upgrade, type ResultRow
 import { money, ordinal } from './strings';
 import { matte } from './look';
 import { SkidMarks } from './marks';
+import { Cockpit, COCKPIT_LAYER } from './cockpit';
 
 const LAPS = 4;
 const NCP = 4;                 // checkpoints per lap (besides the line)
@@ -64,6 +65,18 @@ const NITRO = { x: 1018, y: 448, r: 64 };
 const PEDALS_HINT = { x: 1050, y: NITRO.y - NITRO.r - 6 };
 /** Storage key: the controls hint has been shown once (first race only). */
 const HINT_KEY = 'mud-rally:controlsHint';
+/** Storage key: the chosen camera view ('classic' or 'cockpit'). */
+const CAM_KEY = 'mud-rally:camera';
+/** Storage key: the camera button's hint has been shown once. */
+const CAM_HINT_KEY = 'mud-rally:cameraHint';
+/** The camera button: a round glass button under the pause button. */
+const CAM_BTN = { x: 1228, y: 140 };
+/** Seconds of the blend between the two views. */
+const VIEW_BLEND = 0.3;
+/** In-car view: where the "this way" and "rival" chips sit on the screen edges. */
+const DIR_Y = 236;
+const RIVAL_Y = 316;
+type View = 'classic' | 'cockpit';
 const RIVALS = [
   { model: 'suvLux', color: 0xe8402f, name: 'driverRed' },
   { model: 'truck', color: 0xf5c52b, name: 'driverYellow' },
@@ -130,6 +143,25 @@ export class PlayScene extends ArcadeScene {
   private engine: Phaser.Sound.BaseSound | null = null;
   private nitroIcon!: HudChip;
   private shown = -1;
+  // the in-car view
+  private cockpit!: Cockpit;
+  /** The chosen view (stored); the blend follows it during the race. Exposed for tests. */
+  view: View = 'classic';
+  /** 0 = classic .. 1 = in-car (linear in time), and its eased value. */
+  private viewK = 0;
+  viewE = 0;
+  private inCar = false;
+  private camBtn!: Phaser.GameObjects.Container;
+  private camHint: Phaser.GameObjects.Container | null = null;
+  private dirChips: HudChip[] = [];
+  private dirShow = 0;
+  private dirSide = 1;
+  private rivalChips: HudChip[] = [];
+  private rivalIcons: Phaser.GameObjects.Image[] = [];
+  private speedLines!: Phaser.GameObjects.Graphics;
+  /** The steering shown on the 3D wheel. */
+  private wheelVis = 0;
+  private mudAcc = 0;
 
   createGame(): void {
     this.trucks = [];
@@ -163,6 +195,14 @@ export class PlayScene extends ArcadeScene {
     this.camShake = 0;
     this.centerText = '';
     this.shown = -1;
+    this.view = storage.get<string>(CAM_KEY, 'classic') === 'cockpit' ? 'cockpit' : 'classic';
+    this.viewK = this.viewE = 0;
+    this.inCar = false;
+    this.camHint = null;
+    this.dirShow = 0;
+    this.dirSide = 1;
+    this.wheelVis = 0;
+    this.mudAcc = 0;
 
     this.world = new World3D(this, { fov: FOV, background: 0x9fd0ff, fog: { color: 0xb9dcf5, near: 70, far: 150 } });
     const sun = this.world.addLights({ sky: 0xeaf6ff, ground: 0x8a6a4a, ambient: 1.55, intensity: 2.5, dir: [-0.45, 1, 0.5], extent: 40 });
@@ -196,6 +236,12 @@ export class PlayScene extends ArcadeScene {
     }
     for (const tr of this.trucks) this.world.scene.add(tr.root, tr.blob);
 
+    // the in-car view: the cockpit rides with the player's truck; its mirror is drawn first
+    this.cockpit = new Cockpit(PLAYER_COLOR);
+    this.cockpit.onSound = (key, cfg) => this.sfx(key, cfg);
+    this.world.scene.add(this.cockpit.rig);
+    this.world.onFrame = () => this.cockpit.renderMirror(this.world.renderer, this.world.scene);
+
     // a bobbing arrow over the player's truck
     const mgeo = new THREE.ConeGeometry(0.42, 0.9, 4);
     mgeo.rotateX(Math.PI);
@@ -216,6 +262,7 @@ export class PlayScene extends ArcadeScene {
     this.world.scene.add(this.wrongArrow);
 
     this.buildNitroHud();
+    this.buildViewUi();
     this.hud.setLives(this.lives, this.tune.lives);
     this.setScore(0);
 
@@ -238,6 +285,7 @@ export class PlayScene extends ArcadeScene {
       this.dust.dispose();
       this.glow.dispose();
       this.marks.dispose();
+      this.cockpit.dispose();
       mgeo.dispose();
       ageo.dispose();
     });
@@ -320,6 +368,8 @@ export class PlayScene extends ArcadeScene {
       this.dustAcc.set(tr, 0);
     });
     this.player.nitro = 1 + this.levels.nitro;
+    this.cockpit.setTrack(tk);
+    this.cockpit.reset(this.player);
     this.shown = -1;
     this.updateNitroHud();
     this.nitroIcon.setVisible(!this.steering.pad);
@@ -340,6 +390,7 @@ export class PlayScene extends ArcadeScene {
     this.world.camera.lookAt(CAM_LOOK);
     this.banner(t('raceN', { n: this.raceNo }), loc(layout.name));
     if (this.raceNo === 1 && !storage.get<boolean>(HINT_KEY, false)) this.showHint();
+    if (this.raceNo === 1 && !storage.get<boolean>(CAM_HINT_KEY, false)) this.showCamHint();
   }
 
   /** The first race ever: how the car controls work, over the grid until the start. */
@@ -493,6 +544,7 @@ export class PlayScene extends ArcadeScene {
     this.updateEngine();
     this.updateMarker();
     this.updateCamera(dt);
+    this.updateView(dt);
   }
 
   private simulate(dt: number, terrain: Arena['terrain']): void {
@@ -595,7 +647,7 @@ export class PlayScene extends ArcadeScene {
   private fireNitro(tr: Truck): void {
     tr.nitro--;
     tr.nitroT = NITRO_TIME;
-    const p = this.world.toScreen(new THREE.Vector3(tr.x, tr.y, tr.z));
+    const p = this.screenOf(tr.x, tr.y, tr.z);
     this.sfxAt('nitro', p.x, { volume: tr.isPlayer ? 0.75 : 0.35 });
     if (tr.isPlayer) {
       this.updateNitroHud();
@@ -611,7 +663,7 @@ export class PlayScene extends ArcadeScene {
 
   private onEvents(tr: Truck, ev: StepEvents): void {
     const near = tr.isPlayer;
-    const sx = () => this.world.toScreen(new THREE.Vector3(tr.x, tr.y, tr.z)).x;
+    const sx = () => this.screenOf(tr.x, tr.y, tr.z).x;
     if (ev.launched) {
       if (near || Math.random() < 0.5) this.sfxAt('jump', sx(), { volume: near ? 0.55 : 0.25 });
       for (let k = 0; k < 6; k++) {
@@ -630,7 +682,10 @@ export class PlayScene extends ArcadeScene {
       }
       if (near && big) {
         this.camShake = Math.max(this.camShake, Math.min(0.55, ev.landed * 0.05));
-        tr.surface === SURF_MUD && this.mudSplash(tr, 18);
+        if (tr.surface === SURF_MUD) {
+          this.mudSplash(tr, 18);
+          if (this.inCar) this.cockpit.splat(9);
+        }
       }
     }
     if (ev.wall > 0) {
@@ -661,7 +716,7 @@ export class PlayScene extends ArcadeScene {
           b.vx += nx * imp * 0.5; b.vz += nz * imp * 0.5;
           if (vrel > 2.2) {
             const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2, my = (a.y + b.y) / 2 + 0.6;
-            const sx = this.world.toScreen(new THREE.Vector3(mx, my, mz)).x;
+            const sx = this.screenOf(mx, my, mz).x;
             const mine = a.isPlayer || b.isPlayer;
             this.sfxAt('bump', sx, { volume: mine ? 0.7 : 0.3 });
             for (let k = 0; k < 7; k++) {
@@ -929,7 +984,7 @@ export class PlayScene extends ArcadeScene {
     }
     if (p.kind === 'nitro') tr.nitro = Math.min(9, tr.nitro + 1);
     if (!tr.isPlayer) return;
-    const sc = this.world.toScreen(new THREE.Vector3(p.x, p.y + 1, p.z));
+    const sc = this.screenOf(p.x, p.y + 1, p.z);
     if (p.kind === 'cash') {
       const v = Math.round((500 * (1 + 0.15 * (this.raceNo - 1))) / 50) * 50;
       this.raceCash += v;
@@ -1008,7 +1063,7 @@ export class PlayScene extends ArcadeScene {
     this.wasBraking = tr.braking;
     if (start && this.skidCd <= 0 && surf !== SURF_MUD) {
       this.skidCd = tr.braking ? 0.9 : 2.2;
-      const x = this.world.toScreen(new THREE.Vector3(tr.x, tr.y, tr.z)).x;
+      const x = this.screenOf(tr.x, tr.y, tr.z).x;
       this.sfxAt('skid', x, { volume: tr.braking ? 0.45 : 0.3 });
     }
   }
@@ -1040,14 +1095,16 @@ export class PlayScene extends ArcadeScene {
     const tr = this.player;
     this.marker.position.set(tr.x, tr.y + 2.6 + Math.sin(performance.now() / 220) * 0.2, tr.z);
     this.marker.rotation.y += 0.05;
-    this.marker.visible = this.phase !== 'results' && this.phase !== 'shop';
+    this.marker.visible = this.phase !== 'results' && this.phase !== 'shop' && !this.inCar;
     // wrong way: the ground arrow shows which way the race goes
     const show = this.phase === 'race' && this.wrongT > 0.5 && !tr.finished;
     this.wrongArrow.visible = show;
     if (show) {
       const p = this.track.sampleAt(tr.s);
       const pulse = 1.4 + Math.sin(performance.now() / 120) * 0.15;
-      this.wrongArrow.position.set(tr.x + p.tx * 2.4, this.arena!.terrain.heightAt(tr.x + p.tx * 2.4, tr.z + p.tz * 2.4) + 0.12, tr.z + p.tz * 2.4);
+      // from the driver's seat it lies on the ground ahead, where the windscreen shows it
+      const ox = this.inCar ? Math.cos(tr.heading) * 5.5 : p.tx * 2.4, oz = this.inCar ? Math.sin(tr.heading) * 5.5 : p.tz * 2.4;
+      this.wrongArrow.position.set(tr.x + ox, this.arena!.terrain.heightAt(tr.x + ox, tr.z + oz) + 0.12, tr.z + oz);
       this.wrongArrow.rotation.y = Math.atan2(-p.tz, p.tx);
       this.wrongArrow.scale.setScalar(pulse);
     }
@@ -1067,6 +1124,270 @@ export class PlayScene extends ArcadeScene {
       cam.updateProjectionMatrix();
     }
     cam.lookAt(CAM_LOOK.x + (Math.random() - 0.5) * a * 0.5, CAM_LOOK.y, CAM_LOOK.z + (Math.random() - 0.5) * a * 0.5);
+  }
+
+  // ---------------------------------------------------------------- camera views
+
+  /**
+   * Where a world point shows on the screen, for popups and sound panning. From the driver's
+   * seat a point beside or under the truck has no useful spot: it is placed over the bonnet.
+   */
+  private screenOf(x: number, y: number, z: number): { x: number; y: number } {
+    const p = this.world.toScreen(new THREE.Vector3(x, y, z));
+    if (!this.inCar) return p;
+    const ok = p.visible && p.x > 40 && p.x < this.scale.width - 40 && p.y > 80 && p.y < 500;
+    return ok ? p : { x: this.scale.width / 2, y: 420 };
+  }
+
+  /** The views can be switched from the grid until the finish (not on the result or garage screens). */
+  private viewAllowed(): boolean {
+    return this.phase === 'intro' || this.phase === 'count' || this.phase === 'race' || this.phase === 'finish';
+  }
+
+  /** Switches between the classic overview and the in-car view (button or C), and remembers it. */
+  toggleView(): void {
+    if (!this.viewAllowed() || this.isOver) return;
+    this.view = this.view === 'classic' ? 'cockpit' : 'classic';
+    storage.set(CAM_KEY, this.view);
+    this.sfx('move', { volume: 0.4, rate: 0.85 });
+    popup(this, this.scale.width / 2, 196, t(this.view === 'cockpit' ? 'camCockpit' : 'camClassic'), '#ffffff', 24);
+    this.tweens.add({ targets: this.camBtn, scale: { from: 1.18, to: 1 }, duration: 260, ease: 'Back.easeOut' });
+    this.dropCamHint();
+  }
+
+  private buildViewUi(): void {
+    const { width } = this.scale;
+    // a camera, drawn once: body, viewfinder bump and lens
+    if (!this.textures.exists('mr-cam')) {
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      g.fillStyle(0xffffff).fillRoundedRect(4, 18, 56, 38, 9).fillRoundedRect(18, 10, 22, 12, 4);
+      g.fillStyle(0x24324a).fillCircle(32, 37, 13);
+      g.fillStyle(0xffffff).fillCircle(32, 37, 8);
+      g.fillStyle(0x24324a).fillCircle(32, 37, 5);
+      g.fillStyle(0xffd23f).fillCircle(51, 26, 3.5);
+      g.generateTexture('mr-cam', 64, 64);
+      g.clear();
+      // a chevron for the "this way" chip, pointing left
+      g.fillStyle(0xffd23f).fillTriangle(2, 20, 22, 2, 22, 38).fillRect(20, 13, 18, 14);
+      g.generateTexture('mr-arrow', 40, 40);
+      g.clear();
+      // a little truck for the rival chips (tinted with the rival's colour)
+      g.fillStyle(0xffffff).fillRoundedRect(0, 8, 44, 14, 4).fillRoundedRect(8, 0, 20, 12, 3);
+      g.fillStyle(0x15171d).fillCircle(10, 23, 5).fillCircle(34, 23, 5);
+      g.generateTexture('mr-rival', 44, 28);
+      g.destroy();
+    }
+    this.camBtn = iconButton(this, CAM_BTN.x, CAM_BTN.y, 'mr-cam', () => this.toggleView(), 72);
+    this.camBtn.setScrollFactor(0).setDepth(9600).setData('label', t('camBtn'));
+    if (!this.steering.pad) {
+      // desktop: the key on a small cap in the button's corner
+      const cap = this.add.graphics().fillStyle(0xf3f2f2, 1).fillRoundedRect(12, 12, 24, 24, 6).lineStyle(2, 0x24324a, 0.6).strokeRoundedRect(12, 12, 24, 24, 6);
+      const key = txt(this, 24, 24, 'C', { title: true, size: 15, color: '#24324a', strokeThickness: 0 });
+      this.camBtn.add([cap, key]);
+    }
+    // C switches the view; a key event, so even a very short tap counts (listeners go with the scene)
+    this.input.keyboard?.on('keydown-C', (ev: KeyboardEvent) => { if (!ev.repeat) this.toggleView(); });
+
+    const arrowR = this.add.image(0, 0, 'mr-arrow').setFlipX(true).setScale(0.7);
+    this.dirChips = [
+      hudChip(this, HUD_MARGIN, DIR_Y, { icon: 'mr-arrow', iconSize: 28, text: t('thisWay'), color: '#ffd23f' }),
+      hudChip(this, width - HUD_MARGIN, DIR_Y, { align: 'right', text: t('thisWay'), color: '#ffd23f', items: [arrowR] }),
+    ];
+    const truckR = this.add.image(0, 0, 'mr-rival').setScale(0.8);
+    this.rivalChips = [
+      hudChip(this, HUD_MARGIN, RIVAL_Y, { icon: 'mr-rival', iconSize: 22, text: t('rivalBehind'), size: 22 }),
+      hudChip(this, width - HUD_MARGIN, RIVAL_Y, { align: 'right', text: t('rivalBehind'), size: 22, items: [truckR] }),
+    ];
+    this.rivalIcons = [this.rivalChips[0].icon!, truckR];
+    for (const c of [...this.dirChips, ...this.rivalChips]) c.setVisible(false);
+    // nitro in the in-car view: streaks rushing past the windscreen
+    this.speedLines = this.add.graphics().setDepth(-90).setScrollFactor(0);
+  }
+
+  /** The first race: a hint beside the camera button. */
+  private showCamHint(): void {
+    // it names the view the button leads to
+    const s = t((this.steering.pad ? 'camHintTouch' : 'camHintKeys') + (this.view === 'cockpit' ? 'Out' : ''));
+    const label = txt(this, 0, 0, s, { size: 20, color: '#ffffff', strokeThickness: 5 }).setOrigin(1, 0.5);
+    const w = label.width + 36;
+    const x = CAM_BTN.x - 50;
+    const pill = this.add.graphics().fillStyle(0x0b1020, 0.72).fillRoundedRect(-w + 8, -22, w, 44, 22)
+      .lineStyle(2, 0xffd23f, 0.6).strokeRoundedRect(-w + 8, -22, w, 44, 22);
+    label.setX(-10);
+    const c = this.add.container(x, CAM_BTN.y, [pill, label]).setDepth(9550).setScrollFactor(0).setAlpha(0);
+    this.camHint = c;
+    storage.set(CAM_HINT_KEY, true);
+    this.tweens.add({ targets: c, alpha: 1, x: x - 8, duration: 320, delay: 900 });
+    this.tweens.add({ targets: this.camBtn, scale: { from: 1, to: 1.14 }, duration: 300, yoyo: true, repeat: 3, delay: 1100 });
+    this.time.delayedCall(7000, () => this.dropCamHint());
+  }
+
+  private dropCamHint(): void {
+    const c = this.camHint;
+    if (!c) return;
+    this.camHint = null;
+    this.tweens.add({ targets: c, alpha: 0, duration: 300, onComplete: () => c.destroy() });
+  }
+
+  /** Blends the camera between the views and runs everything the in-car view shows. */
+  private updateView(dt: number): void {
+    const cam = this.world.camera;
+    const tr = this.player;
+    const ph = this.phase;
+    const live = ph === 'count' || ph === 'race' || ph === 'finish';
+    const want = this.view === 'cockpit' && (live || (ph === 'intro' && this.phaseT > 1.35)) ? 1 : 0;
+    this.viewK = Phaser.Math.Clamp(this.viewK + Math.sign(want - this.viewK) * (dt / VIEW_BLEND), 0, 1);
+    const e = (this.viewE = this.viewK * this.viewK * (3 - 2 * this.viewK));
+    this.camBtn.setVisible(this.viewAllowed());
+
+    // the wheel: in the race it is the steering itself; on the grid it follows the thumb or keys
+    const pad = this.steering.pad;
+    if (ph === 'race' && !tr.finished) this.wheelVis = this.steering.current;
+    else if (ph === 'race' || ph === 'finish') this.wheelVis = tr.steer / 0.55;
+    else {
+      const keys = Math.abs(this.controls.axisX) > 0.3 ? Math.sign(this.controls.axisX) : 0;
+      if (!keys && pad && pad.mode === 'tilt' && tilt.active) this.wheelVis = tilt.steer;
+      else if (!keys && pad && pad.mode === 'wheel') this.wheelVis = pad.steer;
+      else {
+        const aim = keys || (pad?.steer ?? 0);
+        const step = dt / RAMP_TIME;
+        this.wheelVis += Phaser.Math.Clamp(aim - this.wheelVis, -step, step);
+      }
+    }
+
+    const inCar = e >= 0.5;
+    if (e > 0) {
+      const surf = tr.surface;
+      const rough = tr.airborne ? 0 : surf === SURF_MUD ? 1 : surf === SURF_PUDDLE ? 0.6 : surf === SURF_BERM || surf === SURF_GRASS ? 0.5 : 0.12;
+      this.cockpit.update(dt, {
+        truck: tr,
+        steer: this.wheelVis,
+        top: BASE_TOP * (1 + 0.075 * this.levels.engine),
+        gas: this.controls.axisY < -0.3 || this.steering.isDown('gas'),
+        racing: ph === 'race' || ph === 'finish',
+        shake: this.camShake,
+        kick: this.fovKick,
+        rough,
+        trucks: this.trucks,
+      });
+      if (ph === 'intro') cam.fov = FOV;
+      cam.position.lerp(this.cockpit.camPos, e);
+      cam.quaternion.slerp(this.cockpit.camQuat, e);
+      cam.fov += (this.cockpit.fov - cam.fov) * e;
+      cam.near = 0.04;
+      cam.updateProjectionMatrix();
+      cam.updateMatrixWorld();
+      this.cockpit.mirrorOn = inCar;
+      if (inCar && (ph === 'race' || ph === 'finish')) this.windscreenMud(dt);
+    } else if (cam.near !== 0.1) {
+      cam.near = 0.1;
+      cam.updateProjectionMatrix();
+    }
+    if (inCar !== this.inCar) {
+      this.inCar = inCar;
+      if (inCar) cam.layers.enable(COCKPIT_LAYER);
+      else cam.layers.disable(COCKPIT_LAYER);
+      tr.setGhost(inCar);
+    }
+    this.dust.setView(cam.fov, inCar ? 0.9 : 0, inCar ? 180 : 4096);
+    this.glow.setView(cam.fov, inCar ? 0.9 : 0, inCar ? 180 : 4096);
+
+    // HUD: the dashboard shows nitro in the car; the chips that only the in-car view needs
+    if (ph !== 'results' && ph !== 'shop') this.nitroIcon.setVisible(!pad && !inCar);
+    this.updateDirChip(dt, inCar && ph === 'race' && !tr.finished);
+    this.updateRivalChip(inCar && (ph === 'race' || ph === 'finish'));
+    this.drawSpeedLines(inCar && tr.nitroT > 0 && ph !== 'results' && ph !== 'shop');
+  }
+
+  /** Mud and water on the windscreen: from the player's own wheels and from a truck just ahead. */
+  private windscreenMud(dt: number): void {
+    const tr = this.player, sp = tr.speed;
+    let rate = 0, water = false;
+    if (!tr.airborne && tr.surface === SURF_MUD && sp > 3) rate = sp * 0.28;
+    else if (!tr.airborne && tr.surface === SURF_PUDDLE && sp > 4) { rate = sp * 0.35; water = true; }
+    const fx = Math.cos(tr.heading), fz = Math.sin(tr.heading);
+    for (const o of this.trucks) {
+      if (o === tr || o.surface !== SURF_MUD || o.speed < 4 || o.airborne) continue;
+      const dx = o.x - tr.x, dz = o.z - tr.z;
+      const along = dx * fx + dz * fz, side = Math.abs(-dx * fz + dz * fx);
+      if (along > 1.5 && along < 7.5 && side < 1.8) rate += 2.6;
+    }
+    this.mudAcc += rate * dt;
+    if (this.mudAcc >= 1) {
+      const n = Math.floor(this.mudAcc);
+      this.mudAcc -= n;
+      this.cockpit.splat(n, water);
+      if (Math.random() < 0.25) this.sfx('splash', { volume: 0.18, rate: 1.4 });
+    }
+  }
+
+  /** In the car: a "this way" chip on the screen edge when the track ahead is out of sight. */
+  private updateDirChip(dt: number, on: boolean): void {
+    const tr = this.player;
+    let need = false;
+    if (on) {
+      const p = this.track.pointAt(tr.s + 14);
+      const sc = this.world.toScreen(new THREE.Vector3(p.x, this.arena!.terrain.heightAt(p.x, p.z) + 0.5, p.z));
+      const seen = sc.visible && sc.x > 70 && sc.x < this.scale.width - 70 && sc.y > 70 && sc.y < 520;
+      need = !seen || this.wrongT > 0.5;
+      if (need) {
+        const a = Math.atan2(p.z - tr.z, p.x - tr.x) - tr.heading;
+        const side = Math.atan2(Math.sin(a), Math.cos(a)) > 0 ? 1 : 0;
+        // keep the side while it is shown, unless the target swings well across
+        if (this.dirShow <= 0 || Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) > 0.25) this.dirSide = side;
+      }
+    }
+    this.dirShow = Phaser.Math.Clamp(this.dirShow + (need ? dt / 0.25 : -dt / 0.4), 0, 1);
+    const show = on && this.dirShow > 0.5;
+    this.dirChips.forEach((c, i) => {
+      const v = show && i === this.dirSide;
+      if (v && !c.visible) this.tweens.add({ targets: c, scale: { from: 1.3, to: 1 }, duration: 240, ease: 'Back.easeOut' });
+      c.setVisible(v);
+      if (v) c.setAlpha(0.75 + 0.25 * Math.sin(this.elapsed * 9));
+    });
+  }
+
+  /** In the car: a rival close behind or alongside (out of the windscreen) gets a chip on its side. */
+  private updateRivalChip(on: boolean): void {
+    const tr = this.player;
+    let best: Truck | null = null, bestD = 8.5, along = 0, lat = 0;
+    if (on) {
+      const fx = Math.cos(tr.heading), fz = Math.sin(tr.heading);
+      for (const o of this.trucks) {
+        if (o === tr) continue;
+        const dx = o.x - tr.x, dz = o.z - tr.z, d = Math.hypot(dx, dz);
+        const a = dx * fx + dz * fz;
+        if (d < bestD && a < 1.2) { best = o; bestD = d; along = a; lat = -dx * fz + dz * fx; }
+      }
+    }
+    const side = lat > 0 ? 1 : 0;
+    this.rivalChips.forEach((c, i) => {
+      const v = !!best && i === side;
+      if (v && best) {
+        if (!c.visible) this.tweens.add({ targets: c, scale: { from: 1.25, to: 1 }, duration: 220, ease: 'Back.easeOut' });
+        c.setText(t(along < -1.5 ? 'rivalBehind' : 'rivalBeside'));
+        this.rivalIcons[i].setTint(best.color);
+        c.setAlpha(bestD < 4 ? 0.8 + 0.2 * Math.sin(this.elapsed * 14) : 1);
+      }
+      c.setVisible(v);
+    });
+  }
+
+  /** Nitro from the driver's seat: white streaks rushing out from the middle of the windscreen. */
+  private drawSpeedLines(on: boolean): void {
+    const g = this.speedLines;
+    g.clear();
+    if (!on) return;
+    const cx = this.scale.width / 2, cy = 330;
+    for (let i = 0; i < 26; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r0 = 300 + Math.random() * 160, r1 = r0 + 90 + Math.random() * 200;
+      const x0 = cx + Math.cos(a) * r0, y0 = cy + Math.sin(a) * r0 * 0.62;
+      const x1 = cx + Math.cos(a) * r1, y1 = cy + Math.sin(a) * r1 * 0.62;
+      if (y1 > 500 || y0 > 500 || y1 < 96 || y0 < 96) continue;
+      g.lineStyle(2 + Math.random() * 3, Math.random() < 0.3 ? 0xffd9a0 : 0xffffff, 0.18 + Math.random() * 0.3);
+      g.lineBetween(x0, y0, x1, y1);
+    }
   }
 
   // ---------------------------------------------------------------- HUD

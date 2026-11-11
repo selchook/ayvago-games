@@ -1830,6 +1830,39 @@
       "thumb": "thumbs/pipe-flow.png"
     },
     {
+      "id": "pirate-cove",
+      "title": {
+        "tr": "Korsan Koyu",
+        "en": "Pirate Cove"
+      },
+      "description": {
+        "tr": "Kara yelkenli korsan gemine dümen kır, adalarla dolu masmavi denize açıl! Düşmanı yanına al, iskele ya da sancak bordasından gülle yağdır; batan gemilerin altınlarını, tamir fıçılarını topla, yaralanınca koya dönüp gemini onar. On dalga boyunca devriye gemileri, kıyı kaleleri, fırtına öncesi hazine avı, hazine gemisi eskortu ve sisin içinden çıkan Hayalet Kalyon seni bekliyor.",
+        "en": "Take the helm of a black-sailed pirate ship on a bright sea full of islands! Bring enemies alongside and rake them with port or starboard broadsides, scoop up the gold and repair barrels they leave behind, and limp back to the cove to patch your hull. Ten waves of navy patrols, shore forts, a treasure hunt before the storm, a treasure ship to escort and the Ghost Galleon rising from the fog."
+      },
+      "howTo": {
+        "tr": "Dokunmatik: dümeni menüden seç; sağda İSKELE ve SANCAK topları, üstlerinde yelken tuşları. Klavye: ← → dümen, ↑ ↓ yelken, A/Z iskele, D/X sancak, Boşluk hedefteki taraf.",
+        "en": "Touch: pick the helm on the menu; PORT and STARBOARD guns on the right, sail buttons above them. Keys: ← → steer, ↑ ↓ sails, A/Z fire port, D/X fire starboard, Space the side with a target."
+      },
+      "genres": [
+        "action",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Kenney Pirate Kit (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact and Interface Sounds (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-11-11"
+      },
+      "thumb": "thumbs/pirate-cove.png"
+    },
+    {
       "id": "pixel-runner",
       "title": {
         "tr": "Piksel Koşucu",

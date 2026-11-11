@@ -81,6 +81,8 @@ export class Truck {
   /** A soft dark blob on the ground under the truck: it stays down when the truck flies. */
   readonly blob: THREE.Mesh;
   private blobMat: THREE.MeshBasicMaterial;
+  /** The player's own body materials (cloned), switched off in the in-car view (ghost). */
+  private own: THREE.Material[] = [];
 
   x = 0; z = 0; y = 0;
   vx = 0; vz = 0; vy = 0;
@@ -160,6 +162,18 @@ export class Truck {
     this.flame.visible = false;
     this.body.add(this.flame);
     m.scale.setScalar(MODEL_SCALE);
+    if (isPlayer) {
+      // the player's truck gets its own materials, so the in-car view can hide it alone
+      m.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh || mesh === this.flame) return;
+        if (!mesh.userData.ownMaterial) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          mesh.userData.ownMaterial = true;
+        }
+        this.own.push(mesh.material as THREE.Material);
+      });
+    }
     this.blobMat = new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, opacity: 0.4, depthWrite: false });
     this.blob = new THREE.Mesh(blobGeo, this.blobMat);
     this.blob.userData.ownMaterial = true;
@@ -167,6 +181,22 @@ export class Truck {
     this.tilt.add(m);
     this.root.add(this.tilt);
   }
+
+  /**
+   * In-car view: the body draws nothing (the camera sits inside it) but still casts its shadow
+   * on the ground. The nitro flame stays visible (in the mirror).
+   */
+  setGhost(on: boolean): void {
+    for (const m of this.own) {
+      m.colorWrite = !on;
+      m.depthWrite = !on;
+    }
+  }
+
+  /** The body's smoothed pitch and roll (radians) and suspension travel, for the in-car camera. */
+  get bodyPitch(): number { return this.pitch; }
+  get bodyRoll(): number { return this.roll; }
+  get suspension(): number { return this.susp; }
 
   get speed(): number {
     return Math.hypot(this.vx, this.vz);
