@@ -106,10 +106,10 @@ export class Swim extends SportEvent {
       // after the dive the plan covers the rest of the pool
       this.plans[i] = racePlan(mark - this.reacts[i] - DIVE, POOL_LEN - DIVE_X, 0, 1.2);
     }
-    this.strip = new RaceStrip(s, 380, 900, 86, s.entrants);
+    this.strip = new RaceStrip(s, s.entrants);
     this.airMeter = new Meter(s, 640, 636, 300, t('air'), [0x3ee6ff, 0x3ee6ff, 0xff6b4a]);
     this.ring = s.add.graphics().setDepth(9000);
-    this.judgeText = txt(s, 1110, 270, '', { title: true, size: 30 }).setDepth(9001);
+    this.judgeText = txt(s, 1110, 246, '', { title: true, size: 30 }).setDepth(9001);
     s.ui.add([this.strip.root, this.airMeter.root, this.ring, this.judgeText]);
     this.calls = new StartCalls(s, (st) => {
       // on the blocks, then bent forward ready to dive
@@ -341,7 +341,7 @@ export class Swim extends SportEvent {
   private drawRing(now: number): void {
     const g = this.ring;
     const tn = this.tune;
-    const cx = 1110, cy = 400, r0 = 40;
+    const cx = 1110, cy = 382, r0 = 40;
     const phase = ((now - this.entry) / tn.beat) % 1;     // 0 just after a beat … 1 at the next
     const r = r0 + (1 - phase) * 70;
     g.clear();

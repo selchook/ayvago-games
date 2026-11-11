@@ -2,7 +2,7 @@
 // board after it, the medal table at the end, plus small HUD widgets (meters, the race strip,
 // call-outs). Jumbotron look: a dark screen with a frame of bulbs. Touch and keys (Space / Enter).
 import Phaser from 'phaser';
-import { Button, txt, t, playSfx } from '@core';
+import { Button, txt, t, playSfx, hudChip, hudText, HUD_ROW2_Y, HUD_MARGIN, type HudChip } from '@core';
 import { ordinal } from './strings';
 
 export const PANEL_DEPTH = 9550;
@@ -227,20 +227,24 @@ export class MedalTable extends Panel {
 }
 
 // ------------------------------------------------------------------ HUD widgets
+// Every always-visible readout during an event sits in a core HUD chip (frosted glass).
 
-/** A horizontal meter with a label (speed, air). */
+/** Bottom centre line of the event meters (speed, air): above the hint line, between the thumbs. */
+export const METER_Y = 636;
+
+/** A horizontal meter with its caption, in a chip (speed, air). */
 export class Meter {
-  readonly root: Phaser.GameObjects.Container;
+  readonly root: HudChip;
   private bar: Phaser.GameObjects.Graphics;
   private value = 0;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, private w: number, label: string, private colors: [number, number, number] = [0x3ee6ff, 0xffd23f, 0xff6b4a], private h = 22) {
-    this.root = scene.add.container(x, y).setDepth(9000).setScrollFactor(0);
-    const bg = scene.add.graphics();
-    bg.fillStyle(0x0b1028, 0.7).fillRoundedRect(-w / 2 - 6, -h / 2 - 6, w + 12, h + 12, (h + 12) / 2);
+  constructor(scene: Phaser.Scene, x: number, y: number, private w: number, label: string, private colors: [number, number, number] = [0x3ee6ff, 0xffd23f, 0xff6b4a], private h = 20) {
+    const slot = scene.add.container(0, 0).setData('chipWidth', w);
+    const track = scene.add.graphics();
+    track.fillStyle(0x000000, 0.35).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
     this.bar = scene.add.graphics();
-    const lbl = txt(scene, -w / 2 - 16, 0, label, { size: 20, strokeThickness: 4 }).setOrigin(1, 0.5);
-    this.root.add([bg, this.bar, lbl]);
+    slot.add([track, this.bar]).setScrollFactor(0, 0, true);
+    this.root = hudChip(scene, x, y, { align: 'center', label, items: [slot] });
   }
 
   set(v: number, mark?: number): void {
@@ -250,35 +254,71 @@ export class Meter {
     const c = this.value > 0.85 ? this.colors[1] : this.value < 0.25 ? this.colors[2] : this.colors[0];
     g.fillStyle(c, 1).fillRoundedRect(-this.w / 2, -this.h / 2, Math.max(this.h, this.w * this.value), this.h, this.h / 2);
     g.fillStyle(0xffffff, 0.3).fillRoundedRect(-this.w / 2 + 4, -this.h / 2 + 3, Math.max(this.h - 8, this.w * this.value - 8), this.h * 0.3, 4);
-    if (mark !== undefined) g.fillStyle(0xffffff, 0.9).fillRect(-this.w / 2 + this.w * mark - 2, -this.h / 2 - 5, 4, this.h + 10);
+    if (mark !== undefined) g.fillStyle(0xffffff, 0.9).fillRect(-this.w / 2 + this.w * mark - 2, -this.h / 2 - 4, 4, this.h + 8);
   }
 }
 
-/** The race strip at the top: one dot per athlete from start to finish. */
+/**
+ * The race strip: one dot per athlete from start to finish, in a wide chip on the second HUD row
+ * (under the event title, clear of the score, clock and pause button).
+ */
 export class RaceStrip {
-  readonly root: Phaser.GameObjects.Container;
-  private dots: Phaser.GameObjects.Container[] = [];
+  readonly root: HudChip;
+  private dots: Phaser.GameObjects.Arc[] = [];
 
-  constructor(scene: Phaser.Scene, private x0: number, private x1: number, y: number, rows: Row[]) {
-    this.root = scene.add.container(0, 0).setDepth(9000).setScrollFactor(0);
+  constructor(scene: Phaser.Scene, rows: Row[], private len = 520, y = HUD_ROW2_Y) {
+    const slot = scene.add.container(0, 0).setData('chipWidth', len + 24);
     const g = scene.add.graphics();
-    g.fillStyle(0x0b1028, 0.6).fillRoundedRect(x0 - 24, y - 26, x1 - x0 + 48, 52, 26);
-    g.lineStyle(3, 0xffffff, 0.5).lineBetween(x0, y, x1, y);
-    g.fillStyle(0xffffff, 1).fillRect(x1 - 2, y - 16, 4, 32);
-    this.root.add(g);
+    g.lineStyle(3, 0xffffff, 0.55).lineBetween(-len / 2, 0, len / 2, 0);
+    g.fillStyle(0xffffff, 0.55).fillRect(-len / 2 - 1, -9, 3, 18);
+    g.fillStyle(0xffffff, 1).fillRect(len / 2 - 2, -15, 4, 30);
+    slot.add(g);
     rows.forEach((r, i) => {
-      const d = scene.add.container(x0, y + (i - 1.5) * 9);
-      const c = scene.add.circle(0, 0, r.player ? 11 : 8, r.color).setStrokeStyle(r.player ? 3 : 2, 0xffffff);
-      d.add(c);
-      this.dots.push(d);
-      this.root.add(d);
+      const c = scene.add.circle(-len / 2, (i - 1.5) * 6, r.player ? 10 : 7.5, r.color).setStrokeStyle(r.player ? 3 : 2, 0xffffff);
+      this.dots.push(c);
     });
-    this.dots.slice().reverse().forEach((d) => this.root.bringToTop(d));
-    this.root.bringToTop(this.dots[0]);
+    // the rivals under the player's dot, the first rival on top of the others
+    slot.add([...this.dots].reverse());
+    slot.bringToTop(this.dots[0]);
+    slot.setScrollFactor(0, 0, true);
+    this.root = hudChip(scene, scene.scale.width / 2, y, { align: 'center', items: [slot] });
   }
 
   set(i: number, f: number): void {
-    this.dots[i].x = this.x0 + (this.x1 - this.x0) * Phaser.Math.Clamp(f, 0, 1);
+    this.dots[i].x = -this.len / 2 + this.len * Phaser.Math.Clamp(f, 0, 1);
+  }
+}
+
+/** Width of a standings row's content (dot, name, value). */
+const BOARD_ROW_W = 196;
+const BOARD_ROW_H = 40;
+
+/**
+ * The event's standings at the right (archery totals, long jump bests): a caption chip and one
+ * chip per athlete, under the pause button. `values[i]` is entrant i's number.
+ */
+export class ChipBoard {
+  readonly root: Phaser.GameObjects.Container;
+  readonly values: Phaser.GameObjects.Text[] = [];
+
+  constructor(scene: Phaser.Scene, title: string, rows: Row[], empty: string) {
+    const x = scene.scale.width - HUD_MARGIN, w = BOARD_ROW_W;
+    this.root = scene.add.container(0, 0).setDepth(9000);
+    const head = hudChip(scene, x, HUD_ROW2_Y - 4, { align: 'right', label: title, height: 34, minWidth: w + 36 });
+    this.root.add(head);
+    rows.forEach((r, i) => {
+      const slot = scene.add.container(0, 0).setData('chipWidth', w);
+      const dot = scene.add.circle(-w / 2 + 8, 0, 8, r.color).setStrokeStyle(2, 0xffffff);
+      const name = hudText(scene, r.name, 20, r.player ? '#3ee6ff' : '#ffffff').setOrigin(0, 0.5).setPosition(-w / 2 + 24, 1);
+      const v = hudText(scene, empty, 22).setOrigin(1, 0.5).setPosition(w / 2, 1);
+      // a long name gives way to the number
+      const room = w - 24 - 56;
+      if (name.width > room) name.setScale(room / name.width);
+      slot.add([dot, name, v]).setScrollFactor(0, 0, true);
+      this.values.push(v);
+      const chip = hudChip(scene, x, HUD_ROW2_Y + 44 + i * (BOARD_ROW_H + 6), { align: 'right', height: BOARD_ROW_H, items: [slot] });
+      this.root.add(chip);
+    });
   }
 }
 

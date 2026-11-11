@@ -2,11 +2,11 @@
 // with the archer's breathing and the wind blows the arrow sideways in flight, one ring per
 // wind point. Aim with a drag or the arrow keys, SHOOT to release. Rings score 1–10.
 import Phaser from 'phaser';
-import { t, txt } from '@core';
+import { t, hudChip, HUD_MARGIN, HUD_ROW2_Y, type HudChip } from '@core';
 import { THREE } from '@core/three';
 import { SportEvent } from './base';
 import { FACE_R, RANGE, TARGET_Y, rangeZ } from '../stadium';
-import { hexs } from '../panels';
+import { hexs, ChipBoard } from '../panels';
 import { rivalMark, type EventId } from '../scoring';
 import { mesh, lambert } from '../look';
 import type { PadButton } from '../pad';
@@ -42,11 +42,12 @@ export class Archery extends SportEvent {
   private arrows: THREE.Object3D[] = [];
   private flying: THREE.Object3D | null = null;
   private reticle!: Phaser.GameObjects.Graphics;
-  private windText!: Phaser.GameObjects.Text;
+  /** WIND chip at the top left: the strength and an arrow for the direction. */
+  private windChip!: HudChip;
   private windArrow!: Phaser.GameObjects.Graphics;
-  private board!: Phaser.GameObjects.Container;
+  private board!: ChipBoard;
   private boardRows: Phaser.GameObjects.Text[] = [];
-  private arrowText!: Phaser.GameObjects.Text;
+  private arrowChip!: HudChip;
   private group = new THREE.Group();
 
   private get tune() {
@@ -119,21 +120,12 @@ export class Archery extends SportEvent {
     const s = this.s;
     s.pad.dragArea = true;
     this.reticle = s.add.graphics().setDepth(9000);
-    this.windArrow = s.add.graphics().setDepth(9000);
-    this.windText = txt(s, 160, 150, '', { title: true, size: 22 }).setDepth(9001);
-    this.arrowText = txt(s, 640, 88, '', { title: true, size: 24 }).setDepth(9001);
-    this.board = s.add.container(0, 0).setDepth(9000);
-    const bg = s.add.graphics().fillStyle(0x0b1028, 0.72).fillRoundedRect(1004, 128, 252, 200, 22);
-    this.board.add([bg, txt(s, 1130, 152, t('total'), { size: 18, color: '#9fb3d9', strokeThickness: 0 })]);
-    this.boardRows = s.entrants.map((e, i) => {
-      const y = 190 + i * 38;
-      this.board.add(s.add.circle(1028, y, 8, e.color).setStrokeStyle(2, 0xffffff));
-      this.board.add(txt(s, 1044, y, e.name, { size: 20, color: e.player ? '#3ee6ff' : '#ffffff', strokeThickness: 3 }).setOrigin(0, 0.5));
-      const v = txt(s, 1240, y, '0', { title: true, size: 20, strokeThickness: 3 }).setOrigin(1, 0.5);
-      this.board.add(v);
-      return v;
-    });
-    s.ui.add([this.reticle, this.windArrow, this.windText, this.arrowText, this.board]);
+    this.windArrow = s.add.graphics();
+    this.windChip = hudChip(s, HUD_MARGIN, HUD_ROW2_Y, { label: t('wind'), text: '0', items: [this.windArrow] });
+    this.arrowChip = hudChip(s, 640, HUD_ROW2_Y, { align: 'center' });
+    this.board = new ChipBoard(s, t('total'), s.entrants, '0');
+    this.boardRows = this.board.values;
+    s.ui.add([this.reticle, this.windChip, this.arrowChip, this.board.root]);
     this.n = 0;
     this.mine = [];
     this.nextArrow();
@@ -149,7 +141,7 @@ export class Archery extends SportEvent {
     if (this.n === 1) this.wind = Math.sign(this.wind || 1) * Math.min(1, m);
     this.aim = { x: 0, y: 0 };
     this.ph = [Math.random() * 6, Math.random() * 6, Math.random() * 6, Math.random() * 6];
-    this.arrowText.setText(t('arrow', { n: this.n }));
+    this.arrowChip.setText(t('arrow', { n: this.n }));
     this.drawWind();
     this.reticle.clear();
     this.wideShot();
@@ -162,13 +154,17 @@ export class Archery extends SportEvent {
     const g = this.windArrow;
     g.clear();
     const w = this.wind;
-    g.fillStyle(0x0b1028, 0.65).fillRoundedRect(30, 82, 260, 92, 22);
-    this.windText.setText(`${t('wind')} ${Math.abs(w)}`).setColor(w === 0 ? '#ffffff' : '#7ee6ff');
+    this.windChip.setText(String(Math.abs(w))).setTextColor(w === 0 ? '#ffffff' : '#7ee6ff');
     if (w !== 0) {
-      const len = 30 + Math.abs(w) * 18, cx = 160, cy = 112, d = Math.sign(w);
-      g.lineStyle(8, 0x7ee6ff, 1).lineBetween(cx - (len / 2) * d, cy, cx + (len / 2) * d, cy);
-      g.fillStyle(0x7ee6ff, 1).fillTriangle(cx + (len / 2 + 16) * d, cy, cx + (len / 2) * d, cy - 13, cx + (len / 2) * d, cy + 13);
+      const len = 30 + Math.abs(w) * 18, d = Math.sign(w), half = (len + 16) / 2;
+      // centred in its slot: shaft and head together span len + 16 px
+      const tail = -half * d, head = (half - 16) * d;
+      g.lineStyle(7, 0x7ee6ff, 1).lineBetween(tail, 0, head, 0);
+      g.fillStyle(0x7ee6ff, 1).fillTriangle(half * d, 0, head, -11, head, 11);
+      g.setData('chipWidth', len + 16);
     }
+    g.setVisible(w !== 0);
+    this.windChip.layout();
     // the flags on the range lean with the wind
     for (const f of this.s.venues.windFlags) {
       f.rotation.y = w >= 0 ? 0 : Math.PI;

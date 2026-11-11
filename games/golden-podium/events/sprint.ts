@@ -93,7 +93,7 @@ export class Sprint extends SportEvent {
       this.times[i] = mark;
       this.plans[i] = racePlan(mark, this.len, 0.13 + Math.random() * 0.08, this.tau);
     }
-    this.strip = new RaceStrip(s, 380, 900, 86, s.entrants);
+    this.strip = new RaceStrip(s, s.entrants);
     this.meter = new Meter(s, 640, 636, 340, t('speed'));
     s.ui.add([this.strip.root, this.meter.root]);
     this.calls = new StartCalls(s, (st) => {
