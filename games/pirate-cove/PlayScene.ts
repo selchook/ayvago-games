@@ -212,11 +212,7 @@ export class PlayScene extends ArcadeScene {
 
     // the world (its own geometries are freed when the scene shuts down)
     freeOwnGeometry(this, () => this.world?.scene);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.fx?.dispose();
-      // the sun's shadow map is not freed with the scene
-      this.world?.sun?.dispose();
-    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.fx?.dispose());
     this.world = new World3D(this, { fov: 54, near: 1, far: 320, background: PALETTES.day.sky, fog: { color: PALETTES.day.fog, near: 95, far: 230 } });
     this.world.addLights({ ambient: 1.55, intensity: 2.3, extent: 36, dir: [-0.45, 1, -0.35] });
     const sun = this.world.sun!;

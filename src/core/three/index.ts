@@ -237,6 +237,8 @@ export class World3D {
   private image: Phaser.GameObjects.Image;
   private texture: Phaser.Textures.Texture;
   private last = 0;
+  /** The environment map's render target (setEnvironment). */
+  private envTarget: THREE.WebGLRenderTarget | null = null;
 
   constructor(private host: Phaser.Scene, opts: World3DOptions = {}) {
     const { width, height } = host.scale;
@@ -306,39 +308,67 @@ export class World3D {
   }
 
   /**
+   * Gives glossy materials something to reflect: renders `room` (a small scene, e.g. a box with
+   * a few emissive strips) into an environment map and sets it as `scene.environment`. The room
+   * is freed at once; the map is a render target the world owns and frees on shutdown.
+   * `blur` is the PMREM sigma in radians (0 = sharp).
+   */
+  setEnvironment(room: THREE.Scene, blur = 0.04): THREE.Texture {
+    this.envTarget?.dispose();
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.envTarget = pmrem.fromScene(room, blur);
+    pmrem.dispose();
+    freeTree(room);
+    room.clear();
+    this.scene.environment = this.envTarget.texture;
+    return this.envTarget.texture;
+  }
+
+  /**
    * Frees what this world put on the GPU. The renderer is shared and outlives the scene, so
    * anything left here would pile up with every restart. Resources still in use elsewhere are
    * safe to free: three.js uploads them again on their next render.
    */
   private dispose(): void {
     this.image.destroy();
-    const geometries = new Set<THREE.BufferGeometry>();
-    const materials = new Set<THREE.Material>();
-    const lights = new Set<THREE.Light>(this.sun ? [this.sun] : []);
-    this.scene.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      // sprites share one geometry inside three.js
-      if (mesh.geometry && !(o as THREE.Sprite).isSprite) geometries.add(mesh.geometry);
-      for (const mat of materialsOf(o)) materials.add(mat);
-      if ((o as THREE.SkinnedMesh).isSkinnedMesh) (o as THREE.SkinnedMesh).skeleton.dispose(); // its bone texture
-      if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose(); // instance buffers
-      if ((o as THREE.Light).isLight) lights.add(o as THREE.Light);
-    });
-    const textures = new Set<THREE.Texture>();
-    for (const mat of materials) for (const tex of texturesOf(mat)) textures.add(tex);
-    for (const bg of [this.scene.background, this.scene.environment]) {
-      if ((bg as THREE.Texture | null)?.isTexture) textures.add(bg as THREE.Texture);
-    }
-    const free = (r: { dispose(): void }) => { if (!modelResources.has(r)) r.dispose(); };
-    geometries.forEach(free);
-    materials.forEach(free);
-    textures.forEach(free);
-    // a shadow-casting light owns a render target (its shadow map)
-    for (const light of lights) disposeShadow(light);
+    freeTree(this.scene);
+    if (this.sun) disposeShadow(this.sun); // even if the game took it out of the scene
+    // a render target's texture is not freed by its own dispose(): free the target
+    this.envTarget?.dispose();
+    this.envTarget = null;
     this.scene.clear();
     this.sun = null;
     this.onFrame = null;
   }
+}
+
+/**
+ * Frees everything a tree of objects holds on the GPU: geometries, materials and their textures,
+ * skeletons' bone textures, instance buffers, shadow maps, and a scene's background and
+ * environment. The loaded models' own resources, shared by every copy, are kept.
+ */
+function freeTree(root: THREE.Object3D): void {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  root.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    // sprites share one geometry inside three.js
+    if (mesh.geometry && !(o as THREE.Sprite).isSprite) geometries.add(mesh.geometry);
+    for (const mat of materialsOf(o)) materials.add(mat);
+    if ((o as THREE.SkinnedMesh).isSkinnedMesh) (o as THREE.SkinnedMesh).skeleton.dispose(); // its bone texture
+    if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose(); // instance buffers
+    if ((o as THREE.Light).isLight) disposeShadow(o as THREE.Light); // a shadow map is a render target
+  });
+  const textures = new Set<THREE.Texture>();
+  for (const mat of materials) for (const tex of texturesOf(mat)) textures.add(tex);
+  const scene = root as THREE.Scene;
+  for (const bg of [scene.background, scene.environment]) {
+    if ((bg as THREE.Texture | null)?.isTexture) textures.add(bg as THREE.Texture);
+  }
+  const free = (r: { dispose(): void }) => { if (!modelResources.has(r)) r.dispose(); };
+  geometries.forEach(free);
+  materials.forEach(free);
+  textures.forEach(free);
 }
 
 /** Frees a light's shadow map and drops the reference (three.js re-creates it if the light is used again). */

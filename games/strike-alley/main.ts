@@ -44,7 +44,7 @@ launch({
     // the alley behind the menu: the player's bowler at the line, ball in hand, pins down the lane
     const world = new World3D(scene, { fov: 46, near: 0.05, far: 80, background: 0x0d0820, fog: { color: 0x0d0820, near: 26, far: 60 } });
     world.addLights({ sky: 0xe6dcff, ground: 0x3a2a48, ambient: 1.35, intensity: 1.7, dir: [0.2, 1, -0.35], extent: 3 });
-    const a = buildAlley(world.scene, world.renderer);
+    const a = buildAlley(world);
     a.pins.forEach((p, i) => {
       p.position.set(SPOTS[i].x, PIN_COM, SPOTS[i].z);
       a.mirrorPins[i].position.copy(p.position);
