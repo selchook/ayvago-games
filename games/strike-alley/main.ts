@@ -5,7 +5,8 @@ import { PlayScene } from './PlayScene';
 import { STRINGS } from './strings';
 import { makeSounds } from './sounds';
 import { buildAlley, drawScreen } from './alley';
-import { Person, ballInHand } from './bowler';
+import { Person } from './bowler';
+import { poseBowler, approachPose, HOLD_T, WALK_T } from './approach';
 import { SPOTS, PIN_COM, HEAD_Z } from './sim';
 
 const SPECTATORS = ['character-male-a', 'character-male-c', 'character-male-e'];
@@ -51,23 +52,50 @@ launch({
     });
     const bowler = new Person(playerCharacter3d());
     world.scene.add(bowler.root);
-    bowler.root.position.set(-0.26, 0, 2.3);
-    bowler.face(0.1).play('holding-right', { fade: 0 });
+    bowler.root.position.set(0.3, 0, 2.6);
+    bowler.face(0.04).play('idle', { fade: 0 });
+    poseBowler(bowler, 0);
+    bowler.legs.w = 0;
     a.mirrorBall.visible = false;
     scene.events.once('shutdown', () => bowler.dispose());
-    world.followSun(new THREE.Vector3(-0.3, 0, 1.6));
+    world.followSun(new THREE.Vector3(0.1, 0, 1.9));
     drawScreen(a, { title: t('lane'), big: '300', sub: t('perfect'), color: '#ffd23f' });
     scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0b0620, 0.36).setOrigin(0).setDepth(-90);
     const t0 = performance.now();
+    // a practice swing on the spot, over and over: steps in place, push-away, backswing, the
+    // forward swing into a slide and the follow-through (the ball stays in the hand)
+    const CYCLE = HOLD_T + 1.6;
+    let last = 0;
     world.onFrame = (dt) => {
       const time = (performance.now() - t0) / 1000;
+      const tt = (time + 0.55) % CYCLE;
+      const pose = approachPose(Math.min(tt, HOLD_T + 0.4));
+      if (tt < last) bowler.relax();
+      poseBowler(bowler, tt, pose);
+      // back into the stance at the end of the loop
+      const back = Math.min(1, Math.max(0, (tt - HOLD_T - 0.4) / 1.0));
+      if (back > 0) {
+        const st = approachPose(0);
+        const k = back * back * (3 - 2 * back);
+        bowler.armR.swing += (st.swing - bowler.armR.swing) * k;
+        bowler.armR.abd += (st.abd - bowler.armR.abd) * k;
+        bowler.armL.w += (st.lw - bowler.armL.w) * k;
+        bowler.armL.swing += (st.lSwing - bowler.armL.swing) * k;
+        bowler.armL.abd += (st.lAbd - bowler.armL.abd) * k;
+        bowler.torso.pitch += (st.pitch - bowler.torso.pitch) * k;
+        bowler.legs.w *= 1 - k;
+        bowler.headPitch *= 1 - k;
+      }
+      bowler.stepLegs(tt < WALK_T ? dt * 1.6 : 0, tt < WALK_T ? 1 : 0, 0.45);
+      last = tt;
       bowler.update(dt);
-      ballInHand(bowler, a.ball.position);
+      bowler.ballAt(a.ball.position);
+      bowler.ballQuat(a.ball.quaternion);
       a.neon.forEach((n, i) => n.mat.color.copy(n.base).offsetHSL(Math.sin(time * 0.7 + i) * 0.04, 0, 0));
       const sway = Math.sin(time * 0.25);
-      // behind the bowler's right shoulder, down the lane to the rack
-      world.camera.position.set(0.62 + sway * 0.12, 0.95 + Math.sin(time * 0.31) * 0.04, 5.0);
-      world.camera.lookAt(-0.02, 0.62, HEAD_Z * 0.7);
+      // behind the bowler's left shoulder, the swinging arm on the right, down the lane to the rack
+      world.camera.position.set(-0.5 + sway * 0.1, 1.3 + Math.sin(time * 0.31) * 0.04, 7.3);
+      world.camera.lookAt(-0.05, 1.25, HEAD_Z * 0.7);
     };
   },
   scenes: [PlayScene],

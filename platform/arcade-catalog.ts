@@ -1179,8 +1179,8 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'strike-alley',
     title: { en: 'Strike Alley', tr: 'Strike Salonu' },
     description: {
-      en: '3D bowling in a glossy neon alley. Pick your spot, flick the ball with spin and watch it skid through the oil and hook on the dry back end, while the pins crash into each other with real physics. Ten frames of real scoring: strikes, spares, splits and the perfect 300!',
-      tr: 'Neon ışıklı, cilalı bir bowling salonunda üç boyutlu bowling. Yerini seç, topu falsolu fırlat, yağlı pistte kayıp kuru bölümde dönmesini izle; lobutlar gerçek fizikle birbirine çarpıp devrilir. On çerçevelik gerçek puanlama: strike, spare, split ve 300 puanlık kusursuz oyun!',
+      en: '3D bowling in a glossy neon alley. Pick your board and your target arrow like a real bowler, flick the ball with spin and watch it skid through the oil and hook on the dry back end, while the pins crash into each other with real physics. Ten frames of real scoring: strikes, spares, splits and the perfect 300!',
+      tr: "Neon ışıklı, cilalı bir bowling salonunda üç boyutlu bowling. Duracağın tahtayı ve hedef oku seç, topu falsolu fırlat, yağlı pistte kayıp kuru bölümde dönmesini izle; lobutlar gerçek fizikle birbirine çarpıp devrilir. On frame'lik gerçek puanlama: strike, spare, split ve 300 puanlık kusursuz oyun!",
     },
     category: 'sports',
     categories: ['sports', 'casual', 'arcade'],
