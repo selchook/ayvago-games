@@ -11,6 +11,9 @@
 //     boot progress) and parsed before the menu opens; model(key) returns a fresh copy.
 //   - One three.js renderer serves the whole game: a restart reuses it, so WebGL contexts
 //     never pile up.
+//   - When its scene shuts down, a World3D frees every GPU resource it created (geometries,
+//     materials, textures, skeletons, shadow maps); only the loaded models' own resources, which
+//     every copy shares, stay. Games do not dispose what they put in the world.
 import Phaser from 'phaser';
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -28,6 +31,35 @@ export const WORLD_DEPTH = -100;
 
 const models = new Map<string, GLTF>();
 const loader = new GLTFLoader();
+/** Geometries, materials and textures of the parsed models: shared by every copy, never freed. */
+const modelResources = new WeakSet<object>();
+
+function keepModelResources(gltf: GLTF): void {
+  gltf.scene.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.geometry) return;
+    modelResources.add(m.geometry);
+    for (const mat of materialsOf(m)) {
+      modelResources.add(mat);
+      for (const tex of texturesOf(mat)) modelResources.add(tex);
+    }
+  });
+}
+
+const materialsOf = (o: THREE.Object3D): THREE.Material[] => {
+  const mat = (o as THREE.Mesh).material;
+  return !mat ? [] : Array.isArray(mat) ? mat : [mat];
+};
+
+/** The textures a material uses (map, normalMap, uniforms of a ShaderMaterial …). */
+function texturesOf(mat: THREE.Material): THREE.Texture[] {
+  const out: THREE.Texture[] = [];
+  const add = (v: unknown) => { if ((v as THREE.Texture | null)?.isTexture) out.push(v as THREE.Texture); };
+  for (const v of Object.values(mat)) add(v);
+  const uniforms = (mat as THREE.ShaderMaterial).uniforms;
+  if (uniforms) for (const u of Object.values(uniforms)) add(u?.value);
+  return out;
+}
 
 /** URL of a model in a Kenney 3D kit: kenney3d('car-kit', 'race') → …/car-kit/models/gltf_format/race.glb */
 export const kenney3d = (kit: string, name: string): string => kenney(`${kit}/models/gltf_format/${name.toLowerCase()}.glb`);
@@ -44,6 +76,7 @@ export function loadModel(load: Phaser.Loader.LoaderPlugin, key: string, url: st
     addBootWork(new Promise<void>((resolve) => {
       // external files (Mini Characters' Textures/colormap.png) resolve next to the model
       loader.parse(data, THREE.LoaderUtils.extractUrlBase(url), (gltf) => {
+        keepModelResources(gltf);
         models.set(key, gltf);
         resolve();
       }, (err) => {
@@ -190,7 +223,8 @@ function sharedRenderer(game: Phaser.Game, w: number, h: number): Shared {
 
 /**
  * A three.js world inside a Phaser scene. Create it in createGame() (or a menu decor); it renders
- * itself after every update of that scene and cleans up when the scene shuts down.
+ * itself after every update of that scene and cleans up when the scene shuts down: everything in
+ * its scene is freed on the GPU except the loaded models' shared resources.
  */
 export class World3D {
   readonly scene = new THREE.Scene();
@@ -271,14 +305,47 @@ export class World3D {
     this.texture.source[0].update();
   }
 
+  /**
+   * Frees what this world put on the GPU. The renderer is shared and outlives the scene, so
+   * anything left here would pile up with every restart. Resources still in use elsewhere are
+   * safe to free: three.js uploads them again on their next render.
+   */
   private dispose(): void {
     this.image.destroy();
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
+    const lights = new Set<THREE.Light>(this.sun ? [this.sun] : []);
     this.scene.traverse((o) => {
-      // models share geometry with the parsed originals: only free per-world materials
-      const m = o as THREE.Mesh;
-      if (m.isMesh && m.userData.ownMaterial) (m.material as THREE.Material).dispose();
+      const mesh = o as THREE.Mesh;
+      // sprites share one geometry inside three.js
+      if (mesh.geometry && !(o as THREE.Sprite).isSprite) geometries.add(mesh.geometry);
+      for (const mat of materialsOf(o)) materials.add(mat);
+      if ((o as THREE.SkinnedMesh).isSkinnedMesh) (o as THREE.SkinnedMesh).skeleton.dispose(); // its bone texture
+      if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose(); // instance buffers
+      if ((o as THREE.Light).isLight) lights.add(o as THREE.Light);
     });
+    const textures = new Set<THREE.Texture>();
+    for (const mat of materials) for (const tex of texturesOf(mat)) textures.add(tex);
+    for (const bg of [this.scene.background, this.scene.environment]) {
+      if ((bg as THREE.Texture | null)?.isTexture) textures.add(bg as THREE.Texture);
+    }
+    const free = (r: { dispose(): void }) => { if (!modelResources.has(r)) r.dispose(); };
+    geometries.forEach(free);
+    materials.forEach(free);
+    textures.forEach(free);
+    // a shadow-casting light owns a render target (its shadow map)
+    for (const light of lights) disposeShadow(light);
     this.scene.clear();
+    this.sun = null;
     this.onFrame = null;
   }
+}
+
+/** Frees a light's shadow map and drops the reference (three.js re-creates it if the light is used again). */
+function disposeShadow(light: THREE.Light): void {
+  const shadow = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
+  if (!shadow) return;
+  shadow.dispose();
+  shadow.map = null;
+  shadow.mapPass = null;
 }
