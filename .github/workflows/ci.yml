@@ -100,7 +100,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright@1.56.1 install --with-deps chromium
+      # The system packages come from the Ubuntu mirrors, which are sometimes unreachable from the
+      # runner. Retry, then fall back to the image's own libraries (it already runs Chrome); the
+      # missing extras are only fallback fonts, and the games load their own.
+      - name: Install Chromium
+        run: |
+          for attempt in 1 2 3; do
+            if timeout 300 npx playwright@1.56.1 install --with-deps chromium; then exit 0; fi
+            echo "Attempt $attempt to install Chromium with its system packages failed; retrying."
+            sleep 20
+          done
+          echo "::warning::Ubuntu mirrors unreachable: installing Chromium without its system packages."
+          npx playwright@1.56.1 install chromium
       - run: npm i --no-save playwright@1.56.1
       - name: Build and smoke-test
         run: node scripts/test-changed.mjs --games "$GAME_LIST" --shard ${{ matrix.shard }}/${{ strategy.job-total }} --smoke-only
