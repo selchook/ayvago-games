@@ -7,7 +7,7 @@
 // boards, the ball and the pins pick up coloured highlights), and a fake mirror: copies of the
 // pins and the ball are drawn upside down under the boards, and the boards are slightly
 // see-through, so the pins stand on their own reflections.
-import { THREE } from '@core/three';
+import { THREE, type World3D } from '@core/three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
   LANE_HALF, GUTTER_W, WALL_X, GUTTER_DEPTH, HEAD_Z, PIT_Z, BACK_Z, PIN_COM, SPOTS, BALL_R, OIL_LEN,
@@ -241,8 +241,8 @@ export function pinMaterial(): THREE.MeshStandardMaterial {
 
 // ------------------------------------------------------------------ the room's reflections
 
-/** Neon "room" rendered into an environment map for the gloss on boards, ball and pins. */
-export function neonEnvironment(renderer: THREE.WebGLRenderer): THREE.Texture {
+/** Neon "room" for the environment map: the gloss on boards, ball and pins. */
+function neonRoom(): THREE.Scene {
   const room = new THREE.Scene();
   room.background = new THREE.Color(0x0d0820);
   const mat = (c: number, k = 1) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k), side: THREE.BackSide });
@@ -264,14 +264,7 @@ export function neonEnvironment(renderer: THREE.WebGLRenderer): THREE.Texture {
   // the bright pin deck at the far end and the screens behind
   strip(0, 1.5, -29.5, 12, 2, 0.2, 0xffffff, 1.6);
   strip(0, 3.2, 29.5, 10, 1.6, 0.2, NEON[1], 1.2);
-  const pm = new THREE.PMREMGenerator(renderer);
-  const tex = pm.fromScene(room, 0.03).texture;
-  pm.dispose();
-  room.traverse((o) => {
-    const m = o as THREE.Mesh;
-    if (m.isMesh) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); }
-  });
-  return tex;
+  return room;
 }
 
 // ------------------------------------------------------------------ building
@@ -408,10 +401,11 @@ function ourLane(parent: THREE.Group, boards: THREE.Texture): void {
   lane.renderOrder = 1;
 }
 
-export function buildAlley(scene: THREE.Scene, renderer: THREE.WebGLRenderer): Alley {
+export function buildAlley(world: World3D): Alley {
+  const { scene } = world;
   const root = new THREE.Group();
   scene.add(root);
-  scene.environment = neonEnvironment(renderer);
+  world.setEnvironment(neonRoom(), 0.03); // the world frees the map on shutdown
   scene.environmentIntensity = 0.55;
   const boards = boardsTexture();
   const neonMat = new THREE.MeshBasicMaterial({ color: NEON[1], toneMapped: false });

@@ -307,6 +307,9 @@ through `@core/three` (`src/core/three/index.ts`). The pilot is `games/sky-road`
     materials when you drop them, or recycle them.
   - `world.followSun(p)` keeps the shadow area on the player.
   - `world.toScreen(v)` gives game pixels for `popup()` over 3D objects.
+  - `world.setEnvironment(room)` renders a small scene into the environment map that glossy
+    materials reflect, and the world frees it on shutdown. Don't build one with
+    `PMREMGenerator` yourself: its render target is not freed with the texture.
   - `world.onFrame` is for things that move even while the game logic is idle, such as menu decor.
 - **Menu decor** can be 3D as well: create a `World3D` in `menuDecor(scene)` with
   `background: null`, so the menu colour shows through.

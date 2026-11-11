@@ -259,7 +259,7 @@ export class PlayScene extends ArcadeScene {
     this.world = new World3D(this, { fov: 50, near: 0.05, far: 80, background: 0x0d0820, fog: { color: 0x0d0820, near: 26, far: 60 } });
     const sun = this.world.addLights({ sky: 0xe6dcff, ground: 0x3a2a48, ambient: 1.35, intensity: 1.7, dir: [0.15, 1, 0.5], extent: 3.2 });
     sun.shadow.mapSize.set(1024, 1024);
-    this.alley = buildAlley(this.world.scene, this.world.renderer);
+    this.alley = buildAlley(this.world);
     this.fx = new Particles(this.world.scene);
     this.sim = new LaneSim(this.simTune);
     this.sim.rack(null, this.rackSeed);
