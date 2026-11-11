@@ -1,5 +1,7 @@
-// One off-road truck: a car-kit model with big wheels and a lifted body, plus its arcade physics
-// (2.5D: x/z with heading and velocity, height from the terrain, ballistic jumps).
+// One off-road truck: a Kenney Toy Car Kit monster truck (or its pickup cab on the same lifted
+// chassis) with spinning, steering wheels, stretching suspension arms and a per-truck paint job,
+// plus its arcade physics (2.5D: x/z with heading and velocity, height from the terrain,
+// ballistic jumps).
 import { THREE, model } from '@core/three';
 import { SURF_DIRT, SURF_MUD, SURF_PUDDLE, type Terrain } from './terrain';
 import type { Near, Track } from './tracks';
@@ -7,10 +9,36 @@ import { matte } from './look';
 
 export const GRAVITY = 24;
 export const TRUCK_R = 1.1;
-const WHEEL_SCALE = 1.35;
-const WHEEL_R = 0.3 * WHEEL_SCALE;
-const LIFT = 0.2;
-const MODEL_SCALE = 0.95;
+
+/** The two bodies: the monster truck, and the kit's pickup lifted onto the monster's chassis. */
+export type TruckModel = 'monster' | 'pickup';
+/** Model keys (loaded in main.ts from kenney/toy-car-kit). */
+export const TRUCK_MODELS: Record<TruckModel, string> = { monster: 'vehicle-monster-truck', pickup: 'vehicle-suv' };
+
+/** Toy Car Kit units to world units: a truck is about 2.5 long, 1.8 wide and 2.2 tall. */
+const S = 2.9;
+/** Wheel radius (kit units) and the axle height (wheel centres stand on the ground). */
+const WHEEL_KIT_R = 0.1875;
+const WHEEL_R = WHEEL_KIT_R * S;
+/** Kit-unit heights between which the suspension arms stretch: the axles stay with the wheels. */
+const ARM_LOW = 0.25, ARM_HIGH = 0.42;
+/** The pickup cab's lift onto the monster chassis (kit units), so its floor meets the arm tops. */
+const PICKUP_LIFT = 0.33;
+/** The paint swatch of the kit's colour map (column, row of 64×128 cells): the purple body. */
+const PAINT_CELL: [number, number] = [7, 2];
+
+/** Where things are on a truck (world units: side from the centre, back from the centre, up). */
+export const TRUCK_GEOM = {
+  /** Rear wheels: their contact patch, for dust, spray and skid marks. */
+  wheelSide: 0.219 * S,
+  wheelBack: 0.25 * S,
+  wheelR: WHEEL_R,
+  /** Tyre width (skid marks). */
+  tyre: 0.17 * S,
+  /** The tail, where the nitro flame comes out. */
+  exhaustBack: 0.33 * S,
+  exhaustUp: 0.36 * S,
+};
 
 export interface Stats {
   top: number;
@@ -64,17 +92,162 @@ function blobTexture(): THREE.CanvasTexture {
   blobTex = new THREE.CanvasTexture(c);
   return blobTex;
 }
-const blobGeo = new THREE.PlaneGeometry(2.1, 3.1);
+const blobGeo = new THREE.PlaneGeometry(2.3, 3.0);
 blobGeo.rotateX(-Math.PI / 2);
 
 const flameGeo = new THREE.ConeGeometry(0.2, 1.1, 8, 1, true);
 flameGeo.rotateX(Math.PI / 2);   // tip towards +z (behind the truck)
 flameGeo.translate(0, 0, 0.55);
 
+/** The parts of one body style, built once from the kit model and shared by every truck. */
+interface Kit {
+  /** Body (and the chassis arms) in kit units, with a morph target that lifts it on its springs. */
+  body: THREE.BufferGeometry;
+  /** The kit's material (its colour map), made matte. */
+  material: THREE.MeshStandardMaterial;
+  wheels: { geo: THREE.BufferGeometry; x: number; y: number; z: number; front: boolean }[];
+}
+const kits = new Map<TruckModel, Kit>();
+
+/** Non-indexed copy of a geometry with the node's transform baked in (position, normal, uv only). */
+function baked(mesh: THREE.Mesh): THREE.BufferGeometry {
+  mesh.updateWorldMatrix(true, false);
+  const g = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+  for (const name of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(name)) g.deleteAttribute(name);
+  g.applyMatrix4(mesh.matrixWorld);
+  return g;
+}
+
+/** The triangles of a non-indexed geometry that pass a test on their three vertex heights. */
+function triangles(g: THREE.BufferGeometry, keep: (minY: number) => boolean): THREE.BufferGeometry {
+  const pos = g.getAttribute('position');
+  const tris: number[] = [];
+  for (let t = 0; t < pos.count; t += 3) if (keep(Math.min(pos.getY(t), pos.getY(t + 1), pos.getY(t + 2)))) tris.push(t);
+  const out = new THREE.BufferGeometry();
+  for (const name of Object.keys(g.attributes)) {
+    const a = g.getAttribute(name) as THREE.BufferAttribute;
+    const arr = new Float32Array(tris.length * 3 * a.itemSize);
+    tris.forEach((t, k) => arr.set(a.array.subarray(t * a.itemSize, (t + 3) * a.itemSize), k * 3 * a.itemSize));
+    out.setAttribute(name, new THREE.BufferAttribute(arr, a.itemSize));
+  }
+  return out;
+}
+
+/** Joins non-indexed geometries with the same attributes into one (one draw call). */
+function joined(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const out = new THREE.BufferGeometry();
+  for (const name of ['position', 'normal', 'uv']) {
+    const arrs = parts.map((g) => (g.getAttribute(name) as THREE.BufferAttribute).array as Float32Array);
+    const arr = new Float32Array(arrs.reduce((n, a) => n + a.length, 0));
+    let o = 0;
+    for (const a of arrs) { arr.set(a, o); o += a.length; }
+    out.setAttribute(name, new THREE.BufferAttribute(arr, name === 'uv' ? 2 : 3));
+  }
+  return out;
+}
+
+/**
+ * The suspension as a morph target: everything above the arms rises one world unit per unit of
+ * influence, the axles stay with the wheels and the arms between them stretch.
+ */
+function withSprings(g: THREE.BufferGeometry): THREE.BufferGeometry {
+  const pos = g.getAttribute('position');
+  const d = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const w = Math.max(0, Math.min(1, (pos.getY(i) - ARM_LOW) / (ARM_HIGH - ARM_LOW)));
+    d[i * 3 + 1] = w / S;
+  }
+  g.morphAttributes.position = [new THREE.BufferAttribute(d, 3)];
+  g.morphTargetsRelative = true;
+  g.computeBoundingSphere();
+  g.computeBoundingBox();
+  return g;
+}
+
+function kit(kind: TruckModel): Kit {
+  const done = kits.get(kind);
+  if (done) return done;
+  // both styles stand on the monster truck's chassis and wheels
+  const mt = model(TRUCK_MODELS.monster, { shadows: false });
+  mt.updateMatrixWorld(true);
+  const meshes = (o: THREE.Object3D) => {
+    const list: THREE.Mesh[] = [];
+    o.traverse((c) => { if ((c as THREE.Mesh).isMesh) list.push(c as THREE.Mesh); });
+    return list;
+  };
+  const parts = meshes(matte(mt));
+  const wheels: Kit['wheels'] = parts.filter((m) => m.name.startsWith('wheel-')).map((m) => {
+    const p = new THREE.Vector3().setFromMatrixPosition(m.matrixWorld);
+    return { geo: m.geometry, x: p.x, y: p.y, z: p.z, front: m.name[6] === 'f' };
+  });
+  let body = baked(parts.find((m) => !m.name.startsWith('wheel-'))!);
+  if (kind === 'pickup') {
+    // the chassis (axles and arms: every triangle that reaches down to the axles) under the
+    // kit's pickup cab, lifted to meet the arm tops
+    const chassis = triangles(body, (minY) => minY < ARM_LOW);
+    const pk = model(TRUCK_MODELS.pickup, { shadows: false });
+    pk.updateMatrixWorld(true);
+    const cab = baked(meshes(pk).find((m) => !m.name.startsWith('wheel-'))!).translate(0, PICKUP_LIFT, 0);
+    body = joined([chassis, cab]);
+  }
+  const k: Kit = { body: withSprings(body), material: parts[0].material as THREE.MeshStandardMaterial, wheels };
+  kits.set(kind, k);
+  return k;
+}
+
+/** Paint tint when clean and fully mud-caked (it multiplies the colour map). */
+const CLEAN = new THREE.Color(1, 1, 1);
+const MUDDY = new THREE.Color(0xa47a54);
+
+/** The kit's colour map with its body swatch repainted, one per colour (shared by trucks). */
+const paints = new Map<number, THREE.Texture>();
+function paintedMap(src: THREE.Texture, color: number): THREE.Texture {
+  const done = paints.get(color);
+  if (done) return done;
+  const img = src.image as CanvasImageSource & { width: number; height: number };
+  const c = document.createElement('canvas');
+  c.width = img.width;
+  c.height = img.height;
+  const x = c.getContext('2d', { willReadFrequently: true })!;
+  x.drawImage(img, 0, 0);
+  // keep the swatch's own shading (light top, darker foot), in the new colour
+  const cw = img.width / 8, ch = img.height / 4;
+  const d = x.getImageData(PAINT_CELL[0] * cw, PAINT_CELL[1] * ch, cw, ch);
+  let mean = 0;
+  for (let i = 0; i < d.data.length; i += 4) mean += Math.max(d.data[i], d.data[i + 1], d.data[i + 2]);
+  mean /= d.data.length / 4;
+  const r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
+  for (let i = 0; i < d.data.length; i += 4) {
+    const k = Math.max(0.72, Math.min(1.12, Math.max(d.data[i], d.data[i + 1], d.data[i + 2]) / mean));
+    d.data[i] = Math.min(255, r * k);
+    d.data[i + 1] = Math.min(255, g * k);
+    d.data[i + 2] = Math.min(255, b * k);
+  }
+  x.putImageData(d, PAINT_CELL[0] * cw, PAINT_CELL[1] * ch);
+  const t = new THREE.CanvasTexture(c);
+  t.flipY = src.flipY;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = src.wrapS;
+  t.wrapT = src.wrapT;
+  t.magFilter = src.magFilter;
+  t.minFilter = src.minFilter;
+  t.anisotropy = 4;
+  paints.set(color, t);
+  return t;
+}
+
 export class Truck {
   readonly root = new THREE.Group();
   private readonly tilt = new THREE.Group();
+  /** The sprung body: world units, its origin at axle height (landings squash it from there). */
   private readonly body = new THREE.Group();
+  private readonly bodyMesh: THREE.Mesh;
+  private readonly paint: THREE.MeshStandardMaterial;
+  /** 0..1: how muddy the paint is (mud pits splash it on, puddles wash it off). */
+  dirt = 0;
+  private dirtShown = -1;
+  /** Rides on the springs with the body (the nitro flame). */
+  private readonly upper = new THREE.Group();
   private wheels: { node: THREE.Object3D; front: boolean }[] = [];
   private flame: THREE.Mesh;
   private flameMat: THREE.MeshBasicMaterial;
@@ -119,66 +292,47 @@ export class Truck {
   skill = 1;
   aiNitroCd = 0;
 
-  constructor(readonly modelKey: string, readonly color: number, readonly isPlayer: boolean) {
-    const m = matte(model(modelKey));
-    // paint, per truck
-    m.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      const mat = mesh.material as THREE.MeshStandardMaterial;
-      if (mat?.name?.toLowerCase().includes('paint')) {
-        const c = mat.clone();
-        c.color.setHex(color);
-        c.metalness = 0.1;
-        c.roughness = 0.45;
-        mesh.material = c;
-        mesh.userData.ownMaterial = true;
-      }
-    });
-    // big wheels, lifted body: the root node of the kit model holds body + wheels
-    let inner: THREE.Object3D = m;
-    m.traverse((o) => {
-      if (o.name.startsWith('wheel_') && o.parent) inner = o.parent;
-    });
-    for (const child of [...inner.children]) {
-      const name = child.name;
-      if (name.startsWith('wheel_') && name !== 'wheel_back') {
-        child.scale.multiplyScalar(WHEEL_SCALE);
-        child.position.y = WHEEL_R;
-        child.position.x = Math.sign(child.position.x) * 0.4;
-        child.rotation.order = 'YXZ';
-        this.wheels.push({ node: child, front: name.toLowerCase().includes('front') });
-      } else {
-        child.position.y += WHEEL_R - 0.3 + LIFT;
-        inner.remove(child);
-        this.body.add(child);
-      }
+  constructor(readonly kind: TruckModel, readonly color: number, readonly isPlayer: boolean) {
+    const k = kit(kind);
+    const paint = k.material.clone();
+    paint.map = paintedMap(k.material.map!, color);
+    paint.roughness = 0.75;
+    this.paint = paint;
+    // the player's truck gets its own materials, so the in-car view can hide it alone
+    const tyre = isPlayer ? k.material.clone() : k.material;
+    const axle = WHEEL_KIT_R * S;
+    this.bodyMesh = new THREE.Mesh(k.body, paint);
+    this.bodyMesh.scale.setScalar(S);
+    this.bodyMesh.position.y = -axle;
+    this.bodyMesh.userData.ownMaterial = true;
+    this.body.position.y = axle;
+    this.body.add(this.bodyMesh, this.upper);
+    for (const w of k.wheels) {
+      const node = new THREE.Mesh(w.geo, tyre);
+      node.position.set(w.x * S, w.y * S, w.z * S);
+      node.scale.setScalar(S);
+      node.rotation.order = 'YXZ';
+      if (isPlayer) node.userData.ownMaterial = true;
+      this.wheels.push({ node, front: w.front });
+      this.tilt.add(node);
     }
-    inner.add(this.body);
     this.flameMat = new THREE.MeshBasicMaterial({ color: 0xffa31a, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
     this.flame = new THREE.Mesh(flameGeo, this.flameMat);
     this.flame.userData.ownMaterial = true;
-    this.flame.position.set(0, 0.62 + LIFT, 1.3);
+    this.flame.position.set(0, TRUCK_GEOM.exhaustUp - axle, TRUCK_GEOM.exhaustBack);
     this.flame.visible = false;
-    this.body.add(this.flame);
-    m.scale.setScalar(MODEL_SCALE);
-    if (isPlayer) {
-      // the player's truck gets its own materials, so the in-car view can hide it alone
-      m.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        if (!mesh.isMesh || mesh === this.flame) return;
-        if (!mesh.userData.ownMaterial) {
-          mesh.material = (mesh.material as THREE.Material).clone();
-          mesh.userData.ownMaterial = true;
-        }
-        this.own.push(mesh.material as THREE.Material);
-      });
+    this.flame.castShadow = false;
+    this.upper.add(this.flame);
+    for (const o of [this.bodyMesh, ...this.wheels.map((w) => w.node)]) {
+      o.castShadow = true;
+      o.receiveShadow = true;
     }
+    if (isPlayer) this.own.push(paint, tyre);
     this.blobMat = new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, opacity: 0.4, depthWrite: false });
     this.blob = new THREE.Mesh(blobGeo, this.blobMat);
     this.blob.userData.ownMaterial = true;
     this.blob.renderOrder = 1;
-    this.tilt.add(m);
+    this.tilt.add(this.body);
     this.root.add(this.tilt);
   }
 
@@ -191,6 +345,14 @@ export class Truck {
       m.colorWrite = !on;
       m.depthWrite = !on;
     }
+  }
+
+  /** Menu showcase: the body idles on its springs like a revving engine, with a blip now and then. */
+  idle(t: number): void {
+    const blip = Math.max(0, Math.sin(t * 0.9)) ** 12;
+    const v = Math.sin(t * 23) * 0.012 + blip * 0.16 * Math.sin(t * 9);
+    this.bodyMesh.morphTargetInfluences![0] = v;
+    this.upper.position.y = v;
   }
 
   /** The body's smoothed pitch and roll (radians) and suspension travel, for the in-car camera. */
@@ -209,6 +371,7 @@ export class Truck {
 
   place(x: number, z: number, heading: number, terrain: Terrain): void {
     this.x = x; this.z = z; this.heading = heading;
+    this.dirt = 0;
     this.vx = this.vz = this.vy = 0;
     this.y = this.lastGround = terrain.heightAt(x, z);
     this.lastRate = 0;
@@ -228,6 +391,9 @@ export class Truck {
     if (boosting) this.nitroT -= dt;
     this.surface = terrain.surfaceAt(this.x, this.z);
     const mud = this.surface === SURF_MUD, wet = this.surface === SURF_PUDDLE, rough = this.surface > SURF_PUDDLE;
+    const moving = Math.min(1, this.speed / 6);
+    if (mud && !this.airborne) this.dirt = Math.min(1, this.dirt + dt * 0.7 * moving);
+    else if (wet) this.dirt = Math.max(0, this.dirt - dt * 0.9 * moving);
     // how strongly the mud holds this truck (1 = fully, 0 = like dry dirt)
     const mk = mud ? 1 - (st.mudEase ?? 0) : 0;
     const fx = Math.cos(this.heading), fz = Math.sin(this.heading);
@@ -373,13 +539,19 @@ export class Truck {
     this.blob.scale.setScalar(1 - Math.min(0.35, lift * 0.1));
     this.blobMat.opacity = 0.42 / (1 + lift * 0.5);
     this.tilt.rotation.set(this.pitch, 0, this.roll);
-    this.body.position.y = this.susp;
+    if (Math.abs(this.dirt - this.dirtShown) > 0.02) {
+      this.dirtShown = this.dirt;
+      this.paint.color.copy(CLEAN).lerp(MUDDY, this.dirt * 0.75);
+    }
+    // the springs: the body rises and sinks on its stretching arms, the axles stay on the wheels
+    this.bodyMesh.morphTargetInfluences![0] = this.susp;
+    this.upper.position.y = this.susp;
     if (this.squashT < 1) {
       this.squashT = Math.min(1, this.squashT + dt / 0.25);
       const k = Math.sin(this.squashT * Math.PI) * 0.16;
       this.body.scale.set(1 + k * 0.5, 1 - k, 1 + k * 0.5);
     }
-    const spin = (this.forward * dt) / (WHEEL_R * MODEL_SCALE);
+    const spin = (this.forward * dt) / WHEEL_R;
     for (const w of this.wheels) {
       w.node.rotation.x -= spin;
       if (w.front) w.node.rotation.y = -this.steer * 0.9;

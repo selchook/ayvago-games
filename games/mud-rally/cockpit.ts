@@ -36,7 +36,7 @@ const at = (sx: number, sy: number, d: number) => new THREE.Vector3((sx - 640) *
 const px = (n: number, d: number) => n * K * d;
 
 /** The eye in the truck's frame (model space: -z ahead, +y up), and how far it looks down. */
-const EYE = new THREE.Vector3(0, 1.42, 0.05);
+const EYE = new THREE.Vector3(0, 1.95, 0.25);
 const LOOK_DOWN = 0.12;
 const ROLL_MAX = 0.12;
 const PITCH_MAX = 0.32;
@@ -50,8 +50,8 @@ const METAL = 0xc3cbd6;
 const SPOKE = 0x737c8e;
 const RIM = 0x262a33;
 const YELLOW = 0xffd23f;
-const STRIPE = 0xf2f2f2;
-const LAMP = 0xfff3c2;
+const GRILLE = 0x4b4f5e;
+const GRILLE_TOP = 0x6b7080;
 const TREE = 0x3fbf5a;
 
 /** One vertex-coloured, non-indexed geometry built from many parts (one draw call). */
@@ -375,19 +375,21 @@ export class Cockpit {
       for (let i = -1; i <= 1; i++) b.add(new THREE.BoxGeometry(0.114, 0.007, 0.012), TRIM, o.matrix.clone().multiply(mat4(V(0, i * 0.018, 0.002), new THREE.Euler(-0.4, 0, 0))));
     }
 
-    // bonnet beyond the glass: painted, two racing stripes, a scoop and two rally lamps
+    // bonnet beyond the glass, shaped like the monster truck's: a painted hood between two
+    // painted wheel arches, ending in the kit's dark grille block that stands proud of it
     const hz0 = -0.9, hz1 = -1.62, hy0 = -0.302, hy1 = -0.318;
+    const shade = new THREE.Color(paint).multiplyScalar(0.62).getHex();
     b.quad(V(-0.8, hy0, hz0), V(0.8, hy0, hz0), V(0.64, hy1, hz1), V(-0.64, hy1, hz1), paint);
-    b.quad(V(-0.64, hy1, hz1), V(0.64, hy1, hz1), V(0.62, hy1 - 0.07, hz1 - 0.04), V(-0.62, hy1 - 0.07, hz1 - 0.04), 0x1f5fcc);
-    for (const sx of [-0.13, 0.13]) {
-      b.quad(V(sx - 0.05, hy0 + 0.003, hz0), V(sx + 0.05, hy0 + 0.003, hz0), V(sx * 0.82 + 0.042, hy1 + 0.003, hz1), V(sx * 0.82 - 0.042, hy1 + 0.003, hz1), STRIPE);
-    }
-    b.add(new THREE.BoxGeometry(0.2, 0.05, 0.22), DARK, mat4(V(0, hy0 + 0.006, -1.08), new THREE.Euler(-0.05, 0, 0)));
-    b.add(new THREE.BoxGeometry(0.22, 0.012, 0.24), paint, mat4(V(0, hy0 + 0.034, -1.08), new THREE.Euler(-0.05, 0, 0)));
-    for (const sx of [-0.36, 0.36]) {
-      b.add(new THREE.CylinderGeometry(0.055, 0.06, 0.06, 12), DARK, mat4(V(sx, hy1 + 0.045, hz1 + 0.06), new THREE.Euler(Math.PI / 2, 0, 0)));
-      b.add(new THREE.CircleGeometry(0.046, 12), LAMP, mat4(V(sx, hy1 + 0.045, hz1 + 0.025), new THREE.Euler(0, Math.PI, 0)));
-      b.add(new THREE.CircleGeometry(0.046, 12), LAMP, mat4(V(sx, hy1 + 0.045, hz1 + 0.094)));
+    b.quad(V(-0.64, hy1, hz1), V(0.64, hy1, hz1), V(0.62, hy1 - 0.07, hz1 - 0.04), V(-0.62, hy1 - 0.07, hz1 - 0.04), shade);
+    // a raised centre panel down the hood, as on the kit's truck
+    b.quad(V(-0.3, hy0 + 0.012, hz0 - 0.05), V(0.3, hy0 + 0.012, hz0 - 0.05), V(0.26, hy1 + 0.012, hz1 + 0.06), V(-0.26, hy1 + 0.012, hz1 + 0.06), shade);
+    b.quad(V(-0.27, hy0 + 0.02, hz0 - 0.07), V(0.27, hy0 + 0.02, hz0 - 0.07), V(0.23, hy1 + 0.02, hz1 + 0.08), V(-0.23, hy1 + 0.02, hz1 + 0.08), paint);
+    b.add(new THREE.BoxGeometry(1.36, 0.08, 0.16), GRILLE, mat4(V(0, hy1 + 0.03, hz1 - 0.03)));
+    b.add(new THREE.BoxGeometry(1.32, 0.012, 0.15), GRILLE_TOP, mat4(V(0, hy1 + 0.075, hz1 - 0.03)));
+    for (const sx of [-1, 1]) {
+      // wheel arch over the front tyre, a step below the hood, and the tyre's tread under it
+      b.add(new THREE.BoxGeometry(0.36, 0.07, 0.56), paint, mat4(V(sx * 0.9, hy1 - 0.02, -1.3), new THREE.Euler(0, 0, sx * -0.22)));
+      b.add(new THREE.BoxGeometry(0.3, 0.05, 0.5), shade, mat4(V(sx * 0.93, hy1 - 0.075, -1.3), new THREE.Euler(0, 0, sx * -0.22)));
     }
 
     // roof header and the A-pillars framing the windscreen

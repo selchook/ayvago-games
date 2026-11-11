@@ -1501,8 +1501,8 @@
         "en": "Mud Rally"
       },
       "description": {
-        "tr": "Dört kamyonet, tek ekranlık toprak bir pist! Rampalardan uç, çamur çukurlarında kaymamaya çalış, nitroyu doğru anda ateşle ve dört turu herkesten önce bitir. Kazandığın parayla garajda motoru, lastikleri, amortisörleri ve nitroyu geliştir; her yeni pistte rakipler daha hızlı.",
-        "en": "Four pickup trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster."
+        "tr": "Dört canavar kamyon, tek ekranlık toprak bir pist! Rampalardan uç, çamur çukurlarında kaymamaya çalış, nitroyu doğru anda ateşle ve dört turu herkesten önce bitir. Kazandığın parayla garajda motoru, lastikleri, amortisörleri ve nitroyu geliştir; her yeni pistte rakipler daha hızlı.",
+        "en": "Four monster trucks, one dirt arena on a single screen! Fly off the ramps, fight the mud pits, fire your nitro at the right moment and finish four laps ahead of the pack. Spend your prize money in the garage on engine, tires, shocks and nitro; on every new track the rivals get faster."
       },
       "howTo": {
         "tr": "Kamyonu gerçek bir araba gibi sür. Dokunmatik: direksiyonu menüden seç (oklar, direksiyon simidi ya da eğim); sağda GAZ, FREN ve NİTRO. Klavye: ← → direksiyon, ↑ gaz, ↓ fren / geri, Boşluk, Z ya da Enter nitro.",
@@ -1518,9 +1518,9 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.4.0",
+      "version": "1.5.0",
       "credits": [
-        "3D models: Kenney Car Kit, Racing Kit, Nature Kit and Platformer Kit (CC0) — kenney.nl",
+        "3D models: Kenney Toy Car Kit, Racing Kit, Nature Kit, Platformer Kit and Mini Characters (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
       ],
       "platform": {

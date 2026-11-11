@@ -1,0 +1,3 @@
+toy-car-kit/models/gltf_format/vehicle-monster-truck.glb 119KB 0.63x0.75x0.88
+toy-car-kit/models/gltf_format/vehicle-suv.glb 104KB 0.52x0.50x0.88
+toy-car-kit/models/gltf_format/Textures/colormap.png 8KB 512x512 (shared colour map, loaded by the models)
