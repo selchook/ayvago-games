@@ -26,6 +26,19 @@ PACKS = {
     # 3D kits (GLB only)
     'carkit_v1.4': 'car-kit', 'kenney_platformerkit': 'platformer-kit', 'kenney_natureKit_2.1': 'nature-kit',
     'kenney_racingkit2': 'racing-kit', 'minigolf-kit-2.0': 'minigolf-kit',
+    # Pirate Kit 2.1 (not in the ETdoFresh mirror; any checkout with the zip's layout works)
+    'kenney_pirate-kit': 'pirate-kit',
+}
+# Kits imported only in part: the models the games load (plus the shared texture and the license).
+PICK = {
+    'pirate-kit': {
+        'ship-pirate-medium', 'ship-small', 'ship-medium', 'ship-large', 'ship-ghost', 'ship-pirate-small', 'ship-wreck',
+        'barrel', 'chest', 'bottle-large', 'cannon-ball', 'cannon', 'crate',
+        'patch-sand', 'patch-sand-foliage', 'patch-grass-foliage', 'palm-bend', 'palm-straight', 'palm-detailed-bend',
+        'rocks-a', 'rocks-b', 'rocks-c', 'rocks-sand-a', 'rocks-sand-b', 'rocks-sand-c',
+        'tower-complete-small', 'tower-watch', 'castle-wall', 'castle-gate',
+        'structure', 'structure-roof', 'structure-platform-dock', 'flag-pirate-high',
+    },
 }
 ONLY = set(sys.argv[2:])
 KEEP = {'.png', '.ogg', '.ttf', '.xml', '.json', '.txt', '.tsx', '.glb'}
@@ -35,6 +48,10 @@ SKIP = re.compile(r'(^|/)(preview|sample|information|instructions?)[^/]*$|deskto
 def norm(p):
     p = p.replace('(', '').replace(')', '').replace('&', 'and')
     p = re.sub(r'\s+', '_', p.strip()).lower()
+    # newer kits ship 'Models/GLB format'; the runtime reads every kit from models/gltf_format
+    p = p.replace('models/glb_format/', 'models/gltf_format/')
+    # GLBs that share an external texture name it 'Textures/colormap.png' (case matters on the web)
+    p = p.replace('models/gltf_format/textures/', 'models/gltf_format/Textures/')
     return p
 
 count = 0
@@ -49,6 +66,8 @@ for pack, short in PACKS.items():
             if ext not in KEEP or SKIP.search('/' + rel.replace(os.sep, '/')):
                 continue
             if ext == '.txt' and 'license' not in f.lower():
+                continue
+            if short in PICK and ext == '.glb' and os.path.splitext(f)[0].lower() not in PICK[short]:
                 continue
             out = os.path.join(DST, short, norm(rel))
             os.makedirs(os.path.dirname(out), exist_ok=True)
