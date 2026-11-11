@@ -1,8 +1,9 @@
 // Everything around the racing line: the ground, barriers on the berms, the arena fence,
-// grandstands, tents, flags, lights, trees, rocks and puddle water. Repeated pieces are
+// grandstands, tents, flags, lights, trees, rocks and puddle water, the inflatable start arch,
+// barrel stacks at the ramps and a few cheering spectators. Repeated pieces are
 // InstancedMeshes, so a whole arena costs a few dozen draw calls.
 import { rng } from '@core';
-import { THREE, model, grounded } from '@core/three';
+import { THREE, model, grounded, modelClips, miniKey } from '@core/three';
 import { ARENA, type Track } from './tracks';
 import { Terrain } from './terrain';
 import { matte } from './look';
@@ -66,10 +67,33 @@ function checkers(): THREE.CanvasTexture {
   return checkerTex;
 }
 
+/** The Mini Characters who watch at the start line (loaded in main.ts). */
+export const SPECTATORS = ['character-male-a', 'character-female-f', 'character-male-d'];
+
 export interface Arena {
   group: THREE.Group;
   terrain: Terrain;
+  /** Animates the spectators. */
+  update(dt: number): void;
+  /** The spectators cheer (a lap, a win). */
+  cheer(): void;
   dispose(): void;
+}
+
+/** One spectator: idles, and cheers or jumps now and then. */
+interface Fan {
+  mixer: THREE.AnimationMixer;
+  actions: Map<string, THREE.AnimationAction>;
+  cur: THREE.AnimationAction | null;
+  t: number;
+}
+
+function play(f: Fan, name: string): void {
+  const a = f.actions.get(name);
+  if (!a || a === f.cur) return;
+  a.reset().play();
+  if (f.cur) a.crossFadeFrom(f.cur, 0.25, false);
+  f.cur = a;
 }
 
 /** Builds the arena for a track. Geometries made here are freed by dispose(). */
@@ -88,7 +112,7 @@ export function buildArena(track: Track, seed: number): Arena {
 
   // barriers on the berm crests, both sides, spaced along each side's own length
   const barriers: Place[] = [];
-  const pylons: Place[] = [];
+  const barrels: Place[] = [];
   for (const side of [-1, 1]) {
     const off = side * (hw + 1.2);
     let acc = 1.1, px = 0, pz = 0;
@@ -104,15 +128,14 @@ export function buildArena(track: Track, seed: number): Arena {
   }
   group.add(instanced('barrier', barriers, terrain, false));
 
-  // pylons and banner towers mark the ramps
+  // rows of striped barrels on both sides of each ramp's run-up
   for (const r of terrain.ramps) {
     for (const side of [-1, 1]) {
-      const d = side * (hw + 0.45);
-      pylons.push({ x: r.x + r.tz * d - r.tx * 1.2, z: r.z - r.tx * d - r.tz * 1.2, s: 4.2 });
-      pylons.push({ x: r.x + r.tz * d - r.tx * 3, z: r.z - r.tx * d - r.tz * 3, s: 4.2 });
+      const d = side * (hw + 0.55);
+      barrels.push({ x: r.x + r.tz * d - r.tx * 2.1, z: r.z - r.tx * d - r.tz * 2.1, yaw: Math.atan2(-r.tz, r.tx), s: 2.9 });
     }
   }
-  group.add(instanced('pylon', pylons, terrain, false));
+  group.add(instanced('barrels', barrels, terrain));
 
   // start / finish: a checkered strip across the track and chequered flags on both berms
   const st = track.pointAt(0);
@@ -125,10 +148,9 @@ export function buildArena(track: Track, seed: number): Arena {
   line.position.set(st.x, terrain.heightAt(st.x, st.z) + 0.06, st.z);
   line.receiveShadow = true;
   group.add(line);
-  for (const side of [-1, 1]) {
-    const d = side * (hw + 1.0);
-    group.add(single('flagCheckers', { x: st.x + st.tz * d, z: st.z - st.tx * d, s: 3.2, yaw: Math.atan2(-st.tz, st.tx) }, terrain));
-  }
+  // the inflatable red-and-white arch over the line, its feet on the berms
+  const span = track.width + 3.4;
+  group.add(single('arch', { x: st.x, z: st.z, s: [span / 5.53, 1.3, 1.05], yaw: Math.atan2(-st.tz, st.tx) + Math.PI / 2 }, terrain));
 
   // puddle water
   const waterMat = new THREE.MeshStandardMaterial({ color: 0x79acd6, transparent: true, opacity: 0.75, roughness: 0.12, metalness: 0.2 });
@@ -160,9 +182,16 @@ export function buildArena(track: Track, seed: number): Arena {
   // grandstands behind the far fence, tents and lights on the sides
   const standXs = [-21, -11.5, -2, 7.5, 17];
   for (const x of standXs) group.add(single('stand', { x, z: -ARENA.hz - 3.2, s: 4.6 }, terrain));
-  group.add(single('tent', { x: 25.5, z: -ARENA.hz - 2.6, s: 3.6 }, terrain));
-  group.add(single('tent', { x: -ARENA.hx - 3, z: 6, s: 3.4, yaw: Math.PI / 2 }, terrain));
-  group.add(single('tent', { x: ARENA.hx + 3, z: 8, s: 3.4, yaw: -Math.PI / 2 }, terrain));
+  group.add(single('tentWide', { x: 25.8, z: -ARENA.hz - 3, s: 1.6 }, terrain));
+  group.add(single('tentBig', { x: -ARENA.hx - 3.6, z: 6, s: 1.5, yaw: Math.PI / 2 }, terrain));
+  group.add(single('tentWide', { x: ARENA.hx + 3.4, z: 8, s: 1.6, yaw: -Math.PI / 2 }, terrain));
+  // green and yellow flags along the fence in front of the grandstands
+  const flags: Record<string, Place[]> = { flagG: [], flagY: [] };
+  for (let i = 0; i < 12; i++) {
+    const x = -26 + i * 4.7;
+    flags[i % 2 ? 'flagY' : 'flagG'].push({ x, z: -ARENA.hz - 0.6, s: 2.3, yaw: -0.3 + rand() * 0.6 });
+  }
+  group.add(instanced('flagG', flags.flagG, terrain), instanced('flagY', flags.flagY, terrain));
   for (const [x, z] of [[-ARENA.hx - 1.2, -ARENA.hz - 1.2], [ARENA.hx + 1.2, -ARENA.hz - 1.2], [-ARENA.hx - 1.2, ARENA.hz + 1.2], [ARENA.hx + 1.2, ARENA.hz + 1.2]]) {
     group.add(single('light', { x, z, s: 6, yaw: Math.atan2(x, z) }, terrain));
   }
@@ -190,10 +219,56 @@ export function buildArena(track: Track, seed: number): Arena {
   }
   group.add(instanced('rock', rocks, terrain), instanced('cactus', cactus, terrain), instanced('bush', bushes, terrain), instanced('grass', tufts, terrain, false));
 
+  // spectators just past the start line, on the outer side when the fence leaves room there,
+  // else in the infield, facing the track
+  const fans: Fan[] = [];
+  const out = Math.hypot(st.x + st.tz * hw, st.z - st.tx * hw) > Math.hypot(st.x - st.tz * hw, st.z + st.tx * hw) ? 1 : -1;
+  for (const side of [out, -out]) {
+    if (fans.length >= 3) break;
+    for (const f of fans.splice(0)) group.remove(f.mixer.getRoot() as THREE.Object3D);
+    for (let i = 0; i < 6; i++) {
+      const p = track.pointAt(1.5 + i * 2.2 + (rand() - 0.5) * 0.8, side * (hw + 3.4 + rand() * 0.6));
+      const x = p.x, z = p.z;
+      if (Math.abs(x) > ARENA.hx - 0.8 || Math.abs(z) > ARENA.hz - 0.8 || !clear(x, z, 2.8)) continue;
+      const key = miniKey(SPECTATORS[i % SPECTATORS.length]);
+      const obj = model(key);
+      obj.scale.setScalar(2.5);
+      obj.position.set(x, terrain.heightAt(x, z) - 0.02, z);
+      // the models face +z: turn them towards the racing line
+      const c = track.pointAt(1.5 + i * 2.2);
+      obj.rotation.y = Math.atan2(c.x - x, c.z - z) + (rand() - 0.5) * 0.5;
+      group.add(obj);
+      const mixer = new THREE.AnimationMixer(obj);
+      const actions = new Map<string, THREE.AnimationAction>();
+      for (const clip of modelClips(key)) if (['idle', 'emote-yes', 'jump'].includes(clip.name)) actions.set(clip.name, mixer.clipAction(clip));
+      const f: Fan = { mixer, actions, cur: null, t: rand() * 2 };
+      play(f, 'idle');
+      mixer.update(rand() * 2);
+      fans.push(f);
+    }
+  }
+  const cheerOne = (f: Fan) => {
+    play(f, rand() < 0.5 ? 'emote-yes' : 'jump');
+    f.t = 1.2 + rand() * 1.4;
+  };
+
   return {
     group,
     terrain,
+    update: (dt) => {
+      for (const f of fans) {
+        f.t -= dt;
+        if (f.t <= 0) {
+          // mostly idle, now and then a wave or a hop
+          if (f.cur === f.actions.get('idle') && rand() < 0.45) cheerOne(f);
+          else { play(f, 'idle'); f.t = 1.5 + rand() * 3; }
+        }
+        f.mixer.update(dt);
+      }
+    },
+    cheer: () => { for (const f of fans) cheerOne(f); },
     dispose: () => {
+      for (const f of fans) f.mixer.stopAllAction();
       for (const o of own) o.dispose();
       group.traverse((o) => {
         if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose();

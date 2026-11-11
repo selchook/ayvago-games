@@ -3,7 +3,7 @@ import { World3D, THREE, model, grounded } from '@core/three';
 import { LAYOUTS, Track } from './tracks';
 import { buildArena, type Arena } from './scenery';
 import { Particles } from './particles';
-import { Truck, TRUCK_R, turnFactor, type DriveInput, type Stats, type StepEvents } from './truck';
+import { Truck, TRUCK_GEOM, TRUCK_R, turnFactor, type DriveInput, type Stats, type StepEvents, type TruckModel } from './truck';
 import { SURF_MUD, SURF_PUDDLE, SURF_BERM, SURF_GRASS } from './terrain';
 import { ResultsPanel, ShopPanel, MAX_LEVEL, price, type Upgrade, type ResultRow } from './panels';
 import { money, ordinal } from './strings';
@@ -77,10 +77,10 @@ const VIEW_BLEND = 0.3;
 const DIR_Y = 236;
 const RIVAL_Y = 316;
 type View = 'classic' | 'cockpit';
-const RIVALS = [
-  { model: 'suvLux', color: 0xe8402f, name: 'driverRed' },
-  { model: 'truck', color: 0xf5c52b, name: 'driverYellow' },
-  { model: 'truckFlat', color: 0x35c46a, name: 'driverGreen' },
+const RIVALS: { model: TruckModel; color: number; name: string }[] = [
+  { model: 'pickup', color: 0xe8402f, name: 'driverRed' },
+  { model: 'monster', color: 0xf5c52b, name: 'driverYellow' },
+  { model: 'pickup', color: 0x35c46a, name: 'driverGreen' },
 ];
 
 type Phase = 'intro' | 'count' | 'race' | 'finish' | 'results' | 'shop';
@@ -226,7 +226,7 @@ export class PlayScene extends ArcadeScene {
     this.marks = new SkidMarks();
     this.world.scene.add(this.marks.mesh, this.dust.points, this.glow.points);
 
-    this.player = new Truck('suv', PLAYER_COLOR, true);
+    this.player = new Truck('monster', PLAYER_COLOR, true);
     this.trucks.push(this.player);
     this.names.set(this.player, t('you'));
     for (const r of RIVALS) {
@@ -510,6 +510,7 @@ export class PlayScene extends ArcadeScene {
           this.shout(t('go'), '#7dff9a', 120, 380);
           this.sfx('beep', { exact: true, rate: 1.6, volume: 0.9 });
           this.sfx('go', { volume: 0.6 });
+          this.arena?.cheer();
           this.phase = 'race';
           this.phaseT = 0;
           for (const tr of this.trucks) if (!tr.isPlayer) this.aiDelay.set(tr, 0.05 + Math.random() * 0.3);
@@ -538,6 +539,7 @@ export class PlayScene extends ArcadeScene {
       p.obj.position.y = p.y + Math.sin(p.t * 3) * 0.15;
     }
 
+    this.arena!.update(dt);
     this.dust.update(dt);
     this.glow.update(dt);
     this.marks.update(dt);
@@ -656,7 +658,7 @@ export class PlayScene extends ArcadeScene {
       this.fovKick = 1;
     }
     for (let k = 0; k < 14; k++) {
-      const e = tr.local((Math.random() - 0.5) * 0.6, 1.25, 0.5);
+      const e = tr.local((Math.random() - 0.5) * 0.6, TRUCK_GEOM.exhaustBack + 0.1, TRUCK_GEOM.exhaustUp);
       this.glow.emit({ x: e.x, y: e.y, z: e.z, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 3, life: 0.4, size: 1.3, grow: 0.2, color: 0xff9a2a, alpha: 0.9 });
     }
   }
@@ -678,7 +680,7 @@ export class PlayScene extends ArcadeScene {
       for (let k = 0; k < n; k++) {
         const a = (k / n) * Math.PI * 2;
         const sp = 2 + Math.random() * 2.5;
-        this.dust.emit({ x: tr.x + Math.cos(a) * 0.8, y: tr.y + 0.15, z: tr.z + Math.sin(a) * 0.8, vx: Math.cos(a) * sp, vy: 0.6 + Math.random(), vz: Math.sin(a) * sp, life: 0.9 + Math.random() * 0.5, size: 0.9, grow: 2.6, color: 0xd8b48a, alpha: 0.6, drag: 2.4 });
+        this.dust.emit({ x: tr.x + Math.cos(a) * 1.1, y: tr.y + 0.15, z: tr.z + Math.sin(a) * 1.1, vx: Math.cos(a) * sp, vy: 0.6 + Math.random(), vz: Math.sin(a) * sp, life: 0.9 + Math.random() * 0.5, size: 0.9, grow: 2.6, color: 0xd8b48a, alpha: 0.6, drag: 2.4 });
       }
       if (near && big) {
         this.camShake = Math.max(this.camShake, Math.min(0.55, ev.landed * 0.05));
@@ -791,6 +793,7 @@ export class PlayScene extends ArcadeScene {
         this.lateT = -1;
         this.shout(t('placeShout', { p: ordinal(place) }), place === 1 ? '#ffd23f' : place < 4 ? '#ffffff' : '#ff7a7a', 76, 1400);
         this.sfx(place < 4 ? 'finish' : 'lose', { exact: true, volume: 0.8 });
+        if (place < 4) this.arena?.cheer();
         if (place === 1) {
           flash(this, 0xffffff, 200, 0.3);
           for (let k = 0; k < 40; k++) {
@@ -807,6 +810,7 @@ export class PlayScene extends ArcadeScene {
       const lap = tr.lapsDone + 1;
       this.shout(lap === LAPS ? t('finalLap') : t('lapN', { n: lap }), lap === LAPS ? '#ff9f43' : '#ffffff', 64, 700);
       this.sfx('lap', { exact: true, volume: 0.7 });
+      this.arena?.cheer();
     }
   }
 
@@ -1007,7 +1011,7 @@ export class PlayScene extends ArcadeScene {
     const sp = tr.speed;
     if (tr.nitroT > 0) {
       for (let k = 0; k < 2; k++) {
-        const e = tr.local((Math.random() - 0.5) * 0.25, 1.35, 0.62);
+        const e = tr.local((Math.random() - 0.5) * 0.25, TRUCK_GEOM.exhaustBack + 0.35, TRUCK_GEOM.exhaustUp);
         const fx = Math.cos(tr.heading), fz = Math.sin(tr.heading);
         this.glow.emit({ x: e.x, y: e.y, z: e.z, vx: -fx * 5 + (Math.random() - 0.5), vy: Math.random() * 0.8, vz: -fz * 5 + (Math.random() - 0.5), life: 0.28, size: 1.0, grow: 0.25, color: Math.random() < 0.5 ? 0xff7a1a : 0xffd23f, alpha: 0.95 });
       }
@@ -1022,8 +1026,8 @@ export class PlayScene extends ArcadeScene {
     const fx = Math.cos(tr.heading), fz = Math.sin(tr.heading);
     while (acc >= 1) {
       acc -= 1;
-      const side = Math.random() < 0.5 ? -0.62 : 0.62;
-      const e = tr.local(side, 0.95, 0.12);
+      const side = Math.random() < 0.5 ? -TRUCK_GEOM.wheelSide : TRUCK_GEOM.wheelSide;
+      const e = tr.local(side, TRUCK_GEOM.wheelBack + 0.2, 0.15);
       const r = () => Math.random() - 0.5;
       if (surf === SURF_MUD) {
         this.dust.emit({ x: e.x, y: e.y, z: e.z, vx: -fx * sp * 0.25 + r() * 3 + side * fz * -2, vy: 2.5 + Math.random() * 3, vz: -fz * sp * 0.25 + r() * 3 + side * fx * 2, life: 0.55, size: 0.38, grow: 0.3, color: Math.random() < 0.5 ? 0x4a2c16 : 0x6b4224, alpha: 1, gravity: 16 });
@@ -1053,9 +1057,9 @@ export class PlayScene extends ArcadeScene {
     }
     const k = tr.braking ? 0.85 : Phaser.Math.Clamp((tr.slip - 2.6) / 4, 0.3, 1);
     const strength = k * (surf === SURF_MUD ? 1.3 : surf === SURF_BERM ? 0.7 : 1);
-    for (const side of [-0.6, 0.6]) {
-      const w = tr.local(side, 0.85, 0);
-      this.marks.mark(id + (side < 0 ? 'l' : 'r'), w.x, w.y, w.z, strength, surf === SURF_MUD ? 0.42 : 0.3);
+    for (const side of [-TRUCK_GEOM.wheelSide, TRUCK_GEOM.wheelSide]) {
+      const w = tr.local(side, TRUCK_GEOM.wheelBack, 0);
+      this.marks.mark(id + (side < 0 ? 'l' : 'r'), w.x, w.y, w.z, strength, TRUCK_GEOM.tyre * (surf === SURF_MUD ? 1.15 : 0.85));
     }
     if (!tr.isPlayer) return;
     this.skidCd -= dt;
@@ -1070,8 +1074,10 @@ export class PlayScene extends ArcadeScene {
 
   private mudSplash(tr: Truck, n: number): void {
     for (let k = 0; k < n; k++) {
+      // thrown off the four big tyres
       const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 4;
-      this.dust.emit({ x: tr.x, y: tr.y + 0.3, z: tr.z, vx: Math.cos(a) * sp, vy: 3 + Math.random() * 4, vz: Math.sin(a) * sp, life: 0.7, size: 0.45, grow: 0.3, color: 0x4a2c16, alpha: 1, gravity: 16 });
+      const w = tr.local((k & 1 ? 1 : -1) * TRUCK_GEOM.wheelSide, (k & 2 ? 1 : -1) * TRUCK_GEOM.wheelBack, 0.3);
+      this.dust.emit({ x: w.x, y: w.y, z: w.z, vx: Math.cos(a) * sp, vy: 3 + Math.random() * 4, vz: Math.sin(a) * sp, life: 0.7, size: 0.45, grow: 0.3, color: 0x4a2c16, alpha: 1, gravity: 16 });
     }
     this.sfx('splash', { volume: 0.4 });
   }
@@ -1093,7 +1099,7 @@ export class PlayScene extends ArcadeScene {
 
   private updateMarker(): void {
     const tr = this.player;
-    this.marker.position.set(tr.x, tr.y + 2.6 + Math.sin(performance.now() / 220) * 0.2, tr.z);
+    this.marker.position.set(tr.x, tr.y + 3.3 + Math.sin(performance.now() / 220) * 0.2, tr.z);
     this.marker.rotation.y += 0.05;
     this.marker.visible = this.phase !== 'results' && this.phase !== 'shop' && !this.inCar;
     // wrong way: the ground arrow shows which way the race goes

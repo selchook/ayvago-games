@@ -1,7 +1,14 @@
 """Copy curated Kenney CC0 packs from a local checkout of the ETdoFresh/kenney.nl mirror
 into public/assets/kenney/<short>/, normalising paths (lowercase, no spaces) and
 adding .mp3 twins for every .ogg (Safari). 3D kits keep only their GLB models.
-Usage: python3 tools/import-kenney.py <mirror-dir> [short-name ...]   (names limit the run to those packs)"""
+Usage: python3 tools/import-kenney.py <mirror-dir> [short-name ...]   (names limit the run to those packs)
+
+Kenney's newer 3D kits are not in that mirror; they come from a checkout of
+github.com/series-ai/jam-ready-assets (Git LFS: fetch the listed files first), whose packs sit
+under <pack>/3D/vehicles-racing/. Those kits keep only the files a game uses (FILES), store
+their GLBs under models/gltf_format/ like the older kits, and keep the external texture folder
+`Textures/` as the GLBs reference it (case matters on the server).
+  python3 tools/import-kenney.py <jam-ready-assets-dir> toy-car-kit racing-kit-ea"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -26,7 +33,24 @@ PACKS = {
     # 3D kits (GLB only)
     'carkit_v1.4': 'car-kit', 'kenney_platformerkit': 'platformer-kit', 'kenney_natureKit_2.1': 'nature-kit',
     'kenney_racingkit2': 'racing-kit', 'minigolf-kit-2.0': 'minigolf-kit',
+    # newer textured 3D kits (jam-ready-assets mirror, see above)
+    'kenney-toy-car-kit/3D/vehicles-racing': 'toy-car-kit',
+    'kenney-racing-kit-early-access/3D/vehicles-racing': 'racing-kit-ea',
 }
+# Kits imported file by file (paths relative to the pack root): only what the games load.
+FILES = {
+    'toy-car-kit': ['License.txt', 'Models/GLB format/Textures/colormap.png',
+                    'Models/GLB format/vehicle-monster-truck.glb', 'Models/GLB format/vehicle-suv.glb'],
+    'racing-kit-ea': ['License.txt', 'Models/GLB format/Textures/colormap.png',
+                      'Models/GLB format/overhead-arch-striped.glb', 'Models/GLB format/barrels.glb',
+                      'Models/GLB format/tent-roof-large.glb', 'Models/GLB format/tent-open-wide.glb',
+                      'Models/GLB format/flag-green-tall.glb', 'Models/GLB format/flag-yellow-tall.glb'],
+}
+
+def norm_file(rel):
+    """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""
+    out = norm(rel).replace('models/glb_format/', 'models/gltf_format/')
+    return out.replace('/textures/', '/Textures/')
 ONLY = set(sys.argv[2:])
 KEEP = {'.png', '.ogg', '.ttf', '.xml', '.json', '.txt', '.tsx', '.glb'}
 SKIP = re.compile(r'(^|/)(preview|sample|information|instructions?)[^/]*$|desktop\.ini|/vector/|/spritesheets?/.*\.(swf)$'
@@ -42,6 +66,17 @@ for pack, short in PACKS.items():
     if ONLY and short not in ONLY:
         continue
     root = os.path.join(SRC, pack)
+    if short in FILES:
+        for rel in FILES[short]:
+            src = os.path.join(root, rel)
+            with open(src, 'rb') as fh:
+                if fh.read(40).startswith(b'version https://git-lfs'):
+                    sys.exit(f'{src} is a Git LFS pointer: fetch the file first')
+            out = os.path.join(DST, short, norm_file(rel))
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            shutil.copyfile(src, out)
+            count += 1
+        continue
     for dp, _, files in os.walk(root):
         for f in files:
             rel = os.path.relpath(os.path.join(dp, f), root)
