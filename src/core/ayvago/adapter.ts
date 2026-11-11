@@ -16,7 +16,7 @@
  * Update vendored copies by copying this file; do not edit them in place.
  */
 
-export const ADAPTER_VERSION = '2.7.0';
+export const ADAPTER_VERSION = '2.8.0';
 export const PROTOCOL_VERSION = 2;
 
 /** Origins allowed to host games. "*" matches one DNS label segment (letters, digits, "-"). */
@@ -110,6 +110,11 @@ export type GameResult = {
   won?: boolean;
   message?: string;
   difficulty?: Difficulty;
+  /**
+   * 1 when the player continued this run once after a rewarded ad (protocol 2.8); the run is still
+   * one score session. Anything else is sent as nothing.
+   */
+  continues?: 0 | 1;
 };
 
 /** Largest move payload (serialized JSON, in characters); larger moves are dropped. */
@@ -542,6 +547,7 @@ class AyvagoAdapter implements PlatformAdapter {
     // only a valid value is sent; games that do not offer difficulty send nothing (normal)
     if (result.difficulty === 'easy' || result.difficulty === 'normal')
       end.difficulty = result.difficulty;
+    if (result.continues === 1) end.continues = 1;
     this.send('GHA_END', end);
   }
 
