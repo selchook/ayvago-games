@@ -2,16 +2,21 @@ import Phaser from 'phaser';
 import { ArcadeScene, t, txt, flash, burst, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, popup } from '@core';
 import { World3D, THREE, playerCharacter3d, miniKey } from '@core/three';
 import {
-  LaneSim, SIM_DT, LANE_HALF, HEAD_Z, PIT_Z, BALL_R, PIN_COM, PIN_H, SPOTS, OIL_LEN, isSplit, newEvents, ballPath,
+  LaneSim, SIM_DT, LANE_HALF, HEAD_Z, PIT_Z, BALL_R, PIN_COM, PIN_H, SPOTS, OIL_LEN, isSplit, newEvents, ballPath, POCKET_X, SPIN_MAX,
   type Release, type SimTune, type StepEvents,
 } from './sim';
 import { ScoreSheet, FRAMES } from './scoring';
-import { buildAlley, drawScreen, type Alley, RETURN_X, HOOD_Z, RACK_END_Z, RACK_Y, APPROACH, PITCH } from './alley';
-import { Person, ballInHand } from './bowler';
+import { buildAlley, drawScreen, canvasTex, type Alley, RETURN_X, HOOD_Z, RACK_END_Z, RACK_Y, PITCH, APPROACH } from './alley';
+import { Person } from './bowler';
 import { Particles } from './fx3d';
 import { scorecardChip, callout, Summary, RackView, type CardView } from './panels';
-import { aimFor } from './bot';
+import { aimBoards } from './bot';
 import { TUNING, type Tuning } from './tuning';
+import {
+  ARROWS, LAY_Z, STAND_MAX, STAND_MIN, arrowZ, arrowTipZ, boardX, breakpoint, clampAim, releaseFor, targetFor, tipFor, xBoard, type Tip,
+} from './aim';
+import { approachPose, poseBowler, PHASE0, WALK_D, RELEASE_T, RISE_T } from './approach';
+import { AimChip, SpinControl, SpeedChip, LaneViewButton, OilChip, TipChip, fmtBoard } from './controls';
 
 export { TUNING } from './tuning';
 export type { Tuning } from './tuning';
@@ -20,27 +25,33 @@ export const SPEED_MIN = 5.4;
 export const SPEED_MAX = 9.6;
 const X_MAX = LANE_HALF - 0.08;
 const ANGLE_MAX = 0.07;
-/** Where the bowler stands to aim, and where the slide ends. */
-const STANCE_Z = 3.75;
-const SLIDE_Z = 0.62;
-const APPROACH_T = 1.45;
 /** Sweep bar and setting table rest heights. */
 const SWEEP_UP = 0.95;
 const SWEEP_Z = HEAD_Z + 0.36;
 const TABLE_UP = 1.25;
 const TABLE_DOWN = PIN_H + 0.045;
-/** Pixels of finger travel per metre of sideways movement. */
-const SLIDE_PX = 420;
+/** Finger travel (px) per board when dragging the stand or the target (twice as much when dragging slowly). */
+const PX_PER_BOARD = 15;
+/** Spin steps of the ◀ ▶ buttons. */
+const SPIN_STEP = 0.25;
+/** Where the bowler picks the ball up from the return (facing it), and the walking speed. */
+const PICK = new THREE.Vector3(RETURN_X + 0.66, 0, RACK_END_Z - 0.02);
+const WALK_V = 2.5;
+const DEG = Math.PI / 180;
 
 type Phase = 'intro' | 'return' | 'aim' | 'approach' | 'roll' | 'result' | 'replay' | 'react' | 'summary' | 'over';
 type Call = 'strike' | 'spare' | 'split' | 'splitConverted' | 'gutter' | 'miss' | 'count';
+type BallMode = 'hidden' | 'hand' | 'flight' | 'free';
 
 interface Gesture {
   id: number;
   x0: number;
   y0: number;
-  mode: 'none' | 'slide' | 'throw';
-  startX: number;
+  mode: 'none' | 'stand' | 'target' | 'throw';
+  /** What a sideways drag moves (picked from where the finger landed). */
+  drag: 'stand' | 'target';
+  value: number;
+  fine: boolean;
   path: { x: number; y: number; t: number }[];
   throwFrom: number;
 }
@@ -52,12 +63,17 @@ interface PinVis {
   up: boolean;
 }
 
+/** One step of the walk back to the ball return and the stance. */
+type ReturnStep = 'turn' | 'walk' | 'face' | 'pick' | 'stance' | 'done';
+
 const SPECTATORS = ['character-male-a', 'character-male-c', 'character-male-e'];
 /** Points in the ball's track ribbon (one every 0.25 m). */
 const TRACK_MAX = 90;
 
 /** When the finger really moved (the DOM event's time; the game may handle it a frame later). */
 const stamp = (p: Phaser.Input.Pointer): number => (p.event as Event | undefined)?.timeStamp || performance.now();
+const smooth = (a: number, b: number, x: number) => { const k = Phaser.Math.Clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+const angleTo = (from: number, to: number) => Phaser.Math.Angle.Wrap(to - from);
 
 export class PlayScene extends ArcadeScene {
   private world!: World3D;
@@ -72,20 +88,30 @@ export class PlayScene extends ArcadeScene {
 
   private bowler!: Person;
   private crowd: Person[] = [];
+  private crowdLife: { t: number; shift: number; yaw: number; cheer: number; base: number }[] = [];
   private phase: Phase = 'intro';
   private phaseT = 0;
 
-  // the throw
-  private ballX = 0.2;
-  private angle = 0;
+  // the line: the board the ball is laid down on and the target board at the arrows
+  stand = 12;
+  target = 9;
+  /** The spin the player set (−1 backup … 1 big hook to the left). */
   private hook = 0.35;
-  private power = 0;
+  /** The hook of the throw being made (the setting plus a curved flick). */
+  private liveHook = 0.35;
+  /** Ball speed (m/s): the last throw's, or the one being chosen. */
+  private speed = 7.6;
+  private power = 0.5;
   private charging = false;
   private chargeT = 0;
-  private kbStage: 'move' | 'aim' = 'move';
+  private stage: 'stand' | 'target' = 'stand';
+  private keyRepeat = 0;
+  private laneView = false;
   private gesture: Gesture | null = null;
   private release: Release | null = null;
   private released = false;
+  private ballMode: BallMode = 'hidden';
+  private flight: { from: THREE.Vector3; t: number; dur: number } | null = null;
   private standingBefore: boolean[] = new Array(10).fill(true);
   private leftSplit = false;
   private rackSeed = 1;
@@ -95,6 +121,25 @@ export class PlayScene extends ArcadeScene {
   private firstHit = false;
   private ballQ = new THREE.Quaternion();
   private lastCall: Call = 'count';
+  /** Seconds since the throw began (the bowler's approach and follow-through timeline). */
+  private throwT = -1;
+  private gaitDone = 0;
+  private steps = 0;
+  /** The ball's x on its way to the arrows, the bowler's place relative to it at the release. */
+  private relOff = new THREE.Vector3(0.33, 0.14, -0.3);
+  private stanceZ = 3.75;
+  /** The ball's x relative to the bowler's feet last frame; where the hand let go, relative to the laying point. */
+  private handOffX = NaN;
+  private releaseGap: number[] = [];
+  private bowlerX = 0;
+  // the walk back
+  private retStep: ReturnStep = 'done';
+  private retT = 0;
+  // coaching
+  private strikeLine: { stand: number; target: number } | null = null;
+  private strikeTip: Tip | null = null;
+  private lastThrow: { stand: number; target: number; speed: number; hook: number; fresh: boolean } | null = null;
+  private pendingTip: { stand: number; target: number } | null = null;
 
   // replay
   private recording: Float32Array[] = [];
@@ -117,13 +162,20 @@ export class PlayScene extends ArcadeScene {
   private camLock: [THREE.Vector3, THREE.Vector3] | null = null;
 
   // 3D guides
-  private aimDots!: THREE.InstancedMesh;
   private guideKey = '';
   /** The ball's track on the boards (a glowing ribbon that shows the hook). */
   private track!: THREE.Mesh;
   private trackPts: THREE.Vector2[] = [];
-  /** Easy: the ball's predicted path. */
+  /** The aim line (stand → target arrow) and the predicted path beyond it. */
+  private aimLine!: THREE.Mesh;
   private pathRibbon!: THREE.Mesh;
+  private standMark!: THREE.Mesh;
+  private targetMark!: THREE.Mesh;
+  private targetDot!: THREE.Mesh;
+  private breakMark!: THREE.Mesh;
+  private oilSheen!: THREE.Mesh;
+  private spinRing!: THREE.Mesh;
+  private guidePulse = 0;
 
   // UI
   private card!: CardView;
@@ -131,10 +183,12 @@ export class PlayScene extends ArcadeScene {
   private hint!: Phaser.GameObjects.Text;
   private rack!: RackView;
   private rackChip!: HudChip;
-  private spinChip!: HudChip;
-  private spinIcon!: Phaser.GameObjects.Graphics;
-  private powerChip!: HudChip;
-  private powerBar!: Phaser.GameObjects.Graphics;
+  private aimChip!: AimChip;
+  private spinCtl!: SpinControl;
+  private speedChip!: SpeedChip;
+  private laneBtn!: LaneViewButton;
+  private oilChip!: OilChip;
+  private tipChip!: TipChip;
   private trail!: Phaser.GameObjects.Graphics;
   private replayTag: Phaser.GameObjects.Container | null = null;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -151,16 +205,21 @@ export class PlayScene extends ArcadeScene {
     this.sheet = new ScoreSheet();
     this.phase = 'intro';
     this.phaseT = 0;
-    this.ballX = 0.2;
-    this.angle = 0;
-    this.hook = 0.35;
-    this.power = 0;
+    this.stand = 12;
+    this.target = 9;
+    this.hook = this.liveHook = 0.35;
+    this.speed = 7.6;
+    this.power = 0.5;
     this.charging = false;
     this.chargeT = 0;
-    this.kbStage = 'move';
+    this.stage = 'stand';
+    this.keyRepeat = 0;
+    this.laneView = false;
     this.gesture = null;
     this.release = null;
     this.released = false;
+    this.ballMode = 'hidden';
+    this.flight = null;
     this.standingBefore = new Array(10).fill(true);
     this.leftSplit = false;
     this.rackSeed = 1 + Math.floor(Math.random() * 100000);
@@ -178,6 +237,7 @@ export class PlayScene extends ArcadeScene {
     this.guideKey = '';
     this.replayTag = null;
     this.crowd = [];
+    this.crowdLife = [];
     this.lastKnock = 0;
     this.neonPulse = 0;
     this.neonCycle = 0;
@@ -188,8 +248,13 @@ export class PlayScene extends ArcadeScene {
     this.lastCall = 'count';
     this.summary = null;
     this.camLock = null;
-    this.bodyOff = 0.39;
     this.camRate = 4;
+    this.throwT = -1;
+    this.retStep = 'done';
+    this.strikeLine = null;
+    this.strikeTip = null;
+    this.lastThrow = null;
+    this.pendingTip = null;
 
     this.world = new World3D(this, { fov: 50, near: 0.05, far: 80, background: 0x0d0820, fog: { color: 0x0d0820, near: 26, far: 60 } });
     const sun = this.world.addLights({ sky: 0xe6dcff, ground: 0x3a2a48, ambient: 1.35, intensity: 1.7, dir: [0.15, 1, 0.5], extent: 3.2 });
@@ -204,17 +269,20 @@ export class PlayScene extends ArcadeScene {
     // the bowler (the player's platform character) and the people around
     this.bowler = new Person(playerCharacter3d());
     this.world.scene.add(this.bowler.root);
+    this.measureRelease();
     this.bowler.face(0).play('idle', { fade: 0 });
-    this.placeBowler(STANCE_Z);
+    this.bowlerX = this.standX();
+    this.placeBowler();
     const spots: [number, number, number][] = [[1.05, APPROACH + 1.2, -0.25], [1.85, APPROACH + 0.9, -0.45], [PITCH * 2 + 0.2, 1.4, 0]];
     SPECTATORS.forEach((name, i) => {
       const p = new Person(miniKey(name));
       const [x, z, yaw] = spots[i];
       p.root.position.set(x, 0, z);
       p.face(yaw);
-      p.play('idle', { fade: 0 });
+      p.play('idle', { fade: 0, at: Math.random(), speed: 0.8 + Math.random() * 0.4 });
       this.world.scene.add(p.root);
       this.crowd.push(p);
+      this.crowdLife.push({ t: Math.random() * 3, shift: 0, yaw, cheer: 0, base: yaw });
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.bowler.dispose();
@@ -225,23 +293,7 @@ export class PlayScene extends ArcadeScene {
       this.rollSound = null;
     });
 
-    // guides: the aim chevrons (Normal) and the predicted path (Easy)
-    const chev = new THREE.Shape();
-    chev.moveTo(0, 0.1); chev.lineTo(0.085, -0.03); chev.lineTo(0.05, -0.055); chev.lineTo(0, 0.02); chev.lineTo(-0.05, -0.055); chev.lineTo(-0.085, -0.03);
-    chev.closePath();
-    const guideMat = (c: number) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false });
-    this.aimDots = new THREE.InstancedMesh(new THREE.ShapeGeometry(chev).rotateX(-Math.PI / 2), guideMat(0xffd23f), 24);
-    for (const d of [this.aimDots]) {
-      d.count = 0;
-      d.frustumCulled = false;
-      d.renderOrder = 4;
-      d.userData.ownMaterial = true;
-      this.world.scene.add(d);
-    }
-
-    this.track = this.makeRibbon(0x34e7ff, 0.5);
-    this.pathRibbon = this.makeRibbon(0x7dff9a, 0.55);
-    this.trackPts = [];
+    this.buildGuides();
 
     // UI
     const { width, height } = this.scale;
@@ -251,18 +303,21 @@ export class PlayScene extends ArcadeScene {
     this.card.update(this.sheet, 0);
     this.hud.setCenter(t('frameShort', { n: 1 }));
     this.rack = new RackView(this);
-    this.rackChip = hudChip(this, width - HUD_MARGIN, HUD_ROW2_Y + 24 + this.card.h / 2 + 72, { align: 'right', items: [this.rack.g], height: 96 });
+    const row3 = HUD_ROW2_Y + 24 + this.card.h / 2 + 72;
+    this.rackChip = hudChip(this, width - HUD_MARGIN, row3, { align: 'right', items: [this.rack.g], height: 96 });
     this.rack.update(this.sim.standing());
-    this.hint = txt(this, width / 2, height - 190, '', { size: 26, color: '#ffffff', strokeThickness: 6, stroke: '#140a2a', wrap: 660 }).setDepth(9000).setScrollFactor(0);
-    this.spinIcon = this.add.graphics();
-    this.spinIcon.setData('chipWidth', 34);
-    this.spinChip = hudChip(this, HUD_MARGIN, height - 86, { label: t('spin'), text: '', items: [this.spinIcon], minWidth: 210 });
-    this.powerBar = this.add.graphics();
-    this.powerBar.setData('chipWidth', 200);
-    this.powerChip = hudChip(this, this.scale.width - HUD_MARGIN, height - 86, { align: 'right', label: t('power'), items: [this.powerBar] });
-    this.powerChip.setVisible(false);
+    this.oilChip = new OilChip(this, HUD_MARGIN, row3 - 22);
+    this.laneBtn = new LaneViewButton(this, HUD_MARGIN, row3 + 44, () => this.toggleLaneView());
+    this.tipChip = new TipChip(this, width / 2, row3 + 104);
+    this.hint = txt(this, width / 2, height - 300, '', { size: 25, color: '#ffffff', strokeThickness: 6, stroke: '#140a2a', wrap: 660 }).setDepth(9000).setScrollFactor(0);
+    this.aimChip = new AimChip(this, width / 2, height - 190);
+    this.spinCtl = new SpinControl(this, HUD_MARGIN, height - 90, (d) => this.stepSpin(d));
+    this.speedChip = new SpeedChip(this, width - HUD_MARGIN, height - 90);
     this.trail = this.add.graphics().setDepth(8900).setScrollFactor(0);
-    this.updateSpinChip();
+    this.showAimUi(false);
+    this.oilChip.set(this.simTune.oil ?? OIL_LEN);
+    this.layOil();
+    this.updateAimUi();
     drawScreen(this.alley, { title: t('lane'), big: '0', sub: t('frameN', { n: 1 }), color: '#ffd23f' });
 
     // input
@@ -271,7 +326,7 @@ export class PlayScene extends ArcadeScene {
     this.input.on('pointermove', this.onMove, this);
     this.input.on('pointerup', this.onUp, this);
     this.input.on('pointerupoutside', this.onUp, this);
-    this.keys = this.input.keyboard!.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,ENTER,Z,X,SHIFT') as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = this.input.keyboard!.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,ENTER,Z,X,SHIFT,V,H') as Record<string, Phaser.Input.Keyboard.Key>;
 
     if (this.cache.audio.exists('roll')) {
       this.rollSound = this.sound.add('roll', { loop: true, volume: 0 }) as Phaser.Sound.WebAudioSound;
@@ -291,13 +346,78 @@ export class PlayScene extends ArcadeScene {
     this.sfx('whir', { volume: 0.3 });
   }
 
+  // ------------------------------------------------------------------ the bowler
+
+  /**
+   * Puts the bowler in the release pose once and measures where the ball sits relative to his
+   * feet, so the stance can be placed for the ball to leave the hand exactly over the chosen
+   * board, a hand's length behind the point where the simulation lays it on the boards.
+   */
+  private measureRelease(): void {
+    const b = this.bowler;
+    b.root.position.set(0, 0, 0);
+    b.face(0);
+    b.gaitPhase(PHASE0);
+    b.walk(WALK_D, { fade: 0 });
+    poseBowler(b, RELEASE_T);
+    b.update(0);
+    const at = b.ballAt(new THREE.Vector3());
+    this.relOff.copy(at);
+    const d = approachPose(RELEASE_T).d;
+    // the hand lets go ~12 cm behind the laying point; the slide foot stays behind the foul line
+    this.stanceZ = LAY_Z + 0.12 - at.z + d;
+    b.gaitPhase(0);
+    b.relax();
+  }
+
+  /** The bowler's x for the chosen stand (the ball leaves the hand over that board). */
+  private standX(): number {
+    return boardX(this.stand) - this.relOff.x;
+  }
+
+  private placeBowler(z = this.stanceZ): void {
+    this.bowler.root.position.set(this.bowlerX, 0, z);
+  }
+
+  /** The ball follows the hand (after the bowler's pose for this frame). */
+  private ballFollow(dt: number): void {
+    if (this.ballMode === 'hand') {
+      const p = this.bowler.ballAt(new THREE.Vector3());
+      this.handOffX = p.x - this.bowler.root.position.x;
+      this.ballQ.copy(this.bowler.ballQuat());
+      this.setBall(p.x, p.y, p.z, false);
+    } else if (this.ballMode === 'flight' && this.flight && this.release) {
+      // from the hand to the boards: a few centimetres at the ball's speed, then the sim takes over
+      const f = this.flight;
+      f.t += dt;
+      const r = this.release;
+      const k = Math.min(1, f.t / f.dur);
+      const x = f.from.x + (r.x - f.from.x) * k;
+      const z = f.from.z + (LAY_Z - f.from.z) * k;
+      const y = f.from.y + (BALL_R - f.from.y) * k * k;
+      // the spin it left the hand with
+      const w = new THREE.Vector3(-Math.cos(r.angle) * r.speed / BALL_R * 0.22, r.hook * 8, r.hook * SPIN_MAX * this.simTune.hook);
+      const wl = w.length();
+      if (wl > 1e-4) this.ballQ.premultiply(new THREE.Quaternion().setFromAxisAngle(w.normalize(), wl * dt));
+      this.setBall(x, y, z, false);
+      if (k >= 1) this.landBall(f.t - f.dur);
+    }
+  }
+
   // ------------------------------------------------------------------ helpers
 
   private stanceCam(): void {
-    const bx = this.ballX;
-    // over the right shoulder: the bowler at the left edge, the ball low, the lane down the middle
-    this.goalPos.set(bx * 0.7 + 0.3, 1.32, STANCE_Z + 2.25);
-    this.goalLook.set(bx * 0.2 + 0.08, 0.0, -10);
+    const bx = this.bowlerX, bz = this.stanceZ;
+    if (this.laneView) {
+      // low over the foul line: the arrows and the pins
+      const x = (boardX(this.stand) + boardX(this.target)) * 0.25;
+      this.goalPos.set(x, 1.3, 0.55);
+      this.goalLook.set(x * 0.3, 0.0, -8.5);
+    } else {
+      // behind and above the bowler's right shoulder: the bowler low left, the lane and arrows up the middle
+      this.goalPos.set(bx + 0.85, 1.55, bz + 1.85);
+      this.goalLook.set(bx * 0.2 + 0.05, 0.0, -6);
+    }
   }
 
   private deckCam(wide = false): void {
@@ -308,24 +428,6 @@ export class PlayScene extends ArcadeScene {
       this.goalPos.set(0.42, 0.72, HEAD_Z + 2.55);
       this.goalLook.set(0, 0.17, HEAD_Z - 0.35);
     }
-  }
-
-  /**
-   * Puts the bowler so the ball in the right hand sits over ballX. The hand's side offset is
-   * measured while he stands holding the ball and then kept, so a swinging arm does not drag
-   * the body sideways during the approach.
-   */
-  private placeBowler(z: number, measure = true): void {
-    if (measure && this.bowler.clip === 'holding-right') {
-      const off = this.handWorld().x - this.bowler.root.position.x;
-      if (Number.isFinite(off) && Math.abs(off) < 0.7) this.bodyOff += (off - this.bodyOff) * 0.5;
-    }
-    this.bowler.root.position.set(this.ballX - this.bodyOff, 0, z);
-  }
-  private bodyOff = 0.39;
-
-  private handWorld(): THREE.Vector3 {
-    return ballInHand(this.bowler);
   }
 
   private copyPinsFromSim(): void {
@@ -364,44 +466,193 @@ export class PlayScene extends ArcadeScene {
     a.mirrorBall.quaternion.copy(this.ballQ);
   }
 
-  private updateSpinChip(): void {
-    const h = this.hook;
-    const g = this.spinIcon;
-    g.clear();
-    const dir = h > 0.02 ? -1 : h < -0.02 ? 1 : 0;
-    const col = Math.abs(h) > 0.66 ? 0xff3fa4 : Math.abs(h) > 0.33 ? 0xffd23f : 0x7dff9a;
-    g.lineStyle(4, col, 1);
-    if (dir === 0) {
-      g.lineBetween(0, 12, 0, -12);
-      g.fillStyle(col, 1).fillTriangle(-7, -8, 7, -8, 0, -16);
-    } else {
-      // a curve that bends towards the hook side
-      const pts: Phaser.Math.Vector2[] = [];
-      for (let k = 0; k <= 10; k++) {
-        const s = k / 10;
-        pts.push(new Phaser.Math.Vector2(-dir * 8 + dir * 16 * s * s * (0.4 + Math.abs(h) * 0.6), 12 - s * 26));
-      }
-      g.strokePoints(pts);
-      const e = pts[10], p = pts[8];
-      const ang = Math.atan2(e.y - p.y, e.x - p.x);
-      g.fillStyle(col, 1).fillTriangle(
-        e.x + Math.cos(ang) * 8, e.y + Math.sin(ang) * 8,
-        e.x + Math.cos(ang + 2.3) * 8, e.y + Math.sin(ang + 2.3) * 8,
-        e.x + Math.cos(ang - 2.3) * 8, e.y + Math.sin(ang - 2.3) * 8,
-      );
-    }
-    this.spinChip.setText(Math.abs(h) < 0.02 ? t('straight') : `${Math.round(Math.abs(h) * 100)}%`);
+  private hideBall(): void {
+    this.ballMode = 'hidden';
+    this.alley.ball.visible = false;
+    this.alley.mirrorBall.visible = false;
+    this.spinRing.visible = false;
   }
 
-  private drawPower(): void {
-    const g = this.powerBar;
-    g.clear();
-    const w = 200, h = 16;
-    g.fillStyle(0x000000, 0.35).fillRoundedRect(-w / 2, -h / 2, w, h, 8);
-    const col = Phaser.Display.Color.HSLToColor(0.33 - this.power * 0.33, 0.95, 0.55).color;
-    g.fillStyle(col, 1).fillRoundedRect(-w / 2, -h / 2, Math.max(h, w * this.power), h, 8);
-    // the sweet spot
-    g.lineStyle(2, 0xffffff, 0.8).lineBetween(-w / 2 + w * 0.62, -h / 2 - 3, -w / 2 + w * 0.62, h / 2 + 3);
+  /** The release the current line, spin and speed make. */
+  private currentRelease(speed = this.speed, hook = this.liveHook): Release {
+    return releaseFor(this.stand, this.target, speed, hook);
+  }
+
+  private kmh(speed: number): number {
+    return speed * 3.6;
+  }
+
+  private updateAimUi(): void {
+    const touch = this.sys.game.device.input.touch && !this.keysUsed;
+    this.aimChip.set(this.stand, this.target, touch ? null : this.stage);
+    this.spinCtl.set(this.liveHook);
+    const k = (this.speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN);
+    this.speedChip.set(this.kmh(this.speed), Phaser.Math.Clamp(k, 0, 1), this.charging || this.gesture?.mode === 'throw');
+  }
+  private keysUsed = false;
+
+  private showAimUi(on: boolean): void {
+    this.aimChip.chip.setVisible(on);
+    this.spinCtl.chip.setVisible(on);
+    this.speedChip.chip.setVisible(on);
+    this.laneBtn.chip.setVisible(on);
+    if (!on) this.tipChip.hide();
+  }
+
+  private stepSpin(dir: number): void {
+    if (!this.canAim()) return;
+    this.hook = Phaser.Math.Clamp(Math.round((this.hook + dir * SPIN_STEP) / SPIN_STEP) * SPIN_STEP, -1, 1);
+    this.liveHook = this.hook;
+    this.sfx('tick', { volume: 0.4 });
+    this.updateAimUi();
+  }
+
+  private toggleLaneView(): void {
+    this.laneView = !this.laneView;
+    this.laneBtn.set(this.laneView);
+    this.sfx('tick', { volume: 0.4 });
+    this.camRate = 4;
+  }
+
+  /** Sets the stand or the target to a board (snapped to whole or half boards); the other stays put. */
+  private moveAim(which: 'stand' | 'target', value: number, step: number): void {
+    const v = Math.round(value / step) * step;
+    const [ns, nt] = which === 'stand' ? clampAim(v, this.target) : clampAim(this.stand, v);
+    if (ns === this.stand && nt === this.target) return;
+    this.stand = ns;
+    this.target = nt;
+    this.sfx('tick', { volume: 0.25, rate: which === 'stand' ? 1 : 1.3 });
+    if (this.tipChip.shown && this.pendingTip && (this.pendingTip.stand !== ns || this.pendingTip.target !== nt)) this.tipChip.hide();
+    this.updateAimUi();
+  }
+
+  // ------------------------------------------------------------------ 3D guides
+
+  private buildGuides(): void {
+    const scene = this.world.scene;
+    const glow = (c: number, o = 0.85) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, depthWrite: false, toneMapped: false });
+    const flat = (m: THREE.Mesh, order = 4) => { m.frustumCulled = false; m.renderOrder = order; m.userData.ownMaterial = true; m.visible = false; scene.add(m); return m; };
+    // the stand: a chevron on the approach just behind the foul line, pointing down the lane
+    const chev = new THREE.Shape();
+    chev.moveTo(0, 0.13); chev.lineTo(0.075, -0.02); chev.lineTo(0.045, -0.05); chev.lineTo(0, 0.04); chev.lineTo(-0.045, -0.05); chev.lineTo(-0.075, -0.02);
+    chev.closePath();
+    this.standMark = flat(new THREE.Mesh(new THREE.ShapeGeometry(chev).rotateX(-Math.PI / 2), glow(0xffd23f, 0.95)));
+    // the target: the lane arrow lit up (a copy of its shape, a little larger)
+    const arrow = new THREE.Shape();
+    arrow.moveTo(0, 0.2); arrow.lineTo(-0.036, -0.075); arrow.lineTo(0.036, -0.075); arrow.closePath();
+    this.targetMark = flat(new THREE.Mesh(new THREE.ShapeGeometry(arrow).rotateX(-Math.PI / 2), glow(0xffd23f, 0.95)));
+    this.targetMark.material = new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.95, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending });
+    this.targetMark.scale.set(1.5, 1, 1.25);
+    this.targetDot = flat(new THREE.Mesh(new THREE.CircleGeometry(0.03, 4).rotateX(-Math.PI / 2), glow(0xffd23f, 0.95)));
+    this.targetDot.scale.set(1.3, 1, 2);
+    // the breakpoint: a ring on the boards
+    this.breakMark = flat(new THREE.Mesh(new THREE.RingGeometry(0.075, 0.11, 32).rotateX(-Math.PI / 2), glow(0xff3fa4, 0.95)), 6);
+    const dot = new THREE.Mesh(new THREE.CircleGeometry(0.035, 16).rotateX(-Math.PI / 2), glow(0xff3fa4, 0.95));
+    dot.userData.ownMaterial = true;
+    this.breakMark.add(dot);
+    this.breakMark.scale.set(1, 1, 2.2);
+    this.aimLine = this.makeRibbon(0xffd23f, 0.6);
+    this.pathRibbon = this.makeRibbon(0x7dff9a, 0.55);
+    this.track = this.makeRibbon(0x34e7ff, 0.5);
+    this.trackPts = [];
+    // the oil: a faint sheen over the oiled boards, fading where the pattern ends
+    const oilTex = canvasTex('oil', 64, 512, (g, w, h) => {
+      const gr = g.createLinearGradient(0, h, 0, 0);
+      gr.addColorStop(0, 'rgba(255,255,255,0.0)');
+      gr.addColorStop(0.03, 'rgba(255,255,255,0.75)');
+      gr.addColorStop(0.82, 'rgba(255,255,255,0.55)');
+      gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, w, h);
+      // heavier in the middle boards, lighter outside (a house shot)
+      const side = g.createLinearGradient(0, 0, w, 0);
+      side.addColorStop(0, 'rgba(0,0,0,0.75)');
+      side.addColorStop(0.3, 'rgba(0,0,0,0.15)');
+      side.addColorStop(0.7, 'rgba(0,0,0,0.15)');
+      side.addColorStop(1, 'rgba(0,0,0,0.75)');
+      g.globalCompositeOperation = 'destination-out';
+      g.fillStyle = side;
+      g.fillRect(0, 0, w, h);
+    });
+    const oilMat = new THREE.MeshBasicMaterial({ map: oilTex, color: 0xbfe8ff, transparent: true, opacity: 0.13, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending });
+    this.oilSheen = new THREE.Mesh(new THREE.PlaneGeometry(LANE_HALF * 2 - 0.01, 1).rotateX(-Math.PI / 2).translate(0, 0.0012, -0.5), oilMat);
+    this.oilSheen.renderOrder = 2;
+    this.oilSheen.userData.ownMaterial = true;
+    scene.add(this.oilSheen);
+    // the spin ring: a thin glowing band round the ball, square to its spin axis
+    this.spinRing = new THREE.Mesh(new THREE.TorusGeometry(BALL_R * 1.01, 0.0045, 6, 40), new THREE.MeshBasicMaterial({ color: 0x9ff3ff, transparent: true, opacity: 0.85, toneMapped: false, depthWrite: false }));
+    this.spinRing.userData.ownMaterial = true;
+    this.spinRing.renderOrder = 7;
+    this.spinRing.visible = false;
+    scene.add(this.spinRing);
+  }
+
+  /** The oil sheen reaches as far as the oil does (plus its fade). */
+  private layOil(): void {
+    const oil = this.simTune.oil ?? OIL_LEN;
+    this.oilSheen.scale.z = oil + 1.6;
+    // a worn pattern is shorter and thinner
+    (this.oilSheen.material as THREE.MeshBasicMaterial).opacity = 0.14 * (0.55 + 0.45 * Math.max(0, (oil - 9) / (OIL_LEN - 9)));
+  }
+
+  private hideGuides(): void {
+    this.standMark.visible = this.targetMark.visible = this.targetDot.visible = this.breakMark.visible = false;
+    this.aimLine.geometry.setDrawRange(0, 0);
+    this.pathRibbon.geometry.setDrawRange(0, 0);
+    this.guideKey = '';
+  }
+
+  /**
+   * The aim: the stand chevron, the lit target arrow and the line through them, and the hook:
+   * Normal shows the path up to the breakpoint and marks it; Easy the whole path, coloured.
+   */
+  private drawGuides(): void {
+    const speed = this.speed;
+    const hook = this.liveHook;
+    const key = `${this.stand}:${this.target}:${hook.toFixed(2)}:${speed.toFixed(1)}:${this.simTune.oil}`;
+    // the marks pulse a little
+    this.guidePulse += this.lastDt;
+    const pulse = 0.75 + Math.sin(this.guidePulse * 6) * 0.2;
+    (this.targetMark.material as THREE.MeshBasicMaterial).opacity = pulse;
+    (this.breakMark.material as THREE.MeshBasicMaterial).opacity = 0.6 + Math.sin(this.guidePulse * 5) * 0.3;
+    if (key === this.guideKey) return;
+    this.guideKey = key;
+    const xs = boardX(this.stand), xt = boardX(this.target);
+    this.standMark.position.set(xs, 0.004, 0.32);
+    this.standMark.visible = true;
+    const onArrow = ARROWS.includes(this.target);
+    this.targetMark.visible = onArrow;
+    this.targetDot.visible = !onArrow;
+    if (onArrow) this.targetMark.position.set(xt, 0.003, arrowZ(this.target));
+    else this.targetDot.position.set(xt, 0.003, arrowTipZ(this.target) + 0.05);
+    // the straight line from the stand through the target, to the arrows
+    const r = this.currentRelease(speed, hook);
+    const zEnd = arrowTipZ(this.target) - 0.3;
+    const line: THREE.Vector2[] = [];
+    for (let z = 0.3; z >= zEnd; z -= 0.25) line.push(new THREE.Vector2(xs + Math.tan(r.angle) * (LAY_Z - z), z));
+    this.layRibbon(this.aimLine, line, 0.012, 0, 0.0035);
+    // the path the ball will take (no pins)
+    const pts = ballPath(this.simTune, r, 0.25).filter((p) => p.z < -0.2 && p.z > HEAD_Z + 0.15);
+    const gutter = pts.findIndex((p) => p.gutter);
+    const bp = breakpoint(pts, hook);
+    if (bp >= 0 && (gutter < 0 || bp < gutter)) {
+      this.breakMark.position.set(pts[bp].x, 0.004, pts[bp].z);
+      this.breakMark.visible = true;
+    } else this.breakMark.visible = false;
+    const upto = this.tune.preview ? (gutter >= 0 ? gutter + 1 : pts.length) : Math.max(0, bp >= 0 ? bp + 1 : Math.min(pts.length, 34));
+    const from = pts.findIndex((p) => p.z < zEnd + 0.25);
+    const lane = pts.slice(Math.max(0, from), upto).map((p) => new THREE.Vector2(p.x, p.z));
+    this.layRibbon(this.pathRibbon, lane, this.tune.preview ? 0.018 : 0.01, 0, 0.004);
+    const mat = this.pathRibbon.material as THREE.MeshBasicMaterial;
+    if (this.tune.preview) {
+      const end = pts[pts.length - 1];
+      const good = gutter < 0 && end && Math.abs(Math.abs(end.x) - POCKET_X) < 0.05;
+      mat.color.setHex(gutter >= 0 ? 0xff5a5a : good ? 0x7dff9a : 0xffd23f);
+      mat.opacity = 0.55;
+    } else {
+      mat.color.setHex(gutter >= 0 && (bp < 0 || gutter < bp) ? 0xff5a5a : 0xff7ac8);
+      mat.opacity = 0.6;
+    }
   }
 
   // ------------------------------------------------------------------ input
@@ -410,20 +661,34 @@ export class PlayScene extends ArcadeScene {
     return this.phase === 'aim' && this.sweepDone;
   }
 
+  /** Screen y of the target row (the arrows) and of the stand row (the foul line). */
+  private aimRows(): { target: number; stand: number } {
+    const a = this.world.toScreen(new THREE.Vector3(boardX(this.target), 0, arrowZ(this.target)));
+    const s = this.world.toScreen(new THREE.Vector3(boardX(this.stand), 0, 0.3));
+    return { target: a.y, stand: s.visible ? s.y : this.scale.height };
+  }
+
   private onDown(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
     if (over.length || this.isOver) return;
     if (this.phase === 'intro' || this.phase === 'result' || this.phase === 'replay' || this.phase === 'react') {
       this.skip();
       return;
     }
-    if (!this.canAim() && this.phase !== 'return') return;
+    if (this.phase === 'return') this.skip();
+    if (!this.canAim()) return;
     if (this.gesture) return;
-    this.gesture = { id: p.id, x0: p.x, y0: p.y, mode: 'none', startX: this.ballX, path: [{ x: p.x, y: p.y, t: stamp(p) }], throwFrom: 0 };
+    // a sideways drag moves what is nearest the finger: the target near the arrows, else the stand
+    const rows = this.aimRows();
+    const split = rows.target + (rows.stand - rows.target) * 0.45;
+    const drag = p.y < split ? 'target' : 'stand';
+    this.keysUsed = false;
+    this.gesture = { id: p.id, x0: p.x, y0: p.y, mode: 'none', drag, value: drag === 'stand' ? this.stand : this.target, fine: false, path: [{ x: p.x, y: p.y, t: stamp(p) }], throwFrom: 0 };
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
     const g = this.gesture;
     if (!g || p.id !== g.id || !p.isDown) return;
+    const prev = g.path[g.path.length - 1];
     g.path.push({ x: p.x, y: p.y, t: stamp(p) });
     if (g.path.length > 240) g.path.splice(0, g.path.length - 240);
     if (g.mode === 'throw') {
@@ -431,24 +696,29 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     const dx = p.x - g.x0, dy = p.y - g.y0;
-    // recent upward motion turns a slide into a throw
+    // recent upward motion turns a drag into a throw
     const back = g.path[Math.max(0, g.path.length - 6)];
     const up = back.y - p.y, side = Math.abs(p.x - back.x);
-    if ((g.mode === 'none' && -dy > 26 && -dy > Math.abs(dx) * 0.9) || (g.mode === 'slide' && up > 34 && up > side * 1.2)) {
-      if (!this.canAim()) return;
+    if ((g.mode === 'none' && -dy > 26 && -dy > Math.abs(dx) * 0.9) || (g.mode !== 'none' && up > 34 && up > side * 1.2)) {
       g.mode = 'throw';
       // the flick starts where the finger began to move up
       let k = g.path.length - 1;
       while (k > 0 && g.path[k - 1].y > g.path[k].y + 0.5) k--;
       g.throwFrom = k;
-      this.kbStage = 'aim';
       this.hint.setText('');
+      this.readFlick(false);
       return;
     }
-    if (g.mode === 'none' && Math.abs(dx) > 14) g.mode = 'slide';
-    if (g.mode === 'slide') {
-      this.ballX = Phaser.Math.Clamp(g.startX + dx / SLIDE_PX, -X_MAX, X_MAX);
-      if (this.phase === 'aim' || this.phase === 'return') this.angle = 0;
+    if (g.mode === 'none' && Math.abs(dx) > 12) g.mode = g.drag;
+    if (g.mode === 'stand' || g.mode === 'target') {
+      // a slow drag moves half as far per pixel and snaps to half boards
+      const ddx = p.x - prev.x;
+      const dtm = Math.max(1, g.path[g.path.length - 1].t - prev.t);
+      const slow = Math.abs(ddx) / dtm * 1000 < 160;
+      g.fine = slow;
+      // boards count from the right: a drag to the right lowers the board
+      g.value -= ddx / PX_PER_BOARD * (slow ? 0.5 : 1);
+      this.moveAim(g.mode, g.value, slow ? 0.5 : 1);
     }
   }
 
@@ -456,18 +726,24 @@ export class PlayScene extends ArcadeScene {
     const g = this.gesture;
     if (!g || p.id !== g.id) return;
     this.trail.clear();
-    if (g.mode !== 'throw') { this.gesture = null; return; }
+    if (g.mode !== 'throw') { this.gesture = null; this.updateAimUi(); return; }
     const f = this.readFlick(true);
     this.gesture = null;
     if (!f || !this.canAim()) {
-      if (this.canAim()) popup(this, this.scale.width / 2, this.scale.height - 260, t('flickMore'), '#ffd23f', 30);
+      if (this.canAim()) popup(this, this.scale.width / 2, this.scale.height - 360, t('flickMore'), '#ffd23f', 30);
+      this.liveHook = this.hook;
       this.guideKey = '';
+      this.updateAimUi();
       return;
     }
-    this.throwBall({ x: this.ballX, angle: this.angle, speed: f.speed, hook: this.hook });
+    this.throwBall(this.currentRelease(f.speed, this.liveHook));
   }
 
-  /** Reads the flick so far: direction from its chord, speed from its last 0.11 s, hook from its bend. */
+  /**
+   * Reads the flick so far: speed from its last 0.11 s (and its average), extra hook from its
+   * bend (a forgiving dead zone, added to the spin set on the control). Its direction does not
+   * steer: the line is the stand and the target.
+   */
   private readFlick(final: boolean): { speed: number } | null {
     const g = this.gesture ?? null;
     if (!g) return null;
@@ -476,22 +752,18 @@ export class PlayScene extends ArcadeScene {
     const a = pts[0], b = pts[pts.length - 1];
     const cx = b.x - a.x, cy = b.y - a.y;
     const len = Math.hypot(cx, cy);
-    // direction
-    const sa = Math.atan2(cx, -cy);
-    this.angle = Phaser.Math.Clamp(sa * 0.075 * this.tune.aimSens, -ANGLE_MAX, ANGLE_MAX);
     // bend: the furthest point right (+) or left (-) of the chord
     let dev = 0;
-    if (len > 20) {
+    if (len > 30) {
       for (const q of pts) {
         const d = ((q.x - a.x) * -cy + (q.y - a.y) * cx) / len;   // right of the chord is +
         if (Math.abs(d) > Math.abs(dev)) dev = d;
       }
     }
     const r = len > 0 ? dev / len : 0;
-    const mag = Phaser.Math.Clamp((Math.abs(r) - 0.03) / 0.17, 0, 1);
-    // a flick that bows out to the right ends heading left: a left hook (positive)
-    this.hook = Math.sign(r) * mag;
-    this.updateSpinChip();
+    const mag = Phaser.Math.Clamp((Math.abs(r) - 0.05) / 0.2, 0, 1);
+    // a flick that bows out to the right ends heading left: more left hook (positive)
+    this.liveHook = Phaser.Math.Clamp(this.hook + Math.sign(r) * mag * 0.8, -1, 1);
     // speed: the finger's speed over the last 0.11 s (px/s in game pixels)
     const now = b.t;
     let k = pts.length - 1;
@@ -502,7 +774,8 @@ export class PlayScene extends ArcadeScene {
     const vAvg = len / (Math.max(60, now - a.t) / 1000);
     const v = Math.max(vEnd, vAvg);
     this.power = Phaser.Math.Clamp((v - 300) / 2600, 0, 1);
-    // trail
+    this.speed = SPEED_MIN + this.power * (SPEED_MAX - SPEED_MIN);
+    // the finger's trail
     const tr = this.trail;
     tr.clear();
     tr.lineStyle(14, 0x000000, 0.25);
@@ -511,122 +784,281 @@ export class PlayScene extends ArcadeScene {
     tr.lineStyle(9, col, 0.9);
     tr.strokePoints(pts.map((q) => new Phaser.Math.Vector2(q.x, q.y)));
     tr.fillStyle(0xffffff, 1).fillCircle(b.x, b.y, 10);
-    this.powerChip.setVisible(true);
-    this.drawPower();
+    this.updateAimUi();
     if (!final) return null;
     if (-cy < 90 || len < 90) return null;
-    return { speed: SPEED_MIN + this.power * (SPEED_MAX - SPEED_MIN) };
+    return { speed: this.speed };
   }
 
   private skip(): void {
-    if (this.phase === 'intro') this.endIntro();
+    if (this.phase === 'intro') {
+      // a skipped fly-in cuts straight to the bowler
+      this.endIntro();
+      this.camPos.copy(this.goalPos);
+      this.camLook.copy(this.goalLook);
+    }
     else if (this.phase === 'result') this.afterResult(true);
     else if (this.phase === 'replay') this.endReplay();
     else if (this.phase === 'react') this.afterReact();
+    else if (this.phase === 'return') this.finishReturn();
     this.sweepFast = 3;
   }
 
   // ------------------------------------------------------------------ flow
 
-  /** The ball comes back up the return; the bowler picks it up. */
+  /** The ball comes back up the return; the bowler walks back, picks it up and takes the stance. */
   private beginReturn(): void {
     this.phase = 'return';
     this.phaseT = 0;
-    this.kbStage = 'move';
     this.charging = false;
-    this.power = 0;
-    this.powerChip.setVisible(false);
-    this.spinChip.setVisible(false);
-    this.bowler.face(0).play('idle', { fade: 0 });
+    this.throwT = -1;
+    this.showAimUi(false);
+    this.hideGuides();
     this.bowler.lift = 0;
-    this.placeBowler(STANCE_Z);
+    this.bowler.relax();
+    this.bowler.setCarry(false, 0);
+    this.bowler.play('idle', { fade: 0.25 });
+    this.retStep = 'turn';
+    this.retT = 0;
+    // a cut to the camera behind the approach
     this.returnCam();
-    this.camPos.copy(this.goalPos).add(new THREE.Vector3(0.3, 0.25, -0.6));
+    this.camPos.copy(this.goalPos);
     this.camLook.copy(this.goalLook);
     this.camRate = 3;
     this.ballQ.identity();
-    this.alley.ball.visible = false;
-    this.alley.mirrorBall.visible = false;
+    this.hideBall();
     this.hud.setRight('');
     this.updateHudFrame();
     // the oil wears a little with every frame
     const f = Math.min(this.sheet.frame, FRAMES - 1);
     this.simTune.oil = OIL_LEN - f * this.tune.oilWear;
+    this.oilChip.set(this.simTune.oil);
+    this.layOil();
     if (this.sheet.ball === 0 && (f === 3 || f === 6)) this.tip(t('oilWear'));
+    // a fresh rack: back to the strike line
+    if (this.sheet.freshRack() && this.strikeLine) {
+      this.stand = this.strikeLine.stand;
+      this.target = this.strikeLine.target;
+    }
     this.keys.SPACE.reset();
     this.keys.ENTER.reset();
   }
 
-  /** In front of the bowler and to the right: the hood, the rack and the bowler. */
+  /** From the next approach on the left, keeping pace with the bowler: the walk back, the rack, the pick-up. */
   private returnCam(): void {
     const p = this.bowler.root.position;
-    this.goalPos.set(-1.75, 2.15, STANCE_Z + 3.4);
-    this.goalLook.set((p.x + RETURN_X) / 2 + 0.1, 0.45, STANCE_Z - 0.3);
+    this.goalPos.set(-3.9, 2.35, Phaser.Math.Clamp(p.z - 2.4, -2, 2.4));
+    this.goalLook.set(p.x - 0.35, 0.55, p.z + 0.25);
   }
 
   /** A line of advice that fades in under the HUD and away again. */
   private tip(s: string): void {
-    const tx = txt(this, this.scale.width / 2, 330, s, { size: 28, color: '#9ff3ff', strokeThickness: 6, stroke: '#140a2a', wrap: 640 }).setDepth(9000).setScrollFactor(0).setAlpha(0);
+    const tx = txt(this, this.scale.width / 2, 440, s, { size: 28, color: '#9ff3ff', strokeThickness: 6, stroke: '#140a2a', wrap: 640 }).setDepth(9000).setScrollFactor(0).setAlpha(0);
     this.tweens.add({ targets: tx, alpha: 1, delay: 700, duration: 300, hold: 2600, yoyo: true, onComplete: () => tx.destroy() });
   }
 
-  private updateReturn(): void {
+  /** Walks the bowler towards a point: turns first if needed, steps with the walk clip. Returns true when there. */
+  private walkTo(dt: number, x: number, z: number, v = WALK_V): boolean {
+    const b = this.bowler;
+    const p = b.root.position;
+    const dx = x - p.x, dz = z - p.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 0.02) { p.x = x; p.z = z; return true; }
+    // heading: yaw 0 looks down the lane (-z)
+    const want = Math.atan2(dx, -dz);
+    const turn = angleTo(b.yaw, want);
+    b.face(b.yaw + Phaser.Math.Clamp(turn, -dt * 9, dt * 9));
+    const go = Math.abs(turn) > 1.2 ? v * 0.3 : v;
+    const step = Math.min(dist, go * dt * smooth(0, 0.25, this.retT + 0.05));
+    p.x += dx / dist * step;
+    p.z += dz / dist * step;
+    b.walk(step + Math.abs(turn) * dt * 0.6, { stride: 0.9 });
+    return false;
+  }
+
+  /** Turns on the spot to a yaw with little steps. Returns true when facing it. */
+  private turnTo(dt: number, yaw: number, rate = 7): boolean {
+    const b = this.bowler;
+    const turn = angleTo(b.yaw, yaw);
+    if (Math.abs(turn) < 0.02) { b.face(yaw); b.stepLegs(0, 0); return true; }
+    const d = Phaser.Math.Clamp(turn, -dt * rate, dt * rate);
+    b.face(b.yaw + d);
+    if (b.clip === 'walk') b.walk(Math.abs(d) * 0.35, { stride: 0.5 });
+    else b.stepLegs(Math.abs(d) * 0.35, 1, 0.5);
+    return false;
+  }
+
+  private updateReturn(dt: number): void {
     const tt = this.phaseT;
     const tm = this.track.material as THREE.MeshBasicMaterial;
     tm.opacity = Math.max(0, 0.5 - tt * 0.6);
     const a = this.alley;
+    const b = this.bowler;
+    // the ball: out of the hood and down the rack, waiting at its end
     const hood = new THREE.Vector3(RETURN_X, RACK_Y + BALL_R * 0.7, HOOD_Z + 0.15);
     const end = new THREE.Vector3(RETURN_X, RACK_Y + BALL_R * 0.55, RACK_END_Z - 0.04);
-    if (tt < 0.3) {
-      a.ball.visible = false;
-    } else if (tt < 1.05) {
-      if (!a.ball.visible) this.sfx('pop', { volume: 0.6 });
-      // out of the hood and down the rack
-      const k = Phaser.Math.Easing.Quadratic.Out((tt - 0.3) / 0.75);
-      const p = hood.clone().lerp(end, k);
-      const prev = a.ball.position.clone();
-      this.setBall(p.x, p.y + Math.sin(Math.min(1, k * 4) * Math.PI) * 0.03, p.z, false);
-      const moved = p.distanceTo(prev);
-      if (moved > 0 && moved < 0.3) this.ballQ.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), moved / BALL_R));
-      if (tt + this.lastDt >= 1.05) this.sfx('clack', { volume: 0.5 });
-    } else if (tt < 1.7) {
-      // the bowler turns to the rack and picks it up
-      if (this.bowler.clip !== 'pick-up') {
-        const p = this.bowler.root.position;
-        this.bowler.face(Math.PI - Math.atan2(RETURN_X - p.x, RACK_END_Z - p.z)).play('pick-up', { fade: 0.12, speed: 1.2 });
+    if (this.ballMode !== 'hand') {
+      if (tt < 0.3) a.ball.visible = false;
+      else {
+        if (!a.ball.visible) this.sfx('pop', { volume: 0.6 });
+        const k = Phaser.Math.Easing.Quadratic.Out(Math.min(1, (tt - 0.3) / 0.75));
+        const p = hood.clone().lerp(end, k);
+        const prev = a.ball.visible ? a.ball.position.clone() : p.clone();
+        this.setBall(p.x, p.y + Math.sin(Math.min(1, k * 4) * Math.PI) * 0.03, p.z, false);
+        const moved = p.distanceTo(prev);
+        if (moved > 0 && moved < 0.3) this.ballQ.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), moved / BALL_R));
+        if (tt - 0.3 < 0.75 && tt - 0.3 + this.lastDt >= 0.75) this.sfx('clack', { volume: 0.5 });
+        this.ballMode = 'free';
       }
-      const k = Phaser.Math.Clamp((tt - 1.3) / 0.3, 0, 1);
-      const hand = this.handWorld();
-      const p = end.clone().lerp(hand, k * k);
-      this.setBall(p.x, p.y, p.z, false);
-    } else {
-      this.bowler.face(0).play('holding-right', { fade: 0.2 });
-      this.beginAim();
-      return;
     }
-    this.placeBowlerKeepX();
+    this.retT += dt;
+    switch (this.retStep) {
+      case 'turn':
+        // turn round towards the ball return (to the left)
+        if (this.turnTo(dt, -Math.PI * 0.85, 8) || this.retT > 0.6) { this.retStep = 'walk'; this.retT = 0; }
+        break;
+      case 'walk':
+        // back up the approach to the end of the rack
+        if (this.walkTo(dt, PICK.x, PICK.z)) { this.retStep = 'face'; this.retT = 0; }
+        break;
+      case 'face':
+        b.play('idle', { fade: 0.15 });
+        if ((this.turnTo(dt, -Math.PI / 2, 9) && tt > 1.1) || this.retT > 0.8) { this.retStep = 'pick'; this.retT = 0; b.stepLegs(0, 0); }
+        break;
+      case 'pick': {
+        // a bend from the hips, the right hand under the ball, and up with it
+        const k = this.retT;
+        const reach = smooth(0, 0.22, k) * (1 - smooth(0.42, 0.7, k));
+        b.torso.w = 1; b.torso.keep = 1; b.torso.yaw = 0;
+        b.torso.pitch = reach * 0.5;
+        b.armR.w = 1;
+        b.armR.twist = -Math.PI / 2;
+        b.armR.abd = -0.05 + reach * 0.05;
+        b.armR.swing = (35 + reach * 33) * DEG;
+        b.armL.w = 1;
+        b.armL.swing = (25 + reach * 30) * DEG;
+        b.armL.abd = -0.2;
+        b.armL.twist = -0.9;
+        b.headPitch = reach * 0.35;
+        b.legs.w = reach * 0.6; b.legs.front = 20 * DEG; b.legs.back = 18 * DEG; b.legs.cross = 0; b.legs.spread = 0;
+        if (k > 0.3 && this.ballMode !== 'hand') {
+          this.ballMode = 'hand';
+          this.sfx('clack', { volume: 0.4, rate: 1.2 });
+        }
+        if (k > 0.75) { this.retStep = 'stance'; this.retT = 0; }
+        break;
+      }
+      case 'stance': {
+        // carry it back to the stance (legs from walk, the right arm from holding-right, a masked
+        // layer), then turn to the lane and take the ball in front for the stance
+        if (!b.carrying) b.setCarry(true, 0.25);
+        const x = this.standX();
+        const p = b.root.position;
+        const near = 1 - smooth(0.12, 0.45, Math.hypot(x - p.x, this.stanceZ - p.z));
+        const k = Math.min(1, this.retT / 0.3);
+        this.blendStance(k);
+        b.armR.w = Math.max(near, 1 - smooth(0, 0.25, this.retT));
+        b.armL.w *= near;
+        if (this.walkTo(dt, x, this.stanceZ, WALK_V * 0.8) && this.turnTo(dt, 0, 8)) this.finishReturn();
+        break;
+      }
+      default: break;
+    }
     this.returnCam();
   }
 
-  /** Keeps the bowler where he stands while turning (the hand moves, not the feet). */
-  private placeBowlerKeepX(): void {
-    if (this.bowler.clip === 'pick-up') return;
-    this.placeBowler(STANCE_Z);
+  /** Blends the bowler's arms and torso into the stance (k 0 … 1). */
+  private blendStance(k: number): void {
+    const b = this.bowler;
+    const pose = approachPose(0);
+    const from = { swing: b.armR.swing, abd: b.armR.abd };
+    poseBowler(b, 0, pose);
+    b.armR.swing = from.swing + (pose.swing - from.swing) * k;
+    b.armR.abd = from.abd + (pose.abd - from.abd) * k;
+    b.armL.w = k;
+    b.legs.w = 0;
+    b.torso.keep = 0.3;
+  }
+
+  /** The bowler at the stance with the ball, ready (also when the walk back is skipped). */
+  private finishReturn(): void {
+    if (this.phase !== 'return') return;
+    const b = this.bowler;
+    this.bowlerX = this.standX();
+    this.placeBowler();
+    b.setCarry(false, 0.2);
+    b.face(0).play('idle', { fade: 0.2 });
+    b.stepLegs(0, 0);
+    poseBowler(b, 0);
+    b.legs.w = 0;
+    this.ballMode = 'hand';
+    this.retStep = 'done';
+    this.beginAim();
   }
 
   private beginAim(): void {
     this.phase = 'aim';
     this.phaseT = 0;
     this.camRate = 2.6;
-    this.kbStage = 'move';
+    this.stage = 'stand';
     this.guideKey = '';
-    this.updateSpinChip();
-    this.spinChip.setVisible(true);
+    this.liveHook = this.hook;
+    this.charging = false;
+    this.showAimUi(true);
+    this.updateAimUi();
     if (!this.hintShown) {
       this.hintShown = true;
       const touch = this.sys.game.device.input.touch;
-      this.hint.setText(touch ? t('hintTouch') : `${t('hintTouch')}\n${t('hintKeys')}`);
+      this.hint.setText(touch ? t('hintTouch') : t('hintKeys'));
     }
+    this.showTip();
+  }
+
+  /** Coaching: after a strike ball that missed the pocket, and before every spare. */
+  private showTip(): void {
+    this.pendingTip = null;
+    const fresh = this.sheet.freshRack();
+    let tip: Tip | null = null;
+    let lead = '';
+    if (fresh) {
+      tip = this.strikeTip;
+      this.strikeTip = null;
+      if (!tip || Number.isNaN(tip.miss) || Math.abs(tip.miss) < 0.75) { if (tip && !Number.isNaN(tip.miss)) this.tipChip.show(t('tipGood'), null); return; }
+      const m = Math.round(Math.abs(tip.miss) * 2) / 2;
+      lead = t((tip.miss > 0 ? 'tipMissL' : 'tipMissR') + (m <= 1 ? '1' : ''), { n: fmtBoard(m) });
+    } else {
+      // the spare: aim at the front pin still standing
+      const standing = this.sim.standing();
+      const ids = standing.map((s, i) => (s ? i : -1)).filter((i) => i >= 0);
+      if (!ids.length) return;
+      const front = Math.max(...ids.map((i) => SPOTS[i].z));
+      const row = ids.filter((i) => Math.abs(SPOTS[i].z - front) < 0.01);
+      const x = row.reduce((s, i) => s + SPOTS[i].x, 0) / row.length;
+      // a single pin is hit full in the face; a group is hit on its pocket side
+      const aimX = row.length > 1 ? x + Math.sign(this.liveHook || 1) * 0.06 : x;
+      tip = tipFor(this.simTune, this.stand, this.target, this.speed, this.liveHook, aimX, front + 0.02);
+      if (!tip) return;
+      lead = t('tipPin', { p: row.map((i) => i + 1).join('-') });
+    }
+    const move = tip.move !== 0 ? tip.move : tip.moveTarget;
+    const n = fmtBoard(Math.abs(move));
+    const one = Math.abs(move) <= 1;
+    const what = move === 0 ? t('tipKeep')
+      : tip.move !== 0 ? t(move > 0 ? (one ? 'tipMoveL1' : 'tipMoveL') : (one ? 'tipMoveR1' : 'tipMoveR'), { n })
+      : t(move > 0 ? (one ? 'tipTargetL1' : 'tipTargetL') : (one ? 'tipTargetR1' : 'tipTargetR'), { n });
+    const apply = move === 0 ? null : () => this.applyTip(tip!);
+    this.pendingTip = { stand: this.stand, target: this.target };
+    this.tipChip.show(`${lead}: ${what}`, apply);
+  }
+
+  private applyTip(tip: Tip): void {
+    if (!this.canAim()) return;
+    const [s, tg] = clampAim(this.stand + tip.move, this.target + tip.moveTarget);
+    this.stand = s;
+    this.target = tg;
+    this.tipChip.hide();
+    this.sfx('good', { volume: 0.4 });
+    this.updateAimUi();
   }
 
   private throwBall(r: Release): void {
@@ -637,17 +1069,22 @@ export class PlayScene extends ArcadeScene {
     r.hook = Phaser.Math.Clamp(r.hook, -1, 1);
     this.release = r;
     this.released = false;
+    this.speed = r.speed;
+    this.liveHook = r.hook;
     this.steps = 0;
     this.phase = 'approach';
     this.phaseT = 0;
+    this.throwT = 0;
+    this.gaitDone = 0;
     this.charging = false;
     this.hint.setText('');
     this.trail.clear();
-    this.aimDots.count = 0;
-    this.pathRibbon.geometry.setDrawRange(0, 0);
-    this.powerChip.setVisible(false);
-    this.spinChip.setVisible(false);
+    this.hideGuides();
+    this.showAimUi(false);
     this.standingBefore = this.sim.standing();
+    const fresh = this.standingBefore.every((s) => s);
+    this.lastThrow = { stand: this.stand, target: this.target, speed: r.speed, hook: r.hook, fresh };
+    if (fresh) this.strikeLine = { stand: this.stand, target: this.target };
     this.trackPts = [];
     this.track.geometry.setDrawRange(0, 0);
     (this.track.material as THREE.MeshBasicMaterial).opacity = 0.5;
@@ -655,12 +1092,17 @@ export class PlayScene extends ArcadeScene {
     this.firstHit = false;
     this.recording = [];
     this.timeScale = 1;
+    // the bowler stands so the ball leaves the hand over the release's x
+    this.bowlerX = r.x - this.relOff.x;
+    this.placeBowler();
+    this.bowler.face(0);
+    this.bowler.gaitPhase(PHASE0);
+    this.bowler.play('walk', { fade: 0.12, speed: 0 });
     // predict the outcome a few hundred steps per frame (slow motion and the crash's size)
     this.predictor = new LaneSim(this.simTune);
     this.predictor.restore(this.sim.snapshot());
     this.predictor.release(r);
     this.predicted = null;
-    this.bowler.walk(2.4);
   }
 
   private stepPredictor(): void {
@@ -676,74 +1118,102 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  private updateApproach(dt: number): void {
-    const tt = this.phaseT;
-    const r = this.release!;
-    const k = Math.min(1, tt / APPROACH_T);
-    // four steps that speed up, then the slide
-    const e = k * k * (2.2 - 1.2 * k);
-    const z = STANCE_Z + (SLIDE_Z - STANCE_Z) * e;
-    const v = (STANCE_Z - SLIDE_Z) * (2 * 2.2 * k - 3 * 1.2 * k * k) / APPROACH_T;
-    if (k < 0.82) this.bowler.walk(Math.max(1.2, v));
-    // footsteps on the approach (four steps, then the slide)
-    const stepN = Math.floor(e * 4.2);
-    if (stepN > this.steps && k < 0.85) { this.steps = stepN; this.sfx('step', { volume: 0.35 + stepN * 0.08 }); }
-    else if (this.bowler.clip !== 'interact-right') this.bowler.play('interact-right', { fade: 0.1, speed: 1.3 });
-    this.placeBowler(z, false);
-    if (!this.released) {
-      const hand = this.handWorld();
-      if (tt >= APPROACH_T + 0.05) {
-        // the ball meets the boards just past the foul line
-        this.released = true;
-        this.sim.release(r);
-        this.ballQ.identity();
-        this.phase = 'roll';
-        this.phaseT = 0;
-        this.acc = 0;
-        this.sfx('thud', { volume: 0.8 });
-        this.shakeAmp = Math.max(this.shakeAmp, 0.01);
-        this.hud.setRight(t('kmh', { n: Math.round(r.speed * 3.6) }));
-      } else if (k > 0.82) {
-        const f = Phaser.Math.Clamp((tt - APPROACH_T * 0.82) / (APPROACH_T * 0.18 + 0.05), 0, 1);
-        const p = hand.clone().lerp(new THREE.Vector3(r.x, BALL_R, -0.05), f * f);
-        this.setBall(p.x, p.y, p.z, false);
-      } else this.setBall(hand.x, hand.y, hand.z, false);
+  /** The bowler's throw timeline: the approach, the slide, the follow-through, standing up. */
+  private poseThrow(dt: number): void {
+    if (this.throwT < 0) return;
+    this.throwT += dt;
+    const b = this.bowler;
+    const tt = this.throwT;
+    const pose = approachPose(tt);
+    // the legs: the walk clip's phase from the ground the feet cover
+    const dg = pose.gait - this.gaitDone;
+    if (dg > 0) { b.walk(dg, { fade: 0.12 }); this.gaitDone = pose.gait; }
+    poseBowler(b, tt, pose);
+    // on the slide, the body drifts the last centimetres so the hand meets the release's board
+    if (this.release && !this.released && tt > RELEASE_T - 0.16 && Number.isFinite(this.handOffX)) {
+      const want = this.release.x - this.handOffX;
+      this.bowlerX += (want - this.bowlerX) * Math.min(1, this.lastDt * 14);
     }
-    // the camera follows the bowler down the approach
-    // the camera lags: the bowler walks away from it to the line
-    const cz = STANCE_Z + 2.25 + (SLIDE_Z + 2.8 - STANCE_Z - 2.25) * e;
-    this.goalPos.set(r.x * 0.7 + 0.3 - k * 0.2, 1.32 - k * 0.2, cz);
-    this.goalLook.set(r.x * 0.2 + 0.08, 0.0, -10);
+    this.placeBowler(this.stanceZ - pose.d);
+    // footsteps: the four plants of the walk clip's cycle
+    const phase = PHASE0 + pose.gait / Person.WALK_LOOP;
+    const stepN = Math.floor((phase - 0.2) / 0.5);
+    if (stepN > this.steps && tt < RELEASE_T) { this.steps = stepN; this.sfx('step', { volume: 0.3 + Math.min(4, stepN) * 0.08, rate: stepN >= 4 ? 0.8 : 1 }); }
+    // after the follow-through, the bowler stands up and watches the ball (a little body english)
+    if (tt > RISE_T && b.clip === 'walk') b.play('idle', { fade: 0.4 });
+    if (tt > RISE_T + 0.7) { this.throwT = -1; b.relax(); }
+  }
+
+  private updateApproach(): void {
+    const r = this.release!;
+    const k = Math.min(1, this.throwT / RELEASE_T);
+    const p = this.bowler.root.position;
+    // a three-quarter view from the right, behind: the legs, the swing, the ball and the lane ahead
+    this.goalPos.set(p.x + 2.75 - k * 0.3, 1.7 - k * 0.2, Math.min(5.0, p.z + 3.3 - k * 0.3));
+    this.goalLook.set(p.x - 0.2, 0.5 - k * 0.08, p.z - 1.2);
+    this.camRate = this.phaseT < 0.2 ? 5 : 7;
     this.stepPredictor();
-    void dt;
+    void r;
+  }
+
+  /** The ball leaves the hand (this frame's hand position) and flies to the boards. */
+  private letGo(): void {
+    if (this.released || !this.release) return;
+    this.released = true;
+    const from = this.bowler.ballAt(new THREE.Vector3());
+    const dz = Math.max(0.005, from.z - LAY_Z);
+    this.flight = { from, t: 0, dur: dz / this.release.speed };
+    this.releaseGap = [from.x - this.release.x, from.y - BALL_R, from.z - LAY_Z, this.flight.dur, this.throwT];
+    this.ballMode = 'flight';
+    this.sfx('wood', { volume: 0.25, rate: 1.4 });
+  }
+
+  /** The ball meets the boards: the simulation starts here. */
+  private landBall(over: number): void {
+    const r = this.release!;
+    this.sim.release(r);
+    this.ballMode = 'free';
+    this.flight = null;
+    this.phase = 'roll';
+    this.phaseT = 0;
+    this.acc = Math.max(0, over);
+    this.sfx('thud', { volume: 0.8 });
+    this.shakeAmp = Math.max(this.shakeAmp, 0.01);
+    this.hud.setRight(t('kmh', { n: Math.round(this.kmh(r.speed)) }));
   }
 
   private lastDt = 0;
-  private steps = 0;
 
   updateGame(_time: number, delta: number): void {
+    // tests freeze the game between their own steps (headless WebGL is slow)
+    if (this.frozen && !this.stepping) return;
     const dt = delta / 1000;
     this.lastDt = dt;
     this.phaseT += dt;
-    // Space / Enter skip the fly-in, the call-out, the replay and the reaction
-    if ((this.phase === 'intro' || this.phase === 'result' || this.phase === 'replay' || this.phase === 'react')
+    // Space / Enter skip the fly-in, the call-out, the replay, the reaction and the walk back
+    if ((this.phase === 'intro' || this.phase === 'result' || this.phase === 'replay' || this.phase === 'react' || this.phase === 'return')
       && (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) || Phaser.Input.Keyboard.JustDown(this.keys.ENTER))) this.skip();
+    this.poseThrow(dt);
     switch (this.phase) {
       case 'intro': this.updateIntro(); break;
-      case 'return': this.updateReturn(); break;
+      case 'return': this.updateReturn(dt); break;
       case 'aim': this.updateAim(dt); break;
-      case 'approach': this.updateApproach(dt); break;
+      case 'approach': this.updateApproach(); break;
       case 'roll': this.updateRoll(dt); break;
       case 'result': this.updateResult(); break;
       case 'replay': this.updateReplay(dt); break;
-      case 'react': this.updateReact(); break;
+      case 'react': this.updateReact(dt); break;
       case 'summary': this.updateSummary(); break;
       default: break;
     }
     if (this.sweepT >= 0) this.updateSweep(dt * this.sweepFast);
     if (this.phase !== 'replay') this.drawPins();
     this.bowler.update(dt);
-    for (const c of this.crowd) c.update(dt);
+    // the release: at the bottom of the forward swing, from where the hand is now
+    if (this.phase === 'approach' && !this.released && this.throwT >= RELEASE_T) this.letGo();
+    this.ballFollow(dt);
+    this.updateCrowd(dt);
+    this.updateSpinRing();
     this.fx.update(dt * (this.phase === 'roll' ? this.timeScale : 1));
     this.updateNeon(dt);
     this.updateCamera(dt);
@@ -761,17 +1231,19 @@ export class PlayScene extends ArcadeScene {
     this.camLook.copy(look.lerp(this.goalLook, Math.pow(e, 3)));
     this.goalPos.copy(this.camPos);
     this.goalLook.copy(this.camLook);
-    this.world.followSun(new THREE.Vector3(0, 0, e < 0.5 ? HEAD_Z : STANCE_Z));
+    this.world.followSun(new THREE.Vector3(0, 0, e < 0.5 ? HEAD_Z : this.stanceZ));
     this.holdFirstBall();
     if (this.phaseT > 2.5) this.endIntro();
   }
 
   /** The first ball starts in the bowler's hand (later ones come up the ball return). */
   private holdFirstBall(): void {
-    if (this.bowler.clip !== 'holding-right') this.bowler.face(0).play('holding-right', { fade: 0 });
-    this.placeBowler(STANCE_Z);
-    const hand = this.handWorld();
-    this.setBall(hand.x, hand.y, hand.z, false);
+    this.bowlerX = this.standX();
+    this.placeBowler();
+    this.bowler.face(0);
+    poseBowler(this.bowler, 0);
+    this.bowler.legs.w = 0;
+    this.ballMode = 'hand';
   }
 
   private endIntro(): void {
@@ -785,90 +1257,69 @@ export class PlayScene extends ArcadeScene {
 
   private updateAim(dt: number): void {
     const k = this.keys;
-    const fine = k.SHIFT.isDown ? 0.3 : 1;
-    const left = k.LEFT.isDown || k.A.isDown, right = k.RIGHT.isDown || k.D.isDown;
+    const anyKey = k.LEFT.isDown || k.RIGHT.isDown || k.UP.isDown || k.DOWN.isDown || k.A.isDown || k.D.isDown || k.SPACE.isDown || k.Z.isDown || k.X.isDown;
+    if (anyKey && !this.keysUsed) { this.keysUsed = true; this.updateAimUi(); }
     if (this.canAim() && !this.gesture) {
-      if (this.kbStage === 'move') {
-        if (left) this.ballX = Math.max(-X_MAX, this.ballX - dt * 0.45 * fine);
-        if (right) this.ballX = Math.min(X_MAX, this.ballX + dt * 0.45 * fine);
-        if (Phaser.Input.Keyboard.JustDown(k.SPACE) || Phaser.Input.Keyboard.JustDown(k.ENTER) || Phaser.Input.Keyboard.JustDown(k.UP) || Phaser.Input.Keyboard.JustDown(k.W)) {
-          this.kbStage = 'aim';
-          this.hint.setText(t('hintAim'));
-          this.sfx('tick', { volume: 0.4 });
-          this.keys.SPACE.reset();
-        }
-      } else {
-        if (left) this.angle = Math.max(-ANGLE_MAX, this.angle - dt * 0.035 * fine);
-        if (right) this.angle = Math.min(ANGLE_MAX, this.angle + dt * 0.035 * fine);
-        if (Phaser.Input.Keyboard.JustDown(k.DOWN) || Phaser.Input.Keyboard.JustDown(k.S)) {
-          this.kbStage = 'move';
-          this.charging = false;
-          this.powerChip.setVisible(false);
-          this.hint.setText(t('hintKeys'));
-        }
-        const hold = k.SPACE.isDown || k.ENTER.isDown;
-        if (hold && !this.charging && (Phaser.Input.Keyboard.JustDown(k.SPACE) || Phaser.Input.Keyboard.JustDown(k.ENTER))) {
-          this.charging = true;
-          this.chargeT = 0;
-          this.powerChip.setVisible(true);
-        }
-        if (this.charging) {
-          this.chargeT += dt;
-          // up in 0.95 s, then back down
-          const c = (this.chargeT / 0.95) % 2;
-          this.power = c < 1 ? c : 2 - c;
-          this.drawPower();
-          if (!hold) {
-            this.charging = false;
-            this.throwBall({ x: this.ballX, angle: this.angle, speed: SPEED_MIN + this.power * (SPEED_MAX - SPEED_MIN), hook: this.hook });
-            return;
-          }
+      const fine = k.SHIFT.isDown;
+      const step = fine ? 0.5 : 1;
+      const left = k.LEFT.isDown || k.A.isDown, right = k.RIGHT.isDown || k.D.isDown;
+      const press = Phaser.Input.Keyboard.JustDown(k.LEFT) || Phaser.Input.Keyboard.JustDown(k.A) || Phaser.Input.Keyboard.JustDown(k.RIGHT) || Phaser.Input.Keyboard.JustDown(k.D);
+      // a press moves one board (half with Shift); held, it repeats
+      if (left || right) {
+        this.keyRepeat = press ? -0.3 : this.keyRepeat + dt;
+        if (press || this.keyRepeat > 0.075) {
+          if (!press) this.keyRepeat = 0;
+          const d = (left ? 1 : -1) * step;
+          if (this.stage === 'stand') this.moveAim('stand', this.stand + d, step);
+          else this.moveAim('target', this.target + d, step);
         }
       }
-      // spin: Z hooks left, X hooks right
-      if (k.Z.isDown) { this.hook = Math.min(1, this.hook + dt * 0.9); this.updateSpinChip(); }
-      if (k.X.isDown) { this.hook = Math.max(-1, this.hook - dt * 0.9); this.updateSpinChip(); }
+      if (Phaser.Input.Keyboard.JustDown(k.UP) || Phaser.Input.Keyboard.JustDown(k.W)) { this.stage = 'target'; this.sfx('tick', { volume: 0.4 }); this.updateAimUi(); }
+      if (Phaser.Input.Keyboard.JustDown(k.DOWN) || Phaser.Input.Keyboard.JustDown(k.S)) { this.stage = 'stand'; this.sfx('tick', { volume: 0.4 }); this.updateAimUi(); }
+      if (Phaser.Input.Keyboard.JustDown(k.V)) this.toggleLaneView();
+      if (Phaser.Input.Keyboard.JustDown(k.H) && this.pendingTip) this.tipChip.chip.emit('pointerdown');
+      // Space: hold for the speed meter, let go to bowl
+      const hold = k.SPACE.isDown || k.ENTER.isDown;
+      if (hold && !this.charging && (Phaser.Input.Keyboard.JustDown(k.SPACE) || Phaser.Input.Keyboard.JustDown(k.ENTER))) {
+        this.charging = true;
+        this.chargeT = 0;
+        this.hint.setText('');
+      }
+      if (this.charging) {
+        this.chargeT += dt;
+        // up in 0.95 s, then back down
+        const c = (this.chargeT / 0.95) % 2;
+        this.power = c < 1 ? c : 2 - c;
+        this.speed = SPEED_MIN + this.power * (SPEED_MAX - SPEED_MIN);
+        this.updateAimUi();
+        if (!hold) {
+          this.charging = false;
+          this.throwBall(this.currentRelease(this.speed, this.hook));
+          return;
+        }
+      }
+      // spin: Z hooks left, X hooks right (or backs up)
+      if (k.Z.isDown || k.X.isDown) {
+        this.hook = Phaser.Math.Clamp(this.hook + (k.Z.isDown ? 1 : -1) * dt * 0.9, -1, 1);
+        if (Math.abs(this.hook) < 0.03 && Math.abs(this.liveHook) >= 0.03) this.hook = 0;
+        this.liveHook = this.hook;
+        this.updateAimUi();
+      }
     }
-    if (this.gesture?.mode !== 'throw' && !this.gesture) this.trail.clear();
-    this.placeBowler(STANCE_Z);
-    const hand = this.handWorld();
-    this.setBall(hand.x, hand.y, hand.z, false);
+    if (!this.gesture) this.trail.clear();
+    // the bowler shuffles sideways to the new stand
+    const b = this.bowler;
+    const want = this.standX();
+    const dx = want - this.bowlerX;
+    const mv = Phaser.Math.Clamp(dx, -dt * 1.6, dt * 1.6);
+    this.bowlerX += mv;
+    b.stepLegs(Math.abs(mv) * 1.4, Math.abs(dx) > 0.004 ? 1 : 0, 0.35);
+    this.placeBowler();
+    poseBowler(b, 0);
+    b.legs.w = 0;
     this.stanceCam();
     if (this.phaseT > 1.2) this.camRate = 4;
     this.drawGuides();
-  }
-
-  /** The aim chevrons along the release line, and in Easy the ball's whole path. */
-  private drawGuides(): void {
-    const showing = this.kbStage === 'aim' || this.gesture?.mode === 'throw' || this.tune.preview;
-    const speed = SPEED_MIN + Math.max(0.55, this.power) * (SPEED_MAX - SPEED_MIN);
-    const key = `${this.ballX.toFixed(3)}:${this.angle.toFixed(4)}:${this.hook.toFixed(2)}:${showing}:${this.tune.preview ? speed.toFixed(1) : ''}`;
-    if (key === this.guideKey) return;
-    this.guideKey = key;
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3();
-    // chevrons from the foul line to past the arrows
-    const n = showing ? 14 : 0;
-    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -this.angle);
-    for (let i = 0; i < n; i++) {
-      const d = 0.6 + i * 0.42;
-      const k = 1 - i / n;
-      s.setScalar(0.8 + k * 0.6);
-      m.compose(new THREE.Vector3(this.ballX + Math.sin(this.angle) * d, 0.004, -Math.cos(this.angle) * d), q, s);
-      this.aimDots.setMatrixAt(i, m);
-    }
-    this.aimDots.count = n;
-    this.aimDots.instanceMatrix.needsUpdate = true;
-    // Easy: the path the ball will take (no pins), as a glowing ribbon to the pins
-    if (this.tune.preview && showing) {
-      const pts = ballPath(this.simTune, { x: this.ballX, angle: this.angle, speed, hook: this.hook }, 0.25)
-        .filter((p) => p.z < -0.2 && p.z > HEAD_Z + 0.15);
-      const gutter = pts.findIndex((p) => p.gutter);
-      const lane = (gutter >= 0 ? pts.slice(0, gutter + 1) : pts).map((p) => new THREE.Vector2(p.x, p.z));
-      this.layRibbon(this.pathRibbon, lane, 0.018, 0, 0.004);
-      const end = pts[pts.length - 1];
-      const good = gutter < 0 && end && Math.abs(Math.abs(end.x) - 0.064) < 0.05;
-      (this.pathRibbon.material as THREE.MeshBasicMaterial).color.setHex(gutter >= 0 ? 0xff5a5a : good ? 0x7dff9a : 0xffd23f);
-    } else this.pathRibbon.geometry.setDrawRange(0, 0);
   }
 
   // ------------------------------------------------------------------ the roll
@@ -900,23 +1351,40 @@ export class PlayScene extends ArcadeScene {
     if (b.mode === 'gone' || b.mode === 'pit') this.alley.ball.visible = b.y > -0.02;
     this.copyPinsFromSim();
     this.onEvents(ev);
-    // camera: chase the ball from above and behind (the track shows the hook), then stop at the
-    // deck for the close-up as the ball rolls in
+    // camera: from behind the bowler's slide, up and after the ball (the track shows the hook),
+    // then the deck close-up as the ball rolls in
     const f = Phaser.Math.Clamp((HEAD_Z + 7.5 - b.z) / 5, 0, 1);
     const ff = f * f * (3 - 2 * f);
     this.deckCam(false);
     if (slow) this.goalPos.set(0.3, 0.5, HEAD_Z + 1.85);
     const deckPos = this.goalPos.clone(), deckLook = this.goalLook.clone();
     const chaseZ = Math.max(b.z + 3.2 - ff * 0.6, deckPos.z);
-    this.goalPos.set(b.x * 0.4 * (1 - ff) + deckPos.x * ff, 1.15 + (deckPos.y - 1.15) * ff, slow ? deckPos.z : chaseZ);
+    // while the ball is still near the line the camera keeps clear of the bowler, out to the right and up
+    const clear = smooth(-7, -2, b.z);
+    this.goalPos.set(b.x * 0.4 * (1 - ff) + deckPos.x * ff + clear * 1.1, 1.15 + (deckPos.y - 1.15) * ff + clear * 0.35, slow ? deckPos.z : chaseZ);
     this.goalLook.set(b.x * 0.3 * (1 - ff) + deckLook.x * ff, 0.0 + deckLook.y * ff, (b.z - 5) * (1 - ff) + deckLook.z * ff);
-    this.camRate = this.phaseT < 0.4 ? 3 : 6;
+    this.camRate = this.phaseT < 0.5 ? 2.2 + this.phaseT * 6 : 6;
     this.world.followSun(new THREE.Vector3(b.x, 0, Math.max(b.z, HEAD_Z - 0.4)));
-    if (this.bowler.clip === 'interact-right' && this.phaseT > 0.9) this.bowler.play('idle', { fade: 0.4 });
     if (this.sim.done() || this.phaseT > 16) this.onSettled();
   }
 
-  /** A flat ribbon along points on the boards (the ball's track, Easy's predicted path). */
+  /** The spin ring: square to the ball's spin axis while it rolls on the lane (skid → hook → roll). */
+  private updateSpinRing(): void {
+    const b = this.sim.ball;
+    const ring = this.spinRing;
+    const on = this.phase === 'roll' && b.mode === 'lane' && this.alley.ball.visible;
+    ring.visible = on;
+    if (!on) return;
+    const w = new THREE.Vector3(b.wx, b.wy, b.wz);
+    if (w.lengthSq() < 1e-6) { ring.visible = false; return; }
+    ring.position.copy(this.alley.ball.position);
+    ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), w.normalize());
+    // brighter while the ball still skids (side rotation), fading as it rolls
+    const side = Math.min(1, Math.abs(b.wz) / 12);
+    (ring.material as THREE.MeshBasicMaterial).opacity = 0.35 + side * 0.55;
+  }
+
+  /** A flat ribbon along points on the boards (the ball's track, the aim line, the predicted path). */
   private makeRibbon(color: number, opacity: number): THREE.Mesh {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRACK_MAX * 2 * 3), 3));
@@ -1011,6 +1479,9 @@ export class PlayScene extends ArcadeScene {
     else if (down === 0) call = 'miss';
     this.lastCall = call;
     this.leftSplit = call === 'split';
+    // coaching for the next strike ball: how far this one missed the pocket and the move to fix it
+    const lt = this.lastThrow;
+    if (wasFresh && lt) this.strikeTip = call === 'strike' ? null : tipFor({ ...this.simTune }, lt.stand, lt.target, lt.speed, lt.hook);
     this.showCall(call, down, standing.filter(Boolean).length);
     this.rack.update(standing, call === 'split');
     this.tweens.add({ targets: this.rackChip, scale: { from: 1.15, to: 1 }, duration: 300, ease: 'Back.easeOut' });
@@ -1149,8 +1620,7 @@ export class PlayScene extends ArcadeScene {
     this.replayTag?.destroy();
     this.replayTag = null;
     this.copyPinsFromSim();
-    this.alley.ball.visible = false;
-    this.alley.mirrorBall.visible = false;
+    this.hideBall();
     this.phase = 'result';
     this.lastCall = 'strike';
     this.beginReact();
@@ -1163,9 +1633,14 @@ export class PlayScene extends ArcadeScene {
     this.phaseT = 0;
     const good = this.lastCall === 'strike' || this.lastCall === 'spare' || this.lastCall === 'splitConverted';
     const bw = this.bowler;
+    this.throwT = -1;
+    bw.relax();
     bw.face(0).play(this.lastCall === 'strike' ? 'jump' : good ? 'emote-yes' : 'emote-no', { fade: 0.15, restart: true });
     this.crowd.forEach((c, i) => {
-      c.face(i === 2 ? 0.5 : i === 0 ? 0.2 : -0.25);
+      const life = this.crowdLife[i];
+      life.cheer = 2.2 + i * 0.15;
+      life.yaw = i === 2 ? 0.5 : i === 0 ? 0.2 : -0.25;
+      c.face(life.yaw);
       c.play(good ? 'emote-yes' : 'emote-no', { fade: 0.2 + i * 0.1, restart: true });
     });
     const p = bw.root.position;
@@ -1175,26 +1650,80 @@ export class PlayScene extends ArcadeScene {
     this.goalLook.copy(this.camLook);
     this.camRate = 1.5;
     this.world.followSun(p.clone());
-    this.alley.ball.visible = false;
-    this.alley.mirrorBall.visible = false;
+    this.hideBall();
   }
 
-  private updateReact(): void {
+  private updateReact(dt: number): void {
     const bw = this.bowler;
+    const tt = this.phaseT;
     if (this.lastCall === 'strike') {
-      // hops between cheers
-      const cyc = this.phaseT % 1.1;
-      if (cyc < 0.42) { bw.lift = Math.sin((cyc / 0.42) * Math.PI) * 0.3; bw.play('jump', { fade: 0.08 }); }
-      else { bw.lift = 0; bw.play('emote-yes', { fade: 0.12 }); }
+      // hops between cheers, landing on bent legs; stepping on the spot between
+      const cyc = tt % 1.1;
+      if (cyc < 0.42) {
+        bw.ground = true;
+        bw.lift = Math.sin((cyc / 0.42) * Math.PI) * 0.3;
+        bw.play('jump', { fade: 0.08 });
+        bw.stepLegs(0, 0);
+      } else {
+        bw.lift = 0;
+        bw.play('emote-yes', { fade: 0.12 });
+        bw.stepLegs(dt * 1.5, 1, 0.45);
+      }
+    } else if (this.lastCall === 'spare' || this.lastCall === 'splitConverted') {
+      // a little dance on the spot
+      bw.stepLegs(dt * 1.3, 1, 0.4);
+    } else {
+      // a step back and a stamp of the foot, shaking the head
+      bw.stepLegs(dt * (tt < 0.7 ? 0.9 : 0.25), 1, 0.4);
+      bw.headPitch = Math.sin(tt * 3) * 0.08 + 0.12;
     }
-    if (this.phaseT > 1.5) this.afterReact();
+    if (tt > 1.5) this.afterReact();
   }
 
   private afterReact(): void {
     if (this.phase !== 'react') return;
     this.bowler.lift = 0;
+    this.bowler.stepLegs(0, 0);
+    this.bowler.relax();
     this.crowd.forEach((c) => c.play('idle', { fade: 0.3 }));
     this.next();
+  }
+
+  /** The people around: idling with life (weight shifts, a look at the ball), cheering with their feet. */
+  private updateCrowd(dt: number): void {
+    const ball = this.alley.ball;
+    this.crowd.forEach((c, i) => {
+      const life = this.crowdLife[i];
+      life.t += dt;
+      if (life.cheer > 0) {
+        life.cheer -= dt;
+        // bounce on the spot while cheering (or shuffle when groaning)
+        c.stepLegs(dt * (c.clip === 'emote-yes' ? 1.4 : 0.6), 1, 0.4);
+        c.headYaw = 0;
+        if (life.cheer <= 0) { c.stepLegs(0, 0); c.face(life.base); c.play('idle', { fade: 0.4, at: Math.random() }); }
+        return;
+      }
+      // a weight shift every few seconds: two small steps, turning a little
+      if (life.t > 3.2 + i * 1.3) {
+        life.t = 0;
+        life.shift = 0.7;
+        life.yaw = life.base + (Math.random() - 0.5) * 0.5;
+      }
+      if (life.shift > 0) {
+        life.shift -= dt;
+        const turn = angleTo(c.yaw, life.yaw);
+        c.face(c.yaw + Phaser.Math.Clamp(turn, -dt * 1.5, dt * 1.5));
+        c.stepLegs(dt * 0.55, life.shift > 0.05 ? 1 : 0, 0.35);
+      }
+      // follow the ball with the head while it rolls
+      let look = 0;
+      if (this.phase === 'roll' && ball.visible) {
+        const p = c.root.position;
+        const want = Math.atan2(ball.position.x - p.x, -(ball.position.z - p.z));
+        look = Phaser.Math.Clamp(angleTo(c.yaw, want), -0.9, 0.9);
+      }
+      c.headYaw += (-look - c.headYaw) * Math.min(1, dt * 4);
+    });
   }
 
   /** On to the next ball (or the summary). */
@@ -1205,8 +1734,7 @@ export class PlayScene extends ArcadeScene {
       this.phaseT = 0;
       this.deckCam(true);
       this.camRate = 2;
-      this.alley.ball.visible = false;
-      this.alley.mirrorBall.visible = false;
+      this.hideBall();
       return;
     }
     this.beginReturn();
@@ -1293,6 +1821,8 @@ export class PlayScene extends ArcadeScene {
       this.copyPinsFromSim();
       this.pinVis.forEach((v, i) => (v.up = this.sim.pins[i].live));
       this.rack.update(this.sim.standing(), this.leftSplit && !fresh);
+      // the spare tip needs the pins the sweep left
+      if (this.phase === 'aim') this.showTip();
     }
   }
 
@@ -1335,7 +1865,10 @@ export class PlayScene extends ArcadeScene {
       cam.position.y += (Math.random() - 0.5) * this.shakeAmp * 2;
     }
     cam.lookAt(this.camLook);
-    if (this.phase === 'aim' || this.phase === 'return' || this.phase === 'approach') this.world.followSun(new THREE.Vector3(this.ballX, 0, STANCE_Z - 1.2));
+    if (this.phase === 'aim' || this.phase === 'return' || this.phase === 'approach') {
+      const p = this.bowler.root.position;
+      this.world.followSun(new THREE.Vector3(p.x * 0.6, 0, Math.min(p.z, this.stanceZ) - 1.2));
+    }
   }
 
   private updateRollSound(): void {
@@ -1351,36 +1884,90 @@ export class PlayScene extends ArcadeScene {
 
   // ------------------------------------------------------------------ test hooks
 
-  /** Test hook: bowl at once (from the aim). */
-  testThrow(x: number, angle: number, speed: number, hook: number): boolean {
+  /** Test hook: get to the aim at once (skips the fly-in and the walk back). */
+  testAim(): boolean {
     if (this.phase === 'intro') this.endIntro();
-    if (this.phase === 'return') { this.bowler.play('holding-right', { fade: 0 }); this.beginAim(); }
-    if (!this.canAim()) return false;
-    this.ballX = x;
-    this.angle = angle;
-    this.hook = hook;
+    if (this.phase === 'return') this.finishReturn();
+    if (this.phase === 'aim' && !this.sweepDone) { this.updateSweep(9); }
+    return this.canAim();
+  }
+
+  /** Test hook: bowl at once with an exact release (x, angle). */
+  testThrow(x: number, angle: number, speed: number, hook: number): boolean {
+    if (!this.testAim()) return false;
+    this.stand = Phaser.Math.Clamp(xBoard(x), STAND_MIN, STAND_MAX);
+    this.target = targetFor(this.stand, angle);
+    this.hook = this.liveHook = hook;
+    this.bowlerX = this.standX();
     this.throwBall({ x, angle, speed, hook });
     return true;
   }
 
-  /** Test hook: the bot's line to the pocket from x (offset moves the target). */
-  testBot(x = 0.25, speed = 8, hook = 0.6, offset = 0): boolean {
-    const a = aimFor(this.simTune, x, speed, hook, 0.064 * Math.sign(hook || 1) + offset);
-    return this.testThrow(x, a, speed, hook);
+  /** Test hook: set the line (stand board → target board), spin and speed; bowl when `go`. */
+  testLine(stand: number, target: number, hook: number, speed: number, go = false): boolean {
+    if (!this.testAim()) return false;
+    [this.stand, this.target] = clampAim(stand, target);
+    this.hook = this.liveHook = hook;
+    this.speed = speed;
+    this.bowlerX = this.standX();
+    this.guideKey = '';
+    this.updateAimUi();
+    if (go) this.throwBall(this.currentRelease(speed, hook));
+    return true;
+  }
+
+  /** Test hook: the bot's line to the pocket from a stand board (offset in m moves the target at the pins). */
+  testBot(stand = 10, speed = 8, hook = 0.6, offset = 0): boolean {
+    const tg = aimBoards(this.simTune, stand, speed, hook, POCKET_X * Math.sign(hook || 1) + offset);
+    return this.testLine(stand, tg, hook, speed, true);
   }
 
   /** Test hook: run the game for `sec` seconds of game time without rendering each step. */
-  testStep(sec: number): void {
-    const n = Math.ceil(sec / 0.05);
-    for (let i = 0; i < n && !this.isOver; i++) this.updateGame(0, 50);
+  testStep(sec: number, step = 0.05): void {
+    const n = Math.ceil(sec / step - 1e-6);
+    this.stepping = true;
+    try {
+      for (let i = 0; i < n && !this.isOver; i++) this.updateGame(0, step * 1000);
+    } finally {
+      this.stepping = false;
+    }
+  }
+
+  /** Test hook: freeze the game between test steps (true) or let it run (false). */
+  testFreeze(on: boolean): void {
+    this.frozen = on;
+  }
+  private frozen = false;
+  private stepping = false;
+
+  /** Test hook: world positions of the bowler's joints, the ball and the measured release offset. */
+  testBones(): Record<string, number[]> {
+    const out: Record<string, number[]> = {};
+    for (const [n, b] of this.bowler.bones) if (['root', 'torso', 'head', 'arm-left', 'arm-right', 'leg-left', 'leg-right'].includes(n)) out[n] = b.getWorldPosition(new THREE.Vector3()).toArray().map((v) => +v.toFixed(3));
+    out.fist = this.bowler.fistAt(new THREE.Vector3()).toArray().map((v) => +v.toFixed(3));
+    out.ball = this.bowler.ballAt(new THREE.Vector3()).toArray().map((v) => +v.toFixed(3));
+    out.rootPos = this.bowler.root.position.toArray().map((v) => +v.toFixed(3));
+    out.relOff = this.relOff.toArray().map((v) => +v.toFixed(3));
+    out.stanceZ = [this.stanceZ];
+    return out;
   }
 
   /** Test hook: the state. */
-  testState(): { phase: Phase; frame: number; ball: number; total: number; standing: boolean[]; marks: string[][]; ballZ: number; sweep: boolean; call: Call } {
+  testState(): { phase: Phase; frame: number; ball: number; total: number; standing: boolean[]; marks: string[][]; ballZ: number; sweep: boolean; call: Call; stand: number; target: number; hook: number; throwT: number } {
     return {
       phase: this.phase, frame: this.sheet.frame, ball: this.sheet.ball, total: this.sheet.total(), standing: this.sim.standing(),
       marks: Array.from({ length: FRAMES }, (_, f) => this.sheet.marks(f)), ballZ: this.sim.ball.z, sweep: this.sweepT >= 0, call: this.lastCall,
+      stand: this.stand, target: this.target, hook: this.liveHook, throwT: this.throwT,
     };
+  }
+
+  /** Test hook: the hand and the ball now (world), for the grip and release checks. */
+  testGrip(): { fist: number[]; ball: number[]; gap: number; mode: BallMode; sim: number[]; throwT: number; release: number[] } {
+    const f = this.bowler.fistAt(new THREE.Vector3());
+    const b = this.alley.ball.position;
+    const g = this.bowler.ballAt(new THREE.Vector3());
+    const s = this.sim.ball;
+    return { fist: f.toArray(), ball: b.toArray(), gap: g.distanceTo(f), mode: this.ballMode, sim: [s.x, s.y, s.z], throwT: this.throwT, release: this.releaseGap };
   }
 
   /** Test hook: fill the card with balls (pins per ball) and skip to the next ball. */
@@ -1410,3 +1997,4 @@ export class PlayScene extends ArcadeScene {
     this.camLook.copy(this.goalLook);
   }
 }
+
