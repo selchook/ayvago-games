@@ -11,6 +11,8 @@ export interface Island {
   r: number;
   root: THREE.Group;
   fort?: Fort;
+  /** A bare rock (no beach): drawn grey on the sea chart. */
+  rock?: boolean;
 }
 
 export interface Fort {
@@ -155,7 +157,7 @@ export class Archipelago {
       root.rotation.y = rand() * 6;
       // the root turns, the foam stays a ring anyway
       scene.add(root);
-      this.islands.push({ x, z, r: r * (rock ? 1 : 1.06), root });
+      this.islands.push({ x, z, r: r * (rock ? 1 : 1.06), root, rock });
     }
     // a wreck on a reef for flavour
     const far = this.islands.filter((i) => i !== this.home && Math.hypot(i.x, i.z) > 60);
