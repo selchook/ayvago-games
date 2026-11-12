@@ -377,6 +377,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'crystal-keep',
+    title: { en: 'Crystal Keep', tr: 'Kristal Kale' },
+    description: {
+      en: 'Defend the Crystal Keep from zombie hordes and UFOs! Build ballistas, cannons, catapults and turrets along the path, upgrade them through three levels or sell them. Fast runners, armoured brutes, flying UFOs, the Giant Zombie and the Mothership come in waves. Three maps with 12–15 waves each: earn stars for the lives you keep, and call waves early for bonus gold.',
+      tr: "Kristal Kale'yi zombi sürülerine ve UFO'lara karşı koru! Yolun kenarına balista, top, mancınık ve taret kur; kulelerini üç seviyeye kadar geliştir, gerekirse sat. Hızlı koşucular, zırhlı askerler, uçan UFO'lar, Dev Zombi ve Ana Gemi dalga dalga geliyor. Üç harita, her birinde 12–15 dalga: kalan canına göre yıldız topla, sonraki dalgayı erken çağırıp altın kazan.",
+    },
+    category: 'strategy',
+    categories: ['strategy', 'action'],
+    tags: ['crystal', 'keep', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-11',
+  }),
+  arcadeGame({
     slug: 'dots-and-boxes',
     title: { en: 'Dots and Boxes', tr: 'Kutu Kapmaca' },
     description: {

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "crystalkeep",
+  "title": {
+    "en": "Crystal Keep",
+    "tr": "Kristal Kale"
+  },
+  "description": {
+    "en": "Defend the Crystal Keep from zombie hordes and UFOs! Build ballistas, cannons, catapults and turrets along the path, upgrade them through three levels or sell them. Fast runners, armoured brutes, flying UFOs, the Giant Zombie and the Mothership come in waves. Three maps with 12–15 waves each: earn stars for the lives you keep, and call waves early for bonus gold.",
+    "tr": "Kristal Kale'yi zombi sürülerine ve UFO'lara karşı koru! Yolun kenarına balista, top, mancınık ve taret kur; kulelerini üç seviyeye kadar geliştir, gerekirse sat. Hızlı koşucular, zırhlı askerler, uçan UFO'lar, Dev Zombi ve Ana Gemi dalga dalga geliyor. Üç harita, her birinde 12–15 dalga: kalan canına göre yıldız topla, sonraki dalgayı erken çağırıp altın kazan."
+  },
+  "category": "strategy",
+  "categories": [
+    "strategy",
+    "action"
+  ],
+  "tags": [
+    "crystal",
+    "keep",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/crystal-keep/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/crystal-keep/ayvago/icon-512.png",
+    "cover": "/games/crystal-keep/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/crystal-keep/ayvago/screenshot.jpg"
+  },
+  "version": "1.0.0"
+}

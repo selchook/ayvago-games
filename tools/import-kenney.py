@@ -38,6 +38,9 @@ PACKS = {
     'kenney-racing-kit-early-access/3D/vehicles-racing': 'racing-kit-ea',
     # Pirate Kit 2.1 (not in the ETdoFresh mirror; any checkout with the zip's layout works)
     'kenney_pirate-kit': 'pirate-kit',
+    # Tower Defense Kit 2.0 (jam-ready-assets mirror, Git LFS; laid out as the zip:
+    # kenney_tower-defense-kit/License.txt + Models/GLB format/)
+    'kenney_tower-defense-kit': 'tower-defense-kit',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -48,6 +51,22 @@ PICK = {
         'rocks-a', 'rocks-b', 'rocks-c', 'rocks-sand-a', 'rocks-sand-b', 'rocks-sand-c',
         'tower-complete-small', 'tower-watch', 'castle-wall', 'castle-gate',
         'structure', 'structure-roof', 'structure-platform-dock', 'flag-pirate-high',
+    },
+    # Crystal Keep: the tiles, towers, weapons, ammo and UFOs it loads (games/crystal-keep/kit.ts KIT_MODELS)
+    'tower-defense-kit': {
+        'tile', 'tile-straight', 'tile-corner-round', 'tile-end-round', 'tile-spawn-end-round', 'tile-split',
+        'tile-tree', 'tile-tree-double', 'tile-tree-quad', 'tile-rock', 'tile-crystal', 'tile-hill',
+        'tile-river-straight', 'tile-river-bridge', 'snow-tile', 'snow-tile-straight',
+        'snow-tile-corner-round', 'snow-tile-end-round', 'snow-tile-spawn-end-round', 'snow-tile-split',
+        'snow-tile-tree', 'snow-tile-tree-double', 'snow-tile-tree-quad', 'snow-tile-rock',
+        'snow-tile-crystal', 'snow-tile-hill', 'detail-tree', 'detail-tree-large', 'detail-rocks',
+        'detail-crystal', 'detail-crystal-large', 'snow-detail-tree', 'snow-detail-tree-large',
+        'snow-detail-rocks', 'snow-detail-crystal', 'tower-round-bottom-a', 'tower-round-bottom-c',
+        'tower-round-middle-a', 'tower-round-middle-c', 'tower-round-top-b', 'tower-round-crystals',
+        'tower-square-bottom-a', 'tower-square-bottom-b', 'tower-square-bottom-c', 'tower-square-middle-a',
+        'tower-square-middle-b', 'tower-square-top-a', 'weapon-ballista', 'weapon-cannon', 'weapon-catapult',
+        'weapon-turret', 'weapon-ammo-arrow', 'weapon-ammo-cannonball', 'weapon-ammo-boulder',
+        'weapon-ammo-bullet', 'enemy-ufo-a', 'enemy-ufo-b-weapon', 'enemy-ufo-d-weapon', 'selection-a',
     },
 }
 # Kits imported file by file (paths relative to the pack root): only what the games load.
