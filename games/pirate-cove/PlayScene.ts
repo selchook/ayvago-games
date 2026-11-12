@@ -10,6 +10,8 @@ import { Ship, fwd, starboard } from './ship';
 import { Archipelago, MAP_R, BERTH, type Fort, type Island } from './islands';
 import { Ambience } from './sounds';
 import { WAVES, FOES, tuning, waveBonus, TUNING, type FoeKind, type FoeStats, type WaveDef } from './waves';
+import { Minimap, viewQuad, type MapState } from './minimap';
+import { CannonSfx } from './cannon-sfx';
 
 // ---------------------------------------------------------------- constants
 
@@ -94,6 +96,7 @@ export class PlayScene extends ArcadeScene {
   private lootModels: Record<LootKind, THREE.Object3D> = {} as Record<LootKind, THREE.Object3D>;
   private seaSound: Ambience | null = null;
   private windSound: Ambience | null = null;
+  private guns!: CannonSfx;
 
   // the player
   private player!: Ship;
@@ -168,6 +171,9 @@ export class PlayScene extends ArcadeScene {
   private card: Phaser.GameObjects.Container | null = null;
   private padIcons: Phaser.GameObjects.Graphics | null = null;
   private goalKey = '';
+  minimap!: Minimap;
+  private mapIslands: MapState['islands'] = [];
+  private hintBig: boolean | null = null;
 
   // tests
   private auto = false;
@@ -256,7 +262,7 @@ export class PlayScene extends ArcadeScene {
 
     // input: arrows steer and set the sails, A/Z fire port, D/X fire starboard, Space either side
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys('LEFT,RIGHT,UP,DOWN,A,Z,D,X,SPACE,ENTER,W,S') as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys('LEFT,RIGHT,UP,DOWN,A,Z,D,X,SPACE,ENTER,W,S,M') as Record<string, Phaser.Input.Keyboard.Key>;
     const { width, height } = this.scale;
     this.steering = new CarSteering(this, {
       touch: touchScreen(this),
@@ -283,9 +289,23 @@ export class PlayScene extends ArcadeScene {
     this.rings = this.add.graphics().setDepth(9450).setScrollFactor(0);
     this.hint = txt(this, width / 2, 238, '', { size: 25, color: '#ffffff', strokeThickness: 6, wrap: 620 }).setDepth(9000).setScrollFactor(0).setAlpha(0);
 
+    // the sea chart (top right, under the gun chip); it hides under the pause and result screens
+    this.mapIslands = this.map.islands.filter((i) => i.root.children.length).map((i) => ({ x: i.x, z: i.z, r: i.r, home: i === this.map.home, rock: !!i.rock }));
+    this.minimap = new Minimap(this, () => this.mapState());
+    this.hintBig = null;
+    const onPause = () => this.minimap.setHidden(true);
+    const onResume = () => this.minimap.setHidden(this.isOver);
+    this.events.on(Phaser.Scenes.Events.PAUSE, onPause);
+    this.events.on(Phaser.Scenes.Events.RESUME, onResume);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off(Phaser.Scenes.Events.PAUSE, onPause);
+      this.events.off(Phaser.Scenes.Events.RESUME, onResume);
+    });
+
     // sound
     this.seaSound = new Ambience(this, 'sea');
     this.windSound = new Ambience(this, 'wind');
+    this.guns = new CannonSfx(this);
 
     this.startWave(0);
   }
@@ -374,7 +394,9 @@ export class PlayScene extends ArcadeScene {
     const n = txt(this, 0, -58, t('waveN', { n: this.wave + 1 }), { size: 24, color: '#ffd23f' });
     const title = txt(this, 0, -10, t(this.def.title), { title: true, size: 44, color: '#ffffff' });
     const sub = txt(this, 0, 50, goal, { size: 24, color: '#d7f3ff', wrap: 560 });
-    this.card = this.add.container(width / 2, 430, [g, n, title, sub]).setDepth(9100).setScrollFactor(0).setScale(0.6).setAlpha(0);
+    // below the large sea chart when it is open
+    const y = this.minimap?.big ? Math.max(430, this.minimap.bottom + 110) : 430;
+    this.card = this.add.container(width / 2, y, [g, n, title, sub]).setDepth(9100).setScrollFactor(0).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.card, scale: 1, alpha: 1, duration: 360, ease: 'Back.easeOut' });
   }
 
@@ -389,7 +411,10 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'play';
     this.phaseT = 0;
     this.hideCard();
-    if (this.wave === 0) this.showHint(this.steering.pad ? 'h_steer_touch' : 'h_steer_keys');
+    if (this.wave === 0) {
+      this.showHint(this.steering.pad ? 'h_steer_touch' : 'h_steer_keys');
+      this.showHintLater(this.steering.pad ? 'h_map_touch' : 'h_map_keys');
+    }
     if (this.def.hint) this.showHint(this.def.hint);
   }
 
@@ -610,6 +635,7 @@ export class PlayScene extends ArcadeScene {
 
   updateGame(_time: number, delta: number): void {
     const dt = delta / 1000;
+    this.guns.tick(delta);
     this.steering.update(dt);
     if (this.timers.length) {
       const due = this.timers.filter((x) => x.at <= this.elapsed);
@@ -672,7 +698,40 @@ export class PlayScene extends ArcadeScene {
     this.windSound?.set(this.stormK * 0.55 + (this.def.light === 'dusk' ? 0.12 : 0), 1);
 
     this.drawUi(dt);
+    if (Phaser.Input.Keyboard.JustDown(this.keys.M)) this.minimap.toggle();
+    this.minimap.update(dt);
     this.drawCalls = this.world.renderer.info.render.calls;
+  }
+
+  /** What the sea chart shows now. */
+  private mapState(): MapState {
+    const p = this.player;
+    const alive = this.foes.filter((f) => f.ship.sinking < 0);
+    const ship = (s: Ship) => ({ x: s.x, z: s.z, heading: s.heading });
+    const boss = this.boss && this.boss.ship.sinking < 0 ? this.boss : null;
+    const ally = this.ally && this.ally.sinking < 0 ? this.ally : null;
+    const storm = this.def.mission === 'treasure' && this.phase !== 'clear' && this.stormTotal > 0;
+    return {
+      player: ship(p),
+      yaw: this.camYaw,
+      bound: MAP_R,
+      islands: this.mapIslands,
+      foes: alive.filter((f) => f !== boss).map((f) => ship(f.ship)),
+      boss: boss ? ship(boss.ship) : null,
+      forts: this.map.forts.filter((f) => f.falling < 0),
+      loot: this.loot.filter((l) => l.obj.visible || l.age < l.life - 5),
+      ally: ally ? ship(ally) : null,
+      berth: { x: BERTH.x, z: BERTH.z, r: BERTH.r, goal: !!ally && !this.escortDone, repair: this.hull < this.tune.hull && !this.dead },
+      storm: this.stormK,
+      stormLeft: storm ? Phaser.Math.Clamp(this.stormT / this.stormTotal, 0, 1) : -1,
+      stormLate: this.stormT < 15,
+      view: viewQuad(this.world.camera),
+    };
+  }
+
+  endGame(o: Parameters<ArcadeScene['endGame']>[0] = {}): void {
+    this.minimap?.setHidden(true);
+    super.endGame(o);
   }
 
   private updateLight(dt: number): void {
@@ -929,7 +988,6 @@ export class PlayScene extends ArcadeScene {
     this.stats.volleys++;
     const atFort = !!aim.target && !(aim.target instanceof Ship);
     this.volley(this.player, side, aim.x, aim.z, PLAYER_GUNS, true, 0, atFort ? 1.1 : 0);
-    this.camShake = Math.max(this.camShake, 0.35);
     // first shots: say how it works
     if (!aim.target && this.foes.length) this.showHint(this.steering.pad ? 'h_fire_touch' : 'h_fire_keys');
   }
@@ -938,6 +996,12 @@ export class PlayScene extends ArcadeScene {
   private volley(ship: Ship, side: number, ax: number, az: number, n: number, mine: boolean, spread: number, minT = 0): void {
     const f = fwd(ship.heading);
     const s = starboard(ship.heading).multiplyScalar(side);
+    // the guns go off one after another, each with its own voice (cannon-sfx.ts)
+    const plan = this.guns.plan(n);
+    const vol = this.guns.volley();
+    const p = this.player;
+    const dist = Math.hypot(ship.x - p.x, ship.z - p.z);
+    let flight = 0;
     for (let i = 0; i < n; i++) {
       // the player's guns spread along the hull to rake a target; enemy shots bunch closer, so a
       // quick change of course gets out from under them
@@ -951,16 +1015,24 @@ export class PlayScene extends ArcadeScene {
       }
       const d = Math.hypot(x1 - start.x, z1 - start.z);
       const T = Phaser.Math.Clamp(Math.max(minT, d / (mine ? PLAYER_VH : FOE_VH)), 0.45, 2.2);
-      this.launchBall(start, x1, z1, T, -i * 0.08, mine, ship);
-      // the muzzle flash and smoke happen when that gun fires
-      const delay = i * 80;
+      const { delay, rate } = plan[i];
+      this.launchBall(start, x1, z1, T, -delay / 1000, mine, ship);
+      flight = Math.max(flight, T);
+      // the muzzle flash, smoke, bang and (for the player's own guns) the kick of the camera all
+      // happen when that gun fires
       this.time.delayedCall(delay, () => {
         if (ship.sinking >= 0) return;
         this.fx.muzzle(ship.point(off, side * ship.halfW * 1.05, 1.6 * ship.scale), s);
         const sx = this.world.toScreen(start).x;
-        this.sfxAt(mine ? 'cannon' : 'cannonFar', sx, { volume: mine ? 0.75 : 0.5 });
+        this.guns.shot({ mine, x: sx, rate, gun: i, volley: vol, dist });
+        if (mine) this.camShake = Math.max(this.camShake, i === 0 ? 0.42 : 0.3);
       });
     }
+    // a long shot whistles as it comes down: the player's quietly, an enemy's that is coming for
+    // the player a little louder (a warning)
+    const ax2 = this.world.toScreen(new THREE.Vector3(ax, 0, az)).x;
+    if (mine) this.guns.whistle(flight, ax2, 0.22);
+    else if (this.phase === 'play' && Math.hypot(ax - p.x, az - p.z) < 16) this.guns.whistle(flight, ax2, 0.3);
   }
 
   private launchBall(start: THREE.Vector3, x1: number, z1: number, T: number, t0: number, mine: boolean, from: Ship | null): void {
@@ -1020,6 +1092,8 @@ export class PlayScene extends ArcadeScene {
         // shots at a fort fly over its beach and walls
         if (isl && !(b.mine && isl.fort && isl.fort.falling < 0)) {
           this.fx.hit(v.set(b.x, Math.max(0.5, b.y), b.z), 0.5);
+          const near = Math.hypot(b.x - this.player.x, b.z - this.player.z);
+          if (b.mine || near < 30) this.guns.stoneHit(this.world.toScreen(v).x, b.mine ? 0.5 : 0.35);
           return false;
         }
       }
@@ -1074,7 +1148,7 @@ export class PlayScene extends ArcadeScene {
     sh.flash();
     this.fx.hit(new THREE.Vector3(b.x, Math.max(b.y, sh.waterY + 1.5), b.z));
     const sp = this.world.toScreen(new THREE.Vector3(b.x, b.y + 2, b.z));
-    this.sfxAt('hit', sp.x, { volume: 0.8 });
+    this.guns.hullHit(sp.x);
     this.bumpCombo();
     const pts = 10 * this.comboMult();
     this.addScore(pts);
@@ -1103,7 +1177,7 @@ export class PlayScene extends ArcadeScene {
     const at = new THREE.Vector3(sh.x, sh.waterY, sh.z);
     this.fx.wreck(at, sh.halfL);
     const boss = foe === this.boss;
-    this.sfx(boss ? 'bigBoom' : 'sink', { volume: 0.9 });
+    this.guns.sinking(this.world.toScreen(at).x, boss);
     this.camShake = boss ? 1.6 : 0.8;
     shake(this, boss ? 0.012 : 0.006, boss ? 600 : 260);
     // the galleon's bounty takes at most a ×3 combo, so one kill does not decide the board
@@ -1141,7 +1215,12 @@ export class PlayScene extends ArcadeScene {
     this.invuln = this.tune.invuln;
     this.player.flash();
     this.hud.setLives(this.hull, this.tune.hull);
-    this.sfx('hurt', { volume: 0.85 });
+    if (force) this.sfx('hurt', { volume: 0.85 });
+    else {
+      // a ball through our own planks
+      this.guns.hullHit(this.scale.width / 2, 1);
+      this.sfx('hurt', { volume: 0.5 });
+    }
     this.camShake = 1;
     shake(this, 0.009, 260);
     flash(this, 0xff4d3a, 160, 0.3);
@@ -1153,7 +1232,7 @@ export class PlayScene extends ArcadeScene {
       this.phase = 'over';
       this.player.startSinking();
       this.fx.wreck(new THREE.Vector3(this.player.x, this.player.waterY, this.player.z), this.player.halfL);
-      this.sfx('sink', { volume: 1 });
+      this.guns.sinking(this.scale.width / 2, true);
       this.sfx('lose', { volume: 0.7, exact: true });
       this.steering.end();
       // the scene keeps running while the ship goes under, then the result screen comes up
@@ -1294,12 +1373,13 @@ export class PlayScene extends ArcadeScene {
     if (!a) return;
     this.allyHp--;
     a.flash();
-    this.sfx('hit', { volume: 0.5 });
+    const ax = this.world.toScreen(new THREE.Vector3(a.x, a.waterY + 2, a.z)).x;
+    this.guns.hullHit(ax, 0.6);
     this.updateGoal();
     if (this.allyHp <= 0 && this.phase === 'play') {
       a.startSinking();
       this.fx.wreck(new THREE.Vector3(a.x, a.waterY, a.z), a.halfL);
-      this.sfx('sink', { volume: 0.8 });
+      this.guns.sinking(ax);
       popup(this, this.scale.width / 2, 340, t('convoyLost'), '#ff8a6a', 32);
       this.failed = true;
     }
@@ -1330,7 +1410,9 @@ export class PlayScene extends ArcadeScene {
           this.launchBall(top, p.x + tv.x + (Math.random() - 0.5) * 2 * spread, p.z + tv.z + (Math.random() - 0.5) * 2 * spread, T, -i * 0.25, false, null);
         }
         this.fx.muzzle(top, new THREE.Vector3(dx / d, 0.3, dz / d));
-        this.sfxAt('cannonFar', this.world.toScreen(top).x, { volume: 0.6 });
+        const sx = this.world.toScreen(top).x;
+        this.guns.shot({ mine: false, fort: true, x: sx, rate: 0.97 + Math.random() * 0.06, gun: 0, volley: this.guns.volley(), dist: d });
+        this.guns.whistle(T, this.world.toScreen(new THREE.Vector3(p.x, 0, p.z)).x, 0.3);
       }
       if (fort.hp < fort.maxHp / 2 && Math.random() < dt * 4) this.fx.burn(new THREE.Vector3(fort.x, 9, fort.z), fort.hp < fort.maxHp / 4);
     }
@@ -1340,7 +1422,7 @@ export class PlayScene extends ArcadeScene {
     fort.hp--;
     this.fx.hit(new THREE.Vector3(b.x, Math.max(2, b.y), b.z));
     const sp = this.world.toScreen(new THREE.Vector3(b.x, b.y + 2, b.z));
-    this.sfxAt('stone', sp.x, { volume: 0.8 });
+    this.guns.stoneHit(sp.x);
     this.bumpCombo();
     const pts = 10 * this.comboMult();
     this.addScore(pts);
@@ -1353,7 +1435,7 @@ export class PlayScene extends ArcadeScene {
       const pts2 = 300 * this.comboMult();
       this.addScore(pts2);
       popup(this, sp.x, sp.y - 30, `${t('fortDown')} +${pts2}`, '#ffd23f', 32);
-      this.sfx('bigBoom', { volume: 0.9 });
+      this.guns.sinking(sp.x, true);
       this.camShake = 1.2;
       shake(this, 0.008, 400);
       this.fx.wreck(new THREE.Vector3(fort.x, 3, fort.z), 6);
@@ -1473,7 +1555,9 @@ export class PlayScene extends ArcadeScene {
     const top = 150, bottom = this.steering.pad ? height - 360 : height - 70;
     const edge = (wx: number, wy: number, wz: number, color: number, size = 1) => {
       const s = this.world.toScreen(new THREE.Vector3(wx, wy, wz));
-      const inside = s.visible && s.x > 20 && s.x < width - 20 && s.y > top && s.y < height - 20;
+      // (what lies under the sea chart counts as off screen: it gets an arrow, not a bar under the chart)
+      const mm = this.minimap;
+      const inside = s.visible && s.x > 20 && s.x < width - 20 && s.y > top && s.y < height - 20 && Math.hypot(s.x - mm.cx, s.y - mm.cy) > mm.r + 12;
       if (inside) return s;
       // point from the screen centre of the ship towards it
       const ps = this.world.toScreen(new THREE.Vector3(this.player.x, 0, this.player.z));
@@ -1483,8 +1567,15 @@ export class PlayScene extends ArcadeScene {
       const cx = width / 2, cy = (top + bottom) / 2;
       const hw = width / 2 - 34, hh = (bottom - top) / 2 - 10;
       const k = Math.min(hw / Math.max(0.001, Math.abs(Math.cos(a))), hh / Math.max(0.001, Math.abs(Math.sin(a))));
-      const x = cx + Math.cos(a) * k, y = cy + Math.sin(a) * k;
+      let x = cx + Math.cos(a) * k, y = cy + Math.sin(a) * k;
       const z = 20 * size;
+      // keep clear of the sea chart in the top-right corner: slide down the right edge or left
+      // along the top
+      const ml = this.minimap.left - 8, mb = this.minimap.bottom + 8;
+      if (x > ml - z && y < mb + z) {
+        if (x >= cx + hw - 1) y = mb + z;
+        else x = ml - z;
+      }
       g.fillStyle(0x000000, 0.35).fillCircle(x, y, z * 0.95);
       g.fillStyle(color, 0.95);
       g.fillTriangle(x + Math.cos(a) * z, y + Math.sin(a) * z, x + Math.cos(a + 2.4) * z * 0.75, y + Math.sin(a + 2.4) * z * 0.75, x + Math.cos(a - 2.4) * z * 0.75, y + Math.sin(a - 2.4) * z * 0.75);
@@ -1524,6 +1615,12 @@ export class PlayScene extends ArcadeScene {
       if (s) g.fillStyle(0x7dff9a, 0.9).fillTriangle(s.x - 14, s.y - 34, s.x + 14, s.y - 34, s.x, s.y - 12);
     }
 
+    // hints sit left of the chart (it grows when tapped)
+    if (this.hintBig !== this.minimap.big) {
+      this.hintBig = this.minimap.big;
+      const right = this.minimap.left - 14;
+      this.hint.setX((HUD_MARGIN + right) / 2).setWordWrapWidth(right - HUD_MARGIN - 6, true);
+    }
     // hints fade out after a while; queued ones follow
     if (this.hintT > 0) {
       this.hintT -= dt;

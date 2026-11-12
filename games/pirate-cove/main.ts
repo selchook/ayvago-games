@@ -21,7 +21,16 @@ launch({
     l.image('pc-coin', kenney('platformer/png/hud/hudcoin.png'));
     const J = 'oga/junkala-sfx/';
     loadAudio(l, 'cannon', J + 'weapons/cannon/sfx-wpn-cannon2');
+    // the cannon (Tito Tank's shot): two copies for the player's broadsides, one for enemy guns,
+    // so a new volley never cuts the tail of the last one
+    loadAudio(l, 'cannonB', J + 'weapons/cannon/sfx-wpn-cannon2');
+    loadAudio(l, 'cannonFoe', J + 'weapons/cannon/sfx-wpn-cannon2');
     loadAudio(l, 'cannonFar', J + 'weapons/cannon/sfx-wpn-cannon4');
+    loadAudio(l, 'whistle', J + 'weapons/grenade-whistles/sfx-wpn-grenadewhistle1');
+    loadAudio(l, 'boom1', J + 'explosions/medium-length/sfx-exp-medium1');
+    loadAudio(l, 'boom2', J + 'explosions/medium-length/sfx-exp-medium3');
+    loadAudio(l, 'boom3', J + 'explosions/medium-length/sfx-exp-medium6');
+    loadAudio(l, 'boomDouble', J + 'explosions/double/sfx-exp-double2');
     loadAudio(l, 'splash', J + 'explosions/shortest/sfx-exp-shortest-soft2');
     loadAudio(l, 'sink', J + 'explosions/medium-length/sfx-exp-medium3');
     loadAudio(l, 'bigBoom', J + 'explosions/long/sfx-exp-long3');
