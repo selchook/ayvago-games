@@ -155,11 +155,32 @@ function iconHtml(m, play) {
 //   wait    ms to let the round start (banners, countdowns) before the scripted play
 //   pick    candidate frame to use (index into CAPTURES) instead of the liveliest one
 //   accent  logo fill colour instead of the one taken from the frame
+//   stage   source of an async function run in the page once Play is active, to set up the
+//           scene the card should show through the game's own test hooks (a feature screen,
+//           a busy moment). With a stage the scripted play sends no input: the captures are
+//           taken of the staged scene as it runs.
 // The picks below were chosen by eye on the November 2026 run (frames without a round-start,
 // "wrong" or game-over banner); check them when the cards are regenerated.
 const CARD = {
   'color-bounce': { pick: 2 },
   'crypt-crawler': { wait: 2500 },
+  // Crystal Keep's card shows a card draft over a built-up defence: the autopilot plays the
+  // first map for a while, then a draft with one card of each rarity opens.
+  'crystal-keep': {
+    stage: `async () => {
+      const p = window.__ayvago.game.scene.getScene('Play');
+      p.testStart(0);
+      await new Promise((r) => setTimeout(r, 1500));
+      p.testAuto(true);
+      p.testStep(75);
+      p.testSync();
+      p.testAuto(false);
+      p.testSettle();
+      p.testDraft(['goldRain', 'criticalStrikes', 'deepFreeze']);
+      await new Promise((r) => setTimeout(r, 2500));
+    }`,
+    pick: 4,
+  },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },
@@ -305,15 +326,19 @@ async function capture(browser, slug, land, tune) {
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => window.__ayvago.game.scene.isActive('Play'), null, { timeout: 15000 });
     if (tune.wait) await page.waitForTimeout(tune.wait);
+    if (tune.stage) await page.evaluate(`(${tune.stage})()`);
     const box = await canvas.boundingBox();
     let play, thumb;
     const shots = [];
     for (let i = 0; i < 24; i++) {
       const k = ['ArrowLeft', 'ArrowRight', 'Space', 'ArrowUp'][i % 4];
-      await page.keyboard.down(k);
-      await page.mouse.click(box.x + box.width * (0.2 + 0.6 * Math.random()), box.y + box.height * (0.35 + 0.5 * Math.random()));
-      await page.waitForTimeout(140);
-      await page.keyboard.up(k);
+      if (tune.stage) await page.waitForTimeout(140);
+      else {
+        await page.keyboard.down(k);
+        await page.mouse.click(box.x + box.width * (0.2 + 0.6 * Math.random()), box.y + box.height * (0.35 + 0.5 * Math.random()));
+        await page.waitForTimeout(140);
+        await page.keyboard.up(k);
+      }
       if (!CAPTURES.includes(i)) continue;
       // Hide the pause overlay if a random tap opened it. A frame is live when the round runs
       // both before and after it is taken (not over, no result screen).
