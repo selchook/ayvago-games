@@ -21,7 +21,7 @@ const common: Strings = {
     // driving games (src/core/steering)
     steerTitle: 'KONTROL', steer_arrows: 'OKLAR', steer_wheel: 'DİREKSİYON', steer_tilt: 'EĞİM',
     tiltAsk: 'EĞİMİ AÇ', tiltOn: 'Eğerek sür: telefonu direksiyon gibi çevir',
-    tiltDenied: 'Hareket sensörüne izin verilmedi', tiltNone: 'Bu cihazda eğim sensörü yok',
+    tiltDenied: 'Hareket sensörüne izin verilmedi. Sayfayı yenileyip tekrar dene', tiltNone: 'Bu cihazda eğim sensörü yok',
     tiltCentre: 'ortalamak için dokun', tiltCentred: 'Ortalandı',
     // ads (src/core/ads.ts)
     adLoading: 'Reklam yükleniyor…', adBadge: 'REKLAM', adContinue: 'DEVAM ET', adContinueNote: 'Reklam izle, devam et',
@@ -43,7 +43,7 @@ const common: Strings = {
     // driving games (src/core/steering)
     steerTitle: 'STEERING', steer_arrows: 'ARROWS', steer_wheel: 'WHEEL', steer_tilt: 'TILT',
     tiltAsk: 'TURN TILT ON', tiltOn: 'Tilt steering: turn the phone like a wheel',
-    tiltDenied: 'Motion sensor access was not allowed', tiltNone: 'No tilt sensor on this device',
+    tiltDenied: 'Motion sensor access was not allowed. Reload the page and try again', tiltNone: 'No tilt sensor on this device',
     tiltCentre: 'tap to centre', tiltCentred: 'Centred',
     // ads (src/core/ads.ts)
     adLoading: 'Loading ad…', adBadge: 'AD', adContinue: 'CONTINUE', adContinueNote: 'Watch an ad to continue',

@@ -3,11 +3,10 @@
 import Phaser from 'phaser';
 import { t } from '../i18n';
 import { txt } from '../theme';
-import { popup } from '../fx';
 import { playSfx } from '../audio';
 import { isModern } from '../style';
 import { STEER_MODES, steerMode, setSteerMode, touchScreen, type SteerMode } from './mode';
-import { tilt } from './tilt';
+import { tilt, tiltNotice } from './tilt';
 
 const SEG = 122;
 const H = 84;
@@ -70,20 +69,24 @@ export function steeringMenu(scene: Phaser.Scene, x: number, y0: number): void {
     if (scene.cache.audio.exists('move')) playSfx(scene, 'move', { volume: 0.4, exact: true });
     else playSfx(scene, 'ui-click');
   };
+  // The tap that asked for tilt; a later tap on another mode makes its answer moot.
+  let asked = 0;
   STEER_MODES.forEach((m, i) => {
     const zone = scene.add.zone(segX(i), y, SEG, H + 10).setInteractive({ useHandCursor: true });
     zone.on('pointerup', () => {
       if (m === mode) return;
       if (m !== 'tilt') {
+        asked++;
         tilt.disable();
         choose(m);
         return;
       }
       // from inside the tap: iOS shows its permission prompt only now
+      const ask = ++asked;
       void tilt.enable().then((r) => {
-        if (!scene.sys.isActive()) return;
+        if (!scene.sys.isActive() || ask !== asked) return;
         if (r === 'on') choose('tilt');
-        else popup(scene, x, y + H / 2 + 30, t(r === 'denied' ? 'tiltDenied' : 'tiltNone'), '#ff9a7a', 22);
+        else tiltNotice(scene, x, y + H / 2 + 34, t(r === 'denied' ? 'tiltDenied' : 'tiltNone'), '#ff9a7a', 24);
       });
     });
   });
