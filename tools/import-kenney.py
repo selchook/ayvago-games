@@ -9,7 +9,8 @@ under <pack>/3D/vehicles-racing/. Those kits keep only the files a game uses (FI
 their GLBs under models/gltf_format/ like the older kits, and keep the external texture folder
 `Textures/` as the GLBs reference it (case matters on the server).
   python3 tools/import-kenney.py <jam-ready-assets-dir> toy-car-kit racing-kit-ea
-  python3 tools/import-kenney.py <jam-ready-assets-dir> food-kit furniture-kit"""
+  python3 tools/import-kenney.py <jam-ready-assets-dir> food-kit furniture-kit
+  python3 tools/import-kenney.py <jam-ready-assets-dir> mini-dungeon graveyard-kit"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -46,6 +47,10 @@ PACKS = {
     # pack roots below are the mirror's own folders: License.txt + Models/GLB|GLTF format/)
     'kenney-food-kit/3D/food': 'food-kit',
     'kenney-furniture-kit/3D/interior-furniture': 'furniture-kit',
+    # Mini Dungeon 1.6 and Graveyard Kit 5.0 (jam-ready-assets mirror, Git LFS, commit 397bf9e;
+    # pack roots are the mirror's own folders: License.txt + Models/GLB format/)
+    'kenney-mini-dungeon/3D/dungeon': 'mini-dungeon',
+    'kenney-graveyard-kit/3D/seasonal-holiday': 'graveyard-kit',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -98,6 +103,20 @@ FURNITURE_KIT = [
 ]
 FILES['food-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in FOOD_KIT]
 FILES['furniture-kit'] = ['License.txt'] + [f'Models/GLTF format/{n}.glb' for n in FURNITURE_KIT]
+
+# Crypt Crawler (games/crypt-crawler/kit.ts DUNGEON_MODELS / GRAVE_MODELS)
+MINI_DUNGEON = [
+    'floor', 'floor-detail', 'wall', 'wall-half', 'wall-opening', 'gate', 'chest', 'coin', 'trap', 'barrel',
+    'banner', 'column', 'stairs', 'rocks', 'stones', 'weapon-sword', 'weapon-spear', 'shield-round',
+    'wood-structure', 'character-orc',
+]
+GRAVEYARD_KIT = [
+    'character-skeleton', 'character-ghost', 'character-zombie', 'character-vampire', 'candle',
+    'candle-multiple', 'fire-basket', 'urn-round', 'urn-square', 'altar-stone', 'lantern-candle',
+    'pillar-large', 'debris', 'coffin', 'gravestone-cross',
+]
+FILES['mini-dungeon'] = ['License.txt', 'Models/GLB format/Textures/colormap.png', 'Models/Textures/variation-a.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_DUNGEON]
+FILES['graveyard-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in GRAVEYARD_KIT]
 
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""

@@ -28,20 +28,23 @@ launch({
     loadAudio(l, 'level', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
   },
   menuDecor(scene) {
-    // the car turning slowly on a floating block under the menu
+    // the car turning slowly on a floating block, in the free band between the title and the best
+    // score (the bottom row holds the Ayvago logo)
     const world = new World3D(scene, { background: null, shadows: true, fov: 40 });
     world.addLights({ ambient: 1.8, intensity: 2.2, extent: 4 });
     const stage = new THREE.Group();
     const block = grounded(model('block'));
-    block.scale.setScalar(1.9);
-    block.position.y = -1.9;
+    // a squat block keeps the stage clear of the best score under it
+    block.scale.set(1.9, 0.9, 1.9);
+    block.position.y = -0.9;
     const car = grounded(model('car'));
     car.scale.setScalar(0.9);
     stage.add(block, car);
+    stage.scale.setScalar(0.5);
     world.scene.add(stage);
-    // looking above the car puts it in the lower part of the screen, under the buttons
+    // looking below the car puts it in the upper part of the screen, under the title
     world.camera.position.set(0, 1.6, 16);
-    world.camera.lookAt(0, 4.5, 0);
+    world.camera.lookAt(0, -2.45, 0);
     world.onFrame = (dt) => {
       stage.rotation.y += dt * 0.6;
       stage.position.y = Math.sin(performance.now() / 700) * 0.08;

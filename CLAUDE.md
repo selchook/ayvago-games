@@ -15,13 +15,13 @@ src/core/          shared runtime (@core): intro, launch, flow scenes, ArcadeSce
 src/core/three/    3D runtime (@core/three): World3D, GLB models via the Phaser loader (3D games only)
 games/<slug>/      one game each: index.html, game.json, main.ts, *.ts
 templates/game/    scaffold used by `npm run new-game`
-public/assets/     ayvago/ (boot intro PNGs, favicon) · kenney/<pack>/ (CC0 art + audio; car-kit, platformer-kit, nature-kit are GLB 3D kits) · thumbs/ (portal)
+public/assets/     ayvago/ (boot intro PNGs, favicon, menu-logo.png: the menu's Ayvago Games logo) · kenney/<pack>/ (CC0 art + audio; car-kit, platformer-kit, nature-kit are GLB 3D kits) · thumbs/ (portal)
 platform/          arcade-catalog.ts (generated SeedGame entries; the platform pulls it from main)
 wip/               unfinished games (not built)
 docs/              GAMES.md (catalogue + backlog), assets/INDEX.md + assets/<pack>.txt (every file with px size)
 portal/ index.html game launcher page (reads src/generated/registry.json)
 scripts/           gen-registry, new-game, smoke-test (Playwright)
-tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio from OpenGameArt), index-3d.mjs (3D kit lists)
+tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio from OpenGameArt), index-3d.mjs (3D kit lists), build-menu-logo.py (menu logo from the intro PNGs)
 .claude/           skills/ayvago-new-game (how to build a game), agents/ayvago-game-dev + ayvago-game-qa
 ```
 
@@ -43,7 +43,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 
 ## Non-negotiables
 
-- **Ayvago intro on every game.** `src/core/intro.ts` is a 1:1 port of the Unity `AyvagoBootIntro.cs`: 5.3 s, skippable by tap. It runs automatically from `launch()` while the game preloads. Don't change its choreography without the brand owner.
+- **Ayvago intro on every game.** `src/core/intro.ts` is a 1:1 port of the Unity `AyvagoBootIntro.cs`: 5.3 s, skippable by tap. It runs automatically from `launch()` while the game preloads. Don't change its choreography without the brand owner. The menu's bottom row carries the same lockup as a logo (`public/assets/ayvago/menu-logo.png`, built from the intro PNGs by `tools/build-menu-logo.py`); never draw the brand as text.
 - **Mobile and desktop.** Every game supports touch and keyboard. Portrait 720×1280 by default; landscape 1280×720 only when needed.
 - **HUD chips.** Every always-visible HUD readout sits in its own chip (`src/core/ui.ts`): iOS-style frosted glass in the modern style, a plain bordered box in retro. `Hud` draws score, lives, level and the centre/right slots that way; game-specific readouts use `hudChip()`. No bare floating HUD text (new-game skill §4).
 - **TR and EN.** Every user-visible string is in both languages; the Turkish must be correct (ç ğ ı İ ö ş ü). Fonts: retro-genre games use Press Start 2P (titles) + Pixelify Sans (body); every other game is drawn in the modern style (`src/core/style.ts`: Fredoka + Nunito, smooth scaling, rounded UI, no scanlines). All four fonts cover Turkish; the core puts "Ayvago Pixel TR" (`src/core/turkish-font.ts`, one glyph) in front of Press Start 2P because its own İ looks like a lowercase i. The Kenney fonts do not cover Turkish.

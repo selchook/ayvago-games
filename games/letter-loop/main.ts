@@ -21,9 +21,10 @@ launch({
     loadAudio(l, 'timeup', J + 'negative-sounds/sfx-sounds-negative1');
   },
   menuDecor(scene) {
-    // a small letter wheel that turns slowly under the menu
+    // a small letter wheel that turns slowly in the free band between the title and the best score
+    // (the bottom row holds the Ayvago logo)
     const { width, height } = scene.scale;
-    const cx = width / 2, cy = height * 0.84, R = 92;
+    const cx = width / 2, cy = height * 0.3, R = 92;
     const word = loc({ tr: 'ÇEMBER', en: 'LETTER' });
     const ring = scene.add.circle(cx, cy, R + 58, 0xffffff, 0.12).setStrokeStyle(3, 0xffffff, 0.3);
     const wheel = scene.add.container(cx, cy);
@@ -34,8 +35,10 @@ launch({
       wheel.add([disc, label]);
       scene.tweens.add({ targets: label, angle: -360, duration: 24000, repeat: -1 });
     });
+    wheel.setScale(0.38);
+    ring.setScale(0.38);
     scene.tweens.add({ targets: wheel, angle: 360, duration: 24000, repeat: -1 });
-    scene.tweens.add({ targets: ring, scale: 1.04, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    scene.tweens.add({ targets: ring, scale: 0.4, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   },
   scenes: [PlayScene],
   strings: {

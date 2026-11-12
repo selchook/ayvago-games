@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "cryptcrawler",
+  "title": {
+    "en": "Crypt Crawler",
+    "tr": "Mahzen Avcısı"
+  },
+  "description": {
+    "en": "Draw your sword and descend into the cursed crypt! Every floor is a set of connected rooms: step inside and the doors slam shut until every skeleton, slime, ghost, zombie, orc and vampire is down. Smash pots, open chests, find the key to the golden vault and dash past spike and saw traps. At shrines, choose one of three blessings: a keener blade, orbiting blades, a vampire sword and more. Every third floor a giant guardian waits. The gold you collect goes to the bank: buy lasting upgrades at the camp and go deeper.",
+    "tr": "Kılıcını kuşan ve lanetli mahzene in! Her kat birbirine bağlı odalardan oluşur: içeri girince kapılar kapanır, tüm iskeletler, balçıklar, hayaletler, zombiler, orklar ve vampirler düşmeden açılmaz. Küpleri kır, sandıkları aç, anahtarla altın kapının ardındaki hazineyi bul, diken ve testere tuzaklarından atılarak geç. Sunaklarda üç güçten birini seç: keskin kılıç, dönen bıçaklar, vampir kılıcı ve daha fazlası. Her üç katta bir dev bir muhafız seni bekler. Topladığın altın kasada birikir: kamptan kalıcı güçler al ve daha derine in."
+  },
+  "category": "action",
+  "categories": [
+    "action",
+    "arcade"
+  ],
+  "tags": [
+    "crypt",
+    "crawler",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/crypt-crawler/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/crypt-crawler/ayvago/icon-512.png",
+    "cover": "/games/crypt-crawler/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/crypt-crawler/ayvago/screenshot.jpg",
+    "card": "/games/crypt-crawler/ayvago/card-640x360.webp",
+    "card2x": "/games/crypt-crawler/ayvago/card-1280x720.webp"
+  },
+  "version": "1.0.0"
+}

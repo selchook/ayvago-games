@@ -9,7 +9,7 @@ import { addCrt, burst } from './fx';
 import { sdk } from './sdk';
 import { net } from './net';
 import { currentGame } from './registry';
-import { kenney, loadSfx } from './assets';
+import { asset, kenney, loadSfx } from './assets';
 import { isModern } from './style';
 import { difficulty, isEasy, offersDifficulty, setDifficulty, type Difficulty } from './difficulty';
 import { adBusy, adsAvailable, REPLAY_INTERSTITIAL_EVERY, showInterstitial, showRewarded } from './ads';
@@ -45,6 +45,7 @@ export class BootScene extends Phaser.Scene {
     for (const icon of ['pause', 'audioon', 'audiooff', 'home', 'return', 'star', 'trophy']) {
       this.load.image('icon-' + icon, kenney(`game-icons/png/white/1x/${icon}.png`));
     }
+    this.load.image(LOGO, asset('ayvago/menu-logo.png'));
     loadSfx(this.load, 'ui-click', 'sfx-interface/audio/click_002');
     loadSfx(this.load, 'ui-select', 'sfx-interface/audio/select_002');
     loadSfx(this.load, 'jingle-over', 'jingles/audio/8-bit_jingles/jingles_nes09');
@@ -121,9 +122,11 @@ export class MenuScene extends Phaser.Scene {
       else option!.build(this, x, y);
     }
 
-    const howY = height * (both ? (land ? 0.69 : 0.7) : land ? 0.68 : 0.64);
+    // landscape: three lines of how-to still end above the logo on the bottom row
+    const howY = height * (both ? (land ? 0.69 : 0.7) : land ? 0.67 : 0.64);
     txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
-    txt(this, width / 2, howY + 24, loc(meta.howTo), { size: land ? 23 : 28, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+    const how = txt(this, width / 2, howY + 24, loc(meta.howTo), { size: land ? 23 : 28, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+    fitAbove(how, height - BOTTOM_ROW_TOP);
 
     // sound + language toggles
     soundButton(this, 60, height - 60);
@@ -132,7 +135,7 @@ export class MenuScene extends Phaser.Scene {
       iconButton(this, width - 60, height - 60, 'icon-trophy', () => sdk.openLeaderboard());
     } else this.languageToggle(width, height);
 
-    txt(this, width / 2, height - 60, 'AYVAGO GAMES', { title: true, size: 14, color: '#ec3013', strokeThickness: 4 });
+    brandLogo(this, width / 2, height - 60, how.y + how.height);
     if (def.crt !== false) addCrt(this);
 
     const kb = this.input.keyboard;
@@ -176,8 +179,10 @@ export class MenuScene extends Phaser.Scene {
     }
     const howY = height * (land ? 0.7 : 0.66);
     txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
-    txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+    const how = txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+    fitAbove(how, height - BOTTOM_ROW_TOP);
     soundButton(this, 60, height - 60);
+    brandLogo(this, width / 2, height - 60, how.y + how.height);
     if (def.crt !== false) addCrt(this);
     // Protocol 2.7: the table's host changed; the new host gets PLAY, everyone else waits.
     net.onHostChange(this, () => {
@@ -580,6 +585,55 @@ function easyTag(scene: Phaser.Scene, x: number, y: number): void {
   const tag = scene.add.container(x, y, [g, label]);
   tag.setScale(0);
   scene.tweens.add({ targets: tag, scale: 1, duration: 320, delay: 250, ease: 'Back.easeOut' });
+}
+
+/** Distance from the bottom edge to the top of the menu's bottom row (sound, logo, language), plus a small gap. */
+const BOTTOM_ROW_TOP = 100;
+
+/** Shrinks a long text (a game's how-to) a step at a time until it ends above `limit`. */
+function fitAbove(t: Phaser.GameObjects.Text, limit: number, min = 18): void {
+  let size = parseInt(String(t.style.fontSize), 10);
+  while (t.y + t.height > limit && size > min) t.setFontSize(--size);
+}
+
+/** Texture key of the Ayvago Games lockup (public/assets/ayvago/menu-logo.png). */
+const LOGO = 'ayvago-logo';
+/** The logo PNG is twice its on-screen size, with this much shadow room (texture px) on every side. */
+const LOGO_PAD = 8;
+
+/**
+ * The Ayvago Games logo, centred at (x, y) on the bottom row of the menu between the sound and
+ * the language/leaderboard buttons: the intro's lockup (built by tools/build-menu-logo.py) on a
+ * dark plate that matches those buttons (the HUD glass in the modern style, a plain box in
+ * retro), so the white art reads on light menus too. Drawn at exactly half the texture size with
+ * linear filtering, which keeps it sharp in pixel-art games as well. When the text above ends
+ * lower than `clearOf` allows (a long how-to on a landscape menu) the logo shrinks, its bottom
+ * edge staying on the row. Not a link: games run sandboxed inside the platform.
+ */
+function brandLogo(scene: Phaser.Scene, x: number, y: number, clearOf = 0): Phaser.GameObjects.Container | null {
+  if (!scene.textures.exists(LOGO)) return null;
+  const tex = scene.textures.get(LOGO);
+  tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  const H0 = 72, bottom = y + H0 / 2;
+  // a text's box already ends a few px under its last line
+  const k = Phaser.Math.Clamp((bottom - (clearOf + 4)) / H0, 0.7, 1);
+  const H = Math.round(H0 * k);
+  y = bottom - H / 2;
+  const img = scene.add.image(0, 0, LOGO).setScale(0.5 * k);
+  // the visible ink, without the shadow room, sets the plate's width
+  const inkW = Math.round(((tex.source[0].width - LOGO_PAD * 2) / 2) * k);
+  if (isModern()) {
+    // the brand ink under the glass deepens it, so the white art also holds on a bright sky
+    const under = scene.add.graphics();
+    img.setData('chipWidth', inkW);
+    const chip = hudChip(scene, x, y, { align: 'center', height: H, depth: 0, items: [img] });
+    under.fillStyle(COLORS.ink, 0.45).fillRoundedRect(x - chip.chipWidth / 2, y - H / 2, chip.chipWidth, H, H / 2);
+    return chip;
+  }
+  const w = inkW + Math.round(28 * k);
+  const c = scene.add.container(x, y);
+  c.add([scene.add.rectangle(0, 0, w, H, 0x000000, 0.6).setStrokeStyle(4, 0xffffff, 0.8), img]);
+  return c;
 }
 
 /**

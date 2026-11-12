@@ -379,6 +379,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'crypt-crawler',
+    title: { en: 'Crypt Crawler', tr: 'Mahzen Avcısı' },
+    description: {
+      en: 'Draw your sword and descend into the cursed crypt! Every floor is a set of connected rooms: step inside and the doors slam shut until every skeleton, slime, ghost, zombie, orc and vampire is down. Smash pots, open chests, find the key to the golden vault and dash past spike and saw traps. At shrines, choose one of three blessings: a keener blade, orbiting blades, a vampire sword and more. Every third floor a giant guardian waits. The gold you collect goes to the bank: buy lasting upgrades at the camp and go deeper.',
+      tr: 'Kılıcını kuşan ve lanetli mahzene in! Her kat birbirine bağlı odalardan oluşur: içeri girince kapılar kapanır, tüm iskeletler, balçıklar, hayaletler, zombiler, orklar ve vampirler düşmeden açılmaz. Küpleri kır, sandıkları aç, anahtarla altın kapının ardındaki hazineyi bul, diken ve testere tuzaklarından atılarak geç. Sunaklarda üç güçten birini seç: keskin kılıç, dönen bıçaklar, vampir kılıcı ve daha fazlası. Her üç katta bir dev bir muhafız seni bekler. Topladığın altın kasada birikir: kamptan kalıcı güçler al ve daha derine in.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['crypt', 'crawler', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-12',
+  }),
+  arcadeGame({
     slug: 'crystal-keep',
     title: { en: 'Crystal Keep', tr: 'Kristal Kale' },
     description: {

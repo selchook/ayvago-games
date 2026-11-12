@@ -1,0 +1,15 @@
+graveyard-kit/models/gltf_format/altar-stone.glb 17KB 1.04x0.49x0.65
+graveyard-kit/models/gltf_format/candle-multiple.glb 17KB 0.26x0.20x0.27
+graveyard-kit/models/gltf_format/candle.glb 7KB 0.14x0.20x0.14
+graveyard-kit/models/gltf_format/character-ghost.glb 111KB 0.79x0.66x0.49
+graveyard-kit/models/gltf_format/character-skeleton.glb 198KB 0.76x0.70x0.32
+graveyard-kit/models/gltf_format/character-vampire.glb 242KB 0.81x0.78x0.45
+graveyard-kit/models/gltf_format/character-zombie.glb 240KB 0.81x0.83x0.35
+graveyard-kit/models/gltf_format/coffin.glb 24KB 0.57x0.33x0.84
+graveyard-kit/models/gltf_format/debris.glb 25KB 0.54x0.16x0.55
+graveyard-kit/models/gltf_format/fire-basket.glb 18KB 0.42x0.17x0.42
+graveyard-kit/models/gltf_format/gravestone-cross.glb 20KB 0.45x0.91x0.33
+graveyard-kit/models/gltf_format/lantern-candle.glb 22KB 0.24x0.39x0.24
+graveyard-kit/models/gltf_format/pillar-large.glb 17KB 0.22x1.13x0.22
+graveyard-kit/models/gltf_format/urn-round.glb 23KB 0.26x0.38x0.26
+graveyard-kit/models/gltf_format/urn-square.glb 22KB 0.26x0.38x0.26
