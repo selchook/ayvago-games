@@ -30,11 +30,14 @@ export type KitModel = (typeof KIT_MODELS)[number];
 
 export const ZOMBIE = 'character-zombie';
 export const SOLDIER = 'character-soldier';
+/** The keep's guards (the Reinforcements power). */
+export const GUARD = 'character-male-c';
 
 export function loadKit(load: Phaser.Loader.LoaderPlugin): void {
   for (const n of KIT_MODELS) loadKenney3d(load, 'td:' + n, KIT, n);
   loadMiniCharacter(load, ZOMBIE);
   loadMiniCharacter(load, SOLDIER);
+  loadMiniCharacter(load, GUARD);
 }
 
 // ------------------------------------------------------------------ materials

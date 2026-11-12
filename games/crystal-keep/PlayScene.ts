@@ -6,16 +6,24 @@ import {
   HUD_MARGIN, HUD_ROW2_Y, Button, pushModal, upper,
 } from '@core';
 import { World3D, THREE } from '@core/three';
-import { Sim, MAPS, TOWERS, ENEMIES, TOWER_KINDS, METEOR, type Tower, type TowerKind, type SimEvent, type EnemyKind, type Enemy } from './sim';
+import { Sim, MAPS, ENEMIES, TOWER_KINDS, METEOR, POWERS, POWER_IDS, type Tower, type TowerKind, type SimEvent, type EnemyKind, type Enemy, type PowerId, type CardId } from './sim';
 import { Board, Markers, buildTower, animateTower, weaponY, GRASS_Y, PATH_Y, PALETTE_LOOK, type TowerView } from './board';
 import { EnemyView, FLY_Y } from './enemies';
 import { Fx } from './fx3d';
 import { kitMat } from './kit';
-import { Thumbs, mapThumb, enemyThumb } from './thumbs';
-import { BuildDock, TowerCard, WaveButton, glass, drawStar, UI_DEPTH, type ArmKind } from './ui';
+import { Thumbs, mapThumb, enemyThumb, shardIcon } from './thumbs';
+import { BuildDock, TowerCard, WaveButton, Pill, glass, drawStar, UI_DEPTH, isPower, POWER_COLOR, type ArmKind, type PowerState } from './ui';
 import { Bot } from './bot';
+import { rollDraft, glowTowers, CARD, RARITY_COLOR } from './cards';
+import { DraftScreen, CardTray, CardList, type CardFace } from './cardsui';
+import { TalentBoard } from './talentsui';
+import { loadMeta, saveMeta, talentFx, slots, powerUnlocked, toggleLoadout, shardsFor, owns, type Meta, type TalentId } from './meta';
+import { powerArt } from './art';
 
 type Phase = 'select' | 'play' | 'clear';
+
+/** A lightning bolt drawn over the field for a moment (world points, projected every frame). */
+interface Bolt { pts: { x: number; y: number; z: number }[]; t: number; max: number; seed: number }
 
 const PROGRESS_KEY = 'crystal-keep:progress';
 interface Progress { stars: number[] }
@@ -102,10 +110,25 @@ export class PlayScene extends ArcadeScene {
   private clearUi: Phaser.GameObjects.GameObject[] = [];
   private focus = 0;
   private lastGold = -1;
-  private meteorWasReady = false;
   private bossOn = false;
   private lowWarned = false;
   private seenKinds = new Set<EnemyKind>();
+
+  // powers, cards and talents
+  meta!: Meta;
+  private draft: DraftScreen | null = null;
+  private draftWait = 0;
+  private cardList: CardList | null = null;
+  private talentBoard: TalentBoard | null = null;
+  private tray!: CardTray;
+  private bolts: Bolt[] = [];
+  private boltG!: Phaser.GameObjects.Graphics;
+  private powerWasReady: Partial<Record<PowerId, boolean>> = {};
+  /** Draft overlays and the like hold the core modal (Esc closes them instead of pausing). */
+  private overlayRelease: (() => void) | null = null;
+  private loadoutUi: Phaser.GameObjects.Container | null = null;
+  private seenPowers = new Set<PowerId>();
+  private lastHitSfx = 0;
 
   // test hooks
   private bot: Bot | null = null;
@@ -141,11 +164,21 @@ export class PlayScene extends ArcadeScene {
     this.selectUi = [];
     this.clearUi = [];
     this.lastGold = -1;
-    this.meteorWasReady = false;
     this.bossOn = false;
     this.lowWarned = false;
     this.seenKinds = new Set();
     this.bot = null;
+    this.meta = loadMeta();
+    this.draft = null;
+    this.draftWait = 0;
+    this.cardList = null;
+    this.talentBoard = null;
+    this.bolts = [];
+    this.powerWasReady = {};
+    this.overlayRelease = null;
+    this.loadoutUi = null;
+    this.seenPowers = new Set();
+    this.lastHitSfx = 0;
     this.shakeT = 0;
     this.time3 = 0;
     this.frameN = 0;
@@ -171,7 +204,9 @@ export class PlayScene extends ArcadeScene {
     this.goldChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { icon: 'ck-coin', iconSize: 30, text: '0', color: '#ffd23f', minWidth: 110 });
     this.bossBar = this.add.graphics();
     this.bossBar.setData('chipWidth', 150);
-    this.bossChip = hudChip(this, width / 2 + 40, HUD_ROW2_Y, { align: 'center', text: '', size: 20, color: '#ff9a7a', items: [this.bossBar] }).setVisible(false);
+    // the boss bar has a row of its own, under the gold and the card tray
+    this.bossChip = hudChip(this, width / 2, HUD_ROW2_Y + 60, { align: 'center', text: '', size: 20, color: '#ff9a7a', items: [this.bossBar] }).setVisible(false);
+    this.tray = new CardTray(this, this.goldChip.right, () => this.openCardList());
     // the speed readout: a drawn fast-forward icon (no emoji-prone glyphs) and 1× / 2×
     const ff = this.add.graphics();
     ff.fillStyle(0xffffff, 0.9).fillTriangle(-16, -11, -16, 11, 0, 0).fillTriangle(0, -11, 0, 11, 16, 0);
@@ -180,7 +215,8 @@ export class PlayScene extends ArcadeScene {
     const speedHit = this.add.zone(width - HUD_MARGIN - 70, BAR_Y, 150, 100).setScrollFactor(0).setDepth(UI_DEPTH + 1).setInteractive({ useHandCursor: true });
     speedHit.on('pointerup', () => this.toggleSpeed());
     this.bars = this.add.graphics().setDepth(40).setScrollFactor(0);
-    this.hint = txt(this, width / 2, 232, '', { size: 25, color: '#ffffff', strokeThickness: 6, wrap: 640 }).setDepth(9400).setScrollFactor(0).setAlpha(0);
+    this.boltG = this.add.graphics().setDepth(45).setScrollFactor(0);
+    this.hint = txt(this, width / 2, 262, '', { size: 25, color: '#ffffff', strokeThickness: 6, wrap: 640 }).setDepth(9400).setScrollFactor(0).setAlpha(0);
 
     this.waveBtn = new WaveButton(this, (HUD_MARGIN + (width - HUD_MARGIN - 136 - 14)) / 2, BAR_Y, width - 2 * HUD_MARGIN - 136 - 14, 92, () => this.callWave());
     this.dock = new BuildDock(this, width / 2, DOCK_Y, (k) => { this.pickKind(k); this.syncModal(); });
@@ -189,6 +225,22 @@ export class PlayScene extends ArcadeScene {
 
     this.setupInput();
     this.showSelect();
+    this.warmShaders();
+  }
+
+  /**
+   * The world's shaders compile in the background (KHR_parallel_shader_compile where the GPU has
+   * it) while the first frames show the sky; then the field appears. Without this the first frame
+   * waits for every shader at once.
+   */
+  private warmShaders(): void {
+    const cam = this.world.camera;
+    const probe = new THREE.PerspectiveCamera();
+    cam.layers.disableAll();
+    let done = false;
+    const show = () => { if (!done) { done = true; cam.layers.set(0); } };
+    this.world.renderer.compileAsync(this.world.scene, probe).then(show, show);
+    this.time.delayedCall(2500, show);
   }
 
   // ------------------------------------------------------------------ map select
@@ -202,6 +254,20 @@ export class PlayScene extends ArcadeScene {
     return i === 0 || this.progress().stars[i - 1] > 0;
   }
 
+  /** Maps that can start from the select screen: any unlocked one, or the next one inside a run. */
+  private selectable(i: number): boolean {
+    return this.mapsCleared > 0 ? i === this.mapIx + 1 : this.unlocked(i);
+  }
+
+  /** The talent board and the loadout show once the player has cleared a map (or owns shards). */
+  private metaOpen(): boolean {
+    return this.meta.earned > 0 || this.meta.shards > 0 || this.meta.talents.length > 0;
+  }
+
+  private inputKind(): 'mouse' | 'touch' | 'keys' {
+    return this.cursorOn ? 'keys' : this.mouse ? 'mouse' : 'touch';
+  }
+
   private showSelect(): void {
     this.phase = 'select';
     playMusic(this, 'select');
@@ -211,14 +277,17 @@ export class PlayScene extends ArcadeScene {
     const add = <O extends Phaser.GameObjects.GameObject>(o: O): O => { this.selectUi.push(o); return o; };
     const { width } = this.scale;
     const prog = this.progress();
+    const meta = this.metaOpen();
     this.focus = Math.max(0, Math.min(this.focus, MAPS.length - 1));
-    if (!this.unlocked(this.focus)) this.focus = 0;
+    if (!this.selectable(this.focus)) this.focus = MAPS.findIndex((_, i) => this.selectable(i));
+    if (this.focus < 0) this.focus = 0;
     add(txt(this, width / 2, 196, t('chooseMap'), { title: true, size: 46, color: '#ffffff', strokeThickness: 8 }).setScrollFactor(0).setDepth(UI_DEPTH));
-    const cw = 214, ch = 316, y = 900;
+    if (meta) this.talentRow(add);
+    const cw = 214, ch = 316, y = meta ? 600 : 900;
     MAPS.forEach((def, i) => {
       const x = width / 2 + (i - 1) * (cw + 12);
       const box = this.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH);
-      const open = this.unlocked(i);
+      const open = this.selectable(i);
       const bg = this.add.graphics();
       const img = this.add.image(0, -66, this.textures.exists(mapThumb(i)) ? mapThumb(i) : '__WHITE').setDisplaySize(186, 186).setAlpha(open ? 1 : 0.35);
       if (!this.textures.exists(mapThumb(i))) img.setTint(0x22304f);
@@ -230,31 +299,138 @@ export class PlayScene extends ArcadeScene {
       for (let k = 0; k < 3; k++) drawStar(stars, (k - 1) * 40, 124, 15, prog.stars[i] > k);
       box.add([bg, img, name, waves, stars]);
       if (!open) {
-        const lock = txt(this, 0, -66, t('locked'), { size: 20, color: '#ffd23f', strokeThickness: 5, wrap: cw - 30 });
+        // inside a run the maps already played say so; others are still locked
+        const done = this.mapsCleared > 0 && i <= this.mapIx;
+        const lock = txt(this, 0, -66, done ? t('mapDone') : t('locked'), { title: done, size: done ? 30 : 20, color: done ? '#9dffb8' : '#ffd23f', strokeThickness: 5, wrap: cw - 30 });
         box.add(lock);
+      } else if (this.mapsCleared > 0) {
+        box.add(txt(this, 0, -ch / 2 + 22, t('mapNext'), { title: true, size: 18, color: '#9dffb8', strokeThickness: 4 }));
       }
       box.setData('bg', bg).setData('open', open);
       box.setSize(cw, ch).setInteractive({ useHandCursor: open });
       box.on('pointerup', () => {
+        if (this.talentBoard) return;
         if (!open) { this.sfx('error', { volume: 0.5 }); return; }
         if (this.focus === i) this.startMap(i);
         else { this.focus = i; this.sfx('move', { volume: 0.5 }); this.drawSelect(); this.previewMap(i); }
       });
       add(box);
     });
-    add(new Button(this, width / 2, 1166, t('playMap'), () => this.startMap(this.focus), { width: 340, height: 96, color: 0x2f9e56 }).setScrollFactor(0).setDepth(UI_DEPTH));
+    if (meta) this.loadoutRow(add);
+    add(new Button(this, width / 2, meta ? 1124 : 1166, t('playMap'), () => { if (!this.talentBoard) this.startMap(this.focus); }, { width: 340, height: 96, color: 0x2f9e56 }).setScrollFactor(0).setDepth(UI_DEPTH));
     const touch = this.sys.game.device.input.touch;
-    add(txt(this, width / 2, 1252, touch ? t('selectTouch') : t('selectKeys'), { size: 22, color: '#e6ecff', strokeThickness: 4 }).setScrollFactor(0).setDepth(UI_DEPTH));
+    add(txt(this, width / 2, 1240, touch ? t('selectTouch') : meta ? t('selectKeys2') : t('selectKeys'), { size: 22, color: '#e6ecff', strokeThickness: 4 }).setScrollFactor(0).setDepth(UI_DEPTH));
     this.drawSelect();
     this.previewMap(this.focus);
   }
 
+  /** The shard counter and the TALENTS button (with a NEW badge until the board was opened). */
+  private talentRow(add: <O extends Phaser.GameObjects.GameObject>(o: O) => O): void {
+    const { width } = this.scale;
+    const y = 282;
+    const chip = add(this.add.container(width / 2 - 150, y).setScrollFactor(0).setDepth(UI_DEPTH));
+    const text = txt(this, 18, 0, String(this.meta.shards), { title: true, size: 30, color: '#f0d0ff', strokeThickness: 0, shadow: false });
+    const w = Math.max(150, text.width + 100);
+    chip.add([this.add.graphics().fillStyle(0x000000, 0.3).fillRoundedRect(-w / 2, -34, w, 76, 34).fillStyle(0x1a1430, 0.88).fillRoundedRect(-w / 2, -38, w, 76, 34).lineStyle(2, 0xd27bff, 0.8).strokeRoundedRect(-w / 2, -38, w, 76, 34),
+      this.add.image(-w / 2 + 40, 0, shardIcon()).setDisplaySize(52, 52), text.setX(-w / 2 + 70).setOrigin(0, 0.5)]);
+    chip.setData('shardText', text);
+    const btn = add(new Pill(this, width / 2 + 100, y, 270, 76, 0x8a3fd0, () => this.openTalents(), 26).setScrollFactor(0, 0, true).setDepth(UI_DEPTH));
+    btn.setLabels(t('talents'));
+    if (!this.meta.seenBoard) {
+      const badge = this.add.container(width / 2 + 210, y - 36).setScrollFactor(0).setDepth(UI_DEPTH + 1);
+      const bt = txt(this, 0, 0, t('newBadge'), { title: true, size: 17, strokeThickness: 0, shadow: false });
+      badge.add([this.add.graphics().fillStyle(0xff4a6a, 1).fillRoundedRect(-bt.width / 2 - 12, -15, bt.width + 24, 30, 15), bt]);
+      add(badge);
+      this.tweens.add({ targets: badge, scale: 1.15, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.tweens.add({ targets: btn, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
+  }
+
+  /** The powers for the next map: tap (or Q W E R) to equip; locked ones point to the talent board. */
+  private loadoutRow(add: <O extends Phaser.GameObjects.GameObject>(o: O) => O): void {
+    const { width } = this.scale;
+    const m = this.meta;
+    const c = add(this.add.container(0, 0).setScrollFactor(0).setDepth(UI_DEPTH));
+    this.loadoutUi = c;
+    const y = 930, tw = 124;
+    const panelW = 4 * tw + 3 * 14 + 40;
+    c.add(glass(this, panelW, 236, { alpha: 0.82 }).setPosition(width / 2, y - 10));
+    const title = txt(this, width / 2, y - 102, t('powersTitle', { n: m.loadout.length, m: slots(m) }), { title: true, size: 22, color: '#ffd27a', strokeThickness: 0, shadow: false });
+    c.add(title);
+    POWER_IDS.forEach((id, i) => {
+      const x = width / 2 + (i - 1.5) * (tw + 14);
+      const unlocked = powerUnlocked(m, id), on = m.loadout.includes(id);
+      const g = this.add.graphics();
+      g.fillStyle(0x000000, 0.25).fillRoundedRect(x - tw / 2, y - tw / 2 + 5, tw, tw, 18);
+      g.fillStyle(on ? POWER_COLOR[id] : unlocked ? 0x24345a : 0x1a1f30, 1).fillRoundedRect(x - tw / 2, y - tw / 2, tw, tw, 18);
+      g.fillStyle(0xffffff, 0.08).fillRoundedRect(x - tw / 2 + 4, y - tw / 2 + 4, tw - 8, tw * 0.4, { tl: 15, tr: 15, bl: 6, br: 6 });
+      g.lineStyle(on ? 4 : 2, on ? 0xffe0b0 : 0xffffff, on ? 1 : 0.16).strokeRoundedRect(x - tw / 2, y - tw / 2, tw, tw, 18);
+      const art = this.add.image(x, y - 12, this.textures.exists(powerArt(id)) ? powerArt(id) : '__WHITE').setDisplaySize(82, 82).setAlpha(unlocked ? (on ? 1 : 0.6) : 0.22);
+      const name = txt(this, x, y + 46, t('p_' + id), { title: true, size: 16, strokeThickness: 0, shadow: false, color: on ? '#ffffff' : '#9fb0d8' });
+      name.setScale(Math.min(1, (tw - 10) / name.width));
+      const key = txt(this, x - tw / 2 + 15, y - tw / 2 + 15, POWERS[id].key, { size: 16, color: '#cfd8f0', strokeThickness: 0, shadow: false });
+      c.add([g, art, name, key]);
+      if (on) {
+        const ck = this.add.graphics().fillStyle(0x2f9e56, 1).fillCircle(x + tw / 2 - 16, y - tw / 2 + 16, 14).lineStyle(4, 0xffffff, 1);
+        ck.beginPath(); ck.moveTo(x + tw / 2 - 23, y - tw / 2 + 16); ck.lineTo(x + tw / 2 - 18, y - tw / 2 + 22); ck.lineTo(x + tw / 2 - 9, y - tw / 2 + 10); ck.strokePath();
+        c.add(ck);
+      }
+      if (!unlocked) {
+        const l = this.add.graphics();
+        l.lineStyle(6, 0x9fb0d8, 1).strokeCircle(x, y - 26, 14);
+        l.fillStyle(0x9fb0d8, 1).fillRoundedRect(x - 20, y - 22, 40, 32, 7);
+        c.add(l);
+      }
+      const hit = this.add.zone(x, y, tw, tw).setInteractive({ useHandCursor: true });
+      hit.on('pointerup', () => { if (!this.talentBoard) this.toggleLoadout(id); });
+      c.add(hit);
+    });
+    if (m.loadout.length >= 3) c.add(txt(this, width / 2, y + 86, t('threeSlower'), { size: 18, color: '#ffc27a', strokeThickness: 0, shadow: false }));
+  }
+
+  private toggleLoadout(id: PowerId): void {
+    const m = this.meta;
+    if (!powerUnlocked(m, id)) {
+      this.sfx('error', { volume: 0.4 });
+      popup(this, this.scale.width / 2, 840, t('powerLocked'), '#ffc27a', 24);
+      return;
+    }
+    if (!toggleLoadout(m, id)) {
+      this.sfx('error', { volume: 0.4 });
+      if (!m.loadout.includes(id)) popup(this, this.scale.width / 2, 840, t('slotsFull'), '#ffc27a', 24);
+      return;
+    }
+    this.sfx(m.loadout.includes(id) ? 'arm' : 'move', { volume: 0.55 });
+    this.showSelect();
+  }
+
+  /** Opens the talent board over the map select. */
+  openTalents(focus?: TalentId): void {
+    if (this.talentBoard || this.phase !== 'select') return;
+    this.meta.seenBoard = true;
+    saveMeta(this.meta);
+    this.thumbs.flush();
+    this.holdOverlay(true);
+    this.talentBoard = new TalentBoard(this, this.meta, {
+      input: this.inputKind(), focus,
+      sfx: (k, v) => this.sfx(k, { volume: v ?? 0.5 }),
+      onChange: () => {},
+      onClose: () => { this.talentBoard = null; this.holdOverlay(false); this.showSelect(); },
+    });
+    this.sfx('arm', { volume: 0.55 });
+  }
+
+  /** Holds the core modal while an overlay (draft, card list, talent board) is open. */
+  private holdOverlay(on: boolean): void {
+    if (on && !this.overlayRelease) this.overlayRelease = pushModal(this);
+    else if (!on && this.overlayRelease) { this.overlayRelease(); this.overlayRelease = null; }
+  }
+
   private drawSelect(): void {
     const cw = 214, ch = 316;
-    for (const o of this.selectUi) {
-      const bg = o.getData?.('bg') as Phaser.GameObjects.Graphics | undefined;
-      if (!bg) continue;
-      const i = this.selectUi.filter((q) => q.getData?.('bg')).indexOf(o);
+    const boxes = this.selectUi.filter((q) => q.getData?.('bg'));
+    boxes.forEach((o, i) => {
+      const bg = o.getData('bg') as Phaser.GameObjects.Graphics;
       const on = i === this.focus;
       const open = o.getData('open') as boolean;
       bg.clear();
@@ -262,7 +438,7 @@ export class PlayScene extends ArcadeScene {
       bg.fillStyle(on ? 0x1f5a3a : 0x14203a, open ? 0.94 : 0.8).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 24);
       bg.lineStyle(on ? 5 : 2, on ? 0x9dffb8 : 0xffffff, on ? 1 : 0.16).strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 24);
       (o as Phaser.GameObjects.Container).setScale(on ? 1.04 : 1);
-    }
+    });
   }
 
   /** Shows a map in 3D behind the select cards. */
@@ -288,8 +464,14 @@ export class PlayScene extends ArcadeScene {
     this.sun.color.setHex(look.sun);
   }
 
+  /** A new simulation of map i with the equipped powers and the owned talents. */
+  private newSim(i: number): Sim {
+    return new Sim(i, this.tune as 'easy' | 'normal', { powers: this.meta.loadout, talents: talentFx(this.meta.talents) });
+  }
+
   private startMap(i: number): void {
-    if (!this.unlocked(i)) return;
+    if (!this.selectable(i) || this.talentBoard) return;
+    this.loadoutUi = null;
     this.thumbs.flush();
     this.dock.syncIcons();
     for (const o of this.selectUi) o.destroy();
@@ -299,7 +481,12 @@ export class PlayScene extends ArcadeScene {
     this.mapIx = i;
     this.phase = 'select'; // loadBoard reuses the previewed board
     this.loadBoard(i);
-    this.sim = new Sim(i, this.tune as 'easy' | 'normal');
+    this.sim = this.newSim(i);
+    this.dock.setPowers(this.sim.powers);
+    this.powerWasReady = {};
+    this.draft = null;
+    this.draftWait = 0;
+    this.bolts = [];
     this.phase = 'play';
     this.speed = 1;
     this.speedChip.setText('1×');
@@ -326,6 +513,9 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: title, alpha: 0, y: 380, delay: 1600, duration: 500, onComplete: () => title.destroy() });
     const touch = this.sys.game.device.input.touch;
     this.time.delayedCall(900, () => {
+      // a power that is new to the player gets its own hint
+      const fresh = this.sim?.powers.find((p) => p !== 'meteor' && !this.seenPowers.has(p) && !seenHints.has('h_power_' + p));
+      if (fresh) { this.seenPowers.add(fresh); seenHints.add('h_power_' + fresh); this.hintQueue.push('h_power:' + fresh); }
       this.showHint(touch ? 'h_build_touch' : 'h_build_mouse');
       this.queueHint(touch ? 'h_pan' : 'h_build_keys');
       this.queueHint('h_start');
@@ -338,6 +528,7 @@ export class PlayScene extends ArcadeScene {
     this.waveBtn.setVisible(on);
     this.speedChip.setVisible(on);
     this.goldChip.setVisible(on);
+    this.tray.setVisible(on);
     this.hud.setVisible(true);
     this.hud.setCenter(on && this.sim ? t('waveOf', { n: 0, m: this.sim.totalWaves }) : '');
     if (!on) {
@@ -503,14 +694,15 @@ export class PlayScene extends ArcadeScene {
 
   /** A tap or click on the map (not a drag, not on the UI). */
   private tapMap(px: number, py: number): void {
-    if (this.armed === 'meteor') {
+    if (isPower(this.armed)) {
+      const pw = this.armed;
       const pt = this.groundAt(px, py);
       if (!pt) return;
-      if (this.mouse) { this.castMeteor(pt.x, pt.z); return; }
-      // touch: the first tap aims, a second tap near the same spot drops it
+      if (this.mouse) { this.castPower(pw, pt.x, pt.z); return; }
+      // touch: the first tap aims, a second tap near the same spot casts
       if (this.aim) {
         const s = this.screen(this.aim.x, GRASS_Y, this.aim.z);
-        if (Phaser.Math.Distance.Between(s.x, s.y, px, py) < 70) { this.castMeteor(this.aim.x, this.aim.z); return; }
+        if (Phaser.Math.Distance.Between(s.x, s.y, px, py) < 70) { this.castPower(pw, this.aim.x, this.aim.z); return; }
       }
       this.aim = pt;
       this.sfx('move', { volume: 0.4 });
@@ -527,7 +719,7 @@ export class PlayScene extends ArcadeScene {
     const sim = this.sim!;
     const tw = sim.towerAt(c, r);
     if (tw) { this.selectTower(tw); return; }
-    if (this.armed && this.armed !== 'meteor') {
+    if (this.armed && !isPower(this.armed)) {
       if (!sim.canBuild(c, r)) { this.denied(c, r); return; }
       if (direct || (this.sel && this.sel.c === c && this.sel.r === r)) { this.tryBuild(c, r); return; }
       // touch: this tap shows the ghost here, the next one on the same tile builds
@@ -550,12 +742,16 @@ export class PlayScene extends ArcadeScene {
     if (this.isOver) return;
     const code = ev.code;
     if (this.phase === 'select') {
+      if (this.talentBoard) { this.cursorOn = true; this.talentBoard.key(code); return; }
       const step = code === 'ArrowLeft' ? -1 : code === 'ArrowRight' ? 1 : 0;
+      const pw = (['KeyQ', 'KeyW', 'KeyE', 'KeyR'] as const).indexOf(code as 'KeyQ');
       if (step) {
         let f = this.focus;
-        for (let k = 0; k < MAPS.length; k++) { f = (f + step + MAPS.length) % MAPS.length; if (this.unlocked(f)) break; }
+        for (let k = 0; k < MAPS.length; k++) { f = (f + step + MAPS.length) % MAPS.length; if (this.selectable(f)) break; }
         if (f !== this.focus) { this.focus = f; this.sfx('move', { volume: 0.5 }); this.drawSelect(); this.previewMap(f); }
       } else if (code === 'Enter' || code === 'Space') this.startMap(this.focus);
+      else if (code === 'KeyT' && this.metaOpen()) { this.cursorOn = true; this.openTalents(); }
+      else if (pw >= 0 && this.metaOpen()) this.toggleLoadout(POWER_IDS[pw]);
       return;
     }
     if (this.phase === 'clear') {
@@ -563,6 +759,9 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     if (!this.sim) return;
+    // overlays first: the draft, the card list
+    if (this.draft) { this.cursorOn = true; this.draft.key(code); return; }
+    if (this.cardList) { if (code === 'Escape' || code === 'KeyC' || code === 'Enter' || code === 'Space') this.cardList.close(); return; }
     const m = this.sim.map;
     const move: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     if (move[code]) {
@@ -574,12 +773,22 @@ export class PlayScene extends ArcadeScene {
       this.mouse = false;
       if (this.selTower) { this.selTower = null; this.sellArmed = false; this.towerCard.close(); this.dock.open(); }
       // an armed card's ghost (or the meteor's aim) rides on the cursor
-      this.sel = this.armed && this.armed !== 'meteor' ? { ...this.cursor } : null;
-      if (this.armed === 'meteor' && this.board) this.aim = { x: this.board.X(this.cursor.c), z: this.board.Z(this.cursor.r) };
+      this.sel = this.armed && !isPower(this.armed) ? { ...this.cursor } : null;
+      if (isPower(this.armed) && this.board) this.aim = { x: this.board.X(this.cursor.c), z: this.board.Z(this.cursor.r) };
       this.focusCell(this.cursor.c, this.cursor.r);
       ev.preventDefault?.();
       return;
     }
+    // powers: their own keys (Q W E R) or 5–7 for the dock slots
+    const byKey = POWER_IDS.find((p) => 'Key' + POWERS[p].key === code);
+    const slot = ['Digit5', 'Digit6', 'Digit7', 'Numpad5', 'Numpad6', 'Numpad7'].indexOf(code);
+    const power = byKey && this.sim.powers.includes(byKey) ? byKey : slot >= 0 ? this.sim.powers[slot % 3] : undefined;
+    if (power) {
+      this.pickKind(power);
+      if (this.armed === power && this.cursorOn && this.board) this.aim = { x: this.board.X(this.cursor.c), z: this.board.Z(this.cursor.r) };
+      return;
+    }
+    if (code === 'KeyC') { this.openCardList(); return; }
     const num = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4'].indexOf(code);
     if (num >= 0) {
       const kind = TOWER_KINDS[num % 4];
@@ -597,12 +806,8 @@ export class PlayScene extends ArcadeScene {
         // P still pauses while something is picked (Esc only closes it)
         if (this.modalRelease) { this.deselect(); this.cursorOn = false; this.syncModal(); this.time.delayedCall(10, () => this.pauseGame()); }
         break;
-      case 'KeyQ': case 'Digit5': case 'Numpad5':
-        this.pickKind('meteor');
-        if (this.armed === 'meteor' && this.cursorOn && this.board) this.aim = { x: this.board.X(this.cursor.c), z: this.board.Z(this.cursor.r) };
-        break;
       case 'Enter':
-        if (this.armed === 'meteor') { if (this.aim) this.castMeteor(this.aim.x, this.aim.z); }
+        if (isPower(this.armed)) { if (this.aim) this.castPower(this.armed, this.aim.x, this.aim.z); }
         else if (this.armed && this.sel) this.tryBuild(this.sel.c, this.sel.r);
         else if (this.cursorOn) this.tapCell(this.cursor.c, this.cursor.r);
         break;
@@ -670,20 +875,22 @@ export class PlayScene extends ArcadeScene {
     const sim = this.sim;
     if (!sim || this.phase !== 'play' || this.isOver) return;
     if (this.selTower) { this.selTower = null; this.sellArmed = false; this.sel = null; this.towerCard.close(); this.dock.open(); }
-    if (kind === 'meteor') {
-      if (this.armed === 'meteor') {
-        if (this.aim) this.castMeteor(this.aim.x, this.aim.z);
+    if (isPower(kind)) {
+      if (this.armed === kind) {
+        if (this.aim) this.castPower(kind, this.aim.x, this.aim.z);
         else this.disarm();
         return;
       }
-      if (!sim.meteorReady()) {
-        this.dock.shake('meteor');
-        const c = this.dock.card('meteor')!;
-        popup(this, this.dock.x + c.box.x, this.dock.y - 96, sim.wave === 0 ? t('meteorFirst') : t('meteorWait', { n: Math.ceil(sim.meteorCd) }), '#ffc27a', 22);
+      if (!sim.powerReady(kind)) {
+        this.dock.shake(kind);
+        const c = this.dock.card(kind);
+        if (c) popup(this, this.dock.x + c.box.x, this.dock.y - 96, sim.wave === 0 ? t('powersFirst') : t('powerWait', { name: t('p_' + kind), n: Math.ceil(sim.cd[kind]) }), '#ffc27a', 22);
         this.sfx('error', { volume: 0.4 });
         return;
       }
-      this.armed = 'meteor';
+      // Lightning and Reinforcements go at once; the Meteor and Frost Nova are aimed
+      if (!POWERS[kind].aimed) { this.castPower(kind); return; }
+      this.armed = kind;
       this.stayArmed = false;
       this.sel = null;
       this.aim = null;
@@ -700,7 +907,7 @@ export class PlayScene extends ArcadeScene {
     this.stayArmed = !this.sel;
     this.aim = null;
     this.sfx('arm', { volume: 0.5 });
-    if (sim.gold < TOWERS[kind].tiers[0].cost) this.noGold(kind);
+    if (sim.gold < sim.buildCost(kind)) this.noGold(kind);
   }
 
   private disarm(): void {
@@ -714,9 +921,9 @@ export class PlayScene extends ArcadeScene {
   private tryBuild(c: number, r: number): void {
     const sim = this.sim!;
     const kind = this.armed as TowerKind;
-    if (!kind || kind as ArmKind === 'meteor') return;
+    if (!kind || isPower(kind)) return;
     if (!sim.canBuild(c, r)) { this.denied(c, r); return; }
-    if (sim.gold < TOWERS[kind].tiers[0].cost) { this.noGold(kind); return; }
+    if (sim.gold < sim.buildCost(kind)) { this.noGold(kind); return; }
     const tw = sim.build(kind, c, r);
     if (!tw) return;
     this.addTowerView(tw, true);
@@ -783,18 +990,19 @@ export class PlayScene extends ArcadeScene {
     const cur = this.sel ?? (this.cursorOn ? this.cursor : null);
     mk.cursor.visible = !!cur && !this.isOver;
     if (cur) mk.cursor.position.set(b.X(cur.c), sim.map.buildable(cur.c, cur.r) ? GRASS_Y : PATH_Y, b.Z(cur.r));
-    if (this.armed === 'meteor') {
+    if (isPower(this.armed)) {
       const pt = hovering && this.hoverPt ? this.hoverPt : this.aim;
-      if (pt) { mk.showRing(pt.x, pt.z, METEOR.radius, sim.meteorReady() ? 0xff7a2a : 0x9a9a9a); ring = true; }
+      const col = this.armed === 'frost' ? 0x7fd0ff : 0xff7a2a;
+      if (pt) { mk.showRing(pt.x, pt.z, sim.powerRadius(this.armed), sim.powerReady(this.armed) ? col : 0x9a9a9a); ring = true; }
     } else if (this.armed) {
       const cell = hovering && this.hover ? this.hover : this.sel;
       if (cell) {
         const x = b.X(cell.c), z = b.Z(cell.r);
         if (sim.map.buildable(cell.c, cell.r) && !sim.towerAt(cell.c, cell.r)) {
-          const ok = sim.gold >= TOWERS[this.armed].tiers[0].cost;
+          const ok = sim.gold >= sim.buildCost(this.armed);
           mk.showGhost(this.armed, 0, x, z);
           mk.tintGhost(ok);
-          mk.showRing(x, z, TOWERS[this.armed].tiers[0].range, ok ? 0x7dffa0 : 0xff6a5a);
+          mk.showRing(x, z, sim.towerStats(this.armed, 0).range, ok ? 0x7dffa0 : 0xff6a5a);
           mk.showTile(x, z, GRASS_Y, ok ? 0x7dffa0 : 0xff6a5a);
           ghost = ring = tile = true;
         } else {
@@ -805,11 +1013,11 @@ export class PlayScene extends ArcadeScene {
         }
       }
     } else if (this.selTower) {
-      mk.showRing(this.selTower.x, this.selTower.z, TOWERS[this.selTower.kind].tiers[this.selTower.tier].range, 0x9fd8ff);
+      mk.showRing(this.selTower.x, this.selTower.z, sim.towerStats(this.selTower.kind, this.selTower.tier).range, 0x9fd8ff);
       ring = true;
     } else if (this.sel) {
       // tile first: a soft preview of the cheapest tower's reach
-      mk.showRing(b.X(this.sel.c), b.Z(this.sel.r), TOWERS.ballista.tiers[0].range, 0xffffff);
+      mk.showRing(b.X(this.sel.c), b.Z(this.sel.r), sim.towerStats('ballista', 0).range, 0xffffff);
       ring = true;
     }
     // the mouse alone: the tile under it lights up, a tower shows its reach
@@ -819,7 +1027,7 @@ export class PlayScene extends ArcadeScene {
       if (tw) {
         mk.showTile(tw.x, tw.z, GRASS_Y, 0x9fd8ff);
         tile = true;
-        if (tw !== this.selTower) { mk.showRing2(tw.x, tw.z, TOWERS[tw.kind].tiers[tw.tier].range, 0x9fd8ff); ring2 = true; }
+        if (tw !== this.selTower) { mk.showRing2(tw.x, tw.z, sim.towerStats(tw.kind, tw.tier).range, 0x9fd8ff); ring2 = true; }
       } else if (sim.map.buildable(h.c, h.r)) {
         mk.showTile(b.X(h.c), b.Z(h.r), GRASS_Y, 0xffffff);
         tile = true;
@@ -846,13 +1054,20 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: this.towerCard.mode, scale: 1.08, duration: 80, yoyo: true });
   }
 
-  private castMeteor(x: number, z: number): void {
+  /** Casts a power (aimed ones at x, z) with its sound and effects; the sim does the rest. */
+  private castPower(id: PowerId, x = 0, z = 0): void {
     const sim = this.sim!;
-    if (!sim.castMeteor(x, z)) { this.dock.shake('meteor'); this.sfx('error', { volume: 0.4 }); return; }
-    this.armed = null;
-    this.aim = null;
-    this.seenHint('h_meteor');
-    this.seenHint('h_meteor_touch');
+    if (!sim.castPower(id, x, z)) {
+      this.dock.shake(id);
+      this.sfx('error', { volume: 0.4 });
+      if (id === 'lightning' && sim.powerReady(id)) { const c = this.dock.card(id); if (c) popup(this, this.dock.x + c.box.x, this.dock.y - 96, t('noTarget'), '#ffc27a', 22); }
+      return;
+    }
+    if (this.armed === id) { this.armed = null; this.aim = null; }
+    const c = this.dock.card(id);
+    if (c) this.tweens.add({ targets: c.box, scale: 1.12, duration: 90, yoyo: true });
+    if (id === 'meteor') { this.seenHint('h_meteor'); this.seenHint('h_meteor_touch'); }
+    this.seenHint('h_power:' + id);
   }
 
   private upgradeSelected(): void {
@@ -865,7 +1080,7 @@ export class PlayScene extends ArcadeScene {
     this.seenHint('h_upgrade');
     this.seenHint('h_upgrade_mouse');
     this.addTowerView(tw, true);
-    this.markers.showRing(tw.x, tw.z, TOWERS[tw.kind].tiers[tw.tier].range, 0x9fd8ff);
+    this.markers.showRing(tw.x, tw.z, sim.towerStats(tw.kind, tw.tier).range, 0x9fd8ff);
     this.sfx('upgrade', { volume: 0.7 });
     const s = this.screen(tw.x, weaponY(tw.kind, tw.tier) + 0.6, tw.z);
     popup(this, s.x, s.y, t('upgraded', { n: tw.tier + 1 }), '#9dffb8', 26);
@@ -1030,6 +1245,118 @@ export class PlayScene extends ArcadeScene {
         if (ev.wave === 2) this.queueHint('h_speed');
         break;
       }
+      case 'frost': {
+        const { x, z, r } = ev;
+        this.fx.ring(x, 0.18, z, r, 0x5ab8ff, 0.55);
+        this.fx.ring(x, 0.2, z, r * 1.35, 0xbfe8ff, 0.8);
+        this.fx.dustRing(x, 0.2, z, 26, 0xe6f7ff);
+        this.fx.puff(x, 0.4, z, 0xbfe8ff, 16, { speed: 2.4, size: 0.13, up: 1.2, life: 0.9, grow: 1.6 });
+        this.fx.spark(x, 0.5, z, 0xffffff, 30, 4.5);
+        // the frozen ground glows for as long as the ice holds, and snow drifts down
+        this.fx.ring(x, 0.17, z, r, 0x2f8cff, 3);
+        for (let i = 0; i < 26; i++) {
+          const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * r;
+          this.fx.puff(x + Math.cos(a) * d, 1.2 + Math.random() * 1.2, z + Math.sin(a) * d, 0xf2fbff, 1, { speed: 0.15, size: 0.07, up: -0.6, life: 1.6, grow: 0.2 });
+        }
+        const s = this.screen(x, 0.3, z);
+        this.sfxAt('frost', s.x, { volume: 0.8 });
+        this.sfxAt('shatter', s.x, { volume: 0.45 });
+        this.glow(0x9fe0ff, 0.22, 320);
+        this.shake3(0.12, 0.2);
+        if (ev.hits > 0) popup(this, s.x, s.y - 50, t('frozenN', { n: ev.hits }), '#bfe8ff', 30);
+        break;
+      }
+      case 'thaw': {
+        const e = ev.e;
+        const y = ENEMIES[e.kind].flying ? FLY_Y : PATH_Y + 0.4;
+        this.fx.spark(e.x, y, e.z, 0xdff4ff, 10, 2.6);
+        this.fx.puff(e.x, y, e.z, 0xbfe8ff, 3, { speed: 0.8, size: 0.08, life: 0.4 });
+        if (this.time3 - this.lastHitSfx > 0.08) { this.lastHitSfx = this.time3; this.sfxAt('shatter', this.screen(e.x, y, e.z).x, { volume: 0.3 }); }
+        break;
+      }
+      case 'lightning': {
+        this.bolts.push({ pts: ev.pts, t: 0, max: 0.55, seed: Math.floor(Math.random() * 1e6) + 1 });
+        for (const p of ev.pts.slice(1)) {
+          this.fx.spark(p.x, p.y, p.z, 0xdfe8ff, 10, 3);
+          this.fx.ring(p.x, Math.max(0.15, p.y - 0.4), p.z, 0.55, 0x9fb8ff, 0.3);
+        }
+        const p1 = ev.pts[1] ?? ev.pts[0];
+        const s = this.screen(p1.x, p1.y, p1.z);
+        this.sfxAt('zap', s.x, { volume: 0.8 });
+        this.sfx('thunder', { volume: 0.6 });
+        this.glow(0xcfe0ff, 0.28, 220);
+        this.shake3(0.16, 0.25);
+        if (ev.hits >= 3) popup(this, s.x, s.y - 50, t('meteorHits', { n: ev.hits }), '#dfe8ff', 30);
+        break;
+      }
+      case 'allySpawn': {
+        const a = ev.a;
+        this.fx.ring(a.x, PATH_Y + 0.05, a.z, 0.8, 0xffd27a, 0.5);
+        this.fx.spark(a.x, 0.6, a.z, 0xffe8a0, 12, 2.4);
+        this.fx.puff(a.x, 0.3, a.z, 0xfff3d0, 6, { speed: 0.9, size: 0.1, life: 0.5 });
+        if (this.time3 - this.lastHitSfx > 0.2) {
+          this.lastHitSfx = this.time3;
+          this.sfx('guards', { volume: 0.7 });
+          this.sfx('portal', { volume: 0.4 });
+          const k = this.board!.keepTop();
+          const s = this.screen(k.x, k.y, k.z);
+          popup(this, s.x, s.y - 50, t('guardsOut'), '#ffd27a', 28);
+        }
+        break;
+      }
+      case 'allyHit': {
+        const e = ev.e;
+        this.fx.spark(e.x, PATH_Y + 0.45, e.z, 0xfff3c0, 5, 2);
+        if (this.time3 - this.lastHitSfx > 0.09) { this.lastHitSfx = this.time3; this.sfxAt('sword', this.screen(e.x, 0.4, e.z).x, { volume: 0.35 }); }
+        break;
+      }
+      case 'allyGone': {
+        const a = ev.a;
+        this.fx.puff(a.x, 0.4, a.z, 0xfff3d0, 8, { speed: 0.9, size: 0.11, up: 1.2, life: 0.6 });
+        this.fx.spark(a.x, 0.6, a.z, 0xffd27a, 8, 2);
+        break;
+      }
+      case 'thorns': {
+        const k = this.board!.keepTop();
+        this.fx.ring(k.x, PATH_Y + 0.1, k.z, 2.4, 0x9fe36a, 0.6);
+        this.fx.spark(k.x, 0.6, k.z, 0x9fe36a, 18, 4);
+        const s = this.screen(k.x, k.y, k.z);
+        popup(this, s.x + 60, s.y - 10, t('thornsHit'), '#bff58a', 24);
+        break;
+      }
+      case 'blast': {
+        this.fx.boom(ev.x, ev.z, ev.r * 0.8);
+        if (this.time3 - this.lastHitSfx > 0.07) { this.lastHitSfx = this.time3; this.sfxAt('boom', this.screen(ev.x, 0.2, ev.z).x, { volume: 0.35 }); }
+        break;
+      }
+      case 'crit': {
+        const s = this.screen(ev.x, ev.fly ? FLY_Y + 0.4 : PATH_Y + 0.8, ev.z);
+        popup(this, s.x, s.y, t('crit'), '#ff7a5a', 24);
+        this.fx.spark(ev.x, ev.fly ? FLY_Y : PATH_Y + 0.4, ev.z, 0xff7a5a, 8, 3);
+        break;
+      }
+      case 'goldShower': {
+        const s = this.screen(ev.e.x, 0.6, ev.e.z);
+        popup(this, s.x, s.y - 60, t('goldShower', { n: ev.gold }), '#ffd23f', 32);
+        this.flyCoins(s.x, s.y, 14);
+        this.fx.spark(ev.e.x, 0.8, ev.e.z, 0xffd23f, 30, 4);
+        this.sfx('sell', { volume: 0.8 });
+        break;
+      }
+      case 'interest':
+        popup(this, this.goldChip.x + 90, this.goldChip.y + 44, t('interestGold', { n: ev.gold }), '#ffd23f', 24);
+        this.sfx('coins', { volume: 0.5 });
+        break;
+      case 'regen': {
+        const k = this.board!.keepTop();
+        const s = this.screen(k.x, k.y, k.z);
+        popup(this, s.x, s.y - 40, t('regenLife', { n: ev.lives }), '#9dffb8', 28);
+        this.fx.ring(k.x, PATH_Y + 0.1, k.z, 1.6, 0x9dffb8, 0.6);
+        break;
+      }
+      case 'draft':
+        this.draftWait = 0;
+        break;
       case 'meteorCast': {
         const s = this.screen(ev.m.x, 0, ev.m.z);
         this.sfxAt('meteorFall', s.x, { volume: 0.7 });
@@ -1174,6 +1501,145 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
+  // ------------------------------------------------------------------ power cards
+
+  /** Opens the card draft: the game waits until a card is taken. */
+  private openDraft(forced?: CardId[]): void {
+    const sim = this.sim;
+    if (!sim || this.draft) return;
+    const offer = forced ?? rollDraft(sim);
+    this.thumbs.flush();
+    if (!offer.length) { sim.drafts = Math.max(0, sim.drafts - 1); return; }
+    this.deselect();
+    this.cardList?.close();
+    this.holdOverlay(true);
+    this.tray.setVisible(true);
+    // the bottom of the screen is the draft's: the dock and the wave button step aside
+    this.dock.close();
+    this.waveBtn.setVisible(false);
+    this.speedChip.setVisible(false);
+    this.hint.setVisible(false);
+    this.draft = new DraftScreen(this, {
+      sim, wave: Math.max(1, sim.wave), offer, rerolls: sim.talents.rerolls, input: this.inputKind(),
+      roll: () => rollDraft(sim),
+      onPick: (id, face) => this.cardPicked(id, face),
+      sfx: (k, v) => this.sfx(k, { volume: v ?? 0.5, exact: true }),
+    });
+  }
+
+  /** The draft is over: the card flies into the tray and takes effect. */
+  private cardPicked(id: CardId, face: CardFace): void {
+    const sim = this.sim!;
+    const draft = this.draft;
+    const lives = sim.lives, gold = sim.gold;
+    sim.pickCard(id);
+    this.tray.hide(id, true);
+    const to = this.tray.slotPos(sim, id);
+    // the face leaves the draft and flies to its slot, shrinking
+    const p = face.getWorldTransformMatrix();
+    face.parentContainer?.remove(face);
+    face.setPosition(p.tx, p.ty).setScrollFactor(0, 0, true).setDepth(9750);
+    this.add.existing(face);
+    draft?.close();
+    this.tweens.add({
+      targets: face, x: to.x, y: to.y, scale: 0.14, angle: 360, duration: 560, ease: 'Cubic.easeIn',
+      onComplete: () => {
+        face.destroy();
+        this.tray.hide(id, false);
+        this.tray.sync(sim);
+        this.tray.pop(id);
+        this.sfx('cardPlace', { volume: 0.6 });
+      },
+    });
+    this.draft = null;
+    this.holdOverlay(false);
+    this.hint.setVisible(true);
+    this.queueHint('h_draft');
+    if (this.phase === 'play' && !this.isOver) {
+      this.dock.open();
+      this.waveBtn.setVisible(true);
+      this.speedChip.setVisible(true);
+    }
+    // what the card did, right away
+    const col = RARITY_COLOR[CARD[id].rarity];
+    const colN = Phaser.Display.Color.HexStringToColor(col.text).color;
+    for (const tid of glowTowers(sim, id)) {
+      const tw = sim.towers.find((q) => q.id === tid);
+      if (!tw) continue;
+      const y = weaponY(tw.kind, tw.tier);
+      this.time.delayedCall(450, () => {
+        this.fx.ring(tw.x, GRASS_Y + 0.05, tw.z, 0.9, colN, 0.7);
+        this.fx.spark(tw.x, y + 0.3, tw.z, colN, 14, 2.4);
+        this.fx.puff(tw.x, y, tw.z, colN, 6, { speed: 0.6, size: 0.1, up: 1.6, life: 0.8 });
+      });
+    }
+    if (sim.lives > lives) {
+      const k = this.board!.keepTop();
+      this.fx.ring(k.x, PATH_Y + 0.1, k.z, 2.2, 0x9dffb8, 0.8);
+      const s = this.screen(k.x, k.y, k.z);
+      popup(this, s.x, s.y - 30, '+' + (sim.lives - lives), '#9dffb8', 34);
+      this.tweens.add({ targets: this.hud.livesChip, scale: 1.2, duration: 120, yoyo: true });
+    }
+    if (sim.gold > gold) {
+      popup(this, this.goldChip.x + 80, this.goldChip.y + 44, '+' + (sim.gold - gold), '#ffd23f', 28);
+      this.flyCoins(this.scale.width / 2, 640, 8);
+      this.sfx('coins', { volume: 0.6 });
+    }
+    if (sim.drafts === 0) this.glow(col.glow, 0.16, 300);
+  }
+
+  /** All owned cards with their texts (a tap on the tray, or C). */
+  private openCardList(): void {
+    const sim = this.sim;
+    if (!sim || this.cardList || this.draft || this.phase !== 'play' || !sim.cardOrder.length) return;
+    this.holdOverlay(true);
+    this.sfx('cardSlide', { volume: 0.5 });
+    this.tray.hideTip();
+    this.cardList = new CardList(this, sim, () => { this.cardList = null; this.holdOverlay(false); });
+  }
+
+  /** Lightning: jagged glowing lines between the struck enemies, redrawn as the camera moves. */
+  private drawBolts(dt: number): void {
+    const g = this.boltG.clear();
+    for (let i = this.bolts.length - 1; i >= 0; i--) {
+      const b = this.bolts[i];
+      b.t += dt;
+      if (b.t >= b.max) { this.bolts.splice(i, 1); continue; }
+      // full strength for most of its life, then a quick fade
+      const a = Math.min(1, (1 - b.t / b.max) / 0.4);
+      const flick = 0.75 + 0.25 * Math.sin(b.t * 60 + b.seed);
+      const pts = b.pts.map((p) => this.screen(p.x, p.y, p.z));
+      // the same jag for a whole frame, a new one every few frames
+      let seed = b.seed + Math.floor(b.t * 24) * 7;
+      const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed / 2147483647) - 0.5; };
+      const path: { x: number; y: number }[] = [];
+      for (let k = 0; k < pts.length - 1; k++) {
+        const p0 = pts[k], p1 = pts[k + 1];
+        const n = 6;
+        for (let j = 0; j < n; j++) {
+          const u = j / n;
+          const off = j === 0 ? 0 : rnd() * 26;
+          path.push({ x: p0.x + (p1.x - p0.x) * u + off, y: p0.y + (p1.y - p0.y) * u + rnd() * 18 });
+        }
+      }
+      path.push(pts[pts.length - 1]);
+      const stroke = (w: number, c: number, al: number) => {
+        g.lineStyle(w, c, al * a * flick);
+        g.beginPath();
+        path.forEach((q, j) => (j ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y)));
+        g.strokePath();
+      };
+      // a dark violet halo keeps the bolt readable on snow, an electric blue body, a white core
+      stroke(26, 0x1a1050, 0.45);
+      stroke(14, 0x4466ff, 1);
+      stroke(6, 0xfff3a0, 1);
+      for (const q of pts.slice(1)) {
+        g.fillStyle(0x4466ff, 0.55 * a).fillCircle(q.x, q.y, 26 * a + 6);
+        g.fillStyle(0xfff3a0, 0.95 * a).fillCircle(q.x, q.y, 11 * a + 4);
+      }
+    }
+  }
+
   // ------------------------------------------------------------------ the end of a map
 
   private mapWon(): void {
@@ -1192,8 +1658,15 @@ export class PlayScene extends ArcadeScene {
     this.setScore(this.runBase);
     this.mapsCleared++;
     const prog = this.progress();
+    const newStars = Math.max(0, stars - (prog.stars[this.mapIx] ?? 0));
     prog.stars[this.mapIx] = Math.max(prog.stars[this.mapIx] ?? 0, stars);
     storage.set(PROGRESS_KEY, prog);
+    // Crystal Shards for the talent board
+    const firstShards = this.meta.earned === 0;
+    const shards = shardsFor(this.mapIx, stars, this.tune === 'easy', newStars, owns(this.meta, 'hunter'));
+    this.meta.shards += shards;
+    this.meta.earned += shards;
+    saveMeta(this.meta);
     playMusic(this, false);
     this.sfx('fanfare', { volume: 0.8 });
     // the camera moves to the keep, which shows above the card
@@ -1206,34 +1679,67 @@ export class PlayScene extends ArcadeScene {
     const { width } = this.scale;
     const last = this.mapIx >= MAPS.length - 1;
     const add = <O extends Phaser.GameObjects.GameObject>(o: O): O => { this.clearUi.push(o); return o; };
-    const box = add(this.add.container(width / 2, 690).setScrollFactor(0).setDepth(9600));
-    box.add(glass(this, 620, 640, { alpha: 0.93 }));
+    const box = add(this.add.container(width / 2, 700).setScrollFactor(0).setDepth(9600));
+    box.add(glass(this, 620, last ? 640 : 720, { alpha: 0.93 }).setY(last ? -40 : 0));
     // one line, shrunk to fit the card (the Turkish "all maps cleared" is long)
-    const head = txt(this, 0, -250, last ? t('allClear') : t('mapClear'), { title: true, size: 44, color: '#9dffb8', strokeThickness: 8 });
+    const head = txt(this, 0, -296, last ? t('allClear') : t('mapClear'), { title: true, size: 44, color: '#9dffb8', strokeThickness: 8 });
     if (head.width > 570) head.setScale(570 / head.width);
     box.add(head);
-    box.add(txt(this, 0, -192, t('m_' + sim.map.def.id), { size: 28, color: '#cfd8f0', strokeThickness: 0 }));
+    box.add(txt(this, 0, -238, t('m_' + sim.map.def.id), { size: 28, color: '#cfd8f0', strokeThickness: 0 }));
     const sg = this.add.graphics();
     box.add(sg);
     for (let i = 0; i < 3; i++) {
-      drawStar(sg, (i - 1) * 110, -90, 44, false);
+      drawStar(sg, (i - 1) * 110, -142, 44, false);
       if (i < stars) {
         const st = this.add.graphics();
         drawStar(st, 0, 0, 44, true);
-        st.setPosition((i - 1) * 110, -90).setScale(0);
+        st.setPosition((i - 1) * 110, -142).setScale(0);
         box.add(st);
         this.tweens.add({ targets: st, scale: 1, duration: 360, delay: 400 + i * 300, ease: 'Back.easeOut', onStart: () => this.sfx('star', { volume: 0.6 }) });
       }
     }
-    box.add(txt(this, 0, 10, t('livesLeft', { n: sim.lives }) + '   ' + t('killsN', { n: sim.kills }), { size: 26, color: '#ffffff', strokeThickness: 0 }));
-    box.add(txt(this, 0, 58, t('bonusPts', { n: bonus }), { size: 30, color: '#ffd23f', strokeThickness: 0 }));
-    const next = new Button(this, 0, last ? 200 : 150, last ? t('finish') : t('nextMap'), () => last ? this.finishRun() : this.startMap(this.mapIx + 1), { width: 380, height: 92, color: 0x2f9e56 });
+    box.add(txt(this, 0, -50, t('livesLeft', { n: sim.lives }) + '   ' + t('killsN', { n: sim.kills }), { size: 26, color: '#ffffff', strokeThickness: 0 }));
+    box.add(txt(this, 0, -4, t('bonusPts', { n: bonus }), { size: 30, color: '#ffd23f', strokeThickness: 0 }));
+    // the shards: a crystal and a number that counts up
+    const sh = this.add.container(0, 56);
+    const shText = txt(this, 0, 0, t('shardsEarned', { n: 0 }), { title: true, size: 30, color: '#f0d0ff', strokeThickness: 0, shadow: false });
+    const gem = this.add.image(0, 0, shardIcon()).setDisplaySize(54, 54);
+    const lay = () => { const w = gem.displayWidth + 10 + shText.width; gem.x = -w / 2 + gem.displayWidth / 2; shText.setOrigin(0, 0.5).setX(gem.x + gem.displayWidth / 2 + 10); };
+    shText.setText(t('shardsEarned', { n: shards }));
+    lay();
+    shText.setText(t('shardsEarned', { n: 0 }));
+    sh.add([gem, shText]);
+    box.add(sh);
+    const count = { v: 0 };
+    this.tweens.add({
+      targets: count, v: shards, duration: 700, delay: 1500, ease: 'Quad.easeOut',
+      onUpdate: () => shText.setText(t('shardsEarned', { n: Math.round(count.v) })),
+      onStart: () => this.sfx('shards', { volume: 0.6 }),
+      onComplete: () => { this.tweens.add({ targets: gem, scale: gem.scale * 1.4, duration: 140, yoyo: true }); this.sfx('star', { volume: 0.5 }); },
+    });
+    if (firstShards) {
+      const hint = txt(this, 0, 104, t('talentHintFirst'), { size: 21, color: '#ffd27a', strokeThickness: 0, wrap: 560 });
+      box.add(hint);
+      this.tweens.add({ targets: hint, alpha: 0.55, duration: 600, yoyo: true, repeat: -1 });
+    }
+    const next = new Button(this, 0, last ? 196 : 186, last ? t('finish') : t('nextMap'), () => last ? this.finishRun() : this.toNextMap(), { width: 380, height: 92, color: 0x2f9e56 });
     next.setData('primary', true);
     box.add(next);
     this.clearUi.push(next);
-    if (!last) box.add(new Button(this, 0, 258, t('finish'), () => this.finishRun(), { width: 300, height: 76, color: 0x4a5a86, size: 26 }));
+    if (!last) box.add(new Button(this, 0, 284, t('finish'), () => this.finishRun(), { width: 300, height: 76, color: 0x4a5a86, size: 26 }));
     box.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: box, scale: 1, alpha: 1, duration: 360, delay: 500, ease: 'Back.easeOut' });
+  }
+
+  /** Between maps: back to the map select (talents and loadout), the next map picked. */
+  private toNextMap(): void {
+    for (const o of this.clearUi) o.destroy();
+    this.clearUi = [];
+    this.focus = this.mapIx + 1;
+    this.deselect();
+    this.clearTowers();
+    this.sim = null;
+    this.showSelect();
   }
 
   private finishRun(): void {
@@ -1343,7 +1849,8 @@ export class PlayScene extends ArcadeScene {
 
   private displayHint(key: string): void {
     seenHints.add(key);
-    this.hint.setText(t(key)).setAlpha(0).setScale(0.9);
+    const pw = key.startsWith('h_power:') ? key.slice(8) as PowerId : null;
+    this.hint.setText(pw ? `${t('p_' + pw)} · ${t('h_power', { key: POWERS[pw].key })}` : t(key)).setAlpha(0).setScale(0.9);
     this.tweens.add({ targets: this.hint, alpha: 1, scale: 1, duration: 260, ease: 'Back.easeOut' });
     this.hintT = 4.6;
   }
@@ -1356,7 +1863,8 @@ export class PlayScene extends ArcadeScene {
 
   private tick(dt: number): void {
     this.time3 += dt;
-    // all at once, a few frames in (the scene's first frames compile the world's shaders)
+    // all at once, a few frames in (the scene's first frames compile the world's shaders); every
+    // restart then builds the same GPU state (scripts/three-memory.mjs)
     this.frameN++;
     if (!this.thumbs.done && this.frameN > 3) {
       this.thumbs.flush();
@@ -1367,9 +1875,13 @@ export class PlayScene extends ArcadeScene {
         const key = img?.getData('thumb') as string | undefined;
         if (img && key && img.texture.key !== key && this.textures.exists(key)) img.setTexture(key).clearTint().setDisplaySize(186, 186);
       }
+      // the loadout's power pictures come last: redraw the select screen once they are there
+      if (this.thumbs.done && this.phase === 'select' && this.loadoutUi && !this.talentBoard) this.showSelect();
     }
     const sim = this.sim;
-    if (this.phase === 'play' && sim && !sim.over) {
+    // the game waits while a card draft or the card list is open
+    const halted = !!(this.draft || this.cardList || (sim && sim.drafts > 0));
+    if (this.phase === 'play' && sim && !sim.over && !halted) {
       let left = dt * this.speed;
       while (left > 1e-6) {
         const h = Math.min(1 / 30, left);
@@ -1377,13 +1889,18 @@ export class PlayScene extends ArcadeScene {
         sim.step(h);
         for (const ev of sim.events) this.onEvent(ev);
         sim.events.length = 0;
-        if (sim.over) break;
+        if (sim.over || sim.drafts > 0) break;
         left -= h;
       }
       sim.compact();
       if (this.bot) this.testSync();
     }
-    const simDt = this.phase === 'play' ? dt * this.speed : dt;
+    // a draft is due: open it a moment after the wave-clear banner
+    if (this.phase === 'play' && sim && !sim.over && !this.isOver && sim.drafts > 0 && !this.draft) {
+      this.draftWait += dt;
+      if (this.draftWait > 0.7) { this.draftWait = 0; this.openDraft(); }
+    }
+    const simDt = this.phase === 'play' && !halted ? dt * this.speed : this.phase === 'play' ? 0 : dt;
     // towers
     if (sim) {
       for (const tw of sim.towers) {
@@ -1391,7 +1908,7 @@ export class PlayScene extends ArcadeScene {
         if (v) { this.animateBuild(v, dt); animateTower(v, tw.kind, tw.target ? tw.aim : v.yaw + simDt * 0.3, simDt); }
       }
     }
-    this.enemiesV.update(simDt, this.time3, this.phase === 'play' && sim ? sim.enemies : []);
+    this.enemiesV.update(simDt, this.time3, this.phase === 'play' && sim ? sim.enemies : [], this.phase === 'play' && sim ? sim.allies : []);
     this.fx.update(simDt, this.phase === 'play' && sim ? sim.shots : [], this.phase === 'play' && sim ? sim.meteors : []);
     this.board?.update(dt, this.time3, sim ? sim.lives / sim.maxLives : 1);
     this.markers.update(this.time3, dt);
@@ -1403,11 +1920,14 @@ export class PlayScene extends ArcadeScene {
       if (this.hintT <= 0) this.tweens.add({ targets: this.hint, alpha: 0, duration: 350 });
     } else if (this.hintQueue.length && this.hint.alpha < 0.05) this.displayHint(this.hintQueue.shift()!);
     if (this.phase === 'play' && sim) this.updateHud(sim);
+    this.drawBolts(dt);
+    if (sim) this.tray.update(dt, sim);
   }
 
   private updateHud(sim: Sim): void {
     this.setScore(this.runBase + sim.score);
-    if (sim.gold !== this.lastGold) { this.goldChip.setText(String(sim.gold)); this.lastGold = sim.gold; }
+    if (sim.gold !== this.lastGold) { this.goldChip.setText(String(sim.gold)); this.lastGold = sim.gold; this.tray.place(this.goldChip.right); }
+    this.tray.sync(sim);
     this.hud.setLives(sim.lives, sim.maxLives);
     // wave button
     const b = this.waveBtn;
@@ -1428,21 +1948,24 @@ export class PlayScene extends ArcadeScene {
     // panels follow the gold
     if (this.selTower && !sim.towers.includes(this.selTower)) this.deselect();
     if (this.selTower) this.towerCard.refresh(this.selTower, sim, this.sellArmed);
+    const powers: Partial<Record<PowerId, PowerState>> = {};
+    for (const id of sim.powers) powers[id] = { cd: sim.cd[id], max: sim.cooldown(id), ready: sim.powerReady(id) };
     if (this.dock.visible) {
-      this.dock.refresh({
-        gold: sim.gold, armed: this.armed, waiting: !!this.sel && !this.armed && !this.selTower,
-        meteorCd: sim.meteorCd, meteorMax: METEOR.cooldown, meteorReady: sim.meteorReady(), time: this.time3,
-      });
+      const costs = Object.fromEntries(TOWER_KINDS.map((k) => [k, sim.buildCost(k)])) as Record<TowerKind, number>;
+      this.dock.refresh({ gold: sim.gold, costs, armed: this.armed, waiting: !!this.sel && !this.armed && !this.selTower, powers, time: this.time3 });
     }
-    if (sim.meteorReady() && !this.meteorWasReady) {
-      // the meteor charged: the card flashes once
-      const c = this.dock.card('meteor');
-      if (c && this.dock.visible) {
-        this.tweens.add({ targets: c.box, scale: 1.12, duration: 140, yoyo: true, ease: 'Quad.easeOut' });
-        if (sim.wave > 1) popup(this, this.dock.x + c.box.x, this.dock.y - 96, t('meteorReady'), '#ffc27a', 22);
+    for (const id of sim.powers) {
+      const ready = sim.powerReady(id);
+      // a power charged: its card flashes once
+      if (ready && this.powerWasReady[id] === false) {
+        const c = this.dock.card(id);
+        if (c && this.dock.visible) {
+          this.tweens.add({ targets: c.box, scale: 1.12, duration: 140, yoyo: true, ease: 'Quad.easeOut' });
+          if (sim.wave > 1) popup(this, this.dock.x + c.box.x, this.dock.y - 96, t('powerReady', { name: t('p_' + id) }), '#ffc27a', 22);
+        }
       }
+      this.powerWasReady[id] = ready;
     }
-    this.meteorWasReady = sim.meteorReady();
     this.updateMarkers(sim);
     this.syncModal();
     // health bars (sized with the camera's zoom) and the boss bar
@@ -1461,6 +1984,14 @@ export class PlayScene extends ArcadeScene {
       const k = Math.max(0, e.hp / e.maxHp);
       g.fillStyle(0x000000, 0.6).fillRoundedRect(s.x - w / 2 - 2, s.y - h / 2 - 2, w + 4, h + 4, 3);
       g.fillStyle(k > 0.5 ? 0x5dff7a : k > 0.25 ? 0xffd23f : 0xff5a4a, 1).fillRect(s.x - w / 2, s.y - h / 2, w * k, h);
+    }
+    // the guards' time left: a thin gold bar over each
+    for (const a of sim.allies) {
+      if (!a.alive) continue;
+      const s = this.screen(a.x, PATH_Y + 0.72 * 1.25 + 0.12, a.z);
+      const w = Math.round(unit * 0.42), h = Math.max(4, Math.round(unit * 0.06));
+      g.fillStyle(0x000000, 0.55).fillRoundedRect(s.x - w / 2 - 2, s.y - h / 2 - 2, w + 4, h + 4, 3);
+      g.fillStyle(0xffd27a, 1).fillRect(s.x - w / 2, s.y - h / 2, w * Math.max(0, a.life / a.max), h);
     }
     if (boss) {
       if (!this.bossOn) {
@@ -1486,11 +2017,52 @@ export class PlayScene extends ArcadeScene {
     for (let s = 0; s < seconds; s += dt) this.tick(dt);
   }
 
-  /** The autopilot (bot.ts) builds, upgrades and calls waves. */
-  testAuto(on = true): void {
-    this.bot = on && this.sim ? new Bot(this.sim) : null;
+  /** The autopilot (bot.ts) builds, upgrades and calls waves (drafts: it also takes the cards). */
+  testAuto(on = true, drafts = false): void {
+    this.bot = on && this.sim ? new Bot(this.sim, { drafts }) : null;
     if (this.bot) for (const tw of this.sim!.towers) if (!this.towersV.has(tw.id)) this.addTowerView(tw, false);
   }
+
+  /** Sets the saved progression (shards, talents, loadout) and redraws the map select. */
+  testMeta(m: Partial<Meta>): void {
+    Object.assign(this.meta, m);
+    saveMeta(this.meta);
+    if (this.phase === 'select' && !this.talentBoard) this.showSelect();
+  }
+
+  /** Opens a card draft now (optionally with a given offer). */
+  testDraft(offer?: CardId[]): void {
+    const sim = this.sim;
+    if (!sim) return;
+    sim.drafts++;
+    this.openDraft(offer);
+  }
+
+  testDraftPick(i: number): void { this.draft?.testPick(i); }
+
+  /** Gives cards without a draft. */
+  testGive(ids: CardId[]): void {
+    for (const id of ids) { const d = this.sim!.drafts; this.sim!.pickCard(id); this.sim!.drafts = d; }
+    this.tray.sync(this.sim!);
+  }
+
+  /** Casts a power now (aimed ones at x, z), ready or not. */
+  testCast(id: PowerId, x = 0, z = 0): void {
+    if (!this.sim) return;
+    this.sim.cd[id] = 0;
+    this.castPower(id, x, z);
+  }
+
+  /** Wins the map at once (the map-clear screen). */
+  testWin(lives?: number): void {
+    const sim = this.sim!;
+    if (lives !== undefined) sim.lives = lives;
+    sim.over = 'win';
+    this.mapWon();
+  }
+
+  /** Opens the talent board (from the map select). */
+  testTalents(focus?: TalentId): void { this.openTalents(focus); }
 
   /** Starts a map directly (screenshots). */
   testStart(i: number): void {
@@ -1535,9 +2107,9 @@ export class PlayScene extends ArcadeScene {
   }
 
   /** Game pixels of a dock card's centre. */
-  testCardScreen(kind: ArmKind): { x: number; y: number } {
-    const c = this.dock.card(kind)!;
-    return { x: this.dock.x + c.box.x, y: this.dock.y + c.box.y };
+  testCardScreen(kind: ArmKind): { x: number; y: number } | null {
+    const c = this.dock.card(kind);
+    return c ? { x: this.dock.x + c.box.x, y: this.dock.y + c.box.y } : null;
   }
 
   /** Buildable tiles that show between the HUD and the dock (for the build checks). */

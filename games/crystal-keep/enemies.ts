@@ -3,8 +3,8 @@
 // kind is instanced, so a crowded wave costs the same few draw calls as a quiet one.
 import Phaser from 'phaser';
 import { THREE } from '@core/three';
-import { Instances, RigInstances, kitGeo, kitMat, ZOMBIE, SOLDIER } from './kit';
-import { ENEMIES, type Enemy, type EnemyKind } from './sim';
+import { Instances, RigInstances, kitGeo, kitMat, ZOMBIE, SOLDIER, GUARD } from './kit';
+import { ENEMIES, type Enemy, type EnemyKind, type Ally } from './sim';
 import { PATH_Y } from './board';
 
 interface Look {
@@ -51,19 +51,29 @@ const _v = new THREE.Vector3();
 const _s = new THREE.Vector3();
 const _c = new THREE.Color();
 const UP = new THREE.Vector3(0, 1, 0);
+const ICE = new THREE.Color(0.45, 0.78, 1.25);
 
 export class EnemyView {
   private zombies: RigInstances;
   private soldiers: RigInstances;
   private ufos: Record<'ufo' | 'gunship' | 'mothership', Instances>;
+  private guards: RigInstances;
+  /** Frost Nova's ice: a translucent shell around every frozen enemy. */
+  private ice: Instances;
+  private iceMat: THREE.MeshBasicMaterial;
+  private guardVis = new Map<number, { t: number; yaw: number; born: number }>();
   private vis = new Map<number, Vis>();
   private corpses: Corpse[] = [];
   /** Called when a falling UFO hits the ground (for an explosion). */
   onCrash: ((x: number, z: number, big: boolean) => void) | null = null;
 
   constructor(scene: Phaser.Scene, parent: THREE.Object3D) {
-    this.zombies = new RigInstances(parent, ZOMBIE, ['walk', 'sprint', 'die'], 60);
-    this.soldiers = new RigInstances(parent, SOLDIER, ['walk', 'die'], 24);
+    this.zombies = new RigInstances(parent, ZOMBIE, ['walk', 'sprint', 'die', 'attack-melee-left'], 60);
+    this.soldiers = new RigInstances(parent, SOLDIER, ['walk', 'die', 'attack-melee-left'], 24);
+    this.guards = new RigInstances(parent, GUARD, ['walk', 'attack-melee-right', 'emote-yes'], 8);
+    // the same kind of material as the effects' rings, so it needs no shader of its own
+    this.iceMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false });
+    this.ice = new Instances(parent, new THREE.IcosahedronGeometry(1, 0), this.iceMat, 60, { colors: true });
     const mat = kitMat(scene);
     this.ufos = {
       ufo: new Instances(parent, kitGeo('enemy-ufo-a'), mat, 40, { shadows: true, colors: true }),
@@ -72,7 +82,7 @@ export class EnemyView {
     };
   }
 
-  get drawCalls(): number { return this.zombies.drawCalls + this.soldiers.drawCalls + 3; }
+  get drawCalls(): number { return this.zombies.drawCalls + this.soldiers.drawCalls + this.guards.drawCalls + 4; }
 
   /** A hit: the figure flashes white. */
   hit(e: Enemy): void {
@@ -99,9 +109,33 @@ export class EnemyView {
     return L.ufo ? FLY_Y + 0.55 * L.scale + 0.15 : PATH_Y + 0.72 * L.scale + 0.1;
   }
 
-  update(dt: number, time: number, enemies: Enemy[]): void {
+  /** Height of a guard's head (its time bar). */
+  static GUARD_SCALE = 1.25;
+
+  update(dt: number, time: number, enemies: Enemy[], allies: Ally[] = []): void {
     this.zombies.begin();
     this.soldiers.begin();
+    this.guards.begin();
+    this.ice.begin();
+    // the keep's guards: march with their own walk, swing with their own attack
+    for (const a of allies) {
+      if (!a.alive) continue;
+      let v = this.guardVis.get(a.id);
+      if (!v) { v = { t: Math.random(), yaw: Math.atan2(a.fx, a.fz), born: 0 }; this.guardVis.set(a.id, v); }
+      v.born = Math.min(1, v.born + dt * 2.5);
+      let d = Math.atan2(a.fx, a.fz) - v.yaw;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      v.yaw += d * Math.min(1, dt * 10);
+      const fight = a.fight !== 0;
+      v.t += dt * (fight ? 1.3 : 1.15 / (0.75 * EnemyView.GUARD_SCALE));
+      // a short shrink as their time runs out
+      const out = a.life < 0.35 ? a.life / 0.35 : 1;
+      const sc = EnemyView.GUARD_SCALE * Phaser.Math.Easing.Back.Out(v.born) * out;
+      _m.compose(_v.set(a.x, PATH_Y, a.z), _q.setFromAxisAngle(UP, v.yaw), _s.set(sc, sc, sc));
+      this.guards.put(_m, fight ? 'attack-melee-right' : 'walk', v.t, _c.setRGB(1.08, 1.05, 1.0));
+    }
+    for (const id of [...this.guardVis.keys()]) if (!allies.some((a) => a.id === id && a.alive)) this.guardVis.delete(id);
     for (const k in this.ufos) this.ufos[k as keyof typeof this.ufos].begin();
     for (const e of enemies) {
       if (!e.alive) continue;
@@ -117,14 +151,23 @@ export class EnemyView {
       const pop = v.born < 1 ? Phaser.Math.Easing.Back.Out(v.born) : 1;
       const s = L.scale * pop;
       const f = v.flash > 0 ? 2.6 : 1;
-      _c.setRGB(L.tint[0] * f, L.tint[1] * f, L.tint[2] * f);
+      const frozen = e.frozen > 0;
+      if (frozen) _c.setRGB(0.62 * f, 0.88 * f, 1.35 * f);
+      else _c.setRGB(L.tint[0] * f, L.tint[1] * f, L.tint[2] * f);
+      if (frozen) {
+        const k = L.ufo ? 0.6 * L.scale : 0.55 * L.scale;
+        const wob = 1 + Math.sin(time * 20 + e.id) * 0.02 * Math.min(1, e.frozen);
+        _m.compose(_v.set(e.x, L.ufo ? FLY_Y : PATH_Y + 0.42 * L.scale, e.z), _q.setFromAxisAngle(UP, e.id), _s.set(k * wob, k * 1.2 * wob, k * wob));
+        this.ice.put(_m, ICE);
+      }
       if (L.rig) {
-        v.t += dt * e.speed / (L.stride * L.scale);
+        // held up by a guard: they fight back with their own attack
+        if (!frozen) v.t += e.blocked ? dt * 1.2 : dt * e.speed / (L.stride * L.scale);
         _m.compose(_v.set(e.x, PATH_Y, e.z), _q.setFromAxisAngle(UP, v.yaw), _s.set(s, s, s));
-        (L.rig === 'zombie' ? this.zombies : this.soldiers).put(_m, L.clip, v.t, _c);
+        (L.rig === 'zombie' ? this.zombies : this.soldiers).put(_m, e.blocked && !frozen ? 'attack-melee-left' : L.clip, v.t, _c);
       } else {
-        v.t += dt;
-        const bob = Math.sin(time * 3 + e.id) * 0.08;
+        if (!frozen) v.t += dt;
+        const bob = frozen ? 0 : Math.sin(time * 3 + e.id) * 0.08;
         const tilt = new THREE.Euler(Math.sin(time * 2 + e.id) * 0.08, v.t * (e.kind === 'mothership' ? 0.6 : 2.2), Math.cos(time * 2.3 + e.id) * 0.08);
         _m.compose(_v.set(e.x, FLY_Y + bob, e.z), _q.setFromEuler(tilt), _s.set(s, s, s));
         this.ufos[L.ufo!].put(_m, _c);
@@ -158,6 +201,8 @@ export class EnemyView {
     }
     this.zombies.end();
     this.soldiers.end();
+    this.guards.end();
+    this.ice.end();
     for (const k in this.ufos) this.ufos[k as keyof typeof this.ufos].end();
   }
 }

@@ -9,6 +9,7 @@ import { EnemyView } from './enemies';
 import { Fx } from './fx3d';
 import { Sim } from './sim';
 import { Bot } from './bot';
+import { Thumbs } from './thumbs';
 
 launch({
   meta: meta as GameMeta,
@@ -48,6 +49,24 @@ launch({
     loadAudio(l, 'move', J + 'general-sounds/menu-sounds/sfx-menu-move2');
     loadAudio(l, 'arm', J + 'general-sounds/menu-sounds/sfx-menu-select2');
     loadAudio(l, 'meteorFall', J + 'movement/falling-sounds/sfx-sounds-falling3');
+    // power cards, the new powers and the talent board
+    loadAudio(l, 'cardPick', J + 'general-sounds/positive-sounds/sfx-sounds-powerup10');
+    loadAudio(l, 'epic', J + 'general-sounds/weird-sounds/sfx-sound-bling');
+    loadAudio(l, 'frost', J + 'general-sounds/weird-sounds/sfx-sound-depressurizing');
+    loadAudio(l, 'zap', J + 'weapons/lasers/sfx-wpn-laser10');
+    loadAudio(l, 'thunder', J + 'explosions/long/sfx-exp-long1');
+    loadAudio(l, 'sword', J + 'weapons/melee/sfx-wpn-sword2');
+    loadAudio(l, 'guards', J + 'general-sounds/fanfares/sfx-sounds-fanfare1');
+    loadAudio(l, 'talent', J + 'general-sounds/positive-sounds/sfx-sounds-powerup13');
+    loadAudio(l, 'refund', J + 'general-sounds/weird-sounds/sfx-sound-shutdown1');
+    loadAudio(l, 'shards', J + 'general-sounds/coins/sfx-coin-cluster5');
+    const C = 'sfx-casino/audio/';
+    loadSfx(l, 'cardFan', C + 'cardfan1');
+    loadSfx(l, 'cardFlip', C + 'cardplace1');
+    loadSfx(l, 'cardPlace', C + 'cardplace3');
+    loadSfx(l, 'cardSlide', C + 'cardslide3');
+    loadSfx(l, 'reroll', C + 'cardshuffle');
+    loadSfx(l, 'shatter', 'sfx-impact/audio/impactglass_heavy_002');
     const I = 'sfx-impact/audio/';
     loadSfx(l, 'catapult', I + 'impactplank_medium_000');
     loadSfx(l, 'hammer', I + 'impactplank_medium_002');
@@ -60,6 +79,9 @@ launch({
     const world = new World3D(scene, { fov: 34, near: 0.5, far: 140, background: PALETTE_LOOK.green.sky });
     world.scene.fog = new THREE.Fog(PALETTE_LOOK.green.fog, 30, 70);
     world.addLights({ extent: 12, dir: [-0.45, 1, 0.5], intensity: 2.3, ambient: 1.5 });
+    // the UI icons (towers, enemies, maps, cards, powers, talents) are drawn once, here, so every
+    // round of the Play scene starts with them and builds the same GPU state
+    new Thumbs(scene, world.renderer).flush();
     const sim = new Sim(0, 'easy');
     sim.gold = 2000;
     const board = new Board(scene, world.scene, sim.map);
@@ -98,7 +120,7 @@ launch({
         }
         animateTower(v, tw.kind, tw.target ? tw.aim : v.yaw, dt);
       }
-      enemies.update(dt, time, sim.enemies);
+      enemies.update(dt, time, sim.enemies, sim.allies);
       fx.update(dt, sim.shots, sim.meteors);
       board.update(dt, time, 1);
       const a = time * 0.08;

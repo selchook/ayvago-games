@@ -396,15 +396,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'crystal-keep',
     title: { en: 'Crystal Keep', tr: 'Kristal Kale' },
     description: {
-      en: "Defend the Crystal Keep from zombie hordes and UFOs! Pick a ballista, cannon, catapult or turret from the cards below and build it along the path; upgrade your towers through three levels, choose their targets (first, strongest, closest) or sell them. In a pinch, drop the keep's meteor on the enemies. Fast runners, armoured brutes, flying UFOs, the Giant Zombie and the Mothership come in waves. Three maps with 12–15 waves each: earn stars for the lives you keep, and call waves early for bonus gold.",
-      tr: "Kristal Kale'yi zombi sürülerine ve UFO'lara karşı koru! Alttaki kartlardan balista, top, mancınık ya da taret seç ve yolun kenarına kur; kulelerini üç seviyeye kadar geliştir, hedeflerini (ilk, en güçlü, en yakın) seç, gerekirse sat. Sıkışınca kalenin göktaşını düşmanların üstüne bırak. Hızlı koşucular, zırhlı askerler, uçan UFO'lar, Dev Zombi ve Ana Gemi dalga dalga geliyor. Üç harita, her birinde 12–15 dalga: kalan canına göre yıldız topla, sonraki dalgayı erken çağırıp altın kazan.",
+      en: "Defend the Crystal Keep from zombie hordes and UFOs! Build ballistas, cannons, catapults and turrets along the path, upgrade them and pick their targets. After every third wave and every boss, choose one of three power cards: Critical Strikes, Chain Reaction, Meteor Storm and more last for the whole map. Unleash the keep's powers: the Meteor, Frost Nova, Lightning Storm and Reinforcements. Clear maps to earn Crystal Shards and unlock new powers on the Talent board. Three maps with 12–15 waves each.",
+      tr: "Kristal Kale'yi zombi sürülerine ve UFO'lara karşı koru! Yolun kenarına balista, top, mancınık ve taret kur, geliştir ve hedeflerini seç. Her üç dalgada bir ve her boss'tan sonra üç güç kartından birini seç: Kritik Vuruş, Zincirleme Patlama, Göktaşı Yağmuru gibi kartlar harita boyunca sürer. Kalenin güçlerini kullan: Göktaşı, Buz Patlaması, Şimşek Fırtınası ve Takviye muhafızları. Haritaları bitirip Kristal Parçası topla, Yetenek panosunda yeni güçler aç. Üç harita, her birinde 12–15 dalga.",
     },
     category: 'strategy',
     categories: ['strategy', 'action'],
     tags: ['crystal', 'keep', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.2.0',
     addedAt: '2026-11-11',
   }),
   arcadeGame({
