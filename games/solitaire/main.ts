@@ -35,13 +35,14 @@ launch({
     const { width, height } = scene.scale;
     makeArt(scene);
     scene.add.image(0, 0, makeFelt(scene, width, height, 1140)).setOrigin(0).setDepth(-100);
-    // a fanned hand: the back, then the ace of spades, the king of hearts and the queen of diamonds
+    // a fanned hand: the back, then the ace of spades, the king of hearts and the queen of diamonds,
+    // in the free band between the title and the best score (the bottom row holds the Ayvago logo)
     const hand: [string, number][] = [[BACK, -15], [faceKey(3, 1), -5], [faceKey(2, 13), 5], [faceKey(1, 12), 15]];
     hand.forEach(([key, angle], i) => {
-      const x = width / 2 - 105 + i * 70, y = height * 0.868 + Math.abs(i - 1.5) * 10;
-      const shadow = scene.add.image(x + 3, y + 6, SHADOW).setAngle(angle).setAlpha(0.45).setScale(0.85);
-      const card = scene.add.image(x, y, key).setAngle(angle).setScale(0.85);
-      scene.tweens.add({ targets: [card, shadow], y: '-=10', duration: 1400, delay: i * 180, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      const x = width / 2 - 78 + i * 52, y = height * 0.29 + Math.abs(i - 1.5) * 7;
+      const shadow = scene.add.image(x + 3, y + 5, SHADOW).setAngle(angle).setAlpha(0.45).setScale(0.6);
+      const card = scene.add.image(x, y, key).setAngle(angle).setScale(0.6);
+      scene.tweens.add({ targets: [card, shadow], y: '-=6', duration: 1400, delay: i * 180, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     });
   },
   scenes: [PlayScene],
