@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/brick-breaker/ayvago/icon-512.png",
     "cover": "/games/brick-breaker/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/brick-breaker/ayvago/screenshot.jpg"
+    "screenshot": "/games/brick-breaker/ayvago/screenshot.jpg",
+    "card": "/games/brick-breaker/ayvago/card-640x360.webp",
+    "card2x": "/games/brick-breaker/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

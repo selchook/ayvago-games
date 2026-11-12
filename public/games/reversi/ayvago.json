@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/reversi/ayvago/icon-512.png",
     "cover": "/games/reversi/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/reversi/ayvago/screenshot.jpg"
+    "screenshot": "/games/reversi/ayvago/screenshot.jpg",
+    "card": "/games/reversi/ayvago/card-640x360.webp",
+    "card2x": "/games/reversi/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

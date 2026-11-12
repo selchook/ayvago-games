@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/axe-throw/ayvago/icon-512.png",
     "cover": "/games/axe-throw/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/axe-throw/ayvago/screenshot.jpg"
+    "screenshot": "/games/axe-throw/ayvago/screenshot.jpg",
+    "card": "/games/axe-throw/ayvago/card-640x360.webp",
+    "card2x": "/games/axe-throw/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

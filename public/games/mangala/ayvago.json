@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/mangala/ayvago/icon-512.png",
     "cover": "/games/mangala/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/mangala/ayvago/screenshot.jpg"
+    "screenshot": "/games/mangala/ayvago/screenshot.jpg",
+    "card": "/games/mangala/ayvago/card-640x360.webp",
+    "card2x": "/games/mangala/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

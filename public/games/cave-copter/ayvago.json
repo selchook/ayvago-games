@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/cave-copter/ayvago/icon-512.png",
     "cover": "/games/cave-copter/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/cave-copter/ayvago/screenshot.jpg"
+    "screenshot": "/games/cave-copter/ayvago/screenshot.jpg",
+    "card": "/games/cave-copter/ayvago/card-640x360.webp",
+    "card2x": "/games/cave-copter/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

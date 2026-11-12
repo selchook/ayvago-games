@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/rope-swing/ayvago/icon-512.png",
     "cover": "/games/rope-swing/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/rope-swing/ayvago/screenshot.jpg"
+    "screenshot": "/games/rope-swing/ayvago/screenshot.jpg",
+    "card": "/games/rope-swing/ayvago/card-640x360.webp",
+    "card2x": "/games/rope-swing/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

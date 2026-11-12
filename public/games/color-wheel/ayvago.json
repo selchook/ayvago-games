@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/color-wheel/ayvago/icon-512.png",
     "cover": "/games/color-wheel/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/color-wheel/ayvago/screenshot.jpg"
+    "screenshot": "/games/color-wheel/ayvago/screenshot.jpg",
+    "card": "/games/color-wheel/ayvago/card-640x360.webp",
+    "card2x": "/games/color-wheel/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

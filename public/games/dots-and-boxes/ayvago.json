@@ -54,7 +54,9 @@
   "assets": {
     "icon": "/games/dots-and-boxes/ayvago/icon-512.png",
     "cover": "/games/dots-and-boxes/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/dots-and-boxes/ayvago/screenshot.jpg"
+    "screenshot": "/games/dots-and-boxes/ayvago/screenshot.jpg",
+    "card": "/games/dots-and-boxes/ayvago/card-640x360.webp",
+    "card2x": "/games/dots-and-boxes/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

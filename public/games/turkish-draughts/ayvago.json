@@ -53,7 +53,9 @@
   "assets": {
     "icon": "/games/turkish-draughts/ayvago/icon-512.png",
     "cover": "/games/turkish-draughts/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/turkish-draughts/ayvago/screenshot.jpg"
+    "screenshot": "/games/turkish-draughts/ayvago/screenshot.jpg",
+    "card": "/games/turkish-draughts/ayvago/card-640x360.webp",
+    "card2x": "/games/turkish-draughts/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

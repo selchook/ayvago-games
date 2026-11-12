@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/water-sort/ayvago/icon-512.png",
     "cover": "/games/water-sort/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/water-sort/ayvago/screenshot.jpg"
+    "screenshot": "/games/water-sort/ayvago/screenshot.jpg",
+    "card": "/games/water-sort/ayvago/card-640x360.webp",
+    "card2x": "/games/water-sort/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

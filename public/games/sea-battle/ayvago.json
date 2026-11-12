@@ -53,7 +53,9 @@
   "assets": {
     "icon": "/games/sea-battle/ayvago/icon-512.png",
     "cover": "/games/sea-battle/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/sea-battle/ayvago/screenshot.jpg"
+    "screenshot": "/games/sea-battle/ayvago/screenshot.jpg",
+    "card": "/games/sea-battle/ayvago/card-640x360.webp",
+    "card2x": "/games/sea-battle/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

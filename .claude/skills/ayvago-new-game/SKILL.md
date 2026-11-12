@@ -176,6 +176,7 @@ Other helpers from `@core`:
 8. **Visual check.** Take at least one gameplay screenshot with Playwright and look at it; layout must fit the 720×1280 (or 1280×720) world.
 9. **HUD in chips.** Score, lives and level use `Hud`; every other always-visible readout sits in a `hudChip` (glass in modern, plain box in retro). The screenshot shows no bare HUD text and nothing under the pause button.
 10. **Characters move with their own limbs.** In a game with a player character, every move uses one of its poses (no extra limbs drawn on top). Screenshots with two characters show the ball, rope or tool meeting the real foot or hand.
+11. **Store art.** `node scripts/gen-store-assets.mjs <slug>` passes and the catalog card (`card-640x360.webp`) shows real play with the logo clear of the action (§8).
 
 ## 7. Verify
 
@@ -472,6 +473,7 @@ nothing, so a game that opts in looks and plays exactly as before.
 - Run `npm run registry` (validates `game.json`).
 - Run `npm run build`.
 - Run `npm run platform` (writes `public/games/<slug>/ayvago.json` and the platform catalog).
-- Run `node scripts/gen-store-assets.mjs <slug>` (platform cover + icon + portal thumbnail).
+- Run `node scripts/gen-store-assets.mjs <slug>` (platform cover, icon, screenshot, catalog card in two sizes and portal thumbnail), then `npm run validate:platform`.
+- Look at the catalog card `public/games/<slug>/ayvago/card-640x360.webp`: it is what players see first in the ayvago.com catalog. It must show real play (not the menu, a round-start banner or an empty or black frame) and the logo must not hide the action. If it misses, add the game to the `CARD` table in `scripts/gen-store-assets.mjs` (`pick` another candidate frame, `wait` before the scripted play, or `accent` for the logo colour); `CARD_FRAMES=<dir>` keeps the candidate frames for a look and `--card-only --from-frames` re-composes from them without replaying.
 - Run `node scripts/platform-harness.mjs <slug>` (GHA_* protocol check, embedded like ayvago.com).
 - Commit `games/<slug>`, `public/games/<slug>/`, `public/thumbs/<slug>.png` and `platform/arcade-catalog.ts`. The platform pulls the catalog from `main` by itself (its "Sync arcade catalog" workflow opens the PR); never copy it by hand.

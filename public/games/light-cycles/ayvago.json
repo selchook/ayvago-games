@@ -53,7 +53,9 @@
   "assets": {
     "icon": "/games/light-cycles/ayvago/icon-512.png",
     "cover": "/games/light-cycles/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/light-cycles/ayvago/screenshot.jpg"
+    "screenshot": "/games/light-cycles/ayvago/screenshot.jpg",
+    "card": "/games/light-cycles/ayvago/card-640x360.webp",
+    "card2x": "/games/light-cycles/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/golden-podium/ayvago/icon-512.png",
     "cover": "/games/golden-podium/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/golden-podium/ayvago/screenshot.jpg"
+    "screenshot": "/games/golden-podium/ayvago/screenshot.jpg",
+    "card": "/games/golden-podium/ayvago/card-640x360.webp",
+    "card2x": "/games/golden-podium/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

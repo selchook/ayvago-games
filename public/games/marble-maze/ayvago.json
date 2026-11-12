@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/marble-maze/ayvago/icon-512.png",
     "cover": "/games/marble-maze/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/marble-maze/ayvago/screenshot.jpg"
+    "screenshot": "/games/marble-maze/ayvago/screenshot.jpg",
+    "card": "/games/marble-maze/ayvago/card-640x360.webp",
+    "card2x": "/games/marble-maze/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

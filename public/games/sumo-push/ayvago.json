@@ -53,7 +53,9 @@
   "assets": {
     "icon": "/games/sumo-push/ayvago/icon-512.png",
     "cover": "/games/sumo-push/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/sumo-push/ayvago/screenshot.jpg"
+    "screenshot": "/games/sumo-push/ayvago/screenshot.jpg",
+    "card": "/games/sumo-push/ayvago/card-640x360.webp",
+    "card2x": "/games/sumo-push/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }
