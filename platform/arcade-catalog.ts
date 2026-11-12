@@ -1134,6 +1134,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'snack-shack',
+    title: { en: 'Snack Shack', tr: 'Lezzet Durağı' },
+    description: {
+      en: 'Lunch rush at a tiny diner! Customers walk in, take a stool at the bar and order: burgers, fries, sodas, deluxe burgers, hot dogs and ice cream. Grill the patties without burning them, fry the fries, fill the cups and get every order to the right customer before their patience runs out. Fast service earns tips and back-to-back orders build combos. Every day opens new dishes and stations; collect stars at the end of the day and spend your tips on a hotter grill, comfier stools and a bigger pass. If too many customers storm off, the shack closes.',
+      tr: 'Küçük bir lokantada öğle telaşı! Müşteriler içeri girip bara oturuyor ve siparişlerini veriyor: burger, patates, gazoz, süper burger, sosisli ve dondurma. Köfteleri ızgarada pişir ama yakma, patatesleri kızart, bardakları doldur ve her siparişi sabrı bitmeden doğru müşteriye ulaştır. Hızlı servis bahşiş getirir, art arda biten siparişler kombo yapar. Her gün yeni yemekler ve istasyonlar açılır; günün sonunda yıldızlarını topla ve bahşişlerle ızgarayı, tabureleri ve tezgâhı geliştir. Çok fazla müşteri kızıp giderse lokanta kapanır.',
+    },
+    category: 'casual',
+    categories: ['casual', 'arcade'],
+    tags: ['snack', 'shack', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-12',
+  }),
+  arcadeGame({
     slug: 'sokoban',
     title: { en: 'Box Pusher', tr: 'Kutu İtici' },
     description: {
