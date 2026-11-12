@@ -2,8 +2,9 @@
 // the build bar, the tower card, the wave button and stars. Fixed to the camera.
 import Phaser from 'phaser';
 import { txt, t } from '@core';
-import { TOWERS, TOWER_KINDS, ENEMIES, type TowerKind, type Tower, type Sim, type EnemyKind, type TargetMode } from './sim';
+import { TOWERS, TOWER_KINDS, ENEMIES, POWERS, POWER_IDS, type TowerKind, type Tower, type Sim, type EnemyKind, type TargetMode, type PowerId } from './sim';
 import { towerThumb, enemyThumb, meteorThumb } from './thumbs';
+import { powerArt } from './art';
 
 export const UI_DEPTH = 9100;
 
@@ -92,13 +93,15 @@ export class Pill extends Phaser.GameObjects.Container {
 
 // ------------------------------------------------------------------ build dock
 
-/** What a dock card arms: a tower to build or the keep's meteor strike. */
-export type ArmKind = TowerKind | 'meteor';
-export const DOCK_KINDS: ArmKind[] = [...TOWER_KINDS, 'meteor'];
+/** What a dock card arms: a tower to build or one of the keep's powers. */
+export type ArmKind = TowerKind | PowerId;
+export const isPower = (k: ArmKind | null): k is PowerId => !!k && (POWER_IDS as string[]).includes(k);
 
 interface DockCard {
   kind: ArmKind;
   box: Phaser.GameObjects.Container;
+  /** Resting x in the dock. */
+  x0: number;
   bg: Phaser.GameObjects.Graphics;
   img: Phaser.GameObjects.Image;
   coin: Phaser.GameObjects.Image | null;
@@ -107,75 +110,104 @@ interface DockCard {
   cdText: Phaser.GameObjects.Text;
 }
 
+export interface PowerState { cd: number; max: number; ready: boolean }
+
 export interface DockState {
   gold: number;
+  /** Gold of each tower (cards may make them cheaper). */
+  costs: Record<TowerKind, number>;
   armed: ArmKind | null;
   /** A tile is selected and waits for a card (the cards glow). */
   waiting: boolean;
-  meteorCd: number;
-  meteorMax: number;
-  meteorReady: boolean;
+  powers: Partial<Record<PowerId, PowerState>>;
   time: number;
 }
 
 /**
- * The build inventory, always open at the bottom of the field: the four towers and the meteor.
- * A card is "armed" when picked; the scene then places it where the player clicks or taps.
+ * The build inventory, always open at the bottom of the field: the four towers and the equipped
+ * powers. A card is "armed" when picked; the scene then places it where the player clicks or taps.
+ * With more powers the cards get narrower, so the dock always fits the screen.
  */
 export class BuildDock extends Phaser.GameObjects.Container {
-  static CW = 128;
-  static CH = 128;
-  static W = 5 * 128 + 4 * 8 + 16;
+  static W = 696;
   static H = 144;
-  readonly cards: DockCard[] = [];
+  static CH = 128;
+  cw = 128;
+  cards: DockCard[] = [];
+  private panel: Phaser.GameObjects.Graphics;
   private info: Phaser.GameObjects.Container;
   private infoBg: Phaser.GameObjects.Graphics;
   private infoText: Phaser.GameObjects.Text;
   private sig = '';
+  w = BuildDock.W;
   /** The card under the mouse (desktop), for the info line. */
   hoverKind: ArmKind | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, private onPick: (k: ArmKind) => void) {
     super(scene, x, y);
-    const { CW, CH, W, H } = BuildDock;
-    this.add(glass(scene, W, H, { alpha: 0.86 }));
+    this.panel = scene.add.graphics();
+    this.add(this.panel);
     // the panel swallows clicks between the cards, so they never reach the map below
-    this.add(scene.add.zone(0, 0, W, H).setInteractive());
-    DOCK_KINDS.forEach((kind, i) => {
-      const cx = -W / 2 + 8 + CW / 2 + i * (CW + 8);
-      const box = scene.add.container(cx, 0);
-      const bg = scene.add.graphics();
-      const meteor = kind === 'meteor';
-      const img = scene.add.image(0, -14, meteor ? meteorThumb() : towerThumb(kind, 0)).setDisplaySize(88, 88);
-      const coin = meteor ? null : scene.add.image(0, 43, 'ck-coin').setDisplaySize(22, 22);
-      const cost = txt(scene, 0, 43, '', { title: true, size: meteor ? 17 : 21, color: '#ffd23f', strokeThickness: 0, shadow: false });
-      if (!meteor) cost.setOrigin(0, 0.5);
-      const key = txt(scene, -CW / 2 + 15, -CH / 2 + 15, meteor ? 'Q' : String(i + 1), { size: 16, color: '#9fb0d8', strokeThickness: 0, shadow: false });
-      const cd = scene.add.graphics();
-      const cdText = txt(scene, 0, -14, '', { title: true, size: 34, strokeThickness: 6 });
-      const hit = scene.add.zone(0, 0, CW, CH).setInteractive({ useHandCursor: true });
-      hit.on('pointerdown', () => scene.tweens.add({ targets: box, scale: 0.93, duration: 60 }));
-      hit.on('pointerup', () => {
-        scene.tweens.add({ targets: box, scale: 1, duration: 180, ease: 'Back.easeOut' });
-        this.onPick(kind);
-      });
-      hit.on('pointerover', (p: Phaser.Input.Pointer) => { if (!p.wasTouch) { this.hoverKind = kind; this.sig = ''; } });
-      hit.on('pointerout', () => {
-        scene.tweens.add({ targets: box, scale: 1, duration: 120 });
-        if (this.hoverKind === kind) { this.hoverKind = null; this.sig = ''; }
-      });
-      box.add([bg, img, ...(coin ? [coin] : []), cost, key, cd, cdText, hit]);
-      this.add(box);
-      this.cards.push({ kind, box, bg, img, coin, cost, cd, cdText });
-    });
+    this.add(scene.add.zone(0, 0, BuildDock.W, BuildDock.H).setInteractive());
     // one line about the armed (or hovered) card, above the dock
-    this.info = scene.add.container(0, -H / 2 - 38);
+    this.info = scene.add.container(0, -BuildDock.H / 2 - 38);
     this.infoBg = scene.add.graphics();
     this.infoText = txt(scene, 0, 0, '', { size: 21, strokeThickness: 0, shadow: false });
     this.info.add([this.infoBg, this.infoText]).setVisible(false);
     this.add(this.info);
     this.setScrollFactor(0, 0, true).setDepth(UI_DEPTH).setVisible(false);
     scene.add.existing(this);
+    this.setPowers(['meteor']);
+  }
+
+  /** Lays the cards out for the towers and these powers. */
+  setPowers(powers: PowerId[]): void {
+    for (const c of this.cards) c.box.destroy();
+    this.cards = [];
+    const kinds: ArmKind[] = [...TOWER_KINDS, ...powers];
+    const n = kinds.length, gap = 8;
+    const cw = this.cw = Math.min(128, Math.floor((BuildDock.W - 16 - gap * (n - 1)) / n));
+    const W = this.w = n * cw + (n - 1) * gap + 16;
+    const CH = BuildDock.CH;
+    this.panel.clear();
+    this.panel.fillStyle(0x000000, 0.28).fillRoundedRect(-W / 2, -BuildDock.H / 2 + 8, W, BuildDock.H, 26);
+    this.panel.fillStyle(0x14203a, 0.86).fillRoundedRect(-W / 2, -BuildDock.H / 2, W, BuildDock.H, 26);
+    this.panel.fillStyle(0xffffff, 0.06).fillRoundedRect(-W / 2 + 4, -BuildDock.H / 2 + 4, W - 8, BuildDock.H * 0.4, { tl: 23, tr: 23, bl: 6, br: 6 });
+    this.panel.lineStyle(2, 0xffffff, 0.16).strokeRoundedRect(-W / 2, -BuildDock.H / 2, W, BuildDock.H, 26);
+    const icon = Math.min(88, cw - 22);
+    kinds.forEach((kind, i) => {
+      const cx = -W / 2 + 8 + cw / 2 + i * (cw + gap);
+      const box = this.scene.add.container(cx, 0);
+      const bg = this.scene.add.graphics();
+      const power = isPower(kind);
+      const img = this.scene.add.image(0, -14, this.iconKey(kind)).setDisplaySize(icon, icon);
+      const coin = power ? null : this.scene.add.image(0, 43, 'ck-coin').setDisplaySize(22, 22);
+      const cost = txt(this.scene, 0, 43, '', { title: true, size: power ? 17 : 21, color: '#ffd23f', strokeThickness: 0, shadow: false });
+      if (!power) cost.setOrigin(0, 0.5);
+      const key = txt(this.scene, -cw / 2 + 15, -CH / 2 + 15, power ? POWERS[kind].key : String(i + 1), { size: 16, color: '#9fb0d8', strokeThickness: 0, shadow: false });
+      const cd = this.scene.add.graphics();
+      const cdText = txt(this.scene, 0, -14, '', { title: true, size: 34, strokeThickness: 6 });
+      const hit = this.scene.add.zone(0, 0, cw, CH).setInteractive({ useHandCursor: true });
+      hit.on('pointerdown', () => this.scene.tweens.add({ targets: box, scale: 0.93, duration: 60 }));
+      hit.on('pointerup', () => {
+        this.scene.tweens.add({ targets: box, scale: 1, duration: 180, ease: 'Back.easeOut' });
+        this.onPick(kind);
+      });
+      hit.on('pointerover', (p: Phaser.Input.Pointer) => { if (!p.wasTouch) { this.hoverKind = kind; this.sig = ''; } });
+      hit.on('pointerout', () => {
+        this.scene.tweens.add({ targets: box, scale: 1, duration: 120 });
+        if (this.hoverKind === kind) { this.hoverKind = null; this.sig = ''; }
+      });
+      box.add([bg, img, ...(coin ? [coin] : []), cost, key, cd, cdText, hit]);
+      this.add(box);
+      this.cards.push({ kind, box, x0: cx, bg, img, coin, cost, cd, cdText });
+    });
+    this.bringToTop(this.info);
+    this.sig = '';
+  }
+
+  private iconKey(kind: ArmKind): string {
+    return isPower(kind) ? (kind === 'meteor' && !this.scene.textures.exists(powerArt('meteor')) ? meteorThumb() : powerArt(kind)) : towerThumb(kind, 0);
   }
 
   card(kind: ArmKind): DockCard | undefined {
@@ -184,43 +216,48 @@ export class BuildDock extends Phaser.GameObjects.Container {
 
   /** Picks up the icons rendered after the dock was made. */
   syncIcons(): void {
+    const icon = Math.min(88, this.cw - 22);
     for (const c of this.cards) {
-      const key = c.kind === 'meteor' ? meteorThumb() : towerThumb(c.kind, 0);
-      if (c.img.texture.key !== key && this.scene.textures.exists(key)) c.img.setTexture(key).setDisplaySize(88, 88);
+      const key = this.iconKey(c.kind);
+      if (c.img.texture.key !== key && this.scene.textures.exists(key)) c.img.setTexture(key).setDisplaySize(icon, icon);
     }
   }
 
   refresh(s: DockState): void {
     const pulse = 0.55 + Math.sin(s.time * 6) * 0.35;
-    const cdS = Math.ceil(s.meteorCd);
-    const sig = `${s.gold}|${s.armed}|${s.waiting}|${cdS}|${s.meteorReady}|${this.hoverKind}|${s.armed || s.waiting ? Math.round(pulse * 8) : 0}`;
+    const cds = Object.entries(s.powers).map(([k, p]) => `${k}${Math.ceil(p!.cd)}${p!.ready}`).join();
+    const sig = `${s.gold}|${s.armed}|${s.waiting}|${cds}|${Object.values(s.costs).join()}|${this.hoverKind}|${s.armed || s.waiting ? Math.round(pulse * 8) : 0}`;
     if (sig === this.sig) return;
     this.sig = sig;
-    const { CW: w, CH: h } = BuildDock;
+    const w = this.cw, h = BuildDock.CH;
     for (const c of this.cards) {
-      const meteor = c.kind === 'meteor';
-      const cost = meteor ? 0 : TOWERS[c.kind as TowerKind].tiers[0].cost;
-      const ok = meteor ? s.meteorReady : s.gold >= cost;
+      const power = isPower(c.kind);
+      const ps = power ? s.powers[c.kind as PowerId] : undefined;
+      const cost = power ? 0 : s.costs[c.kind as TowerKind];
+      const ok = ps ? ps.ready : s.gold >= cost;
       const on = s.armed === c.kind;
       const hover = this.hoverKind === c.kind;
       const g = c.bg.clear();
       g.fillStyle(0x000000, 0.25).fillRoundedRect(-w / 2, -h / 2 + 5, w, h, 18);
-      g.fillStyle(on ? (meteor ? 0xb4521f : 0x2f8f4e) : ok ? (hover ? 0x2e4370 : 0x24345a) : 0x262b3b, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 18);
+      g.fillStyle(on ? (power ? POWER_COLOR[c.kind as PowerId] : 0x2f8f4e) : ok ? (hover ? 0x2e4370 : 0x24345a) : 0x262b3b, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 18);
       g.fillStyle(0xffffff, on ? 0.14 : 0.07).fillRoundedRect(-w / 2 + 4, -h / 2 + 4, w - 8, h * 0.4, { tl: 15, tr: 15, bl: 6, br: 6 });
-      if (on) g.lineStyle(4, meteor ? 0xffc27a : 0x9dffb8, 0.6 + pulse * 0.4).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
-      else if (s.waiting && ok) g.lineStyle(3, 0xfff3a0, pulse).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
+      if (on) g.lineStyle(4, power ? 0xffe0b0 : 0x9dffb8, 0.6 + pulse * 0.4).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
+      else if (s.waiting && ok && !power) g.lineStyle(3, 0xfff3a0, pulse).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
+      else if (ps?.ready) g.lineStyle(3, 0xffd27a, 0.35 + pulse * 0.2).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
       else g.lineStyle(2, 0xffffff, hover ? 0.4 : 0.14).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
       c.box.y = on ? -8 : 0;
       c.img.setAlpha(ok || on ? 1 : 0.5);
-      if (meteor) {
-        c.cost.setText(t('meteor')).setColor(s.meteorReady ? '#ffc27a' : '#9fb0d8');
-        const k = s.meteorReady || s.meteorMax <= 0 ? 0 : Phaser.Math.Clamp(s.meteorCd / s.meteorMax, 0, 1);
+      if (ps) {
+        c.cost.setText(t('ps_' + c.kind)).setColor(ps.ready ? '#ffc27a' : '#9fb0d8');
+        c.cost.setScale(Math.min(1, (w - 10) / Math.max(1, c.cost.width)));
+        const k = ps.ready || ps.max <= 0 ? 0 : Phaser.Math.Clamp(ps.cd / ps.max, 0, 1);
         const cg = c.cd.clear();
         if (k > 0) {
           const hh = (h - 4) * k;
           cg.fillStyle(0x0b1020, 0.62).fillRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, hh, Math.min(16, hh / 2));
         }
-        c.cdText.setText(s.meteorCd > 0 && cdS > 0 ? String(cdS) : '').setVisible(s.meteorCd > 0);
+        const cdS = Math.ceil(ps.cd);
+        c.cdText.setText(ps.cd > 0 && cdS > 0 ? String(cdS) : '').setVisible(ps.cd > 0);
       } else {
         c.cost.setText(String(cost)).setColor(ok ? (on ? '#ffffff' : '#ffd23f') : '#ff7a7a');
         const tw = c.cost.width + 26;
@@ -230,27 +267,27 @@ export class BuildDock extends Phaser.GameObjects.Container {
     }
     const k = this.hoverKind ?? s.armed;
     if (k) {
-      const name = k === 'meteor' ? t('meteor') : t('t_' + k);
+      const name = isPower(k) ? t('p_' + k) : t('t_' + k);
       const line = `${name} · ${t('d_' + k)}`;
       if (this.infoText.text !== line) this.infoText.setText(line);
-      const iw = Math.min(BuildDock.W, this.infoText.width + 44);
+      this.infoText.setScale(Math.min(1, (BuildDock.W - 40) / Math.max(1, this.infoText.width)));
+      const iw = Math.min(BuildDock.W, this.infoText.displayWidth + 44);
       this.infoBg.clear().fillStyle(0x0b1020, 0.78).fillRoundedRect(-iw / 2, -22, iw, 44, 22).lineStyle(2, 0xffffff, 0.16).strokeRoundedRect(-iw / 2, -22, iw, 44, 22);
       this.info.setVisible(true);
     } else this.info.setVisible(false);
   }
 
-  /** The card says no: a quick shake with a red rim (not enough gold, meteor recharging). */
+  /** The card says no: a quick shake with a red rim (not enough gold, power recharging). */
   shake(kind: ArmKind): void {
     const c = this.card(kind);
     if (!c) return;
-    const x0 = DOCK_KINDS.indexOf(kind);
-    const cx = -BuildDock.W / 2 + 8 + BuildDock.CW / 2 + x0 * (BuildDock.CW + 8);
+    const cx = c.x0;
     this.scene.tweens.killTweensOf(c.box);
     c.box.x = cx;
     c.box.setScale(1);
     this.scene.tweens.add({ targets: c.box, x: { from: cx - 9, to: cx }, duration: 260, ease: 'Elastic.easeOut', easeParams: [1.4, 0.25] });
     const red = this.scene.add.graphics();
-    red.lineStyle(5, 0xff5a4a, 1).strokeRoundedRect(-BuildDock.CW / 2, -BuildDock.CH / 2, BuildDock.CW, BuildDock.CH, 18);
+    red.lineStyle(5, 0xff5a4a, 1).strokeRoundedRect(-this.cw / 2, -BuildDock.CH / 2, this.cw, BuildDock.CH, 18);
     c.box.add(red);
     this.scene.tweens.add({ targets: red, alpha: 0, duration: 420, onComplete: () => red.destroy() });
   }
@@ -268,6 +305,9 @@ export class BuildDock extends Phaser.GameObjects.Container {
     this.hoverKind = null;
   }
 }
+
+/** The armed colour of each power's card. */
+export const POWER_COLOR: Record<PowerId, number> = { meteor: 0xb4521f, frost: 0x2f7fbf, lightning: 0xb08a1a, knights: 0x3d5a9e };
 
 // ------------------------------------------------------------------ tower card
 
@@ -319,12 +359,12 @@ export class TowerCard extends Phaser.GameObjects.Container {
 
   refresh(tw: Tower, sim: Sim, sellArmed: boolean): void {
     const cost = sim.upgradeCost(tw);
-    const s = `${tw.id}|${tw.tier}|${sim.gold >= (cost ?? 0)}|${sellArmed}|${tw.kills}|${Math.floor(tw.dealt / 10)}|${tw.mode}`;
+    const s = `${tw.id}|${tw.tier}|${sim.gold >= (cost ?? 0)}|${cost}|${sim.cardOrder.length}|${sellArmed}|${tw.kills}|${Math.floor(tw.dealt / 10)}|${tw.mode}`;
     if (s === this.sig) return;
     this.sig = s;
     const def = TOWERS[tw.kind];
-    const st = def.tiers[tw.tier];
-    const nx = tw.tier < 2 ? def.tiers[tw.tier + 1] : null;
+    const st = sim.towerStats(tw.kind, tw.tier);
+    const nx = tw.tier < 2 ? sim.towerStats(tw.kind, tw.tier + 1) : null;
     this.img.setTexture(towerThumb(tw.kind, tw.tier)).setDisplaySize(132, 132);
     this.title.setText(t('t_' + tw.kind));
     const g = this.pips.clear();

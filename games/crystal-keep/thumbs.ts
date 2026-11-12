@@ -1,9 +1,10 @@
 // Crystal Keep: icons for the UI rendered from the real 3D models (towers per tier, enemies, maps)
 // with the shared three.js renderer, once per game, into Phaser canvas textures.
 import Phaser from 'phaser';
-import { THREE, model, miniKey } from '@core/three';
+import { THREE, model, miniKey, modelClips } from '@core/three';
 import { buildTower, Board } from './board';
-import { kitMat, kitModel, ZOMBIE, SOLDIER } from './kit';
+import { kitMat, kitModel, ZOMBIE, SOLDIER, GUARD } from './kit';
+import { artJobs } from './art';
 import { LOOKS } from './enemies';
 import { MAPS, parseMap, TOWER_KINDS, type EnemyKind } from './sim';
 
@@ -11,6 +12,12 @@ export const towerThumb = (kind: string, tier: number) => `ck-tw-${kind}-${tier}
 export const enemyThumb = (kind: string) => `ck-en-${kind}`;
 export const mapThumb = (i: number) => `ck-map-${i}`;
 export const meteorThumb = () => 'ck-meteor';
+/** A glowing crystal: 'keep' purple (shields, shards), 'ice' blue (frost), 'gold' yellow (lightning). */
+export const crystalThumb = (tint: 'keep' | 'ice' | 'gold') => `ck-crystal-${tint}`;
+export const guardThumb = () => 'ck-guards';
+export const arrowThumb = () => 'ck-arrow';
+export const shardIcon = () => 'ck-shard';
+const CRYSTAL_TINT = { keep: 0xc04cff, ice: 0x4ab8ff, gold: 0xffc02a } as const;
 
 const ENEMY_KINDS: EnemyKind[] = ['zombie', 'runner', 'brute', 'ufo', 'gunship', 'giant', 'mothership'];
 
@@ -128,6 +135,42 @@ function thumbJobs(scene: Phaser.Scene, renderer: THREE.WebGLRenderer): (() => v
     flameGeo.dispose();
     for (const m of flames) m.dispose();
   }));
+  // crystals in three colours (the keep's, frost, lightning) and a small shard for the shard counter
+  for (const tint of ['keep', 'ice', 'gold'] as const) jobs.push(guarded(crystalThumb(tint), () => {
+    const m = new THREE.MeshLambertMaterial({ map: mat.map, emissive: CRYSTAL_TINT[tint], emissiveIntensity: 0.6 });
+    const g = kitModel('detail-crystal-large', m, false);
+    g.rotation.y = 0.6;
+    shoot(crystalThumb(tint), g, 128, new THREE.Vector3(0.3, 0.45, 1.6), 1.15);
+    m.dispose();
+  }));
+  jobs.push(guarded(shardIcon(), () => {
+    const m = new THREE.MeshLambertMaterial({ map: mat.map, emissive: 0xc04cff, emissiveIntensity: 0.7 });
+    const g = kitModel('detail-crystal', m, false);
+    shoot(shardIcon(), g, 64, new THREE.Vector3(0.3, 0.5, 1.6), 1.2);
+    m.dispose();
+  }));
+  // two keep guards, posed with their own swing
+  jobs.push(guarded(guardThumb(), () => {
+    const g = new THREE.Group();
+    const mixers: THREE.AnimationMixer[] = [];
+    [[-0.32, 0.15, 0.5], [0.3, -0.12, -0.35]].forEach(([x, z, yaw], i) => {
+      const o = model(miniKey(GUARD), { shadows: false });
+      o.position.set(x, 0, z);
+      o.rotation.y = yaw;
+      const mx = new THREE.AnimationMixer(o);
+      const clip = modelClips(miniKey(GUARD)).find((c) => c.name === (i ? 'emote-yes' : 'attack-melee-right'));
+      if (clip) { mx.clipAction(clip).play(); mx.setTime(clip.duration * (i ? 0.3 : 0.35)); }
+      mixers.push(mx);
+      g.add(o);
+    });
+    shoot(guardThumb(), g, 128, new THREE.Vector3(0.25, 0.4, 1.6), 1.05);
+    for (const m of mixers) m.stopAllAction();
+  }));
+  jobs.push(guarded(arrowThumb(), () => {
+    const a = kitModel('weapon-ammo-arrow', mat, false);
+    a.rotation.set(0, Math.PI / 2, -0.7);
+    shoot(arrowThumb(), a, 112, new THREE.Vector3(0, 0.2, 1.6), 1.1);
+  }));
   // the maps first: the select cards show them at once
   const mapJobs: (() => void)[] = [];
   MAPS.forEach((def, i) => mapJobs.push(guarded(mapThumb(i), () => {
@@ -161,5 +204,6 @@ function thumbJobs(scene: Phaser.Scene, renderer: THREE.WebGLRenderer): (() => v
     board.dispose();
     box.geometry.dispose();
   })));
-  return [...mapJobs, ...jobs];
+  // card and power art is drawn from the icons above (art.ts)
+  return [...mapJobs, ...jobs, ...artJobs(scene)];
 }
