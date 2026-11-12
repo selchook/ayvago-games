@@ -1,5 +1,5 @@
 {
-  "count": 91,
+  "count": 92,
   "games": [
     {
       "id": "air-hockey",
@@ -682,6 +682,39 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/connect-four.png"
+    },
+    {
+      "id": "crystal-keep",
+      "title": {
+        "tr": "Kristal Kale",
+        "en": "Crystal Keep"
+      },
+      "description": {
+        "tr": "Kristal Kale'yi zombi sürülerine ve UFO'lara karşı koru! Yolun kenarına balista, top, mancınık ve taret kur; kulelerini üç seviyeye kadar geliştir, gerekirse sat. Hızlı koşucular, zırhlı askerler, uçan UFO'lar, Dev Zombi ve Ana Gemi dalga dalga geliyor. Üç harita, her birinde 12–15 dalga: kalan canına göre yıldız topla, sonraki dalgayı erken çağırıp altın kazan.",
+        "en": "Defend the Crystal Keep from zombie hordes and UFOs! Build ballistas, cannons, catapults and turrets along the path, upgrade them through three levels or sell them. Fast runners, armoured brutes, flying UFOs, the Giant Zombie and the Mothership come in waves. Three maps with 12–15 waves each: earn stars for the lives you keep, and call waves early for bonus gold."
+      },
+      "howTo": {
+        "tr": "Dokunmatik: çim karesine dokun, kule seç, kurmak için yeniden dokun; kuleye dokunup geliştir ya da sat. Klavye: oklar imleç, 1–4 kule, U geliştir, S sat, Boşluk dalga, F hız.",
+        "en": "Touch: tap a grass tile, pick a tower and tap it again to build; tap a tower to upgrade or sell. Keys: arrows move the cursor, 1–4 towers, U upgrade, S sell, Space next wave, F speed."
+      },
+      "genres": [
+        "strategy",
+        "action"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Kenney Tower Defense Kit and Mini Characters (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact Sounds (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-11-11"
+      },
+      "thumb": "thumbs/crystal-keep.png"
     },
     {
       "id": "dots-and-boxes",
