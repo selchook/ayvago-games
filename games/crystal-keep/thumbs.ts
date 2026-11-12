@@ -10,6 +10,7 @@ import { MAPS, parseMap, TOWER_KINDS, type EnemyKind } from './sim';
 export const towerThumb = (kind: string, tier: number) => `ck-tw-${kind}-${tier}`;
 export const enemyThumb = (kind: string) => `ck-en-${kind}`;
 export const mapThumb = (i: number) => `ck-map-${i}`;
+export const meteorThumb = () => 'ck-meteor';
 
 const ENEMY_KINDS: EnemyKind[] = ['zombie', 'runner', 'brute', 'ufo', 'gunship', 'giant', 'mothership'];
 
@@ -104,6 +105,28 @@ function thumbJobs(scene: Phaser.Scene, renderer: THREE.WebGLRenderer): (() => v
     }
     shoot(enemyThumb(kind), obj, 112, new THREE.Vector3(0.6, 0.55, 1.6), 1.1);
     for (const m of tmpMats) m.dispose();
+  }));
+  // the meteor: a glowing boulder with a tail of fire
+  jobs.push(guarded(meteorThumb(), () => {
+    const g = new THREE.Group();
+    const hot = new THREE.MeshLambertMaterial({ map: mat.map, emissive: 0xff5a1a, emissiveIntensity: 0.55 });
+    const rock = kitModel('weapon-ammo-boulder', hot, false);
+    rock.scale.setScalar(6);
+    g.add(rock);
+    const flameGeo = new THREE.IcosahedronGeometry(1, 0);
+    const flames: THREE.Material[] = [];
+    [[0.35, 0.42, 0.34, 0xffb347], [0.62, 0.72, 0.26, 0xff7a2a], [0.86, 0.98, 0.18, 0xffe08a], [0.2, 0.62, 0.2, 0xff7a2a]].forEach(([x, y, r, c]) => {
+      const m = new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.85 });
+      flames.push(m);
+      const f = new THREE.Mesh(flameGeo, m);
+      f.position.set(x, y, -0.1);
+      f.scale.setScalar(r);
+      g.add(f);
+    });
+    shoot(meteorThumb(), g, 112, new THREE.Vector3(0.2, 0.25, 1.6), 1.05);
+    hot.dispose();
+    flameGeo.dispose();
+    for (const m of flames) m.dispose();
   }));
   // the maps first: the select cards show them at once
   const mapJobs: (() => void)[] = [];

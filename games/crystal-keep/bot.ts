@@ -1,7 +1,7 @@
 // A simple tower-defense autopilot on the pure simulation: builds where a tower covers the most
 // route, mixes tower kinds (anti-air before flying waves), upgrades the busiest towers and starts
 // waves. Used by the headless balance check and by the in-game test hook (`testAuto`).
-import { Sim, TOWERS, ENEMIES, parseWave, type TowerKind, type Tower } from './sim';
+import { Sim, TOWERS, ENEMIES, METEOR, parseWave, type TowerKind, type Tower } from './sim';
 
 interface Spot { c: number; r: number; ground: number; air: number }
 
@@ -11,7 +11,7 @@ export class Bot {
   /** What the bot did last (the test hook shows it). */
   last = '';
 
-  constructor(private sim: Sim, private opts: { early?: boolean } = {}) {
+  constructor(private sim: Sim, private opts: { early?: boolean; meteor?: boolean } = {}) {
     const m = sim.map;
     const samples = (routes: typeof m.routes) => {
       const pts: { x: number; z: number }[] = [];
@@ -70,6 +70,21 @@ export class Bot {
     return best;
   }
 
+  /** Drops the meteor on the thickest crowd (or a boss half way down the path). */
+  private meteor(): void {
+    const s = this.sim;
+    if (!s.meteorReady()) return;
+    let best: { x: number; z: number } | null = null, bestV = 0;
+    for (const e of s.enemies) {
+      if (!e.alive) continue;
+      const k = e.d / e.route.len;
+      let v = ENEMIES[e.kind].boss && k > 0.45 ? 6 : 0;
+      for (const o of s.enemies) if (o.alive && Math.hypot(o.x - e.x, o.z - e.z) < METEOR.radius * 0.8) v += 1 + (o.d / o.route.len);
+      if (v > bestV) { bestV = v; best = s.predict(e, METEOR.fall); }
+    }
+    if (best && bestV >= 6) { s.castMeteor(best.x, best.z); this.last = 'meteor'; }
+  }
+
   /** Call every frame with the simulated time step. */
   update(dt: number): void {
     const s = this.sim;
@@ -77,6 +92,7 @@ export class Bot {
     this.thinkT -= dt;
     if (this.thinkT > 0) return;
     this.thinkT = 0.4;
+    if (this.opts.meteor !== false) this.meteor();
     const kind = this.pickKind();
     const want = 3 + s.wave * 0.45;
     const up = this.bestUpgrade();

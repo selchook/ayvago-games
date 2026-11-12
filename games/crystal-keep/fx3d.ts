@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { THREE } from '@core/three';
 import { Instances, kitGeo, kitMat } from './kit';
-import type { Ammo, Shot } from './sim';
+import { METEOR, type Ammo, type Shot, type Meteor } from './sim';
 
 interface Puff {
   x: number; y: number; z: number;
@@ -29,7 +29,9 @@ export class Fx {
   private sparkInst: Instances;
   private ringInst: Instances;
   private shotInst: Record<Ammo, Instances>;
+  private meteorInst: Instances;
   private trailT = 0;
+  private markT = 0;
 
   constructor(scene: Phaser.Scene, parent: THREE.Object3D) {
     this.puffInst = new Instances(parent, new THREE.IcosahedronGeometry(1, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), 320, { colors: true });
@@ -43,6 +45,15 @@ export class Fx {
       boulder: new Instances(parent, kitGeo('weapon-ammo-boulder'), mat, 40, { shadows: true }),
       bullet: new Instances(parent, kitGeo('weapon-ammo-bullet'), mat, 120, { shadows: false }),
     };
+    const hot = new THREE.MeshLambertMaterial({ map: mat.map, emissive: 0xff5a1a, emissiveIntensity: 0.7 });
+    this.meteorInst = new Instances(parent, kitGeo('weapon-ammo-boulder'), hot, 4, { shadows: true });
+  }
+
+  /** Where a falling meteor is: it comes in from behind the field at a slant. */
+  static meteorPos(m: Meteor, out: THREE.Vector3): THREE.Vector3 {
+    const u = 1 - Math.max(0, m.t) / METEOR.fall;
+    const k = 1 - u * u;
+    return out.set(m.x - 2.2 * k, 0.3 + 8 * k, m.z - 3.2 * k);
   }
 
   /** Draw calls the effects use when all are visible. */
@@ -98,7 +109,24 @@ export class Fx {
     this.spark(x, 0.3, z, 0xffe08a, big ? 14 : 8, 3.5);
   }
 
-  update(dt: number, shots: Shot[]): void {
+  update(dt: number, shots: Shot[], meteors: Meteor[] = []): void {
+    // meteors: a burning boulder with a tail of fire and smoke, and a target ring on the ground
+    this.meteorInst.begin();
+    this.markT -= dt;
+    const mark = this.markT <= 0;
+    if (mark) this.markT = 0.12;
+    for (const m of meteors) {
+      Fx.meteorPos(m, _v);
+      const sp = 4;
+      _m.compose(_v, _q.setFromEuler(_e.set(m.t * 7, m.t * 4, 0)), _s.set(sp, sp, sp));
+      this.meteorInst.put(_m);
+      if (this.puffs.length < 300) {
+        this.puffs.push({ x: _v.x, y: _v.y, z: _v.z, vx: 0, vy: 0.2, vz: 0, life: 0.35, max: 0.35, size: 0.22, grow: 1.2, color: new THREE.Color(Math.random() < 0.5 ? 0xffa040 : 0xffe08a), g: 0 });
+        this.puffs.push({ x: _v.x, y: _v.y + 0.1, z: _v.z, vx: 0, vy: 0.3, vz: 0, life: 0.6, max: 0.6, size: 0.11, grow: 2.2, color: new THREE.Color(0xb8b0a8), g: 0 });
+      }
+      if (mark) this.ring(m.x, 0.16, m.z, METEOR.radius, 0xff5a2a, 0.35);
+    }
+    this.meteorInst.end();
     // puffs
     this.puffInst.begin();
     for (let i = this.puffs.length - 1; i >= 0; i--) {

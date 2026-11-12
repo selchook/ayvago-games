@@ -3,16 +3,16 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, txt, t, popup, storage, isEasy, playMusic, hudChip, HudChip,
-  HUD_MARGIN, HUD_ROW2_Y, Button,
+  HUD_MARGIN, HUD_ROW2_Y, Button, pushModal, upper,
 } from '@core';
 import { World3D, THREE } from '@core/three';
-import { Sim, MAPS, TOWERS, ENEMIES, TOWER_KINDS, type Tower, type TowerKind, type SimEvent, type EnemyKind, type Enemy } from './sim';
+import { Sim, MAPS, TOWERS, ENEMIES, TOWER_KINDS, METEOR, type Tower, type TowerKind, type SimEvent, type EnemyKind, type Enemy } from './sim';
 import { Board, Markers, buildTower, animateTower, weaponY, GRASS_Y, PATH_Y, PALETTE_LOOK, type TowerView } from './board';
 import { EnemyView, FLY_Y } from './enemies';
 import { Fx } from './fx3d';
 import { kitMat } from './kit';
 import { Thumbs, mapThumb, enemyThumb } from './thumbs';
-import { BuildBar, TowerCard, WaveButton, glass, drawStar, UI_DEPTH } from './ui';
+import { BuildDock, TowerCard, WaveButton, glass, drawStar, UI_DEPTH, type ArmKind } from './ui';
 import { Bot } from './bot';
 
 type Phase = 'select' | 'play' | 'clear';
@@ -26,7 +26,11 @@ const seenHints = new Set<string>();
 const FOV = 34;
 const TILT = THREE.MathUtils.degToRad(52);
 const BAR_Y = 1214;
-const PANEL_Y = 1040;
+const PANEL_Y = 1030;
+const DOCK_Y = 1082;
+/** A press that moves less than this (game pixels) is a tap; more is a drag that pans the map. */
+const TAP_SLOP_TOUCH = 18;
+const TAP_SLOP_MOUSE = 8;
 
 interface TowerVis extends TowerView { id: number; buildT: number; tier: number; kind: TowerKind }
 
@@ -55,16 +59,30 @@ export class PlayScene extends ArcadeScene {
   private cam = { x: 0, z: 0, zoom: 1, tx: 0, tz: 0, tzoom: 1, D0: 20, yaw: 0 };
   private shakeT = 0;
   private shakeAmp = 0;
-  private drag: { x: number; y: number; moved: boolean; ui: boolean } | null = null;
+  private drag: { x: number; y: number; moved: boolean; ui: boolean; right: boolean } | null = null;
   private pinch: { d: number; zoom: number } | null = null;
 
-  // selection
+  // selection and building
+  /** The selected build tile (tile first, or a touch preview waiting for its confirming tap). */
   private sel: { c: number; r: number } | null = null;
   private selTower: Tower | null = null;
-  private pending: TowerKind | null = null;
+  /** The dock card that is picked: a tower to place or the meteor to aim. */
+  private armed: ArmKind | null = null;
+  /** Picked with nothing selected: stays armed after a build, for placing several in a row. */
+  private stayArmed = false;
+  /** Touch / keyboard aim of the meteor (the mouse aims by hovering). */
+  private aim: { x: number; z: number } | null = null;
   private sellArmed = false;
   private cursor = { c: 0, r: 0 };
   private cursorOn = false;
+  /** The last pointer was a mouse (it can hover); taps on touch screens never hover. */
+  private mouse = false;
+  /** Mouse hover: the tile and the ground point under the cursor (null over the UI). */
+  private hover: { c: number; r: number } | null = null;
+  private hoverPt: { x: number; z: number } | null = null;
+  private overUi = false;
+  /** Held while something is selected, so Esc closes it instead of pausing. */
+  private modalRelease: (() => void) | null = null;
 
   // UI
   private goldChip!: HudChip;
@@ -72,7 +90,9 @@ export class PlayScene extends ArcadeScene {
   private bossChip!: HudChip;
   private bossBar!: Phaser.GameObjects.Graphics;
   private bars!: Phaser.GameObjects.Graphics;
-  private buildBar!: BuildBar;
+  private dock!: BuildDock;
+  private vignette!: Phaser.GameObjects.Graphics;
+  private bossCam: { t: number; back: { tx: number; tz: number; tzoom: number } } | null = null;
   private towerCard!: TowerCard;
   private waveBtn!: WaveButton;
   private hint!: Phaser.GameObjects.Text;
@@ -82,6 +102,7 @@ export class PlayScene extends ArcadeScene {
   private clearUi: Phaser.GameObjects.GameObject[] = [];
   private focus = 0;
   private lastGold = -1;
+  private meteorWasReady = false;
   private bossOn = false;
   private lowWarned = false;
   private seenKinds = new Set<EnemyKind>();
@@ -102,9 +123,17 @@ export class PlayScene extends ArcadeScene {
     this.towersV = new Map();
     this.sel = null;
     this.selTower = null;
-    this.pending = null;
+    this.armed = null;
+    this.stayArmed = false;
+    this.aim = null;
     this.sellArmed = false;
     this.cursorOn = false;
+    this.mouse = !this.sys.game.device.input.touch;
+    this.hover = null;
+    this.hoverPt = null;
+    this.overUi = false;
+    this.modalRelease = null;
+    this.bossCam = null;
     this.drag = null;
     this.pinch = null;
     this.hintQueue = [];
@@ -112,6 +141,7 @@ export class PlayScene extends ArcadeScene {
     this.selectUi = [];
     this.clearUi = [];
     this.lastGold = -1;
+    this.meteorWasReady = false;
     this.bossOn = false;
     this.lowWarned = false;
     this.seenKinds = new Set();
@@ -153,8 +183,9 @@ export class PlayScene extends ArcadeScene {
     this.hint = txt(this, width / 2, 232, '', { size: 25, color: '#ffffff', strokeThickness: 6, wrap: 640 }).setDepth(9400).setScrollFactor(0).setAlpha(0);
 
     this.waveBtn = new WaveButton(this, (HUD_MARGIN + (width - HUD_MARGIN - 136 - 14)) / 2, BAR_Y, width - 2 * HUD_MARGIN - 136 - 14, 92, () => this.callWave());
-    this.buildBar = new BuildBar(this, width / 2, PANEL_Y, (k) => this.pickKind(k));
-    this.towerCard = new TowerCard(this, width / 2, PANEL_Y, () => this.upgradeSelected(), () => this.sellSelected(), () => this.deselect());
+    this.dock = new BuildDock(this, width / 2, DOCK_Y, (k) => { this.pickKind(k); this.syncModal(); });
+    this.towerCard = new TowerCard(this, width / 2, PANEL_Y, () => this.upgradeSelected(), () => this.sellSelected(), () => { this.deselect(); this.syncModal(); }, () => this.cycleMode());
+    this.vignette = this.redEdges();
 
     this.setupInput();
     this.showSelect();
@@ -260,6 +291,7 @@ export class PlayScene extends ArcadeScene {
   private startMap(i: number): void {
     if (!this.unlocked(i)) return;
     this.thumbs.flush();
+    this.dock.syncIcons();
     for (const o of this.selectUi) o.destroy();
     this.selectUi = [];
     for (const o of this.clearUi) o.destroy();
@@ -283,7 +315,8 @@ export class PlayScene extends ArcadeScene {
     this.cam.z = this.board!.Z(s.r) + 2;
     this.cam.zoom = 1.25;
     this.cam.tzoom = 1;
-    this.cam.tz = 0.9;
+    // the field settles with the keep clear of the build dock
+    this.cam.tz = Math.max(0.9, this.board!.Z(m.keep.r) - 4.3);
     this.cursor = { c: Math.floor(m.W / 2), r: Math.floor(m.H / 2) };
     this.setPlayUi(true);
     playMusic(this, 'stage1');
@@ -293,25 +326,24 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: title, alpha: 0, y: 380, delay: 1600, duration: 500, onComplete: () => title.destroy() });
     const touch = this.sys.game.device.input.touch;
     this.time.delayedCall(900, () => {
-      this.showHint(touch ? 'h_build_touch' : 'h_build_keys');
-      if (touch) this.queueHint('h_pan');
+      this.showHint(touch ? 'h_build_touch' : 'h_build_mouse');
+      this.queueHint(touch ? 'h_pan' : 'h_build_keys');
       this.queueHint('h_start');
     });
   }
 
   private setPlayUi(on: boolean): void {
+    if (on) this.dock.open();
+    else this.dock.close();
     this.waveBtn.setVisible(on);
     this.speedChip.setVisible(on);
     this.goldChip.setVisible(on);
     this.hud.setVisible(true);
     this.hud.setCenter(on && this.sim ? t('waveOf', { n: 0, m: this.sim.totalWaves }) : '');
     if (!on) {
-      this.buildBar.close();
       this.towerCard.close();
       this.bossChip.setVisible(false);
-      this.markers.hideRing();
-      this.markers.cursor.visible = false;
-      this.markers.showGhost(null, 0, 0, 0);
+      this.hideMarkers();
     }
     this.bars.clear();
   }
@@ -339,6 +371,10 @@ export class PlayScene extends ArcadeScene {
 
   private updateCamera(dt: number): void {
     const c = this.cam;
+    if (this.bossCam) {
+      this.bossCam.t -= dt;
+      if (this.bossCam.t <= 0) { Object.assign(c, { tx: this.bossCam.back.tx, tz: this.bossCam.back.tz, tzoom: this.bossCam.back.tzoom }); this.bossCam = null; }
+    }
     if (this.phase === 'select') c.yaw += dt * 0.12;
     else c.yaw += (0 - c.yaw) * Math.min(1, dt * 3);
     if (this.phase === 'play' && !this.isOver) this.clampCam();
@@ -369,12 +405,21 @@ export class PlayScene extends ArcadeScene {
   }
 
   private raycaster = new THREE.Raycaster();
-  private cellAt(px: number, py: number): { c: number; r: number } | null {
+  private groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -GRASS_Y);
+
+  /** The point on the field under a screen point (game pixels). */
+  private groundAt(px: number, py: number): { x: number; z: number } | null {
     if (!this.board) return null;
     const ndc = new THREE.Vector2((px / this.scale.width) * 2 - 1, -(py / this.scale.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.world.camera);
     const hit = new THREE.Vector3();
-    if (!this.raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -GRASS_Y), hit)) return null;
+    if (!this.raycaster.ray.intersectPlane(this.groundPlane, hit)) return null;
+    return { x: hit.x, z: hit.z };
+  }
+
+  private cellAt(px: number, py: number): { c: number; r: number } | null {
+    const hit = this.groundAt(px, py);
+    if (!hit || !this.board) return null;
     const { W, H } = this.board.map;
     const c = Math.round(hit.x + (W - 1) / 2), r = Math.round(hit.z + (H - 1) / 2);
     if (c < 0 || r < 0 || c >= W || r >= H) return null;
@@ -383,19 +428,32 @@ export class PlayScene extends ArcadeScene {
 
   // ------------------------------------------------------------------ input
 
+  /**
+   * One pointer flow for mouse and touch. A press that stays within the tap slop is a tap on the
+   * map when it is released; one that moves further pans the map and never builds. The mouse also
+   * hovers: an armed card's ghost follows it and a click builds at once. Touch has no hover, so a
+   * tap shows the ghost and a second tap on the same tile (or on the card) confirms.
+   */
   private setupInput(): void {
     this.input.addPointer(1);
+    this.input.mouse?.disableContextMenu();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+      this.mouse = !p.wasTouch;
       const p1 = this.input.pointer1, p2 = this.input.pointer2;
       if (p1.isDown && p2.isDown) {
         this.pinch = { d: Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y), zoom: this.cam.tzoom };
         if (this.drag) this.drag.moved = true;
         return;
       }
-      this.drag = { x: p.x, y: p.y, moved: false, ui: over.length > 0 };
+      this.drag = { x: p.x, y: p.y, moved: false, ui: over.length > 0, right: p.rightButtonDown() };
     });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+    this.input.on('pointermove', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       if (this.phase !== 'play' || !this.board) return;
+      if (!p.wasTouch) {
+        this.mouse = true;
+        this.overUi = over.length > 0;
+        this.updateHover(p.x, p.y);
+      }
       const p1 = this.input.pointer1, p2 = this.input.pointer2;
       if (this.pinch && p1.isDown && p2.isDown) {
         const d = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
@@ -404,7 +462,8 @@ export class PlayScene extends ArcadeScene {
       }
       const dr = this.drag;
       if (!dr || dr.ui || !p.isDown) return;
-      if (!dr.moved && Phaser.Math.Distance.Between(dr.x, dr.y, p.x, p.y) < 14) return;
+      const slop = p.wasTouch ? TAP_SLOP_TOUCH : TAP_SLOP_MOUSE;
+      if (!dr.moved && Phaser.Math.Distance.Between(dr.x, dr.y, p.x, p.y) < slop) return;
       if (!dr.moved) this.seenHint('h_pan');
       dr.moved = true;
       const D = this.cam.D0 / this.cam.zoom;
@@ -413,22 +472,78 @@ export class PlayScene extends ArcadeScene {
       this.cam.tz -= ((p.y - p.prevPosition.y) * upp) / Math.sin(TILT);
       this.cam.x = this.cam.tx;
       this.cam.z = this.cam.tz;
+      this.bossCam = null;
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       const dr = this.drag;
       if (!this.input.pointer1.isDown && !this.input.pointer2.isDown) this.pinch = null;
       this.drag = null;
       if (!dr || dr.moved || dr.ui || over.length || this.phase !== 'play' || this.isOver) return;
-      const cell = this.cellAt(p.x, p.y);
-      this.cursorOn = false;
-      if (cell) this.tapCell(cell.c, cell.r);
-      else this.deselect();
+      // the right button (or a right click without a drag) cancels whatever is picked
+      if (dr.right || p.button === 2) this.deselect();
+      else {
+        this.mouse = !p.wasTouch;
+        this.tapMap(p.x, p.y);
+      }
+      this.syncModal();
     });
+    this.input.on('gameout', () => { this.hover = null; this.hoverPt = null; });
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => {
       if (this.phase !== 'play') return;
       this.cam.tzoom = Phaser.Math.Clamp(this.cam.tzoom * (dy > 0 ? 0.9 : 1.1), 0.9, 2.4);
     });
-    this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => this.onKey(ev));
+    this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => { this.onKey(ev); this.syncModal(); });
+  }
+
+  private updateHover(px: number, py: number): void {
+    if (this.overUi || this.isOver) { this.hover = null; this.hoverPt = null; return; }
+    this.hover = this.cellAt(px, py);
+    this.hoverPt = this.groundAt(px, py);
+  }
+
+  /** A tap or click on the map (not a drag, not on the UI). */
+  private tapMap(px: number, py: number): void {
+    if (this.armed === 'meteor') {
+      const pt = this.groundAt(px, py);
+      if (!pt) return;
+      if (this.mouse) { this.castMeteor(pt.x, pt.z); return; }
+      // touch: the first tap aims, a second tap near the same spot drops it
+      if (this.aim) {
+        const s = this.screen(this.aim.x, GRASS_Y, this.aim.z);
+        if (Phaser.Math.Distance.Between(s.x, s.y, px, py) < 70) { this.castMeteor(this.aim.x, this.aim.z); return; }
+      }
+      this.aim = pt;
+      this.sfx('move', { volume: 0.4 });
+      return;
+    }
+    const cell = this.cellAt(px, py);
+    this.cursorOn = false;
+    if (!cell) { this.deselect(); return; }
+    this.tapCell(cell.c, cell.r, this.mouse);
+  }
+
+  /** A tile was tapped, clicked (`direct`: a mouse click builds at once) or chosen with Enter. */
+  private tapCell(c: number, r: number, direct = false): void {
+    const sim = this.sim!;
+    const tw = sim.towerAt(c, r);
+    if (tw) { this.selectTower(tw); return; }
+    if (this.armed && this.armed !== 'meteor') {
+      if (!sim.canBuild(c, r)) { this.denied(c, r); return; }
+      if (direct || (this.sel && this.sel.c === c && this.sel.r === r)) { this.tryBuild(c, r); return; }
+      // touch: this tap shows the ghost here, the next one on the same tile builds
+      this.sel = { c, r };
+      this.cursor = { c, r };
+      this.sfx('move', { volume: 0.45 });
+      this.showHint('h_build_touch2');
+      return;
+    }
+    if (sim.canBuild(c, r)) {
+      if (this.sel && this.sel.c === c && this.sel.r === r && !this.selTower) { this.deselect(); return; }
+      this.selectBuild(c, r);
+      return;
+    }
+    this.deselect();
+    this.denied(c, r);
   }
 
   private onKey(ev: KeyboardEvent): void {
@@ -456,7 +571,11 @@ export class PlayScene extends ArcadeScene {
         this.cursor.r = Phaser.Math.Clamp(this.cursor.r + move[code][1], 0, m.H - 1);
       }
       this.cursorOn = true;
-      this.deselect();
+      this.mouse = false;
+      if (this.selTower) { this.selTower = null; this.sellArmed = false; this.towerCard.close(); this.dock.open(); }
+      // an armed card's ghost (or the meteor's aim) rides on the cursor
+      this.sel = this.armed && this.armed !== 'meteor' ? { ...this.cursor } : null;
+      if (this.armed === 'meteor' && this.board) this.aim = { x: this.board.X(this.cursor.c), z: this.board.Z(this.cursor.r) };
       this.focusCell(this.cursor.c, this.cursor.r);
       ev.preventDefault?.();
       return;
@@ -464,22 +583,36 @@ export class PlayScene extends ArcadeScene {
     const num = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4'].indexOf(code);
     if (num >= 0) {
       const kind = TOWER_KINDS[num % 4];
-      const target = this.sel ?? (this.cursorOn ? this.cursor : null);
-      if (!target) { this.cursorOn = true; this.focusCell(this.cursor.c, this.cursor.r); return; }
-      if (!this.sel || this.selTower) {
-        if (!this.sim.canBuild(target.c, target.r)) { this.denied(target.c, target.r); return; }
-        this.selectBuild(target.c, target.r);
-      }
+      // with the keyboard cursor out, the tower goes on the cursor's tile
+      if (this.cursorOn && !this.sel && !this.selTower && this.sim.canBuild(this.cursor.c, this.cursor.r)) this.sel = { ...this.cursor };
       this.pickKind(kind);
       return;
     }
     switch (code) {
+      case 'Escape': case 'Backspace': case 'KeyX':
+        this.deselect();
+        this.cursorOn = false;
+        break;
+      case 'KeyP':
+        // P still pauses while something is picked (Esc only closes it)
+        if (this.modalRelease) { this.deselect(); this.cursorOn = false; this.syncModal(); this.time.delayedCall(10, () => this.pauseGame()); }
+        break;
+      case 'KeyQ': case 'Digit5': case 'Numpad5':
+        this.pickKind('meteor');
+        if (this.armed === 'meteor' && this.cursorOn && this.board) this.aim = { x: this.board.X(this.cursor.c), z: this.board.Z(this.cursor.r) };
+        break;
       case 'Enter':
-        if (this.pending && this.sel) this.pickKind(this.pending);
+        if (this.armed === 'meteor') { if (this.aim) this.castMeteor(this.aim.x, this.aim.z); }
+        else if (this.armed && this.sel) this.tryBuild(this.sel.c, this.sel.r);
         else if (this.cursorOn) this.tapCell(this.cursor.c, this.cursor.r);
         break;
       case 'Space': this.callWave(); break;
       case 'KeyF': this.toggleSpeed(); break;
+      case 'KeyT': {
+        if (!this.selTower && this.cursorOn) { const tw = this.sim.towerAt(this.cursor.c, this.cursor.r); if (tw) this.selectTower(tw); }
+        this.cycleMode();
+        break;
+      }
       case 'KeyU': {
         if (!this.selTower && this.cursorOn) { const tw = this.sim.towerAt(this.cursor.c, this.cursor.r); if (tw) this.selectTower(tw); }
         this.upgradeSelected();
@@ -490,8 +623,14 @@ export class PlayScene extends ArcadeScene {
         this.sellSelected();
         break;
       }
-      case 'Backspace': case 'KeyX': this.deselect(); break;
     }
+  }
+
+  /** Esc closes a selection instead of pausing: hold a core modal while anything is picked. */
+  private syncModal(): void {
+    const want = this.phase === 'play' && !this.isOver && !!(this.armed || this.sel || this.selTower || this.cursorOn);
+    if (want && !this.modalRelease) this.modalRelease = pushModal(this);
+    else if (!want && this.modalRelease) { this.modalRelease(); this.modalRelease = null; }
   }
 
   /** Keeps a cell in view (above the bottom panels). */
@@ -507,19 +646,6 @@ export class PlayScene extends ArcadeScene {
 
   // ------------------------------------------------------------------ building
 
-  private tapCell(c: number, r: number): void {
-    const sim = this.sim!;
-    const tw = sim.towerAt(c, r);
-    if (tw) { this.selectTower(tw); return; }
-    if (sim.canBuild(c, r)) {
-      if (this.sel && this.sel.c === c && this.sel.r === r && !this.selTower) { this.deselect(); return; }
-      this.selectBuild(c, r);
-      return;
-    }
-    this.deselect();
-    this.denied(c, r);
-  }
-
   private denied(c: number, r: number): void {
     if (!this.board) return;
     const s = this.screen(this.board.X(c), GRASS_Y, this.board.Z(r));
@@ -527,80 +653,206 @@ export class PlayScene extends ArcadeScene {
     this.sfx('error', { volume: 0.35 });
   }
 
+  /** Tile first: the tile is selected and the dock's cards glow until one is picked. */
   private selectBuild(c: number, r: number): void {
     this.sel = { c, r };
     this.selTower = null;
     this.sellArmed = false;
     this.cursor = { c, r };
     this.towerCard.close();
-    this.buildBar.open();
+    this.dock.open();
     this.sfx('move', { volume: 0.4 });
-    const afford = TOWER_KINDS.find((k) => this.sim!.gold >= TOWERS[k].tiers[0].cost) ?? null;
-    this.pending = null;
-    this.showPreview(afford, true);
     this.focusCell(c, r);
   }
 
-  /** The ghost tower and its range ring on the selected tile (`soft`: before a kind is picked). */
-  private showPreview(kind: TowerKind | null, soft = false): void {
-    if (!this.sel || !this.board) return;
-    const x = this.board.X(this.sel.c), z = this.board.Z(this.sel.r);
-    const k = kind ?? 'ballista';
-    const ok = this.sim!.gold >= TOWERS[k].tiers[0].cost;
-    this.markers.showRing(x, z, TOWERS[k].tiers[0].range, soft ? 0xffffff : ok ? 0x7dffa0 : 0xff6a5a);
-    this.markers.showGhost(soft ? null : k, 0, x, z);
-  }
-
-  private pickKind(kind: TowerKind): void {
-    if (!this.sel || !this.sim || this.selTower) return;
-    const cost = TOWERS[kind].tiers[0].cost;
-    if (this.pending === kind) {
-      if (this.sim.gold < cost) { this.noGold(); return; }
-      const tw = this.sim.build(kind, this.sel.c, this.sel.r);
-      if (!tw) return;
-      this.addTowerView(tw, true);
-      this.deselect();
-      this.seenHint('h_build_touch');
-      this.seenHint('h_build_keys');
-      this.queueHint('h_upgrade');
+  /** A dock card was picked (tap, click or key). */
+  private pickKind(kind: ArmKind): void {
+    const sim = this.sim;
+    if (!sim || this.phase !== 'play' || this.isOver) return;
+    if (this.selTower) { this.selTower = null; this.sellArmed = false; this.sel = null; this.towerCard.close(); this.dock.open(); }
+    if (kind === 'meteor') {
+      if (this.armed === 'meteor') {
+        if (this.aim) this.castMeteor(this.aim.x, this.aim.z);
+        else this.disarm();
+        return;
+      }
+      if (!sim.meteorReady()) {
+        this.dock.shake('meteor');
+        const c = this.dock.card('meteor')!;
+        popup(this, this.dock.x + c.box.x, this.dock.y - 96, sim.wave === 0 ? t('meteorFirst') : t('meteorWait', { n: Math.ceil(sim.meteorCd) }), '#ffc27a', 22);
+        this.sfx('error', { volume: 0.4 });
+        return;
+      }
+      this.armed = 'meteor';
+      this.stayArmed = false;
+      this.sel = null;
+      this.aim = null;
+      this.sfx('arm', { volume: 0.55 });
       return;
     }
-    this.pending = kind;
-    this.sfx('move', { volume: 0.5 });
-    this.showPreview(kind);
-    if (this.sim.gold < cost) this.noGold();
+    if (this.armed === kind) {
+      // the armed card again: builds on the selected tile, or puts the card down
+      if (this.sel) this.tryBuild(this.sel.c, this.sel.r);
+      else this.disarm();
+      return;
+    }
+    this.armed = kind;
+    this.stayArmed = !this.sel;
+    this.aim = null;
+    this.sfx('arm', { volume: 0.5 });
+    if (sim.gold < TOWERS[kind].tiers[0].cost) this.noGold(kind);
   }
 
-  private noGold(): void {
+  private disarm(): void {
+    if (this.armed) this.sfx('move', { volume: 0.3 });
+    this.armed = null;
+    this.stayArmed = false;
+    this.aim = null;
+    this.sel = null;
+  }
+
+  private tryBuild(c: number, r: number): void {
+    const sim = this.sim!;
+    const kind = this.armed as TowerKind;
+    if (!kind || kind as ArmKind === 'meteor') return;
+    if (!sim.canBuild(c, r)) { this.denied(c, r); return; }
+    if (sim.gold < TOWERS[kind].tiers[0].cost) { this.noGold(kind); return; }
+    const tw = sim.build(kind, c, r);
+    if (!tw) return;
+    this.addTowerView(tw, true);
+    this.seenHint('h_build_touch');
+    this.seenHint('h_build_touch2');
+    this.seenHint('h_build_mouse');
+    this.seenHint('h_build_keys');
+    this.queueHint(this.sys.game.device.input.touch ? 'h_upgrade' : 'h_upgrade_mouse');
+    this.sel = null;
+    this.cursor = { c, r };
+    if (!this.stayArmed) this.disarm();
+  }
+
+  private noGold(kind?: ArmKind): void {
     const s = this.goldChip;
     popup(this, s.x + 80, s.y + 40, t('notEnough'), '#ff8a7a', 22);
     this.sfx('error', { volume: 0.4 });
     this.tweens.add({ targets: s, scale: 1.15, duration: 90, yoyo: true });
+    if (kind) this.dock.shake(kind);
   }
 
   private selectTower(tw: Tower): void {
+    this.armed = null;
+    this.stayArmed = false;
+    this.aim = null;
     this.sel = { c: tw.c, r: tw.r };
     this.selTower = tw;
-    this.pending = null;
     this.sellArmed = false;
     this.cursor = { c: tw.c, r: tw.r };
-    this.buildBar.close();
+    this.dock.close();
     this.towerCard.open();
-    this.markers.showGhost(null, 0, 0, 0);
-    this.markers.showRing(tw.x, tw.z, TOWERS[tw.kind].tiers[tw.tier].range, 0x9fd8ff);
     this.sfx('move', { volume: 0.4 });
     this.focusCell(tw.c, tw.r);
+    this.queueHint('h_target');
   }
 
+  /** Clears every selection: the tile, the tower card and an armed card. */
   private deselect(): void {
     this.sel = null;
     this.selTower = null;
-    this.pending = null;
+    this.armed = null;
+    this.stayArmed = false;
+    this.aim = null;
     this.sellArmed = false;
-    this.buildBar.close();
     this.towerCard.close();
+    if (this.phase === 'play' && !this.isOver) this.dock.open();
+    this.hideMarkers();
+  }
+
+  private hideMarkers(): void {
     this.markers.hideRing();
+    this.markers.hideRing2();
+    this.markers.hideTile();
+    this.markers.cursor.visible = false;
     this.markers.showGhost(null, 0, 0, 0);
+  }
+
+  /** Draws the ghost, rings and highlights for the current selection and the mouse hover. */
+  private updateMarkers(sim: Sim): void {
+    const b = this.board!;
+    const mk = this.markers;
+    const hovering = this.mouse && !this.overUi && !this.drag?.moved;
+    let ghost = false, ring = false, tile = false, ring2 = false;
+    const cur = this.sel ?? (this.cursorOn ? this.cursor : null);
+    mk.cursor.visible = !!cur && !this.isOver;
+    if (cur) mk.cursor.position.set(b.X(cur.c), sim.map.buildable(cur.c, cur.r) ? GRASS_Y : PATH_Y, b.Z(cur.r));
+    if (this.armed === 'meteor') {
+      const pt = hovering && this.hoverPt ? this.hoverPt : this.aim;
+      if (pt) { mk.showRing(pt.x, pt.z, METEOR.radius, sim.meteorReady() ? 0xff7a2a : 0x9a9a9a); ring = true; }
+    } else if (this.armed) {
+      const cell = hovering && this.hover ? this.hover : this.sel;
+      if (cell) {
+        const x = b.X(cell.c), z = b.Z(cell.r);
+        if (sim.map.buildable(cell.c, cell.r) && !sim.towerAt(cell.c, cell.r)) {
+          const ok = sim.gold >= TOWERS[this.armed].tiers[0].cost;
+          mk.showGhost(this.armed, 0, x, z);
+          mk.tintGhost(ok);
+          mk.showRing(x, z, TOWERS[this.armed].tiers[0].range, ok ? 0x7dffa0 : 0xff6a5a);
+          mk.showTile(x, z, GRASS_Y, ok ? 0x7dffa0 : 0xff6a5a);
+          ghost = ring = tile = true;
+        } else {
+          // a tower answers a click with its card (blue); anything else is blocked (red)
+          const tw = sim.towerAt(cell.c, cell.r);
+          mk.showTile(x, z, sim.map.buildable(cell.c, cell.r) ? GRASS_Y : PATH_Y, tw ? 0x9fd8ff : 0xff5a4a);
+          tile = true;
+        }
+      }
+    } else if (this.selTower) {
+      mk.showRing(this.selTower.x, this.selTower.z, TOWERS[this.selTower.kind].tiers[this.selTower.tier].range, 0x9fd8ff);
+      ring = true;
+    } else if (this.sel) {
+      // tile first: a soft preview of the cheapest tower's reach
+      mk.showRing(b.X(this.sel.c), b.Z(this.sel.r), TOWERS.ballista.tiers[0].range, 0xffffff);
+      ring = true;
+    }
+    // the mouse alone: the tile under it lights up, a tower shows its reach
+    if (hovering && this.hover && !this.armed) {
+      const h = this.hover;
+      const tw = sim.towerAt(h.c, h.r);
+      if (tw) {
+        mk.showTile(tw.x, tw.z, GRASS_Y, 0x9fd8ff);
+        tile = true;
+        if (tw !== this.selTower) { mk.showRing2(tw.x, tw.z, TOWERS[tw.kind].tiers[tw.tier].range, 0x9fd8ff); ring2 = true; }
+      } else if (sim.map.buildable(h.c, h.r)) {
+        mk.showTile(b.X(h.c), b.Z(h.r), GRASS_Y, 0xffffff);
+        tile = true;
+      }
+    }
+    if (!ghost) mk.showGhost(null, 0, 0, 0);
+    if (!ring) mk.hideRing();
+    if (!tile) mk.hideTile();
+    if (!ring2) mk.hideRing2();
+    // the pointer: a hand over things that answer a click
+    const canvas = this.game.canvas;
+    const want = hovering && this.hover && (this.armed || sim.towerAt(this.hover.c, this.hover.r) || sim.map.buildable(this.hover.c, this.hover.r)) ? 'pointer' : '';
+    if (canvas.style.cursor !== want && !this.overUi) canvas.style.cursor = want;
+  }
+
+  private cycleMode(): void {
+    const tw = this.selTower, sim = this.sim;
+    if (!tw || !sim) return;
+    const mode = sim.cycleMode(tw);
+    this.seenHint('h_target');
+    this.sfx('arm', { volume: 0.45 });
+    const s = this.screen(tw.x, weaponY(tw.kind, tw.tier) + 0.6, tw.z);
+    popup(this, s.x, s.y, t('tmd_' + mode), '#9fd8ff', 22);
+    this.tweens.add({ targets: this.towerCard.mode, scale: 1.08, duration: 80, yoyo: true });
+  }
+
+  private castMeteor(x: number, z: number): void {
+    const sim = this.sim!;
+    if (!sim.castMeteor(x, z)) { this.dock.shake('meteor'); this.sfx('error', { volume: 0.4 }); return; }
+    this.armed = null;
+    this.aim = null;
+    this.seenHint('h_meteor');
+    this.seenHint('h_meteor_touch');
   }
 
   private upgradeSelected(): void {
@@ -611,6 +863,7 @@ export class PlayScene extends ArcadeScene {
     if (sim.gold < cost) { this.noGold(); return; }
     sim.upgrade(tw);
     this.seenHint('h_upgrade');
+    this.seenHint('h_upgrade_mouse');
     this.addTowerView(tw, true);
     this.markers.showRing(tw.x, tw.z, TOWERS[tw.kind].tiers[tw.tier].range, 0x9fd8ff);
     this.sfx('upgrade', { volume: 0.7 });
@@ -671,8 +924,15 @@ export class PlayScene extends ArcadeScene {
       if (u >= 1 && !p.userData.landed) {
         p.userData.landed = true;
         const x = v.root.position.x, z = v.root.position.z;
-        this.fx.dustRing(x, GRASS_Y + p.userData.y, z, i === 0 ? 16 : 8);
+        this.fx.dustRing(x, GRASS_Y + p.userData.y, z, i === 0 ? 18 : 8);
         this.sfx('hammer', { volume: 0.45 });
+        // the base lands with a thunk: dust, a ring and a small nudge of the camera
+        if (i === 0) {
+          this.sfx('thud', { volume: 0.55 });
+          this.shake3(0.07, 0.12);
+          this.fx.ring(x, GRASS_Y + 0.04, z, 0.8, 0xf3ead9, 0.35);
+          this.fx.puff(x, GRASS_Y + 0.1, z, 0xc9b79a, 6, { speed: 1.4, size: 0.1, up: 0.5, life: 0.5 });
+        }
       }
     });
     if (v.buildT >= 1) {
@@ -766,7 +1026,28 @@ export class PlayScene extends ArcadeScene {
           else if (k.kind === 'runner') this.queueHint('h_runner');
         }
         if (boss) this.sfx('bossHorn', { volume: 0.6 });
+        if (ev.wave === 1) this.queueHint(this.sys.game.device.input.touch ? 'h_meteor_touch' : 'h_meteor');
         if (ev.wave === 2) this.queueHint('h_speed');
+        break;
+      }
+      case 'meteorCast': {
+        const s = this.screen(ev.m.x, 0, ev.m.z);
+        this.sfxAt('meteorFall', s.x, { volume: 0.7 });
+        this.fx.ring(ev.m.x, 0.16, ev.m.z, METEOR.radius, 0xffd23f, 0.3);
+        break;
+      }
+      case 'meteorHit': {
+        const { x, z } = ev.m;
+        this.fx.boom(x, z, METEOR.radius, true);
+        this.fx.ring(x, 0.18, z, METEOR.radius * 1.5, 0xff7a2a, 0.6);
+        this.fx.dustRing(x, 0.15, z, 22, 0xd9c6a8);
+        this.fx.puff(x, 0.4, z, 0x9a8f86, 12, { speed: 1.8, size: 0.12, up: 1.6, life: 1, grow: 2.2 });
+        this.fx.spark(x, 0.4, z, 0xffb347, 26, 5);
+        const s = this.screen(x, 0.3, z);
+        this.sfxAt('bigBoom', s.x, { volume: 0.9 });
+        this.shake3(0.38, 0.45);
+        this.glow(0xffa040, 0.32, 260);
+        if (ev.hits >= 3) popup(this, s.x, s.y - 50, t('meteorHits', { n: ev.hits }), '#ffc27a', 30);
         break;
       }
       case 'waveSpawned':
@@ -787,7 +1068,7 @@ export class PlayScene extends ArcadeScene {
       }
       case 'spawn': {
         const e = ev.e;
-        if (ENEMIES[e.kind].boss) { this.shake3(0.25, 0.4); this.fx.ring(e.x, 0.2, e.z, 1.5, 0xc04cff, 0.6); }
+        if (ENEMIES[e.kind].boss) { this.shake3(0.25, 0.4); this.fx.ring(e.x, 0.2, e.z, 1.5, 0xc04cff, 0.6); this.time.delayedCall(1700, () => { if (e.alive && this.phase === 'play' && !this.isOver) this.bossIntro(e); }); }
         if (Math.random() < 0.5) this.fx.puff(e.x, 0.3, e.z, 0xc78cff, 3, { speed: 0.6, size: 0.1, life: 0.5 });
         break;
       }
@@ -854,7 +1135,13 @@ export class PlayScene extends ArcadeScene {
         this.fx.spark(k.x, k.y, k.z, 0xff5ab0, 14, 3);
         this.fx.ring(k.x, PATH_Y + 0.1, k.z, 1.4, 0xff4a6a, 0.5);
         this.shake3(ev.lives >= 5 ? 0.5 : 0.18, ev.lives >= 5 ? 0.6 : 0.25);
-        this.cameras.main.flash(160, 255, 40, 60, false);
+        this.glow(0xff2840, ev.lives >= 5 ? 0.3 : 0.18, 220);
+        // red at the screen's edges and the hearts shudder
+        this.tweens.killTweensOf(this.vignette);
+        this.vignette.setAlpha(ev.lives >= 5 ? 1 : 0.75);
+        this.tweens.add({ targets: this.vignette, alpha: 0, duration: ev.lives >= 5 ? 1100 : 650, ease: 'Quad.easeIn' });
+        const lc = this.hud.livesChip;
+        this.tweens.add({ targets: lc, x: { from: lc.x - 8, to: lc.x }, duration: 300, ease: 'Elastic.easeOut', easeParams: [1.5, 0.3] });
         this.sfx('hurt', { volume: 0.7 });
         if (!this.lowWarned && sim.lives > 0 && sim.lives / sim.maxLives < 0.35) { this.lowWarned = true; this.showHint('h_lowlives'); }
         break;
@@ -987,6 +1274,53 @@ export class PlayScene extends ArcadeScene {
     popup(this, s.x, s.y - 40, t('revived'), '#9dffb8', 30);
   }
 
+  // ------------------------------------------------------------------ boss intro and the vignette
+
+  /** A boss arrives: a ribbon with its portrait and name, and the camera looks at it for a moment. */
+  private bossIntro(e: Enemy): void {
+    const { width } = this.scale;
+    const y = 560;
+    const box = this.add.container(-width, y).setScrollFactor(0).setDepth(9550);
+    const band = this.add.graphics();
+    band.fillStyle(0x000000, 0.35).fillRect(-width / 2 - 40, -76 + 8, width + 80, 152);
+    band.fillStyle(0x8a1f2a, 0.92).fillRect(-width / 2 - 40, -76, width + 80, 152);
+    band.fillStyle(0xffffff, 0.08).fillRect(-width / 2 - 40, -76, width + 80, 60);
+    band.lineStyle(4, 0xffb0a0, 0.9).lineBetween(-width / 2 - 40, -76, width / 2 + 40, -76).lineBetween(-width / 2 - 40, 76, width / 2 + 40, 76);
+    const disc = this.add.circle(-width / 2 + 130, 0, 70, 0x2a0a10, 0.9).setStrokeStyle(4, 0xffb0a0);
+    const img = this.add.image(-width / 2 + 130, 0, enemyThumb(e.kind)).setDisplaySize(132, 132);
+    const tag = txt(this, -width / 2 + 236, -30, t('bossTag'), { title: true, size: 26, color: '#ffd23f', strokeThickness: 5 }).setOrigin(0, 0.5);
+    const name = txt(this, -width / 2 + 236, 22, upper(t('e_' + e.kind)), { title: true, size: 44, color: '#ffffff', strokeThickness: 8 }).setOrigin(0, 0.5);
+    box.add([band, disc, img, tag, name]);
+    this.tweens.add({ targets: box, x: width / 2, duration: 380, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: img, scale: { from: img.scale * 1.25, to: img.scale }, duration: 500, delay: 250, ease: 'Bounce.easeOut' });
+    this.tweens.add({ targets: box, x: width * 2, delay: 2000, duration: 360, ease: 'Back.easeIn', onComplete: () => box.destroy() });
+    // the camera swings to the spawn and back (a drag by the player cancels the return)
+    if (!this.bossCam) {
+      this.bossCam = { t: 1.8, back: { tx: this.cam.tx, tz: this.cam.tz, tzoom: this.cam.tzoom } };
+      this.cam.tx = e.x;
+      this.cam.tz = e.z + 2;
+      this.cam.tzoom = Math.max(this.cam.tzoom, 1.15);
+    }
+  }
+
+  /** A soft full-screen glow (the meteor's blast), much gentler than a camera flash. */
+  private glow(color: number, alpha: number, ms: number): void {
+    const r = this.add.rectangle(0, 0, this.scale.width, this.scale.height, color, alpha).setOrigin(0).setScrollFactor(0).setDepth(8980);
+    this.tweens.add({ targets: r, alpha: 0, duration: ms, ease: 'Quad.easeOut', onComplete: () => r.destroy() });
+  }
+
+  /** Red edges for the keep's hits: four bands that fade towards the middle (vertex alpha). */
+  private redEdges(): Phaser.GameObjects.Graphics {
+    const { width: w, height: h } = this.scale;
+    const g = this.add.graphics().setScrollFactor(0).setDepth(8990).setAlpha(0);
+    const c = 0xff1e32, a = 0.7, d = 150;
+    g.fillGradientStyle(c, c, c, c, a, a, 0, 0).fillRect(0, 0, w, d);
+    g.fillGradientStyle(c, c, c, c, 0, 0, a, a).fillRect(0, h - d, w, d);
+    g.fillGradientStyle(c, c, c, c, a, 0, a, 0).fillRect(0, 0, d, h);
+    g.fillGradientStyle(c, c, c, c, 0, a, 0, a).fillRect(w - d, 0, d, h);
+    return g;
+  }
+
   // ------------------------------------------------------------------ hints
 
   private showHint(key: string): void {
@@ -1026,6 +1360,7 @@ export class PlayScene extends ArcadeScene {
     this.frameN++;
     if (!this.thumbs.done && this.frameN > 3) {
       this.thumbs.flush();
+      this.dock.syncIcons();
       // map cards pick up their pictures as they come
       for (const o of this.selectUi) {
         const img = o.getData?.('img') as Phaser.GameObjects.Image | undefined;
@@ -1057,9 +1392,10 @@ export class PlayScene extends ArcadeScene {
       }
     }
     this.enemiesV.update(simDt, this.time3, this.phase === 'play' && sim ? sim.enemies : []);
-    this.fx.update(simDt, this.phase === 'play' && sim ? sim.shots : []);
+    this.fx.update(simDt, this.phase === 'play' && sim ? sim.shots : [], this.phase === 'play' && sim ? sim.meteors : []);
     this.board?.update(dt, this.time3, sim ? sim.lives / sim.maxLives : 1);
-    this.markers.update(this.time3);
+    this.markers.update(this.time3, dt);
+    if (this.phase !== 'play' && this.modalRelease) this.syncModal();
     this.updateCamera(dt);
     // hints
     if (this.hintT > 0) {
@@ -1090,18 +1426,30 @@ export class PlayScene extends ArcadeScene {
       b.pill.setLabels(t('wavesDone')).setEnabled(false);
     }
     // panels follow the gold
-    if (this.buildBar.visible) this.buildBar.refresh(sim.gold, this.pending);
-    if (this.selTower) {
-      if (!sim.towers.includes(this.selTower)) this.deselect();
-      else this.towerCard.refresh(this.selTower, sim, this.sellArmed);
+    if (this.selTower && !sim.towers.includes(this.selTower)) this.deselect();
+    if (this.selTower) this.towerCard.refresh(this.selTower, sim, this.sellArmed);
+    if (this.dock.visible) {
+      this.dock.refresh({
+        gold: sim.gold, armed: this.armed, waiting: !!this.sel && !this.armed && !this.selTower,
+        meteorCd: sim.meteorCd, meteorMax: METEOR.cooldown, meteorReady: sim.meteorReady(), time: this.time3,
+      });
     }
-    if (this.pending && this.sel && !this.selTower) this.showPreview(this.pending);
-    // keyboard cursor
-    const cur = this.markers.cursor;
-    cur.visible = this.cursorOn && !this.sel;
-    if (cur.visible && this.board) cur.position.set(this.board.X(this.cursor.c), sim.map.buildable(this.cursor.c, this.cursor.r) ? GRASS_Y : PATH_Y, this.board.Z(this.cursor.r));
-    // health bars and the boss bar
+    if (sim.meteorReady() && !this.meteorWasReady) {
+      // the meteor charged: the card flashes once
+      const c = this.dock.card('meteor');
+      if (c && this.dock.visible) {
+        this.tweens.add({ targets: c.box, scale: 1.12, duration: 140, yoyo: true, ease: 'Quad.easeOut' });
+        if (sim.wave > 1) popup(this, this.dock.x + c.box.x, this.dock.y - 96, t('meteorReady'), '#ffc27a', 22);
+      }
+    }
+    this.meteorWasReady = sim.meteorReady();
+    this.updateMarkers(sim);
+    this.syncModal();
+    // health bars (sized with the camera's zoom) and the boss bar
     const g = this.bars.clear();
+    const c = this.cam;
+    const a = this.screen(c.x - 0.5, 0, c.z), bpt = this.screen(c.x + 0.5, 0, c.z);
+    const unit = Math.max(40, Math.abs(bpt.x - a.x));
     let boss: Enemy | null = null;
     for (const e of sim.enemies) {
       if (!e.alive) continue;
@@ -1109,7 +1457,7 @@ export class PlayScene extends ArcadeScene {
       if (def.boss && (!boss || e.hp / e.maxHp < boss.hp / boss.maxHp)) boss = e;
       if (e.hp >= e.maxHp && !def.boss) continue;
       const s = this.screen(e.x, this.enemiesV.headY(e.kind), e.z);
-      const w = def.boss ? 76 : 40, h = def.boss ? 9 : 6;
+      const w = Math.round(unit * (def.boss ? 0.95 : 0.5)), h = Math.max(5, Math.round(unit * (def.boss ? 0.11 : 0.072)));
       const k = Math.max(0, e.hp / e.maxHp);
       g.fillStyle(0x000000, 0.6).fillRoundedRect(s.x - w / 2 - 2, s.y - h / 2 - 2, w + 4, h + 4, 3);
       g.fillStyle(k > 0.5 ? 0x5dff7a : k > 0.25 ? 0xffd23f : 0xff5a4a, 1).fillRect(s.x - w / 2, s.y - h / 2, w * k, h);
@@ -1164,9 +1512,52 @@ export class PlayScene extends ArcadeScene {
   }
 
   /** Opens the tower card or the build bar on a cell (screenshots). */
-  testTap(c: number, r: number, kind?: TowerKind): void {
+  testTap(c: number, r: number, kind?: ArmKind): void {
     this.tapCell(c, r);
     if (kind) this.pickKind(kind);
+  }
+
+  /** Puts the camera where it is heading at once (checks click on tiles that must not move). */
+  testSettle(): void {
+    this.clampCam();
+    this.cam.x = this.cam.tx;
+    this.cam.z = this.cam.tz;
+    this.cam.zoom = this.cam.tzoom;
+    this.cam.yaw = 0;
+    this.shakeT = 0;
+    this.updateCamera(0);
+    this.world.camera.updateMatrixWorld();
+  }
+
+  /** Game pixels of a tile's centre (the Playwright build checks click there). */
+  testCellScreen(c: number, r: number): { x: number; y: number } {
+    return this.screen(this.board!.X(c), GRASS_Y, this.board!.Z(r));
+  }
+
+  /** Game pixels of a dock card's centre. */
+  testCardScreen(kind: ArmKind): { x: number; y: number } {
+    const c = this.dock.card(kind)!;
+    return { x: this.dock.x + c.box.x, y: this.dock.y + c.box.y };
+  }
+
+  /** Buildable tiles that show between the HUD and the dock (for the build checks). */
+  testOpenTiles(): { c: number; r: number; x: number; y: number }[] {
+    const out: { c: number; r: number; x: number; y: number }[] = [];
+    const m = this.sim!.map;
+    for (let r = 0; r < m.H; r++) for (let c = 0; c < m.W; c++) {
+      if (!this.sim!.canBuild(c, r)) continue;
+      const p = this.testCellScreen(c, r);
+      if (p.y > 260 && p.y < 900 && p.x > 70 && p.x < 650) out.push({ c, r, x: p.x, y: p.y });
+    }
+    return out;
+  }
+
+  /** What the build flow holds right now. */
+  testState(): { armed: string | null; sel: { c: number; r: number } | null; tower: number | null; towers: number; gold: number; hover: { c: number; r: number } | null; ghost: boolean; mouse: boolean } {
+    return {
+      armed: this.armed, sel: this.sel, tower: this.selTower?.id ?? null, towers: this.sim?.towers.length ?? 0, gold: this.sim?.gold ?? 0,
+      hover: this.hover, ghost: !!this.markers.ghost?.root.parent, mouse: this.mouse,
+    };
   }
 
   /** Draw calls of the last rendered frame. */

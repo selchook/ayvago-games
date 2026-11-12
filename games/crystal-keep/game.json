@@ -1,12 +1,12 @@
 {
   "id": "crystal-keep",
   "title": { "tr": "Kristal Kale", "en": "Crystal Keep" },
-  "description": { "tr": "Kristal Kale'yi zombi sürülerine ve UFO'lara karşı koru! Yolun kenarına balista, top, mancınık ve taret kur; kulelerini üç seviyeye kadar geliştir, gerekirse sat. Hızlı koşucular, zırhlı askerler, uçan UFO'lar, Dev Zombi ve Ana Gemi dalga dalga geliyor. Üç harita, her birinde 12–15 dalga: kalan canına göre yıldız topla, sonraki dalgayı erken çağırıp altın kazan.", "en": "Defend the Crystal Keep from zombie hordes and UFOs! Build ballistas, cannons, catapults and turrets along the path, upgrade them through three levels or sell them. Fast runners, armoured brutes, flying UFOs, the Giant Zombie and the Mothership come in waves. Three maps with 12–15 waves each: earn stars for the lives you keep, and call waves early for bonus gold." },
-  "howTo": { "tr": "Dokunmatik: çim karesine dokun, kule seç, kurmak için yeniden dokun; kuleye dokunup geliştir ya da sat. Klavye: oklar imleç, 1–4 kule, U geliştir, S sat, Boşluk dalga, F hız.", "en": "Touch: tap a grass tile, pick a tower and tap it again to build; tap a tower to upgrade or sell. Keys: arrows move the cursor, 1–4 towers, U upgrade, S sell, Space next wave, F speed." },
+  "description": { "tr": "Kristal Kale'yi zombi sürülerine ve UFO'lara karşı koru! Alttaki kartlardan balista, top, mancınık ya da taret seç ve yolun kenarına kur; kulelerini üç seviyeye kadar geliştir, hedeflerini (ilk, en güçlü, en yakın) seç, gerekirse sat. Sıkışınca kalenin göktaşını düşmanların üstüne bırak. Hızlı koşucular, zırhlı askerler, uçan UFO'lar, Dev Zombi ve Ana Gemi dalga dalga geliyor. Üç harita, her birinde 12–15 dalga: kalan canına göre yıldız topla, sonraki dalgayı erken çağırıp altın kazan.", "en": "Defend the Crystal Keep from zombie hordes and UFOs! Pick a ballista, cannon, catapult or turret from the cards below and build it along the path; upgrade your towers through three levels, choose their targets (first, strongest, closest) or sell them. In a pinch, drop the keep's meteor on the enemies. Fast runners, armoured brutes, flying UFOs, the Giant Zombie and the Mothership come in waves. Three maps with 12–15 waves each: earn stars for the lives you keep, and call waves early for bonus gold." },
+  "howTo": { "tr": "Bir kule kartı seç, sonra çim kareye tıkla ya da iki kez dokun; kuleye dokunup geliştir ya da sat. Klavye: oklar imleç, 1–4 kule, Q göktaşı, U geliştir, S sat, T hedef, Boşluk dalga, F hız.", "en": "Pick a tower card, then click a grass tile or tap it twice; tap a tower to upgrade or sell. Keys: arrows cursor, 1–4 towers, Q meteor, U upgrade, S sell, T target, Space next wave, F speed." },
   "genres": ["strategy", "action"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "1.0.0",
+  "version": "1.1.0",
   "credits": ["3D models: Kenney Tower Defense Kit and Mini Characters (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact Sounds (CC0) — kenney.nl"],
   "platform": { "addedAt": "2026-11-11" }
 }
