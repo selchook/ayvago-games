@@ -46,6 +46,8 @@ launch({
     loadAudio(l, 'lose', J + 'general-sounds/negative-sounds/sfx-sounds-negative1');
     loadAudio(l, 'error', J + 'general-sounds/negative-sounds/sfx-sounds-error3');
     loadAudio(l, 'move', J + 'general-sounds/menu-sounds/sfx-menu-move2');
+    loadAudio(l, 'arm', J + 'general-sounds/menu-sounds/sfx-menu-select2');
+    loadAudio(l, 'meteorFall', J + 'movement/falling-sounds/sfx-sounds-falling3');
     const I = 'sfx-impact/audio/';
     loadSfx(l, 'catapult', I + 'impactplank_medium_000');
     loadSfx(l, 'hammer', I + 'impactplank_medium_002');
@@ -77,6 +79,7 @@ launch({
         if (ev.type === 'kill') { enemies.kill(ev.e); fx.puff(ev.e.x, 0.35, ev.e.z, 0x9fd27a, 6); }
         else if (ev.type === 'leak') enemies.drop(ev.e);
         else if (ev.type === 'impact' && ev.r > 0) fx.boom(ev.x, ev.z, ev.r);
+        else if (ev.type === 'meteorHit') fx.boom(ev.m.x, ev.m.z, 1.5, true);
         else if (ev.type === 'fire') { const v = views.get(ev.tower.id); if (v) v.kick = 1; }
       }
       sim.events.length = 0;
@@ -96,7 +99,7 @@ launch({
         animateTower(v, tw.kind, tw.target ? tw.aim : v.yaw, dt);
       }
       enemies.update(dt, time, sim.enemies);
-      fx.update(dt, sim.shots);
+      fx.update(dt, sim.shots, sim.meteors);
       board.update(dt, time, 1);
       const a = time * 0.08;
       const D = 26;

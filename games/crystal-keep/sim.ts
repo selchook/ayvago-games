@@ -6,6 +6,9 @@ export type TowerKind = 'ballista' | 'cannon' | 'catapult' | 'turret';
 export type EnemyKind = 'zombie' | 'runner' | 'brute' | 'ufo' | 'gunship' | 'giant' | 'mothership';
 export type Ammo = 'arrow' | 'cannonball' | 'boulder' | 'bullet';
 export type Difficulty = 'easy' | 'normal';
+/** Which enemy in range a tower shoots: the one furthest along the path, the toughest, or the nearest. */
+export type TargetMode = 'first' | 'strong' | 'close';
+export const TARGET_MODES: TargetMode[] = ['first', 'strong', 'close'];
 
 export const TOWER_KINDS: TowerKind[] = ['ballista', 'cannon', 'catapult', 'turret'];
 
@@ -173,7 +176,7 @@ export const MAPS: MapDef[] = [
     ],
   },
   {
-    id: 'pass', theme: 'snow', growth: 0.155, hpK: 1.27, gold: 90,
+    id: 'pass', theme: 'snow', growth: 0.155, hpK: 1.285, gold: 90,
     rows: [
       't.S...S.t',
       '..#...#..',
@@ -388,7 +391,15 @@ export interface Tower {
   target: number;
   spent: number;
   kills: number;
+  /** Damage dealt so far (the upgrade panel shows it). */
+  dealt: number;
+  mode: TargetMode;
 }
+
+/** The keep's meteor strike: aimed by the player, lands after a short fall, hits ground and air. */
+export const METEOR = { radius: 1.3, fall: 0.75, cooldown: 50, dmg: 40, airK: 0.6 };
+
+export interface Meteor { x: number; z: number; t: number; dmg: number }
 
 export interface Shot {
   id: number;
@@ -417,6 +428,8 @@ export type SimEvent =
   | { type: 'kill'; e: Enemy; gold: number; score: number }
   | { type: 'leak'; e: Enemy; lives: number }
   | { type: 'drop'; boss: Enemy; e: Enemy }
+  | { type: 'meteorCast'; m: Meteor }
+  | { type: 'meteorHit'; m: Meteor; hits: number; kills: number }
   | { type: 'waveStart'; wave: number; early: number }
   | { type: 'waveSpawned'; wave: number }
   | { type: 'waveClear'; wave: number; gold: number; score: number }
@@ -445,6 +458,9 @@ export class Sim {
   kills = 0;
   leaked = 0;
   over: 'win' | 'lose' | null = null;
+  /** Seconds until the meteor strike is ready again (0 = ready). */
+  meteorCd = 0;
+  meteors: Meteor[] = [];
   private spawners: Spawner[] = [];
   private aliveByWave = new Map<number, number>();
   private spawnedDone = new Set<number>();
@@ -476,7 +492,7 @@ export class Sim {
     this.gold -= cost;
     const t: Tower = {
       id: this.nextId++, kind, tier: 0, c, r, x: cellX(this.map.W, c), z: cellZ(this.map.H, r),
-      cool: 0.3, aim: Math.PI, target: 0, spent: cost, kills: 0,
+      cool: 0.3, aim: Math.PI, target: 0, spent: cost, kills: 0, dealt: 0, mode: 'first',
     };
     this.towers.push(t);
     return t;
@@ -506,6 +522,31 @@ export class Sim {
     this.gold += g;
     this.towers.splice(i, 1);
     return g;
+  }
+
+  /** Switches a tower to the next targeting mode. */
+  cycleMode(t: Tower): TargetMode {
+    t.mode = TARGET_MODES[(TARGET_MODES.indexOf(t.mode) + 1) % TARGET_MODES.length];
+    return t.mode;
+  }
+
+  /** Meteor damage at the current wave (it grows with the enemies' hit points). */
+  meteorDmg(): number {
+    return Math.round(METEOR.dmg * this.hpScale(Math.max(1, this.wave)) / this.tune.hp);
+  }
+
+  meteorReady(): boolean {
+    return this.meteorCd <= 0 && !this.over && this.wave > 0;
+  }
+
+  /** Calls the meteor strike on a point of the map; false while it recharges. */
+  castMeteor(x: number, z: number): boolean {
+    if (!this.meteorReady()) return false;
+    const m: Meteor = { x, z, t: METEOR.fall, dmg: this.meteorDmg() };
+    this.meteors.push(m);
+    this.meteorCd = METEOR.cooldown;
+    this.events.push({ type: 'meteorCast', m });
+    return true;
   }
 
   /** Gold for calling the next wave now. */
@@ -573,6 +614,8 @@ export class Sim {
     let dmg = raw * (def.flying ? airK : 1);
     if (type === 'pierce') dmg *= 1 - def.armor;
     dmg = Math.max(1, Math.round(dmg));
+    const tw = shot.tower ? this.towers.find((t) => t.id === shot.tower) : undefined;
+    if (tw) tw.dealt += Math.min(dmg, e.hp);
     e.hp -= dmg;
     e.hitT = 0;
     this.events.push({ type: 'hit', e, dmg, shot });
@@ -582,7 +625,6 @@ export class Sim {
       this.gold += gold;
       this.score += def.score;
       this.kills++;
-      const tw = this.towers.find((t) => t.id === shot.tower);
       if (tw) tw.kills++;
       this.events.push({ type: 'kill', e, gold, score: def.score });
       this.removed(e);
@@ -622,6 +664,15 @@ export class Sim {
   step(dt: number): void {
     if (this.over) return;
     this.time += dt;
+    if (this.wave > 0) this.meteorCd = Math.max(0, this.meteorCd - dt);
+    for (let i = this.meteors.length - 1; i >= 0; i--) {
+      const m = this.meteors[i];
+      m.t -= dt;
+      if (m.t > 0) continue;
+      this.meteors.splice(i, 1);
+      this.meteorHit(m);
+      if (this.over) return;
+    }
     // waves
     if (this.countdown > 0) {
       this.countdown -= dt;
@@ -687,14 +738,15 @@ export class Sim {
       const st = def.tiers[t.tier];
       t.cool -= dt;
       let best: Enemy | null = null;
-      let bestP = -1;
+      let bestP = -Infinity;
       for (const e of this.enemies) {
         if (!e.alive) continue;
         const fly = ENEMIES[e.kind].flying;
         if (fly ? !def.air : !def.ground) continue;
         if (!this.inRange(t, e, st.range)) continue;
         const pr = this.progress(e) + (ENEMIES[e.kind].boss ? 0.02 : 0);
-        if (pr > bestP) { bestP = pr; best = e; }
+        const v = t.mode === 'strong' ? e.hp + pr : t.mode === 'close' ? -Math.hypot(e.x - t.x, e.z - t.z) + pr * 0.01 : pr;
+        if (v > bestP) { bestP = v; best = e; }
       }
       t.target = best ? best.id : 0;
       if (!best) continue;
@@ -767,6 +819,23 @@ export class Sim {
       this.enemies = this.enemies.filter((e) => e.alive);
       this.shots = this.shots.filter((s) => s.alive);
     }
+  }
+
+  private meteorHit(m: Meteor): void {
+    const shot: Shot = {
+      id: this.nextId++, ammo: 'boulder', tower: 0, target: 0, x: m.x, y: 0, z: m.z, sx: m.x, sy: 6, sz: m.z, tx: m.x, tz: m.z,
+      t: 0, T: 0, arc: 0, dmg: m.dmg, splash: METEOR.radius, dmgType: 'blast', airK: METEOR.airK, alive: false,
+    };
+    let hits = 0, kills = 0;
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const d = Math.hypot(e.x - m.x, e.z - m.z);
+      if (d > METEOR.radius) continue;
+      hits++;
+      this.damage(e, m.dmg * (1 - 0.35 * (d / METEOR.radius)), 'blast', METEOR.airK, shot);
+      if (!e.alive) kills++;
+    }
+    this.events.push({ type: 'meteorHit', m, hits, kills });
   }
 
   private towerKindOf(s: Shot): TowerKind {

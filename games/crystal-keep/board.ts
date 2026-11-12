@@ -374,27 +374,75 @@ export function animateTower(v: TowerView, kind: TowerKind, aim: number, dt: num
 
 // ------------------------------------------------------------------ markers
 
-/** The range ring and the build cursor. */
+/**
+ * The markers on the field: the range ring (the selected tower or the build preview), a faint
+ * second ring (a tower under the mouse), the selected-tile cursor and the hover square.
+ */
 export class Markers {
   readonly ring = new THREE.Group();
+  readonly ring2 = new THREE.Group();
+  readonly tile = new THREE.Group();
   readonly cursor: THREE.Object3D;
   private ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false });
   private fillMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.16, depthWrite: false });
+  private ring2Mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, depthWrite: false });
+  private tileMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false });
+  private tileFillMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18, depthWrite: false });
   ghost: TowerView | null = null;
   private ghostKey = '';
+  private ghostY = 0;
 
   constructor(private scene: Phaser.Scene, parent: THREE.Object3D, mat: THREE.Material) {
-    const edge = new THREE.Mesh(new THREE.RingGeometry(0.965, 1, 64), this.ringMat);
+    const edgeGeo = new THREE.RingGeometry(0.965, 1, 64);
+    const edge = new THREE.Mesh(edgeGeo, this.ringMat);
     const fill = new THREE.Mesh(new THREE.CircleGeometry(0.965, 64), this.fillMat);
     for (const m of [edge, fill]) { m.rotation.x = -Math.PI / 2; m.renderOrder = 5; this.ring.add(m); }
     this.ring.visible = false;
     parent.add(this.ring);
+    const edge2 = new THREE.Mesh(edgeGeo, this.ring2Mat);
+    edge2.rotation.x = -Math.PI / 2;
+    edge2.renderOrder = 5;
+    this.ring2.add(edge2);
+    this.ring2.visible = false;
+    parent.add(this.ring2);
+    // a square outline: a four-segment ring turned by 45 degrees, and a soft fill
+    const square = new THREE.Mesh(new THREE.RingGeometry(0.6, 0.68, 4, 1, Math.PI / 4), this.tileMat);
+    const squareFill = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.85), this.tileFillMat);
+    for (const m of [square, squareFill]) { m.rotation.x = -Math.PI / 2; m.renderOrder = 6; this.tile.add(m); }
+    this.tile.visible = false;
+    parent.add(this.tile);
     this.cursor = kitModel('selection-a', mat, false);
     this.cursor.visible = false;
     parent.add(this.cursor);
     this.parent = parent;
   }
   private parent: THREE.Object3D;
+
+  /** The hover square on a tile (`y`: the tile's surface). */
+  showTile(x: number, z: number, y: number, color: number): void {
+    this.tile.visible = true;
+    this.tile.position.set(x, y + 0.03, z);
+    this.tileMat.color.setHex(color);
+    this.tileFillMat.color.setHex(color);
+  }
+
+  hideTile(): void { this.tile.visible = false; }
+
+  showRing2(x: number, z: number, range: number, color: number): void {
+    this.ring2.visible = true;
+    this.ring2.position.set(x, GRASS_Y + 0.03, z);
+    this.ring2.scale.setScalar(range);
+    this.ring2Mat.color.setHex(color);
+  }
+
+  hideRing2(): void { this.ring2.visible = false; }
+
+  /** Tints the ghost tower: green (buildable) or red (blocked, unaffordable). */
+  tintGhost(ok: boolean): void {
+    const m = ghostMat(this.scene);
+    m.emissive.setHex(ok ? 0x2f7a4a : 0xa02a2a);
+    m.opacity = ok ? 0.6 : 0.5;
+  }
 
   showRing(x: number, z: number, range: number, color: number): void {
     this.ring.visible = true;
@@ -417,12 +465,22 @@ export class Markers {
       }
       this.ghostKey = key;
     }
-    if (this.ghost) this.ghost.root.position.set(x, GRASS_Y, z);
+    if (this.ghost) {
+      // a new spot: the ghost drops in from a little above
+      const p = this.ghost.root.position;
+      if (p.x !== x || p.z !== z) this.ghostY = 0.35;
+      p.set(x, GRASS_Y + this.ghostY, z);
+    }
   }
 
-  update(time: number): void {
+  update(time: number, dt = 1 / 60): void {
     this.ringMat.opacity = 0.7 + Math.sin(time * 6) * 0.15;
-    if (this.cursor.visible) this.cursor.scale.setScalar(1 + Math.sin(time * 5) * 0.04);
-    if (this.ghost) this.ghost.weapon.rotation.y = time * 0.8;
+    this.tileMat.opacity = 0.75 + Math.sin(time * 7) * 0.2;
+    if (this.cursor.visible) this.cursor.scale.setScalar(1 + Math.sin(time * 5) * 0.05);
+    if (this.ghost) {
+      this.ghost.weapon.rotation.y = time * 0.8;
+      this.ghostY = Math.max(0, this.ghostY - dt * 2.4);
+      this.ghost.root.position.y = GRASS_Y + this.ghostY;
+    }
   }
 }
