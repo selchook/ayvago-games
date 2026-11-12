@@ -53,7 +53,9 @@
   "assets": {
     "icon": "/games/head-soccer/ayvago/icon-512.png",
     "cover": "/games/head-soccer/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/head-soccer/ayvago/screenshot.jpg"
+    "screenshot": "/games/head-soccer/ayvago/screenshot.jpg",
+    "card": "/games/head-soccer/ayvago/card-640x360.webp",
+    "card2x": "/games/head-soccer/ayvago/card-1280x720.webp"
   },
   "version": "1.3.0"
 }

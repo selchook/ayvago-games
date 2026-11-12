@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/paint-roll/ayvago/icon-512.png",
     "cover": "/games/paint-roll/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/paint-roll/ayvago/screenshot.jpg"
+    "screenshot": "/games/paint-roll/ayvago/screenshot.jpg",
+    "card": "/games/paint-roll/ayvago/card-640x360.webp",
+    "card2x": "/games/paint-roll/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

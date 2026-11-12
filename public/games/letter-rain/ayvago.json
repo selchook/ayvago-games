@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/letter-rain/ayvago/icon-512.png",
     "cover": "/games/letter-rain/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/letter-rain/ayvago/screenshot.jpg"
+    "screenshot": "/games/letter-rain/ayvago/screenshot.jpg",
+    "card": "/games/letter-rain/ayvago/card-640x360.webp",
+    "card2x": "/games/letter-rain/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

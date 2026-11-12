@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/orbit-hop/ayvago/icon-512.png",
     "cover": "/games/orbit-hop/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/orbit-hop/ayvago/screenshot.jpg"
+    "screenshot": "/games/orbit-hop/ayvago/screenshot.jpg",
+    "card": "/games/orbit-hop/ayvago/card-640x360.webp",
+    "card2x": "/games/orbit-hop/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

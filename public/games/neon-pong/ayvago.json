@@ -53,7 +53,9 @@
   "assets": {
     "icon": "/games/neon-pong/ayvago/icon-512.png",
     "cover": "/games/neon-pong/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/neon-pong/ayvago/screenshot.jpg"
+    "screenshot": "/games/neon-pong/ayvago/screenshot.jpg",
+    "card": "/games/neon-pong/ayvago/card-640x360.webp",
+    "card2x": "/games/neon-pong/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

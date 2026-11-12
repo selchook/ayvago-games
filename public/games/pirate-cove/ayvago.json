@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/pirate-cove/ayvago/icon-512.png",
     "cover": "/games/pirate-cove/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/pirate-cove/ayvago/screenshot.jpg"
+    "screenshot": "/games/pirate-cove/ayvago/screenshot.jpg",
+    "card": "/games/pirate-cove/ayvago/card-640x360.webp",
+    "card2x": "/games/pirate-cove/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

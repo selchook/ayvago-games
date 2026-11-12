@@ -50,7 +50,9 @@
   "assets": {
     "icon": "/games/nonogram/ayvago/icon-512.png",
     "cover": "/games/nonogram/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/nonogram/ayvago/screenshot.jpg"
+    "screenshot": "/games/nonogram/ayvago/screenshot.jpg",
+    "card": "/games/nonogram/ayvago/card-640x360.webp",
+    "card2x": "/games/nonogram/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

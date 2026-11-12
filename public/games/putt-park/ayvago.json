@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/putt-park/ayvago/icon-512.png",
     "cover": "/games/putt-park/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/putt-park/ayvago/screenshot.jpg"
+    "screenshot": "/games/putt-park/ayvago/screenshot.jpg",
+    "card": "/games/putt-park/ayvago/card-640x360.webp",
+    "card2x": "/games/putt-park/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

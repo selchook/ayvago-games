@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/alien-invaders/ayvago/icon-512.png",
     "cover": "/games/alien-invaders/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/alien-invaders/ayvago/screenshot.jpg"
+    "screenshot": "/games/alien-invaders/ayvago/screenshot.jpg",
+    "card": "/games/alien-invaders/ayvago/card-640x360.webp",
+    "card2x": "/games/alien-invaders/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

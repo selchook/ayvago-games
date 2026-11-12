@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/bubble-pop/ayvago/icon-512.png",
     "cover": "/games/bubble-pop/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/bubble-pop/ayvago/screenshot.jpg"
+    "screenshot": "/games/bubble-pop/ayvago/screenshot.jpg",
+    "card": "/games/bubble-pop/ayvago/card-640x360.webp",
+    "card2x": "/games/bubble-pop/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

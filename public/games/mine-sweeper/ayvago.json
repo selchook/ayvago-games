@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/mine-sweeper/ayvago/icon-512.png",
     "cover": "/games/mine-sweeper/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/mine-sweeper/ayvago/screenshot.jpg"
+    "screenshot": "/games/mine-sweeper/ayvago/screenshot.jpg",
+    "card": "/games/mine-sweeper/ayvago/card-640x360.webp",
+    "card2x": "/games/mine-sweeper/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }
