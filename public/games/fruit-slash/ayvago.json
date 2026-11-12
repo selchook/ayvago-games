@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/fruit-slash/ayvago/icon-512.png",
     "cover": "/games/fruit-slash/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/fruit-slash/ayvago/screenshot.jpg"
+    "screenshot": "/games/fruit-slash/ayvago/screenshot.jpg",
+    "card": "/games/fruit-slash/ayvago/card-640x360.webp",
+    "card2x": "/games/fruit-slash/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

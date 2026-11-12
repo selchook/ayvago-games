@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/merge-2048/ayvago/icon-512.png",
     "cover": "/games/merge-2048/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/merge-2048/ayvago/screenshot.jpg"
+    "screenshot": "/games/merge-2048/ayvago/screenshot.jpg",
+    "card": "/games/merge-2048/ayvago/card-640x360.webp",
+    "card2x": "/games/merge-2048/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

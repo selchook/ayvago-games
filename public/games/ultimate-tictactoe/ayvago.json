@@ -53,7 +53,9 @@
   "assets": {
     "icon": "/games/ultimate-tictactoe/ayvago/icon-512.png",
     "cover": "/games/ultimate-tictactoe/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/ultimate-tictactoe/ayvago/screenshot.jpg"
+    "screenshot": "/games/ultimate-tictactoe/ayvago/screenshot.jpg",
+    "card": "/games/ultimate-tictactoe/ayvago/card-640x360.webp",
+    "card2x": "/games/ultimate-tictactoe/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/space-blaster/ayvago/icon-512.png",
     "cover": "/games/space-blaster/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/space-blaster/ayvago/screenshot.jpg"
+    "screenshot": "/games/space-blaster/ayvago/screenshot.jpg",
+    "card": "/games/space-blaster/ayvago/card-640x360.webp",
+    "card2x": "/games/space-blaster/ayvago/card-1280x720.webp"
   },
   "version": "1.2.0"
 }

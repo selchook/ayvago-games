@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/retro-snake/ayvago/icon-512.png",
     "cover": "/games/retro-snake/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/retro-snake/ayvago/screenshot.jpg"
+    "screenshot": "/games/retro-snake/ayvago/screenshot.jpg",
+    "card": "/games/retro-snake/ayvago/card-640x360.webp",
+    "card2x": "/games/retro-snake/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

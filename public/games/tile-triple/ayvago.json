@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/tile-triple/ayvago/icon-512.png",
     "cover": "/games/tile-triple/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/tile-triple/ayvago/screenshot.jpg"
+    "screenshot": "/games/tile-triple/ayvago/screenshot.jpg",
+    "card": "/games/tile-triple/ayvago/card-640x360.webp",
+    "card2x": "/games/tile-triple/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

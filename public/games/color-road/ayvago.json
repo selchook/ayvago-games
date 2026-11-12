@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/color-road/ayvago/icon-512.png",
     "cover": "/games/color-road/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/color-road/ayvago/screenshot.jpg"
+    "screenshot": "/games/color-road/ayvago/screenshot.jpg",
+    "card": "/games/color-road/ayvago/card-640x360.webp",
+    "card2x": "/games/color-road/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

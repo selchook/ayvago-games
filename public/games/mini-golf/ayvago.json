@@ -53,7 +53,9 @@
   "assets": {
     "icon": "/games/mini-golf/ayvago/icon-512.png",
     "cover": "/games/mini-golf/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/mini-golf/ayvago/screenshot.jpg"
+    "screenshot": "/games/mini-golf/ayvago/screenshot.jpg",
+    "card": "/games/mini-golf/ayvago/card-640x360.webp",
+    "card2x": "/games/mini-golf/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

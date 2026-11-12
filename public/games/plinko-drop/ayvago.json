@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/plinko-drop/ayvago/icon-512.png",
     "cover": "/games/plinko-drop/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/plinko-drop/ayvago/screenshot.jpg"
+    "screenshot": "/games/plinko-drop/ayvago/screenshot.jpg",
+    "card": "/games/plinko-drop/ayvago/card-640x360.webp",
+    "card2x": "/games/plinko-drop/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/jetpack-rush/ayvago/icon-512.png",
     "cover": "/games/jetpack-rush/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/jetpack-rush/ayvago/screenshot.jpg"
+    "screenshot": "/games/jetpack-rush/ayvago/screenshot.jpg",
+    "card": "/games/jetpack-rush/ayvago/card-640x360.webp",
+    "card2x": "/games/jetpack-rush/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

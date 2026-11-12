@@ -53,7 +53,9 @@
   "assets": {
     "icon": "/games/connect-four/ayvago/icon-512.png",
     "cover": "/games/connect-four/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/connect-four/ayvago/screenshot.jpg"
+    "screenshot": "/games/connect-four/ayvago/screenshot.jpg",
+    "card": "/games/connect-four/ayvago/card-640x360.webp",
+    "card2x": "/games/connect-four/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

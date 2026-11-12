@@ -65,6 +65,8 @@ function arcadeGame({
         icon: `/games/${slug}/ayvago/icon-512.png`,
         cover: `/games/${slug}/ayvago/cover-1920x1080.jpg`,
         screenshot: `/games/${slug}/ayvago/screenshot.jpg`,
+        card: `/games/${slug}/ayvago/card-640x360.webp`,
+        card2x: `/games/${slug}/ayvago/card-1280x720.webp`,
       },
       version: version ?? '1.0.0',
     },

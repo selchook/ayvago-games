@@ -23,6 +23,21 @@ function jpgSize(file: string): [number, number] {
   }
   return [0, 0];
 }
+// WebP: a RIFF container whose first chunk holds the size (lossy VP8, lossless VP8L or extended VP8X).
+function webpSize(file: string): [number, number] {
+  const b = readFileSync(file);
+  if (b.toString('ascii', 0, 4) !== 'RIFF' || b.toString('ascii', 8, 12) !== 'WEBP') return [0, 0];
+  const chunk = b.toString('ascii', 12, 16);
+  if (chunk === 'VP8 ') return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff];
+  if (chunk === 'VP8L') {
+    const bits = b.readUInt32LE(21);
+    return [(bits & 0x3fff) + 1, ((bits >> 14) & 0x3fff) + 1];
+  }
+  if (chunk === 'VP8X') return [b.readUIntLE(24, 3) + 1, b.readUIntLE(27, 3) + 1];
+  return [0, 0];
+}
+// Catalog card art (assets.card / card2x), both required for the studio's games.
+const CARDS = [['card', '640x360'], ['card2x', '1280x720']] as const;
 
 for (const slug of readdirSync(dir).sort()) {
   const file = join(dir, slug, 'ayvago.json');
@@ -42,6 +57,13 @@ for (const slug of readdirSync(dir).sort()) {
     if (m.assets.screenshot && !existsSync(join(root, 'public', m.assets.screenshot))) problems.push('screenshot missing');
     if (!existsSync(cover)) problems.push('cover missing');
     else if (jpgSize(cover).join('x') !== '1920x1080') problems.push(`cover is ${jpgSize(cover).join('x')}`);
+    for (const [key, size] of CARDS) {
+      const ref = m.assets[key];
+      const file = ref && join(root, 'public', ref);
+      if (!file) problems.push(`assets.${key} missing`);
+      else if (!existsSync(file)) problems.push(`${key} file missing`);
+      else if (webpSize(file).join('x') !== size) problems.push(`${key} is ${webpSize(file).join('x')}, not a ${size} WebP`);
+    }
   }
   if (problems.length) failed++;
   console.log(`${problems.length ? 'FAIL' : 'ok  '}  ${slug}${problems.length ? '  ' + problems.join('; ') : ''}`);

@@ -2,13 +2,19 @@
 //   public/games/<slug>/ayvago/cover-1920x1080.jpg   catalog / game page cover
 //   public/games/<slug>/ayvago/icon-512.png          square icon
 //   public/games/<slug>/ayvago/screenshot.jpg        in-game frame (platform Arcade theme tiles)
+//   public/games/<slug>/ayvago/card-640x360.webp     catalog card (Minimal / Modern theme tiles)
+//   public/games/<slug>/ayvago/card-1280x720.webp    the same card for high-density screens
 //   public/thumbs/<slug>.png                         thumbnail for this repo's own portal
 // Each game is opened (no intro), its menu and a few seconds of play are captured, then the
-// captures are composed on a branded HTML template and rendered by Chromium.
-// Usage: npm run build && node scripts/gen-store-assets.mjs [--dev] [slug ...]
+// captures are composed on a branded HTML template and rendered by Chromium. The card uses the
+// busiest, most colourful of several frames from the run (frameStats) with only a small title logo.
+// Usage: npm run build && node scripts/gen-store-assets.mjs [--dev] [--card-only] [slug ...]
+//   --card-only   regenerate just the cards (covers, icons, screenshots and thumbnails stay)
+//   CARD_FRAMES=<dir> keeps the card candidate frames; with --card-only --from-frames the cards are
+//   re-composed from them without opening the games
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
-import { readdirSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +26,7 @@ try { playwright = require('playwright'); } catch { playwright = require('/opt/n
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const dev = args.includes('--dev');
+const cardOnly = args.includes('--card-only');
 const only = args.filter((a) => !a.startsWith('--'));
 const slugs = (only.length ? only : readdirSync(join(root, 'public', 'games')))
   .filter((s) => existsSync(join(root, 'public', 'games', s, 'ayvago.json')));
@@ -141,16 +148,152 @@ function iconHtml(m, play) {
   <div class="name">${m.title.en.toUpperCase()}</div><div class="frame"></div></body></html>`;
 }
 
-const PORT = 5600 + Math.floor(Math.random() * 300);
-const server = spawn('npx', dev ? ['vite', '--port', String(PORT), '--strictPort'] : ['vite', 'preview', '--port', String(PORT), '--strictPort'],
-  { cwd: root, stdio: 'pipe', detached: true, env: { ...process.env, VITE_CACHE_DIR: join(tmpdir(), `ayvago-vite-${PORT}`) } });
-await new Promise((r) => { server.stdout.on('data', (d) => String(d).includes('Local') && r()); setTimeout(r, 10000); });
+// ---- Catalog card: a 16:9 in-game frame with a small title logo, no other text. ----
+// The logo sits bottom-left: the platform tile draws its "New" / "Coming soon" badges top-left.
+// Laid out at 640×360 CSS px and rendered at device scale 1 and 2, so both sizes are drawn
+// natively sharp. Per-game tuning when the default capture misses the action:
+//   wait    ms to let the round start (banners, countdowns) before the scripted play
+//   pick    candidate frame to use (index into CAPTURES) instead of the liveliest one
+//   accent  logo fill colour instead of the one taken from the frame
+// The picks below were chosen by eye on the November 2026 run (frames without a round-start,
+// "wrong" or game-over banner); check them when the cards are regenerated.
+const CARD = {
+  'color-bounce': { pick: 2 },
+  'fruit-slash': { pick: 3 },
+  'golden-podium': { pick: 0 },
+  'light-cycles': { pick: 4 },
+  'lights-out': { pick: 3 },
+  'simon-says': { pick: 1 },
+  'space-blaster': { pick: 2 },
+  'whack-a-mole': { pick: 3 },
+};
+// Steps of the scripted play (see the capture loop) after which a card candidate is taken.
+const CAPTURES = [7, 11, 15, 19, 23];
+const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader'] });
-let made = 0;
-for (const slug of slugs) {
-  const m = JSON.parse(readFileSync(join(root, 'public', 'games', slug, 'ayvago.json'), 'utf8'));
+/** Colour statistics of a captured frame: how lively it is (score) and its accent hue. */
+async function frameStats(lab, b64) {
+  return lab.evaluate(async (src) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${src}`;
+    await img.decode();
+    const w = 96, h = Math.round((96 * img.height) / img.width);
+    const ctx = new OffscreenCanvas(w, h).getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    const d = ctx.getImageData(0, 0, w, h).data;
+    const n = w * h, lum = new Float32Array(n), hues = new Float32Array(12);
+    let rg = 0, yb = 0, rg2 = 0, yb2 = 0, l1 = 0, l2 = 0, dark = 0;
+    for (let i = 0; i < n; i++) {
+      const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+      const a = r - g, c = (r + g) / 2 - b, l = 0.299 * r + 0.587 * g + 0.114 * b;
+      rg += a; yb += c; rg2 += a * a; yb2 += c * c; l1 += l; l2 += l * l; lum[i] = l;
+      if (l < 28) dark++;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), s = mx ? (mx - mn) / mx : 0;
+      if (s > 0.45 && mx > 110) {
+        let hu = mx === r ? (g - b) / (mx - mn) : mx === g ? 2 + (b - r) / (mx - mn) : 4 + (r - g) / (mx - mn);
+        hu = ((hu * 60) + 360) % 360;
+        hues[Math.floor(hu / 30) % 12] += s * mx;
+      }
+    }
+    const sd = (s1, s2) => Math.sqrt(Math.max(0, s2 / n - (s1 / n) ** 2));
+    // Hasler–Süsstrunk colourfulness, plus edge density for busy frames, minus near-black area.
+    const colourful = Math.hypot(sd(rg, rg2), sd(yb, yb2)) + 0.3 * Math.hypot(rg / n, yb / n);
+    let edge = 0;
+    for (let y = 0; y < h - 1; y++) for (let x = 0; x < w - 1; x++) {
+      const i = y * w + x;
+      edge += Math.abs(lum[i] - lum[i + 1]) + Math.abs(lum[i] - lum[i + w]);
+    }
+    edge /= (w - 1) * (h - 1);
+    const darkShare = dark / n;
+    const score = colourful + 0.8 * edge + 0.25 * sd(l1, l2) - 160 * Math.max(0, darkShare - 0.5);
+    const top = hues.indexOf(Math.max(...hues));
+    const accent = hues[top] > n * 6 ? `hsl(${top * 30 + 15} 92% 64%)` : '#ffd23f';
+    return { score, accent, colourful, edge, darkShare };
+  }, b64);
+}
+
+function cardHtml(m, b64, accent) {
   const land = m.orientation === 'landscape';
+  const modern = isModern(m);
+  const shot = `data:image/png;base64,${b64}`;
+  const title = esc(m.title.en.toUpperCase());
+  // Logo width limit: 45% of the card, or the free band left of a portrait frame.
+  const maxW = land ? 270 : 192;
+  return `<!doctype html><html><head><style>${FONTS}
+  * { box-sizing: border-box; margin: 0; }
+  body { width: 640px; height: 360px; overflow: hidden; background: #141212; position: relative; }
+  .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .blur { filter: blur(10px) brightness(.55) saturate(1.3); transform: scale(1.12); }
+  .vig { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,.45)); }
+  .glow { position: absolute; inset: 0; mix-blend-mode: screen; opacity: .32;
+    background: radial-gradient(circle at 12% 88%, ${accent}, transparent 42%), radial-gradient(circle at 90% 18%, ${accent}, transparent 40%); }
+  .frame { position: absolute; left: 50%; top: 50%; height: 94%; aspect-ratio: 9 / 16; transform: translate(-50%, -50%);
+    overflow: hidden; background: #000; box-shadow: 0 10px 28px rgba(0,0,0,.65), 0 2px 6px rgba(0,0,0,.5); }
+  .frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .frame.modern { border-radius: 14px; }
+  .frame.retro { border: 2px solid #f3efe9; outline: 2px solid #000; }
+  .scrim { position: absolute; left: 0; bottom: 0; width: 64%; height: 50%;
+    background: radial-gradient(farthest-side at 0 100%, rgba(0,0,0,.62), rgba(0,0,0,.32) 55%, transparent); }
+  .logo { position: absolute; left: 18px; bottom: 14px; display: inline-block; max-width: ${maxW}px; text-wrap: balance; }
+  .logo span { display: block; }
+  .logo .front { position: absolute; inset: 0; }
+  .modern-logo { font-family: MT; font-weight: 700; line-height: .98; letter-spacing: .5px; }
+  .modern-logo .back { color: #1a1310; -webkit-text-stroke: 8px #1a1310;
+    text-shadow: 0 3px 0 #1a1310, 0 5px 12px rgba(0,0,0,.7); }
+  .modern-logo .front { background: linear-gradient(#fff 0%, color-mix(in srgb, ${accent} 55%, #fff) 30%, ${accent} 75%);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .retro-logo { font-family: P2P; line-height: 1.3; letter-spacing: 1px; }
+  .retro-logo .back { color: #000; -webkit-text-stroke: 6px #000; text-shadow: 3px 3px 0 #000, 0 4px 10px rgba(0,0,0,.6); }
+  .retro-logo .front { color: ${accent}; }
+  </style></head><body>
+  ${land ? `<img class="bg" src="${shot}">` : `<img class="bg blur" src="${shot}"><div class="vig"></div><div class="glow"></div>
+  <div class="frame ${modern ? 'modern' : 'retro'}"><img src="${shot}"></div>`}
+  <div class="scrim"></div>
+  <div class="logo ${modern ? 'modern-logo' : 'retro-logo'}" style="font-size:${modern ? 30 : 20}px"><span class="back">${title}</span><span class="front">${title}</span></div>
+  <script>
+  // Shrink the logo until it fits its width on at most two lines.
+  window.fitLogo = () => {
+    const el = document.querySelector('.logo');
+    let size = parseFloat(el.style.fontSize);
+    const lh = parseFloat(getComputedStyle(el).lineHeight) / size;
+    const fits = () => el.scrollWidth <= ${maxW} + 1 && el.offsetHeight <= 2 * size * lh + 2;
+    while (!fits() && size > 12) el.style.fontSize = (size -= 0.5) + 'px';
+    return { size, lines: Math.round(el.offsetHeight / (size * lh)), w: el.offsetWidth };
+  };
+  </script></body></html>`;
+}
+
+/** Renders the card at device scale `scale` and encodes it as WebP no larger than `maxBytes`. */
+async function renderCard(browser, lab, html, scale, maxBytes) {
+  const page = await browser.newPage({ viewport: { width: 640, height: 360 }, deviceScaleFactor: scale });
+  await page.setContent(html);
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => Promise.all([...document.images].map((i) => i.decode())));
+  const fit = await page.evaluate(() => window.fitLogo());
+  const png = (await page.screenshot({ type: 'png' })).toString('base64');
+  await page.close();
+  const webp = await lab.evaluate(async ({ src, maxBytes }) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${src}`;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    let url;
+    for (const q of [0.92, 0.88, 0.84, 0.8, 0.75, 0.7, 0.65, 0.6]) {
+      url = c.toDataURL('image/webp', q);
+      if ((url.length - 23) * 0.75 <= maxBytes) break;
+    }
+    return url;
+  }, { src: png, maxBytes });
+  if (!webp.startsWith('data:image/webp')) throw new Error('this Chromium cannot encode WebP');
+  return { buf: Buffer.from(webp.split(',')[1], 'base64'), fit };
+}
+
+// Opens a game, captures its menu and a scripted few seconds of play. The cover, icon, screenshot
+// and thumbnail use the frame after step 15 (`play`); the card candidates are the frames after
+// each CAPTURES step (`shots`, `live` = the round was still running).
+async function capture(browser, slug, land, tune) {
   const page = await browser.newPage({ viewport: land ? { width: 1280, height: 720 } : { width: 720, height: 1280 } });
   try {
     await page.goto(`http://localhost:${PORT}/games/${slug}/?nointro&lang=en`);
@@ -159,46 +302,108 @@ for (const slug of slugs) {
     const canvas = page.locator('canvas').first();
     const menu = (await canvas.screenshot()).toString('base64');
     await page.keyboard.press('Enter');
-    await page.waitForFunction(() => window.__ayvago.game.scene.isActive('Play'), null, { timeout: 5000 });
+    await page.waitForFunction(() => window.__ayvago.game.scene.isActive('Play'), null, { timeout: 15000 });
+    if (tune.wait) await page.waitForTimeout(tune.wait);
     const box = await canvas.boundingBox();
-    for (let i = 0; i < 16; i++) {          // a few seconds of "play" so the frame is lively
+    let play, thumb;
+    const shots = [];
+    for (let i = 0; i < 24; i++) {
       const k = ['ArrowLeft', 'ArrowRight', 'Space', 'ArrowUp'][i % 4];
       await page.keyboard.down(k);
       await page.mouse.click(box.x + box.width * (0.2 + 0.6 * Math.random()), box.y + box.height * (0.35 + 0.5 * Math.random()));
       await page.waitForTimeout(140);
       await page.keyboard.up(k);
+      if (!CAPTURES.includes(i)) continue;
+      // Hide the pause overlay if a random tap opened it. A frame is live when the round runs
+      // both before and after it is taken (not over, no result screen).
+      const running = () => page.evaluate(() => {
+        const g = window.__ayvago.game;
+        if (g.scene.isActive('Pause')) { g.scene.stop('Pause'); g.scene.resume('Play'); }
+        return g.scene.isActive('Play') && !g.scene.isActive('GameOver') && !g.scene.getScene('Play').isOver;
+      });
+      const before = await running();
+      await page.waitForTimeout(i === 15 ? 500 : 250);
+      const b64 = (await canvas.screenshot()).toString('base64');
+      shots.push({ b64, live: before && (await running()) });
+      if (i === 15) {
+        play = b64;
+        if (!cardOnly) thumb = await canvas.screenshot({ scale: 'css' });
+      }
     }
-    await page.evaluate(() => {           // hide the pause overlay if a random tap opened it
-      const g = window.__ayvago.game;
-      if (g.scene.isActive('Pause')) { g.scene.stop('Pause'); g.scene.resume('Play'); }
-    });
-    await page.waitForTimeout(500);
-    const play = (await canvas.screenshot()).toString('base64');
+    return { menu, play, thumb, shots };
+  } finally {
+    await page.close();   // stop the game so it does not slow the rendering that follows
+  }
+}
 
-    const out = join(root, 'public', 'games', slug, 'ayvago');
-    mkdirSync(out, { recursive: true });
-    mkdirSync(join(root, 'public', 'thumbs'), { recursive: true });
-    await canvas.screenshot({ path: join(root, 'public', 'thumbs', `${slug}.png`), scale: 'css' });
-    // Light in-game screenshot for the platform's Arcade theme tiles (manifest assets.screenshot).
-    await renderScreenshot(browser, play, land, join(out, 'screenshot.jpg'));
+// CARD_FRAMES=<dir> keeps every card candidate there; --from-frames re-composes the cards from
+// the kept frames without opening the games (for tuning the layout and the CARD table).
+const framesDir = process.env.CARD_FRAMES;
+const fromFrames = args.includes('--from-frames');
+if (fromFrames && !framesDir) throw new Error('--from-frames needs CARD_FRAMES=<dir>');
+const PORT = 5600 + Math.floor(Math.random() * 300);
+const server = fromFrames ? null : spawn('npx', dev ? ['vite', '--port', String(PORT), '--strictPort'] : ['vite', 'preview', '--port', String(PORT), '--strictPort'],
+  { cwd: root, stdio: 'pipe', detached: true, env: { ...process.env, VITE_CACHE_DIR: join(tmpdir(), `ayvago-vite-${PORT}`) } });
+if (server) await new Promise((r) => { server.stdout.on('data', (d) => String(d).includes('Local') && r()); setTimeout(r, 10000); });
 
-    const art = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-    await art.setContent(coverHtml(m, menu, play, heroImage(slug)));
-    await art.evaluate(() => document.fonts.ready);
-    await art.screenshot({ path: join(out, 'cover-1920x1080.jpg'), type: 'jpeg', quality: 86 });
-    await art.setViewportSize({ width: 512, height: 512 });
-    await art.setContent(iconHtml(m, play));
-    await art.evaluate(() => document.fonts.ready);
-    await art.screenshot({ path: join(out, 'icon-512.png') });
-    await art.close();
+const browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader'] });
+const lab = await browser.newPage();   // frame statistics and WebP encoding
+let made = 0;
+for (const slug of slugs) {
+  const m = JSON.parse(readFileSync(join(root, 'public', 'games', slug, 'ayvago.json'), 'utf8'));
+  const land = m.orientation === 'landscape';
+  const tune = CARD[slug] ?? {};
+  const out = join(root, 'public', 'games', slug, 'ayvago');
+  mkdirSync(out, { recursive: true });
+  try {
+    let shots;
+    if (fromFrames) {
+      const live = JSON.parse(readFileSync(join(framesDir, `${slug}.json`), 'utf8'));
+      shots = live.map((l, n) => ({ live: l, b64: readFileSync(join(framesDir, `${slug}-${n}.png`)).toString('base64') }));
+    } else {
+      const cap = await capture(browser, slug, land, tune);
+      shots = cap.shots;
+      if (framesDir) {
+        mkdirSync(framesDir, { recursive: true });
+        shots.forEach((s, n) => writeFileSync(join(framesDir, `${slug}-${n}.png`), Buffer.from(s.b64, 'base64')));
+        writeFileSync(join(framesDir, `${slug}.json`), JSON.stringify(shots.map((s) => s.live)));
+      }
+      if (!cardOnly) {
+        mkdirSync(join(root, 'public', 'thumbs'), { recursive: true });
+        writeFileSync(join(root, 'public', 'thumbs', `${slug}.png`), cap.thumb);
+        // Light in-game screenshot for the platform's Arcade theme tiles (manifest assets.screenshot).
+        await renderScreenshot(browser, cap.play, land, join(out, 'screenshot.jpg'));
+        const art = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+        await art.setContent(coverHtml(m, cap.menu, cap.play, heroImage(slug)));
+        await art.evaluate(() => document.fonts.ready);
+        await art.screenshot({ path: join(out, 'cover-1920x1080.jpg'), type: 'jpeg', quality: 86 });
+        await art.setViewportSize({ width: 512, height: 512 });
+        await art.setContent(iconHtml(m, cap.play));
+        await art.evaluate(() => document.fonts.ready);
+        await art.screenshot({ path: join(out, 'icon-512.png') });
+        await art.close();
+      }
+    }
+
+    // Catalog card: frames during live play first, then the liveliest of them, with a small lean
+    // towards later frames (past the round-start banners).
+    for (const [n, s] of shots.entries()) Object.assign(s, await frameStats(lab, s.b64), { n });
+    for (const s of shots) s.rank = s.score + 3 * s.n;
+    const ranked = [...shots].sort((a, b) => (b.live - a.live) || (b.rank - a.rank));
+    const best = tune.pick !== undefined ? shots[tune.pick] : ranked[0];
+    const html = cardHtml(m, best.b64, tune.accent ?? best.accent);
+    const big = await renderCard(browser, lab, html, 2, 110_000);
+    const small = await renderCard(browser, lab, html, 1, 45_000);
+    writeFileSync(join(out, 'card-1280x720.webp'), big.buf);
+    writeFileSync(join(out, 'card-640x360.webp'), small.buf);
+    const stats = shots.map((s) => `${s.n}${s === best ? '*' : ''}:${s.live ? '' : 'x'}${Math.round(s.rank)}`).join(' ');
+    console.log(`ok    ${slug}  card [${stats}] ${Math.round(small.buf.length / 1024)}+${Math.round(big.buf.length / 1024)} KB, logo ${big.fit.size}px x${big.fit.lines}`);
     made++;
-    console.log(`ok    ${slug}`);
   } catch (e) {
     console.log(`FAIL  ${slug}: ${String(e.message).split('\n')[0]}`);
   }
-  await page.close();
 }
 await browser.close();
-try { process.kill(-server.pid); } catch { server.kill(); }
+if (server) try { process.kill(-server.pid); } catch { server.kill(); }
 console.log(`\nstore assets: ${made}/${slugs.length}`);
 process.exit(made === slugs.length ? 0 : 1);

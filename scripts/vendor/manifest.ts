@@ -91,6 +91,11 @@ export const gameManifestSchema = z
       preview: assetRef.optional(),
       // An in-game screenshot in the game's orientation; the Arcade theme's tiles show it.
       screenshot: assetRef.optional(),
+      // Card art for the catalog tiles of the Minimal and Cartoon themes: in-game frames with a
+      // small logo and no text block, 640×360 WebP. Without it the tiles show the cover.
+      card: assetRef.optional(),
+      // The same card art at 1280×720 WebP for dense screens; only used together with `card`.
+      card2x: assetRef.optional(),
     }),
     version: z.string().regex(/^\d+\.\d+\.\d+$/, 'version must be semver (x.y.z)'),
     // Enables ?ayvagoTest=... hooks used by the automated harness; ignored in production.

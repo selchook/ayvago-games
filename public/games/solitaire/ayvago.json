@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/solitaire/ayvago/icon-512.png",
     "cover": "/games/solitaire/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/solitaire/ayvago/screenshot.jpg"
+    "screenshot": "/games/solitaire/ayvago/screenshot.jpg",
+    "card": "/games/solitaire/ayvago/card-640x360.webp",
+    "card2x": "/games/solitaire/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

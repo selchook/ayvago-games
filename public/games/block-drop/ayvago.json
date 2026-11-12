@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/block-drop/ayvago/icon-512.png",
     "cover": "/games/block-drop/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/block-drop/ayvago/screenshot.jpg"
+    "screenshot": "/games/block-drop/ayvago/screenshot.jpg",
+    "card": "/games/block-drop/ayvago/card-640x360.webp",
+    "card2x": "/games/block-drop/ayvago/card-1280x720.webp"
   },
   "version": "1.1.0"
 }

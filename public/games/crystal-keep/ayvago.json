@@ -51,7 +51,9 @@
   "assets": {
     "icon": "/games/crystal-keep/ayvago/icon-512.png",
     "cover": "/games/crystal-keep/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/crystal-keep/ayvago/screenshot.jpg"
+    "screenshot": "/games/crystal-keep/ayvago/screenshot.jpg",
+    "card": "/games/crystal-keep/ayvago/card-640x360.webp",
+    "card2x": "/games/crystal-keep/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }

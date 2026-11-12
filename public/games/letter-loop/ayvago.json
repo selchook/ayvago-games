@@ -52,7 +52,9 @@
   "assets": {
     "icon": "/games/letter-loop/ayvago/icon-512.png",
     "cover": "/games/letter-loop/ayvago/cover-1920x1080.jpg",
-    "screenshot": "/games/letter-loop/ayvago/screenshot.jpg"
+    "screenshot": "/games/letter-loop/ayvago/screenshot.jpg",
+    "card": "/games/letter-loop/ayvago/card-640x360.webp",
+    "card2x": "/games/letter-loop/ayvago/card-1280x720.webp"
   },
   "version": "1.0.0"
 }
