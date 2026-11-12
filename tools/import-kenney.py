@@ -8,7 +8,8 @@ github.com/series-ai/jam-ready-assets (Git LFS: fetch the listed files first), w
 under <pack>/3D/vehicles-racing/. Those kits keep only the files a game uses (FILES), store
 their GLBs under models/gltf_format/ like the older kits, and keep the external texture folder
 `Textures/` as the GLBs reference it (case matters on the server).
-  python3 tools/import-kenney.py <jam-ready-assets-dir> toy-car-kit racing-kit-ea"""
+  python3 tools/import-kenney.py <jam-ready-assets-dir> toy-car-kit racing-kit-ea
+  python3 tools/import-kenney.py <jam-ready-assets-dir> food-kit furniture-kit"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -41,6 +42,10 @@ PACKS = {
     # Tower Defense Kit 2.0 (jam-ready-assets mirror, Git LFS; laid out as the zip:
     # kenney_tower-defense-kit/License.txt + Models/GLB format/)
     'kenney_tower-defense-kit': 'tower-defense-kit',
+    # Food Kit 2.0 and Furniture Kit 2.1 (jam-ready-assets mirror, Git LFS, commit 397bf9e; the
+    # pack roots below are the mirror's own folders: License.txt + Models/GLB|GLTF format/)
+    'kenney-food-kit/3D/food': 'food-kit',
+    'kenney-furniture-kit/3D/interior-furniture': 'furniture-kit',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -78,6 +83,21 @@ FILES = {
                       'Models/GLB format/tent-roof-large.glb', 'Models/GLB format/tent-open-wide.glb',
                       'Models/GLB format/flag-green-tall.glb', 'Models/GLB format/flag-yellow-tall.glb'],
 }
+
+# Snack Shack (games/snack-shack/kit.ts FOOD_MODELS / FURNITURE_MODELS)
+FOOD_KIT = [
+    'burger', 'burger-cheese', 'meat-patty', 'meat-sausage', 'hot-dog', 'fries', 'soda',
+    'ice-cream', 'ice-cream-cne', 'cabbage', 'tomato', 'plate', 'pot', 'bread', 'bottle-ketchup',
+    'bottle-musterd', 'cupcake', 'shaker-salt', 'shaker-pepper',
+]
+FURNITURE_KIT = [
+    'kitchenBar', 'kitchenBarEnd', 'kitchenCabinet', 'kitchenStove', 'kitchenStoveElectric',
+    'kitchenCoffeeMachine', 'kitchenFridgeLarge', 'kitchenMicrowave',
+    'stoolBar', 'wall', 'wallWindow', 'wallDoorway', 'pottedPlant', 'plantSmall1', 'trashcan', 'radio',
+    'televisionModern', 'rugRectangle', 'tableRound', 'chair',
+]
+FILES['food-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in FOOD_KIT]
+FILES['furniture-kit'] = ['License.txt'] + [f'Models/GLTF format/{n}.glb' for n in FURNITURE_KIT]
 
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""
