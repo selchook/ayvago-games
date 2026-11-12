@@ -159,6 +159,7 @@ function iconHtml(m, play) {
 // "wrong" or game-over banner); check them when the cards are regenerated.
 const CARD = {
   'color-bounce': { pick: 2 },
+  'crypt-crawler': { wait: 2500 },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },

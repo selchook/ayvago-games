@@ -1,5 +1,5 @@
 {
-  "count": 93,
+  "count": 94,
   "games": [
     {
       "id": "air-hockey",
@@ -682,6 +682,39 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/connect-four.png"
+    },
+    {
+      "id": "crypt-crawler",
+      "title": {
+        "tr": "Mahzen Avcısı",
+        "en": "Crypt Crawler"
+      },
+      "description": {
+        "tr": "Kılıcını kuşan ve lanetli mahzene in! Her kat birbirine bağlı odalardan oluşur: içeri girince kapılar kapanır, tüm iskeletler, balçıklar, hayaletler, zombiler, orklar ve vampirler düşmeden açılmaz. Küpleri kır, sandıkları aç, anahtarla altın kapının ardındaki hazineyi bul, diken ve testere tuzaklarından atılarak geç. Sunaklarda üç güçten birini seç: keskin kılıç, dönen bıçaklar, vampir kılıcı ve daha fazlası. Her üç katta bir dev bir muhafız seni bekler. Topladığın altın kasada birikir: kamptan kalıcı güçler al ve daha derine in.",
+        "en": "Draw your sword and descend into the cursed crypt! Every floor is a set of connected rooms: step inside and the doors slam shut until every skeleton, slime, ghost, zombie, orc and vampire is down. Smash pots, open chests, find the key to the golden vault and dash past spike and saw traps. At shrines, choose one of three blessings: a keener blade, orbiting blades, a vampire sword and more. Every third floor a giant guardian waits. The gold you collect goes to the bank: buy lasting upgrades at the camp and go deeper."
+      },
+      "howTo": {
+        "tr": "Klavye: WASD/oklar yürü, tıkla ya da Boşluk ile imlece saldır (basılı tut: dönüş darbesi), Shift/K/sağ tık atıl. Dokunmatik: solda sürükle yürü, SALDIR ve ATIL düğmeleri. Puan: geçilen kat ve altın.",
+        "en": "Keys: WASD/arrows to walk, click or Space to strike at the cursor (hold for a spin), Shift/K/right click to dash. Touch: drag on the left to walk, ATTACK and DASH buttons. Score: floors cleared plus gold."
+      },
+      "genres": [
+        "action",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Kenney Mini Dungeon, Graveyard Kit, Platformer Kit and Mini Characters (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact Sounds (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-11-12"
+      },
+      "thumb": "thumbs/crypt-crawler.png"
     },
     {
       "id": "crystal-keep",
