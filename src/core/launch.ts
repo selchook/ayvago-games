@@ -43,6 +43,43 @@ function bindPlatform(game: Phaser.Game, adapter: PlatformAdapter): void {
   });
 }
 
+/**
+ * Keeps the FIT canvas matched to its parent after rotations and fullscreen changes.
+ *
+ * Phaser 3.90 can miss a resize for good. When the screen orientation `change` event comes before
+ * the frame's own resize was handled, its listener refreshes with the old parent size, and the
+ * last step of that refresh (`getParentBounds`) then stores the new size without applying it.
+ * Every later check sees no difference, so the canvas keeps the previous size: a portrait game
+ * turned sideways and back shows at a fraction of its frame until the next rotation.
+ *
+ * A ResizeObserver on the parent re-measures and refreshes on the next frame after every real
+ * size change, whatever order the browser sends its events in.
+ */
+function keepCanvasFitted(game: Phaser.Game): void {
+  if (typeof ResizeObserver === 'undefined') return;
+  const start = (): void => {
+    const scale = game.scale;
+    const parent = scale.parent as HTMLElement | null;
+    if (!parent) return;
+    let frame = 0;
+    const fit = (): void => {
+      frame = 0;
+      scale.getParentBounds();
+      scale.refresh();
+    };
+    const observer = new ResizeObserver(() => {
+      if (!frame) frame = requestAnimationFrame(fit);
+    });
+    observer.observe(parent);
+    game.events.once(Phaser.Core.Events.DESTROY, () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    });
+  };
+  if (game.isBooted) start();
+  else game.events.once(Phaser.Core.Events.BOOT, start);
+}
+
 async function fontsReady(timeoutMs = 3000): Promise<void> {
   const loads = Promise.all([
     document.fonts.load('32px "Press Start 2P"', 'AĞŞİ'),
@@ -116,6 +153,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   });
   game.sound.mute = isSilenced();
   installMasterBus(game);
+  keepCanvasFitted(game);
 
   bindPlatform(game, adapter);
   bindAds(game);
