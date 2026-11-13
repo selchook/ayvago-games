@@ -176,7 +176,7 @@ export class HullBar {
   private label: Phaser.GameObjects.Text;
   private shown = -1;
   private ghost = 1;
-  static W = 196;
+  static W = 140;
 
   constructor(private scene: Phaser.Scene, x: number, y: number) {
     this.bar = scene.add.graphics();

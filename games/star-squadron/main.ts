@@ -63,6 +63,9 @@ launch({
     loadAudio(l, 'refund', J + 'general-sounds/weird-sounds/sfx-sound-shutdown1');
     loadAudio(l, 'star', J + 'general-sounds/coins/sfx-coin-double4');
     loadAudio(l, 'dust', J + 'general-sounds/coins/sfx-coin-cluster5');
+    loadAudio(l, 'offer', J + 'general-sounds/menu-sounds/sfx-menu-select1');
+    loadAudio(l, 'slowIn', J + 'general-sounds/pause-sounds/sfx-sounds-pause3-in');
+    loadAudio(l, 'slowOut', J + 'general-sounds/pause-sounds/sfx-sounds-pause3-out');
     const C = 'sfx-casino/audio/';
     loadSfx(l, 'cardFan', C + 'cardfan1');
     loadSfx(l, 'cardFlip', C + 'cardplace1');
@@ -83,7 +86,7 @@ launch({
       acc += dt;
       while (acc > 1 / 60) {
         acc -= 1 / 60;
-        if (sim.phase === 'draft') sim.pick(bot.choose(sim.offer));
+        sim.takeAll((cards) => bot.choose(cards));
         sim.step(1 / 60, sim.over ? NO_INPUT : bot.input(1 / 60));
         for (const ev of sim.events) {
           view.handle(ev, sim);

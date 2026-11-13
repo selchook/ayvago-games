@@ -17,7 +17,7 @@ export function playRun(mode: Mode, skill: Skill, talents: TalentId[], seed: num
   let t = 0;
   if (force) sim.apply(force);
   while (!sim.over && t < limit) {
-    if (sim.phase === 'draft') sim.pick(bot.choose(sim.offer));
+    sim.takeAll((cards) => bot.choose(cards));
     sim.step(dt, bot.input(dt));
     sim.events.length = 0;
     t += dt;

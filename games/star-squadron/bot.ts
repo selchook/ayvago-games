@@ -1,6 +1,6 @@
 // Star Squadron: an autopilot. It dodges by scoring a ring of candidate moves against where every
 // bullet and ship will be a moment later, lines up under its target, collects pickups, fires the
-// powers when things get hot and picks cards from a priority list. Two skills: a good pilot and a
+// powers when things get hot and takes every card offer at once from a priority list. Two skills: a good pilot and a
 // casual one (slower reactions, a shorter look ahead, random cards). It plays the menu backdrop,
 // the store art and the headless balance run (balance.ts).
 import { FIELD, playerHalfWidth } from './defs';
@@ -64,7 +64,7 @@ export class Bot {
   /** The input for this frame. */
   input(dt: number): Input {
     const sim = this.sim, p = sim.player, sk = this.skill;
-    if (!p.alive || sim.phase === 'draft') return NO_INPUT;
+    if (!p.alive) return NO_INPUT;
     this.t -= dt;
     let bomb = false, shield = false, overdrive = false;
     if (this.t <= 0) {

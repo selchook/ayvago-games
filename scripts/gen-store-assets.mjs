@@ -183,9 +183,9 @@ const CARD = {
     }`,
     pick: 4,
   },
-  // Star Squadron's card shows a power-card draft over a 3D fight: the autopilot flies the first
-  // sector with a few cards for a while (sped up for software rendering), then a draft with a
-  // rare, an epic and the synergy they make opens.
+  // Star Squadron's card shows the card bar open over a live 3D fight: the autopilot flies the
+  // first sector with a few cards for a while (sped up for software rendering), then a card offer
+  // with a rare, an epic and the synergy they make opens in the bar while the fight runs on.
   'star-squadron': {
     stage: `async () => {
       const p = window.__ayvago.game.scene.getScene('Play');
