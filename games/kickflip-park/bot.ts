@@ -4,9 +4,9 @@
 // Rails and manuals are balanced with a small controller. Two skills: a good skater and a casual
 // one (slower, sloppier balance, fewer and later tricks). It drives the menu backdrop, the store
 // art and the headless balance run (balance.ts).
-import { clamp, wrap, seeded, FLIPS, SPECIALS, type Dir } from './defs';
+import { clamp, wrap, seeded, FLIPS, SPECIALS, RIDE, type Dir } from './defs';
 import { onSeg } from './park';
-import { Sim, NO_INPUT, type Input } from './sim';
+import { Sim, NO_INPUT, turnBy, type Input } from './sim';
 import type { Waypoint } from './parks';
 
 export interface Skill {
@@ -31,11 +31,13 @@ export interface Skill {
   specials: boolean;
   /** Steering noise. */
   wobble: number;
+  /** Chance to pop off the top of a kicker or ramp (instead of rolling off it). */
+  pops: number;
 }
 
 export const SKILL: Record<'good' | 'casual', Skill> = {
-  good: { margin: 0.05, sloppy: 0.03, spins: 3, manual: 0.85, gain: 1.35, lag: 0.02, tricky: 0.97, rails: 0.95, pace: 1.05, specials: true, wobble: 0.05 },
-  casual: { margin: -0.02, sloppy: 0.12, spins: 1, manual: 0.4, gain: 0.85, lag: 0.16, tricky: 0.85, rails: 0.7, pace: 0.9, specials: false, wobble: 0.25 },
+  good: { margin: 0.05, sloppy: 0.03, spins: 3, manual: 0.85, gain: 1.35, lag: 0.02, tricky: 0.97, rails: 0.95, pace: 1.05, specials: true, wobble: 0.05, pops: 1 },
+  casual: { margin: -0.02, sloppy: 0.12, spins: 1, manual: 0.4, gain: 0.85, lag: 0.16, tricky: 0.85, rails: 0.7, pace: 0.9, specials: false, wobble: 0.25, pops: 0.3 },
 };
 
 export class Bot {
@@ -61,6 +63,8 @@ export class Bot {
   private noise = 0;
   private rnd: () => number;
   private goRail = true;
+  /** Pops at the top of the next kicker or ramp (a casual skater does not always). */
+  private goBig = true;
   private airDir: Dir = 0;
 
   constructor(private sim: Sim, readonly skill: Skill, seed = 7) {
@@ -94,6 +98,7 @@ export class Bot {
       }
     }
     this.goRail = this.rnd() < this.skill.rails;
+    this.goBig = this.rnd() < this.skill.pops;
   }
 
   input(dt: number): Input {
@@ -130,7 +135,8 @@ export class Bot {
     const diff = wrap(want - s.heading);
     switch (s.state) {
       case 'ground': case 'manual': {
-        inp.steer = clamp(diff * 2.4 + this.noise, -1, 1);
+        // diff is in heading terms (atan2(x, z)); the stick turns the other way (sim.turnBy)
+        inp.steer = clamp(turnBy(diff) * 2.4 + this.noise, -1, 1);
         // no carving up a steep wall: ride straight at the lip
         if ((s.gx * hx + s.gz * hz) * s.speed > 0.5) inp.steer *= 0.15;
         const v = (tw.v ?? 8.6) * sk.pace;
@@ -157,12 +163,15 @@ export class Bot {
         }
         // on a ramp heading for its lip or a kicker's top: crouch, pop at the top
         const slope = s.gx * hx + s.gz * hz;
+        const popBig = sk.margin > 0 || this.goBig;
+        // winding up for a kicker or a ramp: crouch on the run-in, so the pop at the top is a full one
+        if (act === 'big' && popBig && slope <= 0.1 && s.speed > 5 && td < s.speed * 0.75 && td > 1 && Math.abs(diff) < 0.4) this.crouch = true;
         if (act === 'big' && slope > 0.1 && s.speed > 4 && td < 7) {
           const yAhead = s.terrain.height(s.x + hx * 0.7, s.z + hz * 0.7);
-          const atTop = yAhead < s.y - 0.05 || slope > 3.6;
-          if (!atTop && sk.margin > 0) this.crouch = true;
+          // the top: the ground ahead stops rising (a drop, or a funbox's table) or a vert wall's lip
+          const atTop = (yAhead - s.y) / 0.7 < 0.12 || slope > 3.6;
+          if (!atTop && popBig) this.crouch = true;
           if (atTop && this.crouch) this.crouch = false;
-          if (!atTop && sk.margin <= 0 && slope > 0.5 && this.rnd() < 0.02) this.crouch = true;
         }
         inp.crouch = this.crouch;
         // manuals
@@ -232,12 +241,16 @@ export class Bot {
       const tricky = this.rnd() < sk.tricky;
       let spin = 0;
       if (tricky && sk.spins > 0) {
-        const halfTime = Math.PI / 7.4 + 0.12;
-        const can = Math.floor((total - 0.25) / halfTime);
-        const pick = Math.min(sk.spins, can);
-        // even half turns land forward; odd ones fakie (fine too) — prefer even off kickers
-        spin = pick >= 2 ? (this.rnd() < 0.6 ? 2 : pick) : pick >= 1 && this.rnd() < 0.4 ? 1 : 0;
-        if (pick >= 3 && this.rnd() < 0.35) spin = 3;
+        // the half turns that fit in this air: spin up, turn at full rate, brake to a stop (the landing
+        // forgives about a fifth of a half turn); a vert air turns round by itself on top and scores
+        // one half more (a 360 on top of it is a 540)
+        const v = RIDE.spinRate, ac = RIDE.spinAccel, tt = Math.max(0, total - 0.14 - Math.max(0, sk.margin));
+        const ang = tt > 2 * v / ac ? v * tt - v * v / ac : ac * tt * tt / 4;
+        const can = Math.floor(ang / Math.PI + 0.12);
+        const pick = Math.min(sk.spins - (a.vert ? 1 : 0), can);
+        if (pick >= 3) spin = this.rnd() < 0.55 ? 3 : 2;
+        else if (pick >= 2) spin = this.rnd() < 0.7 ? 2 : 1;
+        else if (pick >= 1) spin = this.rnd() < 0.5 ? 1 : 0;
       }
       const special = tricky && sk.specials && s.specialReady && total > 1.15;
       const grab = tricky && !special && total > 0.85 && this.rnd() < 0.6 ? 0.25 + (total - 0.85) * (0.4 + this.rnd() * 0.4) : 0;
@@ -247,12 +260,12 @@ export class Bot {
     const p = this.plan;
     // spin to the planned angle, easing off in time
     const rem = p.spin - a.spin;
-    const brake = (a.spinVel * a.spinVel) / (2 * 26) + 0.05;
+    const brake = (a.spinVel * a.spinVel) / (2 * RIDE.spinAccel) + 0.05;
     inp.steer = Math.abs(rem) > brake && Math.sign(rem) === Math.sign(p.spin) ? Math.sign(rem) : 0;
     // over a rail of the line: hold grind
     const w = this.points[this.wp];
     if (w.act === 'grind' && this.goRail) inp.grind = true;
-    else if (this.goRail && this.railNear()) inp.grind = true;
+    else if (this.goRail && w.act !== 'big' && this.railNear()) inp.grind = true;
     if (inp.grind) inp.dir = this.rnd() < 0.5 ? -1 : this.airDir;
     // tricks
     this.flipCool -= 1 / 60;

@@ -2,7 +2,9 @@
 // materials (one program for all), merges static pieces per texture (a whole park is a handful of
 // draw calls) and builds our own pieces (kickers, banks, ledges, roofs) with procedural textures.
 import Phaser from 'phaser';
-import { THREE, model, loadKenney3d, loadMiniCharacter, loadCharacter3d, MINI_MALES, miniKey } from '@core/three';
+import { THREE, model, loadKenney3d, loadModel, loadMiniCharacter, loadCharacter3d, MINI_MALES, miniKey } from '@core/three';
+import { asset } from '@core';
+import { BOARDS, boardModelKey } from './boards';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { kickerTop } from './park';
 import { park, PARKS, type Piece, type Prop, type Style } from './parks';
@@ -26,6 +28,23 @@ export function loadKit(load: Phaser.Loader.LoaderPlugin): void {
   loadKenney3d(load, SKATE_CLIPS, 'mini-skate', 'character-skate-boy');
   loadKenney3d(load, 'ms:character-skate-girl', 'mini-skate', 'character-skate-girl');
   loadCharacter3d(load);
+  // board models of the catalogue: each file is looked at first and only parsed when it really is a
+  // GLB (a missing file comes back as the dev server's HTML page, or a 404), so a board whose file is
+  // not there is left out instead of stopping the boot
+  const seenBoards = new Set<string>();
+  for (const b of BOARDS) {
+    const key = boardModelKey(b);
+    if (b.model === 'kenney' || seenBoards.has(key)) continue;
+    seenBoards.add(key);
+    const url = asset(b.model), probe = 'probe:' + key;
+    load.binary(probe, url);
+    load.once(`filecomplete-binary-${probe}`, (_k: string, _t: string, data: ArrayBuffer) => {
+      const glb = data && data.byteLength > 20 && new DataView(data).getUint32(0, true) === 0x46546c67; // 'glTF'
+      if (glb) loadModel(load, key, url);
+      else console.warn('[kickflip-park] board model missing, board left out:', url);
+      load.cacheManager.binary.remove(probe);
+    });
+  }
   for (const m of [MINI_MALES[0], MINI_MALES[1], MINI_MALES[2], MINI_MALES[4]]) loadMiniCharacter(load, m);
   loadMiniCharacter(load, 'character-female-f');
   const seen = new Set<string>();

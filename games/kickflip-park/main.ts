@@ -34,8 +34,15 @@ launch({
     loadSfx(l, 'pop', I + 'impactplank_medium_001');
     loadSfx(l, 'flick', I + 'impactwood_light_002');
     loadSfx(l, 'land', I + 'impactwood_heavy_001');
+    loadSfx(l, 'land2', I + 'impactwood_heavy_003');
+    loadSfx(l, 'land3', I + 'impactwood_medium_002');
     loadSfx(l, 'landWood', I + 'impactplank_medium_003');
+    loadSfx(l, 'landWood2', I + 'impactplank_medium_000');
+    loadSfx(l, 'landWood3', I + 'impactwood_heavy_004');
+    loadSfx(l, 'landMetal', I + 'impactmetal_light_002');
     loadSfx(l, 'thud', I + 'impactsoft_heavy_002');
+    loadSfx(l, 'thud2', I + 'impactpunch_medium_002');
+    loadSfx(l, 'scrape', F + 'plating/platesslide3');
     loadSfx(l, 'push', I + 'footstep_concrete_002');
     loadSfx(l, 'crash', I + 'impactpunch_heavy_001');
     loadSfx(l, 'wall', I + 'impactsoft_medium_001');
@@ -43,6 +50,7 @@ launch({
     loadAudio(l, 'trick', J + 'general-sounds/simple-bleeps/sfx-sounds-blip3');
     loadAudio(l, 'tick', J + 'general-sounds/menu-sounds/sfx-menu-move2');
     loadAudio(l, 'combo', J + 'general-sounds/coins/sfx-coin-double3');
+    loadAudio(l, 'perfect', J + 'general-sounds/coins/sfx-coin-single3');
     loadAudio(l, 'comboBig', J + 'general-sounds/coins/sfx-coin-cluster5');
     loadAudio(l, 'tape', J + 'general-sounds/positive-sounds/sfx-sounds-powerup2');
     loadAudio(l, 'goal', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
@@ -58,7 +66,7 @@ launch({
     // a live autopilot skates the chosen park behind the menu. Building it here also compiles
     // every shader the Play scene uses (keepPrograms), so the first Play frame compiles none.
     const m = loadMeta();
-    const view = new View(scene, m.park, { deck: m.deck, wheel: m.wheel, menu: true });
+    const view = new View(scene, m.park, { board: m.board, menu: true });
     view.camDist = 1.25;
     view.menuShift = 0.35;
     let seed = 21;

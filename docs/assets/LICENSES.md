@@ -23,6 +23,17 @@ the row.
 | `oga/junkala-music` (`level-1..3`, `title-screen`, `ending`) | [5 Chiptunes (Action)](https://opengameart.org/content/5-chiptunes-action) | Juhani Junkala | CC0 1.0 | `tools/import-oga.py junkala-music <zip> --music` |
 | `oga/junkala-music` (`1-stage-1`, `2-stage-2`, `3-boss-fight`, `4-stage-select`) | [4 Chiptunes (Adventure)](https://opengameart.org/content/4-chiptunes-adventure) | Juhani Junkala (SubspaceAudio) | CC0 1.0 | `tools/import-oga.py junkala-music <zip> --music` |
 
+## Owner-supplied assets
+
+A deliberate, owner-approved exception to the CC0-only rule: files the project owner bought and owns
+the rights to, for commercial use without attribution. Nothing else may be added under this heading
+without the owner.
+
+| File (`public/assets/…`) | Source | Owner | License | Import |
+|---|---|---|---|---|
+| `boards/blueskateboard3d.glb` (Kickflip Park's "Blue Cruiser" board) | Generated with [Tripo AI](https://www.tripo3d.ai) and bought by the project owner on a paid plan | the project owner | Owned by the project owner: commercial use, no attribution required | Optimised from the owner's 1.9 MB export with `games/kickflip-park/optimise-board.mjs` (deck texture to 512 px, the eight truck and wheel textures packed into two 256 px atlases, the nine parts joined into `deck`, `truck` and `wheel`, the unused `KHR_materials_volume` and `FB_ngon_encoding` extensions dropped) |
+| `boards/skateboard3d_black.glb` (Kickflip Park's default board "Black Pro") | Generated with [Tripo AI](https://www.tripo3d.ai) and bought by the project owner on a paid plan | the project owner | Owned by the project owner: commercial use, no attribution required | From the owner's 60 MB export (one mesh, about 1M vertices, a 4.3 MB texture) with the gltf-transform CLI: `weld`, `simplify --ratio 0.012 --error 0.0005` (about 16 500 vertices), `resize --width 512 --height 512`, `prune`, the unused `KHR_materials_volume` dropped and the mesh named `board`, then `quantize` (`KHR_mesh_quantization`, read by three.js): about 530 KB; see `games/kickflip-park/optimise-board.mjs` |
+
 Not allowed: CC-BY or any license that needs attribution in the game (OpenGameArt and Freesound
 list many), Sonniss GDC bundles (no redistribution of the raw files in a public repository) and
 the Pixabay license.

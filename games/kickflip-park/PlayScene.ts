@@ -4,7 +4,7 @@
 // the session's goals and unlocks, banks them (meta.ts) and opens the result screen.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang,
+  ArcadeScene, Controls, txt, t, loc, isEasy, hudChip, HudChip, flash, burst, getLang,
   HUD_MARGIN, HUD_ROW2_Y, HUD_GAP,
 } from '@core';
 import type { World3D } from '@core/three';
@@ -12,9 +12,12 @@ import { Sim, NO_INPUT, type Input, type SimEvent, type Entry } from './sim';
 import { View } from './view';
 import { Bot, SKILL } from './bot';
 import { park, type ParkId, type GoalDef } from './parks';
-import { loadMeta, saveMeta, bankSession, type Meta } from './meta';
+import { loadMeta, saveMeta, bankSession, TUTORIAL_STEPS, type Meta } from './meta';
+import { onSeg } from './park';
 import { PRAISE, clamp, type Mode } from './defs';
-import { TouchPad, Meter, BalanceBar, banner, goalToast, dirOf, UI_DEPTH } from './ui';
+import { boardDef, RARITY_COLOR } from './boards';
+import { usableBoard } from './boardmodel';
+import { TouchPad, Meter, BalanceBar, banner, goalToast, dirOf, comboSummary, popWord, TutorialCard, UI_DEPTH } from './ui';
 import { makeLoops, Loop } from './audio';
 import { makeIcons, TAPE_ICON, CLOCK_ICON } from './art';
 
@@ -56,6 +59,11 @@ export function goalNeed(g: GoalDef, mode: Mode): number {
 }
 
 const SPIN_KEYS = ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'];
+
+/** Landing sounds per surface (cycled, so no two landings in a row sound the same). */
+const LAND_SFX: Record<string, string[]> = { concrete: ['land', 'land2', 'land3'], wood: ['landWood', 'landWood2', 'landWood3'], metal: ['landMetal', 'land2', 'landMetal'] };
+/** The landing qualities' colours (popups and the combo summary). */
+const QUALITY_COLOR: Record<string, string> = { perfect: '#ffd23f', clean: '#9fe8ff', sketchy: '#ff9a6a' };
 
 export class PlayScene extends ArcadeScene {
   view!: View;
@@ -99,6 +107,8 @@ export class PlayScene extends ArcadeScene {
   private finished = false;
   private banked = false;
   private summaryT = -1;
+  /** Seconds the session summary stays (longer with a new board). */
+  private summaryLen = 3.6;
   private flashT = 0;
   private specialHinted = false;
   private newGoals: GoalDef[] = [];
@@ -133,6 +143,7 @@ export class PlayScene extends ArcadeScene {
     this.finished = false;
     this.banked = false;
     this.summaryT = -1;
+    this.summaryLen = 3.6;
     this.flashT = 0;
     this.specialHinted = false;
     this.newGoals = [];
@@ -140,7 +151,7 @@ export class PlayScene extends ArcadeScene {
     this.frameStart = 0;
     this.testSpeed = 1;
 
-    this.view = new View(this, this.parkId, { deck: this.meta.deck, wheel: this.meta.wheel });
+    this.view = new View(this, this.parkId, { board: this.meta.board });
     this.world = this.view.world;
     this.programsAtStart = (this.world.renderer.info.programs ?? []).length;
     this.perf = { frames: 0, update: 0, render: 0, maxUpdate: 0, maxRender: 0, calls: 0, maxCalls: 0 };
@@ -183,7 +194,13 @@ export class PlayScene extends ArcadeScene {
     this.ledgeLoop = new Loop(this, 'ledge-loop');
     this.crowd = this.view.hasCrowd ? new Loop(this, 'crowd') : null;
 
-    if (!this.meta.hinted) this.time.delayedCall(250, () => this.showHint());
+    this.tut = null; this.tutStep = 0; this.tutWait = -1; this.tutRingT = 0;
+    if (this.meta.tutorial < TUTORIAL_STEPS && this.parkId === 'plaza') {
+      // the first session: the park's banner, then four short lessons (they replace the controls card)
+      this.parkBanner();
+      this.meta.hinted = true;
+      this.time.delayedCall(1700, () => this.startTutorial(this.meta.tutorial));
+    } else if (!this.meta.hinted) this.time.delayedCall(250, () => this.showHint());
     else this.parkBanner();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { if (!this.banked && this.sim.time > 5) this.bank(); });
   }
@@ -277,12 +294,13 @@ export class PlayScene extends ArcadeScene {
     sim.events.length = 0;
     this.view.sync(sim, dt, sdt);
     this.updateHud(dt);
+    this.updateTutorial(dt);
     this.updateSound(dt);
     this.drawSpeedLines(dt);
     if (sim.over && !this.finished) this.finish();
     if (this.summaryT >= 0) {
       this.summaryT += dt;
-      if (this.summaryT > 3.6) this.endGame({ title: t('sessionOver'), win: this.newGoals.length > 0, delay: 0 });
+      if (this.summaryT > this.summaryLen) this.endGame({ title: t('sessionOver'), win: this.newGoals.length > 0, delay: 0 });
     }
     const d = performance.now() - now;
     this.perf.frames++;
@@ -299,15 +317,25 @@ export class PlayScene extends ArcadeScene {
     const at = () => this.view.toScreen(sim.x, sim.y + 1.6, sim.z);
     switch (ev.type) {
       case 'push': this.sfx('push', { volume: 0.25 }); break;
-      case 'ollie': this.sfx('pop', { volume: 0.55 + ev.power * 0.3 }); break;
+      case 'ollie': this.sfx('pop', { volume: 0.55 + ev.power * 0.3 }); this.tutorialEvent('ollie'); break;
       case 'launch': if (ev.vert) this.sfx('whoosh2', { volume: 0.35 }); break;
-      case 'land':
-        this.sfx(ev.surf === 'wood' ? 'landWood' : 'land', { volume: Math.min(0.9, 0.35 + ev.impact * 0.06) });
-        if (ev.impact > 8) this.sfx('thud', { volume: 0.5 });
+      case 'land': {
+        // a different clack each time: three recordings per surface, harder ones for big drops
+        const set = LAND_SFX[ev.surf] ?? LAND_SFX.concrete;
+        this.sfx(set[(this.landN++ + (ev.impact > 6 ? 1 : 0)) % set.length], { volume: Math.min(0.9, 0.35 + ev.impact * 0.06) });
+        if (ev.impact > 8) this.sfx(ev.impact > 12 ? 'thud2' : 'thud', { volume: 0.5 });
+        if (ev.tricks) {
+          const p = at(), col = QUALITY_COLOR[ev.quality];
+          popWord(this, clamp(p.x, 160, W - 160), clamp(p.y - 40, 300, 980), t('q_' + ev.quality), col, ev.quality === 'perfect' ? 34 : 28);
+          if (ev.quality === 'perfect') { this.sfx('perfect', { volume: 0.45 }); this.view.ring(sim.x, sim.y, sim.z, 2.6, 0xffd23f, 0.35); }
+          else if (ev.quality === 'sketchy') { this.sfx('scrape', { volume: 0.5 }); this.view.shake(0.1, 0.25); }
+        }
+        this.tutorialEvent('land');
         break;
-      case 'flip': this.sfx(ev.def.id === 'shoveit' ? 'whoosh4' : 'whoosh1', { volume: 0.5 }); this.sfx('flick', { volume: 0.3 }); break;
+      }
+      case 'flip': this.sfx(ev.def.id === 'shoveit' ? 'whoosh4' : 'whoosh1', { volume: 0.5 }); this.sfx('flick', { volume: 0.3 }); this.tutorialEvent('flip'); break;
       case 'grab': this.sfx('grab', { volume: 0.35 }); break;
-      case 'grindStart': this.sfx(ev.kind === 'rail' ? 'clank' : 'ledgeHit', { volume: 0.6 }); break;
+      case 'grindStart': this.sfx(ev.kind === 'rail' ? 'clank' : 'ledgeHit', { volume: 0.6 }); this.tutorialEvent('grind'); break;
       case 'manualStart': this.sfx('tick', { volume: 0.3 }); break;
       case 'trick': break;
       case 'special':
@@ -321,7 +349,7 @@ export class PlayScene extends ArcadeScene {
         banner(this, W / 2, 620, t('specialReady'), { color: '#ffc23a', size: 44, hold: 0.8 });
         if (!this.specialHinted) { this.specialHinted = true; this.time.delayedCall(1300, () => this.tip(t('hintSpecial'))); }
         break;
-      case 'combo': this.landedCombo(ev.score, ev.tricks); break;
+      case 'combo': this.landedCombo(ev); break;
       case 'comboLost':
         this.comboOut(true);
         break;
@@ -361,13 +389,20 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  private landedCombo(score: number, tricks: number): void {
-    const W = this.scale.width;
+  private landN = 0;
+
+  private landedCombo(ev: Extract<SimEvent, { type: 'combo' }>): void {
+    const W = this.scale.width, score = ev.score;
     this.comboOut(false);
     let tier = -1;
     for (let i = 0; i < PRAISE.length; i++) if (score >= PRAISE[i]) tier = i;
     const big = score >= 5000;
-    banner(this, W / 2, 470, '+' + fmt(score), { color: tier >= 3 ? '#ffb020' : '#7dffa0', size: big ? 62 : 48, hold: 0.7, sub: tier >= 0 ? t('praise' + tier) : tricks > 1 ? t('landed') : '', subColor: '#ffffff' });
+    // the combo's summary: its tricks, points × tricks, the landing and what it did, the total
+    comboSummary(this, W / 2, 545, {
+      names: ev.entries.map(trickName), sum: fmt(ev.sum), count: ev.tricks, total: fmt(score),
+      quality: t('q_' + ev.quality), qualityColor: QUALITY_COLOR[ev.quality], mult: ev.mult !== 1 ? '×' + dec(ev.mult) : '',
+      praise: tier >= 0 ? t('praise' + tier) : ev.tricks > 1 ? t('landed') : '', big, tier,
+    });
     this.sfx(tier >= 2 ? 'comboBig' : 'combo', { volume: tier >= 2 ? 0.7 : 0.5 });
     if (big) {
       this.hitStop = 0.09;
@@ -491,6 +526,88 @@ export class PlayScene extends ArcadeScene {
     void dt;
   }
 
+  // ------------------------------------------------------------------ the first-session tutorial
+
+  private tut: TutorialCard | null = null;
+  private tutStep = 0;
+  /** Seconds until the next lesson after one is done (−1: a lesson is on). */
+  private tutWait = -1;
+  private tutRingT = 0;
+  private static readonly TUT = ['push', 'ollie', 'flip', 'grind'] as const;
+
+  private startTutorial(step: number): void {
+    if (this.isOver || this.tut || this.bot || step >= TUTORIAL_STEPS) return;
+    const touch = !!this.pad;
+    this.tut = new TutorialCard(this, 372, t(touch ? 'tut_skip' : 'tut_skipKey'), () => this.endTutorial(true));
+    this.tutStep = step;
+    this.showLesson();
+  }
+
+  private showLesson(): void {
+    if (!this.tut) return;
+    const id = PlayScene.TUT[this.tutStep];
+    this.tut.set(t('tut_head', { n: this.tutStep + 1 }), t(`tut_${id}_${this.pad ? 'touch' : 'keys'}`));
+    this.tutWait = -1;
+  }
+
+  /** A move the lessons wait for. */
+  private tutorialEvent(kind: 'ollie' | 'flip' | 'grind' | 'land'): void {
+    if (!this.tut || this.tutWait >= 0) return;
+    if (PlayScene.TUT[this.tutStep] === kind) this.lessonDone();
+  }
+
+  private lessonDone(): void {
+    if (!this.tut) return;
+    this.tut.done();
+    this.sfx('combo', { volume: 0.5 });
+    popWord(this, this.scale.width / 2, 470, t('tut_nice'), '#7dffa0', 40);
+    this.tutStep++;
+    this.meta.tutorial = Math.max(this.meta.tutorial, this.tutStep);
+    saveMeta(this.meta);
+    this.tutWait = 1.1;
+  }
+
+  private updateTutorial(dt: number): void {
+    if (!this.tut) return;
+    if (this.controls.justB()) { this.endTutorial(true); return; }
+    if (this.tutWait >= 0) {
+      this.tutWait -= dt;
+      if (this.tutWait < 0) {
+        if (this.tutStep >= TUTORIAL_STEPS) this.endTutorial(false);
+        else this.showLesson();
+      }
+      return;
+    }
+    const sim = this.sim, id = PlayScene.TUT[this.tutStep];
+    if (id === 'push' && sim.state === 'ground' && sim.speed > 7.5) this.lessonDone();
+    // the grind lesson: a green ring pulses on the nearest rail or ledge
+    if (id === 'grind') {
+      this.tutRingT -= dt;
+      if (this.tutRingT <= 0) {
+        this.tutRingT = 0.7;
+        let best: { x: number; y: number; z: number } | null = null, bd = 30;
+        for (const sg of this.sim.park.segs) {
+          const r = onSeg(sg, sim.x, sim.z);
+          if (r.d < bd) { bd = r.d; best = { x: sg.ax + (sg.bx - sg.ax) * r.t, y: r.y, z: sg.az + (sg.bz - sg.az) * r.t }; }
+        }
+        if (best) this.view.ring(best.x, best.y, best.z, 2.6, 0x7dffa0, 0.6);
+      }
+    }
+  }
+
+  private endTutorial(skipped: boolean): void {
+    const c = this.tut;
+    if (!c) return;
+    this.tut = null;
+    c.destroy();
+    this.meta.tutorial = TUTORIAL_STEPS;
+    saveMeta(this.meta);
+    if (!skipped) {
+      banner(this, this.scale.width / 2, 400, t('tut_done'), { color: '#7dffa0', size: 52, hold: 1.1, sub: t('tut_doneSub'), subColor: '#ffd23f' });
+      this.sfx('goal', { volume: 0.6, exact: true });
+    } else this.sfx('tick', { volume: 0.4 });
+  }
+
   // ------------------------------------------------------------------ hints
 
   private showHint(): void {
@@ -544,13 +661,13 @@ export class PlayScene extends ArcadeScene {
   private bank(): ReturnType<typeof bankSession> | null {
     if (this.banked) return null;
     this.banked = true;
-    return bankSession(this.meta, this.parkId, this.sim.score, this.sim.done);
+    return bankSession(this.meta, this.parkId, this.sim.score, this.sim.done, this.sim.tapes);
   }
 
   /** The session's summary over the park, then the result screen. */
   private finish(): void {
     this.finished = true;
-    const res = this.bank() ?? { goals: [], parks: [], decks: [], wheels: [] };
+    const res = this.bank() ?? { goals: [], parks: [], boards: [] };
     this.summaryT = 0;
     this.comboOut(false);
     this.balance.hide();
@@ -561,8 +678,7 @@ export class PlayScene extends ArcadeScene {
     for (const g of this.newGoals) lines.push(['• ' + goalText(g, this.sim.goalNeed(g)), '#7dffa0', 24]);
     if (!this.newGoals.length) lines.push([t('noGoals'), '#cfd8f0', 24]);
     for (const p of res.parks) lines.push([t('newPark', { name: t('park_' + p) }), '#ffd23f', 26]);
-    for (const d of res.decks) lines.push([t('newDeck', { name: t('deck_' + d) }), '#ff9ae6', 24]);
-    for (const w of res.wheels) lines.push([t('newWheel', { name: t('wheel_' + w) }), '#9fe8ff', 24]);
+    for (const b of res.boards) lines.push([t('newBoard', { name: loc(boardDef(b).name) }), '#ff9ae6', 24]);
     const H = 190 + lines.length * 46;
     const g = this.add.graphics();
     g.fillStyle(0x000000, 0.3).fillRoundedRect(-310, -H / 2 + 8, 620, H, 28);
@@ -576,7 +692,20 @@ export class PlayScene extends ArcadeScene {
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });
     this.tweens.add({ targets: c, alpha: 0, delay: 3100, duration: 300 });
-    if (res.parks.length || res.decks.length || res.wheels.length) { this.sfx('unlock', { volume: 0.7, exact: true }); burst(this, width / 2, 600, [0xffd23f, 0xff9ae6, 0x9fe8ff], 50, 420); }
+    if (res.parks.length || res.boards.length) { this.sfx('unlock', { volume: 0.7, exact: true }); burst(this, width / 2, 600, [0xffd23f, 0xff9ae6, 0x9fe8ff], 50, 420); }
+    if (res.boards.length) {
+      // the new board moment: a banner over the summary, in the best new board's rarity colour
+      const order = ['common', 'rare', 'epic', 'legendary', 'special'];
+      const best = res.boards.map(boardDef).sort((a, b) => order.indexOf(b.rarity) - order.indexOf(a.rarity))[0];
+      const col = '#' + RARITY_COLOR[best.rarity].toString(16).padStart(6, '0');
+      // on the tween clock, like the summary card it joins
+      this.tweens.addCounter({ from: 0, to: 1, duration: 450, onComplete: () => {
+        banner(this, width / 2, 250, t('newBoardTitle'), { color: col, size: 46, hold: 2.6, sub: res.boards.map((b) => loc(boardDef(b).name)).join(' · '), subColor: '#ffffff' });
+        this.sfx('specialReady', { volume: 0.6 });
+        burst(this, width / 2, 250, [RARITY_COLOR[best.rarity], 0xffffff], 36, 360);
+      } });
+      this.summaryLen = 4.6;
+    }
   }
 
   endGame(o: Parameters<ArcadeScene['endGame']>[0] = {}): void {
@@ -587,11 +716,19 @@ export class PlayScene extends ArcadeScene {
   // ------------------------------------------------------------------ test hooks
 
   /** The autopilot plays (store art, screenshots). */
-  testAuto(on: boolean, skill: 'good' | 'casual' = 'good'): void { this.bot = on ? new Bot(this.sim, SKILL[skill], 11) : null; }
+  testAuto(on: boolean, skill: 'good' | 'casual' = 'good'): void {
+    this.bot = on ? new Bot(this.sim, SKILL[skill], 11) : null;
+    if (on) this.endTutorial(true);
+  }
   testCam(yaw: number, dist: number, h: number): void { this.view.debugCam = dist > 0 ? { yaw, dist, h } : null; }
+  testTutorial(open: boolean, step = 0): void {
+    if (open) { this.endTutorial(true); this.meta.tutorial = step; this.startTutorial(step); } else { this.endTutorial(true); this.meta.tutorial = TUTORIAL_STEPS; }
+  }
   testHint(open: boolean): void {
     if (open) { this.meta.hinted = false; this.showHint(); } else { this.meta.hinted = true; this.closeHint(); }
   }
+  /** Puts another board under the rider (screenshots of the boards in play). */
+  testBoard(id: string): void { this.view.skater.setBoard(usableBoard(id)); }
   testSpecial(): void { this.sim.special = 1; this.sim.specialReady = true; }
   testPlace(x: number, z: number, heading: number, speed: number): void {
     this.sim.combo = [];

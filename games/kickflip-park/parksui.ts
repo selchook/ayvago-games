@@ -1,22 +1,25 @@
 // Kickflip Park: the parks screen, opened from the menu (the menu waits under it, so its keys do
 // not start a session). One park at a time with its goals ticked off, its best score and a button
-// to skate it (locked parks say what opens them), and the board below: deck graphics and wheel
-// colours, the ones not yet earned shown locked with what they need. Touch, mouse and keyboard
-// (←/→ parks, Enter skate here, Esc back).
+// to skate it (locked parks say what opens them), and the board picker below: the board turning on
+// a small 3D turntable, its name, rarity, and whether you ride it or what unlocks it. Touch, mouse
+// and keyboard (←/→ parks, ↑/↓ boards, Enter skate here, Esc back).
 import Phaser from 'phaser';
-import { txt, t, playSfx, isEasy } from '@core';
+import { txt, t, loc, playSfx, isEasy } from '@core';
+import { World3D, THREE } from '@core/three';
 import { PARKS, UNLOCK_GOALS, park, type ParkId } from './parks';
-import { loadMeta, saveMeta, unlocked, deckOpen, wheelOpen, goalsDone, type Meta } from './meta';
-import { DECKS, WHEELS, DECK_GOALS, WHEEL_SCORE, WHEEL_COLOR, type DeckId, type WheelId } from './defs';
+import { loadMeta, saveMeta, unlocked, boardIsOpen, progress, type Meta } from './meta';
+import { BOARDS, RARITY_COLOR, boardProgress, type BoardDef } from './boards';
+import { buildBoardModel, boardReady, usableBoard, type BoardModel } from './boardmodel';
+import { Mats } from './kit';
 import { goalText, goalNeed, fmt } from './PlayScene';
 
 /** A frosted panel (the core's modern glass look). */
-export function glass(scene: Phaser.Scene, w: number, h: number, o: { r?: number; color?: number; alpha?: number; rim?: number } = {}): Phaser.GameObjects.Graphics {
+export function glass(scene: Phaser.Scene, w: number, h: number, o: { r?: number; color?: number; alpha?: number; rim?: number; sheen?: boolean } = {}): Phaser.GameObjects.Graphics {
   const r = o.r ?? 26;
   const g = scene.add.graphics();
   g.fillStyle(0x000000, 0.28).fillRoundedRect(-w / 2, -h / 2 + 8, w, h, r);
   g.fillStyle(o.color ?? 0x121a33, o.alpha ?? 0.9).fillRoundedRect(-w / 2, -h / 2, w, h, r);
-  g.fillStyle(0xffffff, 0.06).fillRoundedRect(-w / 2 + 4, -h / 2 + 4, w - 8, h * 0.4, { tl: r - 3, tr: r - 3, bl: 6, br: 6 });
+  if (o.sheen !== false) g.fillStyle(0xffffff, 0.06).fillRoundedRect(-w / 2 + 4, -h / 2 + 4, w - 8, h * 0.4, { tl: r - 3, tr: r - 3, bl: 6, br: 6 });
   g.lineStyle(2, o.rim ?? 0xffffff, o.rim ? 0.9 : 0.16).strokeRoundedRect(-w / 2, -h / 2, w, h, r);
   return g;
 }
@@ -71,34 +74,66 @@ export class Pill extends Phaser.GameObjects.Container {
   }
 }
 
-/** Small deck graphics for the board picker (drawn like the 3D board's underside). */
-export function deckSwatch(scene: Phaser.Scene, id: DeckId): string {
-  const key = 'kf-deck-' + id;
-  if (scene.textures.exists(key)) return key;
-  const cv = document.createElement('canvas');
-  cv.width = 48; cv.height = 112;
-  const g = cv.getContext('2d')!;
-  g.save();
-  g.beginPath(); g.roundRect(2, 2, 44, 108, 22); g.clip();
-  const W = 48, H = 112;
-  switch (id) {
-    case 'classic': g.fillStyle = '#ef5b2a'; g.fillRect(0, 0, W, H); g.fillStyle = '#ffd23f'; g.fillRect(0, 44, W, 8); g.fillRect(0, 60, W, 8); break;
-    case 'flame': {
-      g.fillStyle = '#26222e'; g.fillRect(0, 0, W, H);
-      const grd = g.createLinearGradient(0, H, 0, 20); grd.addColorStop(0, '#ffdf3a'); grd.addColorStop(0.5, '#ff7a1a'); grd.addColorStop(1, '#e8322b');
-      g.fillStyle = grd; for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(i * 16 - 2, H); g.quadraticCurveTo(i * 16 + 2, 50, i * 16 + 8, 26 + i * 10); g.quadraticCurveTo(i * 16 + 14, 60, i * 16 + 18, H); g.fill(); }
-      break;
-    }
-    case 'checker': g.fillStyle = '#f4f1ea'; g.fillRect(0, 0, W, H); g.fillStyle = '#26222e'; for (let y = 0; y < 7; y++) for (let x = 0; x < 3; x++) if ((x + y) % 2) g.fillRect(x * 16, y * 16, 16, 16); break;
-    case 'wave': g.fillStyle = '#2f7fd8'; g.fillRect(0, 0, W, H); g.strokeStyle = '#ffffff'; g.lineWidth = 3; for (let i = 0; i < 6; i++) { g.beginPath(); for (let x = 0; x <= W; x += 4) g.lineTo(x, i * 18 + 10 + Math.sin(x / 7 + i) * 4); g.stroke(); } break;
-    case 'galaxy': { const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, '#2a1259'); grd.addColorStop(0.5, '#7a2fb8'); grd.addColorStop(1, '#1a0f3a'); g.fillStyle = grd; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; for (let i = 0; i < 24; i++) g.fillRect((i * 29) % W, (i * 47) % H, 2, 2); break; }
-    case 'gold': { const grd = g.createLinearGradient(0, 0, W, H); grd.addColorStop(0, '#fff2a8'); grd.addColorStop(0.5, '#e8b020'); grd.addColorStop(1, '#fff0a0'); g.fillStyle = grd; g.fillRect(0, 0, W, H); break; }
+/** The board picker's turntable: a 3D board turning over a soft shadow, drawn under the screen's UI. */
+class Turntable {
+  readonly world: World3D;
+  private mats = new Mats();
+  private holder = new THREE.Group();
+  private bm: BoardModel | null = null;
+  private spin = 0.6;
+  private kick = 0;
+  private t = 0;
+  /** Rolls the board round its length (its middle on the pivot). */
+  private roll = new THREE.Group();
+
+  constructor(scene: Phaser.Scene, cx: number, cy: number, dist: number) {
+    // shadows on: the renderer is shared with the menu's world under this screen
+    this.world = new World3D(scene, { fov: 30, near: 0.5, far: 60, background: null, shadows: true });
+    const w = this.world, sc = w.scene;
+    sc.add(new THREE.HemisphereLight(0xeaf4ff, 0x6a5a70, 2.2));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+    sun.position.set(-3, 6, 4);
+    sc.add(sun);
+    // a soft round shadow under the board
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 64;
+    const g = cv.getContext('2d')!;
+    const r = g.createRadialGradient(32, 32, 2, 32, 32, 31);
+    r.addColorStop(0, 'rgba(0,0,0,0.55)'); r.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+    const blob = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 2.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false }));
+    blob.rotation.x = -Math.PI / 2;
+    blob.position.y = 0.005;
+    sc.add(blob, this.holder);
+    this.holder.add(this.roll);
+    const { width, height } = scene.scale;
+    const cam = w.camera;
+    cam.position.set(0, dist * 0.42, dist);
+    cam.lookAt(0, 0.2, 0);
+    // the board shows at (cx, cy) on the screen instead of the middle
+    cam.setViewOffset(width, height, width / 2 - cx, height / 2 - cy, width, height);
+    // it turns round, and every few seconds kickflips over to show the graphic underneath
+    w.onFrame = (dt) => {
+      this.kick = Math.max(0, this.kick - dt * 2.5);
+      this.spin += dt * (0.7 + this.kick * 9);
+      this.t += dt;
+      const ph = this.t % 8, f = (k: number) => k * k * (3 - 2 * k);
+      const flip = ph < 3.4 ? 0 : ph < 4 ? f((ph - 3.4) / 0.6) : ph < 7.4 ? 1 : 1 + f((ph - 7.4) / 0.6);
+      const hop = ph >= 3.4 && ph < 4 ? Math.sin(Math.PI * (ph - 3.4) / 0.6) : ph >= 7.4 ? Math.sin(Math.PI * (ph - 7.4) / 0.6) : 0;
+      this.holder.rotation.set(0, this.spin, 0);
+      this.roll.rotation.z = flip * Math.PI;
+      this.roll.position.y = (this.bm?.pivotY ?? 0.15) + hop * 0.45;
+      this.holder.position.y = 0.06 + Math.sin(this.spin * 2) * 0.03;
+    };
   }
-  g.restore();
-  g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 3;
-  g.beginPath(); g.roundRect(2, 2, 44, 108, 22); g.stroke();
-  scene.textures.addCanvas(key, cv);
-  return key;
+
+  show(def: BoardDef): void {
+    if (this.bm) { this.roll.remove(this.bm.group); this.bm.dispose(); }
+    this.bm = buildBoardModel(def, this.mats);
+    this.bm.group.position.y = -this.bm.pivotY;
+    this.roll.add(this.bm.group);
+    this.kick = 1;
+  }
 }
 
 export class ParkScene extends Phaser.Scene {
@@ -110,6 +145,12 @@ export class ParkScene extends Phaser.Scene {
   private closed = false;
   private from = 'Menu';
   private go!: Pill;
+  /** Boards in the picker (those whose model is there) and the one shown. */
+  private boards: BoardDef[] = [];
+  private bIdx = 0;
+  private table!: Turntable;
+  private boardChanged = false;
+  private under: Phaser.GameObjects.GameObject[] = [];
 
   constructor() { super('Parks'); }
 
@@ -117,38 +158,50 @@ export class ParkScene extends Phaser.Scene {
     this.from = data?.from ?? 'Menu';
     this.meta = loadMeta();
     this.closed = false;
+    this.boardChanged = false;
     this.idx = PARKS.indexOf(this.meta.park);
+    this.boards = BOARDS.filter(boardReady);
+    this.bIdx = Math.max(0, this.boards.findIndex((b) => b.id === usableBoard(this.meta.board).id));
     const { width, height } = this.scale;
     this.root = this.add.container(0, 0);
-    // an opaque backdrop: nothing of the menu shows through
-    const dim = this.add.rectangle(0, 0, width, height, 0x070b1a, 1).setOrigin(0).setInteractive();
-    const panel = this.add.container(width / 2, 650, [glass(this, 690, 1240, { alpha: 1, r: 30 })]);
-    this.root.add([dim, panel]);
+    // an opaque backdrop: nothing of the menu shows through. It and the glass panels sit under the
+    // 3D turntable's image (WORLD_DEPTH −100); the text and buttons above it.
+    const dim = this.add.rectangle(0, 0, width, height, 0x070b1a, 1).setOrigin(0).setInteractive().setDepth(-300);
+    const panel = this.add.container(width / 2, 650, [glass(this, 690, 1240, { alpha: 1, r: 30, sheen: false })]).setDepth(-250);
+    const boardBox = this.add.container(width / 2, BOARD_Y + 30, [glass(this, 640, 380, { color: 0x0b1020, alpha: 0.85, r: 22, sheen: false })]).setDepth(-200);
+    this.under = [dim, panel, boardBox];
     this.root.add(txt(this, width / 2, 84, t('parksTitle'), { title: true, size: 40, color: '#ffd23f', strokeThickness: 7 }));
-    // park arrows
-    const arrow = (x: number, d: number, icon: string) => {
-      const c = this.add.container(x, 170);
+    // arrows: parks at the top, boards beside the turntable
+    const arrow = (x: number, y: number, d: number, icon: string, on: (d: number) => void) => {
+      const c = this.add.container(x, y);
       const g = this.add.graphics().fillStyle(0xffffff, 0.12).fillCircle(0, 0, 40).lineStyle(2, 0xffffff, 0.35).strokeCircle(0, 0, 40);
       c.add([g, this.add.image(0, 0, icon).setDisplaySize(42, 42)]);
-      c.setSize(90, 90).setInteractive({ useHandCursor: true }).on('pointerup', () => this.step(d));
+      c.setSize(96, 96).setInteractive({ useHandCursor: true }).on('pointerup', () => on(d));
       this.root.add(c);
     };
-    arrow(78, -1, 'icon-arrowleft');
-    arrow(width - 78, 1, 'icon-arrowright');
+    arrow(78, 170, -1, 'icon-arrowleft', (d) => this.step(d));
+    arrow(width - 78, 170, 1, 'icon-arrowright', (d) => this.step(d));
+    arrow(104, BOARD_Y, -1, 'icon-arrowleft', (d) => this.stepBoard(d));
+    arrow(width - 104, BOARD_Y, 1, 'icon-arrowright', (d) => this.stepBoard(d));
+    // the turntable itself is tappable too: the next board
+    this.root.add(this.add.zone(width / 2, BOARD_Y, 300, 190).setInteractive({ useHandCursor: true }).on('pointerup', () => this.stepBoard(1)));
     this.card = this.add.container(0, 0);
     this.board = this.add.container(0, 0);
     this.root.add([this.card, this.board]);
-    this.go = new Pill(this, width / 2, 890, 420, 92, 0x2fae5a, () => this.pick(), 32);
-    const back = new Pill(this, width / 2, 1208, 300, 76, 0x3b4466, () => this.close(), 26);
+    this.go = new Pill(this, width / 2, 694, 420, 84, 0x2fae5a, () => this.pick(), 30);
+    const back = new Pill(this, width / 2, 1206, 300, 76, 0x3b4466, () => this.close(), 26);
     back.setLabels(t('back'));
     this.root.add([this.go, back]);
+    this.table = new Turntable(this, width / 2, BOARD_Y + 8, 9.5);
     this.draw();
-    this.drawBoard();
+    this.drawBoard(false);
     const kb = this.input.keyboard;
     kb?.on('keydown', (e: KeyboardEvent) => {
       if (this.closed) return;
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.step(-1);
       else if (e.code === 'ArrowRight' || e.code === 'KeyD') this.step(1);
+      else if (e.code === 'ArrowUp' || e.code === 'KeyW') this.stepBoard(-1);
+      else if (e.code === 'ArrowDown' || e.code === 'KeyS') this.stepBoard(1);
       else if (e.code === 'Enter' || e.code === 'Space') this.pick();
       else if (e.code === 'Escape' || e.code === 'Backspace') this.close();
     });
@@ -174,30 +227,28 @@ export class ParkScene extends Phaser.Scene {
     const open = unlocked(m, id);
     const done = m.goals[id];
     c.add(txt(this, width / 2, 158, t('park_' + id), { title: true, size: 36, color: '#ffffff', strokeThickness: 6 }));
-    c.add(txt(this, width / 2, 206, t('parkSub_' + id), { size: 21, color: '#cfd8f0', strokeThickness: 0, shadow: false, wrap: 500 }));
+    c.add(txt(this, width / 2, 204, t('parkSub_' + id), { size: 21, color: '#cfd8f0', strokeThickness: 0, shadow: false, wrap: 480 }));
     // dots: which park of three
-    PARKS.forEach((q, i) => {
-      const g = this.add.graphics().fillStyle(i === this.idx ? 0xffd23f : 0xffffff, i === this.idx ? 1 : 0.3).fillCircle(width / 2 + (i - 1) * 26, 242, 7);
-      c.add(g);
-      void q;
+    PARKS.forEach((_q, i) => {
+      c.add(this.add.graphics().fillStyle(i === this.idx ? 0xffd23f : 0xffffff, i === this.idx ? 1 : 0.3).fillCircle(width / 2 + (i - 1) * 26, 240, 7));
     });
-    const box = this.add.container(width / 2, 520, [glass(this, 620, 470, { color: 0x0b1020, alpha: 0.7, r: 22 })]);
+    const box = this.add.container(width / 2, 450, [glass(this, 620, 368, { color: 0x0b1020, alpha: 0.85, r: 22, sheen: false })]);
     c.add(box);
-    box.add(txt(this, 0, -200, t('goalsCount', { n: done.length, m: p.goals.length }) + '   ·   ' + t('bestIn', { n: fmt(m.best[id]) }), { title: true, size: 22, color: '#ffd23f', strokeThickness: 0, shadow: false }));
+    box.add(txt(this, 0, -154, t('goalsCount', { n: done.length, m: p.goals.length }) + '   ·   ' + t('bestIn', { n: fmt(m.best[id]) }), { title: true, size: 22, color: '#ffd23f', strokeThickness: 0, shadow: false }));
     const mode = isEasy() ? 'easy' : 'normal';
     p.goals.forEach((g, i) => {
-      const y = -150 + i * 50;
+      const y = -112 + i * 37;
       const ok = done.includes(g.id);
       const mark = this.add.graphics();
-      if (ok) mark.fillStyle(0x2fae5a, 1).fillCircle(-268, y, 15).lineStyle(4, 0xffffff, 1).beginPath().moveTo(-275, y).lineTo(-269, y + 6).lineTo(-259, y - 6).strokePath();
-      else mark.lineStyle(3, 0xffffff, 0.45).strokeCircle(-268, y, 14);
-      const tx = txt(this, -240, y, goalText(g, goalNeed(g, mode)), { size: 22, color: ok ? '#9dffb8' : '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+      if (ok) mark.fillStyle(0x2fae5a, 1).fillCircle(-268, y, 14).lineStyle(4, 0xffffff, 1).beginPath().moveTo(-275, y).lineTo(-269, y + 6).lineTo(-259, y - 6).strokePath();
+      else mark.lineStyle(3, 0xffffff, 0.45).strokeCircle(-268, y, 13);
+      const tx = txt(this, -240, y, goalText(g, goalNeed(g, mode)), { size: 21, color: ok ? '#9dffb8' : '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
       box.add([mark, tx]);
     });
     if (!open) {
       const prev = PARKS[this.idx - 1];
-      const lock = this.add.container(0, 0, [this.add.graphics().fillStyle(0x050814, 0.86).fillRoundedRect(-310, -235, 620, 470, 22)]);
-      lock.add(this.add.image(0, -70, 'icon-locked').setDisplaySize(90, 90));
+      const lock = this.add.container(0, 0, [this.add.graphics().fillStyle(0x050814, 0.86).fillRoundedRect(-310, -184, 620, 368, 22)]);
+      lock.add(this.add.image(0, -60, 'icon-locked').setDisplaySize(84, 84));
       lock.add(txt(this, 0, 40, t('locked', { park: t('park_' + prev), n: UNLOCK_GOALS }), { title: true, size: 26, color: '#ffd23f', strokeThickness: 0, shadow: false, wrap: 500 }));
       box.add(lock);
     }
@@ -207,54 +258,66 @@ export class ParkScene extends Phaser.Scene {
     this.go.setLabels(sel ? t('selected') : t('skateHere'));
   }
 
-  private drawBoard(): void {
+  // ------------------------------------------------------------------ the board picker
+
+  private stepBoard(d: number): void {
+    if (!this.boards.length) return;
+    this.bIdx = (this.bIdx + d + this.boards.length) % this.boards.length;
+    const b = this.boards[this.bIdx];
+    // an open board is ridden at once; a locked one is only shown
+    if (boardIsOpen(this.meta, b.id) && this.meta.board !== b.id) {
+      this.meta.board = b.id;
+      saveMeta(this.meta);
+      this.boardChanged = true;
+      playSfx(this, 'ui-select');
+    } else playSfx(this, 'ui-click');
+    this.drawBoard(true);
+  }
+
+  private drawBoard(anim: boolean): void {
     const { width } = this.scale;
-    const b = this.board;
-    b.removeAll(true);
-    const m = this.meta;
-    b.add(txt(this, width / 2, 978, t('board'), { title: true, size: 24, color: '#9fe8ff', strokeThickness: 0, shadow: false }));
-    // decks
-    DECKS.forEach((d, i) => {
-      const x = 120 + i * 96, y = 1050;
-      const open = deckOpen(m, d);
-      const img = this.add.image(x, y, deckSwatch(this, d)).setDisplaySize(36, 84).setAngle(90);
-      const c = this.add.container(0, 0, [img]);
-      if (m.deck === d) c.add(this.add.graphics().lineStyle(4, 0xffd23f, 1).strokeRoundedRect(x - 46, y - 26, 92, 52, 14));
-      if (!open) {
-        c.add(this.add.rectangle(x, y, 86, 40, 0x050814, 0.6));
-        c.add(txt(this, x, y, t('needGoals', { n: DECK_GOALS[d] }), { size: 16, color: '#ffd23f', strokeThickness: 3 }));
+    const c = this.board;
+    c.removeAll(true);
+    const b = this.boards[this.bIdx];
+    if (!b) return;
+    this.table.show(b);
+    const open = boardIsOpen(this.meta, b.id);
+    const rc = '#' + RARITY_COLOR[b.rarity].toString(16).padStart(6, '0');
+    c.add(txt(this, width / 2, BOARD_Y - 128, t('board') + '  ' + (this.bIdx + 1) + '/' + this.boards.length, { title: true, size: 22, color: '#9fe8ff', strokeThickness: 0, shadow: false }));
+    const name = txt(this, width / 2, BOARD_Y + 104, loc(b.name), { title: true, size: 30, color: '#ffffff', strokeThickness: 6 });
+    const rar = txt(this, width / 2, BOARD_Y + 140, t('rarity_' + b.rarity), { title: true, size: 18, color: rc, strokeThickness: 4 });
+    c.add([name, rar]);
+    let status: string, col: string;
+    if (!open) {
+      const [have, need] = boardProgress(b, progress(this.meta));
+      const u = b.unlock;
+      switch (u.kind) {
+        case 'score': status = t('unlock_score', { n: fmt(need) }) + ' (' + t('bestIn', { n: fmt(have) }) + ')'; break;
+        case 'park': status = t('unlock_park', { park: t('park_' + u.park), n: need, prev: t('park_' + (u.park === 'yard' ? 'plaza' : 'yard')), have, need }); break;
+        case 'free': status = ''; break;
+        default: status = t('unlock_' + u.kind, { n: need, have, need });
       }
-      const z = this.add.zone(x, y, 90, 60).setInteractive({ useHandCursor: true }).on('pointerup', () => this.setDeck(d));
-      b.add([c, z]);
+      col = '#ffd23f';
+      const lock = this.add.image(width / 2 + 150, BOARD_Y - 70, 'icon-locked').setDisplaySize(46, 46);
+      c.add(lock);
+    } else {
+      status = usableBoard(this.meta.board).id === b.id ? '✓ ' + t('boardRiding') : t('boardOpen');
+      col = '#7dffa0';
+    }
+    c.add(txt(this, width / 2, BOARD_Y + 178, status, { size: 21, color: col, strokeThickness: 0, shadow: false, wrap: 560 }));
+    // dots: where in the list (a row of rarity-coloured pips)
+    const n = this.boards.length, gap = Math.min(22, 440 / n);
+    const g = this.add.graphics();
+    this.boards.forEach((q, i) => {
+      const x = width / 2 + (i - (n - 1) / 2) * gap, y = BOARD_Y - 96;
+      const on = boardIsOpen(this.meta, q.id);
+      g.fillStyle(RARITY_COLOR[q.rarity], i === this.bIdx ? 1 : on ? 0.55 : 0.2).fillCircle(x, y, i === this.bIdx ? 6 : 4);
     });
-    // wheels
-    WHEELS.forEach((w, i) => {
-      const x = 120 + i * 96, y = 1128;
-      const open = wheelOpen(m, w);
-      const g = this.add.graphics();
-      g.fillStyle(0x000000, 0.3).fillCircle(x, y + 3, 22).fillStyle(WHEEL_COLOR[w], open ? 1 : 0.35).fillCircle(x, y, 22).fillStyle(0x333344, 1).fillCircle(x, y, 8);
-      if (m.wheel === w) g.lineStyle(4, 0xffd23f, 1).strokeCircle(x, y, 30);
-      const items: Phaser.GameObjects.GameObject[] = [g];
-      if (!open) items.push(txt(this, x, y + 2, t('needScore', { n: fmt(WHEEL_SCORE[w] / 1000) + 'k' }), { size: 14, color: '#ffd23f', strokeThickness: 3 }));
-      const z = this.add.zone(x, y, 80, 64).setInteractive({ useHandCursor: true }).on('pointerup', () => this.setWheel(w));
-      b.add([...items, z]);
-    });
-  }
-
-  private setDeck(d: DeckId): void {
-    if (!deckOpen(this.meta, d)) { playSfx(this, 'error'); return; }
-    this.meta.deck = d;
-    saveMeta(this.meta);
-    playSfx(this, 'ui-click');
-    this.drawBoard();
-  }
-
-  private setWheel(w: WheelId): void {
-    if (!wheelOpen(this.meta, w)) { playSfx(this, 'error'); return; }
-    this.meta.wheel = w;
-    saveMeta(this.meta);
-    playSfx(this, 'ui-click');
-    this.drawBoard();
+    c.add(g);
+    if (anim) {
+      name.setScale(0.8);
+      this.tweens.add({ targets: name, scale: 1, duration: 200, ease: 'Back.easeOut' });
+    }
   }
 
   private pick(): void {
@@ -268,18 +331,25 @@ export class ParkScene extends Phaser.Scene {
   close(changed = false): void {
     if (this.closed) return;
     this.closed = true;
-    void goalsDone;
+    const restart = changed || this.boardChanged;
     this.tweens.add({
-      targets: this.root, alpha: 0, duration: 150, onComplete: () => {
+      targets: [this.root, ...this.under], alpha: 0, duration: 150, onComplete: () => {
         this.scene.stop();
         const menu = this.scene.get(this.from);
-        // the menu's backdrop shows the chosen park: build it again
-        if (changed) menu.scene.restart();
+        // the menu's backdrop shows the chosen park and board: build it again
+        if (restart) menu.scene.restart();
         else { this.scene.resume(this.from); menu.events.emit('parks-closed'); }
       },
     });
   }
 
-  /** Test hook. */
+  /** Test hooks. */
   testStep(d: number): void { this.step(d); }
+  testInfo(): { board: string; shown: string; owned: string[]; open: string[]; listed: string[] } {
+    return { board: this.meta.board, shown: this.boards[this.bIdx]?.id, owned: this.meta.owned, open: BOARDS.filter((b) => boardIsOpen(this.meta, b.id)).map((b) => b.id), listed: this.boards.map((b) => b.id) };
+  }
+  testBoard(id: string): void { const i = this.boards.findIndex((b) => b.id === id); if (i >= 0) { this.bIdx = (i - 1 + this.boards.length) % this.boards.length; this.stepBoard(1); } }
 }
+
+/** The board picker's centre line (the turntable). */
+const BOARD_Y = 880;

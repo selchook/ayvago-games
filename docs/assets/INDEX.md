@@ -112,6 +112,14 @@ All poses face right except `front` and `back`.
 - `arm.png`: an arm, with the shoulder at the top;
 - `hand.png`: a hand.
 
+**Owner-supplied models** (`public/assets/boards`, not CC0: a deliberate, owner-approved exception,
+see [LICENSES.md](LICENSES.md#owner-supplied-assets)):
+
+| file | what |
+|---|---|
+| `boards/skateboard3d_black.glb` | the owner's black skateboard (Kickflip Park's default board "Black Pro"): 0.98 × 0.18 × 0.29 in its own units, long along x (the game's board fitter turns it), one quantized mesh `board` with a 512 px texture (black grip, wooden edges, white wheels); simplified from the 60 MB Tripo export to about 530 KB |
+| `boards/blueskateboard3d.glb` | the owner's blue skateboard (Kickflip Park's "Blue Cruiser", which opens with Timber Yard, and its colourways Crimson and Jade): 1.0 × 0.29 × 0.4 in its own units, rolled on its side (the game's board fitter stands it up), three meshes named by their material: `deck` (512 px graffiti texture), `truck` and `wheel` (256 px atlases); optimised from the 1.9 MB Tripo export to about 300 KB |
+
 **Rig points.** `src/core/character-rig.json` (`characterRig(id)`) holds, per character:
 - the shoulder points and the arm size;
 - `kickFoot`: the foot tip in `kick`;
