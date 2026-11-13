@@ -1,0 +1,12 @@
+{
+  "id": "snow-express",
+  "title": { "tr": "Kar Ekspresi", "en": "Snow Express" },
+  "description": { "tr": "Karlı bir dağ köyünde 3D bir demiryolu makas bulmacası! Trenler tünelden renkli hediyelerle çıkar; makaslara dokunarak her treni kendi rengindeki kulübeye gönder. Doğru teslimat kulübenin pencerelerini yakar ve hediyeleri içeri uçurur; yanlış durak bir can götürür, iki treni çarpıştırmak ise her şeyi bitirir. Yolculuk modunda Karlı Köy, Donmuş Göl ve Dağ Geçidi'nden geçen 24 seviye seni bekliyor: tüneller, kesişen raylar, sinyaller, bekleme döngüleri, ekspres trenler, üst geçitler ve yolu açan kar küreme treni. Yılbaşı Telaşı'nda trenler durmadan hızlanır, akşam çöker, ışıklar yanar; kombo yaparak puanını katla. Sıcak Kakao zamanı yavaşlatır, Kar Küresi trenleri dondurur.", "en": "A cozy 3D rail-switching puzzle in a snowy mountain village! Trains roll out of the tunnel with coloured presents; tap the switches to send every train to the cabin of its colour. A good delivery lights up the cabin's windows and pops the presents inside; a wrong stop costs a heart, and two trains colliding ends it all. The Journey takes you through 24 levels across the Snowy Village, the Frozen Lake and the Mountain Pass: tunnels, crossings, signals, passing loops, express trains, overpasses and a snowplow that clears the drifts. In Holiday Rush the trains keep speeding up as evening falls and the lights come on; chain deliveries to multiply your score. Hot Cocoa slows time and the Snow Globe freezes every train." },
+  "howTo": { "tr": "Makasa dokun, çevir; her treni kendi rengindeki ve simgesindeki kulübeye gönder. Klavye: 1–9 makasları çevirir, oklar + Boşluk seçip çevirir, Z kakao, X kar küresi.", "en": "Tap a switch to flip it and send every train to the cabin of its colour and icon. Keys: 1–9 flip switches, arrows + Space pick and flip, Z cocoa, X snow globe." },
+  "genres": ["puzzle", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["3D models: Kenney Holiday Kit and Train Kit (CC0) — kenney.nl", "Sound effects: Kenney Impact Sounds and Interface Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org; the chug, whistle, sleigh bells, trombone and jingle are made in the game"],
+  "platform": { "addedAt": "2026-11-13" }
+}

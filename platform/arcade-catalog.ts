@@ -1180,6 +1180,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-11-12',
   }),
   arcadeGame({
+    slug: 'snow-express',
+    title: { en: 'Snow Express', tr: 'Kar Ekspresi' },
+    description: {
+      en: "A cozy 3D rail-switching puzzle in a snowy mountain village! Trains roll out of the tunnel with coloured presents; tap the switches to send every train to the cabin of its colour. A good delivery lights up the cabin's windows and pops the presents inside; a wrong stop costs a heart, and two trains colliding ends it all. The Journey takes you through 24 levels across the Snowy Village, the Frozen Lake and the Mountain Pass: tunnels, crossings, signals, passing loops, express trains, overpasses and a snowplow that clears the drifts. In Holiday Rush the trains keep speeding up as evening falls and the lights come on; chain deliveries to multiply your score. Hot Cocoa slows time and the Snow Globe freezes every train.",
+      tr: "Karlı bir dağ köyünde 3D bir demiryolu makas bulmacası! Trenler tünelden renkli hediyelerle çıkar; makaslara dokunarak her treni kendi rengindeki kulübeye gönder. Doğru teslimat kulübenin pencerelerini yakar ve hediyeleri içeri uçurur; yanlış durak bir can götürür, iki treni çarpıştırmak ise her şeyi bitirir. Yolculuk modunda Karlı Köy, Donmuş Göl ve Dağ Geçidi'nden geçen 24 seviye seni bekliyor: tüneller, kesişen raylar, sinyaller, bekleme döngüleri, ekspres trenler, üst geçitler ve yolu açan kar küreme treni. Yılbaşı Telaşı'nda trenler durmadan hızlanır, akşam çöker, ışıklar yanar; kombo yaparak puanını katla. Sıcak Kakao zamanı yavaşlatır, Kar Küresi trenleri dondurur.",
+    },
+    category: 'puzzle',
+    categories: ['puzzle', 'casual'],
+    tags: ['snow', 'express', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-13',
+  }),
+  arcadeGame({
     slug: 'sokoban',
     title: { en: 'Box Pusher', tr: 'Kutu İtici' },
     description: {

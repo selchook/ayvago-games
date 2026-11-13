@@ -227,6 +227,26 @@ const CARD = {
   'light-cycles': { pick: 4 },
   'lights-out': { pick: 3 },
   'simon-says': { pick: 1 },
+  // Snow Express's card shows a busy evening village: a Holiday Rush on the frozen-lake board,
+  // the autopilot well into the run (several trains out, five cabins lit, the fairy lights on),
+  // then slowed right down so every candidate frame keeps the trains on the tracks.
+  'snow-express': {
+    stage: `async () => {
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      localStorage.setItem('ayvago:snow-express:meta', JSON.stringify({ mode: 'rush', level: 1, stars: {}, rushRuns: 0, tutorial: true, keysSeen: true }));
+      const g = window.__ayvago.game;
+      g.scene.getScene('Play').scene.restart();
+      await wait(1500);
+      for (let i = 0; i < 100 && !g.scene.isActive('Play'); i++) await wait(100);
+      const p = g.scene.getScene('Play');
+      p.testAuto(true);
+      p.testStep(150);
+      for (let i = 0; i < 60 && p.sim.trains.filter((t) => t.state === 'run').length < 4; i++) p.testStep(0.5);
+      p.testPowers(1);
+      p.testSpeed = 0.25;
+      await wait(3500);
+    }`,
+  },
   'space-blaster': { pick: 2 },
   'whack-a-mole': { pick: 3 },
 };
