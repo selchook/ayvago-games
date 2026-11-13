@@ -1,5 +1,6 @@
-// Star Squadron: the power cards. After every wave and every boss the run stops on a draft of
-// three cards (four with a talent); a picked card lasts for the whole run and most of them stack.
+// Star Squadron: the power cards. Every cleared wave and every boss earns a card offer of three
+// cards (four with a talent), rolled at that moment; the player opens it whenever they like while
+// the run flows on. A picked card lasts for the whole run and most of them stack.
 // Two owned cards can unlock a synergy card (gold frame) that combines them into something stronger.
 // Pure data and rules: what each card does to the ship is in `shipStats()`.
 
@@ -179,11 +180,11 @@ export function offerable(st: Stacks, id: CardId, hullFull: boolean): boolean {
 }
 
 /**
- * `n` different cards for a draft: by rarity odds, never a dead pick. A synergy the player has
- * unlocked takes one slot about half the time.
+ * `n` different cards for an offer (never one in `exclude`): by rarity odds, never a dead pick.
+ * A synergy the player has unlocked takes one slot about half the time.
  */
-export function rollDraft(st: Stacks, n: number, luck: boolean, hullFull: boolean, rnd: () => number): CardId[] {
-  const pool = CARDS.filter((c) => offerable(st, c.id, hullFull));
+export function rollDraft(st: Stacks, n: number, luck: boolean, hullFull: boolean, rnd: () => number, exclude: readonly CardId[] = []): CardId[] {
+  const pool = CARDS.filter((c) => offerable(st, c.id, hullFull) && !exclude.includes(c.id));
   const out: CardId[] = [];
   const syn = pool.filter((c) => c.rarity === 'synergy');
   if (syn.length && rnd() < 0.5) {

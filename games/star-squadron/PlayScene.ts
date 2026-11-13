@@ -1,24 +1,31 @@
 // Star Squadron: the Play scene. Runs the simulation (sim.ts) at 60 Hz, draws it in 3D (view.ts)
-// under a Phaser HUD, reads touch (relative drag), mouse (hold to steer) and keys, opens the card
-// drafts, plays the sounds and banners, and banks the run's Stardust at the end.
+// under a Phaser HUD, reads touch (relative drag), mouse (hold to steer) and keys, banks the card
+// offers the run earns and opens them in the card bar when the player wants (the fight runs on in
+// slow motion), plays the sounds and banners, and banks the run's Stardust at the end.
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash, popup,
   HUD_MARGIN, HUD_ROW2_Y,
 } from '@core';
 import { THREE, type World3D } from '@core/three';
-import { Sim, NO_INPUT, type Input, type SimEvent, type CardId } from './sim';
+import { Sim, NO_INPUT, type Input, type SimEvent, type CardId, type Offer } from './sim';
 import { TUNING, FIELD, playerHalfWidth, type Mode, type PowerId, POWER_IDS } from './defs';
-import { CARD } from './cards';
+import { CARD, RARITY_COLOR } from './cards';
 import { View } from './view';
 import { Bot, SKILL } from './bot';
 import { talentFx, stardustFor } from './talents';
 import { loadMeta, bankRun, type Meta } from './meta';
-import { makeArt, COIN, DUST, cardArt } from './art';
+import { makeArt, COIN, DUST, OFFER, cardArt } from './art';
 import { PowerButton, HullBar, BossBar, banner, bossWarning, UI_DEPTH } from './ui';
-import { DraftScreen, CardTray, CardList, type CardFace } from './cardsui';
+import { CardBar, CardTray, CardList, OfferButton, DRAFT_DEPTH, BAR_BOTTOM, BAR_H } from './cardsui';
 
 const BAR_Y = 1212;
+/** Time scale while the card bar is open, and how fast the fight eases into it and back. */
+const BAR_SLOW = 0.4;
+const SLOW_EASE = 7;
+/** Seconds without damage when the bar opens (at most once per GRACE_CD seconds of play). */
+const GRACE = 0.5;
+const GRACE_CD = 4;
 const seenHints = new Set<string>();
 
 interface Bolt { pts: { x: number; z: number }[]; t: number; seed: number }
@@ -42,8 +49,15 @@ export class PlayScene extends ArcadeScene {
   private tray!: CardTray;
   private overlay!: Phaser.GameObjects.Graphics;
   private vignette!: Phaser.GameObjects.Graphics;
-  private draft: DraftScreen | null = null;
-  private draftDelay = -1;
+  /** Over the open card bar: the ship and the enemy shots behind it. */
+  private ghost!: Phaser.GameObjects.Graphics;
+  private offerBtn!: OfferButton;
+  /** The open card bar and the offer it shows. */
+  private bar: CardBar | null = null;
+  private barOffer = -1;
+  /** The fight's time scale (eases to BAR_SLOW while the bar is open). */
+  slow = 1;
+  private graceCd = 0;
   private cardList: CardList | null = null;
   private bolts: Bolt[] = [];
   private bulletT = 0;
@@ -72,8 +86,11 @@ export class PlayScene extends ArcadeScene {
     this.inputKind = this.sys.game.device.input.touch ? 'touch' : 'mouse';
     this.want = { bomb: false, shield: false, overdrive: false };
     this.powerBtns = [];
-    this.draft = null;
-    this.draftDelay = -1;
+    this.bar = null;
+    this.barOffer = -1;
+    this.slow = 1;
+    this.graceCd = 0;
+    this.botCards = true;
     this.cardList = null;
     this.bolts = [];
     this.bulletT = 0;
@@ -89,7 +106,6 @@ export class PlayScene extends ArcadeScene {
     this.hitSfxT = 0;
     this.bot = null;
     this.firstFrames = [];
-    this.draftUi = false;
     this.testSpeed = 1;
     makeArt(this);
 
@@ -110,7 +126,7 @@ export class PlayScene extends ArcadeScene {
     const { width } = this.scale;
 
     // HUD: score (core), sector / wave in the centre chip, credits and the card tray on row 2,
-    // the hull and the powers along the bottom
+    // the hull, the card-offer button and the powers along the bottom
     this.hud.setCenter(t('hudWave', { s: 1, n: 1, m: this.sim.wavesInSector }));
     this.creditChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { icon: COIN, iconSize: 28, text: '0', color: '#ffd23f', minWidth: 96 });
     this.tray = new CardTray(this, this.creditChip.right, HUD_ROW2_Y, () => this.openCardList());
@@ -123,8 +139,12 @@ export class PlayScene extends ArcadeScene {
       const x = width - HUD_MARGIN - R - (2 - i) * (R * 2 + 14);
       this.powerBtns.push(new PowerButton(this, x, BAR_Y - 14, id, keys, () => this.firePower(id)));
     });
+    // the offer button sits in the gap between the hull and the powers
+    const ox = Math.round((this.hull.chip.right + this.powerBtns[0].chip.x - R) / 2);
+    this.offerBtn = new OfferButton(this, ox, BAR_Y - 14, keys, () => this.toggleBar());
     this.overlay = this.add.graphics().setDepth(50).setScrollFactor(0);
     this.vignette = this.add.graphics().setDepth(60).setScrollFactor(0);
+    this.ghost = this.add.graphics().setDepth(DRAFT_DEPTH + 2).setScrollFactor(0);
 
     this.setupInput();
     // a run left through the pause menu still banks what it earned
@@ -141,7 +161,7 @@ export class PlayScene extends ArcadeScene {
   private setupInput(): void {
     this.input.addPointer(2);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-      if (this.draft || this.cardList || over.length) return;
+      if (this.cardList || over.length) return;
       if (p.wasTouch) {
         this.inputKind = 'touch';
         if (this.drag) return;
@@ -161,8 +181,9 @@ export class PlayScene extends ArcadeScene {
     this.input.on('pointerupoutside', up);
     const kb = this.input.keyboard;
     kb?.on('keydown', (e: KeyboardEvent) => {
-      if (this.draft) { this.draft.key(e.code); return; }
       if (this.cardList) { if (e.code === 'Escape' || e.code === 'KeyC' || e.code === 'Enter') this.cardList.close(); return; }
+      if (this.barOpen && this.bar!.key(e.code)) return;
+      if (e.code === 'KeyE') { this.toggleBar(); return; }
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
         if (this.inputKind !== 'keys') { this.inputKind = 'keys'; this.hint('hintKeys'); }
       }
@@ -174,7 +195,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private firePower(id: PowerId): void {
-    if (this.draft || this.isOver) return;
+    if (this.isOver) return;
     if (!this.sim.canUse(id)) {
       if (this.sim.player.alive && this.sim.powers[id].cd > 0) this.sfx('error', { volume: 0.25 });
       return;
@@ -245,25 +266,30 @@ export class PlayScene extends ArcadeScene {
     const dt = delta / 1000;
     const sim = this.sim;
     const paused = !!this.cardList;
+    // the card bar slows the fight down (eased in and out), it never stops it
+    const target = this.barOpen ? BAR_SLOW : 1;
+    this.slow += (target - this.slow) * Math.min(1, dt * SLOW_EASE);
+    if (Math.abs(target - this.slow) < 0.004) this.slow = target;
     if (!paused) {
-      let sdt = dt * this.testSpeed;
-      if (this.bulletT > 0) { this.bulletT -= dt; sdt = dt * 0.25; }
-      if (this.bot && sim.phase === 'draft' && !this.draft && this.draftDelay < 0) sim.pick(this.bot.choose(sim.offer));
-      sim.step(sdt, this.draft ? NO_INPUT : this.readInput(dt));
+      let sdt = dt * this.testSpeed * this.slow;
+      if (this.bulletT > 0) { this.bulletT -= dt; sdt = dt * 0.25 * this.slow; }
+      this.graceCd -= sdt;
+      // the autopilot takes every offer at once (as balance.ts does), unless a test opened the bar
+      if (this.bot && this.botCards && !this.bar && sim.offers.length) sim.takeAll((c) => this.bot!.choose(c));
+      sim.step(sdt, this.readInput(dt));
       for (const ev of sim.events) this.onEvent(ev);
       sim.events.length = 0;
     }
-    if (this.draftDelay >= 0) {
-      this.draftDelay -= dt;
-      if (this.draftDelay < 0) this.openDraft();
-    }
+    this.bar?.update(dt);
     // the backdrop: a warp between sectors, a quick fly-in at their start
-    const target = sim.phase === 'warp' ? (sim.phaseT < 2.6 ? 70 : 5) : sim.phase === 'intro' ? 10 : 5;
-    this.view.speed += (target - this.view.speed) * Math.min(1, dt * (target > this.view.speed ? 1.6 : 3));
-    if (this.view.speed > 16) this.warpLines(dt);
-    this.view.sync(sim, dt);
+    const vdt = dt * this.slow;
+    const speed = sim.phase === 'warp' ? (sim.phaseT < 2.6 ? 70 : 5) : sim.phase === 'intro' ? 10 : 5;
+    this.view.speed += (speed - this.view.speed) * Math.min(1, vdt * (speed > this.view.speed ? 1.6 : 3));
+    if (this.view.speed > 16) this.warpLines(vdt);
+    this.view.sync(sim, vdt);
     this.updateHud(dt);
     this.drawOverlay(dt);
+    this.drawGhost();
     if (this.deathT >= 0) {
       this.deathT += dt;
       if (this.deathT > 1.6 && !this.summary) this.showSummary();
@@ -366,10 +392,7 @@ export class PlayScene extends ArcadeScene {
         banner(this, 420, ev.flawless ? t('flawless') : t('waveClear'), '+' + ev.bonus, { color: ev.flawless ? '#ffd23f' : '#7dffa0', size: 46, hold: 0.8 });
         this.sfx('waveClear', { volume: 0.55 });
         break;
-      case 'draft':
-        this.draftDelay = this.bot && !this.draftUi ? -1 : 0.35;
-        this.draftUi = false;
-        break;
+      case 'offer': this.onOffer(ev.offer); break;
       case 'card':
         if (CARD[ev.id].rarity === 'synergy') banner(this, 300, t('newSynergy'), t('c_' + ev.id), { color: '#ffd23f', size: 42, hold: 1.4 });
         break;
@@ -377,6 +400,15 @@ export class PlayScene extends ArcadeScene {
         bossWarning(this, t('boss_' + sim.sectorDef.boss));
         this.sfx('alarm', { volume: 0.55 });
         this.hud.setCenter(t('hudBoss', { s: sim.sector + 1 }));
+        // a gentle nudge: cards are waiting and the boss is coming
+        if (sim.offers.length >= 2 && !this.barOpen && !(this.bot && this.botCards)) {
+          this.time.delayedCall(400, () => {
+            if (this.isOver || this.barOpen || this.sim.offers.length < 2) return;
+            this.offerBtn.flash();
+            this.floatText(this.offerBtn.x, this.offerBtn.y - 84, t('cardsWaiting'), '#ffd23f', 24);
+            this.sfx('offer', { volume: 0.3, exact: true });
+          });
+        }
         break;
       case 'bossSpawn':
         this.bossBar.show(t('boss_' + ev.boss.kind));
@@ -424,52 +456,91 @@ export class PlayScene extends ArcadeScene {
         flash(this, 0xffffff, 300, 0.6);
         this.deathT = 0;
         this.bankStardust();
+        // unopened offers are lost with the ship
+        if (this.bar) { this.bar.destroy(); this.bar = null; }
         break;
     }
   }
 
   // ------------------------------------------------------------------ cards
 
-  private openDraft(): void {
-    const sim = this.sim;
-    if (sim.phase !== 'draft' || this.draft || this.isOver) return;
-    this.drag = null;
-    this.mouseHold = false;
-    const sub = sim.boss?.dead ? t('draftAfterBoss', { name: t('boss_' + sim.boss.kind) }) : t('draftAfterWave', { n: sim.waveIx + 1 });
-    this.tray.setVisible(false);
-    this.draft = new DraftScreen(this, {
-      ctx: { stack: (id) => sim.stack(id) },
-      sub,
-      offer: sim.offer,
-      input: this.inputKind,
-      credits: () => sim.credits,
-      rerollCost: () => sim.rerollCost,
-      roll: () => (sim.reroll() ? sim.offer : null),
-      onPick: (id, face) => this.takeCard(id, face),
-      sfx: (k, v) => this.sfx(k, { volume: v ?? 0.5, exact: true }),
+  get barOpen(): boolean { return !!this.bar && !this.bar.done; }
+
+  /** A new offer: the button counts it, a card flies into it with a soft chime and "+1 CARD". */
+  private onOffer(_o: Offer): void {
+    const btn = this.offerBtn;
+    if (this.bar) this.bar.setWaiting(Math.max(0, this.sim.offers.length - 1));
+    const card = this.add.image(this.scale.width / 2, 520, OFFER).setDisplaySize(30, 30).setScrollFactor(0).setDepth(9350).setAlpha(0);
+    this.tweens.add({ targets: card, alpha: 1, displayWidth: 84, displayHeight: 84, duration: 220, ease: 'Back.easeOut' });
+    this.tweens.add({
+      targets: card, x: btn.x, y: btn.y, displayWidth: 56, displayHeight: 56, delay: 380, duration: 480, ease: 'Cubic.easeIn',
+      onComplete: () => {
+        card.destroy();
+        btn.bump();
+        this.sfx('offer', { volume: 0.4, exact: true });
+        this.floatText(btn.x, btn.y - 76, t('offerPlus'), '#ffd23f', 24);
+      },
     });
+    if (!this.bot) this.time.delayedCall(1500, () => this.hint(this.inputKind === 'touch' ? 'hintOfferTouch' : 'hintOfferKeys'));
   }
 
-  private takeCard(id: CardId, face: CardFace): void {
+  /** E, or a tap on the offer button: opens the front offer, or closes the open bar. */
+  private toggleBar(): void {
+    if (this.barOpen) { this.bar!.close(); return; }
+    this.openBar();
+  }
+
+  private barIndex(): number { return this.sim.offers.findIndex((o) => o.id === this.barOffer); }
+
+  private openBar(): void {
     const sim = this.sim;
-    const draft = this.draft;
-    sim.pick(id);
-    this.tray.setVisible(true);
+    if (this.isOver || !sim.player.alive || this.cardList || this.barOpen) return;
+    const o = sim.offers[0];
+    if (!o) { this.sfx('error', { volume: 0.25 }); return; }
+    this.bar?.destroy();
+    this.barOffer = o.id;
+    this.sfx('slowIn', { volume: 0.45, exact: true });
+    // the switch costs no free hit: a short grace (not again for a few seconds of play)
+    if (this.graceCd <= 0) { sim.grace(GRACE); this.graceCd = GRACE_CD; }
+    this.bar = new CardBar(this, {
+      ctx: { stack: (id) => sim.stack(id) },
+      cards: o.cards,
+      sub: o.from === 'boss' ? t('barFromBoss') : t('barFromWave', { n: o.n }),
+      input: this.inputKind === 'touch' ? 'touch' : 'desk',
+      credits: () => sim.credits,
+      rerollCost: () => sim.rerollCost(Math.max(0, this.barIndex())),
+      roll: () => { const i = this.barIndex(); return i >= 0 && sim.reroll(i) ? sim.offers[i].cards : null; },
+      onPick: (id, x, y) => this.takeCard(id, x, y),
+      onClose: () => { this.bar = null; this.sfx('slowOut', { volume: 0.4, exact: true }); },
+      sfx: (k, v) => this.sfx(k, { volume: v ?? 0.5, exact: true }),
+    }, sim.offers.length - 1);
+  }
+
+  /** A card from the bar: it applies at once and its icon flies into the tray. */
+  private takeCard(id: CardId, fx: number, fy: number): void {
+    const sim = this.sim;
+    const i = this.barIndex();
+    this.bar = null;
+    this.sfx('slowOut', { volume: 0.4, exact: true });
+    if (i < 0 || !sim.take(i, id)) return;
+    const col = RARITY_COLOR[CARD[id].rarity];
+    const p = this.view.toScreen(sim.player.x, 0.3, sim.player.z);
+    this.floatText(p.x, p.y - 90, t('c_' + id), col.text, 26);
+    const trayOn = this.tray.chip.getData('show') !== false;
     this.tray.hide(id, true);
     const to = this.tray.slotPos(sim.cardOrder, (c) => sim.stack(c), id);
-    // the picked card shrinks into its tray slot
-    const fly = this.add.image(face.x, face.y, cardArt(id)).setDisplaySize(132, 132).setScrollFactor(0).setDepth(9800);
-    draft?.close();
-    face.setVisible(false);
+    const repair = id === 'repair';
+    const fly = this.add.image(fx, fy, cardArt(id)).setDisplaySize(70, 70).setScrollFactor(0).setDepth(9800);
     this.tweens.add({
-      targets: fly, x: id === 'repair' ? this.hull.chip.x + 100 : to.x, y: id === 'repair' ? BAR_Y : to.y, displayWidth: 38, displayHeight: 38, duration: 520, ease: 'Cubic.easeIn',
-      onComplete: () => { fly.destroy(); this.tray.hide(id, false); this.tray.sync(sim.cardOrder, (c) => sim.stack(c)); this.tray.pop(id); this.sfx('star', { volume: 0.35 }); },
+      targets: fly, x: repair ? this.hull.chip.x + 100 : to.x, y: repair ? BAR_Y : to.y, displayWidth: 38, displayHeight: 38,
+      alpha: !repair && !trayOn ? 0 : 1, duration: 480, ease: 'Cubic.easeIn',
+      onComplete: () => { fly.destroy(); this.tray.hide(id, false); this.tray.sync(sim.cardOrder, (c) => sim.stack(c)); if (trayOn) this.tray.pop(id); this.sfx('star', { volume: 0.35 }); },
     });
-    this.time.delayedCall(260, () => { this.draft = null; });
   }
 
   private openCardList(): void {
-    if (this.cardList || this.draft || !this.sim.cardOrder.length || this.isOver) return;
+    if (this.cardList || !this.sim.cardOrder.length || this.isOver) return;
+    if (this.barOpen) this.bar!.close();
     this.sfx('move', { volume: 0.4 });
     this.cardList = new CardList(this, this.sim.cardOrder, (c) => this.sim.stack(c), () => { this.cardList = null; });
   }
@@ -488,6 +559,9 @@ export class PlayScene extends ArcadeScene {
     }
     this.tray.sync(sim.cardOrder, (c) => sim.stack(c));
     this.tray.update(dt, (c) => sim.stack(c));
+    // offers go down with the ship
+    this.offerBtn.set(p.alive ? sim.offers.length : 0, this.barOpen);
+    this.offerBtn.update(dt, this.elapsed);
     this.hull.update(p.hull, p.maxHull, p.shield, sim.stats.shieldMax, dt, this.elapsed);
     const on: Record<PowerId, number> = { bomb: 0, shield: sim.shieldT / 3.6, overdrive: sim.overdriveT / sim.stats.overdriveT };
     for (const b of this.powerBtns) {
@@ -511,11 +585,13 @@ export class PlayScene extends ArcadeScene {
     const pulse = low ? 0.22 + 0.12 * Math.sin(this.elapsed * 6) : 0;
     const a = Math.max(this.redT, pulse);
     const slow = this.sim.slowT > 0 ? 0.25 : 0;
+    // the card bar's slow motion: cool blue edges
+    const bar = ((1 - this.slow) / (1 - BAR_SLOW)) * 0.3;
     const g = this.vignette.clear();
-    if (a <= 0.01 && slow <= 0) return;
+    if (a <= 0.01 && slow <= 0 && bar <= 0.01) return;
     const { width: w, height: h } = this.scale;
-    const col = slow > a ? 0x9a6bff : 0xff2a2a;
-    const k = Math.max(a, slow);
+    const col = slow > a && slow >= bar ? 0x9a6bff : bar > a ? 0x5ab8ff : 0xff2a2a;
+    const k = Math.max(a, slow, bar);
     for (let i = 0; i < 8; i++) {
       const d = i * 14;
       g.lineStyle(16, col, k * (1 - i / 8) * 0.6).strokeRect(d, d, w - d * 2, h - d * 2);
@@ -567,6 +643,31 @@ export class PlayScene extends ArcadeScene {
         g.strokePath();
       }
     }
+  }
+
+  /** The card bar may cover the ship: its outline and the enemy shots near it show through. */
+  private drawGhost(): void {
+    const g = this.ghost.clear();
+    const sim = this.sim;
+    if (!this.barOpen || !sim.player.alive) return;
+    const top = BAR_BOTTOM - BAR_H - 8, bottom = BAR_BOTTOM + 8;
+    for (const b of sim.ebullets) {
+      if (b.dead) continue;
+      const s = this.view.toScreen(b.x, 0.3, b.z);
+      if (s.y < top || s.y > bottom) continue;
+      g.fillStyle(0xff3b5c, 0.9).fillCircle(s.x, s.y, 7).lineStyle(2, 0xffffff, 0.85).strokeCircle(s.x, s.y, 7);
+    }
+    for (const e of sim.enemies) {
+      if (e.dead) continue;
+      const s = this.view.toScreen(e.x, 0.3, e.z);
+      if (s.y < top || s.y > bottom) continue;
+      g.lineStyle(4, 0xff3b5c, 0.9).strokeCircle(s.x, s.y, 22);
+    }
+    const p = this.view.toScreen(sim.player.x, 0.3, sim.player.z);
+    if (p.y < top || p.y > bottom + 40) return;
+    const pts = [new Phaser.Math.Vector2(p.x, p.y - 30), new Phaser.Math.Vector2(p.x + 26, p.y + 20), new Phaser.Math.Vector2(p.x, p.y + 10), new Phaser.Math.Vector2(p.x - 26, p.y + 20)];
+    g.fillStyle(0x5ad1ff, 0.3).fillPoints(pts, true);
+    g.lineStyle(3, 0x9fe8ff, 0.95).strokePoints(pts, true, true);
   }
 
   private dmgNumber(x: number, y: number, n: number): void {
@@ -621,10 +722,13 @@ export class PlayScene extends ArcadeScene {
     c.add(txt(this, 0, -118, t('runOver'), { title: true, size: 44, color: '#ff7a6a', strokeThickness: 8 }));
     c.add(txt(this, 0, -56, t('reached', { n: sim.sector + 1 }) + ' · ' + t('sec_' + sim.sectorDef.id), { size: 26, color: '#e6ecff', strokeThickness: 0 }));
     c.add(txt(this, 0, -16, t('runStats', { w: sim.run.wavesCleared, b: sim.run.bosses, k: sim.run.kills }), { size: 22, color: '#9fb0d8', strokeThickness: 0 }));
-    const dustIcon = this.add.image(-120, 50, DUST).setDisplaySize(56, 56);
-    const dustTxt = txt(this, 10, 50, t('dustEarned', { n: 0 }), { title: true, size: 36, color: '#f0d0ff', strokeThickness: 6 });
+    const lost = sim.offers.length;
+    if (lost > 0) c.add(txt(this, 0, 16, t('offersLost', { n: lost }), { size: 19, color: '#ff9aab', strokeThickness: 0 }));
+    const dy = lost > 0 ? 14 : 0;
+    const dustIcon = this.add.image(-120, 50 + dy, DUST).setDisplaySize(56, 56);
+    const dustTxt = txt(this, 10, 50 + dy, t('dustEarned', { n: 0 }), { title: true, size: 36, color: '#f0d0ff', strokeThickness: 6 });
     c.add([dustIcon, dustTxt]);
-    c.add(txt(this, 0, 118, t('dustTotal', { n: this.meta.dust }), { size: 20, color: '#cfd8f0', strokeThickness: 0 }));
+    c.add(txt(this, 0, 118 + dy / 2, t('dustTotal', { n: this.meta.dust }), { size: 20, color: '#cfd8f0', strokeThickness: 0 }));
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });
     this.tweens.addCounter({ from: 0, to: this.dustEarned, duration: 900, delay: 350, onUpdate: (tw) => dustTxt.setText(t('dustEarned', { n: Math.round(tw.getValue() ?? 0) })), onComplete: () => { if (this.dustEarned > 0) this.sfx('dust', { volume: 0.6 }); } });
@@ -640,13 +744,19 @@ export class PlayScene extends ArcadeScene {
 
   /** Test hook: runs the simulation faster (slow software rendering in screenshots). */
   testSpeed = 1;
-  /** The autopilot plays (store art, screenshots). */
-  testAuto(on: boolean): void { this.bot = on ? new Bot(this.sim, SKILL.good) : null; }
-  /** Opens a draft with these cards. */
-  testDraft(cards: CardId[]): void { this.draftUi = true; this.draftDelay = 0.3; this.sim.forceDraft(cards); }
-  private draftUi = false;
-  testPick(i: number): void { this.draft?.testPick(i); }
-  get testDraftReady(): boolean { return !!this.draft?.ready; }
+  /** The autopilot plays (store art, screenshots); with `cards` false it leaves the offers alone. */
+  testAuto(on: boolean, cards = true): void { this.bot = on ? new Bot(this.sim, SKILL.good) : null; this.botCards = cards; }
+  private botCards = true;
+  /** Puts an offer with these cards at the front of the queue and opens it in the card bar. */
+  testDraft(cards: CardId[]): void {
+    this.sim.forceOffer(cards);
+    if (this.barOpen) { this.bar!.destroy(); this.bar = null; }
+    this.openBar();
+  }
+  /** Banks an offer with these cards behind the others (the bar stays closed). */
+  testOffer(cards: CardId[]): void { this.sim.forceOffer(cards); const o = this.sim.offers.shift()!; this.sim.offers.push(o); }
+  testPick(i: number): void { this.bar?.testPick(i); }
+  get testDraftReady(): boolean { return !!this.bar?.ready; }
   testCards(ids: CardId[]): void { for (const id of ids) this.sim.apply(id); }
   testBoss(): void { this.sim.skipToBoss(); }
   testSector(n: number): void {

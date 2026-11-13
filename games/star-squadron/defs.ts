@@ -163,7 +163,7 @@ export const BOSSES: Record<BossKind, BossDef> = {
 export const ARMOURED = 0.25;
 
 /** Seconds of each run phase. */
-export const TIMES = { intro: 2.2, clear: 1.3, warning: 3.0, warp: 3.2, bossDeath: 2.6 };
+export const TIMES = { intro: 2.2, clear: 2.0, warning: 3.0, warp: 3.2, bossDeath: 2.6 };
 
 export type PowerId = 'bomb' | 'shield' | 'overdrive';
 export const POWER_IDS: PowerId[] = ['bomb', 'shield', 'overdrive'];

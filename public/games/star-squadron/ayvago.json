@@ -6,8 +6,8 @@
     "tr": "Yıldız Filosu"
   },
   "description": {
-    "en": "A 3D space shooter with a deck of power cards! Fly from the surface of the Ember Moon through a crystal asteroid belt and an orbital shipyard into the Nebula Rift, blasting enemy squadrons and giant bosses through their weak points. After every wave, pick one of three power cards: Spread Shot, Homing Missiles, Wing Drones, Chain Lightning and more, and combine two of them into a synergy card. Bomb, Shield and Overdrive get you out of tight spots. Every run earns Stardust for lasting upgrades on the Talent board. Four sectors, then an endless loop that keeps getting harder.",
-    "tr": "Bir 3D uzay nişancısı ve kart destesi bir arada! Kor Ay'ın yüzeyinden kristal asteroit kuşağına, yörünge tersanesinden bulutsu yarığına uç; düşman filolarını ve dev bossları zayıf noktalarından vurarak yok et. Her dalgadan sonra üç güç kartından birini seç: Yayılım Atışı, Güdümlü Füze, Kanat Dronu, Zincir Şimşek ve daha fazlası. İki kartı birleştirip sinerji kartlarını aç. Zor anlarda Bomba, Kalkan ve Aşırı Güç seni kurtarır. Her koşu Yıldız Tozu kazandırır; Yetenek panosunda kalıcı geliştirmeler aç. Dört sektör, ardından sonsuz ve gittikçe zorlaşan döngü."
+    "en": "A 3D space shooter with a deck of power cards! Fly from the surface of the Ember Moon through a crystal asteroid belt and an orbital shipyard into the Nebula Rift, blasting enemy squadrons and giant bosses through their weak points. Every wave and every boss earns a card offer and the fight never stops: offers bank up, and whenever you like you open one and take one of three power cards while the action slows down: Spread Shot, Homing Missiles, Wing Drones, Chain Lightning and more. Combine two of them into a synergy card. Bomb, Shield and Overdrive get you out of tight spots. Every run earns Stardust for lasting upgrades on the Talent board. Four sectors, then an endless loop that keeps getting harder.",
+    "tr": "Bir 3D uzay nişancısı ve kart destesi bir arada! Kor Ay'ın yüzeyinden kristal asteroit kuşağına, yörünge tersanesinden bulutsu yarığına uç; düşman filolarını ve dev bossları zayıf noktalarından vurarak yok et. Her dalga ve her boss sana bir kart teklifi kazandırır; savaş hiç durmaz. Teklifler birikir, istediğin an aç ve üç güç kartından birini seç, sen seçerken savaş ağır çekime geçer: Yayılım Atışı, Güdümlü Füze, Kanat Dronu, Zincir Şimşek ve daha fazlası. İki kartı birleştirip sinerji kartlarını aç. Zor anlarda Bomba, Kalkan ve Aşırı Güç seni kurtarır. Her koşu Yıldız Tozu kazandırır; Yetenek panosunda kalıcı geliştirmeler aç. Dört sektör, ardından sonsuz ve gittikçe zorlaşan döngü."
   },
   "category": "action",
   "categories": [
@@ -55,5 +55,5 @@
     "card": "/games/star-squadron/ayvago/card-640x360.webp",
     "card2x": "/games/star-squadron/ayvago/card-1280x720.webp"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

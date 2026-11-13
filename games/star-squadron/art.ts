@@ -10,6 +10,8 @@ export const talentArt = (id: TalentId) => 'ss-tal-' + id;
 export const powerArt = (id: PowerId) => 'ss-pow-' + id;
 export const COIN = 'ss-coin';
 export const DUST = 'ss-dust';
+/** The card-offer button: two fanned cards with a star. */
+export const OFFER = 'ss-offer';
 
 type G = CanvasRenderingContext2D;
 const S = 128;
@@ -165,6 +167,18 @@ export function makeArt(scene: Phaser.Scene): void {
   for (const tl of TALENTS) canvasIcon(scene, talentArt(tl.id), 128, (g) => { disc(g, tl.hue); TALENT_DRAW[tl.id](g, css(tl.hue)); });
   for (const p of ['bomb', 'shield', 'overdrive'] as PowerId[]) canvasIcon(scene, powerArt(p), 128, (g) => POWER_DRAW[p](g));
   canvasIcon(scene, COIN, 64, (g) => coin(g, 64, 64, 50));
+  canvasIcon(scene, OFFER, 128, (g) => {
+    disc(g, 0xffd23f);
+    const card = (cx: number, cy: number, a: number, fill: string, rim: string) => {
+      g.save(); g.translate(cx, cy); g.rotate(a);
+      g.beginPath(); g.roundRect(-26, -36, 52, 72, 9);
+      g.fillStyle = fill; g.fill(); g.lineWidth = 5; g.strokeStyle = rim; g.stroke();
+      g.restore();
+    };
+    card(50, 68, -0.32, '#24345a', '#8fd0ff');
+    card(76, 64, 0.2, '#4a3008', '#ffd23f');
+    g.save(); g.translate(76, 64); g.rotate(0.2); star(g, 0, 0, 20, '#ffe28a'); g.restore();
+  });
   canvasIcon(scene, DUST, 64, (g) => {
     const r = g.createRadialGradient(64, 64, 4, 64, 64, 60);
     r.addColorStop(0, 'rgba(255,240,255,1)'); r.addColorStop(0.4, 'rgba(210,123,255,0.8)'); r.addColorStop(1, 'rgba(120,60,255,0)');

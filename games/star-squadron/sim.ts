@@ -6,7 +6,7 @@ import {
   FIELD, TUNING, ENEMIES, SECTORS, BOSSES, ARMOURED, TIMES, POWER_CD, POWER_IDS, playerHalfWidth,
   type Mode, type Tuning, type EnemyKind, type BossKind, type PowerId, type PickupKind, type SectorDef,
 } from './defs';
-import { CARD, shipStats, rollDraft, NO_TALENTS, type CardId, type Stacks, type ShipStats, type TalentFx } from './cards';
+import { CARD, shipStats, rollDraft, offerable, NO_TALENTS, type CardId, type Stacks, type ShipStats, type TalentFx } from './cards';
 
 export const STEP = 1 / 60;
 
@@ -149,7 +149,23 @@ export interface Boss {
   coins: number;
 }
 
-export type Phase = 'intro' | 'wave' | 'clear' | 'draft' | 'warning' | 'boss' | 'bossDeath' | 'warp' | 'dead';
+export type Phase = 'intro' | 'wave' | 'clear' | 'warning' | 'boss' | 'bossDeath' | 'warp' | 'dead';
+
+/**
+ * A card offer, earned by a cleared wave or a boss: its cards are rolled when it is earned and it
+ * waits in `Sim.offers` until the player opens it and takes one (the run never stops for it).
+ */
+export interface Offer {
+  /** Counts up through the run (the UI tells offers apart by it). */
+  id: number;
+  cards: CardId[];
+  from: 'wave' | 'boss';
+  /** The wave (1-based) or the boss's sector (1-based) that earned it. */
+  n: number;
+  /** Paid rerolls so far and free ones left (the Free Reroll talent). */
+  rerolls: number;
+  free: number;
+}
 
 export type SimEvent =
   | { type: 'fire'; x: number; z: number; heavy: boolean }
@@ -172,7 +188,7 @@ export type SimEvent =
   | { type: 'bossPhase'; n: number }
   | { type: 'bossKill'; boss: Boss; score: number }
   | { type: 'warp' }
-  | { type: 'draft' }
+  | { type: 'offer'; offer: Offer }
   | { type: 'card'; id: CardId }
   | { type: 'reflex' }
   | { type: 'phoenix' }
@@ -262,17 +278,15 @@ export class Sim {
   slowT = 0;
   reflexCd = 0;
   phoenix = 0;
-  /** The cards on offer while the phase is 'draft'. */
-  offer: CardId[] = [];
-  rerolls = 0;
-  freeRerolls = 0;
+  /** Card offers earned and not opened yet, oldest first. */
+  offers: Offer[] = [];
+  private offerId = 0;
   events: SimEvent[] = [];
   run: RunStats = { kills: 0, wavesCleared: 0, bosses: 0, damageTaken: 0, creditsEarned: 0, cards: 0, time: 0 };
   private nextId = 1;
   private queue: Spawn[] = [];
   private waveT = 0;
   private waveHurt = false;
-  private afterDraft: 'wave' | 'warp' = 'wave';
   private acc = 0;
 
   constructor(readonly mode: Mode, seed: number, readonly talents: TalentFx = NO_TALENTS) {
@@ -320,7 +334,6 @@ export class Sim {
   }
 
   private tick(dt: number, input: Input): void {
-    if (this.phase === 'draft') return;
     this.time += dt;
     this.run.time += dt;
     const p = this.player;
@@ -1187,16 +1200,28 @@ export class Sim {
           this.events.push({ type: 'clear', flawless: !this.waveHurt, bonus });
           this.phase = 'clear';
           this.phaseT = TIMES.clear;
+          this.addOffer(this.roll(), 'wave');
         }
         break;
       case 'clear':
-        if (this.phaseT <= 0) this.openDraft('wave');
+        if (this.phaseT <= 0) {
+          // the clear phase pulled every coin in; what is left is picked up now
+          for (const k of this.pickups) if (!k.dead) this.collect(k);
+          if (this.waveIx + 1 < this.wavesInSector) this.startWave(this.waveIx + 1);
+          else { this.phase = 'warning'; this.phaseT = TIMES.warning; this.events.push({ type: 'warning' }); }
+        }
         break;
       case 'warning':
         if (this.phaseT <= 0) this.spawnBoss();
         break;
       case 'bossDeath':
-        if (this.phaseT <= 0) this.openDraft('warp');
+        if (this.phaseT <= 0) {
+          for (const k of this.pickups) if (!k.dead) this.collect(k);
+          this.addOffer(this.roll(), 'boss');
+          this.phase = 'warp';
+          this.phaseT = TIMES.warp;
+          this.events.push({ type: 'warp' });
+        }
         break;
       case 'warp':
         if (this.phaseT <= 0) {
@@ -1212,50 +1237,69 @@ export class Sim {
     }
   }
 
-  private openDraft(after: 'wave' | 'warp'): void {
-    // the clear phase pulled every coin in; what is left is picked up now
-    for (const k of this.pickups) if (!k.dead) this.collect(k);
-    this.afterDraft = after;
-    this.rerolls = 0;
-    this.freeRerolls = this.talents.freeRerolls;
-    this.offer = this.roll();
-    this.phase = 'draft';
-    this.events.push({ type: 'draft' });
+  /** A cleared wave or a downed boss earns a card offer; the run goes on without waiting for it. */
+  private addOffer(cards: CardId[], from: 'wave' | 'boss', front = false): Offer {
+    const offer: Offer = {
+      id: ++this.offerId, cards, from, n: from === 'wave' ? this.waveIx + 1 : this.sector + 1,
+      rerolls: 0, free: this.talents.freeRerolls,
+    };
+    if (front) this.offers.unshift(offer); else this.offers.push(offer);
+    this.events.push({ type: 'offer', offer });
+    return offer;
   }
 
-  private roll(): CardId[] {
+  private roll(exclude: CardId[] = [], n = this.talents.draftN): CardId[] {
     const p = this.player;
-    return rollDraft(this.stacks, this.talents.draftN, this.talents.luck, p.hull >= p.maxHull * 0.8, this.rnd);
+    return rollDraft(this.stacks, n, this.talents.luck, p.hull >= p.maxHull * 0.8, this.rnd, exclude);
   }
 
-  /** Credits a reroll costs now (0 when a free one is left). */
-  get rerollCost(): number {
-    return this.freeRerolls > 0 ? 0 : 40 + 30 * this.rerolls;
+  /** Credits a reroll of offer `i` costs now (0 when a free one is left). */
+  rerollCost(i = 0): number {
+    const o = this.offers[i];
+    if (!o) return 0;
+    return o.free > 0 ? 0 : 40 + 30 * o.rerolls;
   }
 
-  canReroll(): boolean { return this.phase === 'draft' && this.credits >= this.rerollCost; }
+  canReroll(i = 0): boolean { return !!this.offers[i] && this.player.alive && this.credits >= this.rerollCost(i); }
 
-  reroll(): boolean {
-    if (!this.canReroll()) return false;
-    if (this.freeRerolls > 0) this.freeRerolls--;
-    else { this.credits -= this.rerollCost; this.rerolls++; }
-    this.offer = this.roll();
+  /** Rolls offer `i` again (credits, or a free reroll); false when the player cannot afford it. */
+  reroll(i = 0): boolean {
+    if (!this.canReroll(i)) return false;
+    const o = this.offers[i];
+    if (o.free > 0) o.free--;
+    else { this.credits -= this.rerollCost(i); o.rerolls++; }
+    o.cards = this.roll();
     return true;
   }
 
-  /** Takes a card from the draft and goes on with the run. */
-  pick(id: CardId): void {
-    if (this.phase !== 'draft') return;
+  /** Takes card `id` from offer `i`: its effect applies at once and the offer is used up. */
+  take(i: number, id: CardId): boolean {
+    const o = this.offers[i];
+    if (!o || !o.cards.includes(id) || !this.player.alive) return false;
+    this.offers.splice(i, 1);
     this.apply(id);
-    this.offer = [];
-    if (this.afterDraft === 'wave') {
-      if (this.waveIx + 1 < this.wavesInSector) this.startWave(this.waveIx + 1);
-      else { this.phase = 'warning'; this.phaseT = TIMES.warning; this.events.push({ type: 'warning' }); }
-    } else {
-      this.phase = 'warp';
-      this.phaseT = TIMES.warp;
-      this.events.push({ type: 'warp' });
+    this.refreshOffers();
+    return true;
+  }
+
+  /** The autopilot and the balance run: every waiting offer is taken at once. */
+  takeAll(choose: (cards: CardId[]) => CardId): void {
+    while (this.offers.length) if (!this.take(0, choose(this.offers[0].cards))) this.offers.shift();
+  }
+
+  /**
+   * A banked offer may hold a card that a later pick maxed out: that card is swapped for another
+   * one (and an offer left with nothing to give is dropped).
+   */
+  private refreshOffers(): void {
+    for (const o of this.offers) {
+      for (let k = 0; k < o.cards.length; k++) {
+        if (offerable(this.stacks, o.cards[k], false)) continue;
+        const next = this.roll(o.cards, 1)[0];
+        if (next) o.cards[k] = next; else { o.cards.splice(k, 1); k--; }
+      }
     }
+    this.offers = this.offers.filter((o) => o.cards.length > 0);
   }
 
   /** Adds a card's effect (also used by the tests to set up a ship). */
@@ -1296,13 +1340,13 @@ export class Sim {
     this.events.push({ type: 'warning' });
   }
 
-  /** Opens a draft with the given cards (tests and the store art). */
-  forceDraft(cards: CardId[]): void {
-    this.afterDraft = this.phase === 'boss' ? 'warp' : 'wave';
-    this.offer = cards.filter((c) => CARD[c]);
-    this.phase = 'draft';
-    this.events.push({ type: 'draft' });
+  /** Puts an offer with the given cards at the front of the queue (tests and the store art). */
+  forceOffer(cards: CardId[]): Offer {
+    return this.addOffer(cards.filter((c) => CARD[c]), this.boss ? 'boss' : 'wave', true);
   }
+
+  /** Gives the ship a moment without damage (the card bar opening or closing). */
+  grace(s: number): void { if (this.player.alive) this.player.inv = Math.max(this.player.inv, s); }
 }
 
 // ------------------------------------------------------------------ wave builder
