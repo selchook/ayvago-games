@@ -1,0 +1,12 @@
+city-kit-suburban/models/gltf_format/building-type-a.glb 96KB 1.30x0.83x1.03
+city-kit-suburban/models/gltf_format/building-type-b.glb 143KB 1.83x1.14x1.14
+city-kit-suburban/models/gltf_format/building-type-c.glb 97KB 1.29x1.03x1.03
+city-kit-suburban/models/gltf_format/building-type-d.glb 144KB 1.76x1.24x1.03
+city-kit-suburban/models/gltf_format/building-type-f.glb 135KB 1.43x1.14x1.41
+city-kit-suburban/models/gltf_format/building-type-k.glb 87KB 0.92x1.15x1.02
+city-kit-suburban/models/gltf_format/building-type-m.glb 95KB 1.43x0.74x1.43
+city-kit-suburban/models/gltf_format/building-type-o.glb 112KB 1.27x1.14x1.03
+city-kit-suburban/models/gltf_format/fence-1x4.glb 25KB 1.68x0.27x0.44
+city-kit-suburban/models/gltf_format/planter.glb 20KB 0.40x0.18x0.30
+city-kit-suburban/models/gltf_format/tree-large.glb 6KB 0.21x0.77x0.24
+city-kit-suburban/models/gltf_format/tree-small.glb 6KB 0.21x0.57x0.24

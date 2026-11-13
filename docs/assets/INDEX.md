@@ -38,6 +38,7 @@ Load Kenney art with `kenney('<pack>/<path>')`; Kenney audio with
 | sfx-digital | 0 | 62 |
 | sfx-impact | 0 | 130 |
 | sfx-interface | 0 | 100 |
+| sfx-foley | 0 | 10 |
 | sfx-sci-fi | 0 | 8 |
 | sfx-ui | 0 | 51 |
 | shooting-gallery | 110 | 0 |
@@ -77,6 +78,9 @@ platformer-kit block is about 1.27 wide). Regenerate them with `node tools/index
 | city-kit-commercial | 13 | Kenney City Kit Commercial 2.1, in part: shops and offices (`building-a`, `-c`, `-e`, `-g`, `-h`, `-k`), three skyscrapers (`building-skyscraper-a` … `c`), the low-detail far buildings (`low-detail-building-a`, `-c`, `-wide-a`) and a parasol. About 1 unit per city block (building-a is 0.88 × 1.29 × 0.94). Textured: the models share `models/gltf_format/Textures/colormap.png` (external). Only what `games/blacktop-kings` uses is imported (`CITY_KIT_COMMERCIAL` in `tools/import-kenney.py`, from the jam-ready-assets mirror) |
 | city-kit-roads | 4 | Kenney City Kit Roads 2.0, in part: the street lamps `light-square` and `light-curved`, the `road-straight` tile (1 × 1) and a `construction-cone`. Textured: the models share `models/gltf_format/Textures/colormap.png` (external). Only what `games/blacktop-kings` uses is imported (`CITY_KIT_ROADS` in `tools/import-kenney.py`) |
 | space-kit | 35 | Kenney Space Kit 2.0, in part: spacecraft (`craft_speedera` … `d`, `craft_racer`, `craft_miner`, `craft_cargoa` / `b`; the nose points to −z), meteors and rocks (`meteor`, `meteor_detailed`, `rock_largea`, crystal rocks), turrets (`turret_single`, `turret_double`, each with a separate `turret` node that turns), `machine_generatorlarge`, hangars (`hangar_rounda`, the glass dome `hangar_roundglass`, `hangar_largea`), satellite dishes, a frame structure, pipes, a platform, rocket parts, craters, a gate, a corridor piece. Untextured: every part carries its own flat material (`metal`, `metalDark`, `metalRed`, `dark`, `rock`, `crystal` …); file names are lowercased (`craft_speedera.glb`). Only what `games/star-squadron` uses is imported (`SPACE_KIT` in `tools/import-kenney.py`, from the jam-ready-assets mirror) |
+| mini-skate | 20 | Kenney Mini Skate 1.2, complete: ramps (`half-pipe` is the wooden quarter pipe, `bowl-side` the concrete one: 1 × 0.8 × 1, a circular transition of radius 0.8 rising towards −z with a 0.2 deck; `bowl-corner-inner` / `-outer` for bowls), `obstacle-middle` (a 1-long hip with a rail on its spine, along z) and its round cap `obstacle-end`, the low `obstacle-box` pad, `steps` (four 0.1 steps rising towards −z), rails (`rail-low` 0.25 and `rail-high` 0.45 high, 1 long along z; `rail-slope`; `rail-curve`, a quarter circle), `pallet`, the deck `structure-platform` (half a tile, 0.8 high) and the scaffold `structure-wood`, `floor-concrete` / `floor-wood` tiles, `skateboard` (0.3 × 0.14 × 0.7, along z) and two rigged skaters (`character-skate-boy`, `character-skate-girl`: the Mini Characters skeleton with its 32 clips plus `skate` (push), `skate-stand`, `skate-air` and `skate-grab`, which also drive any other Mini Character). Textured: the models share `models/gltf_format/Textures/colormap.png` (external). Imported from the jam-ready-assets mirror (`MINI_SKATE` in `tools/import-kenney.py`) |
+| city-kit-suburban | 12 | Kenney City Kit Suburban 2.0, in part: eight houses (`building-type-a`, `-b`, `-c`, `-d`, `-f`, `-k`, `-m`, `-o`; about 1.3 × 1 × 1 units), `fence-1x4`, `planter`, `tree-large`, `tree-small`. Textured: the models share `models/gltf_format/Textures/colormap.png` (external). Only what `games/kickflip-park` uses is imported (`CITY_KIT_SUBURBAN` in `tools/import-kenney.py`, from the jam-ready-assets mirror) |
+| city-kit-industrial | 10 | Kenney City Kit Industrial 1.0, in part: warehouses and factories (`building-a`, `-b`, `-g`, `-h`, `-k`, `-p`, `-s`; pivots are not always centred, see the boxes in `city-kit-industrial.txt`), `chimney-large`, `chimney-medium` and the `detail-tank`. Textured: the models share `models/gltf_format/Textures/colormap.png` (external). Only what `games/kickflip-park` uses is imported (`CITY_KIT_INDUSTRIAL` in `tools/import-kenney.py`, from the jam-ready-assets mirror) |
 
 ## OpenGameArt CC0 (`public/assets/oga`)
 
@@ -112,4 +116,3 @@ All poses face right except `front` and `back`.
 - the shoulder points and the arm size;
 - `kickFoot`: the foot tip in `kick`;
 - `hangHand`: the raised fist in `hang`.
-

@@ -12,7 +12,8 @@ their GLBs under models/gltf_format/ like the older kits, and keep the external 
   python3 tools/import-kenney.py <jam-ready-assets-dir> food-kit furniture-kit
   python3 tools/import-kenney.py <jam-ready-assets-dir> mini-dungeon graveyard-kit
   python3 tools/import-kenney.py <jam-ready-assets-dir> city-kit-commercial city-kit-roads
-  python3 tools/import-kenney.py <jam-ready-assets-dir> space-kit planets sfx-sci-fi"""
+  python3 tools/import-kenney.py <jam-ready-assets-dir> space-kit planets sfx-sci-fi
+  python3 tools/import-kenney.py <jam-ready-assets-dir> mini-skate city-kit-suburban city-kit-industrial sfx-foley"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -62,6 +63,13 @@ PACKS = {
     'kenney-space-kit/3D/space-scifi': 'space-kit',
     'kenney-planets/2D/space-scifi': 'planets',
     'kenney-sci-fi-sounds/audio': 'sfx-sci-fi',
+    # Mini Skate 1.2, City Kit Suburban 2.0, City Kit Industrial 1.0 and Foley Sounds 1.0
+    # (jam-ready-assets mirror, Git LFS, commit 397bf9e; pack roots are the mirror's own folders:
+    # License.txt + Models/GLB format/ or Audio/)
+    'kenney-mini-skate/3D/sports': 'mini-skate',
+    'kenney-city-kit-suburban/3D/city': 'city-kit-suburban',
+    'kenney-city-kit-industrial/3D/city': 'city-kit-industrial',
+    'kenney-foley-sounds/audio': 'sfx-foley',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -158,6 +166,33 @@ SCI_FI_SOUNDS = [
 FILES['space-kit'] = ['License.txt'] + [f'Models/GLTF format/{n}.glb' for n in SPACE_KIT]
 FILES['planets'] = ['License.txt'] + [f'Planets/{n}.png' for n in PLANETS]
 FILES['sfx-sci-fi'] = ['License.txt'] + [f'Audio/{n}.ogg' for n in SCI_FI_SOUNDS]
+
+# Kickflip Park (games/kickflip-park/kit.ts SKATE_MODELS / SUBURBAN_MODELS / INDUSTRIAL_MODELS,
+# main.ts sounds): every skate piece, the two skaters (their skate clips drive the player's own
+# Mini Character), houses, fences and trees around the plaza, warehouses and chimneys around the
+# wooden park, and the foley loops for wheels and grinds
+MINI_SKATE = [
+    'bowl-corner-inner', 'bowl-corner-outer', 'bowl-side', 'floor-concrete', 'floor-wood', 'half-pipe',
+    'obstacle-box', 'obstacle-end', 'obstacle-middle', 'pallet', 'rail-curve', 'rail-high', 'rail-low',
+    'rail-slope', 'skateboard', 'steps', 'structure-platform', 'structure-wood', 'character-skate-boy',
+    'character-skate-girl',
+]
+CITY_KIT_SUBURBAN = [
+    'building-type-a', 'building-type-b', 'building-type-c', 'building-type-d', 'building-type-f',
+    'building-type-k', 'building-type-m', 'building-type-o', 'fence-1x4', 'planter', 'tree-large', 'tree-small',
+]
+CITY_KIT_INDUSTRIAL = [
+    'building-a', 'building-b', 'building-g', 'building-h', 'building-k', 'building-p', 'building-s',
+    'chimney-large', 'chimney-medium', 'detail-tank',
+]
+FOLEY_SOUNDS = [
+    'Rocks/stoneDrag1', 'Rocks/stoneDrag3', 'Rocks/stoneHit2', 'Swords/swordSlide1', 'Plating/platesSlide3',
+    'Plating/platesHit4', 'Woosh/woosh2', 'Woosh/woosh4', 'Woosh/woosh6', 'Woosh/woosh7',
+]
+FILES['mini-skate'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_SKATE]
+FILES['city-kit-suburban'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in CITY_KIT_SUBURBAN]
+FILES['city-kit-industrial'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in CITY_KIT_INDUSTRIAL]
+FILES['sfx-foley'] = ['License.txt'] + [f'Audio/{n}.ogg' for n in FOLEY_SOUNDS]
 
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""
