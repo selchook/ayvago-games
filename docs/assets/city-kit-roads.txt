@@ -1,0 +1,4 @@
+city-kit-roads/models/gltf_format/construction-cone.glb 7KB 0.08x0.09x0.08
+city-kit-roads/models/gltf_format/light-curved.glb 9KB 0.05x0.67x0.23
+city-kit-roads/models/gltf_format/light-square.glb 7KB 0.05x0.60x0.24
+city-kit-roads/models/gltf_format/road-straight.glb 5KB 1.00x0.02x1.00
