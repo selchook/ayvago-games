@@ -204,8 +204,10 @@ const CARD = {
   // first-session tutorial is closed first, and the rider is on the owner's Blue Cruiser (the
   // most colourful board; the default black one reads dark this small).
   'kickflip-park': {
+    // PLAY opens the session setup (1.2): START it as the button does
     stage: `async () => {
       const p = window.__ayvago.game.scene.getScene('Play');
+      if (p.testStart?.()) await new Promise((r) => setTimeout(r, 1200));
       p.testHint(false);
       p.testTutorial?.(false);
       p.testBoard?.('blue');

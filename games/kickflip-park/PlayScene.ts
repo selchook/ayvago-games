@@ -7,7 +7,8 @@ import {
   ArcadeScene, Controls, txt, t, loc, isEasy, hudChip, HudChip, flash, burst, getLang,
   HUD_MARGIN, HUD_ROW2_Y, HUD_GAP,
 } from '@core';
-import type { World3D } from '@core/three';
+import { World3D } from '@core/three';
+import { Setup, takeFromMenu } from './setup';
 import { Sim, NO_INPUT, type Input, type SimEvent, type Entry } from './sim';
 import { View } from './view';
 import { Bot, SKILL } from './bot';
@@ -15,14 +16,12 @@ import { park, type ParkId, type GoalDef } from './parks';
 import { loadMeta, saveMeta, bankSession, TUTORIAL_STEPS, type Meta } from './meta';
 import { onSeg } from './park';
 import { PRAISE, clamp, type Mode } from './defs';
+import { fmt, dec, goalText, goalNeed } from './goals';
 import { boardDef, RARITY_COLOR } from './boards';
 import { usableBoard } from './boardmodel';
 import { TouchPad, Meter, BalanceBar, banner, goalToast, dirOf, comboSummary, popWord, TutorialCard, UI_DEPTH } from './ui';
 import { makeLoops, Loop } from './audio';
 import { makeIcons, TAPE_ICON, CLOCK_ICON } from './art';
-
-/** Numbers with thousands separators (TR: 12.345, EN: 12,345). */
-export const fmt = (n: number): string => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, getLang() === 'tr' ? '.' : ',');
 
 /** A trick's name in the combo string. */
 export function trickName(e: Entry): string {
@@ -32,30 +31,6 @@ export function trickName(e: Entry): string {
   if (e.n >= 3) return t('tr_triple', { t: name });
   if (e.n === 2) return t('tr_double', { t: name });
   return name;
-}
-
-/** A decimal number in the language's style (TR: 2,5 · EN: 2.5). */
-const dec = (n: number): string => (Math.round(n * 10) / 10).toString().replace('.', getLang() === 'tr' ? ',' : '.');
-
-/** A goal's line of text (score goals scale in Easy). */
-export function goalText(g: GoalDef, need: number): string {
-  switch (g.kind) {
-    case 'score': return t('goal_score', { n: fmt(need) });
-    case 'combo': return t('goal_combo', { n: fmt(need) });
-    case 'tapes': return t('goal_tapes');
-    case 'rail': return t('goal_rail_' + g.tag, { n: dec(need) });
-    case 'gap': return t('goal_gap_' + g.tag);
-    case 'manual': return t('goal_manual', { n: dec(need) });
-    case 'vert': return t('goal_vert', { n: dec(need) });
-    case 'spin': return t('goal_spin', { n: need });
-    case 'rails': return t('goal_rails', { n: need });
-    case 'special': return t('goal_special');
-  }
-}
-
-export function goalNeed(g: GoalDef, mode: Mode): number {
-  const scale = mode === 'easy' ? 0.7 : 1;
-  return g.kind === 'score' || g.kind === 'combo' ? Math.round(g.n * scale / 500) * 500 : g.n;
 }
 
 const SPIN_KEYS = ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'];
@@ -121,10 +96,59 @@ export class PlayScene extends ArcadeScene {
   /** Frame cost (test hook). */
   perf = { frames: 0, update: 0, render: 0, maxUpdate: 0, maxRender: 0, calls: 0, maxCalls: 0 };
 
+  /** 'setup': the session setup is on screen (PLAY on the menu); 'play': the session runs. */
+  phase: 'setup' | 'play' = 'play';
+  /** The session setup (park, goals, board, START), while it is on screen. */
+  setup: Setup | null = null;
+  private leaving = false;
+
   createGame(): void {
     makeIcons(this);
     makeLoops(this.game);
     this.meta = loadMeta();
+    this.setup = null;
+    this.leaving = false;
+    this.world = undefined as unknown as World3D;
+    this.view = undefined as unknown as View;
+    this.sim = undefined as unknown as Sim;
+    this.tut = null; this.tutStep = 0; this.tutWait = -1; this.tutRingT = 0;
+    this.hintBox = null;
+    this.bot = null;
+    this.forced = null;
+    // PLAY on the menu opens the setup first; a "play again" (result screen, pause) skates the
+    // same park on the same board at once
+    if (takeFromMenu()) {
+      this.phase = 'setup';
+      this.useHud = false;
+      // the turntable draws in the scene's world; the session's View takes it over on START
+      this.world = new World3D(this, { fov: 30, near: 0.5, far: 60, background: null });
+      this.setup = new Setup(this, this.world, this.meta, () => this.begin(), () => this.leave());
+    } else {
+      this.phase = 'play';
+      this.useHud = true;
+      this.begin();
+    }
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { if (this.phase === 'play' && !this.banked && this.sim.time > 5) this.bank(); });
+  }
+
+  /** BACK on the setup: the menu. */
+  private leave(): void {
+    this.leaving = true;
+    this.setup = null;
+    this.scene.start('Menu');
+  }
+
+  pauseGame(): void {
+    // the setup's Esc goes back to the menu (the core's Esc handler runs after the setup's)
+    if (this.leaving) return;
+    super.pauseGame();
+  }
+
+  /** The session starts: the park and board chosen (or the last ones on a "play again"). */
+  private begin(): void {
+    this.setup = null;
+    this.phase = 'play';
+    if (!this.useHud) { this.useHud = true; this.hud.setVisible(true); }
     this.parkId = this.meta.park;
     this.mode = isEasy() ? 'easy' : 'normal';
     this.sim = new Sim(park(this.parkId), this.mode, Math.floor(Math.random() * 1e9));
@@ -151,7 +175,7 @@ export class PlayScene extends ArcadeScene {
     this.frameStart = 0;
     this.testSpeed = 1;
 
-    this.view = new View(this, this.parkId, { board: this.meta.board });
+    this.view = new View(this, this.parkId, { board: this.meta.board, world: this.world });
     this.world = this.view.world;
     this.programsAtStart = (this.world.renderer.info.programs ?? []).length;
     this.perf = { frames: 0, update: 0, render: 0, maxUpdate: 0, maxRender: 0, calls: 0, maxCalls: 0 };
@@ -194,7 +218,6 @@ export class PlayScene extends ArcadeScene {
     this.ledgeLoop = new Loop(this, 'ledge-loop');
     this.crowd = this.view.hasCrowd ? new Loop(this, 'crowd') : null;
 
-    this.tut = null; this.tutStep = 0; this.tutWait = -1; this.tutRingT = 0;
     if (this.meta.tutorial < TUTORIAL_STEPS && this.parkId === 'plaza') {
       // the first session: the park's banner, then four short lessons (they replace the controls card)
       this.parkBanner();
@@ -202,7 +225,6 @@ export class PlayScene extends ArcadeScene {
       this.time.delayedCall(1700, () => this.startTutorial(this.meta.tutorial));
     } else if (!this.meta.hinted) this.time.delayedCall(250, () => this.showHint());
     else this.parkBanner();
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { if (!this.banked && this.sim.time > 5) this.bank(); });
   }
 
   // ------------------------------------------------------------------ input
@@ -276,6 +298,7 @@ export class PlayScene extends ArcadeScene {
   // ------------------------------------------------------------------ frame
 
   updateGame(_time: number, delta: number): void {
+    if (this.phase === 'setup') return;
     const now = performance.now();
     if (this.firstFrames.length < 8 && this.frameStart) this.firstFrames.push(now - this.frameStart);
     this.frameStart = now;
@@ -709,11 +732,21 @@ export class PlayScene extends ArcadeScene {
   }
 
   endGame(o: Parameters<ArcadeScene['endGame']>[0] = {}): void {
-    if (!this.isOver) this.bank();
+    // a round ended from outside before its session began (the platform, a test): nothing to bank
+    if (this.setup) { this.setup.close(); this.setup = null; }
+    else if (!this.isOver && this.phase === 'play') this.bank();
     super.endGame(o);
   }
 
   // ------------------------------------------------------------------ test hooks
+
+  /** Starts the session from the setup as START does (store art, screenshots); returns whether it did. */
+  testStart(): boolean {
+    if (!this.setup) return false;
+    this.setup.close();
+    this.begin();
+    return true;
+  }
 
   /** The autopilot plays (store art, screenshots). */
   testAuto(on: boolean, skill: 'good' | 'casual' = 'good'): void {

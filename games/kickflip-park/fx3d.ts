@@ -46,6 +46,18 @@ export const ringTex = () => canvasTex(128, (g, s) => {
   g.fillRect(0, 0, s, s);
 });
 
+/**
+ * Makes a basic material read a per-instance opacity (the geometry's `instanceAlpha` attribute) and
+ * multiply its alpha by it. keepPrograms (view.ts) copies the hook to its warm-up copies.
+ */
+export function fadeByAlpha(mat: THREE.Material): void {
+  mat.onBeforeCompile = (sh) => {
+    sh.vertexShader = 'attribute float instanceAlpha;\nvarying float vInstAlpha;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n\tvInstAlpha = instanceAlpha;');
+    sh.fragmentShader = 'varying float vInstAlpha;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n\tdiffuseColor.a *= vInstAlpha;');
+  };
+  mat.customProgramCacheKey = () => 'kf-instance-alpha';
+}
+
 const tmpM = new THREE.Matrix4();
 const tmpQ = new THREE.Quaternion();
 const tmpS = new THREE.Vector3();
@@ -60,13 +72,25 @@ export class Billboards {
   private n = 0;
   private rq = new THREE.Quaternion();
   private flat: boolean;
+  /** Additive sets fade by darkening their colour (black adds nothing); normal-blended ones by opacity. */
+  private additive: boolean;
+  private alpha: THREE.InstancedBufferAttribute | null = null;
 
   constructor(scene: THREE.Object3D, tex: THREE.Texture, readonly capacity: number, o: { additive?: boolean; flat?: boolean; order?: number; depthTest?: boolean } = {}) {
     const mat = new THREE.MeshBasicMaterial({
       map: tex, transparent: true, depthWrite: false, depthTest: o.depthTest ?? true,
       blending: o.additive === false ? THREE.NormalBlending : THREE.AdditiveBlending, fog: false, side: THREE.DoubleSide,
     });
-    this.mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), mat, capacity);
+    const geo = new THREE.PlaneGeometry(1, 1);
+    this.additive = o.additive !== false;
+    if (!this.additive) {
+      // a normal-blended set fades by its opacity, per instance (see fadeByAlpha)
+      this.alpha = new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1);
+      this.alpha.setUsage(THREE.DynamicDrawUsage);
+      geo.setAttribute('instanceAlpha', this.alpha);
+      fadeByAlpha(mat);
+    }
+    this.mesh = new THREE.InstancedMesh(geo, mat, capacity);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
     this.mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
@@ -88,7 +112,11 @@ export class Billboards {
     tmpM.compose(tmpP.set(x, y, z), tmpQ, tmpS.set(sx, sy, 1));
     this.mesh.setMatrixAt(this.n, tmpM);
     if (typeof color === 'number') tmpC.setHex(color); else tmpC.copy(color);
-    if (k !== 1) tmpC.multiplyScalar(k);
+    // Fading. Additive glows fade by their colour: black adds nothing. A normal-blended puff must
+    // fade by its opacity instead: a darkened colour at full opacity paints a dark smudge over
+    // the floor (1.1's black smoke trail behind the rider).
+    if (this.alpha) this.alpha.setX(this.n, Math.max(0, Math.min(1, k)));
+    else if (k !== 1) tmpC.multiplyScalar(k);
     this.mesh.setColorAt(this.n, tmpC);
     this.n++;
   }
@@ -98,6 +126,7 @@ export class Billboards {
     if (this.n) {
       this.mesh.instanceMatrix.needsUpdate = true;
       this.mesh.instanceColor!.needsUpdate = true;
+      if (this.alpha) this.alpha.needsUpdate = true;
     }
   }
 }
