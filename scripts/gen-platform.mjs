@@ -68,7 +68,8 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
     orientation: m.orientation,
     input: [...new Set([...m.controls, 'mouse'])].filter((i) => ['touch', 'mouse', 'keyboard', 'gamepad'].includes(i)),
     // game.json "multiplayer": true → online two-player matches on the platform (src/core/net.ts);
-    // a number (3 or 4) → a table for that many seats, bots included (protocol 2.3).
+    // a number (2 to 4) → a table for that many seats in the lobby (protocol 2.3; bots only at
+    // three or four seats).
     players: { min: 1, max: typeof m.multiplayer === 'number' ? m.multiplayer : m.multiplayer ? 2 : 1 },
     scoring: { ...DEFAULT_SCORING, ...(m.platform?.scoring ?? {}) },
     ads: { rewarded: [], interstitial: [] },
@@ -93,7 +94,8 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
 const DEFAULT_TEXT = JSON.stringify(DEFAULT_SCORING);
 // Per-game platform overrides from game.json: `featured`, and `addedAt` for games added after
 // the first release (default --added-at).
-const platformOf = (slug) => JSON.parse(readFileSync(join(root, 'games', slug, 'game.json'), 'utf8')).platform ?? {};
+const metaOf = (slug) => JSON.parse(readFileSync(join(root, 'games', slug, 'game.json'), 'utf8'));
+const platformOf = (slug) => metaOf(slug).platform ?? {};
 const entries = games.map(({ slug, manifest: m }) => {
   const e = { slug, title: m.title, description: m.description, category: m.category, categories: m.categories, tags: m.tags, orientation: m.orientation, input: m.input };
   if (m.ageRating !== '3+') e.ageRating = m.ageRating;
@@ -102,7 +104,9 @@ const entries = games.map(({ slug, manifest: m }) => {
   const p = platformOf(slug);
   if (p.addedAt && p.addedAt !== ADDED_AT) e.addedAt = p.addedAt;
   if (p.featured) e.featured = true;
-  if (m.players.max > 2) e.multiplayer = m.players.max;
+  // A number is a table game (lobby, quick play, invites), two seats included; true a room game.
+  const online = metaOf(slug).multiplayer;
+  if (typeof online === 'number' && m.players.max > 1) e.multiplayer = m.players.max;
   else if (m.players.max > 1) e.multiplayer = true;
   return e;
 });
@@ -132,7 +136,10 @@ type ArcadeEntry = Pick<
     slug: string;
     addedAt?: string;
     featured?: boolean;
-    /** Online play: true = two-player rooms; a number = a table with that many seats (bots allowed). */
+    /**
+     * Online play: true = two-player rooms; a number = a table game (\`tables\`: lobby, quick play,
+     * invites) with that many seats, bots only at three or four.
+     */
     multiplayer?: boolean | number;
   };
 
@@ -143,6 +150,7 @@ function arcadeGame({ slug, addedAt, featured, multiplayer, ageRating, scoring, 
     status: ARCADE_STATUS,
     addedAt: addedAt ?? ARCADE_ADDED_AT,
     ...(featured ? { featured } : {}),
+    ...(typeof multiplayer === 'number' ? { tables: true } : {}),
     manifest: {
       id: slug.replace(/-/g, ''),
       ...text,

@@ -32,7 +32,10 @@ type ArcadeEntry = Pick<
     slug: string;
     addedAt?: string;
     featured?: boolean;
-    /** Online play: true = two-player rooms; a number = a table with that many seats (bots allowed). */
+    /**
+     * Online play: true = two-player rooms; a number = a table game (`tables`: lobby, quick play,
+     * invites) with that many seats, bots only at three or four.
+     */
     multiplayer?: boolean | number;
   };
 
@@ -52,6 +55,7 @@ function arcadeGame({
     status: ARCADE_STATUS,
     addedAt: addedAt ?? ARCADE_ADDED_AT,
     ...(featured ? { featured } : {}),
+    ...(typeof multiplayer === 'number' ? { tables: true } : {}),
     manifest: {
       id: slug.replace(/-/g, ''),
       ...text,
@@ -159,9 +163,9 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'backgammon', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.3.0',
+    version: '1.4.0',
     addedAt: '2026-10-30',
-    multiplayer: true,
+    multiplayer: 2,
   }),
   arcadeGame({
     slug: 'block-blast',

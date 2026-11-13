@@ -272,6 +272,16 @@ Verify with the two-player bench, which needs no platform:
 - **Verify** with `node scripts/table-harness.mjs --dev --shots` (Okey: three pages at one table,
   settings, a stalled tab, a leaving player, a host hand-over, no double moves).
 
+**Two-seat tables** (`"multiplayer": 2`; reference `games/backgammon`, platform ADR 0026): a
+turn-based two-player game that wants the ayvago.com lobby (open tables, quick play, invites) is
+seated at a table of two instead of a room. The platform sends the seats and also `peerName` /
+`peerCharacter` (the other seat), so room code keeps working; `net.isTable` is true. There are no
+bots and no table settings (`net.table.bots` is false; keep the game's own match rules). Override
+`onSeatLeave` to end the round as a win for the player who stayed (nobody can play the empty
+seat); the leaver comes back with the table link and the host starts a rematch. Real-time games
+stay in rooms. Verify with `node scripts/mp-harness.mjs --dev --shots --table <slug>` and the
+plain room run.
+
 ## 7b. 3D games (optional)
 
 A 3D game is still an ordinary Ayvago game: `launch()`, an `ArcadeScene` named `Play`, the HUD,

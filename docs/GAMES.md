@@ -42,7 +42,7 @@ air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, blac
 
 **Easy / Normal difficulty** (protocol 2.6, §7c of the new-game skill; Easy runs are practice and stay off the leaderboards): 41 games: air-hockey, alien-invaders, asteroid-storm, backgammon, blacktop-kings, bug-blaster, city-defender, connect-four, crypt-crawler, crystal-keep, dots-and-boxes, dungeon-dash, golden-podium, gomoku, head-soccer, hex-bridge, kickflip-park, light-cycles, mangala, marble-maze, mud-rally, neon-pong, nine-mens-morris, okey, pirate-cove, putt-park, reversi, sea-battle, snack-shack, snow-express, space-blaster, star-squadron, strike-alley, sumo-push, tank-arena, tito-tank, tower-defense, traffic-racer, turkish-draughts, ultimate-tictactoe, zombie-survivor.
 
-**Online play** (`"multiplayer"` in `game.json`, skill §7a): 23 games: air-hockey, backgammon, blacktop-kings, bowling-strike, connect-four, dots-and-boxes, gomoku, head-soccer, hex-bridge, light-cycles, mangala, memory-match, mini-golf, neon-pong, nine-mens-morris, okey (a table of up to four), penalty-kick, reversi, sea-battle, sumo-push, tito-tank, turkish-draughts, ultimate-tictactoe.
+**Online play** (`"multiplayer"` in `game.json`, skill §7a): 23 games: air-hockey, backgammon (a two-seat table in the ayvago.com lobby), blacktop-kings, bowling-strike, connect-four, dots-and-boxes, gomoku, head-soccer, hex-bridge, light-cycles, mangala, memory-match, mini-golf, neon-pong, nine-mens-morris, okey (a table of up to four), penalty-kick, reversi, sea-battle, sumo-push, tito-tank, turkish-draughts, ultimate-tictactoe.
 
 **Work in progress:** none.
 
@@ -185,7 +185,7 @@ Same rules as batch J: a full solo mode against an AI and an online mode (`"mult
 | slug | title | concept | assets | o |
 |---|---|---|---|---|
 | mangala | Mangala / Mangala | Turkish mancala: 2x6 pits of 4 stones and two stores; sow counter-clockwise starting in the picked pit (a single stone moves on), last stone in your store plays again, an even count in a rival pit captures it, last stone in your own empty pit captures the opposite pit; the side that empties first takes the rest; AI with lookahead | drawn | P |
-| backgammon | Backgammon / Tavla | one game to 5 points (plain win 1, gammon/mars 2), standard moves, bar, bearing off, doubles move four times, forced-move rules; tap a checker then a target with hints; AI picks the best move by a heuristic; online: the mover rolls and sends dice and moves | drawn / boardgame dice | L |
+| backgammon | Backgammon / Tavla | one game to 5 points (plain win 1, gammon/mars 2), standard moves, bar, bearing off, doubles move four times, forced-move rules; tap a checker then a target with hints; AI picks the best move by a heuristic; online: the mover rolls and sends dice and moves; a two-seat table in the platform lobby (`"multiplayer": 2`, no bots: a player who leaves loses the match, as in a room; old room links still work) | drawn / boardgame dice | L |
 | ~~head-soccer~~ | Head Soccer / Kafa Topu (off the platform 2026-11-13, moved to `wip/`) | 1v1 side-view football with big-headed player characters: run, jump, kick; 60-second matches, golden goal on a draw; AI rival; online: the host simulates, the guest sends input; each side shows its own platform character (`playerCharacter()` / `peerCharacter()`) | characters + sports pack | L |
 
 ## Batch M — wave 4 solo
