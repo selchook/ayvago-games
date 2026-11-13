@@ -416,7 +416,7 @@ export function buildCourt(scene: THREE.Scene): Court {
   // the net hangs from the rim
   const netTex = tex(canvas('net', 256, 64, drawNet), true);
   netTex.repeat.set(3, 1);
-  const netGeo = new THREE.CylinderGeometry(RIM_R, RIM_R * 0.58, 0.46, 18, 3, true);
+  const netGeo = new THREE.CylinderGeometry(RIM_R, RIM_R * 0.58, 0.46, 18, 6, true);
   netGeo.translate(0, -0.23, 0);
   const net = new THREE.Mesh(netGeo, new THREE.MeshLambertMaterial({ map: netTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide }));
   rim.add(net);

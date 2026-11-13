@@ -27,6 +27,6 @@ export function figState(g: Game, p: Player, mood = 0): FigState {
   const guard = !!h && h.team !== p.team && Math.hypot(h.x - p.x, h.z - p.z) < 2.2;
   return {
     x: p.x, z: p.z, face: p.face, lift: p.lift, act: p.act, actT: p.actT, spd: Math.hypot(p.vx, p.vz), turbo: p.turbo,
-    mood: g.phase === 'final' ? (g.winner === p.team ? 1 : 2) : mood, guard,
+    mood: g.phase === 'final' ? (g.winner === p.team ? 1 : 2) : mood, guard, kind: p.kind,
   };
 }

@@ -16,6 +16,7 @@ import { Game, NO_INPUT, PEAK, PERFECT, GOOD, SHOT_AUTO, RUN, TURBO, PHASES, typ
 import { encodeSnap, EventLog, SnapBuffer, emptyIn, PER_PLAYER, type Snap, type InMsg } from './netcode';
 import { DUNK_R, HOOP_X, HOOP_Z, RIM_Y, BOUNDS, hoopDist, isCleared } from './court';
 import { MATES } from './ai';
+import { D_HANG, D_POWER } from './moves';
 import { TUNING, rivalLevel, type Tuning } from './tuning';
 import { CourtView, CAM_FOV, type ViewState } from './view';
 import { charKey } from './kit';
@@ -299,7 +300,7 @@ export class PlayScene extends ArcadeScene {
       case 'swish':
         v.swish(e.a === 1);
         this.sfxAt('swishNet', rim.x, { volume: 0.85 });
-        if (e.a === 1) this.pop(t('swish'), HOOP_X, RIM_Y + 1.2, HOOP_Z, '#ffffff', 34);
+        if (e.a === 1) this.popScreen(t('swish'), this.scale.width / 2, 300, '#ffffff', 40);
         break;
       case 'make': {
         if (e.a === 1) { v.swish(false); this.sfxAt('swishNet', rim.x, { volume: 0.7 }); break; }
@@ -316,14 +317,23 @@ export class PlayScene extends ArcadeScene {
         if (!this.online && mine && g) this.addScore(pts * 10);
         break;
       }
-      case 'rim': v.rimHit(); this.sfxAt(e.a ? 'rim' : 'rimHard', rim.x, { volume: e.a ? 0.5 : 0.7 }); break;
-      case 'board': v.boardHit(); this.sfxAt('board', rim.x, { volume: 0.45 }); break;
+      case 'rim':
+        // the sound by how hard it hit: a soft roll on the rim or a clang
+        v.rimHit(e.a);
+        this.sfxAt(e.a > 0.45 ? 'rimHard' : 'rim', rim.x, { volume: 0.2 + 0.65 * e.a });
+        break;
+      case 'board': v.boardHit(e.a); this.sfxAt('board', rim.x, { volume: 0.2 + 0.5 * (e.a || 0.5) }); break;
+      case 'bank':
+        v.swish(false);
+        this.sfxAt('swishNet', rim.x, { volume: 0.7 });
+        this.popScreen(t('bank'), this.scale.width / 2, 300, '#9fe8ff', 40);
+        break;
       case 'airball': this.pop(t('airball'), HOOP_X - 1, RIM_Y + 1, HOOP_Z, '#ff9a9a', 28); this.sfx('ooh', { volume: 0.4 }); break;
       case 'miss': if (!e.a) this.sfx('ooh', { volume: 0.25 }); else this.sfx('ooh', { volume: 0.45 }); break;
       case 'dunk': {
         const p = at(e.p);
         if (p) this.sfxAt('jump', sx(p.x), { volume: 0.5 });
-        v.dunkCam(true);
+        v.dunkCam(true, e.a);
         this.crowdLoop.level(0.3, 300);
         break;
       }
@@ -331,15 +341,16 @@ export class PlayScene extends ArcadeScene {
         this.sfx('slam', { volume: 0.9 });
         this.sfx('boom', { volume: 0.5 });
         this.sfx('roar', { volume: 0.7 });
-        v.swish(true);
-        v.rimHit();
+        // the rim is yanked down, the net whips, the crowd goes up
+        const kind = e.a | 0;
+        v.slam(kind === D_POWER || kind === D_HANG ? 1.3 : 1);
         v.shake(0.35);
         v.fx.burst(HOOP_X, RIM_Y, HOOP_Z, [0xffd23f, 0xffffff, 0xff7a1a], 50, 6);
         v.crowd.cheer(1.4);
-        this.pop(t('dunk'), HOOP_X - 1.2, RIM_Y + 1.6, HOOP_Z, '#ffd23f', 52);
+        this.popScreen(t('dunk' + kind), this.scale.width / 2, 250, '#ffd23f', 50);
         flash(this, 0xffffff, 120, 0.35);
         if (!this.online || this.host) { this.slow = 0.3; this.slowT = 0.5; }
-        this.time.delayedCall(1100, () => { v.dunkCam(false); this.crowdLoop.level(0.14, 900); });
+        this.time.delayedCall(kind === D_HANG ? 1700 : 1150, () => { v.dunkCam(false); this.crowdLoop.level(0.14, 900); });
         break;
       }
       case 'block': {
@@ -367,10 +378,25 @@ export class PlayScene extends ArcadeScene {
         this.sfxAt('catch', sx(v.ballPos.x), { volume: 0.4 });
         break;
       case 'catch': case 'pickup': this.sfxAt('catch', sx(v.ballPos.x), { volume: 0.3 }); break;
-      case 'cross': { const p = at(e.p); if (p) { this.sfxAt('cross', sx(p.x), { volume: 0.4 }); v.fx.dust(p.x, p.z, 5); } break; }
+      case 'cross': {
+        const p = at(e.p);
+        if (p) {
+          this.sfxAt('cross', sx(p.x), { volume: 0.4 });
+          this.sfxAt('squeak', sx(p.x), { volume: 0.3 });
+          v.fx.dust(p.x, p.z, 5);
+          // the local player sees the name of his move
+          if (this.isLocal(e.p)) this.pop(t('move' + (e.a & 7)), p.x, 2.7, p.z, '#ffffff', 22);
+        }
+        break;
+      }
       case 'ankles': {
         const q = at(e.p);
-        if (q) { this.pop(pTeam === this.me ? t('anklesYou') : t('ankles'), q.x, 2.6, q.z, pTeam === this.me ? '#ff9a5a' : '#ffd23f', 30); v.fx.dust(q.x, q.z, 10); }
+        if (q) {
+          this.pop(pTeam === this.me ? t('anklesYou') : t('ankles'), q.x, 2.9, q.z, pTeam === this.me ? '#ff9a5a' : '#ffd23f', 36);
+          v.fx.dust(q.x, q.z, 12);
+          v.nudge(q.x, 1, q.z, 1.1);
+          v.shake(0.08);
+        }
         this.sfx('ooh', { volume: 0.5 });
         v.crowd.cheer(0.7);
         break;
@@ -410,6 +436,13 @@ export class PlayScene extends ArcadeScene {
   /** True when the player id is the one this screen controls. */
   private isLocal(id: number): boolean {
     return this.vs.ctrl[this.me] === id;
+  }
+
+  /** A big word at a place on the screen (dunk names). */
+  private popScreen(s: string, x: number, y: number, color: string, size: number): void {
+    const o = txt(this, x, y, s, { title: true, size, color, strokeThickness: 9 }).setDepth(71).setScale(0.3).setAngle(-4);
+    this.tweens.add({ targets: o, scale: 1, angle: 0, duration: 300, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: o, y: o.y - 40, alpha: 0, delay: 1000, duration: 450, onComplete: () => o.destroy() });
   }
 
   private pop(s: string, x: number, y: number, z: number, color: string, size: number): void {
