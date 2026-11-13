@@ -14,7 +14,8 @@ their GLBs under models/gltf_format/ like the older kits, and keep the external 
   python3 tools/import-kenney.py <jam-ready-assets-dir> city-kit-commercial city-kit-roads
   python3 tools/import-kenney.py <jam-ready-assets-dir> space-kit planets sfx-sci-fi
   python3 tools/import-kenney.py <jam-ready-assets-dir> mini-skate city-kit-suburban city-kit-industrial sfx-foley
-  python3 tools/import-kenney.py <jam-ready-assets-dir> holiday-kit train-kit"""
+  python3 tools/import-kenney.py <jam-ready-assets-dir> holiday-kit train-kit
+  python3 tools/import-kenney.py <jam-ready-assets-dir> road-pack"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -75,6 +76,9 @@ PACKS = {
     # roots are the mirror's own folders: License.txt + Models/GLB format/)
     'kenney-holiday-kit/3D/seasonal-holiday': 'holiday-kit',
     'kenney-train-kit/3D/vehicles-racing': 'train-kit',
+    # Road Pack 1.0, the "3D Road Tiles" (jam-ready-assets mirror, Git LFS, commit 397bf9e; pack
+    # root is the mirror's own folder: License.txt + Models/GLTF format/tileNNN.glb)
+    'kenney-road-pack/3D/city': 'road-pack',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -213,6 +217,11 @@ HOLIDAY_KIT = [
 TRAIN_KIT = ['track', 'train-locomotive-a', 'train-electric-bullet-a', 'train-diesel-a', 'train-carriage-flatbed']
 FILES['holiday-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in HOLIDAY_KIT]
 FILES['train-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in TRAIN_KIT]
+
+# Delivery Dash (games/delivery-dash/tiles.ts ROAD_TILES): the numbered road tiles the towns are
+# built from. The full catalogue of all 294 tiles (what each one is) is the table in tiles.ts
+ROAD_TILES = [5, 11, 17, 21, 26, 27, 29, 34, 41, 47, 53, 59, 78, 84, 85, 92, 103, 119, 157, 169, 203]
+FILES['road-pack'] = ['License.txt'] + [f'Models/GLTF format/tile{n:03d}.glb' for n in ROAD_TILES]
 
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""
