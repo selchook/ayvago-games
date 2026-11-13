@@ -8,7 +8,8 @@
 import Phaser from 'phaser';
 import { THREE, model, modelClips, miniKey } from '@core/three';
 import { isMuted } from '@core';
-import { FIG } from './players';
+/** Metres per model unit for the spectators (the Kenney chibi build, about 1.8 m). */
+const FIG = 2.45;
 
 interface ClipPoses { dur: number; frames: THREE.Matrix4[][] }
 interface Baked { parts: { joint: number; geo: THREE.BufferGeometry }[]; clips: Map<string, ClipPoses>; map: THREE.Texture | null }

@@ -11,7 +11,7 @@ import type { FigState } from './players';
 
 export interface Snap {
   t: number;
-  p: number[];                    // 6 × [x, z, face, lift, act, actT, spd, turbo] (×100)
+  p: number[];                    // 6 × [x, z, face, lift, act, actT, spd, turbo, kind] (×100 for the first seven)
   b: number[];                    // x, y, z (×100), state, holder
   s: [number, number];
   c: number;                      // game clock, tenths
@@ -32,7 +32,7 @@ export interface Snap {
 export interface InMsg { x: number; z: number; tb: number; sd: number; su: number; sh: number; ps: number; pt: number; jp: number; ac: number; sw: number; q: number }
 export const emptyIn = (): InMsg => ({ x: 0, z: 0, tb: 0, sd: 0, su: 0, sh: 0, ps: 0, pt: -1, jp: 0, ac: 0, sw: 0, q: -1 });
 
-export const PER_PLAYER = 8;
+export const PER_PLAYER = 9;
 /** The view: a held ball that would move further than this in one frame eases there instead (m). */
 export const HELD_SNAP = 0.3;
 
@@ -40,7 +40,7 @@ export const HELD_SNAP = 0.3;
 export function encodeSnap(g: Game, now: number, ev: number[][], lastIn: number, inFor: number): Snap {
   const r = (v: number) => Math.round(v * 100);
   const p: number[] = [];
-  for (const q of g.p) p.push(r(q.x), r(q.z), r(q.face), r(q.lift), ACTS.indexOf(q.act), r(q.actT), r(Math.hypot(q.vx, q.vz)), q.turbo ? 1 : 0);
+  for (const q of g.p) p.push(r(q.x), r(q.z), r(q.face), r(q.lift), ACTS.indexOf(q.act), r(q.actT), r(Math.hypot(q.vx, q.vz)), q.turbo ? 1 : 0, q.kind);
   const b = g.ball;
   const c1 = g.ctrl[1];
   return {
@@ -136,13 +136,20 @@ export class SnapBuffer {
     const pa = a.s.p, pb = b.s.p;
     const phase = PHASES[S.ph] ?? 'play';
     const p: FigState[] = [];
+    const B0 = k < 0.5 ? a.s.b : b.s.b;
+    const hold = BALL_STATES[B0[3]] === 'held' ? B0[4] : -1;
     for (let i = 0; i < 6; i++) {
       const o = i * PER_PLAYER;
       p.push({
         x: L(pa[o], pb[o]) / 100, z: L(pa[o + 1], pb[o + 1]) / 100, face: A(pa[o + 2] / 100, pb[o + 2] / 100), lift: L(pa[o + 3], pb[o + 3]) / 100,
         act: (ACTS[S.p[o + 4]] ?? 'free') as Act, actT: S.p[o + 5] / 100 + (k < 0.5 ? k : k - 1) * span / 1000, spd: L(pa[o + 6], pb[o + 6]) / 100, turbo: !!S.p[o + 7],
-        mood: phase === 'final' ? ((i < 3 ? 0 : 1) === S.w ? 1 : 2) : 0, guard: false,
+        mood: phase === 'final' ? ((i < 3 ? 0 : 1) === S.w ? 1 : 2) : 0, guard: false, kind: S.p[o + 8] ?? 0,
       });
+    }
+    // a defender near the ball handler crouches into his stance
+    if (hold >= 0) {
+      const h = p[hold];
+      for (let i = 0; i < 6; i++) if ((i < 3) !== (hold < 3)) p[i].guard = Math.hypot(p[i].x - h.x, p[i].z - h.z) < 2.2;
     }
     const ba = a.s.b, bb = b.s.b;
     // the ball changed hands between the two (a catch, a pick-up, a release): no smearing, the
