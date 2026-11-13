@@ -160,8 +160,16 @@ export class Sim {
   crouchT = 0;
   crouching = false;
   pushT = 0;
-  /** A push stroke is playing (for the view), counts down. */
+  /** A push stroke is playing (for the view), counts down from RIDE.pushEvery. */
   pushing = 0;
+  /**
+   * When the push foot leaves the ground (stroke phase): RIDE.pushLift, or sooner when the board
+   * is fast, because the foot holds its spot on the ground while the board rolls on and the leg
+   * only reaches RIDE.pushReach along it. The view lifts the foot then too.
+   */
+  pushEnd = RIDE.pushLift;
+  /** How far through the push stroke (0 … 1), or −1 when not pushing. */
+  get pushPhase(): number { return this.pushing > 0 ? 1 - this.pushing / RIDE.pushEvery : -1; }
   air: AirState | null = null;
   grind: GrindState | null = null;
   manual: ManualState | null = null;
@@ -300,6 +308,8 @@ export class Sim {
       }
     }
     if (this.pushing > 0) this.pushing -= dt;
+    // a push stroke stops when the board leaves the ground or the rider crouches for an ollie
+    if (this.pushing > 0 && (this.state !== 'ground' || this.crouching)) { this.pushing = 0; this.pushT = 0; }
     if (this.sketchT > 0) this.sketchT -= dt;
     if (this.state !== 'ground' && this.state !== 'manual') this.carve = 0;
     switch (this.state) {
@@ -340,9 +350,19 @@ export class Sim {
       const wantPush = inp.fwd > 0.3 || (inp.fwd > -0.3 && this.speed < RIDE.cruise && this.speed > -0.5);
       if (wantPush && flat && this.speed < RIDE.pushTop && this.pushT <= 0) {
         this.pushT = RIDE.pushEvery;
-        this.pushing = 0.5;
-        this.speed = Math.min(RIDE.pushTop, Math.max(this.speed, 0) + RIDE.pushKick);
-        this.emit({ type: 'push' });
+        this.pushing = RIDE.pushEvery;
+      }
+      // the foot on the ground: the stroke's speed comes in while it kicks back
+      const ph = this.pushPhase;
+      if (ph >= 0) {
+        const was = 1 - (this.pushing + dt) / RIDE.pushEvery;
+        if (was < RIDE.pushTouch && ph >= RIDE.pushTouch) {
+          // the foot touches down
+          this.pushEnd = Math.min(RIDE.pushLift, RIDE.pushTouch + RIDE.pushReach / Math.max(0.5, Math.abs(this.speed)) / RIDE.pushEvery);
+          this.emit({ type: 'push' });
+        }
+        const k = Math.min(ph, this.pushEnd) - Math.max(was, RIDE.pushTouch);
+        if (k > 0 && this.speed < RIDE.pushTop) this.speed = Math.min(RIDE.pushTop, Math.max(this.speed, 0) + RIDE.pushKick * k / (this.pushEnd - RIDE.pushTouch));
       }
       if (inp.fwd < -0.3) this.speed -= Math.sign(this.speed) * Math.min(Math.abs(this.speed), RIDE.brake * -inp.fwd * dt);
     }
