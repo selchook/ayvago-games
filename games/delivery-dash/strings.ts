@@ -1,0 +1,88 @@
+// Delivery Dash: every string the game shows, in Turkish and English.
+import type { Strings } from '@core';
+
+export const STRINGS: Strings = {
+  tr: {
+    // controls
+    gas: 'GAZ', brake: 'FREN', turbo: 'TURBO', horn: 'KORNA',
+    // districts and shifts
+    d0: 'Eski Şehir', d1: 'Nehir Kıyısı', d2: 'Tepebaşı',
+    shiftN: 'Vardiya {n}', rush: 'SONSUZ TELAŞ', rushShort: 'Sonsuz Telaş',
+    in_first: 'İlk gün: siparişi al, kapıya götür!', in_walkers: 'Yayalara dikkat: yaya geçidinde dur.',
+    in_fragile: 'Kırılacak kargo: pasta ve çiçek tümseklerde hasar alır.', in_multi: 'Aynı anda birden çok sipariş: rotanı planla!',
+    in_rushhour: 'Trafik saati: sokaklar dolu!', in_vip: 'VIP ekspres: altın siparişler kısa sürer, çok kazandırır.',
+    in_bridges: 'Kemer köprüler: kırılacak kargoyla yavaş geç.', in_oneway: 'Tek yön sokaklar: oklara uy, ters girme!',
+    in_works: 'Yol çalışması: kapalı sokakları dolaş.', in_night: 'Gece ve yağmur: yollar kaygan, farlar açık.',
+    in_busy: 'Yoğun nehir kıyısı: trafik ve kırılacak kargo.', in_river_vip: 'Gece VIP siparişleri: hızlı ama dikkatli!',
+    in_slopes: 'Tepebaşı: rampalar tepeye çıkar. Rampada kargoyu sarsma!', in_ring: 'Çevre yolu: hızlı trafik tepeyi sarar.',
+    in_hillworks: 'Tepede yol çalışması: başka rampayı dene.', in_hillnight: 'Tepede yağmurlu gece.',
+    in_hillvip: 'VIP telaşı: altın siparişler peş peşe.', in_finale: 'Büyük final: gece, yağmur, VIP ve kalabalık!',
+    // HUD
+    goal: 'HEDEF', late: 'GEÇ', turboN: 'TURBO ×{n}', go: 'Haydi!',
+    // events
+    newOrder: 'Yeni sipariş!', pickedUp: 'Teslim alındı!', full: 'Kasa dolu!', delivered: 'Teslim edildi!',
+    tipN: '+{n} bahşiş', payN: '+{n}', perfect: 'Kusursuz!', lateMsg: 'Sipariş gecikti!', expired: 'Sipariş iptal oldu',
+    ruined: 'Kargo hasarlı', crash: 'KAZA!', careful: 'Dikkat, kırılacak!', fine: 'Hey! Yavaş! −{n}',
+    coffee: '+1 Turbo kahvesi', turboGo: 'TURBO!', wrongWay: 'Ters yön!', vip: 'VIP EKSPRES!', addTime: '+{n} sn',
+    dusk: 'Akşam oluyor', night: 'Gece çöktü', rain: 'Yağmur başladı: yollar kaygan!', timeLow: 'Son 10 saniye!',
+    // results
+    shiftDone: 'VARDİYA {n} TAMAM!', shiftFail: 'HEDEFE ULAŞILAMADI', timeUp: 'MESAİ BİTTİ', rushOver: 'SÜRE DOLDU',
+    earned: 'Kazanç', deliveries: 'Teslimat', tips: 'Bahşiş', crashes: 'Kaza', wallet: 'Cüzdan',
+    newDistrict: 'Yeni semt açıldı: {d}!', target: 'Hedef: {n}',
+    // tutorial
+    tut_driveTouch: 'GAZ pedalına bas, solda direksiyonla dön.', tut_driveKeys: '↑ ile gaz ver, ← → ile dön. ↓ fren ve geri.',
+    tut_follow: 'Ok seni dükkâna götürür. Parlayan cebe gir!', tut_stop: 'Cepte dur: sipariş kendiliğinden yüklenir.',
+    tut_deliver: 'Şimdi işaretli eve götür. Süre işliyor!', tut_done: 'Harika! Hızlı ve dikkatli olursan bahşiş artar.',
+    tut_coffee: 'Kahve al: TURBO ile hızlan!',
+    // menu and map
+    menuShift: 'Vardiya {n} · {d}', menuRush: 'Sonsuz Telaş', menuSub: 'Harita ve garaj için dokun (M)',
+    mapTitle: 'ŞEHİR HARİTASI', tabShifts: 'VARDİYALAR', tabGarage: 'GARAJ', back: 'GERİ', start: 'BAŞLA',
+    needStars: '{n} yıldızla açılır', rushDesc: 'Her teslimat süre kazandırır; trafik büyür, akşam olur, yağmur başlar.',
+    rushBest: 'Rekor: {n}', starsOf: '{n}/{m}', cash: 'Bakiye',
+    // garage
+    up_engine: 'Motor', up_handling: 'Yol tutuş', up_capacity: 'Kapasite', up_padding: 'Koruma',
+    upd_engine: 'Daha hızlı ve çevik', upd_handling: 'Daha keskin dönüş, az kayma', upd_capacity: '+1 sipariş taşır', upd_padding: 'Kırılacaklar daha az hasar alır',
+    buy: 'AL', maxed: 'MAKS', use: 'SEÇ', inUse: 'SEÇİLİ', notEnough: 'Bakiye yetmiyor!', bought: 'Satın alındı!',
+    v_van: 'Minibüs', v_flatbed: 'Kasalı Kamyonet', v_truck: 'Kamyon', capN: '{n} sipariş', vehicles: 'ARAÇLAR', paints: 'BOYA', upgrades: 'GELİŞTİRMELER',
+    p_mint: 'Nane', p_tomato: 'Domates', p_sky: 'Gökyüzü', p_sun: 'Güneş', p_grape: 'Üzüm', p_pink: 'Pembe', p_night: 'Gece',
+    // the core's retry button after a won shift
+    retry: 'TEKRAR',
+  },
+  en: {
+    gas: 'GAS', brake: 'BRAKE', turbo: 'TURBO', horn: 'HORN',
+    d0: 'Old Town', d1: 'Riverside', d2: 'Hilltop',
+    shiftN: 'Shift {n}', rush: 'ENDLESS RUSH', rushShort: 'Endless Rush',
+    in_first: 'First day: pick up the order, take it to the door!', in_walkers: 'Mind the walkers: stop at crosswalks.',
+    in_fragile: 'Fragile cargo: cakes and flowers get damaged on bumps.', in_multi: 'Several orders at once: plan your route!',
+    in_rushhour: 'Rush hour: the streets are packed!', in_vip: 'VIP express: gold orders are short and pay big.',
+    in_bridges: 'Humped bridges: cross slowly with fragile cargo.', in_oneway: 'One-way streets: follow the arrows!',
+    in_works: 'Roadworks: drive round the closed streets.', in_night: 'Night and rain: slippery roads, lights on.',
+    in_busy: 'Busy Riverside: traffic and fragile cargo.', in_river_vip: 'VIP orders by night: quick but careful!',
+    in_slopes: 'Hilltop: ramps lead up the hill. Go easy on the cargo!', in_ring: 'The ring road: fast traffic around the hill.',
+    in_hillworks: 'Roadworks on the hill: try another ramp.', in_hillnight: 'A rainy night on the hill.',
+    in_hillvip: 'VIP rush: gold orders one after another.', in_finale: 'Grand finale: night, rain, VIPs and crowds!',
+    goal: 'GOAL', late: 'LATE', turboN: 'TURBO ×{n}', go: 'Go!',
+    newOrder: 'New order!', pickedUp: 'Picked up!', full: 'Van full!', delivered: 'Delivered!',
+    tipN: '+{n} tip', payN: '+{n}', perfect: 'Perfect!', lateMsg: 'Order late!', expired: 'Order cancelled',
+    ruined: 'Cargo damaged', crash: 'CRASH!', careful: 'Careful, fragile!', fine: 'Hey! Slow down! −{n}',
+    coffee: '+1 Turbo coffee', turboGo: 'TURBO!', wrongWay: 'Wrong way!', vip: 'VIP EXPRESS!', addTime: '+{n} s',
+    dusk: 'Evening falls', night: 'Night has come', rain: 'Rain: slippery roads!', timeLow: 'Last 10 seconds!',
+    shiftDone: 'SHIFT {n} DONE!', shiftFail: 'TARGET MISSED', timeUp: 'SHIFT OVER', rushOver: 'TIME UP',
+    earned: 'Earned', deliveries: 'Deliveries', tips: 'Tips', crashes: 'Crashes', wallet: 'Wallet',
+    newDistrict: 'New district: {d}!', target: 'Target: {n}',
+    tut_driveTouch: 'Press GAS and turn with the steering on the left.', tut_driveKeys: '↑ to drive, ← → to steer. ↓ brakes and reverses.',
+    tut_follow: 'The arrow leads to the shop. Pull into the glowing bay!', tut_stop: 'Stop in the bay: the order loads by itself.',
+    tut_deliver: 'Now take it to the marked house. The clock is ticking!', tut_done: 'Great! Be quick and careful for bigger tips.',
+    tut_coffee: 'Grab a coffee: TURBO for a burst of speed!',
+    menuShift: 'Shift {n} · {d}', menuRush: 'Endless Rush', menuSub: 'Tap for the map and garage (M)',
+    mapTitle: 'TOWN MAP', tabShifts: 'SHIFTS', tabGarage: 'GARAGE', back: 'BACK', start: 'START',
+    needStars: 'Opens with {n} stars', rushDesc: 'Every delivery adds time; traffic grows, evening falls, rain begins.',
+    rushBest: 'Best: {n}', starsOf: '{n}/{m}', cash: 'Cash',
+    up_engine: 'Engine', up_handling: 'Handling', up_capacity: 'Capacity', up_padding: 'Padding',
+    upd_engine: 'Faster and livelier', upd_handling: 'Sharper turns, less sliding', upd_capacity: 'Carries +1 order', upd_padding: 'Fragile cargo takes less damage',
+    buy: 'BUY', maxed: 'MAX', use: 'USE', inUse: 'IN USE', notEnough: 'Not enough cash!', bought: 'Bought!',
+    v_van: 'Van', v_flatbed: 'Flatbed', v_truck: 'Truck', capN: '{n} orders', vehicles: 'VEHICLES', paints: 'PAINT', upgrades: 'UPGRADES',
+    p_mint: 'Mint', p_tomato: 'Tomato', p_sky: 'Sky', p_sun: 'Sun', p_grape: 'Grape', p_pink: 'Pink', p_night: 'Night',
+    retry: 'RETRY',
+  },
+};

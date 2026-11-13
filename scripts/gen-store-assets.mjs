@@ -249,6 +249,44 @@ const CARD = {
       await wait(3500);
     }`,
   },
+  // Delivery Dash's card shows the van mid-delivery in a busy rush-hour street of Old Town: the
+  // autopilot drives until a delivery, the camera holds the delivery shot (the house, the resident
+  // waving at the door, coins popping and the pay floating up, cars passing) while the simulation
+  // is slowed right down so every candidate frame keeps the moment.
+  'delivery-dash': {
+    stage: `async () => {
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const stars = {};
+      for (let i = 1; i <= 18; i++) stars[i] = 2;
+      localStorage.setItem('ayvago:delivery-dash:meta', JSON.stringify({ mode: 'shift', shift: 5, stars, tutorial: true, paint: 1, paints: [0, 1] }));
+      const g = window.__ayvago.game;
+      const old = g.scene.getScene('Play').sim;
+      g.scene.getScene('Play').constructor.forceSeed = 11;
+      g.scene.getScene('Play').scene.restart();
+      // wait for the new round (its own simulation), not the one the menu's Enter started
+      for (let i = 0; i < 300 && !(g.scene.isActive('Play') && g.scene.getScene('Play').sim && g.scene.getScene('Play').sim !== old); i++) await wait(100);
+      const p = g.scene.getScene('Play');
+      // no start banners (and no "target" banner waiting to pop up) over the scene
+      p.time.removeAllEvents();
+      p.children.list.filter((o) => o.depth === 9350).forEach((o) => o.destroy());
+      p.testAuto(true);
+      p.testStep(18);
+      p.testUntil('deliver', 160);
+      p.testTraffic(5);
+      p.testSpeed = 0.04;
+      p.testSettle();
+      // a three-quarter view down the street: the van in its bay, the house with the resident at
+      // the door, the street with its traffic
+      const o = p.sim.orders.filter((q) => q.state === 'done').pop();
+      if (o) {
+        const b = o.house, d = p.view.houseDoors.get(b) ?? { x: b.x, y: b.y, z: b.z };
+        const n = Math.hypot(d.x - b.x, d.z - b.z) || 1, dx = (d.x - b.x) / n, dz = (d.z - b.z) / n;
+        const ax = dz, az = -dx;
+        p.testCam([b.x - dx * 7 + ax * 10, b.y + 10, b.z - dz * 7 + az * 10], [b.x + (d.x - b.x) * 0.3 - ax * 0.5, b.y + 0.8, b.z + (d.z - b.z) * 0.3 - az * 0.5]);
+      }
+      await wait(1200);
+    }`,
+  },
   'space-blaster': { pick: 2 },
   'whack-a-mole': { pick: 3 },
 };

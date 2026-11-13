@@ -1,0 +1,12 @@
+{
+  "id": "delivery-dash",
+  "title": { "tr": "Sipariş Var!", "en": "Delivery Dash" },
+  "description": { "tr": "Rengârenk bir kasabada 3D teslimat telaşı! Küçük minibüsünle pizzacıdan, çiçekçiden, pastaneden, postaneden siparişleri al, işaretli evlere zamanında yetiştir. Hızlı ve dikkatli olursan bahşiş büyür; pasta ve çiçek tümseklerde, kemer köprülerde ve kazalarda hasar alır. Aynı anda birkaç sipariş taşı, rotanı planla; trafiğe, yaya geçitlerine, tek yön sokaklara, yol çalışmalarına ve yağmurlu gecelere dikkat et. Eski Şehir, Nehir Kıyısı ve Tepebaşı'nda 18 vardiya seni bekliyor; Sonsuz Telaş'ta her teslimat süre kazandırır. Kazancınla motoru, yol tutuşu, kapasiteyi geliştir, yeni boyalar ve daha büyük araçlar al. Kahve içip TURBO'ya bas!", "en": "A cheerful 3D delivery rush through a little town! Pick up orders at the pizzeria, the florist, the bakery and the post office in your little van and get them to the marked houses before the clock runs out. Be quick and careful for bigger tips: cakes and flowers get damaged on bumps, humped bridges and crashes. Carry several orders at once and plan your route through traffic, crosswalks, one-way streets, roadworks and rainy nights. 18 shifts across Old Town, Riverside and Hilltop, plus an Endless Rush where every delivery adds time. Spend your earnings on engine, handling, capacity and padding upgrades, fresh paint and bigger vehicles. Grab a coffee and hit TURBO!" },
+  "howTo": { "tr": "Siparişi parlayan cepte durarak al, evin cebinde durarak teslim et. Klavye: ↑ gaz, ↓ fren/geri, ← → direksiyon, Boşluk turbo, H korna. Dokunmatik: direksiyonu menüden seç (oklar, direksiyon ya da eğim); sağda GAZ, FREN ve TURBO.", "en": "Stop in a shop's glowing bay to pick up, then in the house's bay to deliver. Keys: ↑ gas, ↓ brake/reverse, ← → steer, Space turbo, H horn. Touch: pick the steering on the menu (arrows, a wheel or tilt); GAS, BRAKE and TURBO on the right." },
+  "genres": ["action", "casual"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard"],
+  "version": "1.0.0",
+  "credits": ["3D models: Kenney Road Pack (3D road tiles), City Kit Suburban, City Kit Commercial, City Kit Roads, Nature Kit, Car Kit, Food Kit and Mini Characters (CC0) — kenney.nl", "Sound effects: Kenney Impact Sounds and Interface Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org; the horn, doorbell, till, tyre screech, rain and town ambience are made in the game"],
+  "platform": { "addedAt": "2026-11-13" }
+}

@@ -397,6 +397,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-11-11',
   }),
   arcadeGame({
+    slug: 'delivery-dash',
+    title: { en: 'Delivery Dash', tr: 'Sipariş Var!' },
+    description: {
+      en: 'A cheerful 3D delivery rush through a little town! Pick up orders at the pizzeria, the florist, the bakery and the post office in your little van and get them to the marked houses before the clock runs out. Be quick and careful for bigger tips: cakes and flowers get damaged on bumps, humped bridges and crashes. Carry several orders at once and plan your route through traffic, crosswalks, one-way streets, roadworks and rainy nights. 18 shifts across Old Town, Riverside and Hilltop, plus an Endless Rush where every delivery adds time. Spend your earnings on engine, handling, capacity and padding upgrades, fresh paint and bigger vehicles. Grab a coffee and hit TURBO!',
+      tr: "Rengârenk bir kasabada 3D teslimat telaşı! Küçük minibüsünle pizzacıdan, çiçekçiden, pastaneden, postaneden siparişleri al, işaretli evlere zamanında yetiştir. Hızlı ve dikkatli olursan bahşiş büyür; pasta ve çiçek tümseklerde, kemer köprülerde ve kazalarda hasar alır. Aynı anda birkaç sipariş taşı, rotanı planla; trafiğe, yaya geçitlerine, tek yön sokaklara, yol çalışmalarına ve yağmurlu gecelere dikkat et. Eski Şehir, Nehir Kıyısı ve Tepebaşı'nda 18 vardiya seni bekliyor; Sonsuz Telaş'ta her teslimat süre kazandırır. Kazancınla motoru, yol tutuşu, kapasiteyi geliştir, yeni boyalar ve daha büyük araçlar al. Kahve içip TURBO'ya bas!",
+    },
+    category: 'action',
+    categories: ['action', 'casual'],
+    tags: ['delivery', 'dash', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-13',
+  }),
+  arcadeGame({
     slug: 'dots-and-boxes',
     title: { en: 'Dots and Boxes', tr: 'Kutu Kapmaca' },
     description: {
