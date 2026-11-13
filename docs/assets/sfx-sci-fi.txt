@@ -1,0 +1,8 @@
+sfx-sci-fi/audio/explosioncrunch_000  (audio: .ogg+.mp3)
+sfx-sci-fi/audio/explosioncrunch_002  (audio: .ogg+.mp3)
+sfx-sci-fi/audio/forcefield_000  (audio: .ogg+.mp3)
+sfx-sci-fi/audio/impactmetal_001  (audio: .ogg+.mp3)
+sfx-sci-fi/audio/laserlarge_000  (audio: .ogg+.mp3)
+sfx-sci-fi/audio/laserretro_000  (audio: .ogg+.mp3)
+sfx-sci-fi/audio/lasersmall_001  (audio: .ogg+.mp3)
+sfx-sci-fi/audio/lowfrequency_explosion_000  (audio: .ogg+.mp3)

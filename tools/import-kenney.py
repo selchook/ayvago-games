@@ -11,7 +11,8 @@ their GLBs under models/gltf_format/ like the older kits, and keep the external 
   python3 tools/import-kenney.py <jam-ready-assets-dir> toy-car-kit racing-kit-ea
   python3 tools/import-kenney.py <jam-ready-assets-dir> food-kit furniture-kit
   python3 tools/import-kenney.py <jam-ready-assets-dir> mini-dungeon graveyard-kit
-  python3 tools/import-kenney.py <jam-ready-assets-dir> city-kit-commercial city-kit-roads"""
+  python3 tools/import-kenney.py <jam-ready-assets-dir> city-kit-commercial city-kit-roads
+  python3 tools/import-kenney.py <jam-ready-assets-dir> space-kit planets sfx-sci-fi"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -56,6 +57,11 @@ PACKS = {
     # 397bf9e; pack roots are the mirror's own folders: License.txt + Models/GLB format/)
     'kenney-city-kit-commercial/3D/city': 'city-kit-commercial',
     'kenney-city-kit-roads/3D/city': 'city-kit-roads',
+    # Space Kit 2.0, Planets 1.0 and Sci-Fi Sounds 1.0 (jam-ready-assets mirror, Git LFS, commit
+    # 397bf9e; pack roots are the mirror's own folders: License.txt + Models/GLTF format/, Planets/, Audio/)
+    'kenney-space-kit/3D/space-scifi': 'space-kit',
+    'kenney-planets/2D/space-scifi': 'planets',
+    'kenney-sci-fi-sounds/audio': 'sfx-sci-fi',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -133,6 +139,26 @@ FILES['city-kit-commercial'] = ['License.txt', 'Models/GLB format/Textures/color
 FILES['city-kit-roads'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in CITY_KIT_ROADS]
 FILES['graveyard-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in GRAVEYARD_KIT]
 
+# Star Squadron (games/star-squadron/kit.ts SPACE_MODELS, PLANETS, main.ts sounds): the ships, rocks,
+# boss parts and scenery it loads, four planets for the sky and a few sci-fi effects
+SPACE_KIT = [
+    'craft_speederA', 'craft_speederB', 'craft_speederC', 'craft_speederD', 'craft_racer', 'craft_miner',
+    'craft_cargoA', 'craft_cargoB', 'meteor', 'meteor_detailed', 'rock_largeA', 'rock_crystalsLargeA',
+    'rock_crystals', 'turret_double', 'turret_single', 'machine_generatorLarge', 'hangar_roundGlass',
+    'hangar_roundA', 'hangar_largeA', 'satelliteDish_large', 'satelliteDish_detailed',
+    'structure_detailed', 'pipe_straight', 'pipe_ring', 'platform_large', 'rocket_baseA', 'rocket_fuelA',
+    'rocket_topA', 'rocket_finsA', 'rocket_sidesA', 'craterLarge', 'crater', 'gate_complex',
+    'machine_wireless', 'corridor',
+]
+PLANETS = ['planet02', 'planet03', 'planet07', 'planet09']
+SCI_FI_SOUNDS = [
+    'laserSmall_001', 'laserRetro_000', 'laserLarge_000', 'forceField_000', 'lowFrequency_explosion_000',
+    'explosionCrunch_000', 'explosionCrunch_002', 'impactMetal_001',
+]
+FILES['space-kit'] = ['License.txt'] + [f'Models/GLTF format/{n}.glb' for n in SPACE_KIT]
+FILES['planets'] = ['License.txt'] + [f'Planets/{n}.png' for n in PLANETS]
+FILES['sfx-sci-fi'] = ['License.txt'] + [f'Audio/{n}.ogg' for n in SCI_FI_SOUNDS]
+
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""
     out = norm(rel).replace('models/glb_format/', 'models/gltf_format/')
@@ -166,6 +192,8 @@ for pack, short in PACKS.items():
             os.makedirs(os.path.dirname(out), exist_ok=True)
             shutil.copyfile(src, out)
             count += 1
+            if out.endswith('.ogg'):
+                subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-i', out, '-b:a', '96k', out[:-4] + '.mp3'], check=True)
         continue
     for dp, _, files in os.walk(root):
         for f in files:

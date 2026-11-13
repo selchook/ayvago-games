@@ -1236,6 +1236,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'star-squadron',
+    title: { en: 'Star Squadron', tr: 'Yıldız Filosu' },
+    description: {
+      en: 'A 3D space shooter with a deck of power cards! Fly from the surface of the Ember Moon through a crystal asteroid belt and an orbital shipyard into the Nebula Rift, blasting enemy squadrons and giant bosses through their weak points. After every wave, pick one of three power cards: Spread Shot, Homing Missiles, Wing Drones, Chain Lightning and more, and combine two of them into a synergy card. Bomb, Shield and Overdrive get you out of tight spots. Every run earns Stardust for lasting upgrades on the Talent board. Four sectors, then an endless loop that keeps getting harder.',
+      tr: "Bir 3D uzay nişancısı ve kart destesi bir arada! Kor Ay'ın yüzeyinden kristal asteroit kuşağına, yörünge tersanesinden bulutsu yarığına uç; düşman filolarını ve dev bossları zayıf noktalarından vurarak yok et. Her dalgadan sonra üç güç kartından birini seç: Yayılım Atışı, Güdümlü Füze, Kanat Dronu, Zincir Şimşek ve daha fazlası. İki kartı birleştirip sinerji kartlarını aç. Zor anlarda Bomba, Kalkan ve Aşırı Güç seni kurtarır. Her koşu Yıldız Tozu kazandırır; Yetenek panosunda kalıcı geliştirmeler aç. Dört sektör, ardından sonsuz ve gittikçe zorlaşan döngü.",
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['star', 'squadron', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-13',
+  }),
+  arcadeGame({
     slug: 'strike-alley',
     title: { en: 'Strike Alley', tr: 'Strike Salonu' },
     description: {

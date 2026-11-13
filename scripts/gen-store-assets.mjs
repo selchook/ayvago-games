@@ -183,6 +183,21 @@ const CARD = {
     }`,
     pick: 4,
   },
+  // Star Squadron's card shows a power-card draft over a 3D fight: the autopilot flies the first
+  // sector with a few cards for a while (sped up for software rendering), then a draft with a
+  // rare, an epic and the synergy they make opens.
+  'star-squadron': {
+    stage: `async () => {
+      const p = window.__ayvago.game.scene.getScene('Play');
+      p.testSpeed = 3;
+      p.testAuto(true);
+      p.testCards(['spread', 'drone', 'drone', 'homing']);
+      await new Promise((r) => setTimeout(r, 9000));
+      p.testDraft(['homing', 'chain', 'stormMissiles']);
+      await new Promise((r) => setTimeout(r, 3500));
+    }`,
+    pick: 2,
+  },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },
