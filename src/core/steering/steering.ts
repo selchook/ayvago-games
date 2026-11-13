@@ -8,7 +8,7 @@ import { t } from '../i18n';
 import { popup } from '../fx';
 import { CarPad, type CarPadOptions } from './pad';
 import { steerMode, setSteerMode, touchScreen } from './mode';
-import { tilt, TILT_FULL_LOCK } from './tilt';
+import { tilt, tiltNotice, TILT_FULL_LOCK } from './tilt';
 
 export interface CarSteeringOptions extends CarPadOptions {
   /** Draw the touch pad (default: on touch screens). */
@@ -173,6 +173,6 @@ export class CarSteering {
   private dropTilt(why: 'tiltDenied' | 'tiltNone'): void {
     setSteerMode('arrows');
     this.pad?.setMode('arrows');
-    popup(this.scene, this.scene.scale.width / 2, this.msgY, t(why), '#ff9a7a', Math.round(26 * this.msgK));
+    tiltNotice(this.scene, this.scene.scale.width / 2, this.msgY, t(why), '#ff9a7a', Math.round(26 * this.msgK));
   }
 }
