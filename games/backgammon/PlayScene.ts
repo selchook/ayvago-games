@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, burst, shake, flash, popup, txt, t, rng, net, currentGame,
   quickChat, isModalOpen, openPlayerCard, isPlayerCardOpen, portraitKey, lifetimeRows, recordMatch,
-  playerCharacter, peerCharacter, otherCharacters, isEasy, hudChip,
+  playerCharacter, peerCharacter, otherCharacters, isCharacterId, isEasy, hudChip,
   type QuickChat, type CharacterId,
 } from '@core';
 import {
@@ -139,7 +139,7 @@ export class PlayScene extends ArcadeScene {
     this.turnAt = 0;
     // who sits where: the player's character, the opponent's (online) or another one for the CPU
     const me = playerCharacter();
-    const them = this.online ? peerCharacter() : otherCharacters(me)[0];
+    const them = this.online ? this.peerLook() : otherCharacters(me)[0];
     this.looks = this.mine === 0 ? [me, them] : [them, me];
     this.portraits = [0, 1].map((side) => portraitKey(this, `ch-${this.looks[side]}-front`, side === this.mine ? GOLD : THEM)) as [string, string];
 
@@ -226,6 +226,21 @@ export class PlayScene extends ArcadeScene {
       // solo: the first game opens with one die each, the higher die starts
       this.startGame(this.online ? (net.starter as Side) : null);
     }
+  }
+
+  /** The opponent's character: the room's peer, or the other seat at a two-seat table. */
+  private peerLook(): CharacterId {
+    const seat = net.seats[other(this.mine)]?.character;
+    return isCharacterId(seat) ? seat : peerCharacter();
+  }
+
+  /**
+   * A two-seat table on ayvago.com (the lobby; platform ADR 0026) has no bots, so nobody can play
+   * a seat whose player left: the match ends as a win for the one who stayed, as in a room. The
+   * player who left can come back with the table link, and the host starts a rematch.
+   */
+  protected onSeatLeave(): void {
+    if (!this.isOver) this.endGame({ win: true, title: t('peerLeft'), delay: 300 });
   }
 
   private tex(side: Side): string { return side === 0 ? 'bg-w' : 'bg-b'; }
@@ -375,7 +390,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private opponentName(max = 14): string {
-    return this.online ? clip(net.peerName || t('opponent'), max) : t('d' + this.level);
+    return this.online ? clip(net.peerName || net.seats[other(this.mine)]?.name || t('opponent'), max) : t('d' + this.level);
   }
 
   /** The side to play is lit in its colour on the scoreboard chip. */

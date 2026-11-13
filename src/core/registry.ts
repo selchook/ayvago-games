@@ -16,8 +16,10 @@ export interface GameMeta {
   version: string;
   credits?: string[];
   /**
-   * Online play (core/net.ts): true = two-player rooms; a number (3 or 4) = a table with that many
-   * seats where the host fills empty seats with bots (protocol 2.3).
+   * Online play (core/net.ts): true = two-player rooms; a number (2 to 4) = a table with that many
+   * seats in the platform's lobby (protocol 2.3). At three or four seats the host fills empty
+   * seats with bots; two seats (Tavla) are a duel without bots, and a two-player game at a table
+   * still plays in rooms reached through an old room link.
    */
   multiplayer?: boolean | number;
 }

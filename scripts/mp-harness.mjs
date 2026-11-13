@@ -9,8 +9,12 @@
 // ends the guest's round. With --shots, screenshots of both frames go to reports/mp/.
 // Difficulty: both frames start with Easy stored for the game; online play ignores it, so the
 // menus show no Easy/Normal toggle and every GHA_END carries difficulty 'normal' (or none).
-// Usage: node scripts/mp-harness.mjs [--dev] [--shots] [--latency 120] <slug> [slug ...]
-//        (only games whose game.json has "multiplayer": true when no slug is given)
+// --table seats the two players at a two-seat table instead (game.json "multiplayer": 2, Tavla;
+// platform ADR 0026): GHA_START adds the seats and the table settings (no bots), the peer is the
+// other seat, moves carry `from`, and GHA_PEER_LEAVE carries the seat.
+// Usage: node scripts/mp-harness.mjs [--dev] [--shots] [--table] [--latency 120] <slug> [slug ...]
+//        (games whose game.json has "multiplayer": true or 2 when no slug is given; with --table,
+//        only "multiplayer": 2)
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
@@ -27,10 +31,14 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const dev = args.includes('--dev');
 const shots = args.includes('--shots');
+const table = args.includes('--table');
 const latency = args.includes('--latency') ? Number(args[args.indexOf('--latency') + 1]) : 60;
 const only = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--latency');
 const isMultiplayer = (s) => {
-  try { return JSON.parse(readFileSync(join(root, 'games', s, 'game.json'), 'utf8')).multiplayer === true; } catch { return false; }
+  try {
+    const m = JSON.parse(readFileSync(join(root, 'games', s, 'game.json'), 'utf8')).multiplayer;
+    return m === 2 || (m === true && !table);
+  } catch { return false; }
 };
 const slugs = (only.length ? only : readdirSync(join(root, 'games')).filter(isMultiplayer))
   .filter((s) => existsSync(dev ? join(root, 'games', s, 'index.html') : join(root, 'dist', 'games', s, 'index.html')));
@@ -64,13 +72,17 @@ const hostPage = (slug, land) => {
     const m = e.data || {};
     window.log[i].push(m.type);
     if (m.type === 'GHA_END') window.ends.push(m);
+    // At a table the platform also lists the seats and the settings, and names the other seat
+    // as the peer (two seats, so no bots).
+    const seats = ${table} ? { seats: names.map((name, k) => ({ name, character: chars[k], bot: false })),
+      table: { settings: { hands: 5, turnSeconds: 30, bots: false }, hostSeat: 0 } } : {};
     if (m.type === 'GHA_READY') send(i, { type: 'GHA_START', config: {
       mode: 'multiplayer', isHost: i === 0, playerIndex: i, playerCount: 2, peerName: names[1 - i], protocol: 2,
-      character: chars[i], peerCharacter: chars[1 - i],
+      character: chars[i], peerCharacter: chars[1 - i], ...seats,
       theme: 'retro', colorMode: 'dark', tokens: { '--accent': '#ec3013' }, locale: 'tr', adsEnabled: false } });
     if (m.type === 'GHA_MOVE_OUT') {
       window.relayed[i].push(m.data && m.data.t);
-      setTimeout(() => send(1 - i, { type: 'GHA_MOVE_IN', data: m.data }), ${latency});
+      setTimeout(() => send(1 - i, { type: 'GHA_MOVE_IN', data: m.data, ...(${table} ? { from: i } : {}) }), ${latency});
     }
   });
 </script></body></html>`;
@@ -95,7 +107,7 @@ async function check(slug) {
   const frames = () => gameFrames;
   const active = (i, key) => frames()[i].evaluate((k) => !!window.__ayvago?.game.scene.isActive(k), key).catch(() => false);
   const waitScene = (i, key, ms) => frames()[i].waitForFunction((k) => window.__ayvago?.game.scene.isActive(k), key, { timeout: ms });
-  const shot = async (name) => { if (shots) await page.screenshot({ path: join(root, 'reports', 'mp', `${slug}-${name}.png`) }); };
+  const shot = async (name) => { if (shots) await page.screenshot({ path: join(root, 'reports', 'mp', `${slug}${table ? '-table' : ''}-${name}.png`) }); };
   const step = { menus: false, start: false, hostToGuest: 0, guestToHost: 0, nonBlank: false, peerLeave: false, noToggle: false, normal: false };
   // a player who picked Easy for solo play: online matches are Normal all the same
   await page.addInitScript((id) => { try { localStorage.setItem(`ayvago:difficulty:${id}`, '"easy"'); } catch {} }, slug);
@@ -141,9 +153,10 @@ async function check(slug) {
     const canvases = await Promise.all([0, 1].map((i) => page.locator('iframe').nth(i).screenshot()));
     step.nonBlank = canvases.every((c) => new Set(Array.from(c.subarray(200, Math.min(c.length, 20000)))).size > 40);
 
-    // The platform reports the opponent leaving: an unfinished round ends for the guest.
+    // The platform reports the opponent leaving: an unfinished round ends for the guest (at a
+    // two-seat table nobody can play the empty seat, so it ends as in a room).
     if (!(await active(1, 'GameOver'))) {
-      await page.evaluate(() => send(1, { type: 'GHA_PEER_LEAVE' }));
+      await page.evaluate((t) => send(1, t ? { type: 'GHA_PEER_LEAVE', seat: 0 } : { type: 'GHA_PEER_LEAVE' }), table);
       await waitScene(1, 'GameOver', 20000);
     }
     step.peerLeave = true;
@@ -168,5 +181,5 @@ await browser.close();
 host.close();
 try { process.kill(-server.pid); } catch { server.kill(); }
 const failed = results.filter((r) => !r.ok).length;
-console.log(`\n${results.length - failed}/${results.length} passed the online two-player check`);
+console.log(`\n${results.length - failed}/${results.length} passed the online two-player check${table ? ' at a two-seat table' : ''}`);
 process.exit(failed ? 1 : 0);
