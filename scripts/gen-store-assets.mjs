@@ -198,6 +198,26 @@ const CARD = {
     }`,
     pick: 2,
   },
+  // Kickflip Park's card shows a big air: the skater launched high over the plaza with the
+  // special meter full, mid Comet Twist (the board flipping under the feet, the glow on), the
+  // simulation slowed right down so every candidate frame catches the trick in the air.
+  'kickflip-park': {
+    stage: `async () => {
+      const p = window.__ayvago.game.scene.getScene('Play');
+      p.testHint(false);
+      p.testSpecial();
+      p.testPlace(-3, 20, Math.PI, 5);
+      p.testInput({ fwd: -0.35 });
+      await new Promise((r) => setTimeout(r, 1800));
+      p.testCam(Math.PI / 2 + 0.4, 5.8, 1.5);
+      p.sim.testAir(11.5);
+      for (let i = 0; i < 100 && p.sim.y < 2.6; i++) await new Promise((r) => setTimeout(r, 50));
+      p.testSpeed = 0.05;
+      p.testInput({ fwd: -0.35, special: true, dir: 0 });
+      await new Promise((r) => setTimeout(r, 1500));
+    }`,
+    pick: 4,
+  },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },

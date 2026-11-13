@@ -1,0 +1,10 @@
+city-kit-industrial/models/gltf_format/building-a.glb 173KB 2.08x1.47x1.24
+city-kit-industrial/models/gltf_format/building-b.glb 207KB 2.08x1.47x1.26
+city-kit-industrial/models/gltf_format/building-g.glb 104KB 1.68x1.28x1.28
+city-kit-industrial/models/gltf_format/building-h.glb 62KB 1.32x0.73x1.31
+city-kit-industrial/models/gltf_format/building-k.glb 64KB 1.30x0.77x0.91
+city-kit-industrial/models/gltf_format/building-p.glb 101KB 1.68x0.71x0.99
+city-kit-industrial/models/gltf_format/building-s.glb 79KB 2.12x0.84x0.92
+city-kit-industrial/models/gltf_format/chimney-large.glb 21KB 1.00x1.70x1.00
+city-kit-industrial/models/gltf_format/chimney-medium.glb 15KB 0.45x1.92x0.45
+city-kit-industrial/models/gltf_format/detail-tank.glb 23KB 0.85x0.42x0.52

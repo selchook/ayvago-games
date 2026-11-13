@@ -9,7 +9,7 @@ import type { CatalogStatus, SeedGame } from './seed-catalog';
 export const ARCADE_ORIGIN = 'https://ayvago-games-nine.vercel.app';
 
 // 'coming_soon' until the origin is deployed and checked (docs/setup/phase-2.md, slice 2.6).
-export const ARCADE_STATUS: CatalogStatus = 'live';
+export const ARCADE_STATUS: CatalogStatus = 'coming_soon';
 
 const ARCADE_ADDED_AT = '2026-10-27';
 
@@ -593,6 +593,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-29',
+  }),
+  arcadeGame({
+    slug: 'kickflip-park',
+    title: { en: 'Kickflip Park', tr: 'Kaykay Parkı' },
+    description: {
+      en: "A 3D skateboarding trick game! Roam a skate park in two-minute sessions: ollie, flip kickflips, heelflips and shove-its in the air, grab the board, spin 180s to 540s, grind rails and ledges and link it all with manuals. A combo scores its tricks' points times the number of tricks, but only if you land clean. Fill the special meter to unlock flashy specials like the Comet Twist. Three parks: a schoolyard plaza, a wooden yard with a half-pipe and a skyline of rooftops. Beat score tiers, land big combos, find the lost mixtapes and clear the gaps; goals open new parks, board decks and wheel colours.",
+      tr: "Bir 3D kaykay hareketi oyunu! İki dakikalık seanslarda parkı istediğin gibi gez: ollie yap, havada kickflip, heelflip ve shove-it çevir, tahtayı tut, 180'den 540'a dön, raylarda ve banklarda grind yap, manuelle hareketleri birbirine bağla. Kombo puanı, hareket puanlarının toplamı çarpı hareket sayısıdır; ama sadece temiz inersen sayılır. Özel çubuğu dolunca Kuyruklu Yıldız gibi gösterişli özel hareketler açılır. Üç park: okul meydanı, ahşap U-rampalı avlu ve şehrin çatıları. Puan barajlarını aş, büyük kombolar indir, kayıp kasetleri bul, boşlukları atla; hedefler yeni parkları, kaykay tahtalarını ve teker renklerini açar.",
+    },
+    category: 'sports',
+    categories: ['sports', 'action'],
+    tags: ['kickflip', 'park', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-13',
   }),
   arcadeGame({
     slug: 'letter-loop',
