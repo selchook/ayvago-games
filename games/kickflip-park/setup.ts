@@ -3,6 +3,9 @@
 // board at once). From the top: the park (‹ › or a swipe; a locked park says what opens it), that
 // park's goals ticked off, the board picker (the board turning on a small 3D turntable, its name,
 // rarity, and whether you ride it or what unlocks it) and a big START that begins the session.
+// While a locked park or a locked board is on show START reads LOCKED, greyed, with a hint under
+// it, and nothing starts the session (a tap only shakes it with a bonk). The setup opens on the
+// park and the board last ridden, which are always open.
 // BACK returns to the menu. Keyboard: ←/→ park, ↑/↓ board, Enter (or Space) start, Esc back.
 //
 // The setup lives in the Play scene (not a scene of its own) so the platform's and the tests'
@@ -45,6 +48,8 @@ export class Pill extends Phaser.GameObjects.Container {
   readonly main: Phaser.GameObjects.Text;
   readonly sub: Phaser.GameObjects.Text;
   enabled = true;
+  /** A tap while the button is disabled (a locked choice on show). */
+  onDenied: (() => void) | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, readonly w: number, readonly h: number, private color: number, private onTap: () => void, size = 28) {
     super(scene, x, y);
@@ -58,6 +63,7 @@ export class Pill extends Phaser.GameObjects.Container {
     this.on('pointerup', () => {
       scene.tweens.add({ targets: this, scale: 1, duration: 200, ease: 'Back.easeOut' });
       if (this.enabled) this.onTap();
+      else this.onDenied?.();
     });
     this.draw();
     scene.add.existing(this);
@@ -172,7 +178,7 @@ class Turntable {
 // ------------------------------------------------------------------ the setup panel
 
 /** The park card's and the board picker's centre lines. */
-const PARK_Y = 168, GOALS_Y = 408, BOARD_Y = 742, START_Y = 1010, BACK_Y = 1138;
+const PARK_Y = 168, GOALS_Y = 408, BOARD_Y = 742, START_Y = 1004, HINT_Y = 1088, BACK_Y = 1158;
 
 export class Setup {
   private root: Phaser.GameObjects.Container;
@@ -180,6 +186,9 @@ export class Setup {
   private boardC: Phaser.GameObjects.Container;
   private under: Phaser.GameObjects.GameObject[] = [];
   private go: Pill;
+  /** Under START while it is locked: what to do instead. */
+  private hint: Phaser.GameObjects.Text;
+  private pulse: Phaser.Tweens.Tween;
   private table: Turntable;
   private idx = 0;
   private boards: BoardDef[];
@@ -230,14 +239,17 @@ export class Setup {
     this.boardC = s.add.container(0, 0);
     this.root.add([this.card, this.boardC]);
     this.go = new Pill(s, width / 2, START_Y, 460, 120, 0x2fae5a, () => this.start(), 44);
+    this.go.onDenied = () => this.deny();
+    this.hint = txt(s, width / 2, HINT_Y, '', { size: 21, color: '#ffd23f', strokeThickness: 0, shadow: false });
+    this.root.add(this.hint);
     const back = new Pill(s, width / 2, BACK_Y, 280, 84, 0x3b4466, () => this.back(), 28);
     back.setLabels(t('back'));
     this.root.add([this.go, back]);
-    if (!s.sys.game.device.input.touch) this.root.add(txt(s, width / 2, 1216, t('setupKeys'), { size: 20, color: '#8f9bc0', strokeThickness: 0, shadow: false }));
+    if (!s.sys.game.device.input.touch) this.root.add(txt(s, width / 2, 1234, t('setupKeys'), { size: 20, color: '#8f9bc0', strokeThickness: 0, shadow: false }));
     this.table = new Turntable(world, width / 2, BOARD_Y + 4, 9.5, width, height);
+    this.pulse = s.tweens.add({ targets: this.go, scale: 1.04, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.draw();
     this.drawBoard(false);
-    s.tweens.add({ targets: this.go, scale: 1.04, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     s.input.keyboard?.on('keydown', this.onKey, this);
     // Esc goes back to the menu: registered before the Play scene's own Esc (pause), which the
     // scene skips once the setup is leaving
@@ -256,6 +268,7 @@ export class Setup {
     else if (e.code === 'ArrowUp' || e.code === 'KeyW') this.stepBoard(-1);
     else if (e.code === 'ArrowDown' || e.code === 'KeyS') this.stepBoard(1);
     // not the held key that pressed PLAY on the menu
+    // (a locked park or board on show: nothing happens)
     else if ((e.code === 'Enter' || e.code === 'Space') && !e.repeat && this.scene.time.now - this.openedAt > 250) this.start();
     else if (e.code === 'Backspace') this.back();
   }
@@ -299,6 +312,26 @@ export class Setup {
     // the goals, compact
     const box = s.add.container(width / 2, GOALS_Y);
     c.add(box);
+    if (!open) {
+      // a locked park: only the lock, what opens it and how far along that is (no goal list)
+      const prev = PARKS[this.idx - 1], have = Math.min(UNLOCK_GOALS, m.goals[prev].length);
+      box.add(s.add.image(0, -104, 'icon-locked').setDisplaySize(72, 72).setTint(0xffd23f));
+      box.add(txt(s, 0, -42, t('lockedShort'), { title: true, size: 34, color: '#ffd23f', strokeThickness: 0, shadow: false }));
+      const why = txt(s, 0, -10, t('lockedWhy', { park: t('park_' + prev), n: UNLOCK_GOALS }), { size: 23, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: 540 }).setOrigin(0.5, 0);
+      box.add(why);
+      // one pip per goal needed, filled for those done
+      const py = why.y + why.height + 26;
+      const pips = s.add.graphics();
+      for (let i = 0; i < UNLOCK_GOALS; i++) {
+        const x = (i - (UNLOCK_GOALS - 1) / 2) * 44;
+        if (i < have) pips.fillStyle(0x2fae5a, 1).fillCircle(x, py, 14).lineStyle(3, 0xffffff, 0.9).strokeCircle(x, py, 14);
+        else pips.lineStyle(3, 0xffffff, 0.4).strokeCircle(x, py, 13);
+      }
+      box.add(pips);
+      box.add(txt(s, 0, py + 38, t('lockedHave', { n: have, m: UNLOCK_GOALS }), { size: 20, color: '#cfd8f0', strokeThickness: 0, shadow: false }));
+      this.label();
+      return;
+    }
     box.add(txt(s, 0, -132, t('goalsCount', { n: done.length, m: p.goals.length }) + '   ·   ' + t('bestIn', { n: fmt(m.best[id]) }), { title: true, size: 21, color: '#ffd23f', strokeThickness: 0, shadow: false }));
     const mode = isEasy() ? 'easy' : 'normal';
     p.goals.forEach((g, i) => {
@@ -310,24 +343,46 @@ export class Setup {
       const tx = txt(s, -256, y, goalText(g, goalNeed(g, mode)), { size: 19, color: ok ? '#9dffb8' : '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
       box.add([mark, tx]);
     });
-    if (!open) {
-      const prev = PARKS[this.idx - 1];
-      const lock = s.add.container(0, 0, [s.add.graphics().fillStyle(0x050814, 0.88).fillRoundedRect(-325, -158, 650, 316, 24)]);
-      lock.add(s.add.image(0, -64, 'icon-locked').setDisplaySize(80, 80));
-      const why = txt(s, 0, 2, t('locked', { park: t('park_' + prev), n: UNLOCK_GOALS }), { title: true, size: 25, color: '#ffd23f', strokeThickness: 0, shadow: false, wrap: 560 }).setOrigin(0.5, 0);
-      lock.add(why);
-      lock.add(txt(s, 0, why.y + why.height + 22, t('lockedHave', { n: m.goals[prev].length, m: UNLOCK_GOALS }), { size: 20, color: '#cfd8f0', strokeThickness: 0, shadow: false }));
-      box.add(lock);
-    }
     this.label();
   }
 
-  /** START: what it skates (or that the park is locked). */
+  /** The board on show (the board picker's current entry). */
+  private get shownBoard(): BoardDef | undefined { return this.boards[this.bIdx]; }
+
+  /** Why START can't start now: a locked park or a locked board on show (null: it can). */
+  private lockedChoice(): 'park' | 'board' | null {
+    if (!unlocked(this.meta, this.id)) return 'park';
+    const b = this.shownBoard;
+    if (b && !boardIsOpen(this.meta, b.id)) return 'board';
+    return null;
+  }
+
+  /** START: what it skates, or LOCKED (greyed, not pulsing) with what to do instead under it. */
   private label(): void {
-    const open = unlocked(this.meta, this.id);
-    this.go.setEnabled(open);
-    if (open) this.go.setLabels(t('start'), t('park_' + this.id) + ' · ' + loc(usableBoard(this.meta.board).name));
-    else this.go.setLabels(t('lockedShort'));
+    const lock = this.lockedChoice();
+    this.go.setEnabled(!lock);
+    if (!lock) {
+      this.go.setLabels(t('start'), t('park_' + this.id) + ' · ' + loc(usableBoard(this.meta.board).name));
+      this.hint.setText('');
+      if (this.pulse.isPaused()) this.pulse.resume();
+    } else {
+      this.go.setLabels(t('lockedShort'));
+      this.hint.setText(t(lock === 'park' ? 'lockedParkHint' : 'lockedBoardHint'));
+      this.pulse.pause();
+      this.go.setScale(1);
+    }
+  }
+
+  /** A tap on a locked START: it shakes and bonks, nothing starts. */
+  private deny(): void {
+    if (this.done) return;
+    playSfx(this.scene, 'wall', { volume: 0.7 });
+    playSfx(this.scene, 'error', { volume: 0.35 });
+    const x = this.scene.scale.width / 2;
+    this.scene.tweens.killTweensOf(this.hint);
+    this.scene.tweens.add({ targets: this.go, x: { from: x - 14, to: x }, duration: 320, ease: 'Elastic.easeOut', easeParams: [1.2, 0.25] });
+    this.hint.setScale(1);
+    this.scene.tweens.add({ targets: this.hint, scale: 1.12, duration: 110, yoyo: true, ease: 'Quad.easeOut' });
   }
 
   // ------------------------------------------------------------------ the board picker
@@ -393,16 +448,10 @@ export class Setup {
 
   // ------------------------------------------------------------------ out
 
+  /** START: only with an open park and an open board on show (that board is the one ridden). */
   private start(): void {
-    if (this.done) return;
-    if (!unlocked(this.meta, this.id)) {
-      playSfx(this.scene, 'error');
-      this.scene.tweens.add({ targets: this.card, x: { from: -10, to: 0 }, duration: 260, ease: 'Bounce.easeOut' });
-      return;
-    }
+    if (this.done || this.lockedChoice()) return;
     this.meta.park = this.id;
-    // a locked board on show: the session rides the last open one
-    if (!boardIsOpen(this.meta, this.meta.board)) this.meta.board = usableBoard(this.meta.board).id;
     saveMeta(this.meta);
     playSfx(this.scene, 'ui-select');
     this.close();
@@ -434,7 +483,10 @@ export class Setup {
   /** Test hooks. */
   testStep(d: number): void { this.step(d); }
   testBoard(id: string): void { const i = this.boards.findIndex((b) => b.id === id); if (i >= 0) { this.bIdx = (i - 1 + this.boards.length) % this.boards.length; this.stepBoard(1); } }
-  testInfo(): { park: string; shown: string; board: string; owned: string[]; open: string[]; listed: string[] } {
-    return { park: this.id, shown: this.boards[this.bIdx]?.id, board: this.meta.board, owned: this.meta.owned, open: BOARDS.filter((b) => boardIsOpen(this.meta, b.id)).map((b) => b.id), listed: this.boards.map((b) => b.id) };
+  testInfo(): { park: string; shown: string; board: string; owned: string[]; open: string[]; listed: string[]; locked: string | null; button: string; hint: string; enabled: boolean } {
+    return {
+      park: this.id, shown: this.boards[this.bIdx]?.id, board: this.meta.board, owned: this.meta.owned, open: BOARDS.filter((b) => boardIsOpen(this.meta, b.id)).map((b) => b.id), listed: this.boards.map((b) => b.id),
+      locked: this.lockedChoice(), button: this.go.main.text, hint: this.hint.text, enabled: this.go.enabled,
+    };
   }
 }

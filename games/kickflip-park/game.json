@@ -6,7 +6,7 @@
   "genres": ["sports", "action"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "1.2.0",
+  "version": "1.2.1",
   "credits": ["Skateboards: Ayvago's own black and blue board models and their skins", "3D models: Kenney Mini Skate, Mini Characters, City Kit Suburban, City Kit Industrial, City Kit Commercial, City Kit Roads and Nature Kit (CC0) — kenney.nl", "Sound effects: Kenney Impact Sounds and Foley Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org"],
   "platform": { "addedAt": "2026-11-13" }
 }

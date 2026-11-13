@@ -1,12 +1,13 @@
 // Kickflip Park: the skater on screen. The player's Mini Character plays the Mini Skate kit's own
 // skate clips (push, stance, air, grab: they share the Mini Characters' skeleton) through one
 // AnimationMixer; on top of them the bones are posed per trick (crouch, arms out on rails, lean
-// back in manuals, tucks and splits in the air) and the Kenney board turns under the feet:
+// back in manuals, tucks and splits in the air; a push stroke steps the back foot down onto the
+// ground beside the board) and the board turns under the feet:
 // kickflips roll it, shove-its spin it, grabs lift it into the hand, grinds lock it on the rail.
 // A bail throws board and rider apart; both come back on recovery.
 import { THREE, model, modelClips } from '@core/three';
 import type { Sim } from './sim';
-import { clamp, wrap, lerp } from './defs';
+import { clamp, wrap, lerp, RIDE } from './defs';
 import { SKATE_CLIPS, type Mats } from './kit';
 import { C, buildBoardModel, type BoardModel } from './boardmodel';
 import type { BoardDef } from './boards';
@@ -65,6 +66,15 @@ export class Skater {
   private lastFlip = '';
   private boardY = 0;
   private specialT = 0;
+  // the push stroke (pushLegs): how much of it shows, where the foot holds the ground (world), and
+  // where (board frame) and when it left the ground
+  private pushK = 0;
+  private pushPh = -1;
+  private contact: THREE.Vector3 | null = null;
+  private liftAt = new THREE.Vector3();
+  private liftPh = RIDE.pushLift;
+  /** The push foot (test hook): the stroke's phase, whether it holds the ground, its sole's world position, the ground there and how far the sole is from where it touched down (m). */
+  pushInfo = { ph: -1, k: 0, contact: false, foot: [0, 0, 0], ground: 0, slip: 0, front: [0, 0, 0], deck: 0, legs: [1, 1] };
   /** The board's model and measures (deck top, pivot, length, trucks). */
   bm: BoardModel;
   /** The board this skater rides. */
@@ -192,12 +202,13 @@ export class Skater {
     // reset the bones, let the clip pose them, then add our own pose
     for (const b of BONES) {
       const r = this.rest.get(b), bone = this.bones.get(b);
-      if (r && bone) { bone.position.copy(r.p); bone.quaternion.copy(r.q); }
+      if (r && bone) { bone.position.copy(r.p); bone.quaternion.copy(r.q); bone.scale.set(1, 1, 1); }
     }
     const pose = this.choose(sim, dt);
     this.mixer.update(dt);
     this.applyPose(pose, sim, dt);
     this.placeBoard(sim, pose, dt);
+    this.pushLegs(sim);
     if (st === 'air' && sim.air!.grab) this.pinGrab(sim.air!.grab.def.id, sim.air!.grab.t);
 
     // the ground shadow
@@ -327,8 +338,14 @@ export class Skater {
     const st = sim.state;
     switch (st) {
       case 'ground':
-        if (sim.pushing > 0) { this.play('skate', 0.12, 1.1); p.stance = 0; }
-        else this.play('skate-stand', 0.2);
+        if (sim.pushPhase >= 0) {
+          // a push stroke: the rider faces ahead; the clip swings the arms in time with the stroke
+          // (its legs are posed by pushLegs)
+          this.play('skate', 0.12, 0);
+          const a = this.actions.get('skate');
+          if (a) a.time = pushClipAt(sim.pushPhase) * a.getClip().duration;
+          p.stance = 0;
+        } else this.play('skate-stand', 0.2);
         p.crouch = sim.crouching ? clamp(sim.crouchT / 0.5, 0.35, 1) : 0;
         p.lean = clamp(Math.abs(sim.speed) / 14, 0, 0.3);
         if (sim.sketchT > 0) {
@@ -380,6 +397,12 @@ export class Skater {
         break;
     }
     this.stance += wrap(p.stance - this.stance) * Math.min(1, dt * 12);
+    // the push shows while a stroke runs on the ground (fast in, a little slower out)
+    const pushing = st === 'ground' && sim.pushPhase >= 0;
+    if (st === 'bail') this.pushK = 0;
+    else this.pushK = clamp(this.pushK + (pushing ? dt * 12 : -dt * 8), 0, 1);
+    if (!pushing || sim.pushPhase < this.pushPh) { this.contact = null; this.liftPh = RIDE.pushLift; }
+    this.pushPh = pushing ? sim.pushPhase : -1;
     this.crouchK = lerp(this.crouchK, p.crouch, Math.min(1, dt * 14));
     this.armsK = lerp(this.armsK, p.arms, Math.min(1, dt * 10));
     this.leanK = lerp(this.leanK, p.lean, Math.min(1, dt * 10));
@@ -446,11 +469,128 @@ export class Skater {
       this.body.position.y = -this.bm.deckTop + Math.sin(k * Math.PI) * 0.6;
     } else {
       this.body.rotation.set(0, 0, 0);
-      this.body.position.y = 0;
+      this.body.position.set(0, 0, 0);
+      if (this.pushK > 0) this.pushBody();
     }
     // rider height: on the deck, lifted with the board in flips and grabs
     this.fig.position.y = this.bm.deckTop + this.boardY * 0.9;
     void dt;
+  }
+
+  // ------------------------------------------------------------------ the push stroke
+
+  /**
+   * How deep the push stroke bends at phase `ph`: 0 on the deck, 1 while the foot is on the ground.
+   * The standing knee bends (the body sinks) as the foot goes down and straightens as it comes up.
+   */
+  private pushDepth(ph: number): number {
+    const a = RIDE.pushTouch, b = this.liftPh;
+    const ease = (k: number) => k * k * (3 - 2 * k);
+    if (ph < a) return ease(clamp(ph / a, 0, 1));
+    if (ph < b) return 1;
+    return 1 - ease(clamp((ph - b) / Math.max(0.05, 1 - b), 0, 1));
+  }
+
+  /**
+   * The body in a push: it sinks (the standing knee bends: on this 7-bone rig the front leg's bone
+   * gets shorter instead) and the hips lean over the push side, so the push foot reaches the ground
+   * beside the board; the chest leans back upright.
+   */
+  private pushBody(): void {
+    const k = this.pushK, d = this.pushPh >= 0 ? this.pushDepth(this.pushPh) : 0;
+    const drop = (PUSH.drop + PUSH.dropDeep * d) * k;
+    const roll = (PUSH.roll + PUSH.rollDeep * d) * k;
+    // the offset in the board frame, turned into the rider's (stance-turned) frame
+    _v.set(PUSH.bodyX * k, -drop, PUSH.bodyZ * k).applyAxisAngle(UP, -this.stance);
+    this.body.position.copy(_v);
+    this.rot('root', 0, 0, roll);
+    this.rot('torso', 0, 0, -roll * 0.75);
+  }
+
+  /** A point in the board frame (x across, toe side +x; y up from the ground under the board; z to the nose) in the world. */
+  private boardToWorld(x: number, y: number, z: number, out = new THREE.Vector3()): THREE.Vector3 {
+    return this.yawG.localToWorld(out.set(x, y, z));
+  }
+
+  /** The same point with its height on the ground under it (+ the sole's height). */
+  private groundAt(x: number, z: number, out = new THREE.Vector3()): THREE.Vector3 {
+    this.boardToWorld(x, 0, z, out);
+    out.y = this.terrainH(out.x, out.z) + SOLE;
+    return out;
+  }
+
+  /** Aims a leg at a world point and stretches or shortens its bone to reach it (`w` of the way). */
+  private reachLeg(name: Bone, target: THREE.Vector3, w: number, min: number, max: number): THREE.Vector3 {
+    const bone = this.bones.get(name), tip = this.tips.get(name), r = this.rest.get(name);
+    if (!bone || !tip || !r || !bone.parent) return target.clone();
+    // the leg from its own rest pose (the clip's riding legs fade out)
+    bone.quaternion.slerp(r.q, w);
+    bone.position.lerp(r.p, w);
+    bone.updateWorldMatrix(true, false);
+    const hip = bone.getWorldPosition(new THREE.Vector3());
+    const ws = bone.parent.getWorldScale(new THREE.Vector3()).x;
+    const d = hip.distanceTo(target) / ws;
+    const sy = Math.sqrt(Math.max(0, d * d - tip.x * tip.x - tip.z * tip.z)) / Math.max(1e-4, Math.abs(tip.y));
+    bone.scale.set(1, lerp(1, clamp(sy, min, max), w), 1);
+    return this.aimBone(name, target, w);
+  }
+
+  /**
+   * The push stroke's legs. The front foot stays on the deck by the front truck, pointing ahead;
+   * the back foot steps off the tail, down beside the board on the heel side (−x) and touches the
+   * ground at RIDE.pushTouch of the stroke. There it holds its spot on the ground (the board rolls
+   * on past it, so the foot kicks back along the board) until the sim's push ends (sim.pushEnd: the
+   * speed comes in meanwhile), or sooner if the leg can't reach it any further, then lifts and comes
+   * back onto the tail. On a slope the foot stands on the ground under it.
+   */
+  private pushLegs(sim: Sim): void {
+    const k = this.pushK;
+    if (k <= 0 || !this.tips.size) { this.pushInfo.ph = -1; this.pushInfo.k = 0; this.pushInfo.contact = false; return; }
+    this.root.updateMatrixWorld(true);
+    const deck = this.bm.deckTop + SOLE;
+    // the front foot: planted
+    const front = this.reachLeg('leg-left', this.boardToWorld(PUSH.frontX, deck, PUSH.frontZ), k, 0.6, 1.12);
+    const ph = this.pushPh;
+    const tail = this.boardToWorld(PUSH.tailX, deck, PUSH.tailZ);
+    let foot: THREE.Vector3;
+    const ease = (u: number) => u * u * (3 - 2 * u);
+    if (ph < 0) foot = tail;
+    else if (ph < RIDE.pushTouch) {
+      // stepping down: out past the deck's edge first, then down to the ground ahead of the hip
+      const u = ph / RIDE.pushTouch;
+      const down = this.yawG.worldToLocal(this.groundAt(PUSH.downX, PUSH.downZ));
+      const ox = 1 - (1 - u) * (1 - u), oy = u * u;
+      foot = this.boardToWorld(lerp(PUSH.tailX, down.x, ox), lerp(deck, down.y, oy) + Math.sin(Math.PI * u) * PUSH.lift, lerp(PUSH.tailZ, down.z, ease(u)));
+    } else if (ph < Math.min(this.liftPh, sim.pushEnd)) {
+      // on the ground: the contact point stays where it touched down
+      if (!this.contact) this.contact = this.groundAt(PUSH.downX, PUSH.downZ);
+      // the hip where the leg will hang from (the clip moves it; reachLeg puts it back)
+      const leg = this.bones.get('leg-right')!, tip = this.tips.get('leg-right')!;
+      leg.position.lerp(this.rest.get('leg-right')!.p, k);
+      leg.updateWorldMatrix(true, false);
+      const hip = leg.getWorldPosition(new THREE.Vector3());
+      const reach = Math.hypot(tip.x, tip.y * PUSH.stretch, tip.z) * C;
+      if (hip.distanceTo(this.contact) > reach) {
+        // out of reach: the stroke is done, the foot comes up
+        this.liftPh = ph;
+        this.yawG.worldToLocal(this.liftAt.copy(this.contact));
+        this.contact = null;
+        foot = this.boardToWorld(this.liftAt.x, this.liftAt.y, this.liftAt.z);
+      } else foot = this.contact;
+    } else {
+      // lifting off (when the sim's push ends) and back onto the tail
+      if (this.contact) { this.liftPh = Math.min(this.liftPh, sim.pushEnd); this.yawG.worldToLocal(this.liftAt.copy(this.contact)); this.contact = null; }
+      const u = clamp((ph - this.liftPh) / Math.max(0.05, 1 - this.liftPh), 0, 1);
+      const ix = u * u, iy = 1 - (1 - u) * (1 - u);
+      foot = this.boardToWorld(lerp(this.liftAt.x, PUSH.tailX, ix), lerp(this.liftAt.y, deck, iy) + Math.sin(Math.PI * u) * PUSH.lift, lerp(this.liftAt.z, PUSH.tailZ, ease(u)));
+    }
+    const got = this.reachLeg('leg-right', foot, k, 0.6, PUSH.stretch);
+    const gy = this.terrainH(got.x, got.z);
+    this.pushInfo = {
+      ph, k, contact: !!this.contact, foot: got.toArray(), ground: gy,
+      slip: this.contact ? got.distanceTo(this.contact) : 0, front: front.toArray(), deck: this.boardToWorld(0, this.bm.deckTop, 0).y,
+      legs: [this.bones.get('leg-left')!.scale.y, this.bones.get('leg-right')!.scale.y],
+    };
   }
 
   private placeBoard(sim: Sim, p: Pose, dt: number): void {
@@ -520,6 +660,37 @@ export class Skater {
     }
   }
 }
+
+/**
+ * Where in the Mini Skate push clip (0 … 1) a push stroke's phase is: the clip's leg goes up and
+ * forward in its first half, is down from about 0.5 and kicks back until about 0.83; the stroke's
+ * steps map onto those, so the clip's arm swing and body bob keep time with the posed legs.
+ */
+function pushClipAt(ph: number): number {
+  const a = RIDE.pushTouch, b = RIDE.pushLift;
+  if (ph < a) return 0.5 * ph / a;
+  if (ph < b) return 0.5 + 0.33 * (ph - a) / (b - a);
+  return 0.83 + 0.17 * (ph - b) / (1 - b);
+}
+
+/** Height of a sole's far end (the leg's tip) above what the foot stands on (m). */
+const SOLE = 0.028;
+/**
+ * The push stroke's layout in the board frame (m; x across, heel side −x; z to the nose): where the
+ * front foot stands, where the back foot rests on the tail and touches the ground, how high it
+ * lifts, how far the body sinks and leans over the push side (rad), and the most the push leg's
+ * bone stretches to reach the ground (the rider's legs are short next to the board's height).
+ */
+const PUSH = {
+  frontX: 0.05, frontZ: 0.3,
+  tailX: -0.1, tailZ: -0.3,
+  downX: -0.42, downZ: 0.2,
+  lift: 0.1,
+  bodyX: 0.02, bodyZ: 0.06,
+  drop: 0.06, dropDeep: 0.17,
+  roll: 0.08, rollDeep: 0.2,
+  stretch: 1.3,
+};
 
 interface Pose {
   crouch: number;

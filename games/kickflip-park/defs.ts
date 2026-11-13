@@ -51,11 +51,19 @@ export const TUNING: Record<Mode, Tuning> = {
 // ------------------------------------------------------------------ riding
 
 export const RIDE = {
-  /** Speed a push brings you up to, and the push's kick (m/s). */
+  /** Speed a push brings you up to, and the speed one push adds (m/s). */
   pushTop: 9.2,
-  pushKick: 1.7,
-  /** Seconds between pushes while push is held. */
-  pushEvery: 0.52,
+  pushKick: 2.2,
+  /**
+   * One push stroke (s): the back foot steps off the deck, touches the ground at `pushTouch` of
+   * the stroke, kicks back along it until `pushLift` (sooner when fast: `pushReach`; the speed
+   * comes in then, spread over the contact) and returns to the tail. Held push: one stroke after another.
+   */
+  pushEvery: 0.68,
+  pushTouch: 0.24,
+  pushLift: 0.62,
+  /** How far (m) the push foot kicks back along the board while it holds the ground. */
+  pushReach: 0.4,
   /** Below this the skater pushes by himself when the stick is not pulled back. */
   cruise: 4.2,
   /** Hard top speed. */
