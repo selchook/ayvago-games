@@ -282,3 +282,103 @@ export function dirOf(up: boolean, right: boolean, down: boolean, left: boolean)
 }
 
 export type { Dir };
+
+/** A frosted card for the HUD layer (summary, tutorial): drawn round (0, 0). */
+function card(scene: Phaser.Scene, w: number, h: number, rim = 0xffffff, rimA = 0.22): Phaser.GameObjects.Graphics {
+  const g = scene.add.graphics();
+  g.fillStyle(0x000000, 0.28).fillRoundedRect(-w / 2, -h / 2 + 6, w, h, 24);
+  g.fillStyle(0x10162e, 0.86).fillRoundedRect(-w / 2, -h / 2, w, h, 24);
+  g.fillStyle(0xffffff, 0.07).fillRoundedRect(-w / 2 + 4, -h / 2 + 4, w - 8, Math.min(26, h * 0.3), { tl: 20, tr: 20, bl: 6, br: 6 });
+  g.lineStyle(2, rim, rimA).strokeRoundedRect(-w / 2, -h / 2, w, h, 24);
+  return g;
+}
+
+let lastSummary: Phaser.GameObjects.Container | null = null;
+
+/**
+ * The end of a combo: its tricks, points × tricks, how it landed (and what that did to it) and the
+ * total, with the praise word for big ones. One at a time: a new combo replaces the card.
+ */
+export function comboSummary(scene: Phaser.Scene, x: number, y: number, o: { names: string[]; sum: string; count: number; total: string; quality: string; qualityColor: string; mult: string; praise: string; big: boolean; tier: number }): void {
+  if (lastSummary?.active) { const old = lastSummary; scene.tweens.killTweensOf(old); scene.tweens.add({ targets: old, alpha: 0, duration: 120, onComplete: () => old.destroy() }); }
+  const c = scene.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 45);
+  const shown = o.names.length > 5 ? ['…', ...o.names.slice(-5)] : o.names;
+  const names = txt(scene, 0, 0, shown.join(' + '), { size: 19, color: '#dfe6ff', strokeThickness: 0, shadow: false, wrap: 560 });
+  const line = txt(scene, 0, 0, `${o.sum} × ${o.count}`, { title: true, size: 24, color: '#ffffff', strokeThickness: 0, shadow: false });
+  const q = txt(scene, 0, 0, o.mult ? `${o.quality}  ${o.mult}` : o.quality, { title: true, size: 20, color: o.qualityColor, strokeThickness: 0, shadow: false });
+  const total = txt(scene, 0, 0, '+' + o.total, { title: true, size: o.big ? 58 : 46, color: o.tier >= 3 ? '#ffb020' : '#7dffa0', strokeThickness: 8 });
+  const praise = o.praise ? txt(scene, 0, 0, o.praise, { title: true, size: 26, color: '#ffffff', strokeThickness: 6 }) : null;
+  const h = 34 + names.height + 10 + line.height + 6 + q.height + 4 + total.height + (praise ? praise.height : 0) + 22;
+  let yy = -h / 2 + 20;
+  const place = (t: Phaser.GameObjects.Text) => { t.setY(yy + t.height / 2); yy += t.height + 6; };
+  place(names); place(line); place(q); yy += 2; place(total); if (praise) place(praise);
+  c.add([card(scene, 600, h, o.qualityColor === '#ffd23f' ? 0xffd23f : 0xffffff, o.qualityColor === '#ffd23f' ? 0.7 : 0.22), names, line, q, total, ...(praise ? [praise] : [])]);
+  c.setScale(0.5).setAlpha(0);
+  scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 200, ease: 'Back.easeOut' });
+  scene.tweens.add({ targets: total, scale: { from: 1.25, to: 1 }, duration: 260, delay: 120, ease: 'Back.easeOut' });
+  scene.tweens.add({ targets: c, y: y - 40, alpha: 0, delay: 1500 + (o.big ? 300 : 0), duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
+  lastSummary = c;
+}
+
+/** A small word by the rider (a landing's quality). */
+export function popWord(scene: Phaser.Scene, x: number, y: number, s: string, color: string, size = 30): void {
+  const t = txt(scene, x, y, s, { title: true, size, color, strokeThickness: 7 }).setScrollFactor(0).setDepth(UI_DEPTH + 40);
+  t.setScale(0.4).setAlpha(0);
+  scene.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 160, ease: 'Back.easeOut' });
+  scene.tweens.add({ targets: t, y: y - 60, alpha: 0, delay: 520, duration: 360, onComplete: () => t.destroy() });
+}
+
+/** The tutorial's prompt: step count, what to do, a tick when done, and a SKIP pill. */
+export class TutorialCard {
+  readonly c: Phaser.GameObjects.Container;
+  private head: Phaser.GameObjects.Text;
+  private body: Phaser.GameObjects.Text;
+  private g: Phaser.GameObjects.Graphics;
+  private tick: Phaser.GameObjects.Graphics;
+  readonly skip: Phaser.GameObjects.Container;
+  static readonly W = 640;
+
+  constructor(private scene: Phaser.Scene, y: number, skipLabel: string, onSkip: () => void) {
+    const s = scene;
+    this.c = s.add.container(s.scale.width / 2, y).setScrollFactor(0).setDepth(UI_DEPTH + 30);
+    this.g = s.add.graphics();
+    this.head = txt(s, -TutorialCard.W / 2 + 28, 0, '', { title: true, size: 20, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+    this.body = txt(s, -TutorialCard.W / 2 + 28, 0, '', { size: 23, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: TutorialCard.W - 230, align: 'left' }).setOrigin(0, 0.5);
+    this.tick = s.add.graphics().setVisible(false);
+    // the SKIP pill (an 84 px tall tap target)
+    const sg = s.add.graphics();
+    sg.fillStyle(0xffffff, 0.14).fillRoundedRect(-70, -36, 140, 72, 36).lineStyle(2, 0xffffff, 0.4).strokeRoundedRect(-70, -36, 140, 72, 36);
+    const st = txt(s, 0, 0, skipLabel, { title: true, size: 20, color: '#ffffff', strokeThickness: 0, shadow: false });
+    this.skip = s.add.container(TutorialCard.W / 2 - 90, 0, [sg, st]).setSize(150, 84).setInteractive({ useHandCursor: true });
+    this.skip.on('pointerup', onSkip);
+    this.c.add([this.g, this.head, this.body, this.tick, this.skip]);
+  }
+
+  set(head: string, body: string): void {
+    this.head.setText(head);
+    this.body.setText(body);
+    const h = Math.max(110, this.body.height + 64);
+    this.head.setY(-h / 2 + 24);
+    this.body.setY(-h / 2 + 46 + this.body.height / 2);
+    this.g.clear();
+    this.g.fillStyle(0x000000, 0.28).fillRoundedRect(-TutorialCard.W / 2, -h / 2 + 6, TutorialCard.W, h, 24);
+    this.g.fillStyle(0x10162e, 0.88).fillRoundedRect(-TutorialCard.W / 2, -h / 2, TutorialCard.W, h, 24);
+    this.g.lineStyle(3, 0xffd23f, 0.75).strokeRoundedRect(-TutorialCard.W / 2, -h / 2, TutorialCard.W, h, 24);
+    this.tick.setVisible(false);
+    this.c.setAlpha(0).setScale(0.85);
+    this.scene.tweens.add({ targets: this.c, alpha: 1, scale: 1, duration: 220, ease: 'Back.easeOut' });
+  }
+
+  /** A green tick over the card (the step is done). */
+  done(): void {
+    const t = this.tick.clear().setVisible(true).setPosition(TutorialCard.W / 2 - 200, 0);
+    t.fillStyle(0x2fae5a, 1).fillCircle(0, 0, 30).lineStyle(7, 0xffffff, 1).beginPath().moveTo(-13, 0).lineTo(-3, 10).lineTo(14, -10).strokePath();
+    t.setScale(0.3);
+    this.scene.tweens.add({ targets: t, scale: 1, duration: 220, ease: 'Back.easeOut' });
+  }
+
+  destroy(): void {
+    const c = this.c;
+    this.scene.tweens.add({ targets: c, alpha: 0, y: c.y - 30, duration: 260, onComplete: () => c.destroy() });
+  }
+}

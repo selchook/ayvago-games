@@ -16,7 +16,11 @@ import { onSeg, inZone, type RailSeg, type Shape, type Surface } from './park';
 import type { ParkDef, GoalDef } from './parks';
 
 export interface Input {
-  /** −1 … 1: left / right (steer on the ground, spin in the air, balance on rails). */
+  /**
+   * −1 … 1: the rider's left / right, which is the screen's left / right behind the rider (steer on
+   * the ground, spin in the air, balance on rails). Headings are atan2(x, z) in three.js's
+   * right-handed world (y up), so a turn to the right makes the heading smaller: see turnBy().
+   */
   steer: number;
   /** −1 … 1: push / brake on the ground, balance in a manual. */
   fwd: number;
@@ -40,6 +44,16 @@ export const NO_INPUT: Input = { steer: 0, fwd: 0, crouch: false, grind: false, 
 
 export type State = 'ground' | 'air' | 'grind' | 'manual' | 'bail';
 
+/**
+ * How well the board came down: PERFECT (square to the way you go, every flip finished), CLEAN, or
+ * SKETCHY (way off the line, or a flip still finishing as the wheels touched). The landing that ends
+ * a combo scales it: LAND_MULT.
+ */
+export type Quality = 'perfect' | 'clean' | 'sketchy';
+export const LAND_MULT: Record<Quality, number> = { perfect: 1.2, clean: 1, sketchy: 0.8 };
+/** Share of the landing tolerance that is still PERFECT, and beyond which it is SKETCHY. */
+const PERFECT_TOL = 0.25, SKETCHY_TOL = 0.62;
+
 export interface Entry {
   /** Trick id ('kickflip', 'spin', 'gap' …). */
   id: string;
@@ -58,7 +72,7 @@ export type SimEvent =
   | { type: 'push' }
   | { type: 'ollie'; power: number }
   | { type: 'launch'; vert: boolean; speed: number }
-  | { type: 'land'; clean: true; impact: number; surf: Surface; fakie: boolean }
+  | { type: 'land'; clean: true; impact: number; surf: Surface; fakie: boolean; quality: Quality; tricks: boolean }
   | { type: 'bail'; reason: 'land' | 'grind' | 'manual' | 'flip' | 'fall' }
   | { type: 'recover' }
   | { type: 'trick'; entry: Entry }
@@ -70,7 +84,7 @@ export type SimEvent =
   | { type: 'manualEnd' }
   | { type: 'special'; def: TrickDef }
   | { type: 'specialReady' }
-  | { type: 'combo'; score: number; tricks: number; entries: Entry[] }
+  | { type: 'combo'; score: number; tricks: number; entries: Entry[]; sum: number; quality: Quality; mult: number }
   | { type: 'comboLost'; score: number }
   | { type: 'gap'; id: string; pts: number }
   | { type: 'tape'; i: number; x: number; y: number; z: number }
@@ -79,6 +93,14 @@ export type SimEvent =
   | { type: 'timeUp' };
 
 const STEP = 1 / 120;
+
+/**
+ * The heading change for a turn of `rad` to the rider's right. Headings are atan2(x, z) (0 = +z,
+ * π/2 = +x) and the world is right-handed with y up, so seen from behind (camera looking along +z)
+ * +x is the screen's LEFT: turning right means a smaller heading. Getting this sign wrong swaps
+ * the steering (the 1.0.0 bug: → turned left).
+ */
+export const turnBy = (rad: number): number => -rad;
 
 interface AirState {
   t: number;
@@ -160,6 +182,12 @@ export class Sim {
   linkT = -1;
   special = 0;
   specialReady = false;
+  /** For the view: the steering's turn to the rider's right on the ground (rad/s), and a sketchy landing's wobble (s). */
+  carve = 0;
+  sketchT = 0;
+  /** The last landing of the combo going on (it scales the combo when it lands). */
+  landQ: Quality = 'clean';
+  stats2 = { perfect: 0, clean: 0, sketchy: 0 };
   // goals and run stats
   readonly done = new Set<string>();
   tapes: boolean[];
@@ -272,6 +300,8 @@ export class Sim {
       }
     }
     if (this.pushing > 0) this.pushing -= dt;
+    if (this.sketchT > 0) this.sketchT -= dt;
+    if (this.state !== 'ground' && this.state !== 'manual') this.carve = 0;
     switch (this.state) {
       case 'ground': case 'manual': this.ride(dt, inp); break;
       case 'air': this.fly(dt, inp); break;
@@ -320,7 +350,8 @@ export class Sim {
     // steering, and the side slope turning you downhill
     const turn = RIDE.turnSlow + (RIDE.turnFast - RIDE.turnSlow) * clamp(sp / 12, 0, 1);
     const dirSign = this.speed < -0.3 ? -1 : 1;
-    this.heading += inp.steer * turn * (manual ? 0.7 : 1) * dt * dirSign;
+    this.carve = inp.steer * turn * (manual ? 0.7 : 1) * dirSign;
+    this.heading += turnBy(this.carve * dt);
     const q = g.gx * Math.cos(this.heading) - g.gz * Math.sin(this.heading);
     this.heading += clamp(q, -3, 3) * 2.2 / Math.max(2.5, sp) * dt * Math.sign(this.speed || 1);
     // rolling backwards on the flat: turn round (a revert)
@@ -497,7 +528,8 @@ export class Sim {
     const dv = target - a.spinVel;
     a.spinVel += clamp(dv, -RIDE.spinAccel * dt, RIDE.spinAccel * dt);
     if (inp.steer === 0 && Math.abs(a.spinVel) < 3) a.spinVel *= Math.max(0, 1 - dt * 10);
-    this.heading += a.spinVel * dt;
+    // spinVel and spin count to the rider's right (holding → spins clockwise seen from above)
+    this.heading += turnBy(a.spinVel * dt);
     a.spin += a.spinVel * dt;
     if (a.auto > 0) {
       const d = Math.min(a.auto, a.autoRate * dt);
@@ -575,6 +607,15 @@ export class Sim {
     }
   }
 
+  /**
+   * The half turns an air scores: the rider's own spin, and on a vert air one more when they spun
+   * at all (the ramp's own turn round on top makes a 360 there a 540, as skaters count it).
+   */
+  private spinHalves(a: AirState): number {
+    const own = Math.round(Math.abs(a.spin) / Math.PI);
+    return own >= 1 && a.vert && a.auto <= 0.2 ? own + 1 : own;
+  }
+
   private endGrab(): void {
     const a = this.air;
     if (!a?.grab) return;
@@ -608,6 +649,8 @@ export class Sim {
       this.doBail(flipLate ? 'flip' : 'land');
       return;
     }
+    // clean: how clean (before the air's tricks are finished)
+    const q: Quality = !f && off < tol * PERFECT_TOL ? 'perfect' : f || off > tol * SKETCHY_TOL ? 'sketchy' : 'clean';
     // clean: finish the air's tricks
     if (f) {
       this.addEntry({ id: f.def.id, n: 1, pts: f.def.pts, decay: 1, live: false });
@@ -615,7 +658,7 @@ export class Sim {
       a.flip = null;
     }
     this.endGrab();
-    const half = Math.round(Math.abs(a.spin) / Math.PI);
+    const half = this.spinHalves(a);
     if (half >= 1) {
       this.addEntry({ id: 'spin', n: half, pts: SPIN_PTS[Math.min(SPIN_PTS.length - 1, half)], decay: 1, live: false });
       this.stats.maxSpin = Math.max(this.stats.maxSpin, half * 180);
@@ -628,7 +671,10 @@ export class Sim {
     const impact = Math.max(0, -vn);
     this.air = null;
     this.setState('ground');
-    this.emit({ type: 'land', clean: true, impact, surf: this.surf, fakie });
+    const tricks = this.combo.length > 0;
+    if (tricks) { this.landQ = q; this.stats2[q]++; }
+    if (q === 'sketchy') this.sketchT = 0.6;
+    this.emit({ type: 'land', clean: true, impact, surf: this.surf, fakie, quality: q, tricks });
     if (this.combo.length) {
       if (a.manualBuf > 0) this.startManual(false);
       else this.linkT = this.tune.linkWindow;
@@ -660,7 +706,9 @@ export class Sim {
       const r = onSeg(s, this.x, this.z);
       if (r.d > snap || r.d > bestD) continue;
       if (this.y < r.y - 0.35 || this.y > r.y + 1.25) continue;
+      // rising fast: going over it, not onto it (rails lock on the way down or level)
       if (this.vy > 3.5 && this.y < r.y) continue;
+      if (this.vy > 2.5) continue;
       best = s; bestD = r.d; bestY = r.y; bestT = r.t;
     }
     if (!best) return false;
@@ -681,7 +729,7 @@ export class Sim {
       a.flip = null;
     }
     this.endGrab();
-    const half = Math.round(Math.abs(a.spin) / Math.PI);
+    const half = this.spinHalves(a);
     if (half >= 1) this.addEntry({ id: 'spin', n: half, pts: SPIN_PTS[Math.min(SPIN_PTS.length - 1, half)], decay: 1, live: false });
     this.checkJumpGaps(a.fromX, a.fromZ, this.x, this.z);
     const def = GRINDS[(inp.dir >= 0 ? inp.dir : 4) as Dir | 4];
@@ -824,6 +872,7 @@ export class Sim {
     if (this.state === 'grind' || this.state === 'manual') this.speed *= 0.5;
     const lost = this.comboValue();
     this.combo = [];
+    this.landQ = 'clean';
     this.linkT = -1;
     this.stats.comboRails.clear();
     this.stats.bails++;
@@ -914,9 +963,12 @@ export class Sim {
   private bank(): void {
     this.linkT = -1;
     if (!this.combo.length) return;
-    const v = this.comboValue();
+    const quality = this.landQ, mult = LAND_MULT[quality];
+    const sum = this.comboSum();
+    const v = Math.round(this.comboValue() * mult);
     const entries = this.combo;
     this.combo = [];
+    this.landQ = 'clean';
     this.score += v;
     this.stats.combos++;
     this.stats.bestCombo = Math.max(this.stats.bestCombo, v);
@@ -924,7 +976,7 @@ export class Sim {
     const was = this.specialReady;
     this.special = Math.min(1, this.special + v / this.tune.specialFill);
     if (this.special >= 1 && !was) { this.specialReady = true; this.emit({ type: 'specialReady' }); }
-    this.emit({ type: 'combo', score: v, tricks: entries.length, entries });
+    this.emit({ type: 'combo', score: v, tricks: entries.length, entries, sum, quality, mult });
     this.goalCheck('combo', v);
     this.goalCheck('score', this.score);
     if (entries.some((e) => e.id === 'spin')) this.goalCheck('spin', this.stats.maxSpin);

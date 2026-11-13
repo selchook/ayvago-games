@@ -200,11 +200,15 @@ const CARD = {
   },
   // Kickflip Park's card shows a big air: the skater launched high over the plaza with the
   // special meter full, mid Comet Twist (the board flipping under the feet, the glow on), the
-  // simulation slowed right down so every candidate frame catches the trick in the air.
+  // simulation slowed right down so every candidate frame catches the trick in the air. The
+  // first-session tutorial is closed first, and the rider is on the owner's Blue Cruiser (the
+  // most colourful board; the default black one reads dark this small).
   'kickflip-park': {
     stage: `async () => {
       const p = window.__ayvago.game.scene.getScene('Play');
       p.testHint(false);
+      p.testTutorial?.(false);
+      p.testBoard?.('blue');
       p.testSpecial();
       p.testPlace(-3, 20, Math.PI, 5);
       p.testInput({ fwd: -0.35 });

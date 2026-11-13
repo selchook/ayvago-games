@@ -74,8 +74,8 @@ export const RIDE = {
   ollieMax: 7.4,
   crouchFull: 0.55,
   /** Spin rate in the air (rad/s) and how quickly it ramps. */
-  spinRate: 7.4,
-  spinAccel: 26,
+  spinRate: 8.0,
+  spinAccel: 30,
   /** Steps higher than this are walls (m). */
   stepUp: 0.14,
   /** Slope (rise per run) where a transition throws you into the air (about 80°). */
@@ -151,19 +151,6 @@ export const REPEAT_DECAY = 0.7;
 
 /** Praise words by combo size (localized keys praise0 … praise5). */
 export const PRAISE = [1200, 3000, 7000, 15000, 30000, 60000];
-
-// ------------------------------------------------------------------ cosmetics
-
-export const DECKS = ['classic', 'flame', 'checker', 'wave', 'galaxy', 'gold'] as const;
-export type DeckId = (typeof DECKS)[number];
-/** Goals completed (all parks) that unlock each deck. */
-export const DECK_GOALS: Record<DeckId, number> = { classic: 0, flame: 2, checker: 5, wave: 9, galaxy: 14, gold: 20 };
-
-export const WHEELS = ['white', 'mint', 'pink', 'sky', 'violet', 'gold'] as const;
-export type WheelId = (typeof WHEELS)[number];
-/** Best session score (any park, Normal or Easy) that unlocks each wheel colour. */
-export const WHEEL_SCORE: Record<WheelId, number> = { white: 0, mint: 15000, pink: 40000, sky: 80000, violet: 130000, gold: 200000 };
-export const WHEEL_COLOR: Record<WheelId, number> = { white: 0xf4f1ea, mint: 0x5fe0b0, pink: 0xff6fb5, sky: 0x5ac8ff, violet: 0xa678ff, gold: 0xffc93a };
 
 // ------------------------------------------------------------------ helpers
 

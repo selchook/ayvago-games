@@ -6,13 +6,12 @@
 // A bail throws board and rider apart; both come back on recovery.
 import { THREE, model, modelClips } from '@core/three';
 import type { Sim } from './sim';
-import { clamp, wrap, lerp, WHEEL_COLOR, type DeckId, type WheelId } from './defs';
+import { clamp, wrap, lerp } from './defs';
 import { SKATE_CLIPS, type Mats } from './kit';
+import { C, buildBoardModel, type BoardModel } from './boardmodel';
+import type { BoardDef } from './boards';
 
-/** Metres per model unit for the rider and the board. */
-export const C = 2.2;
-/** Height of the deck's top above the ground (m). */
-export const DECK_TOP = 0.137 * C;
+export { C };
 
 type Bone = 'root' | 'torso' | 'head' | 'arm-left' | 'arm-right' | 'leg-left' | 'leg-right';
 const BONES: Bone[] = ['root', 'torso', 'head', 'arm-left', 'arm-right', 'leg-left', 'leg-right'];
@@ -25,127 +24,6 @@ const _e = new THREE.Euler();
 const _v = new THREE.Vector3();
 const _n = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
-
-// ------------------------------------------------------------------ the board's look
-
-function deckTexture(id: DeckId): THREE.CanvasTexture {
-  const cv = document.createElement('canvas');
-  cv.width = 128; cv.height = 256;
-  const g = cv.getContext('2d')!;
-  const W = 128, H = 256;
-  const bg = (c: string) => { g.fillStyle = c; g.fillRect(0, 0, W, H); };
-  switch (id) {
-    case 'classic':
-      bg('#ef5b2a');
-      g.fillStyle = '#ffd23f'; g.fillRect(0, 100, W, 18); g.fillRect(0, 138, W, 18);
-      g.fillStyle = '#ffffff'; g.beginPath(); g.arc(64, 128, 26, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#ef5b2a'; g.beginPath(); g.arc(64, 128, 16, 0, Math.PI * 2); g.fill();
-      break;
-    case 'flame': {
-      bg('#26222e');
-      for (let i = 0; i < 6; i++) {
-        const x = 10 + i * 22;
-        const grd = g.createLinearGradient(0, 256, 0, 60);
-        grd.addColorStop(0, '#ffdf3a'); grd.addColorStop(0.5, '#ff7a1a'); grd.addColorStop(1, '#e8322b');
-        g.fillStyle = grd;
-        g.beginPath(); g.moveTo(x - 14, 256); g.quadraticCurveTo(x - 18, 150, x + (i % 2 ? 6 : -6), 70 + (i * 23) % 50); g.quadraticCurveTo(x + 14, 160, x + 14, 256); g.fill();
-      }
-      break;
-    }
-    case 'checker':
-      bg('#f4f1ea');
-      g.fillStyle = '#26222e';
-      for (let y = 0; y < 8; y++) for (let x = 0; x < 4; x++) if ((x + y) % 2) g.fillRect(x * 32, y * 32, 32, 32);
-      break;
-    case 'wave':
-      bg('#2f7fd8');
-      for (let i = 0; i < 9; i++) {
-        g.strokeStyle = i % 2 ? '#9fe8ff' : '#ffffff'; g.lineWidth = 7;
-        g.beginPath();
-        for (let x = 0; x <= W; x += 8) g.lineTo(x, i * 30 + 10 + Math.sin(x / 14 + i) * 8);
-        g.stroke();
-      }
-      break;
-    case 'galaxy': {
-      const grd = g.createLinearGradient(0, 0, 0, H);
-      grd.addColorStop(0, '#2a1259'); grd.addColorStop(0.5, '#7a2fb8'); grd.addColorStop(1, '#1a0f3a');
-      g.fillStyle = grd; g.fillRect(0, 0, W, H);
-      g.fillStyle = '#ffffff';
-      for (let i = 0; i < 70; i++) { const x = (i * 53) % W, y = (i * 97) % H, r = (i % 5 === 0) ? 2.4 : 1.1; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
-      break;
-    }
-    case 'gold': {
-      const grd = g.createLinearGradient(0, 0, W, H);
-      grd.addColorStop(0, '#fff2a8'); grd.addColorStop(0.5, '#e8b020'); grd.addColorStop(1, '#fff0a0');
-      g.fillStyle = grd; g.fillRect(0, 0, W, H);
-      g.fillStyle = '#ffffff';
-      g.beginPath();
-      for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 16 : 38; g.lineTo(64 + Math.cos(a) * r, 128 + Math.sin(a) * r); }
-      g.fill();
-      break;
-    }
-  }
-  const t = new THREE.CanvasTexture(cv);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
-/**
- * The Kenney skateboard split into its colormap parts, the deck's underside (with a printed deck
- * graphic, UV'd flat) and the wheels (their own colour).
- */
-export function buildBoard(mats: Mats, deck: DeckId, wheel: WheelId): THREE.Group {
-  const src = model('ms:skateboard', { shadows: true });
-  let mesh: THREE.Mesh | null = null;
-  src.traverse((o) => { if ((o as THREE.Mesh).isMesh && !mesh) mesh = o as THREE.Mesh; });
-  const g = new THREE.Group();
-  if (!mesh) return g;
-  const m0 = mesh as THREE.Mesh;
-  m0.updateMatrixWorld(true);
-  const geo = (m0.geometry.index ? m0.geometry.toNonIndexed() : m0.geometry.clone());
-  geo.applyMatrix4(m0.matrixWorld);
-  const pos = geo.attributes.position as THREE.BufferAttribute, nor = geo.attributes.normal as THREE.BufferAttribute, uv = geo.attributes.uv as THREE.BufferAttribute;
-  const groups: number[] = [];
-  for (let t = 0; t < pos.count; t += 3) {
-    let cy = 0, cx = 0, ny = 0;
-    for (let k = 0; k < 3; k++) { cy += pos.getY(t + k) / 3; cx += Math.abs(pos.getX(t + k)) / 3; ny += nor.getY(t + k) / 3; }
-    let grp = 0;
-    if (ny < -0.6 && cy > 0.075 && cy < 0.1) grp = 1;          // the deck's underside
-    else if (cy < 0.05 && cx > 0.095) grp = 2;                  // the wheels
-    groups.push(grp);
-    if (grp === 1) for (let k = 0; k < 3; k++) uv.setXY(t + k, (pos.getX(t + k) + 0.15) / 0.3, (pos.getZ(t + k) + 0.35) / 0.7);
-  }
-  // sort triangles into three draw groups
-  const order = [0, 1, 2];
-  const P: number[] = [], N: number[] = [], U: number[] = [];
-  const starts: number[] = [];
-  for (const grp of order) {
-    starts.push(P.length / 3);
-    for (let t = 0, i = 0; t < pos.count; t += 3, i++) {
-      if (groups[i] !== grp) continue;
-      for (let k = 0; k < 3; k++) {
-        P.push(pos.getX(t + k), pos.getY(t + k), pos.getZ(t + k));
-        N.push(nor.getX(t + k), nor.getY(t + k), nor.getZ(t + k));
-        U.push(uv.getX(t + k), uv.getY(t + k));
-      }
-    }
-  }
-  starts.push(P.length / 3);
-  const out = new THREE.BufferGeometry();
-  out.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
-  out.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
-  out.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
-  for (let i = 0; i < 3; i++) out.addGroup(starts[i], starts[i + 1] - starts[i], i);
-  geo.dispose();
-  const base = mats.of(m0.material as THREE.Material);
-  const deckMat = new THREE.MeshLambertMaterial({ map: deckTexture(deck) });
-  const wheelMat = new THREE.MeshLambertMaterial({ color: WHEEL_COLOR[wheel] });
-  const board = new THREE.Mesh(out, [base, deckMat, wheelMat]);
-  board.castShadow = true;
-  board.scale.setScalar(C);
-  g.add(board);
-  return g;
-}
 
 // ------------------------------------------------------------------ the rider
 
@@ -174,6 +52,7 @@ export class Skater {
   private crouchK = 0;
   private armsK = 0;
   private leanK = 0;
+  private carveK = 0;
   private tiltQ = new THREE.Quaternion();
   private t = 0;
   private lastState = '';
@@ -186,12 +65,16 @@ export class Skater {
   private lastFlip = '';
   private boardY = 0;
   private specialT = 0;
+  /** The board's model and measures (deck top, pivot, length, trucks). */
+  bm: BoardModel;
+  /** The board this skater rides. */
+  boardDef: BoardDef;
   /** World position of the board's middle (sparks, dust). */
   readonly boardWorld = new THREE.Vector3();
   /** World position of the rider's chest (popups, glow). */
   readonly chest = new THREE.Vector3();
 
-  constructor(key: string, private mats: Mats, deck: DeckId, wheel: WheelId, private terrainH: (x: number, z: number) => number) {
+  constructor(key: string, private mats: Mats, board: BoardDef, private terrainH: (x: number, z: number) => number) {
     this.obj = model(key, { shadows: true });
     let skin: THREE.MeshLambertMaterial | null = null;
     this.obj.traverse((o) => {
@@ -208,13 +91,16 @@ export class Skater {
       }
     });
     this.obj.scale.setScalar(C);
+    this.findTips();
     this.body.add(this.obj);
     this.fig.add(this.body);
-    this.fig.position.y = DECK_TOP;
-    this.board = buildBoard(mats, deck, wheel);
-    this.board.position.y = -0.07 * C;
+    this.boardDef = board;
+    this.bm = buildBoardModel(board, mats);
+    this.board = this.bm.group;
+    this.fig.position.y = this.bm.deckTop;
+    this.board.position.y = -this.bm.pivotY;
     this.boardPivot.add(this.board);
-    this.boardPivot.position.y = 0.07 * C;
+    this.boardPivot.position.y = this.bm.pivotY;
     this.yawG.add(this.boardPivot, this.fig);
     this.tilt.add(this.yawG);
     this.root.add(this.tilt);
@@ -249,16 +135,14 @@ export class Skater {
     this.curName = name;
   }
 
-  setLook(deck: DeckId, wheel: WheelId): void {
+  /** Puts another board under the feet (the old one's own resources are freed). */
+  setBoard(def: BoardDef): void {
     this.boardPivot.remove(this.board);
-    this.board.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (!m.isMesh) return;
-      m.geometry.dispose();
-      for (const mat of (m.material as THREE.Material[]).slice(1)) { (mat as THREE.MeshLambertMaterial).map?.dispose(); mat.dispose(); }
-    });
-    this.board = buildBoard(this.mats, deck, wheel);
-    this.board.position.y = -0.07 * C;
+    this.bm.dispose();
+    this.boardDef = def;
+    this.bm = buildBoardModel(def, this.mats);
+    this.board = this.bm.group;
+    this.board.position.y = -this.bm.pivotY;
     this.boardPivot.add(this.board);
   }
 
@@ -282,7 +166,10 @@ export class Skater {
     const target = sim.heading;
     if (st === 'air') this.yaw = target;
     else this.yaw += wrap(target - this.yaw) * Math.min(1, dt * 16);
-    this.yawG.rotation.y = this.yaw;
+    // carving: board and rider lean into the turn (more with speed)
+    const carve = st === 'ground' || st === 'manual' ? clamp(sim.carve * Math.abs(sim.speed) * 0.03, -0.32, 0.32) : 0;
+    this.carveK = lerp(this.carveK, carve, Math.min(1, dt * 8));
+    this.yawG.rotation.set(0, this.yaw, this.carveK);
     // tilt to the ground's slope (on the ground and in manuals), upright in the air
     if (st === 'ground' || st === 'manual') {
       _n.set(-sim.gx, 1, -sim.gz).normalize();
@@ -311,6 +198,7 @@ export class Skater {
     this.mixer.update(dt);
     this.applyPose(pose, sim, dt);
     this.placeBoard(sim, pose, dt);
+    if (st === 'air' && sim.air!.grab) this.pinGrab(sim.air!.grab.def.id, sim.air!.grab.t);
 
     // the ground shadow
     const gy = st === 'bail' && this.loose ? this.terrainH(sim.x, sim.z) : this.terrainH(sim.x, sim.z);
@@ -326,6 +214,112 @@ export class Skater {
     this.chest.y += 0.35;
   }
 
+  // ------------------------------------------------------------------ grabs: the hand on the board
+
+  /**
+   * The ends of the arms (fists) and legs (soles) in their bones' own space, from the skin: the
+   * vertices that bone moves, in its bind pose, the far end of them. The Mini Characters' limbs are
+   * one bone each, so aiming a bone at a point puts its end there (as far as the limb reaches).
+   */
+  private findTips(): void {
+    const v = new THREE.Vector3();
+    this.obj.traverse((o) => {
+      const sm = o as THREE.SkinnedMesh;
+      if (!sm.isSkinnedMesh) return;
+      const g = sm.geometry;
+      const pos = g.getAttribute('position') as THREE.BufferAttribute;
+      const si = g.getAttribute('skinIndex') as THREE.BufferAttribute, sw = g.getAttribute('skinWeight') as THREE.BufferAttribute;
+      for (const name of ['arm-left', 'arm-right', 'leg-left', 'leg-right'] as Bone[]) {
+        const bi = sm.skeleton.bones.findIndex((b) => b.name === name);
+        if (bi < 0) continue;
+        const pts: THREE.Vector3[] = [];
+        for (let i = 0; i < pos.count; i++) {
+          if (si.getX(i) !== bi || sw.getX(i) < 0.5) continue;
+          pts.push(v.fromBufferAttribute(pos, i).applyMatrix4(sm.bindMatrix).applyMatrix4(sm.skeleton.boneInverses[bi]).clone());
+        }
+        if (!pts.length) continue;
+        const far = Math.max(...pts.map((p) => p.length()));
+        const tip = new THREE.Vector3();
+        let n = 0;
+        for (const p of pts) if (p.length() > far * 0.82) { tip.add(p); n++; }
+        this.tips.set(name, tip.divideScalar(Math.max(1, n)));
+      }
+    });
+  }
+  private tips = new Map<Bone, THREE.Vector3>();
+  /** The last grab's hand and how far it is from the grab point (m; test hook). */
+  pinErr: { hand: string; err: number; reach: number; at: number[] } = { hand: '', err: 0, reach: 0, at: [] };
+
+  /** Turns a limb bone so its tip points at a world point (`w` 0…1 of the way); returns the tip's world position. */
+  private aimBone(name: Bone, target: THREE.Vector3, w: number): THREE.Vector3 {
+    const bone = this.bones.get(name), tip = this.tips.get(name);
+    const out = new THREE.Vector3();
+    if (!bone || !tip || !bone.parent) return out;
+    bone.updateWorldMatrix(true, false);
+    const s = bone.getWorldPosition(new THREE.Vector3());
+    const f = bone.localToWorld(tip.clone()).sub(s).normalize();
+    const d = target.clone().sub(s).normalize();
+    _q.setFromUnitVectors(f, d);
+    if (w < 1) _q.slerp(_q2.identity(), 1 - w);
+    const pq = bone.parent.getWorldQuaternion(new THREE.Quaternion());
+    bone.quaternion.premultiply(pq.clone().invert().multiply(_q).multiply(pq));
+    bone.updateMatrixWorld(true);
+    return bone.localToWorld(out.copy(tip));
+  }
+
+  /**
+   * A grab: the grabbing hand on the board's edge. The arm reaches for the grab point (nose, tail,
+   * toe-side edge for the indy, heel-side for the melon), the board tilts round its middle and moves
+   * the rest of the way into the hand, and the legs follow the board so the feet stay on the deck.
+   */
+  private pinGrab(id: string, t: number): void {
+    const w = clamp(t / 0.12, 0, 1);
+    if (w <= 0 || !this.tips.size) return;
+    const bp = this.boardPivot, bm = this.bm;
+    this.root.updateMatrixWorld(true);
+    // which hand is the front one (nearer the nose) and where the feet stand on the deck
+    const local = (name: Bone) => this.yawG.worldToLocal(this.bones.get(name)!.getWorldPosition(new THREE.Vector3()));
+    const front: Bone = local('arm-left').z > local('arm-right').z ? 'arm-left' : 'arm-right';
+    const back: Bone = front === 'arm-left' ? 'arm-right' : 'arm-left';
+    const feet = (['leg-left', 'leg-right'] as Bone[]).map((n) => {
+      const bone = this.bones.get(n), tip = this.tips.get(n);
+      return bone && tip ? bp.worldToLocal(bone.localToWorld(tip.clone())) : null;
+    });
+    // the grab point on the board (board pivot space: x across, toe side +x; z to the nose)
+    const top = bm.deckTop - bm.pivotY, L = bm.len / 2, W = bm.width / 2;
+    let hand: Bone, p: THREE.Vector3;
+    switch (id) {
+      // the fist closes round the edge: its middle just outside the deck
+      case 'nosegrab': hand = front; p = new THREE.Vector3(W * 0.3, top + 0.02, L - 0.06); break;
+      case 'tailgrab': hand = back; p = new THREE.Vector3(W * 0.3, top + 0.02, -L + 0.06); break;
+      case 'melon': hand = front; p = new THREE.Vector3(-W - 0.03, top - 0.03, L * 0.12); break;
+      default: hand = back; p = new THREE.Vector3(W + 0.03, top - 0.03, -L * 0.12); break; // indy
+    }
+    const target = bp.localToWorld(p.clone());
+    const h = this.aimBone(hand, target, w);
+    // tilt the board round its middle towards the hand (at most ~50°), then move it the rest
+    const c = bp.getWorldPosition(new THREE.Vector3());
+    _q.setFromUnitVectors(target.clone().sub(c).normalize(), h.clone().sub(c).normalize());
+    const ang = 2 * Math.acos(clamp(Math.abs(_q.w), 0, 1));
+    const k = (ang > 0.87 ? 0.87 / ang : 1) * w;
+    _q.slerp(_q2.identity(), 1 - k);
+    const pq = bp.parent!.getWorldQuaternion(new THREE.Quaternion());
+    bp.quaternion.premultiply(pq.clone().invert().multiply(_q).multiply(pq));
+    bp.updateMatrixWorld(true);
+    const t2 = bp.localToWorld(p.clone());
+    const move = h.clone().sub(t2);
+    if (move.length() > 0.35) move.setLength(0.35);
+    move.multiplyScalar(w);
+    const wp = bp.getWorldPosition(new THREE.Vector3()).add(move);
+    bp.position.copy(bp.parent!.worldToLocal(wp));
+    bp.updateMatrixWorld(true);
+    // the hand onto the point where it is now, the feet back onto the deck
+    const got = this.aimBone(hand, bp.localToWorld(p.clone()), w);
+    this.pinErr = { hand, err: got.distanceTo(bp.localToWorld(p.clone())), reach: got.distanceTo(this.bones.get(hand)!.getWorldPosition(new THREE.Vector3())), at: got.toArray() };
+    (['leg-left', 'leg-right'] as Bone[]).forEach((n, i) => { const f = feet[i]; if (f) this.aimBone(n, bp.localToWorld(f.clone()), w); });
+    this.boardPivot.getWorldPosition(this.boardWorld);
+  }
+
   // ------------------------------------------------------------------ poses
 
   private choose(sim: Sim, dt: number): Pose {
@@ -337,6 +331,13 @@ export class Skater {
         else this.play('skate-stand', 0.2);
         p.crouch = sim.crouching ? clamp(sim.crouchT / 0.5, 0.35, 1) : 0;
         p.lean = clamp(Math.abs(sim.speed) / 14, 0, 0.3);
+        if (sim.sketchT > 0) {
+          // a sketchy landing: arms windmill, the body rocks
+          const k = sim.sketchT / 0.6;
+          p.arms = Math.max(p.arms, 0.9 * k);
+          p.lean += Math.sin(this.t * 22) * 0.35 * k;
+          p.crouch = Math.max(p.crouch, 0.5 * k);
+        }
         break;
       case 'manual': {
         this.play('skate-stand', 0.15);
@@ -442,13 +443,13 @@ export class Skater {
       const k = clamp(p.tumble / 0.6, 0, 1);
       this.body.rotation.set(0, 0, 0);
       this.body.rotation.x = k * Math.PI * 0.5 + Math.sin(k * Math.PI) * 0.8;
-      this.body.position.y = -DECK_TOP + Math.sin(k * Math.PI) * 0.6;
+      this.body.position.y = -this.bm.deckTop + Math.sin(k * Math.PI) * 0.6;
     } else {
       this.body.rotation.set(0, 0, 0);
       this.body.position.y = 0;
     }
     // rider height: on the deck, lifted with the board in flips and grabs
-    this.fig.position.y = DECK_TOP + this.boardY * 0.9;
+    this.fig.position.y = this.bm.deckTop + this.boardY * 0.9;
     void dt;
   }
 
@@ -469,7 +470,7 @@ export class Skater {
         if (f.def.id === 'pinwheel') {
           // the board orbits the rider
           const ang = e * Math.PI * 4;
-          bp.position.set(Math.sin(ang) * 0.7, 0.07 * C + 0.5 * Math.sin(Math.PI * k), Math.cos(ang) * 0.7);
+          bp.position.set(Math.sin(ang) * 0.7, this.bm.pivotY + 0.5 * Math.sin(Math.PI * k), Math.cos(ang) * 0.7);
           bp.rotation.set(0, ang, Math.PI / 2 * Math.sin(Math.PI * k));
           this.boardY = 0.35 * Math.sin(Math.PI * k);
           return;
@@ -477,12 +478,8 @@ export class Skater {
         this.lastFlip = f.def.id;
         this.flipRoll = roll; this.flipYaw = yaw; this.flipPitch = pitch;
       } else if (a.grab) {
+        // lifted to the hand; pinGrab tilts it into the grabbing hand
         y = 0.22;
-        const id = a.grab.def.id;
-        if (id === 'nosegrab') pitch = -0.45;
-        else if (id === 'tailgrab') pitch = 0.45;
-        else if (id === 'melon') roll = -0.4;
-        else roll = 0.4;
       } else y = p.tuck * 0.12;
     } else if (st === 'grind') {
       const g = sim.grind!;
@@ -502,9 +499,9 @@ export class Skater {
     this.boardY = lerp(this.boardY, y, Math.min(1, dt * 20));
     if (st === 'manual') {
       // pivot on the back (or front) wheels
-      const L = 0.27 * C * (pitch < 0 ? 1 : -1);
-      bp.position.set(0, 0.07 * C + Math.abs(Math.sin(pitch)) * Math.abs(L) * 0.9, 0);
-    } else bp.position.set(0, 0.07 * C + this.boardY, 0);
+      const L = this.bm.truckZ;
+      bp.position.set(0, this.bm.pivotY + Math.abs(Math.sin(pitch)) * L * 0.9, 0);
+    } else bp.position.set(0, this.bm.pivotY + this.boardY, 0);
     bp.rotation.set(pitch, yaw, roll, 'YXZ');
     // in a bail the board flies on its own (in world space, drawn through the pivot)
     if (st === 'bail' && this.loose) {

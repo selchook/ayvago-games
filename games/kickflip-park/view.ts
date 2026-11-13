@@ -12,10 +12,14 @@ import { park as getPark, type ParkDef, type ParkId } from './parks';
 import { Mats, GeoBuilder, buildCustom, mergeModels, pieceMatrix, propMatrix, CROWD_KEYS, type StyleTex } from './kit';
 import { Skater, C } from './skater';
 import { Billboards, Particles, glowTex, puffTex, ringTex } from './fx3d';
-import { clamp, wrap, type DeckId, type WheelId } from './defs';
+import { clamp, wrap } from './defs';
+import { usableBoard } from './boardmodel';
 import { onSeg } from './park';
 
 export const FOV = 62;
+
+/** Where the line of sight from the rider to the camera is checked (shares of the way; close to the rider too: a wall hugging the rider hides them). */
+const LOS_STEPS = [0.06, 0.12, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
 
 interface Fan { obj: THREE.Object3D; mixer: THREE.AnimationMixer; idle: THREE.AnimationAction | null; cheer: THREE.AnimationAction | null; cheerT: number }
 
@@ -60,7 +64,7 @@ export class View {
   private snap = true;
   private lastState = '';
 
-  constructor(phaser: Phaser.Scene, id: ParkId, o: { deck: DeckId; wheel: WheelId; menu?: boolean }) {
+  constructor(phaser: Phaser.Scene, id: ParkId, o: { board: string; menu?: boolean }) {
     const park = getPark(id);
     this.park = park;
     const L = park.look;
@@ -77,7 +81,7 @@ export class View {
     this.buildPark(sc);
     this.buildSky(sc);
     // the skater
-    this.skater = new Skater(playerCharacter3d(), this.mats, o.deck, o.wheel, (x, z) => park.terrain.height(x, z));
+    this.skater = new Skater(playerCharacter3d(), this.mats, usableBoard(o.board), (x, z) => park.terrain.height(x, z));
     sc.add(this.skater.root, this.skater.shadowMesh);
     // effects
     const glow = glowTex();
@@ -218,9 +222,25 @@ export class View {
       if (!sim.air!.vert && vh > 2) want = Math.atan2(sim.vx, sim.vz);
     }
     if (st !== this.lastState) this.lastState = st;
-    const rate = st === 'air' ? (sim.air!.vert ? 0 : 1.2) : st === 'bail' ? 0.6 : 2.4;
-    const d = wrap(want - this.camYaw);
-    this.camYaw += clamp(d * Math.min(1, dt * 3.2), -rate * dt, rate * dt);
+    // the chase follows the heading quickly enough that a turn reads at once (about 25° behind in
+    // a full-lock carve), slowly in the air so spins show against the park
+    const rate = st === 'air' ? (sim.air!.vert ? 0 : 1.2) : st === 'bail' ? 0.6 : 2.9;
+    let d = wrap(want - this.camYaw);
+    // a wall between the camera and the rider (riding round a bowl's outside): swing round to behind
+    // the rider quickly when the view from there is clear
+    let fast = 1;
+    if (st === 'ground' || st === 'manual') {
+      const view = (yaw: number) => {
+        const cx = sim.x - Math.sin(yaw) * 8.6, cz = sim.z - Math.cos(yaw) * 8.6, cy = sim.y + 3.9;
+        return this.clearView(sim.x, sim.y + 1, sim.z, cx, cy, cz, sim.y + 10, sim.y) - cy;
+      };
+      if (Math.abs(d) > 0.25) {
+        const here = view(this.camYaw);
+        if (here > 2.5 && view(want) < here - 1.5) fast = 3;
+      }
+    }
+    d = wrap(want - this.camYaw);
+    this.camYaw += clamp(d * Math.min(1, dt * 4.4 * fast), -rate * fast * dt, rate * fast * dt);
     if (this.snap) this.camYaw = want;
     // where it sits: behind and above, higher and further at speed and in big airs
     const sp = Math.min(14, Math.abs(st === 'air' ? Math.hypot(vh, sim.vy) : sim.speed));
@@ -230,15 +250,24 @@ export class View {
     const dist = (8.6 + sp * 0.16 + above * 0.35) * this.camDist * (1 - this.punch * 0.2);
     const fy = Math.sin(this.camYaw), fz = Math.cos(this.camYaw);
     const baseY = st === 'air' ? Math.max(sim.y - above * 0.55, sim.air!.startY) : sim.y;
-    const tx = sim.x - fy * dist, tz = sim.z - fz * dist;
+    let tx = sim.x - fy * dist, tz = sim.z - fz * dist;
     let ty = baseY + 3.9 + sp * 0.07 + above * 0.25 - this.punch * 0.6;
     const T = this.park.terrain;
     const ty0 = ty;
-    ty = this.clearView(sim.x, sim.y + 1, sim.z, tx, ty, tz, sim.y + 10, Math.min(sim.y, groundY));
+    const floorY = Math.min(sim.y, groundY);
+    ty = this.clearView(sim.x, sim.y + 1, sim.z, tx, ty, tz, sim.y + 10, floorY);
+    // lifted high over walls (a bowl, a deck): come in closer instead, so the rider does not sink to
+    // the bottom of the picture under the touch buttons
+    const lift0 = ty - ty0;
+    if (lift0 > 1) {
+      const k = clamp(1 - (lift0 - 1) * 0.09, 0.6, 1);
+      tx = sim.x - fy * dist * k; tz = sim.z - fz * dist * k;
+      ty = this.clearView(sim.x, sim.y + 1, sim.z, tx, ty0, tz, sim.y + 10, floorY);
+    }
     // look ahead of the board, so the line in front shows and the rider sits in the lower third;
     // a camera lifted over something looks up with it, so the bottom edge of the view stays clear
     const ahead = 5.2 + sp * 0.15;
-    const lx = sim.x + fy * ahead, ly = sim.y + 1.4 + (ty - ty0) * 0.6, lz = sim.z + fz * ahead;
+    const lx = sim.x + fy * ahead, ly = sim.y + 1.4 + (ty - ty0) * 0.2, lz = sim.z + fz * ahead;
     // vert airs (half-pipe, bowl): a side view from the flat, out and up, so the coping, the rider
     // above it and the transition all show
     const a = sim.air;
@@ -319,7 +348,7 @@ export class View {
         if (h > floor + 0.3) cy = Math.max(cy, Math.min(cap, h + 0.6 + d * 0.92));
       }
     }
-    for (let k = 0.2; k <= 1.001; k += 0.1) {
+    for (const k of LOS_STEPS) {
       const h = T.height(x + (cx - x) * k, z + (cz - z) * k);
       if (h < -20) continue;
       const lineY = y + (cy - y) * k;
@@ -365,7 +394,9 @@ export class View {
       for (let i = 0; i < n; i++) {
         if (Math.random() > sdt * 60) continue;
         const back = -Math.sin(sim.heading), backZ = -Math.cos(sim.heading);
-        const c = g.special ? [0x9fe8ff, 0xffffff, 0xff8af0][i % 3] : metal ? [0xffd27a, 0xffffff, 0xff9a3c][i % 3] : 0xd8d0c0;
+        // the board's own spark colour mixes into a metal rail's sparks
+        const own = sk.boardDef.spark;
+        const c = g.special ? [0x9fe8ff, 0xffffff, 0xff8af0][i % 3] : metal ? [own ?? 0xffd27a, 0xffffff, own ?? 0xff9a3c][i % 3] : 0xd8d0c0;
         this.sparks.emit(bw.x, sim.y + 0.02, bw.z, back * (2 + Math.random() * 3) + (Math.random() - 0.5) * 2, 1 + Math.random() * 2.5, backZ * (2 + Math.random() * 3) + (Math.random() - 0.5) * 2, 0.35 + Math.random() * 0.3, metal ? 0.22 : 0.26, 0.03, c, 1, 9, 0.06);
       }
     }
@@ -379,6 +410,11 @@ export class View {
       const p = 0.75 + 0.25 * Math.sin(this.t * 8);
       this.halo.add(sk.chest.x, sk.chest.y - 0.3, sk.chest.z, 2.6 * p, 2.6 * p, 0, 0xffc23a, 0.45);
       if (Math.random() < dt * 25) this.glows.emit(sk.chest.x + (Math.random() - 0.5) * 0.8, sk.chest.y - 0.6, sk.chest.z + (Math.random() - 0.5) * 0.8, 0, 1.2, 0, 0.6, 0.3, 0.05, Math.random() < 0.5 ? 0xffd23f : 0xff8a3d, 0.5);
+    }
+    // a board with a trail leaves a short glowing ribbon of sparkles in the air
+    const trail = sk.boardDef.trail;
+    if (trail !== undefined && sim.state === 'air' && Math.random() < sdt * 70) {
+      this.glows.emit(bw.x + (Math.random() - 0.5) * 0.3, bw.y - 0.05, bw.z + (Math.random() - 0.5) * 0.3, -sim.vx * 0.15, -0.2, -sim.vz * 0.15, 0.45, 0.28, 0.04, Math.random() < 0.3 ? 0xffffff : trail, 0.4);
     }
     if (sim.state === 'air' && sim.air?.flip?.special) {
       for (let i = 0; i < 3; i++) this.glows.emit(bw.x, bw.y, bw.z, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, 0.5, 0.5, 0.05, [0x9fe8ff, 0xff8af0, 0xffffff][i], 1.5);
