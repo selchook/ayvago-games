@@ -10,7 +10,7 @@ const S: Record<string, Pair> = {
   park_roofs: ['Gökdelen Çatıları', 'Skyline Roofs'],
   parkSub_plaza: ['Okul meydanı: banklar, merdivenler, raylar', 'A schoolyard plaza: benches, stairs, rails'],
   parkSub_yard: ['Ahşap park: U-rampa, havuz, funbox', 'A wooden park: half-pipe, bowl, funbox'],
-  parkSub_roofs: ['Şehrin tepesi: boşluklar, uzun raylar, rampalar', 'Downtown roofs: gaps, long rails, kickers'],
+  parkSub_roofs: ['Çatılar: boşluklar, uzun raylar, rampalar', 'Downtown roofs: gaps, long rails, kickers'],
 
   // tricks
   tr_kickflip: ['Kickflip', 'Kickflip'],
@@ -123,15 +123,15 @@ const S: Record<string, Pair> = {
   newPark: ['YENİ PARK AÇILDI: {name}', 'NEW PARK UNLOCKED: {name}'],
   newBoard: ['YENİ KAYKAY AÇILDI: {name}', 'NEW BOARD UNLOCKED: {name}'],
   newBoardTitle: ['YENİ KAYKAY AÇILDI!', 'NEW BOARD UNLOCKED!'],
-  newBoardHint: ['Parklar ekranından seç', 'Pick it on the Parks screen'],
   sessionTitle: ['{park}', '{park}'],
 
-  // the park screen
-  parks: ['PARKLAR', 'PARKS'],
-  parksTitle: ['PARKLAR VE HEDEFLER', 'PARKS & GOALS'],
-  skateHere: ['BURADA KAY', 'SKATE HERE'],
-  selected: ['SEÇİLİ', 'SELECTED'],
+  // the session setup (PLAY on the menu)
+  setupTitle: ['PARKINI VE KAYKAYINI SEÇ', 'PICK YOUR PARK AND BOARD'],
+  start: ['BAŞLA', 'START'],
+  setupKeys: ['←/→ park · ↑/↓ kaykay · Enter başla · Esc geri', '←/→ park · ↑/↓ board · Enter start · Esc back'],
+  lockedShort: ['KİLİTLİ', 'LOCKED'],
   locked: ['KİLİTLİ: {park} parkında {n} hedef tamamla', 'LOCKED: finish {n} goals in {park}'],
+  lockedHave: ['Şu ana kadar: {n}/{m} hedef', 'So far: {n}/{m} goals'],
   goalsCount: ['{n}/{m} hedef', '{n}/{m} goals'],
   bestIn: ['En iyi: {n}', 'Best: {n}'],
   board: ['KAYKAY', 'BOARD'],

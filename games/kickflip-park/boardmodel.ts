@@ -5,12 +5,17 @@
 //     deck edges, wheels, trucks) so each takes the entry's colours; a longboard stretches the deck
 //     and moves the trucks out with it.
 //   - Any other GLB is fitted by itself: the longest side of its bounding box becomes the length,
-//     the shortest the height, the side with the long flat deck goes up; `fit` overrides it.
-//     Its own materials are kept (as the game's flat Lambert) and `tint` colours them.
+//     the shortest the height, the side with the long flat deck goes up; `fit` overrides it. Then
+//     it is normalised to the Kenney board's size (normalise): the deck as wide, its top as high
+//     and as thick as the Kenney deck, the trucks and wheels scaled (round) to fit under it. The
+//     fitted shape of a model is worked out once and shared by all its skins.
+//   - A GLB keeps its own textures (as the game's flat Lambert, or Phong when glossy); a skin
+//     recolours parts of them (skin): on a one-mesh board by what each texel is (dark grip, wooden
+//     deck, white wheels, grey trucks), on a board in parts by the material's name.
 // It also measures what the rider needs: the deck's top (feet), the board's middle (the flip
 // pivot), the trucks (manual pivots) and the length (grab points).
 import { THREE, model } from '@core/three';
-import { boardModelKey, boardDef, FALLBACKS, type BoardDef, type BoardFit } from './boards';
+import { boardModelKey, boardDef, boardOn, FALLBACKS, type BoardDef, type BoardFit } from './boards';
 import { paintDeck } from './boardart';
 import type { Mats } from './kit';
 
@@ -19,6 +24,13 @@ export const C = 2.2;
 /** The Kenney board's length (model units) and the standard board length in metres. */
 const KENNEY_LEN = 0.7;
 export const BOARD_LEN = KENNEY_LEN * C;
+/**
+ * The Kenney board as the game rides it (metres, measured on the fitted model by vertical rays):
+ * 1.54 m long, the deck 0.658 m wide and 0.11 m thick, its top 0.301 m and its underside 0.191 m
+ * above the ground (the trucks' height), wheels 0.19 m across. The owner's boards are normalised
+ * to these.
+ */
+export const KENNEY_SIZE = { len: BOARD_LEN, deckWidth: 0.658, deckTop: 0.301, deckBottom: 0.191, width: 0.66, wheel: 0.19 };
 
 export interface BoardModel {
   /** The fitted board: its origin on the ground under the middle of the board. */
@@ -44,21 +56,33 @@ export function boardReady(def: BoardDef): boolean {
   try { model(boardModelKey(def), { shadows: false }); return true; } catch { return false; }
 }
 
-/** The board to show for `id`: itself when its model is there, else the first fallback that is. */
+/** The board to show for `id`: itself when it is on and its model is there, else the first fallback that is. */
 export function usableBoard(id: string): BoardDef {
   const d = boardDef(id);
-  if (boardReady(d)) return d;
+  if (boardOn(d.id) && boardReady(d)) return d;
   for (const f of FALLBACKS) { const q = boardDef(f); if (boardReady(q)) return q; }
   return boardDef('classic');
 }
 
 export function buildBoardModel(def: BoardDef, mats: Mats): BoardModel {
   const own: { dispose(): void }[] = [];
-  let src: THREE.Object3D;
-  if (def.model === 'kenney' || !boardReady(def)) src = kenneyBoard(def, mats, own);
-  else src = glbBoard(def, mats, own);
-  const targetLen = BOARD_LEN * (def.model === 'kenney' ? def.length ?? 1 : def.fit?.scale ?? 1);
-  const fitted = fitBoard(src, def.model === 'kenney' ? {} : def.fit ?? {}, targetLen);
+  let fitted: Fitted;
+  if (def.model === 'kenney' || !boardReady(def)) {
+    fitted = fitBoard(kenneyBoard(def.model === 'kenney' ? def : boardDef('classic'), mats, own), {}, BOARD_LEN * (def.model === 'kenney' ? def.length ?? 1 : 1));
+  } else {
+    // the model's fitted, normalised shape (shared by its skins) with this skin's materials
+    const shape = glbShape(def);
+    const src = glbBoard(def, mats, own);
+    const meshes: THREE.Mesh[] = [];
+    src.traverse((o) => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
+    const group = new THREE.Group();
+    shape.geos.forEach((g, i) => {
+      const geo = g.clone();
+      own.push(geo);
+      group.add(new THREE.Mesh(geo, meshes[i]?.material ?? mats.of(new THREE.MeshBasicMaterial())));
+    });
+    fitted = { ...shape.m, group };
+  }
   fitted.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = false; } });
   return { ...fitted, dispose: () => own.forEach((r) => r.dispose()) };
 }
@@ -135,35 +159,56 @@ function kenneyBoard(def: BoardDef, mats: Mats, own: { dispose(): void }[]): THR
   return g;
 }
 
-// ------------------------------------------------------------------ a GLB board
+// ------------------------------------------------------------------ a GLB board's skin
 
+/** What a texel of a board's texture is: the parts a skin can recolour. */
+type Part = 'grip' | 'wood' | 'wheel' | 'truck' | 'art';
+const PARTS: Part[] = ['grip', 'wood', 'wheel', 'truck', 'art'];
+
+/**
+ * The model's own materials with the skin's colours. A material named 'wheel' or 'truck' (the blue
+ * board) is all wheel or truck; 'deck' is wood (its warm edge) and art (the graphic); any other
+ * (the black board's one material, 'board') is sorted texel by texel into grip, wood, wheels and
+ * trucks. Glossy skins get Phong materials, glowing ones an emissive map of their wood.
+ */
 function glbBoard(def: BoardDef, mats: Mats, own: { dispose(): void }[]): THREE.Object3D {
   const src = model(boardModelKey(def), { shadows: true });
   const tint = def.tint !== undefined && def.tint !== 0xffffff ? new THREE.Color(def.tint) : null;
-  // colours by material name (a colourway of one model)
-  const named: Record<string, number | undefined> = { wheel: def.wheel, truck: def.truck, grip: def.grip, edge: def.edge };
+  const colours: Partial<Record<Part, number>> = { grip: def.grip, wood: def.wood, wheel: def.wheel, truck: def.truck };
   const made = new Map<THREE.Material, THREE.Material>();
   const conv = (mat: THREE.Material): THREE.Material => {
     const done = made.get(mat);
     if (done) return done;
     const base = mats.of(mat);
     const name = mat.name.toLowerCase();
-    const part = Object.keys(named).find((k) => name.includes(k) && named[k] !== undefined);
-    const hue = name.includes('deck') && def.hue ? def.hue : 0;
-    let out: THREE.MeshLambertMaterial = base;
-    if (tint || part || hue) {
-      out = base.clone();
-      own.push(out);
-      if (part) {
-        // a textured part keeps its detail: its shading recoloured; a plain one takes the colour
-        const tex = base.map ? recoloured(base.map, named[part]!) : null;
-        if (tex) { out.map = tex; own.push(tex); } else out.color.setHex(named[part]!);
-      }
-      if (hue && base.map) {
-        const tex = hueShifted(base.map, hue);
-        if (tex) { out.map = tex; own.push(tex); }
-      }
-      if (tint) out.color.multiply(tint);
+    const kind: 'wheel' | 'truck' | 'deck' | 'board' = name.includes('wheel') ? 'wheel' : name.includes('truck') ? 'truck' : name.includes('deck') ? 'deck' : 'board';
+    const touched = (kind === 'board' ? ['grip', 'wood', 'wheel', 'truck'] : kind === 'deck' ? ['wood'] : [kind]).some((p) => colours[p as Part] !== undefined);
+    const hue = kind === 'deck' || kind === 'board' ? def.hue ?? 0 : 0;
+    const glow = def.glow !== undefined && (kind === 'deck' || kind === 'board') ? def.glow : undefined;
+    const gloss = def.gloss ?? 0;
+    // metal: the trucks shine in their own colour (a gold skin's wheels too)
+    const metalPart = !!def.metal && (kind === 'truck' || kind === 'board' || (kind === 'wheel' && def.wheel !== undefined && isGold(def.wheel)));
+    let out: THREE.Material = base;
+    if (tint || touched || hue || glow !== undefined || gloss > 0) {
+      const spotty = kind === 'board' && gloss > 0;
+      const skin = base.map && (touched || hue || glow !== undefined || spotty) ? skinMaps(base.map, kind, colours, hue, glow, spotty, def.id + ':' + name) : null;
+      const map = skin?.map ?? base.map;
+      let m: THREE.MeshLambertMaterial | THREE.MeshPhongMaterial;
+      if (gloss > 0) {
+        m = new THREE.MeshPhongMaterial({ map, shininess: 18 + gloss * 70 });
+        // a metal part's highlight takes its colour; anything else a soft white sheen
+        const spec = metalPart ? new THREE.Color(kind === 'wheel' ? def.wheel! : def.truck ?? 0xdddddd).multiplyScalar(0.55 + gloss * 0.35) : new THREE.Color(0xffffff).multiplyScalar(0.12 + gloss * 0.22);
+        m.specular.copy(spec);
+        // one mesh: the shine is the trucks' (and a gold skin's wheels'), hardly the grip's
+        if (skin?.spec) m.specularMap = skin.spec;
+      } else m = new THREE.MeshLambertMaterial({ map });
+      if (!map) m.color.copy(base.color);
+      if (skin?.glow) { m.emissive.setHex(0xffffff); m.emissiveMap = skin.glow; m.emissiveIntensity = kind === 'board' ? 1 : 0.6; }
+      if (tint) m.color.multiply(tint);
+      if (!base.map && kind !== 'board' && kind !== 'deck' && colours[kind as Part] !== undefined) m.color.setHex(colours[kind as Part]!);
+      own.push(m);
+      if (skin) { own.push(skin.map); if (skin.glow) own.push(skin.glow); if (skin.spec) own.push(skin.spec); }
+      out = m;
     }
     made.set(mat, out);
     return out;
@@ -175,54 +220,120 @@ function glbBoard(def: BoardDef, mats: Mats, own: { dispose(): void }[]): THREE.
   return src;
 }
 
-/** A copy of a texture in one colour: its lightness (relative to its average) times `color`. */
-function recoloured(src: THREE.Texture, color: number): THREE.CanvasTexture | null {
-  const c = new THREE.Color(color);
-  return remap(src, (px) => {
-    let avg = 0;
-    for (let i = 0; i < px.length; i += 4) avg += px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11;
-    avg = Math.max(1, avg / (px.length / 4));
-    const r = c.r * 255, g = c.g * 255, b = c.b * 255;
-    for (let i = 0; i < px.length; i += 4) {
-      const k = Math.min(1.5, (px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11) / avg);
-      px[i] = r * k; px[i + 1] = g * k; px[i + 2] = b * k;
-    }
-  });
+const isGold = (c: number): boolean => { const h = new THREE.Color(c).getHSL({ h: 0, s: 0, l: 0 }); return h.h > 0.1 && h.h < 0.17 && h.s > 0.6; };
+
+const smooth = (a: number, b: number, x: number): number => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+/** The parts a texel belongs to (weights that add up to 1). */
+function texelParts(r: number, g: number, b: number, kind: 'wheel' | 'truck' | 'deck' | 'board', w: Record<Part, number>): void {
+  for (const p of PARTS) w[p] = 0;
+  if (kind === 'wheel' || kind === 'truck') { w[kind] = 1; return; }
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx > 0 ? (mx - mn) / mx : 0;
+  let h = 0;
+  if (mx > mn) {
+    if (mx === r) h = 60 * (((g - b) / (mx - mn)) % 6);
+    else if (mx === g) h = 60 * ((b - r) / (mx - mn) + 2);
+    else h = 60 * ((r - g) / (mx - mn) + 4);
+    if (h < 0) h += 360;
+  }
+  // warm, saturated texels are the wooden deck (the black board's underside and ply edge, the
+  // blue board's edge)
+  const wood = smooth(0.16, 0.3, sat) * smooth(4, 14, h) * (1 - smooth(52, 62, h)) * smooth(0.18, 0.3, mx);
+  if (kind === 'deck') { w.wood = wood; w.art = 1 - wood; return; }
+  const rest = 1 - wood;
+  const dark = rest * (1 - smooth(0.32, 0.4, mx));
+  const light = rest * smooth(0.63, 0.72, mx);
+  w.wood = wood; w.grip = dark; w.wheel = light; w.truck = Math.max(0, rest - dark - light);
 }
 
-/** A copy of a texture with its hue turned by `deg` degrees (a colourway's deck graphic). */
-function hueShifted(src: THREE.Texture, deg: number): THREE.CanvasTexture | null {
-  // rotate the colour round the grey axis (keeps lightness and saturation close)
-  const a = deg * Math.PI / 180, cosA = Math.cos(a), sinA = Math.sin(a);
-  const k1 = (1 - cosA) / 3, k2 = Math.sqrt(1 / 3) * sinA;
-  const m00 = cosA + k1, m01 = k1 - k2, m02 = k1 + k2;
-  return remap(src, (px) => {
-    for (let i = 0; i < px.length; i += 4) {
-      const r = px[i], gg = px[i + 1], b = px[i + 2];
-      px[i] = r * m00 + gg * m01 + b * m02;
-      px[i + 1] = r * m02 + gg * m00 + b * m01;
-      px[i + 2] = r * m01 + gg * m02 + b * m00;
-    }
-  });
-}
+/** Skin maps made so far, by skin and material (a skin seen again reuses its pixels). */
+const skinCache = new Map<string, { map: HTMLCanvasElement; glow: HTMLCanvasElement | null; spec: HTMLCanvasElement | null }>();
 
-/** A canvas copy of a texture with its pixels changed by `f`. */
-function remap(src: THREE.Texture, f: (px: Uint8ClampedArray) => void): THREE.CanvasTexture | null {
-  const img = src.image as (CanvasImageSource & { width: number; height: number }) | undefined;
-  if (!img?.width) return null;
-  const cv = document.createElement('canvas');
-  cv.width = img.width; cv.height = img.height;
-  const g = cv.getContext('2d', { willReadFrequently: true })!;
-  g.drawImage(img, 0, 0);
-  const d = g.getImageData(0, 0, cv.width, cv.height);
-  f(d.data);
-  g.putImageData(d, 0, 0);
-  const t = new THREE.CanvasTexture(cv);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.flipY = src.flipY;
-  t.wrapS = src.wrapS; t.wrapT = src.wrapT;
-  t.anisotropy = 4;
-  return t;
+/**
+ * A skin's colour map (and glow map) from a board texture: each part with a colour takes it, its
+ * shading kept (the texel's lightness relative to the part's average); the deck graphic's hue
+ * turned by `hue` degrees; the wood lit in `glow`.
+ */
+function skinMaps(src: THREE.Texture, kind: 'wheel' | 'truck' | 'deck' | 'board', colours: Partial<Record<Part, number>>, hue: number, glow: number | undefined, spotty: boolean, key: string): { map: THREE.CanvasTexture; glow: THREE.CanvasTexture | null; spec: THREE.CanvasTexture | null } | null {
+  let c = skinCache.get(key);
+  if (!c) {
+    const img = src.image as (CanvasImageSource & { width: number; height: number }) | undefined;
+    if (!img?.width) return null;
+    const cv = document.createElement('canvas');
+    cv.width = img.width; cv.height = img.height;
+    const g = cv.getContext('2d', { willReadFrequently: true })!;
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, cv.width, cv.height), px = d.data, n = px.length / 4;
+    // every texel's parts, and each part's average lightness
+    const W = new Float32Array(n * PARTS.length), avg = PARTS.map(() => 0), wsum = PARTS.map(() => 0);
+    const w = { grip: 0, wood: 0, wheel: 0, truck: 0, art: 0 } as Record<Part, number>;
+    for (let i = 0; i < n; i++) {
+      const r = px[i * 4] / 255, gg = px[i * 4 + 1] / 255, b = px[i * 4 + 2] / 255;
+      texelParts(r, gg, b, kind, w);
+      const l = r * 0.3 + gg * 0.59 + b * 0.11;
+      PARTS.forEach((p, k) => { W[i * PARTS.length + k] = w[p]; avg[k] += w[p] * l; wsum[k] += w[p]; });
+    }
+    PARTS.forEach((_p, k) => { avg[k] = Math.max(0.02, avg[k] / Math.max(1e-6, wsum[k])); });
+    const tgt = PARTS.map((p) => (colours[p] !== undefined ? new THREE.Color(colours[p]!) : null));
+    // hue rotation round the grey axis (keeps lightness and saturation close)
+    const a = hue * Math.PI / 180, cosA = Math.cos(a), sinA = Math.sin(a);
+    const k1 = (1 - cosA) / 3, k2 = Math.sqrt(1 / 3) * sinA;
+    const m00 = cosA + k1, m01 = k1 - k2, m02 = k1 + k2;
+    let gpx: Uint8ClampedArray | null = null, gd: ImageData | null = null, gcv: HTMLCanvasElement | null = null;
+    const gc = glow !== undefined ? new THREE.Color(glow) : null;
+    if (gc) { gcv = document.createElement('canvas'); gcv.width = cv.width; gcv.height = cv.height; gd = gcv.getContext('2d')!.createImageData(cv.width, cv.height); gpx = gd.data; }
+    // a one-mesh board's shine by part: metal trucks and wheels, a little on the wood, none on the grip
+    let spx: Uint8ClampedArray | null = null, sd: ImageData | null = null, scv: HTMLCanvasElement | null = null;
+    const SHINE: Record<Part, number> = { grip: 0.1, wood: 0.45, wheel: colours.wheel !== undefined && isGold(colours.wheel) ? 1 : 0.55, truck: 1, art: 0.5 };
+    if (spotty) { scv = document.createElement('canvas'); scv.width = cv.width; scv.height = cv.height; sd = scv.getContext('2d')!.createImageData(cv.width, cv.height); spx = sd.data; }
+    const wi = PARTS.indexOf('wood');
+    for (let i = 0; i < n; i++) {
+      const r = px[i * 4], gg = px[i * 4 + 1], b = px[i * 4 + 2];
+      const l = (r * 0.3 + gg * 0.59 + b * 0.11) / 255;
+      let R = 0, G = 0, B = 0;
+      for (let k = 0; k < PARTS.length; k++) {
+        const wk = W[i * PARTS.length + k];
+        if (wk <= 0) continue;
+        const t = tgt[k];
+        if (t) {
+          const sh = Math.min(1.45, Math.max(0.45, l / avg[k])) * 255;
+          R += wk * t.r * sh; G += wk * t.g * sh; B += wk * t.b * sh;
+        } else if (hue && (PARTS[k] === 'art' || kind === 'board')) {
+          R += wk * (r * m00 + gg * m01 + b * m02); G += wk * (r * m02 + gg * m00 + b * m01); B += wk * (r * m01 + gg * m02 + b * m00);
+        } else { R += wk * r; G += wk * gg; B += wk * b; }
+      }
+      px[i * 4] = R; px[i * 4 + 1] = G; px[i * 4 + 2] = B;
+      if (spx) {
+        let sh = 0;
+        for (let k = 0; k < PARTS.length; k++) sh += W[i * PARTS.length + k] * SHINE[PARTS[k]];
+        spx[i * 4] = spx[i * 4 + 1] = spx[i * 4 + 2] = sh * 255; spx[i * 4 + 3] = 255;
+      }
+      if (gpx && gc) {
+        // a one-mesh board glows along its ply edge (the most saturated wood), a deck all over its wood
+        const edge = kind === 'board' ? smooth(0.4, 0.52, (Math.max(r, gg, b) - Math.min(r, gg, b)) / Math.max(1, Math.max(r, gg, b))) : 1;
+        const e = W[i * PARTS.length + wi] * edge * Math.min(1.2, 0.55 + 0.6 * l / avg[wi]) * 255;
+        gpx[i * 4] = gc.r * e; gpx[i * 4 + 1] = gc.g * e; gpx[i * 4 + 2] = gc.b * e; gpx[i * 4 + 3] = 255;
+      }
+    }
+    g.putImageData(d, 0, 0);
+    if (gcv && gd) gcv.getContext('2d')!.putImageData(gd, 0, 0);
+    if (scv && sd) scv.getContext('2d')!.putImageData(sd, 0, 0);
+    c = { map: cv, glow: gcv, spec: scv };
+    skinCache.set(key, c);
+    // a few skins' worth of pixels at most
+    if (skinCache.size > 12) skinCache.delete(skinCache.keys().next().value!);
+  }
+  const tex = (cv: HTMLCanvasElement) => {
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.flipY = src.flipY;
+    t.wrapS = src.wrapS; t.wrapT = src.wrapT;
+    t.anisotropy = 4;
+    return t;
+  };
+  const spec = c.spec ? tex(c.spec) : null;
+  if (spec) spec.colorSpace = THREE.NoColorSpace;
+  return { map: tex(c.map), glow: c.glow ? tex(c.glow) : null, spec };
 }
 
 // ------------------------------------------------------------------ the fit
@@ -344,4 +455,199 @@ export function fitBoard(src: THREE.Object3D, fit: BoardFit, targetLen: number):
   const group = new THREE.Group();
   group.add(inner);
   return { group, deckTop: top, pivotY: top / 2, len, width, truckZ };
+}
+
+// ------------------------------------------------------------------ the owner's boards at the Kenney board's size
+
+/** A GLB board's shape in the board frame: its meshes' geometries (in traverse order) and measures. */
+interface Shape { geos: THREE.BufferGeometry[]; m: Omit<Fitted, 'group'> }
+const shapes = new Map<string, Shape>();
+
+/** The fitted (and normalised) shape of a board's model, worked out once per model and fit. */
+function glbShape(def: BoardDef): Shape {
+  const fit = def.fit ?? {};
+  const key = boardModelKey(def) + JSON.stringify(fit);
+  let sh = shapes.get(key);
+  if (sh) return sh;
+  const src = model(boardModelKey(def), { shadows: false });
+  const fitted = fitBoard(src, fit, BOARD_LEN * (fit.scale ?? 1));
+  fitted.group.updateMatrixWorld(true);
+  // every mesh baked into the board frame, as plain float positions and normals
+  const parts: { geo: THREE.BufferGeometry; kind: 'deck' | 'under' | 'any' }[] = [];
+  fitted.group.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const geo = m.geometry.clone();
+    for (const name of ['position', 'normal']) {
+      const a = geo.getAttribute(name) as THREE.BufferAttribute | undefined;
+      if (!a) continue;
+      const f = new Float32Array(a.count * 3);
+      for (let i = 0; i < a.count; i++) { f[i * 3] = a.getX(i); f[i * 3 + 1] = a.getY(i); f[i * 3 + 2] = a.getZ(i); }
+      geo.setAttribute(name, new THREE.BufferAttribute(f, 3));
+    }
+    geo.applyMatrix4(m.matrixWorld);
+    const mat = (Array.isArray(m.material) ? m.material[0] : m.material) as THREE.Material;
+    const name = mat?.name.toLowerCase() ?? '';
+    parts.push({ geo, kind: name.includes('wheel') || name.includes('truck') ? 'under' : name.includes('deck') ? 'deck' : 'any' });
+  });
+  let m: Omit<Fitted, 'group'> = { deckTop: fitted.deckTop, pivotY: fitted.pivotY, len: fitted.len, width: fitted.width, truckZ: fitted.truckZ };
+  if (fit.normalise !== false) m = normalise(parts, m) ?? m;
+  for (const p of parts) { p.geo.computeBoundingBox(); p.geo.computeBoundingSphere(); }
+  sh = { geos: parts.map((p) => p.geo), m };
+  shapes.set(key, sh);
+  return sh;
+}
+
+/**
+ * Reshapes a fitted board to the Kenney board's size (KENNEY_SIZE), in place: the deck as wide,
+ * its top as high and its wood as thick as the Kenney deck, the nose and tail kicks and the concave
+ * kept as they were; the trucks and wheels scaled evenly (wheels stay round) about each truck so
+ * they reach up to the deck's underside, no wider than the Kenney board.
+ *
+ * The deck's underside and top are found by vertical rays on a grid over the board (the deck
+ * alone: the 'deck' meshes, or every mesh of a one-mesh board), so every point of the deck keeps
+ * its height above the underside, times the thickness factor. Returns null when no deck is found.
+ */
+function normalise(parts: { geo: THREE.BufferGeometry; kind: 'deck' | 'under' | 'any' }[], m: Omit<Fitted, 'group'>): Omit<Fitted, 'group'> | null {
+  const K = KENNEY_SIZE;
+  // the deck's triangles (x, y, z of three corners)
+  const tris: number[] = [];
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (const p of parts) {
+    if (p.kind === 'under') continue;
+    const pos = p.geo.getAttribute('position') as THREE.BufferAttribute, idx = p.geo.index;
+    const n = idx ? idx.count : pos.count;
+    for (let i = 0; i < n; i++) {
+      const v = idx ? idx.getX(i) : i;
+      const x = pos.getX(v), z = pos.getZ(v);
+      tris.push(x, pos.getY(v), z);
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z);
+    }
+  }
+  if (!tris.length) return null;
+  // vertical rays: every surface's height at (x, z)
+  const NZ = 97, NX = 25;
+  const gx = (i: number) => x0 + (x1 - x0) * (i / (NX - 1)), gz = (j: number) => z0 + (z1 - z0) * (j / (NZ - 1));
+  // bucket the triangles by grid column (z) for speed
+  const zb: number[][] = Array.from({ length: NZ }, () => []);
+  for (let t = 0; t < tris.length; t += 9) {
+    const a = Math.min(tris[t + 2], tris[t + 5], tris[t + 8]), b = Math.max(tris[t + 2], tris[t + 5], tris[t + 8]);
+    const j0 = Math.max(0, Math.floor((a - z0) / (z1 - z0) * (NZ - 1))), j1 = Math.min(NZ - 1, Math.ceil((b - z0) / (z1 - z0) * (NZ - 1)));
+    for (let j = j0; j <= j1; j++) zb[j].push(t);
+  }
+  const hits = (x: number, z: number, j: number): number[] => {
+    const out: number[] = [];
+    for (const t of zb[j]) {
+      const ax = tris[t], ay = tris[t + 1], az = tris[t + 2], bx = tris[t + 3], by = tris[t + 4], bz = tris[t + 5], cx = tris[t + 6], cy = tris[t + 7], cz = tris[t + 8];
+      const d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+      if (Math.abs(d) < 1e-12) continue;
+      const u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / d, v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / d, w = 1 - u - v;
+      if (u < -1e-6 || v < -1e-6 || w < -1e-6) continue;
+      out.push(u * ay + v * by + w * cy);
+    }
+    return out.sort((p, q) => q - p);
+  };
+  const midJ = Math.round((0 - z0) / (z1 - z0) * (NZ - 1)), midI = Math.round((0 - x0) / (x1 - x0) * (NX - 1));
+  const c0 = hits(gx(midI), gz(midJ), midJ);
+  if (c0.length < 2) return null;
+  // in the middle nothing hangs under the deck: its top and underside
+  const t0 = c0[0], b0 = c0[c0.length - 1], th0 = t0 - b0;
+  if (th0 <= 1e-4) return null;
+  // the underside and top on the grid (NaN where the ray misses the deck)
+  const bot = new Float32Array(NX * NZ).fill(NaN), top = new Float32Array(NX * NZ).fill(NaN);
+  let w0 = Infinity, w1 = -Infinity;
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+    const h = hits(gx(i), gz(j), j);
+    if (!h.length) continue;
+    // the underside: the first surface about one deck thickness below the top (a slope makes the
+    // wood deeper to a vertical ray). Where there is none (a truck's baseplate fused into the deck,
+    // the thin rounded rim) the cell is filled from its neighbours below.
+    const under0 = h.find((y) => y < h[0] - th0 * 0.6 && y > h[0] - th0 * 1.5);
+    if (under0 === undefined) continue;
+    top[j * NX + i] = h[0];
+    bot[j * NX + i] = under0;
+    if (j === midJ && Math.abs(h[0] - t0) < th0 * 0.6) { w0 = Math.min(w0, gx(i)); w1 = Math.max(w1, gx(i)); }
+  }
+  // the deck's width at the middle (to the grid's step; at least the measured span)
+  const step = (x1 - x0) / (NX - 1);
+  const deckW = Math.max(1e-3, Math.min(x1 - x0, w1 - w0 + step));
+  // fill the misses from the nearest filled cell of the same row, then of the nearest row
+  for (let j = 0; j < NZ; j++) {
+    for (let i = 0; i < NX; i++) {
+      if (!isNaN(bot[j * NX + i])) continue;
+      for (let d = 1; d < NX; d++) {
+        const a = i - d >= 0 ? j * NX + i - d : -1, b = i + d < NX ? j * NX + i + d : -1;
+        const k = a >= 0 && !isNaN(bot[a]) ? a : b >= 0 && !isNaN(bot[b]) ? b : -1;
+        if (k >= 0) { bot[j * NX + i] = bot[k]; top[j * NX + i] = top[k]; break; }
+      }
+    }
+  }
+  for (let j = 0; j < NZ; j++) {
+    if (!isNaN(bot[j * NX])) continue;
+    for (let d = 1; d < NZ; d++) {
+      const r = [j - d, j + d].find((q) => q >= 0 && q < NZ && !isNaN(bot[q * NX]));
+      if (r !== undefined) { for (let i = 0; i < NX; i++) { bot[j * NX + i] = bot[r * NX + i]; top[j * NX + i] = top[r * NX + i]; } break; }
+    }
+  }
+  const under = (x: number, z: number): number => {
+    const fi = Math.max(0, Math.min(NX - 1.001, (x - x0) / (x1 - x0) * (NX - 1))), fj = Math.max(0, Math.min(NZ - 1.001, (z - z0) / (z1 - z0) * (NZ - 1)));
+    const i = Math.floor(fi), j = Math.floor(fj), u = fi - i, v = fj - j;
+    const g = (ii: number, jj: number) => bot[jj * NX + ii];
+    return (g(i, j) * (1 - u) + g(i + 1, j) * u) * (1 - v) + (g(i, j + 1) * (1 - u) + g(i + 1, j + 1) * u) * v;
+  };
+  // the factors: deck across, deck thickness, the trucks and wheels (evenly, about each truck)
+  const sxD = K.deckWidth / deckW, sT = (K.deckTop - K.deckBottom) / th0, sU = K.deckBottom / b0;
+  // what lies under the deck: its extent across and along (one truck each side of the middle)
+  const isUnder = (p: { kind: string }, x: number, y: number, z: number) => p.kind === 'under' || (p.kind === 'any' && y < under(x, z) - 0.002);
+  let ux = 0, zp0 = Infinity, zp1 = -Infinity, zn0 = Infinity, zn1 = -Infinity;
+  for (const p of parts) {
+    const pos = p.geo.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      if (!isUnder(p, x, y, z)) continue;
+      ux = Math.max(ux, Math.abs(x));
+      if (z >= 0) { zp0 = Math.min(zp0, z); zp1 = Math.max(zp1, z); } else { zn0 = Math.min(zn0, z); zn1 = Math.max(zn1, z); }
+    }
+  }
+  const sxU = ux > 0 ? Math.min(sxD, K.width / 2 / ux) : sxD;
+  const zcP = isFinite(zp0) ? (zp0 + zp1) / 2 : m.truckZ, zcN = isFinite(zn0) ? (zn0 + zn1) / 2 : -m.truckZ;
+  // remap every vertex (normals by the inverse transpose of the local stretch)
+  const J = new THREE.Matrix3(), N = new THREE.Matrix3(), nv = new THREE.Vector3();
+  let truck0 = Infinity, truck1 = -Infinity, top1 = 0;
+  const e = 0.004;
+  for (const p of parts) {
+    const pos = p.geo.getAttribute('position') as THREE.BufferAttribute, nor = p.geo.getAttribute('normal') as THREE.BufferAttribute | undefined;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      if (isUnder(p, x, y, z)) {
+        const zc = z >= 0 ? zcP : zcN;
+        const nx = x * sxU, ny = y * sU, nz = zc + (z - zc) * sU;
+        pos.setXYZ(i, nx, ny, nz);
+        truck0 = Math.min(truck0, nz); truck1 = Math.max(truck1, nz);
+        if (nor) { nv.set(nor.getX(i) / sxU, nor.getY(i) / sU, nor.getZ(i) / sU).normalize(); nor.setXYZ(i, nv.x, nv.y, nv.z); }
+      } else {
+        // the wood (a slab of the middle's thickness, deeper to a vertical ray on a slope) grows
+        // by sT; anything standing on it (bolt heads) keeps its own height
+        const bz = under(x, z);
+        const dbx = (under(x + e, z) - under(x - e, z)) / (2 * e), dbz = (under(x, z + e) - under(x, z - e)) / (2 * e);
+        const thL = th0 * Math.sqrt(1 + dbx * dbx + dbz * dbz), d = y - bz;
+        const ny = K.deckBottom + (bz - b0) + (d <= thL ? d * sT : thL * sT + (d - thL));
+        pos.setXYZ(i, x * sxD, ny, z);
+        if (Math.abs(z) < m.len * 0.18 && Math.abs(x) < deckW * 0.15) top1 = Math.max(top1, ny);
+        if (nor) {
+          // y' = deckBottom + (b(x, z) − b0) + (y − b(x, z))·k: its slopes along x and z
+          const k = d <= thL ? sT : 1;
+          J.set(sxD, 0, 0, (1 - k) * dbx, k, (1 - k) * dbz, 0, 0, 1);
+          N.copy(J).invert().transpose();
+          nv.set(nor.getX(i), nor.getY(i), nor.getZ(i)).applyMatrix3(N).normalize();
+          nor.setXYZ(i, nv.x, nv.y, nv.z);
+        }
+      }
+    }
+    pos.needsUpdate = true;
+    if (nor) nor.needsUpdate = true;
+  }
+  const truckZ = isFinite(truck0) ? Math.max(0.1, (truck1 - truck0) / 2 * 0.85) : m.truckZ;
+  const deckTop = top1 > 0 ? top1 : K.deckTop;
+  return { deckTop, pivotY: deckTop / 2, len: m.len, width: Math.max(K.deckWidth, ux * 2 * sxU), truckZ };
 }

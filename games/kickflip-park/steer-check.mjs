@@ -49,6 +49,8 @@ async function open(touch) {
   await page.waitForTimeout(600);
   await page.evaluate(() => window.__ayvago.game.scene.getScene('Menu').scene.start('Play'));
   await page.waitForFunction(() => window.__ayvago?.game.scene.isActive('Play'), null, { timeout: 30000 });
+  // PLAY opens the session setup (1.2): START the session as the button does
+  await page.evaluate(() => window.__ayvago.game.scene.getScene('Play').testStart?.());
   await page.waitForTimeout(1500);
   return { ctx, page };
 }

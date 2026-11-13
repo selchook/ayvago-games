@@ -64,11 +64,21 @@ export class View {
   private snap = true;
   private lastState = '';
 
-  constructor(phaser: Phaser.Scene, id: ParkId, o: { board: string; menu?: boolean }) {
+  constructor(phaser: Phaser.Scene, id: ParkId, o: { board: string; menu?: boolean; world?: World3D }) {
     const park = getPark(id);
     this.park = park;
     const L = park.look;
-    const world = new World3D(phaser, { fov: FOV, near: 0.3, far: 420, background: L.sky, fog: { color: L.fog, near: L.fogNear, far: L.fogFar } });
+    // a world the scene made already (the session setup's) is taken over and set up like a new one
+    let world: World3D;
+    if (o.world) {
+      world = o.world;
+      world.scene.background = new THREE.Color(L.sky);
+      world.scene.fog = new THREE.Fog(L.fog, L.fogNear, L.fogFar);
+      const cam = world.camera;
+      cam.fov = FOV; cam.near = 0.3; cam.far = 420;
+      cam.clearViewOffset();
+      cam.updateProjectionMatrix();
+    } else world = new World3D(phaser, { fov: FOV, near: 0.3, far: 420, background: L.sky, fog: { color: L.fog, near: L.fogNear, far: L.fogFar } });
     this.world = world;
     (globalThis as { __kfRenderer?: THREE.WebGLRenderer }).__kfRenderer = world.renderer;
     world.addLights({ sky: L.hemiSky, ground: L.hemiGround, ambient: 1.55, sun: L.sun, intensity: 2.1, dir: [-0.45, 1, 0.55], extent: 26 });
@@ -570,10 +580,13 @@ export function keepPrograms(renderer: THREE.WebGLRenderer, world: THREE.Scene, 
       const skinned = (o as THREE.SkinnedMesh).isSkinnedMesh;
       const kind = skinned ? 'skin' : inst.isInstancedMesh ? (inst.instanceColor ? 'instc' : 'inst') : 'mesh';
       const a = mat as THREE.MeshLambertMaterial & THREE.MeshBasicMaterial;
-      const key = kind + ':' + mat.type + ':' + JSON.stringify([!!a.map, !!a.vertexColors, a.transparent, a.blending, a.side, a.fog, !!a.emissive && a.emissive.getHex() > 0, m.receiveShadow, m.castShadow]);
+      const key = kind + ':' + mat.type + ':' + JSON.stringify([!!a.map, !!a.vertexColors, a.transparent, a.blending, a.side, a.fog, !!a.emissive && a.emissive.getHex() > 0, m.receiveShadow, m.castShadow, mat.customProgramCacheKey()]);
       if (seen.has(key)) continue;
       seen.add(key);
       const c = mat.clone();
+      // a material's compile hook (fx3d fadeByAlpha) is not part of clone()
+      c.onBeforeCompile = mat.onBeforeCompile;
+      c.customProgramCacheKey = mat.customProgramCacheKey;
       let k: THREE.Object3D;
       if (skinned) {
         // a whole copy of the rigged model, so the skinning variant compiles
