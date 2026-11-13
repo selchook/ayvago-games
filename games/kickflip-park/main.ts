@@ -1,14 +1,13 @@
-import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, kenney, t, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, kenney, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
-import { ParkScene, Pill } from './parksui';
+import { menuOpened } from './setup';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
 import { View, keepPrograms } from './view';
 import { Sim, NO_INPUT } from './sim';
 import { Bot, SKILL } from './bot';
-import { loadMeta, goalsDone } from './meta';
+import { loadMeta } from './meta';
 import { park } from './parks';
 import { makeIcons } from './art';
 
@@ -63,6 +62,8 @@ launch({
   },
   menuDecor(scene) {
     makeIcons(scene);
+    // PLAY (or Enter) from here opens the session setup in the Play scene
+    menuOpened();
     // a live autopilot skates the chosen park behind the menu. Building it here also compiles
     // every shader the Play scene uses (keepPrograms), so the first Play frame compiles none.
     const m = loadMeta();
@@ -93,23 +94,6 @@ launch({
       if (!warm) { warm = true; keepPrograms(view.world.renderer, view.world.scene, view.world.camera); }
     };
   },
-  // the parks screen: a button under the difficulty switch (P is pause in play; here it is free)
-  menuOption: {
-    build(scene, x, y) {
-      const btn = new Pill(scene, x, y + 6, 360, 86, 0x7a3fd0, () => open(), 26);
-      const label = () => { const mm = loadMeta(); btn.setLabels(t('parks') + ': ' + t('park_' + mm.park), t('goalsCount', { n: goalsDone(mm), m: 24 })); };
-      label();
-      const open = () => {
-        if (!scene.scene.isActive()) return;
-        scene.scene.pause();
-        scene.scene.launch('Parks', { from: scene.scene.key });
-      };
-      scene.events.on('parks-closed', label);
-      scene.input.keyboard?.on('keydown-G', open);
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('parks-closed', label));
-      scene.tweens.add({ targets: btn, scale: 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    },
-  },
-  scenes: [PlayScene, ParkScene],
+  scenes: [PlayScene],
   strings: STRINGS,
 });

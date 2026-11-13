@@ -75,6 +75,14 @@ export class Mats {
     return m;
   }
 
+  /** Frees the materials made here (and the procedural surfaces' textures); the kits' own textures stay. */
+  dispose(): void {
+    for (const m of this.cache.values()) m.dispose();
+    for (const m of this.styles.values()) { m.map?.dispose(); m.dispose(); }
+    this.cache.clear();
+    this.styles.clear();
+  }
+
   /** A procedural surface (canvas texture tiled in world metres). */
   style(name: StyleTex): THREE.MeshLambertMaterial {
     let m = this.styles.get(name);
