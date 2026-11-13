@@ -1,0 +1,12 @@
+{
+  "id": "star-squadron",
+  "title": {"tr": "Yıldız Filosu", "en": "Star Squadron"},
+  "description": {"tr": "Bir 3D uzay nişancısı ve kart destesi bir arada! Kor Ay'ın yüzeyinden kristal asteroit kuşağına, yörünge tersanesinden bulutsu yarığına uç; düşman filolarını ve dev bossları zayıf noktalarından vurarak yok et. Her dalgadan sonra üç güç kartından birini seç: Yayılım Atışı, Güdümlü Füze, Kanat Dronu, Zincir Şimşek ve daha fazlası. İki kartı birleştirip sinerji kartlarını aç. Zor anlarda Bomba, Kalkan ve Aşırı Güç seni kurtarır. Her koşu Yıldız Tozu kazandırır; Yetenek panosunda kalıcı geliştirmeler aç. Dört sektör, ardından sonsuz ve gittikçe zorlaşan döngü.", "en": "A 3D space shooter with a deck of power cards! Fly from the surface of the Ember Moon through a crystal asteroid belt and an orbital shipyard into the Nebula Rift, blasting enemy squadrons and giant bosses through their weak points. After every wave, pick one of three power cards: Spread Shot, Homing Missiles, Wing Drones, Chain Lightning and more, and combine two of them into a synergy card. Bomb, Shield and Overdrive get you out of tight spots. Every run earns Stardust for lasting upgrades on the Talent board. Four sectors, then an endless loop that keeps getting harder."},
+  "howTo": {"tr": "Gemiyi uçurmak için ekranda parmağını sürükle; ateş otomatik. Sağ alttaki güçlere dokun. Klavye: WASD / oklar uç, J ya da Boşluk bomba, K kalkan, L aşırı güç.", "en": "Drag anywhere to fly; your guns fire on their own. Tap the powers at the bottom right. Keys: WASD / arrows fly, J or Space bomb, K shield, L overdrive."},
+  "genres": ["action", "arcade"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "mouse"],
+  "version": "1.0.0",
+  "credits": ["3D models: Kenney Space Kit (CC0) — kenney.nl", "Planets: Kenney Planets (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Sci-Fi Sounds and Casino Audio (CC0) — kenney.nl"],
+  "platform": {"addedAt": "2026-11-13"}
+}

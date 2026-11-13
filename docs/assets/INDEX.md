@@ -26,6 +26,7 @@ Load Kenney art with `kenney('<pack>/<path>')`; Kenney audio with
 | onebit | 9 | 0 |
 | onscreen-controls | 100 | 0 |
 | particles | 96 | 0 |
+| planets | 4 | 0 |
 | physics | 333 | 0 |
 | pixel-platformer | 903 | 0 |
 | pixel-ui | 35 | 0 |
@@ -37,6 +38,7 @@ Load Kenney art with `kenney('<pack>/<path>')`; Kenney audio with
 | sfx-digital | 0 | 62 |
 | sfx-impact | 0 | 130 |
 | sfx-interface | 0 | 100 |
+| sfx-sci-fi | 0 | 8 |
 | sfx-ui | 0 | 51 |
 | shooting-gallery | 110 | 0 |
 | simple-platformer | 91 | 0 |
@@ -74,6 +76,7 @@ platformer-kit block is about 1.27 wide). Regenerate them with `node tools/index
 | graveyard-kit | 15 | Kenney Graveyard Kit 5.0, in part: the node-rigged characters `character-skeleton`, `character-ghost`, `character-zombie`, `character-vampire` (one mesh per limb node, no skin: `root`, `torso`, `head`, `arm-left/right`, `leg-left/right`, with the same 32 clips as the Mini Characters), `candle`, `candle-multiple`, `fire-basket`, `urn-round` / `urn-square` (separate `lid`), `altar-stone`, `lantern-candle`, `pillar-large`, `debris`, `coffin` (separate `lid`), `gravestone-cross`. Textured: the models share `models/gltf_format/Textures/colormap.png`. Only what `games/crypt-crawler` uses is imported (`GRAVEYARD_KIT` in `tools/import-kenney.py`, from the jam-ready-assets mirror) |
 | city-kit-commercial | 13 | Kenney City Kit Commercial 2.1, in part: shops and offices (`building-a`, `-c`, `-e`, `-g`, `-h`, `-k`), three skyscrapers (`building-skyscraper-a` … `c`), the low-detail far buildings (`low-detail-building-a`, `-c`, `-wide-a`) and a parasol. About 1 unit per city block (building-a is 0.88 × 1.29 × 0.94). Textured: the models share `models/gltf_format/Textures/colormap.png` (external). Only what `games/blacktop-kings` uses is imported (`CITY_KIT_COMMERCIAL` in `tools/import-kenney.py`, from the jam-ready-assets mirror) |
 | city-kit-roads | 4 | Kenney City Kit Roads 2.0, in part: the street lamps `light-square` and `light-curved`, the `road-straight` tile (1 × 1) and a `construction-cone`. Textured: the models share `models/gltf_format/Textures/colormap.png` (external). Only what `games/blacktop-kings` uses is imported (`CITY_KIT_ROADS` in `tools/import-kenney.py`) |
+| space-kit | 35 | Kenney Space Kit 2.0, in part: spacecraft (`craft_speedera` … `d`, `craft_racer`, `craft_miner`, `craft_cargoa` / `b`; the nose points to −z), meteors and rocks (`meteor`, `meteor_detailed`, `rock_largea`, crystal rocks), turrets (`turret_single`, `turret_double`, each with a separate `turret` node that turns), `machine_generatorlarge`, hangars (`hangar_rounda`, the glass dome `hangar_roundglass`, `hangar_largea`), satellite dishes, a frame structure, pipes, a platform, rocket parts, craters, a gate, a corridor piece. Untextured: every part carries its own flat material (`metal`, `metalDark`, `metalRed`, `dark`, `rock`, `crystal` …); file names are lowercased (`craft_speedera.glb`). Only what `games/star-squadron` uses is imported (`SPACE_KIT` in `tools/import-kenney.py`, from the jam-ready-assets mirror) |
 
 ## OpenGameArt CC0 (`public/assets/oga`)
 

@@ -1,0 +1,4 @@
+planets/planets/planet02.png 1280x1280
+planets/planets/planet03.png 1280x1280
+planets/planets/planet07.png 1280x1280
+planets/planets/planet09.png 1280x1280
