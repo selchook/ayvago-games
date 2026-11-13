@@ -207,21 +207,6 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-29',
   }),
   arcadeGame({
-    slug: 'bowling-strike',
-    title: { en: 'Bowling Strike', tr: 'Bowling' },
-    description: {
-      en: 'Ten frames of real bowling: position, aim, set power and spin. Chain strikes and spares on your way to a perfect 300!',
-      tr: 'On karelik gerçek bowling: topu konumla, nişan al, gücünü ve falsosunu ayarla. Strike ve spare ile 300 sayıya uzan!',
-    },
-    category: 'sports',
-    categories: ['sports', 'casual', 'arcade'],
-    tags: ['multiplayer', 'bowling', 'strike', 'retro'],
-    orientation: 'portrait',
-    input: ['touch', 'keyboard', 'mouse'],
-    addedAt: '2026-10-28',
-    multiplayer: true,
-  }),
-  arcadeGame({
     slug: 'brick-breaker',
     title: { en: 'Brick Breaker', tr: 'Tuğla Kırıcı' },
     description: {
@@ -424,21 +409,6 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
-    slug: 'dungeon-dash',
-    title: { en: 'Dungeon Dash', tr: 'Zindan Koşusu' },
-    description: {
-      en: 'A turn-based micro roguelike: fight monsters, grab potions and chests, take the stairs ever deeper.',
-      tr: 'Sıra tabanlı mini zindan macerası: canavarlarla savaş, iksir ve sandık topla, merdivenden aşağı in.',
-    },
-    category: 'strategy',
-    categories: ['strategy', 'retro', 'puzzle'],
-    tags: ['dungeon', 'dash', 'retro'],
-    orientation: 'portrait',
-    input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.0',
-    addedAt: '2026-10-28',
-  }),
-  arcadeGame({
     slug: 'fish-frenzy',
     title: { en: 'Fish Frenzy', tr: 'Balık Çılgınlığı' },
     description: {
@@ -518,22 +488,6 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
     version: '1.1.0',
     addedAt: '2026-10-29',
-    multiplayer: true,
-  }),
-  arcadeGame({
-    slug: 'head-soccer',
-    title: { en: 'Head Soccer', tr: 'Kafa Topu' },
-    description: {
-      en: 'Big-headed one-on-one football! Run, jump, head the ball and shoot with your own character. Matches last 60 seconds and a draw goes to golden goal. Every win brings a faster, smarter rival. Play a friend online too.',
-      tr: 'Koca kafalı birebir futbol! Kendi karakterinle koş, zıpla, kafa vur ve şut çek. Maçlar 60 saniye sürer, beraberlikte altın gol kazandırır. Her galibiyette rakibin daha hızlı ve daha zeki olur. Çevrimiçi bir arkadaşınla da oyna.',
-    },
-    category: 'sports',
-    categories: ['sports', 'action', 'arcade'],
-    tags: ['multiplayer', 'head', 'soccer', 'retro'],
-    orientation: 'landscape',
-    input: ['touch', 'keyboard', 'mouse'],
-    version: '1.3.0',
-    addedAt: '2026-10-30',
     multiplayer: true,
   }),
   arcadeGame({
@@ -764,21 +718,6 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
     addedAt: '2026-10-28',
-  }),
-  arcadeGame({
-    slug: 'mini-golf',
-    title: { en: 'Mini Golf', tr: 'Mini Golf' },
-    description: {
-      en: 'A nine-hole mini golf course: bank off walls, avoid water, ride the bumpers and slip past moving blocks. Finish under par!',
-      tr: 'Dokuz delikli mini golf parkuru: duvarlardan sektir, sudan kaçın, tamponlarla oyna ve hareketli engellerin arasından geç. Pardan az vuruşla bitir!',
-    },
-    category: 'sports',
-    categories: ['sports', 'casual', 'puzzle'],
-    tags: ['multiplayer', 'mini', 'golf', 'retro'],
-    orientation: 'portrait',
-    input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
-    multiplayer: true,
   }),
   arcadeGame({
     slug: 'mud-rally',

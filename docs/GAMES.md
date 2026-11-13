@@ -2,7 +2,7 @@
 
 ## Status (98 shipped)
 
-**Shipped.** 97 games (Color Race was retired on 2026-11-06; Blacktop Kings was taken off the platform on 2026-11-13 and is in `wip/`). Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
+**Shipped.** 93 games (Color Race was retired on 2026-11-06; Blacktop Kings was taken off the platform on 2026-11-13, and Head Soccer, Mini Golf, Bowling Strike and Dungeon Dash on 2026-11-13; all are in `wip/`). Every one passes the smoke test, the GHA protocol test and manifest validation, and is in the platform catalog:
 air-hockey, alien-invaders, archery, asteroid-storm, axe-throw, backgammon, blacktop-kings, block-blast, block-drop, bomb-maze, bowling-strike, brick-breaker, bubble-pop, bug-blaster, cave-copter, city-defender, coin-catcher, color-bounce, color-gate, color-road, color-wheel, connect-four, crypt-crawler, crystal-keep, dots-and-boxes, dungeon-dash, fish-frenzy, fruit-slash, gem-match, golden-podium, gomoku, head-soccer, hex-bridge, hex-merge, hoop-shot, jetpack-rush, kickflip-park, letter-loop, letter-rain, light-cycles, lights-out, lunar-lander, mangala, marble-maze, maze-muncher, memory-match, merge-2048, mine-sweeper, mini-golf, mud-rally, neon-pong, nine-mens-morris, nonogram, okey, orbit-hop, paint-roll, penalty-kick, pinball, pipe-flow, pirate-cove, pixel-runner, platform-hopper, plinko-drop, putt-park, retro-snake, reversi, road-crosser, rope-swing, sea-battle, secret-word, shooting-gallery, simon-says, sky-jumper, sky-road, slide-puzzle, snack-shack, snow-express, sokoban, solitaire, space-blaster, stack-tower, star-squadron, strike-alley, sudoku, sumo-push, tank-arena, tappy-plane, tile-triple, tito-tank, tower-defense, traffic-racer, turkish-draughts, ufo-abduction, ultimate-tictactoe, water-sort, whack-a-mole, word-hunt, zombie-survivor.
 
 - **Launch wave (2026-10-27):** 26 games.
@@ -102,7 +102,7 @@ Columns: slug · EN title / TR title · concept · suggested assets (`public/ass
 | tower-defense | Tower Defense / Kule Savunması | fixed-path TD, 3 tower types + upgrade, 15 waves | tower-defense | L |
 | crypt-crawler | Crypt Crawler / Mahzen Avcısı | 3D action dungeon crawler: floors of locked rooms, slimes, skeletons, ghosts, zombies, orcs, vampires, a guardian every third floor, shrines with 1-of-3 blessings, keys, vaults, spike and saw traps, a camp shop between runs | mini-dungeon + graveyard-kit + mini-characters (3D) | P |
 | crystal-keep | Crystal Keep / Kristal Kale | 3D tower defense on the Kenney Tower Defense Kit: 4 towers × 3 tiers, zombies, brutes, UFOs and two bosses, 3 maps with 12–15 waves, stars, early wave calls, 1×/2× speed | tower-defense-kit (3D) + mini-characters | P |
-| dungeon-dash | Dungeon Dash / Zindan Koşusu | turn-based micro-roguelike: floors, monsters, potions, stairs | micro-roguelike (pixelArt) | P |
+| ~~dungeon-dash~~ | Dungeon Dash / Zindan Koşusu (off the platform 2026-11-13, moved to `wip/`) | turn-based micro-roguelike: floors, monsters, potions, stairs | micro-roguelike (pixelArt) | P |
 | coin-catcher | Coin Catcher / Altın Avcısı | move catcher, catch coins/gems, avoid bombs, combo multiplier | platformer items | P |
 | platform-hopper | Platform Hopper / Platform Zıpzıp | single-screen platformer levels: collect gems, avoid enemies, reach flag | simple-platformer | L |
 | fish-frenzy | Fish Frenzy / Balık Çılgınlığı | eat smaller fish to grow, avoid bigger ones, sharks | fish | L |
@@ -113,10 +113,10 @@ Columns: slug · EN title / TR title · concept · suggested assets (`public/ass
 |---|---|---|---|---|
 | hoop-shot | Hoop Shot / Basket Atışı | flick/aim basketball into moving hoop, streak bonus, timer | sports | P |
 | penalty-kick | Penalty Kick / Penaltı Atışı | swipe/aim shot vs keeper, curve, rounds, then keeper mode | sports | P |
-| mini-golf | Mini Golf / Mini Golf | top-down drag-to-putt, 9 holes with walls/water/bumpers, par | sports + drawn | P |
+| ~~mini-golf~~ | Mini Golf / Mini Golf (off the platform 2026-11-13, moved to `wip/`) | top-down drag-to-putt, 9 holes with walls/water/bumpers, par | sports + drawn | P |
 | putt-park | Putt Park / Golf Parkı | 3D mini golf: 18 holes on two courses (meadow, castle), drag-back putting, ramps, jumps, windmill, tunnels, movers, par scoring | minigolf-kit + nature-kit (3D) | P |
 | plinko-drop | Plinko Drop / Plinko | drop balls through pegs (matter physics) into scoring slots, limited balls | puzzle2 balls | P |
-| bowling-strike | Bowling Strike / Bowling | aim + power + spin, 10 frames with real scoring | sports + drawn | P |
+| ~~bowling-strike~~ | Bowling Strike / Bowling (off the platform 2026-11-13, moved to `wip/`) | aim + power + spin, 10 frames with real scoring | sports + drawn | P |
 | strike-alley | Strike Alley / Strike Salonu | 3D ten-pin bowling in a neon alley: slide-and-flick (or keys and a power meter) throws with hook, skid/hook/roll ball physics on an oil pattern that wears, rigid-body pins, real 10-frame scoring, replays and call-outs; the bowler is the player's platform character as a rigged Kenney Mini Character | mini-characters (3D) + procedural alley | P |
 | air-hockey | Air Hockey / Hava Hokeyi | vs AI, first to 7, physics puck | drawn | P |
 | mud-rally | Mud Rally / Çamur Rallisi | 3D single-screen off-road truck racing: 4 laps, jumps, mud, nitro, prize money and garage upgrades between races, 6 arenas | car-kit + racing-kit + nature-kit + platformer-kit (3D) | L |
@@ -186,7 +186,7 @@ Same rules as batch J: a full solo mode against an AI and an online mode (`"mult
 |---|---|---|---|---|
 | mangala | Mangala / Mangala | Turkish mancala: 2x6 pits of 4 stones and two stores; sow counter-clockwise starting in the picked pit (a single stone moves on), last stone in your store plays again, an even count in a rival pit captures it, last stone in your own empty pit captures the opposite pit; the side that empties first takes the rest; AI with lookahead | drawn | P |
 | backgammon | Backgammon / Tavla | one game to 5 points (plain win 1, gammon/mars 2), standard moves, bar, bearing off, doubles move four times, forced-move rules; tap a checker then a target with hints; AI picks the best move by a heuristic; online: the mover rolls and sends dice and moves | drawn / boardgame dice | L |
-| head-soccer | Head Soccer / Kafa Topu | 1v1 side-view football with big-headed player characters: run, jump, kick; 60-second matches, golden goal on a draw; AI rival; online: the host simulates, the guest sends input; each side shows its own platform character (`playerCharacter()` / `peerCharacter()`) | characters + sports pack | L |
+| ~~head-soccer~~ | Head Soccer / Kafa Topu (off the platform 2026-11-13, moved to `wip/`) | 1v1 side-view football with big-headed player characters: run, jump, kick; 60-second matches, golden goal on a draw; AI rival; online: the host simulates, the guest sends input; each side shows its own platform character (`playerCharacter()` / `peerCharacter()`) | characters + sports pack | L |
 
 ## Batch M — wave 4 solo
 | slug | title | concept | assets | o |
