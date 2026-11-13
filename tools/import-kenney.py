@@ -13,7 +13,8 @@ their GLBs under models/gltf_format/ like the older kits, and keep the external 
   python3 tools/import-kenney.py <jam-ready-assets-dir> mini-dungeon graveyard-kit
   python3 tools/import-kenney.py <jam-ready-assets-dir> city-kit-commercial city-kit-roads
   python3 tools/import-kenney.py <jam-ready-assets-dir> space-kit planets sfx-sci-fi
-  python3 tools/import-kenney.py <jam-ready-assets-dir> mini-skate city-kit-suburban city-kit-industrial sfx-foley"""
+  python3 tools/import-kenney.py <jam-ready-assets-dir> mini-skate city-kit-suburban city-kit-industrial sfx-foley
+  python3 tools/import-kenney.py <jam-ready-assets-dir> holiday-kit train-kit"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -70,6 +71,10 @@ PACKS = {
     'kenney-city-kit-suburban/3D/city': 'city-kit-suburban',
     'kenney-city-kit-industrial/3D/city': 'city-kit-industrial',
     'kenney-foley-sounds/audio': 'sfx-foley',
+    # Holiday Kit 2.0 and Train Kit 1.1 (jam-ready-assets mirror, Git LFS, commit 397bf9e; pack
+    # roots are the mirror's own folders: License.txt + Models/GLB format/)
+    'kenney-holiday-kit/3D/seasonal-holiday': 'holiday-kit',
+    'kenney-train-kit/3D/vehicles-racing': 'train-kit',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -193,6 +198,21 @@ FILES['mini-skate'] = ['License.txt', 'Models/GLB format/Textures/colormap.png']
 FILES['city-kit-suburban'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in CITY_KIT_SUBURBAN]
 FILES['city-kit-industrial'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in CITY_KIT_INDUSTRIAL]
 FILES['sfx-foley'] = ['License.txt'] + [f'Audio/{n}.ogg' for n in FOLEY_SOUNDS]
+
+# Snow Express (games/snow-express/kit.ts HOLIDAY / TRAINS): log-cabin modules for the stops,
+# presents for the wagons, trees, rocks, snow drifts and village props; the Train Kit's bendable
+# `track` piece, a steam locomotive, the express, the diesel that becomes the snowplow and the
+# flatbed wagon
+HOLIDAY_KIT = [
+    'cabin-doorway', 'cabin-window-a', 'cabin-window-b', 'cabin-wall', 'cabin-wall-roof-center', 'cabin-roof-snow-point',
+    'cabin-corner-logs', 'present-a-cube', 'present-b-round', 'present-a-rectangle', 'tree-snow-a', 'tree-snow-b',
+    'tree-snow-c', 'tree-decorated-snow', 'rocks-large', 'rocks-medium', 'rocks-small', 'snow-pile', 'snow-bunker',
+    'snow-flat', 'snowman-hat', 'lantern', 'lights-colored', 'reindeer', 'sled', 'bench', 'candy-cane-red',
+    'wreath-decorated', 'gingerbread-man', 'nutcracker',
+]
+TRAIN_KIT = ['track', 'train-locomotive-a', 'train-electric-bullet-a', 'train-diesel-a', 'train-carriage-flatbed']
+FILES['holiday-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in HOLIDAY_KIT]
+FILES['train-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in TRAIN_KIT]
 
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""

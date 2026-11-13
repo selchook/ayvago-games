@@ -1,0 +1,5 @@
+train-kit/models/gltf_format/track.glb 8KB 1.00x0.15x1.00
+train-kit/models/gltf_format/train-carriage-flatbed.glb 98KB 1.10x1.16x2.70
+train-kit/models/gltf_format/train-diesel-a.glb 153KB 1.20x1.60x2.40
+train-kit/models/gltf_format/train-electric-bullet-a.glb 112KB 1.32x1.64x2.80
+train-kit/models/gltf_format/train-locomotive-a.glb 151KB 1.43x1.66x2.60
