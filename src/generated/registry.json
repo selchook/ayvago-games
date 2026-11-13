@@ -1,5 +1,5 @@
 {
-  "count": 94,
+  "count": 95,
   "games": [
     {
       "id": "air-hockey",
@@ -197,6 +197,41 @@
         "addedAt": "2026-10-30"
       },
       "thumb": "thumbs/backgammon.png"
+    },
+    {
+      "id": "blacktop-kings",
+      "title": {
+        "tr": "Asfalt Kralları",
+        "en": "Blacktop Kings"
+      },
+      "description": {
+        "tr": "Mahalle potasında üçe üç sokak basketbolu! Kendi karakterinle sahaya çık, iki takım arkadaşınla pas yap, perdeyi kullan, çalımla rakibi yere oturt ve potaya smaç bas. Şut çizgisinde zamanlamayı tuttur: zıplamanın tepesinde bırakırsan top fileye sürtmeden girer. Üst üste üç sayı atan takım alev alır. 14 saniyelik şut saati, ribauntta topu çizgi dışına taşıma kuralı ve 21 sayıya ya da üç dakikaya kadar süren maçlar. Her galibiyette daha güçlü bir mahalle ekibi gelir. Arkadaşınla çevrimiçi de oyna: herkes kendi üçlüsünü yönetir.",
+        "en": "Three-on-three street ball on the neighbourhood court! Take the floor as your own character, pass with your two teammates, run off screens, break ankles with a crossover and throw it down with a dunk. Nail the shot meter: let go at the top of your jump for a clean swish. Three baskets in a row and your crew is on fire. A 14-second shot clock, take-backs after every rebound and steal, and games to 21 or three minutes. Every win brings a tougher crew from across town. Play a friend online too: each of you runs a crew of three."
+      },
+      "howTo": {
+        "tr": "Klavye: WASD/oklar koş, J basılı tut ve tepede bırak: şut (potanın dibinde smaç), K pas, L turbo, Boşluk çalım/top çal, Q oyuncu değiştir. Dokunmatik: solda joystick, sağda ŞUT, PAS, TURBO ve ÇALIM düğmeleri (savunmada BLOK, DEĞİŞ, TOP ÇAL).",
+        "en": "Keys: WASD/arrows run, hold J and let go at the top to shoot (near the rim: dunk), K pass, L turbo, Space crossover/steal, Q switch player. Touch: stick on the left, SHOOT, PASS, TURBO and CROSS buttons on the right (on defence BLOCK, SWITCH, STEAL)."
+      },
+      "genres": [
+        "sports",
+        "action",
+        "arcade"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "multiplayer": true,
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Kenney Mini Characters, City Kit Commercial and City Kit Roads (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact Sounds (CC0) — kenney.nl"
+      ],
+      "platform": {
+        "addedAt": "2026-11-12"
+      },
+      "thumb": "thumbs/blacktop-kings.png"
     },
     {
       "id": "block-blast",

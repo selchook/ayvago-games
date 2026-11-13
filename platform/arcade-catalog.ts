@@ -164,6 +164,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'blacktop-kings',
+    title: { en: 'Blacktop Kings', tr: 'Asfalt Kralları' },
+    description: {
+      en: 'Three-on-three street ball on the neighbourhood court! Take the floor as your own character, pass with your two teammates, run off screens, break ankles with a crossover and throw it down with a dunk. Nail the shot meter: let go at the top of your jump for a clean swish. Three baskets in a row and your crew is on fire. A 14-second shot clock, take-backs after every rebound and steal, and games to 21 or three minutes. Every win brings a tougher crew from across town. Play a friend online too: each of you runs a crew of three.',
+      tr: 'Mahalle potasında üçe üç sokak basketbolu! Kendi karakterinle sahaya çık, iki takım arkadaşınla pas yap, perdeyi kullan, çalımla rakibi yere oturt ve potaya smaç bas. Şut çizgisinde zamanlamayı tuttur: zıplamanın tepesinde bırakırsan top fileye sürtmeden girer. Üst üste üç sayı atan takım alev alır. 14 saniyelik şut saati, ribauntta topu çizgi dışına taşıma kuralı ve 21 sayıya ya da üç dakikaya kadar süren maçlar. Her galibiyette daha güçlü bir mahalle ekibi gelir. Arkadaşınla çevrimiçi de oyna: herkes kendi üçlüsünü yönetir.',
+    },
+    category: 'sports',
+    categories: ['sports', 'action', 'arcade'],
+    tags: ['multiplayer', 'blacktop', 'kings', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-12',
+    multiplayer: true,
+  }),
+  arcadeGame({
     slug: 'block-blast',
     title: { en: 'Block Burst', tr: 'Blok Patlaması' },
     description: {

@@ -162,6 +162,8 @@ function iconHtml(m, play) {
 // The picks below were chosen by eye on the November 2026 run (frames without a round-start,
 // "wrong" or game-over banner); check them when the cards are regenerated.
 const CARD = {
+  // a 3D tip-off that runs slowly in software WebGL: wait for the ball to be in play
+  'blacktop-kings': { wait: 30000 },
   'color-bounce': { pick: 2 },
   'crypt-crawler': { wait: 2500 },
   // Crystal Keep's card shows a card draft over a built-up defence: the autopilot plays the

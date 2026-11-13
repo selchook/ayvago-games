@@ -10,7 +10,8 @@ their GLBs under models/gltf_format/ like the older kits, and keep the external 
 `Textures/` as the GLBs reference it (case matters on the server).
   python3 tools/import-kenney.py <jam-ready-assets-dir> toy-car-kit racing-kit-ea
   python3 tools/import-kenney.py <jam-ready-assets-dir> food-kit furniture-kit
-  python3 tools/import-kenney.py <jam-ready-assets-dir> mini-dungeon graveyard-kit"""
+  python3 tools/import-kenney.py <jam-ready-assets-dir> mini-dungeon graveyard-kit
+  python3 tools/import-kenney.py <jam-ready-assets-dir> city-kit-commercial city-kit-roads"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -51,6 +52,10 @@ PACKS = {
     # pack roots are the mirror's own folders: License.txt + Models/GLB format/)
     'kenney-mini-dungeon/3D/dungeon': 'mini-dungeon',
     'kenney-graveyard-kit/3D/seasonal-holiday': 'graveyard-kit',
+    # City Kit Commercial 2.1 and City Kit Roads 2.0 (jam-ready-assets mirror, Git LFS, commit
+    # 397bf9e; pack roots are the mirror's own folders: License.txt + Models/GLB format/)
+    'kenney-city-kit-commercial/3D/city': 'city-kit-commercial',
+    'kenney-city-kit-roads/3D/city': 'city-kit-roads',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -116,6 +121,16 @@ GRAVEYARD_KIT = [
     'pillar-large', 'debris', 'coffin', 'gravestone-cross',
 ]
 FILES['mini-dungeon'] = ['License.txt', 'Models/GLB format/Textures/colormap.png', 'Models/Textures/variation-a.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_DUNGEON]
+# Blacktop Kings (games/blacktop-kings/kit.ts CITY_MODELS / ROAD_MODELS): the skyline behind the court,
+# street lights, the street and cones
+CITY_KIT_COMMERCIAL = [
+    'building-a', 'building-c', 'building-e', 'building-g', 'building-h', 'building-k',
+    'building-skyscraper-a', 'building-skyscraper-b', 'building-skyscraper-c',
+    'low-detail-building-a', 'low-detail-building-c', 'low-detail-building-wide-a', 'detail-parasol-a',
+]
+CITY_KIT_ROADS = ['light-square', 'light-curved', 'road-straight', 'construction-cone']
+FILES['city-kit-commercial'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in CITY_KIT_COMMERCIAL]
+FILES['city-kit-roads'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in CITY_KIT_ROADS]
 FILES['graveyard-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in GRAVEYARD_KIT]
 
 def norm_file(rel):
