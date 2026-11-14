@@ -22,7 +22,8 @@ is not reachable from the build machines). Unzip each into one folder, named as 
 that folder (nothing in the zips is run, only the listed files are copied):
   unzip kenney_mini-forest.zip -d <dir>/kenney_mini-forest
   unzip kenney_mini-characters.zip -d <dir>/kenney_mini-characters
-  python3 tools/import-kenney.py <dir> mini-forest mini-characters"""
+  python3 tools/import-kenney.py <dir> mini-forest mini-characters
+  python3 tools/import-kenney.py <jam-ready-assets-dir> retro-urban-kit"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -90,6 +91,9 @@ PACKS = {
     # <dir>/kenney_mini-forest/ and <dir>/kenney_mini-characters/ (License.txt + Models/GLB format/)
     'kenney_mini-forest': 'mini-forest',
     'kenney_mini-characters': 'mini-characters',
+    # Retro Urban Kit 2.0 (jam-ready-assets mirror, Git LFS, commit 397bf9e; pack root is the
+    # mirror's own folder: License.txt + Models/GLB format/ with its 22 textures in Textures/)
+    'kenney-retro-urban-kit/3D/city': 'retro-urban-kit',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -250,6 +254,28 @@ MINI_CHARACTERS = [
 ]
 FILES['mini-forest'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_FOREST]
 FILES['mini-characters'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_CHARACTERS]
+# Rooftop Courier (games/rooftop-courier/kit.ts KIT_MODELS / KIT_TEXTURES): the brick, metal and bar
+# walls, roofs and slants, fire escapes, awnings, cables, beams, planks, scaffolding, roof clutter,
+# street lamps, trees, trucks and street tiles it builds its city from, and every texture they use
+RETRO_URBAN_KIT = [
+    'wall-a', 'wall-a-window', 'wall-a-door', 'wall-a-garage', 'wall-a-detail', 'wall-a-painted',
+    'wall-a-corner-painted', 'wall-a-roof', 'wall-a-roof-slant', 'wall-a-roof-detailed', 'wall-a-column',
+    'wall-b', 'wall-b-window', 'wall-b-door', 'wall-b-garage', 'wall-b-roof', 'wall-b-roof-slant', 'wall-b-column',
+    'wall-c-flat', 'wall-c-flat-low', 'wall-type-a', 'wall-type-b', 'wall-broken-type-a', 'wall-fence',
+    'balcony-type-a', 'balcony-ladder-bottom', 'balcony-ladder-top', 'detail-awning-wide', 'detail-awning-small',
+    'detail-cables-type-a', 'detail-cables-type-b', 'detail-beam', 'planks', 'pallet', 'pallet-small',
+    'detail-barrier-strong-type-a', 'detail-barrier-strong-type-b', 'detail-barrier-type-a', 'detail-dumpster-closed',
+    'detail-dumpster-open', 'detail-block', 'detail-light-single', 'detail-light-double', 'roof-metal-type-a',
+    'roof-metal-type-b', 'roof-metal-poles', 'scaffolding-structure', 'scaffolding-floor', 'scaffolding-poles',
+    'tree-large', 'tree-park-large', 'tree-pine-large', 'tree-small', 'truck-grey', 'truck-green', 'truck-flat',
+    'truck-grey-cargo', 'road-asphalt-straight', 'road-asphalt-center', 'road-asphalt-pavement', 'road-asphalt-side',
+]
+RETRO_URBAN_TEXTURES = [
+    'asphalt', 'bars', 'concrete', 'dirt', 'doors', 'grass', 'metal', 'metal_wall', 'planks', 'rock', 'roof',
+    'roof_plates', 'signs', 'tiles', 'treeA', 'treeB', 'truck', 'truck_alien', 'wall', 'wall_garage', 'wall_lines', 'windows',
+]
+FILES['retro-urban-kit'] = (['License.txt'] + [f'Models/GLB format/Textures/{n}.png' for n in RETRO_URBAN_TEXTURES]
+                            + [f'Models/GLB format/{n}.glb' for n in RETRO_URBAN_KIT])
 
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""
