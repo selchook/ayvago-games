@@ -1,22 +1,25 @@
 // Zombie Grove: the Play scene. Runs the simulation (sim.ts) at a fixed 60 Hz, draws it in 3D
 // (view.ts) under a Phaser HUD, reads the stick and the keys, banks the level-up offers and opens
-// them in the card bar when the player wants (the fight runs on in slow motion), plays the sounds,
-// banners and damage numbers, and banks the night's coins at the end.
+// them in the card bar when the player wants (the fight runs on in slow motion), shows the power-ups
+// (timer chips) and the gold chest's reveal, plays the sounds, banners and damage numbers, offers
+// the endless night after the dawn, and banks the night's coins (and new heroes) at the end.
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash, shake, storage,
   HUD_MARGIN, HUD_ROW2_Y, HUD_GAP,
 } from '@core';
+import { ChestReveal } from './chestui';
+import type { Card as ChestCard } from './cards';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent, type Offer } from './sim';
-import { TUNING, isBoss, type Mode, type BossKind, type WeaponId, type PassiveId, type ZombieKind } from './defs';
+import { TUNING, isBoss, type Mode, type BossKind, type WeaponId, type PassiveId, type ZombieKind, type PowerId, type BuffId, type HeroId } from './defs';
 import { RARITY_COLOR, type Card } from './cards';
 import { View } from './view';
 import { Bot, SKILL } from './bot';
 import { metaFx, runBonus, bankRun, type Meta } from './meta';
 import { loadMeta, saveMeta } from './save';
-import { makeArt, cardArt, COIN, SKULL, MOON, SUN, OFFER } from './art';
-import { HpBar, XpChip, WeaponTray, BossBar, banner, bossWarning, UI_DEPTH } from './ui';
+import { makeArt, cardArt, COIN, SKULL, MOON, SUN, OFFER, INFINITY, POWER_HUE } from './art';
+import { HpBar, XpChip, WeaponTray, BossBar, BuffChips, banner, bossWarning, glass, Pill, UI_DEPTH } from './ui';
 import { CardBar, OfferButton, DRAFT_DEPTH, BAR_BOTTOM, BAR_H, cardText } from './cardsui';
 import { xpToNext } from './defs';
 
@@ -27,6 +30,9 @@ const GRACE = 0.6;
 const GRACE_CD = 4;
 const BOTTOM_Y = 1214;
 const SEEN_KEY = 'zombie-grove:seen';
+/** Each power-up's pickup sound. */
+const POWER_SFX: Record<PowerId, string> = { heal: 'heal', vacuum: 'magnet', nuke: 'nuke', freeze: 'bell', rage: 'rage', boots: 'boots' };
+const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
 
 interface DmgText { t: Phaser.GameObjects.Text; life: number; x: number; y: number }
 
@@ -42,6 +48,11 @@ export class PlayScene extends ArcadeScene {
   private xp!: XpChip;
   private tray!: WeaponTray;
   private bossBar!: BossBar;
+  private buffChips!: BuffChips;
+  private chest: ChestReveal | null = null;
+  private chestQueue: { cards: ChestCard[]; coins: number }[] = [];
+  private choice: { root: Phaser.GameObjects.Container; pills: Pill[]; focus: number } | null = null;
+  private newHeroes: HeroId[] = [];
   private killChip!: HudChip;
   private coinChip!: HudChip;
   private offerBtn!: OfferButton;
@@ -111,6 +122,12 @@ export class PlayScene extends ArcadeScene {
     this.banked = false;
     this.coinsEarned = 0;
     this.summaryBox = null;
+    this.chest = null;
+    this.chestQueue = [];
+    this.choice = null;
+    this.newHeroes = [];
+    // the won night waits for the keep-going choice
+    this.sim.hold = true;
     this.shownCoins = this.shownKills = -1;
     this.shownTime = '';
     this.firstFrames = [];
@@ -151,6 +168,7 @@ export class PlayScene extends ArcadeScene {
     this.killChip = hudChip(this, this.xp.chip.right + HUD_GAP, HUD_ROW2_Y, { icon: SKULL, iconSize: 28, text: '0', minWidth: 90, depth: UI_DEPTH });
     this.coinChip = hudChip(this, this.killChip.right + HUD_GAP, HUD_ROW2_Y, { icon: COIN, iconSize: 28, text: '0', color: '#ffe68a', minWidth: 90, depth: UI_DEPTH });
     this.bossBar = new BossBar(this, width / 2, HUD_ROW2_Y + 62);
+    this.buffChips = new BuffChips(this, width - HUD_MARGIN, HUD_ROW2_Y + 126);
     this.hp = new HpBar(this, HUD_MARGIN, BOTTOM_Y);
     this.tray = new WeaponTray(this, width / 2, BOTTOM_Y - 74);
     const keys = !this.sys.game.device.input.touch;
@@ -159,6 +177,8 @@ export class PlayScene extends ArcadeScene {
     this.vignette = this.add.graphics().setDepth(60).setScrollFactor(0);
 
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
+      if (this.choice && this.choiceKey(e.code)) return;
+      if (this.chest && !this.chest.done && this.chest.key(e.code)) return;
       if (this.barOpen && this.bar!.key(e.code)) return;
       if (e.code === 'KeyE') { this.toggleBar(); return; }
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) this.inputKind = 'keys';
@@ -175,7 +195,8 @@ export class PlayScene extends ArcadeScene {
   get tune() { return TUNING[this.mode]; }
 
   private clock(): string {
-    const left = Math.max(0, Math.ceil(this.sim.tune.night - this.sim.time));
+    // the endless night counts up from the dawn
+    const left = this.sim.endless ? Math.floor(this.sim.time - this.sim.endlessT0) : Math.max(0, Math.ceil(this.sim.tune.night - this.sim.time));
     return `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
   }
 
@@ -206,7 +227,7 @@ export class PlayScene extends ArcadeScene {
   private step(dt: number): void {
     if (this.frozen) { dt = this.pending; this.pending = 0; }
     const sim = this.sim;
-    const target = this.barOpen ? BAR_SLOW : 1;
+    const target = this.barOpen || this.chestOpen ? BAR_SLOW : 1;
     this.slow += (target - this.slow) * Math.min(1, dt * SLOW_EASE);
     if (Math.abs(target - this.slow) < 0.004) this.slow = target;
     let k = this.slow * this.testSpeed;
@@ -224,6 +245,7 @@ export class PlayScene extends ArcadeScene {
     }
     if (n >= 10) this.acc = 0;
     this.bar?.update(dt);
+    this.chest?.update(dt);
     this.view.sync(sim, dt * Math.max(0.3, this.slow) * Math.min(1, this.testSpeed || 0.0001) * (this.bulletT > 0 ? 0.4 : 1));
     this.updateHud(dt);
     this.updateSounds(dt);
@@ -279,12 +301,42 @@ export class PlayScene extends ArcadeScene {
         this.floatText(p.x, p.y - 20, t('healed', { n: ev.n }), '#7affa0', 26);
         break;
       }
-      case 'magnet': this.sfx('magnet', { volume: 0.5 }); this.floatText(this.scale.width / 2, 520, t('magnetOn'), '#8fd0ff', 34); break;
-      case 'chest': {
-        this.sfx('chest', { volume: 0.7 });
-        banner(this, 430, t('chest'), t('coinsPlus', { n: 15 }), { color: '#ffd23f', size: 50, hold: 1 });
+      case 'power': {
+        this.sfx(POWER_SFX[ev.kind], { volume: ev.kind === 'nuke' ? 0.9 : 0.6 });
+        const pp = this.sx(sim.player.x, sim.player.z, 1.8);
+        // the name, and what it does (the stew shows the health it gave)
+        if (ev.kind !== 'heal' && ev.kind !== 'nuke') this.floatText(pp.x, pp.y - 96, t('pw_' + ev.kind), hex(POWER_HUE[ev.kind]), 30, t('pws_' + ev.kind));
+        if (ev.kind === 'freeze') { flash(this, 0xbff0ff, 260, 0.35); this.sfx('freezeHit', { volume: 0.4 }); }
+        if (ev.kind === 'rage') flash(this, 0xff3a4a, 180, 0.25);
         break;
       }
+      case 'nuke':
+        flash(this, 0xfff6d0, 520, 0.85);
+        shake(this, 0.012, 380);
+        this.time.delayedCall(250, () => this.sfx('boom', { volume: 0.6, rate: 0.7 }));
+        banner(this, 430, t('pw_nuke'), t('pws_nuke', { n: ev.n }), { color: '#ffe07a', size: 48, hold: 1 });
+        break;
+      case 'buffEnd': this.sfx('slowOut', { volume: 0.25, exact: true }); break;
+      case 'drop': this.sfxAt('dropPop', this.sx(ev.x, ev.z).x, { volume: 0.3 }); break;
+      case 'bash':
+        if (ev.n === 0) this.sfx('bash', { volume: ev.hits ? 0.45 : 0.25 });
+        if (ev.n === 0 && ev.hits >= 3) this.sfx('clang', { volume: 0.25 });
+        break;
+      case 'chest': {
+        this.sfx('chest', { volume: 0.7 });
+        this.chestQueue.push({ cards: ev.cards, coins: ev.coins });
+        if (!this.chest) this.openChest();
+        break;
+      }
+      case 'endless':
+        this.sfx('roar', { volume: 0.8, rate: 0.65 });
+        flash(this, 0xff3050, 500, 0.45);
+        banner(this, 400, t('endlessBanner'), t('endlessSub'), { color: '#ff6a7a', size: 58, hold: 2 });
+        this.hud.centerChip.setIcon(INFINITY, undefined, 28);
+        this.hud.centerChip.setTextColor('#ff8a9a');
+        playMusic(this, 'boss');
+        this.time.delayedCall(4000, () => { if (!this.isOver && !this.sim.boss) playMusic(this, 'level3'); });
+        break;
       case 'level': {
         this.sfx('levelup', { volume: 0.55 });
         const p = this.sx(sim.player.x, sim.player.z, 1.8);
@@ -350,8 +402,9 @@ export class PlayScene extends ArcadeScene {
         break;
       case 'won':
         this.sfx('fanfare', { volume: 0.8 });
-        this.bankCoins();
-        this.time.delayedCall(400, () => this.showSummary(true));
+        // the autopilot (tests, store art) ends the night; a player chooses
+        if (this.bot) { this.endTheNight(); break; }
+        this.time.delayedCall(500, () => this.showChoice());
         break;
       case 'revive':
         this.sfx('revive', { volume: 0.8 });
@@ -364,7 +417,8 @@ export class PlayScene extends ArcadeScene {
         this.bulletT = 1.4;
         this.bankCoins();
         if (this.bar) { this.bar.destroy(); this.bar = null; }
-        this.time.delayedCall(1200, () => this.showSummary(false));
+        this.closeChest();
+        this.time.delayedCall(1200, () => this.showSummary(this.sim.won));
         break;
     }
   }
@@ -412,6 +466,8 @@ export class PlayScene extends ArcadeScene {
       input: this.inputKind === 'touch' ? 'touch' : 'desk',
       rerolls: () => sim.rerolls,
       roll: () => { const i = this.barIndex(); return i >= 0 && sim.reroll(i) ? sim.offers[i].cards : null; },
+      banishes: () => sim.banishes,
+      banish: (k) => { const i = this.barIndex(); return i >= 0 ? sim.banish(i, k) : null; },
       onPick: (k, x, y) => this.takeCard(k, x, y),
       onClose: () => { this.bar = null; this.sfx('slowOut', { volume: 0.4, exact: true }); },
       sfx: (key, v) => this.sfx(key, { volume: v ?? 0.5, exact: true }),
@@ -436,6 +492,81 @@ export class PlayScene extends ArcadeScene {
     if (card.kind === 'weapon' && card.to >= 5 && !this.seen.has('hintEvolve')) this.time.delayedCall(1200, () => this.hint('hintEvolve', true));
   }
 
+  // ------------------------------------------------------------------ the gold chest
+
+  get chestOpen(): boolean { return !!this.chest && !this.chest.done; }
+
+  private openChest(): void {
+    const next = this.chestQueue.shift();
+    if (!next || this.isOver) return;
+    this.sim.grace(2.5);
+    this.chest = new ChestReveal(this, next.cards, next.coins,
+      (key, v, rate) => this.sfx(key, { volume: v ?? 0.5, exact: rate === undefined, rate }),
+      () => { this.chest = null; this.time.delayedCall(250, () => this.openChest()); });
+  }
+
+  private closeChest(): void {
+    this.chestQueue = [];
+    this.chest?.destroy();
+    this.chest = null;
+  }
+
+  // ------------------------------------------------------------------ the dawn's choice
+
+  /** After the dawn: keep going into the endless night, or end the night and bank. */
+  private showChoice(): void {
+    if (this.choice || this.isOver || this.sim.phase !== 'won') return;
+    const { width } = this.scale;
+    const root = this.add.container(width / 2, 700).setScrollFactor(0).setDepth(9600);
+    root.add(this.add.zone(0, 0, 640, 470).setInteractive());
+    root.add(glass(this, 640, 470, { alpha: 0.92, r: 30, color: 0x1a1410, rim: 0xffd27a }));
+    root.add(txt(this, 0, -180, t('dawnChoice'), { title: true, size: 36, color: '#ffd27a', strokeThickness: 6 }));
+    const keep = new Pill(this, 0, -70, 500, 120, 0xa0304a, () => this.choose(0), 34);
+    keep.setLabels(t('keepGoing'), t('keepSub'));
+    const end = new Pill(this, 0, 80, 500, 120, 0x2f8a5a, () => this.choose(1), 34);
+    end.setLabels(t('endNight'), t('endSub'));
+    root.add([keep, end]);
+    if (this.inputKind === 'keys') root.add(txt(this, 0, 196, t('choiceKeys'), { size: 18, color: '#b8c8b0', strokeThickness: 0, shadow: false }));
+    this.choice = { root, pills: [keep, end], focus: 0 };
+    this.focusChoice(0);
+    root.setScale(0.5).setAlpha(0);
+    this.tweens.add({ targets: root, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });
+    this.sfx('offer', { volume: 0.5, exact: true });
+  }
+
+  private focusChoice(i: number): void {
+    const c = this.choice;
+    if (!c) return;
+    c.focus = i;
+    c.pills.forEach((p, k) => { p.setScale(k === i ? 1.04 : 0.96); p.setAlpha(k === i ? 1 : 0.75); });
+  }
+
+  private choiceKey(code: string): boolean {
+    const c = this.choice;
+    if (!c) return false;
+    if (['ArrowUp', 'ArrowLeft', 'KeyW', 'KeyA'].includes(code)) { this.focusChoice(0); this.sfx('move', { volume: 0.3 }); return true; }
+    if (['ArrowDown', 'ArrowRight', 'KeyS', 'KeyD'].includes(code)) { this.focusChoice(1); this.sfx('move', { volume: 0.3 }); return true; }
+    if (code === 'Enter' || code === 'Space') { this.choose(c.focus); return true; }
+    return false;
+  }
+
+  /** 0: keep going, 1: end the night. */
+  choose(i: number): void {
+    const c = this.choice;
+    if (!c) return;
+    this.choice = null;
+    this.sfx('cardPick', { volume: 0.6, exact: true });
+    this.tweens.add({ targets: c.root, scale: 0.85, alpha: 0, duration: 220, onComplete: () => c.root.destroy() });
+    if (i === 0 && this.sim.keepGoing()) return;
+    this.endTheNight();
+  }
+
+  private endTheNight(): void {
+    this.sim.endNight();
+    this.bankCoins();
+    this.time.delayedCall(300, () => this.showSummary(true));
+  }
+
   // ------------------------------------------------------------------ HUD
 
   private redT = 0;
@@ -443,17 +574,17 @@ export class PlayScene extends ArcadeScene {
   private updateHud(dt: number): void {
     const sim = this.sim, p = sim.player;
     if (this.score !== sim.score) this.setScore(sim.score);
-    const clock = sim.phase === 'night' ? this.clock() : '0:00';
+    const clock = sim.phase === 'night' || sim.endless ? this.clock() : '0:00';
     if (clock !== this.shownTime) {
       this.shownTime = clock;
       this.hud.setCenter(clock);
       const left = sim.tune.night - sim.time;
-      if (left <= 60 && sim.phase === 'night') {
+      if (left <= 60 && sim.phase === 'night' && !sim.endless) {
         this.hud.centerChip.setTextColor('#ff8a6a');
         if (!this.lastMinute) { this.lastMinute = true; banner(this, 470, t('lastMinute'), '', { color: '#ff8a6a', size: 44, hold: 1 }); this.sfx('alarm', { volume: 0.35 }); }
         this.tweens.add({ targets: this.hud.centerChip, scale: 1.08, duration: 90, yoyo: true });
       }
-      if (sim.phase !== 'night') { this.hud.centerChip.setIcon(SUN, undefined, 28); this.hud.centerChip.setTextColor('#ffd27a'); }
+      if (sim.phase !== 'night' && !sim.endless) { this.hud.centerChip.setIcon(SUN, undefined, 28); this.hud.centerChip.setTextColor('#ffd27a'); }
     }
     this.xp.update(sim.level, Math.min(1, sim.xp / xpToNext(sim.level)), dt, this.elapsed);
     if (sim.run.kills !== this.shownKills) {
@@ -468,6 +599,7 @@ export class PlayScene extends ArcadeScene {
     this.killChip.setAnchor(this.xp.chip.right + HUD_GAP, HUD_ROW2_Y);
     this.coinChip.setAnchor(this.killChip.right + HUD_GAP, HUD_ROW2_Y);
     this.tray.sync(sim.weapons, sim.passives);
+    this.buffChips.update(sim.buffs, this.elapsed);
     this.offerBtn.set(p.alive && sim.phase === 'night' ? sim.offers.length : 0, this.barOpen);
     this.offerBtn.update(dt, this.elapsed);
     this.hp.update(p.hp, p.maxHp, dt, this.elapsed);
@@ -599,10 +731,16 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  private floatText(x: number, y: number, s: string, color: string, size = 26): void {
-    const tx = txt(this, x, y, s, { title: true, size, color, strokeThickness: 6 }).setScrollFactor(0).setDepth(9300).setScale(0.5);
-    this.tweens.add({ targets: tx, scale: 1, duration: 200, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: tx, y: y - 60, alpha: 0, delay: 650, duration: 500, onComplete: () => tx.destroy() });
+  private floatText(x: number, y: number, s: string, color: string, size = 26, sub = ''): void {
+    // kept on the screen (a hero near the edge still shows the whole text)
+    const c = this.add.container(0, y).setScrollFactor(0).setDepth(9300).setScale(0.5);
+    const tx = txt(this, 0, 0, s, { title: true, size, color, strokeThickness: 6 });
+    c.add(tx);
+    let w = tx.width;
+    if (sub) { const st = txt(this, 0, size * 0.5 + 16, sub, { size: 20, color: '#ffffff', strokeThickness: 5 }); c.add(st); w = Math.max(w, st.width); }
+    c.x = Math.max(w / 2 + 12, Math.min(this.scale.width - w / 2 - 12, x));
+    this.tweens.add({ targets: c, scale: 1, duration: 200, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: c, y: y - 60, alpha: 0, delay: sub ? 1100 : 650, duration: 500, onComplete: () => c.destroy() });
   }
 
   private hintText: Phaser.GameObjects.Container | null = null;
@@ -631,11 +769,11 @@ export class PlayScene extends ArcadeScene {
     if (this.banked) return 0;
     this.banked = true;
     const sim = this.sim;
-    const base = sim.coins + runBonus(sim.run.kills, sim.run.time, sim.won, sim.run.minis + sim.run.bosses);
-    const coins = Math.round(base * this.tune.coinK * sim.meta.coinK);
+    const base = sim.coins + runBonus(sim.run.kills, sim.run.time, sim.won, sim.run.minis + sim.run.bosses, sim.run.endless);
+    const coins = Math.round(base * sim.coinMul);
     // fresh from storage: the camp may have changed it in another tab
     const m = loadMeta();
-    bankRun(m, coins, sim.won);
+    this.newHeroes = bankRun(m, coins, sim.won, { level: sim.level, time: sim.run.time, kills: sim.run.kills });
     saveMeta(m);
     this.meta = m;
     this.coinsEarned = coins;
@@ -649,12 +787,16 @@ export class PlayScene extends ArcadeScene {
     const { width } = this.scale;
     const c = this.add.container(width / 2, 560).setScrollFactor(0).setDepth(9500);
     this.summaryBox = c;
+    const extra = (sim.endless ? 34 : 0) + (this.newHeroes.length ? 46 : 0);
     const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.3).fillRoundedRect(-310, -180 + 8, 620, 360, 28);
-    bg.fillStyle(0x0d140f, 0.93).fillRoundedRect(-310, -180, 620, 360, 28);
-    bg.lineStyle(2, won ? 0xffd27a : 0xff7a6a, 0.5).strokeRoundedRect(-310, -180, 620, 360, 28);
+    bg.fillStyle(0x000000, 0.3).fillRoundedRect(-310, -180 + 8, 620, 360 + extra, 28);
+    bg.fillStyle(0x0d140f, 0.93).fillRoundedRect(-310, -180, 620, 360 + extra, 28);
+    bg.lineStyle(2, won ? 0xffd27a : 0xff7a6a, 0.5).strokeRoundedRect(-310, -180, 620, 360 + extra, 28);
     c.add(bg);
-    c.add(txt(this, 0, -128, won ? t('survived') : t('youFell'), { title: true, size: 46, color: won ? '#ffd27a' : '#ff7a6a', strokeThickness: 8 }));
+    const title = sim.endless ? t('endlessOver') : won ? t('survived') : t('youFell');
+    const tt = txt(this, 0, -128, title, { title: true, size: 46, color: won ? '#ffd27a' : '#ff7a6a', strokeThickness: 8 });
+    if (tt.width > 580) tt.setScale(580 / tt.width);
+    c.add(tt);
     const secs = Math.floor(sim.run.time);
     c.add(txt(this, 0, -62, t('runStats', { t: `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, l: sim.level, k: sim.run.kills }), { size: 24, color: '#e6efdf', strokeThickness: 0 }));
     const who = sim.run.killer as ZombieKind | 'goo' | 'blast' | null;
@@ -667,6 +809,18 @@ export class PlayScene extends ArcadeScene {
     const earned = txt(this, 10, 96, t('coinsEarned', { n: 0 }), { title: true, size: 34, color: '#ffe68a', strokeThickness: 6 });
     c.add([coin, earned]);
     c.add(txt(this, 0, 148, t('purse', { n: this.meta.coins }), { size: 20, color: '#cfd8c8', strokeThickness: 0 }));
+    let y = 148;
+    if (sim.endless) {
+      y += 34;
+      const e = Math.floor(sim.run.endless);
+      c.add(txt(this, 0, y, t('endlessStat', { t: `${Math.floor(e / 60)}:${String(e % 60).padStart(2, '0')}` }), { size: 22, color: '#ff9aab', strokeThickness: 0 }));
+    }
+    if (this.newHeroes.length) {
+      y += 46;
+      const nh = txt(this, 0, y, t('newHero', { h: this.newHeroes.map((h) => t('h_' + h)).join(', ') }), { title: true, size: 26, color: '#7affc0', strokeThickness: 5 });
+      c.add(nh);
+      this.tweens.add({ targets: nh, scale: { from: 1.25, to: 1 }, duration: 500, delay: 900, ease: 'Back.easeOut', onStart: () => this.sfx('evolve', { volume: 0.6 }) });
+    }
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });
     this.tweens.addCounter({ from: 0, to: this.coinsEarned, duration: 900, delay: 350, onUpdate: (tw) => earned.setText(t('coinsEarned', { n: Math.round(tw.getValue() ?? 0) })), onComplete: () => { if (this.coinsEarned > 0) this.sfx('coins', { volume: 0.6 }); } });
@@ -677,7 +831,7 @@ export class PlayScene extends ArcadeScene {
     this.ended = true;
     const won = this.sim.won;
     const box = this.summaryBox;
-    const go = () => this.endGame({ win: won, title: won ? t('survived') : t('runOver'), delay: 0 });
+    const go = () => this.endGame({ win: won, title: this.sim.endless ? t('endlessOver') : won ? t('survived') : t('runOver'), delay: 0 });
     if (box) {
       this.time.delayedCall(1600, () => this.tweens.add({ targets: box, alpha: 0, scale: 0.9, duration: 260, onComplete: go }));
     } else go();
@@ -686,6 +840,8 @@ export class PlayScene extends ArcadeScene {
   endGame(o: Parameters<ArcadeScene['endGame']>[0] = {}): void {
     if (!this.isOver) this.bankCoins();
     if (this.bar) { this.bar.destroy(); this.bar = null; }
+    this.closeChest();
+    if (this.choice) { this.choice.root.destroy(); this.choice = null; }
     super.endGame(o);
   }
 
@@ -721,6 +877,12 @@ export class PlayScene extends ArcadeScene {
   /** Test hook: clears the banners on screen (slow software rendering keeps them up for long). */
   testClean(): void { for (const o of [...this.children.list]) if ((o as Phaser.GameObjects.Container).depth === 9400) o.destroy(); this.hintText?.destroy(); }
   testHint(key: string): void { this.seen.delete(key); this.seen.delete(key + ':2'); this.meta.runs = 0; this.hint(key, true); }
+  /** Drops a power-up (or the gold chest) next to the hero. */
+  testPower(kind: PowerId | 'chest', dx = 1.2, dz = 0): void { this.sim.dropAt(kind, this.sim.player.x + dx, this.sim.player.z + dz); }
+  /** Sets a timed power-up running. */
+  testBuff(id: BuffId, s: number): void { this.sim.buffs[id] = s; }
+  get testChestReady(): boolean { return !!this.chest?.ready; }
+  get testChoice(): boolean { return !!this.choice; }
 }
 
 export { isBoss };

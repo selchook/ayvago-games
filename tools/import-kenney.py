@@ -251,6 +251,8 @@ MINI_CHARACTERS = [
     'character-male-f', 'character-male-g', 'character-female-f', 'character-soldier', 'character-zombie', 'weapon-bow',
     'character-raider', 'character-alien', 'character-robot', 'character-knight', 'character-worker',
     'weapon-sword', 'weapon-spear', 'weapon-shooter', 'weapon-arrow', 'shield-round',
+    # Zombie Grove 1.1: the Medic and Scout heroes and the Tower Shield
+    'character-female-c', 'character-female-e', 'shield-rectangle',
 ]
 FILES['mini-forest'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_FOREST]
 FILES['mini-characters'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_CHARACTERS]

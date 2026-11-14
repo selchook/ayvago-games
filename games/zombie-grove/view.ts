@@ -4,24 +4,30 @@
 // menu's attract mode both use it, so the menu also compiles every shader the first Play frame
 // needs (kit.ts keepPrograms).
 import Phaser from 'phaser';
-import { World3D, THREE, model, miniKey, playerCharacter3d } from '@core/three';
+import { World3D, THREE, model, miniKey } from '@core/three';
 import type { Sim, SimEvent, Zombie } from './sim';
-import { ARENA, isBoss, type BossKind, type WeaponId, type HeroId } from './defs';
+import { ARENA, POWER_IDS, isBoss, type BossKind, type WeaponId, type HeroId, type PowerId } from './defs';
 import { arena } from './arena';
-import { mergeProps, modelGeo, packMap, fkey, heroKey, keepPrograms, groveMaterial, PERSON } from './kit';
+import { mergeProps, modelGeo, packMap, fkey, keepPrograms, groveMaterial, fistMatrix, PERSON } from './kit';
 import { Billboards, Particles, TEX, canvasTex } from './fx3d';
 import { Horde } from './horde';
 import { Figure } from './figure';
+import { heroFigure } from './heroes3d';
+import { powerCanvas, POWER_HUE } from './art';
 
 export const CAM = { fov: 40, tilt: 52, dist: 38 };
 const CHUNKS = 5;
 const chunkGeo = new Map<number, THREE.BufferGeometry>();
 
-const BOSS_LOOK: Record<BossKind, { model: string; scale: number; tint: number; glow: number; aura: number }> = {
-  brute: { model: 'character-raider', scale: PERSON * 3.0, tint: 0xb8e0a0, glow: 0x1c2a10, aura: 0x9aff5a },
-  matron: { model: 'character-alien', scale: PERSON * 2.8, tint: 0xd8ffb0, glow: 0x1a2a08, aura: 0xc8ff3a },
-  knight: { model: 'character-knight', scale: PERSON * 2.9, tint: 0xb0c8a0, glow: 0x101c18, aura: 0x7ac8ff },
-  king: { model: 'character-zombie', scale: PERSON * 3.8, tint: 0xc0a8f0, glow: 0x24103a, aura: 0xb070ff },
+/**
+ * The bosses: a big Mini Character, light-tinted with a rim light in its aura's colour, a weapon in
+ * the fist and (the Rot King) a crown, so each reads from the high camera.
+ */
+const BOSS_LOOK: Record<BossKind, { model: string; scale: number; tint: number; glow: number; aura: number; weapon?: [string, 'left' | 'right', number]; crown?: boolean }> = {
+  brute: { model: 'character-raider', scale: PERSON * 3.1, tint: 0xe4ffd0, glow: 0x1c2a10, aura: 0x9aff5a, weapon: ['weapon-sword', 'right', 1.5] },
+  matron: { model: 'character-alien', scale: PERSON * 2.9, tint: 0xeaffd0, glow: 0x1a2a08, aura: 0xc8ff3a },
+  knight: { model: 'character-knight', scale: PERSON * 3.0, tint: 0xd8e8d0, glow: 0x101c18, aura: 0x7ac8ff, weapon: ['weapon-spear', 'right', 1.2] },
+  king: { model: 'character-zombie', scale: PERSON * 4.3, tint: 0xf0e4ff, glow: 0x2a1440, aura: 0xc080ff, weapon: ['weapon-sword', 'right', 1.8], crown: true },
 };
 
 interface Sky { sky: number; hemi: number; ground: number; hemiI: number; sun: number; sunI: number; dir: [number, number, number]; lantern: number; fire: number }
@@ -34,13 +40,16 @@ const SKY_KEYS: [number, Sky][] = [
   [1, { sky: 0x3d3a6a, hemi: 0xa49ad8, ground: 0x383448, hemiI: 1.2, sun: 0xd8b8ff, sunI: 1, dir: [0.8, 0.7, 0.3], lantern: 2.6, fire: 2.6 }],
 ];
 const DAWN: Sky = { sky: 0xffbf94, hemi: 0xfff0d8, ground: 0x80684e, hemiI: 1.9, sun: 0xffe2b8, sunI: 2.5, dir: [0.9, 0.45, 0.2], lantern: 0.3, fire: 0.8 };
+/** The endless night under a blood moon. */
+const BLOOD: Sky = { sky: 0x3a1020, hemi: 0xe0a0b0, ground: 0x402030, hemiI: 1.35, sun: 0xff8a8a, sunI: 1.25, dir: [-0.4, 1, 0.5], lantern: 3, fire: 3 };
 
 const GEM_COL = [0x5affb0, 0x4fb4ff, 0xff5ad2];
 const SHOT_COL: Record<string, number> = { shot: 0xffd25a, ember: 0xff7a2a, laser: 0x5ae8ff };
 
 interface Swing { ang: number; arc: number; r: number; t: number; evo: boolean; delay: number }
 interface Thrust { ang: number; len: number; t: number; evo: boolean }
-interface Flash { x: number; y: number; z: number; s: number; t: number; max: number; c: number; kind: 'glow' | 'ring' | 'flare' }
+interface Flash { x: number; y: number; z: number; s: number; t: number; max: number; c: number; kind: 'glow' | 'ring' | 'flare' | 'implode' }
+interface Bash { ang: number; arc: number; r: number; t: number; evo: boolean }
 interface Tele { x: number; z: number; r: number; ang: number; t: number; max: number; kind: 'charge' | 'slam'; boss: Zombie }
 interface BossView { z: Zombie; fig: Figure; dead: number; kind: BossKind; act: string }
 
@@ -69,11 +78,11 @@ export class View {
   private lanes: Billboards;
   private slashes: Billboards;
   private gooBB: Billboards;
-  private hearts: Billboards;
-  private magnets: Billboards;
+  private powers = new Map<PowerId, Billboards>();
   private gems: THREE.InstancedMesh;
   private coins: THREE.InstancedMesh;
   private chests: THREE.InstancedMesh;
+  private chestBands: THREE.InstancedMesh;
   private arrows: THREE.InstancedMesh;
   private wards: THREE.InstancedMesh;
   private sticks: THREE.InstancedMesh;
@@ -82,6 +91,7 @@ export class View {
   private spears: THREE.Group[] = [];
   private swings: Swing[] = [];
   private thrusts: Thrust[] = [];
+  private bashes: Bash[] = [];
   private flashes: Flash[] = [];
   private teles: Tele[] = [];
   private levelT = 0;
@@ -98,8 +108,12 @@ export class View {
   private up = new THREE.Vector3(0, 1, 0);
   private time = 0;
   private skyCol = new THREE.Color();
-  /** 0 → 1 as the dawn comes up. */
+  /** 0 → 1 as the dawn comes up; 0 → 1 as the blood moon rises over the endless night. */
   dawnK = 0;
+  bloodK = 0;
+  /** The hero's torch flame (the Worker), for its sparks. */
+  private torchTip: THREE.Object3D | null = null;
+  private tipV = new THREE.Vector3();
   heroDead = false;
   heroWon = false;
   private emitAcc = 0;
@@ -162,12 +176,26 @@ export class View {
 
     // people
     this.horde = new Horde(sc);
-    this.hero = new Figure(heroKey(o.hero, playerCharacter3d()), PERSON, { ownMaterials: true });
+    this.hero = heroFigure(o.hero, { ownMaterials: true });
+    this.torchTip = (this.hero.root.userData.torch as THREE.Object3D | undefined) ?? null;
     sc.add(this.hero.root);
     this.robot = new Figure(miniKey('character-robot'), PERSON * 0.82);
     this.robot.root.visible = false;
     sc.add(this.robot.root);
-    this.heldWeapon(o.hero);
+    if (o.menu) {
+      // a boss's rim-lit material, out of sight: the menu compiles its program for the first boss
+      const warm = this.bossFigure('king');
+      warm.root.visible = false;
+      warm.root.position.y = -50;
+      sc.add(warm.root);
+      // and the Worker's torch (unlit flame, plain stick) when another hero stands in the grove
+      if (o.hero !== 'worker') {
+        const wk = heroFigure('worker');
+        wk.root.visible = false;
+        wk.root.position.y = -50;
+        sc.add(wk.root);
+      }
+    }
 
     // effects
     const glow = TEX.glow();
@@ -180,8 +208,11 @@ export class View {
     this.flares = new Billboards(sc, TEX.flare(), 220, { order: 15 });
     this.streaks = new Billboards(sc, TEX.streak(), 240, { flat: true, order: 13 });
     this.gooBB = new Billboards(sc, TEX.goo(), 200, { blend: 'normal', order: 16 });
-    this.hearts = new Billboards(sc, TEX.heart(), 12, { blend: 'normal', order: 17 });
-    this.magnets = new Billboards(sc, TEX.magnet(), 6, { blend: 'normal', order: 17 });
+    for (const id of POWER_IDS) {
+      const tex = new THREE.CanvasTexture(powerCanvas(id));
+      tex.colorSpace = THREE.SRGBColorSpace;
+      this.powers.set(id, new Billboards(sc, tex, 6, { blend: 'normal', order: 17 }));
+    }
     this.particles = new Particles(sc, glow, 1600);
     this.flames = new Particles(sc, TEX.flame(), 700, 'add', 13);
 
@@ -191,7 +222,20 @@ export class View {
     const coinGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.06, 14);
     coinGeo.rotateX(Math.PI / 2);
     this.coins = instanced(sc, coinGeo, new THREE.MeshLambertMaterial({ color: 0xffc83a, emissive: 0x6a4200 }), 80, false);
-    this.chests = instanced(sc, new THREE.BoxGeometry(0.9, 0.62, 0.62), new THREE.MeshLambertMaterial({ color: 0x8a5a2a, emissive: 0x3a2000 }), 4, false);
+    // the gold chest: a wooden box with a round lid, and its gold bands and lock on top
+    const box = new THREE.BoxGeometry(0.9, 0.42, 0.6);
+    box.translate(0, 0.21, 0);
+    const lid = new THREE.CylinderGeometry(0.3, 0.3, 0.9, 12, 1, false, 0, Math.PI);
+    lid.rotateZ(Math.PI / 2);
+    lid.translate(0, 0.42, 0);
+    this.chests = instanced(sc, mergeGeos([box, lid]), new THREE.MeshLambertMaterial({ color: 0x9a6230, emissive: 0x3a2000 }), 4, false);
+    const bands: THREE.BufferGeometry[] = [];
+    for (const x of [-0.3, 0.3]) {
+      const b = new THREE.BoxGeometry(0.1, 0.44, 0.63); b.translate(x, 0.21, 0); bands.push(b);
+      const t = new THREE.CylinderGeometry(0.315, 0.315, 0.1, 12, 1, false, 0, Math.PI); t.rotateZ(Math.PI / 2); t.translate(x, 0.42, 0); bands.push(t);
+    }
+    const lock = new THREE.BoxGeometry(0.16, 0.18, 0.06); lock.translate(0, 0.42, 0.31); bands.push(lock);
+    this.chestBands = instanced(sc, mergeGeos(bands), new THREE.MeshLambertMaterial({ color: 0xffd23f, emissive: 0x6a4a00 }), 4, false);
     const arrow = modelGeo(miniKey('weapon-arrow'));
     const arrowGeo = arrow.geo.clone().applyMatrix4(arrow.mat);
     arrowGeo.scale(2.2, 2.2, 2.2);
@@ -235,24 +279,42 @@ export class View {
     if (o.menu) keepPrograms(world.renderer, sc, world.camera);
   }
 
-  /** The hero's own weapon in hand (a sword, the bow or the spear). */
-  private heldWeapon(hero: HeroId): void {
-    const name = hero === 'ranger' ? 'weapon-bow' : hero === 'knight' ? 'weapon-spear' : 'weapon-sword';
-    const w = model(miniKey(name), { shadows: true });
-    const g = new THREE.Group();
-    g.add(w);
-    // into the fist at the end of the arm (the arm bone's space, model units)
-    w.position.set(-0.06, -0.02, -0.04);
-    g.position.set(hero === 'ranger' ? 0.17 : -0.17, -0.05, 0.06);
-    g.rotation.set(Math.PI / 2, 0, 0);
-    this.hero.hold(g, hero === 'ranger' ? 'left' : 'right');
-  }
-
   /** Swaps the hero's model (the camp's hero changed on the menu). */
   get drawCalls(): number { return this.world.renderer.info.render.calls; }
   get horded(): number { return this.horde.drawn; }
 
   // ------------------------------------------------------------------ light
+
+  /** A boss's figure: tinted, rim-lit, armed (and crowned). */
+  private bossFigure(kind: BossKind): Figure {
+    const lk = BOSS_LOOK[kind];
+    const fig = new Figure(miniKey(lk.model), lk.scale, { tint: lk.tint, glow: lk.glow, rim: [lk.aura, 0.9] });
+    if (lk.weapon) {
+      const [name, side, sc] = lk.weapon;
+      const g = new THREE.Group();
+      g.applyMatrix4(fistMatrix(side, sc));
+      g.add(model(miniKey(name), { shadows: true }));
+      fig.hold(g, side);
+    }
+    if (lk.crown) {
+      // a gold crown on the head: a band and five points (the head bone's space, model units)
+      const crown = new THREE.Group();
+      const gold = new THREE.MeshLambertMaterial({ color: 0xffd23f, emissive: 0x8a5a00 });
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.16, 0.07, 10, 1, true), gold);
+      band.userData.own = true;
+      crown.add(band);
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const pt = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.1, 4), gold);
+        pt.userData.own = true;
+        pt.position.set(Math.sin(a) * 0.15, 0.08, Math.cos(a) * 0.15);
+        crown.add(pt);
+      }
+      crown.position.set(0, 0.36, 0);
+      fig.bones.get('head')?.add(crown);
+    }
+    return fig;
+  }
 
   /** f: share of the night gone (0–1), dawn: 0–1 as the sun comes up. */
   setSky(f: number, dawn: number): void {
@@ -265,15 +327,17 @@ export class View {
       sky: 0, hemi: 0, ground: 0, hemiI: mix(a.hemiI, b.hemiI), sun: 0, sunI: mix(a.sunI, b.sunI),
       dir: [mix(a.dir[0], b.dir[0]), mix(a.dir[1], b.dir[1]), mix(a.dir[2], b.dir[2])], lantern: mix(a.lantern, b.lantern), fire: mix(a.fire, b.fire),
     };
-    const col = (x: number, y: number, d: number) => lerpColor(x, y, k, this.c).lerp(new THREE.Color(d), dawn).getHex();
-    sky.sky = col(a.sky, b.sky, DAWN.sky);
-    sky.hemi = col(a.hemi, b.hemi, DAWN.hemi);
-    sky.ground = col(a.ground, b.ground, DAWN.ground);
-    sky.sun = col(a.sun, b.sun, DAWN.sun);
-    const dm = (x: number, y: number) => x + (y - x) * dawn;
-    sky.hemiI = dm(sky.hemiI, DAWN.hemiI); sky.sunI = dm(sky.sunI, DAWN.sunI);
-    sky.lantern = dm(sky.lantern, DAWN.lantern); sky.fire = dm(sky.fire, DAWN.fire);
-    sky.dir = [dm(sky.dir[0], DAWN.dir[0]), dm(sky.dir[1], DAWN.dir[1]), dm(sky.dir[2], DAWN.dir[2])];
+    // the dawn, or the blood moon of the endless night, blended over the night's own light
+    const T = this.bloodK > 0 ? BLOOD : DAWN, w = this.bloodK > 0 ? this.bloodK : dawn;
+    const col = (x: number, y: number, d: number) => lerpColor(x, y, k, this.c).lerp(new THREE.Color(d), w).getHex();
+    sky.sky = col(a.sky, b.sky, T.sky);
+    sky.hemi = col(a.hemi, b.hemi, T.hemi);
+    sky.ground = col(a.ground, b.ground, T.ground);
+    sky.sun = col(a.sun, b.sun, T.sun);
+    const dm = (x: number, y: number) => x + (y - x) * w;
+    sky.hemiI = dm(sky.hemiI, T.hemiI); sky.sunI = dm(sky.sunI, T.sunI);
+    sky.lantern = dm(sky.lantern, T.lantern); sky.fire = dm(sky.fire, T.fire);
+    sky.dir = [dm(sky.dir[0], T.dir[0]), dm(sky.dir[1], T.dir[1]), dm(sky.dir[2], T.dir[2])];
     this.skyCol.setHex(sky.sky);
     (this.world.scene.background as THREE.Color).copy(this.skyCol);
     (this.world.scene.fog as THREE.Fog).color.copy(this.skyCol);
@@ -302,8 +366,8 @@ export class View {
       case 'kill': {
         const zb = ev.z;
         const big = zb.kind === 'tank' || isBoss(zb.kind);
-        if (ev.by === 'dawn') {
-          this.flames.burst(zb.x, 0.6, zb.z, 4, 2, [0xffb060, 0xff7a2a], 0.7, 0.6, 1.4, -2);
+        if (ev.by === 'dawn' || ev.by === 'nuke') {
+          this.flames.burst(zb.x, 0.6, zb.z, ev.by === 'nuke' ? 3 : 4, 2, ev.by === 'nuke' ? [0xfff0a0, 0xffb060] : [0xffb060, 0xff7a2a], 0.7, 0.6, 1.4, -2);
           break;
         }
         P.burst(zb.x, 0.55, zb.z, big ? 18 : 7, big ? 6 : 3.6, [0x8fbf6a, 0x5e8a4a, 0xcfe8a0], 0.55, big ? 0.7 : 0.45, 0.9, 5);
@@ -319,6 +383,16 @@ export class View {
         this.thrusts.push({ ang: ev.ang, len: ev.len, t: 0, evo: ev.evo });
         this.hero.act('attack-melee-left', 0.35, 2.1);
         break;
+      case 'bash': {
+        // the shield's shove: a violet crescent (a ring when evolved) and a dust wave
+        this.bashes.push({ ang: ev.ang, arc: ev.arc, r: ev.r, t: 0, evo: ev.evo });
+        if (ev.n === 0) this.hero.act('attack-melee-left', 0.32, 2.2);
+        const ux = Math.sin(ev.ang), uz = Math.cos(ev.ang);
+        if (!ev.evo) P.burst(sim.player.x + ux * ev.r * 0.6, 0.3, sim.player.z + uz * ev.r * 0.6, 8, 4, [0xd8c8ff, 0xa080ff, 0xffffff], 0.35, 0.35, 0.5, 4);
+        else P.burst(sim.player.x, 0.4, sim.player.z, 18, 6, [0xb8ffb0, 0xd8c8ff, 0xffffff], 0.45, 0.4, 0.5, 3);
+        if (ev.hits >= 4) this.shake(0.18, 0.12);
+        break;
+      }
       case 'chain':
         for (const p of ev.pts) this.flashes.push({ x: p.x, y: 0.8, z: p.z, s: 1.2, t: 0.2, max: 0.2, c: 0x8fd8ff, kind: 'flare' });
         break;
@@ -360,8 +434,36 @@ export class View {
         this.flashes.push({ x: sim.player.x, y: 0.1, z: sim.player.z, s: 5, t: 0.5, max: 0.5, c: 0xfff07a, kind: 'ring' });
         break;
       case 'chest':
-        P.burst(ev.x, 0.6, ev.z, 30, 6, [0xffd23f, 0xffffff, 0xff9a3a], 0.8, 0.5, 1.6, 3);
+        P.burst(ev.x, 0.6, ev.z, 40, 7, [0xffd23f, 0xffffff, 0xff9a3a], 0.9, 0.55, 1.8, 3);
+        this.flashes.push({ x: ev.x, y: 0.1, z: ev.z, s: 6, t: 0.6, max: 0.6, c: 0xffd23f, kind: 'ring' });
+        this.flashes.push({ x: ev.x, y: 1.2, z: ev.z, s: 4, t: 0.5, max: 0.5, c: 0xfff0a0, kind: 'glow' });
         break;
+      case 'drop':
+        // a power-up pops out of the fallen with a ring in its colour
+        this.flashes.push({ x: ev.x, y: 0.1, z: ev.z, s: 2.4, t: 0.5, max: 0.5, c: ev.kind === 'chest' ? 0xffd23f : POWER_HUE[ev.kind], kind: 'ring' });
+        break;
+      case 'power': {
+        const c = POWER_HUE[ev.kind], p = sim.player;
+        P.burst(p.x, 0.8, p.z, 22, 5, [c, 0xffffff], 0.6, 0.45, 1.2, 3);
+        this.flashes.push({ x: p.x, y: 0.1, z: p.z, s: 4, t: 0.5, max: 0.5, c, kind: 'ring' });
+        if (ev.kind === 'freeze') {
+          this.flashes.push({ x: p.x, y: 0.1, z: p.z, s: 34, t: 0.9, max: 0.9, c: 0xbff0ff, kind: 'ring' });
+          this.flashes.push({ x: p.x, y: 0.1, z: p.z, s: 22, t: 0.7, max: 0.7, c: 0xe8fbff, kind: 'ring' });
+          for (const zb of sim.zombies) if (Math.random() < 0.25 && Math.abs(zb.x - p.x) < 13 && Math.abs(zb.z - p.z) < 16) P.burst(zb.x, 1, zb.z, 3, 1.5, [0xe8fbff, 0x9fe4ff], 0.7, 0.3, 0.6, -1);
+        }
+        if (ev.kind === 'vacuum') this.flashes.push({ x: p.x, y: 0.1, z: p.z, s: 30, t: 0.8, max: 0.8, c: 0x7ab8ff, kind: 'implode' });
+        if (ev.kind === 'boots') this.flashes.push({ x: p.x, y: 0.1, z: p.z, s: 6, t: 0.5, max: 0.5, c: 0x6affb0, kind: 'ring' });
+        break;
+      }
+      case 'nuke': {
+        // the flare goes up and the light sweeps the screen: rings, a white-gold glow, a big shake
+        this.flashes.push({ x: ev.x, y: 0.1, z: ev.z, s: 46, t: 1.1, max: 1.1, c: 0xfff0a0, kind: 'ring' });
+        this.flashes.push({ x: ev.x, y: 0.1, z: ev.z, s: 30, t: 0.8, max: 0.8, c: 0xffb03a, kind: 'ring' });
+        this.flashes.push({ x: ev.x, y: 4, z: ev.z, s: 30, t: 0.7, max: 0.7, c: 0xfff6d0, kind: 'glow' });
+        this.particles.burst(ev.x, 1, ev.z, 50, 14, [0xfff0a0, 0xffffff, 0xffb03a], 1, 0.8, 2.5, 2);
+        this.shake(0.9, 0.7);
+        break;
+      }
       case 'telegraph':
         this.teles.push({ x: ev.x, z: ev.z2, r: ev.r, ang: ev.ang, t: ev.t, max: ev.t, kind: ev.kind, boss: ev.z });
         break;
@@ -406,6 +508,7 @@ export class View {
     // light: the night's progress and the dawn
     const f = Math.min(1, sim.time / sim.tune.night);
     if (sim.phase === 'dawn' || sim.phase === 'won') this.dawnK = Math.min(1, this.dawnK + dt / 2.2);
+    if (sim.endless) { this.dawnK = Math.max(0, this.dawnK - dt / 2); this.bloodK = Math.min(1, this.bloodK + dt / 3); }
     this.setSky(f, this.dawnK);
     const flick = 1 + Math.sin(this.time * 17) * 0.06 + Math.sin(this.time * 7.3) * 0.08;
     this.campfire.intensity = (this.campfire.userData.base as number) * flick;
@@ -459,9 +562,16 @@ export class View {
       if (sp > 0.6) h.play(sp > sim.stats.speed * 1.08 ? 'sprint' : 'walk', { speed: sp * 0.42 });
       else h.play('idle', { speed: 1 });
     }
-    // a red flash when bitten
-    if (p.hurt > 0) for (const m of h.mats) m.emissive.setRGB(p.hurt * 2.4, 0.05, 0.05);
+    // a red flash when bitten; a pulsing red glow on a rage tonic
     h.update(dt);
+    const rage = sim.buffs.rage > 0 ? 0.25 + Math.sin(this.time * 12) * 0.12 : 0;
+    if (p.hurt > 0) for (const m of h.mats) m.emissive.setRGB(p.hurt * 2.4, 0.05, 0.05);
+    else if (rage > 0) for (const m of h.mats) m.emissive.setRGB(rage, 0.02, 0.02);
+    // the Worker's torch throws sparks
+    if (this.torchTip && h.root.visible && Math.random() < dt * 14) {
+      this.torchTip.getWorldPosition(this.tipV);
+      this.flames.emit(this.tipV.x, this.tipV.y + 0.05, this.tipV.z, 0, 1.2, 0, 0.35, 0.3, 0.05, Math.random() < 0.5 ? 0xffd070 : 0xff7a2a, 1, -1);
+    }
     // blinking while invulnerable after a second wind
     h.root.visible = !(p.inv > 0.6 && Math.floor(this.time * 14) % 2 === 0);
     // the robot helper
@@ -480,8 +590,7 @@ export class View {
   private syncBosses(sim: Sim, dt: number): void {
     for (const zb of sim.zombies) {
       if (!isBoss(zb.kind) || this.bosses.has(zb.id)) continue;
-      const lk = BOSS_LOOK[zb.kind as BossKind];
-      const fig = new Figure(miniKey(lk.model), lk.scale, { tint: lk.tint, glow: lk.glow });
+      const fig = this.bossFigure(zb.kind as BossKind);
       this.world.scene.add(fig.root);
       this.bosses.set(zb.id, { z: zb, fig, dead: -1, kind: zb.kind as BossKind, act: '' });
     }
@@ -499,6 +608,7 @@ export class View {
       fig.root.position.set(zb.x, 0, zb.z);
       fig.root.rotation.y = zb.face;
       if (zb.flash > 0.1) fig.flash();
+      if (zb.rage) for (const u of fig.rims) u.value.setRGB(1.1, 0.2, 0.4);
       const act = zb.act;
       if (act !== b.act) {
         b.act = act;
@@ -516,7 +626,7 @@ export class View {
 
   private syncFx(sim: Sim, dt: number, cull: (x: number, z: number) => boolean): void {
     const cq = this.camQ, t = this.time, p = sim.player;
-    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.gooBB, this.hearts, this.magnets]) b.begin(cq);
+    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.gooBB, ...this.powers.values()]) b.begin(cq);
 
     // blob shadows and the hero's marker ring
     if (!this.heroDead || sim.phaseT < 2) this.shadows.add(p.x, 0.03, p.z, 1.1, 1.1, 0, 0xffffff, 1);
@@ -525,18 +635,37 @@ export class View {
       this.glows.add(p.x, 0.08, p.z, 2.4, 2.4, 0, 0x3a8aff, 0.25);
     }
     if (sim.robot.on) this.shadows.add(sim.robot.x, 0.03, sim.robot.z, 0.8, 0.8, 0, 0xffffff, 1);
+    // timed power-ups ring the hero in their colour (blinking in the last two seconds)
+    if (!this.heroDead) {
+      let ring = 0;
+      for (const id of ['rage', 'boots', 'freeze'] as const) {
+        const left = sim.buffs[id];
+        if (left <= 0) continue;
+        const blink = left < 2 && Math.floor(t * 8) % 2 === 0 ? 0.3 : 1;
+        const s = 2.7 + ring * 0.55 + Math.sin(t * 6 + ring) * 0.08;
+        this.rings.add(p.x, 0.05 + ring * 0.01, p.z, s, s, 0, POWER_HUE[id], 0.85 * blink);
+        ring++;
+      }
+      if (sim.buffs.boots > 0 && Math.hypot(p.vx, p.vz) > 1 && Math.random() < dt * 30) this.particles.emit(p.x + (Math.random() - 0.5) * 0.3, 0.15, p.z + (Math.random() - 0.5) * 0.3, -p.vx * 0.15, 0.4, -p.vz * 0.15, 0.4, 0.35, 0.1, 0x9fffd0, 3);
+      if (sim.buffs.rage > 0 && Math.random() < dt * 18) this.flames.emit(p.x + (Math.random() - 0.5) * 0.5, 0.4 + Math.random() * 0.6, p.z + (Math.random() - 0.5) * 0.5, 0, 1.2, 0, 0.35, 0.3, 0.05, 0xff3a3a, 1, -1);
+    }
     for (const zb of sim.zombies) {
       if (!cull(zb.x, zb.z)) continue;
       const s = zb.r * (isBoss(zb.kind) ? 3.4 : 3.2);
       this.shadows.add(zb.x, 0.03, zb.z, s, s, 0, 0xffffff, 1);
       if (zb.burn > 0 && Math.random() < dt * 14) this.flames.emit(zb.x + (Math.random() - 0.5) * 0.4, 0.5 + Math.random() * 0.6, zb.z + (Math.random() - 0.5) * 0.4, 0, 1.6, 0, 0.45, 0.45, 0.1, Math.random() < 0.5 ? 0xffa040 : 0xff6020, 1, -1);
+      // a Hulk stands in a warm ring, so it reads in the crowd
+      if (zb.kind === 'tank') { this.rings.add(zb.x, 0.05, zb.z, 2.6, 2.6, 0, 0xffa040, 0.55 + Math.sin(t * 4 + zb.id) * 0.15); this.glows.add(zb.x, 1.6, zb.z, 3.2, 3.2, 0, 0xffb060, 0.16); }
+      if (zb.stun > 0) this.flares.add(zb.x, 1.7 * (zb.kind === 'tank' ? 1.6 : 1), zb.z, 0.5, 0.5, t * 6, 0xfff07a, 0.8);
       if (zb.fuse >= 0) this.glows.add(zb.x, 0.9, zb.z, 2.2, 2.2, 0, 0xff5020, 0.6 + Math.sin(t * 30) * 0.3);
       else if (zb.kind === 'exploder') this.glows.add(zb.x, 0.7, zb.z, 1.5, 1.5, 0, 0xff6a2a, 0.22 + Math.sin(t * 6 + zb.id) * 0.08);
       if (isBoss(zb.kind)) {
         // a boss stands in a ring of its own colour
         const aura = BOSS_LOOK[zb.kind as BossKind].aura, col = zb.rage ? 0xff3060 : aura;
-        this.rings.add(zb.x, 0.05, zb.z, zb.r * 4.2, zb.r * 4.2, 0, col, 0.75 + Math.sin(t * 5) * 0.2);
-        this.glows.add(zb.x, 1.4, zb.z, zb.r * 7, zb.r * 7, 0, col, 0.3);
+        this.rings.add(zb.x, 0.05, zb.z, zb.r * 4.4, zb.r * 4.4, 0, col, 0.85 + Math.sin(t * 5) * 0.15);
+        this.rings.add(zb.x, 0.06, zb.z, zb.r * 5.6, zb.r * 5.6, t * 0.5, col, 0.35 + Math.sin(t * 5 + 1) * 0.15);
+        this.discs.add(zb.x, 0.04, zb.z, zb.r * 4, zb.r * 4, 0, col, 0.22);
+        this.glows.add(zb.x, 1.8, zb.z, zb.r * 7, zb.r * 7, 0, col, 0.32);
       }
     }
 
@@ -601,6 +730,17 @@ export class View {
       const fade = 1 - th.t / 0.36;
       const col = th.evo ? 0x8fd8ff : 0xfff2c8;
       this.streaks.add(p.x + ux * th.len / 2, 0.75, p.z + uz * th.len / 2, th.evo ? 0.9 : 0.55, th.len, Math.atan2(-ux, -uz), col, fade);
+    }
+
+    // the shield's shoves
+    for (let i = this.bashes.length - 1; i >= 0; i--) {
+      const b = this.bashes[i];
+      b.t += dt;
+      if (b.t > 0.3) { this.bashes.splice(i, 1); continue; }
+      const k = b.t / 0.3, out = 0.5 + k * 0.6, fade = 1 - k;
+      const col = b.evo ? 0xb8ffb0 : 0xc8a0ff;
+      if (b.evo) this.rings.add(p.x, 0.3, p.z, b.r * 2 * out, b.r * 2 * out, 0, col, fade);
+      else for (let j = 0; j < 2; j++) this.slashes.add(p.x, 0.45 + j * 0.01, p.z, b.r * 2.2 * out, b.r * 2.2 * out, b.ang + Math.PI, col, fade * (0.7 - j * 0.25));
     }
 
     // shots
@@ -692,7 +832,8 @@ export class View {
       this.shadows.add(g.x, 0.03, g.z, s, s, 0, 0xffffff, 1);
     }
 
-    // pickups: gems (green, blue, pink by value), coins, meals, magnets, chests
+    // pickups: gems (green, blue, pink by value), coins, chests and the power-ups (an icon over a
+    // beacon: a ring and a soft beam in its colour)
     let gn = 0, cn = 0, chn = 0;
     for (const q of sim.pickups) {
       if (!cull(q.x, q.z)) continue;
@@ -715,15 +856,21 @@ export class View {
         this.glows.add(q.x, bob, q.z, 0.8, 0.8, 0, 0xffc83a, 0.35);
       } else if (q.kind === 'chest') {
         if (chn >= 4) continue;
-        this.q.setFromAxisAngle(this.up, 0.4);
-        this.m.compose(this.v.set(q.x, 0.31, q.z), this.q, this.s.setScalar(1 + Math.sin(t * 6) * 0.04));
-        this.chests.setMatrixAt(chn++, this.m);
-        this.glows.add(q.x, 0.7, q.z, 3, 3, 0, 0xffd23f, 0.55 + Math.sin(t * 5) * 0.15);
-        this.flares.add(q.x, 1.1, q.z, 1.4, 1.4, t, 0xfff0a0, 0.6);
+        this.q.setFromAxisAngle(this.up, 0.4 + Math.sin(t * 2) * 0.15);
+        this.m.compose(this.v.set(q.x, Math.abs(Math.sin(t * 3)) * 0.12, q.z), this.q, this.s.setScalar(1.15 + Math.sin(t * 6) * 0.04));
+        this.chests.setMatrixAt(chn, this.m);
+        this.chestBands.setMatrixAt(chn++, this.m);
+        this.glows.add(q.x, 0.7, q.z, 3.4, 3.4, 0, 0xffd23f, 0.55 + Math.sin(t * 5) * 0.15);
+        this.glows.add(q.x, 2.2, q.z, 1.2, 5, 0, 0xffe07a, 0.3);
+        this.rings.add(q.x, 0.05, q.z, 2.6, 2.6, 0, 0xffd23f, 0.6 + Math.sin(t * 5) * 0.2);
+        this.flares.add(q.x, 1.2, q.z, 1.4, 1.4, t, 0xfff0a0, 0.6);
       } else {
-        const bb = q.kind === 'heal' ? this.hearts : this.magnets;
-        bb.add(q.x, bob + 0.3, q.z, 0.75, 0.75, 0, 0xffffff, 1);
-        this.glows.add(q.x, bob + 0.3, q.z, 1.4, 1.4, 0, q.kind === 'heal' ? 0xff5a7a : 0x7ab8ff, 0.5);
+        const id = q.kind as PowerId, c = POWER_HUE[id];
+        const pulse = 0.5 + Math.sin(t * 5 + q.x) * 0.5;
+        this.powers.get(id)!.add(q.x, bob + 0.55, q.z, 1.05, 1.05, 0, 0xffffff, 1);
+        this.glows.add(q.x, bob + 0.55, q.z, 1.8, 1.8, 0, c, 0.45 + pulse * 0.2);
+        this.glows.add(q.x, 1.8, q.z, 0.7, 3.6, 0, c, 0.18 + pulse * 0.1);
+        this.rings.add(q.x, 0.05, q.z, 1.5 + pulse * 0.4, 1.5 + pulse * 0.4, 0, c, 0.75 - pulse * 0.3);
       }
       this.shadows.add(q.x, 0.03, q.z, 0.4, 0.4, 0, 0xffffff, 0.7);
     }
@@ -731,8 +878,8 @@ export class View {
     if (gn) { this.gems.instanceMatrix.needsUpdate = true; this.gems.instanceColor!.needsUpdate = true; }
     this.coins.count = cn;
     if (cn) this.coins.instanceMatrix.needsUpdate = true;
-    this.chests.count = chn;
-    if (chn) this.chests.instanceMatrix.needsUpdate = true;
+    this.chests.count = this.chestBands.count = chn;
+    if (chn) { this.chests.instanceMatrix.needsUpdate = true; this.chestBands.instanceMatrix.needsUpdate = true; }
 
     // level-up: a pillar of light on the hero
     if (this.levelT > 0) {
@@ -749,13 +896,14 @@ export class View {
       if (fl.t <= 0) { this.flashes.splice(i, 1); continue; }
       const k = fl.t / fl.max;
       if (fl.kind === 'ring') this.rings.add(fl.x, fl.y, fl.z, fl.s * (1.15 - k * 0.6), fl.s * (1.15 - k * 0.6), 0, fl.c, k);
+      else if (fl.kind === 'implode') { const r = fl.s * k * k; this.rings.add(p.x, 0.06, p.z, r, r, 0, fl.c, 1 - k * 0.5); }
       else if (fl.kind === 'glow') this.glows.add(fl.x, fl.y, fl.z, fl.s, fl.s, 0, fl.c, k);
       else this.flares.add(fl.x, fl.y, fl.z, fl.s * (0.6 + k * 0.4), fl.s * (0.6 + k * 0.4), t * 3, fl.c, k);
     }
 
     this.particles.update(dt, cq);
     this.flames.update(dt, cq);
-    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.gooBB, this.hearts, this.magnets]) b.end();
+    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.gooBB, ...this.powers.values()]) b.end();
   }
 
   /** Game pixels of a world point. */
@@ -797,7 +945,30 @@ function disposeTree(root: THREE.Object3D): void {
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const m of mats) m.dispose();
     if ((o as THREE.SkinnedMesh).isSkinnedMesh) (o as THREE.SkinnedMesh).skeleton.dispose();
+    // what the view built itself (the Rot King's crown)
+    if (o.userData.own) mesh.geometry.dispose();
   });
+}
+
+/** Concatenates simple geometries (position, normal, uv) into one non-indexed geometry. */
+function mergeGeos(list: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const parts = list.map((g) => (g.index ? g.toNonIndexed() : g));
+  const n = parts.reduce((a, g) => a + g.getAttribute('position').count, 0);
+  const P = new Float32Array(n * 3), N = new Float32Array(n * 3), U = new Float32Array(n * 2);
+  let o = 0;
+  for (const g of parts) {
+    const c = g.getAttribute('position').count;
+    P.set(g.getAttribute('position').array as Float32Array, o * 3);
+    N.set(g.getAttribute('normal').array as Float32Array, o * 3);
+    U.set(g.getAttribute('uv').array as Float32Array, o * 2);
+    o += c;
+  }
+  for (const g of [...list, ...parts]) g.dispose();
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(P, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+  out.setAttribute('uv', new THREE.BufferAttribute(U, 2));
+  return out;
 }
 
 /** A grass texture: a mottled green with tufts and dark specks (drawn once per page). */
