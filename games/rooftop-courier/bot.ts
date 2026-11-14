@@ -1,12 +1,13 @@
 // Rooftop Courier: the autopilot. It reads the course ahead the way a player reads the screen:
 // picks a lane (the hatch, the ladder, the bridge, the cable, the awning, round the clutter,
-// through the stamps), times its jumps at the roof edge with a hold planned by replaying the jump
-// physics, vaults low walls, slides under beams and cables, rolls hard landings and climbs.
+// through the power-ups and the stamps), times its jumps at the roof edge with a hold planned by
+// replaying the jump physics, vaults low walls, slides under beams and cables, rolls hard
+// landings and climbs. Power-ups work by themselves once picked up.
 // Two skills: a good courier and a casual one (late reactions, sloppy timing, missed rolls,
 // now and then a jump it forgets). It drives the menu backdrop, the store art and balance.ts.
-import { Sim, NO_INPUT, JUMP_V, HOLD_T, HOLD_G, HARD, type Input } from './sim';
+import { Sim, NO_INPUT, HOLD_T, HOLD_G, HARD, type Input } from './sim';
 import type { Block, Box } from './course';
-import { GRAV, HW, RAD, REACH, clamp, seeded } from './defs';
+import { GRAV, HW, RAD, REACH, clamp, seeded, isPower } from './defs';
 
 export interface Skill {
   /** Reaction delay (s) and its spread. */
@@ -51,9 +52,14 @@ export class Bot {
     this.rnd = seeded(seed * 31 + 5);
   }
 
+  private lastS = 0;
+
   input(dt: number): Input {
     const sim = this.sim;
     if (sim.over) return NO_INPUT;
+    // put back on a roof behind (a respawn, a continue): every feature ahead is new again
+    if (sim.s < this.lastS - 1) { this.decided.clear(); this.decidedBox.clear(); this.decidedZip.clear(); this.slidFor.clear(); this.planFor = -1; this.wait = -1; this.holdLeft = 0; }
+    this.lastS = sim.s;
     const inp: Input = { ...NO_INPUT };
     this.noiseT -= dt;
     if (this.noiseT <= 0) { this.noiseT = 0.4 + this.rnd() * 0.6; this.noise = (this.rnd() * 2 - 1) * this.skill.wobble; }
@@ -95,8 +101,14 @@ export class Bot {
     const br = c.boxes.find((b) => b.kind === 'bridge' && sim.s > b.s0 - 2 && sim.s < b.s1);
     if (br) { x = (br.x0 + br.x1) / 2; locked = true; }
     if (!locked) {
+      // a power-up ahead: worth a detour (a casual courier sees it a little later)
+      let took = false;
+      for (const pk of c.pickups) {
+        if (pk.taken || !isPower(pk.kind) || pk.s < sim.s + 1.5 || pk.s > sim.s + 6 + 10 * this.skill.greed) continue;
+        if (Math.abs(pk.x - x) < 3.4 && pk.y < sim.y + 2.5 && (!cur || pk.s < cur.s1 - 0.5)) { x = pk.x; took = true; break; }
+      }
       // stamps just ahead, a little off the line
-      if (this.rnd() < this.skill.greed) {
+      if (!took && this.rnd() < this.skill.greed) {
         for (const pk of c.pickups) {
           if (pk.taken || pk.s < sim.s + 2 || pk.s > sim.s + 9) continue;
           if (Math.abs(pk.x - x) < 1.6 && pk.y < sim.y + 2.5) { x = pk.x; break; }
@@ -136,7 +148,7 @@ export class Bot {
 
   private plan(): void {
     const sim = this.sim, c = sim.course;
-    if (sim.state === 'zip' || sim.state === 'climb' || sim.state === 'mantle' || sim.state === 'vault') return;
+    if (sim.state === 'zip' || sim.state === 'climb' || sim.state === 'mantle' || sim.state === 'vault' || sim.state === 'rescue') return;
     // blocked at a wall without a ladder: jump to the ledge
     if (sim.blockedT > 0.25 && sim.state === 'run') { this.fire(HOLD_T, 0); return; }
     if (!sim.grounded || sim.state === 'stumble') return;
@@ -219,7 +231,7 @@ export class Bot {
    * `yLand` past `sLand`, or whether it meets the wall at `wallS` within a ledge's reach of `wallTop`.
    */
   private predict(s0: number, y0: number, v: number, hold: number, yLand: number, sLand: number, wallS: number, wallTop: number): { land: number | null; ledge: boolean } {
-    let s = s0, y = y0, vy = JUMP_V * (this.sim.springs > 0 ? 1.38 : 1), ht = Math.min(hold, HOLD_T);
+    let s = s0, y = y0, vy = this.sim.jumpV * (this.sim.springs > 0 ? 1.38 : 1), ht = Math.min(hold, HOLD_T);
     for (let i = 0; i < 240; i++) {
       let g = GRAV;
       if (ht > 0) { ht -= DT; if (vy > 0) g *= HOLD_G; }

@@ -8,7 +8,7 @@
 // The gameplay shape is a plain list: boxes (roofs, bridges, scaffold towers, awnings and
 // obstacles), ramps, ladders and cables. The simulation only ever asks this list; the view builds
 // its meshes from the same blocks.
-import { TILE, STOREY, HW, THEMES, Rng, clamp, lerp, type Theme, type Tune } from './defs';
+import { TILE, STOREY, HW, THEMES, POWER_W, Rng, clamp, lerp, type Theme, type Tune, type Power } from './defs';
 
 export type Link = 'start' | 'gap' | 'flat' | 'ladder' | 'scaffold' | 'awning' | 'zip' | 'beam' | 'plank' | 'kicker';
 export type BoxKind = 'roof' | 'bridge' | 'scaf' | 'awning' | 'low' | 'tall' | 'over';
@@ -34,8 +34,12 @@ export interface Box {
 export interface Ramp { s0: number; s1: number; x0: number; x1: number; ya: number; yb: number; block: number }
 export interface Ladder { s: number; x0: number; x1: number; y0: number; y1: number; kind: 'ladder' | 'scaffold'; block: number }
 export interface Zip { id: number; sa: number; ya: number; sb: number; yb: number; x: number; block: number }
-export type PickupKind = 'stamp' | 'bottle' | 'spring';
-export interface Pickup { id: number; kind: PickupKind; s: number; x: number; y: number; taken: boolean; block: number }
+export type PickupKind = 'stamp' | 'bottle' | 'spring' | Power;
+export interface Pickup {
+  id: number; kind: PickupKind; s: number; x: number; y: number; taken: boolean; block: number;
+  /** Caught by the magnet: flying to the courier. */
+  pulled?: boolean;
+}
 export interface Flock { id: number; s: number; x: number; y: number; n: number; gold: boolean; startled: boolean; goldTaken: boolean; block: number }
 
 export interface Block {
@@ -101,6 +105,8 @@ export class Course {
   private lastY = 15;
   private sinceFeature = 0;
   private lastLink: Link = 'start';
+  /** Blocks since the last power-up (they never come in clumps). */
+  private sincePower = 0;
 
   constructor(readonly seed: number, private tune: Tune) {
     this.rng = new Rng(seed * 7919 + 13);
@@ -423,6 +429,18 @@ export class Course {
     // a bottle (more time), a spring (big jumps)
     if (r.chance(0.13 + hard * 0.05)) this.pickup('bottle', b.s0 + len * r.range(0.3, 0.8), r.range(-3, 3), b.y + 0.9, b.i);
     else if (r.chance(0.07)) this.pickup('spring', b.s0 + len * r.range(0.3, 0.7), r.range(-3, 3), b.y + 0.9, b.i);
+    // a power-up now and then (never two close together), on a clear spot of the roof
+    this.sincePower++;
+    if (this.sincePower >= 4 && len >= 9 && r.chance(0.09 + hard * 0.03)) {
+      const kind = r.weighted<Power>(POWER_W);
+      for (let k = 0; k < 6; k++) {
+        const s = b.s0 + len * r.range(0.25, 0.75), x = r.range(-3, 3);
+        if (this.groundAt(s, x, b.y + 3, 0.6).y > b.y + 0.05 || Math.abs(s - b.drop.s) < 1.5) continue;
+        this.pickup(kind, s, x, b.y + 1.0, b.i);
+        this.sincePower = 0;
+        break;
+      }
+    }
     // pigeons on the roof (a golden one now and then, further on)
     if (r.chance(0.32) && len >= 12) this.flock(b, b.s0 + len * r.range(0.35, 0.8), r.range(-3.2, 3.2), b.s0 > 250 && r.chance(0.09));
   }

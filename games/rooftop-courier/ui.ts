@@ -2,10 +2,11 @@
 //   - TouchPad: the left thumb drags a floating stick to steer; on the right a JUMP button (held
 //     for a longer jump) and a SLIDE button, and swipes anywhere else on the right half: a tap or
 //     a swipe up jumps (held while the finger stays down), a swipe down slides or rolls.
-//   - FlowMeter, the rubber stamp of a delivery, banners, words and the tutorial card. Every
-//     always-visible readout sits in a core hudChip.
+//   - FlowMeter, the active power-ups (PowerBar: one small chip each, a ring running down round
+//     its icon), the rubber stamp of a delivery, banners, words, the tutorial card and the
+//     first-time power-up hint. Every always-visible readout sits in a core hudChip.
 import Phaser from 'phaser';
-import { txt, hudChip, HudChip, HUD_CHIP_H } from '@core';
+import { txt, hudChip, HudChip, HUD_CHIP_H, HUD_GAP } from '@core';
 import { clamp } from './defs';
 
 export const UI_DEPTH = 9300;
@@ -264,5 +265,101 @@ export class TutorialCard {
   destroy(): void {
     const c = this.c;
     this.scene.tweens.add({ targets: c, alpha: 0, y: c.y - 30, duration: 260, onComplete: () => c.destroy() });
+  }
+}
+
+/** One active power-up in the HUD: its icon inside a ring that runs down as it wears off. */
+export interface PowerShown { id: string; icon: string; color: number; k: number; left: number; text?: string }
+
+/**
+ * The active power-ups as a row of small chips, right-aligned at (x, y): one per power-up, in a
+ * fixed order, popping in when one starts and out when it ends. Each chip's ring shows the share
+ * left and blinks in the last two seconds.
+ */
+export class PowerBar {
+  private chips = new Map<string, { chip: HudChip; ring: Phaser.GameObjects.Graphics; badge: Phaser.GameObjects.Container; leaving: boolean }>();
+  private order: string[] = [];
+  /** Left edge of the row (the mission chip makes room when they meet). */
+  left: number;
+
+  constructor(private scene: Phaser.Scene, private x: number, private y: number) { this.left = x; }
+
+  update(list: PowerShown[], time: number): void {
+    const want = new Set(list.map((p) => p.id));
+    for (const [id, c] of this.chips) {
+      if (want.has(id) || c.leaving) continue;
+      c.leaving = true;
+      this.scene.tweens.add({ targets: c.chip, scale: 0.3, alpha: 0, duration: 200, ease: 'Back.easeIn', onComplete: () => { c.chip.destroy(); this.chips.delete(id); this.layout(); } });
+    }
+    for (const p of list) {
+      let c = this.chips.get(p.id);
+      if (c?.leaving) { this.scene.tweens.killTweensOf(c.chip); c.chip.destroy(); this.chips.delete(p.id); c = undefined; }
+      if (!c) {
+        const ring = this.scene.add.graphics();
+        const icon = this.scene.add.image(0, 0, p.icon).setDisplaySize(28, 28);
+        const badge = this.scene.add.container(0, 0, [ring, icon]);
+        badge.setData('chipWidth', 40);
+        const chip = hudChip(this.scene, this.x, this.y, { align: 'right', text: p.text ?? '', size: 22, color: '#ffffff', items: [badge] });
+        c = { chip, ring, badge, leaving: false };
+        this.chips.set(p.id, c);
+        chip.setScale(0.3).setAlpha(0);
+        this.scene.tweens.add({ targets: chip, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut' });
+        this.layout();
+      }
+      if (p.text !== undefined) { const before = c.chip.chipWidth; c.chip.setText(p.text); if (c.chip.chipWidth !== before) this.layout(); }
+      const g = c.ring.clear();
+      const warn = p.left > 0 && p.left < 2;
+      const blink = warn ? 0.45 + 0.55 * (0.5 + 0.5 * Math.cos(time * Math.PI * 2 * 3)) : 1;
+      g.lineStyle(4, 0xffffff, 0.18).strokeCircle(0, 0, 18);
+      const k = clamp(p.k, 0, 1);
+      if (k > 0.001) g.lineStyle(4, p.color, blink).beginPath().arc(0, 0, 18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k, false).strokePath();
+      c.badge.list[1] && (c.badge.list[1] as Phaser.GameObjects.Image).setAlpha(warn ? 0.6 + 0.4 * blink : 1);
+    }
+    const ids = list.map((p) => p.id);
+    if (ids.join() !== this.order.join()) { this.order = ids; this.layout(); }
+  }
+
+  private layout(): void {
+    let x = this.x;
+    for (const id of this.order) {
+      const c = this.chips.get(id);
+      if (!c || c.leaving) continue;
+      c.chip.setAnchor(x, this.y, 'right');
+      x -= c.chip.chipWidth + HUD_GAP;
+    }
+    this.left = x + HUD_GAP;
+  }
+
+  /** How many show now. */
+  get count(): number { let n = 0; for (const c of this.chips.values()) if (!c.leaving) n++; return n; }
+}
+
+/**
+ * A one-line hint the first time a power-up turns up: its icon, a heading and what it does. It
+ * slides in under the HUD, holds a few seconds and goes.
+ */
+export class HintCard {
+  readonly c: Phaser.GameObjects.Container;
+  static readonly W = 640;
+
+  constructor(private scene: Phaser.Scene, y: number, icon: string, head: string, body: string, hold = 3.6) {
+    const s = scene, W = HintCard.W;
+    this.c = s.add.container(s.scale.width / 2, y).setScrollFactor(0).setDepth(UI_DEPTH + 30);
+    const ht = txt(s, -W / 2 + 104, 0, head, { title: true, size: 22, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+    const bt = txt(s, -W / 2 + 104, 0, body, { size: 23, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: W - 130, align: 'left' }).setOrigin(0, 0.5);
+    const h = Math.max(104, bt.height + 62);
+    ht.setY(-h / 2 + 24);
+    bt.setY(-h / 2 + 44 + bt.height / 2);
+    const g = s.add.graphics();
+    g.fillStyle(0x000000, 0.28).fillRoundedRect(-W / 2, -h / 2 + 6, W, h, 24);
+    g.fillStyle(0x14112a, 0.9).fillRoundedRect(-W / 2, -h / 2, W, h, 24);
+    g.lineStyle(3, 0x7fe0ff, 0.8).strokeRoundedRect(-W / 2, -h / 2, W, h, 24);
+    g.fillStyle(0xffffff, 0.08).fillCircle(-W / 2 + 54, 0, 38);
+    const ic = s.add.image(-W / 2 + 54, 0, icon).setDisplaySize(54, 54);
+    this.c.add([g, ic, ht, bt]);
+    this.c.setAlpha(0).setScale(0.85);
+    s.tweens.add({ targets: this.c, alpha: 1, scale: 1, duration: 240, ease: 'Back.easeOut' });
+    s.tweens.add({ targets: ic, scale: { from: ic.scale * 1.25, to: ic.scale }, duration: 500, yoyo: true, repeat: 2, delay: 240 });
+    s.tweens.add({ targets: this.c, alpha: 0, y: y - 24, delay: 240 + hold * 1000, duration: 320, onComplete: () => this.c.destroy() });
   }
 }

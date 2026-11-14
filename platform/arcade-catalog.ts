@@ -1013,14 +1013,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'rooftop-courier',
     title: { en: 'Rooftop Courier', tr: 'Çatı Kuryesi' },
     description: {
-      en: 'You are a courier racing across the rooftops of an old brick city at dusk! Get each parcel to its glowing roof hatch before the clock runs out: jump the gaps, vault walls, slide under beams, climb fire escapes, ride zip-lines and bounce off awnings. Chain moves into a Rush, collect stamps, and keep going as four districts get harder and night falls.',
-      tr: 'Gün batarken eski tuğla şehrin çatılarında koşan bir kuryesin! Koliyi süresi bitmeden ışıklı çatı kapağına ulaştır: boşlukları atla, duvarların üstünden aş, kirişlerin altından kay, merdivenlere tırman, tellerde kay, tentelerden sek. Hareketleri zincirle, Hız moduna gir, pul topla; dört bölgede şehir zorlaşır, akşam çöker.',
+      en: 'You are a courier racing across the rooftops of an old brick city at dusk! Get each parcel to its glowing roof hatch before the clock runs out: jump the gaps, vault walls, slide under beams, climb fire escapes, ride zip-lines and bounce off awnings. Grab power-ups: a magnet satchel, a paper glider, a shield bubble, double stamps, a slow-mo watch and an express ribbon. Chain moves into a Rush, collect stamps and level up ten upgrades in the shop, while four districts get harder and night falls.',
+      tr: 'Gün batarken eski tuğla şehrin çatılarında koşan bir kuryesin! Koliyi süresi bitmeden ışıklı çatı kapağına ulaştır: boşlukları atla, duvarların üstünden aş, kirişlerin altından kay, merdivenlere tırman, tellerde kay, tentelerden sek. Güçleri kap: mıknatıslı çanta, kâğıt planör, kalkan balonu, çifte pul, ağır çekim saati ve ekspres kurdele. Hareketleri zincirle, Hız moduna gir, pul topla ve mağazada on geliştirmeyi yükselt; dört bölgede şehir zorlaşır, akşam çöker.',
     },
     category: 'action',
     categories: ['action', 'arcade'],
     tags: ['rooftop', 'courier', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
