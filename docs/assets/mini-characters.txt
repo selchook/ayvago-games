@@ -1,4 +1,6 @@
+mini-characters/models/gltf_format/character-alien.glb 267KB 0.77x0.70x0.34
 mini-characters/models/gltf_format/character-female-f.glb 251KB 0.77x0.67x0.44
+mini-characters/models/gltf_format/character-knight.glb 252KB 0.77x0.81x0.49
 mini-characters/models/gltf_format/character-male-a.glb 239KB 0.77x0.67x0.34
 mini-characters/models/gltf_format/character-male-b.glb 233KB 0.77x0.66x0.39
 mini-characters/models/gltf_format/character-male-c.glb 254KB 0.77x0.79x0.46
@@ -6,6 +8,14 @@ mini-characters/models/gltf_format/character-male-d.glb 238KB 0.77x0.72x0.34
 mini-characters/models/gltf_format/character-male-e.glb 230KB 0.77x0.68x0.34
 mini-characters/models/gltf_format/character-male-f.glb 242KB 0.77x0.67x0.34
 mini-characters/models/gltf_format/character-male-g.glb 257KB 0.77x0.67x0.40
+mini-characters/models/gltf_format/character-raider.glb 259KB 0.77x0.72x0.53
+mini-characters/models/gltf_format/character-robot.glb 258KB 0.77x0.84x0.32
 mini-characters/models/gltf_format/character-soldier.glb 275KB 0.77x0.75x0.59
+mini-characters/models/gltf_format/character-worker.glb 254KB 0.77x0.82x0.46
 mini-characters/models/gltf_format/character-zombie.glb 234KB 0.77x0.67x0.34
+mini-characters/models/gltf_format/shield-round.glb 15KB 0.38x0.38x0.11
+mini-characters/models/gltf_format/weapon-arrow.glb 7KB 0.12x0.12x0.46
 mini-characters/models/gltf_format/weapon-bow.glb 9KB 0.12x0.48x0.21
+mini-characters/models/gltf_format/weapon-shooter.glb 14KB 0.10x0.23x0.30
+mini-characters/models/gltf_format/weapon-spear.glb 7KB 0.15x0.60x0.12
+mini-characters/models/gltf_format/weapon-sword.glb 9KB 0.23x0.45x0.11

@@ -224,6 +224,23 @@ const CARD = {
     }`,
     pick: 4,
   },
+  // Zombie Grove's card shows the survivor at dusk amid a big horde with weapon effects: the
+  // autopilot fights on with evolved weapons (blade spin, warding shields, fires, arrows, the
+  // robot) while two hundred zombies close in; hints off, nothing hurts the hero (sim.god).
+  'zombie-grove': {
+    stage: `async () => {
+      const p = window.__ayvago.game.scene.getScene('Play');
+      p.quiet = true;
+      p.testTime(30);
+      p.testKit([['blade', 5, true], ['wards', 5, true], ['torch', 5], ['bow', 5, true], ['robot', 4]], [['reach', 5], ['armor', 5], ['vigor', 5]]);
+      p.sim.player.hp = p.sim.player.maxHp;
+      p.sim.god = true;
+      p.sim.player.x = 3; p.sim.player.z = 12; p.testSnap();
+      p.testHorde(230);
+      p.testAuto(true, true);
+      await new Promise((r) => setTimeout(r, 2500));
+    }`,
+  },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },
