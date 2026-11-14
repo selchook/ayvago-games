@@ -1,4 +1,4 @@
-import type { Track } from './music';
+import type { MusicChoice } from './music';
 import type Phaser from 'phaser';
 import type { Localized, Strings } from './i18n';
 
@@ -48,9 +48,10 @@ export interface GameDefinition {
   strings?: Partial<Strings>;
   /**
    * Background music (src/core/music.ts). Defaults: the title theme on the menu and a track
-   * picked from the game's genre during rounds; `false` turns a slot off.
+   * picked from the game's genre during rounds; `false` turns a slot off. A slot may also name
+   * the game's own file (`{ file: 'music/owner/….mp3', gain? }`, see MusicFile).
    */
-  music?: { menu?: Track | false; play?: Track | false };
+  music?: { menu?: MusicChoice | false; play?: MusicChoice | false };
   /**
    * Offers Easy / Normal (src/core/difficulty.ts): the menu shows the toggle in solo play, the
    * game reads `isEasy()` in createGame(), and GHA_END reports the difficulty. Easy runs are

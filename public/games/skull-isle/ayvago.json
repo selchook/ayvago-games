@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "skullisle",
+  "title": {
+    "en": "Skull Isle",
+    "tr": "Kurukafa Adası"
+  },
+  "description": {
+    "en": "Raid island after island in a 3D pirate brawler: chain sword combos, roll out of the red warnings, grab rum, powder kegs and a parrot, and beat the Kraken and Captain Bonebeard.",
+    "tr": "3B korsan dövüşünde adaları tek tek yağmala: kılıç kombolarını zincirle, kırmızı uyarılardan yuvarlanarak kaç, rom, barut fıçısı ve papağan topla, dokunaçlarıyla Kraken'ı ve Kaptan Kemiksakal'ı yen."
+  },
+  "category": "action",
+  "categories": [
+    "action",
+    "arcade"
+  ],
+  "tags": [
+    "skull",
+    "isle",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/skull-isle/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/skull-isle/ayvago/icon-512.png",
+    "cover": "/games/skull-isle/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/skull-isle/ayvago/screenshot.jpg",
+    "card": "/games/skull-isle/ayvago/card-640x360.webp",
+    "card2x": "/games/skull-isle/ayvago/card-1280x720.webp"
+  },
+  "version": "1.0.0"
+}

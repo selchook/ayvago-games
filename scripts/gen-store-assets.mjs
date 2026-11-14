@@ -268,6 +268,33 @@ const CARD = {
     }`,
     pick: 2,
   },
+  // Skull Isle's card shows the hero mid-combo against a skeleton crew on Sandy Cove's north
+  // beach, Ernest the parrot over the fight and the crew's ship at anchor behind: the training is
+  // skipped, nothing hurts the hero, the camera looks a little past them so the ship shows, and the
+  // run is slowed right down while the attack is held, so every candidate frame catches a swing.
+  'skull-isle': {
+    stage: `async () => {
+      const p = window.__ayvago.game.scene.getScene('Play');
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      p.testSkipTutorial();
+      p.quiet = true;
+      p.god = true;
+      p.testTimeScale(5);
+      p.sim.p.x = -3.2; p.sim.p.z = -8.2; p.sim.p.face = Math.PI * 0.85;
+      p.testStep(1.9);
+      p.testFoes('skel', 3, 2.3);
+      p.testFoes('runner', 1, 3.2);
+      p.testStep(1.05);
+      p.testPower('fury');
+      p.testPower('parrot');
+      p.testClean();
+      p.view.lookAhead = 2.6;
+      p.testSnap();
+      p.testInput({ attack: true }, 60);
+      p.testSpeed = 0.2;
+      await sleep(1500);
+    }`,
+  },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },

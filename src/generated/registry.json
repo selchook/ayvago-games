@@ -1,5 +1,5 @@
 {
-  "count": 96,
+  "count": 97,
   "games": [
     {
       "id": "air-hockey",
@@ -2291,6 +2291,41 @@
         "Audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/simon-says.png"
+    },
+    {
+      "id": "skull-isle",
+      "title": {
+        "tr": "Kurukafa Adası",
+        "en": "Skull Isle"
+      },
+      "description": {
+        "tr": "3B korsan dövüşünde adaları tek tek yağmala: kılıç kombolarını zincirle, kırmızı uyarılardan yuvarlanarak kaç, rom, barut fıçısı ve papağan topla, dokunaçlarıyla Kraken'ı ve Kaptan Kemiksakal'ı yen.",
+        "en": "Raid island after island in a 3D pirate brawler: chain sword combos, roll out of the red warnings, grab rum, powder kegs and a parrot, and beat the Kraken and Captain Bonebeard."
+      },
+      "howTo": {
+        "tr": "Dokunmatik: solda sürükleyerek yürü; sağda SALDIR, YUVARLAN, ÖZEL ve FIÇI. Klavye: WASD/oklar, J ya da Boşluk saldırı, K ya da Shift yuvarlanma, L özel, E fıçı.",
+        "en": "Touch: drag on the left to walk; ATTACK, DODGE, SPECIAL and KEG on the right. Keys: WASD/arrows, J or Space attack, K or Shift dodge, L special, E keg."
+      },
+      "genres": [
+        "action",
+        "arcade"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Quaternius Pirate Kit (CC0) — quaternius.com",
+        "Props and sounds: Kenney (CC0) — kenney.nl",
+        "Sound effects: Juhani Junkala (CC0)",
+        "Music: supplied by the Ayvago owner"
+      ],
+      "platform": {
+        "addedAt": "2026-11-14"
+      },
+      "thumb": "thumbs/skull-isle.png"
     },
     {
       "id": "sky-jumper",

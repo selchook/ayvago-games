@@ -3,8 +3,9 @@ import { ASSET_ROOT } from './assets';
 import { currentGame } from './registry';
 
 // Background music: CC0 chiptunes by Juhani Junkala (public/assets/oga/junkala-music, see
-// docs/assets/LICENSES.md). Tracks load lazily the first time they are needed, so they never
-// slow down the boot; one track plays at a time and changes cross-fade.
+// docs/assets/LICENSES.md), or a game's own file (MusicFile). Tracks load lazily the first time
+// they are needed, so they never slow down the boot; one track plays at a time and changes
+// cross-fade.
 
 export const TRACKS = {
   title: 'title-screen',
@@ -18,6 +19,18 @@ export const TRACKS = {
   ending: 'ending',
 } as const;
 export type Track = keyof typeof TRACKS;
+
+/**
+ * A game's own music file instead of one of the shared TRACKS: a path under public/assets
+ * (e.g. 'music/owner/rolling-sea-shanty.mp3'), loaded as it is, and an optional loudness factor
+ * on the core's music volumes (quieter recordings next to the chiptunes).
+ */
+export interface MusicFile {
+  file: string;
+  gain?: number;
+}
+/** What a game's `music.menu` / `music.play` may name. */
+export type MusicChoice = Track | MusicFile;
 
 const MENU_VOLUME = 0.3;
 const PLAY_VOLUME = 0.24;
@@ -34,8 +47,9 @@ let current: Phaser.Sound.BaseSound | null = null;
 let currentKey = '';
 let wanted = '';
 let baseVolume = PLAY_VOLUME;
+let gain = 1;
 
-const keyOf = (track: Track) => `music-${track}`;
+const keyOf = (track: MusicChoice) => (typeof track === 'string' ? `music-${track}` : `music-file:${track.file}`);
 
 function hash(text: string): number {
   let h = 0;
@@ -44,14 +58,14 @@ function hash(text: string): number {
 }
 
 /** The track a game plays during rounds: its own choice, else one picked from its genre. */
-export function playTrack(): Track | false {
+export function playTrack(): MusicChoice | false {
   const def = currentGame();
   if (def.music?.play !== undefined) return def.music.play;
   const pool = CALM_GENRES.has(def.meta.genres[0]) ? CALM : ENERGETIC;
   return pool[hash(def.meta.id) % pool.length];
 }
 
-export function menuTrack(): Track | false {
+export function menuTrack(): MusicChoice | false {
   return currentGame().music?.menu ?? 'title';
 }
 
@@ -80,13 +94,15 @@ function fadeTo(sound: Phaser.Sound.BaseSound, volume: number, then?: () => void
 }
 
 /** Starts (or keeps) a looping track; `false` fades the music out. */
-export function playMusic(scene: Phaser.Scene, track: Track | false, volume = PLAY_VOLUME): void {
+export function playMusic(scene: Phaser.Scene, track: MusicChoice | false, volume = PLAY_VOLUME): void {
   if (track === false) {
     stopMusic();
     return;
   }
   const key = keyOf(track);
   wanted = key;
+  gain = typeof track === 'string' ? 1 : track.gain ?? 1;
+  volume *= gain;
   baseVolume = volume;
   if (currentKey === key && current?.isPlaying) {
     fadeTo(current, volume);
@@ -109,8 +125,10 @@ export function playMusic(scene: Phaser.Scene, track: Track | false, volume = PL
     start();
     return;
   }
-  const base = ASSET_ROOT + 'oga/junkala-music/' + TRACKS[track];
-  scene.load.audio(key, [base + '.ogg', base + '.mp3']);
+  if (typeof track === 'string') {
+    const base = ASSET_ROOT + 'oga/junkala-music/' + TRACKS[track];
+    scene.load.audio(key, [base + '.ogg', base + '.mp3']);
+  } else scene.load.audio(key, ASSET_ROOT + track.file);
   scene.load.once(`filecomplete-audio-${key}`, start);
   if (!scene.load.isLoading()) scene.load.start();
 }
@@ -126,7 +144,7 @@ export function stopMusic(): void {
 
 /** Lowers the music under an overlay (pause, result screen); restoreMusic() brings it back. */
 export function duckMusic(): void {
-  if (current) fadeTo(current, DUCKED);
+  if (current) fadeTo(current, DUCKED * gain);
 }
 
 export function restoreMusic(): void {
