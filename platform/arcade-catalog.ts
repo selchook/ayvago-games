@@ -135,7 +135,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['asteroid', 'storm', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.0',
+    version: '1.2.1',
   }),
   arcadeGame({
     slug: 'axe-throw',

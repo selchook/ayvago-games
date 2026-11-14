@@ -25,7 +25,11 @@ function seeded(seed: number): () => number {
   };
 }
 
-/** Deep space with nebula clouds; tiles seamlessly top to bottom so it can scroll. */
+/** Offsets of a tile and its eight neighbours: drawing a shape at each makes it wrap at the edges. */
+const WRAP = (w: number, h: number): [number, number][] =>
+  [-w, 0, w].flatMap((dx) => [-h, 0, h].map((dy): [number, number] => [dx, dy]));
+
+/** Deep space with nebula clouds; tiles seamlessly in both directions, since it scrolls on both axes. */
 export function makeNebula(scene: Phaser.Scene, w: number, h: number): void {
   make(scene, 'as-nebula', w, h, (c) => {
     c.fillStyle = '#05070f'; c.fillRect(0, 0, w, h);
@@ -33,9 +37,9 @@ export function makeNebula(scene: Phaser.Scene, w: number, h: number): void {
     const cols = ['#1f6bff', '#00c2a8', '#ff8a3d', '#3a2bd8', '#2ad4ff'];
     for (let i = 0; i < 16; i++) {
       const x = rnd() * w, y = rnd() * h, r = 140 + rnd() * 260, col = cols[i % cols.length];
-      // draw each cloud three times (one tile up and down) so the texture wraps
-      for (const dy of [-h, 0, h]) {
-        const g = c.createRadialGradient(x, y + dy, 0, x, y + dy, r);
+      // draw each cloud in all nine neighbouring tiles so the texture wraps on both axes
+      for (const [dx, dy] of WRAP(w, h)) {
+        const g = c.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
         g.addColorStop(0, col + '33'); g.addColorStop(0.5, col + '14'); g.addColorStop(1, col + '00');
         c.fillStyle = g; c.fillRect(0, 0, w, h);
       }
@@ -43,8 +47,8 @@ export function makeNebula(scene: Phaser.Scene, w: number, h: number): void {
     // dark dust lanes
     for (let i = 0; i < 6; i++) {
       const x = rnd() * w, y = rnd() * h, r = 120 + rnd() * 160;
-      for (const dy of [-h, 0, h]) {
-        const g = c.createRadialGradient(x, y + dy, 0, x, y + dy, r);
+      for (const [dx, dy] of WRAP(w, h)) {
+        const g = c.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
         g.addColorStop(0, 'rgba(0,0,0,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
         c.fillStyle = g; c.fillRect(0, 0, w, h);
       }
@@ -65,7 +69,7 @@ export function makeStars(scene: Phaser.Scene, key: string, w: number, h: number
       c.fillRect(x, y, s, s);
       if (near && rnd() < 0.08) {
         c.fillStyle = `rgba(255,255,255,${a * 0.5})`;
-        c.fillRect(x - 4, y + 1, 10, 1); c.fillRect(x + 1, y - 4, 1, 10);
+        for (const [dx, dy] of WRAP(w, h)) { c.fillRect(x + dx - 4, y + dy + 1, 10, 1); c.fillRect(x + dx + 1, y + dy - 4, 1, 10); }
       }
     }
   });
