@@ -195,7 +195,7 @@ export class PlayScene extends ArcadeScene {
     this.camShake = 0;
     this.centerText = '';
     this.shown = -1;
-    this.view = storage.get<string>(CAM_KEY, 'classic') === 'cockpit' ? 'cockpit' : 'classic';
+    this.view = storage.get<string>(CAM_KEY, 'cockpit') === 'classic' ? 'classic' : 'cockpit';
     this.viewK = this.viewE = 0;
     this.inCar = false;
     this.camHint = null;
@@ -1155,24 +1155,45 @@ export class PlayScene extends ArcadeScene {
     if (!this.viewAllowed() || this.isOver) return;
     this.view = this.view === 'classic' ? 'cockpit' : 'classic';
     storage.set(CAM_KEY, this.view);
+    (this.camBtn.getData('icon') as Phaser.GameObjects.Image).setTexture(this.viewIcon()).setDisplaySize(72 * 0.62, 72 * 0.62);
     this.sfx('move', { volume: 0.4, rate: 0.85 });
     popup(this, this.scale.width / 2, 196, t(this.view === 'cockpit' ? 'camCockpit' : 'camClassic'), '#ffffff', 24);
     this.tweens.add({ targets: this.camBtn, scale: { from: 1.18, to: 1 }, duration: 260, ease: 'Back.easeOut' });
     this.dropCamHint();
   }
 
+  /** The view button's icon: the view a tap leads to. */
+  private viewIcon(): string {
+    return this.view === 'cockpit' ? 'mr-view-out' : 'mr-view-in';
+  }
+
   private buildViewUi(): void {
     const { width } = this.scale;
-    // a camera, drawn once: body, viewfinder bump and lens
-    if (!this.textures.exists('mr-cam')) {
+    // the view button shows the view it leads to: a steering wheel (into the cab) or the truck
+    // seen from behind (back to the chase camera); drawn once
+    if (!this.textures.exists('mr-view-in')) {
       const g = this.make.graphics({ x: 0, y: 0 }, false);
-      g.fillStyle(0xffffff).fillRoundedRect(4, 18, 56, 38, 9).fillRoundedRect(18, 10, 22, 12, 4);
-      g.fillStyle(0x24324a).fillCircle(32, 37, 13);
-      g.fillStyle(0xffffff).fillCircle(32, 37, 8);
-      g.fillStyle(0x24324a).fillCircle(32, 37, 5);
-      g.fillStyle(0xffd23f).fillCircle(51, 26, 3.5);
-      g.generateTexture('mr-cam', 64, 64);
+      // steering wheel: rim, three spokes, hub and the yellow top mark
+      g.lineStyle(7, 0xffffff).strokeCircle(32, 32, 24);
+      g.fillStyle(0xffffff).fillRect(10, 29, 44, 7).fillRect(28, 32, 8, 22);
+      g.fillStyle(0x24324a).fillCircle(32, 33, 9);
+      g.fillStyle(0xffffff).fillCircle(32, 33, 5);
+      g.fillStyle(0xffd23f).fillRoundedRect(28, 4, 8, 9, 2);
+      g.generateTexture('mr-view-in', 64, 64);
       g.clear();
+      // a monster truck from behind: cab with its rear window, body, tail lights, big tyres
+      g.fillStyle(0xffffff).fillRoundedRect(17, 10, 30, 20, 6);
+      g.fillStyle(0x24324a).fillRoundedRect(21, 14, 22, 11, 3);
+      g.fillStyle(0xffffff).fillRoundedRect(8, 28, 48, 18, 5);
+      g.fillStyle(0xff4a3d).fillRoundedRect(11, 32, 8, 6, 2).fillRoundedRect(45, 32, 8, 6, 2);
+      g.fillStyle(0x24324a).fillRect(24, 38, 16, 4);
+      g.fillStyle(0x15171d).fillRoundedRect(3, 42, 15, 19, 4).fillRoundedRect(46, 42, 15, 19, 4);
+      g.lineStyle(2, 0xffffff, 0.9).strokeRoundedRect(3, 42, 15, 19, 4).strokeRoundedRect(46, 42, 15, 19, 4);
+      g.generateTexture('mr-view-out', 64, 64);
+      g.destroy();
+    }
+    if (!this.textures.exists('mr-arrow')) {
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
       // a chevron for the "this way" chip, pointing left
       g.fillStyle(0xffd23f).fillTriangle(2, 20, 22, 2, 22, 38).fillRect(20, 13, 18, 14);
       g.generateTexture('mr-arrow', 40, 40);
@@ -1183,7 +1204,7 @@ export class PlayScene extends ArcadeScene {
       g.generateTexture('mr-rival', 44, 28);
       g.destroy();
     }
-    this.camBtn = iconButton(this, CAM_BTN.x, CAM_BTN.y, 'mr-cam', () => this.toggleView(), 72);
+    this.camBtn = iconButton(this, CAM_BTN.x, CAM_BTN.y, this.viewIcon(), () => this.toggleView(), 72);
     this.camBtn.setScrollFactor(0).setDepth(9600).setData('label', t('camBtn'));
     if (!this.steering.pad) {
       // desktop: the key on a small cap in the button's corner
