@@ -2299,12 +2299,12 @@
         "en": "Skull Isle"
       },
       "description": {
-        "tr": "3B korsan dövüşünde adaları tek tek yağmala: kılıç kombolarını zincirle, kırmızı uyarılardan yuvarlanarak kaç, rom, barut fıçısı ve papağan topla, dokunaçlarıyla Kraken'ı ve Kaptan Kemiksakal'ı yen.",
-        "en": "Raid island after island in a 3D pirate brawler: chain sword combos, roll out of the red warnings, grab rum, powder kegs and a parrot, and beat the Kraken and Captain Bonebeard."
+        "tr": "3B korsan dövüşünde adaları tek tek yağmala, aralarda gemini sür: kılıç kombolarını zincirle, kırmızı uyarılardan kaç, denizde bordaları ateşle, iskelet sandallarını ve hayalet gemiyi batır, gizli adacıklara yüz, Kraken'ı ve Kaptan Kemiksakal'ı yen.",
+        "en": "Raid island after island in a 3D pirate brawler and sail your ship between them: chain sword combos, dodge the red warnings, fire broadsides at skeleton rowboats and a ghost ship, swim out to hidden islets, and beat the Kraken and Captain Bonebeard."
       },
       "howTo": {
-        "tr": "Dokunmatik: solda sürükleyerek yürü; sağda SALDIR, YUVARLAN, ÖZEL ve FIÇI. Klavye: WASD/oklar, J ya da Boşluk saldırı, K ya da Shift yuvarlanma, L özel, E fıçı.",
-        "en": "Touch: drag on the left to walk; ATTACK, DODGE, SPECIAL and KEG on the right. Keys: WASD/arrows, J or Space attack, K or Shift dodge, L special, E keg."
+        "tr": "Dokunmatik: solda sürükleyerek yürü ya da dümen kır; sağda SALDIR/ATEŞ, YUVARLAN/KAÇ, ÖZEL ve FIÇI. Klavye: WASD/oklar, J ya da Boşluk saldırı ve top atışı, K ya da Shift kaçış, L özel, E fıçı.",
+        "en": "Touch: drag on the left to walk or steer; ATTACK/FIRE, DODGE/EVADE, SPECIAL and KEG on the right. Keys: WASD/arrows, J or Space attack and fire, K or Shift dodge, L special, E keg."
       },
       "genres": [
         "action",
@@ -2315,7 +2315,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "3D models: Quaternius Pirate Kit (CC0) — quaternius.com",
         "Props and sounds: Kenney (CC0) — kenney.nl",

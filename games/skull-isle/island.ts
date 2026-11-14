@@ -48,6 +48,10 @@ export interface Layout {
   /** Grass patches on the sand (centre, radius). */
   grass: { x: number; z: number; r: number }[];
   palette: Palette;
+  /** A hidden treasure islet out in the deep water (reached only by swimming), or none. */
+  islet: { x: number; z: number; r: number } | null;
+  /** Where the crew's ship rides at anchor while the island is raided (north, offshore). */
+  anchor: { x: number; z: number; rot: number };
 }
 
 export const PALETTES: Record<IslandId, Palette> = {
@@ -74,6 +78,26 @@ export function landD(L: Layout, x: number, z: number): number {
   return Math.hypot(x, z) - shoreAt(L, Math.atan2(z, x));
 }
 
+/** Signed distance to the islet's shore (negative on it); a large number when there is none. */
+export function isletD(L: Layout, x: number, z: number): number {
+  return L.islet ? Math.hypot(x - L.islet.x, z - L.islet.z) - L.islet.r : 1e9;
+}
+
+/** Signed distance to the nearest land, the island or its islet (negative on land). */
+export function waterD(L: Layout, x: number, z: number): number {
+  return Math.min(landD(L, x, z), isletD(L, x, z));
+}
+
+/** Height of the ground at (x, z): flat sand, sloping under the sea off the island and the islet. */
+export function groundY(L: Layout, x: number, z: number): number {
+  const d = landD(L, x, z), di = isletD(L, x, z);
+  const y = (dd: number, k: number) => (dd < -1.1 ? 0 : Math.max(-1.6, -(dd + 1.1) / k));
+  return Math.max(y(d, 4.2), L.islet ? (di < -0.5 ? 0 : Math.max(-1.6, -(di + 0.5) / 2.2)) : -9);
+}
+
+/** Where the islets lie (direction off the centre; none on Kraken Bay, the Kraken's arms own its waters). */
+const ISLET: Partial<Record<IslandId, number>> = { cove: 1.0, docks: 2.25, village: 2.2, reef: 0.9 };
+
 /** The point on the shore in direction θ, pushed `off` units out to sea (negative: inland). */
 export function shorePoint(L: Layout, th: number, off = 0): { x: number; z: number } {
   const r = shoreAt(L, th) + off;
@@ -90,6 +114,7 @@ export function layout(k: number): Layout {
     id, lap, rx, rz,
     harm: [[3, 0.05 + rnd() * 0.03, rnd() * 6.28], [5, 0.025 + rnd() * 0.02, rnd() * 6.28], [2, 0.03, rnd() * 6.28]],
     props: [], tentacleSpots: [], ship: null, pools: [], grass: [], palette: PALETTES[id],
+    islet: null, anchor: { x: 0, z: 0, rot: 0.12 },
   };
   const P = L.props;
   const R = (a: number, b: number) => a + rnd() * (b - a);
@@ -178,5 +203,15 @@ export function layout(k: number): Layout {
     }
   }
   if (!L.tentacleSpots.length) for (let i = 0; i < 6; i++) L.tentacleSpots.push(edge(-Math.PI + (i + 0.5) / 6 * Math.PI * 2, -1.6));
+  // the crew's ship at anchor off the north shore (the island's own ship takes its place)
+  { const a = shorePoint(L, -Math.PI / 2 - 0.32, 6.0); L.anchor = { x: a.x, z: a.z, rot: 0.12 }; }
+  // a hidden islet out in the deep water, with a palm (its chest is the simulation's)
+  const ith = ISLET[id];
+  if (ith !== undefined) {
+    const c = shorePoint(L, ith, 6.1);
+    L.islet = { x: c.x, z: c.z, r: 1.75 };
+    P.push({ model: 'palm2', x: c.x + Math.sign(c.x) * 0.45, z: c.z - 0.85, rot: rnd() * 6.28, s: 1.05, r: 0.4, y: 0 });
+    P.push({ model: 'k:rocks-sand-c', x: c.x + Math.sign(c.x) * 1.1, z: c.z + 0.7, rot: rnd() * 6.28, s: 0.22, r: 0, y: -0.15 });
+  }
   return L;
 }

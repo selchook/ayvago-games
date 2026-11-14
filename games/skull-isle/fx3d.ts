@@ -93,6 +93,34 @@ export const TEX = {
       g.beginPath(); g.arc(64 + Math.cos(a) * d, 64 + Math.sin(a) * d, r, 0, Math.PI * 2); g.fill();
     }
   }),
+  /** A gull seen from below: a flat V of two wings (the islet's hint). */
+  gull: () => canvasTex('gull', 64, 32, (g) => {
+    g.strokeStyle = 'rgba(255,255,255,1)';
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.lineWidth = 5;
+    g.beginPath(); g.moveTo(4, 10); g.quadraticCurveTo(18, 2, 32, 18); g.quadraticCurveTo(46, 2, 60, 10); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,1)';
+    g.beginPath(); g.ellipse(32, 18, 4, 3, 0, 0, Math.PI * 2); g.fill();
+  }),
+  /** The next island far off on the horizon: a hazy hump with palms (fades as the real one comes out of the fog). */
+  isle: () => canvasTex('isle', 256, 96, (g) => {
+    g.fillStyle = 'rgba(255,255,255,1)';
+    g.beginPath(); g.moveTo(0, 96); g.bezierCurveTo(40, 70, 70, 58, 128, 56); g.bezierCurveTo(186, 58, 216, 70, 256, 96); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(86, 70); g.bezierCurveTo(110, 30, 150, 34, 170, 66); g.closePath(); g.fill();
+    for (const [x, h, lean] of [[98, 40, -6], [132, 54, 4], [160, 44, 8]] as [number, number, number][]) {
+      g.lineWidth = 4; g.strokeStyle = 'rgba(255,255,255,1)';
+      g.beginPath(); g.moveTo(x, 64); g.quadraticCurveTo(x + lean * 0.5, 64 - h * 0.6, x + lean, 64 - h); g.stroke();
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI * 0.95 + i * Math.PI * 0.22;
+        g.beginPath(); g.moveTo(x + lean, 64 - h);
+        g.quadraticCurveTo(x + lean + Math.cos(a) * 12, 64 - h + Math.sin(a) * 10 - 4, x + lean + Math.cos(a) * 22, 64 - h + Math.sin(a) * 6 + 8);
+        g.lineWidth = 5; g.stroke();
+      }
+    }
+  }),
+  /** A plain rounded bar (health bars over the sea's ships). */
+  bar: () => canvasTex('bar', 32, 8, (g) => { g.fillStyle = 'rgba(255,255,255,1)'; g.beginPath(); g.roundRect(0, 0, 32, 8, 4); g.fill(); }),
   /** A ghostly bubble (the ghost shield). */
   bubble: () => canvasTex('bubble', 128, 128, radial([[0, 'rgba(255,255,255,0.05)'], [0.7, 'rgba(255,255,255,0.12)'], [0.88, 'rgba(255,255,255,0.75)'], [0.95, 'rgba(255,255,255,0.4)'], [1, 'rgba(255,255,255,0)']])),
 };
@@ -350,13 +378,16 @@ export function waterMaterial(): THREE.ShaderMaterial {
       uSky: { value: new THREE.Color(0xa9e2fb) },
       uFog: { value: new THREE.Vector2(30, 70) },
       uCam: { value: new THREE.Vector3() },
+      uIslet: { value: new THREE.Vector3(0, 0, 0) },
+      uSwell: { value: 1 },
     },
     vertexShader: `
       uniform float uTime;
+      uniform float uSwell;
       varying vec3 vW;
       void main() {
         vec4 w = modelMatrix * vec4(position, 1.0);
-        w.y += sin(w.x * 0.55 + uTime * 1.3) * 0.05 + cos(w.z * 0.47 + uTime * 1.1) * 0.05;
+        w.y += (sin(w.x * 0.55 + uTime * 1.3) * 0.05 + cos(w.z * 0.47 + uTime * 1.1) * 0.05) * uSwell;
         vW = w.xyz;
         gl_Position = projectionMatrix * viewMatrix * w;
       }`,
@@ -364,7 +395,7 @@ export function waterMaterial(): THREE.ShaderMaterial {
       uniform float uTime;
       uniform vec2 uCoast;
       uniform vec3 uHarm[3];
-      uniform vec3 uDeep, uShallow, uFoam, uSky, uCam;
+      uniform vec3 uDeep, uShallow, uFoam, uSky, uCam, uIslet;
       uniform vec2 uFog;
       varying vec3 vW;
       float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -380,6 +411,8 @@ export function waterMaterial(): THREE.ShaderMaterial {
         float k = 1.0;
         for (int i = 0; i < 3; i++) k += uHarm[i].y * sin(uHarm[i].x * th + uHarm[i].z);
         float d = length(vW.xz) - r * k;
+        // the hidden islet has its own ring of shallows and foam
+        if (uIslet.z > 0.0) d = min(d, length(vW.xz - uIslet.xy) - uIslet.z);
         float n = noise(vW.xz * 0.6 + uTime * 0.15) * 0.6 + noise(vW.xz * 1.7 - uTime * 0.2) * 0.4;
         vec3 col = mix(uShallow, uDeep, smoothstep(0.3, 6.5, d + (n - 0.5) * 1.2));
         // rolling foam: lines that move in towards the beach and fade out at sea
@@ -400,7 +433,8 @@ export function waterMaterial(): THREE.ShaderMaterial {
   return mat;
 }
 
-export function setCoast(mat: THREE.ShaderMaterial, c: Coast): void {
+export function setCoast(mat: THREE.ShaderMaterial, c: Coast & { islet?: { x: number; z: number; r: number } | null }): void {
   mat.uniforms.uCoast.value.set(c.rx, c.rz);
+  (mat.uniforms.uIslet.value as THREE.Vector3).set(c.islet?.x ?? 0, c.islet?.z ?? 0, c.islet ? c.islet.r : 0);
   c.harm.forEach(([n, a, p], i) => (mat.uniforms.uHarm.value as THREE.Vector3[])[i].set(n, a, p));
 }

@@ -3,7 +3,7 @@
 //   - the dock shop between islands: the island's loot buys levels of seven upgrades and a patch-up;
 //   - the boons: a free pick of one of three after every boss;
 //   - the meta board: Doubloons earned by every run buy ten lasting nodes, plus Barbarossa.
-import { HERO, PLAYER, type HeroId } from './defs';
+import { HERO, PLAYER, SEA, SWIM, type HeroId, type Tuning } from './defs';
 
 // ------------------------------------------------------------------ the dock shop
 
@@ -22,6 +22,55 @@ export const SHOP_COST: Record<ShopId, number[]> = {
 /** The patch-up: heals this share of max HP, once per shop, for 12 + 4 × island gold. */
 export const PATCH = 0.4;
 export const patchCost = (island: number): number => 12 + island * 4;
+
+// ------------------------------------------------------------------ the ship (the dock shop's SHIP tab)
+
+export type ShipId = 'hull' | 'cannon' | 'sails' | 'net' | 'figurehead' | 'swim';
+export const SHIP_IDS: ShipId[] = ['hull', 'cannon', 'sails', 'net', 'figurehead', 'swim'];
+export const SHIP_COST: Record<ShipId, number[]> = {
+  hull: [20, 35, 55, 80],
+  cannon: [25, 40, 60, 85],
+  sails: [18, 30, 48],
+  net: [12, 22, 35],
+  figurehead: [25, 45, 70],
+  swim: [12, 22, 35],
+};
+/** The shipwright: mends this share of the hull, once per shop, for 10 + 3 × island gold. */
+export const REPAIR = 0.5;
+export const repairCost = (island: number): number => 10 + island * 3;
+
+export interface ShipStats {
+  maxHull: number;
+  /** Units a second forward, and the sideways handling factor. */
+  speed: number;
+  agility: number;
+  /** Damage of one cannonball, and seconds to reload a side. */
+  dmg: number;
+  reload: number;
+  /** Salvage reach round the ship (units). */
+  net: number;
+  /** Figurehead: more loot from the sea (share), and a better chance of bottles. */
+  luck: number;
+  /** In deep water: swimming speed factor and seconds of breath. */
+  swim: number;
+  breath: number;
+}
+
+/** The ship's (and the swimmer's) numbers for shop levels `lv`. */
+export function shipStats(lv: Partial<Record<ShipId, number>>, tune: Pick<Tuning, 'hull' | 'breath'>): ShipStats {
+  const l = (id: ShipId) => lv[id] ?? 0;
+  return {
+    maxHull: Math.round((100 + 25 * l('hull')) * tune.hull),
+    speed: SEA.speed * (1 + 0.07 * l('sails')),
+    agility: 1 + 0.14 * l('sails'),
+    dmg: 24 * (1 + 0.2 * l('cannon')),
+    reload: 1.15 * (1 - 0.1 * l('cannon')),
+    net: 2.4 + 1.1 * l('net'),
+    luck: 0.2 * l('figurehead'),
+    swim: 1 + 0.14 * l('swim'),
+    breath: (SWIM.breath + 3 * l('swim')) * tune.breath,
+  };
+}
 
 // ------------------------------------------------------------------ boons (after a boss)
 
@@ -115,8 +164,8 @@ export function stats(load: Loadout, shop: Partial<Record<ShopId, number>>, boon
   };
 }
 
-/** Doubloons for a run: gold / 40, a foe in 15, 3 per island cleared, 8 per boss (Easy: half, rounded up). */
-export function doubloonsFor(goldEarned: number, islands: number, bosses: number, k: number, kills = 0): number {
-  const base = Math.floor(goldEarned / 40) + Math.floor(kills / 15) + 3 * islands + 8 * bosses;
+/** Doubloons for a run: gold / 40, a foe in 15, 3 per island cleared, 8 per boss, plus hidden treasure (Easy: half, rounded up). */
+export function doubloonsFor(goldEarned: number, islands: number, bosses: number, k: number, kills = 0, bonus = 0): number {
+  const base = Math.floor(goldEarned / 40) + Math.floor(kills / 15) + 3 * islands + 8 * bosses + bonus;
   return Math.ceil(base * k);
 }

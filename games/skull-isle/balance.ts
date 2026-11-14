@@ -15,6 +15,7 @@ export function playRun(mode: Mode, skill: Skill, nodes: NodeId[], seed: number,
   while (!sim.over && sim.time < limit) {
     if (sim.phase === 'shop') { bot.shop(); sim.leaveShop(); }
     if (sim.phase === 'draft') sim.pickBoon(bot.draft());
+    if (sim.phase === 'chart') sim.pickRoute(bot.route());
     sim.step(DT, bot.input(DT));
     sim.events.length = 0;
   }

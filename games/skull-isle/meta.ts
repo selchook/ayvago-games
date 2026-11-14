@@ -18,6 +18,9 @@ export interface Meta {
   krakenDown: boolean;
   tutorial: boolean;
   hints: string[];
+  /** Voyages sailed and hidden islets plundered, over all runs (1.1; missing in older saves). */
+  voyages: number;
+  islets: number;
 }
 
 /** The four heroes everyone starts with; Barbarossa is unlocked later. */
@@ -36,6 +39,8 @@ export function cleanMeta(m: Partial<Meta>): Meta {
     krakenDown: !!m.krakenDown,
     tutorial: !!m.tutorial,
     hints: Array.isArray(m.hints) ? m.hints.filter((h) => typeof h === 'string') : [],
+    voyages: Math.max(0, Math.floor(Number(m.voyages) || 0)),
+    islets: Math.max(0, Math.floor(Number(m.islets) || 0)),
   };
 }
 
@@ -65,9 +70,11 @@ export function buyBarbarossa(m: Meta): boolean {
 }
 
 /** Banks a finished run: Doubloons, the record, the Kraken (which frees Barbarossa). */
-export function bankRun(m: Meta, o: { doubloons: number; islands: number; kraken: boolean }): { freedBarbarossa: boolean } {
+export function bankRun(m: Meta, o: { doubloons: number; islands: number; kraken: boolean; voyages?: number; islets?: number }): { freedBarbarossa: boolean } {
   m.doubloons += o.doubloons;
   m.runs++;
+  m.voyages += o.voyages ?? 0;
+  m.islets += o.islets ?? 0;
   m.bestIslands = Math.max(m.bestIslands, o.islands);
   let freed = false;
   if (o.kraken) {

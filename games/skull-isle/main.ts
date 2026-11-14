@@ -79,6 +79,21 @@ launch({
     loadAudio(l, 'alarm', J + 'general-sounds/alarms/low-health-alarms/sfx-lowhealth-alarmloop4');
     loadAudio(l, 'bossDie', J + 'explosions/long/sfx-exp-long3');
     loadSfx(l, 'sail', 'sfx-interface/audio/maximize_003');
+    // at sea and in the water
+    loadAudio(l, 'cannon2', J + 'weapons/cannon/sfx-wpn-cannon1');
+    loadAudio(l, 'cannon3', J + 'weapons/cannon/sfx-wpn-cannon2');
+    loadAudio(l, 'thunder', J + 'explosions/long/sfx-exp-long5');
+    loadAudio(l, 'ghost', J + 'movement/portals-and-transitions/sfx-movement-portal3');
+    loadAudio(l, 'bling', J + 'general-sounds/weird-sounds/sfx-sound-bling');
+    loadAudio(l, 'gasp', J + 'general-sounds/negative-sounds/sfx-sounds-negative1');
+    loadAudio(l, 'fireUp', J + 'explosions/various/sfx-exp-various2');
+    loadAudio(l, 'spy', J + 'general-sounds/menu-sounds/sfx-menu-select2');
+    loadAudio(l, 'wind', J + 'general-sounds/positive-sounds/sfx-sounds-powerup6');
+    loadAudio(l, 'treasure', J + 'general-sounds/positive-sounds/sfx-sounds-powerup16');
+    loadSfx(l, 'hullHit', 'sfx-impact/audio/impactwood_heavy_002');
+    loadSfx(l, 'repair', 'sfx-impact/audio/impactwood_medium_001');
+    loadSfx(l, 'rockHit', 'sfx-foley/audio/rocks/stonehit2');
+    loadSfx(l, 'gust', 'sfx-foley/audio/woosh/woosh2');
     loadSfx(l, 'card', 'sfx-casino/audio/cardslide3');
   },
   menuDecor(scene) {
@@ -106,8 +121,10 @@ launch({
         acc -= 1 / 60;
         n++;
         sim.p.invuln = Math.max(sim.p.invuln, 0.1);
+        if (sim.voyage) sim.voyage.ship.invuln = Math.max(sim.voyage.ship.invuln, 0.1);
         if (sim.phase === 'shop') { bot.shop(); sim.leaveShop(); }
         if (sim.phase === 'draft') sim.pickBoon(0);
+        if (sim.phase === 'chart') sim.pickRoute(bot.route());
         sim.step(1 / 60, sim.over ? NO_INPUT : bot.input(1 / 60));
         for (const ev of sim.events) view.handle(ev, sim);
         sim.events.length = 0;

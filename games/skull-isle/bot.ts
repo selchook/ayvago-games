@@ -1,11 +1,13 @@
 // Skull Isle: the autopilot. It fights (closes in, swings full combos, picks targets), reads the
 // red telegraphs and rolls or walks out of them, keeps off the waterline when sharks hunt, grabs
-// loot and power-ups, opens chests, uses the special and the powder kegs, and shops between
-// islands. It plays behind the menu, in the store art and in the headless balance run; the casual
-// skill reacts late, misses some warnings and wanders, like a first-time player.
-import { seeded, PLAYER } from './defs';
-import { landD } from './island';
-import { SHOP_COST, SHOP_IDS, type ShopId } from './upgrades';
+// loot and power-ups, opens chests (swimming out to a hidden islet's when the beach is quiet),
+// uses the special and the powder kegs, shops between islands (crew, ship and repairs), picks a
+// route and sails: it steers out of the red warnings and round the rocks, fires the broadsides and
+// salvages what floats by. It plays behind the menu, in the store art and in the headless balance
+// run; the casual skill reacts late, misses some warnings and wanders, like a first-time player.
+import { seeded, PLAYER, SEA, type Route } from './defs';
+import { landD, waterD } from './island';
+import { SHOP_COST, SHOP_IDS, SHIP_COST, type ShopId, type ShipId } from './upgrades';
 import { NO_INPUT, type Input, type Sim, type Tele } from './sim';
 
 export interface Skill {
@@ -29,6 +31,7 @@ export const SKILL: Record<'casual' | 'good', Skill> = {
 };
 
 const SHOP_ORDER: ShopId[] = ['dmg', 'hp', 'combo', 'dmg', 'hp', 'dodge', 'charge', 'magnet', 'crit', 'dmg', 'hp', 'combo', 'crit', 'charge', 'dodge', 'hp', 'dmg', 'magnet', 'crit', 'hp', 'charge', 'magnet', 'dodge', 'dmg'];
+const SHIP_ORDER: ShipId[] = ['hull', 'cannon', 'net', 'hull', 'sails', 'cannon', 'swim', 'figurehead', 'hull', 'cannon', 'sails', 'net', 'figurehead', 'hull', 'swim', 'cannon', 'sails', 'figurehead', 'net', 'swim'];
 
 export class Bot {
   private rnd: () => number;
@@ -63,6 +66,7 @@ export class Bot {
     if (s.over || p.state === 'dead') return inp;
     this.pressT -= dt;
     this.wanderT -= dt;
+    if (s.atSea) return this.sail(dt);
     // ---------------------------------------------- danger first
     let fleeX = 0, fleeZ = 0, danger = false, urgent = false;
     for (const T of this.threats()) {
@@ -88,8 +92,9 @@ export class Bot {
     if (danger) {
       const l = Math.hypot(fleeX, fleeZ) || 1;
       fleeX /= l; fleeZ /= l;
-      if (landD(s.L, p.x + fleeX * 2, p.z + fleeZ * 2) > -0.6) { const t = fleeX; fleeX = -fleeZ; fleeZ = t; }
+      if (landD(s.L, p.x + fleeX * 2, p.z + fleeZ * 2) > -0.6 && !p.swim) { const t = fleeX; fleeX = -fleeZ; fleeZ = t; }
       inp.mx = fleeX; inp.mz = fleeZ;
+      if (!p.swim) this.stayAshore(inp);
       if (urgent && p.dodgeCd <= 0 && this.rnd() < this.skill.roll * dt * 30) inp.dodge = true;
       return inp;
     }
@@ -111,8 +116,15 @@ export class Bot {
         if (d < bd) { bd = d; target = { x: bx, z: bz, r: 1.5 }; }
       }
     }
+    let islet = false;
     if (!target) {
-      for (const c of s.chests) if (!c.open) { const d = Math.hypot(c.x - p.x, c.z - p.z); if (d < bd) { bd = d; target = { x: c.x, z: c.z, r: 0.6 }; } }
+      for (const c of s.chests) {
+        if (c.open) continue;
+        // the islet's treasure: only when the beach is quiet and the hero is fit (the good bot always, the casual one now and then)
+        if (c.islet && (p.hp < s.st.maxHp * (p.swim ? 0.35 : 0.6) || (p.breath < s.shipSt.breath * 0.9 && !p.swim) || s.phase === 'cleared' || s.bossActive || this.skill.tactics < 0.5 && (s.wave + s.k) % 2 === 0)) continue;
+        const d = Math.hypot(c.x - p.x, c.z - p.z);
+        if (d < bd) { bd = d; target = { x: c.x, z: c.z, r: 0.6 }; islet = !!c.islet; }
+      }
     }
     // power-ups and loot nearby are worth a detour
     let loot: { x: number; z: number } | null = null, ld = foes.length ? 4.5 : 30;
@@ -157,23 +169,105 @@ export class Bot {
         gx += -uz * sgn * 2.2 * gl / Math.max(1, gl); gz += ux * sgn * 2.2 * gl / Math.max(1, gl);
       }
     }
-    // keep off the waterline where sharks hunt
-    if (s.isle.sharks && landD(s.L, p.x, p.z) > -3.4) { gx -= p.x * 0.25; gz -= p.z * 0.25; }
+    // keep off the waterline where sharks hunt; out of breath (or with nothing to swim for): back to land
+    if (!islet && s.isle.sharks && landD(s.L, p.x, p.z) > -3.4) { gx -= p.x * 0.25; gz -= p.z * 0.25; }
+    if (p.swim && (!islet || p.breath < 2.5)) {
+      const toI = s.L.islet && waterD(s.L, p.x, p.z) < landD(s.L, p.x, p.z) && islet;
+      const cx = toI ? s.L.islet!.x : 0, cz = toI ? s.L.islet!.z : 0;
+      gx = (cx - p.x); gz = (cz - p.z);
+    }
     if (this.skill.sloppy > 0) {
       if (this.wanderT <= 0) { this.wanderT = 0.6 + this.rnd(); const a = this.rnd() * 6.28; this.wx = Math.cos(a); this.wz = Math.sin(a); }
       gx += this.wx * this.skill.sloppy * 3; gz += this.wz * this.skill.sloppy * 3;
     }
     const l = Math.hypot(gx, gz);
     if (l > 0.05) { const k = l > 1 ? 1 / l : 1; inp.mx = gx * k; inp.mz = gz * k; }
+    if (!islet && !p.swim) this.stayAshore(inp);
     // do not hold attack down: press edges only
     if (inp.attack && this.lastPress) inp.attack = false;
     this.lastPress = inp.attack;
     return inp;
   }
 
-  /** Between islands: buy what it can, in a sensible order, and a patch-up when hurt. */
+  /** Unless it swims for the islet, the bot keeps its feet dry: no stepping out past the shallows. */
+  private stayAshore(inp: Input): void {
+    const s = this.sim, p = s.p;
+    if (landD(s.L, p.x + inp.mx * 1.2, p.z + inp.mz * 1.2) < -0.5) return;
+    const d = Math.hypot(p.x, p.z) || 1, ox = p.x / d, oz = p.z / d;
+    const out = inp.mx * ox + inp.mz * oz;
+    if (out > 0) { inp.mx -= ox * out; inp.mz -= oz * out; }
+  }
+
+  // ------------------------------------------------------------------ at sea
+
+  /** The route: the good bot braves the storm with a sound hull; the casual one picks at random. */
+  route(): Route {
+    const s = this.sim;
+    if (this.skill === SKILL.casual) return this.rnd() < 0.5 ? 'calm' : 'storm';
+    return s.hull >= s.shipSt.maxHull * 0.6 ? 'storm' : 'calm';
+  }
+
+  private sail(dt: number): Input {
+    const s = this.sim, v = s.voyage;
+    const inp: Input = { ...NO_INPUT };
+    if (!v || s.phase !== 'sea') return inp;
+    const ship = v.ship;
+    const threats = this.threats();
+    // where across the lane to be: every candidate is scored for the warnings it would be inside
+    // when they land, the rocks ahead, the loot afloat and a foe lined up beside the ship
+    const look = ship.speed * 3.2;
+    let foe: { x: number; z: number } | null = null, fd = 1e9;
+    for (const f of v.foes) {
+      if (!v.targetable(f)) continue;
+      const d = Math.abs(f.z - ship.z);
+      if (d < fd && d < 20) { fd = d; foe = v.aimPoint(f); }
+    }
+    let best = ship.x, bc = 1e9, slow = false;
+    for (let cx = -SEA.lane; cx <= SEA.lane + 1e-6; cx += 0.75) {
+      let c = Math.abs(cx - ship.x) * 0.12;
+      for (const r of v.rocks) {
+        const dz = ship.z - r.z;
+        if (dz < -5 || dz > look) continue;
+        const need = r.r + 1.3 + 0.8;
+        if (Math.abs(cx - r.x) < need) c += 45 * (1 - Math.max(0, dz) / look * 0.5);
+      }
+      for (const T of threats) {
+        const left = Math.max(0, T.dur - T.t);
+        const z = ship.z - ship.speed * left;
+        let inside = false;
+        for (const u of [3.3, 0, -3.3]) if (s.inTele(T, cx, z - u, 1.3)) inside = true;
+        if (inside) { c += 60; if (T.kind === 'line' && Math.abs(Math.sin(T.ang)) > 0.7) slow = true; }
+      }
+      for (const f of v.floats) {
+        const dz = ship.z - f.z;
+        if (dz < -2 || dz > 26) continue;
+        if (Math.abs(cx - f.x) < s.shipSt.net + 0.8) c -= 8 * (1 - Math.max(0, dz) / 30) * (f.kind === 'crate' && ship.hull < s.shipSt.maxHull * 0.7 ? 2 : 1);
+      }
+      if (foe) c += Math.abs(Math.abs(cx - foe.x) - 6) * 0.25;
+      if (c < bc) { bc = c; best = cx; }
+    }
+    let gx = (best - ship.x) * 0.7;
+    if (this.skill.sloppy > 0) {
+      if (this.wanderT <= 0) { this.wanderT = 0.8 + this.rnd(); this.wx = this.rnd() * 2 - 1; }
+      gx += this.wx * this.skill.sloppy * 1.4;
+    }
+    inp.mx = Math.max(-1, Math.min(1, gx));
+    if (slow) inp.mz = 0.9;
+    // evade when a warning is about to land on the hull and the rudder alone is too slow
+    let urgent = false;
+    for (const T of threats) if (T.dur - T.t < 0.5 && v.shipIn(T)) urgent = true;
+    if (urgent && ship.evadeCd <= 0 && this.rnd() < this.skill.roll * dt * 30) { inp.dodge = true; inp.mx = Math.sign(best - ship.x) || inp.mx; }
+    // fire whenever a broadside bears
+    if (v.aim && ship.reload[v.aim.side] <= 0 && this.pressT <= 0 && this.rnd() < this.skill.tactics * 0.6 + 0.4) { inp.attack = true; this.pressT = 1 / this.skill.apm + 0.1; }
+    if (inp.attack && this.lastPress) inp.attack = false;
+    this.lastPress = inp.attack;
+    return inp;
+  }
+
+  /** Between islands: buy what it can, in a sensible order, a patch-up when hurt, the shipwright when battered. */
   shop(): void {
     const s = this.sim;
+    if (s.hull < s.shipSt.maxHull * 0.45) s.buyRepair();
     if (s.p.hp < s.st.maxHp * 0.55) s.buyPatch();
     for (const id of SHOP_ORDER) {
       const lv = s.shop[id] ?? 0;
@@ -184,6 +278,12 @@ export class Bot {
       if (lv < SHOP_COST[id].length && s.gold >= SHOP_COST[id][lv]) s.buy(id);
     }
     if (s.p.hp < s.st.maxHp * 0.8) s.buyPatch();
+    if (s.hull < s.shipSt.maxHull * 0.75) s.buyRepair();
+    // the ship gets what is left
+    for (const id of SHIP_ORDER) {
+      const lv = s.shipLv[id] ?? 0;
+      if (lv < SHIP_COST[id].length && s.gold >= SHIP_COST[id][lv] + 10) { s.buyShip(id); break; }
+    }
   }
 
   /** A boon: the first of the three (the casual bot picks at random). */

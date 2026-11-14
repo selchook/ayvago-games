@@ -21,8 +21,8 @@ export const PIRATE_MODELS = [
   'rock', 'sawmill', 'ship-large', 'ship-small', 'skull', 'skulls', 'sword',
 ] as const;
 
-/** Kenney Pirate Kit stand-ins for the kit's files that could not be had (rocks, cannonballs, bottles, crates). */
-export const KENNEY_MODELS = ['cannon-ball', 'crate', 'rocks-sand-c', 'rocks-c', 'bottle-large'] as const;
+/** Kenney Pirate Kit models: stand-ins for the kit's files that could not be had (rocks, cannonballs, bottles, crates), and the sea's ships. */
+export const KENNEY_MODELS = ['cannon-ball', 'crate', 'rocks-sand-c', 'rocks-a', 'rocks-b', 'rocks-c', 'bottle-large', 'ship-pirate-small', 'ship-ghost'] as const;
 
 export function loadKit(load: Phaser.Loader.LoaderPlugin): void {
   for (const m of PIRATE_MODELS) loadModel(load, pk(m), asset(`quaternius/pirate-kit/${m}.glb`));
@@ -37,30 +37,36 @@ export const pirateMaterial = (): THREE.MeshLambertMaterial => new THREE.MeshLam
 /**
  * The scenery's Lambert (vertex colours, or the Kenney map) with a see-through: whatever stands
  * between the camera and the hero (a palm's crown, a house, the ship) is dithered away in a soft
- * cylinder round the line of sight, so the fight always shows. `hero` and `cam` move every frame.
+ * cylinder round the line of sight, so the fight always shows. `hero` and `cam` move every frame
+ * (a hero below y = −50 turns it off). At sea `sail` (x, z, height, amount) thins out the crew's
+ * masts and sails above a height round the ship, so the sea ahead shows through them.
  */
-export function sceneryMaterial(hero: THREE.Vector3, cam: THREE.Vector3, map: THREE.Texture | null = null): THREE.MeshLambertMaterial {
+export function sceneryMaterial(hero: THREE.Vector3, cam: THREE.Vector3, map: THREE.Texture | null = null, sail: THREE.Vector4 = new THREE.Vector4()): THREE.MeshLambertMaterial {
   const mat = new THREE.MeshLambertMaterial(map ? { map } : { vertexColors: true });
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uHero = { value: hero };
     sh.uniforms.uCam = { value: cam };
+    sh.uniforms.uSail = { value: sail };
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vGp;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vGp;\nuniform vec3 uHero;\nuniform vec3 uCam;')
+      .replace('#include <common>', '#include <common>\nvarying vec3 vGp;\nuniform vec3 uHero;\nuniform vec3 uCam;\nuniform vec4 uSail;')
       .replace('#include <clipping_planes_fragment>', [
         '#include <clipping_planes_fragment>',
+        'vec2 cell = mod(floor(gl_FragCoord.xy), 4.0);',
+        'float th = fract((cell.x * 4.0 + cell.y + mod(cell.x + cell.y, 2.0) * 7.0) / 16.0);',
         'vec3 sl = uHero - uCam;',
         'float sll = length(sl);',
-        'vec3 sd = sl / sll;',
+        'vec3 sd = sl / max(sll, 0.001);',
         'float along = dot(vGp - uCam, sd);',
-        'if (along < sll - 0.6 && vGp.y > 0.9) {',
+        'if (uHero.y > -50.0 && along < sll - 0.6 && vGp.y > 0.9) {',
         '  float side = length(vGp - uCam - sd * along);',
         '  float k = smoothstep(2.6, 1.3, side) * smoothstep(sll - 0.6, sll - 2.5, along);',
-        '  vec2 cell = mod(floor(gl_FragCoord.xy), 4.0);',
-        '  float th = (cell.x * 4.0 + cell.y + mod(cell.x + cell.y, 2.0) * 7.0) / 16.0;',
-        '  if (fract(th) < k * 0.85) discard;',
+        '  if (th < k * 0.85) discard;',
+        '}',
+        'if (uSail.w > 0.0 && vGp.y > uSail.z && length(vGp.xz - uSail.xy) < 8.0) {',
+        '  if (th < uSail.w * smoothstep(uSail.z, uSail.z + 0.8, vGp.y)) discard;',
         '}',
       ].join('\n'));
   };

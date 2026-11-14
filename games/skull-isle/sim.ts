@@ -11,14 +11,16 @@
 // ground first (red circles, lanes and cones that fill up).
 import {
   DT, clamp, angDiff, seeded, TUNING, PLAYER, FOES, HERO, comboSteps, islandOf, lapOf,
-  POWER_TIME, SHIELD_HITS, FISH_HEAL, POWER_WEIGHTS, TIMED_POWERS,
+  POWER_TIME, SHIELD_HITS, FISH_HEAL, POWER_WEIGHTS, TIMED_POWERS, SWIM,
   type Mode, type FoeKind, type PowerId, type TimedPower, type Cause, type StepDef, type Tuning, type IslandDef,
+  type Route, type SeaKind, type FloatKind, type SeaPower, type SeaCause,
 } from './defs';
-import { layout, landD, shoreAt, shorePoint, type Layout } from './island';
+import { layout, landD, shoreAt, shorePoint, waterD, isletD, type Layout } from './island';
 import {
-  stats, PATCH, patchCost, SHOP_COST, BOON_IDS, doubloonsFor,
-  type Loadout, type Stats, type ShopId, type BoonId,
+  stats, shipStats, PATCH, patchCost, SHOP_COST, SHIP_COST, REPAIR, repairCost, BOON_IDS, doubloonsFor,
+  type Loadout, type Stats, type ShopId, type BoonId, type ShipId, type ShipStats,
 } from './upgrades';
+import { Voyage } from './voyage';
 
 export interface Input {
   /** Move direction on the ground (x right, z towards the camera), length ≤ 1. */
@@ -46,6 +48,8 @@ export interface Player {
   secondWinds: number;
   /** Seconds since the last swing (for the view's slash trail). */
   moved: number;
+  /** In deep water: swimming, seconds of breath left, seconds in the water. */
+  swim: boolean; breath: number; swimT: number;
 }
 
 export interface Foe {
@@ -80,6 +84,8 @@ export interface Tele {
   dmg: number; cause: Cause; knock: number;
   /** The player's own (gold): hurts foes only. */
   friendly: boolean;
+  /** At sea: who fired it (the hull's damage cause). */
+  seaCause?: SeaKind;
   /** Also hurts foes (cannon fire, barrels). */
   hitsFoes: boolean;
   /** A warning only (a barrel's lane): resolves nothing. */
@@ -102,10 +108,10 @@ export interface Shot {
 export interface Roller { id: number; x: number; z: number; dx: number; dz: number; speed: number; t: number; tele: number; live: boolean; spin: number; hitPlayer: boolean; hit: number[] }
 
 export interface Loot { id: number; kind: 'coin' | 'bag' | 'power'; power: PowerId | null; x: number; y: number; z: number; vx: number; vy: number; vz: number; t: number; value: number; pull: boolean }
-export interface Chest { id: number; x: number; z: number; open: boolean; t: number }
+export interface Chest { id: number; x: number; z: number; open: boolean; t: number; islet?: boolean }
 export interface Pool { x: number; z: number; r: number; state: 'dry' | 'rise' | 'flood'; t: number; level: number }
 
-export type Phase = 'tutorial' | 'intro' | 'fight' | 'breather' | 'cleared' | 'shop' | 'draft' | 'sail' | 'dead';
+export type Phase = 'tutorial' | 'intro' | 'fight' | 'breather' | 'cleared' | 'shop' | 'draft' | 'chart' | 'sail' | 'sea' | 'dock' | 'sinking' | 'wreck' | 'dead';
 
 export type SimEvent =
   | { type: 'swing'; step: number; last: boolean; spin: boolean; anim: string; dur: number }
@@ -141,7 +147,36 @@ export type SimEvent =
   | { type: 'lunge'; x: number; z: number }
   | { type: 'shop' }
   | { type: 'draft'; boons: BoonId[] }
-  | { type: 'sail' };
+  | { type: 'chart'; dest: number }
+  | { type: 'sail' }
+  // at sea (voyage.ts)
+  | { type: 'seaStart'; route: Route; dest: number }
+  | { type: 'broadside'; side: number; x: number; z: number; n: number; fire: boolean; chain: boolean }
+  | { type: 'evade'; x: number; z: number; dir: number }
+  | { type: 'gust'; dir: number }
+  | { type: 'lightning'; x: number; z: number }
+  | { type: 'seaSpawn'; id: number; kind: SeaKind; x: number; z: number }
+  | { type: 'ghost' }
+  | { type: 'seaFire'; id: number; kind: SeaKind; x: number; z: number }
+  | { type: 'seaBoom'; x: number; z: number; friendly: boolean; fire: boolean; kind: string }
+  | { type: 'miss'; x: number; z: number }
+  | { type: 'hullHit'; dmg: number; cause: SeaCause; x: number; z: number }
+  | { type: 'seaHit'; id: number; kind: SeaKind; x: number; z: number; dmg: number; src: string }
+  | { type: 'seaKill'; id: number; kind: SeaKind; x: number; z: number }
+  | { type: 'ram'; x: number; z: number }
+  | { type: 'float'; kind: FloatKind; value: number; repair?: number; x: number; z: number }
+  | { type: 'seaPower'; power: SeaPower }
+  | { type: 'seaExpire'; power: SeaPower }
+  | { type: 'rockHit'; x: number; z: number }
+  | { type: 'dock' }
+  | { type: 'jumpAshore' }
+  | { type: 'sink'; cause: SeaCause }
+  | { type: 'wreck'; lost: number }
+  | { type: 'washed'; hp: number }
+  // swimming
+  | { type: 'swim'; on: boolean }
+  | { type: 'breath'; level: 'low' | 'out' }
+  | { type: 'islet'; x: number; z: number; n: number };
 
 const TAU = Math.PI * 2;
 const ON_SCREEN = 25;
@@ -177,6 +212,26 @@ export class Sim {
   cause: Cause | null = null;
   damageBy: Partial<Record<Cause, number>> = {};
   st: Stats;
+  // the ship and the voyages
+  shipLv: Partial<Record<ShipId, number>> = {};
+  shipSt: ShipStats;
+  /** Hull left (carried between legs; mended at the dock shop). */
+  hull = 100;
+  repaired = false;
+  route: Route = 'calm';
+  voyage: Voyage | null = null;
+  voyages = 0;
+  /** Ships sunk this run (the voyage's), and the times the crew's own ship went down. */
+  sinks = 0;
+  /** Doubloons from hidden treasure. */
+  bonusDoubloons = 0;
+  /** The layout's island index (a voyage builds the next island's layout before it is raided). */
+  private Lk = 0;
+  private hunterCd = 0;
+  /** Ashore from the ship: the hero runs up the beach to the island's start during its intro. */
+  private walkIn: { x: number; z: number; t: number } | null = null;
+  private breathWarned = false;
+  private drownT = 0;
 
   p: Player;
   foes: Foe[] = [];
@@ -219,10 +274,13 @@ export class Sim {
     this.L = layout(0);
     this.isle = islandOf(0);
     this.st = this.calcStats();
+    this.shipSt = shipStats(this.shipLv, this.tune);
+    this.hull = this.shipSt.maxHull;
     this.p = {
       x: 0, z: 2, vx: 0, vz: 0, face: Math.PI, hp: this.st.maxHp, state: 'idle', t: 0, step: 0, stepDef: null, hitDone: false,
       chainT: 0, invuln: 0, dodgeCd: 0, dodgeX: 0, dodgeZ: 1, special: 0, kegs: this.st.kegsStart, shieldHits: 0,
       powers: { rum: 0, parrot: 0, shield: 0, gold2: 0, fury: 0 }, combo: 0, comboT: 0, secondWinds: this.st.secondWinds, moved: 0,
+      swim: false, breath: this.shipSt.breath, swimT: 0,
     };
     this.startIsland(0, !!opts.tutorial);
   }
@@ -236,9 +294,13 @@ export class Sim {
   private get lvl(): number { return this.k * this.tune.ramp; }
   private get lap(): number { return lapOf(this.k); }
   private R(a: number, b: number): number { return a + this.rnd() * (b - a); }
-  private emit(e: SimEvent): void { this.events.push(e); }
+  emit(e: SimEvent): void { this.events.push(e); }
   /** Telegraph length for this mode. */
-  private tl(s: number): number { return s * this.tune.tele; }
+  tl(s: number): number { return s * this.tune.tele; }
+  /** At sea (sailing, docking or sinking). */
+  get atSea(): boolean { return this.phase === 'sea' || this.phase === 'dock' || this.phase === 'sinking'; }
+  /** Gold found (the hero's gold factor is the caller's). */
+  addGold(v: number): void { this.gold += v; this.goldEarned += v; this.score += v * 5; }
   get steps(): StepDef[] { return comboSteps(this.st.combo); }
   get maxSpecial(): number { return PLAYER.pip * this.st.pips; }
   get boss(): Foe | null { return this.foes.find((f) => (f.kind === 'head' || f.kind === 'captain') && f.state !== 'dead') ?? null; }
@@ -255,6 +317,7 @@ export class Sim {
       case 'tentacle': case 'arm': return f.state === 'down';
       case 'head': return f.state === 'open';
       case 'shark': return f.state === 'beached' || f.state === 'lunge';
+      case 'hunter': return f.state === 'wind' || f.state === 'lunge';
       case 'captain': return f.state !== 'ship' && f.state !== 'leap';
       default: return f.state !== 'spawn';
     }
@@ -262,10 +325,13 @@ export class Sim {
 
   // ------------------------------------------------------------------ islands and waves
 
-  private startIsland(k: number, tutorial = false): void {
+  private startIsland(k: number, tutorial = false, keepPos = false): void {
     this.k = k;
-    this.L = layout(k);
+    if (this.Lk !== k) this.L = layout(k);
+    this.Lk = k;
     this.isle = islandOf(k);
+    this.voyage = null;
+    this.walkIn = null;
     this.st = this.calcStats();
     this.wave = 0;
     this.waves = this.isle.waves + (this.isle.boss ? 1 : 0);
@@ -281,8 +347,13 @@ export class Sim {
     this.patched = false;
     this.pools = this.L.pools.map((q, i) => ({ x: q.x, z: q.z, r: q.r, state: 'dry', t: -i * 2.6, level: 0 }));
     const p = this.p;
-    p.x = 0; p.z = this.L.rz * 0.35; p.vx = p.vz = 0; p.face = Math.PI; p.state = 'idle'; p.t = 0; p.stepDef = null;
+    if (!keepPos) { p.x = 0; p.z = this.L.rz * 0.35; }
+    p.vx = p.vz = 0; p.face = Math.PI; p.state = 'idle'; p.t = 0; p.stepDef = null;
     p.invuln = 1; p.chainT = 0;
+    p.swim = false; p.swimT = 0; p.breath = this.shipSt.breath;
+    this.hunterCd = 2;
+    // the hidden islet's treasure
+    if (!tutorial) this.isletChest();
     if (this.st.parrotStart > 0) this.givePower('parrot', this.st.parrotStart, false);
     this.sharkCd = 5;
     this.barrelCd = 7;
@@ -447,11 +518,14 @@ export class Sim {
       case 'fight': this.updateWave(dt); break;
       case 'breather': if (this.phaseT > 2.2) this.startWave(); break;
       case 'cleared': this.magnetAll(dt); if (this.phaseT > 2.6) { this.setPhase('shop'); this.emit({ type: 'shop' }); } break;
-      case 'shop': case 'draft': return;
-      case 'sail': if (this.phaseT > 1.4) this.startIsland(this.k + 1); return;
+      case 'shop': case 'draft': case 'chart': return;
+      case 'sail': if (this.phaseT > 1.0) this.startSea(); return;
+      case 'sea': case 'dock': case 'sinking': this.voyage?.update(dt, inp); return;
+      case 'wreck': break;
       case 'dead': if (this.phaseT > 2.4) this.over = true; break;
     }
     this.updatePlayer(dt, inp);
+    if (this.phase !== 'tutorial') this.hunterTick(dt);
     this.updateFoes(dt);
     this.updateTeles(dt);
     this.updateShots(dt);
@@ -460,7 +534,10 @@ export class Sim {
     this.updatePools(dt);
     this.updateParrot(dt);
     this.foes = this.foes.filter((f) => !(f.state === 'dead' && f.deadT > 3) && !(f.state === 'gone'));
+    for (const c of this.chests) if (c.open) c.t += dt;
     this.chests = this.chests.filter((c) => !c.open || c.t < 6);
+    // the wreck's swim ends on the beach
+    if (this.phase === 'wreck' && this.p.state !== 'dead' && waterD(this.L, this.p.x, this.p.z) < 0.1) this.washAshore();
   }
 
   private updateWave(dt: number): void {
@@ -479,7 +556,7 @@ export class Sim {
     }
     if (this.bossKind) { this.updateBoss(dt); return; }
     // spawning
-    const fighting = this.foes.filter((f) => f.state !== 'dead' && f.kind !== 'shark').length;
+    const fighting = this.foes.filter((f) => f.state !== 'dead' && f.kind !== 'shark' && f.kind !== 'hunter').length;
     this.spawnT -= dt;
     if (this.queue.length && this.spawnT <= 0 && fighting < this.cap && this.foes.length < ON_SCREEN) {
       this.spawnFromQueue();
@@ -583,7 +660,14 @@ export class Sim {
     const ml = Math.hypot(inp.mx, inp.mz);
     const mx = ml > 1 ? inp.mx / ml : inp.mx, mz = ml > 1 ? inp.mz / ml : inp.mz;
     const free = p.state === 'idle' || p.state === 'run';
-    const canAct = this.phase !== 'cleared' && this.phase !== 'sail';
+    this.updateSwim(dt);
+    if (this.walkIn) {
+      const w = this.walkIn, dx = w.x - p.x, dz = w.z - p.z, d = Math.hypot(dx, dz);
+      w.t -= dt;
+      if (d < 0.6 || w.t <= 0 || this.phase !== 'intro' || ml > 0.3) this.walkIn = null;
+      else return this.runTo(dt, dx / d, dz / d);
+    }
+    const canAct = this.phase !== 'cleared' && this.phase !== 'sail' && !p.swim;
 
     if (free && canAct) {
       if (this.dodgeBuf > 0 && p.dodgeCd <= 0) this.startDodge(mx, mz);
@@ -594,7 +678,7 @@ export class Sim {
 
     switch (p.state) {
       case 'idle': case 'run': {
-        const sp = this.speed;
+        const sp = p.swim ? this.speed * SWIM.speed * this.shipSt.swim : this.speed;
         const ax = mx * sp - p.vx, az = mz * sp - p.vz;
         const k = Math.min(1, dt * (ml > 0.05 ? 16 : 22));
         p.vx += ax * k; p.vz += az * k;
@@ -644,11 +728,87 @@ export class Sim {
     this.moveBody(dt);
   }
 
-  /** Moves the player by its velocity, kept on the sand and out of the props. */
+  /** The scripted run up the beach (no input). */
+  private runTo(dt: number, ux: number, uz: number): void {
+    const p = this.p, sp = this.speed;
+    const k = Math.min(1, dt * 16);
+    p.vx += (ux * sp - p.vx) * k; p.vz += (uz * sp - p.vz) * k;
+    p.face += angDiff(p.face, Math.atan2(ux, uz)) * Math.min(1, dt * 16);
+    p.state = 'run';
+    this.moveBody(dt);
+  }
+
+  /** Moves the player by its velocity: on the sand, or out into the deep water (but not past it), round the props and ships. */
   private moveBody(dt: number): void {
     const p = this.p;
     p.x += p.vx * dt; p.z += p.vz * dt;
-    this.keepOnLand(p, PLAYER.radius);
+    if (this.phase === 'tutorial') { this.keepOnLand(p, PLAYER.radius); return; }
+    const L = this.L;
+    const th = Math.atan2(p.z, p.x);
+    const lim = shoreAt(L, th) + SWIM.reach;
+    const d = Math.hypot(p.x, p.z);
+    if (d > lim) { p.x *= lim / d; p.z *= lim / d; }
+    const block = (x: number, z: number, m: number) => {
+      const dx = p.x - x, dz = p.z - z, dd = Math.hypot(dx, dz);
+      if (dd < m && dd > 1e-4) { p.x = x + dx / dd * m; p.z = z + dz / dd * m; }
+    };
+    for (const pr of L.props) if (pr.r > 0) block(pr.x, pr.z, pr.r + PLAYER.radius);
+    if (L.ship && !L.ship.beached) block(L.ship.x, L.ship.z, 3.6);
+    if (!L.ship) block(L.anchor.x, L.anchor.z, 3.6);
+  }
+
+  /** Deep water: swimming (no attacks, slower), breath that runs out (then HP drains and the sea pushes back to shore). */
+  private updateSwim(dt: number): void {
+    const p = this.p;
+    if (this.phase === 'tutorial' || p.state === 'dead') return;
+    const wd = waterD(this.L, p.x, p.z);
+    const max = this.shipSt.breath;
+    if (!p.swim && wd > SWIM.in && p.state !== 'dodge') { p.swim = true; this.emit({ type: 'swim', on: true }); this.emit({ type: 'splash', x: p.x, z: p.z, big: false }); }
+    else if (p.swim && wd < SWIM.out) { p.swim = false; this.emit({ type: 'swim', on: false }); }
+    if (!p.swim) {
+      p.breath = Math.min(max, p.breath + dt * SWIM.refill);
+      if (p.breath > max * 0.5) this.breathWarned = false;
+      this.drownT = 0;
+      return;
+    }
+    p.breath -= dt;
+    if (p.breath < 3 && !this.breathWarned) { this.breathWarned = true; this.emit({ type: 'breath', level: 'low' }); }
+    if (p.breath <= 0) {
+      if (this.drownT === 0) this.emit({ type: 'breath', level: 'out' });
+      p.breath = 0;
+      this.drownT += dt;
+      // the sea pushes a breathless swimmer back to the nearest land
+      const toIslet = this.L.islet && isletD(this.L, p.x, p.z) < landD(this.L, p.x, p.z);
+      const cx = toIslet ? this.L.islet!.x : 0, cz = toIslet ? this.L.islet!.z : 0;
+      const dx = cx - p.x, dz = cz - p.z, dd = Math.hypot(dx, dz) || 1;
+      p.x += dx / dd * 1.8 * dt; p.z += dz / dd * 1.8 * dt;
+      // a soft limit: the breathless swimmer weakens (never below 1 HP) while the sea carries them back
+      if (Math.floor(this.drownT / 0.5) !== Math.floor((this.drownT - dt) / 0.5) && p.hp > 1) this.loseHp(Math.min(p.hp - 1, Math.max(1, Math.round(SWIM.drain * 0.5 * this.tune.hurt))), 'drown');
+    }
+  }
+
+  /** HP lost without a hit (drowning): no knockback or stagger, but it can end the run. */
+  private loseHp(n: number, cause: Cause): void {
+    const p = this.p;
+    if (p.state === 'dead') return;
+    p.hp -= n;
+    this.damageBy[cause] = (this.damageBy[cause] ?? 0) + n;
+    p.combo = 0; p.comboT = 0;
+    this.emit({ type: 'hurt', dmg: n, cause, x: p.x, z: p.z });
+    if (p.hp > 0) return;
+    if (p.secondWinds > 0) {
+      p.secondWinds--;
+      p.hp = Math.round(this.st.maxHp * 0.4);
+      p.breath = this.shipSt.breath;
+      p.invuln = 2.2;
+      this.emit({ type: 'secondWind' });
+      return;
+    }
+    p.hp = 0;
+    p.state = 'dead'; p.t = 0;
+    this.cause = cause;
+    this.setPhase('dead');
+    this.emit({ type: 'death', cause });
   }
 
   private keepOnLand(o: { x: number; z: number }, r: number): void {
@@ -792,7 +952,7 @@ export class Sim {
 
   private barrage(): void {
     const p = this.p;
-    const targets = this.foes.filter((f) => f.state !== 'dead' && f.kind !== 'head' && Math.hypot(f.x - p.x, f.z - p.z) < 15)
+    const targets = this.foes.filter((f) => f.state !== 'dead' && f.kind !== 'head' && f.kind !== 'hunter' && Math.hypot(f.x - p.x, f.z - p.z) < 15)
       .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z)).slice(0, 7);
     const pts = targets.map((f) => (f.kind === 'arm' || f.kind === 'tentacle' ? this.armPoint(f, f.bx + Math.sin(f.yaw) * f.len * 0.6, f.bz + Math.cos(f.yaw) * f.len * 0.6) : { x: f.x, z: f.z }));
     const head = this.foes.find((f) => f.kind === 'head' && f.state === 'open');
@@ -824,7 +984,7 @@ export class Sim {
   /** The player takes a hit (dodge, invulnerability and the ghost shield first). */
   hurtPlayer(dmg: number, cause: Cause, fx: number, fz: number, knock: number): boolean {
     const p = this.p;
-    if (p.state === 'dead' || p.invuln > 0 || this.phase === 'cleared' || this.phase === 'sail') return false;
+    if (p.state === 'dead' || p.invuln > 0 || this.phase === 'cleared' || this.phase === 'sail' || this.atSea) return false;
     if (p.powers.shield > 0 && p.shieldHits > 0) {
       p.shieldHits--;
       p.invuln = 0.5;
@@ -878,7 +1038,7 @@ export class Sim {
     const heavy = src === 'finisher' || src === 'special' || src === 'keg';
     const def = FOES[f.kind];
     if (!def.poise || heavy) {
-      if (f.kind !== 'tentacle' && f.kind !== 'arm' && f.kind !== 'head' && f.kind !== 'shark') {
+      if (f.kind !== 'tentacle' && f.kind !== 'arm' && f.kind !== 'head' && f.kind !== 'shark' && f.kind !== 'hunter') {
         const dx = f.x - fx, dz = f.z - fz, d = Math.hypot(dx, dz) || 1;
         const k = kb * def.kb;
         f.vx = dx / d * k; f.vz = dz / d * k;
@@ -910,8 +1070,9 @@ export class Sim {
       const coins = Math.round(def.gold * (1 + 0.08 * this.lvl) * (f.elite ? 2.5 : 1));
       this.dropCoins(f.kind === 'tentacle' || f.kind === 'arm' ? this.armPoint(f, this.p.x, this.p.z) : f, coins);
       // power-ups: brutes and elites often, the rest now and then
-      const chance = boss ? 1 : f.kind === 'brute' || f.elite ? 0.4 : f.kind === 'shark' ? 1 : 0.055;
-      if (this.rnd() < chance) this.dropPower(f.kind === 'shark' ? 'fish' : this.randomPower(), f.x, f.z);
+      const fishy = f.kind === 'shark' || f.kind === 'hunter';
+      const chance = boss ? 1 : f.kind === 'brute' || f.elite ? 0.4 : fishy ? 1 : 0.055;
+      if (this.rnd() < chance) this.dropPower(fishy ? 'fish' : this.randomPower(), f.x, f.z);
       if (f.kind === 'skel' || f.kind === 'runner') this.crewKilled++;
     }
     this.emit({ type: 'kill', id: f.id, kind: f.kind, x: f.x, z: f.z, boss });
@@ -951,9 +1112,23 @@ export class Sim {
     for (let i = 0; i < bags; i++) add('bag', 5);
   }
 
+  /** Loot that lands: on the sand (out of the props), on the islet, or afloat (coins then drift to the hero). */
+  private keepLoot(l: { x: number; z: number; pull?: boolean; kind?: string }): void {
+    const L = this.L;
+    if (this.phase !== 'tutorial' && waterD(L, l.x, l.z) > 0) {
+      if (L.islet && isletD(L, l.x, l.z) < 2.5) {
+        const dx = l.x - L.islet.x, dz = l.z - L.islet.z, d = Math.hypot(dx, dz) || 1, m = L.islet.r - 0.35;
+        l.x = L.islet.x + dx / d * m; l.z = L.islet.z + dz / d * m;
+        return;
+      }
+      if (landD(L, l.x, l.z) > 1.2) { if (l.kind !== 'power' && l.pull !== undefined) l.pull = true; return; }
+    }
+    this.keepOnLand(l, 0.3);
+  }
+
   dropPower(power: PowerId, x: number, z: number): void {
     const c = { x, z };
-    this.keepOnLand(c, 0.5);
+    this.keepLoot(c);
     this.loot.push({ id: this.nextId++, kind: 'power', power, x: c.x, y: 0.6, z: c.z, vx: 0, vy: 5, vz: 0, t: 0, value: 0, pull: false });
   }
 
@@ -961,8 +1136,17 @@ export class Sim {
     c.open = true;
     c.t = 0;
     this.score += 100;
-    this.dropCoins(c, Math.round(14 + this.lvl * 4));
-    this.dropPower(this.randomPower(), c.x + this.R(-1, 1), c.z + 1.2);
+    if (c.islet) {
+      // hidden treasure: more gold, a power-up and doubloons for the treasure map
+      this.score += 400;
+      this.dropCoins(c, Math.round(30 + this.lvl * 8));
+      this.dropPower(this.randomPower(), c.x + this.R(-0.6, 0.6), c.z + 0.6);
+      this.bonusDoubloons += 2;
+      this.emit({ type: 'islet', x: c.x, z: c.z, n: 2 });
+    } else {
+      this.dropCoins(c, Math.round(14 + this.lvl * 4));
+      this.dropPower(this.randomPower(), c.x + this.R(-1, 1), c.z + 1.2);
+    }
     this.emit({ type: 'chest', x: c.x, z: c.z });
   }
 
@@ -977,6 +1161,7 @@ export class Sim {
         case 'skel': case 'runner': case 'thrower': case 'brute': this.walker(f, dt); break;
         case 'tentacle': case 'arm': this.tentacle(f, dt); break;
         case 'shark': this.shark(f, dt); break;
+        case 'hunter': this.hunter(f, dt); break;
         case 'head': this.head(f, dt); break;
         case 'captain': this.captain(f, dt); break;
       }
@@ -1182,7 +1367,7 @@ export class Sim {
   private sharkTick(dt: number): void {
     const p = this.p;
     this.sharkCd -= dt;
-    const near = landD(this.L, p.x, p.z) > -3.6;
+    const near = landD(this.L, p.x, p.z) > -3.6 && !p.swim;
     const sharks = this.foes.filter((f) => f.kind === 'shark' && f.state !== 'dead').length;
     if (this.sharkCd <= 0 && near && sharks < 1 + Math.floor(this.lvl / 4) && p.state !== 'dead') {
       this.sharkCd = this.R(4.5, 8);
@@ -1237,6 +1422,103 @@ export class Sim {
         break;
       }
       case 'hurt': f.state = 'beached'; break;
+    }
+  }
+
+  /** Spawns a shark that hunts the swimmer (deep water on any island, and the wreck's swim). */
+  private hunterTick(dt: number): void {
+    const p = this.p;
+    if (p.swim) p.swimT += dt; else p.swimT = 0;
+    this.hunterCd -= dt;
+    if (!p.swim || p.state === 'dead' || p.swimT < 2 || this.hunterCd > 0) return;
+    const alive = this.foes.filter((f) => f.kind === 'hunter' && f.state !== 'dead' && f.state !== 'leave').length;
+    const cap = 1 + (this.lvl >= 4 || (this.phase === 'wreck' && this.route === 'storm') ? 1 : 0);
+    if (alive >= cap) return;
+    const out = Math.atan2(p.z, p.x);
+    for (let i = 0; i < 8; i++) {
+      const a = out + this.R(-1, 1);
+      const x = p.x + Math.cos(a) * 7.5, z = p.z + Math.sin(a) * 7.5;
+      if (waterD(this.L, x, z) < 2) continue;
+      const f = this.makeFoe('hunter', x, z);
+      f.state = 'circle'; f.y = -0.55; f.yaw = a + Math.PI; f.pitch = this.rnd() < 0.5 ? 1 : -1;
+      this.hunterCd = this.R(4, 7) * (this.mode === 'easy' ? 1.4 : 1);
+      return;
+    }
+    this.hunterCd = 1;
+  }
+
+  /** A shark hunting a swimmer: circles them, lunges along a red lane, dives, comes round again; leaves once they are ashore. */
+  private hunter(f: Foe, dt: number): void {
+    const p = this.p;
+    const away = !p.swim || p.state === 'dead';
+    f.away = away ? f.away + dt : 0;
+    if (f.away > 1.5 && f.state !== 'leave' && f.state !== 'lunge') {
+      if (f.tele >= 0) this.cancelTele(f.tele);
+      f.tele = -1; f.state = 'leave'; f.t = 0;
+    }
+    switch (f.state) {
+      case 'circle': {
+        // f.yaw is its angle round the swimmer, f.pitch the way round
+        f.yaw += dt * 1.05 * f.pitch;
+        const r = 5.6;
+        const gx = p.x + Math.cos(f.yaw) * r, gz = p.z + Math.sin(f.yaw) * r;
+        const px = f.x, pz = f.z;
+        const dx = gx - f.x, dz = gz - f.z, d = Math.hypot(dx, dz);
+        const sp = Math.min(d, 6 * dt);
+        if (d > 1e-3) { f.x += dx / d * sp; f.z += dz / d * sp; }
+        if (Math.hypot(f.x - px, f.z - pz) > 1e-4) f.face = Math.atan2(f.x - px, f.z - pz);
+        f.y = -0.55;
+        if (f.t > 2.4 && p.swim && p.state !== 'dead') {
+          f.state = 'wind'; f.t = 0;
+          const lead = 0.45;
+          const tx = p.x + p.vx * lead, tz = p.z + p.vz * lead;
+          f.face = Math.atan2(tx - f.x, tz - f.z);
+          f.tele = this.addTele({ kind: 'line', x: f.x, z: f.z, len: Math.min(10, Math.hypot(tx - f.x, tz - f.z) + 3), w: 1.4, ang: f.face, dur: this.tl(1.1), dmg: f.dmg, cause: 'shark', knock: 5, owner: f.id, lane: true });
+        }
+        break;
+      }
+      case 'wind':
+        f.y = -0.45 + Math.sin(f.t * 18) * 0.05;
+        if (f.t >= this.tl(1.1)) { f.state = 'lunge'; f.t = 0; f.hitPlayer = false; this.emit({ type: 'lunge', x: f.x, z: f.z }); this.emit({ type: 'splash', x: f.x, z: f.z, big: true }); }
+        break;
+      case 'lunge': {
+        const sp = 13;
+        f.x += Math.sin(f.face) * sp * dt; f.z += Math.cos(f.face) * sp * dt;
+        f.y = Math.sin(Math.min(1, f.t / 0.72) * Math.PI) * 1.1 - 0.3;
+        if (!f.hitPlayer && Math.hypot(p.x - f.x, p.z - f.z) < 1.15) { f.hitPlayer = true; this.hurtPlayer(f.dmg, 'shark', f.x, f.z, 4); }
+        if (f.t >= 0.72 || waterD(this.L, f.x, f.z) < 0.4) {
+          if (f.tele >= 0) this.cancelTele(f.tele);
+          f.tele = -1; f.state = 'dive'; f.t = 0;
+          this.emit({ type: 'splash', x: f.x, z: f.z, big: false });
+        }
+        break;
+      }
+      case 'dive':
+        f.y -= dt * 2;
+        if (f.t >= 1.3) {
+          f.state = 'circle'; f.t = 0; f.y = -0.55;
+          f.yaw = this.rnd() * Math.PI * 2;
+          f.x = p.x + Math.cos(f.yaw) * 6.5; f.z = p.z + Math.sin(f.yaw) * 6.5;
+        }
+        break;
+      case 'hurt': f.state = 'dive'; f.t = 0; break;
+      case 'leave': {
+        const dx = f.x - p.x, dz = f.z - p.z, d = Math.hypot(dx, dz) || 1;
+        f.x += dx / d * 5 * dt; f.z += dz / d * 5 * dt;
+        f.y -= dt * 0.6;
+        if (f.t > 2) { f.state = 'gone'; this.emit({ type: 'splash', x: f.x, z: f.z, big: false }); }
+        break;
+      }
+    }
+    // sharks keep to the deep water
+    if (f.state !== 'lunge') {
+      const wd = waterD(this.L, f.x, f.z);
+      if (wd < 1.2) {
+        const isl = this.L.islet && isletD(this.L, f.x, f.z) < landD(this.L, f.x, f.z);
+        const cx = isl ? this.L.islet!.x : 0, cz = isl ? this.L.islet!.z : 0;
+        const dx = f.x - cx, dz = f.z - cz, d = Math.hypot(dx, dz) || 1;
+        f.x += dx / d * (1.2 - wd); f.z += dz / d * (1.2 - wd);
+      }
     }
   }
 
@@ -1346,7 +1628,7 @@ export class Sim {
 
   // ------------------------------------------------------------------ telegraphs and shots
 
-  private addTele(o: Partial<Tele> & { kind: TeleKind; x: number; z: number; dur: number; dmg: number; cause: Cause }): number {
+  addTele(o: Partial<Tele> & { kind: TeleKind; x: number; z: number; dur: number; dmg: number; cause: Cause }): number {
     const T: Tele = {
       id: this.nextId++, r: 1, len: 0, w: 0, ang: 0, arc: 0, t: 0, knock: 4, friendly: false, hitsFoes: false, lane: false, owner: -1, ...o,
     };
@@ -1355,7 +1637,7 @@ export class Sim {
     return T.id;
   }
 
-  private cancelTele(id: number): void {
+  cancelTele(id: number): void {
     this.teles = this.teles.filter((t) => t.id !== id);
   }
 
@@ -1518,7 +1800,7 @@ export class Sim {
         l.vy -= 22 * dt;
         l.y += l.vy * dt;
         l.x += l.vx * dt; l.z += l.vz * dt;
-        if (l.y <= 0) { l.y = 0; l.vy = 0; l.vx = l.vz = 0; this.keepOnLand(l, 0.3); }
+        if (l.y <= 0) { l.y = 0; l.vy = 0; l.vx = l.vz = 0; this.keepLoot(l); }
       }
       const dx = p.x - l.x, dz = p.z - l.z, d = Math.hypot(dx, dz);
       if (p.state === 'dead') continue;
@@ -1532,8 +1814,7 @@ export class Sim {
         if (l.kind === 'power') this.takePower(l.power!, l.x, l.z);
         else {
           const v = Math.max(1, Math.round(l.value * this.st.gold * (p.powers.gold2 > 0 ? 2 : 1)));
-          this.gold += v; this.goldEarned += v;
-          this.score += v * 5;
+          this.addGold(v);
           this.emit({ type: 'coin', x: l.x, z: l.z, value: v, bag: l.kind === 'bag' });
         }
       }
@@ -1622,6 +1903,31 @@ export class Sim {
     return true;
   }
 
+  /** The shop's SHIP tab: a level of a ship upgrade. */
+  buyShip(id: ShipId): boolean {
+    const lv = this.shipLv[id] ?? 0;
+    const costs = SHIP_COST[id];
+    if (this.phase !== 'shop' || lv >= costs.length || this.gold < costs[lv]) return false;
+    this.gold -= costs[lv];
+    const before = this.shipSt.maxHull;
+    this.shipLv[id] = lv + 1;
+    this.shipSt = shipStats(this.shipLv, this.tune);
+    if (this.shipSt.maxHull > before) this.hull += this.shipSt.maxHull - before;
+    this.p.breath = this.shipSt.breath;
+    return true;
+  }
+
+  get repairPrice(): number { return repairCost(this.k); }
+
+  /** The shipwright: mends half the hull, once per shop. */
+  buyRepair(): boolean {
+    if (this.phase !== 'shop' || this.repaired || this.gold < this.repairPrice || this.hull >= this.shipSt.maxHull) return false;
+    this.gold -= this.repairPrice;
+    this.repaired = true;
+    this.hull = Math.min(this.shipSt.maxHull, this.hull + Math.round(this.shipSt.maxHull * REPAIR));
+    return true;
+  }
+
   /** Leaves the shop: a boon draft after a boss island, else the voyage on. */
   leaveShop(): void {
     if (this.phase !== 'shop') return;
@@ -1637,7 +1943,7 @@ export class Sim {
       this.emit({ type: 'draft', boons: pick });
       return;
     }
-    this.sail();
+    this.toChart();
   }
 
   pickBoon(i: number): void {
@@ -1648,15 +1954,85 @@ export class Sim {
     if (b === 'powder') this.p.kegs = Math.min(PLAYER.kegsMax, this.p.kegs + 2);
     this.st = this.calcStats();
     this.draft = [];
-    this.sail();
+    this.toChart();
   }
 
-  private sail(): void {
-    // a rest at sea: a quarter of the HP back
-    const n = Math.min(this.st.maxHp - this.p.hp, Math.round(this.st.maxHp * 0.25));
+  /** The sea chart: two routes to the next island. */
+  private toChart(): void {
+    this.setPhase('chart');
+    this.emit({ type: 'chart', dest: this.k + 1 });
+  }
+
+  /** Picks the route and sets sail (a short fade, then the sea leg). */
+  pickRoute(r: Route): void {
+    if (this.phase !== 'chart') return;
+    this.route = r;
+    // a rest aboard (a voyage is 40 s or more): a third of the HP back
+    const n = Math.min(this.st.maxHp - this.p.hp, Math.round(this.st.maxHp * 0.35));
     this.p.hp += n;
     this.setPhase('sail');
     this.emit({ type: 'sail' });
+  }
+
+  /** The sea leg: the next island is built ahead at the origin, the ship starts far to its south. */
+  private startSea(): void {
+    const dest = this.k + 1;
+    this.L = layout(dest);
+    this.Lk = dest;
+    this.foes = []; this.teles = []; this.shots = []; this.rollers = []; this.loot = []; this.chests = []; this.pools = [];
+    this.bossKind = null;
+    this.p.swim = false;
+    this.voyage = new Voyage(this, this.route, dest, Math.floor(this.rnd() * 1e9));
+    this.voyages++;
+    this.setPhase('sea');
+    this.emit({ type: 'seaStart', route: this.route, dest });
+  }
+
+  /** The voyage reached the island: the ship comes in to dock. */
+  dockPhase(): void { this.setPhase('dock'); this.emit({ type: 'dock' }); }
+
+  /** The hero is ashore after docking: the island begins. */
+  landFromSea(): void {
+    const v = this.voyage!;
+    this.hull = v.ship.hull;
+    this.p.x = v.landAt.x; this.p.z = v.landAt.z;
+    this.startIsland(v.dest, false, true);
+    this.walkIn = { x: 0, z: this.L.rz * 0.35, t: 1.6 };
+  }
+
+  /** The ship went down: the crew is in the water. */
+  sink(cause: SeaCause): void {
+    this.sinks++;
+    this.setPhase('sinking');
+    this.emit({ type: 'sink', cause });
+  }
+
+  /** After the sinking: the hero swims for the island's south beach, sharks about; gold lost to the sea. */
+  startWreck(): void {
+    const v = this.voyage!;
+    const lost = Math.floor(this.gold * this.tune.sinkGold);
+    this.gold -= lost;
+    const p = this.p;
+    p.x = clamp(v.ship.x * 0.4, -4, 4);
+    p.z = shoreAt(this.L, Math.PI / 2) + 8;
+    p.vx = p.vz = 0; p.face = Math.PI; p.state = 'idle'; p.t = 0;
+    p.swim = true; p.swimT = 0; p.breath = this.shipSt.breath; p.invuln = 1.5;
+    this.hunterCd = 1.2;
+    this.teles = [];
+    this.setPhase('wreck');
+    this.emit({ type: 'wreck', lost });
+    this.emit({ type: 'splash', x: p.x, z: p.z, big: true });
+  }
+
+  /** The wreck's swim reached the beach: hurt and soaked, the hero raids on; the ship is salvaged. */
+  private washAshore(): void {
+    const p = this.p;
+    const n = Math.min(p.hp - 1, Math.round(this.st.maxHp * this.tune.sinkHurt));
+    if (n > 0) p.hp -= n;
+    this.hull = Math.max(this.hull, Math.round(this.shipSt.maxHull * 0.4));
+    const dest = this.voyage?.dest ?? this.k + 1;
+    this.emit({ type: 'washed', hp: Math.max(0, n) });
+    this.startIsland(dest, false, true);
   }
 
   // ------------------------------------------------------------------ the tutorial (the Play scene drives it)
@@ -1676,8 +2052,16 @@ export class Sim {
 
   tutorialPower(): void { this.dropPower('rum', this.p.x - 2.5, this.p.z - 1.5); }
 
+  /** The hidden islet's treasure chest. */
+  private isletChest(): void {
+    const is = this.L.islet;
+    if (!is || this.chests.some((c) => c.islet)) return;
+    this.chests.push({ id: this.nextId++, x: is.x - Math.sign(is.x) * 0.25, z: is.z + 0.4, open: false, t: 0, islet: true });
+  }
+
   endTutorial(): void {
     if (this.phase !== 'tutorial') return;
+    this.isletChest();
     for (const f of this.foes) if (f.passive && f.state !== 'dead') { f.state = 'dead'; f.deadT = 2.5; }
     this.teles = [];
     this.tutTele = -1;
@@ -1721,8 +2105,17 @@ export class Sim {
     this.addTele({ kind, x, z, r: kind === 'cone' ? 2.2 : 2.2, len: 7, w: 1.6, ang: Math.PI, arc: 1.9, dur: 3, dmg: 0, cause: 'cannon' });
   }
 
+  /** Straight to a sea leg (route chosen) towards the next island. */
+  testSea(r: Route = 'calm'): void {
+    if (this.phase === 'tutorial') this.endTutorial();
+    this.foes = []; this.teles = [];
+    this.setPhase('chart');
+    this.pickRoute(r);
+    this.startSea();
+  }
+
   /** The run's Doubloons. */
-  get doubloons(): number { return doubloonsFor(this.goldEarned, this.islandsCleared, this.bosses, this.tune.doubloons, this.kills); }
+  get doubloons(): number { return doubloonsFor(this.goldEarned, this.islandsCleared, this.bosses, this.tune.doubloons, this.kills, this.bonusDoubloons); }
 }
 
 export { HERO };

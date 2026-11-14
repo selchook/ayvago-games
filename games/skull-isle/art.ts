@@ -2,8 +2,8 @@
 // hearts, the boss skull), drawn once per game into canvas textures: simple vector symbols over a
 // glowing disc in the item's colour.
 import Phaser from 'phaser';
-import { POWER_IDS, POWER_COLOR, type PowerId } from './defs';
-import { SHOP_IDS, BOON_IDS, NODES, type ShopId, type BoonId, type NodeId } from './upgrades';
+import { POWER_IDS, POWER_COLOR, SEA_POWERS, SEA_POWER_COLOR, ROUTES, type PowerId, type SeaPower, type Route } from './defs';
+import { SHOP_IDS, SHIP_IDS, BOON_IDS, NODES, type ShopId, type ShipId, type BoonId, type NodeId } from './upgrades';
 
 export const powerArt = (id: PowerId) => 'si-pw-' + id;
 export const shopArt = (id: ShopId | 'patch') => 'si-shop-' + id;
@@ -16,6 +16,11 @@ export const SKULL = 'si-skull';
 export const LOCK = 'si-lock';
 export const MAP = 'si-map';
 export const WAVE = 'si-wave';
+export const seaPowerArt = (id: SeaPower) => 'si-sea-' + id;
+export const shipArt = (id: ShipId | 'repair') => 'si-ship-' + id;
+export const routeArt = (id: Route) => 'si-route-' + id;
+export const SHIP = 'si-shipicon';
+export const BUBBLE = 'si-bubble';
 
 type G = CanvasRenderingContext2D;
 const S = 128;
@@ -205,6 +210,99 @@ const SYM: Record<string, (g: G) => void> = {
     g.setLineDash([6, 6]); g.beginPath(); g.moveTo(28, 90); g.quadraticCurveTo(50, 50, 82, 70); g.lineWidth = 4; g.strokeStyle = '#a0502a'; g.stroke(); g.setLineDash([]);
     g.beginPath(); g.moveTo(84, 54); g.lineTo(100, 70); g.moveTo(100, 54); g.lineTo(84, 70); g.lineWidth = 7; g.strokeStyle = '#d02a1a'; g.stroke();
   },
+  sail: (g) => {
+    g.beginPath(); g.moveTo(58, 10); g.lineTo(58, 112); g.lineWidth = 10; g.strokeStyle = 'rgba(20,12,8,0.9)'; g.stroke(); g.lineWidth = 6; g.strokeStyle = '#8a5a34'; g.stroke();
+    g.beginPath(); g.moveTo(62, 18); g.quadraticCurveTo(112, 50, 62, 92); g.closePath(); ink(g, '#f4ecd8');
+    g.beginPath(); g.moveTo(54, 26); g.quadraticCurveTo(20, 56, 54, 84); g.closePath(); ink(g, '#e8dcc0', 5);
+  },
+  windSail: (g) => {
+    SYM.sail(g);
+    for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(6, 36 + i * 22); g.quadraticCurveTo(22, 30 + i * 22, 36, 38 + i * 22); g.lineWidth = 6; g.strokeStyle = '#7ad8ff'; g.stroke(); }
+  },
+  chain: (g) => {
+    g.beginPath(); g.moveTo(36, 78); g.lineTo(92, 50); g.lineWidth = 14; g.strokeStyle = 'rgba(20,12,8,0.9)'; g.stroke(); g.lineWidth = 8; g.strokeStyle = '#9aa0b0'; g.stroke();
+    for (let i = 0; i < 4; i++) { g.beginPath(); g.ellipse(44 + i * 14, 74 - i * 7, 7, 4, -0.45, 0, Math.PI * 2); g.lineWidth = 3; g.strokeStyle = '#d8dce8'; g.stroke(); }
+    g.beginPath(); g.arc(32, 82, 20, 0, Math.PI * 2); ink(g, '#3a3a44');
+    g.beginPath(); g.arc(96, 46, 20, 0, Math.PI * 2); ink(g, '#3a3a44');
+    g.beginPath(); g.arc(26, 76, 6, 0, Math.PI * 2); g.arc(90, 40, 6, 0, Math.PI * 2); g.fillStyle = 'rgba(255,255,255,0.5)'; g.fill();
+  },
+  shell: (g) => {
+    g.beginPath(); g.moveTo(64, 104); g.lineTo(22, 52); g.quadraticCurveTo(64, -6, 106, 52); g.closePath(); ink(g, '#ffb8c8');
+    for (const a of [-0.55, -0.27, 0, 0.27, 0.55]) { g.beginPath(); g.moveTo(64, 100); g.lineTo(64 + Math.sin(a) * 52, 100 - Math.cos(a) * 70); g.lineWidth = 4; g.strokeStyle = '#d0708a'; g.stroke(); }
+    g.beginPath(); g.roundRect(48, 98, 32, 16, 6); ink(g, '#ffb8c8', 5);
+    g.beginPath(); g.arc(64, 60, 9, 0, Math.PI * 2); g.fillStyle = '#ffffff'; g.fill();
+  },
+  fireball: (g) => {
+    g.beginPath(); g.moveTo(16, 30); g.quadraticCurveTo(50, 40, 60, 46); g.quadraticCurveTo(30, 60, 20, 70); g.quadraticCurveTo(50, 70, 58, 74); g.quadraticCurveTo(36, 96, 34, 104); g.lineTo(84, 84); g.closePath(); ink(g, '#ff8a2a');
+    g.beginPath(); g.arc(78, 70, 30, 0, Math.PI * 2); ink(g, '#3a3a44');
+    g.beginPath(); g.arc(70, 62, 9, 0, Math.PI * 2); g.fillStyle = 'rgba(255,200,120,0.7)'; g.fill();
+  },
+  spyglass: (g) => {
+    g.save(); g.translate(64, 64); g.rotate(-0.6);
+    g.beginPath(); g.roundRect(-52, -12, 40, 24, 6); ink(g, '#a0602a');
+    g.beginPath(); g.roundRect(-14, -16, 36, 32, 6); ink(g, '#ffc83a');
+    g.beginPath(); g.roundRect(20, -20, 32, 40, 6); ink(g, '#a0602a');
+    g.beginPath(); g.ellipse(52, 0, 6, 18, 0, 0, Math.PI * 2); g.fillStyle = '#bff4ff'; g.fill();
+    g.restore();
+  },
+  hull: (g) => {
+    g.beginPath(); g.moveTo(10, 62); g.lineTo(118, 62); g.lineTo(98, 104); g.lineTo(28, 104); g.closePath(); ink(g, '#9a6234');
+    g.fillStyle = '#6a4024'; g.fillRect(24, 76, 82, 6);
+    for (const x of [38, 58, 78]) { g.beginPath(); g.arc(x, 90, 5, 0, Math.PI * 2); g.fillStyle = '#2a1a10'; g.fill(); }
+    g.beginPath(); g.moveTo(40, 58); g.lineTo(40, 14); g.lineTo(84, 50); g.closePath(); ink(g, '#f4ecd8', 5);
+  },
+  ship: (g) => {
+    g.beginPath(); g.moveTo(14, 70); g.lineTo(114, 70); g.lineTo(96, 104); g.lineTo(30, 104); g.closePath(); ink(g, '#9a6234');
+    g.beginPath(); g.moveTo(62, 66); g.lineTo(62, 12); g.lineWidth = 7; g.strokeStyle = '#5a3a1a'; g.stroke();
+    g.beginPath(); g.moveTo(66, 16); g.quadraticCurveTo(100, 40, 66, 62); g.closePath(); ink(g, '#f4ecd8', 5);
+    g.beginPath(); g.moveTo(58, 22); g.quadraticCurveTo(30, 42, 58, 60); g.closePath(); ink(g, '#f4ecd8', 5);
+    g.beginPath(); g.moveTo(62, 12); g.lineTo(80, 8); g.lineTo(62, 4); g.closePath(); g.fillStyle = '#1a0c08'; g.fill();
+  },
+  net: (g) => {
+    g.beginPath(); g.arc(64, 64, 46, 0, Math.PI * 2); g.lineWidth = 10; g.strokeStyle = 'rgba(20,12,8,0.9)'; g.stroke(); g.lineWidth = 6; g.strokeStyle = '#c8a070'; g.stroke();
+    g.save(); g.beginPath(); g.arc(64, 64, 44, 0, Math.PI * 2); g.clip();
+    g.lineWidth = 4; g.strokeStyle = '#e8d0a0';
+    for (let i = -3; i <= 3; i++) { g.beginPath(); g.moveTo(20, 64 + i * 14 - 40); g.lineTo(108, 64 + i * 14 + 40); g.stroke(); g.beginPath(); g.moveTo(20, 64 + i * 14 + 40); g.lineTo(108, 64 + i * 14 - 40); g.stroke(); }
+    g.restore();
+    g.beginPath(); g.arc(70, 72, 12, 0, Math.PI * 2); ink(g, '#ffc83a', 4);
+  },
+  figurehead: (g) => {
+    g.beginPath(); g.moveTo(98, 110); g.quadraticCurveTo(100, 60, 70, 40); g.quadraticCurveTo(54, 30, 44, 40); g.quadraticCurveTo(34, 52, 46, 60); g.quadraticCurveTo(30, 72, 40, 84); g.quadraticCurveTo(60, 92, 66, 110); g.closePath(); ink(g, '#ffc83a');
+    g.beginPath(); g.arc(56, 46, 5, 0, Math.PI * 2); g.fillStyle = '#5a3a08'; g.fill();
+    g.beginPath(); g.moveTo(70, 30); g.lineTo(76, 14); g.lineTo(84, 28); g.lineTo(94, 16); g.lineTo(94, 36); g.closePath(); ink(g, '#fff0a0', 4);
+  },
+  swimmer: (g) => {
+    for (let i = 0; i < 2; i++) {
+      g.beginPath();
+      for (let x = 14; x <= 114; x += 4) g.lineTo(x, 74 + i * 24 + Math.sin(x / 10 + i) * 6);
+      g.lineWidth = 10; g.strokeStyle = 'rgba(20,12,8,0.9)'; g.stroke(); g.lineWidth = 6; g.strokeStyle = '#7ad8ff'; g.stroke();
+    }
+    for (const [x, y, r] of [[40, 40, 12], [66, 26, 9], [86, 46, 14]] as [number, number, number][]) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.lineWidth = 5; g.strokeStyle = '#d8f6ff'; g.stroke(); g.beginPath(); g.arc(x - r * 0.35, y - r * 0.35, r * 0.25, 0, Math.PI * 2); g.fillStyle = '#ffffff'; g.fill(); }
+  },
+  hammer: (g) => {
+    g.save(); g.translate(64, 64); g.rotate(-0.7);
+    g.beginPath(); g.roundRect(-7, -14, 14, 70, 5); ink(g, '#8a5a34');
+    g.beginPath(); g.roundRect(-32, -40, 64, 28, 6); ink(g, '#9aa8b8');
+    g.restore();
+    g.beginPath(); g.arc(98, 98, 12, 0, Math.PI * 2); ink(g, '#7affa0', 4);
+  },
+  bubble: (g) => {
+    g.beginPath(); g.arc(60, 66, 40, 0, Math.PI * 2); g.lineWidth = 9; g.strokeStyle = 'rgba(20,12,8,0.9)'; g.stroke();
+    g.fillStyle = 'rgba(150,230,255,0.45)'; g.fill(); g.lineWidth = 5; g.strokeStyle = '#d8f6ff'; g.stroke();
+    g.beginPath(); g.arc(46, 52, 10, 0, Math.PI * 2); g.fillStyle = '#ffffff'; g.fill();
+    g.beginPath(); g.arc(100, 30, 12, 0, Math.PI * 2); g.lineWidth = 4; g.strokeStyle = '#d8f6ff'; g.stroke();
+  },
+  calm: (g) => {
+    g.beginPath(); g.arc(80, 44, 24, 0, Math.PI * 2); ink(g, '#ffd23f');
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; g.beginPath(); g.moveTo(80 + Math.cos(a) * 30, 44 + Math.sin(a) * 30); g.lineTo(80 + Math.cos(a) * 40, 44 + Math.sin(a) * 40); g.lineWidth = 5; g.strokeStyle = '#ffd23f'; g.stroke(); }
+    for (let i = 0; i < 2; i++) { g.beginPath(); for (let x = 10; x <= 118; x += 4) g.lineTo(x, 88 + i * 18 + Math.sin(x / 14) * 3); g.lineWidth = 9; g.strokeStyle = 'rgba(20,12,8,0.9)'; g.stroke(); g.lineWidth = 5; g.strokeStyle = '#7ad8ff'; g.stroke(); }
+  },
+  storm: (g) => {
+    g.beginPath(); g.arc(44, 46, 20, Math.PI * 0.5, Math.PI * 1.5); g.arc(66, 32, 24, Math.PI, 0); g.arc(92, 48, 18, Math.PI * 1.5, Math.PI * 0.5); g.closePath(); ink(g, '#8a96a8');
+    g.beginPath(); g.moveTo(70, 62); g.lineTo(56, 84); g.lineTo(68, 84); g.lineTo(58, 106); g.lineTo(84, 76); g.lineTo(72, 76); g.lineTo(80, 62); g.closePath(); ink(g, '#ffe24a', 4);
+    for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(26 + i * 10, 74 + (i % 2) * 6); g.lineTo(20 + i * 10, 92 + (i % 2) * 6); g.lineWidth = 4; g.strokeStyle = '#9fd8ff'; g.stroke(); }
+    g.beginPath(); for (let x = 10; x <= 118; x += 4) g.lineTo(x, 112 + Math.sin(x / 8) * 6); g.lineWidth = 9; g.strokeStyle = 'rgba(20,12,8,0.9)'; g.stroke(); g.lineWidth = 5; g.strokeStyle = '#5aa8d8'; g.stroke();
+  },
   wave: (g) => {
     for (let i = 0; i < 3; i++) {
       g.beginPath();
@@ -229,12 +327,22 @@ const NODE_SYM: Record<NodeId, [string, number]> = {
   seaLegs: ['anchor', 0x7ad8ff], luckyCoin: ['coin', 0xffd23f], lootHook: ['hook', 0xffc83a], powderMonkey: ['powderKid', 0xff7a3a], cannonDrill: ['cannon', 0xff9a5a],
 };
 
+const SEA_SYM: Record<SeaPower, string> = { wind: 'windSail', chain: 'chain', mermaid: 'shell', fire: 'fireball', spyglass: 'spyglass' };
+const SHIP_SYM: Record<ShipId | 'repair', [string, number]> = {
+  hull: ['hull', 0xc89a5a], cannon: ['cannon', 0xff9a5a], sails: ['sail', 0xbff6ff], net: ['net', 0xffd23f], figurehead: ['figurehead', 0xffc83a], swim: ['swimmer', 0x7ad8ff], repair: ['hammer', 0x7affa0],
+};
+
 /** Draws every icon once (cheap; each scene that shows icons calls it). */
 export function makeArt(scene: Phaser.Scene): void {
   for (const id of POWER_IDS) icon(scene, powerArt(id), (g) => { disc(g, POWER_COLOR[id]); SYM[POWER_SYM[id]](g); });
   for (const id of [...SHOP_IDS, 'patch'] as const) icon(scene, shopArt(id), (g) => { disc(g, SHOP_SYM[id][1]); SYM[SHOP_SYM[id][0]](g); });
   for (const id of BOON_IDS) icon(scene, boonArt(id), (g) => { disc(g, BOON_SYM[id][1]); SYM[BOON_SYM[id][0]](g); });
   for (const n of NODES) icon(scene, nodeArt(n.id), (g) => { disc(g, NODE_SYM[n.id][1]); SYM[NODE_SYM[n.id][0]](g); });
+  for (const id of SEA_POWERS) icon(scene, seaPowerArt(id), (g) => { disc(g, SEA_POWER_COLOR[id]); SYM[SEA_SYM[id]](g); });
+  for (const id of [...SHIP_IDS, 'repair'] as const) icon(scene, shipArt(id), (g) => { disc(g, SHIP_SYM[id][1]); SYM[SHIP_SYM[id][0]](g); });
+  for (const id of ROUTES) icon(scene, routeArt(id), (g) => { disc(g, id === 'calm' ? 0x7ad8ff : 0x8a96a8); SYM[id](g); });
+  icon(scene, SHIP, SYM.ship);
+  icon(scene, BUBBLE, SYM.bubble);
   icon(scene, GOLD, SYM.coin);
   icon(scene, DOUBLOON, SYM.doubloon);
   icon(scene, HEART, SYM.heart);
