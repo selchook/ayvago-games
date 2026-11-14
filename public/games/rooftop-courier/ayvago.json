@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "rooftopcourier",
+  "title": {
+    "en": "Rooftop Courier",
+    "tr": "Çatı Kuryesi"
+  },
+  "description": {
+    "en": "You are a courier racing across the rooftops of an old brick city at dusk! Get each parcel to its glowing roof hatch before the clock runs out: jump the gaps, vault walls, slide under beams, climb fire escapes, ride zip-lines and bounce off awnings. Chain moves into a Rush, collect stamps, and keep going as four districts get harder and night falls.",
+    "tr": "Gün batarken eski tuğla şehrin çatılarında koşan bir kuryesin! Koliyi süresi bitmeden ışıklı çatı kapağına ulaştır: boşlukları atla, duvarların üstünden aş, kirişlerin altından kay, merdivenlere tırman, tellerde kay, tentelerden sek. Hareketleri zincirle, Hız moduna gir, pul topla; dört bölgede şehir zorlaşır, akşam çöker."
+  },
+  "category": "action",
+  "categories": [
+    "action",
+    "arcade"
+  ],
+  "tags": [
+    "rooftop",
+    "courier",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/rooftop-courier/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/rooftop-courier/ayvago/icon-512.png",
+    "cover": "/games/rooftop-courier/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/rooftop-courier/ayvago/screenshot.jpg",
+    "card": "/games/rooftop-courier/ayvago/card-640x360.webp",
+    "card2x": "/games/rooftop-courier/ayvago/card-1280x720.webp"
+  },
+  "version": "1.0.0"
+}
