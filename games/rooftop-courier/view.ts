@@ -3,18 +3,23 @@
 // and scrap of paper. The chase camera rides behind and above with a look ahead over the next
 // gap, pulls out on long jumps, rises with climbs and never sinks into walls, scaffolding or
 // chimneys (it checks the course's shape list round the lens, ahead of it and along the line of
-// sight). The dusk deepens as the run goes on: windows light up one by one, the street lamps come
-// on. The Play scene and the menu's autopilot both use it, so the menu compiles every shader the
-// first Play frame needs.
+// sight). When the courier drops into an alley the camera leans out over the gap and looks down
+// at it (never from behind a wall), while the courier fades out on the way down and goes up in a
+// puff of dust; a respawn fades it back in, blinking while it cannot be hurt. The power-ups show
+// on the courier: a bubble, a magnet's pull rings, golden sparkles, time ripples, a paper glider
+// and a streaming red ribbon. The dusk deepens as the run goes on: windows light up one by one,
+// the street lamps come on. The Play scene and the menu's autopilot both use it, so the menu
+// compiles every shader the first Play frame needs.
 import Phaser from 'phaser';
 import { World3D, THREE, model, playerCharacter3d } from '@core/three';
-import type { Sim, SimEvent } from './sim';
+import { FLOOR, type Sim, type SimEvent } from './sim';
 import { City, Skyline, type CityMats } from './city';
+import type { Block } from './course';
 import { kitReady, kitTexture, kitMaterial, Mats, type KitUniforms } from './kit';
 import { Runner, type Look } from './runner';
 import { Pickups, Pigeons, DropPoint } from './props';
-import { Billboards, Particles, glowTex, puffTex, ringTex } from './fx3d';
-import { PALETTES, clamp, lerp, type Theme } from './defs';
+import { Billboards, Particles, Ribbon, glowTex, puffTex, ringTex, bubbleTex } from './fx3d';
+import { PALETTES, POWER_COLOR, clamp, lerp, smooth, isPower, type Theme } from './defs';
 
 export const FOV = 70;
 
@@ -61,6 +66,19 @@ export class View {
   legacyCam = false;
   /** Camera distance multiplier. */
   camDist = 1;
+  private bubbles: Billboards;
+  private ribbon: Ribbon;
+  /** The courier's fade: back in after a respawn (0 … 1), and whether this fall's puff went off. */
+  private fadeIn = 1;
+  private poofed = false;
+  /** How far the camera has gone over to its look down into an alley (0 … 1). */
+  private alleyK = 0;
+  private alleyHold = 0;
+  private inAlley = false;
+  /** The courier's opacity this frame (test hook). */
+  alpha = 1;
+  /** Called when a falling courier goes up in its puff (the Play scene plays a sound). */
+  onPoof: (() => void) | null = null;
 
   constructor(phaser: Phaser.Scene, readonly sim: Sim, look: Look, quality = 0.72) {
     kitReady(phaser);
@@ -123,6 +141,8 @@ export class View {
     this.glows = new Particles(sc, glow, 360, { order: 13 });
     this.dust = new Particles(sc, puffTex(), 260, { additive: false, order: 12 });
     this.paper = new Particles(sc, paperTex(), 90, { additive: false, order: 14 });
+    this.bubbles = new Billboards(sc, bubbleTex(), 4, { additive: false, order: 15 });
+    this.ribbon = new Ribbon(sc);
     this.pickups = new Pickups(sc, this.halo);
     this.pigeons = new Pigeons(sc, this.halo);
     this.drop = new DropPoint(sc);
@@ -164,14 +184,64 @@ export class View {
     this.skyline.follow(sim.s);
     const ground = sim.course.groundAt(sim.s, sim.x, sim.y + 0.2).y;
     this.runner.update(sdt, sim, ground);
+    this.fade(sim, sdt);
     const z = sim.zip;
     this.runner.hands(sim, z ? sim.course.cableY(z, sim.s) + 0.02 : null, this.wallTop(sim));
     this.atmosphere(sim, dt);
     this.camera(sim, dt);
-    if (!this.legacyCam) this.city.fadeOver(-this.world.camera.position.z, sim.s, dt);
+    if (!this.legacyCam) this.city.fadeOver(-this.world.camera.position.z, sim.s, dt, this.inAlley);
     this.sky.position.copy(this.world.camera.position);
     this.world.followSun(this.v.set(sim.x, Math.max(0, sim.y), -sim.s - 6));
     this.effects(sim, dt, sdt);
+  }
+
+  /**
+   * The courier's opacity: a fall fades it out as it sinks (by time and by the depth left to the
+   * alley floor, so it is gone before it gets there) and ends in a puff; a respawn fades it back
+   * in; while it cannot be hurt it blinks softly. Every change is gradual, frame to frame.
+   */
+  private fade(sim: Sim, dt: number): void {
+    const st = sim.state;
+    let a = 1;
+    if (st === 'fall') {
+      // over the whole drop to the alley floor (gone just above it), and by time for long drops
+      const drop = Math.max(1.5, sim.fallY0 - FLOOR - 0.3);
+      a = Math.min(1 - smooth((sim.stateT - 0.3) / 0.8), smooth((sim.y - FLOOR - 0.3) / drop * 1.2));
+    }
+    else if (st === 'done' && sim.overReason === 'fell') a = 0;
+    if (this.fadeIn < 1) { this.fadeIn = Math.min(1, this.fadeIn + dt / 0.45); a *= smooth(this.fadeIn); }
+    if (sim.ghostT > 0 && st !== 'rescue') a *= 1 - Math.min(1, sim.ghostT / 0.3) * 0.28 * (1 - Math.cos(this.t * Math.PI * 2 * 4.5));
+    this.alpha = a;
+    this.runner.setOpacity(a);
+    if (st === 'fall' && a < 0.12 && !this.poofed) {
+      this.poofed = true;
+      const x = sim.x, y = sim.y + 0.9, z = -sim.s;
+      this.dust.burst(x, y, z, 26, 3.2, [0xd8ccc0, 0xb8aca2, 0xffffff], 0.9, 0.9, { up: 0.8 });
+      this.glows.burst(x, y, z, 14, 3, [0xffffff, 0xffd8a0], 0.5, 0.3);
+      this.ring(x, y - 0.5, z, 3.2, 0xffffff, 0.5);
+      this.onPoof?.();
+    }
+  }
+
+  /**
+   * The alley the courier is dropping into, if any: falling, sliding down a wall, or in the air
+   * below the roofs with nothing under it. The camera then looks down into it from over the gap.
+   */
+  private alley(sim: Sim): { s0: number; s1: number; y: number } | null {
+    const st = sim.state, c = sim.course;
+    const falling = st === 'fall' || st === 'slam' || (st === 'done' && sim.overReason === 'fell');
+    if (!falling) {
+      if (st !== 'air' || sim.vy > 0 || sim.power.glide > 0 || c.blockAt(sim.s)) return null;
+    }
+    let prev: Block | null = null;
+    for (const b of c.blocks) { if (b.s1 <= sim.s + 0.01) prev = b; else break; }
+    const next = c.nextBlock(sim.s);
+    if (!prev || !next) return null;
+    if (!falling) {
+      if (sim.y > Math.min(prev.y, next.y) - 1.4) return null;
+      if (c.groundAt(sim.s, sim.x, sim.y + 0.1).y > 0.5) return null;
+    }
+    return { s0: prev.s1, s1: next.s0, y: Math.max(prev.y, next.y) };
   }
 
   /** The top of whatever the hands rest on (vault, mantle). */
@@ -221,7 +291,7 @@ export class View {
     const st = sim.state;
     const c = sim.course;
     // a steady height to follow: the ground the courier runs on, not each hop
-    const grounded = sim.grounded || st === 'vault' || st === 'mantle';
+    const grounded = sim.grounded || st === 'vault' || st === 'mantle' || st === 'rescue';
     if (grounded) this.refY = this.snap ? sim.y : lerp(this.refY, sim.y, Math.min(1, dt * (st === 'climb' ? 6 : 5)));
     else if (st === 'fall' || st === 'slam') { /* hold: watch the fall */ }
     else this.refY = lerp(this.refY, Math.min(this.refY, sim.y) + Math.max(0, sim.y - this.refY) * 0.35, Math.min(1, dt * 3));
@@ -235,18 +305,28 @@ export class View {
     let cs = sim.s - dist, cx = sim.x * 0.55, cy = this.refY + hgt;
     // climbing: back off and up so the face, the courier and the roof edge above all show
     if (st === 'climb' || st === 'mantle') { cs -= 2.5; cy = Math.max(cy, sim.y + 4.2); }
-    // a fall: lean out over the edge and look down into the alley
-    const falling = st === 'fall' || st === 'slam' || (st === 'done' && sim.overReason === 'fell');
-    if (falling) { cs = sim.s - 3.5; cy = this.refY + 5.5; }
+    // carried up by the shield bubble: back and above, the roof it lands on in view
+    if (st === 'rescue') { cs -= 2; cy = Math.max(cy, sim.y + 4); }
+    // dropping into an alley: out over the gap (never behind the wall it fell past), looking down
+    const al = this.debugCam ? null : this.alley(sim);
+    this.inAlley = !!al;
+    this.alleyK = lerp(this.alleyK, al ? 1 : 0, Math.min(1, dt * (al ? 8 : 3)));
+    const falling = !!al;
+    if (al) {
+      cs = clamp(sim.s - 1.6, al.s0 + 0.3, Math.max(al.s0 + 0.3, al.s1 - 0.7));
+      cx = sim.x;
+      // it follows the courier down for a moment (into the alley, between the walls), then holds
+      if (st !== 'fall' || sim.stateT < 0.6 || !this.alleyHold) this.alleyHold = Math.min(al.y + 4.6, Math.max(al.y - 4, sim.y + 6.5));
+      cy = this.alleyHold;
+    } else { cy = this.clear(sim, cs, cx, cy); this.alleyHold = 0; }
     // nothing round the lens, nothing in the lower part of the picture, a clear line of sight
-    cy = this.clear(sim, cs, cx, cy);
     // looking ahead over the next gap and its landing
     const ahead = 10 + sp * 0.35;
     const ls = sim.s + ahead;
     const nb = c.nextBlock(sim.s);
     let ly = this.refY + 0.1;
     if (nb && nb.s0 < ls + 4) ly = lerp(ly, Math.min(this.refY, nb.y) + 0.1, 0.4);
-    if (falling) ly = sim.y + 0.5;
+    if (falling) ly = Math.max(sim.y + 0.4, FLOOR + 1);
     const lx = falling ? sim.x : sim.x * 0.4;
     if (this.debugCam) {
       const a = this.debugCam.yaw;
@@ -257,15 +337,16 @@ export class View {
     this.v.set(cx, cy, -cs);
     if (this.snap || this.debugCam) this.camPos.copy(this.v);
     else {
-      // fast along the run (no lag at speed), softer up and down
-      this.camPos.x = lerp(this.camPos.x, this.v.x, Math.min(1, dt * 5));
-      this.camPos.y = lerp(this.camPos.y, this.v.y, Math.min(1, dt * (this.v.y > this.camPos.y ? 6 : 3.5)));
-      this.camPos.z = lerp(this.camPos.z, this.v.z, Math.min(1, dt * 9));
+      // fast along the run (no lag at speed), softer up and down; quick out over an alley
+      const q = this.alleyK;
+      this.camPos.x = lerp(this.camPos.x, this.v.x, Math.min(1, dt * (5 + q * 5)));
+      this.camPos.y = lerp(this.camPos.y, this.v.y, Math.min(1, dt * (this.v.y > this.camPos.y ? 6 + q * 6 : 3.5)));
+      this.camPos.z = lerp(this.camPos.z, this.v.z, Math.min(1, dt * (9 + q * 5)));
     }
-    this.v.set(lx, ly, falling ? -sim.s - 1 : -ls);
+    this.v.set(lx, ly, falling ? -sim.s - 0.8 : -ls);
     if (this.debugCam) this.v.set(sim.x, sim.y + 0.9, -sim.s);
     if (this.snap || this.debugCam) this.camLook.copy(this.v);
-    else this.camLook.lerp(this.v, Math.min(1, dt * 7));
+    else this.camLook.lerp(this.v, Math.min(1, dt * (7 + this.alleyK * 7)));
     this.snap = false;
     cam.position.copy(this.camPos);
     if (this.shakeT > 0) {
@@ -318,7 +399,7 @@ export class View {
   private effects(sim: Sim, dt: number, sdt: number): void {
     const from = sim.s - 12, to = sim.s + 150;
     this.halo.begin(this.camQ);
-    this.pickups.update(sdt, sim.course, from, to);
+    this.pickups.update(sdt, sim.course, from, to, sim.power.double > 0);
     this.pigeons.update(sdt, sim.course, from, to);
     this.drop.update(dt, sim.parcel);
     // the drop point's glow on the roof
@@ -330,6 +411,7 @@ export class View {
       this.halo.add(ch.x, ch.y, ch.z, 2.4, 2.4, 0, 0x7fe0ff, 0.5 + 0.2 * Math.sin(this.t * 14));
       if (Math.random() < sdt * 40) this.glows.emit(sim.x + (Math.random() - 0.5) * 0.6, sim.y + Math.random() * 1.6, -sim.s + 0.3, 0, 0.3, 2, 0.4, 0.25, 0.02, Math.random() < 0.5 ? 0x7fe0ff : 0xffffff, 1);
     }
+    this.powerFx(sim, dt, sdt);
     this.halo.end();
     // street lamps come on as night falls
     const on = clamp((this.night - 0.28) / 0.25, 0, 1);
@@ -363,7 +445,9 @@ export class View {
       f.t += dt;
       if (f.t >= f.max) { this.flashes.splice(i, 1); continue; }
       const k = f.t / f.max;
-      this.rings.add(f.x, f.y, f.z, f.s * (0.3 + k), f.s * (0.3 + k), 0, f.c, 1 - k);
+      // a negative size sweeps inwards (the magnet's pull)
+      const sz = f.s < 0 ? -f.s * (1 - k * 0.85) : f.s * (0.3 + k);
+      this.rings.add(f.x, f.y, f.z, sz, sz, 0, f.c, f.s < 0 ? 0.5 * Math.sin(Math.PI * k) : 1 - k);
     }
     this.rings.end();
     this.glows.update(sdt, this.camQ, this.world.camera.position);
@@ -371,6 +455,47 @@ export class View {
     this.paper.update(sdt, this.camQ, this.world.camera.position);
     this.warmUp();
   }
+
+  /** The power-ups on the courier (drawn into the halo pass; the rings come later). */
+  private powerFx(sim: Sim, dt: number, sdt: number): void {
+    const ch = this.runner.chest, P = sim.power, a = this.alpha;
+    // the shield bubble round the courier (bigger while it carries the courier back up)
+    this.bubbles.begin(this.camQ);
+    if ((P.shield > 0 || sim.state === 'rescue') && a > 0.05) {
+      const big = sim.state === 'rescue' ? 1.25 : 1;
+      const r = (2.5 + Math.sin(this.t * 3) * 0.08) * big;
+      this.bubbles.add(ch.x, ch.y - 0.1, ch.z, r, r * 1.08, Math.sin(this.t * 0.7) * 0.3, 0xffffff, 0.85 * a);
+      this.halo.add(ch.x, ch.y, ch.z, r * 1.1, r * 1.1, 0, 0x7fe0ff, 0.22 * a);
+    }
+    this.bubbles.end();
+    if (a < 0.05) { this.ribbon.update(sdt, false, this.v.copy(ch)); return; }
+    // the magnet: a red glow on the satchel and its pull rings sweeping in
+    if (P.magnet > 0) {
+      this.halo.add(ch.x, ch.y, ch.z + 0.25, 1.1, 1.1, 0, 0xff5a5a, 0.45 + 0.2 * Math.sin(this.t * 10));
+      this.magT += sdt;
+      if (this.magT > 0.32) { this.magT = 0; this.flashes.push({ x: sim.x, y: sim.y + 0.06, z: -sim.s, s: -sim.magnetR * 2, t: 0, max: 0.55, c: 0xff6a6a }); }
+    }
+    // double stamps: golden sparkles round the courier
+    if (P.double > 0 && Math.random() < sdt * 26) {
+      const ang = Math.random() * Math.PI * 2;
+      this.glows.emit(ch.x + Math.cos(ang) * 0.6, ch.y + (Math.random() - 0.4) * 1.2, ch.z + Math.sin(ang) * 0.6, 0, 0.8, 0, 0.5, 0.22, 0.02, Math.random() < 0.6 ? 0xffd23f : 0xfff1a0, 0.5);
+    }
+    // the watch: slow blue ripples on the roof
+    if (P.watch > 0) {
+      this.halo.add(ch.x, ch.y, ch.z, 2.2, 2.2, 0, 0x9fb4ff, 0.18);
+      this.watchT += dt;
+      if (this.watchT > 0.7) { this.watchT = 0; this.ring(sim.x, sim.y, -sim.s, 5, 0x9fb4ff, 1.1); }
+    }
+    // the glider: wing-tip trails in the air
+    if (P.glide > 0 && sim.state === 'air' && Math.random() < sdt * 30) {
+      for (const side of [-1, 1]) this.glows.emit(ch.x + side * 0.9, ch.y + 0.2, ch.z + 0.3, 0, 0, 1.5, 0.35, 0.12, 0.02, 0xffffff, 0);
+    }
+    // the express ribbon streams from the satchel
+    this.ribbon.update(sdt, P.express > 0, this.v.set(ch.x, ch.y + 0.05, ch.z + 0.32));
+    void POWER_COLOR;
+  }
+  private magT = 0;
+  private watchT = 0;
 
   ring(x: number, y: number, z: number, s: number, c: number, max = 0.45): void {
     this.flashes.push({ x, y: y + 0.05, z, s, t: 0, max, c });
@@ -408,11 +533,32 @@ export class View {
       case 'slam': this.shake(0.3, 0.3); break;
       case 'pickup': {
         const p = ev.p;
-        const col = p.kind === 'stamp' ? [0xffa64a, 0xffffff, 0xff6a3d] : p.kind === 'bottle' ? [0x7fe6ff, 0xffffff] : [0xffd23f, 0xffffff];
-        this.glows.burst(p.x, p.y, -p.s, p.kind === 'stamp' ? 8 : 26, p.kind === 'stamp' ? 2.5 : 5, col, 0.4, 0.25);
-        if (p.kind !== 'stamp') this.ring(p.x, p.y, -p.s, 2.4, col[0], 0.4);
+        const col = p.kind === 'stamp' ? (ev.value > 1 ? [0xffd23f, 0xffffff, 0xfff1a0] : [0xffa64a, 0xffffff, 0xff6a3d]) : p.kind === 'bottle' ? [0x7fe6ff, 0xffffff] : isPower(p.kind) ? [POWER_COLOR[p.kind], 0xffffff] : [0xffd23f, 0xffffff];
+        this.glows.burst(p.x, p.y, -p.s, p.kind === 'stamp' ? 8 : isPower(p.kind) ? 36 : 26, p.kind === 'stamp' ? 2.5 : 5.5, col, 0.4, 0.25);
+        if (p.kind !== 'stamp') this.ring(p.x, p.y, -p.s, isPower(p.kind) ? 3.4 : 2.4, col[0], 0.45);
         break;
       }
+      case 'power': {
+        const c = POWER_COLOR[ev.kind];
+        this.glows.burst(x, y + 1, z, 30, 4.5, [c, 0xffffff], 0.6, 0.35, { up: 1.5 });
+        this.ring(x, y + 0.05, z, 4, c, 0.5);
+        this.zoomPunch(0.45);
+        break;
+      }
+      case 'powerEnd': this.dust.burst(x, y + 1.1, z, 6, 1.2, [POWER_COLOR[ev.kind], 0xffffff], 0.4, 0.3); break;
+      case 'shieldPop': {
+        // the bubble bursts: droplets and a bright ring
+        const ch = this.runner.chest;
+        this.glows.burst(ch.x, ch.y, ch.z, 40, 7, [0x7fe0ff, 0xffffff, 0xbff0ff], 0.6, 0.3, { up: 1 });
+        this.ring(ch.x, ch.y - 0.6, ch.z, 5, 0x7fe0ff, 0.5);
+        this.shake(0.16, 0.22);
+        this.zoomPunch(0.6);
+        break;
+      }
+      case 'rescued':
+        this.dust.burst(x, y + 0.08, z, 12, 2.4, [0xd6c8ba, 0xbfb2a6], 0.6, 0.5, { up: 0.5 });
+        this.ring(x, y, z, 3.4, 0x7fe0ff, 0.4);
+        break;
       case 'pigeons': {
         const f = ev.f;
         this.pigeons.startle(f);
@@ -435,8 +581,14 @@ export class View {
         break;
       }
       case 'rush': this.glows.burst(x, y + 1, z, 40, 7, [0x7fe0ff, 0xffffff, 0xb070ff], 0.7, 0.45, { up: 1 }); this.zoomPunch(1); break;
-      case 'falling': this.shake(0.2, 0.3); break;
-      case 'respawn': this.snap = true; this.glows.burst(x, y + 1, z, 24, 4, [0x7dffa0, 0xffffff], 0.6, 0.35); break;
+      case 'falling': this.shake(0.2, 0.3); this.poofed = false; break;
+      case 'respawn':
+        this.snap = true;
+        this.fadeIn = 0;
+        this.poofed = false;
+        this.glows.burst(x, y + 1, z, 24, 4, [0x7dffa0, 0xffffff], 0.6, 0.35);
+        this.ring(x, y + 0.05, z, 3.4, 0x7dffa0, 0.5);
+        break;
       default: break;
     }
   }
@@ -548,6 +700,15 @@ export function keepPrograms(renderer: THREE.WebGLRenderer, world: THREE.Scene, 
       k.castShadow = m.castShadow;
       k.receiveShadow = m.receiveShadow;
       s.add(k);
+      // the kit materials also fade (overhead pieces, awnings and bridges during a fall): their
+      // see-through variant is a program of its own
+      if (twin && kind === 'mesh' && !mat.transparent) {
+        const ct = twin();
+        ct.transparent = true; ct.depthWrite = false; ct.opacity = 0.5;
+        const kt = new THREE.Mesh(m.geometry, ct);
+        kt.castShadow = m.castShadow; kt.receiveShadow = m.receiveShadow;
+        s.add(kt);
+      }
     }
   });
   renderer.compile(s, camera);

@@ -1,11 +1,14 @@
-// Rooftop Courier: the courier shop, opened from the menu (the menu waits under it). Stamps buy
-// satchels and caps (worn on the courier) and two small upgrades: more time per parcel and a
-// longer flow window. Touch or mouse on the swatches and buttons; keys: arrows pick, Enter buys or
-// wears, Esc goes back.
+// Rooftop Courier: the courier shop, opened from the menu (the menu waits under it). Two tabs:
+// UPGRADES (ten upgrades in a grid of cards: each with its level pips, what it does now and at the
+// next level, and its price) and COSMETICS (satchels and caps worn on the courier). A purchase
+// pops the card, fills its pip and throws a little confetti. Touch or mouse on the tabs, cards and
+// swatches; keys: arrows pick, Enter buys or wears, Tab (or Q / E) switches the tab, Esc goes back.
 import Phaser from 'phaser';
-import { txt, t, playSfx } from '@core';
-import { BAGS, CAPS, UPGRADES, loadMeta, saveMeta, type Meta, type UpgradeId } from './meta';
-import { STAMP_ICON, makeIcons } from './art';
+import { txt, t, playSfx, burst, getLang } from '@core';
+import { BAGS, CAPS, UPGRADES, UPGRADE_IDS, loadMeta, saveMeta, type Meta, type UpgradeId } from './meta';
+import { UP, MAGNET_R, RUSH_T } from './sim';
+import { TUNING } from './defs';
+import { STAMP_ICON, UPGRADE_ICON, makeIcons } from './art';
 
 /** A frosted panel (the core's modern glass look). */
 export function glass(scene: Phaser.Scene, w: number, h: number, o: { r?: number; color?: number; alpha?: number; rim?: number; sheen?: boolean } = {}): Phaser.GameObjects.Graphics {
@@ -63,19 +66,52 @@ export class Pill extends Phaser.GameObjects.Container {
   }
 }
 
-type Item = { kind: 'bag' | 'cap'; id: string; up?: never } | { kind: 'up'; id: UpgradeId };
+type Item = { kind: 'bag' | 'cap'; id: string } | { kind: 'up'; id: UpgradeId };
+type Tab = 'up' | 'look';
+
+/** A number for the player's language (TR: a decimal comma). */
+const num = (v: number, d = 1): string => {
+  const r = Math.round(v * 10 ** d) / 10 ** d;
+  const str = Number.isInteger(r) ? String(r) : r.toFixed(d);
+  return getLang() === 'tr' ? str.replace('.', ',') : str;
+};
+
+/** What an upgrade gives at a level, as the card shows it. */
+export function upgradeEffect(id: UpgradeId, lv: number): string {
+  switch (id) {
+    case 'time': return t('ef_time', { n: num(UP.time * lv) });
+    case 'flow': return t('ef_flow', { n: num(UP.flow * lv, 2) });
+    case 'bonus': return t('ef_bonus', { n: Math.round((UP.bankShare[0] + UP.bankShare[1] * lv) * 100) });
+    case 'dur': return t('ef_dur', { n: Math.round(UP.dur * lv * 100) });
+    case 'magnet': return t('ef_magnet', { n: num(MAGNET_R + UP.magnet * lv, 2) });
+    case 'shield': return t(lv ? 'ef_shieldOn' : 'ef_shieldOff');
+    case 'jump': return t('ef_jump', { n: num(UP.jump * lv * 100) });
+    case 'rush': return t('ef_rush', { n: num(RUSH_T + UP.rush * lv) });
+    case 'stamp': return t('ef_stamp', { n: Math.round(UP.stamp * lv * 100) });
+    case 'heart': return t('ef_heart', { n: TUNING.easy.hearts + UP.heart * lv });
+  }
+}
+
+const COLS = 2;
+const CARD_W = 322, CARD_H = 162;
+const cardX = (i: number) => 360 + ((i % COLS) - 0.5) * (CARD_W + 16);
+const cardY = (i: number) => 352 + Math.floor(i / COLS) * (CARD_H + 14);
 
 export class ShopScene extends Phaser.Scene {
   private meta!: Meta;
   private root!: Phaser.GameObjects.Container;
   private body!: Phaser.GameObjects.Container;
   private stampsText!: Phaser.GameObjects.Text;
+  private stampChip!: Phaser.GameObjects.Container;
+  private tabs: { id: Tab; c: Phaser.GameObjects.Container }[] = [];
+  private tab: Tab = 'up';
   private items: Item[] = [];
   private sel = 0;
   private closed = false;
   private from = 'Menu';
   private changed = false;
-  private cells: { item: Item; x: number; y: number; w: number; h: number }[] = [];
+  /** The card or swatch of each item as drawn (the purchase pop). */
+  private cellOf = new Map<string, Phaser.GameObjects.Container>();
 
   constructor() { super('Shop'); }
 
@@ -84,38 +120,42 @@ export class ShopScene extends Phaser.Scene {
     this.meta = loadMeta();
     this.closed = false;
     this.changed = false;
+    this.tab = 'up';
     makeIcons(this);
     const { width, height } = this.scale;
     this.root = this.add.container(0, 0);
     this.root.add(this.add.rectangle(0, 0, width, height, 0x0b0918, 1).setOrigin(0).setInteractive());
     this.root.add(this.add.container(width / 2, 650, [glass(this, 690, 1240, { alpha: 1, r: 30, sheen: false })]));
-    this.root.add(txt(this, width / 2, 84, t('shopTitle'), { title: true, size: 42, color: '#ffd23f', strokeThickness: 7 }));
-    const chip = this.add.container(width / 2, 150);
+    this.root.add(txt(this, width / 2, 76, t('shopTitle'), { title: true, size: 42, color: '#ffd23f', strokeThickness: 7 }));
+    const chip = this.add.container(width / 2, 140);
     chip.add(glass(this, 240, 58, { r: 29, color: 0x241c44 }));
     chip.add(this.add.image(-80, 0, STAMP_ICON).setDisplaySize(34, 34));
     this.stampsText = txt(this, 14, 0, '', { title: true, size: 26, color: '#ffffff', strokeThickness: 0, shadow: false });
     chip.add(this.stampsText);
+    this.stampChip = chip;
     this.root.add(chip);
-    this.root.add(txt(this, width / 2, 200, t('shopHint'), { size: 20, color: '#b8b4d8', strokeThickness: 0, shadow: false }));
+    // the tabs
+    this.tabs = (['up', 'look'] as Tab[]).map((id, i) => {
+      const c = this.add.container(width / 2 + (i - 0.5) * 318, 224);
+      c.setSize(306, 74).setInteractive({ useHandCursor: true }).on('pointerup', () => this.setTab(id));
+      this.root.add(c);
+      return { id, c };
+    });
     this.body = this.add.container(0, 0);
     this.root.add(this.body);
-    this.items = [
-      ...BAGS.map((b) => ({ kind: 'bag' as const, id: b.id })),
-      ...CAPS.map((c) => ({ kind: 'cap' as const, id: c.id })),
-      { kind: 'up' as const, id: 'time' as UpgradeId }, { kind: 'up' as const, id: 'flow' as UpgradeId },
-    ];
-    this.sel = BAGS.findIndex((b) => b.id === this.meta.bag);
-    const back = new Pill(this, width / 2, 1196, 300, 84, 0x3b4466, () => this.close(), 28);
+    const back = new Pill(this, width / 2, 1204, 300, 84, 0x3b4466, () => this.close(), 28);
     back.setLabels(t('back'));
     this.root.add(back);
-    this.draw();
+    if (!this.sys.game.device.input.touch) this.root.add(txt(this, width / 2, 1138, t('shopKeys'), { size: 18, color: '#8c88b0', strokeThickness: 0, shadow: false }));
+    this.setTab('up', true);
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
       if (this.closed) return;
       const n = this.items.length;
+      if (e.code === 'Tab' || e.code === 'KeyQ' || e.code === 'KeyE') { e.preventDefault(); this.setTab(this.tab === 'up' ? 'look' : 'up'); return; }
       if (e.code === 'ArrowRight' || e.code === 'KeyD') this.select((this.sel + 1) % n);
       else if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.select((this.sel - 1 + n) % n);
-      else if (e.code === 'ArrowDown' || e.code === 'KeyS') this.select(this.jumpRow(1));
-      else if (e.code === 'ArrowUp' || e.code === 'KeyW') this.select(this.jumpRow(-1));
+      else if (e.code === 'ArrowDown' || e.code === 'KeyS') this.select(this.vertical(1));
+      else if (e.code === 'ArrowUp' || e.code === 'KeyW') this.select(this.vertical(-1));
       else if (e.code === 'Enter' || e.code === 'Space') this.act(this.items[this.sel]);
       else if (e.code === 'Escape' || e.code === 'Backspace') this.close();
     });
@@ -123,15 +163,50 @@ export class ShopScene extends Phaser.Scene {
     this.tweens.add({ targets: this.root, alpha: 1, duration: 160 });
   }
 
-  private jumpRow(d: number): number {
+  private setTab(id: Tab, first = false): void {
+    if (id === this.tab && !first) return;
+    this.tab = id;
+    this.items = id === 'up'
+      ? UPGRADE_IDS.map((u) => ({ kind: 'up' as const, id: u }))
+      : [...BAGS.map((b) => ({ kind: 'bag' as const, id: b.id })), ...CAPS.map((c) => ({ kind: 'cap' as const, id: c.id }))];
+    this.sel = id === 'up' ? 0 : Math.max(0, BAGS.findIndex((b) => b.id === this.meta.bag));
+    if (!first) playSfx(this, 'ui-click');
+    this.drawTabs();
+    this.draw();
+    this.body.setAlpha(0);
+    this.tweens.add({ targets: this.body, alpha: 1, duration: 140 });
+  }
+
+  private drawTabs(): void {
+    for (const { id, c } of this.tabs) {
+      c.removeAll(true);
+      const on = id === this.tab;
+      const g = this.add.graphics();
+      g.fillStyle(0x000000, 0.25).fillRoundedRect(-153, -37 + 5, 306, 74, 37);
+      g.fillStyle(on ? 0xd0702a : 0x241c44, 1).fillRoundedRect(-153, -37, 306, 74, 37);
+      if (on) g.fillStyle(0xffffff, 0.16).fillRoundedRect(-147, -33, 294, 28, 14);
+      g.lineStyle(2, 0xffffff, on ? 0.5 : 0.15).strokeRoundedRect(-153, -37, 306, 74, 37);
+      c.add(g);
+      c.add(txt(this, 0, 1, t(id === 'up' ? 'shopUpgrades' : 'shopCosmetics'), { title: true, size: 26, color: on ? '#ffffff' : '#b8b4d8', strokeThickness: 0, shadow: false }));
+    }
+  }
+
+  /** Up or down a row in the grid (upgrades) or between the satchels and the caps. */
+  private vertical(d: number): number {
     const it = this.items[this.sel];
-    const rows = ['bag', 'cap', 'up'];
-    const r = clampI(rows.indexOf(it.kind) + d, 0, 2);
-    const first = this.items.findIndex((q) => q.kind === rows[r]);
-    return first;
+    if (this.tab === 'up') {
+      const j = this.sel + d * COLS;
+      return j >= 0 && j < this.items.length ? j : this.sel;
+    }
+    const rows = ['bag', 'cap'];
+    const r = clampI(rows.indexOf(it.kind) + d, 0, 1);
+    const col = this.items.filter((q) => q.kind === it.kind).findIndex((q) => q.id === it.id);
+    const row = this.items.map((q, i) => ({ q, i })).filter(({ q }) => q.kind === rows[r]);
+    return row[Math.min(col, row.length - 1)]?.i ?? this.sel;
   }
 
   private select(i: number): void {
+    if (i === this.sel) return;
     this.sel = i;
     playSfx(this, 'ui-click');
     this.draw();
@@ -140,8 +215,7 @@ export class ShopScene extends Phaser.Scene {
   private price(it: Item): number {
     if (it.kind === 'bag') return BAGS.find((b) => b.id === it.id)!.price;
     if (it.kind === 'cap') return CAPS.find((c) => c.id === it.id)!.price;
-    const id = it.id as UpgradeId;
-    const lv = this.meta.upgrades[id];
+    const id = it.id as UpgradeId, lv = this.meta.upgrades[id];
     return lv >= UPGRADES[id].length ? Infinity : UPGRADES[id][lv];
   }
 
@@ -153,39 +227,124 @@ export class ShopScene extends Phaser.Scene {
 
   private act(it: Item): void {
     const m = this.meta;
+    const key = it.kind + ':' + it.id;
     if (it.kind !== 'up' && this.owned(it)) {
       if (it.kind === 'bag') m.bag = it.id; else m.cap = it.id;
       playSfx(this, 'ui-select');
     } else {
       const p = this.price(it);
-      if (!isFinite(p) || m.stamps < p) { playSfx(this, 'shopNo'); this.cameras.main.shake(120, 0.004); return; }
+      if (!isFinite(p) || m.stamps < p) {
+        playSfx(this, 'shopNo');
+        this.cameras.main.shake(120, 0.004);
+        const cell = this.cellOf.get(key);
+        if (cell) this.tweens.add({ targets: cell, x: cell.x + 10, duration: 50, yoyo: true, repeat: 2 });
+        if (isFinite(p)) this.floatText(cell, t('shopNeed', { n: p - m.stamps }), '#ff8a7a');
+        return;
+      }
       m.stamps -= p;
       if (it.kind === 'bag') { m.bags.push(it.id); m.bag = it.id; }
       else if (it.kind === 'cap') { m.caps.push(it.id); m.cap = it.id; }
       else m.upgrades[it.id as UpgradeId]++;
       playSfx(this, 'shopBuy');
+      if (it.kind === 'up') playSfx(this, 'levelUp', { volume: 0.5 });
+      this.changed = true;
+      saveMeta(m);
+      this.draw();
+      this.purchasePop(key, it.kind === 'up' ? t('shopLevelUp', { n: m.upgrades[it.id as UpgradeId] }) : '');
+      return;
     }
     this.changed = true;
     saveMeta(m);
     this.draw();
   }
 
+  /** The bought card pops, its pips fill, confetti flies and the stamps chip ticks down. */
+  private purchasePop(key: string, word: string): void {
+    const cell = this.cellOf.get(key);
+    if (!cell) return;
+    cell.setScale(1.12);
+    this.tweens.add({ targets: cell, scale: 1, duration: 380, ease: 'Back.easeOut' });
+    const wx = cell.x, wy = cell.y;
+    burst(this, wx, wy, [0xffd23f, 0x7dffa0, 0xffffff, 0xff9a4a], 34, 420);
+    const flashR = this.add.graphics().setPosition(wx, wy);
+    flashR.fillStyle(0xffffff, 0.35).fillRoundedRect(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H, 20);
+    this.tweens.add({ targets: flashR, alpha: 0, duration: 320, onComplete: () => flashR.destroy() });
+    if (word) this.floatText(cell, word, '#7dffa0', 30);
+    this.tweens.add({ targets: this.stampChip, scale: 1.15, duration: 110, yoyo: true });
+  }
+
+  private floatText(cell: Phaser.GameObjects.Container | undefined, s: string, color: string, size = 24): void {
+    const x = cell?.x ?? this.scale.width / 2, y = (cell?.y ?? 600) - 40;
+    const w = txt(this, x, y, s, { title: true, size, color, strokeThickness: 7 }).setDepth(50);
+    w.setScale(0.5);
+    this.tweens.add({ targets: w, scale: 1, duration: 160, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: w, y: y - 60, alpha: 0, delay: 600, duration: 400, onComplete: () => w.destroy() });
+  }
+
   private draw(): void {
-    const { width } = this.scale;
     const m = this.meta, b = this.body;
     b.removeAll(true);
-    this.cells = [];
+    this.cellOf.clear();
     this.stampsText.setText(String(m.stamps));
+    if (this.tab === 'up') this.drawUpgrades(); else this.drawLooks();
+    void m;
+  }
+
+  private drawUpgrades(): void {
+    const m = this.meta, b = this.body;
+    this.items.forEach((it, i) => {
+      if (it.kind !== 'up') return;
+      const id = it.id;
+      const lv = m.upgrades[id], max = UPGRADES[id].length, done = lv >= max;
+      const sel = i === this.sel;
+      const p = this.price(it), afford = !done && m.stamps >= p;
+      const c = this.add.container(cardX(i), cardY(i));
+      c.add(glass(this, CARD_W, CARD_H, { r: 20, color: sel ? 0x2c2460 : 0x1c1838, rim: sel ? 0xffd23f : done ? 0x7dffa0 : undefined }));
+      const L = -CARD_W / 2 + 16;
+      c.add(this.add.circle(L + 30, -CARD_H / 2 + 42, 30, 0xffffff, 0.08));
+      c.add(this.add.image(L + 30, -CARD_H / 2 + 42, UPGRADE_ICON(id)).setDisplaySize(46, 46));
+      c.add(txt(this, L + 70, -CARD_H / 2 + 24, t('up_' + id), { title: true, size: 21, color: '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
+      // what it does (up to two lines under the name)
+      const sub = txt(this, L + 70, -CARD_H / 2 + 40, t('up_' + id + 'Sub'), { size: 15, color: '#b8b4d8', strokeThickness: 0, shadow: false, wrap: CARD_W - 96, align: 'left' }).setOrigin(0, 0);
+      sub.setLineSpacing(-3);
+      c.add(sub);
+      // now → next
+      const now = upgradeEffect(id, lv);
+      const line = done ? t('shopNow', { v: now }) : `${now}  →  ${upgradeEffect(id, lv + 1)}`;
+      c.add(txt(this, L, 20, line, { title: true, size: 19, color: done ? '#7dffa0' : '#9fe8ff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
+      // level pips
+      const pips = this.add.graphics();
+      for (let k = 0; k < max; k++) {
+        pips.fillStyle(k < lv ? 0x7dffa0 : 0xffffff, k < lv ? 1 : 0.18).fillRoundedRect(L + k * 30, CARD_H / 2 - 34, 24, 12, 6);
+      }
+      c.add(pips);
+      // the price
+      const btn = new Pill(this, CARD_W / 2 - 74, CARD_H / 2 - 30, 128, 46, done ? 0x3b4466 : afford ? 0x2fae5a : 0x6a4a4a, () => { this.sel = i; this.act(it); }, 20);
+      btn.setLabels(done ? t('maxed') : String(p));
+      if (!done) {
+        btn.main.setX(12);
+        btn.add(this.add.image(-btn.main.width / 2 - 8, 0, STAMP_ICON).setDisplaySize(22, 22));
+      }
+      btn.setEnabled(!done);
+      c.add(btn);
+      c.setSize(CARD_W, CARD_H).setInteractive({ useHandCursor: true }).on('pointerup', () => { if (this.sel !== i) this.select(i); });
+      b.add(c);
+      this.cellOf.set('up:' + id, c);
+    });
+  }
+
+  private drawLooks(): void {
+    const m = this.meta, b = this.body;
     const section = (y: number, label: string) => b.add(txt(this, 60, y, label, { title: true, size: 26, color: '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-    section(262, t('shopBags'));
-    section(522, t('shopCaps'));
-    section(782, t('shopUpgrades'));
+    section(310, t('shopBags'));
+    section(600, t('shopCaps'));
     const swatchRow = (kind: 'bag' | 'cap', y: number) => {
       const list = kind === 'bag' ? BAGS : CAPS;
       list.forEach((q, i) => {
         const it: Item = { kind, id: q.id };
         const x = 104 + i * 128;
-        const sel = this.items.findIndex((v) => v.kind === kind && v.id === q.id) === this.sel;
+        const idx = this.items.findIndex((v) => v.kind === kind && v.id === q.id);
+        const sel = idx === this.sel;
         const worn = kind === 'bag' ? m.bag === q.id : m.cap === q.id;
         const own = this.owned(it);
         const c = this.add.container(x, y);
@@ -214,31 +373,13 @@ export class ShopScene extends Phaser.Scene {
         const tagT = txt(this, own || worn ? 0 : 10, 62, tag, { title: true, size: 19, color: tagCol, strokeThickness: 0, shadow: false });
         c.add(tagT);
         if (!own) c.add(this.add.image(-tagT.width / 2 - 6, 62, STAMP_ICON).setDisplaySize(22, 22));
-        c.setSize(112, 170).setInteractive({ useHandCursor: true }).on('pointerup', () => { this.sel = this.items.findIndex((v) => v.kind === kind && v.id === q.id); this.act(it); });
+        c.setSize(112, 170).setInteractive({ useHandCursor: true }).on('pointerup', () => { this.sel = idx; this.act(it); });
         b.add(c);
+        this.cellOf.set(kind + ':' + q.id, c);
       });
     };
-    swatchRow('bag', 390);
-    swatchRow('cap', 650);
-    (['time', 'flow'] as UpgradeId[]).forEach((id, i) => {
-      const y = 880 + i * 150;
-      const it: Item = { kind: 'up', id };
-      const sel = this.items.findIndex((v) => v.kind === 'up' && v.id === id) === this.sel;
-      const c = this.add.container(width / 2, y);
-      c.add(glass(this, 620, 130, { r: 20, color: sel ? 0x2c2460 : 0x1c1838, rim: sel ? 0xffd23f : undefined }));
-      c.add(txt(this, -280, -26, t('up_' + id), { title: true, size: 26, color: '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-      c.add(txt(this, -280, 12, t('up_' + id + 'Sub'), { size: 20, color: '#b8b4d8', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-      const lv = m.upgrades[id], max = UPGRADES[id].length;
-      const pips = this.add.graphics();
-      for (let k = 0; k < max; k++) pips.fillStyle(k < lv ? 0x7dffa0 : 0xffffff, k < lv ? 1 : 0.2).fillRoundedRect(-280 + k * 40, 38, 32, 12, 6);
-      c.add(pips);
-      const p = this.price(it);
-      const btn = new Pill(this, 196, 0, 170, 84, lv >= max ? 0x3b4466 : m.stamps >= p ? 0x2fae5a : 0x6a4a4a, () => { this.sel = this.items.findIndex((v) => v.kind === 'up' && v.id === id); this.act(it); }, 24);
-      btn.setLabels(lv >= max ? t('maxed') : t('buy'), lv >= max ? '' : t('shopStamps', { n: p }));
-      btn.setEnabled(lv < max);
-      c.add(btn);
-      b.add(c);
-    });
+    swatchRow('bag', 440);
+    swatchRow('cap', 730);
   }
 
   close(): void {

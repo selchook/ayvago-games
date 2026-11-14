@@ -1,7 +1,11 @@
 // Rooftop Courier: the Play scene. Runs the simulation (sim.ts) at a fixed step, draws it (view.ts)
 // under a Phaser HUD, reads the keyboard and the touch pad, and turns the simulation's events into
 // sound, words, the delivery stamp, shakes, slow motion on big gaps and the Rush speed lines. A
-// first run gets four short lessons; missions are tracked live and paid at the end of the run.
+// first run gets four short lessons, each power-up a one-line hint the first time it turns up;
+// missions are tracked live and paid at the end of the run. A fall is a short sequence: slow
+// motion as the courier goes over, the camera looking down into the alley, the courier fading out
+// as it sinks while the screen darkens, and only then the lost heart (a fade-in respawn) or the
+// run's summary.
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang,
@@ -11,12 +15,12 @@ import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent } from './sim';
 import { View } from './view';
 import { Bot, SKILL } from './bot';
-import { THEMES, PRAISE_TIERS, clamp, type Mode } from './defs';
+import { THEMES, PRAISE_TIERS, POWERS, POWER_COLOR, clamp, smooth, isPower, type Mode, type Power } from './defs';
 import { loadMeta, saveMeta, bankRun, missionAt, missionProgress, lookOf, districtName, type Meta, type Mission } from './meta';
-import { TouchPad, FlowMeter, toast, TutorialCard, UI_DEPTH } from './ui';
+import { TouchPad, FlowMeter, toast, TutorialCard, PowerBar, HintCard, UI_DEPTH, type PowerShown } from './ui';
 import { Callouts } from './callouts';
 import { makeSounds, Loop } from './audio';
-import { makeIcons, PARCEL_ICON, STAMP_ICON, FLAG_ICON, SPRING_ICON } from './art';
+import { makeIcons, PARCEL_ICON, STAMP_ICON, FLAG_ICON, POWER_ICON, VIGNETTE } from './art';
 
 /** Numbers with thousands separators (TR: 12.345, EN: 12,345). */
 export const fmt = (n: number): string => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, getLang() === 'tr' ? '.' : ',');
@@ -54,7 +58,15 @@ export class PlayScene extends ArcadeScene {
   private slowK = 1;
   private parcelChip!: HudChip;
   private missionChip!: HudChip;
-  private springChip!: HudChip;
+  private powerBar!: PowerBar;
+  /** The fall's darkening (vignette and a dim) and the watch's blue edges. */
+  private vignette!: Phaser.GameObjects.Image;
+  private dim!: Phaser.GameObjects.Rectangle;
+  private tint!: Phaser.GameObjects.Image;
+  private darkK = 0;
+  private watchK = 0;
+  private hint: HintCard | null = null;
+  private hintQueue: Power[] = [];
   private flow!: FlowMeter;
   /** Every floating word and banner goes through the text lanes. */
   co!: Callouts;
@@ -93,6 +105,7 @@ export class PlayScene extends ArcadeScene {
     this.meta = loadMeta();
     this.mode = isEasy() ? 'easy' : 'normal';
     this.sim = new Sim(this.mode, Math.floor(Math.random() * 1e9), { ...this.meta.upgrades });
+    this.darkK = 0; this.watchK = 1; this.hint = null; this.hintQueue = [];
     this.bot = null; this.forced = null;
     this.acc = 0; this.timeScale = 1; this.slowT = 0; this.slowK = 1;
     this.lastSec = -1; this.lastStamps = -1; this.lastHearts = -1;
@@ -125,13 +138,17 @@ export class PlayScene extends ArcadeScene {
     // HUD: score (core), stamps and hearts (right), parcel and flow (row 2), mission and spring (row 3)
     const row3 = HUD_ROW2_Y + HUD_CHIP_H + 20;
     this.hud.setRight('0', STAMP_ICON);
-    if (this.sim.tune.hearts) this.hud.setLives(this.sim.hearts, this.sim.tune.hearts);
+    if (this.sim.maxHearts) this.hud.setLives(this.sim.hearts, this.sim.maxHearts);
     this.parcelChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { icon: PARCEL_ICON, iconSize: 30, text: '--', minWidth: 190 });
     this.flow = new FlowMeter(this, this.scale.width - HUD_MARGIN, HUD_ROW2_Y, t('flow'));
     this.missionChip = hudChip(this, HUD_MARGIN, row3, { icon: FLAG_ICON, iconSize: 28, text: '', size: 20, color: '#c8ffd8' });
-    this.springChip = hudChip(this, this.scale.width - HUD_MARGIN, row3, { align: 'right', icon: SPRING_ICON, iconSize: 28, text: '×3', color: '#ffd23f' });
-    this.springChip.setVisible(false);
+    this.powerBar = new PowerBar(this, this.scale.width - HUD_MARGIN, row3);
     this.lines = this.add.graphics().setDepth(40).setScrollFactor(0);
+    const { width: W, height: H } = this.scale;
+    this.dim = this.add.rectangle(0, 0, W, H, 0x05030c, 1).setOrigin(0).setScrollFactor(0).setDepth(36).setAlpha(0);
+    this.vignette = this.add.image(W / 2, H / 2, VIGNETTE).setDisplaySize(W, H).setScrollFactor(0).setDepth(37).setTint(0x000000).setAlpha(0);
+    this.tint = this.add.image(W / 2, H / 2, VIGNETTE).setDisplaySize(W, H).setScrollFactor(0).setDepth(38).setTint(0x5a7aff).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
+    this.view.onPoof = () => this.sfx('poof', { volume: 0.55 });
     this.co = new Callouts(this);
     if (this.pad) {
       const J = TouchPad.JUMP, S = TouchPad.SLIDE;
@@ -173,10 +190,12 @@ export class PlayScene extends ArcadeScene {
     this.frameStart = now;
     const dt = delta / 1000;
     const sim = this.sim;
-    // slow motion (big gaps, the tutorial's waits)
+    // slow motion (big gaps, the first moment of a fall, the tutorial's waits, the watch)
     let ts = 1;
     if (this.slowT > 0) { this.slowT -= dt; ts = this.slowK; }
     if (this.tutHold()) ts = Math.min(ts, 0.3);
+    this.watchK += (sim.timeScale - this.watchK) * Math.min(1, dt * 4);
+    ts *= this.watchK;
     this.timeScale += (ts - this.timeScale) * Math.min(1, dt * (ts < this.timeScale ? 14 : 5));
     const sdt = dt * this.timeScale * this.testSpeed;
     this.pad?.update(dt);
@@ -196,6 +215,8 @@ export class PlayScene extends ArcadeScene {
     }
     this.view.sync(sim, dt, sdt);
     this.updateHud(dt);
+    this.updateFx(dt);
+    this.updateHints();
     this.updateTutorial(dt);
     this.updateSound(dt);
     this.drawLines(dt);
@@ -263,23 +284,51 @@ export class PlayScene extends ArcadeScene {
         if (!this.tipsShown.has('bonk')) { this.tipsShown.add('bonk'); this.tip(t('bonk')); }
         break;
       case 'slam': this.sfx('bonk', { volume: 0.7 }); break;
-      case 'falling': this.sfx('fall', { volume: 0.6 }); this.loops?.wind.set(0, 1, 1); break;
+      case 'falling':
+        // a moment of slow motion as the courier goes over the edge
+        this.sfx('fall', { volume: 0.6 });
+        this.slowT = 0.45; this.slowK = 0.42;
+        this.loops?.wind.set(0, 1, 1);
+        break;
       case 'fell':
-        this.cameras.main.shake(260, 0.01);
-        flash(this, 0xff3a2a, 200, 0.3);
+        this.cameras.main.shake(160, 0.004);
         if (ev.hearts > 0) {
           this.co.banner(t('fellHeart'), { color: '#ff7a6a', size: 44, hold: 0.9 }, 3);
           this.sfx('late', { volume: 0.5 });
         }
         break;
-      case 'respawn': this.view.snapCamera(); this.sfx('parcel', { volume: 0.4 }); break;
+      case 'respawn': this.view.snapCamera(); this.sfx('respawn', { volume: 0.5 }); this.sfx('parcel', { volume: 0.3 }); break;
       case 'pickup': {
         const p = ev.p;
-        if (p.kind === 'stamp') this.sfx('stamp', { volume: 0.35, rate: 1 + Math.min(0.5, (this.sim.stamps % 10) * 0.04) });
+        if (p.kind === 'stamp') this.sfx(ev.value > 1 ? 'stamp2' : 'stamp', { volume: 0.35, rate: 1 + Math.min(0.5, (this.sim.stamps % 10) * 0.04) });
         else if (p.kind === 'bottle') { this.sfx('bottle', { volume: 0.6 }); this.co.banner(t('bottle'), { color: '#7fe6ff', size: 36, hold: 0.6 }, 1); }
-        else { this.sfx('springGet', { volume: 0.6 }); this.co.banner(t('spring'), { color: '#ffd23f', size: 36, hold: 0.6 }, 1); }
+        else if (p.kind === 'spring') { this.sfx('springGet', { volume: 0.6 }); this.co.banner(t('spring'), { color: '#ffd23f', size: 36, hold: 0.6 }, 1); }
         break;
       }
+      case 'power': {
+        const k = ev.kind, name = t('pw_' + k);
+        this.sfx('pw_' + k, { volume: 0.6 });
+        const col = '#' + POWER_COLOR[k].toString(16).padStart(6, '0');
+        if (ev.again) { const p = this.at(2.2); this.co.pop(p.x, p.y, t('pwAgain', { name }), col, 26); }
+        else this.co.banner(name, { color: col, size: 46, hold: 0.8, sub: t('pwSub_' + k), subColor: '#ffffff' }, 1);
+        flash(this, POWER_COLOR[k], 120, 0.18);
+        break;
+      }
+      case 'powerEnd': {
+        this.sfx(ev.kind === 'watch' ? 'watchOut' : 'pwEnd', { volume: 0.4 });
+        const p = this.at(2.4);
+        this.co.pop(p.x, p.y, t('pwEnd', { name: t('pw_' + ev.kind) }), '#c8cce0', 22);
+        break;
+      }
+      case 'shieldPop':
+        this.sfx('shieldPop', { volume: 0.7 });
+        if (ev.save) {
+          this.sfx('rescue', { volume: 0.55 });
+          this.co.banner(t('shieldSaved'), { color: '#7fe0ff', size: 50, hold: 1, sub: t('shieldSavedSub') }, 3);
+          this.slowT = 0.35; this.slowK = 0.5;
+        } else { const p = this.at(); this.co.pop(p.x, p.y, t('shieldPop'), '#7fe0ff', 28); }
+        break;
+      case 'rescued': this.sfx('land', { volume: 0.6 }); break;
       case 'gold':
         this.sfx('gold', { volume: 0.7, exact: true });
         this.co.banner(t('gold'), { color: '#ffd23f', size: 50, hold: 1, sub: t('goldSub') }, 2);
@@ -355,22 +404,24 @@ export class PlayScene extends ArcadeScene {
       this.lastStamps = sim.stamps;
       this.hud.setRight(String(sim.stamps), STAMP_ICON);
     }
-    if (sim.tune.hearts && sim.hearts !== this.lastHearts) { this.lastHearts = sim.hearts; this.hud.setLives(sim.hearts, sim.tune.hearts); }
+    if (sim.maxHearts && sim.hearts !== this.lastHearts) { this.lastHearts = sim.hearts; this.hud.setLives(sim.hearts, sim.maxHearts); }
     const p = sim.parcel;
     if (p) {
       const left = Math.max(0, p.left), sec = Math.ceil(left);
       const dist = Math.max(0, Math.round(p.s - sim.s));
       const key = sec * 10000 + dist;
+      // the express ribbon stops the clock: it shows pink
+      const frozen = sim.power.express > 0;
       if (key !== this.lastSec) {
-        const warn = left < 6;
+        const warn = left < 6 && !frozen;
         if (warn && Math.ceil(left) !== Math.ceil(left + dt) && left > 0) {
           this.sfx('tick', { volume: 0.35, exact: true });
           this.tweens.add({ targets: this.parcelChip, scale: 1.12, duration: 100, yoyo: true });
         }
         this.lastSec = key;
         this.parcelChip.setText(`${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}  ·  ${dist} m`);
-        this.parcelChip.setTextColor(warn ? '#ff7a6a' : left < 12 ? '#ffd23f' : '#ffffff');
       }
+      this.parcelChip.setTextColor(frozen ? '#ff9ad0' : left < 6 ? '#ff7a6a' : left < 12 ? '#ffd23f' : '#ffffff');
     }
     this.flow.set(sim.meter, sim.flowMult, sim.rush, this.elapsed);
     // the courier's box on screen: small lines keep clear of it
@@ -380,11 +431,50 @@ export class PlayScene extends ArcadeScene {
       this.co.setCourier({ x0: head.x - hw, y0: head.y - 30, x1: head.x + hw, y1: feet.y + 20 });
     } else this.co.setCourier(null);
     this.co.update();
-    this.springChip.setVisible(sim.springs > 0);
-    if (sim.springs > 0) this.springChip.setText('×' + sim.springs);
+    // the active power-ups (and the spring's jumps) as small chips with their rings
+    const shown: PowerShown[] = [];
+    if (sim.springs > 0) shown.push({ id: 'spring', icon: POWER_ICON('spring'), color: 0xffd23f, k: sim.springs / 3, left: 99, text: '×' + sim.springs });
+    for (const k of POWERS) {
+      const v = sim.power[k];
+      if (v <= 0) continue;
+      shown.push(k === 'shield'
+        ? { id: k, icon: POWER_ICON(k), color: POWER_COLOR[k], k: 1, left: 99 }
+        : { id: k, icon: POWER_ICON(k), color: POWER_COLOR[k], k: v / sim.powerMax[k], left: v / (k === 'watch' ? sim.timeScale : 1) });
+    }
+    this.powerBar.update(shown, this.elapsed);
+    // the mission line makes room when the power-ups reach it
+    const ma = this.missionChip.right + 12 < this.powerBar.left ? 1 : 0;
+    if (Math.abs(this.missionChip.alpha - ma) > 0.01) this.missionChip.setAlpha(clamp(this.missionChip.alpha + Math.sign(ma - this.missionChip.alpha) * dt * 5, 0, 1));
     this.missionT -= dt;
     if (this.missionT <= 0) this.updateMissionChip(false);
     if (this.flashT > 0) this.flashT -= dt;
+  }
+
+  /** The fall's darkening and the slow-motion watch's blue edges. */
+  private updateFx(dt: number): void {
+    const sim = this.sim, st = sim.state;
+    const want = st === 'fall' ? 0.3 + 0.62 * smooth(sim.fallK * 1.2) : st === 'slam' ? 0.25 : sim.fallK >= 1 ? 0.92 : 0;
+    this.darkK += clamp(want - this.darkK, -dt * 2.2, dt * 3.5);
+    this.vignette.setAlpha(this.darkK);
+    this.dim.setAlpha(this.darkK * 0.4);
+    const w = sim.power.watch > 0 ? 0.55 + 0.1 * Math.sin(this.elapsed * 3) : 0;
+    this.tint.setAlpha(this.tint.alpha + clamp(w - this.tint.alpha, -dt * 2, dt * 2));
+  }
+
+  /** The first time each power-up turns up ahead, a one-line hint says what it does. */
+  private updateHints(): void {
+    const sim = this.sim, seen = this.meta.seen;
+    if (seen.length >= POWERS.length || this.isOver) return;
+    for (const p of sim.course.pickups) {
+      if (p.taken || !isPower(p.kind) || p.s < sim.s || p.s > sim.s + 48) continue;
+      if (seen.includes(p.kind) || this.hintQueue.includes(p.kind)) continue;
+      this.hintQueue.push(p.kind);
+    }
+    if (!this.hintQueue.length || this.tut || (this.hint && this.hint.c.active)) return;
+    const k = this.hintQueue.shift()!;
+    if (!seen.includes(k)) { seen.push(k); saveMeta(this.meta); }
+    this.hint = new HintCard(this, 278, POWER_ICON(k), t('hintHead', { name: t('pw_' + k) }), t('hint_' + k));
+    this.sfx('hint', { volume: 0.5 });
   }
 
   private updateMissionChip(first: boolean): void {
@@ -542,6 +632,7 @@ export class PlayScene extends ArcadeScene {
       [t('sumStamps'), '+' + fmt(sim.stamps)],
       [t('sumDistrict'), `${sim.district + 1} · ${t('d_' + sim.theme)}`],
       [t('sumChain'), String(sim.stats.bestChain)],
+      ...(sim.stats.powers ? [[t('sumPowers'), String(sim.stats.powers)] as [string, string]] : []),
     ];
     const H = 210 + rows.length * 44 + done.length * 40;
     const g = this.add.graphics();
@@ -584,7 +675,8 @@ export class PlayScene extends ArcadeScene {
     this.sim.stamps = 0;
     this.pad?.setVisible(true);
     this.view.snapCamera();
-    if (this.sim.tune.hearts) this.hud.setLives(this.sim.hearts, this.sim.tune.hearts);
+    this.darkK = Math.min(this.darkK, 0.6);
+    if (this.sim.maxHearts) this.hud.setLives(this.sim.hearts, this.sim.maxHearts);
   }
 
   // ------------------------------------------------------------------ test hooks
@@ -642,6 +734,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.view.sync(this.sim, ms / 1000, ms / 1000);
     this.updateHud(ms / 1000);
+    this.updateFx(ms / 1000);
   }
   /** Test hook: clears banners and words off the screen (store art of a frozen moment). */
   testClearUi(): void {
@@ -699,6 +792,20 @@ export class PlayScene extends ArcadeScene {
       if (Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) > 2 && Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) > 2) overlaps++;
     }
     return { boxes, overlaps };
+  }
+  /** Test hook: a power-up starts now. */
+  testPower(k: Power): void { this.sim.grant(k); }
+  /** Test hook: the autopilot with a custom skill (many falls: a high fumble rate). */
+  testAutoSkill(sk: Partial<typeof SKILL.casual>, seed = 11): void {
+    this.bot = new Bot(this.sim, { ...SKILL.casual, ...sk }, seed);
+    this.forced = null;
+    this.endTutorial(true);
+  }
+  /** Test hook: what the fall looks like this frame. */
+  fallProbe(): { state: string; t: number; y: number; alpha: number; shown: boolean; hidden: number; under: boolean; inWall: boolean; dark: number } {
+    const sim = this.sim, r = this.view.runner;
+    const inWall = sim.course.boxes.some((b) => b.kind === 'roof' && sim.s > b.s0 + 0.05 && sim.s < b.s1 - 0.05 && sim.y < b.y1 - 0.3);
+    return { state: sim.state, t: sim.stateT, y: sim.y, alpha: r.opacity, shown: r.shown, hidden: this.view.hiddenPoints(sim), under: sim.y < 0, inWall, dark: this.darkK };
   }
   testRush(): void { this.sim.meter = 0.999; (this.sim as unknown as { move: (k: string, n: number) => void }).move('vault', 600); }
 }

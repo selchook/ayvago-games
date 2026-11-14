@@ -63,6 +63,23 @@ launch({
     loadAudio(l, 'tick', J + 'general-sounds/menu-sounds/sfx-menu-move2');
     loadAudio(l, 'move', J + 'general-sounds/simple-bleeps/sfx-sounds-blip3');
     loadAudio(l, 'praise', J + 'general-sounds/positive-sounds/sfx-sounds-powerup2');
+    // power-ups, the fall's puff and the respawn
+    const G = J + 'general-sounds/';
+    loadAudio(l, 'pw_magnet', G + 'positive-sounds/sfx-sounds-powerup6');
+    loadAudio(l, 'pw_glide', G + 'positive-sounds/sfx-sounds-powerup8');
+    loadAudio(l, 'pw_shield', G + 'weird-sounds/sfx-sound-poweron');
+    loadAudio(l, 'pw_double', G + 'coins/sfx-coin-double1');
+    loadAudio(l, 'pw_watch', G + 'pause-sounds/sfx-sounds-pause2-in');
+    loadAudio(l, 'pw_express', G + 'positive-sounds/sfx-sounds-powerup16');
+    loadAudio(l, 'watchOut', G + 'pause-sounds/sfx-sounds-pause2-out');
+    loadAudio(l, 'pwEnd', G + 'simple-bleeps/sfx-sounds-blip8');
+    loadAudio(l, 'shieldPop', G + 'weird-sounds/sfx-sound-bling');
+    loadAudio(l, 'rescue', J + 'movement/portals-and-transitions/sfx-movement-portal3');
+    loadAudio(l, 'respawn', J + 'movement/portals-and-transitions/sfx-movement-portal1');
+    loadAudio(l, 'poof', J + 'explosions/shortest/sfx-exp-shortest-soft1');
+    loadAudio(l, 'stamp2', G + 'coins/sfx-coin-single4');
+    loadAudio(l, 'hint', G + 'interactions/sfx-sounds-interaction9');
+    loadAudio(l, 'levelUp', G + 'fanfares/sfx-sounds-fanfare2');
   },
   menuDecor(scene) {
     makeIcons(scene);

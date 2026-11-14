@@ -179,3 +179,80 @@ export class Particles {
     this.live.length = 0;
   }
 }
+
+/** A soap bubble: clear in the middle, a bright rim and two glints (the shield). */
+export const bubbleTex = () => canvasTex(128, (g, s) => {
+  const c = s / 2;
+  const r = g.createRadialGradient(c, c, s * 0.3, c, c, s * 0.5);
+  r.addColorStop(0, 'rgba(160,230,255,0.08)');
+  r.addColorStop(0.75, 'rgba(160,230,255,0.28)');
+  r.addColorStop(0.93, 'rgba(230,250,255,0.95)');
+  r.addColorStop(1, 'rgba(230,250,255,0)');
+  g.fillStyle = r;
+  g.fillRect(0, 0, s, s);
+  g.fillStyle = 'rgba(255,255,255,0.85)';
+  g.beginPath(); g.ellipse(c - s * 0.2, c - s * 0.22, s * 0.09, s * 0.045, -0.7, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.5)';
+  g.beginPath(); g.arc(c + s * 0.22, c + s * 0.2, s * 0.03, 0, Math.PI * 2); g.fill();
+});
+
+/**
+ * A ribbon streaming behind a moving point (the express ribbon): a strip through the point's
+ * last positions, waving, narrowing and fading towards its tail. One mesh, updated in place.
+ */
+export class Ribbon {
+  readonly mesh: THREE.Mesh;
+  private pts: THREE.Vector3[] = [];
+  private pos: Float32Array;
+  private col: Float32Array;
+  private t = 0;
+  private k = 0;
+
+  constructor(scene: THREE.Object3D, private n = 15, private color = new THREE.Color(0xff3a5a)) {
+    const g = new THREE.BufferGeometry();
+    this.pos = new Float32Array(n * 2 * 3);
+    this.col = new Float32Array(n * 2 * 4);
+    g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    g.setAttribute('color', new THREE.BufferAttribute(this.col, 4).setUsage(THREE.DynamicDrawUsage));
+    const idx: number[] = [];
+    for (let i = 0; i < n - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    g.setIndex(idx);
+    this.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 12;
+    this.mesh.visible = false;
+    scene.add(this.mesh);
+  }
+
+  /** `on`: the ribbon is out; `p`: where it is tied (it trails behind as `p` moves). */
+  update(dt: number, on: boolean, p: THREE.Vector3): void {
+    this.t += dt;
+    this.k += ((on ? 1 : 0) - this.k) * Math.min(1, dt * (on ? 6 : 3));
+    if (this.k < 0.01 && !on) { this.mesh.visible = false; this.pts.length = 0; return; }
+    const last = this.pts[0];
+    if (!last || last.distanceToSquared(p) > 0.04) this.pts.unshift(p.clone());
+    else last.copy(p);
+    if (this.pts.length > this.n) this.pts.length = this.n;
+    const n = this.n, m = this.pts.length;
+    for (let i = 0; i < n; i++) {
+      const q = this.pts[Math.min(i, m - 1)];
+      const f = i / (n - 1);
+      // a flat band (seen from the chase camera above and behind), fluttering and twisting
+      const wave = Math.sin(this.t * 9 - i * 0.7) * 0.22 * f;
+      const lift = Math.sin(this.t * 7 - i * 0.55) * 0.12 * f;
+      const tw = Math.sin(this.t * 5 - i * 0.4) * 0.6 * f;
+      const w = 0.2 * (1 - f * 0.6) * this.k;
+      const cx = Math.cos(tw) * w, cy = Math.sin(tw) * w;
+      this.pos.set([q.x + wave - cx, q.y + lift - cy, q.z], i * 6);
+      this.pos.set([q.x + wave + cx, q.y + lift + cy, q.z], i * 6 + 3);
+      const a = (1 - f) * 0.95 * this.k * (i < m ? 1 : 0);
+      const c = this.color;
+      const g = 0.75 + 0.25 * Math.sin(i * 1.3);
+      this.col.set([c.r * g, c.g * g, c.b * g, a, c.r, c.g * 0.8 + 0.2, c.b, a], i * 8);
+    }
+    const geo = this.mesh.geometry;
+    geo.attributes.position.needsUpdate = true;
+    geo.attributes.color.needsUpdate = true;
+    this.mesh.visible = m > 1;
+  }
+}
