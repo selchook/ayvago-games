@@ -30,8 +30,11 @@ export const SKILL: Record<'good' | 'casual', Skill> = {
   casual: { think: 0.3, look: 0.3, dirs: 8, noise: 0.4, lapse: 0.3, greed: 0.8, cards: false },
 };
 
-const WEAPON_PRI: Record<WeaponId, number> = { wards: 9, torch: 8, bow: 7, blade: 7, spear: 6, robot: 6, blaster: 5 };
+const WEAPON_PRI: Record<WeaponId, number> = { wards: 9, torch: 8, bow: 7, blade: 7, spear: 6, robot: 6, shield: 6, blaster: 5 };
 const PASSIVE_PRI: Record<PassiveId, number> = { vigor: 7, armor: 7, haste: 6, reach: 5, regen: 5, swift: 5, magnet: 4, luck: 3 };
+
+/** How much the bot wants each pickup (gems by value, the stew by health). */
+const PICKUP_WANT: Partial<Record<string, number>> = { chest: 14, nuke: 10, freeze: 9, vacuum: 8, rage: 8, boots: 7 };
 
 export class Bot {
   private t = 0;
@@ -81,7 +84,7 @@ export class Bot {
 
   private decide(): void {
     const sim = this.sim, p = sim.player, sk = this.skill;
-    const sp = sim.stats.speed;
+    const sp = sim.speedNow;
     const T = sk.look;
     // what is near
     const near: { x: number; z: number; r: number; sp: number; boss: boolean }[] = [];
@@ -161,7 +164,7 @@ export class Bot {
         const d = Math.hypot(q.x - p.x, q.z - p.z);
         if (d > 18) continue;
         const toward = ((q.x - p.x) * ux + (q.z - p.z) * uz) / (d || 1);
-        const v = q.kind === 'gem' ? Math.min(6, q.value) : q.kind === 'heal' ? (p.hp < p.maxHp * 0.6 ? 12 : 1) : q.kind === 'chest' ? 14 : q.kind === 'magnet' ? 8 : 2;
+        const v = PICKUP_WANT[q.kind] ?? (q.kind === 'gem' ? Math.min(6, q.value) : q.kind === 'heal' ? (p.hp < p.maxHp * 0.6 ? 12 : 1) : 2);
         gem += toward * v / (1 + d * 0.35);
       }
       s += Math.min(6, gem * sk.greed * 0.6);

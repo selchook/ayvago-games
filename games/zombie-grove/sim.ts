@@ -7,16 +7,20 @@
 //     exploders light a fuse, tanks shrug off knockback; mini-bosses and the Rot King have
 //     their own attacks.
 //   - Kills drop XP gems; levels earn card offers that wait until the player opens them.
-//   - The night lasts TUNING.night seconds; at dawn the sun burns the horde away (a win).
+//   - Kills now and then drop power-ups (a stew, the vacuum, a nuke flare, the freeze bell, a rage
+//     tonic, speed boots); mini-bosses drop a gold chest with free level-ups.
+//   - The night lasts TUNING.night seconds; at dawn the sun burns the horde away (a win). The
+//     player may then keep going into an endless night that only gets harder (keepGoing).
 // Everything the view and the sounds need to show is in the state and in `events`.
 import {
   TUNING, ZOMBIES, ARENA, PLAY_EDGE, PLAYER_SPEED, PLAYER_R, SPAWN_R, BITE_CD, FUSE_R, FUSE, BLAST_R, BLAST_DMG,
   SPIT_RANGE, SPIT_CD, GOO_DMG, GOO_SPEED, MINIS, PASSIVE_STEP, MAX_LEVEL, HEROES, isBoss, weaponStats, xpToNext,
-  type Mode, type Tuning, type ZombieKind, type BossKind, type WeaponId, type PassiveId, type WeaponStats,
+  BUFF_IDS, BUFF_TIME, RAGE_K, BOOTS_K, STEW_HP, POWER_DROP, POWER_W, POWER_IDS, ENDLESS, BOSS_KINDS,
+  type Mode, type Tuning, type ZombieKind, type BossKind, type WeaponId, type PassiveId, type WeaponStats, type PowerId, type BuffId,
 } from './defs';
 import { arena, seeded, type Collider } from './arena';
 import { rollOffer, cardKey, type Card, type Bag, type OwnedWeapon, type OwnedPassive } from './cards';
-import { NO_META, type MetaFx } from './meta';
+import { NO_META, CURSE, type MetaFx } from './meta';
 
 export { seeded };
 
@@ -62,6 +66,8 @@ export interface Zombie {
   dead: boolean;
   /** Spawned by the dawn's last wave or a horde rush (for the view's entrance). */
   born: number;
+  /** Stunned by the Tower Shield (s left). */
+  stun: number;
 }
 
 export interface Corpse { kind: ZombieKind; x: number; z: number; face: number; vary: number; t: number; burnt: boolean; scale: number }
@@ -71,7 +77,7 @@ export interface Shot { kind: ShotKind; x: number; z: number; vx: number; vz: nu
 export interface Goo { x: number; z: number; vx: number; vz: number; life: number; dmg: number; dead: boolean; big: boolean }
 export interface Fire { x: number; z: number; r: number; t: number; max: number; dps: number; tick: number; evo: boolean }
 export interface Torch { x0: number; z0: number; x1: number; z1: number; t: number; T: number; r: number; dps: number; burn: number; evo: boolean }
-export type PickupKind = 'gem' | 'coin' | 'heal' | 'magnet' | 'chest';
+export type PickupKind = 'gem' | 'coin' | 'chest' | PowerId;
 export interface Pickup { kind: PickupKind; x: number; z: number; value: number; fly: boolean; v: number; dead: boolean; t: number }
 
 export interface Offer { id: number; cards: Card[]; from: 'level' | 'chest'; n: number }
@@ -90,13 +96,16 @@ export interface Player {
 export interface Stats {
   speed: number; maxHp: number; regen: number; magnet: number; armor: number; cdK: number; areaK: number; luck: number;
   dmgK: number; crit: number;
+  /** Damage taken multiplier. */
+  takenK: number;
 }
 
 export type SimEvent =
   | { type: 'hit'; x: number; z: number; dmg: number; crit: boolean; boss: boolean }
-  | { type: 'kill'; z: Zombie; by: WeaponId | 'blast' | 'dawn' | 'fire' }
+  | { type: 'kill'; z: Zombie; by: WeaponId | 'blast' | 'dawn' | 'fire' | 'nuke' }
   | { type: 'swing'; x: number; z: number; ang: number; arc: number; r: number; evo: boolean; n: number }
   | { type: 'thrust'; x: number; z: number; ang: number; len: number; evo: boolean }
+  | { type: 'bash'; x: number; z: number; ang: number; arc: number; r: number; evo: boolean; n: number; hits: number }
   | { type: 'chain'; pts: { x: number; z: number }[] }
   | { type: 'fire'; w: WeaponId; x: number; z: number; ang: number }
   | { type: 'torch'; t: Torch }
@@ -106,8 +115,11 @@ export type SimEvent =
   | { type: 'gem'; value: number }
   | { type: 'coin' }
   | { type: 'heal'; n: number }
-  | { type: 'magnet' }
-  | { type: 'chest'; x: number; z: number }
+  | { type: 'power'; kind: PowerId; x: number; z: number }
+  | { type: 'buffEnd'; id: BuffId }
+  | { type: 'nuke'; x: number; z: number; n: number }
+  | { type: 'drop'; kind: PowerId | 'chest'; x: number; z: number }
+  | { type: 'chest'; x: number; z: number; cards: Card[]; coins: number }
   | { type: 'level'; n: number }
   | { type: 'offer'; offer: Offer }
   | { type: 'card'; card: Card }
@@ -124,10 +136,18 @@ export type SimEvent =
   | { type: 'rage'; z: Zombie }
   | { type: 'dawn' }
   | { type: 'won' }
+  | { type: 'endless' }
   | { type: 'revive'; x: number; z: number }
   | { type: 'death'; x: number; z: number };
 
-export interface RunStats { kills: number; bosses: number; minis: number; coins: number; time: number; damage: number; killer: ZombieKind | 'goo' | 'blast' | null; byWeapon: Partial<Record<WeaponId, number>> }
+export interface RunStats {
+  kills: number; bosses: number; minis: number; coins: number; time: number; damage: number; killer: ZombieKind | 'goo' | 'blast' | null;
+  byWeapon: Partial<Record<WeaponId, number>>;
+  /** Seconds survived past the dawn (the endless night). */
+  endless: number;
+  /** Power-ups picked up. */
+  powers: number;
+}
 
 const GRID = 2 * ARENA; // flow field cells (1 unit)
 const HASH = 2; // spatial hash cell size
@@ -167,13 +187,30 @@ export class Sim {
   revives = 0;
   score = 0;
   coins = 0;
-  run: RunStats = { kills: 0, bosses: 0, minis: 0, coins: 0, time: 0, damage: 0, killer: null, byWeapon: {} };
+  run: RunStats = { kills: 0, bosses: 0, minis: 0, coins: 0, time: 0, damage: 0, killer: null, byWeapon: {}, endless: 0, powers: 0 };
   events: SimEvent[] = [];
   boss: Zombie | null = null;
   over = false;
   won = false;
   /** Test hook: nothing hurts the survivor (the store art's staged fight). */
   god = false;
+  /** Test hook: how many upgrades the next chests hold (0: rolled). */
+  chestN = 0;
+  /** Timed power-ups (s left). */
+  buffs: Record<BuffId, number> = { freeze: 0, rage: 0, boots: 0 };
+  /** Banishes left this night, and the cards banished (keys). */
+  banishes = 0;
+  banished: string[] = [];
+  /** The endless night after the dawn (keepGoing), and when it began. */
+  endless = false;
+  endlessT0 = 0;
+  /** The won night waits for the player's choice (keep going or end) instead of ending. */
+  hold = false;
+  private endlessBossT = 0;
+  private endlessBossN = 0;
+  /** Seconds until a power-up may drop again, and since the last one. */
+  private powerGap = 20;
+  private powerPity = 0;
   private nextId = 1;
   private offerId = 0;
   private spawnAcc = 0;
@@ -208,7 +245,8 @@ export class Sim {
     this.player = { x: a.start.x, z: a.start.z, vx: 0, vz: 0, face: 0, hp: 1, maxHp: 1, hurt: 0, inv: 0, alive: true, moving: false };
     this.rerolls = 2 + meta.rerolls;
     this.revives = meta.revives;
-    this.weapons.push({ id: hero.start, lv: 1, evo: false });
+    this.banishes = meta.banishes;
+    this.weapons.push({ id: hero.start, lv: Math.min(MAX_LEVEL, meta.startLv + (hero.startLv ?? 0)), evo: false });
     this.recalc();
     this.player.hp = this.player.maxHp;
     this.robot.x = this.player.x - 1; this.robot.z = this.player.z + 1;
@@ -224,21 +262,23 @@ export class Sim {
     const hero = HEROES[this.meta.hero];
     const p = this.player;
     const maxHp = this.tune.hp + this.meta.hp + hero.hp + PASSIVE_STEP.vigor * this.plv('vigor');
+    const m = this.meta;
     if (p.maxHp > 1) p.hp += Math.max(0, maxHp - p.maxHp);
     p.maxHp = maxHp;
     p.hp = Math.min(p.hp, maxHp);
     const luck = PASSIVE_STEP.luck * this.plv('luck');
     this.stats = {
-      speed: PLAYER_SPEED * (1 + PASSIVE_STEP.swift * this.plv('swift') + hero.speed) * this.meta.speedK,
+      speed: PLAYER_SPEED * (1 + PASSIVE_STEP.swift * this.plv('swift') + hero.speed) * m.speedK,
       maxHp,
-      regen: PASSIVE_STEP.regen * this.plv('regen'),
-      magnet: this.tune.magnet * (1 + PASSIVE_STEP.magnet * this.plv('magnet')) * this.meta.magnetK,
+      regen: PASSIVE_STEP.regen * this.plv('regen') + (hero.regen ?? 0),
+      magnet: this.tune.magnet * (1 + PASSIVE_STEP.magnet * this.plv('magnet')) * m.magnetK * (hero.magnetK ?? 1),
       armor: PASSIVE_STEP.armor * this.plv('armor') + hero.armor,
-      cdK: Math.pow(1 - PASSIVE_STEP.haste, this.plv('haste')),
-      areaK: 1 + PASSIVE_STEP.reach * this.plv('reach'),
+      cdK: Math.pow(1 - PASSIVE_STEP.haste, this.plv('haste')) * m.cdK,
+      areaK: (1 + PASSIVE_STEP.reach * this.plv('reach')) * m.areaK,
       luck,
-      dmgK: this.meta.dmgK,
-      crit: 0.05 + luck * 0.6,
+      dmgK: m.dmgK * (hero.dmgK ?? 1),
+      crit: 0.05 + luck * 0.6 + m.crit,
+      takenK: m.takenK,
     };
     this.robot.on = !!this.weapon('robot');
   }
@@ -247,6 +287,13 @@ export class Sim {
     const w = this.weapon(id)!;
     return weaponStats(id, w.lv, w.evo);
   }
+
+  /** What the night's coins are multiplied by at the bank (difficulty, Greed, Curse, the hero). */
+  get coinMul(): number { return this.tune.coinK * this.meta.coinK * (HEROES[this.meta.hero].coinK ?? 1); }
+  /** The survivor's speed right now (Speed Boots). */
+  get speedNow(): number { return this.stats.speed * (this.buffs.boots > 0 ? BOOTS_K : 1); }
+  /** Minutes into the endless night. */
+  get endlessMin(): number { return this.endless ? (this.time - this.endlessT0) / 60 : 0; }
 
   // ------------------------------------------------------------------ static world
 
@@ -388,13 +435,21 @@ export class Sim {
     this.phaseT += dt;
     const p = this.player;
     if (this.phase === 'night') this.run.time = this.time;
+    if (this.endless && this.phase === 'night') this.run.endless = this.time - this.endlessT0;
+    this.powerGap -= dt;
+    this.powerPity += dt;
+    for (const id of BUFF_IDS) {
+      if (this.buffs[id] <= 0) continue;
+      this.buffs[id] -= dt;
+      if (this.buffs[id] <= 0) { this.buffs[id] = 0; this.events.push({ type: 'buffEnd', id }); }
+    }
     this.rebuildHash();
     if (p.alive) this.movePlayer(dt, input);
     this.flowT -= dt;
     if (this.flowT <= 0 || this.cell(p.x, p.z) !== this.flowCell) { this.flow(); this.flowT = 0.3; }
     if (this.phase === 'night') {
       this.direct(dt);
-      if (this.time >= this.tune.night) this.startDawn();
+      if (!this.endless && this.time >= this.tune.night) this.startDawn();
     }
     this.moveZombies(dt);
     this.rebuildHash();
@@ -408,7 +463,7 @@ export class Sim {
     if (this.corpses.length > 160) this.corpses.splice(0, this.corpses.length - 160);
     if (this.phase === 'dawn') this.dawn(dt);
     if (this.phase === 'dead' && this.phaseT > 2.4) this.over = true;
-    if (this.phase === 'won' && this.phaseT > 3.2) this.over = true;
+    if (this.phase === 'won' && this.phaseT > 3.2 && !this.hold) this.over = true;
     this.compact();
   }
 
@@ -418,7 +473,7 @@ export class Sim {
     const l = Math.hypot(mx, mz);
     if (l > 1) { mx /= l; mz /= l; }
     p.moving = l > 0.1;
-    const sp = this.stats.speed;
+    const sp = this.speedNow;
     // a quick ease so the hero starts and stops crisply
     const k = Math.min(1, dt * 14);
     p.vx += (mx * sp - p.vx) * k;
@@ -460,8 +515,11 @@ export class Sim {
   private direct(dt: number): void {
     const f = Math.min(1, this.time / this.tune.night);
     const tn = this.storyT;
-    const cap = Math.round(this.tune.capStart + (this.tune.capEnd - this.tune.capStart) * Math.pow(f, 0.85) * (f > 0.9 ? 1.12 : 1));
-    const rate = this.tune.rateStart + (this.tune.rateEnd - this.tune.rateStart) * Math.pow(f, 1.3);
+    // the Curse and the endless night grow the horde
+    const e = this.endlessMin;
+    const more = (1 + CURSE.horde * this.meta.curse) * (this.endless ? Math.min(ENDLESS.capMax, 1 + ENDLESS.capPerMin * e) : 1);
+    const cap = Math.min(440, Math.round((this.tune.capStart + (this.tune.capEnd - this.tune.capStart) * Math.pow(f, 0.85) * (f > 0.9 ? 1.12 : 1)) * more));
+    const rate = (this.tune.rateStart + (this.tune.rateEnd - this.tune.rateStart) * Math.pow(f, 1.3)) * (1 + CURSE.horde * this.meta.curse) * (1 + ENDLESS.ratePerMin * e);
     this.spawnAcc += rate * dt;
     const live = this.zombies.length;
     while (this.spawnAcc >= 1) {
@@ -478,7 +536,7 @@ export class Sim {
       if (at) for (let i = 0; i < n; i++) this.spawn('swarm', at.x + (this.rnd() - 0.5) * 3, at.z + (this.rnd() - 0.5) * 3);
     }
     // horde rushes: a ring of runners and swarmers all round
-    if (tn >= this.rushT && tn < this.tune.night - 10) {
+    if (tn >= this.rushT && (tn < this.tune.night - 10 || this.endless)) {
       this.rushT = tn + this.tune.rushEvery;
       const n = Math.round(18 + f * 34);
       const p = this.player;
@@ -502,6 +560,13 @@ export class Sim {
       const t0 = this.tune.king;
       if (this.time >= t0 - 5 && !this.warned.has('king')) { this.warned.add('king'); this.events.push({ type: 'warn', boss: 'king' }); }
       if (this.time >= t0) { this.kingDone = true; this.spawnBoss('king'); }
+    }
+    // the endless night: the bosses come back, one after another, while none is up
+    if (this.endless && !this.boss) {
+      const kind = BOSS_KINDS[this.endlessBossN % BOSS_KINDS.length];
+      const key = 'endless' + this.endlessBossN;
+      if (this.time >= this.endlessBossT - 4 && !this.warned.has(key)) { this.warned.add(key); this.events.push({ type: 'warn', boss: kind }); }
+      if (this.time >= this.endlessBossT) { this.endlessBossN++; this.endlessBossT = this.time + ENDLESS.bossEvery; this.spawnBoss(kind); }
     }
   }
 
@@ -533,19 +598,20 @@ export class Sim {
     if (at) this.spawn(kind, at.x, at.z);
   }
 
-  private hpScale(): number { return this.tune.hpK * (1 + this.tune.hpPerMin * (this.storyT / 60)); }
+  private hpScale(): number { return this.tune.hpK * (1 + this.tune.hpPerMin * (this.storyT / 60)) * (1 + CURSE.hp * this.meta.curse); }
 
   spawn(kind: ZombieKind, x: number, z: number): Zombie {
     const d = ZOMBIES[kind];
     const boss = isBoss(kind);
-    const hp = boss ? d.hp * this.tune.bossK * (1 + (this.storyT / 600) * 0.4) : d.hp * this.hpScale();
+    const e = this.endlessMin;
+    const hp = (boss ? d.hp * this.tune.bossK * (1 + (this.storyT / 600) * 0.4) : d.hp * this.hpScale()) * Math.pow(ENDLESS.hpGrow, e);
     const vary = this.rnd();
     const zb: Zombie = {
       id: this.nextId++, kind, x, z, kx: 0, kz: 0, hp, maxHp: hp,
-      speed: d.speed * this.tune.speedK * (1 + Math.min(0.25, this.storyT / 2400)) * (boss ? 1 : 0.9 + vary * 0.2),
-      r: d.r * (boss ? 1 : 0.92 + vary * 0.16), dmg: d.dmg * this.tune.dmgK, bite: 0, flash: 0, face: 0, anim: this.rnd() * 10, vary,
+      speed: d.speed * this.tune.speedK * (1 + Math.min(0.25, this.storyT / 2400)) * (boss ? 1 : 0.9 + vary * 0.2) * (1 + Math.min(ENDLESS.speedMax, ENDLESS.speedPerMin * e)),
+      r: d.r * (boss ? 1 : 0.92 + vary * 0.16), dmg: d.dmg * this.tune.dmgK * Math.pow(ENDLESS.dmgGrow, e) * (1 + CURSE.dmg * this.meta.curse), bite: 0, flash: 0, face: 0, anim: this.rnd() * 10, vary,
       atk: 0, burn: 0, burnDps: 0, fuse: -1, cd: kind === 'spitter' ? 1 + this.rnd() * SPIT_CD : 2.5, ward: 0,
-      act: 'walk', actT: 0, ax: 0, az: 0, rage: false, dead: false, born: 0,
+      act: 'walk', actT: 0, ax: 0, az: 0, rage: false, dead: false, born: 0, stun: 0,
     };
     this.zombies.push(zb);
     return zb;
@@ -573,6 +639,7 @@ export class Sim {
   private moveZombies(dt: number): void {
     const p = this.player;
     const zs = this.zombies;
+    const frozen = this.buffs.freeze > 0;
     for (let i = 0; i < zs.length; i++) {
       const zb = zs[i];
       if (zb.dead) continue;
@@ -587,18 +654,21 @@ export class Sim {
         if (zb.dead) continue;
       }
       const boss = isBoss(zb.kind);
-      let sp = zb.speed;
+      // the freeze bell holds the horde (bosses only slow down); a shield shove stuns
+      zb.stun = Math.max(0, zb.stun - dt);
+      const still = !boss && (frozen || zb.stun > 0);
+      let sp = still ? 0 : zb.speed * (frozen ? 0.4 : 1);
       this.steer(zb.x, zb.z, this.tmp);
       let dx = this.tmp.x, dz = this.tmp.z;
       const px = p.x - zb.x, pz = p.z - zb.z, pd = Math.hypot(px, pz);
       if (!p.alive) { dx = -px / (pd || 1); dz = -pz / (pd || 1); sp *= 0.3; }
-      if (zb.kind === 'spitter' && p.alive) {
+      if (still) { /* frozen or stunned: no walking, spitting or fuses */ } else if (zb.kind === 'spitter' && p.alive) {
         // keep a distance, lob goo
         if (pd < SPIT_RANGE - 1) { dx = -dx; dz = -dz; sp *= 0.7; } else if (pd < SPIT_RANGE + 1) sp *= 0.15;
         zb.cd -= dt;
         if (zb.cd <= 0 && pd < SPIT_RANGE + 3) { zb.cd = SPIT_CD * (0.85 + this.rnd() * 0.3); this.spit(zb, Math.atan2(px, pz), false); zb.atk = 0.4; }
       }
-      if (zb.kind === 'exploder' && p.alive) {
+      if (!still && zb.kind === 'exploder' && p.alive) {
         if (zb.fuse < 0 && pd < FUSE_R + zb.r) { zb.fuse = FUSE; this.events.push({ type: 'fuse', z: zb }); }
         if (zb.fuse >= 0) {
           sp *= 0.35;
@@ -607,8 +677,8 @@ export class Sim {
         }
       }
       if (boss && p.alive) {
-        const r = this.bossAct(zb, dt, pd, px, pz);
-        if (r) { dx = r.dx; dz = r.dz; sp = r.sp; }
+        const r = this.bossAct(zb, frozen ? dt * 0.4 : dt, pd, px, pz);
+        if (r) { dx = r.dx; dz = r.dz; sp = r.sp * (frozen ? 0.4 : 1); }
       }
       if (this.phase === 'dawn') sp *= 0.4;
       zb.x += dx * sp * dt + zb.kx * dt;
@@ -637,7 +707,7 @@ export class Sim {
       zb.x = Math.max(-ARENA + 2, Math.min(ARENA - 2, zb.x));
       zb.z = Math.max(-ARENA + 2, Math.min(ARENA - 2, zb.z));
       // bites
-      if (p.alive && this.phase === 'night') {
+      if (p.alive && this.phase === 'night' && !still) {
         const qx = p.x - zb.x, qz = p.z - zb.z, rr = PLAYER_R + zb.r + 0.08;
         if (qx * qx + qz * qz < rr * rr) {
           // the survivor is pushed out a little (the crowd closes in, never through)
@@ -790,7 +860,7 @@ export class Sim {
   private hurt(dmg: number, by: ZombieKind | 'goo' | 'blast', x: number, z: number): void {
     const p = this.player;
     if (!p.alive || p.inv > 0 || this.god || this.phase !== 'night') return;
-    const d = Math.max(1, dmg - this.stats.armor);
+    const d = Math.max(1, dmg * this.stats.takenK - this.stats.armor);
     p.hp -= d;
     p.hurt = 0.25;
     this.run.damage += d;
@@ -818,7 +888,7 @@ export class Sim {
   /** Hits a zombie. Returns the damage dealt. */
   damage(zb: Zombie, base: number, fx: number, fz: number, knock: number, by: WeaponId | 'blast', canCrit = true, dot = false): number {
     if (zb.dead) return 0;
-    let dmg = base * this.stats.dmgK;
+    let dmg = base * this.stats.dmgK * (this.buffs.rage > 0 ? RAGE_K : 1);
     const crit = canCrit && this.rnd() < this.stats.crit;
     if (crit) dmg *= 2;
     zb.hp -= dmg;
@@ -837,7 +907,7 @@ export class Sim {
     return dmg;
   }
 
-  private kill(zb: Zombie, by: WeaponId | 'blast' | 'dawn' | 'fire'): void {
+  private kill(zb: Zombie, by: WeaponId | 'blast' | 'dawn' | 'fire' | 'nuke'): void {
     if (zb.dead) return;
     zb.dead = true;
     zb.hp = 0;
@@ -847,8 +917,8 @@ export class Sim {
     this.events.push({ type: 'kill', z: zb, by });
     if (by === 'dawn') return;
     this.run.kills++;
-    this.score += def.score;
-    if (zb.kind === 'exploder') this.blast(zb.x, zb.z, BLAST_R, BLAST_DMG * this.tune.dmgK, true);
+    this.score += Math.round(def.score * (this.endless ? 1.5 : 1));
+    if (zb.kind === 'exploder' && by !== 'nuke') this.blast(zb.x, zb.z, BLAST_R, BLAST_DMG * this.tune.dmgK, true);
     if (boss) {
       if (zb.kind === 'king') this.run.bosses++; else this.run.minis++;
       if (this.boss === zb) this.boss = null;
@@ -864,9 +934,50 @@ export class Sim {
     if (xp < 1) xp = this.rnd() < xp ? 1 : 0;
     if (xp > 0) this.drop('gem', zb.x, zb.z, xp);
     const luck = this.stats.luck;
-    if (this.rnd() < def.coin * (1 + luck)) this.drop('coin', zb.x + 0.3, zb.z, 1);
-    if (this.rnd() < 0.006 * (1 + luck)) this.drop('heal', zb.x, zb.z - 0.3, 1);
-    else if (this.rnd() < 0.0022) this.drop('magnet', zb.x, zb.z - 0.3, 1);
+    if (this.rnd() < def.coin * (1 + luck) * (this.endless ? ENDLESS.coinK : 1)) this.drop('coin', zb.x + 0.3, zb.z, 1);
+    // a power-up now and then (never two close together; a long wait makes the next kill drop one)
+    if (by !== 'nuke' && this.phase === 'night' && this.powerGap <= 0) {
+      const chance = (zb.kind === 'tank' ? POWER_DROP.tank : POWER_DROP.base) * (1 + luck);
+      if (this.rnd() < chance || this.powerPity > POWER_DROP.pity) {
+        const kind = this.pickPower();
+        this.drop(kind, zb.x, zb.z - 0.3, 1);
+        this.events.push({ type: 'drop', kind, x: zb.x, z: zb.z });
+        this.powerGap = POWER_DROP.gap;
+        this.powerPity = 0;
+      }
+    }
+  }
+
+  /** Which power-up drops: weighted, a stew likelier when hurt, the vacuum when gems lie about. */
+  private pickPower(): PowerId {
+    const p = this.player;
+    let gems = 0;
+    for (const q of this.pickups) if (q.kind === 'gem' && !q.dead && !q.fly) gems++;
+    const w = POWER_IDS.map((id) => {
+      let v = POWER_W[id];
+      if (id === 'heal') v *= p.hp < p.maxHp * 0.5 ? 2.5 : p.hp > p.maxHp * 0.9 ? 0.3 : 1;
+      if (id === 'vacuum' && gems < 12) v *= 0.3;
+      if (id === 'nuke' && this.time < 60) v = 0;
+      return v;
+    });
+    let x = this.rnd() * w.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < w.length; i++) { x -= w[i]; if (x <= 0) return POWER_IDS[i]; }
+    return 'heal';
+  }
+
+  /** The nuke flare: every zombie on screen falls (bosses stand), the goo is gone. */
+  private nuke(): void {
+    const p = this.player;
+    let n = 0;
+    for (const zb of this.zombies) {
+      if (zb.dead || isBoss(zb.kind)) continue;
+      const dx = zb.x - p.x, dz = zb.z - p.z;
+      if (Math.abs(dx) > 12.5 || dz < -18 || dz > 10) continue;
+      this.kill(zb, 'nuke');
+      n++;
+    }
+    for (const g of this.goo) g.dead = true;
+    this.events.push({ type: 'nuke', x: p.x, z: p.z, n });
   }
 
   /** An explosion: hurts zombies (and the survivor when `hurtsPlayer`). */
@@ -1020,6 +1131,34 @@ export class Sim {
         }
         return true;
       }
+      case 'shield': {
+        const r = st.size * A;
+        const t = this.nearest(p.x, p.z, r + 1.2);
+        if (!t) return false;
+        const ang = Math.atan2(t.x - p.x, t.z - p.z);
+        const arc = w.evo ? Math.PI * 2 : Math.PI * 0.72;
+        let healed = 0;
+        for (let k = 0; k < (w.evo ? 1 : st.n); k++) {
+          const a = ang + k * Math.PI;
+          let hits = 0;
+          this.near(p.x, p.z, r + 1, (zb) => {
+            if (zb.dead) return;
+            const dx = zb.x - p.x, dz = zb.z - p.z, d = Math.hypot(dx, dz);
+            if (d > r + zb.r) return;
+            let da = Math.atan2(dx, dz) - a;
+            da = Math.atan2(Math.sin(da), Math.cos(da));
+            if (Math.abs(da) > arc / 2 + 0.12 && d > zb.r + 0.4) return;
+            this.damage(zb, st.dmg, dx, dz, st.knock, 'shield');
+            if (!isBoss(zb.kind)) zb.stun = Math.max(zb.stun, st.speed);
+            hits++;
+          });
+          if (w.evo) healed = Math.min(5, hits);
+          this.events.push({ type: 'bash', x: p.x, z: p.z, ang: a, arc, r, evo: w.evo, n: k, hits });
+        }
+        // the evolved wall mends: a point of health per zombie it hits (five at most)
+        if (healed && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + healed);
+        return true;
+      }
       case 'robot': {
         const r = this.robot;
         const t = this.nearest(r.x, r.z, st.size);
@@ -1132,7 +1271,7 @@ export class Sim {
     const p = this.player;
     switch (q.kind) {
       case 'gem':
-        this.xp += q.value;
+        this.xp += q.value * this.meta.xpK;
         this.events.push({ type: 'gem', value: q.value });
         while (this.xp >= xpToNext(this.level)) {
           this.xp -= xpToNext(this.level);
@@ -1141,34 +1280,69 @@ export class Sim {
           this.addOffer('level');
         }
         break;
-      case 'coin':
+      case 'coin': {
         this.coins += q.value;
         this.run.coins += q.value;
         this.events.push({ type: 'coin' });
+        // the Medic patches herself up with what she finds
+        const ch = HEROES[this.meta.hero].coinHeal ?? 0;
+        if (ch && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + ch);
         break;
+      }
       case 'heal': {
-        const n = Math.min(p.maxHp - p.hp, 30);
+        const n = Math.min(p.maxHp - p.hp, STEW_HP * (HEROES[this.meta.hero].healK ?? 1));
         p.hp += n;
+        this.power(q);
         this.events.push({ type: 'heal', n: Math.round(n) });
         break;
       }
-      case 'magnet':
-        for (const g of this.pickups) if (g.kind === 'gem' && !g.dead) { g.fly = true; g.v = 6; }
-        this.events.push({ type: 'magnet' });
+      case 'vacuum':
+        for (const g of this.pickups) if ((g.kind === 'gem' || g.kind === 'coin') && !g.dead) { g.fly = true; g.v = 6; }
+        this.power(q);
         break;
-      case 'chest':
+      case 'nuke':
+        this.power(q);
+        this.nuke();
+        break;
+      case 'freeze':
+        // the bell's ring also pops the goo in the air
+        for (const g of this.goo) { g.dead = true; this.events.push({ type: 'gooHit', x: g.x, z: g.z }); }
+        this.buffs.freeze = BUFF_TIME.freeze;
+        this.power(q);
+        break;
+      case 'rage':
+      case 'boots':
+        this.buffs[q.kind] = BUFF_TIME[q.kind];
+        this.power(q);
+        break;
+      case 'chest': {
+        // a gold chest: coins and one to three free level-ups (an evolution first, if one is ready)
         this.coins += 15;
         this.run.coins += 15;
-        this.events.push({ type: 'chest', x: q.x, z: q.z });
-        this.addOffer('chest');
+        const luck = this.stats.luck, r = this.rnd();
+        const n = this.chestN || (r < 0.14 + luck * 0.3 ? 3 : r < 0.5 + luck * 0.4 ? 2 : 1);
+        const cards: Card[] = [];
+        this.events.push({ type: 'chest', x: q.x, z: q.z, cards, coins: 15 });
+        for (let i = 0; i < n; i++) {
+          const c = rollOffer(this.bag, 1, luck, this.rnd, true, this.banished)[0] ?? { kind: 'gold', id: 'gold', rarity: 'common', add: 0, to: 0 };
+          cards.push(c);
+          this.apply(c);
+        }
+        this.refreshOffers();
         break;
+      }
     }
+  }
+
+  private power(q: Pickup): void {
+    this.run.powers++;
+    this.events.push({ type: 'power', kind: q.kind as PowerId, x: q.x, z: q.z });
   }
 
   // ------------------------------------------------------------------ offers
 
   private addOffer(from: 'level' | 'chest', front = false): Offer {
-    const cards = rollOffer(this.bag, 3, this.stats.luck, this.rnd, from === 'chest');
+    const cards = rollOffer(this.bag, 3, this.stats.luck, this.rnd, from === 'chest', this.banished);
     const offer: Offer = { id: ++this.offerId, cards, from, n: this.level };
     if (front) this.offers.unshift(offer); else this.offers.push(offer);
     this.events.push({ type: 'offer', offer });
@@ -1181,8 +1355,27 @@ export class Sim {
     const o = this.offers[i];
     if (!o || !this.canReroll()) return false;
     this.rerolls--;
-    o.cards = rollOffer(this.bag, 3, this.stats.luck, this.rnd, o.from === 'chest', o.cards.filter((c) => c.kind !== 'heal' && c.kind !== 'gold').map(cardKey));
+    o.cards = rollOffer(this.bag, 3, this.stats.luck, this.rnd, o.from === 'chest', [...this.banished, ...o.cards.filter((c) => c.kind !== 'heal' && c.kind !== 'gold').map(cardKey)]);
     return true;
+  }
+
+  /** Whether card `k` of offer `i` may be banished (weapons and trinkets, while banishes last). */
+  canBanish(i = 0, k = 0): boolean {
+    const c = this.offers[i]?.cards[k];
+    return this.banishes > 0 && this.player.alive && !!c && (c.kind === 'weapon' || c.kind === 'passive');
+  }
+
+  /** Banishes card `k` of offer `i`: it never comes up again this night; a new card takes its place. */
+  banish(i: number, k: number): Card | null {
+    const o = this.offers[i];
+    if (!o || !this.canBanish(i, k)) return null;
+    const c = o.cards[k];
+    this.banishes--;
+    this.banished.push(cardKey(c));
+    const next = rollOffer(this.bag, 1, this.stats.luck, this.rnd, o.from === 'chest', [...this.banished, ...o.cards.map(cardKey)])[0]
+      ?? (o.cards.some((x) => x.kind === 'heal') ? { kind: 'gold', id: 'gold', rarity: 'common', add: 0, to: 0 } : { kind: 'heal', id: 'heal', rarity: 'common', add: 0, to: 0 });
+    o.cards[k] = next;
+    return next;
   }
 
   /** Takes card `k` of offer `i`; it applies at once and the offer is used up. */
@@ -1239,14 +1432,14 @@ export class Sim {
     for (const o of this.offers) {
       o.cards = o.cards.map((c) => {
         if (c.kind === 'heal' || c.kind === 'gold') return c;
-        const still = rollOffer(bag, 99, 0, () => 0.99).some((x) => cardKey(x) === cardKey(c));
+        const still = rollOffer(bag, 99, 0, () => 0.99, false, this.banished).some((x) => cardKey(x) === cardKey(c));
         if (still && c.kind !== 'evo') {
           const lv = c.kind === 'weapon' ? (this.weapon(c.id as WeaponId)?.lv ?? 0) : (this.passives.find((x) => x.id === c.id)?.lv ?? 0);
           const add = Math.min(MAX_LEVEL - lv, c.add);
           return { ...c, add, to: lv + add };
         }
         if (still) return c;
-        return rollOffer(bag, 1, this.stats.luck, this.rnd, false, o.cards.map(cardKey))[0] ?? { kind: 'heal', id: 'heal', rarity: 'common', add: 0, to: 0 };
+        return rollOffer(bag, 1, this.stats.luck, this.rnd, false, [...this.banished, ...o.cards.map(cardKey)])[0] ?? { kind: 'heal', id: 'heal', rarity: 'common', add: 0, to: 0 };
       });
     }
   }
@@ -1283,6 +1476,25 @@ export class Sim {
     void dt;
   }
 
+  /** After the dawn: the night goes on, endless and harder, with more coins (the player's choice). */
+  keepGoing(): boolean {
+    if (this.phase !== 'won' || this.endless) return false;
+    this.endless = true;
+    this.hold = false;
+    this.phase = 'night';
+    this.phaseT = 0;
+    this.endlessT0 = this.time;
+    this.endlessBossT = this.time + 45;
+    this.rushT = this.time + 25;
+    this.swarmT = this.time + 8;
+    this.player.inv = Math.max(this.player.inv, 2);
+    this.events.push({ type: 'endless' });
+    return true;
+  }
+
+  /** Ends a won night that waits for the choice. */
+  endNight(): void { this.hold = false; if (this.phase === 'won') this.phaseT = Math.max(this.phaseT, 3.2); }
+
   private compact(): void {
     if (this.zombies.some((z) => z.dead)) this.zombies = this.zombies.filter((z) => !z.dead);
     if (this.shots.some((s) => s.dead)) this.shots = this.shots.filter((s) => !s.dead);
@@ -1315,6 +1527,9 @@ export class Sim {
   }
 
   bossNow(kind: BossKind): void { this.spawnBoss(kind); }
+
+  /** Puts a pickup down (tests and screenshots). */
+  dropAt(kind: PickupKind, x: number, z: number): void { this.drop(kind, x, z, 1); }
 
   /** Puts an offer with these cards at the front of the queue (tests and the store art). */
   forceOffer(cards: Card[]): Offer {

@@ -2,20 +2,20 @@
 // bar, the level and XP chip, the weapon tray with level pips, the boss bar and the banners. Every
 // always-visible readout sits in a core HUD chip.
 import Phaser from 'phaser';
-import { txt, t, hudChip, HudChip } from '@core';
-import { MAX_LEVEL, type WeaponId, type PassiveId } from './defs';
-import { weaponArt, passiveArt, HEART } from './art';
+import { txt, t, hudChip, HudChip, HUD_GAP } from '@core';
+import { MAX_LEVEL, BUFF_IDS, BUFF_TIME, type WeaponId, type PassiveId, type BuffId } from './defs';
+import { weaponArt, passiveArt, powerArt, POWER_HUE, HEART } from './art';
 import type { OwnedWeapon, OwnedPassive } from './cards';
 
 export const UI_DEPTH = 9100;
 
 /** A glass panel centred on (0, 0) of a container. */
-export function glass(scene: Phaser.Scene, w: number, h: number, o: { r?: number; color?: number; alpha?: number; rim?: number } = {}): Phaser.GameObjects.Graphics {
+export function glass(scene: Phaser.Scene, w: number, h: number, o: { r?: number; color?: number; alpha?: number; rim?: number; sheen?: boolean } = {}): Phaser.GameObjects.Graphics {
   const r = o.r ?? 26;
   const g = scene.add.graphics();
   g.fillStyle(0x000000, 0.28).fillRoundedRect(-w / 2, -h / 2 + 8, w, h, r);
   g.fillStyle(o.color ?? 0x14201a, o.alpha ?? 0.9).fillRoundedRect(-w / 2, -h / 2, w, h, r);
-  g.fillStyle(0xffffff, 0.06).fillRoundedRect(-w / 2 + 4, -h / 2 + 4, w - 8, h * 0.4, { tl: r - 3, tr: r - 3, bl: 6, br: 6 });
+  if (o.sheen !== false) g.fillStyle(0xffffff, 0.06).fillRoundedRect(-w / 2 + 4, -h / 2 + 4, w - 8, Math.min(h * 0.4, 90), { tl: r - 3, tr: r - 3, bl: 6, br: 6 });
   g.lineStyle(2, o.rim ?? 0xffffff, o.rim ? 0.9 : 0.16).strokeRoundedRect(-w / 2, -h / 2, w, h, r);
   return g;
 }
@@ -220,6 +220,56 @@ export class WeaponTray {
     this.row.setData('chipWidth', Math.max(SLOT, total));
     this.chip.layout();
     if (grew) this.scene.tweens.add({ targets: this.chip, scale: 1.08, duration: 110, yoyo: true });
+  }
+}
+
+// ------------------------------------------------------------------ timed power-ups
+
+/**
+ * The timed power-ups on show: a chip each (the icon in a ring that runs down, and the seconds
+ * left), lined up from the right edge on the third HUD row; they pop in, blink at the end.
+ */
+export class BuffChips {
+  private chips = new Map<BuffId, { chip: HudChip; ring: Phaser.GameObjects.Graphics; secs: Phaser.GameObjects.Text; on: boolean; shown: number }>();
+
+  constructor(private scene: Phaser.Scene, private right: number, private y: number) {
+    for (const id of BUFF_IDS) {
+      const ring = scene.add.graphics();
+      const icon = scene.add.image(0, 0, powerArt(id)).setDisplaySize(36, 36);
+      const box = scene.add.container(0, 0, [icon, ring]);
+      box.setData('chipWidth', 44);
+      const secs = txt(scene, 0, 0, '10', { title: true, size: 20, color: '#' + POWER_HUE[id].toString(16).padStart(6, '0'), strokeThickness: 4 });
+      secs.setData('chipWidth', 30);
+      const chip = hudChip(scene, right, y, { align: 'right', items: [box, secs], height: 54, depth: UI_DEPTH });
+      chip.setVisible(false);
+      this.chips.set(id, { chip, ring, secs, on: false, shown: -1 });
+    }
+  }
+
+  update(buffs: Record<BuffId, number>, time: number): void {
+    let x = this.right;
+    for (const id of BUFF_IDS) {
+      const c = this.chips.get(id)!;
+      const left = buffs[id];
+      const on = left > 0;
+      if (on !== c.on) {
+        c.on = on;
+        c.chip.setVisible(on);
+        if (on) { c.chip.setScale(0.3); this.scene.tweens.add({ targets: c.chip, scale: 1, duration: 300, ease: 'Back.easeOut' }); }
+      }
+      if (!on) continue;
+      c.chip.setAnchor(x, this.y, 'right');
+      x -= c.chip.chipWidth + HUD_GAP;
+      const k = Math.max(0, Math.min(1, left / BUFF_TIME[id]));
+      const col = POWER_HUE[id];
+      const blink = left < 2 && Math.floor(time * 8) % 2 === 0;
+      const g = c.ring.clear();
+      g.lineStyle(5, 0x060914, 0.7).strokeCircle(0, 0, 21);
+      g.lineStyle(4, blink ? 0xffffff : col, 1);
+      g.beginPath(); g.arc(0, 0, 21, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k, false); g.strokePath();
+      const n = Math.ceil(left);
+      if (n !== c.shown) { c.shown = n; c.secs.setText(String(n)); }
+    }
   }
 }
 

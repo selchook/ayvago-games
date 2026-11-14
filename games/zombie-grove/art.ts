@@ -1,14 +1,18 @@
-// Zombie Grove: the UI icons (weapons, evolutions, trinkets, camp upgrades, heroes, coins, the
-// skull, the moon and the card offer), drawn once per game into canvas textures: simple vector
-// symbols over a glowing disc in the item's colour.
+// Zombie Grove: the UI icons (weapons, evolutions, trinkets, camp upgrades, power-ups, coins, the
+// skull, the moon, the chest, the lock and the card offer), drawn once per game into canvas
+// textures: simple vector symbols over a glowing disc in the item's colour. The power-up icons are
+// also the pickups' billboards in the 3D world (powerCanvas).
 import Phaser from 'phaser';
-import { WEAPON_IDS, PASSIVE_IDS, HERO_IDS, type WeaponId, type PassiveId, type HeroId } from './defs';
+import { WEAPON_IDS, PASSIVE_IDS, POWER_IDS, type WeaponId, type PassiveId, type PowerId } from './defs';
 import { UPGRADE_IDS, type UpgradeId } from './meta';
 
 export const weaponArt = (id: WeaponId, evo = false) => (evo ? 'zg-e-' : 'zg-w-') + id;
 export const passiveArt = (id: PassiveId) => 'zg-p-' + id;
 export const upgradeArt = (id: UpgradeId) => 'zg-u-' + id;
-export const heroArt = (id: HeroId) => 'zg-h-' + id;
+export const powerArt = (id: PowerId) => 'zg-pw-' + id;
+export const CHEST = 'zg-chest';
+export const LOCK = 'zg-lock';
+export const INFINITY = 'zg-inf';
 export const COIN = 'zg-coin';
 export const SKULL = 'zg-skull';
 export const MOON = 'zg-moon';
@@ -19,7 +23,11 @@ export const GOLD = 'zg-c-gold';
 export const HEART = 'zg-heart';
 
 export const WEAPON_HUE: Record<WeaponId, number> = {
-  blade: 0xdfe8ff, bow: 0x9fe870, spear: 0xffd27a, blaster: 0xffb04a, wards: 0x6ac8ff, torch: 0xff7a3a, robot: 0x9fb8ff,
+  blade: 0xdfe8ff, bow: 0x9fe870, spear: 0xffd27a, blaster: 0xffb04a, wards: 0x6ac8ff, torch: 0xff7a3a, robot: 0x9fb8ff, shield: 0xc8a0ff,
+};
+/** The power-ups' colours (glow, beacon ring, HUD timer ring). */
+export const POWER_HUE: Record<PowerId, number> = {
+  heal: 0xff7a5a, vacuum: 0x7ab8ff, nuke: 0xffe07a, freeze: 0x8fe8ff, rage: 0xff4a5a, boots: 0x6affb0,
 };
 export const PASSIVE_HUE: Record<PassiveId, number> = {
   swift: 0x6affd0, vigor: 0xff8a5a, regen: 0x8aff7a, magnet: 0xff5a6a, armor: 0xc8a070, haste: 0xc8d4e8, reach: 0xffa040, luck: 0x5aff7a,
@@ -261,18 +269,129 @@ function wing(g: G): void {
   path(g, [[24, 92], [40, 40], [70, 18], [106, 22], [88, 40], [104, 46], [84, 60], [96, 70], [70, 80]], '#fff3d0', OUT, 6);
   line(g, 30, 88, 80, 34, '#ffb03a', 4);
 }
-function person(g: G, hat: 'none' | 'hood' | 'helm'): void {
-  circle(g, 64, 44, 24, '#f2c39a', OUT, 6);
-  path(g, [[30, 112], [36, 74], [92, 74], [98, 112]], hat === 'helm' ? '#9aa8c0' : hat === 'hood' ? '#4a8a3a' : '#4a7ad0', OUT, 6);
-  if (hat === 'hood') path(g, [[38, 40], [64, 8], [92, 40], [86, 30], [64, 22], [44, 30]], '#3a7a2a', OUT, 5);
-  if (hat === 'helm') { g.beginPath(); g.arc(64, 42, 27, Math.PI, 0); g.fillStyle = '#c8d4e8'; g.fill(); g.lineWidth = 5; g.strokeStyle = OUT; g.stroke(); line(g, 64, 14, 64, 4, '#ff5a4a', 7); }
-  if (hat === 'none') { g.beginPath(); g.arc(64, 38, 25, Math.PI, 0); g.fillStyle = '#6a4020'; g.fill(); }
-  circle(g, 56, 46, 3, OUT); circle(g, 72, 46, 3, OUT);
+
+function towerShield(g: G, gold = false): void {
+  path(g, [[34, 20], [94, 20], [100, 30], [96, 92], [64, 112], [32, 92], [28, 30]], gold ? '#ffd25a' : '#8a6ad0', OUT, 7);
+  path(g, [[44, 32], [84, 32], [86, 86], [64, 100], [42, 86]], gold ? '#fff0b0' : '#e07a3a', OUT, 4);
+  path(g, [[56, 52], [72, 52], [72, 72], [56, 72]], gold ? '#ffd25a' : '#f4ead0', OUT, 4);
+  if (gold) for (let i = 0; i < 3; i++) line(g, 18 + i * 8, 102 - i * 10, 28 + i * 8, 96 - i * 10, '#8aff7a', 5);
+}
+function helmet(g: G): void {
+  g.beginPath(); g.arc(64, 70, 40, Math.PI, 0); g.lineTo(104, 92); g.lineTo(24, 92); g.closePath();
+  g.fillStyle = '#9aa8c0'; g.fill(); g.lineWidth = 7; g.strokeStyle = OUT; g.stroke();
+  path(g, [[58, 30], [70, 30], [70, 92], [58, 92]], '#c8d4e8', OUT, 4);
+  path(g, [[20, 90], [108, 90], [108, 102], [20, 102]], '#6a7890', OUT, 5);
+}
+function book(g: G): void {
+  path(g, [[20, 40], [62, 30], [62, 100], [20, 108]], '#5ad0a0', OUT, 6);
+  path(g, [[106, 40], [66, 30], [66, 100], [106, 108]], '#4ab088', OUT, 6);
+  for (const y of [50, 62, 74]) { line(g, 30, y, 54, y - 5, '#e8fff0', 3); line(g, 74, y - 5, 96, y, '#e8fff0', 3); }
+  path(g, [[64, 4], [80, 22], [70, 22], [70, 30], [58, 30], [58, 22], [48, 22]], '#fff07a', OUT, 4);
+}
+function crosshair(g: G): void {
+  circle(g, 64, 64, 38, null, OUT, 12); circle(g, 64, 64, 38, null, '#ff5a6a', 6);
+  circle(g, 64, 64, 18, null, OUT, 10); circle(g, 64, 64, 18, null, '#ffd0d4', 4);
+  for (const [a, b, c, d] of [[64, 6, 64, 30], [64, 98, 64, 122], [6, 64, 30, 64], [98, 64, 122, 64]]) { line(g, a, b, c, d, OUT, 10); line(g, a, b, c, d, '#ff5a6a', 5); }
+  circle(g, 64, 64, 5, '#ffffff');
+}
+function rings(g: G): void {
+  for (const [r, a] of [[48, 0.45], [34, 0.75], [20, 1]] as [number, number][]) { circle(g, 64, 64, r, null, OUT, 10); circle(g, 64, 64, r, null, `rgba(255,170,70,${a})`, 6); }
+  circle(g, 64, 64, 8, '#fff0b0');
+}
+function hourglass(g: G): void {
+  path(g, [[34, 18], [94, 18], [94, 28], [34, 28]], '#a8703a', OUT, 5);
+  path(g, [[34, 100], [94, 100], [94, 110], [34, 110]], '#a8703a', OUT, 5);
+  path(g, [[40, 28], [88, 28], [68, 64], [88, 100], [40, 100], [60, 64]], '#e8f4ff', OUT, 6);
+  path(g, [[50, 36], [78, 36], [64, 58]], '#ffd27a');
+  path(g, [[64, 74], [80, 98], [48, 98]], '#ffd27a');
+}
+function drill(g: G): void {
+  g.save(); g.scale(0.85, 0.85); g.translate(4, 18); sword(g); g.restore();
+  for (let i = 0; i < 2; i++) path(g, [[78, 46 - i * 18], [96, 28 - i * 18], [114, 46 - i * 18], [106, 52 - i * 18], [96, 42 - i * 18], [86, 52 - i * 18]], '#7affc0', OUT, 4);
+}
+function banishCard(g: G): void {
+  g.save(); g.translate(64, 66); g.rotate(-0.15);
+  path(g, [[-28, -42], [28, -42], [28, 42], [-28, 42]], '#1f2a22', '#c9d4c0', 7);
+  star(g, 0, 0, 16, '#e2ead8');
+  g.restore();
+  line(g, 30, 30, 98, 102, OUT, 18); line(g, 98, 30, 30, 102, OUT, 18);
+  line(g, 30, 30, 98, 102, '#ff4a5a', 10); line(g, 98, 30, 30, 102, '#ff4a5a', 10);
+}
+function bloodMoon(g: G): void {
+  const r = g.createRadialGradient(56, 54, 6, 64, 64, 46);
+  r.addColorStop(0, '#ff8a7a'); r.addColorStop(1, '#a01a2a');
+  circle(g, 64, 64, 42, null, OUT, 7);
+  g.beginPath(); g.arc(64, 64, 42, 0, Math.PI * 2); g.fillStyle = r; g.fill();
+  circle(g, 50, 52, 7, 'rgba(90,0,10,0.45)'); circle(g, 76, 74, 10, 'rgba(90,0,10,0.45)'); circle(g, 72, 44, 4, 'rgba(90,0,10,0.45)');
+  for (const x of [40, 64, 88]) path(g, [[x - 5, 104], [x + 5, 104], [x, 120]], '#c01a2a');
+}
+function vacuum(g: G): void {
+  g.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    g.beginPath(); g.arc(64, 64, 18 + i * 14, i * 0.9, i * 0.9 + Math.PI * 1.3);
+    g.lineWidth = 11; g.strokeStyle = OUT; g.stroke();
+    g.lineWidth = 6; g.strokeStyle = ['#e8f4ff', '#9fd0ff', '#5a9aff'][i]; g.stroke();
+  }
+  for (const [x, y, c] of [[22, 30, '#5affb0'], [104, 40, '#4fb4ff'], [96, 104, '#ff5ad2']] as [number, number, string][]) path(g, [[x, y - 9], [x + 6, y], [x, y + 9], [x - 6, y]], c, OUT, 3);
+}
+function flare(g: G): void {
+  g.save(); g.translate(64, 70); g.rotate(0.5);
+  path(g, [[-9, -10], [9, -10], [9, 46], [-9, 46]], '#e83a3a', OUT, 6);
+  path(g, [[-9, 22], [9, 22], [9, 30], [-9, 30]], '#f4ead0');
+  g.restore();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    line(g, 44 + Math.cos(a) * 14, 40 + Math.sin(a) * 14, 44 + Math.cos(a) * (i % 2 ? 24 : 34), 40 + Math.sin(a) * (i % 2 ? 24 : 34), '#ffe07a', 6);
+  }
+  circle(g, 44, 40, 13, '#ffffff', '#ffb03a', 5);
+}
+function bell(g: G): void {
+  line(g, 64, 14, 64, 26, OUT, 8);
+  g.beginPath(); g.moveTo(26, 92); g.quadraticCurveTo(34, 84, 36, 60); g.quadraticCurveTo(38, 26, 64, 24); g.quadraticCurveTo(90, 26, 92, 60); g.quadraticCurveTo(94, 84, 102, 92); g.closePath();
+  g.fillStyle = '#bfefff'; g.fill(); g.lineWidth = 7; g.strokeStyle = OUT; g.stroke();
+  line(g, 42, 46, 50, 78, 'rgba(255,255,255,0.8)', 6);
+  path(g, [[22, 90], [106, 90], [106, 100], [22, 100]], '#7ad0f0', OUT, 5);
+  circle(g, 64, 108, 9, '#ffd25a', OUT, 4);
+  for (const [x, y] of [[16, 40], [110, 52], [104, 18]]) star(g, x, y, 8, '#e8fbff');
+}
+function tonic(g: G): void {
+  path(g, [[54, 14], [74, 14], [74, 24], [54, 24]], '#a8703a', OUT, 5);
+  path(g, [[56, 24], [72, 24], [72, 42], [98, 70], [92, 108], [36, 108], [30, 70], [56, 42]], '#ffd0d0', OUT, 7);
+  path(g, [[36, 74], [92, 74], [88, 104], [40, 104]], '#ff3a4a');
+  line(g, 44, 80, 48, 98, 'rgba(255,255,255,0.6)', 5);
+  for (const [x, y] of [[62, 62], [78, 56], [70, 46]]) circle(g, x, y, 4, '#ff8a8a');
+}
+function wingedBoot(g: G): void {
+  boot(g);
+  path(g, [[70, 36], [96, 20], [118, 22], [104, 32], [116, 36], [100, 44], [108, 50], [78, 54]], '#ffffff', OUT, 4);
+}
+function chest(g: G): void {
+  path(g, [[16, 56], [112, 56], [112, 112], [16, 112]], '#a8703a', OUT, 7);
+  g.beginPath(); g.moveTo(16, 56); g.quadraticCurveTo(16, 22, 64, 22); g.quadraticCurveTo(112, 22, 112, 56); g.closePath();
+  g.fillStyle = '#c8843a'; g.fill(); g.lineWidth = 7; g.strokeStyle = OUT; g.stroke();
+  for (const x of [34, 94]) path(g, [[x - 6, 26], [x + 6, 26], [x + 6, 110], [x - 6, 110]], '#ffd23f', OUT, 4);
+  path(g, [[52, 48], [76, 48], [76, 72], [52, 72]], '#ffe68a', OUT, 5);
+  circle(g, 64, 62, 4, OUT);
+}
+function lock(g: G): void {
+  g.beginPath(); g.arc(64, 50, 22, Math.PI, 0); g.lineWidth = 16; g.strokeStyle = OUT; g.stroke();
+  g.beginPath(); g.arc(64, 50, 22, Math.PI, 0); g.lineWidth = 9; g.strokeStyle = '#c8d4e8'; g.stroke();
+  line(g, 42, 50, 42, 60, '#c8d4e8', 9); line(g, 86, 50, 86, 60, '#c8d4e8', 9);
+  path(g, [[30, 58], [98, 58], [98, 110], [30, 110]], '#ffd23f', OUT, 7);
+  circle(g, 64, 80, 8, OUT); path(g, [[60, 82], [68, 82], [70, 98], [58, 98]], OUT);
+}
+function infinity(g: G): void {
+  g.lineWidth = 16; g.strokeStyle = OUT; g.lineCap = 'round';
+  const loop = () => { g.beginPath(); g.moveTo(64, 64); g.bezierCurveTo(84, 30, 120, 40, 112, 64); g.bezierCurveTo(104, 92, 80, 88, 64, 64); g.bezierCurveTo(48, 40, 24, 36, 16, 64); g.bezierCurveTo(10, 90, 46, 96, 64, 64); g.stroke(); };
+  loop(); g.lineWidth = 9; g.strokeStyle = '#ff8a6a'; loop();
 }
 
 const WEAPON_DRAW: Record<WeaponId, (g: G, evo: boolean) => void> = {
   blade: (g, e) => sword(g, e), bow: (g) => bow(g), spear: (g) => spear(g), blaster: (g) => blaster(g),
-  wards: (g, e) => shield(g, e), torch: (g, e) => torch(g, e), robot: (g, e) => robot(g, e),
+  wards: (g, e) => shield(g, e), torch: (g, e) => torch(g, e), robot: (g, e) => robot(g, e), shield: (g, e) => towerShield(g, e),
+};
+const POWER_DRAW: Record<PowerId, (g: G) => void> = {
+  heal: bowl, vacuum, nuke: flare, freeze: bell, rage: tonic, boots: wingedBoot,
 };
 const PASSIVE_DRAW: Record<PassiveId, (g: G) => void> = {
   swift: boot, vigor: bowl, regen: cup, magnet, armor: vest, haste: whetstone, reach: charm, luck: clover,
@@ -280,10 +399,27 @@ const PASSIVE_DRAW: Record<PassiveId, (g: G) => void> = {
 const UPGRADE_DRAW: Record<UpgradeId, [number, (g: G) => void]> = {
   might: [0xff6a4a, fist], vitality: [0xff3b5c, (g) => heart(g)], swiftness: [0x6affd0, boot], lodestone: [0xff5a6a, magnet],
   greed: [0xffd23f, pouch], reroll: [0x8fd8ff, arrows], secondWind: [0xffb03a, wing],
+  toughness: [0x9aa8c0, helmet], growth: [0x5affb0, book], precision: [0xff5a6a, crosshair], breadth: [0xffa040, rings],
+  quickHands: [0xffd27a, hourglass], drill: [0x7affc0, drill], banish: [0xff4a5a, banishCard], curse: [0xc01a2a, bloodMoon],
 };
-const HERO_DRAW: Record<HeroId, [number, (g: G) => void]> = {
-  survivor: [0x7ab8ff, (g) => person(g, 'none')], ranger: [0x8aff7a, (g) => person(g, 'hood')], knight: [0xc8d4e8, (g) => person(g, 'helm')],
-};
+
+/** A power-up's icon on a canvas (the 3D pickups' billboards; drawn once per page). */
+const powerCanvases = new Map<PowerId, HTMLCanvasElement>();
+export function powerCanvas(id: PowerId): HTMLCanvasElement {
+  let cv = powerCanvases.get(id);
+  if (cv) return cv;
+  cv = document.createElement('canvas');
+  cv.width = cv.height = 128;
+  const g = cv.getContext('2d')!;
+  // a white rim keeps the icon readable over the dark grass
+  const r = g.createRadialGradient(64, 64, 30, 64, 64, 64);
+  r.addColorStop(0, css(POWER_HUE[id], 0.9)); r.addColorStop(0.7, css(POWER_HUE[id], 0.35)); r.addColorStop(1, css(POWER_HUE[id], 0));
+  g.fillStyle = r; g.fillRect(0, 0, 128, 128);
+  circle(g, 64, 64, 50, 'rgba(20,24,30,0.78)', '#ffffff', 5);
+  g.save(); g.translate(64, 64); g.scale(0.78, 0.78); g.translate(-64, -64); POWER_DRAW[id](g); g.restore();
+  powerCanvases.set(id, cv);
+  return cv;
+}
 
 export function makeArt(scene: Phaser.Scene): void {
   for (const id of WEAPON_IDS) {
@@ -292,7 +428,10 @@ export function makeArt(scene: Phaser.Scene): void {
   }
   for (const id of PASSIVE_IDS) icon(scene, passiveArt(id), (g) => { disc(g, PASSIVE_HUE[id]); PASSIVE_DRAW[id](g); });
   for (const id of UPGRADE_IDS) icon(scene, upgradeArt(id), (g) => { disc(g, UPGRADE_DRAW[id][0]); UPGRADE_DRAW[id][1](g); });
-  for (const id of HERO_IDS) icon(scene, heroArt(id), (g) => { disc(g, HERO_DRAW[id][0]); HERO_DRAW[id][1](g); });
+  for (const id of POWER_IDS) icon(scene, powerArt(id), (g) => { disc(g, POWER_HUE[id]); POWER_DRAW[id](g); });
+  icon(scene, CHEST, (g) => { disc(g, 0xffd23f); chest(g); });
+  icon(scene, LOCK, lock, 64);
+  icon(scene, INFINITY, infinity, 64);
   icon(scene, HEAL, (g) => { disc(g, 0xff8a5a); meal(g); });
   icon(scene, GOLD, (g) => { disc(g, 0xffd23f); pouch(g); });
   icon(scene, COIN, coin, 64);
