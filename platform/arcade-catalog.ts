@@ -1449,6 +1449,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'zombie-grove',
+    title: { en: 'Zombie Grove', tr: 'Zombi Korusu' },
+    description: {
+      en: 'Night falls on a forest camp and zombie hordes shamble out of the trees! A 3D survival game where you only run: your weapons fire on their own. Collect the gems the zombies drop, level up and pick one of three cards: the Camp Blade, Pinewood Bow, Ashwood Spear, Scrap Blaster, Ward Shields, Torch Toss and Sprocket the robot. Max a weapon and evolve it with its paired trinket. Runners, swarms, goo spitters, bloaters and hulks; a mini-boss every few minutes and the Rot King at the end. Hold out until dawn and the sun burns the horde away! Coins from every night buy lasting upgrades, new weapons and heroes at the camp.',
+      tr: 'Ormandaki kampa gece çöküyor ve zombi sürüleri ağaçların arasından çıkıp geliyor! Bir 3D hayatta kalma oyunu: sen sadece koşarsın, silahların kendiliğinden ateş eder. Zombilerin düşürdüğü kristalleri topla, seviye atla ve üç karttan birini seç: Kamp Kılıcı, Çam Yayı, Dişbudak Mızrak, Hurda Tabanca, Muhafız Kalkanları, Meşale Atışı ve Robot Dişli. Silahları 5. seviyeye çıkarıp eşi olan eşyayla evrimleştir. Koşucular, sürüler, balçık tükürenler, patlayanlar ve devler; birkaç dakikada bir mini boss ve en sonda Çürük Kral. Şafağa kadar dayan, güneş sürüyü yaksın! Kazandığın altınlarla kampta kalıcı geliştirmeler, yeni silahlar ve kahramanlar aç.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['zombie', 'grove', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-13',
+  }),
+  arcadeGame({
     slug: 'zombie-survivor',
     title: { en: 'Zombie Survivor', tr: 'Zombi Hayatta Kalma' },
     description: {

@@ -15,7 +15,14 @@ their GLBs under models/gltf_format/ like the older kits, and keep the external 
   python3 tools/import-kenney.py <jam-ready-assets-dir> space-kit planets sfx-sci-fi
   python3 tools/import-kenney.py <jam-ready-assets-dir> mini-skate city-kit-suburban city-kit-industrial sfx-foley
   python3 tools/import-kenney.py <jam-ready-assets-dir> holiday-kit train-kit
-  python3 tools/import-kenney.py <jam-ready-assets-dir> road-pack"""
+  python3 tools/import-kenney.py <jam-ready-assets-dir> road-pack
+
+Mini Forest 1.0 and Mini Characters 2.0 came as zips uploaded by the project owner (kenney.nl
+is not reachable from the build machines). Unzip each into one folder, named as below, and pass
+that folder (nothing in the zips is run, only the listed files are copied):
+  unzip kenney_mini-forest.zip -d <dir>/kenney_mini-forest
+  unzip kenney_mini-characters.zip -d <dir>/kenney_mini-characters
+  python3 tools/import-kenney.py <dir> mini-forest mini-characters"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -79,6 +86,10 @@ PACKS = {
     # Road Pack 1.0, the "3D Road Tiles" (jam-ready-assets mirror, Git LFS, commit 397bf9e; pack
     # root is the mirror's own folder: License.txt + Models/GLTF format/tileNNN.glb)
     'kenney-road-pack/3D/city': 'road-pack',
+    # Mini Forest 1.0 and Mini Characters 2.0: the owner's uploaded zips, unpacked as
+    # <dir>/kenney_mini-forest/ and <dir>/kenney_mini-characters/ (License.txt + Models/GLB format/)
+    'kenney_mini-forest': 'mini-forest',
+    'kenney_mini-characters': 'mini-characters',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -222,6 +233,23 @@ FILES['train-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] 
 # built from. The full catalogue of all 294 tiles (what each one is) is the table in tiles.ts
 ROAD_TILES = [5, 11, 17, 21, 26, 27, 29, 34, 41, 47, 53, 59, 78, 84, 85, 92, 103, 119, 157, 169, 203]
 FILES['road-pack'] = ['License.txt'] + [f'Models/GLTF format/tile{n:03d}.glb' for n in ROAD_TILES]
+# Zombie Grove (games/zombie-grove/kit.ts): the whole Mini Forest (camp, trees, rocks, the archer
+# hero, bow and arrow); from Mini Characters 2.0 the models the platform characters and the games
+# load: the first eleven (golden-podium, kickflip-park, CHARACTER_MODELS in @core/three) and the
+# zombie roster, heroes, robot helper, weapons and shield of Zombie Grove
+MINI_FOREST = [
+    'bridge', 'building-platform', 'building-roof', 'building-structure', 'character-archer', 'fence', 'flag',
+    'ladder', 'patch-dirt', 'patch-grass', 'plant', 'platform', 'rocks-high', 'rocks-low', 'rocks-ramp', 'stones',
+    'target', 'tent', 'tree-high', 'tree', 'weapon-arrow', 'weapon-bow',
+]
+MINI_CHARACTERS = [
+    'character-male-a', 'character-male-b', 'character-male-c', 'character-male-d', 'character-male-e',
+    'character-male-f', 'character-male-g', 'character-female-f', 'character-soldier', 'character-zombie', 'weapon-bow',
+    'character-raider', 'character-alien', 'character-robot', 'character-knight', 'character-worker',
+    'weapon-sword', 'weapon-spear', 'weapon-shooter', 'weapon-arrow', 'shield-round',
+]
+FILES['mini-forest'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_FOREST]
+FILES['mini-characters'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_CHARACTERS]
 
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""
