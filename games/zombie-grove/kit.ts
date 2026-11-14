@@ -5,12 +5,14 @@
 //     posed from their own clips sampled once: one InstancedMesh per part and model, so a horde
 //     of hundreds costs a couple of dozen draw calls. A small shader adds the zombie palette, the
 //     hit flash, burning and the dissolve per instance.
+//   - The Hulk carries a sword baked into its arm part, and every zombie gets a rim light (a soft
+//     edge in its own colour, per instance) so the crowd reads from the high camera.
 //   - keepPrograms() compiles a copy of every material kind behind the menu, so the first Play
 //     frame finds its shader programs ready.
 import Phaser from 'phaser';
 import { THREE, model, modelClips, loadModel, kenney3d, loadMiniCharacter, loadCharacter3d, miniKey } from '@core/three';
 import { FOREST_MODELS, type ForestModel } from './arena';
-import type { HeroId } from './defs';
+import { HEROES, HERO_IDS, type HeroId } from './defs';
 
 export const FOREST = 'mini-forest';
 export const fkey = (m: string): string => 'mf:' + m;
@@ -19,19 +21,22 @@ export const fkey = (m: string): string => 'mf:' + m;
 export const ROSTER = ['character-zombie', 'character-raider', 'character-alien', 'character-worker'] as const;
 export type RosterModel = (typeof ROSTER)[number];
 export const PEOPLE = ['character-knight', 'character-robot', ...ROSTER] as const;
-export const WEAPON_MODELS = ['weapon-sword', 'weapon-spear', 'weapon-shooter', 'weapon-arrow', 'shield-round', 'weapon-bow'] as const;
+export const WEAPON_MODELS = ['weapon-sword', 'weapon-spear', 'weapon-shooter', 'weapon-arrow', 'shield-round', 'shield-rectangle', 'weapon-bow'] as const;
 
 export function loadKit(load: Phaser.Loader.LoaderPlugin): void {
   for (const m of FOREST_MODELS) loadModel(load, fkey(m), kenney3d(FOREST, m));
   loadModel(load, fkey('character-archer'), kenney3d(FOREST, 'character-archer'));
   for (const p of PEOPLE) loadMiniCharacter(load, p);
+  // the heroes' own models (the Mini Forest archer is loaded above)
+  for (const h of HERO_IDS) { const m = HEROES[h].model; if (m !== 'own' && !m.startsWith('mf:')) loadMiniCharacter(load, m); }
   for (const w of WEAPON_MODELS) loadMiniCharacter(load, w);
   loadCharacter3d(load);
 }
 
-/** Model key of a hero ('survivor' is the player's own platform character). */
+/** Model key of a hero ('survivor' is the player's own platform character, `own`). */
 export function heroKey(h: HeroId, own: string): string {
-  return h === 'ranger' ? fkey('character-archer') : h === 'knight' ? miniKey('character-knight') : own;
+  const m = HEROES[h].model;
+  return m === 'own' ? own : m.startsWith('mf:') ? fkey(m.slice(3)) : miniKey(m);
 }
 
 /** Mini Characters are about 0.67 units tall; the game draws people at this scale. */
@@ -111,6 +116,17 @@ export interface Baked { parts: { joint: number; geo: THREE.BufferGeometry }[]; 
 
 const baked = new Map<string, Baked>();
 
+/** A weapon held in a character's fist, in the arm bone's space (model units), as Figure.hold places it. */
+export function fistMatrix(side: 'left' | 'right', scale = 1): THREE.Matrix4 {
+  const g = new THREE.Matrix4().compose(new THREE.Vector3(side === 'left' ? 0.17 : -0.17, -0.05, 0.06), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2), new THREE.Vector3(scale, scale, scale));
+  return g.multiply(new THREE.Matrix4().makeTranslation(-0.06, -0.02, -0.04));
+}
+
+/** Weapons baked into a roster model's arm (the Hulk's sword). */
+const BAKED_WEAPON: Partial<Record<string, { model: string; side: 'left' | 'right'; scale: number }>> = {
+  'character-raider': { model: 'weapon-sword', side: 'right', scale: 1.45 },
+};
+
 /** Splits a rigged Mini Character into rigid parts (by bone) and samples its clips. */
 export function bake(name: string): Baked {
   const hit = baked.get(name);
@@ -155,6 +171,19 @@ export function bake(name: string): Baked {
       byJoint.get(bi)!.push(part);
     }
     g.dispose();
+  }
+  // a weapon in the fist: its triangles join the arm's part, placed in the bind pose
+  const wpn = BAKED_WEAPON[name];
+  if (wpn) {
+    const bi = bones.findIndex((b) => b.name === 'arm-' + wpn.side);
+    if (bi >= 0 && byJoint.has(bi)) {
+      const src = modelGeo(miniKey(wpn.model));
+      const wg = (src.geo.index ? src.geo.toNonIndexed() : src.geo.clone());
+      for (const k of Object.keys(wg.attributes)) if (!['position', 'normal', 'uv'].includes(k)) wg.deleteAttribute(k);
+      const bind = new THREE.Matrix4().copy(skinned[0].skeleton.boneInverses[bi]).invert();
+      wg.applyMatrix4(bind.multiply(fistMatrix(wpn.side, wpn.scale)).multiply(src.mat));
+      byJoint.get(bi)!.push(wg);
+    }
   }
   const parts: Baked['parts'] = [];
   for (const [joint, geos] of byJoint) {
@@ -208,16 +237,17 @@ export function bake(name: string): Baked {
 
 /**
  * Lambert with per-instance effects (attribute `aFx`): x dissolve (0–1), y white flash, z the
- * zombie palette (greys the skin and greens it), w ember glow on the dissolving edge.
+ * zombie palette (greys the skin and greens it), w ember glow on the dissolving edge; and a rim
+ * light (attribute `aRim`: colour and strength).
  */
 export function hordeMaterial(map: THREE.Texture | null): THREE.MeshLambertMaterial {
   const mat = new THREE.MeshLambertMaterial({ map });
   mat.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec4 aFx;\nvarying vec4 vFx;\nvarying vec3 vWp;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFx = aFx;\n#ifdef USE_INSTANCING\nvWp = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;\n#else\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;\n#endif');
+      .replace('#include <common>', '#include <common>\nattribute vec4 aFx;\nattribute vec4 aRim;\nvarying vec4 vFx;\nvarying vec4 vRim;\nvarying vec3 vWp;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFx = aFx;\nvRim = aRim;\n#ifdef USE_INSTANCING\nvWp = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;\n#else\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;\n#endif');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec4 vFx;\nvarying vec3 vWp;')
+      .replace('#include <common>', '#include <common>\nvarying vec4 vFx;\nvarying vec4 vRim;\nvarying vec3 vWp;')
       .replace('#include <map_fragment>', [
         '#include <map_fragment>',
         'float zl = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));',
@@ -226,6 +256,8 @@ export function hordeMaterial(map: THREE.Texture | null): THREE.MeshLambertMater
         'if (dn < vFx.x) discard;',
       ].join('\n'))
       .replace('#include <opaque_fragment>', [
+        'float rimF = pow(1.0 - abs(dot(normalize(vViewPosition), normal)), 2.2);',
+        'outgoingLight += vRim.rgb * rimF * vRim.a;',
         'outgoingLight = mix(outgoingLight, vec3(1.0, 0.97, 0.92), vFx.y);',
         'if (vFx.x > 0.0 && dn < vFx.x + 0.14) outgoingLight += vec3(1.0, 0.42, 0.08) * vFx.w;',
         '#include <opaque_fragment>',
@@ -233,6 +265,22 @@ export function hordeMaterial(map: THREE.Texture | null): THREE.MeshLambertMater
   };
   mat.customProgramCacheKey = () => 'zg-horde';
   return mat;
+}
+
+/**
+ * A rim light on a Figure's (cloned) standard material: a bright edge in `color` so a boss reads
+ * against the dark grass. Returns the uniform so the colour can change (the Rot King's rage).
+ */
+export function addRim(mat: THREE.MeshStandardMaterial, color: number, k: number): { value: THREE.Color } {
+  const u = { value: new THREE.Color(color).multiplyScalar(k) };
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uRim = u;
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec3 uRim;')
+      .replace('#include <opaque_fragment>', 'outgoingLight += uRim * pow(1.0 - abs(dot(normalize(vViewPosition), normal)), 2.0);\n#include <opaque_fragment>');
+  };
+  mat.customProgramCacheKey = () => 'zg-rim';
+  return u;
 }
 
 // ------------------------------------------------------------------ the grove's material

@@ -3,6 +3,7 @@
 // body (legs, torso, head) walks or idles while the arms swing, thrust, shoot or throw. A clip
 // split into those two layers is built once per model.
 import { THREE, model, modelClips } from '@core/three';
+import { addRim } from './kit';
 
 const ARM = /arm-(left|right)/;
 const split = new Map<string, Map<string, { body: THREE.AnimationClip; arms: THREE.AnimationClip; full: THREE.AnimationClip }>>();
@@ -38,8 +39,11 @@ export class Figure {
   readonly bones = new Map<string, THREE.Object3D>();
 
   private glow = new THREE.Color(0, 0, 0);
+  /** The rim light's colour uniforms (bosses), and the arms' resting clip (a held item). */
+  readonly rims: { value: THREE.Color }[] = [];
+  armsRest: string | null = null;
 
-  constructor(readonly key: string, scale: number, o: { tint?: number; glow?: number; shadows?: boolean; ownMaterials?: boolean } = {}) {
+  constructor(readonly key: string, scale: number, o: { tint?: number; glow?: number; shadows?: boolean; ownMaterials?: boolean; rim?: [number, number] } = {}) {
     if (o.glow !== undefined) this.glow.setHex(o.glow);
     this.body = model(key, { shadows: o.shadows ?? true });
     this.body.scale.setScalar(scale);
@@ -50,9 +54,10 @@ export class Figure {
       if ((obj as THREE.Bone).isBone) this.bones.set(obj.name, obj);
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh) return;
-      if (o.ownMaterials || o.tint !== undefined) {
+      if (o.ownMaterials || o.tint !== undefined || o.rim) {
         const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
         if (o.tint !== undefined) mat.color.setHex(o.tint);
+        if (o.rim) this.rims.push(addRim(mat, o.rim[0], o.rim[1]));
         mesh.material = mat;
         this.mats.push(mat);
       }
@@ -72,8 +77,10 @@ export class Figure {
       this.bodyName = name;
     }
     if (o.speed !== undefined && this.bodyAct) this.bodyAct.timeScale = o.speed;
-    if (this.armsT <= 0) this.arms(name, { fade: o.fade, speed: o.speed, once: o.once, follow: true });
-    else if (o.speed !== undefined && this.armsName === name && this.armsAct) this.armsAct.timeScale = o.speed;
+    if (this.armsT <= 0) {
+      if (this.armsRest) this.arms(this.armsRest, { fade: o.fade, follow: false });
+      else this.arms(name, { fade: o.fade, speed: o.speed, once: o.once, follow: true });
+    } else if (o.speed !== undefined && this.armsName === name && this.armsAct) this.armsAct.timeScale = o.speed;
   }
 
   /** A one-shot arm move (swing, thrust, throw) for `hold` seconds; then the arms follow the body. */
@@ -113,7 +120,8 @@ export class Figure {
   update(dt: number): void {
     if (this.armsT > 0) {
       this.armsT -= dt;
-      if (this.armsT <= 0 && this.bodyName) this.arms(this.bodyName, { fade: 0.15, follow: true });
+      if (this.armsT <= 0 && this.armsRest) this.arms(this.armsRest, { fade: 0.15, follow: false });
+      else if (this.armsT <= 0 && this.bodyName) this.arms(this.bodyName, { fade: 0.15, follow: true });
     }
     this.mixer.update(dt);
     if (this.mats.length) {

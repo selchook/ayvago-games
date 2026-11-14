@@ -1,13 +1,16 @@
 // Headless balance check: the autopilot plays whole nights on the pure simulation.
-// Run: npx tsx games/zombie-grove/balance.ts [runs] [--skill=good|casual] [--mode=easy|normal] [--meta=none|full]
+// Run: npx tsx games/zombie-grove/balance.ts [runs] [--skill=good|casual] [--mode=easy|normal]
+//        [--meta=none|old|full|curse] [--hero=survivor|ranger|…]
+//   old: the 1.0 camp (its seven upgrades at their top); full: every upgrade of 1.1 at its top;
+//   curse: the full camp with the Curse at its top.
 //   reports, per difficulty, skill and camp: survival time, win rate, level reached, kills, coins,
 //   what killed the survivor most often and which weapons did the damage.
 import { Sim, seeded } from './sim';
 import { Bot, SKILL, type Skill } from './bot';
-import { NO_META, fullMeta, runBonus, type MetaFx } from './meta';
-import type { Mode, WeaponId } from './defs';
+import { NO_META, fullMeta, oldFullMeta, runBonus, type MetaFx } from './meta';
+import type { Mode, WeaponId, HeroId } from './defs';
 
-export interface RunResult { seconds: number; won: boolean; level: number; kills: number; coins: number; killer: string; score: number; weapons: string; dmg: Partial<Record<WeaponId, number>>; maxZ: number }
+export interface RunResult { seconds: number; won: boolean; level: number; kills: number; coins: number; killer: string; score: number; weapons: string; dmg: Partial<Record<WeaponId, number>>; maxZ: number; powers: number }
 
 export function playRun(mode: Mode, skill: Skill, meta: MetaFx, seed: number): RunResult {
   const sim = new Sim(mode, seed, meta);
@@ -22,8 +25,8 @@ export function playRun(mode: Mode, skill: Skill, meta: MetaFx, seed: number): R
   }
   return {
     seconds: sim.run.time, won: sim.won, level: sim.level, kills: sim.run.kills, score: sim.score,
-    coins: sim.run.coins + runBonus(sim.run.kills, sim.run.time, sim.won, sim.run.minis + sim.run.bosses),
-    killer: sim.run.killer ?? '-', weapons: sim.weapons.map((w) => w.id + w.lv + (w.evo ? '*' : '')).join(' '), dmg: sim.run.byWeapon, maxZ,
+    coins: Math.round((sim.run.coins + runBonus(sim.run.kills, sim.run.time, sim.won, sim.run.minis + sim.run.bosses)) * sim.coinMul),
+    killer: sim.run.killer ?? '-', weapons: sim.weapons.map((w) => w.id + w.lv + (w.evo ? '*' : '')).join(' '), dmg: sim.run.byWeapon, maxZ, powers: sim.run.powers,
   };
 }
 
@@ -37,7 +40,14 @@ if (proc?.argv[1]?.endsWith('balance.ts')) {
   const opt = (k: string) => argv.find((a) => a.startsWith(`--${k}=`))?.split('=')[1];
   const modes = (opt('mode') ? [opt('mode')] : ['easy', 'normal']) as Mode[];
   const skills = opt('skill') ? [opt('skill')!] : ['casual', 'good'];
-  const metas: [string, MetaFx][] = opt('meta') === 'full' ? [['full camp', fullMeta()]] : opt('meta') === 'none' ? [['no camp', NO_META]] : [['no camp', NO_META], ['full camp', fullMeta()]];
+  const hero = (opt('hero') ?? 'survivor') as HeroId;
+  const all: Record<string, [string, MetaFx]> = {
+    none: ['no camp', { ...NO_META, hero, weapons: hero === 'survivor' ? NO_META.weapons : NO_META.weapons }],
+    old: ['1.0 camp', { ...oldFullMeta(), hero }],
+    full: ['full camp', fullMeta(hero)],
+    curse: ['full+curse', fullMeta(hero, 3)],
+  };
+  const metas: [string, MetaFx][] = (opt('meta') ?? 'none,full').split(',').map((k) => all[k]);
   const verbose = argv.includes('-v');
   for (const mode of modes) {
     for (const sk of skills) {
@@ -55,7 +65,7 @@ if (proc?.argv[1]?.endsWith('balance.ts')) {
         for (const r of res) for (const [k, v] of Object.entries(r.dmg)) dmg[k] = (dmg[k] ?? 0) + (v ?? 0);
         const tot = Object.values(dmg).reduce((s, v) => s + v, 0) || 1;
         const share = Object.entries(dmg).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${Math.round((v / tot) * 100)}%`).join(', ');
-        console.log(`${mode.padEnd(6)} ${sk.padEnd(6)} ${mName.padEnd(9)} survive ${mmss(avg(res.map((r) => r.seconds)))} (min ${mmss(Math.min(...res.map((r) => r.seconds)))})  win ${Math.round((res.filter((r) => r.won).length / res.length) * 100)}%  level ${avg(res.map((r) => r.level)).toFixed(1)}  kills ${Math.round(avg(res.map((r) => r.kills)))}  peak ${Math.round(avg(res.map((r) => r.maxZ)))}  coins ${Math.round(avg(res.map((r) => r.coins)))}  killed by ${main}\n         damage: ${share}`);
+        console.log(`${mode.padEnd(6)} ${sk.padEnd(6)} ${mName.padEnd(10)} survive ${mmss(avg(res.map((r) => r.seconds)))} (min ${mmss(Math.min(...res.map((r) => r.seconds)))})  win ${Math.round((res.filter((r) => r.won).length / res.length) * 100)}%  level ${avg(res.map((r) => r.level)).toFixed(1)}  kills ${Math.round(avg(res.map((r) => r.kills)))}  peak ${Math.round(avg(res.map((r) => r.maxZ)))}  coins ${Math.round(avg(res.map((r) => r.coins)))}  powers ${avg(res.map((r) => r.powers)).toFixed(1)}  killed by ${main}\n         damage: ${share}`);
       }
     }
   }

@@ -68,6 +68,16 @@ launch({
     loadAudio(l, 'slowOut', J + 'general-sounds/pause-sounds/sfx-sounds-pause3-out');
     loadSfx(l, 'step', 'sfx-impact/audio/footstep_grass_001');
     const C = 'sfx-casino/audio/';
+    // 1.1: the power-ups, the shield, the chest's reels and the banish
+    loadAudio(l, 'nuke', J + 'explosions/long/sfx-exp-long5');
+    loadAudio(l, 'rage', J + 'general-sounds/positive-sounds/sfx-sounds-powerup9');
+    loadAudio(l, 'boots', J + 'movement/portals-and-transitions/sfx-movement-portal2');
+    loadSfx(l, 'bell', 'sfx-impact/audio/impactbell_heavy_000');
+    loadSfx(l, 'freezeHit', 'sfx-impact/audio/impactglass_heavy_002');
+    loadSfx(l, 'bash', 'sfx-impact/audio/impactpunch_heavy_001');
+    loadAudio(l, 'dropPop', J + 'general-sounds/interactions/sfx-sounds-interaction2');
+    loadAudio(l, 'banish', J + 'general-sounds/negative-sounds/sfx-sounds-negative1');
+    loadSfx(l, 'reel', 'sfx-casino/audio/chiplay2');
     loadSfx(l, 'cardFan', C + 'cardfan1');
     loadSfx(l, 'cardSlide', C + 'cardslide3');
     loadSfx(l, 'reroll', C + 'cardshuffle');
@@ -77,10 +87,12 @@ launch({
     makeSounds(scene.game);
     // a live night behind the menu: the autopilot fights in the grove. Building it here also
     // compiles every shader the Play scene uses (View in menu mode keeps the programs).
-    const view = new View(scene, { hero: loadMeta().hero, menu: true });
+    // a random hero from the camp stands in the grove
+    const owned = loadMeta().heroes;
+    const view = new View(scene, { hero: owned[Math.floor(Math.random() * owned.length)], menu: true });
     let seed = 7;
     const fresh = () => {
-      const s = new Sim('normal', seed++, { ...NO_META, weapons: ['blade', 'bow', 'spear', 'blaster', 'wards', 'torch', 'robot'] });
+      const s = new Sim('normal', seed++, { ...NO_META, weapons: ['blade', 'bow', 'spear', 'blaster', 'wards', 'torch', 'robot', 'shield'] });
       // straight into a busy night with a few weapons
       s.setTime(260);
       s.weapons = [{ id: 'blade', lv: 4, evo: false }, { id: 'wards', lv: 3, evo: false }, { id: 'torch', lv: 3, evo: false }, { id: 'robot', lv: 2, evo: false }];

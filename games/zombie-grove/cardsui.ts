@@ -1,7 +1,7 @@
 // Zombie Grove: the level-up card UI. The offer button (a round HUD button with a count badge:
 // the offers earned and not opened yet), and the compact card bar it opens over live play (three
-// small cards, a reroll and a close button; the fight runs on in slow motion), with a tooltip for
-// a card's full text (hover or long-press).
+// small cards, a reroll, a banish (camp upgrade) and a close button; the fight runs on in slow
+// motion), with a tooltip for a card's full text (hover or long-press).
 import Phaser from 'phaser';
 import { txt, t, hudChip, HudChip } from '@core';
 import { RARITY_COLOR, type Card } from './cards';
@@ -33,7 +33,7 @@ export function cardText(c: Card): { name: string; short: string; long: string; 
 }
 
 /** "NEW", "Lv 2 → 3" … */
-function levelTag(c: Card): string {
+export function levelTag(c: Card): string {
   if (c.kind === 'evo' || c.kind === 'heal' || c.kind === 'gold') return '';
   if (c.to === c.add) return c.add > 1 ? t('cardNew') + ' · ' + t('cardLv', { n: c.to }) : t('cardNew');
   return t('cardLvUp', { a: c.to - c.add, b: c.to });
@@ -209,6 +209,21 @@ class MiniCard extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
+  private banishMark: Phaser.GameObjects.Container | null = null;
+
+  /** Banish mode: a red veil and a cross over the card. */
+  setBanish(on: boolean): void {
+    if (!on) { this.banishMark?.destroy(); this.banishMark = null; return; }
+    if (this.banishMark) return;
+    const g = this.scene.add.graphics();
+    g.fillStyle(0x3a0010, 0.45).fillRoundedRect(-this.w / 2, -this.h / 2, this.w, this.h, 18);
+    g.lineStyle(4, 0xff4a5a, 1).strokeRoundedRect(-this.w / 2, -this.h / 2, this.w, this.h, 18);
+    g.lineStyle(8, 0xff4a5a, 0.85).lineBetween(-22, -this.h / 2 + 42, 22, -this.h / 2 + 86).lineBetween(22, -this.h / 2 + 42, -22, -this.h / 2 + 86);
+    this.banishMark = this.scene.add.container(0, 0, [g]);
+    this.add(this.banishMark);
+    this.scene.tweens.add({ targets: g, alpha: { from: 0.55, to: 1 }, duration: 380, yoyo: true, repeat: -1 });
+  }
+
   setFocus(on: boolean): void {
     if (on === this.focused) return;
     this.focused = on;
@@ -224,6 +239,9 @@ export interface BarOptions {
   input: 'touch' | 'desk';
   rerolls: () => number;
   roll: () => Card[] | null;
+  /** Banishes left, and banishing card k (its replacement, or null when it may not go). */
+  banishes: () => number;
+  banish: (k: number) => Card | null;
   onPick: (k: number, x: number, y: number) => void;
   onClose: () => void;
   sfx: (key: string, volume?: number) => void;
@@ -240,6 +258,11 @@ export class CardBar {
   private root: Phaser.GameObjects.Container;
   private cards: MiniCard[] = [];
   private rerollBtn: Pill;
+  private banishBtn: Pill | null = null;
+  /** Banish mode: the next card picked is banished instead of taken. */
+  private banishing = false;
+  private banishHint: Phaser.GameObjects.Text;
+  private hintText!: Phaser.GameObjects.Text;
   private sub: Phaser.GameObjects.Text;
   private more: Phaser.GameObjects.Text;
   private tip: CardTip;
@@ -265,9 +288,17 @@ export class CardBar {
     close.setLabels('✕');
     this.rerollBtn = new Pill(scene, BAR_W / 2 - 150, top + BAR_HEAD / 2 + 2, 160, 42, 0x3d7a5e, () => this.reroll(), 18);
     this.syncReroll();
-    const hint = txt(scene, 0, BAR_H / 2 - 12, o.input === 'touch' ? t('barTouch') : t('barDesk'), { size: 16, color: '#b8c8b0', strokeThickness: 0, shadow: false });
+    const canBanish = o.banishes() > 0;
+    const hint = txt(scene, 0, BAR_H / 2 - 12, o.input === 'touch' ? t('barTouch') : canBanish ? t('barDesk2') : t('barDesk'), { size: 16, color: '#b8c8b0', strokeThickness: 0, shadow: false });
     if (hint.width > BAR_W - 30) hint.setScale((BAR_W - 30) / hint.width);
-    this.root.add([panel, bg, title, this.sub, this.more, this.rerollBtn, close, hint]);
+    this.banishHint = txt(scene, 0, BAR_H / 2 - 12, t('banishPick'), { title: true, size: 17, color: '#ff8a9a', strokeThickness: 0, shadow: false }).setVisible(false);
+    this.root.add([panel, bg, title, this.sub, this.more, this.rerollBtn, close, hint, this.banishHint]);
+    if (canBanish) {
+      this.banishBtn = new Pill(scene, BAR_W / 2 - 150 - 80 - 8 - 66, top + BAR_HEAD / 2 + 2, 132, 42, 0x8a3048, () => this.toggleBanish(), 17);
+      this.root.add(this.banishBtn);
+      this.syncBanish();
+    }
+    this.hintText = hint;
     this.tip = new CardTip(scene, DRAFT_DEPTH + 5);
     this.setWaiting(waiting);
     this.root.setScrollFactor(0, 0, true);
@@ -279,11 +310,52 @@ export class CardBar {
 
   setWaiting(n: number): void {
     this.more.setText(n > 0 ? t('barMore', { n }) : '');
-    const room = BAR_W / 2 - 150 - 80 - 10 - this.sub.x;
+    const room = BAR_W / 2 - 150 - 80 - 10 - this.sub.x - (this.banishBtn ? 140 : 0);
     const need = this.sub.width + (n > 0 ? 10 + this.more.width : 0);
     const k = Math.min(1, room / need);
     this.sub.setScale(k);
     this.more.setScale(k).setX(this.sub.x + this.sub.width * k + 10 * k);
+  }
+
+  private syncBanish(): void {
+    if (!this.banishBtn) return;
+    const n = this.o.banishes();
+    this.banishBtn.setLabels(this.banishing ? t('banishCancel') : t('banishBtn', { n }));
+    this.banishBtn.setEnabled(n > 0 || this.banishing);
+    this.banishBtn.setColor(this.banishing ? 0xd04060 : 0x8a3048);
+  }
+
+  private toggleBanish(): void {
+    if (this.busy || this.done || !this.banishBtn) return;
+    if (!this.banishing && this.o.banishes() <= 0) { this.o.sfx('error', 0.4); return; }
+    this.banishing = !this.banishing;
+    this.o.sfx(this.banishing ? 'offer' : 'move', 0.4);
+    this.hintText.setVisible(!this.banishing);
+    this.banishHint.setVisible(this.banishing);
+    this.cards.forEach((c) => c.setBanish(this.banishing && (c.card.kind === 'weapon' || c.card.kind === 'passive')));
+    this.syncBanish();
+  }
+
+  /** Banishes card i: it crumbles away and a new card is dealt into its place. */
+  private banishCard(i: number): void {
+    const c = this.cards[i];
+    if (!c || (c.card.kind !== 'weapon' && c.card.kind !== 'passive')) { this.o.sfx('error', 0.4); return; }
+    const next = this.o.banish(i);
+    if (!next) { this.o.sfx('error', 0.4); return; }
+    this.o.sfx('banish', 0.6);
+    this.tip.hide();
+    this.busy = true;
+    c.disableInteractive();
+    const stamp = txt(this.scene, c.x, c.y, t('banished'), { title: true, size: 22, color: '#ff4a5a', strokeThickness: 5 }).setAngle(-12).setScale(1.8).setAlpha(0);
+    this.root.add(stamp);
+    this.scene.tweens.add({ targets: stamp, scale: 1, alpha: 1, duration: 160, ease: 'Back.easeOut' });
+    this.scene.tweens.add({ targets: [c, stamp], alpha: 0, y: c.y + 50, angle: 14, delay: 420, duration: 220, ease: 'Quad.easeIn', onComplete: () => { c.destroy(); stamp.destroy(); } });
+    this.banishing = false;
+    this.banishHint.setVisible(false);
+    this.hintText.setVisible(true);
+    this.cards.forEach((q) => q.setBanish(false));
+    this.syncBanish();
+    this.dealOne(next, i, this.cards.length, 560, true);
   }
 
   private syncReroll(): void {
@@ -293,22 +365,26 @@ export class CardBar {
   }
 
   private deal(offer: Card[], delay: number): void {
-    const n = offer.length;
+    this.busy = true;
+    this.o.sfx('cardFan', 0.45);
+    offer.forEach((card, i) => this.dealOne(card, i, offer.length, delay + i * 60, i === offer.length - 1));
+  }
+
+  /** Deals one card into slot i of n; `last` frees the bar when it lands. */
+  private dealOne(card: Card, i: number, n: number, delay: number, last: boolean): void {
     const gap = 12;
     const w = Math.floor((BAR_W - 24 - gap * (n - 1)) / n);
     const y = -BAR_H / 2 + BAR_HEAD + CARD_H / 2;
-    this.busy = true;
-    this.o.sfx('cardFan', 0.45);
-    offer.forEach((card, i) => {
+    {
       const x = -BAR_W / 2 + 12 + w / 2 + i * (w + gap);
       const c = new MiniCard(this.scene, x, y + 40, w, CARD_H, card, this.o.input === 'desk' ? String(i + 1) : '');
       c.setData('y0', y);
       c.setAlpha(0).setScale(0.8);
       this.root.add(c);
       c.setScrollFactor(0, 0, true);
-      this.cards.push(c);
+      this.cards[i] = c;
       this.scene.tweens.add({
-        targets: c, y, alpha: 1, scale: 1, duration: 220, delay: delay + i * 60, ease: 'Back.easeOut',
+        targets: c, y, alpha: 1, scale: 1, duration: 220, delay, ease: 'Back.easeOut',
         onStart: () => this.o.sfx('cardSlide', 0.3),
         onComplete: () => {
           const r = card.rarity;
@@ -320,7 +396,7 @@ export class CardBar {
             this.root.add(burst);
             this.scene.tweens.add({ targets: burst, scale: 1.25, alpha: 0, duration: 420, onComplete: () => burst.destroy() });
           }
-          if (i === n - 1) this.busy = false;
+          if (last) this.busy = false;
         },
       });
       c.setInteractive({ useHandCursor: true });
@@ -345,7 +421,7 @@ export class CardBar {
         if (pr && pr.i !== i) return;
         this.pick(i);
       });
-    });
+    }
   }
 
   private setFocus(i: number): void {
@@ -369,6 +445,7 @@ export class CardBar {
 
   private reroll(): void {
     if (this.busy || this.done) return;
+    if (this.banishing) this.toggleBanish();
     const next = this.o.roll();
     if (!next) {
       this.o.sfx('error', 0.4);
@@ -392,12 +469,14 @@ export class CardBar {
     const num = ['Digit1', 'Digit2', 'Digit3', 'Numpad1', 'Numpad2', 'Numpad3'].indexOf(code) % 3;
     if (num >= 0) { if (num < this.cards.length) this.pick(num); return true; }
     if (code === 'KeyR') { this.reroll(); return true; }
+    if (code === 'KeyB') { if (this.banishBtn) this.toggleBanish(); return true; }
     if (code === 'Enter' && this.focusI >= 0) { this.pick(this.focusI); return true; }
     return false;
   }
 
   private pick(i: number): void {
     if (this.done || this.busy || !this.cards[i]) return;
+    if (this.banishing) { this.banishCard(i); return; }
     this.done = true;
     this.tip.hide();
     const c = this.cards[i];
