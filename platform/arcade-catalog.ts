@@ -1095,6 +1095,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     input: ['touch', 'keyboard', 'mouse'],
   }),
   arcadeGame({
+    slug: 'skull-isle',
+    title: { en: 'Skull Isle', tr: 'Kurukafa Adası' },
+    description: {
+      en: 'Raid island after island in a 3D pirate brawler: chain sword combos, roll out of the red warnings, grab rum, powder kegs and a parrot, and beat the Kraken and Captain Bonebeard.',
+      tr: "3B korsan dövüşünde adaları tek tek yağmala: kılıç kombolarını zincirle, kırmızı uyarılardan yuvarlanarak kaç, rom, barut fıçısı ve papağan topla, dokunaçlarıyla Kraken'ı ve Kaptan Kemiksakal'ı yen.",
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['skull', 'isle', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-14',
+  }),
+  arcadeGame({
     slug: 'sky-jumper',
     title: { en: 'Sky Jumper', tr: 'Gök Zıplayıcı' },
     description: {

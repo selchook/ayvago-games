@@ -1,0 +1,40 @@
+quaternius/pirate-kit/anchor.glb 16KB 0.78x0.09x0.95
+quaternius/pirate-kit/anne.glb 520KB 1.35x1.49x1.31 clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.77 Run:0.73 Sword:0.87 Wave:1.67 Yes:1.67
+quaternius/pirate-kit/barbarossa.glb 454KB 1.54x1.62x1.39 clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.77 Run:0.73 Sword:0.87 Wave:1.53 Yes:1.67
+quaternius/pirate-kit/barrel.glb 20KB 0.72x0.66x0.72
+quaternius/pirate-kit/bones.glb 48KB 6.50x3.43x6.62
+quaternius/pirate-kit/bucket-fishes.glb 42KB 0.86x0.68x1.15
+quaternius/pirate-kit/cannon.glb 42KB 1.49x1.13x1.04
+quaternius/pirate-kit/chest-closed.glb 67KB 1.40x0.88x0.88
+quaternius/pirate-kit/chest-gold.glb 148KB 1.81x1.28x1.59
+quaternius/pirate-kit/cliff1.glb 66KB 5.63x2.96x5.41
+quaternius/pirate-kit/cliff3.glb 105KB 6.85x6.17x5.94
+quaternius/pirate-kit/coin.glb 21KB 0.40x0.42x0.41
+quaternius/pirate-kit/coins.glb 54KB 0.46x0.34x0.64
+quaternius/pirate-kit/cutlass.glb 15KB 0.41x1.20x0.10
+quaternius/pirate-kit/dock-broken.glb 64KB 2.38x3.01x2.66
+quaternius/pirate-kit/dock.glb 57KB 2.18x3.01x2.66
+quaternius/pirate-kit/fish.glb 16KB 1.56x0.63x0.24
+quaternius/pirate-kit/goldbag.glb 98KB 0.67x0.62x0.52
+quaternius/pirate-kit/headless.glb 494KB 1.31x0.95x1.00 clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.77 Run:0.73 Sword:0.87 Walk:1.00 Yes:1.67
+quaternius/pirate-kit/henry.glb 478KB 1.98x1.42x0.92 clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.77 Run:0.73 Sword:0.87 Wave:1.67 Yes:1.67
+quaternius/pirate-kit/house1.glb 247KB 13.54x6.78x4.60
+quaternius/pirate-kit/house2.glb 100KB 3.78x9.38x3.74
+quaternius/pirate-kit/house3.glb 247KB 8.46x10.64x3.78
+quaternius/pirate-kit/mako.glb 610KB 1.70x1.44x1.37 clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.77 Run:0.73 Sword:0.87 Wave:1.67 Yes:1.67
+quaternius/pirate-kit/palm1.glb 72KB 2.61x3.58x2.52
+quaternius/pirate-kit/palm2.glb 69KB 2.63x2.69x2.58
+quaternius/pirate-kit/palm3.glb 73KB 2.86x2.69x2.75
+quaternius/pirate-kit/parrot.glb 26KB 0.76x0.64x0.38
+quaternius/pirate-kit/pistol.glb 34KB 1.25x0.64x0.34
+quaternius/pirate-kit/rock.glb 25KB 0.78x1.05x0.76
+quaternius/pirate-kit/sawmill.glb 22KB 2.07x0.59x2.07
+quaternius/pirate-kit/shark.glb 295KB 2.27x2.01x5.56 clips: Swim:1.33 Swim_Bite:1.10 Swim_Fast:1.00
+quaternius/pirate-kit/sharky.glb 544KB 1.34x1.42x1.55 clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.77 Run:0.73 Sword:0.87 Wave:1.67 Yes:1.67
+quaternius/pirate-kit/ship-large.glb 336KB 15.44x11.48x5.29
+quaternius/pirate-kit/ship-small.glb 105KB 5.14x1.97x3.60
+quaternius/pirate-kit/skeleton.glb 556KB 1.32x1.36x1.17 clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.77 Run:0.73 Sword:0.87 Walk:1.00 Yes:1.67
+quaternius/pirate-kit/skull.glb 18KB 0.48x0.48x0.48
+quaternius/pirate-kit/skulls.glb 37KB 4.14x3.80x4.44
+quaternius/pirate-kit/sword.glb 16KB 0.28x1.37x0.14
+quaternius/pirate-kit/tentacle.glb 196KB 3.68x15.67x5.50 clips: Tentacle_Attack:0.90 Tentacle_Attack2:1.00 Tentacle_Idle:3.33 Tentacle_Poke:1.33
