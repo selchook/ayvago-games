@@ -5,6 +5,10 @@
 // slant), its rooftop clutter, the alley below (asphalt, parked trucks, dumpsters, lamps) and the
 // neighbours on both sides with their side streets and trees. A chunk is merged into two meshes
 // (one kit material) plus its cable, and is dropped (geometry freed) once the courier is past.
+// Overhead pieces (beams, cables, decks) and the pieces that span an alley (awnings, beam and
+// plank bridges) are merged apart, in materials that can fade: the overhead ones whenever they
+// stand between the camera and the courier, the alley ones while the camera looks down past them
+// at a courier falling into the alley.
 // The far skyline (other Kenney city kits) is one strip that hops forward as the run goes on.
 import { THREE } from '@core/three';
 import { KitBatch, mergeModels, skyKey, SKYLINE, type KitModel, type Mats, type SkyKit } from './kit';
@@ -30,6 +34,8 @@ export interface Chunk {
   block: number; group: THREE.Group; lamps: THREE.Vector3[]; stacks: THREE.Vector3[]; s1: number;
   /** The overhead pieces (beams, cables, scaffold decks, festoon lights): their own meshes, which fade. */
   over: { meshes: THREE.Mesh[]; s0: number; s1: number; k: number } | null;
+  /** The pieces across the alley before the block (awning, bridge): they fade during a fall. */
+  under: { meshes: THREE.Mesh[]; s0: number; s1: number; k: number } | null;
 }
 
 export interface CityMats {
@@ -43,6 +49,7 @@ export class City {
   private chunks: Chunk[] = [];
   private built = new Set<number>();
   private overPut: Put | null = null;
+  private underPut: Put | null = null;
   private overSpan: [number, number] = [Infinity, -Infinity];
 
   constructor(private course: Course, private mats: CityMats) {}
@@ -62,7 +69,7 @@ export class City {
       const c = this.chunks.shift()!;
       this.root.remove(c.group);
       c.group.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
-      for (const m of c.over?.meshes ?? []) (m.material as THREE.Material).dispose();
+      for (const m of [...c.over?.meshes ?? [], ...c.under?.meshes ?? []]) (m.material as THREE.Material).dispose();
     }
   }
 
@@ -77,19 +84,21 @@ export class City {
    * Fades the overhead pieces that stand between the camera (at s = camS) and just past the
    * courier, so a beam, a cable or a scaffold deck never hides it.
    */
-  fadeOver(camS: number, s: number, dt: number): void {
+  fadeOver(camS: number, s: number, dt: number, alley = false): void {
     for (const c of this.chunks) {
-      const o = c.over;
-      if (!o) continue;
-      const between = o.s1 > camS - 0.5 && o.s0 < s + 1.5;
-      const want = between ? 0.18 : 1;
-      if (Math.abs(o.k - want) < 0.001) continue;
-      o.k += Math.sign(want - o.k) * Math.min(Math.abs(want - o.k), dt * 6);
-      for (const m of o.meshes) {
-        const mat = m.material as THREE.Material;
-        const see = o.k < 0.999;
-        if (mat.transparent !== see) { mat.transparent = see; mat.depthWrite = !see; }
-        mat.opacity = o.k;
+      for (const o of [c.over, c.under]) {
+        if (!o) continue;
+        const lo = Math.min(camS, s), hi = Math.max(camS, s);
+        const between = o === c.over ? o.s1 > camS - 0.5 && o.s0 < s + 1.5 : alley && o.s1 > lo - 0.5 && o.s0 < hi + 0.8;
+        const want = between ? (o === c.over ? 0.18 : 0.25) : 1;
+        if (Math.abs(o.k - want) < 0.001) continue;
+        o.k += Math.sign(want - o.k) * Math.min(Math.abs(want - o.k), dt * (o === c.over ? 6 : 16));
+        for (const m of o.meshes) {
+          const mat = m.material as THREE.Material;
+          const see = o.k < 0.999;
+          if (mat.transparent !== see) { mat.transparent = see; mat.depthWrite = !see; }
+          mat.opacity = o.k;
+        }
       }
     }
   }
@@ -122,6 +131,8 @@ export class City {
     const putOver = (n: KitModel, x: number, y: number, s: number, rot = 0, sx = TILE, sy = sx, sz = sx, tint: RGB = WHITE, lit = 2) => ob.add(n, x, y, -s, rot, sx, sy, sz, tint, lit);
     this.overPut = putOver;
     this.overSpan = [Infinity, -Infinity];
+    const ub = new KitBatch();
+    this.underPut = (n, x, y, s, rot = 0, sx = TILE, sy = sx, sz = sx, tint = WHITE, lit = 2) => ub.add(n, x, y, -s, rot, sx, sy, sz, tint, lit);
     this.building(put, kb, r, b, wallTint, lamps);
     this.alley(put, kb, r, b, prev, lamps);
     const stacks: THREE.Vector3[] = [];
@@ -145,8 +156,11 @@ export class City {
       over = { meshes, s0: this.overSpan[0], s1: this.overSpan[1], k: 1 };
     }
     this.overPut = null;
+    let under: Chunk['under'] = null;
+    if (!ub.empty && prev) under = { meshes: ub.build(group, this.mats.fadeable(), true), s0: prev.s1 - 0.5, s1: b.s0 + 0.5, k: 1 };
+    this.underPut = null;
     this.root.add(group);
-    return { block: b.i, group, lamps, stacks, s1: b.s1, over };
+    return { block: b.i, group, lamps, stacks, s1: b.s1, over, under };
   }
 
   /** The courier's building: front face, sides, back and the roof. */
@@ -334,9 +348,9 @@ export class City {
         const aw = this.course.boxes.find((q) => q.kind === 'awning' && q.block === b.i);
         if (!aw || !f) break;
         const w = aw.x1 - aw.x0, d = aw.s1 - aw.s0;
-        put('detail-awning-wide', (aw.x0 + aw.x1) / 2, aw.y1 - 0.28 * 2.2, b.s0, FACE_PZ, w, 2.2, d / 0.3, r.pick(AWNING));
-        // the shop under it
-        put('wall-a-garage', (aw.x0 + aw.x1) / 2, aw.y1 - STOREY - 0.5, b.s0 - 1.5, FACE_PZ, TILE);
+        this.underPut!('detail-awning-wide', (aw.x0 + aw.x1) / 2, aw.y1 - 0.28 * 2.2, b.s0, FACE_PZ, w, 2.2, d / 0.3, r.pick(AWNING));
+        // the shop under it: a shallow shopfront on the building's face (nothing stands in the alley)
+        put('wall-a-garage', (aw.x0 + aw.x1) / 2, aw.y1 - STOREY - 0.5, b.s0 - 0.1, FACE_PZ, TILE, TILE, 0.2);
         break;
       }
       case 'zip': {
@@ -350,10 +364,10 @@ export class City {
         const cx = (br.x0 + br.x1) / 2, len = br.s1 - br.s0, w = br.x1 - br.x0;
         if (b.link === 'beam') {
           const n = Math.ceil(len / TILE);
-          for (let k = 0; k < n; k++) put('detail-beam', cx, br.y0, br.s0 + (k + 0.5) * len / n, 0, w / 0.26, 1.2, len / n);
+          for (let k = 0; k < n; k++) this.underPut!('detail-beam', cx, br.y0, br.s0 + (k + 0.5) * len / n, 0, w / 0.26, 1.2, len / n);
         } else {
           const n = Math.ceil(len / 3.3);
-          for (let k = 0; k < n; k++) put('planks', cx, br.y1 - 0.3, br.s0 + (k + 0.5) * len / n, Math.PI / 2, (len / n) / 1.12, 3, w / 0.58);
+          for (let k = 0; k < n; k++) this.underPut!('planks', cx, br.y1 - 0.3, br.s0 + (k + 0.5) * len / n, Math.PI / 2, (len / n) / 1.12, 3, w / 0.58);
         }
         break;
       }

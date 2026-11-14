@@ -4,7 +4,9 @@
 // slide leaning back on one hand, the vault with a hand planted on the wall, both hands up on the
 // zip-line, hand over hand on a ladder, a forward roll, the stumble and the fall. Hands that touch
 // something (the wall, the cable, the rungs, the ledge) are aimed at it bone by bone. The courier
-// wears a satchel on the back and, if bought, a cap: plain meshes on the torso and head bones.
+// wears a satchel on the back and, if bought, a cap: plain meshes on the torso and head bones;
+// the paper glider power-up rides on its back the same way. Its materials are its own and always
+// blend, so the view can fade the courier out (a fall) and back in (a respawn) without a new shader.
 import { THREE, model, modelClips } from '@core/three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Sim } from './sim';
@@ -53,6 +55,11 @@ export class Runner {
   private cap: THREE.Group | null = null;
   private bagMat: THREE.MeshLambertMaterial;
   private capMat: THREE.MeshLambertMaterial;
+  /** Every material of the courier (faded together). */
+  private fadeMats: THREE.Material[] = [];
+  private alpha = 1;
+  private glider: THREE.Group | null = null;
+  private gliderK = 0;
   readonly shadow: THREE.Mesh;
   /** World positions of the chest and the hands (popups, sparkles). */
   readonly chest = new THREE.Vector3();
@@ -65,7 +72,8 @@ export class Runner {
     this.obj.traverse((o) => {
       const m = o as THREE.Mesh;
       if (m.isMesh) {
-        skin ??= mats.of(m.material as THREE.Material);
+        // its own copy (the shared one is the skyline's too): it fades
+        skin ??= mats.of(m.material as THREE.Material).clone();
         m.material = skin;
         m.frustumCulled = false;
         m.castShadow = true;
@@ -98,6 +106,9 @@ export class Runner {
     this.capMat = new THREE.MeshLambertMaterial({ color: look.cap ?? 0xffffff });
     this.bag = this.makeBag();
     this.setLook(look);
+    this.glider = this.makeGlider();
+    this.fadeMats = [skin!, this.bagMat, this.capMat, this.gliderMat];
+    for (const m of this.fadeMats) { m.transparent = true; m.depthWrite = true; }
     // a soft blob under the courier: where it will land
     const blob = new THREE.MeshBasicMaterial({ map: blobTex(), transparent: true, depthWrite: false, opacity: 0.55 });
     this.shadow = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), blob);
@@ -130,6 +141,18 @@ export class Runner {
   /** A delivery: a quick wave of the free arm while running on. */
   wave(): void { this.waveT = 0.7; }
 
+  /** Fades the whole courier (0 = gone). Below 1 % it is not drawn at all. */
+  setOpacity(a: number): void {
+    a = clamp(a, 0, 1);
+    if (Math.abs(a - this.alpha) < 1e-4) return;
+    this.alpha = a;
+    for (const m of this.fadeMats) m.opacity = a;
+    this.obj.visible = a > 0.01;
+  }
+  get opacity(): number { return this.alpha; }
+  /** Drawn this frame (test hook: never hidden while still more than faintly there). */
+  get shown(): boolean { return this.obj.visible && this.root.visible; }
+
   update(dt: number, sim: Sim, groundY: number): void {
     this.t += dt;
     const st = sim.state;
@@ -146,14 +169,23 @@ export class Runner {
     const k = this.choose(sim);
     this.mixer.update(dt);
     this.pose(sim, k, dt);
+    // the paper glider unfolds on the back while it lasts
+    const gk = sim.power.glide > 0 ? 1 : 0;
+    this.gliderK += clamp(gk - this.gliderK, -dt * 5, dt * 6);
+    if (this.glider) {
+      this.glider.visible = this.gliderK > 0.01;
+      const k = this.gliderK, flap = st === 'air' ? Math.sin(this.t * 7) * 0.08 : 0;
+      this.glider.scale.set(k, 0.6 + 0.4 * k, k);
+      this.glider.rotation.z = flap;
+    }
     this.root.updateMatrixWorld(true);
     // the blob on the ground below
     const h = Math.max(0, sim.y - groundY);
     const sk = clamp(1 - h / 10, 0.35, 1);
-    this.shadow.visible = st !== 'fall' && st !== 'done' && groundY > 0.5;
+    this.shadow.visible = st !== 'fall' && st !== 'done' && st !== 'rescue' && groundY > 0.5 && this.alpha > 0.01;
     this.shadow.position.set(sim.x, groundY + 0.04, -sim.s);
     this.shadow.scale.set(sk, sk, 1);
-    (this.shadow.material as THREE.MeshBasicMaterial).opacity = 0.5 * sk + (sim.state === 'air' ? 0.2 : 0);
+    (this.shadow.material as THREE.MeshBasicMaterial).opacity = (0.5 * sk + (sim.state === 'air' ? 0.2 : 0)) * this.alpha;
     this.bones.get('torso')!.getWorldPosition(this.chest);
     this.waveT = Math.max(0, this.waveT - dt);
   }
@@ -182,7 +214,8 @@ export class Runner {
       case 'mantle': this.play('crouch', 0.08); return 0;
       case 'zip': this.play('fall', 0.15, 0.6); return 0;
       case 'slam': case 'fall': this.play('fall', 0.12, 1.4); return 0;
-      case 'done': this.play('die', 0.2); return 0;
+      case 'rescue': this.play('jump', 0.12, 0.8); return 0;
+      case 'done': if (sim.overReason === 'fell') this.play('fall', 0.12, 1.4); else this.play('die', 0.2); return 0;
     }
     return 0;
   }
@@ -304,13 +337,29 @@ export class Runner {
         lean = -0.1;
         break;
       }
-      case 'fall': {
-        const w = Math.sin(this.t * 14);
-        this.rot('arm-left', 0, 0, -2.2 + w * 0.6);
-        this.rot('arm-right', 0, 0, 2.2 + w * 0.6);
+      case 'fall': case 'done': {
+        if (st === 'done' && sim.overReason !== 'fell') break;
+        // tumbling backwards into the alley, arms and legs flailing
+        const w = Math.sin(this.t * 14), w2 = Math.sin(this.t * 11 + 1.3);
+        this.rot('arm-left', w2 * 0.5, 0, -2.2 + w * 0.6);
+        this.rot('arm-right', -w2 * 0.5, 0, 2.2 + w * 0.6);
         this.rot('leg-left', -0.6 + w * 0.5, 0, 0);
         this.rot('leg-right', -0.2 - w * 0.5, 0, 0);
-        pitch = -Math.min(1.2, sim.stateT * 1.4);
+        this.rot('head', -0.3, 0, 0);
+        const ft = st === 'fall' ? sim.stateT : 1.4;
+        pitch = -Math.min(1.2, ft * 1.4) - Math.max(0, ft - 0.5) * 1.6;
+        roll = Math.sin(ft * 3.2) * 0.35;
+        yaw = Math.sin(ft * 2.1) * 0.4;
+        break;
+      }
+      case 'rescue': {
+        // carried by the bubble: arms out for balance, knees tucked, upright again by the roof
+        const w = Math.sin(this.t * 6) * 0.15;
+        this.rot('arm-left', -0.3, 0, -1.6 + w);
+        this.rot('arm-right', -0.3, 0, 1.6 - w);
+        this.rot('leg-left', -0.8, 0, 0);
+        this.rot('leg-right', -0.5, 0, 0);
+        lean = 0.1;
         break;
       }
       default: break;
@@ -322,7 +371,8 @@ export class Runner {
     this.lowK = lerp(this.lowK, low, Math.min(1, dt * 18));
     this.rot('torso', this.lean, 0, 0);
     // the figure faces the run (its +z towards −z); rolls, leans back and falls pitch it round the hips
-    const p = st === 'roll' ? pitch : lerp(this.spin.rotation.x, pitch, Math.min(1, dt * 14));
+    const tumbling = st === 'fall' || (st === 'done' && sim.overReason === 'fell');
+    const p = st === 'roll' ? pitch : tumbling ? lerp(this.spin.rotation.x, pitch, Math.min(1, dt * 6)) : lerp(this.spin.rotation.x, pitch, Math.min(1, dt * 14));
     this.body.rotation.set(0, Math.PI + this.yaw, this.roll);
     this.spin.rotation.x = p;
     this.spin.position.y = HIP - this.lowK;
@@ -468,6 +518,42 @@ export class Runner {
     const cs = [new THREE.Color(bag), new THREE.Color(flap), new THREE.Color(0xffd23f)];
     this.bagKinds.forEach((k, i) => col.setXYZ(i, cs[k].r, cs[k].g, cs[k].b));
     col.needsUpdate = true;
+  }
+
+  readonly gliderMat = new THREE.MeshLambertMaterial({ color: 0xf8f6f0, emissive: 0x6a6a70, side: THREE.DoubleSide });
+
+  /** A folded paper glider worn on the back (the glide power-up): two swept wings and a keel. */
+  private makeGlider(): THREE.Group {
+    const torso = this.bones.get('torso')!;
+    const b = this.partBox('torso');
+    const size = b.isEmpty() ? new THREE.Vector3(0.14, 0.16, 0.1) : b.getSize(new THREE.Vector3());
+    const c = b.isEmpty() ? new THREE.Vector3(0, 0.08, 0) : b.getCenter(new THREE.Vector3());
+    const span = size.x * 2.6, chord = size.y * 1.15, back = b.isEmpty() ? -0.1 : b.min.z - size.z * 0.75;
+    // in the torso's space: x across, y up the back, z out of the back (−z)
+    const v = (x: number, y: number, z: number) => [x, y, z];
+    const tri = [
+      // left wing (nose up at +y, tip out and back)
+      ...v(0, chord * 0.55, 0), ...v(-span, -chord * 0.45, -0.02 * span), ...v(-span * 0.25, -chord * 0.5, 0),
+      // right wing
+      ...v(0, chord * 0.55, 0), ...v(span * 0.25, -chord * 0.5, 0), ...v(span, -chord * 0.45, -0.02 * span),
+      // keel (the fold, out of the back)
+      ...v(0, chord * 0.55, 0), ...v(0, -chord * 0.5, 0), ...v(0, -chord * 0.35, -size.z * 0.6),
+      // inner wing halves, so the middle reads as folded paper
+      ...v(0, chord * 0.55, 0), ...v(-span * 0.25, -chord * 0.5, 0), ...v(0, -chord * 0.5, 0),
+      ...v(0, chord * 0.55, 0), ...v(0, -chord * 0.5, 0), ...v(span * 0.25, -chord * 0.5, 0),
+    ];
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(tri, 3));
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, this.gliderMat);
+    mesh.castShadow = true;
+    const g = new THREE.Group();
+    g.add(mesh);
+    g.position.set(c.x, c.y + size.y * 0.25, back);
+    g.rotation.x = -0.35;
+    g.visible = false;
+    torso.add(g);
+    return g;
   }
 
   private makeCap(): THREE.Group {

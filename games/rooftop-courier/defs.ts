@@ -96,5 +96,21 @@ export class Rng {
   }
 }
 
+// ------------------------------------------------------------------ power-ups
+
+/** The in-run power-ups (picked up on the roofs; the spring and the time bottle are older pickups). */
+export const POWERS = ['magnet', 'glide', 'shield', 'double', 'watch', 'express'] as const;
+export type Power = typeof POWERS[number];
+export const isPower = (k: string): k is Power => (POWERS as readonly string[]).includes(k);
+/** Seconds each lasts at upgrade level 0 (simulation time; the shield lasts until it is used). */
+export const POWER_T: Record<Power, number> = { magnet: 9, glide: 5.5, shield: 0, double: 10, watch: 4.5, express: 6 };
+/** How often each turns up (weights) and its colour (halo, HUD ring, words). */
+export const POWER_W: Record<Power, number> = { magnet: 24, glide: 13, shield: 12, double: 18, watch: 14, express: 16 };
+export const POWER_COLOR: Record<Power, number> = { magnet: 0xff5a5a, glide: 0xd8f0ff, shield: 0x7fe0ff, double: 0xffd23f, watch: 0x9fb4ff, express: 0xff6aa8 };
+/** Time runs at this rate under the slow-motion watch. */
+export const WATCH_RATE = 0.6;
+/** The paper glider: the fastest sink while it lasts (m/s). */
+export const GLIDE_VY = 2.3;
+
 /** Praise words for a growing flow chain (index by tier). */
 export const PRAISE_TIERS = [3, 5, 8, 12, 16];

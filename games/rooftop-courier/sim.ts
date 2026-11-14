@@ -1,12 +1,18 @@
 // Rooftop Courier: the simulation. A deterministic, seeded run with no rendering in it: the
 // courier's movement over the course's boxes, ramps, ladders and cables (sim state machine:
-// run, air, slide, roll, vault, climb, mantle, zip, stumble, fall), the parcels and their
-// timers, pickups and pigeons, the flow chain and Rush, the districts, the score and the
-// missions' counters. Everything that happens goes out as an event for the view and the scene.
-// Steps at a fixed 1/60 s; the bot, the balance run and the menu backdrop drive it the same way.
+// run, air, slide, roll, vault, climb, mantle, zip, stumble, slam, fall, rescue), the parcels and
+// their timers, pickups, power-ups and pigeons, the flow chain and Rush, the districts, the score
+// and the missions' counters. Everything that happens goes out as an event for the view and the
+// scene. Steps at a fixed 1/60 s; the bot, the balance run and the menu backdrop drive it the same
+// way.
+//
+// A fall is a fixed sequence: past the point of no return the courier tumbles for FALL_T s
+// (never through the street or into the next building's wall), and only then is a heart lost or
+// the run over, so the view can fade the courier out on the way down.
 import { Course, type Box, type Block, type Zip, type Ladder, type Pickup, type Flock } from './course';
 import {
-  TUNING, HW, RAD, H_STAND, H_LOW, GRAV, STEP, REACH, THEMES, clamp, type Mode, type Tune, type Theme,
+  TUNING, HW, RAD, H_STAND, H_LOW, GRAV, STEP, REACH, THEMES, POWERS, POWER_T, WATCH_RATE, GLIDE_VY, clamp, isPower,
+  type Mode, type Tune, type Theme, type Power,
 } from './defs';
 
 export interface Input {
@@ -19,7 +25,7 @@ export interface Input {
 }
 export const NO_INPUT: Input = { steer: 0, jump: false, down: false };
 
-export type State = 'run' | 'air' | 'slide' | 'roll' | 'vault' | 'climb' | 'mantle' | 'zip' | 'stumble' | 'slam' | 'fall' | 'done';
+export type State = 'run' | 'air' | 'slide' | 'roll' | 'vault' | 'climb' | 'mantle' | 'zip' | 'stumble' | 'slam' | 'fall' | 'rescue' | 'done';
 export type MoveKind = 'gap' | 'bigGap' | 'vault' | 'slide' | 'roll' | 'perfectRoll' | 'zip' | 'bounce' | 'climb' | 'mantle' | 'pigeons' | 'drop';
 export type OverReason = 'fell' | 'late';
 
@@ -42,7 +48,11 @@ export type SimEvent =
   | { type: 'falling' }
   | { type: 'fell'; hearts: number }
   | { type: 'respawn' }
-  | { type: 'pickup'; p: Pickup }
+  | { type: 'pickup'; p: Pickup; value: number }
+  | { type: 'power'; kind: Power; again: boolean }
+  | { type: 'powerEnd'; kind: Power }
+  | { type: 'shieldPop'; save: boolean }
+  | { type: 'rescued' }
   | { type: 'gold'; f: Flock }
   | { type: 'pigeons'; f: Flock }
   | { type: 'parcel'; first: boolean }
@@ -71,10 +81,42 @@ export interface Stats {
   distance: number; deliveries: number; perfect: number; zips: number; vaults: number; slides: number; rolls: number;
   bounces: number; climbs: number; stamps: number; flocks: number; rushes: number; gaps: number; stumbles: number;
   falls: number; gold: number; bestChain: number;
+  /** Power-ups picked up and falls a shield bubble saved. */
+  powers: number; saves: number;
 }
 
-/** Upgrades bought with stamps (meta.ts). */
-export interface Upgrades { time: number; flow: number }
+/** Upgrade levels bought with stamps (meta.ts has the prices, the shop shows the effects). */
+export interface Upgrades {
+  /** +1.5 s on every parcel's clock. */
+  time: number;
+  /** +0.45 s flow window. */
+  flow: number;
+  /** Power-ups last 15 % longer per level. */
+  dur: number;
+  /** Magnet range +1.25 m per level. */
+  magnet: number;
+  /** Every run starts with a shield. */
+  shield: number;
+  /** Jumps 3.5 % stronger per level. */
+  jump: number;
+  /** Easy: one more heart per level. */
+  heart: number;
+  /** Rush lasts 1.2 s longer per level. */
+  rush: number;
+  /** Stamps are worth 25 % more per level. */
+  stamp: number;
+  /** A delivery carries more of the time left over to the next parcel. */
+  bonus: number;
+}
+export const NO_UPGRADES: Upgrades = { time: 0, flow: 0, dur: 0, magnet: 0, shield: 0, jump: 0, heart: 0, rush: 0, stamp: 0, bonus: 0 };
+/** What each level of an upgrade does (the simulation and the shop read the same numbers). */
+export const UP = {
+  time: 1.5, flow: 0.45, dur: 0.15, magnet: 1.25, jump: 0.035, heart: 1, rush: 1.2, stamp: 0.25,
+  /** Time carried to the next parcel: share of what was left and its cap (base, per level). */
+  bankShare: [0.35, 0.12], bankCap: [6, 2],
+} as const;
+/** The magnet's reach at level 0 (m). */
+export const MAGNET_R = 4.5;
 
 export const LAT_RUN = 7.2;
 export const LAT_AIR = 5.6;
@@ -91,7 +133,14 @@ const ROLL_WINDOW = 0.32;
 const PERFECT_WINDOW = 0.16;
 /** A landing from this high (m) is hard: roll it or stagger. */
 export const HARD = 3.6;
-const RUSH_T = 6.5;
+export const RUSH_T = 6.5;
+/** In Rush the courier is in the flow: a landing just out of reach pulls it in (m), as in Easy. */
+const RUSH_ASSIST = 1.2;
+/** A fall: seconds from the point of no return to the lost heart or the end of the run. */
+export const FALL_T = 1.3;
+/** The fastest the courier falls (m/s) and the alley floor (m). */
+const FALL_VMAX = 9.5;
+export const FLOOR = 0.05;
 
 export class Sim {
   readonly tune: Tune;
@@ -118,9 +167,18 @@ export class Sim {
   meter = 0;
   rushT = 0;
   springs = 0;
-  /** Invulnerable after a respawn (s). */
+  /** Invulnerable after a respawn, a shield pop or a rescue (s). */
   ghostT = 0;
-  readonly stats: Stats = { distance: 0, deliveries: 0, perfect: 0, zips: 0, vaults: 0, slides: 0, rolls: 0, bounces: 0, climbs: 0, stamps: 0, flocks: 0, rushes: 0, gaps: 0, stumbles: 0, falls: 0, gold: 0, bestChain: 0 };
+  /** Power-ups: seconds left (the shield: charges), and what each started with (HUD rings). */
+  readonly power: Record<Power, number> = { magnet: 0, glide: 0, shield: 0, double: 0, watch: 0, express: 0 };
+  readonly powerMax: Record<Power, number> = { magnet: 1, glide: 1, shield: 1, double: 1, watch: 1, express: 1 };
+  /** Fractions of a stamp the stamp-value upgrade has built up. */
+  private stampFrac = 0;
+  /** Height where the last fall began (the view fades the courier over the drop below it). */
+  fallY0 = 0;
+  /** The shield's flight back onto a roof. */
+  private rescueM: { s0: number; x0: number; y0: number; s1: number; x1: number; y1: number; t: number; dur: number } | null = null;
+  readonly stats: Stats = { distance: 0, deliveries: 0, perfect: 0, zips: 0, vaults: 0, slides: 0, rolls: 0, bounces: 0, climbs: 0, stamps: 0, flocks: 0, rushes: 0, gaps: 0, stumbles: 0, falls: 0, gold: 0, bestChain: 0, powers: 0, saves: 0 };
   /** The block underfoot (or last stood on), the district the courier is in. */
   block: Block | null = null;
   district = 0;
@@ -156,11 +214,12 @@ export class Sim {
   private lastStep = 0;
   private passedOver = new Set<number>();
 
-  constructor(readonly mode: Mode, readonly seed: number, upg: Upgrades = { time: 0, flow: 0 }) {
+  constructor(readonly mode: Mode, readonly seed: number, upg: Partial<Upgrades> = {}) {
     this.tune = TUNING[mode];
-    this.upg = upg;
+    this.upg = { ...NO_UPGRADES, ...upg };
     this.course = new Course(seed, this.tune);
-    this.hearts = this.tune.hearts;
+    this.hearts = this.tune.hearts ? this.tune.hearts + this.upg.heart * UP.heart : 0;
+    if (this.upg.shield > 0) this.power.shield = 1;
     const b = this.course.blocks[0];
     this.s = 0;
     this.y = b.y;
@@ -177,7 +236,22 @@ export class Sim {
   get flowMult(): number { return 1 + 0.15 * Math.min(this.chain, 20); }
   /** The running speed the courier builds towards here. */
   get target(): number { return this.course.speedAt(this.s) * (this.rush ? 1.18 : 1) + this.boost; }
-  get windowLen(): number { return this.tune.flowWindow + this.upg.flow * 0.45; }
+  get windowLen(): number { return this.tune.flowWindow + this.upg.flow * UP.flow; }
+  /** Hearts at the start of a run (0: one fall ends it). */
+  get maxHearts(): number { return this.tune.hearts ? this.tune.hearts + this.upg.heart * UP.heart : 0; }
+  /** Take-off speed of a jump (the jump upgrade). */
+  get jumpV(): number { return JUMP_V * (1 + UP.jump * this.upg.jump); }
+  get rushLen(): number { return RUSH_T + UP.rush * this.upg.rush; }
+  get magnetR(): number { return MAGNET_R + UP.magnet * this.upg.magnet; }
+  /** How long a power-up lasts with the duration upgrade. */
+  powerLen(k: Power): number { return POWER_T[k] * (1 + UP.dur * this.upg.dur); }
+  /** The slow-motion watch: the rate the world runs at (the Play scene scales time by it). */
+  get timeScale(): number { return this.power.watch > 0 ? WATCH_RATE : 1; }
+  /** How far into a fall (0 … 1; 1 once a fall ended the run). */
+  get fallK(): number {
+    if (this.state === 'fall') return clamp(this.stateT / FALL_T, 0, 1);
+    return this.state === 'done' && this.overReason === 'fell' ? 1 : 0;
+  }
 
   private emit(e: SimEvent): void { this.events.push(e); }
 
@@ -196,6 +270,7 @@ export class Sim {
     if (downEdge) this.downAt = this.time;
     this.ghostT = Math.max(0, this.ghostT - dt);
     if (this.boostT > 0) { this.boostT -= dt; if (this.boostT <= 0) this.boost = 0; }
+    this.tickPowers(dt);
 
     const s0 = this.s;
     switch (this.state) {
@@ -206,15 +281,16 @@ export class Sim {
       case 'mantle': this.doMantle(dt); break;
       case 'zip': this.doZip(dt, inp); break;
       case 'slam': case 'fall': this.doFall(dt); break;
+      case 'rescue': this.doRescue(dt); break;
       case 'done': break;
     }
     if (this.over) return;
-    const ds = Math.max(0, this.s - s0);
+    const ds = this.state === 'rescue' ? 0 : Math.max(0, this.s - s0);
     this.stats.distance += ds;
     this.score += ds * (this.rush ? 2 : 1);
     this.flow(dt);
     this.parcels(dt);
-    this.pickups();
+    this.pickups(dt);
     this.course.ensure(this.s + 130);
     this.course.forget(this.s - 70);
     this.updateDistrict();
@@ -355,7 +431,8 @@ export class Sim {
     if (b.kind === 'roof' || b.kind === 'scaf') {
       const lad = this.course.ladders.find((l) => Math.abs(l.s - b.s0) < 0.2 && this.x >= l.x0 - 0.15 && this.x <= l.x1 + 0.15 && this.y >= l.y0 - 0.6);
       if (lad) { this.startClimb(lad, face); return true; }
-      if (up <= REACH + this.tune.grab + (this.grounded ? -0.3 : 0.35)) { this.startMantle(b, face); return true; }
+      const glide = !this.grounded && this.power.glide > 0 ? 2.6 : 0;
+      if (up <= REACH + this.tune.grab + (this.grounded ? -0.3 : 0.35) + glide + (this.rush && !this.grounded ? 0.35 : 0)) { this.startMantle(b, face); return true; }
       this.s = face;
       if (this.grounded) {
         if (this.vs > 3) this.emit({ type: 'bonk' });
@@ -371,9 +448,11 @@ export class Sim {
       }
       return true;
     }
-    // obstacles: Rush and the respawn shield smash through; otherwise a stumble
-    const smash = this.rush || this.ghostT > 0;
+    // obstacles: Rush and the respawn grace smash through, a shield bubble pops; otherwise a stumble
+    const shield = !this.rush && this.ghostT <= 0 && this.power.shield > 0;
+    const smash = this.rush || this.ghostT > 0 || shield;
     b.hit = true;
+    if (shield) { this.power.shield = 0; this.ghostT = 0.6; this.emit({ type: 'shieldPop', save: false }); }
     if (!smash) {
       this.stats.stumbles++;
       this.vs *= 0.35;
@@ -391,7 +470,7 @@ export class Sim {
   private jump(): void {
     const spring = this.springs > 0;
     if (spring) this.springs--;
-    this.vy = JUMP_V * (spring ? 1.38 : 1);
+    this.vy = this.jumpV * (spring ? 1.38 : 1);
     // off a ramp the slope adds its lift
     const rp = this.course.groundAt(this.s, this.x, this.y + 0.1).ramp;
     if (rp) this.vy += this.vs * (rp.yb - rp.ya) / (rp.s1 - rp.s0) * 0.8;
@@ -428,6 +507,12 @@ export class Sim {
       if (inp.jump && this.vy > 0) g *= HOLD_G; else this.holdT = 0;
     }
     this.vy -= g * dt;
+    // the paper glider: a slow sink and the speed kept up, landings stay soft
+    if (this.power.glide > 0 && this.vy < -GLIDE_VY) {
+      this.vy += (-GLIDE_VY - this.vy) * Math.min(1, dt * 9);
+      this.apexY = Math.min(this.apexY, this.y + HARD - 1);
+      if (this.bounceVs < 0) this.vs = Math.max(this.vs, this.target * 0.9);
+    }
     // a bounce off an awning carries a guided forward speed until the top of the arc
     if (this.bounceVs >= 0) {
       this.vs = this.bounceVs;
@@ -454,6 +539,22 @@ export class Sim {
     if (this.vy <= 0) {
       const gr = this.course.groundAt(this.s, this.x, py + 0.02);
       if (this.y <= gr.y && gr.y > 0.5) { this.land(gr.y, gr.box); return; }
+      // the body came down on a roof's front edge (its centre still over the alley): onto the roof
+      const edge = this.course.groundAt(this.s + RAD - 0.18, this.x, py + 0.02);
+      if (edge.box && (edge.box.kind === 'roof' || edge.box.kind === 'scaf') && this.y <= edge.y && edge.y > 0.5) {
+        this.s = Math.max(this.s, edge.box.s0 + 0.05);
+        this.land(edge.y, edge.box);
+        return;
+      }
+    }
+    // never inside a building: a body that slipped past a front face below its top meets the face
+    for (const b of this.course.boxes) {
+      if (b.s0 > this.s + RAD) break;
+      if ((b.kind !== 'roof' && b.kind !== 'scaf') || this.s - RAD >= b.s0 || this.s + RAD <= b.s0) continue;
+      if (this.x + RAD <= b.x0 || this.x - RAD >= b.x1 || this.y >= b.y1 - 0.05 || this.y + H_STAND <= b.y0) continue;
+      this.s = b.s0 - RAD;
+      this.hitFace(b, this.s);
+      return;
     }
     // overhead pieces hit from below
     if (this.vy > 0) {
@@ -470,9 +571,9 @@ export class Sim {
     this.checkDoom();
   }
 
-  /** Easy's jump assist: a landing just out of reach pulls the courier in. */
+  /** Easy's jump assist (and Rush's, in both modes): a landing just out of reach pulls the courier in. */
   private assist(dt: number): number {
-    const a = this.tune.assist;
+    const a = Math.max(this.tune.assist, this.rush ? RUSH_ASSIST : 0);
     if (a <= 0 || this.vy > 2) return 0;
     if (this.course.groundAt(this.s, this.x, this.y + 0.1).y > this.y - 6) return 0;
     const nb = this.course.nextBlock(this.s);
@@ -665,30 +766,91 @@ export class Sim {
 
   // ------------------------------------------------------------------ falling
 
-  /** Below the point of no return over an alley: the courier falls. */
+  /** Below the point of no return over an alley: the courier falls (or a shield bubble saves it). */
   private checkDoom(): void {
+    if (this.power.glide > 0 && this.state === 'air') return;
     const b = this.course.blockAt(this.s);
     if (b && this.course.groundAt(this.s, this.x, this.y + 0.1).y > 0.5) return;
     const prev = this.course.blocks.filter((q) => q.s1 <= this.s + 0.01).pop();
     const next = this.course.nextBlock(this.s);
     const ref = Math.min(prev?.y ?? this.y, next?.y ?? this.y, this.lastSafe.y);
     if (this.y < ref - 4.4) {
+      if (this.power.shield > 0) {
+        this.power.shield = 0;
+        this.stats.saves++;
+        this.emit({ type: 'shieldPop', save: true });
+        this.startRescue();
+        return;
+      }
       this.setState('fall');
+      this.vy = Math.max(this.vy, -FALL_VMAX);
+      this.fallY0 = this.y;
       this.emit({ type: 'falling' });
     }
   }
 
+  /**
+   * Sliding down a wall (slam) or falling into the alley: a capped speed, never through the street
+   * and never into the next building's wall, so the courier stays in the alley in plain view.
+   */
   private doFall(dt: number): void {
-    this.vy -= GRAV * dt;
+    this.vy = Math.max(-FALL_VMAX, this.vy - GRAV * dt);
+    const py = this.y;
     this.y += this.vy * dt;
-    this.vs *= Math.max(0, 1 - dt * 2);
+    // a roof right under a wall it slid down (a gap of nothing): it lands there instead
+    const g = this.course.groundAt(this.s, this.x, py + 0.02);
+    if (g.y > 0.5 && this.y <= g.y) { this.land(g.y, g.box); return; }
+    if (this.y < FLOOR) { this.y = FLOOR; this.vy = 0; }
+    this.vs *= Math.max(0, 1 - dt * 2.5);
+    const wall = this.course.nextBlock(this.s);
     this.s += this.vs * dt;
+    if (wall && this.y < wall.y + 0.5 && this.s > wall.s0 - RAD - 0.02) { this.s = wall.s0 - RAD - 0.02; this.vs = 0; }
     if (this.state === 'slam') {
       // sliding down the wall: a ledge below can't be caught any more
       this.checkDoom();
       return;
     }
-    if (this.stateT > 1.05) this.fell();
+    if (this.stateT > FALL_T) this.fell();
+  }
+
+  /** A shield bubble carries the courier up out of the alley onto the next roof. */
+  private startRescue(): void {
+    const nb = this.course.nextBlock(this.s);
+    let s1: number, y1: number, x1 = clamp(this.x, -HW + 1, HW - 1);
+    if (nb) {
+      s1 = nb.s0 + 1.8;
+      y1 = nb.y;
+      // a clear spot to land on
+      for (const x of [x1, 0, -2.5, 2.5]) if (this.course.groundAt(s1, x, y1 + 2.5, 0.5).y <= y1 + 0.05) { x1 = x; break; }
+    } else { s1 = this.lastSafe.s; y1 = this.lastSafe.y; x1 = this.lastSafe.x; }
+    this.rescueM = { s0: this.s, x0: this.x, y0: this.y, s1, x1, y1, t: 0, dur: clamp(0.95 + Math.abs(s1 - this.s) * 0.015, 0.95, 1.25) };
+    this.zip = null; this.ladder = null; this.vault = null; this.mantle = null;
+    this.vy = 0;
+    this.ghostT = 1.8;
+    this.setState('rescue');
+  }
+
+  private doRescue(dt: number): void {
+    const r = this.rescueM!;
+    r.t += dt;
+    // straight up out of the alley first, then over the edge and down onto the roof
+    const k = clamp(r.t / r.dur, 0, 1);
+    const sm = (v: number) => { const q = clamp(v, 0, 1); return q * q * (3 - 2 * q); };
+    const peak = Math.max(r.y0, r.y1) + 2.2;
+    const e = sm((k - 0.5) / 0.5);
+    this.s = r.s0 + (r.s1 - r.s0) * e;
+    this.x = r.x0 + (r.x1 - r.x0) * e;
+    this.y = k < 0.62 ? r.y0 + (peak - r.y0) * sm(k / 0.62) : peak + (r.y1 - peak) * sm((k - 0.62) / 0.38);
+    this.vs = (r.s1 - r.s0) / r.dur;
+    this.vy = 0;
+    if (k >= 1) {
+      this.rescueM = null;
+      this.y = r.y1;
+      this.vs = this.target * 0.75;
+      this.apexY = this.y;
+      this.setState('run');
+      this.emit({ type: 'rescued' });
+    }
   }
 
   private fell(): void {
@@ -714,7 +876,8 @@ export class Sim {
     this.y = b.y;
     this.vy = 0; this.vx = 0;
     this.vs = this.target * 0.6;
-    this.ladder = null; this.zip = null; this.vault = null; this.mantle = null;
+    this.ladder = null; this.zip = null; this.vault = null; this.mantle = null; this.rescueM = null;
+    this.apexY = this.y;
     this.ghostT = 2;
     this.setState('run');
     this.over = false;
@@ -747,7 +910,7 @@ export class Sim {
     if (!this.rush) {
       this.meter = Math.min(1, this.meter + base / 820 + this.chain * 0.004);
       if (this.meter >= 1) {
-        this.rushT = RUSH_T;
+        this.rushT = this.rushLen;
         this.stats.rushes++;
         this.emit({ type: 'rush' });
       }
@@ -764,7 +927,7 @@ export class Sim {
   private flow(dt: number): void {
     if (this.rushT > 0) {
       this.rushT -= dt;
-      this.meter = Math.max(0, this.rushT / RUSH_T);
+      this.meter = Math.max(0, this.rushT / this.rushLen);
       if (this.rushT <= 0) { this.rushT = 0; this.meter = 0; this.emit({ type: 'rushEnd' }); }
     }
     // the chain lasts while the courier keeps moving (only running on flat ground uses the window)
@@ -785,8 +948,8 @@ export class Sim {
     const b = cands[0] ?? c.blocks[c.blocks.length - 1];
     const route = b.drop.s - this.s;
     const v = (c.speedAt(this.s) + c.speedAt(b.drop.s)) / 2;
-    const bank = this.parcel && this.parcel.left > 0 ? Math.min(6, this.parcel.left * 0.35) : 0;
-    const total = this.tune.timerBase + route / v * this.tune.slack + this.upg.time * 1.5 + bank + (first ? 6 : 0);
+    const bank = this.parcel && this.parcel.left > 0 ? this.bankOf(this.parcel.left) : 0;
+    const total = this.tune.timerBase + route / v * this.tune.slack + this.upg.time * UP.time + bank + (first ? 6 : 0);
     this.parcel = { block: b.i, s: b.drop.s, x: b.drop.x, y: b.y, left: total, total, route };
     this.emit({ type: 'parcel', first });
   }
@@ -797,7 +960,8 @@ export class Sim {
       return;
     }
     const p = this.parcel;
-    if (this.state !== 'fall' && this.state !== 'slam') p.left -= dt;
+    // the clock stops while the courier falls, rides a shield bubble or carries the express ribbon
+    if (this.state !== 'fall' && this.state !== 'slam' && this.state !== 'rescue' && this.power.express <= 0) p.left -= dt;
     // delivered: on the drop roof, at the hatch
     const reach = this.mode === 'easy' ? 2.1 : 1.6;
     if (Math.abs(this.s - p.s) < reach && Math.abs(this.x - p.x) < reach + 0.2 && Math.abs(this.y - p.y) < 1.2 && this.state !== 'fall') {
@@ -839,7 +1003,7 @@ export class Sim {
     this.stats.deliveries++;
     if (perfect) this.stats.perfect++;
     this.towardDistrict++;
-    this.emit({ type: 'deliver', pts, perfect, streak: this.streak, bank: Math.min(6, p.left * 0.35) });
+    this.emit({ type: 'deliver', pts, perfect, streak: this.streak, bank: this.bankOf(p.left) });
     this.move('drop', 40);
     if (this.towardDistrict >= this.tune.districtEvery) {
       this.towardDistrict = 0;
@@ -848,6 +1012,12 @@ export class Sim {
       this.emit({ type: 'districtSoon', theme: THEMES[this.course.district % THEMES.length] });
     }
     this.newParcel(false);
+  }
+
+  /** Seconds of a delivered parcel's spare time carried over to the next one. */
+  bankOf(left: number): number {
+    const lv = this.upg.bonus;
+    return Math.min(UP.bankCap[0] + UP.bankCap[1] * lv, Math.max(0, left) * (UP.bankShare[0] + UP.bankShare[1] * lv));
   }
 
   private updateDistrict(): void {
@@ -861,15 +1031,33 @@ export class Sim {
 
   // ------------------------------------------------------------------ pickups and pigeons
 
-  private pickups(): void {
+  private pickups(dt: number): void {
+    // the magnet satchel: stamps in reach fly to the courier (and keep coming once caught)
+    const mag = this.power.magnet > 0 && this.state !== 'fall' && this.state !== 'done';
+    const R = this.magnetR, cy = this.y + 1.0;
+    for (const p of this.course.pickups) {
+      if (p.taken || p.kind !== 'stamp') continue;
+      if (!p.pulled) {
+        if (!mag || p.s < this.s - 2 || p.s > this.s + R) continue;
+        const d = Math.hypot(p.s - this.s, p.x - this.x, p.y - cy);
+        if (d > R) continue;
+        p.pulled = true;
+      }
+      const ds = this.s + 0.4 - p.s, dx = this.x - p.x, dy = cy - p.y;
+      const d = Math.hypot(ds, dx, dy);
+      const step = Math.min(d, (Math.max(4, this.vs) + 15) * dt);
+      if (d > 1e-4) { p.s += ds / d * step; p.x += dx / d * step; p.y += dy / d * step; }
+    }
     for (const p of this.course.pickups) {
       if (p.taken || Math.abs(p.s - this.s) > 1.1) continue;
       if (Math.abs(p.x - this.x) > 1.0 || p.y < this.y - 0.4 || p.y > this.y + this.height + 0.6) continue;
       p.taken = true;
-      if (p.kind === 'stamp') { this.stamps++; this.stats.stamps++; this.score += 5; }
+      let value = 0;
+      if (p.kind === 'stamp') value = this.addStamps(1);
       else if (p.kind === 'bottle') { if (this.parcel) { this.parcel.left += 5; this.parcel.total = Math.max(this.parcel.total, this.parcel.left); } this.score += 50; }
       else if (p.kind === 'spring') { this.springs = 3; this.score += 50; }
-      this.emit({ type: 'pickup', p });
+      this.emit({ type: 'pickup', p, value });
+      if (isPower(p.kind)) this.grant(p.kind);
     }
     for (const f of this.course.flocks) {
       if (!f.startled && Math.abs(f.s - this.s) < 6.5 && Math.abs(f.x - this.x) < 5 && Math.abs(f.y - this.y) < 3) {
@@ -889,6 +1077,39 @@ export class Sim {
     }
   }
 
+  /** Stamps picked up: double stamps and the stamp-value upgrade add to them. Returns the value. */
+  private addStamps(n: number): number {
+    const dbl = this.power.double > 0 ? 2 : 1;
+    let v = n * dbl;
+    this.stampFrac += n * dbl * UP.stamp * this.upg.stamp;
+    while (this.stampFrac >= 1) { v++; this.stampFrac -= 1; }
+    this.stamps += v;
+    this.stats.stamps += v;
+    this.score += 5 * v;
+    return v;
+  }
+
+  /** A power-up picked up: it starts (or starts again, full). */
+  grant(k: Power): void {
+    const again = this.power[k] > 0;
+    this.stats.powers++;
+    if (k === 'shield') { this.power.shield = 1; this.powerMax.shield = 1; }
+    else { const t = this.powerLen(k); this.power[k] = Math.max(this.power[k], t); this.powerMax[k] = this.power[k]; }
+    this.score += 100;
+    this.emit({ type: 'power', kind: k, again });
+  }
+
+  private tickPowers(dt: number): void {
+    for (const k of POWERS) {
+      if (k === 'shield' || this.power[k] <= 0) continue;
+      let left = this.power[k] - dt;
+      // the glider never runs out over an alley: it holds its last moment until a roof is reached
+      if (k === 'glide' && this.state === 'air' && this.y > 1.5 && this.course.groundAt(this.s, this.x, this.y + 0.1).y < 0.5) left = Math.max(left, Math.min(this.power[k], 0.8));
+      this.power[k] = Math.max(0, left);
+      if (this.power[k] <= 0) this.emit({ type: 'powerEnd', kind: k });
+    }
+  }
+
   private setState(s: State): void {
     if (s !== this.state) { this.state = s; this.stateT = 0; }
     if (s !== 'run') this.blockedT = 0;
@@ -905,7 +1126,7 @@ export class Sim {
     this.y = this.course.groundAt(this.s, x, 99).y;
     this.vy = 0;
     this.vs = this.target;
-    this.zip = null; this.ladder = null; this.vault = null; this.mantle = null;
+    this.zip = null; this.ladder = null; this.vault = null; this.mantle = null; this.rescueM = null;
     this.setState('run');
     this.block = b;
   }

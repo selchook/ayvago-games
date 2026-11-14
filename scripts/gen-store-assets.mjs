@@ -246,9 +246,10 @@ const CARD = {
     }`,
   },
   // Rooftop Courier's card shows a dramatic gap jump at dusk: the run jumps far ahead (deep into
-  // the evening: lit windows, lamps on) to an Old Factory kicker, the autopilot launches off it and
-  // the run is stepped on (game time, however slow the renderer) to the moment the courier hangs
-  // over the alley; there it stops and the camera swings out to the side, the low sun behind.
+  // the evening: lit windows, lamps on) to an Old Factory kicker, the autopilot launches off it with
+  // the paper glider and the express ribbon on (the 1.1 power-ups) and the run is stepped on (game
+  // time, however slow the renderer) to the moment the courier hangs over the alley; there it
+  // stops and the camera swings out to a three-quarter view from above, the glider's wings spread.
   'rooftop-courier': {
     stage: `async () => {
       const p = window.__ayvago.game.scene.getScene('Play');
@@ -257,12 +258,14 @@ const CARD = {
       p.testPlace(1500, 0);
       p.testFind('kicker', 14);
       p.testAuto(true);
+      p.testPower('glide');
+      p.testPower('express');
       const sim = p.sim;
       for (let i = 0; i < 400; i++) {
         p.testAdvance(1000 / 60);
         if (sim.state === 'air' && !sim.course.blockAt(sim.s) && sim.vy < 1.5) break;
       }
-      p.testCam(1.6, 6, 0.6);
+      p.testCam(0.95, 6.5, 2.6);
       p.testClearUi();
       await sleep(1500);
     }`,
