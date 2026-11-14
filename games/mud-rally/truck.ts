@@ -450,15 +450,18 @@ export class Truck {
     // the berm and its barriers: bounce back towards the track
     const g = track.nearest(this.x, this.z);
     const limit = track.half + 0.25;
+    let walled = false;
     if (g.dist > limit) {
+      walled = true;
       const p = track.samples[g.i];
       const nx = (this.x - p.x) / g.dist, nz = (this.z - p.z) / g.dist;
       this.x = p.x + nx * limit;
       this.z = p.z + nz * limit;
       const vn = this.vx * nx + this.vz * nz;
       if (vn > 0) {
-        this.vx -= 1.35 * vn * nx;
-        this.vz -= 1.35 * vn * nz;
+        // a soft bounce: most of the speed into the barrier is lost, only a little comes back
+        this.vx -= 1.15 * vn * nx;
+        this.vz -= 1.15 * vn * nz;
         const loss = vn > 3 ? 0.82 : 0.95;
         this.vx *= loss; this.vz *= loss;
         if (vn > 2.5) ev.wall = vn;
@@ -468,6 +471,8 @@ export class Truck {
     // height: follow the ground, fly off crests
     const ground = terrain.heightAt(this.x, this.z);
     if (this.airborne) {
+      // a barrier never throws a flying truck higher
+      if (walled && this.vy > 0) this.vy *= 0.5;
       this.airTime += dt;
       this.vy -= GRAVITY * dt;
       this.y += this.vy * dt;
@@ -488,7 +493,18 @@ export class Truck {
       }
     } else {
       const rate = dt > 0 ? (ground - this.lastGround) / dt : 0;
-      if (this.lastRate > 1.6 && rate < this.lastRate - GRAVITY * dt * 1.5) {
+      if (walled) {
+        // pushed back off the berm by the barrier: the ground drops under the truck because the
+        // barrier moved it, not because it crested a ramp, so it stays on the ground (no launch)
+        this.y = ground;
+        this.suspV -= Math.max(-0.6, Math.min(0.6, (rate - this.lastRate) * 0.02)) * (1 - st.shocks);
+        this.lastRate = 0;
+        this.lastGround = ground;
+        return ev;
+      }
+      // the berm's slope is no ramp: rubbing along it never throws the truck into the air
+      const onBerm = g.dist > track.half;
+      if (!onBerm && this.lastRate > 1.6 && rate < this.lastRate - GRAVITY * dt * 1.5) {
         this.airborne = true;
         this.airTime = 0;
         this.vy = this.lastRate * 0.95;
