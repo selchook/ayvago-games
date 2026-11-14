@@ -1,7 +1,9 @@
 // Skull Isle: the Play scene. Runs the simulation (sim.ts) at a fixed 60 Hz, draws it in 3D
 // (view.ts) under a Phaser HUD, reads the stick, the action buttons and the keys, plays the sounds,
-// banners, hit-stop and damage numbers, runs the short first-run training, opens the dock shop and
-// the boon draft between islands, and banks the run's doubloons at the end.
+// banners, hit-stop and damage numbers, runs the short first-run training, opens the dock shop,
+// the boon draft and the sea chart between islands, sails the voyages (the same buttons fire the
+// broadsides and evade; the HUD shows the hull and the way to the island), shows the first-voyage
+// card and the swimming hints, and banks the run's doubloons at the end.
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, shake,
@@ -9,14 +11,17 @@ import {
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent } from './sim';
-import { DT, PLAYER, FISH_HEAL, POWER_COLOR, islandOf, type Mode, type PowerId, type FoeKind, type HeroId } from './defs';
+import {
+  DT, PLAYER, FISH_HEAL, POWER_COLOR, TIMED_POWERS, SEA_POWERS, SEA_POWER_COLOR, islandOf,
+  type Mode, type PowerId, type FoeKind, type HeroId, type TimedPower, type SeaPower, type Route, type SeaKind, type FloatKind,
+} from './defs';
 import { View } from './view';
 import { Bot, SKILL } from './bot';
 import { loadMeta, saveMeta, bankRun, type Meta } from './meta';
-import { makeArt, GOLD, powerArt, DOUBLOON } from './art';
-import { HpBar, PowerChips, BossBar, banner, bossIntro, actionButton, drawButton, glass, Pill, type ActionButton } from './ui';
-import { ShopOverlay, DraftOverlay, type OverlayHost } from './shop';
-import type { ShopId, BoonId } from './upgrades';
+import { makeArt, GOLD, powerArt, seaPowerArt, DOUBLOON, SHIP } from './art';
+import { HpBar, PowerChips, BossBar, ProgressChip, BreathChip, banner, bossIntro, actionButton, drawButton, showButton, relabel, glass, Pill, type ActionButton } from './ui';
+import { ShopOverlay, DraftOverlay, RouteOverlay, type OverlayHost } from './shop';
+import type { ShopId, BoonId, ShipId } from './upgrades';
 
 const STEP = DT;
 const BOTTOM_Y = 1214;
@@ -41,8 +46,16 @@ export class PlayScene extends ArcadeScene {
   private keys: Record<string, Phaser.Input.Keyboard.Key> = {};
   private touch = false;
   private hp!: HpBar;
-  private powerChips!: PowerChips;
+  private hullBar!: HpBar;
+  private progress!: ProgressChip;
+  private breath!: BreathChip;
+  private powerChips!: PowerChips<TimedPower>;
+  private seaChips!: PowerChips<SeaPower>;
   private bossBar!: BossBar;
+  private seaHud = false;
+  private route: RouteOverlay | null = null;
+  private seaCard: Phaser.GameObjects.Container | null = null;
+  private seaCardT = 0;
   private goldChip!: HudChip;
   private waveChip!: HudChip;
   private comboChip!: HudChip;
@@ -108,7 +121,7 @@ export class PlayScene extends ArcadeScene {
     this.shown = { gold: -1, wave: '', combo: -1, kegs: -1, special: -1, island: -1 };
     this.sfxGap = {};
     this.redT = 0; this.lowWarned = false; this.ended = false; this.banked = false; this.earned = 0; this.freedBarb = false;
-    this.summaryBox = null; this.shop = null; this.draft = null;
+    this.summaryBox = null; this.shop = null; this.draft = null; this.route = null; this.seaCard = null; this.seaCardT = 0; this.seaHud = false;
     this.specialWasReady = false;
     this.tut = null; this.tutCard = null; this.tutSkip = null; this.tutMoved = 0; this.tutAt = null; this.tutTele = null; this.tutT = 0; this.hintBox = null;
     this.quiet = false; this.testSpeed = 1; this.god = false; this.frozen = false; this.pending = 0;
@@ -177,8 +190,10 @@ export class PlayScene extends ArcadeScene {
       const K = Phaser.Input.Keyboard.KeyCodes;
       for (const [n, c] of Object.entries({ j: K.J, k: K.K, l: K.L, e: K.E, q: K.Q })) this.keys[n] = kb.addKey(c, false, false);
       kb.on('keydown', (e: KeyboardEvent) => {
+        if (this.seaCard && (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyJ' || e.code === 'Escape' || e.code === 'KeyQ')) { this.closeSeaCard(); return; }
+        if (this.route?.key(e.code)) return;
         if (this.draft?.key(e.code)) return;
-        if (this.shop?.key(e.code)) return;
+        if (this.shop?.key(e.code)) { if (e.code === 'Tab') e.preventDefault(); return; }
         if (e.code === 'KeyQ' && this.tut) this.endTutorial(true);
       });
     }
@@ -212,9 +227,14 @@ export class PlayScene extends ArcadeScene {
     this.waveChip = hudChip(this, width / 2, HUD_ROW2_Y, { align: 'center', text: '', size: 22, minWidth: 120 });
     this.comboChip = hudChip(this, width - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', text: '', size: 24, color: '#ffd25a' });
     this.comboChip.setVisible(false);
-    this.powerChips = new PowerChips(this, HUD_MARGIN, HUD_ROW2_Y + 66);
+    this.powerChips = new PowerChips<TimedPower>(this, HUD_MARGIN, HUD_ROW2_Y + 66, TIMED_POWERS, (id) => powerArt(id), (id) => POWER_COLOR[id]);
+    this.seaChips = new PowerChips<SeaPower>(this, HUD_MARGIN, HUD_ROW2_Y + 66, SEA_POWERS, (id) => seaPowerArt(id), (id) => SEA_POWER_COLOR[id]);
     this.bossBar = new BossBar(this, width / 2, HUD_ROW2_Y + 130);
     this.hp = new HpBar(this, HUD_MARGIN, BOTTOM_Y);
+    this.hullBar = new HpBar(this, HUD_MARGIN, BOTTOM_Y, 'hull');
+    this.hullBar.chip.setVisible(false);
+    this.progress = new ProgressChip(this, width / 2, HUD_ROW2_Y);
+    this.breath = new BreathChip(this, HUD_MARGIN, BOTTOM_Y - 74);
     if (!this.touch) {
       // keyboard players read the special meter and the kegs in chips by the corner
       this.specialPips = this.add.graphics();
@@ -225,8 +245,31 @@ export class PlayScene extends ArcadeScene {
     void hudRightEdge;
   }
 
+  /** Swaps the HUD between the island (HP, wave, combo, special and keg) and the sea (hull, voyage, broadsides). */
+  private switchHud(sea: boolean): void {
+    this.seaHud = sea;
+    this.hp.chip.setVisible(!sea);
+    this.hullBar.chip.setVisible(sea);
+    this.waveChip.setVisible(!sea);
+    if (sea) { this.comboChip.setVisible(false); this.shown.combo = -1; this.progress.show(t('i_' + islandOf(this.sim.voyage?.dest ?? this.sim.k + 1).id)); }
+    else this.progress.hide();
+    this.powerChips.clear();
+    this.seaChips.clear();
+    this.bossBar.hide();
+    if (this.btnAttack) relabel(this.btnAttack, t(sea ? 'btnFire' : 'btnAttack'));
+    if (this.btnDodge) relabel(this.btnDodge, t(sea ? 'btnEvade' : 'btnDodge'));
+    if (this.btnSpecial) showButton(this.btnSpecial, !sea);
+    if (this.btnKeg) showButton(this.btnKeg, !sea);
+    if (this.kegChip) this.kegChip.setVisible(!sea);
+    if (this.specialChip) this.specialChip.setText(sea ? 'J' : 'L');
+    this.shown.kegs = -1;
+  }
+
   private updateHud(dt: number): void {
     const sim = this.sim, p = sim.p;
+    const v = sim.voyage;
+    const sea = !!v && sim.atSea;
+    if (sea !== this.seaHud) this.switchHud(sea);
     if (this.score !== sim.score) this.setScore(sim.score);
     if (this.shown.island !== sim.k) { this.shown.island = sim.k; this.hud.setLevel(sim.k + 1); }
     if (sim.gold !== this.shown.gold) {
@@ -234,7 +277,8 @@ export class PlayScene extends ArcadeScene {
       this.shown.gold = sim.gold;
       this.goldChip.setText(String(sim.gold));
     }
-    const waveText = sim.phase === 'tutorial' ? t('tutTitle') : sim.bossActive ? t('bossWave') : t('wave', { n: Math.max(1, sim.wave), of: sim.waves });
+    if (sea) { this.updateSeaHud(dt); return; }
+    const waveText = sim.phase === 'tutorial' ? t('tutTitle') : sim.phase === 'wreck' ? t('i_' + sim.L.id) : sim.bossActive ? t('bossWave') : t('wave', { n: Math.max(1, sim.wave), of: sim.waves });
     if (waveText !== this.shown.wave) {
       this.shown.wave = waveText;
       this.waveChip.setText(waveText);
@@ -250,6 +294,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.powerChips.update(p.powers, { shieldHits: p.shieldHits }, this.elapsed);
     this.hp.update(p.hp, sim.st.maxHp, dt, this.elapsed);
+    this.breath.update(p.breath, sim.shipSt.breath, p.swim, this.elapsed);
     // the boss bar
     const boss = sim.foes.find((f) => (f.kind === 'head' || f.kind === 'captain'));
     if (boss && boss.state !== 'dead' && sim.bossActive) {
@@ -257,26 +302,19 @@ export class PlayScene extends ArcadeScene {
       const shielded = boss.kind === 'head' ? boss.state !== 'open' : boss.state === 'ship';
       this.bossBar.update(Math.max(0, boss.hp / boss.maxHp), shielded, boss.kind === 'captain' && sim.bossPhase === 3, dt, this.elapsed);
     } else this.bossBar.hide();
-    // special meter and kegs
+    // special meter and kegs (dimmed while swimming: no attacks in deep water)
     const pip = PLAYER.pip, pips = sim.st.pips;
     const seg = Array.from({ length: pips }, (_, i) => Math.max(0, Math.min(1, (p.special - i * pip) / pip)));
     const ready = p.special >= pip;
-    if (this.btnAttack) drawButton(this.btnAttack, 0xe2553f, { held: this.controls.a });
-    if (this.btnDodge) drawButton(this.btnDodge, 0x3aa8d8, { held: this.controls.b, ring: [Math.max(0, 1 - p.dodgeCd / sim.st.dodgeCd)], dim: p.dodgeCd > 0 });
-    if (this.btnSpecial) drawButton(this.btnSpecial, 0xd89a1a, { ring: seg, ready, dim: !ready, time: this.elapsed, held: this.btnSpecial.down });
+    const wet = p.swim;
+    if (this.btnAttack) drawButton(this.btnAttack, 0xe2553f, { held: this.controls.a, dim: wet });
+    if (this.btnDodge) drawButton(this.btnDodge, 0x3aa8d8, { held: this.controls.b, ring: [Math.max(0, 1 - p.dodgeCd / sim.st.dodgeCd)], dim: p.dodgeCd > 0 || wet });
+    if (this.btnSpecial) drawButton(this.btnSpecial, 0xd89a1a, { ring: seg, ready: ready && !wet, dim: !ready || wet, time: this.elapsed, held: this.btnSpecial.down });
     if (this.btnKeg) {
-      drawButton(this.btnKeg, 0x8a5a34, { dim: p.kegs <= 0, held: this.btnKeg.down });
+      drawButton(this.btnKeg, 0x8a5a34, { dim: p.kegs <= 0 || wet, held: this.btnKeg.down });
       if (this.shown.kegs !== p.kegs) { this.btnKeg.badge!.setText(p.kegs > 0 ? String(p.kegs) : ''); }
     }
-    if (this.specialPips) {
-      const g = this.specialPips.clear();
-      const w0 = (96 - (pips - 1) * 6) / pips;
-      seg.forEach((k, i) => {
-        g.fillStyle(0x060914, 0.75).fillRoundedRect(-48 + i * (w0 + 6), -9, w0, 18, 8);
-        if (k > 0) g.fillStyle(k >= 1 ? 0xffd23f : 0xbfc8d8, 1).fillRoundedRect(-48 + i * (w0 + 6), -9, Math.max(10, w0 * k), 18, 8);
-      });
-      if (ready) g.lineStyle(2, 0xffd23f, 0.5 + Math.sin(this.elapsed * 8) * 0.4).strokeRoundedRect(-51, -12, 102, 24, 10);
-    }
+    if (this.specialPips) this.drawPips(seg, ready);
     if (this.kegChip && this.shown.kegs !== p.kegs) {
       this.kegChip.setText(`E ×${p.kegs}`);
       this.kegChip.setAlpha(p.kegs > 0 ? 1 : 0.55);
@@ -290,10 +328,29 @@ export class PlayScene extends ArcadeScene {
       this.hint(barrage ? 'hintBarrage' : this.touch ? 'hintSpecialTouch' : 'hintSpecialKeys');
     }
     this.specialWasReady = ready;
+    // the hidden islet: a hint once the gulls are in sight
+    const isl = sim.L.islet;
+    if (isl && (sim.phase === 'fight' || sim.phase === 'breather') && Math.hypot(p.x - isl.x, p.z - isl.z) < 13 && sim.chests.some((c) => c.islet && !c.open)) this.hint('hintIslet');
     // low health: a red, throbbing edge
     const low = p.state !== 'dead' && p.hp < sim.st.maxHp * 0.3;
     if (low && !this.lowWarned) { this.lowWarned = true; this.floatAt(p.x, p.z, t('lowHp'), '#ff7a6a', 28); }
     if (p.hp > sim.st.maxHp * 0.5) this.lowWarned = false;
+    this.edge(dt, low);
+  }
+
+  private drawPips(seg: number[], ready: boolean): void {
+    const g = this.specialPips!.clear();
+    const n = seg.length;
+    const w0 = (96 - (n - 1) * 6) / n;
+    seg.forEach((k, i) => {
+      g.fillStyle(0x060914, 0.75).fillRoundedRect(-48 + i * (w0 + 6), -9, w0, 18, 8);
+      if (k > 0) g.fillStyle(k >= 1 ? 0xffd23f : 0xbfc8d8, 1).fillRoundedRect(-48 + i * (w0 + 6), -9, Math.max(10, w0 * k), 18, 8);
+    });
+    if (ready) g.lineStyle(2, 0xffd23f, 0.5 + Math.sin(this.elapsed * 8) * 0.4).strokeRoundedRect(-51, -12, 102, 24, 10);
+  }
+
+  /** The red edge: a hit, low health, a hull close to sinking. */
+  private edge(dt: number, low: boolean): void {
     this.redT = Math.max(0, this.redT - dt * 1.6);
     const beat = low ? Math.pow(Math.max(0, Math.sin(this.elapsed * Math.PI * 2.2)), 6) : 0;
     const a = Math.max(this.redT, low ? 0.28 + beat * 0.35 : 0);
@@ -302,6 +359,30 @@ export class PlayScene extends ArcadeScene {
       const { width: W, height: H } = this.scale;
       for (let i = 0; i < 12; i++) { const d = i * 15; g.lineStyle(17, 0xff2020, a * Math.pow(1 - i / 12, 1.6) * 0.75).strokeRect(d, d, W - d * 2, H - d * 2); }
     }
+  }
+
+  /** At sea: the hull, the way to the island, the sea's power-ups, the ghost ship, the broadsides' reload. */
+  private updateSeaHud(dt: number): void {
+    const sim = this.sim, v = sim.voyage!, s = v.ship;
+    this.progress.update(v.progress, v.storm, this.elapsed);
+    this.hullBar.update(s.hull, sim.shipSt.maxHull, dt, this.elapsed);
+    this.seaChips.update(v.powers, { shieldHits: 0 }, this.elapsed);
+    this.breath.update(sim.shipSt.breath, sim.shipSt.breath, false, this.elapsed);
+    const ghost = v.foes.find((f) => f.kind === 'ghost' && f.state !== 'dead' && f.state !== 'gone');
+    if (ghost) {
+      this.bossBar.show(t('b_ghost'));
+      this.bossBar.update(Math.max(0, ghost.hp / ghost.maxHp), ghost.state === 'rise', false, dt, this.elapsed);
+    } else this.bossBar.hide();
+    const max = sim.shipSt.reload;
+    const seg = [0, 1].map((i) => Math.max(0, Math.min(1, 1 - s.reload[i] / max)));
+    const ready = !!v.aim && s.reload[v.aim.side] <= 0;
+    if (this.btnAttack) drawButton(this.btnAttack, 0xe2553f, { held: this.controls.a, ring: seg, ready, time: this.elapsed });
+    if (this.btnDodge) drawButton(this.btnDodge, 0x3aa8d8, { held: this.controls.b, ring: [Math.max(0, 1 - s.evadeCd / 2.2)], dim: s.evadeCd > 0 });
+    if (this.specialPips) this.drawPips(seg, ready);
+    const low = !s.sunk && s.hull < sim.shipSt.maxHull * 0.3;
+    if (low && !this.lowWarned) { this.lowWarned = true; this.sfx('alarm', { volume: 0.3, exact: true }); }
+    if (s.hull > sim.shipSt.maxHull * 0.5) this.lowWarned = false;
+    this.edge(dt, low);
   }
 
   // ------------------------------------------------------------------ frame
@@ -329,7 +410,8 @@ export class PlayScene extends ArcadeScene {
     if (this.slowT > 0) { this.slowT -= dt; k *= 0.3; }
     if (this.hitStop > 0) { this.hitStop -= dt; k = 0; }
     if (this.bossHold > 0) { this.bossHold -= dt; k = 0; }
-    if (this.shop || this.draft) k = 0;
+    if (this.shop || this.draft || this.route || this.seaCard) k = 0;
+    if (this.seaCard) { this.seaCardT += dt; if (this.seaCardT > 9) this.closeSeaCard(); }
     this.acc += dt * k;
     let n = 0;
     while (this.acc >= STEP && n < 8) {
@@ -342,7 +424,9 @@ export class PlayScene extends ArcadeScene {
       sim.events.length = 0;
       if (this.bot && sim.phase === 'shop' && !this.shop) { this.bot.shop(); sim.leaveShop(); for (const ev of sim.events) this.onEvent(ev); sim.events.length = 0; }
       if (this.bot && sim.phase === 'draft' && !this.draft) { sim.pickBoon(this.bot.draft()); for (const ev of sim.events) this.onEvent(ev); sim.events.length = 0; }
-      if (this.hitStop > 0 || this.bossHold > 0 || this.shop || this.draft) { this.acc = 0; break; }
+      if (this.bot && sim.phase === 'chart' && !this.route) { sim.pickRoute(this.bot.route()); for (const ev of sim.events) this.onEvent(ev); sim.events.length = 0; }
+      if (this.god && sim.voyage) sim.voyage.ship.invuln = Math.max(sim.voyage.ship.invuln, 0.1);
+      if (this.hitStop > 0 || this.bossHold > 0 || this.shop || this.draft || this.route || this.seaCard) { this.acc = 0; break; }
     }
     if (n >= 8) this.acc = 0;
     if (this.tut) this.updateTutorial(dt);
@@ -448,14 +532,21 @@ export class PlayScene extends ArcadeScene {
         break;
       case 'shop': this.openShop(); break;
       case 'draft': this.openDraft(ev.boons); break;
+      case 'chart': this.openRoute(); break;
       case 'sail':
         this.sfx('sail', { volume: 0.6, exact: true });
-        this.tweens.add({ targets: this.fade, alpha: 1, duration: 600 });
-        banner(this, 600, t('sailing', { name: t('i_' + islandOf(sim.k + 1).id) }), '', { color: '#bfe8ff', size: 40, hold: 0.9 });
+        this.tweens.add({ targets: this.fade, alpha: 1, duration: 500 });
         break;
       case 'island':
-        if (ev.k > 0) { this.tweens.add({ targets: this.fade, alpha: 0, duration: 500 }); this.islandBanner(ev.k); }
+        if (ev.k > 0) {
+          // ashore: a quick dip to black while the ship goes to its anchorage
+          this.tweens.killTweensOf(this.fade);
+          this.fade.setAlpha(Math.max(this.fade.alpha, 0.75));
+          this.tweens.add({ targets: this.fade, alpha: 0, duration: 450 });
+          this.islandBanner(ev.k);
+        }
         break;
+      default: this.onSeaEvent(ev); break;
       case 'boss': {
         this.sfx('alarm', { volume: 0.55, exact: true });
         this.bossHold = 2;
@@ -501,10 +592,153 @@ export class PlayScene extends ArcadeScene {
       case 'lunge': this.s('lunge', 0.55, 0.2, this.sx(ev.x, ev.z).x); this.hint('hintShark'); break;
       case 'spawn':
         if (ev.kind === 'tentacle') { this.s('splash', 0.5, 0.1); this.hint('hintTentacle'); }
-        else if (ev.kind !== 'shark' && ev.kind !== 'arm' && ev.kind !== 'head' && ev.kind !== 'captain') this.s('rise', 0.2, 0.2, this.sx(ev.x, ev.z).x);
+        else if (ev.kind !== 'shark' && ev.kind !== 'arm' && ev.kind !== 'head' && ev.kind !== 'captain' && ev.kind !== 'hunter') this.s('rise', 0.2, 0.2, this.sx(ev.x, ev.z).x);
+        break;
+    }
+  }
+
+  /** The voyage's and the water's events: sounds, banners and floating text. */
+  private onSeaEvent(ev: SimEvent): void {
+    const sim = this.sim, v = sim.voyage;
+    const sxv = (x: number, z: number) => this.sx(x, z).x;
+    switch (ev.type) {
+      case 'seaStart': {
+        this.tweens.killTweensOf(this.fade);
+        this.tweens.add({ targets: this.fade, alpha: 0, duration: 600 });
+        const name = t('i_' + islandOf(ev.dest).id);
+        banner(this, 430, t('r_' + ev.route), t('sailing', { name }), { color: ev.route === 'storm' ? '#c8d4e8' : '#9fe8ff', size: 46, hold: 1.6 });
+        this.sfx(ev.route === 'storm' ? 'thunder' : 'horn', { volume: 0.45, exact: true });
+        this.lowWarned = false;
+        if (!this.bot && !this.quiet && !this.meta.hints.includes('seaTut')) this.time.delayedCall(700, () => this.openSeaCard());
+        break;
+      }
+      case 'broadside':
+        this.sfxAt(ev.n > 2 ? 'cannon3' : 'cannon2', this.scale.width / 2 + ev.side * 160, { volume: 0.6 });
+        this.time.delayedCall(90, () => this.sfxAt('cannon', this.scale.width / 2 + ev.side * 200, { volume: 0.45 }));
+        if (ev.fire) this.s('fuse', 0.3, 0.3);
+        shake(this, 0.004, 110);
+        break;
+      case 'evade': this.s('roll', 0.5, 0.1); this.s('splash', 0.4, 0.1); break;
+      case 'seaFire':
+        this.sfxAt('cannon', sxv(ev.x, ev.z), { volume: ev.kind === 'ghost' ? 0.6 : 0.45 });
+        this.time.delayedCall(120, () => this.s('whistle', 0.25, 0.2));
+        if (ev.kind === 'ghost') this.s('ghost', 0.25, 1);
+        break;
+      case 'seaBoom':
+        if (ev.friendly) this.s('boom', 0.4, 0.05, sxv(ev.x, ev.z));
+        else this.s('splash', 0.35, 0.06, sxv(ev.x, ev.z));
+        break;
+      case 'hullHit':
+        this.sfx('hullHit', { volume: 0.75 });
+        this.s('thud', 0.45, 0.1);
+        this.redT = Math.max(this.redT, 0.45);
+        shake(this, ev.dmg >= 12 ? 0.008 : 0.005, 160);
+        if (v) this.dmgNumber(v.ship.x, v.ship.z, ev.dmg, false, '#ff6a5a');
+        break;
+      case 'seaHit':
+        if (ev.src === 'ball' || Math.random() < 0.4) this.dmgNumber(ev.x, ev.z, ev.dmg, false, ev.src === 'burn' ? '#ffb04a' : undefined);
+        if (ev.src === 'ball') this.s(ev.kind === 'tentacle' || ev.kind === 'shark' ? 'squish' : 'bones', 0.4, 0.06, sxv(ev.x, ev.z));
+        break;
+      case 'seaKill':
+        if (ev.kind === 'sloop' || ev.kind === 'ghost') {
+          this.sfxAt('bigBoom', sxv(ev.x, ev.z), { volume: 0.8 });
+          this.time.delayedCall(260, () => this.s('splash', 0.6, 0.1));
+          shake(this, 0.007, 220);
+          if (ev.kind === 'ghost') {
+            this.slowT = 1;
+            this.time.delayedCall(500, () => { this.sfx('fanfare2', { volume: 0.7, exact: true }); banner(this, 420, t('bossDown', { name: t('b_ghost') }), '', { color: '#7affc0', hold: 1.4, size: 46 }); });
+          }
+        } else this.s(ev.kind === 'tentacle' ? 'squish' : 'splash', 0.55, 0.08, sxv(ev.x, ev.z));
+        break;
+      case 'ram': this.s('bones', 0.6, 0.1); break;
+      case 'float': this.onFloat(ev.kind, ev.value, ev.repair ?? 0); break;
+      case 'seaPower': {
+        const k = ev.power;
+        this.sfx('power', { volume: 0.55 });
+        const extra: Record<SeaPower, string> = { wind: 'wind', chain: 'clang', mermaid: 'bling', fire: 'fireUp', spyglass: 'spy' };
+        this.time.delayedCall(120, () => this.sfx(extra[k], { volume: 0.5 }));
+        if (v) this.floatAt(v.ship.x, v.ship.z, t('sp_' + k), '#' + SEA_POWER_COLOR[k].toString(16).padStart(6, '0'), 34, t('spd_' + k));
+        this.flySea(k);
+        break;
+      }
+      case 'seaExpire': this.sfx('expire', { volume: 0.3, exact: true }); break;
+      case 'rockHit':
+        this.sfx('rockHit', { volume: 0.8 });
+        this.floatAt(ev.x, ev.z, t('rockHit'), '#ffb08a', 26);
+        break;
+      case 'gust': this.s('gust', 0.25, 2); break;
+      case 'lightning':
+        flash(this, 0xeef4ff, 140, 0.32);
+        this.time.delayedCall(260, () => this.sfx('thunder', { volume: 0.4, rate: 0.7 }));
+        break;
+      case 'ghost':
+        this.sfx('ghost', { volume: 0.7, exact: true });
+        this.time.delayedCall(250, () => this.sfx('roar', { volume: 0.5, rate: 1.3 }));
+        bossIntro(this, t('ghostShip'), t('ghostSub'));
+        break;
+      case 'seaSpawn':
+        if (ev.kind === 'tentacle') this.s('splash', 0.5, 0.1);
+        break;
+      case 'dock':
+        this.sfx('horn', { volume: 0.55, exact: true });
+        if (v) banner(this, 420, t('landHo'), v.salvaged || v.sunkFoes ? t('seaHaul', { g: v.salvaged, n: v.sunkFoes }) : '', { color: '#ffe6a0', size: 48, hold: 1.4 });
+        break;
+      case 'jumpAshore': this.sfx('toss', { volume: 0.5 }); break;
+      case 'sink':
+        this.sfx('bossDie', { volume: 0.8 });
+        this.time.delayedCall(300, () => this.sfx('splash', { volume: 0.8 }));
+        flash(this, 0x2060a0, 400, 0.4);
+        this.slowT = 1;
+        banner(this, 420, t('sunk'), '', { color: '#ff8a6a', size: 52, hold: 1.6 });
+        this.time.delayedCall(1300, () => this.tweens.add({ targets: this.fade, alpha: 1, duration: 600 }));
+        break;
+      case 'wreck':
+        this.tweens.killTweensOf(this.fade);
+        this.fade.setAlpha(1);
+        this.tweens.add({ targets: this.fade, alpha: 0, duration: 600 });
+        banner(this, 430, t('sunkSub', { n: ev.lost }), '', { color: '#bfe8ff', size: 38, hold: 1.6 });
+        this.sfx('splash', { volume: 0.7 });
+        break;
+      case 'washed':
+        this.sfx('gasp', { volume: 0.5 });
+        if (ev.hp > 0) this.floatAt(sim.p.x, sim.p.z, t('washed', { n: ev.hp }), '#ffb0a0', 26);
+        break;
+      case 'swim':
+        this.s('splash', ev.on ? 0.45 : 0.25, 0.3);
+        if (ev.on) this.hint('hintSwim');
+        break;
+      case 'breath':
+        this.sfx('gasp', { volume: 0.45 });
+        this.floatAt(sim.p.x, sim.p.z, t(ev.level === 'low' ? 'breathLow' : 'breathOut'), ev.level === 'low' ? '#9fe8ff' : '#ff8a7a', 26);
+        break;
+      case 'islet':
+        this.sfx('treasure', { volume: 0.7, exact: true });
+        banner(this, 290, t('isletFound'), t('doubloonsEarned', { n: ev.n }), { color: '#ffd23f', size: 46, hold: 1.4 });
         break;
       default: break;
     }
+  }
+
+  private onFloat(kind: FloatKind, value: number, repair: number): void {
+    const v = this.sim.voyage;
+    if (!v) return;
+    const s = v.ship;
+    switch (kind) {
+      case 'barrel': this.sfx('bag', { volume: 0.55 }); this.floatAt(s.x, s.z, t('fl_barrel', { n: value }), '#ffe68a', 28); break;
+      case 'crate': this.sfx('repair', { volume: 0.6 }); this.floatAt(s.x, s.z, t('fl_crate', { n: repair }), '#7affa0', 28, t('fl_barrel', { n: value })); break;
+      case 'chest': this.sfx('chest', { volume: 0.7 }); this.floatAt(s.x, s.z, t('fl_chest', { n: value }), '#ffd23f', 34); break;
+      case 'bottle': this.sfx('card', { volume: 0.4 }); break;
+    }
+  }
+
+  /** A sea power's icon flies from the ship to its HUD chip. */
+  private flySea(id: SeaPower): void {
+    const v = this.sim.voyage;
+    if (!v) return;
+    const p = this.sx(v.ship.x, v.ship.z, 2);
+    const to = this.seaChips.slot(id);
+    const img = this.add.image(p.x, p.y, seaPowerArt(id)).setDisplaySize(64, 64).setScrollFactor(0).setDepth(9350);
+    this.tweens.add({ targets: img, x: to.x, y: to.y, displayWidth: 36, displayHeight: 36, duration: 520, ease: 'Cubic.easeIn', onComplete: () => img.destroy() });
   }
 
   private islandBanner(k: number): void {
@@ -538,6 +772,58 @@ export class PlayScene extends ArcadeScene {
       for (const ev of this.sim.events) this.onEvent(ev);
       this.sim.events.length = 0;
     });
+  }
+
+  private openRoute(): void {
+    if (this.route || this.isOver || this.bot) return;
+    this.sfx('card', { volume: 0.5, exact: true });
+    this.route = new RouteOverlay(this, this.sim, this.overlayHost(), (r: Route) => {
+      this.route = null;
+      this.sim.pickRoute(r);
+      for (const ev of this.sim.events) this.onEvent(ev);
+      this.sim.events.length = 0;
+    });
+  }
+
+  /** The first voyage's card: steer, fire, salvage (once per player; the sea waits while it shows). */
+  private openSeaCard(): void {
+    if (this.seaCard || this.isOver || this.bot || !this.sim.atSea) return;
+    this.meta.hints.push('seaTut');
+    const m = loadMeta();
+    if (!m.hints.includes('seaTut')) { m.hints.push('seaTut'); saveMeta(m); }
+    const { width } = this.scale;
+    const c = this.add.container(width / 2, 770).setScrollFactor(0).setDepth(9450);
+    const lines = [
+      [SHIP, t(this.touch ? 'seaTut_steer_touch' : 'seaTut_steer_keys')],
+      [seaPowerArt('fire'), t(this.touch ? 'seaTut_fire_touch' : 'seaTut_fire_keys')],
+      [GOLD, t('seaTut_loot')],
+    ];
+    const h = 470;
+    c.add(glass(this, 640, h, { r: 26, color: 0x0e1a24, alpha: 0.92, rim: 0x7ad8ff }));
+    c.add(txt(this, 0, -h / 2 + 34, t('seaTutTitle'), { title: true, size: 30, color: '#9fe8ff', strokeThickness: 0, shadow: false }));
+    lines.forEach(([icon, text], i) => {
+      const y = -h / 2 + 116 + i * 104;
+      c.add(this.add.image(-262, y, icon).setDisplaySize(62, 62));
+      const tx = txt(this, -218, y, text, { size: 22, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: 500, align: 'left' }).setOrigin(0, 0.5);
+      if (tx.height > 96) tx.setScale(96 / tx.height);
+      c.add(tx);
+    });
+    const ok = new Pill(this, 0, h / 2 - 46, 240, 66, 0x2f8ad0, () => this.closeSeaCard(), 26);
+    ok.setLabels(t('seaTutOk') + (this.touch ? '' : ' (Enter)'));
+    c.add(ok);
+    c.setScale(0.6).setAlpha(0);
+    this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut' });
+    this.sfx('wave', { volume: 0.4, exact: true });
+    this.seaCard = c;
+    this.seaCardT = 0;
+  }
+
+  private closeSeaCard(): void {
+    const c = this.seaCard;
+    if (!c) return;
+    this.seaCard = null;
+    this.sfx('move', { volume: 0.4, exact: true });
+    this.tweens.add({ targets: c, alpha: 0, scale: 0.9, duration: 200, onComplete: () => c.destroy() });
   }
 
   private openDraft(boons: BoonId[]): void {
@@ -714,7 +1000,7 @@ export class PlayScene extends ArcadeScene {
     const sim = this.sim;
     const m = loadMeta();
     this.earned = sim.doubloons;
-    const r = bankRun(m, { doubloons: this.earned, islands: sim.islandsCleared, kraken: sim.krakenDown });
+    const r = bankRun(m, { doubloons: this.earned, islands: sim.islandsCleared, kraken: sim.krakenDown, voyages: sim.voyages, islets: sim.bonusDoubloons / 2 });
     this.freedBarb = r.freedBarbarossa;
     saveMeta(m);
     this.meta = m;
@@ -755,6 +1041,8 @@ export class PlayScene extends ArcadeScene {
     if (!this.isOver) this.bankDoubloons();
     this.shop?.destroy(); this.shop = null;
     this.draft?.destroy(); this.draft = null;
+    this.route?.destroy(); this.route = null;
+    this.seaCard?.destroy(); this.seaCard = null;
     super.endGame(o);
   }
 
@@ -773,7 +1061,27 @@ export class PlayScene extends ArcadeScene {
   testPower(id: PowerId): void { this.sim.takePower(id, this.sim.p.x, this.sim.p.z); for (const ev of this.sim.events) this.onEvent(ev); this.sim.events.length = 0; }
   testDrop(id: PowerId, dx = 1.5, dz = -1): void { this.sim.dropPower(id, this.sim.p.x + dx, this.sim.p.z + dz); }
   testSpecial(full = true): void { this.sim.p.special = full ? this.sim.maxSpecial : PLAYER.pip; }
-  testShopBuy(id: ShopId | 'patch'): void { this.shop?.testBuy(id); }
+  testShopBuy(id: ShopId | 'patch' | ShipId | 'repair'): void { this.shop?.testBuy(id); }
+  testShopTab(tab: 'crew' | 'ship'): void { this.shop?.testTab(tab); }
+  testRoute(i: number): void { this.route?.pick(i); }
+  /** Straight to a sea leg (the route given). */
+  testSea(r: Route = 'calm'): void { this.testSkipTutorial(); this.shop?.destroy(); this.shop = null; this.sim.testSea(r); this.flushEvents(); }
+  testSeaFoe(kind: SeaKind, x = 5, ahead = 18): void { this.sim.voyage?.testSpawn(kind, x, ahead); this.flushEvents(); }
+  testFloat(kind: FloatKind, x = 0, ahead = 10, power?: SeaPower): void { const v = this.sim.voyage; if (v) v.addFloat(kind, x, v.ship.z - ahead, power ?? null); }
+  testRocks(x = 0, ahead = 20): void { this.sim.voyage?.testRocks(x, ahead); }
+  testSeaPower(id: SeaPower): void { this.sim.voyage?.givePower(id); this.flushEvents(); }
+  testSink(): void { const v = this.sim.voyage; if (v) { v.ship.invuln = 0; this.god = false; v.hurtShip(9999, 'sloop', v.ship.x, v.ship.z); this.flushEvents(); } }
+  testDock(): void { const v = this.sim.voyage; if (v) v.ship.z = v.dockZ + 18; }
+  testSeaCard(): void { this.meta.hints = this.meta.hints.filter((h) => h !== 'seaTut'); this.openSeaCard(); }
+  /** Puts the hero in the deep water (dx, dz from the south beach), or by the islet. */
+  testSwim(where: 'south' | 'islet' = 'south', off = 3): void {
+    const L = this.sim.L, p = this.sim.p;
+    if (where === 'islet' && L.islet) { const a = Math.atan2(L.islet.z, L.islet.x); p.x = L.islet.x - Math.cos(a) * (L.islet.r + off); p.z = L.islet.z - Math.sin(a) * (L.islet.r + off); }
+    else { p.x = 1.5; p.z = L.rz + off; }
+    p.vx = p.vz = 0;
+    this.testSnap();
+  }
+  private flushEvents(): void { for (const ev of this.sim.events) this.onEvent(ev); this.sim.events.length = 0; }
   testPick(i: number): void { this.draft?.pick(i); }
   testSail(): void { if (this.shop) (this.shop as unknown as { leave(): void }).leave(); }
   testTele(kind: 'circle' | 'cone' | 'line'): void { const p = this.sim.p; this.sim.testTele(kind, p.x, p.z - 0.5); }
@@ -787,7 +1095,7 @@ export class PlayScene extends ArcadeScene {
   testStep(seconds: number): void {
     const n = Math.round(seconds / STEP);
     for (let i = 0; i < n; i++) {
-      if (this.shop || this.draft) break;
+      if (this.shop || this.draft || this.route || this.seaCard) break;
       this.sim.step(STEP, this.sim.p.state === 'dead' ? NO_INPUT : this.readInput(STEP));
       for (const ev of this.sim.events) this.onEvent(ev);
       this.sim.events.length = 0;

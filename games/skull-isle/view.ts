@@ -9,13 +9,19 @@ import Phaser from 'phaser';
 import { World3D, THREE, model } from '@core/three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Sim, SimEvent, Foe } from './sim';
-import { PLAYER, POWER_COLOR, POWER_IDS, type HeroId, type PowerId } from './defs';
-import { PALETTES, shoreAt, shorePoint, landD, type Layout } from './island';
+import { PLAYER, POWER_COLOR, POWER_IDS, SEA_POWER_COLOR, type HeroId, type PowerId } from './defs';
+import { PALETTES, shoreAt, groundY, type Layout, type Palette } from './island';
 import { pk, kk, mergeModels, soloGeometry, keepPrograms, kenneyMap, sceneryMaterial, type Placed } from './kit';
 import { Billboards, Particles, Telegraphs, TEX, SHAPE, waterMaterial, setCoast } from './fx3d';
 import { Figure, FigurePool } from './figure';
+import { SeaView, SHIP_SCALE, DECK } from './seaview';
+import type { Voyage } from './voyage';
 
 export const CAM = { fov: 42, tilt: 58, dist: 21 };
+/** The sea camera: behind and above the ship, low enough for the horizon. */
+const SEA_CAM = { y: Math.sin(THREE.MathUtils.degToRad(30)) * 40, z: Math.cos(THREE.MathUtils.degToRad(30)) * 40 };
+/** A stormy passage's greys. */
+const STORM = { sky: 0x4d5a68, fog: 0x5a6672, deep: 0x1c3348, shallow: 0x3a6a78, sun: 0xc8d4e0, sunI: 0.95, hemiSky: 0x9aa8b8, hemiGround: 0x2a3038, ambient: 1.15 };
 const TENTACLE_H = 15.67;
 const CLIP: Record<string, number> = { Sword: 0.87, Punch: 0.77, Jump: 0.37, Duck: 1.67 };
 
@@ -50,12 +56,26 @@ export class View {
   private scenery: THREE.Mesh[] = [];
   private ship: THREE.Object3D | null = null;
   private shipAt = { x: 0, z: 0, rot: 0, beached: false, y: 0 };
-  private builtK = -1;
+  private builtL: Layout | null = null;
+  /** The sea leg's drawing; the camera's blend from the island (0) to the sea (1); the storm's (0–1). */
+  readonly sea: SeaView;
+  private seaK = 0;
+  private stormK = 0;
+  private swell = 1;
+  private lightT = 0;
+  private atmo = '';
+  private gulls: Billboards;
+  private swimFx = 0;
+  private snapSea = false;
+  private snapHero = false;
+  private bolts: { x: number; z: number; t: number }[] = [];
+  /** Where the hero is drawn (on deck at sea), for the camera. */
+  private heroPos = new THREE.Vector3();
   hero: Figure;
   private heroId: HeroId;
   private pistol: THREE.Object3D;
   private parrot: THREE.Object3D;
-  private pools: Record<string, FigurePool>;
+  readonly pools: Record<string, FigurePool>;
   private foes = new Map<number, FoeView>();
   private kraken: THREE.Mesh;
   private krakenMat: THREE.MeshLambertMaterial;
@@ -99,6 +119,9 @@ export class View {
   private v = new THREE.Vector3();
   private s = new THREE.Vector3();
   private up = new THREE.Vector3(0, 1, 0);
+  private tmpCol = new THREE.Color();
+  /** The crew's sails thinned out at sea (see kit.ts sceneryMaterial). */
+  private sail = new THREE.Vector4();
   private time = 0;
   private lookAhead = -1.2;
   private stepT = 0;
@@ -124,8 +147,8 @@ export class View {
     const a = THREE.MathUtils.degToRad(CAM.tilt);
     this.camOff.set(0, Math.sin(a) * CAM.dist, Math.cos(a) * CAM.dist);
     this.kenneyMat = new THREE.MeshLambertMaterial({ map: kenneyMap() });
-    this.sceneryMat = sceneryMaterial(this.heroAt, this.camAt);
-    this.sceneryKMat = sceneryMaterial(this.heroAt, this.camAt, this.kenneyMat.map);
+    this.sceneryMat = sceneryMaterial(this.heroAt, this.camAt, null, this.sail);
+    this.sceneryKMat = sceneryMaterial(this.heroAt, this.camAt, this.kenneyMat.map, this.sail);
 
     // the sea
     this.waterMat = waterMaterial();
@@ -202,12 +225,17 @@ export class View {
     this.slashes = new Billboards(sc, TEX.slash(), 24, { flat: true, order: 14 });
     this.glows = new Billboards(sc, glow, 260, { order: 11 });
     this.flares = new Billboards(sc, TEX.flare(), 80, { order: 15 });
-    this.streaks = new Billboards(sc, TEX.streak(), 40, { order: 13 });
+    this.streaks = new Billboards(sc, TEX.streak(), 170, { order: 13 });
     this.inkBB = new Billboards(sc, TEX.ink(), 16, { blend: 'normal', order: 16 });
     this.bubbles = new Billboards(sc, TEX.bubble(), 4, { order: 17 });
     this.teles = new Telegraphs(sc, 48);
     this.particles = new Particles(sc, glow, 900);
-    this.dust = new Particles(sc, TEX.soft(), 400, 'normal', 12);
+    this.dust = new Particles(sc, TEX.soft(), 500, 'normal', 12);
+    this.gulls = new Billboards(sc, TEX.gull(), 6, { blend: 'normal', order: 19 });
+    this.sea = new SeaView({
+      scene: sc, pirateMat: this.pirateMat, kenneyMat: this.kenneyMat, pools: this.pools, particles: this.particles, dust: this.dust,
+      shadows: this.shadows, glows: this.glows, flares: this.flares, rings: this.rings, streaks: this.streaks,
+    });
 
     world.camera.position.set(0, 10, 10);
     if (o.menu) {
@@ -255,7 +283,7 @@ export class View {
     const lay = L ?? sim?.L;
     if (!lay) {
       // a tiny island just to compile the ground and scenery programs
-      this.makeGround({ id: 'cove', lap: 0, rx: 6, rz: 6, harm: [[3, 0.05, 0], [5, 0.02, 0], [2, 0.03, 0]], props: [{ model: 'palm1', x: 0, z: -2, rot: 0, s: 1, r: 0 }, { model: 'k:crate', x: 2, z: 0, rot: 0, s: 1, r: 0 }], tentacleSpots: [], ship: null, pools: [], grass: [], palette: PALETTES.cove });
+      this.makeGround({ id: 'cove', lap: 0, rx: 6, rz: 6, harm: [[3, 0.05, 0], [5, 0.02, 0], [2, 0.03, 0]], props: [{ model: 'palm1', x: 0, z: -2, rot: 0, s: 1, r: 0 }, { model: 'k:crate', x: 2, z: 0, rot: 0, s: 1, r: 0 }], tentacleSpots: [], ship: null, pools: [], grass: [], palette: PALETTES.cove, islet: { x: 9, z: 0, r: 1.5 }, anchor: { x: 0, z: -12, rot: 0 } });
       return;
     }
     this.makeGround(lay);
@@ -268,19 +296,8 @@ export class View {
     this.scenery = [];
     if (this.ship) { sc.remove(this.ship); this.ship = null; }
     const pal = L.palette;
-    // palette
-    (sc.background as THREE.Color).setHex(pal.sky);
-    (sc.fog as THREE.Fog).color.setHex(pal.fog);
-    this.hemi.color.setHex(pal.hemiSky);
-    this.hemi.groundColor.setHex(pal.hemiGround);
-    this.hemi.intensity = pal.ambient;
-    this.world.sun!.color.setHex(pal.sun);
-    this.world.sun!.intensity = pal.sunI;
-    const u = this.waterMat.uniforms;
-    (u.uDeep.value as THREE.Color).setHex(pal.deep);
-    (u.uShallow.value as THREE.Color).setHex(pal.shallow);
-    (u.uFoam.value as THREE.Color).setHex(pal.foam);
-    (u.uSky.value as THREE.Color).setHex(pal.fog);
+    this.atmo = '';
+    this.atmosphere(pal, this.seaK, this.stormK);
     setCoast(this.waterMat, L);
 
     // the ground: a polar mesh out from the centre past the shore, sloping under the sea
@@ -321,6 +338,29 @@ export class View {
         I.push(a, b, a + 1, b, b + 1, a + 1);
       }
     }
+    // the hidden islet: a small mound of sand in the same mesh
+    if (L.islet) {
+      const is = L.islet, base = P.length / 3, ISEG = 28;
+      const IR = [0, 0.35, 0.7, 0.9, 1, 1.25, 1.7, 2.4, 3.3];
+      for (let i = 0; i <= ISEG; i++) {
+        const th = (i / ISEG) * Math.PI * 2;
+        for (let j = 0; j < IR.length; j++) {
+          const r = is.r * IR[j] + (j > 0 ? Math.sin(th * 3 + 1) * 0.12 : 0);
+          const x = is.x + Math.cos(th) * r, z = is.z + Math.sin(th) * r;
+          const d = r - is.r;
+          P.push(x, d < -0.5 ? 0.04 * (1 - r / is.r) : Math.max(-1.6, -(d + 0.5) / 2.2), z);
+          tmp.copy(sand).lerp(wet, THREE.MathUtils.smoothstep(d, -0.9, -0.1) * 0.85);
+          C.push(tmp.r, tmp.g, tmp.b);
+        }
+      }
+      const n = IR.length;
+      for (let i = 0; i < ISEG; i++) {
+        for (let j = 0; j < n - 1; j++) {
+          const a = base + i * n + j, b = base + (i + 1) * n + j;
+          I.push(a, b, a + 1, b, b + 1, a + 1);
+        }
+      }
+    }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
@@ -335,12 +375,12 @@ export class View {
     for (const p of L.props) {
       if (!p.model) continue;
       const k = p.model.startsWith('k:');
-      const y = (p.y ?? 0) + Math.min(0, -(landD(L, p.x, p.z) + 1.1) / 4.2);
+      const y = (p.y ?? 0) + groundY(L, p.x, p.z);
       (k ? ken : pir).push({ key: k ? kk(p.model.slice(2)) : pk(p.model), x: p.x, y, z: p.z, rot: p.rot, s: p.s });
     }
     // a ship of the crew rides at anchor off the north shore (the island's own ship takes its place)
     if (L.ship) this.shipAt = { ...L.ship, y: L.ship.beached ? -0.6 : -0.9 };
-    else { const sp = shorePoint(L, -Math.PI / 2 - 0.32, 6.0); this.shipAt = { x: sp.x, z: sp.z, rot: 0.12, beached: false, y: -0.95 }; }
+    else this.shipAt = { x: L.anchor.x, z: L.anchor.z, rot: L.anchor.rot, beached: false, y: -0.95 };
     if (pir.length) { const m = new THREE.Mesh(mergeModels(pir, 'color'), this.sceneryMat); m.castShadow = true; m.receiveShadow = true; sc.add(m); this.scenery.push(m); }
     if (ken.length) { const m = new THREE.Mesh(mergeModels(ken, 'uv'), this.sceneryKMat); m.castShadow = true; m.receiveShadow = true; sc.add(m); this.scenery.push(m); }
     const ship = new THREE.Mesh(mergeModels([{ key: pk('ship-large'), x: 0, y: 0, z: 0, rot: 0, s: 1 }], 'color'), this.sceneryMat);
@@ -354,6 +394,7 @@ export class View {
   private placeShip(t: number): void {
     if (!this.ship) return;
     const s = this.shipAt;
+    this.ship.scale.setScalar(1);
     this.ship.position.set(s.x, s.y + (s.beached ? 0 : Math.sin(t * 0.9) * 0.12), s.z);
     this.ship.rotation.set(s.beached ? 0.05 : Math.sin(t * 0.7) * 0.025, s.rot, s.beached ? 0.22 : Math.sin(t * 0.8 + 1) * 0.04, 'YXZ');
   }
@@ -364,11 +405,120 @@ export class View {
     const P = this.particles, D = this.dust, pal = sim.L.palette;
     switch (ev.type) {
       case 'island':
-        if (this.builtK === ev.k && this.ground) break;
         this.clearFoes();
-        this.makeGround(sim.L);
-        this.builtK = ev.k;
+        if (this.builtL !== sim.L || !this.ground) { this.makeGround(sim.L); this.builtL = sim.L; }
+        this.heroDead = false;
         this.snap(sim);
+        break;
+      case 'seaStart':
+        this.clearFoes();
+        if (this.builtL !== sim.L) { this.makeGround(sim.L); this.builtL = sim.L; }
+        this.snapSea = true;
+        this.lastState = '';
+        break;
+      case 'wreck':
+        this.clearFoes();
+        this.snapHero = true;
+        this.hero.play('Idle', { restart: true });
+        break;
+      case 'broadside': {
+        const s = sim.voyage?.ship;
+        if (!s) break;
+        for (let i = 0; i < ev.n; i++) {
+          const x = s.x + ev.side * 2, z = s.z + (i - (ev.n - 1) / 2) * 1.8;
+          this.flashes.push({ x, y: 1.3, z, s: 2.4, t: 0.12, max: 0.12, c: ev.fire ? 0xff8a3a : 0xffd27a, kind: 'flare' });
+          for (let j = 0; j < 7; j++) D.emit(x, 1.3, z, ev.side * (2 + Math.random() * 3), 0.6 + Math.random(), (Math.random() - 0.5) * 1.5, 1.1, 0.7, 1.8, 0xe0e0e0, 1.4, -0.3);
+        }
+        this.hero.play('Sword', { once: true, restart: true, speed: 1.6, fade: 0.06 });
+        this.lastState = 'fire';
+        this.shake(0.22, 0.12);
+        break;
+      }
+      case 'evade': {
+        const s = sim.voyage?.ship;
+        if (!s) break;
+        for (let i = 0; i < 18; i++) P.emit(s.x - ev.dir * 1.6, 0, s.z + (Math.random() - 0.5) * 7, -ev.dir * (1 + Math.random() * 2), 2 + Math.random() * 3, 0, 0.7, 0.45, 0.15, 0xdff8ff, 1, 8);
+        this.hero.play('Duck', { once: true, restart: true, speed: 2.2, fade: 0.05 });
+        this.lastState = 'fire';
+        break;
+      }
+      case 'seaBoom': {
+        const n = ev.friendly ? 16 : 12;
+        for (let i = 0; i < n; i++) {
+          const a = Math.random() * Math.PI * 2, vv = 0.6 + Math.random() * 1.6;
+          P.emit(ev.x, 0, ev.z, Math.cos(a) * vv, 4 + Math.random() * 5, Math.sin(a) * vv, 0.8, 0.5, 0.2, i % 3 ? 0xdff8ff : 0x9fe4ff, 0.6, 14);
+        }
+        this.flashes.push({ x: ev.x, y: -0.1, z: ev.z, s: 3.6, t: 0.5, max: 0.5, c: 0xe8fbff, kind: 'ring' });
+        if (ev.fire || ev.kind === 'ghost') P.burst(ev.x, 0.6, ev.z, 10, 5, ev.kind === 'ghost' ? [0x5affb0, 0xffffff] : [0xffb040, 0xff6a1a], 0.5, 0.5, 1, 3);
+        break;
+      }
+      case 'hullHit': {
+        P.burst(ev.x, 1, ev.z, 14, 6, [0x8a5a34, 0x6a4024, 0xffd27a], 0.8, 0.45, 1.2, 10);
+        D.burst(ev.x, 1, ev.z, 8, 2.5, [0x9a9a9a, 0x6a6a6a], 1, 0.9, 0.8, -0.3);
+        this.flashes.push({ x: ev.x, y: 1.2, z: ev.z, s: 3, t: 0.15, max: 0.15, c: 0xffb060, kind: 'flare' });
+        this.shake(ev.dmg >= 12 ? 0.6 : 0.35, 0.22);
+        this.hero.play('HitReact', { once: true, restart: true, speed: 1.4, fade: 0.05 });
+        this.lastState = 'fire';
+        break;
+      }
+      case 'seaHit':
+        this.flashes.push({ x: ev.x, y: 1.4, z: ev.z, s: 2, t: 0.12, max: 0.12, c: 0xfff0b0, kind: 'flare' });
+        P.burst(ev.x, 1.2, ev.z, 8, 5, ev.kind === 'tentacle' ? [0xff9ad0, 0xc84a90] : [0x8a5a34, 0xffd27a], 0.4, 0.35, 1, 6);
+        break;
+      case 'seaKill': {
+        const big = ev.kind === 'sloop' || ev.kind === 'ghost';
+        P.burst(ev.x, 1.4, ev.z, big ? 40 : 16, big ? 9 : 5, ev.kind === 'ghost' ? [0x5affb0, 0xffffff, 0xffd23f] : [0xffd27a, 0xff8a2a, 0xff5a1a], 0.9, 0.6, 1, 4);
+        this.flashes.push({ x: ev.x, y: -0.05, z: ev.z, s: big ? 10 : 5, t: 0.6, max: 0.6, c: 0xffe2a0, kind: 'ring' });
+        if (big) { this.flashes.push({ x: ev.x, y: 2, z: ev.z, s: 9, t: 0.3, max: 0.3, c: 0xffb060, kind: 'glow' }); this.shake(0.5, 0.3); }
+        break;
+      }
+      case 'ram':
+        P.burst(ev.x, 0.6, ev.z, 16, 5, [0x8a5a34, 0xdff8ff], 0.7, 0.45, 1, 8);
+        break;
+      case 'rockHit':
+        D.burst(ev.x, 0.6, ev.z, 14, 4, [0x8a8a8a, 0x6a6a6a, 0xdff8ff], 0.8, 0.8, 0.8, 2);
+        this.shake(0.5, 0.25);
+        break;
+      case 'float': {
+        const s = sim.voyage?.ship;
+        const c = ev.kind === 'crate' ? 0x7affa0 : ev.kind === 'bottle' ? 0x9ff0ff : 0xffd23f;
+        P.burst(ev.x, 0.6, ev.z, ev.kind === 'chest' ? 40 : 18, 5, [c, 0xffffff], 0.7, 0.45, 1.4, 2);
+        if (s) this.flashes.push({ x: s.x, y: -0.05, z: s.z, s: 7, t: 0.45, max: 0.45, c, kind: 'ring' });
+        break;
+      }
+      case 'seaPower': {
+        const s = sim.voyage?.ship;
+        if (!s) break;
+        const c = SEA_POWER_COLOR[ev.power];
+        P.burst(s.x, 2, s.z, 40, 7, [c, 0xffffff], 0.9, 0.55, 1.5, 1);
+        this.flashes.push({ x: s.x, y: -0.05, z: s.z, s: 12, t: 0.7, max: 0.7, c, kind: 'ring' });
+        this.flashes.push({ x: s.x, y: 3, z: s.z, s: 8, t: 0.35, max: 0.35, c, kind: 'glow' });
+        break;
+      }
+      case 'lightning':
+        this.lightT = 0.22;
+        this.bolts.push({ x: ev.x, z: ev.z, t: 0.2 });
+        break;
+      case 'sink': {
+        const s = sim.voyage?.ship;
+        if (!s) break;
+        P.burst(s.x, 0.5, s.z, 50, 8, [0xdff8ff, 0x9fe4ff, 0x8a5a34], 1.1, 0.6, 1.4, 6);
+        this.flashes.push({ x: s.x, y: -0.05, z: s.z, s: 14, t: 1, max: 1, c: 0xe8fbff, kind: 'ring' });
+        this.shake(0.8, 0.5);
+        this.hero.play('Jump', { once: true, restart: true, speed: 0.5, fade: 0.05 });
+        this.lastState = 'fire';
+        break;
+      }
+      case 'jumpAshore':
+        this.hero.play('Jump', { once: true, restart: true, speed: 0.45, fade: 0.05 });
+        this.lastState = 'fire';
+        break;
+      case 'swim':
+        if (ev.on) this.flashes.push({ x: sim.p.x, y: -0.1, z: sim.p.z, s: 3, t: 0.5, max: 0.5, c: 0xe8fbff, kind: 'ring' });
+        break;
+      case 'islet':
+        P.burst(ev.x, 1, ev.z, 50, 8, [0xffd23f, 0xffffff, 0x7affd8], 1.1, 0.55, 1.6, 3);
+        this.flashes.push({ x: ev.x, y: 0.1, z: ev.z, s: 7, t: 0.8, max: 0.8, c: 0xffe27a, kind: 'ring' });
         break;
       case 'swing': {
         const p = sim.p, s = sim.p.stepDef!;
@@ -540,24 +690,64 @@ export class View {
   sync(sim: Sim, rdt: number, anim = 1): void {
     const dt = rdt * anim;
     this.time += dt;
-    if (this.builtK !== sim.k) { this.clearFoes(); this.makeGround(sim.L); this.builtK = sim.k; this.snap(sim); }
+    if (this.builtL !== sim.L) { this.clearFoes(); this.makeGround(sim.L); this.builtL = sim.L; if (!sim.atSea) this.snap(sim); }
     const p = sim.p;
     const world = this.world;
+    const v = sim.voyage;
+    const sea = !!v && sim.atSea;
+    // the camera's blend: the island (hero) camera, the sea (ship) camera, and docking in between
+    let seaK = 0;
+    if (sea) {
+      if (sim.phase === 'dock') {
+        const s = v!.ship;
+        seaK = THREE.MathUtils.clamp((s.z - v!.dockZ) / 16, 0, 1) * 0.6 + 0.4 * (v!.jumpT < 0 ? 1 : Math.max(0, 1 - v!.jumpT / 0.8));
+      } else seaK = 1;
+    }
+    this.seaK = seaK;
+    const stormTo = sea && v!.storm ? seaK : 0;
+    this.stormK += (stormTo - this.stormK) * Math.min(1, rdt * 1.2);
+    if (Math.abs(this.stormK - stormTo) < 0.002) this.stormK = stormTo;
+    this.lightT = Math.max(0, this.lightT - rdt);
+    this.swell = 1 + seaK * 0.6 + this.stormK * 1.6;
+    this.atmosphere(sim.L.palette, seaK, this.stormK);
     this.waterMat.uniforms.uTime.value = this.time;
-    this.placeShip(this.time);
+    this.waterMat.uniforms.uSwell.value = this.swell;
+    if (sea && this.ship) {
+      const sinkK = sim.phase === 'sinking' ? THREE.MathUtils.smoothstep(v!.ship.t, 0.3, 2.4) : 0;
+      this.sea.placeShip(this.ship, v!, this.time, this.swell, sinkK);
+      this.ship.visible = sinkK < 0.98;
+    } else if (this.ship) {
+      this.ship.visible = sim.phase !== 'wreck';
+      this.placeShip(this.time);
+    }
+    this.placeHero(sim, v, sea);
 
-    // camera: follows the hero (with a look past them), pulls back for bosses, a touch of shake
+    // camera: follows the hero (with a look past them), pulls back for bosses; at sea it rides
+    // behind the ship, low enough to see the island on the horizon; a touch of shake
     this.zoom += (this.zoomTarget - this.zoom) * Math.min(1, rdt * 1.5);
     const look = this.camLook;
-    let tx = p.x, tz = p.z - this.lookAhead;
+    const hp = this.heroPos;
+    let tx = hp.x, tz = hp.z - this.lookAhead;
     if (this.focusT > 0) { this.focusT -= rdt; tx = this.focusAt.x; tz = this.focusAt.z; }
-    // keep a little of the island's middle in view so the far shore shows
+    // keep a little of the island's middle in view so the far shore shows (but never lose a swimmer)
     tx = THREE.MathUtils.clamp(tx, -sim.L.rx + 4, sim.L.rx - 4);
-    const k = Math.min(1, rdt * (this.focusT > 0 ? 2.2 : 4));
+    tx = THREE.MathUtils.clamp(tx, hp.x - 3.6, hp.x + 3.6);
+    const e = seaK * seaK * (3 - 2 * seaK);
+    if (sea) {
+      const s = v!.ship;
+      tx += (s.x * 0.45 - tx) * e;
+      tz += (s.z - 12 - tz) * e;
+    }
+    const k = Math.min(1, rdt * (this.focusT > 0 ? 2.2 : sea && seaK >= 1 ? 9 : 4));
     look.x += (tx - look.x) * k;
     look.z += (tz - look.z) * k;
+    if ((this.snapSea && sea) || (this.snapHero && !sea)) { look.x = tx; look.z = tz; this.snapSea = this.snapHero = false; }
     const cam = world.camera;
-    cam.position.set(look.x + this.camOff.x * this.zoom, this.camOff.y * this.zoom, look.z + this.camOff.z * this.zoom);
+    // a wider lens at sea, so the whole lane fits a phone held upright
+    const fov = CAM.fov + 10 * e;
+    if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); }
+    const ox = 0, oy = THREE.MathUtils.lerp(this.camOff.y * this.zoom, SEA_CAM.y, e), oz = THREE.MathUtils.lerp(this.camOff.z * this.zoom, SEA_CAM.z, e);
+    cam.position.set(look.x + ox, oy, look.z + oz);
     if (this.shakeT > 0) {
       this.shakeT -= rdt;
       const a = this.shakeAmp * Math.min(1, this.shakeT * 4);
@@ -569,29 +759,108 @@ export class View {
     cam.updateMatrixWorld();
     this.camQ.copy(cam.quaternion);
     this.camAt.copy(cam.position);
-    this.heroAt.set(sim.p.x, 0.8, sim.p.z);
+    // the scenery's see-through follows the hero on the islands (not the ship's own deck)
+    if (sea) {
+      this.heroAt.set(0, -100, 0);
+      this.sail.set(v!.ship.x, v!.ship.z, 99, 0);
+    } else { this.heroAt.set(p.x, 0.8, p.z); this.sail.set(0, 0, 0, 0); }
     this.waterMat.uniforms.uCam.value.copy(cam.position);
+    // the sea plane follows the view (on its own grid, so the swell does not swim)
+    const g = 200 / 90;
+    this.water.position.x = Math.round(look.x / g) * g;
+    this.water.position.z = Math.round(look.z / g) * g;
     world.followSun(this.v.set(look.x, 0, look.z - 2));
 
-    this.syncHero(sim, dt);
-    this.syncFoes(sim, dt, look);
-    this.syncFx(sim, dt);
+    this.syncHero(sim, dt, sea);
+    if (!sea) this.syncFoes(sim, dt, look);
+    this.syncFx(sim, dt, sea);
   }
 
-  private syncHero(sim: Sim, dt: number): void {
+  /** The palette: the island's, the sea's longer view, the storm's greys, a lightning flash. */
+  private atmosphere(pal: Palette, seaK: number, stormK: number): void {
+    const key = pal.sky + ':' + seaK.toFixed(3) + ':' + stormK.toFixed(3) + ':' + this.lightT.toFixed(2);
+    if (key === this.atmo) return;
+    this.atmo = key;
+    const sc = this.world.scene;
+    const c = (a: number, b: number, k: number, out: THREE.Color) => out.setHex(a).lerp(this.tmpCol.setHex(b), k);
+    const flash = Math.min(1, this.lightT * 4);
+    c(pal.sky, STORM.sky, stormK, sc.background as THREE.Color);
+    (sc.background as THREE.Color).lerp(this.tmpCol.setHex(0xe8f0ff), flash * 0.5);
+    const fog = sc.fog as THREE.Fog;
+    c(pal.fog, STORM.fog, stormK, fog.color);
+    fog.color.lerp(this.tmpCol.setHex(0xe8f0ff), flash * 0.4);
+    fog.near = THREE.MathUtils.lerp(34, 52, seaK);
+    fog.far = THREE.MathUtils.lerp(70, 135, seaK);
+    c(pal.hemiSky, STORM.hemiSky, stormK, this.hemi.color);
+    c(pal.hemiGround, STORM.hemiGround, stormK, this.hemi.groundColor);
+    this.hemi.intensity = THREE.MathUtils.lerp(pal.ambient, STORM.ambient, stormK) + flash * 1.5;
+    c(pal.sun, STORM.sun, stormK, this.world.sun!.color);
+    this.world.sun!.intensity = THREE.MathUtils.lerp(pal.sunI, STORM.sunI, stormK);
+    const u = this.waterMat.uniforms;
+    c(pal.deep, STORM.deep, stormK, u.uDeep.value as THREE.Color);
+    c(pal.shallow, STORM.shallow, stormK, u.uShallow.value as THREE.Color);
+    (u.uFoam.value as THREE.Color).setHex(pal.foam);
+    (u.uSky.value as THREE.Color).copy(fog.color);
+    (u.uFog.value as THREE.Vector2).set(THREE.MathUtils.lerp(30, 52, seaK), THREE.MathUtils.lerp(70, 135, seaK));
+  }
+
+  /** Where the hero is: on the sand or swimming, on deck at sea, mid-jump ashore, overboard. */
+  private placeHero(sim: Sim, v: Voyage | null, sea: boolean): void {
     const p = sim.p, h = this.hero;
-    h.root.position.set(p.x, 0, p.z);
+    if (!sea || !this.ship) {
+      const y = p.swim ? -0.8 + Math.sin(this.time * 3.2) * 0.06 : groundY(sim.L, p.x, p.z);
+      h.root.position.set(p.x, y, p.z);
+      this.heroPos.set(p.x, 0, p.z);
+      return;
+    }
+    const deck = this.ship.localToWorld(this.v.copy(DECK));
+    const s = v!.ship;
+    if (sim.phase === 'dock' && v!.jumpT >= 0) {
+      const u = Math.min(1, v!.jumpT / 0.8);
+      h.root.position.set(deck.x + (v!.landAt.x - deck.x) * u, deck.y + (0 - deck.y) * u + Math.sin(u * Math.PI) * 2.4, deck.z + (v!.landAt.z - deck.z) * u);
+    } else if (sim.phase === 'sinking' && s.t > 0.5) {
+      const u = Math.min(1, (s.t - 0.5) / 0.7);
+      h.root.position.set(deck.x + 2.6 * u, deck.y * (1 - u) - 1 * u + Math.sin(u * Math.PI) * 1.6, deck.z);
+    } else h.root.position.copy(deck);
+    this.heroPos.set(h.root.position.x, 0, h.root.position.z);
+  }
+
+  private syncHero(sim: Sim, dt: number, sea: boolean): void {
+    const p = sim.p, h = this.hero;
+    const v = sim.voyage;
+    if (sea && v) {
+      // on deck: facing the bow, idling, signalling the broadsides (handle() plays the one-shots)
+      h.root.rotation.y = Math.PI - v.ship.yaw;
+      h.pivot.rotation.set(0, 0, 0);
+      h.pivot.position.y = 0.7;
+      if (!this.heroDead && (this.lastState === '' || this.lastState === 'idle' || this.lastState === 'run' || h.clipTime > 1.2)) {
+        if (sim.phase === 'dock' && v.jumpT < 0) h.play('Yes', { fade: 0.25 });
+        else if (sim.phase === 'sea') h.play('Idle', { fade: 0.25 });
+        this.lastState = 'idle';
+      }
+      h.setGlow(0);
+      h.update(dt);
+      h.root.visible = !(sim.phase === 'sinking' && v.ship.t > 1.25);
+      this.parrot.visible = false;
+      this.pistol.visible = false;
+      return;
+    }
     h.root.rotation.y = lerpAng(h.root.rotation.y, p.face, Math.min(1, dt * 18));
     const sp = Math.hypot(p.vx, p.vz);
     const st = p.state;
     if (!this.heroDead) {
-      if (st === 'idle' || st === 'run') {
+      if (p.swim && (st === 'idle' || st === 'run')) {
+        // swimming: the run clip slowed right down, the body leaning into a crawl, only head and shoulders out
+        if (sp > 0.4) h.play('Run', { speed: 0.5, fade: 0.2 });
+        else h.play('Idle', { speed: 0.7, fade: 0.25 });
+        this.lastState = 'swim';
+      } else if (st === 'idle' || st === 'run') {
         if (sp > 0.6) {
           h.play('Run', { speed: Math.max(0.6, sp / 5.2), fade: 0.12 });
           // sand kicked up by the feet
           this.stepT -= dt;
-          if (this.stepT <= 0) { this.stepT = 0.16; this.dust.emit(p.x - Math.sin(p.face) * 0.3, 0.1, p.z - Math.cos(p.face) * 0.3, (Math.random() - 0.5) * 0.6, 0.8, (Math.random() - 0.5) * 0.6, 0.5, 0.35, 0.6, sim.L.palette.sand, 2, 2); }
-        } else if (sim.phase === 'cleared' || sim.phase === 'shop' || sim.phase === 'draft') h.play('Yes', { fade: 0.25 });
+          if (this.stepT <= 0 && groundY(sim.L, p.x, p.z) > -0.05) { this.stepT = 0.16; this.dust.emit(p.x - Math.sin(p.face) * 0.3, 0.1, p.z - Math.cos(p.face) * 0.3, (Math.random() - 0.5) * 0.6, 0.8, (Math.random() - 0.5) * 0.6, 0.5, 0.35, 0.6, sim.L.palette.sand, 2, 2); }
+        } else if (sim.phase === 'cleared' || sim.phase === 'shop' || sim.phase === 'draft' || sim.phase === 'chart') h.play('Yes', { fade: 0.25 });
         else h.play('Idle', { fade: 0.2 });
         this.lastState = st;
       } else if (st === 'hurt' && this.lastState !== 'hurt') { h.play('HitReact', { once: true, restart: true, speed: 1.4, fade: 0.05 }); this.lastState = 'hurt'; }
@@ -611,6 +880,11 @@ export class View {
       h.pivot.rotation.x = u * Math.PI * 2;
       h.pivot.position.y = 0.45 + Math.sin(u * Math.PI) * 0.2;
     } else h.pivot.position.y = 0.7;
+    if (p.swim && !this.heroDead) {
+      this.swimFx = Math.min(1, this.swimFx + dt * 3);
+      h.pivot.rotation.x = (sp > 0.4 ? 0.62 : 0.1) * this.swimFx + Math.sin(this.time * 6) * 0.04;
+      h.pivot.rotation.z = sp > 0.4 ? Math.sin(this.time * 5) * 0.12 : 0;
+    } else this.swimFx = 0;
     // the pistol is in the hand while the shot is fired
     this.pistolT -= dt;
     this.pistol.visible = this.pistolT > 0 && !this.heroDead;
@@ -626,7 +900,7 @@ export class View {
     h.root.visible = !(this.blinkT > 0 && p.state !== 'dodge' && !this.heroDead && Math.floor(this.time * 16) % 2 === 0);
     // the parrot companion
     const b = sim.parrot;
-    const on = p.powers.parrot > 0 && !this.heroDead;
+    const on = p.powers.parrot > 0 && !this.heroDead && !p.swim;
     this.parrot.visible = on;
     if (on) {
       const prev = this.parrot.position.clone();
@@ -641,6 +915,7 @@ export class View {
   private clearFoes(): void {
     for (const fv of this.foes.values()) if (fv.fig && fv.pool) fv.pool.give(fv.fig);
     this.foes.clear();
+    this.sea.clear();
     this.kraken.visible = false;
     // a new island starts clean: no scorch marks, ink pools or sparks from the last one
     this.splatList.length = 0;
@@ -654,7 +929,7 @@ export class View {
     switch (kind) {
       case 'skel': case 'thrower': case 'brute': case 'captain': return this.pools.skeleton;
       case 'runner': return this.pools.headless;
-      case 'shark': return this.pools.shark;
+      case 'shark': case 'hunter': return this.pools.shark;
       case 'tentacle': case 'arm': return this.pools.tentacle;
       default: return null;
     }
@@ -728,6 +1003,18 @@ export class View {
     }
     fig.root.position.set(f.x, f.y, f.z);
     fig.root.rotation.set(0, f.face, 0);
+    if (f.kind === 'hunter') {
+      // a shark hunting a swimmer: its fin cuts the surface while it circles, it bursts out on the lunge
+      if (st === 'dead') { fig.root.rotation.z = Math.PI / 2; fig.root.position.y = -0.3 - f.deadT * 0.6; }
+      if (changed) {
+        if (st === 'lunge') fig.play('Swim_Bite', { once: true, restart: true, speed: 1.3 });
+        else if (st === 'wind') fig.play('Swim_Fast', { speed: 1.4 });
+        else fig.play('Swim', { speed: 1.2 });
+      }
+      if ((st === 'circle' || st === 'wind') && Math.random() < dt * 22) this.particles.emit(f.x - Math.sin(f.face) * 0.6, -0.1, f.z - Math.cos(f.face) * 0.6, 0, 1, 0, 0.5, 0.35, 0.1, 0xe8fbff, 1, 3);
+      fig.update(dt, every);
+      return;
+    }
     if (f.kind === 'shark') {
       if (st === 'fin' || st === 'wind') fig.root.position.y = -0.62 + (st === 'wind' ? Math.sin(this.time * 18) * 0.04 : 0);
       if (st === 'beached') fig.root.rotation.z = Math.sin(f.t * 9) * 0.3;
@@ -776,15 +1063,66 @@ export class View {
     fig.update(dt, every);
   }
 
-  private syncFx(sim: Sim, dt: number): void {
-    const cq = this.camQ, t = this.time, p = sim.p;
-    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.slashes, this.inkBB, this.splats, this.bubbles]) b.begin(cq);
+  private syncFx(sim: Sim, dt: number, sea: boolean): void {
+    const cq = this.camQ, t = this.time;
+    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.slashes, this.inkBB, this.splats, this.bubbles, this.gulls]) b.begin(cq);
     this.teles.begin();
+    // telegraphs: red warnings that fill as the blow comes; gold for the player's own fire
+    for (const T of sim.teles) {
+      const fill = Math.min(1, T.t / T.dur);
+      const col = T.friendly ? 0xffc23a : T.lane ? 0xff7a2a : 0xff2a1a;
+      const pulse = fill > 0.7 ? 0.5 + Math.sin(t * 30) * 0.5 : 0;
+      if (T.kind === 'circle') this.teles.add(SHAPE.circle, T.x, T.z, T.r, 0, 0, 0, 0, fill, col, pulse);
+      else if (T.kind === 'cone') this.teles.add(SHAPE.cone, T.x, T.z, T.r, 0, 0, T.ang, T.arc, fill, col, pulse);
+      else this.teles.add(SHAPE.line, T.x, T.z, 0, T.w, T.len, T.ang, 0, fill, col, pulse);
+    }
+    // lightning on a stormy passage
+    for (let i = this.bolts.length - 1; i >= 0; i--) {
+      const b = this.bolts[i];
+      b.t -= dt;
+      if (b.t <= 0) { this.bolts.splice(i, 1); continue; }
+      const k = b.t / 0.2;
+      for (let j = 0; j < 4; j++) this.streaks.add(b.x + Math.sin(j * 2.1 + b.x) * 1.2, 4 + j * 6, b.z, 0.5, 7, Math.sin(j * 1.7) * 0.4, 0xf0f6ff, k);
+      this.glows.add(b.x, 10, b.z, 30, 30, 0, 0xc8dcff, k * 0.4);
+    }
+    if (sea) this.sea.sync(sim, sim.voyage!, dt, t, cq, this.swell, this.ship!);
+    else this.islandFx(sim, dt);
 
-    // the hero's marker and shadow; the ghost shield
-    if (!this.heroDead || sim.phaseT < 2) this.shadows.add(p.x, 0.03, p.z, 1.2, 1.2, 0, 0xffffff, 1);
+    // one-shot flashes and rings
+    for (let i = this.flashes.length - 1; i >= 0; i--) {
+      const fl = this.flashes[i];
+      fl.t -= dt;
+      if (fl.t <= 0) { this.flashes.splice(i, 1); continue; }
+      const k = fl.t / fl.max;
+      if (fl.kind === 'ring') this.rings.add(fl.x, fl.y < 0 ? fl.y : Math.max(0.05, fl.y), fl.z, fl.s * (1.15 - k * 0.6), fl.s * (1.15 - k * 0.6), 0, fl.c, k * 0.7);
+      else if (fl.kind === 'glow') this.glows.add(fl.x, fl.y, fl.z, fl.s, fl.s, 0, fl.c, k * 0.5);
+      else this.flares.add(fl.x, fl.y, fl.z, fl.s * (0.6 + k * 0.4), fl.s * (0.6 + k * 0.4), t * 3, fl.c, k);
+    }
+
+    this.particles.update(dt, cq);
+    this.dust.update(dt, cq);
+    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.slashes, this.inkBB, this.splats, this.bubbles, this.gulls]) b.end();
+    this.teles.end();
+  }
+
+  /** The island's effects: the hero's marker, shadows, pools, sword arcs, shots, barrels, loot, the islet's gulls. */
+  private islandFx(sim: Sim, dt: number): void {
+    const t = this.time, p = sim.p;
+
+    // the hero's marker and shadow; the ghost shield; a swimmer's ripples and wake
+    const gy = groundY(sim.L, p.x, p.z);
+    if ((!this.heroDead || sim.phaseT < 2) && !p.swim && gy > -0.3) this.shadows.add(p.x, 0.03 + gy, p.z, 1.2, 1.2, 0, 0xffffff, 1);
+    if (p.swim && !this.heroDead) {
+      const mv = Math.hypot(p.vx, p.vz);
+      for (let i = 0; i < 2; i++) {
+        const u = ((t * 0.9 + i * 0.5) % 1);
+        this.rings.add(p.x, -0.13, p.z, 1.1 + u * 1.7, 1.1 + u * 1.7, 0, 0xdff6ff, (1 - u) * 0.28);
+      }
+      if (mv > 0.4 && Math.random() < dt * 14) this.particles.emit(p.x + Math.sin(p.face) * 0.5 + (Math.random() - 0.5) * 0.6, -0.05, p.z + Math.cos(p.face) * 0.5, (Math.random() - 0.5), 1.8 + Math.random() * 1.5, (Math.random() - 0.5), 0.5, 0.28, 0.08, 0xeefbff, 1, 7);
+      if (mv > 0.4 && Math.random() < dt * 10) this.dust.emit(p.x - Math.sin(p.face) * 0.8, -0.12, p.z - Math.cos(p.face) * 0.8, 0, 0.1, 0, 1.2, 0.5, 1.2, 0xf4fbff, 1, 0);
+    }
     if (!this.heroDead) {
-      this.rings.add(p.x, 0.04, p.z, 1.6, 1.6, 0, 0xffe27a, 0.55 + Math.sin(t * 4) * 0.12);
+      this.rings.add(p.x, p.swim ? -0.14 : 0.04 + Math.max(-0.2, gy), p.z, 1.6, 1.6, 0, 0xffe27a, 0.55 + Math.sin(t * 4) * 0.12);
       if (p.powers.shield > 0) {
         const k = Math.min(1, p.powers.shield / 1.5);
         this.bubbles.add(p.x, 0.85, p.z, 2.3, 2.3, t, 0x7fe8ff, (0.7 + Math.sin(t * 6) * 0.15) * (p.powers.shield < 2 && Math.floor(t * 8) % 2 ? 0.3 : 1) * k);
@@ -803,6 +1141,7 @@ export class View {
         continue;
       }
       if (f.kind === 'shark') { if (f.state === 'beached' || f.state === 'lunge') this.shadows.add(f.x, 0.03, f.z, 1.6, 2.8, -f.face, 0xffffff, 0.8); continue; }
+      if (f.kind === 'hunter') { if (f.state === 'circle' || f.state === 'wind') this.rings.add(f.x, -0.12, f.z, 1.6, 1.6, 0, 0xe8fbff, 0.3 + Math.sin(t * 6 + f.id) * 0.1); continue; }
       if (f.state === 'dead' && f.deadT > 2) continue;
       const s = f.r * f.scale * 2.6;
       this.shadows.add(f.x, 0.03, f.z, s, s, 0, 0xffffff, f.state === 'spawn' ? Math.min(1, f.t / 0.9) : 1);
@@ -810,15 +1149,6 @@ export class View {
       if (f.kind === 'captain' && f.state !== 'dead') this.rings.add(f.x, 0.05, f.z, 4, 4, 0, sim.bossPhase === 3 ? 0xff3060 : 0xffa060, 0.7 + Math.sin(t * 5) * 0.2);
     }
 
-    // telegraphs: red warnings that fill as the blow comes; gold for the player's own fire
-    for (const T of sim.teles) {
-      const fill = Math.min(1, T.t / T.dur);
-      const col = T.friendly ? 0xffc23a : T.lane ? 0xff7a2a : 0xff2a1a;
-      const pulse = fill > 0.7 ? 0.5 + Math.sin(t * 30) * 0.5 : 0;
-      if (T.kind === 'circle') this.teles.add(SHAPE.circle, T.x, T.z, T.r, 0, 0, 0, 0, fill, col, pulse);
-      else if (T.kind === 'cone') this.teles.add(SHAPE.cone, T.x, T.z, T.r, 0, 0, T.ang, T.arc, fill, col, pulse);
-      else this.teles.add(SHAPE.line, T.x, T.z, 0, T.w, T.len, T.ang, 0, fill, col, pulse);
-    }
     // tide pools: wet sand, rising (a blue warning), flooded
     for (const q of sim.pools) {
       if (q.state === 'rise') this.teles.add(SHAPE.circle, q.x, q.z, q.r, 0, 0, 0, 0, Math.min(1, q.t / (1.6 * sim.tune.tele)), 0x3aa0ff, 0);
@@ -967,21 +1297,17 @@ export class View {
       this.splats.add(s.x, 0.045, s.z, s.s, s.s, s.rot, s.c, Math.min(1, s.t / 1.5) * 0.55);
     }
 
-    // one-shot flashes and rings
-    for (let i = this.flashes.length - 1; i >= 0; i--) {
-      const fl = this.flashes[i];
-      fl.t -= dt;
-      if (fl.t <= 0) { this.flashes.splice(i, 1); continue; }
-      const k = fl.t / fl.max;
-      if (fl.kind === 'ring') this.rings.add(fl.x, Math.max(0.05, fl.y), fl.z, fl.s * (1.15 - k * 0.6), fl.s * (1.15 - k * 0.6), 0, fl.c, k * 0.7);
-      else if (fl.kind === 'glow') this.glows.add(fl.x, fl.y, fl.z, fl.s, fl.s, 0, fl.c, k * 0.5);
-      else this.flares.add(fl.x, fl.y, fl.z, fl.s * (0.6 + k * 0.4), fl.s * (0.6 + k * 0.4), t * 3, fl.c, k);
+    // the hidden islet: gulls circling over its treasure, a glint now and then
+    const isl = sim.L.islet;
+    if (isl && sim.chests.some((c) => c.islet && !c.open)) {
+      for (let i = 0; i < 3; i++) {
+        const a = t * (0.7 + i * 0.13) + i * 2.1;
+        const r = 2 + i * 0.6;
+        const flap = 0.55 + Math.abs(Math.sin(t * 7 + i * 2)) * 0.45;
+        this.gulls.add(isl.x + Math.cos(a) * r, 4.6 + i * 0.5 + Math.sin(t * 1.3 + i) * 0.3, isl.z + Math.sin(a) * r * 0.8, 0.9, 0.45 * flap, Math.sin(a) * 0.3, 0xf4f8ff, 1);
+      }
+      if (Math.floor(t * 1.4) % 3 === 0) this.flares.add(isl.x + 0.25, 1.1, isl.z + 0.35, 1.4 + Math.sin(t * 9) * 0.4, 1.4 + Math.sin(t * 9) * 0.4, t * 2, 0xfff4b0, 0.8);
     }
-
-    this.particles.update(dt, cq);
-    this.dust.update(dt, cq);
-    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.slashes, this.inkBB, this.splats, this.bubbles]) b.end();
-    this.teles.end();
   }
 
   private finish(im: THREE.InstancedMesh, n: number): void {

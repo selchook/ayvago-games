@@ -3,8 +3,7 @@
 // the boss bar and the banners. Every always-visible readout sits in a core HUD chip.
 import Phaser from 'phaser';
 import { txt, hudChip, HudChip } from '@core';
-import { POWER_COLOR, TIMED_POWERS, type PowerId, type TimedPower } from './defs';
-import { powerArt, HEART, SKULL } from './art';
+import { HEART, SKULL, SHIP, BUBBLE } from './art';
 
 export const UI_DEPTH = 9100;
 
@@ -112,8 +111,8 @@ export class HpBar {
   private ghost = 1;
   static W = 190;
 
-  constructor(private scene: Phaser.Scene, x: number, y: number) {
-    this.heart = scene.add.image(0, 0, HEART).setDisplaySize(38, 38);
+  constructor(private scene: Phaser.Scene, x: number, y: number, private kind: 'hp' | 'hull' = 'hp') {
+    this.heart = scene.add.image(0, 0, kind === 'hull' ? SHIP : HEART).setDisplaySize(38, 38);
     this.heart.setData('chipWidth', 34);
     this.bar = scene.add.graphics();
     this.label = txt(scene, 0, 0, '', { title: true, size: 20, strokeThickness: 4 });
@@ -130,7 +129,7 @@ export class HpBar {
     g.fillStyle(0x060914, 0.75).fillRoundedRect(-W / 2, -H / 2, W, H, 9);
     if (this.ghost > k) g.fillStyle(0xffffff, 0.55).fillRoundedRect(-W / 2, -H / 2, W * this.ghost, H, 9);
     const low = k < 0.3;
-    const col = low ? (Math.floor(time * 6) % 2 ? 0xff3b3b : 0xff7a5a) : k < 0.6 ? 0xffc23f : 0x4fe07a;
+    const col = low ? (Math.floor(time * 6) % 2 ? 0xff3b3b : 0xff7a5a) : k < 0.6 ? 0xffc23f : this.kind === 'hull' ? 0x5ab8ff : 0x4fe07a;
     if (k > 0) g.fillStyle(col, 1).fillRoundedRect(-W / 2, -H / 2, Math.max(18, W * k), H, 9);
     g.fillStyle(0xffffff, 0.25).fillRoundedRect(-W / 2 + 3, -H / 2 + 2, Math.max(10, W * k - 6), 6, 3);
     const n = Math.ceil(hp);
@@ -149,14 +148,17 @@ export class HpBar {
 const RING_R = 25;
 
 /** The power-ups in effect: one chip each, its icon inside a ring that empties as time runs out. */
-export class PowerChips {
-  private chips = new Map<TimedPower, { chip: HudChip; ring: Phaser.GameObjects.Graphics; max: number }>();
+export class PowerChips<Id extends string> {
+  private chips = new Map<Id, { chip: HudChip; ring: Phaser.GameObjects.Graphics; max: number }>();
 
-  constructor(private scene: Phaser.Scene, private x: number, private y: number) {}
+  constructor(private scene: Phaser.Scene, private x: number, private y: number, private ids: readonly Id[], private art: (id: Id) => string, private color: (id: Id) => number) {}
 
-  update(powers: Record<TimedPower, number>, extra: { shieldHits: number }, time: number): void {
+  /** Clears every chip (the island's powers wait while the ship sails, and back). */
+  clear(): void { for (const c of this.chips.values()) c.chip.destroy(); this.chips.clear(); }
+
+  update(powers: Record<Id, number>, extra: { shieldHits: number }, time: number): void {
     let x = this.x;
-    for (const id of TIMED_POWERS) {
+    for (const id of this.ids) {
       const left = powers[id];
       let c = this.chips.get(id);
       if (left <= 0) {
@@ -165,7 +167,7 @@ export class PowerChips {
       }
       if (!c) {
         const ring = this.scene.add.graphics();
-        const img = this.scene.add.image(0, 0, powerArt(id)).setDisplaySize(44, 44);
+        const img = this.scene.add.image(0, 0, this.art(id)).setDisplaySize(44, 44);
         const box = this.scene.add.container(0, 0, [ring, img]);
         box.setData('chipWidth', RING_R * 2 + 4);
         const chip = hudChip(this.scene, x, this.y, { items: [box], height: 60, depth: UI_DEPTH, text: '', size: 20 });
@@ -178,7 +180,7 @@ export class PowerChips {
       const k = left / c.max;
       const g = c.ring.clear();
       g.lineStyle(5, 0x000000, 0.45).strokeCircle(0, 0, RING_R);
-      const col = POWER_COLOR[id];
+      const col = this.color(id);
       const blink = left < 2.5 && Math.floor(time * 6) % 2 === 0;
       g.lineStyle(5, blink ? 0xffffff : col, 1);
       g.beginPath();
@@ -191,12 +193,80 @@ export class PowerChips {
   }
 
   /** Where the chip of a power is (the pickup's icon flies there), or the row's next slot. */
-  slot(id: PowerId): { x: number; y: number } {
-    const c = this.chips.get(id as TimedPower);
+  slot(id: string): { x: number; y: number } {
+    const c = this.chips.get(id as Id);
     if (c) return { x: c.chip.x + c.chip.chipWidth / 2, y: this.y };
     let x = this.x;
     for (const v of this.chips.values()) x = Math.max(x, v.chip.right + 8);
     return { x: x + 40, y: this.y };
+  }
+}
+
+// ------------------------------------------------------------------ at sea and in deep water
+
+/** The voyage's progress: the island's name, a track with the ship moving towards a flag. */
+export class ProgressChip {
+  readonly chip: HudChip;
+  private bar: Phaser.GameObjects.Graphics;
+  private ship: Phaser.GameObjects.Image;
+  static W = 190;
+
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    this.bar = scene.add.graphics();
+    this.ship = scene.add.image(0, 0, SHIP).setDisplaySize(34, 34);
+    const box = scene.add.container(0, 0, [this.bar, this.ship]);
+    box.setData('chipWidth', ProgressChip.W);
+    this.chip = hudChip(scene, x, y, { align: 'center', text: '', size: 19, color: '#bfe8ff', items: [box], depth: UI_DEPTH });
+    this.chip.setVisible(false);
+  }
+
+  show(name: string): void { this.chip.setText(name); this.chip.setVisible(true); }
+  hide(): void { this.chip.setVisible(false); }
+
+  update(k: number, storm: boolean, time: number): void {
+    const W = ProgressChip.W, H = 10;
+    const g = this.bar.clear();
+    g.fillStyle(0x060914, 0.75).fillRoundedRect(-W / 2, -H / 2, W, H, 5);
+    g.fillStyle(storm ? 0x8a9ab0 : 0x5ab8ff, 1).fillRoundedRect(-W / 2, -H / 2, Math.max(10, W * k), H, 5);
+    // the island at the end: a little flag
+    g.fillStyle(0xf2d79a, 1).fillEllipse(W / 2 - 4, 4, 18, 8);
+    g.lineStyle(2, 0x5a3a1a, 1).lineBetween(W / 2 - 4, 2, W / 2 - 4, -14);
+    g.fillStyle(0xff4a3a, 1).fillTriangle(W / 2 - 3, -14, W / 2 + 9, -10, W / 2 - 3, -6);
+    this.ship.setPosition(-W / 2 + (W - 14) * k, -8 + Math.sin(time * 4) * 1.5);
+  }
+}
+
+/** Breath in deep water: a bubble inside a ring that empties, and the seconds left. */
+export class BreathChip {
+  readonly chip: HudChip;
+  private ring: Phaser.GameObjects.Graphics;
+  private shownFull = true;
+
+  constructor(private scene: Phaser.Scene, x: number, y: number) {
+    this.ring = scene.add.graphics();
+    const img = scene.add.image(0, 0, BUBBLE).setDisplaySize(40, 40);
+    const box = scene.add.container(0, 0, [this.ring, img]);
+    box.setData('chipWidth', RING_R * 2 + 4);
+    this.chip = hudChip(scene, x, y, { items: [box], height: 60, depth: UI_DEPTH, text: '', size: 20, color: '#d8f6ff' });
+    this.chip.setVisible(false);
+  }
+
+  update(left: number, max: number, swimming: boolean, time: number): void {
+    const show = swimming || left < max - 0.05;
+    if (show !== this.chip.visible) {
+      this.chip.setVisible(show);
+      if (show) { this.chip.setScale(0.3); this.scene.tweens.add({ targets: this.chip, scale: 1, duration: 220, ease: 'Back.easeOut' }); }
+    }
+    if (!show) return;
+    const k = Math.max(0, left / max);
+    const low = left < 3;
+    const g = this.ring.clear();
+    g.lineStyle(5, 0x000000, 0.45).strokeCircle(0, 0, RING_R);
+    g.lineStyle(5, low ? (Math.floor(time * 6) % 2 ? 0xff5a4a : 0xffffff) : 0x7ad8ff, 1);
+    g.beginPath(); g.arc(0, 0, RING_R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k, false); g.strokePath();
+    this.chip.setText(left > 0 ? String(Math.ceil(left)) : '!');
+    this.chip.setTextColor(low ? '#ff9a8a' : '#d8f6ff');
+    if (low !== !this.shownFull) this.shownFull = !low;
   }
 }
 
@@ -248,6 +318,7 @@ export interface ActionButton {
   badge: Phaser.GameObjects.Text | null;
   down: boolean;
   pressed: boolean;
+  zone: Phaser.GameObjects.Zone | null;
 }
 
 /** A round action button drawn by the game (the core's A/B circles do the hit testing for ATTACK and DODGE). */
@@ -262,14 +333,29 @@ export function actionButton(scene: Phaser.Scene, x: number, y: number, r: numbe
     badge = txt(scene, r * 0.72, -r * 0.72, '', { title: true, size: 22, color: '#1a0c08', strokeThickness: 0, shadow: false });
     root.add(badge);
   }
-  const b: ActionButton = { x, y, r, root, g, label: lab, badge, down: false, pressed: false };
+  const b: ActionButton = { x, y, r, root, g, label: lab, badge, down: false, pressed: false, zone: null };
   if (own) {
-    const zone = scene.add.zone(x, y, r * 2.3, r * 2.3).setScrollFactor(0).setDepth(9519).setInteractive(new Phaser.Geom.Circle(r * 1.15, r * 1.15, r * 1.15), Phaser.Geom.Circle.Contains);
+    const zone = b.zone = scene.add.zone(x, y, r * 2.3, r * 2.3).setScrollFactor(0).setDepth(9519).setInteractive(new Phaser.Geom.Circle(r * 1.15, r * 1.15, r * 1.15), Phaser.Geom.Circle.Contains);
     zone.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { ev?.stopPropagation?.(); b.down = true; b.pressed = true; });
     zone.on('pointerup', () => { b.down = false; });
     zone.on('pointerout', () => { b.down = false; });
   }
   return b;
+}
+
+/** Shows or hides a button (and its own touch zone). */
+export function showButton(b: ActionButton, on: boolean): void {
+  if (b.root.visible === on) return;
+  b.root.setVisible(on);
+  if (b.zone) { if (on) b.zone.setInteractive(); else b.zone.disableInteractive(); }
+  b.down = false; b.pressed = false;
+}
+
+/** Relabels a button (FIRE at sea, ATTACK ashore). */
+export function relabel(b: ActionButton, label: string): void {
+  if (b.label.text === label) return;
+  b.label.setText(label).setScale(1);
+  if (b.label.width > b.r * 1.8) b.label.setScale((b.r * 1.8) / b.label.width);
 }
 
 /** Draws a button: its colour, pressed state, an optional ring (0–1 per segment) and readiness. */
