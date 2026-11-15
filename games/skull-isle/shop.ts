@@ -12,6 +12,7 @@ import { SHOP_IDS, SHOP_COST, PATCH, SHIP_IDS, SHIP_COST, shipStats, REPAIR, typ
 import { shopArt, boonArt, shipArt, routeArt, GOLD, SHIP } from './art';
 import { BOON_SYM } from './art';
 import { glass, Pill } from './ui';
+import { chartTexture, compassRose, rhumbLines, inkIsland, serpent, shipDoodle, stormDoodle, waves, xMark, scrollBanner, dashedPath, INK, INK_N, RED_INK, BLUE_INK } from './chart';
 import { ISLAND_IDS, ROUTES, type Route } from './defs';
 
 export const OVERLAY_DEPTH = 9600;
@@ -197,7 +198,7 @@ export class ShopOverlay {
       case 'sails': return dec(st.speed);
       case 'net': return dec(st.net);
       case 'figurehead': return String(Math.round(st.luck * 100));
-      case 'swim': return String(Math.round(st.breath));
+      case 'swim': return String(Math.round((st.swim - 1) * 100));
     }
   }
 
@@ -317,52 +318,92 @@ export class ShopOverlay {
 }
 
 /** The sea chart: two routes to the next island, side by side on a card each. */
+/** The sea chart's routes in screen space: from the island just raided to the next (calm above, storm below). */
+const ROUTE_PTS: Record<Route, [number, number][]> = {
+  calm: [[176, 452], [250, 340], [372, 282], [500, 262], [548, 280]],
+  storm: [[182, 476], [290, 500], [380, 452], [452, 470], [520, 400], [560, 310]],
+};
+
+/**
+ * The sea chart between islands: an old pirate chart (chart.ts) with the island just raided, the
+ * next one under a red X, and the two routes inked across the sea; the cards below pick one
+ * (tap, 1 · 2, or the arrows and Enter), the chosen route standing out on the chart.
+ */
 export class RouteOverlay {
   readonly root: Phaser.GameObjects.Container;
   private cards: { box: Phaser.GameObjects.Container; bg: Phaser.GameObjects.Graphics; id: Route }[] = [];
+  private routes: Phaser.GameObjects.Graphics;
   private focus = 0;
   done = false;
 
   constructor(private scene: Phaser.Scene, sim: Sim, private host: OverlayHost, private onPick: (r: Route) => void) {
     const { width, height } = scene.scale;
     this.root = scene.add.container(0, 0).setScrollFactor(0).setDepth(OVERLAY_DEPTH);
-    this.root.add(scene.add.rectangle(0, 0, width, height, 0x040a10, 0.66).setOrigin(0).setInteractive());
-    // a strip of sea chart behind the title
-    const chart = scene.add.graphics();
-    chart.fillStyle(0x000000, 0.3).fillRoundedRect(44, 168, width - 88, 230, 24);
-    chart.fillStyle(0xe9d5a2, 0.97).fillRoundedRect(40, 160, width - 80, 230, 24);
-    chart.lineStyle(4, 0x8a5a2a, 0.8).strokeRoundedRect(40, 160, width - 80, 230, 24);
-    // two dotted routes from the ship (left) to the island (right)
-    const y0 = 330;
-    for (const [dy, col] of [[-1, 0x2a7ab0], [1, 0x4a5a6a]] as [number, number][]) {
-      for (let i = 0; i <= 30; i++) {
-        const u = i / 30;
-        const x = 175 + u * (width - 350), y = y0 + Math.sin(u * Math.PI) * dy * 34 + (dy > 0 ? Math.sin(u * 18) * 6 : 0);
-        if (i % 2 === 0) chart.fillStyle(col, 0.9).fillCircle(x, y, 4);
-      }
-    }
-    chart.fillStyle(0xd9b770, 1).fillEllipse(width - 140, y0, 66, 30);
-    chart.fillStyle(0x6a9a4a, 1).fillEllipse(width - 140, y0 - 8, 30, 14);
-    this.root.add(chart);
-    this.root.add(scene.add.image(140, y0, SHIP).setDisplaySize(64, 64));
-    this.root.add(txt(scene, width / 2, 214, t('chartTitle'), { title: true, size: 46, color: '#7a3a12', strokeThickness: 0, shadow: false }));
-    const nextId = ISLAND_IDS[(sim.k + 1) % ISLAND_IDS.length];
-    this.root.add(txt(scene, width / 2, 262, t('chartSub', { name: t('i_' + nextId) }), { size: 23, color: '#4a2a10', strokeThickness: 0, shadow: false, wrap: 600 }));
-    this.root.add(txt(scene, width / 2, 432, t('hullNow', { n: Math.round(sim.hull), max: sim.shipSt.maxHull }), { title: true, size: 24, color: sim.hull < sim.shipSt.maxHull * 0.4 ? '#ff9a8a' : '#bfe8ff', strokeThickness: 5 }));
+    this.root.add(scene.add.rectangle(0, 0, width, height, 0x040a10, 0.8).setOrigin(0).setInteractive());
     const ghost = sim.k + 1 >= 3;
+    const ox = 14, oy = 10;
+    const key = chartTexture(scene, ghost ? 'si-chart-sea-g' : 'si-chart-sea', width - ox * 2, height - oy * 2, ghost ? 977 : 976, (g, r) => {
+      const at = (x: number, y: number): [number, number] => [x - ox, y - oy];
+      rhumbLines(g, ...at(118, 262), 1400, 0.13);
+      for (let i = 0; i < 9; i++) waves(g, ...at(150 + (i % 3) * 210, 230 + Math.floor(i / 3) * 120), 3, r);
+      inkIsland(g, ...at(132, 476), 52, r, { palms: 2 });
+      inkIsland(g, ...at(586, 262), 66, r, { palms: 2 });
+      // both routes, faint (the chosen one is drawn over them)
+      for (const id of ROUTES) {
+        const pts = ROUTE_PTS[id];
+        g.save();
+        g.setLineDash([10, 9]);
+        g.lineWidth = 3;
+        g.strokeStyle = id === 'calm' ? 'rgba(31,90,138,0.45)' : 'rgba(58,40,30,0.45)';
+        g.beginPath();
+        pts.forEach(([x, y], i) => { const [px, py] = at(x, y); if (i) g.lineTo(px, py); else g.moveTo(px, py); });
+        g.stroke();
+        g.restore();
+      }
+      stormDoodle(g, ...at(420, 520), 0.9);
+      serpent(g, ...at(300, 548), 0.5, -1);
+      if (ghost) shipDoodle(g, ...at(470, 540), 0.6, -1, true);
+      xMark(g, ...at(600, 262), 15);
+      compassRose(g, ...at(118, 262), 46);
+      scrollBanner(g, ...at(width / 2, 116), 440, 62);
+      // the cards' places: two lighter panels of parchment
+      for (const y of [722, 980]) {
+        g.save();
+        g.fillStyle = 'rgba(255,248,225,0.35)';
+        g.strokeStyle = 'rgba(58,34,16,0.5)'; g.lineWidth = 1.5;
+        g.beginPath(); g.roundRect(...at(40, y - 115), 640, 230, 22); g.fill(); g.stroke();
+        g.restore();
+      }
+    });
+    this.root.add(scene.add.image(width / 2, height / 2, key));
+    this.routes = scene.add.graphics();
+    this.root.add(this.routes);
+    this.root.add(scene.add.image(176, 438, SHIP).setDisplaySize(56, 56));
+    this.root.add(txt(scene, width / 2, 116, t('chartTitle'), { title: true, size: 40, color: '#7a1e12', strokeThickness: 0, shadow: false }));
+    const nextId = ISLAND_IDS[(sim.k + 1) % ISLAND_IDS.length];
+    this.root.add(txt(scene, width / 2, 172, t('chartSub', { name: t('i_' + nextId) }), { size: 23, color: INK, strokeThickness: 0, shadow: false, wrap: 600 }));
+    const low = sim.hull < sim.shipSt.maxHull * 0.4;
+    this.root.add(txt(scene, width / 2, 576, t('hullNow', { n: Math.round(sim.hull), max: sim.shipSt.maxHull }), { title: true, size: 22, color: low ? '#a3202a' : INK, strokeThickness: 0, shadow: false }));
+    // the routes' numbers on the chart
+    for (const [i, id] of ROUTES.entries()) {
+      const [x, y] = ROUTE_PTS[id][2];
+      const b = scene.add.graphics().fillStyle(0xf3e3b8, 1).fillCircle(x, y - 26, 16).lineStyle(2.5, id === 'calm' ? BLUE_INK : INK_N, 1).strokeCircle(x, y - 26, 16);
+      this.root.add([b, txt(scene, x, y - 25, String(i + 1), { title: true, size: 18, color: id === 'calm' ? '#1f5a8a' : INK, strokeThickness: 0, shadow: false })]);
+    }
     ROUTES.forEach((id, i) => {
-      const y = 600 + i * 270;
+      const y = 722 + i * 258;
       const box = scene.add.container(width / 2, y);
       const bg = scene.add.graphics();
       const icon = scene.add.image(-222, 0, routeArt(id)).setDisplaySize(140, 140);
-      const name = txt(scene, -132, -52, t('r_' + id), { title: true, size: 34, color: id === 'calm' ? '#9fe8ff' : '#c8d4e8', strokeThickness: 6 }).setOrigin(0, 0.5);
-      const desc = txt(scene, -132, -20, t('rd_' + id), { size: 22, color: '#eef4f8', strokeThickness: 0, shadow: false, wrap: 410, align: 'left' }).setOrigin(0, 0);
+      const name = txt(scene, -132, -52, t('r_' + id), { title: true, size: 32, color: id === 'calm' ? '#1f5a8a' : '#3a3a48', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+      const desc = txt(scene, -132, -22, t('rd_' + id), { size: 22, color: INK, strokeThickness: 0, shadow: false, wrap: 410, align: 'left' }).setOrigin(0, 0);
       box.add([bg, icon, name, desc]);
-      if (id === 'storm' && ghost) box.add(txt(scene, -132, 66, t('rd_ghost'), { title: true, size: 20, color: '#7affc0', strokeThickness: 4 }).setOrigin(0, 0.5));
-      const num = txt(scene, 272, -82, String(i + 1), { title: true, size: 22, color: '#9fb0c0', strokeThickness: 0, shadow: false });
-      if (host.touch) num.setVisible(false);
+      if (id === 'storm' && ghost) box.add(txt(scene, -132, 70, t('rd_ghost'), { title: true, size: 20, color: '#a3202a', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
+      const num = scene.add.container(272, -82);
+      num.add([scene.add.graphics().fillStyle(0xf3e3b8, 1).fillCircle(0, 0, 18).lineStyle(2.5, id === 'calm' ? BLUE_INK : INK_N, 1).strokeCircle(0, 0, 18), txt(scene, 0, 1, String(i + 1), { title: true, size: 19, color: id === 'calm' ? '#1f5a8a' : INK, strokeThickness: 0, shadow: false })]);
       const hit = scene.add.zone(0, 0, 640, 230).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => ev?.stopPropagation?.());
+      hit.on('pointerover', () => { if (!this.done && this.focus !== i) { this.focus = i; this.refresh(); } });
       hit.on('pointerup', () => this.pick(i));
       box.add([num, hit]);
       box.setScale(0.6).setAlpha(0);
@@ -370,19 +411,27 @@ export class RouteOverlay {
       this.root.add(box);
       this.cards.push({ box, bg, id });
     });
-    if (!host.touch) this.root.add(txt(scene, width / 2, 1180, t('chartKeys'), { size: 19, color: '#9fb0c0', strokeThickness: 0, shadow: false }));
+    if (!host.touch) this.root.add(txt(scene, width / 2, 1180, t('chartKeys'), { size: 19, color: INK, strokeThickness: 0, shadow: false }));
     this.refresh();
   }
 
   private refresh(): void {
+    // the route in focus inked over the chart, the other left faint
+    const g = this.routes.clear();
+    ROUTES.forEach((id, i) => {
+      if (i !== this.focus) return;
+      const pts = ROUTE_PTS[id].map(([x, y]) => new Phaser.Math.Vector2(x, y));
+      dashedPath(g, pts, id === 'calm' ? BLUE_INK : INK_N, 0.95, 5, 14, 9);
+    });
     this.cards.forEach((c, i) => {
-      const on = i === this.focus && !this.host.touch;
-      const hue = c.id === 'calm' ? 0x5ab8ff : 0x8a96a8;
+      const on = i === this.focus;
+      const ink = c.id === 'calm' ? BLUE_INK : INK_N;
       c.bg.clear()
-        .fillStyle(0x000000, 0.35).fillRoundedRect(-320, -115 + 8, 640, 230, 26)
-        .fillStyle(c.id === 'calm' ? 0x0f2434 : 0x161c26, 0.96).fillRoundedRect(-320, -115, 640, 230, 26)
-        .fillStyle(hue, 0.12).fillRoundedRect(-316, -111, 632, 90, { tl: 22, tr: 22, bl: 6, br: 6 })
-        .lineStyle(on ? 6 : 3, on ? 0xfff3a0 : hue, on ? 1 : 0.7).strokeRoundedRect(-320, -115, 640, 230, 26);
+        .fillStyle(0x3a2210, 0.18).fillRoundedRect(-316, -108, 640, 230, 22)
+        .fillStyle(0xf3e3b8, 0.97).fillRoundedRect(-320, -115, 640, 230, 22)
+        .fillStyle(c.id === 'calm' ? 0x9fc8e8 : 0xa8a8b4, 0.22).fillRoundedRect(-316, -111, 632, 84, { tl: 18, tr: 18, bl: 6, br: 6 })
+        .lineStyle(on ? 6 : 3, on ? RED_INK : ink, on ? 1 : 0.75).strokeRoundedRect(-320, -115, 640, 230, 22)
+        .lineStyle(1, 0x3a2210, 0.45).strokeRoundedRect(-310, -105, 620, 210, 16);
     });
   }
 
@@ -396,6 +445,8 @@ export class RouteOverlay {
 
   pick(i: number): void {
     if (this.done || i < 0 || i >= this.cards.length) return;
+    this.focus = i;
+    this.refresh();
     this.done = true;
     const c = this.cards[i];
     this.host.sfx('boon', 0.6);

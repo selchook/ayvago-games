@@ -20,7 +20,6 @@ export const seaPowerArt = (id: SeaPower) => 'si-sea-' + id;
 export const shipArt = (id: ShipId | 'repair') => 'si-ship-' + id;
 export const routeArt = (id: Route) => 'si-route-' + id;
 export const SHIP = 'si-shipicon';
-export const BUBBLE = 'si-bubble';
 
 type G = CanvasRenderingContext2D;
 const S = 128;
@@ -286,12 +285,6 @@ const SYM: Record<string, (g: G) => void> = {
     g.restore();
     g.beginPath(); g.arc(98, 98, 12, 0, Math.PI * 2); ink(g, '#7affa0', 4);
   },
-  bubble: (g) => {
-    g.beginPath(); g.arc(60, 66, 40, 0, Math.PI * 2); g.lineWidth = 9; g.strokeStyle = 'rgba(20,12,8,0.9)'; g.stroke();
-    g.fillStyle = 'rgba(150,230,255,0.45)'; g.fill(); g.lineWidth = 5; g.strokeStyle = '#d8f6ff'; g.stroke();
-    g.beginPath(); g.arc(46, 52, 10, 0, Math.PI * 2); g.fillStyle = '#ffffff'; g.fill();
-    g.beginPath(); g.arc(100, 30, 12, 0, Math.PI * 2); g.lineWidth = 4; g.strokeStyle = '#d8f6ff'; g.stroke();
-  },
   calm: (g) => {
     g.beginPath(); g.arc(80, 44, 24, 0, Math.PI * 2); ink(g, '#ffd23f');
     for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; g.beginPath(); g.moveTo(80 + Math.cos(a) * 30, 44 + Math.sin(a) * 30); g.lineTo(80 + Math.cos(a) * 40, 44 + Math.sin(a) * 40); g.lineWidth = 5; g.strokeStyle = '#ffd23f'; g.stroke(); }
@@ -342,7 +335,6 @@ export function makeArt(scene: Phaser.Scene): void {
   for (const id of [...SHIP_IDS, 'repair'] as const) icon(scene, shipArt(id), (g) => { disc(g, SHIP_SYM[id][1]); SYM[SHIP_SYM[id][0]](g); });
   for (const id of ROUTES) icon(scene, routeArt(id), (g) => { disc(g, id === 'calm' ? 0x7ad8ff : 0x8a96a8); SYM[id](g); });
   icon(scene, SHIP, SYM.ship);
-  icon(scene, BUBBLE, SYM.bubble);
   icon(scene, GOLD, SYM.coin);
   icon(scene, DOUBLOON, SYM.doubloon);
   icon(scene, HEART, SYM.heart);

@@ -9,12 +9,13 @@ import Phaser from 'phaser';
 import { World3D, THREE, model } from '@core/three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Sim, SimEvent, Foe } from './sim';
-import { PLAYER, POWER_COLOR, POWER_IDS, SEA_POWER_COLOR, type HeroId, type PowerId } from './defs';
+import { PLAYER, POWER_COLOR, POWER_IDS, SEA_POWER_COLOR, SAIL, type HeroId, type PowerId } from './defs';
 import { PALETTES, shoreAt, groundY, type Layout, type Palette } from './island';
 import { pk, kk, mergeModels, soloGeometry, keepPrograms, kenneyMap, sceneryMaterial, type Placed } from './kit';
-import { Billboards, Particles, Telegraphs, TEX, SHAPE, waterMaterial, setCoast } from './fx3d';
+import { Billboards, Particles, Telegraphs, TEX, SHAPE, waterMaterial, setCoast, HealthBars, Wakes, stepBar, swellY, type BarState } from './fx3d';
+import { Sails, stripSails } from './sails';
 import { Figure, FigurePool } from './figure';
-import { SeaView, SHIP_SCALE, DECK } from './seaview';
+import { SeaView, SHIP_SCALE, DECK, SHIP_GUNS } from './seaview';
 import type { Voyage } from './voyage';
 
 export const CAM = { fov: 42, tilt: 58, dist: 21 };
@@ -25,7 +26,7 @@ const STORM = { sky: 0x4d5a68, fog: 0x5a6672, deep: 0x1c3348, shallow: 0x3a6a78,
 const TENTACLE_H = 15.67;
 const CLIP: Record<string, number> = { Sword: 0.87, Punch: 0.77, Jump: 0.37, Duck: 1.67 };
 
-interface FoeView { fig: Figure | null; pool: FigurePool | null; kind: Foe['kind']; state: string; dead: boolean; seen: boolean }
+interface FoeView { fig: Figure | null; pool: FigurePool | null; kind: Foe['kind']; state: string; dead: boolean; seen: boolean; px: number; py: number; pz: number; pitch: number; splashT: number }
 interface Swing { a0: number; arc: number; r: number; t: number; dur: number; spin: boolean; big: boolean }
 interface Flash { x: number; y: number; z: number; s: number; t: number; max: number; c: number; kind: 'glow' | 'ring' | 'flare' }
 interface Splat { x: number; z: number; s: number; t: number; max: number; c: number; rot: number }
@@ -102,6 +103,21 @@ export class View {
   private splats: Billboards;
   private bubbles: Billboards;
   private teles: Telegraphs;
+  /** Foes' health bars (one draw call), and each bar's state between frames. */
+  readonly hpBars: HealthBars;
+  private bars = new Map<string, BarState>();
+  /** Foam on the water behind ships, fins and swimmers (one draw call). */
+  readonly wakes: Wakes;
+  /** The crew's cloth sails on the ship's yards. */
+  readonly sails: Sails;
+  /** The ship's heel from its own broadside (the firing side, 0–1). */
+  private recoilSide = 0;
+  private recoilK = 0;
+  /** The parrot's flight: where it is drawn, its speed, heading, bank, pitch and wingbeat. */
+  private pf = { pos: new THREE.Vector3(), vel: new THREE.Vector3(), yaw: 0, bank: 0, pitch: 0, flap: 0, wing: 0, idle: 0, perch: 0, on: false };
+  private parrotBase!: Float32Array;
+  private parrotNorm!: Float32Array;
+  private parrotWing!: Float32Array;
   private swings: Swing[] = [];
   private flashes: Flash[] = [];
   private splatList: Splat[] = [];
@@ -164,10 +180,10 @@ export class View {
     this.hero = new Figure(pk(o.hero), 1, { shadows: true });
     sc.add(this.hero.root);
     this.pistol = this.makePistol();
-    this.parrot = model(pk('parrot'), { shadows: false });
-    this.parrot.traverse((m) => { if ((m as THREE.Mesh).isMesh) (m as THREE.Mesh).material = this.pirateMat; });
+    this.parrot = this.makeParrot();
     this.parrot.visible = false;
     sc.add(this.parrot);
+    this.sails = new Sails();
 
     // foes: pools of figures (a few built ahead so the menu compiles their programs)
     this.pools = {
@@ -229,12 +245,16 @@ export class View {
     this.inkBB = new Billboards(sc, TEX.ink(), 16, { blend: 'normal', order: 16 });
     this.bubbles = new Billboards(sc, TEX.bubble(), 4, { order: 17 });
     this.teles = new Telegraphs(sc, 48);
+    this.hpBars = new HealthBars(sc, 48);
+    this.wakes = new Wakes(sc, TEX.foam(), 12);
     this.particles = new Particles(sc, glow, 900);
     this.dust = new Particles(sc, TEX.soft(), 500, 'normal', 12);
     this.gulls = new Billboards(sc, TEX.gull(), 6, { blend: 'normal', order: 19 });
     this.sea = new SeaView({
       scene: sc, pirateMat: this.pirateMat, kenneyMat: this.kenneyMat, pools: this.pools, particles: this.particles, dust: this.dust,
       shadows: this.shadows, glows: this.glows, flares: this.flares, rings: this.rings, streaks: this.streaks,
+      wakes: this.wakes, surf: (x: number, z: number) => this.surf(x, z),
+      bar: (key: string, hp: number, max: number, dead: boolean, x: number, y: number, z: number, w: number, h: number, color: number, dt: number) => this.bar(key, hp, max, dead, x, y, z, w, h, color, dt),
     });
 
     world.camera.position.set(0, 10, 10);
@@ -257,6 +277,61 @@ export class View {
     this.world.scene.add(g);
     return g;
   }
+
+  /**
+   * The parrot as one mesh centred on its body, so it can fly: its folded wings (the blue lobes on
+   * its flanks) are found once and swung out and flapped on the CPU each frame (no extra parts).
+   */
+  private makeParrot(): THREE.Mesh {
+    const geo = mergeModels([{ key: pk('parrot'), x: 0, y: 0, z: 0, rot: 0, s: 1 }], 'color');
+    geo.translate(-0.64, -1.26, 0.2);
+    const pos = geo.getAttribute('position'), nor = geo.getAttribute('normal'), col = geo.getAttribute('color');
+    const n = pos.count;
+    this.parrotBase = new Float32Array(pos.array as Float32Array);
+    this.parrotNorm = new Float32Array(nor.array as Float32Array);
+    this.parrotWing = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      const blue = col.getZ(i) > 0.3 && col.getX(i) < 0.15;
+      if (!blue || x < -0.24 || x > 0.2 || y > -0.12 || Math.abs(z) < 0.075) continue;
+      this.parrotWing[i] = Math.sign(z) * THREE.MathUtils.smoothstep(Math.abs(z), 0.075, 0.15) * (1 - THREE.MathUtils.smoothstep(y, -0.2, -0.12));
+    }
+    (pos as THREE.BufferAttribute).setUsage(THREE.DynamicDrawUsage);
+    (nor as THREE.BufferAttribute).setUsage(THREE.DynamicDrawUsage);
+    const m = new THREE.Mesh(geo, this.pirateMat);
+    m.scale.setScalar(1.2);
+    m.rotation.order = 'YZX';
+    return m;
+  }
+
+  /** Swings the parrot's wings: `open` 0 folded to 1 spread, `beat` the stroke (−1 down … 1 up). */
+  private flapParrot(open: number, beat: number): void {
+    const geo = (this.parrot as THREE.Mesh).geometry;
+    const pos = geo.getAttribute('position') as THREE.BufferAttribute, nor = geo.getAttribute('normal') as THREE.BufferAttribute;
+    const P = pos.array as Float32Array, N = nor.array as Float32Array, B = this.parrotBase, BN = this.parrotNorm, W = this.parrotWing;
+    const hy = -0.13;
+    for (let i = 0; i < W.length; i++) {
+      const w = W[i];
+      if (!w) continue;
+      const sd = Math.sign(w), a = Math.abs(w);
+      const hz = sd * 0.07;
+      const py = B[i * 3 + 1] - hy, pz = (B[i * 3 + 2] - hz) * (1 + open * 0.9 * a);
+      // folded wings hang down the flanks; open they swing out level, then beat up and down
+      const th = -sd * a * (open * (1.45 + beat * 0.75));
+      const c = Math.cos(th), sn = Math.sin(th);
+      P[i * 3] = B[i * 3];
+      P[i * 3 + 1] = hy + py * c - pz * sn;
+      P[i * 3 + 2] = hz + py * sn + pz * c;
+      const ny = BN[i * 3 + 1], nz = BN[i * 3 + 2];
+      N[i * 3 + 1] = ny * c - nz * sn;
+      N[i * 3 + 2] = ny * sn + nz * c;
+    }
+    pos.needsUpdate = true;
+    nor.needsUpdate = true;
+  }
+
+  /** The water's surface at (x, z) this frame, a hair above the swell (flat foam and rings sit there). */
+  surf(x: number, z: number): number { return swellY(x, z, this.time, this.swell) + 0.05; }
 
   /** Swaps the hero (the menu's hero selector). */
   setHero(id: HeroId): void {
@@ -383,10 +458,16 @@ export class View {
     else this.shipAt = { x: L.anchor.x, z: L.anchor.z, rot: L.anchor.rot, beached: false, y: -0.95 };
     if (pir.length) { const m = new THREE.Mesh(mergeModels(pir, 'color'), this.sceneryMat); m.castShadow = true; m.receiveShadow = true; sc.add(m); this.scenery.push(m); }
     if (ken.length) { const m = new THREE.Mesh(mergeModels(ken, 'uv'), this.sceneryKMat); m.castShadow = true; m.receiveShadow = true; sc.add(m); this.scenery.push(m); }
-    const ship = new THREE.Mesh(mergeModels([{ key: pk('ship-large'), x: 0, y: 0, z: 0, rot: 0, s: 1 }], 'color'), this.sceneryMat);
+    // the ship: its own sails cut out (cloth ones hang on its yards), a battery of guns on each side
+    const parts: Placed[] = [{ key: pk('ship-large'), x: 0, y: 0, z: 0, rot: 0, s: 1 }];
+    for (const x of SHIP_GUNS) for (const sd of [1, -1]) parts.push({ key: pk('cannon'), x, y: 1.38, z: sd * 1.62, rot: sd * Math.PI / 2, s: 0.85 });
+    const ship = new THREE.Mesh(stripSails(mergeModels(parts, 'color')), this.sceneryMat);
     ship.castShadow = true;
     this.scenery.push(ship);
     this.ship = ship;
+    ship.add(this.sails.mesh);
+    // at anchor the sails are furled; the cursed village's gun ship keeps half, the reef's wreck hangs slack
+    this.sails.setFurl(L.ship ? (L.ship.beached ? 0.3 : 0.62) : SAIL.furl[0], true);
     sc.add(ship);
     this.placeShip(0);
   }
@@ -421,17 +502,25 @@ export class View {
         this.snapHero = true;
         this.hero.play('Idle', { restart: true });
         break;
-      case 'broadside': {
-        const s = sim.voyage?.ship;
-        if (!s) break;
-        for (let i = 0; i < ev.n; i++) {
-          const x = s.x + ev.side * 2, z = s.z + (i - (ev.n - 1) / 2) * 1.8;
-          this.flashes.push({ x, y: 1.3, z, s: 2.4, t: 0.12, max: 0.12, c: ev.fire ? 0xff8a3a : 0xffd27a, kind: 'flare' });
-          for (let j = 0; j < 7; j++) D.emit(x, 1.3, z, ev.side * (2 + Math.random() * 3), 0.6 + Math.random(), (Math.random() - 0.5) * 1.5, 1.1, 0.7, 1.8, 0xe0e0e0, 1.4, -0.3);
-        }
+      case 'broadside':
+        // the captain at the helm signals the broadside; each gun's flash and smoke come with its 'gun'
         this.hero.play('Sword', { once: true, restart: true, speed: 1.6, fade: 0.06 });
         this.lastState = 'fire';
-        this.shake(0.22, 0.12);
+        break;
+      case 'gun': {
+        const side = ev.side, x = ev.x, z = ev.z, y = ev.y;
+        if (ev.kind === 'skull') { D.emit(x, y, z, 0, 0.8, 0, 0.5, 0.4, 0.9, 0xdfe8d8, 2, 0); break; }
+        const ghost = ev.kind === 'ghost';
+        // the muzzle flash: a flare and a glow at the port, sparks out along the barrel
+        this.flashes.push({ x: x + side * 0.25, y, z, s: ghost ? 2.6 : 2.1, t: 0.1, max: 0.1, c: ghost ? 0x9affd0 : 0xffe0a0, kind: 'flare' });
+        this.flashes.push({ x: x + side * 0.4, y, z, s: 3, t: 0.16, max: 0.16, c: ghost ? 0x5affb0 : 0xff9a3a, kind: 'glow' });
+        for (let j = 0; j < 5; j++) P.emit(x + side * 0.3, y, z, side * (6 + Math.random() * 5), 0.5 + Math.random() * 1.5, (Math.random() - 0.5) * 2, 0.22, 0.28, 0.05, ghost ? 0x7affc0 : 0xffc060, 4, 3);
+        // a gout of smoke from the port that rolls out and drifts astern
+        for (let j = 0; j < 9; j++) {
+          const sp = 1.2 + Math.random() * 3.6;
+          D.emit(x + side * (0.3 + Math.random() * 0.4), y + (Math.random() - 0.3) * 0.4, z + (Math.random() - 0.5) * 0.5, side * sp, 0.35 + Math.random() * 0.8, (Math.random() - 0.5) * 0.8, 1.7 + Math.random() * 0.9, 0.8, 3 + Math.random() * 1.1, ghost ? 0xa8f0d0 : j % 2 ? 0xeeeae2 : 0xd6d1c6, 1.5, -0.22);
+        }
+        if (ev.friendly) { this.recoilSide = side; this.recoilK = 1; this.shake(0.12, 0.08); }
         break;
       }
       case 'evade': {
@@ -626,7 +715,7 @@ export class View {
         const c = POWER_COLOR[ev.power];
         P.burst(ev.x, 0.8, ev.z, 22, 5, [c, 0xffffff], 0.6, 0.45, 1.3);
         this.flashes.push({ x: sim.p.x, y: 0.1, z: sim.p.z, s: 3.5, t: 0.5, max: 0.5, c, kind: 'ring' });
-        if (ev.power === 'parrot') { this.parrot.position.set(sim.p.x, 3, sim.p.z); }
+        if (ev.power === 'parrot') { this.pf.on = false; }
         break;
       }
       case 'chest':
@@ -712,13 +801,21 @@ export class View {
     this.atmosphere(sim.L.palette, seaK, this.stormK);
     this.waterMat.uniforms.uTime.value = this.time;
     this.waterMat.uniforms.uSwell.value = this.swell;
+    this.recoilK = Math.max(0, this.recoilK - rdt * 2.2);
     if (sea && this.ship) {
       const sinkK = sim.phase === 'sinking' ? THREE.MathUtils.smoothstep(v!.ship.t, 0.3, 2.4) : 0;
-      this.sea.placeShip(this.ship, v!, this.time, this.swell, sinkK);
+      // the guns' kick heels the ship away from the side that fired, and it rolls back
+      const kick = this.recoilSide * Math.sin(Math.min(1, 1 - this.recoilK) * Math.PI) * this.recoilK * 0.09;
+      this.sea.placeShip(this.ship, v!, this.time, this.swell, sinkK, kick);
       this.ship.visible = sinkK < 0.98;
+      // the sails: the setting chosen at sea, slack while sinking, half in to dock
+      const s = v!.ship;
+      this.sails.setFurl(sim.phase === 'sinking' ? 0.5 : sim.phase === 'dock' ? SAIL.furl[1] : SAIL.furl[s.sail]);
+      this.sails.update(dt, Math.min(1, s.speed / (sim.shipSt.speed * 1.3)), this.stormK);
     } else if (this.ship) {
       this.ship.visible = sim.phase !== 'wreck';
       this.placeShip(this.time);
+      this.sails.update(dt, 0.25, 0);
     }
     this.placeHero(sim, v, sea);
 
@@ -842,6 +939,7 @@ export class View {
       h.update(dt);
       h.root.visible = !(sim.phase === 'sinking' && v.ship.t > 1.25);
       this.parrot.visible = false;
+      this.pf.on = false;
       this.pistol.visible = false;
       return;
     }
@@ -898,18 +996,61 @@ export class View {
     h.update(dt);
     this.blinkT -= dt;
     h.root.visible = !(this.blinkT > 0 && p.state !== 'dodge' && !this.heroDead && Math.floor(this.time * 16) % 2 === 0);
-    // the parrot companion
-    const b = sim.parrot;
-    const on = p.powers.parrot > 0 && !this.heroDead && !p.swim;
+    this.flyParrot(sim, dt, sp);
+  }
+
+  /**
+   * The parrot companion flies: a soft spring after the simulation's parrot (a loose orbit round the
+   * hero, a swoop down at a foe it pecks), heading where it flies, banking into its turns, nose
+   * down in a dive, wings beating (gliding now and then). When all is quiet it lands on the hero's
+   * shoulder and folds its wings.
+   */
+  private flyParrot(sim: Sim, dt: number, heroSpeed: number): void {
+    const p = sim.p, pf = this.pf, b = sim.parrot, h = this.hero;
+    const on = p.powers.parrot > 0 && !this.heroDead;
+    if (on && !pf.on) { pf.pos.set(b.x, b.y + 0.2, b.z); pf.vel.set(0, 0, 0); pf.perch = 0; pf.idle = 0; pf.wing = 1; pf.yaw = p.face; }
+    pf.on = on;
     this.parrot.visible = on;
-    if (on) {
-      const prev = this.parrot.position.clone();
-      this.parrot.position.set(b.x, b.y + 0.2, b.z);
-      const mv = this.parrot.position.clone().sub(prev);
-      if (mv.lengthSq() > 1e-5) this.parrot.rotation.y = lerpAng(this.parrot.rotation.y, Math.atan2(mv.x, mv.z), Math.min(1, dt * 8));
-      this.parrot.rotation.z = Math.sin(this.time * 18) * 0.25;
-      this.parrot.scale.setScalar(1 + Math.sin(this.time * 18) * 0.05);
-    }
+    if (!on || dt <= 0) return;
+    const quiet = b.target < 0 && !p.swim && heroSpeed < 0.3 && (p.state === 'idle' || p.state === 'cheer');
+    pf.idle = quiet ? pf.idle + dt : 0;
+    const perch = pf.idle > 1.5;
+    const tgt = this.s;
+    if (perch) {
+      // on the hero's left shoulder, out beside the head
+      const sh = h.bones.get('ShoulderL');
+      if (sh) sh.getWorldPosition(tgt); else tgt.set(p.x, 0.8, p.z);
+      tgt.x += Math.cos(p.face) * 0.3; tgt.z -= Math.sin(p.face) * 0.3;
+      tgt.y += 0.32;
+    } else tgt.set(b.x, b.y + 0.2, b.z);
+    const K = perch ? 40 : b.target >= 0 ? 30 : 14, C = 2 * Math.sqrt(K) * 0.9;
+    pf.vel.x += ((tgt.x - pf.pos.x) * K - pf.vel.x * C) * dt;
+    pf.vel.y += ((tgt.y - pf.pos.y) * K - pf.vel.y * C) * dt;
+    pf.vel.z += ((tgt.z - pf.pos.z) * K - pf.vel.z * C) * dt;
+    pf.pos.addScaledVector(pf.vel, dt);
+    const near = pf.pos.distanceTo(tgt);
+    const landed = perch && near < 0.12;
+    if (landed) { pf.pos.copy(tgt); pf.vel.set(0, 0, 0); }
+    pf.perch += ((landed ? 1 : 0) - pf.perch) * Math.min(1, dt * 6);
+    const fly = 1 - pf.perch;
+    const hv = Math.hypot(pf.vel.x, pf.vel.z);
+    const yawTo = perch && near < 0.6 ? p.face : hv > 0.25 ? Math.atan2(pf.vel.x, pf.vel.z) : pf.yaw;
+    const d = Math.atan2(Math.sin(yawTo - pf.yaw), Math.cos(yawTo - pf.yaw));
+    const turn = d * Math.min(1, dt * 6);
+    pf.yaw += turn;
+    // bank into the turn, nose down when diving, up when climbing; level and upright on the shoulder
+    const bankTo = THREE.MathUtils.clamp(-turn / dt * 0.16, -0.7, 0.7) * fly;
+    pf.bank += (bankTo - pf.bank) * Math.min(1, dt * 5);
+    const pitchTo = fly * (-0.45 + THREE.MathUtils.clamp(pf.vel.y * 0.12, -0.5, 0.35));
+    pf.pitch += (pitchTo - pf.pitch) * Math.min(1, dt * 6);
+    // the wingbeat: quick and deep climbing or chasing, a glide on the way down
+    const glide = pf.vel.y < -1.4 && !perch ? 1 : 0;
+    pf.flap += dt * (26 + Math.min(14, hv * 2.2)) * (1 - glide * 0.85);
+    pf.wing += (fly * (glide ? 0.75 : 1) - pf.wing) * Math.min(1, dt * 7);
+    const beat = Math.sin(pf.flap) * (1 - glide * 0.85);
+    this.flapParrot(pf.wing, beat);
+    this.parrot.position.set(pf.pos.x, pf.pos.y - beat * 0.05 * fly, pf.pos.z);
+    this.parrot.rotation.set(pf.bank, pf.yaw - Math.PI / 2, pf.pitch);
   }
 
   private clearFoes(): void {
@@ -944,7 +1085,7 @@ export class View {
       if (!fv) {
         const pool = this.poolFor(f.kind);
         const fig = pool ? pool.take() : null;
-        fv = { fig, pool, kind: f.kind, state: '', dead: false, seen: true };
+        fv = { fig, pool, kind: f.kind, state: '', dead: false, seen: true, px: f.x, py: f.y, pz: f.z, pitch: 0, splashT: 0 };
         this.foes.set(f.id, fv);
         if (fig) this.dress(fig, f);
       }
@@ -1003,32 +1144,7 @@ export class View {
     }
     fig.root.position.set(f.x, f.y, f.z);
     fig.root.rotation.set(0, f.face, 0);
-    if (f.kind === 'hunter') {
-      // a shark hunting a swimmer: its fin cuts the surface while it circles, it bursts out on the lunge
-      if (st === 'dead') { fig.root.rotation.z = Math.PI / 2; fig.root.position.y = -0.3 - f.deadT * 0.6; }
-      if (changed) {
-        if (st === 'lunge') fig.play('Swim_Bite', { once: true, restart: true, speed: 1.3 });
-        else if (st === 'wind') fig.play('Swim_Fast', { speed: 1.4 });
-        else fig.play('Swim', { speed: 1.2 });
-      }
-      if ((st === 'circle' || st === 'wind') && Math.random() < dt * 22) this.particles.emit(f.x - Math.sin(f.face) * 0.6, -0.1, f.z - Math.cos(f.face) * 0.6, 0, 1, 0, 0.5, 0.35, 0.1, 0xe8fbff, 1, 3);
-      fig.update(dt, every);
-      return;
-    }
-    if (f.kind === 'shark') {
-      if (st === 'fin' || st === 'wind') fig.root.position.y = -0.62 + (st === 'wind' ? Math.sin(this.time * 18) * 0.04 : 0);
-      if (st === 'beached') fig.root.rotation.z = Math.sin(f.t * 9) * 0.3;
-      if (st === 'dead') { fig.root.rotation.z = Math.PI / 2; fig.root.position.y = -f.deadT * 0.6; }
-      if (changed) {
-        if (st === 'lunge') fig.play('Swim_Bite', { once: true, restart: true, speed: 1.3 });
-        else if (st === 'wind') fig.play('Swim_Fast', { speed: 1.4 });
-        else if (st === 'beached') fig.play('Swim', { speed: 2.4 });
-        else fig.play('Swim', { speed: 1 });
-      }
-      if (st === 'fin' || st === 'back') { const rx = Math.random() < dt * 20; if (rx) this.particles.emit(f.x, -0.1, f.z, 0, 1, 0, 0.5, 0.35, 0.1, 0xe8fbff, 1, 3); }
-      fig.update(dt, every);
-      return;
-    }
+    if (f.kind === 'hunter' || f.kind === 'shark') { this.poseShark(fv, f, dt, every, changed); return; }
     // walkers and the captain
     if (st === 'dead') {
       if (changed) fig.play('Death', { once: true, restart: true, fade: 0.08 });
@@ -1063,10 +1179,58 @@ export class View {
     fig.update(dt, every);
   }
 
+  /**
+   * A shark: under water but for its fin while it swims (a foam wake behind the fin), its back out
+   * as it winds up, a leap out of the sea along its lane (nose up, then down), thrashing in the
+   * shallows, a dive back under. Island sharks and the hunters of swimmers alike.
+   */
+  private poseShark(fv: FoeView, f: Foe, dt: number, every: number, changed: boolean): void {
+    const fig = fv.fig!, st = f.state, t = this.time;
+    const swim = st === 'fin' || st === 'stalk' || st === 'leave' || st === 'circle';
+    let y = f.y;
+    if (swim) y = -0.68 + Math.sin(t * 2.2 + f.id) * 0.04;
+    if (st === 'thrash') y = -0.32 + Math.abs(Math.sin(t * 9)) * 0.08;
+    fig.root.position.set(f.x, y, f.z);
+    // pitch along the leap: nose up out of the water, down into it
+    const ds = Math.hypot(f.x - fv.px, f.z - fv.pz), dy = f.y - fv.py;
+    const pitchTo = st === 'lunge' && ds > 1e-4 ? -Math.atan2(dy, ds) * 0.9 : st === 'dive' ? 0.35 : st === 'wind' ? -0.12 : 0;
+    fv.pitch += (pitchTo - fv.pitch) * Math.min(1, dt * 12);
+    fv.px = f.x; fv.py = f.y; fv.pz = f.z;
+    fig.root.rotation.set(fv.pitch, f.face, st === 'thrash' ? Math.sin(t * 15) * 0.45 : swim ? Math.sin(t * 1.7 + f.id) * 0.08 : 0);
+    if (st === 'dead') { fig.root.rotation.set(0, f.face, Math.PI); fig.root.position.y = -0.3 - f.deadT * 0.5; }
+    if (changed) {
+      if (st === 'lunge') fig.play('Swim_Bite', { once: true, restart: true, speed: 1.3 });
+      else if (st === 'wind') fig.play('Swim_Fast', { speed: 1.5 });
+      else if (st === 'thrash') fig.play('Swim_Fast', { speed: 2.6 });
+      else fig.play('Swim', { speed: st === 'leave' || st === 'dive' ? 1.6 : 1.1 });
+    }
+    // the fin cuts a foam wake; the leap and the thrashing throw spray
+    if ((swim || st === 'dive') && f.y < -0.3) this.wakes.lay('i' + f.id, f.x - Math.sin(f.face) * 0.45, f.z - Math.cos(f.face) * 0.45, Math.sin(f.face), Math.cos(f.face), 0.12, 0.55, swim ? 0.85 : 0.5, 1.5, 0.35);
+    fv.splashT -= dt;
+    if ((st === 'thrash' || st === 'wind') && fv.splashT <= 0) {
+      fv.splashT = st === 'thrash' ? 0.12 : 0.25;
+      for (let i = 0; i < (st === 'thrash' ? 4 : 2); i++) this.particles.emit(f.x + (Math.random() - 0.5) * 1.6, -0.1, f.z + (Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 2, 2.5 + Math.random() * 2.5, (Math.random() - 0.5) * 2, 0.55, 0.32, 0.1, 0xeefbff, 0.8, 12);
+    }
+    if (st === 'lunge' && f.y > -0.2 && Math.random() < dt * 30) this.particles.emit(f.x, f.y - 0.2, f.z, (Math.random() - 0.5), -0.5, (Math.random() - 0.5), 0.4, 0.26, 0.08, 0xeefbff, 1, 9);
+    fig.update(dt, every);
+  }
+
+  /** A foe's small health bar at (x, y, z), shown once hurt, its lost health trailing, faded out at death. */
+  bar(key: string, hp: number, max: number, dead: boolean, x: number, y: number, z: number, w: number, h: number, color: number, dt: number): void {
+    let b = this.bars.get(key);
+    if (!b) { b = { ghost: 1, hold: 0, a: 0, last: 1, seen: true }; this.bars.set(key, b); }
+    b.seen = true;
+    const k = Math.max(0, hp / Math.max(1, max));
+    const a = stepBar(b, k, dead, dt);
+    this.hpBars.add(x, y, z, w, h, k, b.ghost, a, color);
+  }
+
   private syncFx(sim: Sim, dt: number, sea: boolean): void {
     const cq = this.camQ, t = this.time;
     for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.slashes, this.inkBB, this.splats, this.bubbles, this.gulls]) b.begin(cq);
     this.teles.begin();
+    this.hpBars.begin();
+    for (const b of this.bars.values()) b.seen = false;
     // telegraphs: red warnings that fill as the blow comes; gold for the player's own fire
     for (const T of sim.teles) {
       const fill = Math.min(1, T.t / T.dur);
@@ -1094,15 +1258,18 @@ export class View {
       fl.t -= dt;
       if (fl.t <= 0) { this.flashes.splice(i, 1); continue; }
       const k = fl.t / fl.max;
-      if (fl.kind === 'ring') this.rings.add(fl.x, fl.y < 0 ? fl.y : Math.max(0.05, fl.y), fl.z, fl.s * (1.15 - k * 0.6), fl.s * (1.15 - k * 0.6), 0, fl.c, k * 0.7);
+      if (fl.kind === 'ring') this.rings.add(fl.x, fl.y < 0 ? this.surf(fl.x, fl.z) : Math.max(0.05, fl.y), fl.z, fl.s * (1.15 - k * 0.6), fl.s * (1.15 - k * 0.6), 0, fl.c, k * 0.7);
       else if (fl.kind === 'glow') this.glows.add(fl.x, fl.y, fl.z, fl.s, fl.s, 0, fl.c, k * 0.5);
       else this.flares.add(fl.x, fl.y, fl.z, fl.s * (0.6 + k * 0.4), fl.s * (0.6 + k * 0.4), t * 3, fl.c, k);
     }
 
     this.particles.update(dt, cq);
     this.dust.update(dt, cq);
+    this.wakes.update(dt, t, this.swell);
+    for (const [key, b] of this.bars) if (!b.seen) this.bars.delete(key);
     for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.slashes, this.inkBB, this.splats, this.bubbles, this.gulls]) b.end();
     this.teles.end();
+    this.hpBars.end();
   }
 
   /** The island's effects: the hero's marker, shadows, pools, sword arcs, shots, barrels, loot, the islet's gulls. */
@@ -1114,15 +1281,16 @@ export class View {
     if ((!this.heroDead || sim.phaseT < 2) && !p.swim && gy > -0.3) this.shadows.add(p.x, 0.03 + gy, p.z, 1.2, 1.2, 0, 0xffffff, 1);
     if (p.swim && !this.heroDead) {
       const mv = Math.hypot(p.vx, p.vz);
+      const sy = this.surf(p.x, p.z);
       for (let i = 0; i < 2; i++) {
         const u = ((t * 0.9 + i * 0.5) % 1);
-        this.rings.add(p.x, -0.13, p.z, 1.1 + u * 1.7, 1.1 + u * 1.7, 0, 0xdff6ff, (1 - u) * 0.28);
+        this.rings.add(p.x, sy, p.z, 1.1 + u * 1.7, 1.1 + u * 1.7, 0, 0xdff6ff, (1 - u) * 0.28);
       }
-      if (mv > 0.4 && Math.random() < dt * 14) this.particles.emit(p.x + Math.sin(p.face) * 0.5 + (Math.random() - 0.5) * 0.6, -0.05, p.z + Math.cos(p.face) * 0.5, (Math.random() - 0.5), 1.8 + Math.random() * 1.5, (Math.random() - 0.5), 0.5, 0.28, 0.08, 0xeefbff, 1, 7);
-      if (mv > 0.4 && Math.random() < dt * 10) this.dust.emit(p.x - Math.sin(p.face) * 0.8, -0.12, p.z - Math.cos(p.face) * 0.8, 0, 0.1, 0, 1.2, 0.5, 1.2, 0xf4fbff, 1, 0);
+      if (mv > 0.4 && Math.random() < dt * 10) this.particles.emit(p.x + Math.sin(p.face) * 0.5 + (Math.random() - 0.5) * 0.6, -0.05, p.z + Math.cos(p.face) * 0.5, (Math.random() - 0.5), 1.8 + Math.random() * 1.5, (Math.random() - 0.5), 0.5, 0.28, 0.08, 0xeefbff, 1, 7);
+      if (mv > 0.4) this.wakes.lay('swim', p.x - Math.sin(p.face) * 0.4, p.z - Math.cos(p.face) * 0.4, Math.sin(p.face), Math.cos(p.face), 0.22, 0.6, Math.min(1, mv / 2.5) * 0.8, 1.6, 0.45);
     }
     if (!this.heroDead) {
-      this.rings.add(p.x, p.swim ? -0.14 : 0.04 + Math.max(-0.2, gy), p.z, 1.6, 1.6, 0, 0xffe27a, 0.55 + Math.sin(t * 4) * 0.12);
+      this.rings.add(p.x, p.swim ? this.surf(p.x, p.z) + 0.01 : Math.max(0.04 + Math.max(-0.2, gy), gy < -0.15 ? this.surf(p.x, p.z) + 0.01 : -9), p.z, 1.6, 1.6, 0, 0xffe27a, 0.55 + Math.sin(t * 4) * 0.12);
       if (p.powers.shield > 0) {
         const k = Math.min(1, p.powers.shield / 1.5);
         this.bubbles.add(p.x, 0.85, p.z, 2.3, 2.3, t, 0x7fe8ff, (0.7 + Math.sin(t * 6) * 0.15) * (p.powers.shield < 2 && Math.floor(t * 8) % 2 ? 0.3 : 1) * k);
@@ -1131,18 +1299,29 @@ export class View {
       if (p.powers.gold2 > 0 && Math.random() < dt * 6) this.particles.emit(p.x + (Math.random() - 0.5), 2 + Math.random() * 0.3, p.z + (Math.random() - 0.5), 0, 0.6, 0, 0.6, 0.3, 0.05, 0xffd23f, 1, 0);
       if (p.powers.fury > 0 && Math.random() < dt * 14) this.particles.emit(p.x + (Math.random() - 0.5) * 0.8, 0.4 + Math.random(), p.z + (Math.random() - 0.5) * 0.8, 0, 1.2, 0, 0.4, 0.35, 0.05, 0xff4f7b, 1, 0);
     }
-    if (p.powers.parrot > 0 && !this.heroDead) this.shadows.add(sim.parrot.x, 0.03, sim.parrot.z, 0.5, 0.5, 0, 0xffffff, 0.6);
+    if (this.pf.on) { const q = this.pf.pos, gy2 = groundY(sim.L, q.x, q.z); if (gy2 > -0.2) this.shadows.add(q.x, gy2 + 0.03, q.z, 0.55, 0.55, 0, 0xffffff, 0.55 * Math.max(0.3, 1 - q.y / 5)); }
 
-    // foes' shadows, elites' glow
+    // foes' shadows, elites' glow, and their health bars
     for (const f of sim.foes) {
+      const dead = f.state === 'dead';
       if (f.kind === 'tentacle' || f.kind === 'arm' || f.kind === 'head') {
-        if (f.state !== 'dead' && f.y > -2) this.rings.add(f.bx, -0.05, f.bz, 2.6, 2.6, 0, 0xe8fbff, 0.35 + Math.sin(t * 3 + f.id) * 0.15);
+        if (!dead && f.y > -2) this.rings.add(f.bx, this.surf(f.bx, f.bz), f.bz, 2.6, 2.6, 0, 0xe8fbff, 0.35 + Math.sin(t * 3 + f.id) * 0.15);
         if (f.kind === 'head' && f.state === 'open') this.glows.add(f.x, 2.2, f.z, 7, 7, 0, 0xff6ad0, 0.25);
+        if (f.kind !== 'head' && (f.y > -3 || dead)) {
+          // over the arm where it lies on the sand, else high on its stalk
+          const flat = f.state === 'down' || f.state === 'slam' || f.state === 'lift';
+          const u = flat ? f.len * 0.55 : 0.5;
+          this.bar('i' + f.id, f.hp, f.maxHp, dead, f.bx + Math.sin(f.yaw) * u, flat ? 1.7 : Math.min(f.len * 0.55, 5.2) + f.y, f.bz + Math.cos(f.yaw) * u, f.kind === 'arm' ? 1.8 : 1.5, 0.26, 0xe05ad8, dt);
+        }
         continue;
       }
-      if (f.kind === 'shark') { if (f.state === 'beached' || f.state === 'lunge') this.shadows.add(f.x, 0.03, f.z, 1.6, 2.8, -f.face, 0xffffff, 0.8); continue; }
-      if (f.kind === 'hunter') { if (f.state === 'circle' || f.state === 'wind') this.rings.add(f.x, -0.12, f.z, 1.6, 1.6, 0, 0xe8fbff, 0.3 + Math.sin(t * 6 + f.id) * 0.1); continue; }
-      if (f.state === 'dead' && f.deadT > 2) continue;
+      if (f.kind === 'shark' || f.kind === 'hunter') {
+        if (f.state === 'thrash') this.rings.add(f.x, this.surf(f.x, f.z), f.z, 3 + Math.sin(t * 12) * 0.3, 3 + Math.sin(t * 12) * 0.3, 0, 0xffffff, 0.45);
+        this.bar('i' + f.id, f.hp, f.maxHp, dead, f.x, Math.max(f.y, -0.4) + 1.25, f.z, 1.35, 0.24, 0xff6a3a, dt);
+        continue;
+      }
+      if (f.kind !== 'captain') this.bar('i' + f.id, f.hp, f.maxHp, dead, f.x, f.y + 1.85 * f.scale + 0.15, f.z, f.kind === 'brute' ? 1.7 : 1.25, f.kind === 'brute' ? 0.27 : 0.23, f.elite ? 0xffc23a : 0xff4a3a, dt);
+      if (dead && f.deadT > 2) continue;
       const s = f.r * f.scale * 2.6;
       this.shadows.add(f.x, 0.03, f.z, s, s, 0, 0xffffff, f.state === 'spawn' ? Math.min(1, f.t / 0.9) : 1);
       if (f.elite && f.state !== 'dead') this.glows.add(f.x, 0.8, f.z, 2.4, 2.4, 0, 0xffd23f, 0.25 + Math.sin(t * 5 + f.id) * 0.08);

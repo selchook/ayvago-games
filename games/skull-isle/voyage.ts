@@ -3,15 +3,16 @@
 // After the dock shop the crew picks a route (calm waters or a stormy passage) and sails its ship
 // to the next island, which lies at the origin of the world; the ship starts far to the south and
 // sails north (−z) up a sea lane, with the island growing on the horizon. The player steers across
-// the lane and trims the sails (stick / A-D / arrows, W-S), fires the broadside that faces the
-// nearest foe (auto-aim, its impact telegraphed in gold) and evades. On the way: skeleton rowboats
+// the lane (stick / A-D / ←→), sets the sails (three levels: reefed, half, full; W-S / ↑↓ or the
+// touch lever), fires the broadside that faces the nearest foe (auto-aim, its impact telegraphed in
+// gold; the guns fire one after another from their ports along the side) and evades. On the way: skeleton rowboats
 // lobbing skulls, enemy sloops that sail alongside for a cannon duel, a ghost ship on later stormy
 // legs, Kraken tentacles slamming across the lane, sharks lunging at the hull and rocks to steer
 // round, every blow telegraphed in red like on the islands; barrels, crates, bottles (sea power-ups)
 // and chests float by to be salvaged. The hull carries over between legs. At the island the ship
 // docks and the hero jumps ashore; a sunk ship throws the hero into the water (the Sim's wreck swim).
 import {
-  SEA, SEA_FOES, SEA_POWERS, SEA_POWER_TIME, SEA_POWER_WEIGHTS, MERMAID, clamp, seeded,
+  SEA, SEA_FOES, SEA_POWERS, SEA_POWER_TIME, SEA_POWER_WEIGHTS, MERMAID, SAIL, clamp, seeded,
   type Route, type SeaKind, type FloatKind, type SeaPower, type SeaCause,
 } from './defs';
 import { shoreAt } from './island';
@@ -21,6 +22,8 @@ export interface Ship {
   x: number; z: number; vx: number; speed: number;
   /** Heading off straight north (radians, + towards +x) and roll, for the view. */
   yaw: number; roll: number;
+  /** Sails set: 1 reefed, 2 half, 3 full (the speed follows). */
+  sail: number;
   hull: number;
   /** Reload left on the port (−x, index 0) and starboard (+x, index 1) sides. */
   reload: [number, number];
@@ -55,6 +58,12 @@ export interface Ball {
   x: number; y: number; z: number; x0: number; z0: number; x1: number; z1: number; h: number;
   t: number; dur: number; tele: number;
   fire: boolean; chain: boolean;
+  /** Height it leaves the gun at, the arc's height over the straight line, and where it comes down. */
+  y0: number; y1: number;
+  /** Who fired it (−1: the crew's ship), from which gun port (−1: thrown), and to which side (−1 port, +1 starboard). */
+  owner: number; port: number; side: number;
+  /** Fired yet (its gun has gone off). */
+  out: boolean;
 }
 
 interface Plan { d: number; kind: SeaKind | 'rocks' | FloatKind; x: number; done: boolean }
@@ -62,6 +71,26 @@ interface Plan { d: number; kind: SeaKind | 'rocks' | FloatKind; x: number; done
 /** The ship's hull as a few circles along its keel (forward offsets from its middle, radius). */
 export const HULL_PTS = [3.3, 1.1, -1.1, -3.3];
 export const HULL_R = 1.3;
+
+/** Seconds between the guns of a broadside (they fire one after another, bow to stern). */
+export const BROADSIDE_GAP = 0.11;
+
+/**
+ * Gun ports on the side of a ship (world units at sea): forward offsets along the keel in the order
+ * the guns fire (bow to stern), how far out from the middle the muzzles are and how high.
+ */
+export const PORTS: Record<'crew' | 'sloop' | 'ghost', { along: number[]; out: number; y: number }> = {
+  crew: { along: [1.22, 0.39, -0.49], out: 1.66, y: 0.52 },
+  sloop: { along: [1.35, 0.45, -0.45, -1.35], out: 1.25, y: 0.95 },
+  ghost: { along: [2.1, 0.95, -0.2, -1.35, -2.4], out: 1.6, y: 1.05 },
+};
+
+/** A port's place in the world: a ship at (x, z) heading `yaw` off north (+ towards +x), the side (−1 port, +1 starboard). */
+export function portAt(x: number, z: number, yaw: number, along: number, side: number, out: number): { x: number; z: number } {
+  const fx = Math.sin(yaw), fz = -Math.cos(yaw);
+  const rx = Math.cos(yaw), rz = Math.sin(yaw);
+  return { x: x + fx * along + rx * side * out, z: z + fz * along + rz * side * out };
+}
 
 export class Voyage {
   readonly route: Route;
@@ -113,7 +142,7 @@ export class Voyage {
     this.z0 = this.dockZ + this.D;
     const st = sim.shipSt;
     this.ship = {
-      x: 0, z: this.z0, vx: 0, speed: st.speed, yaw: 0, roll: 0, hull: Math.min(sim.hull, st.maxHull),
+      x: 0, z: this.z0, vx: 0, speed: st.speed * SAIL.speed[SAIL.start], yaw: 0, roll: 0, sail: SAIL.start, hull: Math.min(sim.hull, st.maxHull),
       reload: [0, 0], evadeCd: 0, evadeT: 0, evadeDir: 1, invuln: 1.5, sunk: false, t: 0,
     };
     this.ghostAt = this.storm && dest >= 3 ? this.D * 0.42 : -1;
@@ -214,12 +243,15 @@ export class Voyage {
     }
     if (sim.phase === 'dock') { this.dock(dt); this.updateFoes(dt); this.updateBalls(dt); this.updateFloats(dt); return; }
 
-    // sails: the stick's up/down trims them; Fair Wind fills them
+    // sails: three settings, a step at a time; the speed follows them (Fair Wind fills them)
     const wind = this.powers.wind > 0;
     const st = sim.shipSt;
-    const thr = clamp(-inp.mz, -1, 1);
-    const want = st.speed * (wind ? 1.35 : 1) * (1 + 0.22 * Math.max(0, thr) - 0.35 * Math.max(0, -thr));
-    s.speed += (want - s.speed) * Math.min(1, dt * 1.6);
+    if (inp.sail) {
+      const n = clamp(s.sail + Math.sign(inp.sail), 1, 3);
+      if (n !== s.sail) { s.sail = n; sim.emit({ type: 'sails', level: n }); }
+    }
+    const want = st.speed * (wind ? 1.35 : 1) * SAIL.speed[s.sail];
+    s.speed += (want - s.speed) * Math.min(1, dt * (want > s.speed ? 1.1 : 1.5));
     // the rudder: sideways across the lane, with a little weight
     const ag = st.agility * (wind ? 1.3 : 1);
     if (this.evadeBuf > 0 && s.evadeCd <= 0) this.startEvade(inp.mx);
@@ -343,18 +375,23 @@ export class Voyage {
     } else return;
     this.fireBuf = 0;
     const chain = this.powers.chain > 0, fire = this.powers.fire > 0;
-    const n = chain ? 3 : 2;
+    // a staggered broadside: the side's three guns fire one after another from bow to stern (the
+    // first fires again with chain shot); together they hit about as hard as the old pair of balls
+    const n = chain ? 4 : 3;
     const sx = side ? 1 : -1;
+    const P = PORTS.crew;
     for (let i = 0; i < n; i++) {
-      const fx = s.x + sx * 1.6, fz = s.z + (i - (n - 1) / 2) * 1.8;
-      const dist = Math.hypot(tx - fx, tz - fz);
-      const dur = 0.42 + dist / 34;
+      const gap = i * BROADSIDE_GAP;
+      // where this gun will be when it fires
+      const po = portAt(s.x + s.vx * gap, s.z - s.speed * gap, s.yaw, P.along[i % P.along.length], sx, P.out);
+      const dist = Math.hypot(tx - po.x, tz - po.z);
+      const dur = 0.5 + dist / 30;
       const lead = f && f.kind !== 'tentacle' ? 1 : 0;
-      const spread = chain ? (i - 1) * 1.3 : (i - (n - 1) / 2) * 0.9;
-      const ix = tx + (f ? f.vx : 0) * dur * lead + spread * 0.35, iz = tz + (f ? f.vz : 0) * dur * lead + spread;
-      const dmg = st.dmg * (1 + 0.08 * this.lvl) * (fire ? 1.5 : 1);
-      const tele = sim.addTele({ kind: 'circle', x: ix, z: iz, r: chain ? 1.6 : 1.45, dur, dmg, cause: 'cannon', knock: 0, friendly: true, owner: -1 });
-      this.balls.push({ id: this.nextId++, kind: 'ball', friendly: true, x: fx, y: 1.2, z: fz, x0: fx, z0: fz, x1: ix, z1: iz, h: 2.2 + dist * 0.12, t: -i * 0.07, dur, tele, fire, chain });
+      const spread = (i - (n - 1) / 2) * (chain ? 1 : 0.85);
+      const ix = tx + (f ? f.vx : 0) * (dur + gap) * lead + spread * 0.3, iz = tz + (f ? f.vz : 0) * (dur + gap) * lead + spread;
+      const dmg = st.dmg * (1 + 0.08 * this.lvl) * (fire ? 1.5 : 1) * (chain ? 0.75 : 2 / 3);
+      const tele = sim.addTele({ kind: 'circle', x: ix, z: iz, r: chain ? 1.5 : 1.4, dur: dur + gap, dmg, cause: 'cannon', knock: 0, friendly: true, owner: -1 });
+      this.balls.push({ id: this.nextId++, kind: 'ball', friendly: true, x: po.x, y: P.y, z: po.z, x0: po.x, z0: po.z, x1: ix, z1: iz, h: 1.3 + dist * 0.1, t: -gap, dur, tele, fire, chain, y0: P.y, y1: -0.15, owner: -1, port: i % P.along.length, side: sx, out: false });
     }
     s.reload[side] = st.reload * (this.powers.wind > 0 ? 0.85 : 1);
     sim.emit({ type: 'broadside', side: sx, x: s.x, z: s.z, n, fire, chain });
@@ -515,10 +552,14 @@ export class Voyage {
       case 'duel': {
         const tz = s.z + (ghost ? -1.5 : 0.5) + Math.sin(f.t * 0.4) * 2;
         f.vz = -s.speed + clamp((tz - f.z) * 0.9, -3, 3);
-        if (f.cd <= 0) {
+        // a broadside only bears when it lies abeam of the ship, its side towards it
+        const abeam = Math.abs(f.z - s.z) < 3.2 && Math.abs(f.x - s.x) > 3.4 && Math.abs(f.x - s.x) < 9;
+        if (f.cd <= 0 && abeam) {
           f.cd = ghost ? 3 : 3.3 + this.R(0, 0.6);
           const n = ghost ? 4 : 2 + (this.lvl >= 3 ? 1 : 0);
-          for (let i = 0; i < n; i++) this.lob(ghost ? 'ghost' : 'ball', f, 1.85, sim.tl(1.35) + i * 0.16, f.dmg, i === 0 ? 0 : (i % 2 ? 1 : -1) * (1.6 + i * 0.9));
+          // the guns fire one after another along the side; the red circles show where each ball lands
+          const order = ghost ? [1, 2, 3, 0] : [1, 2, 0];
+          for (let i = 0; i < n; i++) this.lob(ghost ? 'ghost' : 'ball', f, 1.85, sim.tl(1.3), f.dmg, i === 0 ? 0 : (i % 2 ? 1 : -1) * (1.6 + i * 0.9), i * 0.17, order[i % order.length]);
           sim.emit({ type: 'seaFire', id: f.id, kind: f.kind, x: f.x, z: f.z });
         }
         if (ghost && f.t > 7 && Math.floor((f.t - dt) / 8) !== Math.floor(f.t / 8)) this.spawnFoe('rowboat', clamp(s.x + this.side() * 4, -6, 6), 34);
@@ -643,23 +684,57 @@ export class Voyage {
     }
   }
 
-  /** A foe's shot at the ship: a red circle where the ship will be, a ball (or skull) arcing to it. */
-  private lob(kind: Ball['kind'], f: SeaFoe, r: number, dur: number, dmg: number, offZ = 0): void {
+  /**
+   * A foe's shot at the ship: a red circle where the ship will be when it lands, and a ball arcing to
+   * it from a gun port on the side facing the ship (a skull thrown from a rowboat). `delay` staggers
+   * a volley along the side; `port` picks the gun (−1: thrown from the middle).
+   */
+  private lob(kind: Ball['kind'], f: SeaFoe, r: number, dur: number, dmg: number, offZ = 0, delay = 0, port = -1): void {
     const s = this.ship, sim = this.sim;
-    const ix = s.x + s.vx * dur * 0.35 + this.R(-0.6, 0.6), iz = s.z - s.speed * dur + offZ;
-    const tele = sim.addTele({ kind: 'circle', x: ix, z: iz, r, dur, dmg, cause: f.kind === 'ghost' ? 'cannon' : 'skull', knock: 0, owner: f.id, hitsFoes: false });
+    const all = delay + dur;
+    const ix = s.x + s.vx * all * 0.35 + this.R(-0.6, 0.6), iz = s.z - s.speed * all + offZ;
+    const tele = sim.addTele({ kind: 'circle', x: ix, z: iz, r, dur: all, dmg, cause: f.kind === 'ghost' ? 'cannon' : 'skull', knock: 0, owner: f.id, hitsFoes: false });
     const T = sim.teles.find((x) => x.id === tele);
     if (T) T.seaCause = f.kind;
-    this.balls.push({ id: this.nextId++, kind, friendly: false, x: f.x, y: 1.6, z: f.z, x0: f.x, z0: f.z, x1: ix, z1: iz, h: kind === 'skull' ? 3.5 : 4.5, t: 0, dur, tele, fire: kind === 'ghost', chain: false });
+    const side = s.x >= f.x ? 1 : -1;
+    const y0 = port >= 0 ? PORTS[f.kind === 'ghost' ? 'ghost' : 'sloop'].y : 1.6;
+    const h = kind === 'skull' ? 3.5 : 1.6 + Math.hypot(ix - f.x, iz - f.z) * 0.18;
+    this.balls.push({ id: this.nextId++, kind, friendly: false, x: f.x, y: y0, z: f.z, x0: f.x, z0: f.z, x1: ix, z1: iz, h, t: -delay, dur, tele, fire: kind === 'ghost', chain: false, y0, y1: 0.2, owner: f.id, port, side, out: false });
+  }
+
+  /** Where a ball leaves its ship: the gun port (moving with the ship until it fires), or the thrower. */
+  private launchAt(b: Ball): { x: number; z: number } {
+    if (b.owner < 0) {
+      const s = this.ship;
+      return portAt(s.x, s.z, s.yaw, PORTS.crew.along[b.port], b.side, PORTS.crew.out);
+    }
+    const f = this.foes.find((o) => o.id === b.owner);
+    if (!f) return { x: b.x0, z: b.z0 };
+    if (b.port < 0) return { x: f.x, z: f.z };
+    const P = PORTS[f.kind === 'ghost' ? 'ghost' : 'sloop'];
+    // the foe's heading off north (its face is π when it sails north like the crew)
+    return portAt(f.x, f.z, Math.PI - f.face, P.along[b.port % P.along.length], b.side, P.out);
   }
 
   private updateBalls(dt: number): void {
     for (const b of this.balls) {
       b.t += dt;
-      if (b.t < 0) continue;
+      if (b.t < 0) {
+        // waiting its turn in the volley: it rides with its gun
+        const at = this.launchAt(b);
+        b.x = b.x0 = at.x; b.z = b.z0 = at.z;
+        continue;
+      }
+      if (!b.out) {
+        b.out = true;
+        const at = this.launchAt(b);
+        b.x0 = at.x; b.z0 = at.z;
+        this.sim.emit({ type: 'gun', x: at.x, y: b.y0, z: at.z, side: b.side, friendly: b.friendly, kind: b.kind, owner: b.owner });
+      }
+      // a ballistic arc: a parabola from the muzzle to where it comes down
       const k = Math.min(1, b.t / b.dur);
       b.x = b.x0 + (b.x1 - b.x0) * k; b.z = b.z0 + (b.z1 - b.z0) * k;
-      b.y = 1.2 * (1 - k) + Math.sin(k * Math.PI) * b.h - 0.2 * k;
+      b.y = b.y0 + (b.y1 - b.y0) * k + 4 * b.h * k * (1 - k);
       if (k >= 1) {
         b.t = 99;
         this.sim.emit({ type: 'seaBoom', x: b.x, z: b.z, friendly: b.friendly, fire: b.fire, kind: b.kind });

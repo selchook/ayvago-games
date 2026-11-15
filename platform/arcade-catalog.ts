@@ -1099,15 +1099,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'skull-isle',
     title: { en: 'Skull Isle', tr: 'Kurukafa Adası' },
     description: {
-      en: 'Raid island after island in a 3D pirate brawler and sail your ship between them: chain sword combos, dodge the red warnings, fire broadsides at skeleton rowboats and a ghost ship, swim out to hidden islets, and beat the Kraken and Captain Bonebeard.',
-      tr: "3B korsan dövüşünde adaları tek tek yağmala, aralarda gemini sür: kılıç kombolarını zincirle, kırmızı uyarılardan kaç, denizde bordaları ateşle, iskelet sandallarını ve hayalet gemiyi batır, gizli adacıklara yüz, Kraken'ı ve Kaptan Kemiksakal'ı yen.",
+      en: 'Raid island after island in a 3D pirate brawler and sail your ship between them: chain sword combos, dodge the red warnings, set your sails, fire broadsides at skeleton rowboats and a ghost ship, swim out to hidden islets, and beat the Kraken and Captain Bonebeard.',
+      tr: "3B korsan dövüşünde adaları tek tek yağmala, aralarda gemini sür: kılıç kombolarını zincirle, kırmızı uyarılardan kaç, yelkenleri ayarla, bordaları ateşle, iskelet sandallarını ve hayalet gemiyi batır, gizli adacıklara yüz, Kraken'ı ve Kaptan Kemiksakal'ı yen.",
     },
     category: 'action',
     categories: ['action', 'arcade'],
     tags: ['skull', 'isle', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.2.0',
     addedAt: '2026-11-14',
   }),
   arcadeGame({

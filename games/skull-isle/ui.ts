@@ -2,8 +2,8 @@
 // bar, the power-up chips with their timer rings, the special meter, the touch action buttons,
 // the boss bar and the banners. Every always-visible readout sits in a core HUD chip.
 import Phaser from 'phaser';
-import { txt, hudChip, HudChip } from '@core';
-import { HEART, SKULL, SHIP, BUBBLE } from './art';
+import { txt, t, hudChip, HudChip } from '@core';
+import { HEART, SKULL, SHIP } from './art';
 
 export const UI_DEPTH = 9100;
 
@@ -236,37 +236,133 @@ export class ProgressChip {
   }
 }
 
-/** Breath in deep water: a bubble inside a ring that empties, and the seconds left. */
-export class BreathChip {
+/** A small square sail on its yard, drawn into a graphics (centred, about `h` tall); `k` is how much canvas is set. */
+function sailGlyph(g: Phaser.GameObjects.Graphics, x: number, y: number, h: number, k: number, color: number, alpha = 1): void {
+  const w = h * 0.86;
+  const top = y - h / 2, drop = h * (0.22 + 0.78 * k);
+  g.lineStyle(Math.max(2, h * 0.07), 0x5a3a1a, alpha).lineBetween(x, top - h * 0.12, x, y + h / 2);
+  g.lineStyle(Math.max(2, h * 0.08), 0x7a5230, alpha).lineBetween(x - w / 2 - 2, top, x + w / 2 + 2, top);
+  g.fillStyle(color, alpha);
+  g.beginPath();
+  g.moveTo(x - w / 2, top + 2);
+  g.lineTo(x + w / 2, top + 2);
+  g.lineTo(x + w / 2 - w * 0.06, top + drop);
+  g.lineTo(x, top + drop + h * 0.08 * k);
+  g.lineTo(x - w / 2 + w * 0.06, top + drop);
+  g.closePath();
+  g.fillPath();
+}
+
+/** At sea: the sails set (a sail and three bars, like a signal meter) in a HUD chip. */
+export class SailChip {
   readonly chip: HudChip;
-  private ring: Phaser.GameObjects.Graphics;
-  private shownFull = true;
+  private g: Phaser.GameObjects.Graphics;
+  private shown = -1;
 
   constructor(private scene: Phaser.Scene, x: number, y: number) {
-    this.ring = scene.add.graphics();
-    const img = scene.add.image(0, 0, BUBBLE).setDisplaySize(40, 40);
-    const box = scene.add.container(0, 0, [this.ring, img]);
-    box.setData('chipWidth', RING_R * 2 + 4);
-    this.chip = hudChip(scene, x, y, { items: [box], height: 60, depth: UI_DEPTH, text: '', size: 20, color: '#d8f6ff' });
+    this.g = scene.add.graphics();
+    this.g.setData('chipWidth', 74);
+    this.chip = hudChip(scene, x, y, { align: 'right', label: t('sailShort'), items: [this.g], depth: UI_DEPTH });
     this.chip.setVisible(false);
   }
 
-  update(left: number, max: number, swimming: boolean, time: number): void {
-    const show = swimming || left < max - 0.05;
-    if (show !== this.chip.visible) {
-      this.chip.setVisible(show);
-      if (show) { this.chip.setScale(0.3); this.scene.tweens.add({ targets: this.chip, scale: 1, duration: 220, ease: 'Back.easeOut' }); }
+  show(on: boolean): void { this.chip.setVisible(on); this.shown = -1; }
+
+  update(level: number, _speed: number, time: number): void {
+    if (level === this.shown) return;
+    const pop = this.shown >= 0;
+    this.shown = level;
+    const g = this.g.clear();
+    sailGlyph(g, -22, 0, 30, (level - 1) / 2, 0xf4ead2);
+    for (let i = 0; i < 3; i++) {
+      const on = i < level, h = 10 + i * 6;
+      g.fillStyle(on ? (level === 3 ? 0xffd23f : 0x9fe8ff) : 0x0a1220, on ? 1 : 0.6).fillRoundedRect(4 + i * 11, 13 - h, 8, h, 3);
     }
-    if (!show) return;
-    const k = Math.max(0, left / max);
-    const low = left < 3;
-    const g = this.ring.clear();
-    g.lineStyle(5, 0x000000, 0.45).strokeCircle(0, 0, RING_R);
-    g.lineStyle(5, low ? (Math.floor(time * 6) % 2 ? 0xff5a4a : 0xffffff) : 0x7ad8ff, 1);
-    g.beginPath(); g.arc(0, 0, RING_R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k, false); g.strokePath();
-    this.chip.setText(left > 0 ? String(Math.ceil(left)) : '!');
-    this.chip.setTextColor(low ? '#ff9a8a' : '#d8f6ff');
-    if (low !== !this.shownFull) this.shownFull = !low;
+    if (pop) this.scene.tweens.add({ targets: this.chip, scale: 1.14, duration: 80, yoyo: true });
+    void time;
+  }
+}
+
+/**
+ * The touch sail lever at sea: a track with three notches (full sail at the top, reefed at the
+ * bottom) and a handle on the one set. Tap a notch, or tap or drag above or below the handle.
+ */
+export class SailLever {
+  readonly root: Phaser.GameObjects.Container;
+  private g: Phaser.GameObjects.Graphics;
+  private knob: Phaser.GameObjects.Container;
+  private knobG: Phaser.GameObjects.Graphics;
+  private zone: Phaser.GameObjects.Zone;
+  private level = 2;
+  private want = -1;
+  static H = 236;
+  static W = 80;
+
+  constructor(private scene: Phaser.Scene, readonly x: number, readonly y: number, private onStep: (d: number) => void) {
+    const W = SailLever.W, H = SailLever.H;
+    this.root = scene.add.container(x, y).setScrollFactor(0).setDepth(9520);
+    this.g = scene.add.graphics();
+    const cap = txt(scene, 0, -H / 2 - 26, t('sailShort'), { title: true, size: 20, strokeThickness: 5 });
+    this.knobG = scene.add.graphics();
+    this.knob = scene.add.container(0, this.notchY(2), [this.knobG]);
+    this.root.add([this.g, cap, this.knob]);
+    // the track and notches
+    const g = this.g;
+    g.fillStyle(0x000000, 0.28).fillRoundedRect(-W / 2, -H / 2 + 6, W, H, W / 2);
+    g.fillStyle(0x0e1a24, 0.62).fillRoundedRect(-W / 2, -H / 2, W, H, W / 2);
+    g.lineStyle(3, 0xffffff, 0.5).strokeRoundedRect(-W / 2, -H / 2, W, H, W / 2);
+    g.lineStyle(8, 0x060c12, 0.8).lineBetween(0, this.notchY(3), 0, this.notchY(1));
+    for (let n = 1; n <= 3; n++) {
+      g.fillStyle(0xffffff, 0.35).fillCircle(0, this.notchY(n), 8);
+      sailGlyph(g, W / 2 - 16, this.notchY(n), 18, (n - 1) / 2, 0xffffff, 0.55);
+    }
+    this.drawKnob(false);
+    this.zone = scene.add.zone(x, y, W + 40, H + 40).setScrollFactor(0).setDepth(9519).setInteractive();
+    const pick = (p: Phaser.Input.Pointer) => {
+      const ly = p.y - y;
+      let best = 1, bd = 1e9;
+      for (let n = 1; n <= 3; n++) { const d = Math.abs(ly - this.notchY(n)); if (d < bd) { bd = d; best = n; } }
+      this.set(best);
+    };
+    this.zone.on('pointerdown', (p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { ev?.stopPropagation?.(); pick(p); this.drawKnob(true); });
+    this.zone.on('pointermove', (p: Phaser.Input.Pointer) => { if (p.isDown) pick(p); });
+    this.zone.on('pointerup', () => this.drawKnob(false));
+    this.zone.on('pointerout', () => this.drawKnob(false));
+    this.show(false);
+  }
+
+  private notchY(n: number): number { return (2 - n) * (SailLever.H / 2 - 40); }
+
+  private drawKnob(held: boolean): void {
+    const g = this.knobG.clear();
+    g.fillStyle(0x000000, 0.3).fillCircle(0, 5, 31);
+    g.fillStyle(held ? 0xffe27a : 0xffd23f, 1).fillCircle(0, 0, 31);
+    g.fillStyle(0xffffff, 0.3).fillCircle(0, -9, 18);
+    g.lineStyle(4, 0x6a4a10, 0.9).strokeCircle(0, 0, 31);
+    sailGlyph(g, 0, 1, 32, (this.level - 1) / 2, 0x3a2410);
+  }
+
+  /** Asks for a level (the steps go to the ship one at a time). */
+  private set(n: number): void {
+    if (n === this.want || n === this.level && this.want < 0) return;
+    const d = n - (this.want > 0 ? this.want : this.level);
+    if (!d) return;
+    this.want = n;
+    this.onStep(d);
+  }
+
+  show(on: boolean): void {
+    this.root.setVisible(on);
+    if (on) this.zone.setInteractive(); else this.zone.disableInteractive();
+  }
+
+  update(level: number, time: number): void {
+    if (this.want === level) this.want = -1;
+    if (level === this.level) return;
+    this.level = level;
+    this.scene.tweens.add({ targets: this.knob, y: this.notchY(level), duration: 160, ease: 'Back.easeOut' });
+    this.drawKnob(false);
+    void time;
   }
 }
 

@@ -8,7 +8,7 @@ export type PowerId = 'rum' | 'keg' | 'parrot' | 'shield' | 'gold2' | 'fury' | '
 /** Powers with a timer (HUD chips with a ring); keg is held, fish heals at once. */
 export const TIMED_POWERS = ['rum', 'parrot', 'shield', 'gold2', 'fury'] as const;
 export type TimedPower = (typeof TIMED_POWERS)[number];
-export type Cause = FoeKind | 'skull' | 'cannon' | 'barrel' | 'tide' | 'ink' | 'drown';
+export type Cause = FoeKind | 'skull' | 'cannon' | 'barrel' | 'tide' | 'ink';
 
 export const DT = 1 / 60;
 export const clamp = (v: number, a: number, b: number): number => (v < a ? a : v > b ? b : v);
@@ -60,14 +60,12 @@ export interface Tuning {
   /** A sunk ship: the share of gold lost, and of max HP the hero loses washing ashore. */
   sinkGold: number;
   sinkHurt: number;
-  /** Breath factor in deep water. */
-  breath: number;
 }
 
 /** Normal and Easy side by side (new-game skill §7c). */
 export const TUNING: Record<Mode, Tuning> = {
-  normal: { hp: 1, speed: 1, count: 1, tele: 1, hurt: 1, magnet: 1, foeHp: 1, ramp: 1, doubloons: 1, hull: 1, seaHurt: 1, seaCount: 1, sinkGold: 0.25, sinkHurt: 0.15, breath: 1 },
-  easy: { hp: 1.25, speed: 0.9, count: 0.88, tele: 1.3, hurt: 0.86, magnet: 1.7, foeHp: 0.92, ramp: 1, doubloons: 0.5, hull: 1.3, seaHurt: 0.75, seaCount: 0.85, sinkGold: 0.1, sinkHurt: 0.05, breath: 1.35 },
+  normal: { hp: 1, speed: 1, count: 1, tele: 1, hurt: 1, magnet: 1, foeHp: 1, ramp: 1, doubloons: 1, hull: 1, seaHurt: 1, seaCount: 1, sinkGold: 0.25, sinkHurt: 0.15 },
+  easy: { hp: 1.25, speed: 0.9, count: 0.88, tele: 1.3, hurt: 0.86, magnet: 1.7, foeHp: 0.92, ramp: 1, doubloons: 0.5, hull: 1.3, seaHurt: 0.75, seaCount: 0.85, sinkGold: 0.1, sinkHurt: 0.05 },
 };
 
 // ------------------------------------------------------------------ heroes
@@ -269,5 +267,13 @@ export const SEA_POWER_COLOR: Record<SeaPower, number> = { wind: 0xbff6ff, chain
 /** Mermaid's Blessing: hull back at once (share of max) and a repair over its time (per second). */
 export const MERMAID = { now: 0.3, regen: 4 };
 
-/** Deep water on the islands: past this distance off the shore the hero swims (and can go 9 units out). */
-export const SWIM = { in: 0.6, out: 0.35, reach: 9, speed: 0.6, breath: 9, drain: 4, refill: 3 };
+/**
+ * Deep water on the islands: past `in` units off the shore the hero swims (slower, no attacks).
+ * There is no breath: the sea only gets in the way. From `soft` units out a current pushes the
+ * swimmer gently back (harder the further out, `push` units a second at `reach`), and `reach` is the
+ * last word; the hunting sharks are the danger out there.
+ */
+export const SWIM = { in: 0.6, out: 0.35, soft: 7, reach: 9.5, push: 4.2, speed: 0.6 };
+
+/** The sea legs' three sail settings (1 reefed, 2 half, 3 full): the speed factor and how much canvas is set. */
+export const SAIL = { speed: [0, 0.62, 1, 1.24], furl: [0.12, 0.34, 0.66, 1], start: 2 };

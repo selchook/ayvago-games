@@ -1,15 +1,17 @@
 // Skull Isle: draws a sea leg (voyage.ts) inside the island view's world. The crew's ship is the
 // island view's own ship mesh, sailing; the sea's foes are instanced Kenney and Quaternius models
 // (sloops, the ghost ship, rowboats with a rigged skeleton aboard) and pooled rigged figures
-// (tentacles, sharks); rocks, floating loot and cannonballs are instanced; wakes, foam, aim marks,
-// rain, health bars and the island on the horizon are billboards. Everything is built hidden with
-// the view, so the menu compiles its shader programs and the first voyage compiles nothing.
+// (tentacles, sharks); rocks, floating loot and cannonballs are instanced; the wakes are foam ribbons
+// riding the swell (fx3d Wakes), health bars the view's instanced bars; aim marks, rain ripples and
+// the island on the horizon are billboards. Everything is built hidden with the view, so the menu
+// compiles its shader programs and the first voyage compiles nothing.
 import { THREE } from '@core/three';
 import type { Sim } from './sim';
 import type { Voyage, SeaFoe } from './voyage';
 import { SEA, SEA_POWER_COLOR, type SeaKind } from './defs';
 import { pk, kk, soloGeometry } from './kit';
-import { Billboards, Particles, TEX } from './fx3d';
+import { Billboards, Particles, TEX, type Wakes } from './fx3d';
+import { PORTS, portAt } from './voyage';
 import { Figure, FigurePool } from './figure';
 
 const TENTACLE_H = 15.67;
@@ -26,6 +28,11 @@ export interface SeaKit {
   flares: Billboards;
   rings: Billboards;
   streaks: Billboards;
+  wakes: Wakes;
+  /** The water's surface at (x, z) this frame (flat foam and rings ride it). */
+  surf: (x: number, z: number) => number;
+  /** A foe's health bar (the view keeps its state between frames). */
+  bar: (key: string, hp: number, max: number, dead: boolean, x: number, y: number, z: number, w: number, h: number, color: number, dt: number) => void;
 }
 
 interface FoeFig { fig: Figure; pool: FigurePool; state: string; seen: boolean }
@@ -41,7 +48,6 @@ export class SeaView {
   private chests: THREE.InstancedMesh;
   private balls: THREE.InstancedMesh;
   private skulls: THREE.InstancedMesh;
-  private bars: Billboards;
   private horizon: Billboards;
   private figs = new Map<number, FoeFig>();
   private m = new THREE.Matrix4();
@@ -51,7 +57,8 @@ export class SeaView {
   private s = new THREE.Vector3();
   private col = new THREE.Color();
   private rainSeed: { x: number; y: number; z: number }[] = [];
-  private wakeT = 0;
+  private ripples: { x: number; z: number; t: number }[] = [];
+  private sprayT = 0;
   private smokeT = 0;
 
   constructor(private k: SeaKit) {
@@ -77,7 +84,6 @@ export class SeaView {
     this.chests = inst(soloGeometry(pk('chest-closed'), 'color', 0.9), k.pirateMat, 3, true);
     this.balls = inst(soloGeometry(kk('cannon-ball'), 'uv', 0.55), k.kenneyMat, 30, true);
     this.skulls = inst(soloGeometry(pk('skull'), 'color', 1), k.pirateMat, 12);
-    this.bars = new Billboards(sc, TEX.bar(), 24, { order: 18, depthTest: false });
     this.horizon = new Billboards(sc, TEX.isle(), 2, { blend: 'normal', order: -2 });
     for (let i = 0; i < 110; i++) this.rainSeed.push({ x: Math.random(), y: Math.random(), z: Math.random() });
   }
@@ -87,18 +93,27 @@ export class SeaView {
     for (const f of this.figs.values()) f.pool.give(f.fig);
     this.figs.clear();
     for (const im of [this.sloops, this.ghosts, this.boats, ...this.rocks, this.barrels, this.crates, this.bottles, this.chests, this.balls, this.skulls]) { im.count = 0; im.visible = false; }
-    this.bars.begin(new THREE.Quaternion()); this.bars.end();
+    this.ripples.length = 0;
     this.horizon.begin(new THREE.Quaternion()); this.horizon.end();
   }
 
-  /** Places the crew's ship (the island view's mesh) on the sea. */
-  placeShip(ship: THREE.Object3D, v: Voyage, t: number, swell: number, sinkK: number): void {
-    const s = v.ship;
-    const bob = Math.sin(t * 1.3) * 0.1 * swell;
+  /**
+   * Places the crew's ship (the island view's mesh) on the sea: it rides the swell (bow and stern
+   * following the waves), heels into its turns, kicks back from its own guns (`kick`: a roll away
+   * from the side that fired) and lifts its bow a little under full sail.
+   */
+  placeShip(ship: THREE.Object3D, v: Voyage, t: number, swell: number, sinkK: number, kick = 0): void {
+    const s = v.ship, k = this.k;
+    const fx = Math.sin(s.yaw), fz = -Math.cos(s.yaw);
+    const mid = k.surf(s.x, s.z), bow = k.surf(s.x + fx * 3, s.z + fz * 3), stern = k.surf(s.x - fx * 3, s.z - fz * 3);
+    const port = k.surf(s.x - fz * 1.6, s.z + fx * 1.6), star = k.surf(s.x + fz * 1.6, s.z - fx * 1.6);
     ship.scale.setScalar(SHIP_SCALE);
-    ship.position.set(s.x, SHIP_Y + bob - sinkK * 6, s.z);
-    // the model's bow points to −x: turned a quarter so it sails north (−z), then off by the heading
-    ship.rotation.set(s.roll + Math.sin(t * 0.9) * 0.03 * swell + sinkK * 0.5, -Math.PI / 2 - s.yaw, Math.sin(t * 0.7 + 1) * 0.02 * swell - sinkK * 0.35, 'YXZ');
+    ship.position.set(s.x, SHIP_Y + (mid + 0.17) * 0.9 + Math.sin(t * 1.3) * 0.04 * swell - sinkK * 6, s.z);
+    // the model's bow points to −x: turned a quarter so it sails north (−z), then off by the heading;
+    // roll round the keel (x), pitch round the beam (z)
+    const roll = s.roll + Math.atan2(star - port, 3.2) * 0.8 + Math.sin(t * 0.9) * 0.02 * swell + kick + sinkK * 0.5;
+    const pitch = Math.atan2(bow - stern, 6) * 0.9 + (s.sail - 2) * 0.012 - sinkK * 0.35;
+    ship.rotation.set(roll, -Math.PI / 2 - s.yaw, -pitch, 'YXZ');
     ship.updateMatrixWorld();
   }
 
@@ -106,7 +121,6 @@ export class SeaView {
   sync(sim: Sim, v: Voyage, dt: number, t: number, cq: THREE.Quaternion, swell: number, ship: THREE.Object3D): void {
     const k = this.k;
     const s = v.ship;
-    this.bars.begin(cq);
     this.horizon.begin(cq);
 
     // the island on the horizon until the real one comes out of the fog
@@ -118,18 +132,23 @@ export class SeaView {
       this.horizon.add(0, 6, s.z - 150, 70, 26, 0, this.col, hk);
     }
 
-    // the wake, foam at the bow, smoke from a battered hull
-    const moving = !s.sunk && sim.phase !== 'dock' || s.speed > 0.5;
-    this.wakeT -= dt;
-    if (moving && this.wakeT <= 0) {
-      this.wakeT = 0.05;
-      const sy = Math.sin(s.yaw), cy = Math.cos(s.yaw);
+    // the wake: a bow wave spreading into a V and the churned water astern, foam ribbons that stay
+    // where they were laid and ride the swell; spray off the bow when the sails drive her hard
+    const moving = !s.sunk && s.speed > 0.4;
+    const sy = Math.sin(s.yaw), cy = Math.cos(s.yaw);
+    const drive = Math.min(1.4, s.speed / Math.max(1, sim.shipSt.speed));
+    if (moving) {
+      k.wakes.lay('bow', s.x + sy * 3.1, s.z - cy * 3.1, sy, -cy, 0.55, 1.1 + drive * 1.5, 0.35 + drive * 0.4, 2.8, 0);
+      k.wakes.lay('stern', s.x - sy * 3.1, s.z + cy * 3.1, sy, -cy, 0.5, 0.42, 0.45 + drive * 0.35, 3.4, 0.95);
+    }
+    this.sprayT -= dt;
+    if (moving && s.sail >= 2 && this.sprayT <= 0) {
+      this.sprayT = s.sail === 3 ? 0.035 : 0.09;
       for (const side of [-1, 1]) {
-        const bx = s.x + sy * 3.6 + cy * side * 0.9, bz = s.z - cy * 3.6 + sy * side * 0.9;
-        k.dust.emit(bx, -0.1, bz, side * 1.4 + (Math.random() - 0.5), 0.6, 1.2, 0.9, 0.55, 1.3, 0xf4fbff, 1.2, 1);
+        const bx = s.x + sy * 3.3 + cy * side * 0.45, bz = s.z - cy * 3.3 + sy * side * 0.45;
+        const out = 1.2 + Math.random() * 1.6 * drive;
+        k.dust.emit(bx, k.surf(bx, bz) + 0.15, bz, cy * side * out + sy * s.speed * 0.6, 1 + Math.random() * 1.6 * drive, sy * side * out - cy * s.speed * 0.6, 0.55, 0.45, 1.5 + drive, 0xf4fbff, 2.2, 5);
       }
-      const sx = s.x - sy * 3.8, sz = s.z + cy * 3.8;
-      k.dust.emit(sx + (Math.random() - 0.5) * 1.6, -0.12, sz, (Math.random() - 0.5) * 0.6, 0.2, 2, 1.6, 0.7, 1.6, 0xe8f6ff, 0.8, 0);
     }
     const hullK = s.hull / Math.max(1, sim.shipSt.maxHull);
     this.smokeT -= dt;
@@ -148,26 +167,29 @@ export class SeaView {
       k.particles.emit(x, 2 + Math.random() * 3, z, 0, 0, 9, 0.5, 0.25, 0.05, SEA_POWER_COLOR.wind, 0.3, 0);
     }
     if (v.powers.mermaid > 0 && Math.random() < dt * 22) k.particles.emit(s.x + (Math.random() - 0.5) * 4, 0.4 + Math.random(), s.z + (Math.random() - 0.5) * 8, 0, 1.6, 0, 0.8, 0.4, 0.05, SEA_POWER_COLOR.mermaid, 1, -0.5);
-    if (v.powers.mermaid > 0) k.rings.add(s.x, -0.1, s.z, 9, 9, 0, SEA_POWER_COLOR.mermaid, 0.35 + Math.sin(t * 5) * 0.1);
+    if (v.powers.mermaid > 0) k.rings.add(s.x, k.surf(s.x, s.z), s.z, 9, 9, 0, SEA_POWER_COLOR.mermaid, 0.35 + Math.sin(t * 5) * 0.1);
     if (v.powers.fire > 0 && Math.random() < dt * 10) for (const side of [-1, 1]) k.particles.emit(s.x + side * 1.8, 1.4, s.z + (Math.random() - 0.5) * 4, side * 0.5, 0.8, 0, 0.4, 0.45, 0.05, 0xff8a2a, 1, -1);
 
     // the net's reach when loot is near
     let near = false;
     for (const f of v.floats) if (v.hullDist(f.x, f.z) < sim.shipSt.net * 2.4) near = true;
-    if (near) k.rings.add(s.x, -0.08, s.z, (sim.shipSt.net + 1.3) * 2.1, (sim.shipSt.net + 4.6) * 2, -s.yaw, 0xffe27a, 0.07);
+    if (near) k.rings.add(s.x, k.surf(s.x, s.z), s.z, (sim.shipSt.net + 1.3) * 2.1, (sim.shipSt.net + 4.6) * 2, -s.yaw, 0xffe27a, 0.07);
 
-    // the broadside's aim: a gold ring on the target, dots along the shot's path
+    // the broadside's aim: a gold ring on the target and, when the guns are loaded, the arc the
+    // balls will fly from the middle gun of that side
     if (v.aim && !s.sunk) {
       const ready = s.reload[v.aim.side] <= 0;
       const a = v.aim;
       const pulse = 0.65 + Math.sin(t * 10) * 0.25;
-      k.rings.add(a.x, 0.1, a.z, 3.4, 3.4, 0, ready ? 0xffd23f : 0x9aa8b8, ready ? pulse : 0.35);
+      k.rings.add(a.x, k.surf(a.x, a.z) + 0.02, a.z, 3.4, 3.4, 0, ready ? 0xffd23f : 0x9aa8b8, ready ? pulse : 0.35);
       if (ready) {
         k.flares.add(a.x, 1.6, a.z, 1.4, 1.4, t * 2, 0xffe27a, 0.6);
-        const sx = s.x + (a.side ? 1 : -1) * 1.8, sz = s.z;
-        for (let i = 1; i < 6; i++) {
-          const u = i / 6;
-          k.glows.add(sx + (a.x - sx) * u, 1.2 + Math.sin(u * Math.PI) * 2.2, sz + (a.z - sz) * u, 0.5, 0.5, 0, 0xffd23f, 0.5);
+        const P = PORTS.crew;
+        const po = portAt(s.x, s.z, s.yaw, P.along[1], a.side ? 1 : -1, P.out);
+        const dist = Math.hypot(a.x - po.x, a.z - po.z), h = 1.3 + dist * 0.1;
+        for (let i = 1; i < 9; i++) {
+          const u = i / 9;
+          k.glows.add(po.x + (a.x - po.x) * u, P.y + (-0.15 - P.y) * u + 4 * h * u * (1 - u), po.z + (a.z - po.z) * u, 0.42, 0.42, 0, 0xffd23f, 0.32 + 0.2 * Math.sin(t * 8 - i));
         }
       }
     }
@@ -182,7 +204,6 @@ export class SeaView {
     this.syncFoes(sim, v, dt, t, swell);
     this.syncThings(v, dt, t, swell, cq);
     this.syncRain(v, dt, t);
-    this.bars.end();
     this.horizon.end();
   }
 
@@ -209,10 +230,10 @@ export class SeaView {
             if (Math.random() < dt * 12) k.particles.emit(f.x + (Math.random() - 0.5) * 4, 1 + Math.random() * 4, f.z + (Math.random() - 0.5) * 6, 0, 0.8, 0, 1, 0.5, 0.1, 0x7affc0, 0.5, -0.3);
           }
           if (dead && Math.random() < dt * 20) k.dust.emit(f.x + (Math.random() - 0.5) * 3, 1 + Math.random() * 2, f.z, 0, 1.4, 0, 1.2, 0.8, 2, 0x6a6460, 0.6, -0.4);
-          if (!dead) {
-            this.bar(f, f.x, 6.4, f.z, f.kind === 'ghost' ? 4.2 : 3);
-            k.shadows.add(f.x, -0.05, f.z, 4, 7, -f.face, 0xffffff, 0.35);
-          }
+          // the ghost ship has the big boss bar; a sloop its own small one
+          if (f.kind === 'sloop') k.bar('s' + f.id, f.hp, f.maxHp, dead, f.x, 6.2, f.z, 3.4, 0.55, 0xff4a3a, dt);
+          // its wake (it sails with the crew's ship, so it churns as hard)
+          if (!dead && f.y > -1) k.wakes.lay('s' + f.id, f.x - Math.sin(f.face) * 2.4, f.z - Math.cos(f.face) * 2.4, Math.sin(f.face), Math.cos(f.face), 0.5, 1, Math.min(1, 0.4 + Math.hypot(f.vx, f.vz) * 0.08), 2.6, 0.8);
           break;
         }
         case 'rowboat': {
@@ -234,8 +255,8 @@ export class SeaView {
           }
           if (f.flash > 0.08) ff.fig.flash();
           ff.fig.update(dt, 1);
-          if (!dead) this.bar(f, f.x, 2.4, f.z, 1.6);
-          if (Math.random() < dt * 6 && !dead) k.dust.emit(f.x, -0.1, f.z - 1.6, 0, 0.3, -1, 0.7, 0.35, 0.9, 0xf4fbff, 1, 0);
+          k.bar('s' + f.id, f.hp, f.maxHp, dead, f.x, 2.5, f.z, 2.5, 0.46, 0xff4a3a, dt);
+          if (!dead) k.wakes.lay('s' + f.id, f.x - Math.sin(f.face) * 1.2, f.z - Math.cos(f.face) * 1.2, Math.sin(f.face), Math.cos(f.face), 0.3, 0.5, 0.55, 1.8, 0.5);
           break;
         }
         case 'tentacle': {
@@ -249,16 +270,28 @@ export class SeaView {
           fig.play('Tentacle_Idle', { speed: f.state === 'wind' ? 3 : f.state === 'down' ? 0.4 : 1, fade: 0.3 });
           if (f.flash > 0.08) fig.flash();
           fig.update(dt, 1);
-          if (!dead && f.y > -3) k.rings.add(f.bx, -0.1, f.bz, 3.2, 3.2, 0, 0xe8fbff, 0.4 + Math.sin(t * 3 + f.id) * 0.15);
+          if (!dead && f.y > -3) k.rings.add(f.bx, k.surf(f.bx, f.bz), f.bz, 3.2, 3.2, 0, 0xe8fbff, 0.4 + Math.sin(t * 3 + f.id) * 0.15);
+          if (f.y > -4 || dead) {
+            const flat = f.state === 'down' || f.state === 'slam' || f.state === 'lift';
+            const u = flat ? f.len * 0.55 : 0.6;
+            k.bar('s' + f.id, f.hp, f.maxHp, dead, f.bx + Math.sin(f.yaw) * u, flat ? 2.2 : Math.min(f.len * 0.55, 6.5) + f.y, f.bz + Math.cos(f.yaw) * u, 2.8, 0.5, 0xe05ad8, dt);
+          }
           if (f.burn > 0 && Math.random() < dt * 20) { const c = v.aimPoint(f); k.particles.emit(c.x, 1, c.z, 0, 1.4, 0, 0.5, 0.5, 0.1, 0xff8a2a, 1, -1); }
           break;
         }
         case 'shark': {
           const ff = this.figFor(f, 'shark');
           const fig = ff.fig;
-          fig.root.position.set(f.x, f.y - (f.state === 'circle' || f.state === 'wind' ? 0.1 : 0), f.z);
-          fig.root.rotation.set(0, f.face, dead ? Math.PI / 2 : 0);
-          if (dead) fig.root.position.y = -0.2 - f.deadT * 0.6;
+          // the fin cuts the surface while it circles; out of the water on the lunge, nose up then down; a dive
+          const swim = f.state === 'circle';
+          const y = swim ? -0.68 + Math.sin(t * 2.2 + f.id) * 0.04 : f.y;
+          const pitch = f.state === 'lunge' ? -Math.cos(Math.min(1, f.t / 0.7) * Math.PI) * 0.55 : f.state === 'dive' ? 0.4 : f.state === 'wind' ? -0.12 : 0;
+          fig.root.position.set(f.x, y, f.z);
+          fig.root.rotation.order = 'YXZ';
+          fig.root.rotation.set(pitch, f.face, dead ? Math.PI : swim ? Math.sin(t * 1.7 + f.id) * 0.08 : 0);
+          if (dead) fig.root.position.y = -0.3 - f.deadT * 0.6;
+          if ((swim || f.state === 'dive') && f.y < -0.3) k.wakes.lay('s' + f.id, f.x - Math.sin(f.face) * 0.45, f.z - Math.cos(f.face) * 0.45, Math.sin(f.face), Math.cos(f.face), 0.14, 0.6, 0.85, 1.5, 0.35);
+          k.bar('s' + f.id, f.hp, f.maxHp, dead, f.x, Math.max(y, -0.4) + 1.5, f.z, 2.2, 0.42, 0xff6a3a, dt);
           if (ff.state !== f.state) {
             ff.state = f.state;
             if (f.state === 'lunge') fig.play('Swim_Bite', { once: true, restart: true, speed: 1.3 });
@@ -267,7 +300,7 @@ export class SeaView {
           }
           if (f.flash > 0.08) fig.flash();
           fig.update(dt, 1);
-          if ((f.state === 'circle' || f.state === 'wind') && Math.random() < dt * 20) k.particles.emit(f.x, -0.1, f.z, 0, 1, 0, 0.5, 0.35, 0.1, 0xe8fbff, 1, 3);
+          if (f.state === 'wind' && Math.random() < dt * 12) k.particles.emit(f.x + (Math.random() - 0.5) * 1.4, -0.1, f.z + (Math.random() - 0.5) * 1.4, (Math.random() - 0.5) * 2, 2.5 + Math.random() * 2, (Math.random() - 0.5) * 2, 0.5, 0.3, 0.1, 0xeefbff, 0.8, 12);
           break;
         }
       }
@@ -296,14 +329,6 @@ export class SeaView {
     return ff;
   }
 
-  /** A small health bar over a foe (shown once it is hurt). */
-  private bar(f: SeaFoe, x: number, y: number, z: number, w: number): void {
-    if (f.hp >= f.maxHp) return;
-    const kk = Math.max(0, f.hp / f.maxHp);
-    this.bars.add(x, y, z, w + 0.25, 0.42, 0, 0x101820, 0.9);
-    this.bars.add(x - (w * (1 - kk)) / 2, y, z, w * kk, 0.26, 0, f.kind === 'ghost' ? 0x5affb0 : 0xff5a3a, 1);
-  }
-
   private syncThings(v: Voyage, dt: number, t: number, swell: number, cq: THREE.Quaternion): void {
     const k = this.k, s = v.ship;
     const spy = v.powers.spyglass > 0;
@@ -314,8 +339,8 @@ export class SeaView {
       this.q.setFromAxisAngle(this.v.set(0, 1, 0), r.rot);
       this.m.compose(this.v.set(r.x, -0.75, r.z), this.q, this.s.setScalar(r.s));
       if (rc[r.model] < 14) this.rocks[r.model].setMatrixAt(rc[r.model]++, this.m);
-      k.rings.add(r.x, -0.1, r.z, r.r * 2.4 + Math.sin(t * 2 + r.id) * 0.3, r.r * 2.4 + Math.sin(t * 2 + r.id) * 0.3, 0, 0xffffff, 0.35);
-      if (spy && r.z < s.z) k.rings.add(r.x, 0.2, r.z, r.r * 2.8, r.r * 2.8, 0, 0xff8a2a, 0.55 + Math.sin(t * 6) * 0.2);
+      k.rings.add(r.x, k.surf(r.x, r.z), r.z, r.r * 2.4 + Math.sin(t * 2 + r.id) * 0.3, r.r * 2.4 + Math.sin(t * 2 + r.id) * 0.3, 0, 0xffffff, 0.35);
+      if (spy && r.z < s.z) k.rings.add(r.x, k.surf(r.x, r.z) + 0.25, r.z, r.r * 2.8, r.r * 2.8, 0, 0xff8a2a, 0.55 + Math.sin(t * 6) * 0.2);
     }
     this.rocks.forEach((im, i) => this.finish(im, rc[i]));
     // loot afloat
@@ -341,7 +366,7 @@ export class SeaView {
         case 'chest': this.m.compose(this.v.set(f.x, -0.4 + bob, f.z), this.q, this.s.setScalar(1)); if (ch < 3) this.chests.setMatrixAt(ch++, this.m); k.flares.add(f.x, 1.4, f.z, 1.6, 1.6, t, 0xfff0a0, 0.6); break;
       }
       k.glows.add(f.x, 0.5, f.z, f.kind === 'chest' ? 3.4 : 2.2, f.kind === 'chest' ? 3.4 : 2.2, 0, col, 0.35 + Math.sin(t * 5 + f.id) * 0.1);
-      k.rings.add(f.x, -0.08, f.z, 2, 2, 0, col, 0.5);
+      k.rings.add(f.x, k.surf(f.x, f.z), f.z, 2, 2, 0, col, 0.5);
       if (spy && f.z < s.z) k.flares.add(f.x, 2.4, f.z, 1.2, 1.2, t * 2, col, 0.8);
     }
     this.finish(this.barrels, br);
@@ -349,7 +374,7 @@ export class SeaView {
     this.finish(this.bottles, bo);
     this.finish(this.chests, ch);
     // under the spyglass: where the next tentacles will rise
-    if (spy) for (const p of v.upcoming(70)) k.rings.add(p.x, -0.05, p.z, 4 + Math.sin(t * 6) * 0.6, 4 + Math.sin(t * 6) * 0.6, 0, 0xff3a2a, 0.55);
+    if (spy) for (const p of v.upcoming(70)) k.rings.add(p.x, k.surf(p.x, p.z) + 0.02, p.z, 4 + Math.sin(t * 6) * 0.6, 4 + Math.sin(t * 6) * 0.6, 0, 0xff3a2a, 0.55);
     // cannonballs and skulls
     let bl = 0, sk = 0;
     for (const b of v.balls) {
@@ -369,6 +394,8 @@ export class SeaView {
         } else if (Math.random() < 0.5) k.dust.emit(b.x, b.y, b.z, 0, 0.3, 0, 0.5, 0.4, 0.8, c, 2, -0.5);
         if (b.chain) k.streaks.add(b.x, b.y, b.z, 0.1, 1.4, b.t * 20, 0x9aa0b0, 0.8);
       }
+      // its shadow on the water, so the arc reads
+      k.shadows.add(b.x, k.surf(b.x, b.z) + 0.01, b.z, 0.7, 0.7, 0, 0xffffff, Math.max(0.15, 0.6 - b.y * 0.08));
     }
     this.finish(this.balls, bl);
     this.finish(this.skulls, sk);
@@ -386,7 +413,15 @@ export class SeaView {
       const z = s.z - 22 + r.z * 32;
       k.streaks.add(x, y, z, 0.05, 1.1, lean, 0xc8dcf0, 0.35);
     }
-    if (Math.random() < dt * 40) k.particles.emit(s.x * 0.55 + (Math.random() - 0.5) * 24, 0, s.z - 18 + Math.random() * 26, 0, 0.6, 0, 0.25, 0.25, 0.05, 0xe8f4ff, 1, 2);
+    // drops landing: small rings that open and fade on the water (not specks)
+    if (this.ripples.length < 36 && Math.random() < dt * 30) this.ripples.push({ x: s.x * 0.55 + (Math.random() - 0.5) * 24, z: s.z - 18 + Math.random() * 26, t: 0 });
+    for (let i = this.ripples.length - 1; i >= 0; i--) {
+      const r = this.ripples[i];
+      r.t += dt;
+      if (r.t > 0.7) { this.ripples.splice(i, 1); continue; }
+      const u = r.t / 0.7;
+      k.rings.add(r.x, k.surf(r.x, r.z), r.z, 0.3 + u * 0.9, 0.3 + u * 0.9, 0, 0xdfeaf6, (1 - u) * 0.35);
+    }
   }
 
   private finish(im: THREE.InstancedMesh, n: number): void {
@@ -399,8 +434,10 @@ export class SeaView {
 /** The crew's ship on the sea: smaller than at anchor so the lane and its foes fit a phone. */
 export const SHIP_SCALE = 0.7;
 export const SHIP_Y = -0.62;
-/** Where the hero stands on deck (the model's own units: the bow is −x). */
-export const DECK = new THREE.Vector3(1.2, 1.55, 0);
+/** Where the hero stands at sea: at the helm on the quarterdeck, behind the wheel (the model's own units: the bow is −x). */
+export const DECK = new THREE.Vector3(4.3, 1.95, 0);
+/** The extra guns along each side of the crew's ship (model x; the hull's own gun stands at −0.55): three a side, matching voyage.ts PORTS.crew. */
+export const SHIP_GUNS = [-1.75, 0.7];
 
 export type { SeaKind };
 export const SEA_LANE = SEA.lane;
