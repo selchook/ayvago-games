@@ -74,6 +74,8 @@ export class PlayScene extends ArcadeScene {
   private stepT = 0;
   private beatT = 0;
   private hitSfx = 0;
+  /** Seconds the night stands still after a finisher bites (hit-stop). */
+  private hitStop = 0;
   private killSfx = 0;
   private gemSfx = 0;
   private gemPitch = 0;
@@ -116,6 +118,7 @@ export class PlayScene extends ArcadeScene {
     this.stepT = 0;
     this.beatT = 0;
     this.hitSfx = this.killSfx = this.gemSfx = this.gemPitch = 0;
+    this.hitStop = 0;
     this.lowWarned = false;
     this.lastMinute = false;
     this.ended = false;
@@ -232,6 +235,9 @@ export class PlayScene extends ArcadeScene {
     if (Math.abs(target - this.slow) < 0.004) this.slow = target;
     let k = this.slow * this.testSpeed;
     if (this.bulletT > 0) { this.bulletT -= dt; k *= 0.3; }
+    // the combo's finisher freezes the night for a few frames as it bites
+    const stopped = this.hitStop > 0;
+    if (stopped) { this.hitStop -= dt; k = 0; }
     this.graceCd -= dt * k;
     if (this.bot && this.botCards && !this.bar && sim.offers.length) sim.takeAll((c) => this.bot!.choose(c));
     this.acc += dt * k;
@@ -242,11 +248,12 @@ export class PlayScene extends ArcadeScene {
       sim.step(STEP, sim.player.alive ? this.readInput(STEP) : NO_INPUT);
       for (const ev of sim.events) this.onEvent(ev);
       sim.events.length = 0;
+      if (this.hitStop > 0) { this.acc = 0; break; }
     }
     if (n >= 10) this.acc = 0;
     this.bar?.update(dt);
     this.chest?.update(dt);
-    this.view.sync(sim, dt * Math.max(0.3, this.slow) * Math.min(1, this.testSpeed || 0.0001) * (this.bulletT > 0 ? 0.4 : 1));
+    this.view.sync(sim, dt * Math.max(0.3, this.slow) * Math.min(1, this.testSpeed || 0.0001) * (this.bulletT > 0 ? 0.4 : 1) * (stopped ? 0.15 : 1));
     this.updateHud(dt);
     this.updateSounds(dt);
     this.drawOverlay(dt);
@@ -271,7 +278,18 @@ export class PlayScene extends ArcadeScene {
         if (this.killSfx <= 0) { this.killSfx = 0.05; this.sfxAt('squish', this.sx(ev.z.x, ev.z.z).x, { volume: 0.32 }); }
         if (ev.z.kind === 'tank') this.view.shake(0.2, 0.15);
         break;
-      case 'swing': if (ev.n === 0) this.sfx(ev.evo ? 'swingBig' : 'swing', { volume: ev.evo ? 0.5 : 0.38 }); break;
+      case 'swing':
+        // each blow of the combo has its own pitch: the backhand higher, the finisher deep
+        if (ev.kind === 'fore') this.sfx('swing', { volume: 0.36, rate: ev.evo ? 0.92 : 1 });
+        else if (ev.kind === 'back') this.sfx('swing', { volume: 0.36, rate: ev.evo ? 1.06 : 1.16 });
+        else this.sfx('swingBig', { volume: ev.evo ? 0.55 : 0.45, rate: ev.evo ? 0.78 : ev.kind === 'spin' ? 0.9 : 0.84 });
+        break;
+      case 'blow':
+        // the finisher lands: a thud, and a sliver of hit-stop when it bites
+        if (ev.kind === 'slam' || ev.hits) this.sfx('bash', { volume: ev.hits ? 0.42 : 0.22, rate: ev.kind === 'slam' ? 0.8 : 1 });
+        if (ev.hits) this.hitStop = Math.max(this.hitStop, ev.kind === 'slam' ? 0.06 : 0.05);
+        break;
+      case 'wave': this.sfx('zap', { volume: 0.22, rate: 0.6 }); break;
       case 'thrust': this.sfx('thrust', { volume: 0.4 }); break;
       case 'chain': this.bolts.push({ pts: ev.pts, t: 0.22, seed: Math.random() * 100 }); this.sfx('zap', { volume: 0.3 }); break;
       case 'fire':

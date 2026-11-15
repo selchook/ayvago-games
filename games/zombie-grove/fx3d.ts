@@ -1,6 +1,6 @@
 // Zombie Grove: the effects layer, all instanced so a busy night stays at a few draw calls.
 //   - Billboards: camera-facing or flat quads with a canvas-drawn texture, one InstancedMesh each
-//     (blob shadows, glows, rings, flares, streaks, the slash arcs, goo, icons).
+//     (blob shadows, glows, rings, flares, streaks, the slash arcs and sword trails, goo, icons).
 //   - Particles: sparks, smoke, flames, poofs and embers on one billboard set per blend mode.
 import { THREE } from '@core/three';
 
@@ -73,6 +73,33 @@ export const TEX = {
       g.fill();
     }
   }),
+  /**
+   * A sword trail: a wedge of the blade's sweep, brightest at its leading edge (the top of the
+   * texture) and at the tip, fading back along the arc (clockwise) and in towards the hilt.
+   */
+  trail: () => canvasTex('trail', 256, 256, (g) => {
+    const S = 256, c = S / 2, R = 124, Ri = 58, W = 2.3;
+    const img = g.createImageData(S, S);
+    for (let y = 0; y < S; y++) {
+      for (let x = 0; x < S; x++) {
+        const dx = x + 0.5 - c, dy = y + 0.5 - c, d = Math.hypot(dx, dy);
+        if (d > R + 2 || d < Ri) continue;
+        let u = Math.atan2(dy, dx) + Math.PI / 2;
+        if (u < -0.08) u += Math.PI * 2;
+        if (u > W) continue;
+        const along = u < 0 ? Math.max(0, 1 + u / 0.08) : Math.pow(1 - u / W, 1.7);
+        const rr = (d - Ri) / (R - Ri);
+        const radial = Math.min(1, Math.max(0, rr)) ** 1.6 * Math.min(1, (R + 2 - d) / 5);
+        const rim = Math.max(0, 1 - Math.abs(d - (R - 6)) / 5) * 0.6;
+        const lead = Math.max(0, 1 - Math.abs(u) / 0.12) * 0.5 * rr;
+        const a = Math.min(1, (radial * 0.85 + rim) * along + lead);
+        const i = (y * S + x) * 4;
+        img.data[i] = img.data[i + 1] = img.data[i + 2] = 255;
+        img.data[i + 3] = Math.round(a * 255);
+      }
+    }
+    g.putImageData(img, 0, 0);
+  }),
   /** A flame lick: a soft teardrop. */
   flame: () => canvasTex('flame', 64, 64, (g) => {
     const r = g.createRadialGradient(32, 40, 2, 32, 36, 28);
@@ -117,6 +144,8 @@ const tmpS = new THREE.Vector3();
 const tmpP = new THREE.Vector3();
 const tmpC = new THREE.Color();
 const zAxis = new THREE.Vector3(0, 0, 1);
+const tiltQ = new THREE.Quaternion();
+const tmpAxis = new THREE.Vector3();
 const flatQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
 
 /** Many textured quads in one draw call: camera-facing, or flat on the ground. */
@@ -151,6 +180,22 @@ export class Billboards {
   add(x: number, y: number, z: number, sx: number, sy: number, rot: number, color: number | THREE.Color, k = 1): void {
     if (this.n >= this.capacity) return;
     tmpQ.setFromAxisAngle(zAxis, rot).premultiply(this.rq);
+    tmpM.compose(tmpP.set(x, y, z), tmpQ, tmpS.set(sx, sy, 1));
+    this.mesh.setMatrixAt(this.n, tmpM);
+    if (typeof color === 'number') tmpC.setHex(color); else tmpC.copy(color);
+    if (k !== 1) tmpC.multiplyScalar(k);
+    this.mesh.setColorAt(this.n, tmpC);
+    this.n++;
+  }
+
+  /**
+   * Like add(), for flat billboards tipped about a level axis pointing at world angle `axis` (atan2
+   * of x over z) by `tilt` radians: a sword trail cut on a slant.
+   */
+  addTilted(x: number, y: number, z: number, sx: number, sy: number, rot: number, axis: number, tilt: number, color: number | THREE.Color, k = 1): void {
+    if (this.n >= this.capacity) return;
+    tmpQ.setFromAxisAngle(zAxis, rot).premultiply(this.rq);
+    tmpQ.premultiply(tiltQ.setFromAxisAngle(tmpAxis.set(Math.sin(axis), 0, Math.cos(axis)), tilt));
     tmpM.compose(tmpP.set(x, y, z), tmpQ, tmpS.set(sx, sy, 1));
     this.mesh.setMatrixAt(this.n, tmpM);
     if (typeof color === 'number') tmpC.setHex(color); else tmpC.copy(color);

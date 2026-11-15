@@ -144,10 +144,10 @@ const L = (lv: number, a: number[]) => a[Math.min(a.length, lv) - 1];
 
 export function weaponStats(id: WeaponId, lv: number, evo: boolean): WeaponStats {
   switch (id) {
-    case 'blade': // a wide arc in front; level 4 swings behind too; evolved: a full spin
+    case 'blade': // a three-hit combo (bladeCombo): cd is a third of a combo's time, dmg one plain hit
       return evo
-        ? { cd: 1.05, dmg: 46, n: 2, pierce: 0, size: 3.7, speed: 0, knock: 4.5 }
-        : { cd: L(lv, [1.35, 1.35, 1.3, 1.3, 1.12]), dmg: L(lv, [17, 23, 25, 27, 35]), n: lv >= 4 ? 2 : 1, pierce: 0, size: L(lv, [2.3, 2.35, 2.85, 2.9, 3.0]), speed: 0, knock: 2.6 };
+        ? { cd: 1.15, dmg: 46, n: 1, pierce: 0, size: 3.7, speed: 0, knock: 4.5 }
+        : { cd: L(lv, [1.35, 1.35, 1.3, 1.3, 1.15]), dmg: L(lv, [17, 22, 25, 29, 35]), n: 1, pierce: 0, size: L(lv, [2.3, 2.35, 2.85, 2.9, 3.0]), speed: 0, knock: 2.6 };
     case 'bow': // arrows at the nearest zombies, passing through
       return evo
         ? { cd: 0.85, dmg: 22, n: 10, pierce: 5, size: 15, speed: 19, knock: 1.2 }
@@ -179,6 +179,47 @@ export function weaponStats(id: WeaponId, lv: number, evo: boolean): WeaponStats
         : { cd: L(lv, [0.8, 0.8, 0.64, 0.64, 0.6]), dmg: L(lv, [9, 12, 12, 13, 17]), n: lv >= 4 ? 2 : 1, pierce: 0, size: L(lv, [9, 9, 9, 9, 11]), speed: 24, knock: 0.4 };
   }
 }
+
+/**
+ * The blade's combo: a forehand slash (the sword sweeps from the hero's right to the left), a
+ * backhand slash the other way and a finisher: an overhead slam that reaches further, or from level
+ * 4 a spin all around (evolved: wider slashes, and the spin hurls a crescent wave). The chain loops
+ * on its own, with a pause after the finisher.
+ */
+export type BladeKind = 'fore' | 'back' | 'slam' | 'spin';
+export interface BladeStep {
+  kind: BladeKind;
+  /** Arc (radians; 2π all round) and reach (× the weapon's size). */
+  arc: number;
+  reach: number;
+  /** Damage and knockback (× the weapon's). */
+  dmg: number;
+  knock: number;
+  /** Wind-up before the blow lands (s). */
+  wind: number;
+  /** The wait after this hit, in weapon cooldowns (a whole combo takes BLADE_CYCLE of them). */
+  gap: number;
+}
+/** A combo takes this many cooldowns; the slashes follow each other CHAIN cooldowns apart. */
+export const BLADE_CYCLE = 2.4;
+const CHAIN = 0.27;
+/** A combo left unfinished this long (s) starts again from the first slash. */
+export const BLADE_RESET = 1.4;
+/** The evolved finisher's crescent wave: how far it flies past the spin (units), its speed and damage (× a plain hit). */
+export const BLADE_WAVE = { range: 2.5, speed: 10, dmg: 0.45, arc: Math.PI * 0.7 };
+
+export function bladeCombo(lv: number, evo: boolean): BladeStep[] {
+  const round = evo || lv >= 4;
+  const arc = evo ? Math.PI * 1.3 : round ? Math.PI * 1.05 : Math.PI * 0.85;
+  const m = evo ? BLADE_K.evo : round ? BLADE_K.round : BLADE_K.slam;
+  const slash = (kind: 'fore' | 'back'): BladeStep => ({ kind, arc, reach: 1, dmg: m[0], knock: 1, wind: 0, gap: CHAIN });
+  const fin: BladeStep = round
+    ? { kind: 'spin', arc: Math.PI * 2, reach: evo ? 1.2 : 1.15, dmg: m[1], knock: 2, wind: 0.1, gap: BLADE_CYCLE - 2 * CHAIN }
+    : { kind: 'slam', arc: Math.PI * 0.62, reach: 1.25, dmg: m[1], knock: 2.2, wind: 0.15, gap: BLADE_CYCLE - 2 * CHAIN };
+  return [slash('fore'), slash('back'), fin];
+}
+/** Damage of the two slashes and of the finisher (× a plain hit), tuned so each level's DPS matches the old single swing. */
+const BLADE_K = { slam: [0.7, 1.4], round: [0.74, 1.4], evo: [0.68, 1.45] };
 
 /** What the trinkets do per level. */
 export const PASSIVE_STEP: Record<PassiveId, number> = {

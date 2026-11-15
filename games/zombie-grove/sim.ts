@@ -16,6 +16,7 @@ import {
   TUNING, ZOMBIES, ARENA, PLAY_EDGE, PLAYER_SPEED, PLAYER_R, SPAWN_R, BITE_CD, FUSE_R, FUSE, BLAST_R, BLAST_DMG,
   SPIT_RANGE, SPIT_CD, GOO_DMG, GOO_SPEED, MINIS, PASSIVE_STEP, MAX_LEVEL, HEROES, isBoss, weaponStats, xpToNext,
   BUFF_IDS, BUFF_TIME, RAGE_K, BOOTS_K, STEW_HP, POWER_DROP, POWER_W, POWER_IDS, ENDLESS, BOSS_KINDS,
+  bladeCombo, BLADE_RESET, BLADE_WAVE, type BladeKind, type BladeStep,
   type Mode, type Tuning, type ZombieKind, type BossKind, type WeaponId, type PassiveId, type WeaponStats, type PowerId, type BuffId,
 } from './defs';
 import { arena, seeded, type Collider } from './arena';
@@ -76,6 +77,8 @@ export type ShotKind = 'arrow' | 'shot' | 'ember' | 'laser';
 export interface Shot { kind: ShotKind; x: number; z: number; vx: number; vz: number; dmg: number; pierce: number; life: number; hits: number[]; dead: boolean; evo: boolean }
 export interface Goo { x: number; z: number; vx: number; vz: number; life: number; dmg: number; dead: boolean; big: boolean }
 export interface Fire { x: number; z: number; r: number; t: number; max: number; dps: number; tick: number; evo: boolean }
+/** The evolved blade's crescent wave, flying out from the spin. */
+export interface Wave { x: number; z: number; ang: number; arc: number; r: number; max: number; speed: number; dmg: number; knock: number; hits: number[]; dead: boolean }
 export interface Torch { x0: number; z0: number; x1: number; z1: number; t: number; T: number; r: number; dps: number; burn: number; evo: boolean }
 export type PickupKind = 'gem' | 'coin' | 'chest' | PowerId;
 export interface Pickup { kind: PickupKind; x: number; z: number; value: number; fly: boolean; v: number; dead: boolean; t: number }
@@ -103,7 +106,11 @@ export interface Stats {
 export type SimEvent =
   | { type: 'hit'; x: number; z: number; dmg: number; crit: boolean; boss: boolean }
   | { type: 'kill'; z: Zombie; by: WeaponId | 'blast' | 'dawn' | 'fire' | 'nuke' }
-  | { type: 'swing'; x: number; z: number; ang: number; arc: number; r: number; evo: boolean; n: number }
+  /** A blow of the blade's combo begins (step 0–2); it lands after `wind` seconds. */
+  | { type: 'swing'; x: number; z: number; ang: number; arc: number; r: number; evo: boolean; step: number; kind: BladeKind; wind: number }
+  /** The finisher lands (`hits`: zombies struck). */
+  | { type: 'blow'; x: number; z: number; ang: number; r: number; evo: boolean; kind: BladeKind; hits: number }
+  | { type: 'wave'; w: Wave }
   | { type: 'thrust'; x: number; z: number; ang: number; len: number; evo: boolean }
   | { type: 'bash'; x: number; z: number; ang: number; arc: number; r: number; evo: boolean; n: number; hits: number }
   | { type: 'chain'; pts: { x: number; z: number }[] }
@@ -171,6 +178,7 @@ export class Sim {
   goo: Goo[] = [];
   fires: Fire[] = [];
   torches: Torch[] = [];
+  waves: Wave[] = [];
   pickups: Pickup[] = [];
   /** The robot helper (when owned). */
   robot = { x: 0, z: 0, face: 0, fire: 0, on: false };
@@ -180,6 +188,11 @@ export class Sim {
   private wcd: Partial<Record<WeaponId, number>> = {};
   /** The wards' spin. */
   wardAng = 0;
+  /** The blade's combo: the next hit (0–2), when the last one began, its wait (× cooldown) and the finisher's blow on its way. */
+  bladeStep = 0;
+  private bladeAt = -99;
+  private bladeGap = 1;
+  private blow: { t: number; s: BladeStep; ang: number; st: WeaponStats; evo: boolean } | null = null;
   level = 1;
   xp = 0;
   offers: Offer[] = [];
@@ -455,6 +468,7 @@ export class Sim {
     this.rebuildHash();
     if (p.alive && this.phase === 'night') this.fireWeapons(dt);
     this.moveShots(dt);
+    this.moveWaves(dt);
     this.moveGoo(dt);
     this.burnFires(dt);
     this.movePickups(dt);
@@ -878,6 +892,7 @@ export class Sim {
       p.alive = false;
       this.run.killer = by;
       this.phase = 'dead';
+      this.blow = null;
       this.phaseT = 0;
       this.events.push({ type: 'death', x: p.x, z: p.z });
     }
@@ -1009,15 +1024,71 @@ export class Sim {
 
   private fireWeapons(dt: number): void {
     const p = this.player;
+    // the finisher's blow lands after its wind-up
+    if (this.blow) {
+      const b = this.blow;
+      b.t -= dt;
+      if (b.t <= 0) { this.blow = null; this.bladeHit(b.s, b.ang, b.st, b.evo); }
+    }
     for (const w of this.weapons) {
       const st = weaponStats(w.id, w.lv, w.evo);
       if (w.id === 'wards') { this.spinWards(dt, st, w.evo); continue; }
       const cd = (this.wcd[w.id] ?? 0.4) - dt;
       if (cd > 0) { this.wcd[w.id] = cd; continue; }
       const fired = this.fire(w, st);
-      this.wcd[w.id] = fired ? st.cd * this.stats.cdK : 0.12;
+      this.wcd[w.id] = fired ? st.cd * this.stats.cdK * (w.id === 'blade' ? this.bladeGap : 1) : 0.12;
     }
     void p;
+  }
+
+  /** One blow of the blade's combo: everything in its arc and reach. */
+  private bladeHit(s: BladeStep, ang: number, st: WeaponStats, evo: boolean): void {
+    const p = this.player;
+    const r = st.size * s.reach * this.stats.areaK;
+    const round = s.arc >= Math.PI * 2;
+    let hits = 0;
+    this.near(p.x, p.z, r + 1, (zb) => {
+      if (zb.dead) return;
+      const dx = zb.x - p.x, dz = zb.z - p.z, d = Math.hypot(dx, dz);
+      if (d > r + zb.r) return;
+      if (!round) {
+        let da = Math.atan2(dx, dz) - ang;
+        da = Math.atan2(Math.sin(da), Math.cos(da));
+        if (Math.abs(da) > s.arc / 2 + 0.15 && d > zb.r + 0.4) return;
+      }
+      this.damage(zb, st.dmg * s.dmg, dx, dz, st.knock * s.knock, 'blade');
+      hits++;
+    });
+    if (s.kind === 'slam' || s.kind === 'spin') {
+      this.events.push({ type: 'blow', x: p.x, z: p.z, ang, r, evo, kind: s.kind, hits });
+      // Moonsplitter's spin hurls a crescent wave at the nearest zombie
+      if (evo) {
+        const w: Wave = { x: p.x, z: p.z, ang, arc: BLADE_WAVE.arc, r: r * 0.6, max: r + BLADE_WAVE.range, speed: BLADE_WAVE.speed, dmg: st.dmg * BLADE_WAVE.dmg, knock: st.knock, hits: [], dead: false };
+        this.waves.push(w);
+        this.events.push({ type: 'wave', w });
+      }
+    }
+  }
+
+  /** The crescent waves fly out and strike each zombie they pass once. */
+  private moveWaves(dt: number): void {
+    if (!this.waves.length) return;
+    for (const w of this.waves) {
+      const r0 = w.r;
+      w.r += w.speed * dt;
+      if (w.r >= w.max) { w.dead = true; continue; }
+      this.near(w.x, w.z, w.r + 1, (zb) => {
+        if (zb.dead || w.hits.includes(zb.id)) return;
+        const dx = zb.x - w.x, dz = zb.z - w.z, d = Math.hypot(dx, dz);
+        if (d < r0 - zb.r - 0.3 || d > w.r + zb.r) return;
+        let da = Math.atan2(dx, dz) - w.ang;
+        da = Math.atan2(Math.sin(da), Math.cos(da));
+        if (Math.abs(da) > w.arc / 2) return;
+        w.hits.push(zb.id);
+        this.damage(zb, w.dmg, dx, dz, w.knock, 'blade');
+      });
+    }
+    this.waves = this.waves.filter((w) => !w.dead);
   }
 
   private fire(w: OwnedWeapon, st: WeaponStats): boolean {
@@ -1025,24 +1096,20 @@ export class Sim {
     const A = this.stats.areaK;
     switch (w.id) {
       case 'blade': {
-        const r = st.size * A;
-        const t = this.nearest(p.x, p.z, r + 1.6);
-        if (!t) return false;
-        const ang = t ? Math.atan2(t.x - p.x, t.z - p.z) : p.face;
-        const arc = w.evo ? Math.PI * 2 : Math.PI * 0.85;
-        for (let k = 0; k < st.n; k++) {
-          const a = w.evo ? ang : ang + k * Math.PI;
-          this.near(p.x, p.z, r + 1, (zb) => {
-            if (zb.dead) return;
-            const dx = zb.x - p.x, dz = zb.z - p.z, d = Math.hypot(dx, dz);
-            if (d > r + zb.r) return;
-            let da = Math.atan2(dx, dz) - a;
-            da = Math.atan2(Math.sin(da), Math.cos(da));
-            if (Math.abs(da) > arc / 2 + 0.15 && d > zb.r + 0.4) return;
-            this.damage(zb, st.dmg, dx, dz, st.knock, 'blade');
-          });
-          this.events.push({ type: 'swing', x: p.x, z: p.z, ang: a, arc, r, evo: w.evo, n: k });
-        }
+        // the next blow of the combo (a combo left too long starts over)
+        if (this.time - this.bladeAt > BLADE_RESET) this.bladeStep = 0;
+        const combo = bladeCombo(w.lv, w.evo);
+        const s = combo[this.bladeStep];
+        // every blow goes at the nearest zombie (locking the combo onto one target made it far stronger)
+        const t = this.nearest(p.x, p.z, st.size * A + 1.6);
+        if (!t || this.blow) return false;
+        const ang = Math.atan2(t.x - p.x, t.z - p.z);
+        this.events.push({ type: 'swing', x: p.x, z: p.z, ang, arc: s.arc, r: st.size * s.reach * A, evo: w.evo, step: this.bladeStep, kind: s.kind, wind: s.wind });
+        if (s.wind > 0) this.blow = { t: s.wind, s, ang, st, evo: w.evo };
+        else this.bladeHit(s, ang, st, w.evo);
+        this.bladeGap = s.gap;
+        this.bladeAt = this.time;
+        this.bladeStep = (this.bladeStep + 1) % combo.length;
         return true;
       }
       case 'bow': {
@@ -1448,6 +1515,7 @@ export class Sim {
 
   private startDawn(): void {
     this.phase = 'dawn';
+    this.blow = null;
     this.phaseT = 0;
     this.score += 2500 + Math.round((this.player.hp / this.player.maxHp) * 1000);
     this.events.push({ type: 'dawn' });

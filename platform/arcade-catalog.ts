@@ -1490,7 +1490,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['zombie', 'grove', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
