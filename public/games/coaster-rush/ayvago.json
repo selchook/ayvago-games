@@ -1,0 +1,60 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "coasterrush",
+  "title": {
+    "en": "Coaster Rush",
+    "tr": "Hız Treni"
+  },
+  "description": {
+    "en": "You drive the roller coaster of a festive fair built among timber houses, windmills, watermills and market stalls! Climb the chain lift, fly down the drops, loop the loops, float in airtime and skim the rooftops. Take a corner too fast and the train leans and derails; run out of speed on a hill and it rolls back. Stop right in each station's glowing bay to let riders off and new ones on. Pick the safe or the thrill route at every junction, collect tokens and grab power-ups: turbo, magnet, safety bar, slow-mo brakes, golden ticket and balloon lift. Six areas, six track styles: wooden, steel, wild mouse, hanging, monorail and log flume. Upgrade and paint your train in the workshop!",
+    "tr": "Ahşap evlerin, yel değirmenlerinin, su değirmenlerinin ve pazar tezgâhlarının arasına kurulmuş şenlikli bir lunaparkta hız trenini sen sürüyorsun! Zincirle tepeye tırman, inişlerde uç, takla at, havada süzül ve çatıların kıl payı üstünden geç. Virajlara fazla hızlı girersen tren yatar ve raydan çıkar; tepeye yetecek hızın yoksa geri kayar. İstasyonlarda tam parlayan alanda dur, yolcuları indir ve yenilerini al. Makaslarda sakin ya da heyecanlı yolu seç, jeton topla, turbo, mıknatıs, emniyet barı, ağır çekim fren, altın bilet ve uçan balon güçlerini kap. Altı bölge, altı ray türü: ahşap, çelik, çılgın fare, asılı, monoray ve kütük kanalı. Atölyede treni geliştir ve boya!"
+  },
+  "category": "arcade",
+  "categories": [
+    "arcade",
+    "action",
+    "casual"
+  ],
+  "tags": [
+    "coaster",
+    "rush",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/coaster-rush/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/coaster-rush/ayvago/icon-512.png",
+    "cover": "/games/coaster-rush/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/coaster-rush/ayvago/screenshot.jpg",
+    "card": "/games/coaster-rush/ayvago/card-640x360.webp",
+    "card2x": "/games/coaster-rush/ayvago/card-1280x720.webp"
+  },
+  "version": "1.0.0"
+}

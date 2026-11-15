@@ -1,5 +1,8 @@
 mini-characters/models/gltf_format/character-alien.glb 267KB 0.77x0.70x0.34
+mini-characters/models/gltf_format/character-female-a.glb 263KB 1.10x0.78x0.50
+mini-characters/models/gltf_format/character-female-b.glb 244KB 0.77x0.72x0.42
 mini-characters/models/gltf_format/character-female-c.glb 244KB 0.77x0.78x0.50
+mini-characters/models/gltf_format/character-female-d.glb 250KB 0.77x0.78x0.50
 mini-characters/models/gltf_format/character-female-e.glb 239KB 0.77x0.72x0.53
 mini-characters/models/gltf_format/character-female-f.glb 251KB 0.77x0.67x0.44
 mini-characters/models/gltf_format/character-knight.glb 252KB 0.77x0.81x0.49
