@@ -1,0 +1,922 @@
+// Menu themes: a game's own look for the core menu (the live backdrop stays). A game declares a
+// `menuTheme` in its definition (palette, display font, logo style with an emblem, a skin for the
+// buttons, switches and plates, and a frame); the core menu draws the same layout in that skin.
+// Every ornament is a canvas texture painted once and cached by key: nothing is redrawn per frame,
+// and nothing here runs in play. Games without a theme never reach this file's drawing code.
+import Phaser from 'phaser';
+import { currentGame } from './registry';
+import { playSfx } from './audio';
+import { isModern } from './style';
+import { upper } from './i18n';
+
+// ------------------------------------------------------------------ the API
+
+export interface MenuPalette {
+  /** Face of the main button (PLAY). */
+  primary: number;
+  /** Face of the other buttons, the plates (sound, language) and the selected switch segment. */
+  secondary: number;
+  /** Boards and sunk pieces: the switch's track, the hero board, the logo plate. */
+  board: number;
+  /** Gold trim: hover rims, rivets, the selected segment's rim. */
+  trim: number;
+  /** Button label fill and outline. */
+  label: string;
+  labelStroke: string;
+  /** Unselected switch labels. */
+  muted: string;
+  /** The best score line. */
+  accent: string;
+  /** The "HOW TO PLAY" heading and the how-to body text (drawn on the notes card). */
+  heading: string;
+  body: string;
+  /** Icon tint on plates (the white Kenney icons). */
+  icon: number;
+  /** Colour of the vignette over the live backdrop. */
+  shade: number;
+}
+
+/** Draws an emblem centred in a `size` x `size` box whose top-left is (0, 0). */
+export type EmblemPainter = (c: CanvasRenderingContext2D, size: number) => void;
+
+export interface LogoStyle {
+  /** Gradient stops of the letters, top to bottom. */
+  fill: string[];
+  /** The thick outline around the letters. */
+  outline: string;
+  /** Outline width as a fraction of the font size (default 0.13). */
+  outlineWidth?: number;
+  /** A thin second rim outside the outline (default none). */
+  rim?: string;
+  /** The extruded side under the letters (default the outline colour). */
+  depth?: string;
+  /** Bevel highlight on the letters' top edges and a gloss band (default true). */
+  bevel?: boolean;
+  /** Drop shadow colour (default rgba(0,0,0,0.55)). */
+  shadow?: string;
+  /** Font size in px before fitting (default 140). */
+  size?: number;
+  /** Upper-case the title (locale-aware; default false: the title as written in game.json). */
+  upper?: boolean;
+  /** Line height of a two-line title, as a fraction of the font size (default 0.9). */
+  lineHeight?: number;
+  /**
+   * An emblem behind the title (a skull and crossed cutlasses ...), painted procedurally.
+   * `overlap` is how much of it the first line covers (fraction of its size, default 0.3).
+   */
+  emblem?: { draw: EmblemPainter; size: number; overlap?: number };
+}
+
+export type SkinKind = 'button' | 'plate' | 'board' | 'track' | 'round';
+export type SkinState = 'up' | 'over' | 'down' | 'on' | 'off';
+
+export interface SkinPaint {
+  color: number;
+  state: SkinState;
+  palette: MenuPalette;
+  /** Seed of the piece's random detail (grain, knots), so a size always looks the same. */
+  seed: number;
+}
+
+/**
+ * Paints one piece of a skin: a w x h face with its top-left at (0, 0). The canvas has SKIN_PAD
+ * room on every side (more below) for shadows and glows.
+ */
+export type SkinPainter = (c: CanvasRenderingContext2D, kind: SkinKind, w: number, h: number, o: SkinPaint) => void;
+
+/** Paints the card behind the how-to text: w x h, top-left (0, 0), SKIN_PAD room around it. */
+export type NotesPainter = (c: CanvasRenderingContext2D, w: number, h: number) => void;
+
+export interface MenuFrame {
+  /** An ornament around the screen edge: 'rope' (a twisted rope with brass corner rings). */
+  border?: 'rope' | null;
+  /** The card behind the how-to text: 'board' (the skin's board) or the game's own painter. */
+  notes?: 'board' | NotesPainter | null;
+  /** Strength of the vignette over the live backdrop (0 to 1, default 0.6). */
+  vignette?: number;
+  /**
+   * A flat darkening of the whole backdrop under the vignette (0 to 1, default 0). A game that
+   * dims its live backdrop itself can hand that to the theme, so the screen keeps one full-screen
+   * layer (software-rendered phones and test machines pay for every one).
+   */
+  dim?: number;
+}
+
+export interface MenuTheme {
+  /**
+   * Display face for the logo, labels and headings (a CSS family). It must cover Turkish
+   * (ç ğ ı İ ö ş ü) and be bundled with the game: import its module (`@core/fonts/pirata-one`).
+   * Body text (the how-to) stays in the style's body font.
+   */
+  font: string;
+  /** Size factor for labels in the display face (condensed faces read small; default 1). */
+  fontScale?: number;
+  palette: MenuPalette;
+  logo: LogoStyle;
+  /** Buttons, switches and plates: 'plank' (weathered wood, iron straps, rivets) or a painter. */
+  skin: 'plank' | SkinPainter;
+  frame?: MenuFrame;
+  /**
+   * The skin pieces the game's own menu widgets use (`menuOption`), painted ahead in Boot under
+   * the Ayvago intro like the core's own. Buttons, plates and round knobs get all three states.
+   */
+  pieces?: Array<{ kind: SkinKind; w: number; h: number; variant?: 'primary' | 'secondary' }>;
+}
+
+/** The current game's menu theme, or null (the plain menu). */
+export function menuTheme(): MenuTheme | null {
+  return currentGame().menuTheme ?? null;
+}
+
+// ------------------------------------------------------------------ helpers
+
+/** Room around every skin texture for the shadow and glow; one more half of it below. */
+export const SKIN_PAD = 14;
+
+export const css = (c: number, a = 1): string => {
+  const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+  return a >= 1 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${a})`;
+};
+
+/** Lightens (k > 0) or darkens (k < 0) a colour. */
+export function shadeColor(c: number, k: number): number {
+  const f = (v: number) => Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k));
+  return (f((c >> 16) & 255) << 16) | (f((c >> 8) & 255) << 8) | f(c & 255);
+}
+
+function rng(seed: number): () => number {
+  let s = (seed >>> 0) % 2147483647 || 1;
+  return () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+}
+
+const hash = (s: string): number => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+};
+
+/**
+ * A 2D context on a plain software canvas. Chrome may back a canvas with the GPU, where every
+ * blur and big stroke is slow to rasterise when WebGL is emulated (and the texture upload has
+ * to read it back); these are painted once and uploaded, so the CPU is the right place.
+ */
+export function canvas2d(w: number, h: number): CanvasRenderingContext2D {
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.ceil(w)); cv.height = Math.max(1, Math.ceil(h));
+  return cv.getContext('2d', { willReadFrequently: true })!;
+}
+
+/** A canvas texture painted once; later calls return the cached key. */
+function bake(scene: Phaser.Scene, key: string, w: number, h: number, draw: (c: CanvasRenderingContext2D) => void): string {
+  if (scene.textures.exists(key)) return key;
+  const c = canvas2d(w, h);
+  draw(c);
+  scene.textures.addCanvas(key, c.canvas)?.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  return key;
+}
+
+function painter(theme: MenuTheme): SkinPainter {
+  return typeof theme.skin === 'function' ? theme.skin : plankPainter;
+}
+
+/** The texture of one skin piece (cached). Its face is w x h, centred in the texture but SKIN_PAD / 2 higher. */
+export function skinTexture(scene: Phaser.Scene, kind: SkinKind, w: number, h: number, state: SkinState = 'up', color?: number): string {
+  const theme = menuTheme()!;
+  const P = theme.palette;
+  const col = color ?? (kind === 'board' || kind === 'track' ? P.board : P.secondary);
+  w = Math.round(w); h = Math.round(h);
+  const key = `mt-${kind}-${w}x${h}-${col.toString(16)}-${state}`;
+  return bake(scene, key, w + SKIN_PAD * 2, h + SKIN_PAD * 3, (c) => {
+    c.translate(SKIN_PAD, SKIN_PAD);
+    painter(theme)(c, kind, w, h, { color: col, state, palette: P, seed: hash(`${kind}${w}x${h}`) });
+  });
+}
+
+/** A skin piece as an image centred on (x, y). */
+export function skinImage(scene: Phaser.Scene, x: number, y: number, kind: SkinKind, w: number, h: number, state: SkinState = 'up', color?: number): Phaser.GameObjects.Image {
+  return scene.add.image(x, y + SKIN_PAD / 2, skinTexture(scene, kind, w, h, state, color));
+}
+
+/**
+ * Text in the theme's display face: a painted label with a dark outline and a soft shadow.
+ * `size` is scaled by the theme's fontScale.
+ */
+export function themeText(scene: Phaser.Scene, x: number, y: number, s: string, o: { size?: number; color?: string; stroke?: string; strokeWidth?: number; shadow?: boolean } = {}): Phaser.GameObjects.Text {
+  const theme = menuTheme()!;
+  const size = Math.round((o.size ?? 32) * (theme.fontScale ?? 1));
+  // the modern style halves outlines (src/core/style.ts): ask for twice the width
+  const sw = Math.round(o.strokeWidth ?? size * 0.14);
+  const t = scene.add.text(x, y, s, {
+    fontFamily: `"${theme.font}", serif`,
+    fontSize: `${size}px`,
+    color: o.color ?? theme.palette.label,
+    stroke: o.stroke ?? theme.palette.labelStroke,
+    strokeThickness: sw > 0 && isModern() ? sw * 2 : sw,
+    align: 'center',
+    padding: { x: Math.ceil(size * 0.12), y: Math.ceil(size * 0.08) },
+  }).setOrigin(0.5);
+  if (o.shadow !== false) t.setShadow(0, Math.max(2, Math.round(size * 0.06)), 'rgba(0,0,0,0.55)', Math.round(size * 0.12), true, true);
+  return t;
+}
+
+// ------------------------------------------------------------------ the 'plank' skin
+
+/** A plank's outline: a rectangle with small, slightly uneven chamfered corners. */
+function plankShape(w: number, h: number, r: () => number, kind: SkinKind): Path2D {
+  const p = new Path2D();
+  if (kind === 'round') {
+    p.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
+    return p;
+  }
+  const k = Math.min(10, h * 0.16);
+  const j = () => (r() - 0.5) * k * 0.5;
+  p.moveTo(k + j(), 0);
+  p.lineTo(w - k + j(), 0);
+  p.lineTo(w, k + j());
+  p.lineTo(w, h - k + j());
+  p.lineTo(w - k + j(), h);
+  p.lineTo(k + j(), h);
+  p.lineTo(0, h - k + j());
+  p.lineTo(0, k + j());
+  p.closePath();
+  return p;
+}
+
+function rivet(c: CanvasRenderingContext2D, x: number, y: number, rad: number, trim: number): void {
+  c.save();
+  c.fillStyle = 'rgba(0,0,0,0.45)';
+  c.beginPath(); c.arc(x + rad * 0.25, y + rad * 0.35, rad * 1.1, 0, Math.PI * 2); c.fill();
+  const g = c.createRadialGradient(x - rad * 0.35, y - rad * 0.4, rad * 0.1, x, y, rad);
+  g.addColorStop(0, css(shadeColor(trim, 0.6)));
+  g.addColorStop(0.5, css(trim));
+  g.addColorStop(1, css(shadeColor(trim, -0.55)));
+  c.fillStyle = g;
+  c.beginPath(); c.arc(x, y, rad, 0, Math.PI * 2); c.fill();
+  c.restore();
+}
+
+/** Wood grain: long wavy fibres, a few knots, the seams between boards. */
+function grain(c: CanvasRenderingContext2D, w: number, h: number, color: number, r: () => number, boards: number): void {
+  const dark = css(shadeColor(color, -0.5), 1);
+  const lines = Math.round(h / 4);
+  for (let i = 0; i < lines; i++) {
+    const y0 = r() * h, amp = 1 + r() * 2.5, ph = r() * 6, freq = 0.01 + r() * 0.02;
+    c.strokeStyle = r() < 0.18 ? 'rgba(255,236,200,0.10)' : dark;
+    c.globalAlpha = 0.1 + r() * 0.18;
+    c.lineWidth = 0.8 + r() * 1.6;
+    c.beginPath();
+    for (let x = -4; x <= w + 4; x += 8) {
+      const y = y0 + Math.sin(x * freq + ph) * amp;
+      x < 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+    }
+    c.stroke();
+  }
+  c.globalAlpha = 1;
+  const knots = w > 140 ? 1 + Math.floor(r() * 2) : r() < 0.5 ? 1 : 0;
+  for (let i = 0; i < knots; i++) {
+    const x = w * (0.2 + r() * 0.6), y = h * (0.25 + r() * 0.5), rx = 5 + r() * 7, ry = rx * (0.4 + r() * 0.2);
+    for (let k = 3; k >= 0; k--) {
+      c.strokeStyle = css(shadeColor(color, -0.55), 0.22 + k * 0.05);
+      c.lineWidth = 1.2;
+      c.beginPath(); c.ellipse(x, y, rx + k * 3.2, ry + k * 1.7, 0, 0, Math.PI * 2); c.stroke();
+    }
+    c.fillStyle = css(shadeColor(color, -0.6), 0.55);
+    c.beginPath(); c.ellipse(x, y, rx * 0.55, ry * 0.55, 0, 0, Math.PI * 2); c.fill();
+  }
+  for (let b = 1; b < boards; b++) {
+    const y = (h * b) / boards + (r() - 0.5) * 2;
+    c.fillStyle = 'rgba(0,0,0,0.45)'; c.fillRect(0, y - 1.5, w, 3);
+    c.fillStyle = 'rgba(255,240,210,0.16)'; c.fillRect(0, y + 1.5, w, 1.5);
+  }
+}
+
+/**
+ * The built-in 'plank' skin: weathered wooden planks with grain and knots, chipped paint on the
+ * main button, iron straps with brass rivets on big buttons, nails on small plates.
+ */
+export const plankPainter: SkinPainter = (c, kind, w, h, o) => {
+  const P = o.palette, r = rng(o.seed);
+  const sunk = o.state === 'down' || o.state === 'off' || kind === 'track';
+  const dy = o.state === 'down' ? 3 : 0;
+  const color = o.state === 'off' ? shadeColor(o.color, -0.35) : o.color;
+  const shape = plankShape(w, h, r, kind);
+  c.save();
+  c.translate(0, dy);
+  // shadow (a sunk piece casts almost none)
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.55)';
+  c.shadowBlur = sunk ? 3 : 10;
+  c.shadowOffsetY = sunk ? 1 : 6;
+  c.fillStyle = '#000';
+  c.fill(shape);
+  c.restore();
+  // the wood: lighter on top, darker at the bottom
+  const body = c.createLinearGradient(0, 0, 0, h);
+  body.addColorStop(0, css(shadeColor(color, sunk ? -0.1 : 0.16)));
+  body.addColorStop(0.5, css(color));
+  body.addColorStop(1, css(shadeColor(color, -0.3)));
+  c.fillStyle = body;
+  c.fill(shape);
+  c.save();
+  c.clip(shape);
+  const boards = kind === 'round' ? 1 : h >= 70 && kind !== 'plate' ? 2 : 1;
+  grain(c, w, h, color, r, boards);
+  // chipped paint: bare wood showing through near the edges of a painted (reddish) face
+  if (kind === 'button' && color === P.primary) {
+    for (let i = 0; i < 9; i++) {
+      const edge = r() < 0.5, x = edge ? r() * w : r() < 0.5 ? r() * 14 : w - r() * 14, y = edge ? (r() < 0.5 ? r() * 7 : h - r() * 7) : r() * h;
+      c.fillStyle = css(shadeColor(P.secondary, 0.1), 0.55);
+      c.beginPath();
+      for (let k = 0; k < 7; k++) {
+        const a = (k / 7) * Math.PI * 2, rr = 2 + r() * 5;
+        k ? c.lineTo(x + Math.cos(a) * rr * 1.6, y + Math.sin(a) * rr) : c.moveTo(x + Math.cos(a) * rr * 1.6, y + Math.sin(a) * rr);
+      }
+      c.fill();
+    }
+  }
+  // inner bevel: a light top edge, a dark bottom edge, darker sides
+  const side = c.createLinearGradient(0, 0, w, 0);
+  side.addColorStop(0, 'rgba(0,0,0,0.28)'); side.addColorStop(0.08, 'rgba(0,0,0,0)');
+  side.addColorStop(0.92, 'rgba(0,0,0,0)'); side.addColorStop(1, 'rgba(0,0,0,0.32)');
+  c.fillStyle = side; c.fillRect(0, 0, w, h);
+  if (sunk) {
+    // a sunk piece: shadow under its top edge
+    const top = c.createLinearGradient(0, 0, 0, 14);
+    top.addColorStop(0, 'rgba(0,0,0,0.5)'); top.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = top; c.fillRect(0, 0, w, 14);
+  } else {
+    c.fillStyle = 'rgba(255,240,210,0.28)'; c.fillRect(0, 0, w, 3);
+    c.fillStyle = 'rgba(0,0,0,0.38)'; c.fillRect(0, h - 5, w, 5);
+  }
+  c.restore();
+  // the outline
+  c.lineWidth = 3;
+  c.strokeStyle = css(shadeColor(color, -0.75));
+  c.stroke(shape);
+  // hardware
+  const rv = Math.max(3, Math.min(5, h * 0.06));
+  if (kind === 'round') {
+    c.lineWidth = 4;
+    c.strokeStyle = css(shadeColor(P.trim, -0.35));
+    c.beginPath(); c.arc(w / 2, h / 2, Math.min(w, h) / 2 - 4, 0, Math.PI * 2); c.stroke();
+  } else if (kind === 'button' && w >= 260) {
+    // iron straps across both ends, two brass rivets on each
+    for (const x0 of [24, w - 40]) {
+      const g = c.createLinearGradient(x0, 0, x0 + 16, 0);
+      g.addColorStop(0, '#2a2d33'); g.addColorStop(0.45, '#5a6068'); g.addColorStop(1, '#1d1f24');
+      c.fillStyle = g; c.fillRect(x0, -1, 16, h + 2);
+      c.strokeStyle = 'rgba(0,0,0,0.6)'; c.lineWidth = 1.5; c.strokeRect(x0, -1, 16, h + 2);
+      rivet(c, x0 + 8, 13, rv + 1, P.trim);
+      rivet(c, x0 + 8, h - 13, rv + 1, P.trim);
+    }
+  } else if (kind === 'board') {
+    // a gold inlay line and brass corner brackets
+    c.strokeStyle = css(P.trim, 0.55); c.lineWidth = 2;
+    c.strokeRect(9, 9, w - 18, h - 18);
+    for (const [x, y, sx, sy] of [[0, 0, 1, 1], [w, 0, -1, 1], [0, h, 1, -1], [w, h, -1, -1]] as number[][]) {
+      c.save(); c.translate(x, y); c.scale(sx, sy);
+      c.fillStyle = css(shadeColor(P.trim, -0.2));
+      c.beginPath(); c.moveTo(2, 2); c.lineTo(30, 2); c.lineTo(30, 9); c.lineTo(9, 9); c.lineTo(9, 30); c.lineTo(2, 30); c.closePath(); c.fill();
+      c.strokeStyle = css(shadeColor(P.trim, -0.7)); c.lineWidth = 1.5; c.stroke();
+      rivet(c, 6, 6, 3, P.trim);
+      c.restore();
+    }
+  } else if (kind !== 'track') {
+    // nails in the corners
+    const m = Math.max(8, Math.min(12, h * 0.16));
+    for (const [x, y] of [[m, m], [w - m, m], [m, h - m], [w - m, h - m]]) rivet(c, x, y, rv, P.trim);
+  }
+  // states: a gold rim (hover, the selected segment)
+  if (o.state === 'over' || o.state === 'on') {
+    c.save();
+    c.shadowColor = css(P.trim, 0.9); c.shadowBlur = o.state === 'over' ? 14 : 8;
+    c.lineWidth = o.state === 'over' ? 4 : 3;
+    c.strokeStyle = css(shadeColor(P.trim, 0.25));
+    c.stroke(shape);
+    c.restore();
+  }
+  if (o.state === 'down') {
+    c.fillStyle = 'rgba(0,0,0,0.16)';
+    c.fill(shape);
+  }
+  c.restore();
+};
+
+// ------------------------------------------------------------------ the logo
+
+export interface LogoLayout {
+  canvas: HTMLCanvasElement;
+  /** The letters only (white), same size and place as `canvas`: the mask of the shine. */
+  letters: HTMLCanvasElement;
+  /** Box of the letters inside the canvas. */
+  text: { x: number; y: number; w: number; h: number };
+}
+
+/** The ways to set a title: on one line, and on two split at the space that makes them most even. */
+function logoCandidates(c: CanvasRenderingContext2D, text: string): string[][] {
+  const words = text.split(' ');
+  const out: string[][] = [[text]];
+  let best: string[] | null = null, bestW = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
+    const w = Math.max(c.measureText(a).width, c.measureText(b).width);
+    if (w < bestW) { bestW = w; best = [a, b]; }
+  }
+  if (best) out.push(best);
+  return out;
+}
+
+/** Every measure of a logo set in `lines` at font size `fs`. */
+function measureLogo(theme: MenuTheme, probe: CanvasRenderingContext2D, lines: string[], fs: number) {
+  const L = theme.logo;
+  probe.font = `${fs}px "${theme.font}", serif`;
+  const ow = fs * (L.outlineWidth ?? 0.13);
+  const rimW = L.rim ? Math.max(2, fs * 0.035) : 0;
+  const depth = Math.round(fs * 0.06);
+  const lh = fs * (L.lineHeight ?? 0.9);
+  const m = probe.measureText('ÇĞİÖŞÜ' + lines.join(''));
+  const asc = Math.max(m.actualBoundingBoxAscent, fs * 0.72), desc = Math.max(m.actualBoundingBoxDescent, fs * 0.18);
+  const textW = Math.max(...lines.map((l) => probe.measureText(l).width));
+  const textH = asc + desc + lh * (lines.length - 1);
+  const halo = Math.ceil(ow / 2 + rimW + fs * 0.12);
+  const E = L.emblem;
+  // the emblem grows and shrinks with the letters
+  const eSize = E ? E.size * Phaser.Math.Clamp(fs / (L.size ?? 140), 0.6, 1.3) : 0;
+  const eTop = E ? -eSize * (1 - (E.overlap ?? 0.3)) : 0;
+  const top = Math.min(0, eTop) - halo, bottom = textH + depth + halo + 6;
+  const W = Math.ceil(Math.max(textW + halo * 2, eSize + 24)), H = Math.ceil(bottom - top);
+  return { lines, fs, ow, rimW, depth, lh, asc, desc, textW, textH, eSize, eTop, top, W, H };
+}
+
+/**
+ * Renders a title as the theme's logo: the emblem behind, then per line a drop shadow, an
+ * extruded side, the rim and outline, a gradient fill, a bevel highlight and a gloss band.
+ * The layout is fitted to maxW x maxH: one line or two (whichever lets the letters be larger),
+ * drawn at the fitted size so it is never scaled afterwards. Pure canvas (no Phaser), so the
+ * store-art script takes the same picture.
+ */
+export function renderLogo(theme: MenuTheme, title: string, maxW: number, size?: number, maxH = Infinity): LogoLayout {
+  const L = theme.logo;
+  const text = L.upper ? upper(title) : title;
+  const size0 = size ?? L.size ?? 140;
+  const probe = canvas2d(1, 1);
+  probe.font = `${size0}px "${theme.font}", serif`;
+  let pick: ReturnType<typeof measureLogo> | null = null;
+  for (const lines of logoCandidates(probe, text)) {
+    let fit = measureLogo(theme, probe, lines, size0);
+    for (let i = 0; i < 5; i++) {
+      const k = Math.min(1, maxW / fit.W, maxH / fit.H);
+      if (k >= 0.995) break;
+      fit = measureLogo(theme, probe, lines, Math.floor(fit.fs * k));
+    }
+    // two lines only when they let the letters be clearly larger
+    if (!pick || fit.fs > pick.fs * 1.15) pick = fit;
+  }
+  const { lines, fs, ow, rimW, depth, lh, asc, desc, textW, textH, eSize, eTop, top, W, H } = pick!;
+  const E = L.emblem;
+  const font = (s: number) => `${s}px "${theme.font}", serif`;
+  const ox = W / 2, oy = -top;   // text box: x centred on ox, its top at oy
+
+  const make = (w = W, h = H) => canvas2d(w, h).canvas;
+  const canvas = make(), letters = make();
+  const c = canvas.getContext('2d')!;
+  // Every layer is drawn once into its own canvas and copied: a canvas shadow blur or a big
+  // stroked text costs a lot on software canvases, a copy almost nothing.
+  if (E) {
+    const em = make(Math.ceil(eSize), Math.ceil(eSize));
+    E.draw(em.getContext('2d')!, eSize);
+    c.save();
+    c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 18; c.shadowOffsetY = 6;
+    c.drawImage(em, ox - eSize / 2, oy + eTop);
+    c.restore();
+  }
+  const setup = (g: CanvasRenderingContext2D) => {
+    g.font = font(fs); g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.lineJoin = 'round'; g.miterLimit = 2;
+  };
+  const baseY = (i: number) => oy + asc + i * lh;
+  const each = (fn: (line: string, y: number) => void) => lines.forEach((l, i) => fn(l, baseY(i)));
+  const layer = (paint: (g: CanvasRenderingContext2D) => void) => {
+    const cv = make(), g = cv.getContext('2d')!;
+    setup(g);
+    paint(g);
+    return cv;
+  };
+  setup(c);
+  const outer = layer((g) => { g.strokeStyle = L.rim ?? L.outline; g.lineWidth = ow + rimW * 2; each((l, y) => g.strokeText(l, 0 + ox, y)); });
+  // drop shadow under the extruded side, then the side: the rim, the outline and the depth colour
+  // stacked a pixel or two at a time
+  c.save();
+  c.shadowColor = L.shadow ?? 'rgba(0,0,0,0.55)'; c.shadowBlur = fs * 0.12; c.shadowOffsetY = fs * 0.06;
+  c.drawImage(outer, 0, depth);
+  c.restore();
+  for (let d = 0; d <= depth; d += 2) c.drawImage(outer, 0, d);
+  if (L.rim) {
+    const inner = layer((g) => { g.strokeStyle = L.outline; g.lineWidth = ow; each((l, y) => g.strokeText(l, ox, y)); });
+    for (let d = 0; d <= depth; d += 2) c.drawImage(inner, 0, d);
+  }
+  const side = layer((g) => { g.fillStyle = L.depth ?? L.outline; each((l, y) => g.fillText(l, ox, y)); });
+  for (let d = 1; d <= depth; d++) c.drawImage(side, 0, d);
+  // the letters: gradient fill
+  each((l, y) => {
+    const g = c.createLinearGradient(0, y - asc, 0, y + desc * 0.4);
+    L.fill.forEach((s, i) => g.addColorStop(i / Math.max(1, L.fill.length - 1), s));
+    c.fillStyle = g;
+    c.fillText(l, ox, y);
+  });
+  // the letters alone (the shine's mask)
+  const lc = letters.getContext('2d')!;
+  setup(lc);
+  lc.fillStyle = '#fff';
+  each((l, y) => lc.fillText(l, ox, y));
+  if (L.bevel !== false) {
+    // bevel: a light crescent on the top edges (the letters minus themselves shifted down) and a
+    // darker one on the bottom edges, then a soft gloss band over the upper half
+    const off = make(), g = off.getContext('2d')!;
+    setup(g);
+    const crescent = (dyOut: number, colour: string, alpha: number) => {
+      g.clearRect(0, 0, W, H);
+      g.globalCompositeOperation = 'source-over';
+      g.fillStyle = colour;
+      each((l, y) => g.fillText(l, ox, y));
+      g.globalCompositeOperation = 'destination-out';
+      each((l, y) => g.fillText(l, ox, y + dyOut));
+      c.globalAlpha = alpha;
+      c.drawImage(off, 0, 0);
+      c.globalAlpha = 1;
+    };
+    crescent(Math.max(2, fs * 0.035), '#fffbe8', 0.85);
+    crescent(-Math.max(2, fs * 0.03), '#000000', 0.3);
+    g.globalCompositeOperation = 'source-over';
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = '#fff';
+    each((l, y) => g.fillText(l, ox, y));
+    g.globalCompositeOperation = 'source-in';
+    each((_l, y) => {
+      const gl = g.createLinearGradient(0, y - asc, 0, y - asc * 0.35);
+      gl.addColorStop(0, 'rgba(255,255,255,0.42)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gl;
+      g.fillRect(0, y - asc - 4, W, asc * 0.7);
+    });
+    c.drawImage(off, 0, 0);
+  }
+  return { canvas, letters, text: { x: ox - textW / 2, y: oy, w: textW, h: textH } };
+}
+
+/**
+ * The logo of a title as a texture and its letters' mask (cached). Until the display face has
+ * loaded (a slow network past launch's wait) the key differs, so the real logo is made later.
+ */
+function logoTextures(scene: Phaser.Scene, theme: MenuTheme, title: string, maxW: number, maxH: number): { key: string; mask: string } {
+  const ready = typeof document.fonts?.check !== 'function' || document.fonts.check(`64px "${theme.font}"`, title);
+  const key = `mt-logo-${hash(title)}-${Math.round(maxW)}x${Math.round(maxH)}${ready ? '' : '-fallback'}`;
+  if (scene.textures.exists(key)) return { key, mask: key + '-m' };
+  const layout = renderLogo(theme, title, maxW, undefined, maxH);
+  scene.textures.addCanvas(key, layout.canvas)?.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  scene.textures.addCanvas(key + '-m', layout.letters);
+  return { key, mask: key + '-m' };
+}
+
+/** Paints the logo ahead of time (the Boot scene does it under the Ayvago intro). */
+export function bakeMenuLogo(scene: Phaser.Scene, title: string, maxW: number, maxH: number): void {
+  const theme = menuTheme();
+  if (theme) logoTextures(scene, theme, title, maxW, maxH);
+}
+
+/**
+ * The themed title: the logo image placed between `top` and `bottom` (its bottom edge on
+ * `bottom`, shrunk when taller than the room), centred on x. Returns the image.
+ */
+export function themeLogo(scene: Phaser.Scene, x: number, top: number, bottom: number, title: string, maxW: number): Phaser.GameObjects.Image {
+  const theme = menuTheme()!;
+  const { key, mask } = logoTextures(scene, theme, title, maxW, bottom - top);
+  const img = scene.add.image(x, bottom, key).setOrigin(0.5, 1);
+  const k = Math.min(1, (bottom - top) / img.height, maxW / img.width);
+  img.setScale(k).setData('maskKey', mask);
+  return img;
+}
+
+// ------------------------------------------------------------------ frame and backdrop
+
+/** Vignette over the live backdrop: darker at the edges and behind the logo, over an optional flat dim (one small texture, scaled). */
+export function themeShade(scene: Phaser.Scene, strength: number, dim = 0): Phaser.GameObjects.Image {
+  const { width, height } = scene.scale;
+  return scene.add.image(0, 0, shadeTexture(scene, strength, dim)).setOrigin(0).setDisplaySize(width, height).setDepth(-50);
+}
+
+function shadeTexture(scene: Phaser.Scene, strength: number, dim: number): string {
+  const theme = menuTheme()!;
+  const { width, height } = scene.scale;
+  const tw = 90, th = Math.round((90 * height) / width);
+  return bake(scene, `mt-shade-${tw}x${th}-${strength}-${dim}`, tw, th, (c) => {
+    const col = theme.palette.shade;
+    if (dim > 0) { c.fillStyle = css(col, dim); c.fillRect(0, 0, tw, th); }
+    const v = c.createRadialGradient(tw / 2, th * 0.5, Math.min(tw, th) * 0.25, tw / 2, th * 0.5, Math.max(tw, th) * 0.62);
+    v.addColorStop(0, css(col, 0.08 * strength)); v.addColorStop(1, css(col, 0.9 * strength));
+    c.fillStyle = v; c.fillRect(0, 0, tw, th);
+    // a soft dark pool behind the logo
+    const l = c.createRadialGradient(tw / 2, th * 0.19, 0, tw / 2, th * 0.19, tw * 0.55);
+    l.addColorStop(0, css(col, 0.55 * strength)); l.addColorStop(1, css(col, 0));
+    c.fillStyle = l; c.fillRect(0, 0, tw, th);
+  });
+}
+
+const ROPE_T = 12, ROPE_RING = 30, ROPE_INSET = 8;
+
+/** A rope tile (twisted strands) of `len` x `thick` px, repeated along the edges. */
+function ropeTile(scene: Phaser.Scene, thick: number): string {
+  const len = Math.round(thick * 1.25);
+  return bake(scene, `mt-rope-${thick}`, len, thick + 4, (c) => {
+    const y0 = 2, h = thick;
+    const g = c.createLinearGradient(0, y0, 0, y0 + h);
+    g.addColorStop(0, '#6b4a22'); g.addColorStop(0.3, '#d9b36c'); g.addColorStop(0.55, '#c49a52'); g.addColorStop(1, '#5a3c18');
+    c.fillStyle = g; c.fillRect(0, y0, len, h);
+    // the strands: slanted dark grooves with a light edge
+    for (let i = -1; i < 2; i++) {
+      const x = i * len * 0.5 + len * 0.25;
+      c.strokeStyle = 'rgba(50,30,10,0.75)'; c.lineWidth = Math.max(1.5, thick * 0.13);
+      c.beginPath(); c.moveTo(x, y0); c.lineTo(x + len * 0.5, y0 + h); c.stroke();
+      c.strokeStyle = 'rgba(255,236,190,0.45)'; c.lineWidth = Math.max(1, thick * 0.07);
+      c.beginPath(); c.moveTo(x + thick * 0.16, y0); c.lineTo(x + len * 0.5 + thick * 0.16, y0 + h); c.stroke();
+    }
+    c.fillStyle = 'rgba(40,22,6,0.7)';
+    c.fillRect(0, y0, len, 1.2); c.fillRect(0, y0 + h - 1.2, len, 1.2);
+  });
+}
+
+/** A brass ring where the ropes meet in a corner. */
+function ringTexture(scene: Phaser.Scene, size: number, trim: number): string {
+  return bake(scene, `mt-ring-${size}-${trim.toString(16)}`, size + 8, size + 8, (c) => {
+    const cx = size / 2 + 4, cy = size / 2 + 4, R = size / 2;
+    c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 5; c.shadowOffsetY = 2;
+    c.lineWidth = size * 0.22;
+    const g = c.createLinearGradient(0, 0, size, size);
+    g.addColorStop(0, css(shadeColor(trim, 0.5))); g.addColorStop(0.5, css(trim)); g.addColorStop(1, css(shadeColor(trim, -0.55)));
+    c.strokeStyle = g;
+    c.beginPath(); c.arc(cx, cy, R - c.lineWidth / 2, 0, Math.PI * 2); c.stroke();
+    c.shadowColor = 'transparent';
+    c.lineWidth = 1.5; c.strokeStyle = css(shadeColor(trim, -0.7));
+    c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.stroke();
+    c.beginPath(); c.arc(cx, cy, R - size * 0.22, 0, Math.PI * 2); c.stroke();
+  });
+}
+
+/** A rope around the screen, inset a little, with brass rings in the corners (four tile sprites). */
+export function ropeBorder(scene: Phaser.Scene): Phaser.GameObjects.GameObject[] {
+  const theme = menuTheme()!;
+  const { width: W, height: H } = scene.scale;
+  const a = ROPE_INSET + ROPE_T / 2;
+  const across = ropeStrip(scene, W - a * 2, false), down = ropeStrip(scene, H - a * 2, true);
+  const ring = ringTexture(scene, ROPE_RING, theme.palette.trim);
+  // plain images of strips painted once: they batch with the rest of the menu (a TileSprite keeps
+  // its own canvas and texture and costs far more to draw on software-rendered GPUs)
+  const out: Phaser.GameObjects.Image[] = [
+    scene.add.image(W / 2, a, across),
+    scene.add.image(W / 2, H - a, across).setFlipY(true),
+    scene.add.image(a, H / 2, down),
+    scene.add.image(W - a, H / 2, down).setFlipX(true),
+  ];
+  for (const [x, y] of [[a, a], [W - a, a], [a, H - a], [W - a, H - a]]) out.push(scene.add.image(x, y, ring));
+  for (const o of out) o.setDepth(-40);
+  return out;
+}
+
+/** A rope `len` px long, across or down: the tile repeated along a strip (cached). */
+function ropeStrip(scene: Phaser.Scene, len: number, vertical: boolean): string {
+  len = Math.round(len);
+  const tile = scene.textures.get(ropeTile(scene, ROPE_T)).getSourceImage() as HTMLCanvasElement;
+  const tw = tile.width, th = tile.height;
+  return bake(scene, `mt-rope-${vertical ? 'v' : 'h'}-${len}`, vertical ? th : len, vertical ? len : th, (c) => {
+    if (vertical) { c.translate(th, 0); c.rotate(Math.PI / 2); }
+    for (let x = 0; x < len; x += tw) c.drawImage(tile, x, 0);
+  });
+}
+
+/** The card behind the how-to text: the theme's notes painter or the skin's board. */
+export function notesCard(scene: Phaser.Scene, x: number, y: number, w: number, h: number): Phaser.GameObjects.Image | null {
+  const key = notesTexture(scene, w, h);
+  return key ? scene.add.image(x, y + SKIN_PAD / 2, key).setDepth(-10) : null;
+}
+
+/** The notes card's texture (cached), or null without one. */
+export function notesTexture(scene: Phaser.Scene, w: number, h: number): string | null {
+  const notes = menuTheme()!.frame?.notes;
+  if (!notes) return null;
+  if (notes === 'board') return skinTexture(scene, 'board', w, h);
+  w = Math.round(w); h = Math.round(h);
+  return bake(scene, `mt-notes-${w}x${h}`, w + SKIN_PAD * 2, h + SKIN_PAD * 3, (c) => {
+    c.translate(SKIN_PAD, SKIN_PAD);
+    notes(c, w, h);
+  });
+}
+
+/**
+ * Paints, ahead of the menu, every texture the themed menu will use: the vignette, the rope,
+ * the core's buttons, switch and plates (`brandW`: the width of the Ayvago logo's plate) and the
+ * game's declared pieces. Boot runs it under the Ayvago intro: a menu with a live 3D backdrop
+ * queues that world's shader compilation as it opens, and on a software-rendered GPU every
+ * texture uploaded after that waits behind it (and the first round with it).
+ */
+export function prebakeMenuTheme(scene: Phaser.Scene, brandW: number): void {
+  const theme = menuTheme();
+  if (!theme) return;
+  const P = theme.palette;
+  shadeTexture(scene, theme.frame?.vignette ?? 0.6, theme.frame?.dim ?? 0);
+  if (theme.frame?.border === 'rope') {
+    const { width: W, height: H } = scene.scale, a = ROPE_INSET + ROPE_T / 2;
+    ropeStrip(scene, W - a * 2, false);
+    ropeStrip(scene, H - a * 2, true);
+    ringTexture(scene, ROPE_RING, P.trim);
+  }
+  const states = (kind: SkinKind, w: number, h: number, color?: number) => {
+    for (const st of ['up', 'over', 'down'] as SkinState[]) skinTexture(scene, kind, w, h, st, color);
+  };
+  states('button', 380, 110, P.primary);                    // PLAY
+  skinTexture(scene, 'track', 336, 94);                      // the Easy | Normal switch
+  skinTexture(scene, 'button', 152, 72, 'on');
+  skinTexture(scene, 'button', 152, 72, 'off');
+  states('plate', 72, 72);                                   // sound, leaderboard
+  states('plate', 100, 72);                                  // language
+  skinTexture(scene, 'plate', brandW, 72, 'up', P.board);    // under the Ayvago logo
+  for (const p of theme.pieces ?? []) {
+    const color = p.variant === 'primary' ? P.primary : undefined;
+    if (p.kind === 'board' || p.kind === 'track') skinTexture(scene, p.kind, p.w, p.h, 'up', color);
+    else states(p.kind, p.w, p.h, color);
+  }
+}
+
+// ------------------------------------------------------------------ widgets
+
+export interface SkinButtonOptions {
+  width?: number;
+  height?: number;
+  /** 'primary' (PLAY) or 'secondary' (default). */
+  variant?: 'primary' | 'secondary';
+  kind?: SkinKind;
+  /** Label size before the theme's fontScale (default 30). */
+  size?: number;
+  sfx?: string;
+}
+
+/**
+ * A button in the theme's skin, the themed menu's counterpart of `Button`: a baked texture per
+ * state (up, over with a gold rim, down pressed in), the label in the display face.
+ */
+export class SkinButton extends Phaser.GameObjects.Container {
+  readonly face: Phaser.GameObjects.Image;
+  readonly label: Phaser.GameObjects.Text;
+  readonly w: number;
+  readonly h: number;
+  private keys: Record<'up' | 'over' | 'down', string>;
+  private labelY = 0;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, text: string, private onClick: () => void, o: SkinButtonOptions = {}) {
+    super(scene, x, y);
+    const theme = menuTheme()!;
+    this.w = o.width ?? 360; this.h = o.height ?? 96;
+    const kind = o.kind ?? 'button';
+    const color = o.variant === 'primary' ? theme.palette.primary : theme.palette.secondary;
+    this.keys = {
+      up: skinTexture(scene, kind, this.w, this.h, 'up', color),
+      over: skinTexture(scene, kind, this.w, this.h, 'over', color),
+      down: skinTexture(scene, kind, this.w, this.h, 'down', color),
+    };
+    this.face = scene.add.image(0, SKIN_PAD / 2, this.keys.up);
+    this.label = themeText(scene, 0, 0, text, { size: o.size ?? 30 });
+    this.add([this.face, this.label]);
+    this.fitLabel();
+    this.setSize(this.w, this.h).setInteractive({ useHandCursor: true });
+    const set = (s: 'up' | 'over' | 'down') => {
+      this.face.setTexture(this.keys[s]);
+      this.label.y = this.labelY + (s === 'down' ? 3 : 0);
+    };
+    this.on('pointerover', () => set('over'));
+    this.on('pointerout', () => set('up'));
+    this.on('pointerdown', () => set('down'));
+    // a finger leaves no hover behind
+    this.on('pointerup', (p: Phaser.Input.Pointer) => {
+      set(p.wasTouch ? 'up' : 'over');
+      playSfx(scene, o.sfx ?? 'ui-click');
+      this.onClick();
+    });
+    scene.add.existing(this);
+  }
+
+  /** Moves the label (e.g. to make room for an icon or a second line). */
+  setLabelY(y: number): this {
+    this.labelY = y;
+    this.label.y = y;
+    return this;
+  }
+
+  setText(s: string): this {
+    this.label.setText(s);
+    this.fitLabel();
+    return this;
+  }
+
+  /** Shrinks a long label (German-long Turkish words) to the button's width. */
+  fitLabel(room = this.w - 36): this {
+    this.label.setScale(1);
+    if (this.label.width > room) this.label.setScale(room / this.label.width);
+    return this;
+  }
+
+  press(): void {
+    playSfx(this.scene, 'ui-click');
+    this.onClick();
+  }
+}
+
+/** A square plate with an icon (sound, leaderboard), keeping `iconButton`'s data('icon'). */
+export function skinIconButton(scene: Phaser.Scene, x: number, y: number, icon: string, onClick: () => void, size = 72): Phaser.GameObjects.Container {
+  const theme = menuTheme()!;
+  const c = scene.add.container(x, y);
+  const keys = {
+    up: skinTexture(scene, 'plate', size, size, 'up'),
+    over: skinTexture(scene, 'plate', size, size, 'over'),
+    down: skinTexture(scene, 'plate', size, size, 'down'),
+  };
+  const bg = scene.add.image(0, SKIN_PAD / 2, keys.up);
+  const img = scene.add.image(0, 0, icon).setDisplaySize(size * 0.56, size * 0.56).setTint(theme.palette.icon);
+  c.add([bg, img]);
+  c.setSize(size, size).setInteractive({ useHandCursor: true });
+  c.on('pointerover', () => bg.setTexture(keys.over));
+  c.on('pointerout', () => { bg.setTexture(keys.up); img.y = 0; });
+  c.on('pointerdown', () => { bg.setTexture(keys.down); img.y = 3; });
+  c.on('pointerup', (p: Phaser.Input.Pointer) => {
+    bg.setTexture(p.wasTouch ? keys.up : keys.over); img.y = 0;
+    playSfx(scene, 'ui-click');
+    onClick();
+  });
+  c.setData('icon', img);
+  return c;
+}
+
+// ------------------------------------------------------------------ the intro
+
+/**
+ * The menu's entrance: the logo drops in and bounces, a shine sweeps across its letters (WebGL),
+ * then the buttons and the rest pop in one after another. `after` runs when it is done (the
+ * logo's idle bob starts there).
+ */
+export function playMenuIntro(scene: Phaser.Scene, logo: Phaser.GameObjects.Image, items: Phaser.GameObjects.GameObject[], after: () => void): number {
+  const y = logo.y;
+  logo.y = y - scene.scale.height * 0.3;
+  logo.setAlpha(0);
+  scene.tweens.add({ targets: logo, alpha: 1, duration: 160 });
+  scene.tweens.add({
+    targets: logo, y, duration: 760, ease: 'Bounce.easeOut',
+    onComplete: () => {
+      // the idle bob waits for the sweep: the shine's mask stays where the logo landed
+      if (shine(scene, logo)) scene.time.delayedCall(740, after);
+      else after();
+    },
+  });
+  // row by row from the top (objects within 70 px of each other's centre line pop together)
+  type Item = Phaser.GameObjects.Components.Transform & Phaser.GameObjects.Components.AlphaSingle & { setAlpha?: unknown };
+  const rows = [...new Set(items.map((o) => Math.round((o as unknown as Item).y / 70)))].sort((a, b) => a - b);
+  items.forEach((o) => {
+    const t = o as unknown as Item;
+    if (o instanceof Phaser.GameObjects.Zone || typeof t.setAlpha !== 'function') return;
+    const delay = 200 + rows.indexOf(Math.round(t.y / 70)) * 70;
+    const a = t.alpha;
+    // not quite 0: Phaser ignores taps on fully transparent objects, and the menu must answer at once
+    t.setAlpha(0.002);
+    if (o instanceof Phaser.GameObjects.Container) {
+      const s = o.scale;
+      o.setScale(s * 0.6);
+      scene.tweens.add({ targets: o, scale: s, alpha: a, duration: 380, delay, ease: 'Back.easeOut' });
+    } else {
+      const y0 = t.y;
+      t.y = y0 + 22;
+      scene.tweens.add({ targets: o, y: y0, alpha: a, duration: 360, delay, ease: 'Back.easeOut' });
+    }
+  });
+  // when the last row has landed
+  return Math.max(800, 200 + rows.length * 70 + 400);
+}
+
+/** One shine sweep across the logo's letters: a soft white band, masked to the letters (WebGL only). */
+function shine(scene: Phaser.Scene, logo: Phaser.GameObjects.Image): boolean {
+  // The letters' white copy, cropped to a moving band and added on top: three nested bands make
+  // a soft edge. Plain quads (no mask, no extra render passes), so it costs next to nothing and
+  // works on the Canvas renderer too.
+  const maskKey = logo.getData('maskKey') as string | undefined;
+  if (!maskKey || !scene.textures.exists(maskKey) || !scene.scene.isActive()) return false;
+  const src = scene.textures.get(maskKey).getSourceImage();
+  const tw = src.width, th = src.height;
+  const bands = ([[0.12, 0.2], [0.065, 0.28], [0.028, 0.42]] as const).map(([wf, a]) => ({
+    w: tw * wf,
+    img: scene.add.image(logo.x, logo.y, maskKey).setOrigin(0.5, 1).setScale(logo.scaleX)
+      .setBlendMode(Phaser.BlendModes.ADD).setAlpha(a).setDepth(logo.depth + 1),
+  }));
+  const sweep = { x: -tw * 0.08 };
+  const place = () => { for (const b of bands) b.img.setCrop(sweep.x - b.w / 2, 0, b.w, th); };
+  place();
+  scene.tweens.add({
+    targets: sweep, x: tw * 1.08, duration: 720, ease: 'Sine.easeInOut',
+    onUpdate: place,
+    onComplete: () => { for (const b of bands) b.img.destroy(); },
+  });
+  return true;
+}

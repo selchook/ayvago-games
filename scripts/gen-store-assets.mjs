@@ -8,6 +8,9 @@
 // Each game is opened (no intro), its menu and a few seconds of play are captured, then the
 // captures are composed on a branded HTML template and rendered by Chromium. The card uses the
 // busiest, most colourful of several frames from the run (frameStats) with only a small title logo.
+// A game with a menu theme (src/core/menu-theme.ts) gets its themed logo (the English title,
+// rendered by the game itself: window.__ayvago.menuLogo) on the card and the cover instead of the
+// plain title, so it looks the same on ayvago.com as on its menu.
 // Usage: npm run build && node scripts/gen-store-assets.mjs [--dev] [--card-only] [slug ...]
 //   --card-only   regenerate just the cards (covers, icons, screenshots and thumbnails stay)
 //   CARD_FRAMES=<dir> keeps the card candidate frames; with --card-only --from-frames the cards are
@@ -97,7 +100,7 @@ const CATEGORY = {
   sports: 'SPORTS', strategy: 'STRATEGY', card: 'CARD', word: 'WORD',
 };
 
-function coverHtml(m, menu, play, hero) {
+function coverHtml(m, menu, play, hero, logo) {
   const land = m.orientation === 'landscape';
   const shot = (b64, cls) => `<div class="shot ${cls}"><img src="data:image/png;base64,${b64}"></div>`;
   return `<!doctype html><html><head><style>${FONTS}
@@ -120,11 +123,13 @@ function coverHtml(m, menu, play, hero) {
   .hero { position: absolute; z-index: 4; height: 470px; bottom: 30px; filter: drop-shadow(0 18px 0 rgba(0,0,0,.55)) drop-shadow(0 0 30px rgba(255,210,63,.25)); image-rendering: auto; }
   .hero.p { left: ${land ? 0 : 880}px; }
   .hero.l { left: 790px; }
+  .logo-img { display: block; align-self: flex-start; max-width: ${land ? 740 : 820}px; max-height: 330px; margin: -10px 0 -6px -14px;
+    filter: drop-shadow(0 12px 18px rgba(0,0,0,.55)); }
   ${isModern(m) ? modernCss : ''}
   </style></head><body><div class="glow"></div>
   <div class="left">
     <div class="brand"><img class="mark" src="data:image/png;base64,${mark}">AYVAGO <b>GAMES</b></div>
-    <h1>${m.title.en.toUpperCase()}</h1>
+    ${logo ? `<img class="logo-img" src="data:image/png;base64,${logo}">` : `<h1>${m.title.en.toUpperCase()}</h1>`}
     <p>${m.description.en}</p>
     <span class="chip">${CATEGORY[m.category] ?? 'ARCADE'}</span>
   </div>
@@ -409,7 +414,7 @@ async function frameStats(lab, b64) {
   }, b64);
 }
 
-function cardHtml(m, b64, accent) {
+function cardHtml(m, b64, accent, logo) {
   const land = m.orientation === 'landscape';
   const modern = isModern(m);
   const shot = `data:image/png;base64,${b64}`;
@@ -442,14 +447,18 @@ function cardHtml(m, b64, accent) {
   .retro-logo { font-family: P2P; line-height: 1.3; letter-spacing: 1px; }
   .retro-logo .back { color: #000; -webkit-text-stroke: 6px #000; text-shadow: 3px 3px 0 #000, 0 4px 10px rgba(0,0,0,.6); }
   .retro-logo .front { color: ${accent}; }
+  .logo-img { position: absolute; left: 12px; bottom: 8px; max-width: ${maxW + 12}px; max-height: ${land ? 150 : 138}px;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,.6)); }
   </style></head><body>
   ${land ? `<img class="bg" src="${shot}">` : `<img class="bg blur" src="${shot}"><div class="vig"></div><div class="glow"></div>
   <div class="frame ${modern ? 'modern' : 'retro'}"><img src="${shot}"></div>`}
   <div class="scrim"></div>
-  <div class="logo ${modern ? 'modern-logo' : 'retro-logo'}" style="font-size:${modern ? 30 : 20}px"><span class="back">${title}</span><span class="front">${title}</span></div>
+  ${logo ? `<img class="logo-img" src="data:image/png;base64,${logo}">` : `<div class="logo ${modern ? 'modern-logo' : 'retro-logo'}" style="font-size:${modern ? 30 : 20}px"><span class="back">${title}</span><span class="front">${title}</span></div>`}
   <script>
-  // Shrink the logo until it fits its width on at most two lines.
+  // Shrink the logo until it fits its width on at most two lines (a themed logo image is fitted by CSS).
   window.fitLogo = () => {
+    const img = document.querySelector('.logo-img');
+    if (img) return { size: Math.round(img.getBoundingClientRect().height), lines: 1, w: Math.round(img.getBoundingClientRect().width) };
     const el = document.querySelector('.logo');
     let size = parseFloat(el.style.fontSize);
     const lh = parseFloat(getComputedStyle(el).lineHeight) / size;
@@ -495,7 +504,9 @@ async function capture(browser, slug, land, tune) {
   try {
     await page.goto(`http://localhost:${PORT}/games/${slug}/?nointro&lang=en`);
     await page.waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: dev ? 60000 : 20000 });
-    await page.waitForTimeout(900);
+    // a themed menu's logo (English), and time for its entrance to finish before the menu shot
+    const logo = await page.evaluate(() => window.__ayvago.menuLogo?.('en')?.split(',')[1] ?? null);
+    await page.waitForTimeout(logo ? 3000 : 900);
     const canvas = page.locator('canvas').first();
     const menu = (await canvas.screenshot()).toString('base64');
     await page.keyboard.press('Enter');
@@ -531,7 +542,7 @@ async function capture(browser, slug, land, tune) {
         if (!cardOnly) thumb = await canvas.screenshot({ scale: 'css' });
       }
     }
-    return { menu, play, thumb, shots };
+    return { menu, play, thumb, shots, logo };
   } finally {
     await page.close();   // stop the game so it does not slow the rendering that follows
   }
@@ -557,17 +568,21 @@ for (const slug of slugs) {
   const out = join(root, 'public', 'games', slug, 'ayvago');
   mkdirSync(out, { recursive: true });
   try {
-    let shots;
+    let shots, logo = null;
     if (fromFrames) {
       const live = JSON.parse(readFileSync(join(framesDir, `${slug}.json`), 'utf8'));
       shots = live.map((l, n) => ({ live: l, b64: readFileSync(join(framesDir, `${slug}-${n}.png`)).toString('base64') }));
+      const kept = join(framesDir, `${slug}-logo.png`);
+      if (existsSync(kept)) logo = readFileSync(kept).toString('base64');
     } else {
       const cap = await capture(browser, slug, land, tune);
       shots = cap.shots;
+      logo = cap.logo;
       if (framesDir) {
         mkdirSync(framesDir, { recursive: true });
         shots.forEach((s, n) => writeFileSync(join(framesDir, `${slug}-${n}.png`), Buffer.from(s.b64, 'base64')));
         writeFileSync(join(framesDir, `${slug}.json`), JSON.stringify(shots.map((s) => s.live)));
+        if (logo) writeFileSync(join(framesDir, `${slug}-logo.png`), Buffer.from(logo, 'base64'));
       }
       if (!cardOnly) {
         mkdirSync(join(root, 'public', 'thumbs'), { recursive: true });
@@ -575,8 +590,9 @@ for (const slug of slugs) {
         // Light in-game screenshot for the platform's Arcade theme tiles (manifest assets.screenshot).
         await renderScreenshot(browser, cap.play, land, join(out, 'screenshot.jpg'));
         const art = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-        await art.setContent(coverHtml(m, cap.menu, cap.play, heroImage(slug)));
+        await art.setContent(coverHtml(m, cap.menu, cap.play, heroImage(slug), logo));
         await art.evaluate(() => document.fonts.ready);
+        await art.evaluate(() => Promise.all([...document.images].map((i) => i.decode())));
         await art.screenshot({ path: join(out, 'cover-1920x1080.jpg'), type: 'jpeg', quality: 86 });
         await art.setViewportSize({ width: 512, height: 512 });
         await art.setContent(iconHtml(m, cap.play));
@@ -592,13 +608,13 @@ for (const slug of slugs) {
     for (const s of shots) s.rank = s.score + 3 * s.n;
     const ranked = [...shots].sort((a, b) => (b.live - a.live) || (b.rank - a.rank));
     const best = tune.pick !== undefined ? shots[tune.pick] : ranked[0];
-    const html = cardHtml(m, best.b64, tune.accent ?? best.accent);
+    const html = cardHtml(m, best.b64, tune.accent ?? best.accent, logo);
     const big = await renderCard(browser, lab, html, 2, 110_000);
     const small = await renderCard(browser, lab, html, 1, 45_000);
     writeFileSync(join(out, 'card-1280x720.webp'), big.buf);
     writeFileSync(join(out, 'card-640x360.webp'), small.buf);
     const stats = shots.map((s) => `${s.n}${s === best ? '*' : ''}:${s.live ? '' : 'x'}${Math.round(s.rank)}`).join(' ');
-    console.log(`ok    ${slug}  card [${stats}] ${Math.round(small.buf.length / 1024)}+${Math.round(big.buf.length / 1024)} KB, logo ${big.fit.size}px x${big.fit.lines}`);
+    console.log(`ok    ${slug}  card [${stats}] ${Math.round(small.buf.length / 1024)}+${Math.round(big.buf.length / 1024)} KB, logo ${logo ? `themed ${big.fit.w}x${big.fit.size}px` : `${big.fit.size}px x${big.fit.lines}`}`);
     made++;
   } catch (e) {
     console.log(`FAIL  ${slug}: ${String(e.message).split('\n')[0]}`);

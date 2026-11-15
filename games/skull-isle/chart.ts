@@ -31,6 +31,13 @@ export function chartTexture(scene: Phaser.Scene, key: string, w: number, h: num
   return key;
 }
 
+/** A bare aged sheet (no ink) of w x h into `g`: the menu's how-to card (menu.ts). */
+export function paintSheet(g: Ctx, w: number, h: number, seed: number): void {
+  const r = rng(seed);
+  parchment(g, w, h, r);
+  burn(g, w, h, r);
+}
+
 /** The torn outline of the sheet: a jagged rectangle a little inside the canvas. */
 function edgePath(g: Ctx, w: number, h: number, r: () => number, inset: number): void {
   const pts: [number, number][] = [];

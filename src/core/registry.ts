@@ -1,6 +1,7 @@
 import type { MusicChoice } from './music';
 import type Phaser from 'phaser';
 import type { Localized, Strings } from './i18n';
+import type { MenuTheme } from './menu-theme';
 
 export type Genre = 'arcade' | 'action' | 'casual' | 'puzzle' | 'retro' | 'sports' | 'strategy' | 'card' | 'word';
 
@@ -60,6 +61,13 @@ export interface GameDefinition {
   difficulty?: boolean;
   /** Optional decoration for the menu (sprites behind the title). */
   menuDecor?: (scene: Phaser.Scene) => void;
+  /**
+   * The game's own menu look (src/core/menu-theme.ts): palette, display font, a logo drawn from
+   * the title with an emblem, a skin for the buttons, switches and plates, and a frame. The layout
+   * stays the core's; without a theme the menu looks as it always has. Its logo also goes on the
+   * store art (scripts/gen-store-assets.mjs).
+   */
+  menuTheme?: MenuTheme;
   /**
    * A game's own setting on the menu (e.g. the driving games' `steeringOption`), drawn by `build` in the
    * slot the Easy/Normal switch uses: beside PLAY in landscape, under it in portrait. `show`

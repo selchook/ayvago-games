@@ -40,6 +40,12 @@ export { openPlayerCard, closePlayerCard, isPlayerCardOpen, avatar, portraitKey,
 export type { PlayerCardInfo, StatRow, LifetimeStats } from './playercard';
 export { isModalOpen, pushModal } from './modal';
 export {
+  menuTheme, SkinButton, skinIconButton, skinImage, skinTexture, themeText, renderLogo, plankPainter, shadeColor, SKIN_PAD,
+} from './menu-theme';
+export type {
+  MenuTheme, MenuPalette, MenuFrame, LogoStyle, EmblemPainter, SkinPainter, SkinKind, SkinState, SkinPaint, NotesPainter, SkinButtonOptions,
+} from './menu-theme';
+export {
   CarSteering, CarPad, Tilt, tilt, TILT_FULL_LOCK, STEER_MODES, steerMode, setSteerMode, touchScreen, steeringMenu, steeringOption,
   RAMP_TIME, WHEEL_LOCK, STEER_CURVE, steerCurve,
 } from './steering';
