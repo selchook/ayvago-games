@@ -1,9 +1,11 @@
 // Zombie Grove: an autopilot. It kites: every think step it scores a ring of directions by where
 // the zombies, the goo and the bosses' charges and slams will be a moment later, keeps out of the
 // trees and away from the arena's edge, drifts towards gems when it is safe and away from the
-// thick of the crowd. It takes every card offer at once from a priority list. Two skills: a good
-// survivor and a casual one (slower reactions, a shorter look ahead, lapses, random cards). It
-// plays the menu backdrop, the store art and the headless balance run (balance.ts).
+// thick of the crowd. It takes every card offer at once from a priority list. It holds ATTACK
+// while a zombie is in reach. Two skills: a good survivor (attacks at once, the whole time
+// something is in reach) and a casual one (slower reactions, a shorter look ahead, lapses, random
+// cards; it notices a zombie in reach late and attacks in bursts with pauses between, about half
+// the time). It plays the menu backdrop, the store art and the headless balance run (balance.ts).
 import { EVOLVES_WITH, PLAY_EDGE, isBoss, type WeaponId, type PassiveId } from './defs';
 import type { Card } from './cards';
 import { type Sim, type Input, NO_INPUT } from './sim';
@@ -23,11 +25,15 @@ export interface Skill {
   greed: number;
   /** Picks cards by priority (true) or at random. */
   cards: boolean;
+  /** Attacking: seconds before it reacts to a zombie in reach; how long a burst of attacks lasts and the pause after it (s, ranges). */
+  react: number;
+  burst: [number, number];
+  rest: [number, number];
 }
 
 export const SKILL: Record<'good' | 'casual', Skill> = {
-  good: { think: 1 / 12, look: 0.55, dirs: 16, noise: 0.05, lapse: 0.03, greed: 1, cards: true },
-  casual: { think: 0.3, look: 0.3, dirs: 8, noise: 0.4, lapse: 0.3, greed: 0.8, cards: false },
+  good: { think: 1 / 12, look: 0.55, dirs: 16, noise: 0.05, lapse: 0.03, greed: 1, cards: true, react: 0.08, burst: [99, 99], rest: [0, 0] },
+  casual: { think: 0.3, look: 0.3, dirs: 8, noise: 0.4, lapse: 0.3, greed: 0.8, cards: false, react: 0.45, burst: [0.8, 2.4], rest: [0.4, 1.4] },
 };
 
 const WEAPON_PRI: Record<WeaponId, number> = { wards: 9, torch: 8, bow: 7, blade: 7, spear: 6, robot: 6, shield: 6, blaster: 5 };
@@ -39,6 +45,10 @@ const PICKUP_WANT: Partial<Record<string, number>> = { chest: 14, nuke: 10, free
 export class Bot {
   private t = 0;
   private dir = { x: 0, z: 0 };
+  /** Attack state: holding or not, the time left in this burst or pause, how long a zombie has been in reach. */
+  private atk = false;
+  private atkT = 0;
+  private seen = 0;
 
   constructor(private sim: Sim, readonly skill: Skill, private rnd: () => number = Math.random) {}
 
@@ -79,7 +89,21 @@ export class Bot {
       this.t = sk.think * (0.8 + this.rnd() * 0.4);
       if (this.rnd() >= sk.lapse) this.decide();
     }
-    return { mx: this.dir.x, mz: this.dir.z };
+    return { mx: this.dir.x, mz: this.dir.z, attack: this.attack(dt) };
+  }
+
+  /** Whether it holds ATTACK this step: once a zombie has been in reach for its reaction time, in bursts. */
+  private attack(dt: number): boolean {
+    const sk = this.skill;
+    this.seen = this.sim.reach ? this.seen + dt : 0;
+    this.atkT -= dt;
+    if (this.seen < sk.react) { this.atk = false; this.atkT = 0; return false; }
+    if (this.atkT <= 0) {
+      this.atk = !this.atk;
+      const [a, b] = this.atk ? sk.burst : sk.rest;
+      this.atkT = a + this.rnd() * (b - a);
+    }
+    return this.atk;
   }
 
   private decide(): void {

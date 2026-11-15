@@ -178,11 +178,13 @@ export class WeaponTray {
   readonly chip: HudChip;
   private row: Phaser.GameObjects.Container;
   private sig = '';
+  /** The chip's scale so a full tray stays within maxW. */
+  private fit = 1;
 
-  constructor(private scene: Phaser.Scene, x: number, y: number) {
+  constructor(private scene: Phaser.Scene, x: number, y: number, private maxW = Infinity) {
     this.row = scene.add.container(0, 0);
     this.row.setData('chipWidth', SLOT);
-    this.chip = hudChip(scene, x, y, { align: 'center', items: [this.row], height: 64, minWidth: 64, depth: UI_DEPTH });
+    this.chip = hudChip(scene, x, y, { align: 'left', items: [this.row], height: 64, minWidth: 64, depth: UI_DEPTH });
   }
 
   sync(weapons: OwnedWeapon[], passives: OwnedPassive[]): void {
@@ -219,7 +221,10 @@ export class WeaponTray {
     });
     this.row.setData('chipWidth', Math.max(SLOT, total));
     this.chip.layout();
-    if (grew) this.scene.tweens.add({ targets: this.chip, scale: 1.08, duration: 110, yoyo: true });
+    this.fit = Math.min(1, this.maxW / this.chip.chipWidth);
+    this.scene.tweens.killTweensOf(this.chip);
+    this.chip.setScale(this.fit);
+    if (grew) this.scene.tweens.add({ targets: this.chip, scale: this.fit * 1.08, duration: 110, yoyo: true });
   }
 }
 
@@ -351,4 +356,115 @@ export function bossWarning(scene: Phaser.Scene, name: string): void {
   scene.tweens.add({ targets: w, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: w, alpha: 0.35, duration: 220, yoyo: true, repeat: 5, delay: 300 });
   scene.tweens.add({ targets: root, alpha: 0, delay: 2700, duration: 400, onComplete: () => root.destroy() });
+}
+
+// ------------------------------------------------------------------ the ATTACK button
+
+/**
+ * The big round ATTACK button on the right thumb's side: hold it to keep every weapon attacking at
+ * its own rate, tap it for one attack each. It shows the first weapon's icon, a ring with a
+ * segment per manual weapon that fills as it cools down (gold when ready), a glow that pulses when
+ * a zombie is in reach, and the keys on a keyboard. It tracks its own pointer, so a thumb sliding a
+ * little off it keeps attacking until it lifts.
+ */
+export class AttackButton {
+  readonly root: Phaser.GameObjects.Container;
+  private g: Phaser.GameObjects.Graphics;
+  private icon: Phaser.GameObjects.Image;
+  private label: Phaser.GameObjects.Text;
+  private keys: Phaser.GameObjects.Text | null = null;
+  private zone: Phaser.GameObjects.Zone;
+  private pointer = -1;
+  private iconKey = '';
+  /** Held by a pointer; and presses not yet read (each one a tap). */
+  down = false;
+  presses = 0;
+  private flashT = 0;
+
+  constructor(private scene: Phaser.Scene, readonly x: number, readonly y: number, readonly r: number, keyHint: string) {
+    this.root = scene.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 2);
+    this.g = scene.add.graphics();
+    this.icon = scene.add.image(0, -r * 0.2, '__WHITE').setVisible(false);
+    this.label = txt(scene, 0, r * 0.38, t('attack'), { title: true, size: Math.round(r * 0.27), strokeThickness: 5 });
+    if (this.label.width > r * 1.6) this.label.setScale((r * 1.6) / this.label.width);
+    this.root.add([this.g, this.icon, this.label]);
+    if (keyHint) {
+      this.keys = txt(scene, 0, r + 30, keyHint, { title: true, size: 17, color: '#ffe0c8', strokeThickness: 4 });
+      this.root.add(this.keys);
+    }
+    // a generous hit circle; the press never starts the movement stick
+    const R = r * 1.2;
+    this.zone = scene.add.zone(x, y, R * 2, R * 2).setScrollFactor(0).setDepth(UI_DEPTH + 3)
+      .setInteractive(new Phaser.Geom.Circle(R, R, R), Phaser.Geom.Circle.Contains);
+    this.zone.on('pointerdown', (p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => {
+      ev?.stopPropagation?.();
+      if (this.down) return;
+      this.down = true;
+      this.pointer = p.id;
+      this.presses++;
+      this.flashT = 0.18;
+    });
+    const up = (p: Phaser.Input.Pointer) => { if (p.id === this.pointer) this.release(); };
+    scene.input.on('pointerup', up);
+    scene.input.on('pointerupoutside', up);
+  }
+
+  /** Lets go (a lifted thumb, the window losing focus, a pause). */
+  release(): void { this.down = false; this.pointer = -1; }
+
+  /** Takes the presses since the last call. */
+  takePresses(): number { const n = this.presses; this.presses = 0; return n; }
+
+  /** A press from the keyboard: the button reacts the same way. */
+  kick(): void { this.flashT = 0.18; }
+
+  /** The first manual weapon's icon in the middle. */
+  setIcon(key: string): void {
+    if (key === this.iconKey) return;
+    this.iconKey = key;
+    this.icon.setVisible(!!key);
+    if (!key) return;
+    const s = this.r * 0.78;
+    this.icon.setTexture(key).setDisplaySize(s, s);
+  }
+
+  setVisible(on: boolean): void {
+    this.root.setVisible(on);
+    if (on) this.zone.setInteractive(); else { this.zone.disableInteractive(); this.release(); }
+  }
+
+  /**
+   * Draws it: `held` pressed, `ready` 0–1 per manual weapon (1: ready), `reach` a zombie within reach,
+   * `dim` nothing to attack with (dawn, death).
+   */
+  draw(held: boolean, ready: number[], reach: boolean, time: number, dt: number, dim = false): void {
+    const g = this.g.clear(), r = this.r;
+    this.flashT = Math.max(0, this.flashT - dt);
+    const press = held || this.flashT > 0;
+    this.root.setScale(press ? 0.93 : 1);
+    // the pulse: a gold glow when a zombie is in reach and the button is not held
+    if (reach && !held && !dim) {
+      const k = 0.5 + Math.sin(time * 7) * 0.5;
+      g.fillStyle(0xffb04a, 0.1 + k * 0.12).fillCircle(0, 0, r + 26 + k * 6);
+      g.lineStyle(4, 0xffd23f, 0.35 + k * 0.5).strokeCircle(0, 0, r + 20 + k * 5);
+    }
+    g.fillStyle(0x000000, 0.3).fillCircle(0, 6, r);
+    g.fillStyle(press ? 0xff6a3a : 0xc8402e, dim ? 0.35 : press ? 0.95 : 0.78).fillCircle(0, 0, r);
+    g.fillStyle(0xffffff, dim ? 0.04 : press ? 0.22 : 0.14).fillCircle(0, -r * 0.3, r * 0.64);
+    g.lineStyle(4, 0xffffff, dim ? 0.25 : press ? 0.95 : 0.7).strokeCircle(0, 0, r);
+    // a ring segment per manual weapon, filling as it cools down
+    const n = ready.length, gap = n > 1 ? 0.16 : 0;
+    for (let i = 0; i < n; i++) {
+      const a0 = -Math.PI / 2 + (i / n) * Math.PI * 2 + gap / 2, span = (Math.PI * 2) / n - gap;
+      g.lineStyle(8, 0x000000, 0.5);
+      g.beginPath(); g.arc(0, 0, r + 9, a0, a0 + span, false); g.strokePath();
+      const k = ready[i];
+      if (k > 0) {
+        g.lineStyle(8, k >= 1 ? 0xffd23f : 0xffffff, k >= 1 ? (dim ? 0.4 : 1) : 0.75);
+        g.beginPath(); g.arc(0, 0, r + 9, a0, a0 + span * Math.min(1, k), false); g.strokePath();
+      }
+    }
+    this.icon.setAlpha(dim ? 0.4 : 1);
+    this.label.setAlpha(dim ? 0.55 : 1);
+  }
 }

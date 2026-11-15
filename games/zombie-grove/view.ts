@@ -9,8 +9,8 @@ import type { Sim, SimEvent, Zombie } from './sim';
 import { ARENA, POWER_IDS, isBoss, type BossKind, type WeaponId, type HeroId, type PowerId, type BladeKind } from './defs';
 import { arena } from './arena';
 import { mergeProps, modelGeo, packMap, fkey, keepPrograms, groveMaterial, fistMatrix, PERSON } from './kit';
-import { Billboards, Particles, TEX, canvasTex } from './fx3d';
-import { Horde } from './horde';
+import { Billboards, Particles, TEX, canvasTex, HealthBars, stepBar, type BarState } from './fx3d';
+import { Horde, LOOK } from './horde';
 import { Figure } from './figure';
 import { heroFigure } from './heroes3d';
 import { powerCanvas, POWER_HUE } from './art';
@@ -44,6 +44,18 @@ const DAWN: Sky = { sky: 0xffbf94, hemi: 0xfff0d8, ground: 0x80684e, hemiI: 1.9,
 const BLOOD: Sky = { sky: 0x3a1020, hemi: 0xe0a0b0, ground: 0x402030, hemiI: 1.35, sun: 0xff8a8a, sunI: 1.25, dir: [-0.4, 1, 0.5], lantern: 3, fire: 3 };
 
 const GEM_COL = [0x5affb0, 0x4fb4ff, 0xff5ad2];
+
+/** Health bars: how many at most (the nearest hurt zombies first), and each kind's bar (width, height, colour). */
+export const BAR_CAP = 40;
+const BAR_ZOMBIE = { w: 1.2, h: 0.29, color: 0xff4a3a };
+const BAR_HULK = { w: 1.7, h: 0.34, color: 0xffa040 };
+const BAR_MINI = { w: 2.5, h: 0.42, color: 0xffc23a };
+const BAR_KING = { w: 3.3, h: 0.5, color: 0xb070ff };
+/**
+ * The bar's height over the ground per unit of a figure's scale (× PERSON) and its gap above the
+ * head: the zombies, the Hulk (the raider is taller) and the bosses (the King's crown on top).
+ */
+const BAR_Y = { zombie: [1.02, 0.42], tank: [1.2, 0.45], boss: [1.28, 0.55], crown: 0.5 };
 const SHOT_COL: Record<string, number> = { shot: 0xffd25a, ember: 0xff7a2a, laser: 0x5ae8ff };
 
 /**
@@ -92,6 +104,18 @@ export class View {
   private slashes: Billboards;
   private trails: Billboards;
   private gooBB: Billboards;
+  private reticle: Billboards;
+  /** Hurt zombies' health bars (one draw call), their states by zombie id, and the frame's candidates. */
+  readonly hpBars: HealthBars;
+  private bars = new Map<number, BarState & { zb: Zombie }>();
+  private cand: Zombie[] = [];
+  private candD = new Float64Array(512);
+  private candI: number[] = [];
+  /** The aim marker's eased position and strength. */
+  private aimX = 0;
+  private aimZ = 0;
+  private aimK = 0;
+  private aimId = -1;
   private powers = new Map<PowerId, Billboards>();
   private gems: THREE.InstancedMesh;
   private coins: THREE.InstancedMesh;
@@ -235,6 +259,8 @@ export class View {
     this.flares = new Billboards(sc, TEX.flare(), 220, { order: 15 });
     this.streaks = new Billboards(sc, TEX.streak(), 240, { flat: true, order: 13 });
     this.gooBB = new Billboards(sc, TEX.goo(), 200, { blend: 'normal', order: 16 });
+    this.reticle = new Billboards(sc, TEX.reticle(), 2, { flat: true, order: 5 });
+    this.hpBars = new HealthBars(sc, BAR_CAP);
     for (const id of POWER_IDS) {
       const tex = new THREE.CanvasTexture(powerCanvas(id));
       tex.colorSpace = THREE.SRGBColorSpace;
@@ -757,7 +783,8 @@ export class View {
 
   private syncFx(sim: Sim, dt: number, cull: (x: number, z: number) => boolean): void {
     const cq = this.camQ, t = this.time, p = sim.player;
-    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.trails, this.gooBB, ...this.powers.values()]) b.begin(cq);
+    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.trails, this.gooBB, this.reticle, ...this.powers.values()]) b.begin(cq);
+    this.cand.length = 0;
 
     // blob shadows and the hero's marker ring
     if (!this.heroDead || sim.phaseT < 2) this.shadows.add(p.x, 0.03, p.z, 1.1, 1.1, 0, 0xffffff, 1);
@@ -782,6 +809,7 @@ export class View {
     }
     for (const zb of sim.zombies) {
       if (!cull(zb.x, zb.z)) continue;
+      if (zb.hp < zb.maxHp && !zb.dead && this.cand.length < this.candD.length) this.cand.push(zb);
       const s = zb.r * (isBoss(zb.kind) ? 3.4 : 3.2);
       this.shadows.add(zb.x, 0.03, zb.z, s, s, 0, 0xffffff, 1);
       if (zb.burn > 0 && Math.random() < dt * 14) this.flames.emit(zb.x + (Math.random() - 0.5) * 0.4, 0.5 + Math.random() * 0.6, zb.z + (Math.random() - 0.5) * 0.4, 0, 1.6, 0, 0.45, 0.45, 0.1, Math.random() < 0.5 ? 0xffa040 : 0xff6020, 1, -1);
@@ -1078,9 +1106,89 @@ export class View {
       else this.flares.add(fl.x, fl.y, fl.z, fl.s * (0.6 + k * 0.4), fl.s * (0.6 + k * 0.4), t * 3, fl.c, k);
     }
 
+    this.aimMarker(sim, dt);
+    this.healthBars(sim, dt);
     this.particles.update(dt, cq);
     this.flames.update(dt, cq);
-    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.trails, this.gooBB, ...this.powers.values()]) b.end();
+    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.trails, this.gooBB, this.reticle, ...this.powers.values()]) b.end();
+  }
+
+  /**
+   * The aim marker: a reticle on the ground under the zombie the next attack goes for, gliding from
+   * one target to the next; red and tight while attacking, a calm white otherwise.
+   */
+  private aimMarker(sim: Sim, dt: number): void {
+    const a = sim.aim, t = this.time;
+    const on = !!a && !this.heroDead && sim.phase === 'night';
+    this.aimK += ((on ? 1 : 0) - this.aimK) * Math.min(1, dt * (on ? 16 : 8));
+    if (a && on) {
+      if (this.aimId !== a.id && this.aimK < 0.05) { this.aimX = a.x; this.aimZ = a.z; }
+      this.aimId = a.id;
+      const k = Math.min(1, dt * 22);
+      this.aimX += (a.x - this.aimX) * k;
+      this.aimZ += (a.z - this.aimZ) * k;
+    }
+    if (this.aimK < 0.02) return;
+    const r = a && on ? a.r : 0.3;
+    const hot = sim.attacking;
+    const s = (r * 3.2 + 0.7) * (hot ? 0.92 + Math.sin(t * 18) * 0.06 : 1 + Math.sin(t * 4) * 0.05);
+    this.reticle.add(this.aimX, 0.07, this.aimZ, s, s, t * (hot ? 3 : 1.2), hot ? 0xff5a3a : 0xfff0d0, this.aimK * (hot ? 1 : 0.7));
+  }
+
+  /**
+   * Health bars over the zombies a hit did not kill: the nearest BAR_CAP hurt ones on screen, in
+   * one instanced draw; gold-framed for the bosses. A bar fades in on the first hit, its lost health
+   * trails off pale, and it drains and fades when the zombie falls. One-hit kills never show one.
+   */
+  private healthBars(sim: Sim, dt: number): void {
+    const p = sim.player, hb = this.hpBars;
+    hb.begin();
+    for (const b of this.bars.values()) b.seen = false;
+    // the nearest hurt ones first
+    const cand = this.cand, n = cand.length, idx = this.candI;
+    idx.length = 0;
+    for (let i = 0; i < n; i++) { const zb = cand[i]; this.candD[i] = (zb.x - p.x) ** 2 + (zb.z - p.z) ** 2; idx.push(i); }
+    if (n > BAR_CAP) idx.sort((x, y) => this.candD[x] - this.candD[y]);
+    const shown = Math.min(n, BAR_CAP);
+    for (let k = 0; k < shown; k++) {
+      const zb = cand[idx[k]];
+      let b = this.bars.get(zb.id);
+      if (!b) {
+        const boss = isBoss(zb.kind);
+        const rel = boss ? BOSS_LOOK[zb.kind as BossKind].scale / PERSON : LOOK[zb.kind as keyof typeof LOOK].scale / PERSON;
+        const look = zb.kind === 'king' ? BAR_KING : boss ? BAR_MINI : zb.kind === 'tank' ? BAR_HULK : BAR_ZOMBIE;
+        const w = look.w * (boss || zb.kind === 'tank' ? 1 : Math.max(0.8, rel));
+        const [ky, gap] = boss ? BAR_Y.boss : zb.kind === 'tank' ? BAR_Y.tank : BAR_Y.zombie;
+        const y = rel * ky + gap + (zb.kind === 'king' ? BAR_Y.crown : 0);
+        b = { ghost: 1, hold: 0, a: 0, last: 1, seen: true, x: 0, y, z: 0, w, h: look.h, color: look.color, boss, zb };
+        this.bars.set(zb.id, b);
+      }
+      b.seen = true;
+      b.x = zb.x; b.z = zb.z;
+      if (zb.kind === 'king') b.color = zb.rage ? 0xff2f6a : BAR_KING.color;
+      this.drawBar(b, Math.max(0, zb.hp / zb.maxHp), false, dt);
+    }
+    // the fallen drain and fade where they stood; the ones off screen or past the cap just fade
+    for (const [id, b] of this.bars) {
+      if (b.seen) continue;
+      const dead = b.zb.dead;
+      this.drawBar(b, dead ? 0 : b.last, true, dt);
+      if (b.a < 0.02) this.bars.delete(id);
+    }
+    hb.end();
+  }
+
+  private drawBar(b: BarState, hp: number, gone: boolean, dt: number): void {
+    const a = stepBar(b, hp, gone, dt);
+    const pop = 0.75 + 0.25 * Math.min(1, a * 1.4);
+    this.hpBars.add(b.x, b.y, b.z, b.w * pop, b.h * pop, hp, b.ghost, a, b.color, b.boss);
+  }
+
+  /** A press of ATTACK: a quick ring round the hero (the weapons answer as they come off cooldown). */
+  pressCue(sim: Sim): void {
+    const p = sim.player;
+    if (!sim.player.alive) return;
+    this.flashes.push({ x: p.x, y: 0.08, z: p.z, s: 2.8, t: 0.16, max: 0.16, c: 0xffe0b0, kind: 'ring' });
   }
 
   /** Game pixels of a world point. */
