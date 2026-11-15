@@ -47,6 +47,7 @@ launch({
     loadSfx(scene.load, 'shoot', 'sfx-digital/audio/laser4');   // no extension: .ogg + .mp3 exist
   },
   menuDecor(scene) { /* optional sprites on the menu */ },
+  // menuTheme: { ... },          // optional: the game's own logo, buttons and frame (§7f)
   scenes: [PlayScene],            // one scene MUST have key 'Play'
   strings: { tr: { hint: 'İpucu' }, en: { hint: 'Hint' } },   // extra keys for t()
 });
@@ -477,6 +478,67 @@ nothing, so a game that opts in looks and plays exactly as before.
   `node scripts/platform-harness.mjs --dev <slug>` runs a game that opts in a second time with
   `adsEnabled: true` and checks the whole continue flow and the menu interstitial. Keyboard: C
   watches the ad on the result screen.
+
+## 7f. Menu theme (optional: the game's own logo, buttons and frame)
+
+The core menu keeps one layout (logo, best, PLAY, the switches, the game's own row, how-to, the
+bottom row with sound, the Ayvago logo and language/leaderboard). A game may give it its own skin
+with `menuTheme` in `launch({...})` (`src/core/menu-theme.ts`); the live backdrop (`menuDecor`)
+stays. Games without one look exactly as before. Pilot: `games/skull-isle/menu.ts`.
+
+```ts
+import { PIRATA_ONE } from '@core/fonts/pirata-one';
+menuTheme: {
+  font: PIRATA_ONE,                       // display face: logo, labels, headings
+  palette: { primary, secondary, board, trim, label, labelStroke, muted, accent, heading, body, icon, shade },
+  logo: { fill: ['#fff7c8', '#ffd23f', '#a85a0c'], outline: '#2a1206', rim: '#7a1018', depth: '#5a0e12', size: 150,
+          emblem: { draw: skullEmblem, size: 250, overlap: 0.28 } },
+  skin: 'plank',                          // or your own SkinPainter
+  pieces: [{ kind: 'board', w: 420, h: 104 }],   // the skin pieces your own menu widgets use
+  frame: { border: 'rope', notes: (c, w, h) => paintSheet(c, w, h, 31), vignette: 0.6, dim: 0.34 },
+},
+```
+
+- **Logo.** Rendered from `meta.title` in the current language (never a fixed image, so TR and EN
+  both fit): gradient fill, thick outline, optional rim, extruded side, bevel and gloss, a drop
+  shadow and the emblem behind. It picks one or two lines, whichever lets the letters be larger
+  in the room above the best score, and is drawn at that size. The emblem is the game's own
+  canvas painter (`EmblemPainter`: draw into a `size` box), cached with the logo. On menu open the
+  logo drops in, a shine sweeps across it (WebGL) and the rest pops in row by row.
+- **Skin.** `'plank'` is weathered wood (grain, knots, iron straps and brass rivets on big buttons,
+  nails on plates, a gold rim on hover, sunk when pressed). Another look is a `SkinPainter`
+  `(ctx, kind, w, h, { color, state, palette, seed })` for the kinds `button | plate | board |
+  track | round` and the states `up | over | down | on | off`. Every piece is a canvas texture
+  baked once per size and state (`skinTexture`); nothing is redrawn per frame and nothing runs in
+  play.
+- **The game's own menu widgets** (`menuOption.build`) use the same pieces: `SkinButton` (label in
+  the display face, `setText`, `fitLabel`, `setLabelY`), `skinImage(scene, x, y, kind, w, h)`,
+  `skinIconButton` and `themeText`. Keep tap targets at least as large as the plain menu's.
+- **Frame.** `border: 'rope'` (a rope round the screen with brass corner rings), `notes`: the card
+  behind the how-to (`'board'` or the game's painter; the how-to is then drawn in `palette.body`),
+  `vignette`: the darkening over the live backdrop, `dim`: a flat darkening under it. A game that
+  dims its backdrop itself moves that into `dim` and drops its own full-screen layer.
+- **Cost (rule).** Boot paints every theme texture under the Ayvago intro: the logo, the core's
+  pieces and the sizes listed in `pieces` (declare every `skinImage` / `SkinButton` size your
+  `menuOption` uses). A menu with a live 3D backdrop queues that world's shader compilation as it
+  opens; on software-rendered GPUs (old phones, the test machines) anything the menu uploads or
+  draws extra then delays the first round. So no TileSprites, masks or extra full-screen layers in
+  theme code, only cached canvas textures (the core paints them on software canvases); check the
+  round start with `node scripts/platform-harness.mjs <slug>` against `origin/main` a few times.
+- **Fonts.** Characterful display faces are welcome, but only SIL OFL ones, bundled locally (copy
+  the latin + latin-ext `.woff2` files of the `@fontsource/<face>` package into
+  `src/core/fonts/display/` with a CSS file and a small `src/core/fonts/<face>.ts` module, as for
+  Pirata One), recorded in `docs/assets/LICENSES.md`, and imported only by the games that use them.
+  **The shipped files must cover Turkish** (ç Ç ğ Ğ ı İ ö Ö ş Ş ü Ü): check the woff2 files with
+  fontTools (latin + latin-ext together) and render a test string in the game (the advance of each
+  letter must be the same with two different fallback fonts). Many display faces ship latin only
+  (Rye, IM Fell English SC); pick another face, never fake a glyph. Body text stays in the style's
+  body font. `launch()` loads the theme face (both subsets) before the menu opens.
+- **Store art.** `scripts/gen-store-assets.mjs` takes the themed logo (English) from the game
+  itself (`window.__ayvago.menuLogo('en')`) and puts it on the catalog card and the cover in place
+  of the plain title. Look at both after `node scripts/gen-store-assets.mjs <slug>`.
+- **Check** EN at 720×1280 and TR at 405×720, the logo's entrance, hover and pressed states,
+  and that the Turkish letters come from the display face.
 
 ## 8. Ship
 

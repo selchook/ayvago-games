@@ -2,7 +2,9 @@
 
 Only **CC0** (public domain) assets are allowed; the one exception is the fonts, which are SIL OFL
 (Press Start 2P, Pixelify Sans and the İ face derived from Press Start 2P for retro games; Fredoka and
-Nunito for modern games, all bundled from `@fontsource`). Every pack that does not come from Kenney is listed
+Nunito for modern games, all bundled from `@fontsource`; the display faces of the menu themes in
+`src/core/fonts/display/`, listed below, each loaded only by the games that use it). A display face is
+added only when its shipped files cover Turkish (ç ğ ı İ ö ş ü, checked on the files themselves). Every pack that does not come from Kenney is listed
 here with its source page, author and license before it is used. Re-import with the tool named in
 the row.
 
@@ -25,6 +27,7 @@ the row.
 | `quaternius/pirate-kit` (40 GLB models converted from 38 of the kit's glTF files: the ones Skull Isle loads; `parrot` and `cutlass` are cut out of Captain Barbarossa) | Quaternius [Pirate Kit](https://quaternius.com), the `.gltf` files of the official Google Drive distribution folder (the folder has no licence file; OpenGameArt lists Quaternius's pirate pack as CC0, and Quaternius's own site and the GDevelop store list the Pirate Kit as CC0), kept as `quaternius/pirate-kit/license.txt` | Quaternius | CC0 1.0 | `node games/skull-isle/import-kit.mjs <dir with the .gltf files> <node_modules with @gltf-transform/*, meshoptimizer, sharp>`: the shared flat-colour atlas baked into vertex colours (no texture), hand-held weapons welded into the skinned body, unused clips dropped, heavy scenery simplified, quantized |
 | `characters/*` (the five player characters) | Kenney [Platformer Characters 1](https://kenney.nl/assets/platformer-characters-1) | Kenney | CC0 1.0 | `tools/import-characters.py <kenney.nl mirror>` |
 | `src/core/fonts/ayvago-pixel-tr.woff` ("Ayvago Pixel TR": only the capital dotted I, U+0130) | Modified from [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) (`@fontsource/press-start-2p`) | The Press Start 2P Project Authors; modified for Ayvago | SIL OFL 1.1 (`src/core/fonts/OFL.txt`); renamed because "Press Start 2P" is a Reserved Font Name | `python3 tools/build-tr-font.py` |
+| `src/core/fonts/display/pirata-one-*.woff2` (Pirata One, the latin and latin-ext subsets: Skull Isle's menu theme and store logo) | [Pirata One](https://fonts.google.com/specimen/Pirata+One), the unmodified files of the npm package `@fontsource/pirata-one` 5.3.0 (copied in, not a dependency; its `LICENSE` kept as `src/core/fonts/display/OFL-pirata-one.txt`) | Rodrigo Fuenzalida, Nicolas Massi (Reserved Font Name "Pirata") | SIL OFL 1.1 | `npm pack @fontsource/pirata-one`, copy `files/pirata-one-latin{,-ext}-400-normal.woff2` |
 | `oga/junkala-sfx` | [The Essential Retro Video Game Sound Effects Collection (512 sounds)](https://opengameart.org/content/512-sound-effects-8-bit-style) | Juhani Junkala | CC0 1.0 | `tools/import-oga.py junkala-sfx <zip>` |
 | `oga/junkala-music` (`level-1..3`, `title-screen`, `ending`) | [5 Chiptunes (Action)](https://opengameart.org/content/5-chiptunes-action) | Juhani Junkala | CC0 1.0 | `tools/import-oga.py junkala-music <zip> --music` |
 | `oga/junkala-music` (`1-stage-1`, `2-stage-2`, `3-boss-fight`, `4-stage-select`) | [4 Chiptunes (Adventure)](https://opengameart.org/content/4-chiptunes-adventure) | Juhani Junkala (SubspaceAudio) | CC0 1.0 | `tools/import-oga.py junkala-music <zip> --music` |

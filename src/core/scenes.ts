@@ -13,6 +13,10 @@ import { asset, kenney, loadSfx } from './assets';
 import { isModern } from './style';
 import { difficulty, isEasy, offersDifficulty, setDifficulty, type Difficulty } from './difficulty';
 import { adBusy, adsAvailable, REPLAY_INTERSTITIAL_EVERY, showInterstitial, showRewarded } from './ads';
+import {
+  bakeMenuLogo, menuTheme, notesCard, notesTexture, playMenuIntro, prebakeMenuTheme, ropeBorder, SkinButton, skinIconButton, skinImage, skinTexture, SKIN_PAD,
+  themeLogo, themeShade, themeText, type MenuTheme,
+} from './menu-theme';
 
 /** "Play again" presses from the result screen this session (every Nth may bring an interstitial). */
 let replays = 0;
@@ -57,6 +61,14 @@ export class BootScene extends Phaser.Scene {
   async create(): Promise<void> {
     this.sound.mute = isSilenced();
     sdk.loading(1);
+    // a menu theme's logo, skin and cards are painted now, while the intro still plays
+    const theme = currentGame().menuTheme;
+    if (theme && !net.active) {
+      const room = logoRoom(this);
+      bakeMenuLogo(this, loc(currentGame().meta.title), room.maxW, room.bottom - room.top);
+      prebakeMenuTheme(this, brandPlateWidth(this));
+      themedHowTo(this, theme, menuHowY(this), currentGame().meta.orientation === 'landscape', true);
+    }
     await introDone;
     // work started during preload that the game needs before the menu (3D models being parsed)
     await Promise.all(bootWork);
@@ -87,10 +99,22 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
 
-    const title = txt(this, width / 2, height * (land ? 0.2 : 0.22), upper(loc(meta.title)), {
-      title: true, size: land ? 56 : 52, color: '#ffd23f', wrap: width - 80, strokeThickness: 10,
-    });
-    this.tweens.add({ targets: title, y: title.y - 12, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const theme = menuTheme();
+    let logo: Phaser.GameObjects.Image | null = null;
+    if (theme) {
+      // the themed menu: a vignette and the frame over the live backdrop, the logo from the title
+      themeShade(this, theme.frame?.vignette ?? 0.6, theme.frame?.dim);
+      if (theme.frame?.border === 'rope') ropeBorder(this);
+      const room = logoRoom(this);
+      logo = themeLogo(this, width / 2, room.top, room.bottom, loc(meta.title), room.maxW);
+    } else {
+      const title = txt(this, width / 2, height * (land ? 0.2 : 0.22), upper(loc(meta.title)), {
+        title: true, size: land ? 56 : 52, color: '#ffd23f', wrap: width - 80, strokeThickness: 10,
+      });
+      this.tweens.add({ targets: title, y: title.y - 12, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
+    // everything made from here on pops in after the themed logo
+    const introFrom = this.children.list.length;
 
     // Games that offer Easy/Normal or their own menu option (the steering switch of driving games):
     // portrait stacks the control under PLAY (best and PLAY move up a little to make room);
@@ -107,10 +131,14 @@ export class MenuScene extends Phaser.Scene {
     // with both switches stacked on the right (landscape), the best score sits over PLAY
     const bestX = both && land ? playX : width / 2;
     const bestY = both ? (land ? 0.35 : 0.335) : side && !land ? 0.31 : 0.36;
-    txt(this, bestX, height * bestY, `${t('best')}: ${best}`, { title: true, size: 22, color: '#3ee6ff' });
+    if (theme) themeText(this, bestX, height * bestY, `${t('best')}: ${best}`, { size: 36, color: theme.palette.accent });
+    else txt(this, bestX, height * bestY, `${t('best')}: ${best}`, { title: true, size: 22, color: '#3ee6ff' });
 
-    const play = new Button(this, playX, playY, t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
-    this.tweens.add({ targets: play, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const play = theme
+      ? new SkinButton(this, playX, playY, t('play'), () => this.startGame(), { width: 380, height: 110, size: 60, variant: 'primary' })
+      : new Button(this, playX, playY, t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
+    const pulse = () => this.tweens.add({ targets: play, scale: theme ? 1.03 : 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    if (!theme) pulse();
     if (both) {
       const x = land ? width / 2 + 200 : width / 2;
       this.difficultyToggle(x, height * (land ? 0.37 : 0.505));
@@ -124,18 +152,27 @@ export class MenuScene extends Phaser.Scene {
 
     // landscape: three lines of how-to still end above the logo on the bottom row
     const howY = height * (both ? (land ? 0.69 : 0.7) : land ? 0.67 : 0.64);
-    txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
-    const how = txt(this, width / 2, howY + 24, loc(meta.howTo), { size: land ? 23 : 28, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
-    fitAbove(how, height - BOTTOM_ROW_TOP);
+    const how = theme ? themedHowTo(this, theme, howY, land) : txt(this, width / 2, howY + 24, loc(meta.howTo), { size: land ? 23 : 28, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+    if (!theme) {
+      txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
+      fitAbove(how, height - BOTTOM_ROW_TOP);
+    }
 
     // sound + language toggles
-    soundButton(this, 60, height - 60);
+    soundButton(this, 60, height - 60, !!theme);
     if (sdk.embedded) {
       // Inside Ayvago the platform owns the locale; offer its leaderboard instead.
-      iconButton(this, width - 60, height - 60, 'icon-trophy', () => sdk.openLeaderboard());
+      (theme ? skinIconButton : iconButton)(this, width - 60, height - 60, 'icon-trophy', () => sdk.openLeaderboard());
     } else this.languageToggle(width, height);
 
-    brandLogo(this, width / 2, height - 60, how.y + how.height);
+    brandLogo(this, width / 2, height - 60, how.y + how.height, !!theme);
+    if (logo) {
+      const items = this.children.list.slice(introFrom).filter((o) => o.type !== 'Zone');
+      const done = playMenuIntro(this, logo, items, () => {
+        this.tweens.add({ targets: logo, y: logo!.y - 8, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      });
+      this.time.delayedCall(done, pulse);
+    }
     if (def.crt !== false) addCrt(this);
 
     const kb = this.input.keyboard;
@@ -151,18 +188,30 @@ export class MenuScene extends Phaser.Scene {
     const def = currentGame();
     const { width, height } = this.scale;
     const land = def.meta.orientation === 'landscape';
-    const title = txt(this, width / 2, height * (land ? 0.18 : 0.2), upper(loc(def.meta.title)), {
-      title: true, size: land ? 52 : 48, color: '#ffd23f', wrap: width - 80, strokeThickness: 10,
-    });
-    this.tweens.add({ targets: title, y: title.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const theme = menuTheme();
+    if (theme) {
+      themeShade(this, theme.frame?.vignette ?? 0.6, theme.frame?.dim);
+      if (theme.frame?.border === 'rope') ropeBorder(this);
+      const logo = themeLogo(this, width / 2, land ? 26 : 40, height * (land ? 0.3 : 0.29), loc(def.meta.title), width - (land ? 360 : 80));
+      playMenuIntro(this, logo, [], () => {
+        this.tweens.add({ targets: logo, y: logo.y - 8, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      });
+    } else {
+      const title = txt(this, width / 2, height * (land ? 0.18 : 0.2), upper(loc(def.meta.title)), {
+        title: true, size: land ? 52 : 48, color: '#ffd23f', wrap: width - 80, strokeThickness: 10,
+      });
+      this.tweens.add({ targets: title, y: title.y - 10, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
     txt(this, width / 2, height * (land ? 0.33 : 0.32), t('online'), { title: true, size: 26, color: '#3ee6ff' });
     if (net.isTable) {
       txt(this, width / 2, height * (land ? 0.41 : 0.38), t('atTable', { names: net.seats.map((s) => s.name).join(' · ') }), { size: 28, color: '#f3f2f2', wrap: width - 80 });
     } else if (net.peerName) txt(this, width / 2, height * (land ? 0.41 : 0.38), t('vs', { name: net.peerName }), { size: 34, color: '#f3f2f2' });
 
     if (net.isHost) {
-      const play = new Button(this, width / 2, height * (land ? 0.56 : 0.52), t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
-      this.tweens.add({ targets: play, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      const play = theme
+        ? new SkinButton(this, width / 2, height * (land ? 0.56 : 0.52), t('play'), () => this.startGame(), { width: 380, height: 110, size: 60, variant: 'primary' })
+        : new Button(this, width / 2, height * (land ? 0.56 : 0.52), t('play'), () => this.startGame(), { width: 380, height: 110, size: 40 });
+      this.tweens.add({ targets: play, scale: theme ? 1.03 : 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       const kb = this.input.keyboard;
       kb?.once('keydown-ENTER', () => this.startGame());
       kb?.once('keydown-SPACE', () => this.startGame());
@@ -178,11 +227,15 @@ export class MenuScene extends Phaser.Scene {
       if (early) this.time.delayedCall(0, () => begin(early));
     }
     const howY = height * (land ? 0.7 : 0.66);
-    txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
-    const how = txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
-    fitAbove(how, height - BOTTOM_ROW_TOP);
-    soundButton(this, 60, height - 60);
-    brandLogo(this, width / 2, height - 60, how.y + how.height);
+    let how: Phaser.GameObjects.Text;
+    if (theme) how = themedHowTo(this, theme, howY, land);
+    else {
+      txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
+      how = txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+      fitAbove(how, height - BOTTOM_ROW_TOP);
+    }
+    soundButton(this, 60, height - 60, !!theme);
+    brandLogo(this, width / 2, height - 60, how.y + how.height, !!theme);
     if (def.crt !== false) addCrt(this);
     // Protocol 2.7: the table's host changed; the new host gets PLAY, everyone else waits.
     net.onHostChange(this, () => {
@@ -195,6 +248,11 @@ export class MenuScene extends Phaser.Scene {
    * segment carries a bright knob that slides across; in Easy a caption says the run is not ranked.
    */
   private difficultyToggle(x: number, y: number): void {
+    const theme = menuTheme();
+    if (theme) {
+      this.plankToggle(theme, x, y);
+      return;
+    }
     const SEG = 160, H = 80, W = SEG * 2, modern = isModern();
     const KNOB: Record<Difficulty, number> = { easy: COLORS.green, normal: COLORS.yellow };
     const bg = modern
@@ -251,10 +309,74 @@ export class MenuScene extends Phaser.Scene {
     show(false);
   }
 
+  /**
+   * The themed Easy | Normal switch: two pieces of the skin side by side in a sunk track; the
+   * chosen one stands raised with a gold rim, the other sits dark and low. Same hit areas, keys
+   * and caption as the plain switch.
+   */
+  private plankToggle(theme: MenuTheme, x: number, y: number): void {
+    const SEG = 160, H = 80, P = theme.palette;
+    const segX = (d: Difficulty) => (d === 'easy' ? x - SEG / 2 : x + SEG / 2);
+    const track = skinImage(this, x, y, 'track', SEG * 2 + 16, H + 14);
+    const w = SEG - 8, h = H - 8;
+    const keys = { on: skinTexture(this, 'button', w, h, 'on'), off: skinTexture(this, 'button', w, h, 'off') };
+    const planks = {} as Record<Difficulty, Phaser.GameObjects.Image>;
+    const labels = {} as Record<Difficulty, Phaser.GameObjects.Text>;
+    for (const d of ['easy', 'normal'] as Difficulty[]) {
+      planks[d] = this.add.image(segX(d), y + SKIN_PAD / 2, keys.off);
+      labels[d] = themeText(this, segX(d), y, d === 'easy' ? t('diffEasy') : t('diffNormal'), { size: 30 });
+      if (labels[d].width > w - 20) labels[d].setScale((w - 20) / labels[d].width);
+    }
+    const note = txt(this, x, y + H / 2 + 26, t('diffEasyNote'), { size: 22, color: '#5dff7a' });
+    this.difficultyHit = { easy: { x: segX('easy'), y }, normal: { x: segX('normal'), y } };
+    let cur = difficulty();
+    const show = (animate: boolean) => {
+      for (const d of ['easy', 'normal'] as Difficulty[]) {
+        const on = d === cur;
+        planks[d].setTexture(on ? keys.on : keys.off).setY(y + SKIN_PAD / 2 + (on ? 0 : 3));
+        labels[d].setColor(on ? P.label : P.muted).setY(y + (on ? 0 : 3)).setAlpha(on ? 1 : 0.85);
+      }
+      note.setVisible(cur === 'easy');
+      if (animate) {
+        const s = labels[cur].scale;
+        this.tweens.add({ targets: [planks[cur]], scaleY: { from: 0.86, to: 1 }, duration: 240, ease: 'Back.easeOut' });
+        this.tweens.add({ targets: labels[cur], scale: { from: s * 1.25, to: s }, duration: 220, ease: 'Back.easeOut' });
+      }
+    };
+    const choose = (d: Difficulty) => {
+      if (d === cur || !this.scene.isActive()) return;
+      cur = d;
+      setDifficulty(d);
+      playSfx(this, 'ui-click');
+      show(true);
+    };
+    for (const d of ['easy', 'normal'] as Difficulty[]) {
+      this.add.zone(segX(d), y, SEG, H).setInteractive({ useHandCursor: true }).on('pointerup', () => choose(d));
+    }
+    track.setDepth(1);
+    for (const d of ['easy', 'normal'] as Difficulty[]) { planks[d].setDepth(2); labels[d].setDepth(3); }
+    note.setDepth(3);
+    const kb = this.input.keyboard;
+    kb?.on('keydown-LEFT', () => choose('easy'));
+    kb?.on('keydown-RIGHT', () => choose('normal'));
+    show(false);
+  }
+
   private languageToggle(width: number, height: number): void {
     const label = getLang() === 'tr' ? 'TR' : 'EN';
     let langBtn: Phaser.GameObjects.Container;
-    if (isModern()) {
+    const theme = menuTheme();
+    if (theme) {
+      // a plate of the skin with the code painted on it
+      langBtn = this.add.container(width - 70, height - 60);
+      const keys = { up: skinTexture(this, 'plate', 100, 72, 'up'), over: skinTexture(this, 'plate', 100, 72, 'over'), down: skinTexture(this, 'plate', 100, 72, 'down') };
+      const bg = this.add.image(0, SKIN_PAD / 2, keys.up);
+      const lt = themeText(this, 0, 0, label, { size: 30 });
+      langBtn.add([bg, lt]);
+      langBtn.on('pointerover', () => bg.setTexture(keys.over));
+      langBtn.on('pointerout', () => { bg.setTexture(keys.up); lt.y = 0; });
+      langBtn.on('pointerdown', () => { bg.setTexture(keys.down); lt.y = 3; });
+    } else if (isModern()) {
       // the same frosted glass as the sound button next to it
       langBtn = hudChip(this, width - 70, height - 60, { align: 'center', text: label, size: 24, height: 72, minWidth: 100, depth: 0 });
     } else {
@@ -587,6 +709,53 @@ function easyTag(scene: Phaser.Scene, x: number, y: number): void {
   scene.tweens.add({ targets: tag, scale: 1, duration: 320, delay: 250, ease: 'Back.easeOut' });
 }
 
+/**
+ * The themed how-to: the heading in the display face and the text in the body font on the
+ * theme's notes card (a parchment, a board), the card fitted round the text above the bottom row.
+ */
+function themedHowTo(scene: Phaser.Scene, theme: MenuTheme, howY: number, land: boolean, dryRun = false): Phaser.GameObjects.Text {
+  const { width, height } = scene.scale;
+  const P = theme.palette;
+  const onCard = !!theme.frame?.notes;
+  const cardW = width - (land ? 260 : 64);
+  // on a card the heading keeps clear of its torn top edge
+  if (onCard) howY += 16;
+  const head = themeText(scene, width / 2, howY, t('howTo'), onCard ? { size: 36, color: P.heading, strokeWidth: 0, shadow: false } : { size: 34, color: P.heading });
+  const how = txt(scene, width / 2, howY + Math.max(24, head.height / 2 - 2), loc(currentGame().meta.howTo), onCard
+    ? { size: land ? 22 : 26, wrap: cardW - (land ? 120 : 70), color: P.body, strokeThickness: 0, shadow: false }
+    : { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+  // the card's bottom edge stays above the bottom row
+  fitAbove(how, height - BOTTOM_ROW_TOP - (onCard ? 22 : 0));
+  if (onCard) {
+    const top = howY - head.height / 2 - 14, bottom = how.y + how.height + 18;
+    // a dry run (Boot) only paints the card's texture, at the size the menu will ask for
+    if (dryRun) notesTexture(scene, cardW, bottom - top);
+    else notesCard(scene, width / 2, (top + bottom) / 2, cardW, bottom - top);
+  }
+  if (dryRun) { head.destroy(); how.destroy(); }
+  return how;
+}
+
+/** The how-to heading's line on the solo menu, as the menu places it. */
+function menuHowY(scene: Phaser.Scene): number {
+  const def = currentGame();
+  const land = def.meta.orientation === 'landscape';
+  const both = offersDifficulty() && !!def.menuOption && (def.menuOption.show?.(scene) ?? true);
+  return scene.scale.height * (both ? (land ? 0.69 : 0.7) : land ? 0.67 : 0.64);
+}
+
+/** The themed logo's room on the solo menu: from the top down to just above the best score. */
+function logoRoom(scene: Phaser.Scene): { top: number; bottom: number; maxW: number } {
+  const def = currentGame();
+  const { width, height } = scene.scale;
+  const land = def.meta.orientation === 'landscape';
+  const diff = offersDifficulty();
+  const option = !!def.menuOption && (def.menuOption.show?.(scene) ?? true);
+  // the best score's line, as the menu places it
+  const bestY = diff && option ? (land ? 0.35 : 0.335) : (diff || option) && !land ? 0.31 : 0.36;
+  return { top: land ? 26 : 40, bottom: height * bestY - (land ? 24 : 32), maxW: width - (land ? 360 : 80) };
+}
+
 /** Distance from the bottom edge to the top of the menu's bottom row (sound, logo, language), plus a small gap. */
 const BOTTOM_ROW_TOP = 100;
 
@@ -610,7 +779,7 @@ const LOGO_PAD = 8;
  * lower than `clearOf` allows (a long how-to on a landscape menu) the logo shrinks, its bottom
  * edge staying on the row. Not a link: games run sandboxed inside the platform.
  */
-function brandLogo(scene: Phaser.Scene, x: number, y: number, clearOf = 0): Phaser.GameObjects.Container | null {
+function brandLogo(scene: Phaser.Scene, x: number, y: number, clearOf = 0, themed = false): Phaser.GameObjects.Container | null {
   if (!scene.textures.exists(LOGO)) return null;
   const tex = scene.textures.get(LOGO);
   tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
@@ -622,6 +791,13 @@ function brandLogo(scene: Phaser.Scene, x: number, y: number, clearOf = 0): Phas
   const img = scene.add.image(0, 0, LOGO).setScale(0.5 * k);
   // the visible ink, without the shadow room, sets the plate's width
   const inkW = Math.round(((tex.source[0].width - LOGO_PAD * 2) / 2) * k);
+  if (themed && menuTheme()) {
+    // a dark board of the menu theme's skin under the white art
+    const w = k === 1 ? brandPlateWidth(scene) : inkW + Math.round(36 * k);
+    const c = scene.add.container(x, y);
+    c.add([skinImage(scene, 0, 0, 'plate', w, H, 'up', menuTheme()!.palette.board), img]);
+    return c;
+  }
   if (isModern()) {
     // the brand ink under the glass deepens it, so the white art also holds on a bright sky
     const under = scene.add.graphics();
@@ -636,13 +812,19 @@ function brandLogo(scene: Phaser.Scene, x: number, y: number, clearOf = 0): Phas
   return c;
 }
 
+/** Width of the themed plate under the Ayvago logo at full size. */
+function brandPlateWidth(scene: Phaser.Scene): number {
+  if (!scene.textures.exists(LOGO)) return 100;
+  return Math.round((scene.textures.get(LOGO).source[0].width - LOGO_PAD * 2) / 2) + 36;
+}
+
 /**
  * The sound toggle on the menu, pause and result screens. Its icon follows the one sound switch,
  * also when the platform's toolbar button changes it.
  */
-function soundButton(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Container {
+function soundButton(scene: Phaser.Scene, x: number, y: number, themed = false): Phaser.GameObjects.Container {
   const icon = () => (isMuted() ? 'icon-audiooff' : 'icon-audioon');
-  const snd = iconButton(scene, x, y, icon(), () => setMuted(scene.game, !isMuted()));
+  const snd = (themed ? skinIconButton : iconButton)(scene, x, y, icon(), () => setMuted(scene.game, !isMuted()));
   const off = onMuteChange(() => (snd.getData('icon') as Phaser.GameObjects.Image).setTexture(icon()));
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, off);
   return snd;

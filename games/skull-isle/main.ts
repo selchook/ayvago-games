@@ -1,19 +1,18 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, t, txt, playSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { BoardScene } from './board';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
-import { makeArt, MAP, DOUBLOON } from './art';
+import { makeArt } from './art';
 import { makeSounds } from './audio';
 import { View } from './view';
 import { Sim, NO_INPUT } from './sim';
 import { Bot, SKILL } from './bot';
-import { loadMeta, saveMeta } from './meta';
+import { loadMeta } from './meta';
 import { ALL_NODES } from './upgrades';
-import { HERO, type HeroId } from './defs';
-import { glass, Pill } from './ui';
+import { menuRow, SKULL_THEME } from './menu';
 
 /** The menu's live backdrop (the hero selector swaps its pirate). */
 let menuView: View | null = null;
@@ -112,7 +111,7 @@ launch({
     };
     let sim = fresh();
     let bot = new Bot(sim, SKILL.good, seed);
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x061018, 0.34).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in menu.ts): one full-screen layer
     let acc = 0;
     view.world.onFrame = (dt) => {
       acc += dt;
@@ -143,59 +142,19 @@ launch({
   menuOption: {
     build(scene, x, y) {
       makeArt(scene);
-      const touch = scene.sys.game.device.input.touch;
-      const sel = scene.add.container(x - 112, y + 4);
-      sel.add(glass(scene, 420, 104, { r: 24, color: 0x0e1a24, alpha: 0.86 }));
-      const name = txt(scene, 0, -24, '', { title: true, size: 30, color: '#ffd23f', strokeThickness: 0, shadow: false });
-      const desc = txt(scene, 0, 16, '', { size: 16, color: '#e6eef4', strokeThickness: 0, shadow: false, wrap: 290 });
-      sel.add([name, desc]);
-      const arrow = (dx: number, dir: 1 | -1) => {
-        const g = scene.add.graphics();
-        g.fillStyle(0xffffff, 0.14).fillCircle(dx, 0, 30);
-        g.fillStyle(0xffd23f, 1).fillTriangle(dx + dir * 12, 0, dx - dir * 8, -13, dx - dir * 8, 13);
-        const hit = scene.add.zone(dx, 0, 90, 104).setInteractive({ useHandCursor: true });
-        hit.on('pointerup', () => cycle(dir));
-        sel.add([g, hit]);
-      };
-      arrow(-174, -1);
-      arrow(174, 1);
-      const show = () => {
-        const mm = loadMeta();
-        name.setText(t('h_' + mm.hero));
-        desc.setText(t('hd_' + mm.hero));
-        if (desc.height > 44) desc.setScale(44 / desc.height); else desc.setScale(1);
-        name.setColor('#' + HERO[mm.hero].color.toString(16).padStart(6, '0'));
-      };
-      const cycle = (dir: 1 | -1) => {
-        const mm = loadMeta();
-        const list = mm.heroes;
-        const i = list.indexOf(mm.hero);
-        mm.hero = list[(i + dir + list.length) % list.length] as HeroId;
-        saveMeta(mm);
-        playSfx(scene, 'move', { volume: 0.4 });
-        show();
-        scene.tweens.add({ targets: sel, scale: 1.04, duration: 80, yoyo: true });
-        menuView?.setHero(mm.hero);
-      };
-      show();
-      const map = new Pill(scene, x + 220, y + 4, 196, 104, 0x8a5a2a, () => open(), 28);
-      map.setIcon(DOUBLOON, 26);
-      const label = () => { map.setLabels(t('map'), String(loadMeta().doubloons)); map.main.setX(20); };
-      label();
-      map.add(scene.add.image(-map.main.width / 2 - 8, -12, MAP).setDisplaySize(40, 40));
       const open = () => {
         if (!scene.scene.isActive()) return;
         scene.scene.pause();
         scene.scene.launch('Board', { from: scene.scene.key });
       };
-      const closed = () => { label(); show(); };
-      scene.events.on('map-closed', closed);
+      const row = menuRow(scene, x, y, (hero) => menuView?.setHero(hero), open);
+      scene.events.on('map-closed', row.refresh);
       scene.input.keyboard?.on('keydown-M', open);
-      scene.input.keyboard?.on('keydown-H', () => cycle(1));
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('map-closed', closed));
-      if (!touch) txt(scene, x, y + 74, t('heroKeys'), { size: 17, color: '#9fc0d8', strokeThickness: 0, shadow: false });
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('map-closed', row.refresh));
     },
   },
+  // pirate wood, rope and parchment, the logo over a Jolly Roger (menu.ts)
+  menuTheme: SKULL_THEME,
   scenes: [PlayScene, BoardScene],
   strings: STRINGS,
 });

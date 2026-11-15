@@ -16,10 +16,15 @@ import { setHostScanlines, themeHasScanlines } from './fx';
 import { installKeyboardOnce } from './keyboard-once';
 import { adoptPlatformBest } from './storage';
 import { bindAds } from './ads';
+import { renderLogo } from './menu-theme';
 
 declare global {
   interface Window {
-    __ayvago?: { game: Phaser.Game; def: GameDefinition; silenced: () => boolean };
+    __ayvago?: {
+      game: Phaser.Game; def: GameDefinition; silenced: () => boolean;
+      /** The themed logo of the title in `lang` as a PNG data URL (store art); absent without a menu theme. */
+      menuLogo?: (lang: 'tr' | 'en', maxWidth?: number, size?: number) => string;
+    };
   }
 }
 
@@ -80,8 +85,11 @@ function keepCanvasFitted(game: Phaser.Game): void {
   else game.events.once(Phaser.Core.Events.BOOT, start);
 }
 
-async function fontsReady(timeoutMs = 3000): Promise<void> {
+async function fontsReady(def: GameDefinition, timeoutMs = 3000): Promise<void> {
+  const theme = def.menuTheme?.font;
   const loads = Promise.all([
+    // a menu theme's display face: both its subsets (Latin and Latin Extended: Turkish)
+    ...(theme ? [document.fonts.load(`64px "${theme}"`, 'AaĞğŞşİıÇçÖöÜü')] : []),
     document.fonts.load('32px "Press Start 2P"', 'AĞŞİ'),
     document.fonts.load(`32px "${TURKISH_I_FAMILY}"`, 'İ'),
     document.fonts.load('32px "Pixelify Sans"', 'AĞŞİ'),
@@ -116,7 +124,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   const params = new URLSearchParams(location.search);
   const intro = params.has('nointro') ? Promise.resolve() : playAyvagoIntro();
   setIntroPromise(intro);
-  const [adapter] = await Promise.all([platform, fontsReady()]);
+  const [adapter] = await Promise.all([platform, fontsReady(def)]);
   if (adapter.name === 'ayvago') setLang(adapter.locale.toLowerCase().startsWith('tr') ? 'tr' : 'en');
   setHostScanlines(themeHasScanlines(adapter.config?.theme));
   // The platform's record wins over this browser's (absent = the platform does not know).
@@ -159,5 +167,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   bindAds(game);
 
   window.__ayvago = { game, def, silenced: isSilenced };
+  const theme = def.menuTheme;
+  if (theme) window.__ayvago.menuLogo = (lang, maxWidth = 900, size = 180) => renderLogo(theme, def.meta.title[lang], maxWidth, size).canvas.toDataURL('image/png');
   return game;
 }
