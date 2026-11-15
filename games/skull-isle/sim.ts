@@ -31,8 +31,10 @@ export interface Input {
   dodge: boolean;
   special: boolean;
   item: boolean;
+  /** At sea: a step of the sails this frame (+1 more canvas, −1 less; 0 none). */
+  sail?: number;
 }
-export const NO_INPUT: Input = { mx: 0, mz: 0, attack: false, dodge: false, special: false, item: false };
+export const NO_INPUT: Input = { mx: 0, mz: 0, attack: false, dodge: false, special: false, item: false, sail: 0 };
 
 export type PState = 'idle' | 'run' | 'attack' | 'dodge' | 'shoot' | 'signal' | 'hurt' | 'dead' | 'cheer';
 
@@ -48,8 +50,8 @@ export interface Player {
   secondWinds: number;
   /** Seconds since the last swing (for the view's slash trail). */
   moved: number;
-  /** In deep water: swimming, seconds of breath left, seconds in the water. */
-  swim: boolean; breath: number; swimT: number;
+  /** In deep water: swimming, and seconds in the water (no breath: the sharks are the danger). */
+  swim: boolean; swimT: number;
 }
 
 export interface Foe {
@@ -72,8 +74,10 @@ export interface Foe {
   /** Seconds since death (the view plays Death, then sinks it). */
   deadT: number;
   elite: boolean;
-  /** Tentacles: seconds the player has been out of reach (they dive and come up nearer). */
+  /** Tentacles: seconds the player has been out of reach (they dive and come up nearer); sharks: the same, before they give up. */
   away: number;
+  /** Sharks: lunges made (they swim off after a few). */
+  passes: number;
 }
 
 export type TeleKind = 'circle' | 'line' | 'cone';
@@ -154,6 +158,9 @@ export type SimEvent =
   | { type: 'broadside'; side: number; x: number; z: number; n: number; fire: boolean; chain: boolean }
   | { type: 'evade'; x: number; z: number; dir: number }
   | { type: 'gust'; dir: number }
+  /** A gun fires: a ball leaves a port on a ship's side (x, y, z), or an enemy's. */
+  | { type: 'gun'; x: number; y: number; z: number; side: number; friendly: boolean; kind: 'ball' | 'skull' | 'ghost'; owner: number }
+  | { type: 'sails'; level: number }
   | { type: 'lightning'; x: number; z: number }
   | { type: 'seaSpawn'; id: number; kind: SeaKind; x: number; z: number }
   | { type: 'ghost' }
@@ -175,11 +182,14 @@ export type SimEvent =
   | { type: 'washed'; hp: number }
   // swimming
   | { type: 'swim'; on: boolean }
-  | { type: 'breath'; level: 'low' | 'out' }
+  | { type: 'current' }
   | { type: 'islet'; x: number; z: number; n: number };
 
 const TAU = Math.PI * 2;
 const ON_SCREEN = 25;
+/** A shark's middle stays this far off the nearest shore (its nose then just reaches the wet sand), and bites within this reach. */
+const SHARK_SHALLOW = 0.8;
+const SHARK_BITE = 1.3;
 
 export class Sim {
   readonly mode: Mode;
@@ -230,8 +240,7 @@ export class Sim {
   private hunterCd = 0;
   /** Ashore from the ship: the hero runs up the beach to the island's start during its intro. */
   private walkIn: { x: number; z: number; t: number } | null = null;
-  private breathWarned = false;
-  private drownT = 0;
+  private currentT = 0;
 
   p: Player;
   foes: Foe[] = [];
@@ -280,7 +289,7 @@ export class Sim {
       x: 0, z: 2, vx: 0, vz: 0, face: Math.PI, hp: this.st.maxHp, state: 'idle', t: 0, step: 0, stepDef: null, hitDone: false,
       chainT: 0, invuln: 0, dodgeCd: 0, dodgeX: 0, dodgeZ: 1, special: 0, kegs: this.st.kegsStart, shieldHits: 0,
       powers: { rum: 0, parrot: 0, shield: 0, gold2: 0, fury: 0 }, combo: 0, comboT: 0, secondWinds: this.st.secondWinds, moved: 0,
-      swim: false, breath: this.shipSt.breath, swimT: 0,
+      swim: false, swimT: 0,
     };
     this.startIsland(0, !!opts.tutorial);
   }
@@ -316,7 +325,7 @@ export class Sim {
     switch (f.kind) {
       case 'tentacle': case 'arm': return f.state === 'down';
       case 'head': return f.state === 'open';
-      case 'shark': return f.state === 'beached' || f.state === 'lunge';
+      case 'shark': return f.state === 'thrash' || f.state === 'lunge';
       case 'hunter': return f.state === 'wind' || f.state === 'lunge';
       case 'captain': return f.state !== 'ship' && f.state !== 'leap';
       default: return f.state !== 'spawn';
@@ -350,7 +359,7 @@ export class Sim {
     if (!keepPos) { p.x = 0; p.z = this.L.rz * 0.35; }
     p.vx = p.vz = 0; p.face = Math.PI; p.state = 'idle'; p.t = 0; p.stepDef = null;
     p.invuln = 1; p.chainT = 0;
-    p.swim = false; p.swimT = 0; p.breath = this.shipSt.breath;
+    p.swim = false; p.swimT = 0;
     this.hunterCd = 2;
     // the hidden islet's treasure
     if (!tutorial) this.isletChest();
@@ -398,7 +407,8 @@ export class Sim {
     const l = this.lvl;
     return {
       hp: (1 + 0.3 * l) * (1 + 0.35 * this.lap) * this.tune.foeHp,
-      dmg: (1 + 0.18 * l) * (1 + 0.15 * this.lap),
+      // (1.2: a little steeper than 1.1's 0.18 a level, as the beach sharks no longer bite on the sand)
+      dmg: (1 + 0.22 * l) * (1 + 0.15 * this.lap),
       speed: this.tune.speed * Math.min(1.25, 1 + 0.025 * l) * (kind === 'runner' || kind === 'skel' ? 1 : 1),
     };
   }
@@ -410,7 +420,7 @@ export class Sim {
       hp: Math.round(d.hp * s.hp), maxHp: Math.round(d.hp * s.hp), r: d.r, speed: d.speed * s.speed, dmg: Math.round(d.dmg * s.dmg),
       state: 'spawn', t: 0, cd: this.R(0.6, 1.6), tx: x, tz: z, flash: 0, stun: 0,
       bx: x, bz: z, yaw: 0, len: 0, pitch: 0, scale: kind === 'brute' ? 1.45 : kind === 'captain' ? 2 : 1,
-      passive: false, tele: -1, hitPlayer: false, deadT: 0, elite: false, away: 0,
+      passive: false, tele: -1, hitPlayer: false, deadT: 0, elite: false, away: 0, passes: 0,
     };
     this.foes.push(f);
     this.emit({ type: 'spawn', id: f.id, kind, x, z });
@@ -738,12 +748,25 @@ export class Sim {
     this.moveBody(dt);
   }
 
-  /** Moves the player by its velocity: on the sand, or out into the deep water (but not past it), round the props and ships. */
+  /** Moves the player by its velocity: on the sand, or out into the deep water (a current pushes back past `SWIM.soft`), round the props and ships. */
   private moveBody(dt: number): void {
     const p = this.p;
     p.x += p.vx * dt; p.z += p.vz * dt;
     if (this.phase === 'tutorial') { this.keepOnLand(p, PLAYER.radius); return; }
     const L = this.L;
+    // the soft edge of the play area: past SWIM.soft off the nearest land the sea pushes back,
+    // gently at first, as hard as a swimmer at the far limit
+    const wd = waterD(L, p.x, p.z);
+    if (wd > SWIM.soft && p.state !== 'dead') {
+      const k = Math.min(1, (wd - SWIM.soft) / (SWIM.reach - SWIM.soft));
+      const toIslet = L.islet && isletD(L, p.x, p.z) < landD(L, p.x, p.z);
+      const cx = toIslet ? L.islet!.x : 0, cz = toIslet ? L.islet!.z : 0;
+      const dx = cx - p.x, dz = cz - p.z, dd = Math.hypot(dx, dz) || 1;
+      const push = SWIM.push * (0.25 + 0.75 * k * k);
+      p.x += dx / dd * push * dt; p.z += dz / dd * push * dt;
+      if (this.currentT <= 0 && k > 0.2) { this.currentT = 8; this.emit({ type: 'current' }); }
+    }
+    this.currentT -= dt;
     const th = Math.atan2(p.z, p.x);
     const lim = shoreAt(L, th) + SWIM.reach;
     const d = Math.hypot(p.x, p.z);
@@ -757,58 +780,14 @@ export class Sim {
     if (!L.ship) block(L.anchor.x, L.anchor.z, 3.6);
   }
 
-  /** Deep water: swimming (no attacks, slower), breath that runs out (then HP drains and the sea pushes back to shore). */
+  /** Deep water: swimming (no attacks, slower). There is no breath to run out: the sharks are the danger. */
   private updateSwim(dt: number): void {
     const p = this.p;
     if (this.phase === 'tutorial' || p.state === 'dead') return;
     const wd = waterD(this.L, p.x, p.z);
-    const max = this.shipSt.breath;
     if (!p.swim && wd > SWIM.in && p.state !== 'dodge') { p.swim = true; this.emit({ type: 'swim', on: true }); this.emit({ type: 'splash', x: p.x, z: p.z, big: false }); }
     else if (p.swim && wd < SWIM.out) { p.swim = false; this.emit({ type: 'swim', on: false }); }
-    if (!p.swim) {
-      p.breath = Math.min(max, p.breath + dt * SWIM.refill);
-      if (p.breath > max * 0.5) this.breathWarned = false;
-      this.drownT = 0;
-      return;
-    }
-    p.breath -= dt;
-    if (p.breath < 3 && !this.breathWarned) { this.breathWarned = true; this.emit({ type: 'breath', level: 'low' }); }
-    if (p.breath <= 0) {
-      if (this.drownT === 0) this.emit({ type: 'breath', level: 'out' });
-      p.breath = 0;
-      this.drownT += dt;
-      // the sea pushes a breathless swimmer back to the nearest land
-      const toIslet = this.L.islet && isletD(this.L, p.x, p.z) < landD(this.L, p.x, p.z);
-      const cx = toIslet ? this.L.islet!.x : 0, cz = toIslet ? this.L.islet!.z : 0;
-      const dx = cx - p.x, dz = cz - p.z, dd = Math.hypot(dx, dz) || 1;
-      p.x += dx / dd * 1.8 * dt; p.z += dz / dd * 1.8 * dt;
-      // a soft limit: the breathless swimmer weakens (never below 1 HP) while the sea carries them back
-      if (Math.floor(this.drownT / 0.5) !== Math.floor((this.drownT - dt) / 0.5) && p.hp > 1) this.loseHp(Math.min(p.hp - 1, Math.max(1, Math.round(SWIM.drain * 0.5 * this.tune.hurt))), 'drown');
-    }
-  }
-
-  /** HP lost without a hit (drowning): no knockback or stagger, but it can end the run. */
-  private loseHp(n: number, cause: Cause): void {
-    const p = this.p;
-    if (p.state === 'dead') return;
-    p.hp -= n;
-    this.damageBy[cause] = (this.damageBy[cause] ?? 0) + n;
-    p.combo = 0; p.comboT = 0;
-    this.emit({ type: 'hurt', dmg: n, cause, x: p.x, z: p.z });
-    if (p.hp > 0) return;
-    if (p.secondWinds > 0) {
-      p.secondWinds--;
-      p.hp = Math.round(this.st.maxHp * 0.4);
-      p.breath = this.shipSt.breath;
-      p.invuln = 2.2;
-      this.emit({ type: 'secondWind' });
-      return;
-    }
-    p.hp = 0;
-    p.state = 'dead'; p.t = 0;
-    this.cause = cause;
-    this.setPhase('dead');
-    this.emit({ type: 'death', cause });
+    void dt;
   }
 
   private keepOnLand(o: { x: number; z: number }, r: number): void {
@@ -1364,34 +1343,96 @@ export class Sim {
     }
   }
 
+  /** Whether a point is clear of the ships (the crew's at anchor, the island's own) for a shark's path. */
+  private clearOfShips(x: number, z: number, m = 4): boolean {
+    const L = this.L;
+    if (L.ship && !L.ship.beached && Math.hypot(x - L.ship.x, z - L.ship.z) < m) return false;
+    if (!L.ship && Math.hypot(x - L.anchor.x, z - L.anchor.z) < m) return false;
+    return true;
+  }
+
+  /**
+   * How far a shark at (x, z) can swim towards `ang` before the water gets too shallow for it
+   * (`shallow` units off the nearest shore, the islet's too), at most `max`.
+   */
+  waterRun(x: number, z: number, ang: number, max: number, shallow = SHARK_SHALLOW): number {
+    const ux = Math.sin(ang), uz = Math.cos(ang);
+    let u = 0;
+    while (u < max) {
+      const n = Math.min(max, u + 0.2);
+      if (waterD(this.L, x + ux * n, z + uz * n) < shallow) break;
+      u = n;
+    }
+    return u;
+  }
+
   private sharkTick(dt: number): void {
     const p = this.p;
     this.sharkCd -= dt;
+    // sharks come for a hero at the water's edge or wading in the shallows (the hunters take swimmers)
     const near = landD(this.L, p.x, p.z) > -3.6 && !p.swim;
     const sharks = this.foes.filter((f) => f.kind === 'shark' && f.state !== 'dead').length;
     if (this.sharkCd <= 0 && near && sharks < 1 + Math.floor(this.lvl / 4) && p.state !== 'dead') {
       this.sharkCd = this.R(4.5, 8);
-      const th = Math.atan2(p.z, p.x) + this.R(-0.3, 0.3);
-      const from = shorePoint(this.L, th, 9), to = shorePoint(this.L, th, 3);
-      const f = this.makeFoe('shark', from.x, from.z);
-      f.state = 'fin'; f.bx = from.x; f.bz = from.z; f.tx = to.x; f.tz = to.z; f.y = -0.5;
-      f.face = Math.atan2(to.x - from.x, to.z - from.z);
+      for (let i = 0; i < 6; i++) {
+        const th = Math.atan2(p.z, p.x) + this.R(-0.35, 0.35);
+        const from = shorePoint(this.L, th, 9), to = shorePoint(this.L, th, 3.4);
+        if (waterD(this.L, to.x, to.z) < 2.4 || waterD(this.L, from.x, from.z) < 4) continue;
+        if (!this.clearOfShips(from.x, from.z) || !this.clearOfShips(to.x, to.z) || !this.clearOfShips((from.x + to.x) / 2, (from.z + to.z) / 2)) continue;
+        const f = this.makeFoe('shark', from.x, from.z);
+        f.state = 'fin'; f.bx = from.x; f.bz = from.z; f.tx = to.x; f.tz = to.z; f.y = -0.55;
+        f.face = Math.atan2(to.x - from.x, to.z - from.z);
+        f.cd = this.R(0.4, 1.2);
+        return;
+      }
     } else if (!near) this.sharkCd = Math.max(this.sharkCd, 1.2);
   }
 
-  /** Sharks: a fin closes in, the shark lunges up the beach along a red lane, lies stranded (hit it!), slides back. */
+  /**
+   * Sharks off the islands live in the water only: a fin closes in and stalks the shallows; when the
+   * hero is at the water's edge it winds up along a red lane that ends where the water gets too
+   * shallow, bursts out of the sea along it, thrashes in the shallows (hit it!) and dives back out.
+   * A hero up on the sand is out of reach: the fin circles and gives up.
+   */
   private shark(f: Foe, dt: number): void {
     const p = this.p;
+    const L = this.L;
+    const swimTo = (gx: number, gz: number, sp: number, turn = 4) => {
+      const dx = gx - f.x, dz = gz - f.z, d = Math.hypot(dx, dz);
+      if (d < 0.05) return d;
+      f.face += angDiff(f.face, Math.atan2(dx, dz)) * Math.min(1, dt * turn);
+      const v = Math.min(d, sp * dt) * Math.max(0.3, Math.cos(angDiff(f.face, Math.atan2(dx, dz))));
+      f.x += Math.sin(f.face) * v; f.z += Math.cos(f.face) * v;
+      return d;
+    };
     switch (f.state) {
       case 'fin': {
-        const k = Math.min(1, f.t / 1.4);
-        f.x = f.bx + (f.tx - f.bx) * k; f.z = f.bz + (f.tz - f.bz) * k;
         f.y = -0.55;
-        if (k >= 1) {
-          f.state = 'wind'; f.t = 0;
+        if (swimTo(f.tx, f.tz, 5.5, 3) < 0.5) { f.state = 'stalk'; f.t = 0; }
+        break;
+      }
+      case 'stalk': {
+        f.y = -0.55;
+        // patrol the water just off the beach nearest the hero, weaving a little
+        const th = Math.atan2(p.z, p.x) + Math.sin(f.t * 0.9 + f.id) * 0.12;
+        const g = shorePoint(L, th, 3.4);
+        const ok = waterD(L, g.x, g.z) > 2.4 && this.clearOfShips(g.x, g.z);
+        if (ok) swimTo(g.x, g.z, 3.4, 3);
+        else swimTo(f.x + Math.sin(f.face + 0.6) * 2, f.z + Math.cos(f.face + 0.6) * 2, 2.2, 2);
+        this.sharkWater(f);
+        const reachable = p.state !== 'dead' && !p.swim && landD(L, p.x, p.z) > -2.2;
+        f.away = reachable ? 0 : f.away + dt;
+        if (f.away > 5 || f.passes >= 2 || this.phase !== 'fight') { f.state = 'leave'; f.t = 0; break; }
+        if (f.cd <= 0 && reachable && this.phase === 'fight') {
+          // the lunge goes straight at the hero but no further than the water lets it
           const ang = Math.atan2(p.x - f.x, p.z - f.z);
-          f.face = ang;
-          f.tele = this.addTele({ kind: 'line', x: f.x, z: f.z, len: 7.5, w: 1.6, ang, dur: this.tl(0.8), dmg: f.dmg, cause: 'shark', knock: 6, owner: f.id, lane: true });
+          const dist = Math.hypot(p.x - f.x, p.z - f.z);
+          const run = this.waterRun(f.x, f.z, ang, Math.min(8, dist + 0.6));
+          const ex = f.x + Math.sin(ang) * run, ez = f.z + Math.cos(ang) * run;
+          if (run > 1.5 && Math.hypot(p.x - ex, p.z - ez) < SHARK_BITE) {
+            f.state = 'wind'; f.t = 0; f.face = ang; f.len = run;
+            f.tele = this.addTele({ kind: 'line', x: f.x, z: f.z, len: run + 0.9, w: 1.6, ang, dur: this.tl(0.8), dmg: f.dmg, cause: 'shark', knock: 6, owner: f.id, lane: true });
+          } else f.cd = 0.3;
         }
         break;
       }
@@ -1400,29 +1441,56 @@ export class Sim {
         if (f.t >= this.tl(0.8)) { f.state = 'lunge'; f.t = 0; f.hitPlayer = false; f.bx = f.x; f.bz = f.z; this.emit({ type: 'lunge', x: f.x, z: f.z }); this.emit({ type: 'splash', x: f.x, z: f.z, big: true }); }
         break;
       case 'lunge': {
-        const sp = 13;
-        f.x += Math.sin(f.face) * sp * dt; f.z += Math.cos(f.face) * sp * dt;
-        const k = f.t * sp / 7.5;
-        f.y = Math.sin(Math.min(1, k) * Math.PI) * 1.2;
-        if (!f.hitPlayer && Math.hypot(p.x - f.x, p.z - f.z) < 1.15) { f.hitPlayer = true; this.hurtPlayer(f.dmg, 'shark', f.x, f.z, 7); }
+        // out of the water in an arc along the lane, down again at its end (still in the water)
+        const sp = 12;
+        const u = Math.min(f.len, f.t * sp);
+        f.x = f.bx + Math.sin(f.face) * u; f.z = f.bz + Math.cos(f.face) * u;
+        const k = u / Math.max(0.1, f.len);
+        f.y = -0.45 + Math.sin(k * Math.PI) * 1.35;
+        if (!f.hitPlayer && Math.hypot(p.x - f.x, p.z - f.z) < SHARK_BITE) { f.hitPlayer = true; this.hurtPlayer(f.dmg, 'shark', f.x, f.z, 7); }
         if (k >= 1) {
           if (f.tele >= 0) this.cancelTele(f.tele);
-          f.tele = -1; f.state = 'beached'; f.t = 0; f.y = 0;
-          this.emit({ type: 'boom', x: f.x, z: f.z, r: 1.2, kind: 'land' });
+          f.tele = -1; f.state = 'thrash'; f.t = 0; f.y = -0.25; f.passes++;
+          this.emit({ type: 'splash', x: f.x, z: f.z, big: true });
         }
         break;
       }
-      case 'beached':
-        if (f.t >= (this.mode === 'easy' ? 2.2 : 1.7)) { f.state = 'back'; f.t = 0; }
+      case 'thrash':
+        // stranded in the shallows for a moment, thrashing: the hero's chance
+        f.y = -0.25;
+        if (f.t >= (this.mode === 'easy' ? 2 : 1.5)) { f.state = 'dive'; f.t = 0; f.face += Math.PI; this.emit({ type: 'splash', x: f.x, z: f.z, big: false }); }
         break;
-      case 'back': {
-        f.x -= Math.sin(f.face) * 7 * dt; f.z -= Math.cos(f.face) * 7 * dt;
-        if (landD(this.L, f.x, f.z) > 0.6) { f.y -= dt * 2; }
-        if (f.t >= 1.6) { f.state = 'gone'; this.emit({ type: 'splash', x: f.x, z: f.z, big: false }); }
+      case 'dive': {
+        // back out to sea and under
+        const out = Math.atan2(f.x, f.z);
+        f.face += angDiff(f.face, out) * Math.min(1, dt * 6);
+        f.x += Math.sin(f.face) * 6 * dt; f.z += Math.cos(f.face) * 6 * dt;
+        f.y = Math.max(-0.95, f.y - dt * 1.4);
+        if (f.t >= 1.1) { f.state = 'stalk'; f.t = 0; f.y = -0.55; f.cd = this.R(2.2, 3.6); }
         break;
       }
-      case 'hurt': f.state = 'beached'; break;
+      case 'leave': {
+        const out = Math.atan2(f.x, f.z);
+        f.face += angDiff(f.face, out) * Math.min(1, dt * 3);
+        f.x += Math.sin(f.face) * 5 * dt; f.z += Math.cos(f.face) * 5 * dt;
+        if (f.t > 1.2) f.y -= dt * 0.8;
+        if (f.t >= 2.6) { f.state = 'gone'; this.emit({ type: 'splash', x: f.x, z: f.z, big: false }); }
+        break;
+      }
+      case 'hurt': f.state = 'thrash'; break;
     }
+    if (f.state === 'fin' || f.state === 'stalk' || f.state === 'leave') this.sharkWater(f);
+  }
+
+  /** Keeps a swimming shark in water deep enough for it (out of the shallows, off the islet). */
+  private sharkWater(f: Foe, min = 1.2): void {
+    const L = this.L;
+    const wd = waterD(L, f.x, f.z);
+    if (wd >= min) return;
+    const isl = L.islet && isletD(L, f.x, f.z) < landD(L, f.x, f.z);
+    const cx = isl ? L.islet!.x : 0, cz = isl ? L.islet!.z : 0;
+    const dx = f.x - cx, dz = f.z - cz, d = Math.hypot(dx, dz) || 1;
+    f.x += dx / d * (min - wd); f.z += dz / d * (min - wd);
   }
 
   /** Spawns a shark that hunts the swimmer (deep water on any island, and the wreck's swim). */
@@ -1430,7 +1498,8 @@ export class Sim {
     const p = this.p;
     if (p.swim) p.swimT += dt; else p.swimT = 0;
     this.hunterCd -= dt;
-    if (!p.swim || p.state === 'dead' || p.swimT < 2 || this.hunterCd > 0) return;
+    const wary = this.shipSt.wary;
+    if (!p.swim || p.state === 'dead' || p.swimT < 2 * wary || this.hunterCd > 0) return;
     const alive = this.foes.filter((f) => f.kind === 'hunter' && f.state !== 'dead' && f.state !== 'leave').length;
     const cap = 1 + (this.lvl >= 4 || (this.phase === 'wreck' && this.route === 'storm') ? 1 : 0);
     if (alive >= cap) return;
@@ -1441,7 +1510,7 @@ export class Sim {
       if (waterD(this.L, x, z) < 2) continue;
       const f = this.makeFoe('hunter', x, z);
       f.state = 'circle'; f.y = -0.55; f.yaw = a + Math.PI; f.pitch = this.rnd() < 0.5 ? 1 : -1;
-      this.hunterCd = this.R(4, 7) * (this.mode === 'easy' ? 1.4 : 1);
+      this.hunterCd = this.R(4, 7) * (this.mode === 'easy' ? 1.4 : 1) * wary;
       return;
     }
     this.hunterCd = 1;
@@ -1452,7 +1521,9 @@ export class Sim {
     const p = this.p;
     const away = !p.swim || p.state === 'dead';
     f.away = away ? f.away + dt : 0;
-    if (f.away > 1.5 && f.state !== 'leave' && f.state !== 'lunge') {
+    // ashore the swimmer is out of reach; a Strong Swimmer bores them sooner
+    const bored = f.passes >= Math.max(1, Math.round(3 / this.shipSt.wary));
+    if ((f.away > 1.5 || (bored && f.state === 'circle')) && f.state !== 'leave' && f.state !== 'lunge' && f.state !== 'dive') {
       if (f.tele >= 0) this.cancelTele(f.tele);
       f.tele = -1; f.state = 'leave'; f.t = 0;
     }
@@ -1473,22 +1544,26 @@ export class Sim {
           const lead = 0.45;
           const tx = p.x + p.vx * lead, tz = p.z + p.vz * lead;
           f.face = Math.atan2(tx - f.x, tz - f.z);
-          f.tele = this.addTele({ kind: 'line', x: f.x, z: f.z, len: Math.min(10, Math.hypot(tx - f.x, tz - f.z) + 3), w: 1.4, ang: f.face, dur: this.tl(1.1), dmg: f.dmg, cause: 'shark', knock: 5, owner: f.id, lane: true });
+          // the lane runs through the swimmer, but never into the shallows
+          f.len = this.waterRun(f.x, f.z, f.face, Math.min(9.4, Math.hypot(tx - f.x, tz - f.z) + 3));
+          if (f.len < 2) { f.state = 'circle'; f.t = 1.2; break; }
+          f.tele = this.addTele({ kind: 'line', x: f.x, z: f.z, len: f.len + 0.6, w: 1.4, ang: f.face, dur: this.tl(1.1), dmg: f.dmg, cause: 'shark', knock: 5, owner: f.id, lane: true });
         }
         break;
       }
       case 'wind':
         f.y = -0.45 + Math.sin(f.t * 18) * 0.05;
-        if (f.t >= this.tl(1.1)) { f.state = 'lunge'; f.t = 0; f.hitPlayer = false; this.emit({ type: 'lunge', x: f.x, z: f.z }); this.emit({ type: 'splash', x: f.x, z: f.z, big: true }); }
+        if (f.t >= this.tl(1.1)) { f.state = 'lunge'; f.t = 0; f.hitPlayer = false; f.bx = f.x; f.bz = f.z; this.emit({ type: 'lunge', x: f.x, z: f.z }); this.emit({ type: 'splash', x: f.x, z: f.z, big: true }); }
         break;
       case 'lunge': {
         const sp = 13;
-        f.x += Math.sin(f.face) * sp * dt; f.z += Math.cos(f.face) * sp * dt;
-        f.y = Math.sin(Math.min(1, f.t / 0.72) * Math.PI) * 1.1 - 0.3;
+        const u = Math.min(f.len, f.t * sp), k = u / Math.max(0.1, f.len);
+        f.x = f.bx + Math.sin(f.face) * u; f.z = f.bz + Math.cos(f.face) * u;
+        f.y = Math.sin(k * Math.PI) * 1.1 - 0.4;
         if (!f.hitPlayer && Math.hypot(p.x - f.x, p.z - f.z) < 1.15) { f.hitPlayer = true; this.hurtPlayer(f.dmg, 'shark', f.x, f.z, 4); }
-        if (f.t >= 0.72 || waterD(this.L, f.x, f.z) < 0.4) {
+        if (k >= 1) {
           if (f.tele >= 0) this.cancelTele(f.tele);
-          f.tele = -1; f.state = 'dive'; f.t = 0;
+          f.tele = -1; f.state = 'dive'; f.t = 0; f.passes++;
           this.emit({ type: 'splash', x: f.x, z: f.z, big: false });
         }
         break;
@@ -1511,15 +1586,7 @@ export class Sim {
       }
     }
     // sharks keep to the deep water
-    if (f.state !== 'lunge') {
-      const wd = waterD(this.L, f.x, f.z);
-      if (wd < 1.2) {
-        const isl = this.L.islet && isletD(this.L, f.x, f.z) < landD(this.L, f.x, f.z);
-        const cx = isl ? this.L.islet!.x : 0, cz = isl ? this.L.islet!.z : 0;
-        const dx = f.x - cx, dz = f.z - cz, d = Math.hypot(dx, dz) || 1;
-        f.x += dx / d * (1.2 - wd); f.z += dz / d * (1.2 - wd);
-      }
-    }
+    if (f.state !== 'lunge') this.sharkWater(f);
   }
 
   /** The Kraken's head: lurks offshore while its arms fight, then surfaces on the beach, spits ink, dives. */
@@ -1865,10 +1932,12 @@ export class Sim {
       }
     }
     const f = this.foes.find((q) => q.id === b.target);
-    const gx = f ? f.x : p.x + Math.cos(b.t * 2) * 1.2, gz = f ? f.z : p.z + Math.sin(b.t * 2) * 1.2;
-    const k = Math.min(1, dt * (f ? 5 : 4));
+    // a loose orbit round the hero (a little wider than tall on screen), a swoop down at a foe
+    const a = b.t * 1.35;
+    const gx = f ? f.x : p.x + Math.cos(a) * 2.1, gz = f ? f.z : p.z + Math.sin(a) * 1.7;
+    const k = Math.min(1, dt * (f ? 4.5 : 3));
     b.x += (gx - b.x) * k; b.z += (gz - b.z) * k;
-    b.y += ((f ? 1.3 : 2.4) + Math.sin(b.t * 6) * 0.2 - b.y) * k;
+    b.y += ((f ? 1.2 : 2.2) + Math.sin(b.t * 1.7) * 0.25 - b.y) * Math.min(1, dt * (f ? 5 : 2.5));
     if (f && this.peckT <= 0 && Math.hypot(b.x - f.x, b.z - f.z) < 1.2) {
       this.peckT = 0.7;
       this.hurtFoe(f, 7 + this.st.dmg * 0.25, b.x, b.z, 1, 'parrot', false);
@@ -1913,7 +1982,6 @@ export class Sim {
     this.shipLv[id] = lv + 1;
     this.shipSt = shipStats(this.shipLv, this.tune);
     if (this.shipSt.maxHull > before) this.hull += this.shipSt.maxHull - before;
-    this.p.breath = this.shipSt.breath;
     return true;
   }
 
@@ -2016,7 +2084,7 @@ export class Sim {
     p.x = clamp(v.ship.x * 0.4, -4, 4);
     p.z = shoreAt(this.L, Math.PI / 2) + 8;
     p.vx = p.vz = 0; p.face = Math.PI; p.state = 'idle'; p.t = 0;
-    p.swim = true; p.swimT = 0; p.breath = this.shipSt.breath; p.invuln = 1.5;
+    p.swim = true; p.swimT = 0; p.invuln = 1.5;
     this.hunterCd = 1.2;
     this.teles = [];
     this.setPhase('wreck');
@@ -2098,6 +2166,17 @@ export class Sim {
       f.state = 'move';
       f.cd = 1.5 + i * 0.4;
     }
+  }
+
+  /** A shark stalking the shallows off the hero's nearest beach (screenshots). */
+  testShark(cd = 0): Foe {
+    const p = this.p;
+    const th = Math.atan2(p.z, p.x);
+    const at = shorePoint(this.L, th, 3.4);
+    const f = this.makeFoe('shark', at.x, at.z);
+    f.state = 'stalk'; f.y = -0.55; f.cd = cd;
+    f.face = Math.atan2(-at.x, -at.z);
+    return f;
   }
 
   /** A telegraph for screenshots. */

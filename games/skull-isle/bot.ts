@@ -41,6 +41,7 @@ export class Bot {
   private wx = 0;
   private wz = 0;
   private lastPress = false;
+  private sailT = 0;
 
   constructor(private sim: Sim, private skill: Skill, seed = 7) {
     this.rnd = seeded(seed * 31 + 5);
@@ -121,7 +122,7 @@ export class Bot {
       for (const c of s.chests) {
         if (c.open) continue;
         // the islet's treasure: only when the beach is quiet and the hero is fit (the good bot always, the casual one now and then)
-        if (c.islet && (p.hp < s.st.maxHp * (p.swim ? 0.35 : 0.6) || (p.breath < s.shipSt.breath * 0.9 && !p.swim) || s.phase === 'cleared' || s.bossActive || this.skill.tactics < 0.5 && (s.wave + s.k) % 2 === 0)) continue;
+        if (c.islet && (p.hp < s.st.maxHp * (p.swim ? 0.35 : 0.6) || s.phase === 'cleared' || s.bossActive || this.skill.tactics < 0.5 && (s.wave + s.k) % 2 === 0)) continue;
         const d = Math.hypot(c.x - p.x, c.z - p.z);
         if (d < bd) { bd = d; target = { x: c.x, z: c.z, r: 0.6 }; islet = !!c.islet; }
       }
@@ -169,9 +170,9 @@ export class Bot {
         gx += -uz * sgn * 2.2 * gl / Math.max(1, gl); gz += ux * sgn * 2.2 * gl / Math.max(1, gl);
       }
     }
-    // keep off the waterline where sharks hunt; out of breath (or with nothing to swim for): back to land
+    // keep off the waterline where sharks hunt; with nothing to swim for: back to land
     if (!islet && s.isle.sharks && landD(s.L, p.x, p.z) > -3.4) { gx -= p.x * 0.25; gz -= p.z * 0.25; }
-    if (p.swim && (!islet || p.breath < 2.5)) {
+    if (p.swim && !islet) {
       const toI = s.L.islet && waterD(s.L, p.x, p.z) < landD(s.L, p.x, p.z) && islet;
       const cx = toI ? s.L.islet!.x : 0, cz = toI ? s.L.islet!.z : 0;
       gx = (cx - p.x); gz = (cz - p.z);
@@ -252,7 +253,12 @@ export class Bot {
       gx += this.wx * this.skill.sloppy * 1.4;
     }
     inp.mx = Math.max(-1, Math.min(1, gx));
-    if (slow) inp.mz = 0.9;
+    // the sails: reefed to let a lane pass ahead, full when the sea ahead is clear (the good bot), else half
+    let clear = !foe && !threats.length;
+    for (const f of v.foes) if (f.z < ship.z && ship.z - f.z < 34) clear = false;
+    const want = slow ? 1 : clear && this.skill.tactics > 0.5 ? 3 : 2;
+    this.sailT -= dt;
+    if (want !== ship.sail && this.sailT <= 0) { inp.sail = Math.sign(want - ship.sail); this.sailT = 0.3 + this.skill.react; }
     // evade when a warning is about to land on the hull and the rudder alone is too slow
     let urgent = false;
     for (const T of threats) if (T.dur - T.t < 0.5 && v.shipIn(T)) urgent = true;

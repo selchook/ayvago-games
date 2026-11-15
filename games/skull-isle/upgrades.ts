@@ -3,7 +3,7 @@
 //   - the dock shop between islands: the island's loot buys levels of seven upgrades and a patch-up;
 //   - the boons: a free pick of one of three after every boss;
 //   - the meta board: Doubloons earned by every run buy ten lasting nodes, plus Barbarossa.
-import { HERO, PLAYER, SEA, SWIM, type HeroId, type Tuning } from './defs';
+import { HERO, PLAYER, SEA, type HeroId, type Tuning } from './defs';
 
 // ------------------------------------------------------------------ the dock shop
 
@@ -51,13 +51,13 @@ export interface ShipStats {
   net: number;
   /** Figurehead: more loot from the sea (share), and a better chance of bottles. */
   luck: number;
-  /** In deep water: swimming speed factor and seconds of breath. */
+  /** In deep water (Strong Swimmer): the swimming speed factor, and how much longer the sharks take to notice a swimmer and how soon they give up. */
   swim: number;
-  breath: number;
+  wary: number;
 }
 
 /** The ship's (and the swimmer's) numbers for shop levels `lv`. */
-export function shipStats(lv: Partial<Record<ShipId, number>>, tune: Pick<Tuning, 'hull' | 'breath'>): ShipStats {
+export function shipStats(lv: Partial<Record<ShipId, number>>, tune: Pick<Tuning, 'hull'>): ShipStats {
   const l = (id: ShipId) => lv[id] ?? 0;
   return {
     maxHull: Math.round((100 + 25 * l('hull')) * tune.hull),
@@ -67,8 +67,8 @@ export function shipStats(lv: Partial<Record<ShipId, number>>, tune: Pick<Tuning
     reload: 1.15 * (1 - 0.1 * l('cannon')),
     net: 2.4 + 1.1 * l('net'),
     luck: 0.2 * l('figurehead'),
-    swim: 1 + 0.14 * l('swim'),
-    breath: (SWIM.breath + 3 * l('swim')) * tune.breath,
+    swim: 1 + 0.15 * l('swim'),
+    wary: 1 + 0.35 * l('swim'),
   };
 }
 

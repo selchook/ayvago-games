@@ -5,7 +5,10 @@
 //   - Telegraphs: the red warnings on the sand (circles, cones and lanes that fill up as the blow
 //     comes; gold for the player's own cannon fire), one instanced quad with a small shader.
 //   - Water: the sea round the island, a shader that knows the coastline (shallows, foam lines
-//     that roll in, glints) and bobs a little.
+//     that roll in, soft glints near the camera) and bobs a little; swellY() is the same swell on
+//     the CPU, so foam, rings and wakes ride the waves instead of cutting through them.
+//   - Health bars: one instanced quad per hurt foe, billboarded in the shader (one draw call).
+//   - Wakes: foam ribbons on the water behind ships, sharks' fins and swimmers (one draw call).
 import { THREE } from '@core/three';
 
 // ------------------------------------------------------------------ textures
@@ -119,8 +122,35 @@ export const TEX = {
       }
     }
   }),
-  /** A plain rounded bar (health bars over the sea's ships). */
-  bar: () => canvasTex('bar', 32, 8, (g) => { g.fillStyle = 'rgba(255,255,255,1)'; g.beginPath(); g.roundRect(0, 0, 32, 8, 4); g.fill(); }),
+  /** Sea foam that tiles: soft blotches and lacy holes (wakes). */
+  foam: () => canvasTex('foam', 128, 128, (g) => {
+    let seed = 7;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    g.clearRect(0, 0, 128, 128);
+    // blotches drawn wrapped round the edges so the texture tiles
+    const blob = (x: number, y: number, r: number, a: number) => {
+      for (const ox of [-128, 0, 128]) for (const oy of [-128, 0, 128]) {
+        const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+        gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(0.6, `rgba(255,255,255,${a * 0.55})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = gr;
+        g.fillRect(x + ox - r, y + oy - r, r * 2, r * 2);
+      }
+    };
+    for (let i = 0; i < 70; i++) blob(rnd() * 128, rnd() * 128, 8 + rnd() * 18, 0.25 + rnd() * 0.35);
+    for (let i = 0; i < 90; i++) blob(rnd() * 128, rnd() * 128, 2 + rnd() * 5, 0.5 + rnd() * 0.4);
+    // lacy holes
+    g.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 26; i++) {
+      const x = rnd() * 128, y = rnd() * 128, r = 3 + rnd() * 7;
+      for (const ox of [-128, 0, 128]) for (const oy of [-128, 0, 128]) {
+        const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+        gr.addColorStop(0, 'rgba(0,0,0,0.7)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = gr;
+        g.fillRect(x + ox - r, y + oy - r, r * 2, r * 2);
+      }
+    }
+    g.globalCompositeOperation = 'source-over';
+  }),
   /** A ghostly bubble (the ghost shield). */
   bubble: () => canvasTex('bubble', 128, 128, radial([[0, 'rgba(255,255,255,0.05)'], [0.7, 'rgba(255,255,255,0.12)'], [0.88, 'rgba(255,255,255,0.75)'], [0.95, 'rgba(255,255,255,0.4)'], [1, 'rgba(255,255,255,0)']])),
 };
@@ -398,7 +428,8 @@ export function waterMaterial(): THREE.ShaderMaterial {
       uniform vec3 uDeep, uShallow, uFoam, uSky, uCam, uIslet;
       uniform vec2 uFog;
       varying vec3 vW;
-      float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      // a sine-free hash (stable far from the origin, where the sea legs are sailed)
+      float hash(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
       float noise(vec2 p) {
         vec2 i = floor(p), f = fract(p);
         f = f * f * (3.0 - 2.0 * f);
@@ -413,17 +444,22 @@ export function waterMaterial(): THREE.ShaderMaterial {
         float d = length(vW.xz) - r * k;
         // the hidden islet has its own ring of shallows and foam
         if (uIslet.z > 0.0) d = min(d, length(vW.xz - uIslet.xy) - uIslet.z);
+        float fd = length(vW - uCam);
+        // how much sea one pixel covers: thin details fade out before they shimmer into speckles
+        float px = length(fwidth(vW.xz));
         float n = noise(vW.xz * 0.6 + uTime * 0.15) * 0.6 + noise(vW.xz * 1.7 - uTime * 0.2) * 0.4;
         vec3 col = mix(uShallow, uDeep, smoothstep(0.3, 6.5, d + (n - 0.5) * 1.2));
         // rolling foam: lines that move in towards the beach and fade out at sea
         float wave = fract(d * 0.42 - uTime * 0.32 + n * 0.25);
-        float foam = smoothstep(0.9, 1.0, wave) * smoothstep(5.0, 0.6, d);
+        float foam = smoothstep(0.9, 1.0, wave) * smoothstep(5.0, 0.6, d) * (1.0 - smoothstep(0.08, 0.2, px));
         foam += smoothstep(0.75, 0.0, d) * (0.65 + 0.35 * sin(uTime * 2.0 + th * 9.0));
         col = mix(col, uFoam, clamp(foam, 0.0, 1.0) * 0.85);
-        // glints on the open water
-        float g = smoothstep(0.82, 0.95, noise(vW.xz * 2.2 + vec2(uTime * 0.6, -uTime * 0.4)));
-        col += g * 0.18 * smoothstep(1.5, 4.0, d);
-        float fd = length(vW - uCam);
+        // broad swells of light and shade on the open water (no thresholded noise out there)
+        float sw = noise(vW.xz * 0.11 + vec2(uTime * 0.05, uTime * 0.03)) * 0.65 + noise(vW.xz * 0.27 - vec2(uTime * 0.04, 0.0)) * 0.35;
+        col *= 0.93 + sw * 0.14 * smoothstep(1.5, 5.0, d);
+        // soft glints near the camera only, a little larger than a pixel
+        float g = smoothstep(0.7, 0.92, noise(vW.xz * 0.9 + vec2(uTime * 0.45, -uTime * 0.3)));
+        col += g * 0.1 * smoothstep(1.5, 4.0, d) * smoothstep(30.0, 12.0, fd) * (1.0 - smoothstep(0.05, 0.12, px));
         col = mix(col, uSky, smoothstep(uFog.x, uFog.y, fd));
         gl_FragColor = vec4(col, 1.0);
         #include <colorspace_fragment>
@@ -437,4 +473,255 @@ export function setCoast(mat: THREE.ShaderMaterial, c: Coast & { islet?: { x: nu
   mat.uniforms.uCoast.value.set(c.rx, c.rz);
   (mat.uniforms.uIslet.value as THREE.Vector3).set(c.islet?.x ?? 0, c.islet?.z ?? 0, c.islet ? c.islet.r : 0);
   c.harm.forEach(([n, a, p], i) => (mat.uniforms.uHarm.value as THREE.Vector3[])[i].set(n, a, p));
+}
+
+/** The water's height at (x, z): the plane's level plus the shader's swell (keep in step with waterMaterial). */
+export function swellY(x: number, z: number, t: number, swell: number): number {
+  return WATER_Y + (Math.sin(x * 0.55 + t * 1.3) * 0.05 + Math.cos(z * 0.47 + t * 1.1) * 0.05) * swell;
+}
+export const WATER_Y = -0.22;
+
+// ------------------------------------------------------------------ health bars
+
+/**
+ * Small health bars over foes: one instanced quad each, turned to the camera in the vertex shader,
+ * drawn over the scene (no depth test) in one draw call. The fragment shader draws a dark rounded
+ * frame, the bar's colour up to the health left, a pale "just lost" ghost behind it, quarter ticks
+ * and a shine, antialiased.
+ */
+export class HealthBars {
+  readonly mesh: THREE.InstancedMesh;
+  private aBar: THREE.InstancedBufferAttribute;
+  private n = 0;
+
+  constructor(scene: THREE.Object3D, private cap = 48) {
+    const geo = new THREE.PlaneGeometry(1, 1);
+    // x: health 0–1, y: ghost 0–1, z: alpha, w: aspect (width / height)
+    this.aBar = new THREE.InstancedBufferAttribute(new Float32Array(cap * 4), 4);
+    this.aBar.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('aBar', this.aBar);
+    const mat = new THREE.ShaderMaterial({
+      transparent: true, depthTest: false, depthWrite: false,
+      vertexShader: `
+        attribute vec4 aBar;
+        varying vec2 vUv;
+        varying vec4 vB;
+        varying vec3 vCol;
+        void main() {
+          vUv = uv;
+          vB = aBar;
+          #ifdef USE_INSTANCING_COLOR
+          vCol = instanceColor;
+          #else
+          vCol = vec3(1.0, 0.3, 0.2);
+          #endif
+          vec4 c = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+          vec2 size = vec2(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz));
+          c.xy += position.xy * size;
+          gl_Position = projectionMatrix * c;
+        }`,
+      fragmentShader: `
+        varying vec2 vUv;
+        varying vec4 vB;
+        varying vec3 vCol;
+        float box(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
+        void main() {
+          float asp = vB.w;
+          vec2 p = (vUv - 0.5) * vec2(asp, 1.0);
+          float d = box(p, vec2(asp * 0.5, 0.5), 0.5);
+          float aa = fwidth(d) + 1e-4;
+          float outer = 1.0 - smoothstep(-aa, aa, d);
+          if (outer <= 0.0) discard;
+          // the inner bar, inset from the frame
+          float di = box(p, vec2(asp * 0.5 - 0.2, 0.3), 0.3);
+          float inner = 1.0 - smoothstep(-aa, aa, di);
+          float u = clamp((p.x + asp * 0.5 - 0.2) / max(0.01, asp - 0.4), 0.0, 1.0);
+          float au = fwidth(u) + 1e-4;
+          float fill = 1.0 - smoothstep(vB.x - au, vB.x + au, u);
+          float ghost = (1.0 - smoothstep(vB.y - au, vB.y + au, u)) * (1.0 - fill);
+          vec3 bg = vec3(0.07, 0.05, 0.06);
+          vec3 bar = vCol * (1.05 + 0.35 * smoothstep(0.0, 0.25, p.y));
+          vec3 col = mix(bg, bar, fill);
+          col = mix(col, vec3(1.0, 0.93, 0.8), ghost * 0.85);
+          // quarter ticks
+          float tick = 0.0;
+          for (int i = 1; i < 4; i++) tick = max(tick, 1.0 - smoothstep(0.0, au * 1.5, abs(u - float(i) * 0.25)));
+          col *= 1.0 - tick * 0.45 * inner;
+          col = mix(vec3(0.02, 0.01, 0.02), col, inner);
+          gl_FragColor = vec4(col, outer * vB.z);
+          #include <colorspace_fragment>
+        }`,
+    });
+    mat.customProgramCacheKey = () => 'si-hpbar';
+    this.mesh = new THREE.InstancedMesh(geo, mat, cap);
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
+    this.mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 40;
+    this.mesh.count = 0;
+    scene.add(this.mesh);
+  }
+
+  begin(): void { this.n = 0; }
+
+  /** A bar centred at (x, y, z), w × h world units, health and ghost 0–1, faded by `alpha`. */
+  add(x: number, y: number, z: number, w: number, h: number, hp: number, ghost: number, alpha: number, color: number): void {
+    if (this.n >= this.cap || alpha <= 0.01) return;
+    const i = this.n++;
+    tmpM.compose(tmpP.set(x, y, z), tmpQ.identity(), tmpS.set(w, h, 1));
+    this.mesh.setMatrixAt(i, tmpM);
+    this.mesh.setColorAt(i, tmpC.setHex(color));
+    this.aBar.setXYZW(i, hp, Math.max(hp, ghost), alpha, w / h);
+  }
+
+  end(): void {
+    this.mesh.count = this.n;
+    this.mesh.visible = this.n > 0;
+    if (this.n) {
+      this.mesh.instanceMatrix.needsUpdate = true;
+      this.mesh.instanceColor!.needsUpdate = true;
+      this.aBar.needsUpdate = true;
+    }
+  }
+}
+
+/** Each foe's bar between frames: shown once hurt, the ghost of lost health catching up, a fade out at death. */
+export interface BarState { ghost: number; hold: number; a: number; last: number; seen: boolean }
+
+/**
+ * Steps a bar's state; returns its alpha (0 hides it). `hp` is 0–1; a dead foe's bar drains and fades.
+ */
+export function stepBar(b: BarState, hp: number, dead: boolean, dt: number): number {
+  if (hp < b.last) b.hold = 0.35;
+  b.last = hp;
+  b.hold -= dt;
+  if (b.hold <= 0) b.ghost = Math.max(hp, b.ghost - dt * 0.9);
+  b.ghost = Math.max(b.ghost, hp);
+  const want = dead ? 0 : hp < 0.999 ? 1 : 0;
+  b.a += (want - b.a) * Math.min(1, dt * (want > b.a ? 14 : dead ? 3.5 : 6));
+  return b.a;
+}
+
+// ------------------------------------------------------------------ wakes
+
+interface WakePt { x: number; z: number; sx: number; sz: number; age: number; k: number; w: number; v: number }
+interface WakeStrip { pts: WakePt[]; t: number; touched: boolean; spread: number; life: number; v: number; core: number }
+
+const WAKE_PTS = 32;
+
+/**
+ * Foam on the water: ribbons laid behind whatever moves through it (a ship's bow wave and its
+ * churned-up track, a shark's fin, a swimmer), all in one mesh and one draw call. The foam stays
+ * where it was laid while the ribbon widens and fades; every vertex rides the swell (swellY), so
+ * the waves never cut it into dots. Five vertices across: clear water at the edges, foam arms
+ * inside them and a fainter churn in the middle.
+ */
+export class Wakes {
+  readonly mesh: THREE.Mesh;
+  private strips = new Map<string | number, WakeStrip>();
+  private pos: Float32Array;
+  private col: Float32Array;
+  private uv: Float32Array;
+  private geo: THREE.BufferGeometry;
+
+  constructor(scene: THREE.Object3D, tex: THREE.Texture, private cap = 10) {
+    const nv = cap * WAKE_PTS * 5;
+    this.pos = new Float32Array(nv * 3);
+    this.col = new Float32Array(nv * 4);
+    this.uv = new Float32Array(nv * 2);
+    const idx: number[] = [];
+    for (let s = 0; s < cap; s++) {
+      for (let i = 0; i < WAKE_PTS - 1; i++) {
+        const a = (s * WAKE_PTS + i) * 5, b = a + 5;
+        for (let j = 0; j < 4; j++) idx.push(a + j, b + j, a + j + 1, a + j + 1, b + j, b + j + 1);
+      }
+    }
+    const geo = this.geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute('color', new THREE.BufferAttribute(this.col, 4).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute('uv', new THREE.BufferAttribute(this.uv, 2).setUsage(THREE.DynamicDrawUsage));
+    geo.setIndex(idx);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    const mat = new THREE.MeshBasicMaterial({ map: tex, vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: true });
+    this.mesh = new THREE.Mesh(geo, mat);
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 2;
+    this.mesh.visible = false;
+    scene.add(this.mesh);
+  }
+
+  /**
+   * Lays foam behind a mover this frame: `key` names its ribbon, (x, z) is where the foam starts,
+   * (fx, fz) the way it is heading, `w` the half width at the start, `spread` how fast it widens,
+   * `k` its strength 0–1, `life` seconds the foam lasts, `core` the churn in the middle 0–1.
+   */
+  lay(key: string | number, x: number, z: number, fx: number, fz: number, w: number, spread: number, k: number, life = 3, core = 0.6): void {
+    let s = this.strips.get(key);
+    if (!s) {
+      if (this.strips.size >= this.cap) return;
+      s = { pts: [], t: 0, touched: true, spread, life, v: 0, core };
+      this.strips.set(key, s);
+    }
+    s.touched = true; s.spread = spread; s.life = life; s.core = core;
+    // a mover that jumped (a new leg, a test) starts a fresh ribbon
+    if (s.pts.length && Math.hypot(s.pts[0].x - x, s.pts[0].z - z) > 12) s.pts.length = 0;
+    const last = s.pts[0];
+    const fl = Math.hypot(fx, fz) || 1;
+    const sx = -fz / fl, sz = fx / fl;
+    const step = life / (WAKE_PTS - 1);
+    if (!last || s.t >= step) {
+      if (last) s.v += Math.hypot(last.x - x, last.z - z) * 0.12;
+      s.t = 0;
+      s.pts.unshift({ x, z, sx, sz, age: 0, k, w, v: s.v });
+      if (s.pts.length > WAKE_PTS) s.pts.pop();
+    } else {
+      // the newest point follows the mover until the next one is laid
+      Object.assign(s.pts[0], { x, z, sx, sz, k, w });
+    }
+  }
+
+  /** Ages the foam and rebuilds the mesh (call once a frame, after every lay()). */
+  update(dt: number, time: number, swell: number): void {
+    let any = false, si = 0;
+    const P = this.pos, C = this.col, U = this.uv;
+    for (const [key, s] of this.strips) {
+      s.t += dt;
+      for (const p of s.pts) p.age += dt;
+      while (s.pts.length && s.pts[s.pts.length - 1].age > s.life) s.pts.pop();
+      if (!s.touched && !s.pts.length) { this.strips.delete(key); continue; }
+      s.touched = false;
+      const n = s.pts.length;
+      for (let i = 0; i < WAKE_PTS; i++) {
+        const p = s.pts[Math.min(i, n - 1)];
+        const o = (si * WAKE_PTS + i) * 5;
+        if (!p) { for (let j = 0; j < 5; j++) C[(o + j) * 4 + 3] = 0; continue; }
+        const w = p.w + p.age * s.spread;
+        const y = swellY(p.x, p.z, time, swell) + 0.07;
+        const fade = i >= n ? 0 : Math.max(0, 1 - p.age / s.life) * p.k * Math.min(1, i / 1.5);
+        const across = [-1, -0.62, 0, 0.62, 1];
+        const alpha = [0, 0.95, s.core * Math.max(0, 1 - p.age / (s.life * 0.55)), 0.95, 0];
+        for (let j = 0; j < 5; j++) {
+          const q = o + j;
+          const a = across[j] * w;
+          P[q * 3] = p.x + p.sx * a; P[q * 3 + 1] = y; P[q * 3 + 2] = p.z + p.sz * a;
+          C[q * 4] = 1; C[q * 4 + 1] = 1; C[q * 4 + 2] = 1; C[q * 4 + 3] = alpha[j] * fade;
+          U[q * 2] = (across[j] * 0.5 + 0.5) * Math.max(0.6, w * 0.45); U[q * 2 + 1] = p.v;
+        }
+      }
+      any = true;
+      si++;
+    }
+    // unused ribbons stay transparent
+    for (let s = si; s < this.cap; s++) for (let i = 0; i < WAKE_PTS * 5; i++) C[((s * WAKE_PTS) * 5 + i) * 4 + 3] = 0;
+    this.mesh.visible = any;
+    if (any) {
+      (this.geo.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+      (this.geo.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
+      (this.geo.getAttribute('uv') as THREE.BufferAttribute).needsUpdate = true;
+      this.geo.setDrawRange(0, si * (WAKE_PTS - 1) * 24);
+    }
+  }
+
+  clear(): void { this.strips.clear(); this.mesh.visible = false; }
 }

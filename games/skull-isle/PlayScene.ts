@@ -16,10 +16,11 @@ import {
   type Mode, type PowerId, type FoeKind, type HeroId, type TimedPower, type SeaPower, type Route, type SeaKind, type FloatKind,
 } from './defs';
 import { View } from './view';
+import { shorePoint } from './island';
 import { Bot, SKILL } from './bot';
 import { loadMeta, saveMeta, bankRun, type Meta } from './meta';
 import { makeArt, GOLD, powerArt, seaPowerArt, DOUBLOON, SHIP } from './art';
-import { HpBar, PowerChips, BossBar, ProgressChip, BreathChip, banner, bossIntro, actionButton, drawButton, showButton, relabel, glass, Pill, type ActionButton } from './ui';
+import { HpBar, PowerChips, BossBar, ProgressChip, SailLever, SailChip, banner, bossIntro, actionButton, drawButton, showButton, relabel, glass, Pill, type ActionButton } from './ui';
 import { ShopOverlay, DraftOverlay, RouteOverlay, type OverlayHost } from './shop';
 import type { ShopId, BoonId, ShipId } from './upgrades';
 
@@ -30,6 +31,8 @@ const BTN_A: [number, number] = [598, 1110];
 const BTN_B: [number, number] = [448, 1188];
 const BTN_SPECIAL: [number, number] = [612, 930];
 const BTN_KEG: [number, number] = [468, 1030];
+/** The touch sail lever at sea: up the right edge, clear of the ships fighting alongside and of FIRE. */
+const SAIL_LEVER: [number, number] = [656, 636];
 
 interface DmgText { t: Phaser.GameObjects.Text; life: number; x: number; y: number }
 type TutStep = 'move' | 'combo' | 'dodge' | 'power' | 'done';
@@ -48,7 +51,8 @@ export class PlayScene extends ArcadeScene {
   private hp!: HpBar;
   private hullBar!: HpBar;
   private progress!: ProgressChip;
-  private breath!: BreathChip;
+  private sailLever: SailLever | null = null;
+  private sailChip!: SailChip;
   private powerChips!: PowerChips<TimedPower>;
   private seaChips!: PowerChips<SeaPower>;
   private bossBar!: BossBar;
@@ -127,6 +131,7 @@ export class PlayScene extends ArcadeScene {
     this.quiet = false; this.testSpeed = 1; this.god = false; this.frozen = false; this.pending = 0;
     this.firstFrames = []; this.frameStart = 0;
     this.btnAttack = this.btnDodge = this.btnSpecial = this.btnKeg = null;
+    this.sailLever = null; this.sailStep = 0;
     this.specialChip = this.kegChip = null; this.specialPips = null;
     makeArt(this);
 
@@ -188,7 +193,7 @@ export class PlayScene extends ArcadeScene {
     const kb = this.input.keyboard;
     if (kb) {
       const K = Phaser.Input.Keyboard.KeyCodes;
-      for (const [n, c] of Object.entries({ j: K.J, k: K.K, l: K.L, e: K.E, q: K.Q })) this.keys[n] = kb.addKey(c, false, false);
+      for (const [n, c] of Object.entries({ j: K.J, k: K.K, l: K.L, e: K.E, q: K.Q, w: K.W, s: K.S, up: K.UP, down: K.DOWN })) this.keys[n] = kb.addKey(c, false, false);
       kb.on('keydown', (e: KeyboardEvent) => {
         if (this.seaCard && (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyJ' || e.code === 'Escape' || e.code === 'KeyQ')) { this.closeSeaCard(); return; }
         if (this.route?.key(e.code)) return;
@@ -200,6 +205,9 @@ export class PlayScene extends ArcadeScene {
   }
 
   private atkRepeat = 0;
+  private gunN = 0;
+  /** Sail steps from the touch lever, read with the next input. */
+  private sailStep = 0;
 
   private readInput(dt: number): Input {
     if (this.forced) { this.forced.t -= dt; const f = this.forced.inp; if (this.forced.t <= 0) this.forced = null; return { ...NO_INPUT, ...f }; }
@@ -215,7 +223,15 @@ export class PlayScene extends ArcadeScene {
     const item = jd('e') || !!this.btnKeg?.pressed;
     if (this.btnSpecial) this.btnSpecial.pressed = false;
     if (this.btnKeg) this.btnKeg.pressed = false;
-    return { mx: c.axisX, mz: c.axisY, attack, dodge: c.justB() || jd('k'), special, item };
+    // at sea W/S and the arrows (or the touch lever) step the sails; the stick only steers
+    let sail = 0;
+    if (this.sim.atSea) {
+      // the lever's steps reach the ship one a frame
+      const lever = Math.sign(this.sailStep);
+      this.sailStep -= lever;
+      sail = lever + (jd('w') || jd('up') ? 1 : 0) - (jd('s') || jd('down') ? 1 : 0);
+    }
+    return { mx: c.axisX, mz: this.sim.atSea ? 0 : c.axisY, attack, dodge: c.justB() || jd('k'), special, item, sail };
   }
 
   // ------------------------------------------------------------------ HUD
@@ -234,7 +250,8 @@ export class PlayScene extends ArcadeScene {
     this.hullBar = new HpBar(this, HUD_MARGIN, BOTTOM_Y, 'hull');
     this.hullBar.chip.setVisible(false);
     this.progress = new ProgressChip(this, width / 2, HUD_ROW2_Y);
-    this.breath = new BreathChip(this, HUD_MARGIN, BOTTOM_Y - 74);
+    this.sailChip = new SailChip(this, width - HUD_MARGIN, HUD_ROW2_Y);
+    if (this.touch) this.sailLever = new SailLever(this, SAIL_LEVER[0], SAIL_LEVER[1], (d) => { this.sailStep += d; });
     if (!this.touch) {
       // keyboard players read the special meter and the kegs in chips by the corner
       this.specialPips = this.add.graphics();
@@ -260,6 +277,8 @@ export class PlayScene extends ArcadeScene {
     if (this.btnDodge) relabel(this.btnDodge, t(sea ? 'btnEvade' : 'btnDodge'));
     if (this.btnSpecial) showButton(this.btnSpecial, !sea);
     if (this.btnKeg) showButton(this.btnKeg, !sea);
+    this.sailLever?.show(sea);
+    this.sailChip.show(sea);
     if (this.kegChip) this.kegChip.setVisible(!sea);
     if (this.specialChip) this.specialChip.setText(sea ? 'J' : 'L');
     this.shown.kegs = -1;
@@ -294,7 +313,6 @@ export class PlayScene extends ArcadeScene {
     }
     this.powerChips.update(p.powers, { shieldHits: p.shieldHits }, this.elapsed);
     this.hp.update(p.hp, sim.st.maxHp, dt, this.elapsed);
-    this.breath.update(p.breath, sim.shipSt.breath, p.swim, this.elapsed);
     // the boss bar
     const boss = sim.foes.find((f) => (f.kind === 'head' || f.kind === 'captain'));
     if (boss && boss.state !== 'dead' && sim.bossActive) {
@@ -367,7 +385,8 @@ export class PlayScene extends ArcadeScene {
     this.progress.update(v.progress, v.storm, this.elapsed);
     this.hullBar.update(s.hull, sim.shipSt.maxHull, dt, this.elapsed);
     this.seaChips.update(v.powers, { shieldHits: 0 }, this.elapsed);
-    this.breath.update(sim.shipSt.breath, sim.shipSt.breath, false, this.elapsed);
+    this.sailChip.update(s.sail, s.speed, this.elapsed);
+    this.sailLever?.update(s.sail, this.elapsed);
     const ghost = v.foes.find((f) => f.kind === 'ghost' && f.state !== 'dead' && f.state !== 'gone');
     if (ghost) {
       this.bossBar.show(t('b_ghost'));
@@ -613,15 +632,20 @@ export class PlayScene extends ArcadeScene {
         break;
       }
       case 'broadside':
-        this.sfxAt(ev.n > 2 ? 'cannon3' : 'cannon2', this.scale.width / 2 + ev.side * 160, { volume: 0.6 });
-        this.time.delayedCall(90, () => this.sfxAt('cannon', this.scale.width / 2 + ev.side * 200, { volume: 0.45 }));
+        // the guns themselves boom one after another ('gun')
         if (ev.fire) this.s('fuse', 0.3, 0.3);
-        shake(this, 0.004, 110);
+        break;
+      case 'gun':
+        if (ev.kind === 'skull') break;
+        if (ev.friendly) {
+          this.gunN = (this.gunN + 1) % 3;
+          this.sfxAt(['cannon2', 'cannon3', 'cannon'][this.gunN], this.scale.width / 2 + ev.side * 170, { volume: 0.55 });
+          shake(this, 0.0035, 90);
+        } else this.sfxAt('cannon', sxv(ev.x, ev.z), { volume: ev.kind === 'ghost' ? 0.42 : 0.34 });
         break;
       case 'evade': this.s('roll', 0.5, 0.1); this.s('splash', 0.4, 0.1); break;
       case 'seaFire':
-        this.sfxAt('cannon', sxv(ev.x, ev.z), { volume: ev.kind === 'ghost' ? 0.6 : 0.45 });
-        this.time.delayedCall(120, () => this.s('whistle', 0.25, 0.2));
+        this.time.delayedCall(260, () => this.s('whistle', 0.25, 0.2));
         if (ev.kind === 'ghost') this.s('ghost', 0.25, 1);
         break;
       case 'seaBoom':
@@ -707,9 +731,13 @@ export class PlayScene extends ArcadeScene {
         this.s('splash', ev.on ? 0.45 : 0.25, 0.3);
         if (ev.on) this.hint('hintSwim');
         break;
-      case 'breath':
-        this.sfx('gasp', { volume: 0.45 });
-        this.floatAt(sim.p.x, sim.p.z, t(ev.level === 'low' ? 'breathLow' : 'breathOut'), ev.level === 'low' ? '#9fe8ff' : '#ff8a7a', 26);
+      case 'current':
+        this.s('splash', 0.3, 1);
+        this.floatAt(sim.p.x, sim.p.z, t('current'), '#9fe8ff', 24);
+        break;
+      case 'sails':
+        this.sfx('sail', { volume: 0.45, rate: 0.8 + ev.level * 0.15 });
+        this.s('gust', 0.25, 0.3);
         break;
       case 'islet':
         this.sfx('treasure', { volume: 0.7, exact: true });
@@ -1058,6 +1086,13 @@ export class PlayScene extends ArcadeScene {
   testLastWave(): void { this.testSkipTutorial(); this.sim.testLastWave(); }
   testClear(): void { this.testSkipTutorial(); this.sim.testClear(); }
   testFoes(kind: FoeKind, n: number, near = 5): void { this.sim.testFoes(kind, n, near); }
+  testShark(cd = 0): number { return this.sim.testShark(cd).id; }
+  /** Puts the hero `off` units off the south shore (negative: up the beach), facing the sea. */
+  testShore(off = -0.2, th = Math.PI / 2): void {
+    const p = this.sim.p, at = shorePoint(this.sim.L, th, off);
+    p.x = at.x; p.z = at.z; p.vx = p.vz = 0; p.face = 0;
+    this.testSnap();
+  }
   testPower(id: PowerId): void { this.sim.takePower(id, this.sim.p.x, this.sim.p.z); for (const ev of this.sim.events) this.onEvent(ev); this.sim.events.length = 0; }
   testDrop(id: PowerId, dx = 1.5, dz = -1): void { this.sim.dropPower(id, this.sim.p.x + dx, this.sim.p.z + dz); }
   testSpecial(full = true): void { this.sim.p.special = full ? this.sim.maxSpecial : PLAYER.pip; }
@@ -1091,6 +1126,11 @@ export class PlayScene extends ArcadeScene {
   testClean(): void { for (const o of [...this.children.list]) if ((o as Phaser.GameObjects.Container).depth === 9400) o.destroy(); this.hintBox?.destroy(); }
   testHint(key: string): void { this.meta.hints = this.meta.hints.filter((h) => h !== key); this.hint(key); }
   get tutorialStep(): TutStep | null { return this.tut; }
+  /** Plays seconds of game time frame by frame, the drawing state with it (wakes, sails, the parrot), rendering only the last frame. */
+  testRun(seconds: number): void {
+    const n = Math.round(seconds / STEP);
+    for (let i = 0; i < n; i++) this.step(STEP);
+  }
   /** Steps the simulation by seconds of game time at once (the renderer may be slow). */
   testStep(seconds: number): void {
     const n = Math.round(seconds / STEP);
