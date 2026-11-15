@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import { World3D, THREE, model, miniKey } from '@core/three';
 import type { Sim, SimEvent, Zombie } from './sim';
-import { ARENA, POWER_IDS, isBoss, type BossKind, type WeaponId, type HeroId, type PowerId } from './defs';
+import { ARENA, POWER_IDS, isBoss, type BossKind, type WeaponId, type HeroId, type PowerId, type BladeKind } from './defs';
 import { arena } from './arena';
 import { mergeProps, modelGeo, packMap, fkey, keepPrograms, groveMaterial, fistMatrix, PERSON } from './kit';
 import { Billboards, Particles, TEX, canvasTex } from './fx3d';
@@ -46,7 +46,20 @@ const BLOOD: Sky = { sky: 0x3a1020, hemi: 0xe0a0b0, ground: 0x402030, hemiI: 1.3
 const GEM_COL = [0x5affb0, 0x4fb4ff, 0xff5ad2];
 const SHOT_COL: Record<string, number> = { shot: 0xffd25a, ember: 0xff7a2a, laser: 0x5ae8ff };
 
-interface Swing { ang: number; arc: number; r: number; t: number; evo: boolean; delay: number }
+/**
+ * A blow of the blade's combo as drawn: `t` runs from the event, the sweep starts after the wind-up
+ * (`wind`) and takes `T`; the trail then fades.
+ */
+interface Swing { kind: BladeKind; ang: number; arc: number; r: number; t: number; T: number; wind: number; evo: boolean }
+/** How long a sweep takes per blow (the spin is longer when evolved), and the trail's fade. */
+const SWEEP: Record<BladeKind, number> = { fore: 0.16, back: 0.16, slam: 0.08, spin: 0.28 };
+const TRAIL_FADE = 0.13;
+/** The slashes are cut on a slant: the forehand rises to the left, the backhand the other way. */
+const SLANT = 0.3;
+/** Where the sword hand points while it sweeps (relative to the torso): a little below level. */
+const ARM_DROP = 0.18;
+/** Trail colours: forehand, backhand, finisher (Camp Blade warm, Moonsplitter moonlight blue). */
+const TRAIL_COL = { fore: 0xffe2b0, back: 0xfff2dc, fin: 0xffb04a, efore: 0x9fd0ff, eback: 0xd8ecff, efin: 0x6aa8ff };
 interface Thrust { ang: number; len: number; t: number; evo: boolean }
 interface Flash { x: number; y: number; z: number; s: number; t: number; max: number; c: number; kind: 'glow' | 'ring' | 'flare' | 'implode' }
 interface Bash { ang: number; arc: number; r: number; t: number; evo: boolean }
@@ -77,6 +90,7 @@ export class View {
   private streaks: Billboards;
   private lanes: Billboards;
   private slashes: Billboards;
+  private trails: Billboards;
   private gooBB: Billboards;
   private powers = new Map<PowerId, Billboards>();
   private gems: THREE.InstancedMesh;
@@ -90,6 +104,18 @@ export class View {
   private swordMesh: THREE.Object3D;
   private spears: THREE.Group[] = [];
   private swings: Swing[] = [];
+  /** The blow the hero's body is acting out, and its pose helpers. */
+  private heroSwing: Swing | null = null;
+  private poseQ = new THREE.Quaternion();
+  private poseM = new THREE.Matrix4();
+  private poseA = new THREE.Vector3();
+  private poseB = new THREE.Vector3();
+  private poseC = new THREE.Vector3();
+  private tiltQ = new THREE.Quaternion();
+  private eul = new THREE.Euler();
+  private axis = new THREE.Vector3();
+  /** The camera's nudge along a finisher (world units, eases back). */
+  private nudgeV = new THREE.Vector3();
   private thrusts: Thrust[] = [];
   private bashes: Bash[] = [];
   private flashes: Flash[] = [];
@@ -204,6 +230,7 @@ export class View {
     this.lanes = new Billboards(sc, TEX.streak(), 16, { flat: true, order: 3 });
     this.rings = new Billboards(sc, TEX.ring(), 120, { flat: true, order: 4 });
     this.slashes = new Billboards(sc, TEX.slash(), 24, { flat: true, order: 14 });
+    this.trails = new Billboards(sc, TEX.trail(), 24, { flat: true, order: 14 });
     this.glows = new Billboards(sc, glow, 1200, { order: 11 });
     this.flares = new Billboards(sc, TEX.flare(), 220, { order: 15 });
     this.streaks = new Billboards(sc, TEX.streak(), 240, { flat: true, order: 13 });
@@ -255,7 +282,7 @@ export class View {
     this.swordMesh.position.set(-0.115, 0, -0.055);
     sw.rotation.x = Math.PI / 2;
     sw.scale.setScalar(3.4);
-    sw.position.set(0, 0.75, 0.35);
+    sw.position.set(0, 0, 0.55);
     this.sword.add(sw);
     this.sword.visible = false;
     sc.add(this.sword);
@@ -375,10 +402,42 @@ export class View {
         if (big) this.flashes.push({ x: zb.x, y: 0.1, z: zb.z, s: 3.2, t: 0.4, max: 0.4, c: 0xb0ff80, kind: 'ring' });
         break;
       }
-      case 'swing':
-        this.swings.push({ ang: ev.ang, arc: ev.arc, r: ev.r, t: 0, evo: ev.evo, delay: ev.n * 0.12 });
-        if (ev.n === 0) this.hero.act('attack-melee-right', 0.38, 1.9);
+      case 'swing': {
+        const sw: Swing = { kind: ev.kind, ang: ev.ang, arc: ev.arc, r: ev.r, t: 0, T: SWEEP[ev.kind] * (ev.evo && ev.kind === 'spin' ? 1.15 : 1), wind: ev.wind, evo: ev.evo };
+        this.swings.push(sw);
+        this.heroSwing = sw;
+        // the slam is the clip's own overhead chop, timed so the blade comes down as the blow lands;
+        // the slashes and the spin lead the sword arm procedurally (syncHero)
+        if (ev.kind === 'slam') this.hero.act('attack-melee-right', ev.wind + 0.3, 1.6);
+        else this.hero.act('holding-right', SWEEP[ev.kind] + ev.wind + 0.12, 1);
         break;
+      }
+      case 'blow': {
+        // the finisher lands: a shock ring, sparks and dust, a jolt of the camera along the blow
+        const p = sim.player, ux = Math.sin(ev.ang), uz = Math.cos(ev.ang);
+        const col = ev.evo ? TRAIL_COL.efin : TRAIL_COL.fin;
+        if (ev.kind === 'slam') {
+          const ix = p.x + ux * ev.r * 0.55, iz = p.z + uz * ev.r * 0.55;
+          this.flashes.push({ x: ix, y: 0.08, z: iz, s: ev.r * 1.5, t: 0.4, max: 0.4, c: 0xffe0a0, kind: 'ring' });
+          this.flashes.push({ x: ix, y: 0.5, z: iz, s: ev.r * 1.1, t: 0.18, max: 0.18, c: 0xfff0c0, kind: 'glow' });
+          P.burst(ix, 0.25, iz, 16, 5.5, [0xc8b890, 0x9a8a6a, 0xffe0a0], 0.5, 0.45, 0.9, 6);
+          P.burst(ix, 0.4, iz, 8, 7, [0xffffff, col], 0.25, 0.25, 0.5, 4);
+        } else {
+          this.flashes.push({ x: p.x, y: 0.1, z: p.z, s: ev.r * 2.2, t: 0.35, max: 0.35, c: col, kind: 'ring' });
+          this.flashes.push({ x: p.x, y: 0.12, z: p.z, s: ev.r * 1.5, t: 0.25, max: 0.25, c: 0xffffff, kind: 'ring' });
+          for (let i = 0; i < 14; i++) {
+            const a = (i / 14) * Math.PI * 2;
+            P.emit(p.x + Math.sin(a) * ev.r * 0.85, 0.6, p.z + Math.cos(a) * ev.r * 0.85, Math.sin(a) * 4, 1.2, Math.cos(a) * 4, 0.3, 0.32, 0.05, i % 2 ? col : 0xffffff, 4);
+          }
+        }
+        if (ev.hits > 0) { this.shake(ev.kind === 'slam' ? 0.2 : 0.16, 0.12); this.nudge(ev.ang, ev.kind === 'slam' ? 0.35 : 0.2); }
+        break;
+      }
+      case 'wave': {
+        const p = sim.player;
+        this.flashes.push({ x: p.x + Math.sin(ev.w.ang) * ev.w.r, y: 0.7, z: p.z + Math.cos(ev.w.ang) * ev.w.r, s: 2.2, t: 0.16, max: 0.16, c: 0xcfe6ff, kind: 'flare' });
+        break;
+      }
       case 'thrust':
         this.thrusts.push({ ang: ev.ang, len: ev.len, t: 0, evo: ev.evo });
         this.hero.act('attack-melee-left', 0.35, 2.1);
@@ -494,6 +553,9 @@ export class View {
     }
   }
 
+  /** Jolts the camera a little along a blow (it eases back). */
+  nudge(ang: number, amp: number): void { this.nudgeV.set(Math.sin(ang) * amp, 0, Math.cos(ang) * amp); }
+
   shake(amp: number, t: number): void {
     this.shakeAmp = Math.max(this.shakeAmp, amp);
     this.shakeT = Math.max(this.shakeT, t);
@@ -529,7 +591,11 @@ export class View {
       cam.position.y += (Math.random() - 0.5) * a;
       if (this.shakeT <= 0) this.shakeAmp = 0;
     }
-    cam.lookAt(look.x, 0, look.z);
+    if (this.nudgeV.lengthSq() > 1e-5) {
+      cam.position.add(this.nudgeV);
+      this.nudgeV.multiplyScalar(Math.exp(-dt * 14));
+    }
+    cam.lookAt(look.x + this.nudgeV.x, 0, look.z + this.nudgeV.z);
     cam.updateMatrixWorld();
     this.heroAt.set(p.x, 0.7, p.z);
     this.camAt.copy(cam.position);
@@ -562,6 +628,7 @@ export class View {
       if (sp > 0.6) h.play(sp > sim.stats.speed * 1.08 ? 'sprint' : 'walk', { speed: sp * 0.42 });
       else h.play('idle', { speed: 1 });
     }
+    this.poseSwing(dt);
     // a red flash when bitten; a pulsing red glow on a rage tonic
     h.update(dt);
     const rage = sim.buffs.rage > 0 ? 0.25 + Math.sin(this.time * 12) * 0.12 : 0;
@@ -585,6 +652,70 @@ export class View {
       r.play('walk', { speed: 1.2 });
       r.update(dt);
     }
+  }
+
+  /**
+   * The hero acts out the combo's blow over the walking legs: the torso turns towards the target
+   * and twists with the sweep while the sword arm leads the blade (forehand from the right, backhand
+   * from the left); the spin turns the whole figure round; the slam (the clip's overhead chop) leans
+   * in with a little hop.
+   */
+  private poseSwing(dt: number): void {
+    const h = this.hero, s = this.heroSwing;
+    h.body.rotation.y = 0;
+    h.body.position.y = 0;
+    if (!s || this.heroDead || this.heroWon) { this.heroSwing = null; return; }
+    // (the blow's clock runs in syncFx)
+    const u0 = s.t - s.wind;
+    if (u0 > s.T + 0.16) { this.heroSwing = null; return; }
+    const w = Math.min(1, s.t / 0.05) * (u0 > s.T ? Math.max(0, 1 - (u0 - s.T) / 0.16) : 1);
+    const u = Math.max(0, Math.min(1, u0 / s.T)), ease = 1 - (1 - u) * (1 - u);
+    // the blow's centre relative to where the legs face
+    let rel = s.ang - h.root.rotation.y;
+    rel = Math.atan2(Math.sin(rel), Math.cos(rel));
+    const turn = Math.max(-1.15, Math.min(1.15, rel));
+    if (s.kind === 'slam') {
+      // lean towards the target, rise on the wind-up and come down with the blade
+      const k = u0 < 0 ? 1 + u0 / Math.max(0.01, s.wind) : 1;
+      this.poseQ.setFromEuler(this.eul.set(u0 < 0 ? -0.15 * k : 0.35 * (1 - u * 0.5), turn, 0, 'YXZ'));
+      h.overlay('torso', this.poseQ, w, true);
+      h.body.position.y = u0 < 0 ? Math.sin(k * Math.PI * 0.5) * 0.18 : Math.max(0, 0.18 * (1 - u * 4));
+      return;
+    }
+    // where the blade points relative to the legs' forward (φ, radians; + is the hero's left)
+    let phi: number, dir: 1 | -1;
+    if (s.kind === 'spin') {
+      // the whole figure turns once round, the sword held out to the front right
+      const lead = -1.0;
+      const a = u0 < 0 ? s.ang : s.ang + ease * Math.PI * 2;
+      let spin = a - h.root.rotation.y - lead;
+      spin = Math.atan2(Math.sin(spin), Math.cos(spin));
+      h.body.rotation.y = spin * w;
+      phi = lead;
+      dir = 1;
+    } else {
+      dir = s.kind === 'fore' ? 1 : -1;
+      const half = Math.min(s.arc, Math.PI * 1.1) / 2;
+      // fore: from the right (−) to the left (+); back: the other way; the wind-up holds the start
+      const sweep = -half * dir + ease * 2 * half * dir;
+      phi = rel + sweep;
+      // the torso turns towards the target and follows a third of the sweep
+      const yaw = turn + sweep * 0.35;
+      this.poseQ.setFromAxisAngle(this.up, yaw);
+      h.overlay('torso', this.poseQ, w, true);
+      phi -= yaw;
+    }
+    // the sword arm in the torso's space: the arm (bone −x) points out at φ a little below level,
+    // the blade (bone +z, square to the arm) leads the sweep and leans outward
+    const ce = Math.cos(ARM_DROP), se = Math.sin(ARM_DROP);
+    const arm = this.poseA.set(Math.sin(phi) * ce, -se, Math.cos(phi) * ce);
+    const blade = this.poseB.set(Math.cos(phi) * dir, 0, -Math.sin(phi) * dir).multiplyScalar(0.8).addScaledVector(this.poseC.set(Math.sin(phi), 0, Math.cos(phi)), 0.6);
+    blade.addScaledVector(arm, -blade.dot(arm)).normalize();
+    const x = arm.multiplyScalar(-1);
+    const y = this.poseC.crossVectors(blade, x);
+    this.poseM.makeBasis(x, y, blade);
+    this.poseQ.setFromRotationMatrix(this.poseM);
+    h.overlay('arm-right', this.poseQ, w, false);
   }
 
   private syncBosses(sim: Sim, dt: number): void {
@@ -626,7 +757,7 @@ export class View {
 
   private syncFx(sim: Sim, dt: number, cull: (x: number, z: number) => boolean): void {
     const cq = this.camQ, t = this.time, p = sim.player;
-    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.gooBB, ...this.powers.values()]) b.begin(cq);
+    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.trails, this.gooBB, ...this.powers.values()]) b.begin(cq);
 
     // blob shadows and the hero's marker ring
     if (!this.heroDead || sim.phaseT < 2) this.shadows.add(p.x, 0.03, p.z, 1.1, 1.1, 0, 0xffffff, 1);
@@ -685,35 +816,81 @@ export class View {
       }
     }
 
-    // the blade's sweeps
+    // the blade's combo: slanted trails sweeping round the hero, the big sword at their lead
     let swordOn = false;
     for (let i = this.swings.length - 1; i >= 0; i--) {
       const s = this.swings[i];
-      if (s.delay > 0) { s.delay -= dt; continue; }
       s.t += dt;
-      const T = s.evo ? 0.32 : 0.2;
-      if (s.t > T + 0.12) { this.swings.splice(i, 1); continue; }
-      const u = Math.min(1, s.t / T);
-      const ease = 1 - (1 - u) * (1 - u);
-      const a = s.evo ? s.ang + ease * Math.PI * 2 : s.ang - s.arc / 2 + ease * s.arc;
-      const fade = s.t > T ? 1 - (s.t - T) / 0.12 : 1;
-      const col = s.evo ? 0x7ab8ff : 0xffd8a0;
-      const sz = s.r * 2.15;
-      // the crescent trails behind the blade
-      for (let k = 0; k < 3; k++) {
-        const ak = a - (s.evo ? 0.5 : 0.3) * k * (s.evo ? 1 : Math.sign(s.arc));
-        this.slashes.add(p.x, 0.55 + k * 0.01, p.z, sz, sz, ak + Math.PI, col, fade * (s.evo ? 0.42 - k * 0.12 : 0.62 - k * 0.18));
+      // the slam's chop ends as the blow lands (its wind-up covers the chop); the others sweep after it
+      const slam = s.kind === 'slam';
+      const u0 = s.t - (slam ? s.wind - s.T : s.wind);
+      const tail = slam ? 0.24 : TRAIL_FADE;
+      if (u0 > s.T + tail) { this.swings.splice(i, 1); continue; }
+      const evo = s.evo;
+      const col = s.kind === 'fore' ? (evo ? TRAIL_COL.efore : TRAIL_COL.fore) : s.kind === 'back' ? (evo ? TRAIL_COL.eback : TRAIL_COL.back) : evo ? TRAIL_COL.efin : TRAIL_COL.fin;
+      if (u0 < 0) {
+        // the finisher's wind-up: light gathers on the hero
+        const k = Math.max(0, 1 + u0 / Math.max(0.01, slam ? s.wind - s.T : s.wind));
+        this.glows.add(p.x, 1.3, p.z, 1.2 + k * 1.2, 1.2 + k * 1.2, 0, col, 0.35 + k * 0.4);
+        if (s.kind === 'spin') this.rings.add(p.x, 0.06, p.z, s.r * 2 * (1.25 - k * 0.45), s.r * 2 * (1.25 - k * 0.45), 0, col, k * 0.7);
+        continue;
       }
-      if (!swordOn) {
+      const u = Math.min(1, u0 / s.T);
+      const ease = s.kind === 'spin' ? 1 - Math.pow(1 - u, 3) : 1 - (1 - u) * (1 - u);
+      const fade = u0 > s.T ? 1 - (u0 - s.T) / tail : 1;
+      const sz = s.r * 2.06;
+      let a = s.ang, tilt = 0, pitch = 0, dir = 1;
+      if (s.kind === 'fore' || s.kind === 'back') {
+        dir = s.kind === 'fore' ? 1 : -1;
+        a = s.ang - (s.arc / 2) * dir + ease * s.arc * dir;
+        tilt = SLANT * dir;
+        // the trail: a wedge whose lead follows the blade, slanted, and a faint echo behind
+        this.trails.addTilted(p.x, 0.8, p.z, sz * dir, sz, a + Math.PI, s.ang, tilt, col, fade * 0.95);
+        this.trails.addTilted(p.x, 0.81, p.z, sz * 0.82 * dir, sz * 0.82, a + Math.PI - 0.35 * dir, s.ang, tilt, col, fade * 0.35);
+      } else if (s.kind === 'spin') {
+        a = s.ang + ease * Math.PI * 2;
+        const big = evo ? 1.08 : 1;
+        // a full smear: the bright lead and the fading tail behind it
+        this.trails.add(p.x, 0.75, p.z, sz * big, sz * big, a + Math.PI, col, fade * 0.85);
+        this.trails.add(p.x, 0.74, p.z, sz * big, sz * big, a + Math.PI - 2.3, col, fade * 0.35 * Math.min(1, u * 2));
+        this.trails.add(p.x, 0.73, p.z, sz * 0.7, sz * 0.7, a + Math.PI - 0.6, 0xffffff, fade * 0.2);
+      } else {
+        // the slam: the blade comes down in front, then a crescent bursts out where it bites
+        pitch = -1.35 + ease * 1.5;
+        if (u >= 1) {
+          const k = 0.75 + Math.min(1, (u0 - s.T) / tail) * 0.35;
+          this.slashes.add(p.x, 0.45, p.z, sz * k, sz * k, s.ang + Math.PI, col, fade * 0.7);
+          this.slashes.add(p.x, 0.46, p.z, sz * k * 0.82, sz * k * 0.82, s.ang + Math.PI, 0xffffff, fade * 0.2);
+        } else this.trails.add(p.x, 0.5, p.z, sz * 0.7, sz * 0.7, s.ang + Math.PI, col, 0.5 * u);
+      }
+      if (!swordOn && u0 <= s.T + (slam ? 0.07 : 0.03)) {
         swordOn = true;
         this.sword.visible = true;
-        this.sword.position.set(p.x, 0, p.z);
-        this.sword.rotation.y = a;
+        this.sword.position.set(p.x, 0.78, p.z);
+        // the big sword sweeps on the slash's slant (or chops down for the slam)
+        this.sword.quaternion.setFromEuler(this.eul.set(pitch, a, 0, 'YXZ'));
+        if (tilt) this.sword.quaternion.premultiply(this.tiltQ.setFromAxisAngle(this.axis.set(Math.sin(s.ang), 0, Math.cos(s.ang)), tilt));
         this.sword.scale.setScalar(s.r / 2.3);
       }
-      if (Math.random() < 0.6) this.particles.emit(p.x + Math.sin(a) * s.r * 0.9, 0.6, p.z + Math.cos(a) * s.r * 0.9, 0, 0.5, 0, 0.25, 0.3, 0.05, col, 3);
+      if (u < 1 && Math.random() < 0.7) {
+        const tr = s.kind === 'slam' ? s.r * 0.6 : s.r * 0.88;
+        this.particles.emit(p.x + Math.sin(a) * tr, 0.6 + (tilt ? Math.sin(a - s.ang) * tilt * tr * 0.9 : 0), p.z + Math.cos(a) * tr, 0, 0.5, 0, 0.25, 0.3, 0.05, col, 3);
+      }
     }
     if (!swordOn) this.sword.visible = false;
+
+    // Moonsplitter's crescent waves
+    for (const w of sim.waves) {
+      const k = Math.min(1, (w.max - w.r) / 1.2);
+      const sz = w.r * 2.2;
+      this.slashes.add(w.x, 0.6, w.z, sz, sz, w.ang + Math.PI, TRAIL_COL.efin, k);
+      this.slashes.add(w.x, 0.61, w.z, sz * 0.96, sz * 0.96, w.ang + Math.PI, 0xcfe6ff, k * 0.5);
+      this.glows.add(w.x + Math.sin(w.ang) * w.r, 0.6, w.z + Math.cos(w.ang) * w.r, 1.6, 1.6, 0, TRAIL_COL.efin, k * 0.6);
+      if (Math.random() < 0.6) {
+        const a = w.ang + (Math.random() - 0.5) * w.arc;
+        this.particles.emit(w.x + Math.sin(a) * w.r, 0.6, w.z + Math.cos(a) * w.r, Math.sin(a) * 2, 0.4, Math.cos(a) * 2, 0.3, 0.28, 0.05, 0xcfe6ff, 3);
+      }
+    }
 
     // spear thrusts
     this.spears.forEach((g) => (g.visible = false));
@@ -903,7 +1080,7 @@ export class View {
 
     this.particles.update(dt, cq);
     this.flames.update(dt, cq);
-    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.gooBB, ...this.powers.values()]) b.end();
+    for (const b of [this.shadows, this.glows, this.flares, this.rings, this.discs, this.streaks, this.lanes, this.slashes, this.trails, this.gooBB, ...this.powers.values()]) b.end();
   }
 
   /** Game pixels of a world point. */

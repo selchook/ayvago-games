@@ -1,7 +1,8 @@
 // Zombie Grove: one rigged Mini Character drawn as itself (the hero, the robot helper and the
 // bosses). Every move is the model's own clip through one AnimationMixer, in two layers: the
 // body (legs, torso, head) walks or idles while the arms swing, thrust, shoot or throw. A clip
-// split into those two layers is built once per model.
+// split into those two layers is built once per model. On top of the clips a procedural layer may
+// turn single bones for a moment (the hero's sword combo twists the torso and leads the sword arm).
 import { THREE, model, modelClips } from '@core/three';
 import { addRim } from './kit';
 
@@ -42,6 +43,9 @@ export class Figure {
   /** The rim light's colour uniforms (bosses), and the arms' resting clip (a held item). */
   readonly rims: { value: THREE.Color }[] = [];
   armsRest: string | null = null;
+  /** The procedural layer: per bone a rotation, its weight this frame and whether it adds to the clip or replaces it. */
+  private over = new Map<string, { q: THREE.Quaternion; w: number; add: boolean; base: THREE.Quaternion; on: boolean }>();
+  private tq = new THREE.Quaternion();
 
   constructor(readonly key: string, scale: number, o: { tint?: number; glow?: number; shadows?: boolean; ownMaterials?: boolean; rim?: [number, number] } = {}) {
     if (o.glow !== undefined) this.glow.setHex(o.glow);
@@ -114,6 +118,19 @@ export class Figure {
     a.setEffectiveWeight(1);
   }
 
+  /**
+   * Turns a bone for the next update only: `add` multiplies `q` onto the clip's pose, otherwise `q`
+   * replaces it; `w` (0–1) blends it in. Call it every frame the pose should hold.
+   */
+  overlay(bone: string, q: THREE.Quaternion, w: number, add: boolean): void {
+    if (!this.bones.has(bone)) return;
+    let o = this.over.get(bone);
+    if (!o) { o = { q: new THREE.Quaternion(), w: 0, add, base: new THREE.Quaternion(), on: false }; this.over.set(bone, o); }
+    o.q.copy(q);
+    o.w = Math.max(0, Math.min(1, w));
+    o.add = add;
+  }
+
   /** A white flash on the materials (bosses being hit). */
   flash(): void { this.flashT = 0.1; }
 
@@ -123,7 +140,19 @@ export class Figure {
       if (this.armsT <= 0 && this.armsRest) this.arms(this.armsRest, { fade: 0.15, follow: false });
       else if (this.armsT <= 0 && this.bodyName) this.arms(this.bodyName, { fade: 0.15, follow: true });
     }
+    // last frame's procedural pose comes off first, so a bone no clip drives does not drift
+    for (const [name, o] of this.over) if (o.on) { this.bones.get(name)!.quaternion.copy(o.base); o.on = false; }
     this.mixer.update(dt);
+    for (const [name, o] of this.over) {
+      if (o.w <= 0) continue;
+      const b = this.bones.get(name)!;
+      o.base.copy(b.quaternion);
+      if (o.add) this.tq.copy(b.quaternion).multiply(o.q);
+      else this.tq.copy(o.q);
+      b.quaternion.slerp(this.tq, o.w);
+      o.on = true;
+      o.w = 0;
+    }
     if (this.mats.length) {
       this.flashT = Math.max(0, this.flashT - dt);
       const k = this.flashT > 0 ? 0.9 : 0;
