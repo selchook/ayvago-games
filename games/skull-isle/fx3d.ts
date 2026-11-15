@@ -171,13 +171,26 @@ export class Billboards {
   private n = 0;
   private rq = new THREE.Quaternion();
   private flat: boolean;
+  /** Per-quad opacity (only with `fade`): normal-blended quads must fade by alpha, not by colour. */
+  private alpha: THREE.InstancedBufferAttribute | null = null;
 
-  constructor(scene: THREE.Object3D, tex: THREE.Texture, readonly capacity: number, o: { blend?: 'add' | 'normal'; flat?: boolean; order?: number; depthTest?: boolean } = {}) {
+  constructor(scene: THREE.Object3D, tex: THREE.Texture, readonly capacity: number, o: { blend?: 'add' | 'normal'; flat?: boolean; order?: number; depthTest?: boolean; fade?: boolean } = {}) {
     const mat = new THREE.MeshBasicMaterial({
       map: tex, transparent: true, depthWrite: false, depthTest: o.depthTest ?? true,
       blending: o.blend === 'normal' ? THREE.NormalBlending : THREE.AdditiveBlending, fog: false, side: THREE.DoubleSide,
     });
-    this.mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), mat, capacity);
+    const geo = new THREE.PlaneGeometry(1, 1);
+    if (o.fade) {
+      this.alpha = new THREE.InstancedBufferAttribute(new Float32Array(capacity).fill(1), 1);
+      this.alpha.setUsage(THREE.DynamicDrawUsage);
+      geo.setAttribute('aFade', this.alpha);
+      mat.onBeforeCompile = (sh) => {
+        sh.vertexShader = 'attribute float aFade;\nvarying float vFade;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvFade = aFade;');
+        sh.fragmentShader = 'varying float vFade;\n' + sh.fragmentShader.replace('#include <alphamap_fragment>', '#include <alphamap_fragment>\ndiffuseColor.a *= vFade;');
+      };
+      mat.customProgramCacheKey = () => 'si-bb-fade';
+    }
+    this.mesh = new THREE.InstancedMesh(geo, mat, capacity);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
     this.mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
@@ -193,14 +206,19 @@ export class Billboards {
     this.rq.copy(this.flat ? flatQ : cam);
   }
 
-  /** A quad at (x, y, z), sx × sy, turned by `rot` in its own plane, tinted (times `k`). */
+  /**
+   * A quad at (x, y, z), sx × sy, turned by `rot` in its own plane, tinted (times `k`). With `fade`
+   * the quad keeps its colour and `k` is its opacity instead: darkening a normal-blended quad to
+   * fade it draws a black smudge.
+   */
   add(x: number, y: number, z: number, sx: number, sy: number, rot: number, color: number | THREE.Color, k = 1): void {
     if (this.n >= this.capacity) return;
     tmpQ.setFromAxisAngle(zAxis, rot).premultiply(this.rq);
     tmpM.compose(tmpP.set(x, y, z), tmpQ, tmpS.set(sx, sy, 1));
     this.mesh.setMatrixAt(this.n, tmpM);
     if (typeof color === 'number') tmpC.setHex(color); else tmpC.copy(color);
-    if (k !== 1) tmpC.multiplyScalar(k);
+    if (this.alpha) this.alpha.setX(this.n, k);
+    else if (k !== 1) tmpC.multiplyScalar(k);
     this.mesh.setColorAt(this.n, tmpC);
     this.n++;
   }
@@ -211,6 +229,7 @@ export class Billboards {
     if (this.n) {
       this.mesh.instanceMatrix.needsUpdate = true;
       this.mesh.instanceColor!.needsUpdate = true;
+      if (this.alpha) this.alpha.needsUpdate = true;
     }
   }
 }
@@ -235,7 +254,8 @@ export class Particles {
   readonly bb: Billboards;
 
   constructor(scene: THREE.Object3D, tex: THREE.Texture, private cap = 1200, blend: 'add' | 'normal' = 'add', order = 12) {
-    this.bb = new Billboards(scene, tex, cap, { order, blend });
+    // normal-blended pools (dust, smoke) fade out by opacity; additive ones by colour
+    this.bb = new Billboards(scene, tex, cap, { order, blend, fade: blend === 'normal' });
   }
 
   get count(): number { return this.live.length; }
