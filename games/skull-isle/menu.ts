@@ -11,6 +11,8 @@ import { HERO, type HeroId } from './defs';
 import { loadMeta, saveMeta } from './meta';
 
 const INK = '#2a1206';
+/** The run summary's card (PlayScene.showSummary). */
+export const SUMMARY_W = 620, SUMMARY_H = 430;
 
 /** One cutlass along +x: the pommel at the left, the curved blade's tip at the right (unit = size / 100). */
 function cutlass(c: CanvasRenderingContext2D, u: number): void {
@@ -154,6 +156,11 @@ export const SKULL_THEME: MenuTheme = {
   pieces: [{ kind: 'board', w: 420, h: 104 }, { kind: 'round', w: 56, h: 56 }, { kind: 'button', w: 196, h: 104 }],
   // dim: the backdrop's darkening (main.ts drew it as its own layer before the theme)
   frame: { border: 'rope', notes: (c, w, h) => paintSheet(c, w, h, 31), vignette: 0.6, dim: 0.34 },
+  // the pause and the result screen wear the same (the parchment card, the Jolly Roger on top);
+  // DEFEATED is the result's heading (PlayScene.finish), painted ahead with the rest
+  overlays: { titles: ['defeated'] },
+  // the run summary's parchment (PlayScene.showSummary)
+  cards: [{ w: SUMMARY_W, h: SUMMARY_H }],
 };
 
 /**

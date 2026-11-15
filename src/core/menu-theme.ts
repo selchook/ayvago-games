@@ -121,6 +121,42 @@ export interface MenuTheme {
    * the Ayvago intro like the core's own. Buttons, plates and round knobs get all three states.
    */
   pieces?: Array<{ kind: SkinKind; w: number; h: number; variant?: 'primary' | 'secondary' }>;
+  /**
+   * The pause overlay and the result screen in the same look (src/core/overlay-theme.ts): on by
+   * default for a themed game; `false` keeps the plain screens.
+   */
+  overlays?: OverlayStyle | false;
+  /** Sizes of the cards (`themeCard`) the game's own panels use, painted ahead in Boot. */
+  cards?: Array<{ w: number; h: number }>;
+}
+
+/** How the pause overlay and the result screen wear the theme. Every field is optional. */
+export interface OverlayStyle {
+  /**
+   * The card behind the content: 'notes' (the frame's notes painter, the how-to card; the
+   * default when the frame has one), 'board' (the skin's board) or the game's own painter.
+   */
+  card?: 'notes' | 'board' | NotesPainter;
+  /** Flat darkening over the frozen round (0 to 1, default 0.5), under the vignette. */
+  dim?: number;
+  /** Vignette strength (default the frame's vignette, or 0.6). */
+  vignette?: number;
+  /** The emblem on the card's top edge (portrait): default the logo's emblem; null: none. */
+  emblem?: EmblemPainter | null;
+  /** The frame's rope round the screen on these screens too (default: as on the menu). */
+  border?: boolean;
+  /** Text drawn on the card (labels, the best line, notes): default palette.body. */
+  ink?: string;
+  /** Result heading of a loss (default palette.heading, ink without outline) and of a win (default palette.accent, outlined). */
+  lose?: string;
+  win?: string;
+  /** Face of the rewarded-ad button (default a sea green). */
+  adColor?: number;
+  /**
+   * i18n keys of the headings the game passes to `endGame({ title })`, painted ahead in Boot
+   * (in the current language, loss and win colours); others are painted when first shown.
+   */
+  titles?: string[];
 }
 
 /** The current game's menu theme, or null (the plain menu). */
@@ -149,7 +185,8 @@ function rng(seed: number): () => number {
   return () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
 }
 
-const hash = (s: string): number => {
+/** FNV-1a hash of a string (texture keys, seeds). */
+export const hash = (s: string): number => {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
   return h >>> 0;
@@ -167,7 +204,7 @@ export function canvas2d(w: number, h: number): CanvasRenderingContext2D {
 }
 
 /** A canvas texture painted once; later calls return the cached key. */
-function bake(scene: Phaser.Scene, key: string, w: number, h: number, draw: (c: CanvasRenderingContext2D) => void): string {
+export function bake(scene: Phaser.Scene, key: string, w: number, h: number, draw: (c: CanvasRenderingContext2D) => void): string {
   if (scene.textures.exists(key)) return key;
   const c = canvas2d(w, h);
   draw(c);
@@ -217,6 +254,180 @@ export function themeText(scene: Phaser.Scene, x: number, y: number, s: string, 
   }).setOrigin(0.5);
   if (o.shadow !== false) t.setShadow(0, Math.max(2, Math.round(size * 0.06)), 'rgba(0,0,0,0.55)', Math.round(size * 0.12), true, true);
   return t;
+}
+
+// ------------------------------------------------------------------ painted labels
+
+export interface LabelStyle {
+  /** Size in px; the display face's is scaled by the theme's fontScale (default 32). */
+  size?: number;
+  /** Fill colour (default palette.label), or a gradient top to bottom. */
+  color?: string;
+  fill?: string[];
+  /** Outline colour (default palette.labelStroke); null: no outline. */
+  stroke?: string | null;
+  /** Outline width (default 0.14 of the size, as `themeText` looks). */
+  strokeWidth?: number;
+  /** Soft drop shadow (default true). */
+  shadow?: boolean;
+  /** The style's body font instead of the display face. */
+  body?: boolean;
+}
+
+interface LabelMetrics { font: string; size: number; sw: number; pad: number; padBottom: number; asc: number; desc: number }
+
+function labelMetrics(theme: MenuTheme, o: LabelStyle, probeText: string): LabelMetrics {
+  const base = o.size ?? 32;
+  const size = o.body ? Math.round(base * (isModern() ? 0.92 : 1)) : Math.round(base * (theme.fontScale ?? 1));
+  const font = o.body
+    ? (isModern() ? `800 ${size}px "Nunito", sans-serif` : `${size}px "Pixelify Sans", sans-serif`)
+    : `${size}px "${theme.font}", serif`;
+  const sw = o.stroke === null ? 0 : Math.round(o.strokeWidth ?? size * 0.14);
+  const blur = o.shadow === false ? 0 : Math.round(size * 0.12);
+  const offY = o.shadow === false ? 0 : Math.max(2, Math.round(size * 0.06));
+  const probe = canvas2d(1, 1);
+  probe.font = font;
+  // one ascent and descent for every label of a style (the Turkish capitals' dots and cedillas
+  // included), so labels side by side share a baseline
+  const m = probe.measureText('ÇĞİÖŞÜ' + probeText);
+  const asc = Math.ceil(Math.max(m.actualBoundingBoxAscent || 0, size * 0.78));
+  const desc = Math.ceil(Math.max(m.actualBoundingBoxDescent || 0, size * 0.2));
+  const pad = Math.ceil(sw / 2 + blur + 2);
+  return { font, size, sw, pad, padBottom: pad + offY, asc, desc };
+}
+
+/** Draws one line of text with its outline and shadow; (x, y) is the baseline's centre. */
+function paintLabel(c: CanvasRenderingContext2D, s: string, x: number, y: number, M: LabelMetrics, o: LabelStyle, P: MenuPalette): void {
+  c.font = M.font;
+  c.textAlign = 'center';
+  c.textBaseline = 'alphabetic';
+  c.lineJoin = 'round';
+  c.miterLimit = 2;
+  const shadow = () => {
+    if (o.shadow === false) return;
+    c.shadowColor = 'rgba(0,0,0,0.55)';
+    c.shadowBlur = Math.round(M.size * 0.12);
+    c.shadowOffsetY = Math.max(2, Math.round(M.size * 0.06));
+  };
+  let fill: string | CanvasGradient = o.color ?? P.label;
+  if (o.fill?.length) {
+    const g = c.createLinearGradient(0, y - M.asc * 0.8, 0, y + M.desc * 0.3);
+    o.fill.forEach((f, i) => g.addColorStop(i / Math.max(1, o.fill!.length - 1), f));
+    fill = g;
+  }
+  c.save();
+  shadow();
+  if (M.sw > 0) {
+    c.strokeStyle = o.stroke ?? P.labelStroke;
+    c.lineWidth = M.sw;
+    c.strokeText(s, x, y);
+    c.shadowColor = 'transparent';
+  }
+  c.fillStyle = fill;
+  c.fillText(s, x, y);
+  c.restore();
+}
+
+/**
+ * A line of text painted once into a cached canvas texture: the display face (or the body font),
+ * fill or gradient, outline and shadow. The image's origin sits on the middle of the letters'
+ * box. Until the face has loaded the key differs, so the real label is painted later.
+ */
+export function labelTexture(scene: Phaser.Scene, s: string, o: LabelStyle = {}): string {
+  const theme = menuTheme()!;
+  const family = o.body ? '"Nunito"' : `"${theme.font}"`;
+  const ready = typeof document.fonts?.check !== 'function' || document.fonts.check(`32px ${family}`, s || 'A');
+  const key = `mt-lbl-${hash(s + '|' + JSON.stringify(o))}${ready ? '' : '-fallback'}`;
+  if (scene.textures.exists(key)) return key;
+  const M = labelMetrics(theme, o, s);
+  const probe = canvas2d(1, 1);
+  probe.font = M.font;
+  const w = Math.ceil(probe.measureText(s).width) + M.pad * 2;
+  const h = M.asc + M.desc + M.pad + M.padBottom;
+  bake(scene, key, w, h, (c) => paintLabel(c, s, w / 2, M.pad + M.asc, M, o, theme.palette));
+  (scene.textures.get(key).customData as Record<string, unknown>).originY = (M.pad + (M.asc + M.desc) / 2) / h;
+  return key;
+}
+
+/** Points an image at a label texture and centres it on the letters. */
+export function placeLabel(img: Phaser.GameObjects.Image, key: string): Phaser.GameObjects.Image {
+  img.setTexture(key);
+  return img.setOrigin(0.5, ((img.texture.customData as Record<string, unknown>).originY as number | undefined) ?? 0.5);
+}
+
+/** A painted label (`labelTexture`) as an image centred on (x, y). */
+export function themeLabel(scene: Phaser.Scene, x: number, y: number, s: string, o: LabelStyle = {}): Phaser.GameObjects.Image {
+  return placeLabel(scene.add.image(x, y, '__DEFAULT'), labelTexture(scene, s, o));
+}
+
+const DIGITS = '0123456789';
+
+/** The ten digits in one label style, one frame each (cached): what `ThemeNumber` counts with. */
+export function digitTexture(scene: Phaser.Scene, o: LabelStyle = {}): string {
+  const theme = menuTheme()!;
+  const ready = typeof document.fonts?.check !== 'function' || document.fonts.check(`32px "${theme.font}"`, DIGITS);
+  const key = `mt-dig-${hash(JSON.stringify(o))}${ready ? '' : '-fallback'}`;
+  if (scene.textures.exists(key)) return key;
+  const M = labelMetrics(theme, o, DIGITS);
+  const probe = canvas2d(1, 1);
+  probe.font = M.font;
+  const adv = [...DIGITS].map((d) => Math.ceil(probe.measureText(d).width));
+  const cells = adv.map((a) => a + M.pad * 2);
+  const w = cells.reduce((a, b) => a + b, 0), h = M.asc + M.desc + M.pad + M.padBottom;
+  bake(scene, key, w, h, (c) => {
+    let x = 0;
+    [...DIGITS].forEach((d, i) => { paintLabel(c, d, x + cells[i] / 2, M.pad + M.asc, M, o, theme.palette); x += cells[i]; });
+  });
+  const tex = scene.textures.get(key);
+  let x = 0;
+  [...DIGITS].forEach((d, i) => { tex.add(d, 0, x, 0, cells[i], h); x += cells[i]; });
+  const data = tex.customData as Record<string, unknown>;
+  data.adv = Object.fromEntries([...DIGITS].map((d, i) => [d, adv[i]]));
+  data.originY = (M.pad + (M.asc + M.desc) / 2) / h;
+  return key;
+}
+
+/**
+ * A number set from painted digits (`digitTexture`): changing it swaps frames, so a score can
+ * count up every frame without rasterising any text. Centred on its position.
+ */
+export class ThemeNumber extends Phaser.GameObjects.Container {
+  private key: string;
+  private digits: Phaser.GameObjects.Image[] = [];
+  private shown = '';
+  /** Width of the digits as set (unscaled). */
+  textWidth = 0;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, value: number, o: LabelStyle = {}) {
+    super(scene, x, y);
+    this.key = digitTexture(scene, o);
+    scene.add.existing(this);
+    this.setValue(value);
+  }
+
+  setValue(n: number): this {
+    const s = String(Math.max(0, Math.round(n)));
+    if (s === this.shown) return this;
+    this.shown = s;
+    const tex = this.scene.textures.get(this.key);
+    const data = tex.customData as { adv: Record<string, number>; originY: number };
+    const adv = data.adv, oy = data.originY;
+    while (this.digits.length < s.length) {
+      const d = this.scene.add.image(0, 0, this.key, '0').setOrigin(0.5, oy);
+      this.digits.push(d);
+      this.add(d);
+    }
+    this.textWidth = [...s].reduce((a, d) => a + adv[d], 0);
+    let x = -this.textWidth / 2;
+    this.digits.forEach((img, i) => {
+      const d = s[i];
+      img.setVisible(!!d);
+      if (!d) return;
+      img.setFrame(d).setX(x + adv[d] / 2);
+      x += adv[d];
+    });
+    return this;
+  }
 }
 
 // ------------------------------------------------------------------ the 'plank' skin
@@ -755,7 +966,17 @@ export interface SkinButtonOptions {
   /** Label size before the theme's fontScale (default 30). */
   size?: number;
   sfx?: string;
+  /**
+   * The label as a texture painted once and cached by text (`labelTexture`) instead of a live
+   * Text object: the pause and result screens open without any text rasterising.
+   */
+  baked?: boolean;
+  /** Face colour (default by variant). */
+  color?: number;
 }
+
+/** The baked label's style of a SkinButton of label size `size`. */
+export const buttonLabelStyle = (size: number): LabelStyle => ({ size });
 
 /**
  * A button in the theme's skin, the themed menu's counterpart of `Button`: a baked texture per
@@ -763,25 +984,28 @@ export interface SkinButtonOptions {
  */
 export class SkinButton extends Phaser.GameObjects.Container {
   readonly face: Phaser.GameObjects.Image;
-  readonly label: Phaser.GameObjects.Text;
+  /** A live Text, or with `baked` an image of the painted label. */
+  readonly label: Phaser.GameObjects.Text | Phaser.GameObjects.Image;
   readonly w: number;
   readonly h: number;
   private keys: Record<'up' | 'over' | 'down', string>;
   private labelY = 0;
+  private labelSize: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number, text: string, private onClick: () => void, o: SkinButtonOptions = {}) {
     super(scene, x, y);
     const theme = menuTheme()!;
     this.w = o.width ?? 360; this.h = o.height ?? 96;
     const kind = o.kind ?? 'button';
-    const color = o.variant === 'primary' ? theme.palette.primary : theme.palette.secondary;
+    const color = o.color ?? (o.variant === 'primary' ? theme.palette.primary : theme.palette.secondary);
+    this.labelSize = o.size ?? 30;
     this.keys = {
       up: skinTexture(scene, kind, this.w, this.h, 'up', color),
       over: skinTexture(scene, kind, this.w, this.h, 'over', color),
       down: skinTexture(scene, kind, this.w, this.h, 'down', color),
     };
     this.face = scene.add.image(0, SKIN_PAD / 2, this.keys.up);
-    this.label = themeText(scene, 0, 0, text, { size: o.size ?? 30 });
+    this.label = o.baked ? themeLabel(scene, 0, 0, text, buttonLabelStyle(this.labelSize)) : themeText(scene, 0, 0, text, { size: this.labelSize });
     this.add([this.face, this.label]);
     this.fitLabel();
     this.setSize(this.w, this.h).setInteractive({ useHandCursor: true });
@@ -809,7 +1033,8 @@ export class SkinButton extends Phaser.GameObjects.Container {
   }
 
   setText(s: string): this {
-    this.label.setText(s);
+    if (this.label instanceof Phaser.GameObjects.Text) this.label.setText(s);
+    else placeLabel(this.label, labelTexture(this.scene, s, buttonLabelStyle(this.labelSize)));
     this.fitLabel();
     return this;
   }

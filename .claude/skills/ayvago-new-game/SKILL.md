@@ -484,7 +484,8 @@ nothing, so a game that opts in looks and plays exactly as before.
 The core menu keeps one layout (logo, best, PLAY, the switches, the game's own row, how-to, the
 bottom row with sound, the Ayvago logo and language/leaderboard). A game may give it its own skin
 with `menuTheme` in `launch({...})` (`src/core/menu-theme.ts`); the live backdrop (`menuDecor`)
-stays. Games without one look exactly as before. Pilot: `games/skull-isle/menu.ts`.
+stays. The pause overlay and the result screen follow it (below). Games without one look exactly
+as before. Pilot: `games/skull-isle/menu.ts`.
 
 ```ts
 import { PIRATA_ONE } from '@core/fonts/pirata-one';
@@ -534,10 +535,32 @@ menuTheme: {
   letter must be the same with two different fallback fonts). Many display faces ship latin only
   (Rye, IM Fell English SC); pick another face, never fake a glyph. Body text stays in the style's
   body font. `launch()` loads the theme face (both subsets) before the menu opens.
+- **Pause and result screens** wear the theme automatically (`src/core/overlay-theme.ts`): the
+  vignette and rope over the frozen round, the notes card (else the skin's board) with the logo's
+  emblem on its top edge (portrait), headings and button labels in the display face, the skin's
+  buttons for RESUME / RETRY / MENU / sound and the rewarded CONTINUE / 2× (a green plank with a
+  brass AD tag), the score counting up in painted digits, the best line in ink and NEW BEST on a
+  ribbon in the primary colour with a burst. Same buttons, keys, ad flow and test hit points as the
+  plain screens; online results stay plain. The pause is fully drawn on its first frame (the
+  entrance only moves and scales it) and resume never waits. Overrides in `menuTheme.overlays`:
+  `card` ('notes' | 'board' | painter), `dim`, `vignette`, `emblem` (painter or null), `border`,
+  `ink`, `lose` / `win` (heading colours), `adColor`, and `titles`: the i18n keys of the headings
+  the game passes to `endGame({ title })`, so they are painted ahead too. `overlays: false` keeps
+  the plain screens.
+- **The game's own panels** in the same look: `themeCard(scene, x, y, w, h)` (declare the size in
+  `menuTheme.cards`), `themeLabel(scene, x, y, text, style)` (a label painted once and cached by
+  text and style; `overlayHeadingStyle(win)` is the result heading's style, so a declared title is
+  reused) and `ThemeNumber` (a number from painted digits that can count every frame). Skull Isle's
+  run summary (`PlayScene.showSummary`) is the example.
+- **Cost (overlays).** Boot paints every texture of these screens in the current language
+  (`prebakeOverlays`); opening the pause or the result creates no texture and rasterises no text
+  (only a language switch mid-session paints the new labels on first use). Check the platform
+  harness's pause step against `origin/main` (`node scripts/platform-harness.mjs <slug>`).
 - **Store art.** `scripts/gen-store-assets.mjs` takes the themed logo (English) from the game
   itself (`window.__ayvago.menuLogo('en')`) and puts it on the catalog card and the cover in place
   of the plain title. Look at both after `node scripts/gen-store-assets.mjs <slug>`.
-- **Check** EN at 720×1280 and TR at 405×720, the logo's entrance, hover and pressed states,
+- **Check** EN at 720×1280 and TR at 405×720 (menu, pause, a lost and a NEW BEST result, the
+  result with `?ads=sim` and a test `ads` option), the logo's entrance, hover and pressed states,
   and that the Turkish letters come from the display face.
 
 ## 8. Ship
