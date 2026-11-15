@@ -41,7 +41,7 @@ export const TUNING: Record<Mode, Tuning> = {
   },
   normal: {
     night: 600, capStart: 30, capEnd: 300, rateStart: 1.1, rateEnd: 13, speedK: 1, hpK: 1, hpPerMin: 0.18,
-    dmgK: 1, hp: 110, magnet: 2.7, bossK: 1, rushEvery: 70, coinK: 1,
+    dmgK: 1, hp: 110, magnet: 2.7, bossK: 0.86, rushEvery: 70, coinK: 1,
     minis: [150, 300, 450], king: 525,
   },
 };
@@ -119,6 +119,23 @@ export const PASSIVE_IDS: PassiveId[] = ['swift', 'vigor', 'regen', 'magnet', 'a
 export const MAX_LEVEL = 5;
 export const MAX_WEAPONS = 6;
 export const MAX_PASSIVES = 6;
+
+/**
+ * 1.2: the hero's own weapons attack only on the ATTACK button (held: each at its own rate; a tap:
+ * one attack each). The Ward Shields (an orbit round the hero) and Sprocket (a companion with a mind
+ * of its own) keep working by themselves.
+ */
+export const AUTO_WEAPONS: readonly WeaponId[] = ['wards', 'robot'];
+export const isManual = (id: WeaponId): boolean => !AUTO_WEAPONS.includes(id);
+/**
+ * Auto-aim: the nearest zombie in a cone ahead of the hero (half-angle, radians; anything within
+ * `close` units counts as ahead); one outside the cone wins only when `outside` times nearer.
+ */
+export const AIM = { cone: 1.15, close: 0.9, outside: 1.8 };
+/** A tap waits this long (s) for a weapon still cooling down, so a press just early still lands. */
+export const TAP_BUFFER = 0.3;
+/** With no zombie in reach a torch lands this far ahead (units). */
+export const TORCH_AHEAD = 5;
 
 /** Each weapon evolves at level 5 with this trinket in the bag. */
 export const EVOLVES_WITH: Record<WeaponId, PassiveId> = {

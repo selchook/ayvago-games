@@ -116,6 +116,21 @@ export const TEX = {
     r.addColorStop(0, '#f6ffd0'); r.addColorStop(0.5, '#b6ff3a'); r.addColorStop(1, '#4fa010');
     g.beginPath(); g.arc(32, 32, 23, 0, Math.PI * 2); g.fillStyle = r; g.fill();
   }),
+  /** The aim reticle: a ring broken by four gaps, with four ticks pointing in. */
+  reticle: () => canvasTex('reticle', 128, 128, (g) => {
+    const c = 64;
+    g.lineCap = 'round';
+    for (const [w, a] of [[11, 0.35], [6, 1]] as [number, number][]) {
+      g.strokeStyle = `rgba(255,255,255,${a})`;
+      g.lineWidth = w;
+      for (let i = 0; i < 4; i++) {
+        const a0 = i * Math.PI / 2 + 0.32, a1 = (i + 1) * Math.PI / 2 - 0.32;
+        g.beginPath(); g.arc(c, c, 50, a0, a1); g.stroke();
+        const m = i * Math.PI / 2;
+        g.beginPath(); g.moveTo(c + Math.cos(m) * 60, c + Math.sin(m) * 60); g.lineTo(c + Math.cos(m) * 40, c + Math.sin(m) * 40); g.stroke();
+      }
+    }
+  }),
   /** A heart (the meal pickup). */
   heart: () => canvasTex('heart', 64, 64, (g) => {
     g.translate(32, 34);
@@ -274,4 +289,126 @@ export class Particles {
   }
 
   clear(): void { for (const p of this.live) this.pool.push(p); this.live.length = 0; }
+}
+
+// ------------------------------------------------------------------ health bars
+
+/**
+ * Small health bars over hurt zombies (after Skull Isle's): one instanced quad each, turned to the
+ * camera in the vertex shader and drawn over the scene (no depth test), all in one draw call. The
+ * fragment shader draws a rounded frame (gold for the bosses), the bar's colour up to the health
+ * left, a pale "just lost" ghost behind it, quarter ticks and a shine, antialiased.
+ */
+export class HealthBars {
+  readonly mesh: THREE.InstancedMesh;
+  private aBar: THREE.InstancedBufferAttribute;
+  private n = 0;
+
+  constructor(scene: THREE.Object3D, readonly cap = 48) {
+    const geo = new THREE.PlaneGeometry(1, 1);
+    // x: health 0–1, y: ghost 0–1, z: alpha, w: aspect (width / height; negative: a boss's gold frame)
+    this.aBar = new THREE.InstancedBufferAttribute(new Float32Array(cap * 4), 4);
+    this.aBar.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('aBar', this.aBar);
+    const mat = new THREE.ShaderMaterial({
+      transparent: true, depthTest: false, depthWrite: false,
+      vertexShader: `
+        attribute vec4 aBar;
+        varying vec2 vUv;
+        varying vec4 vB;
+        varying vec3 vCol;
+        void main() {
+          vUv = uv;
+          vB = aBar;
+          #ifdef USE_INSTANCING_COLOR
+          vCol = instanceColor;
+          #else
+          vCol = vec3(1.0, 0.3, 0.2);
+          #endif
+          vec4 c = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+          vec2 size = vec2(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz));
+          c.xy += position.xy * size;
+          gl_Position = projectionMatrix * c;
+        }`,
+      fragmentShader: `
+        varying vec2 vUv;
+        varying vec4 vB;
+        varying vec3 vCol;
+        float box(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
+        void main() {
+          float boss = step(vB.w, 0.0);
+          float asp = abs(vB.w);
+          vec2 p = (vUv - 0.5) * vec2(asp, 1.0);
+          float d = box(p, vec2(asp * 0.5, 0.5), 0.5);
+          float aa = fwidth(d) + 1e-4;
+          float outer = 1.0 - smoothstep(-aa, aa, d);
+          if (outer <= 0.0) discard;
+          // the inner bar, inset from the frame
+          float di = box(p, vec2(asp * 0.5 - 0.2, 0.3), 0.3);
+          float inner = 1.0 - smoothstep(-aa, aa, di);
+          float u = clamp((p.x + asp * 0.5 - 0.2) / max(0.01, asp - 0.4), 0.0, 1.0);
+          float au = fwidth(u) + 1e-4;
+          float fill = 1.0 - smoothstep(vB.x - au, vB.x + au, u);
+          float ghost = (1.0 - smoothstep(vB.y - au, vB.y + au, u)) * (1.0 - fill);
+          vec3 bg = vec3(0.07, 0.05, 0.06);
+          vec3 bar = vCol * (1.05 + 0.35 * smoothstep(0.0, 0.25, p.y));
+          vec3 col = mix(bg, bar, fill);
+          col = mix(col, vec3(1.0, 0.93, 0.8), ghost * 0.85);
+          // quarter ticks
+          float tick = 0.0;
+          for (int i = 1; i < 4; i++) tick = max(tick, 1.0 - smoothstep(0.0, au * 1.5, abs(u - float(i) * 0.25)));
+          col *= 1.0 - tick * 0.45 * inner;
+          vec3 frame = mix(vec3(0.02, 0.01, 0.02), vec3(1.0, 0.8, 0.25) * (0.8 + 0.4 * vUv.y), boss);
+          col = mix(frame, col, inner);
+          gl_FragColor = vec4(col, outer * vB.z);
+          #include <colorspace_fragment>
+        }`,
+    });
+    mat.customProgramCacheKey = () => 'zg-hpbar';
+    this.mesh = new THREE.InstancedMesh(geo, mat, cap);
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
+    this.mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 40;
+    this.mesh.count = 0;
+    scene.add(this.mesh);
+  }
+
+  begin(): void { this.n = 0; }
+
+  /** A bar centred at (x, y, z), w × h world units, health and ghost 0–1, faded by `alpha`; `boss`: a gold frame. */
+  add(x: number, y: number, z: number, w: number, h: number, hp: number, ghost: number, alpha: number, color: number, boss = false): void {
+    if (this.n >= this.cap || alpha <= 0.01) return;
+    const i = this.n++;
+    tmpM.compose(tmpP.set(x, y, z), tmpQ.identity(), tmpS.set(w, h, 1));
+    this.mesh.setMatrixAt(i, tmpM);
+    this.mesh.setColorAt(i, tmpC.setHex(color));
+    this.aBar.setXYZW(i, hp, Math.max(hp, ghost), alpha, (boss ? -1 : 1) * w / h);
+  }
+
+  end(): void {
+    this.mesh.count = this.n;
+    this.mesh.visible = this.n > 0;
+    if (this.n) {
+      this.mesh.instanceMatrix.needsUpdate = true;
+      this.mesh.instanceColor!.needsUpdate = true;
+      this.aBar.needsUpdate = true;
+    }
+  }
+}
+
+/** A zombie's bar between frames: shown once hurt, the ghost of lost health catching up, a fade out at death. */
+export interface BarState { ghost: number; hold: number; a: number; last: number; seen: boolean; x: number; y: number; z: number; w: number; h: number; color: number; boss: boolean }
+
+/** Steps a bar's state; returns its alpha (0 hides it). `hp` is 0–1; a dead zombie's bar drains and fades. */
+export function stepBar(b: BarState, hp: number, dead: boolean, dt: number): number {
+  if (hp < b.last) b.hold = 0.35;
+  b.last = hp;
+  b.hold -= dt;
+  if (b.hold <= 0) b.ghost = Math.max(hp, b.ghost - dt * 0.9);
+  b.ghost = Math.max(b.ghost, hp);
+  const want = dead ? 0 : hp < 0.999 ? 1 : 0;
+  b.a += (want - b.a) * Math.min(1, dt * (want > b.a ? 14 : dead ? 5 : 6));
+  return b.a;
 }

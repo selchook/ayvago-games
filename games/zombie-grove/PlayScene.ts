@@ -1,5 +1,6 @@
 // Zombie Grove: the Play scene. Runs the simulation (sim.ts) at a fixed 60 Hz, draws it in 3D
-// (view.ts) under a Phaser HUD, reads the stick and the keys, banks the level-up offers and opens
+// (view.ts) under a Phaser HUD, reads the stick, the keys and the ATTACK button (held: attack at
+// each weapon's rate; a tap: one attack), banks the level-up offers and opens
 // them in the card bar when the player wants (the fight runs on in slow motion), shows the power-ups
 // (timer chips) and the gold chest's reveal, plays the sounds, banners and damage numbers, offers
 // the endless night after the dawn, and banks the night's coins (and new heroes) at the end.
@@ -12,14 +13,14 @@ import { ChestReveal } from './chestui';
 import type { Card as ChestCard } from './cards';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent, type Offer } from './sim';
-import { TUNING, isBoss, type Mode, type BossKind, type WeaponId, type PassiveId, type ZombieKind, type PowerId, type BuffId, type HeroId } from './defs';
+import { TUNING, isBoss, isManual, type Mode, type BossKind, type WeaponId, type PassiveId, type ZombieKind, type PowerId, type BuffId, type HeroId } from './defs';
 import { RARITY_COLOR, type Card } from './cards';
 import { View } from './view';
 import { Bot, SKILL } from './bot';
 import { metaFx, runBonus, bankRun, type Meta } from './meta';
 import { loadMeta, saveMeta } from './save';
-import { makeArt, cardArt, COIN, SKULL, MOON, SUN, OFFER, INFINITY, POWER_HUE } from './art';
-import { HpBar, XpChip, WeaponTray, BossBar, BuffChips, banner, bossWarning, glass, Pill, UI_DEPTH } from './ui';
+import { makeArt, cardArt, weaponArt, COIN, SKULL, MOON, SUN, OFFER, INFINITY, POWER_HUE } from './art';
+import { HpBar, XpChip, WeaponTray, BossBar, BuffChips, AttackButton, banner, bossWarning, glass, Pill, UI_DEPTH } from './ui';
 import { CardBar, OfferButton, DRAFT_DEPTH, BAR_BOTTOM, BAR_H, cardText } from './cardsui';
 import { xpToNext } from './defs';
 
@@ -30,6 +31,11 @@ const GRACE = 0.6;
 const GRACE_CD = 4;
 const BOTTOM_Y = 1214;
 const SEEN_KEY = 'zombie-grove:seen';
+/** The keys that attack (held: keep attacking). */
+const ATTACK_KEYS = ['KeyJ', 'Space', 'Enter', 'NumpadEnter'];
+/** The ATTACK button's radius on touch screens and with a keyboard, and its centre's height. */
+const ATK_R = { touch: 86, keys: 70 };
+const ATK_Y = { touch: 1172, keys: 1146 };
 /** Each power-up's pickup sound. */
 const POWER_SFX: Record<PowerId, string> = { heal: 'heal', vacuum: 'magnet', nuke: 'nuke', freeze: 'bell', rage: 'rage', boots: 'boots' };
 const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
@@ -56,6 +62,20 @@ export class PlayScene extends ArcadeScene {
   private killChip!: HudChip;
   private coinChip!: HudChip;
   private offerBtn!: OfferButton;
+  private atkBtn!: AttackButton;
+  /**
+   * The attack input: attack keys held (from the window, so a pause or a lost focus never sticks
+   * one), keys an overlay used (they attack again only after a release), a press waiting for the
+   * next simulation step, and how much of the night had a zombie in reach with no attack yet.
+   */
+  private atkKeys = new Set<string>();
+  private atkLatched = new Set<string>();
+  private atkTap = false;
+  /** A fresh press to echo on the hero (once, whenever the step takes it). */
+  private atkCue = false;
+  private atkPaused = false;
+  private attacked = false;
+  private idleReach = 0;
   private vignette!: Phaser.GameObjects.Graphics;
   private overlay!: Phaser.GameObjects.Graphics;
   private bar: CardBar | null = null;
@@ -136,6 +156,7 @@ export class PlayScene extends ArcadeScene {
     this.firstFrames = [];
     this.frameStart = 0;
     this.testSpeed = 1;
+    this.testHold = false;
     this.quiet = false;
     this.seen = new Set(storage.get<string[]>(SEEN_KEY, []));
     this.inputKind = this.sys.game.device.input.touch ? 'touch' : 'keys';
@@ -173,18 +194,26 @@ export class PlayScene extends ArcadeScene {
     this.bossBar = new BossBar(this, width / 2, HUD_ROW2_Y + 62);
     this.buffChips = new BuffChips(this, width - HUD_MARGIN, HUD_ROW2_Y + 126);
     this.hp = new HpBar(this, HUD_MARGIN, BOTTOM_Y);
-    this.tray = new WeaponTray(this, width / 2, BOTTOM_Y - 74);
+    this.tray = new WeaponTray(this, HUD_MARGIN, BOTTOM_Y - 74, width - HUD_MARGIN - 12 - (this.sys.game.device.input.touch ? ATK_R.touch : ATK_R.keys) * 2 - 30 - HUD_MARGIN);
     const keys = !this.sys.game.device.input.touch;
-    this.offerBtn = new OfferButton(this, width - HUD_MARGIN - OfferButton.R, BOTTOM_Y - 14, keys, () => this.toggleBar());
+    // the right thumb's column: the big ATTACK button at the bottom, the card offers above it; the
+    // weapon tray and health on the left
+    const ar = keys ? ATK_R.keys : ATK_R.touch, ay = keys ? ATK_Y.keys : ATK_Y.touch;
+    const ax = width - HUD_MARGIN - 12 - ar;
+    this.atkBtn = new AttackButton(this, ax, ay, ar, keys ? t('attackKeys') : '');
+    this.offerBtn = new OfferButton(this, width - HUD_MARGIN - OfferButton.R, ay - ar - 44 - OfferButton.R, keys, () => this.toggleBar());
+    this.setupAttack();
     this.overlay = this.add.graphics().setDepth(50).setScrollFactor(0);
     this.vignette = this.add.graphics().setDepth(60).setScrollFactor(0);
 
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
-      if (this.choice && this.choiceKey(e.code)) return;
-      if (this.chest && !this.chest.done && this.chest.key(e.code)) return;
-      if (this.barOpen && this.bar!.key(e.code)) return;
+      // a key an overlay takes (Enter or Space on the chest, a card, the dawn's choice) never attacks
+      if (this.choice && this.choiceKey(e.code)) { this.latch(e.code); return; }
+      if (this.chest && !this.chest.done && this.chest.key(e.code)) { this.latch(e.code); return; }
+      if (this.barOpen && this.bar!.key(e.code)) { this.latch(e.code); return; }
       if (e.code === 'KeyE') { this.toggleBar(); return; }
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) this.inputKind = 'keys';
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyA', 'KeyS', 'KeyD', ...ATTACK_KEYS].includes(e.code)) this.inputKind = 'keys';
+      if (ATTACK_KEYS.includes(e.code) && !e.repeat) this.atkBtn.kick();
     });
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (p.wasTouch) this.inputKind = 'touch'; });
 
@@ -192,7 +221,10 @@ export class PlayScene extends ArcadeScene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { if (!this.banked && this.sim.time > 20) this.bankCoins(); this.view.dispose(); });
     playMusic(this, 'level3');
     banner(this, 400, t('nightFalls'), t('surviveDawn'), { color: '#ffb27a', hold: 1.6 });
-    this.time.delayedCall(1900, () => this.hint(this.inputKind === 'touch' ? 'hintTouch' : 'hintKeys', true));
+    // a hero who starts with an automatic weapon (the Medic's shields, the Scout's robot) hears that
+    // the ATTACK button wakes up with the first weapon card
+    const auto = !this.sim.weapons.some((w) => isManual(w.id));
+    this.time.delayedCall(1900, () => this.hint((auto ? 'hintAuto' : 'hint') + (this.inputKind === 'touch' ? 'Touch' : 'Keys'), true));
   }
 
   get tune() { return TUNING[this.mode]; }
@@ -205,7 +237,91 @@ export class PlayScene extends ArcadeScene {
 
   private readInput(dt: number): Input {
     if (this.bot) return this.bot.input(dt);
-    return { mx: this.controls.axisX, mz: this.controls.axisY };
+    // a press reaches one step; holding keeps attacking
+    const tap = this.atkTap;
+    this.atkTap = false;
+    return { mx: this.controls.axisX, mz: this.controls.axisY, attack: this.attackHeld, tap };
+  }
+
+  // ------------------------------------------------------------------ the attack input
+
+  /** ATTACK is held: the button, or an attack key not used by an overlay. */
+  get attackHeld(): boolean {
+    if (this.atkPaused) return false;
+    if (this.atkBtn.down || this.testHold) return true;
+    for (const k of this.atkKeys) if (!this.atkLatched.has(k)) return true;
+    return false;
+  }
+
+  /** An overlay used this key: it attacks again only once released and pressed anew. */
+  private latch(code: string): void {
+    if (!ATTACK_KEYS.includes(code)) return;
+    this.atkLatched.add(code);
+    this.atkTap = this.atkCue = false;
+  }
+
+  /** Lets go of everything (a lost focus, a hidden tab, a pause); keys still down wait for a release. */
+  private releaseAttack(): void {
+    for (const k of this.atkKeys) this.atkLatched.add(k);
+    this.atkBtn.release();
+    this.atkTap = false;
+  }
+
+  private setupAttack(): void {
+    this.atkKeys.clear();
+    this.atkLatched.clear();
+    this.atkTap = false;
+    this.atkPaused = false;
+    this.attacked = false;
+    this.idleReach = 0;
+    const down = (e: KeyboardEvent) => {
+      if (!ATTACK_KEYS.includes(e.code) || e.repeat) return;
+      this.atkKeys.add(e.code);
+      if (this.atkPaused) { this.atkLatched.add(e.code); return; }
+      this.atkTap = this.atkCue = true;
+    };
+    const up = (e: KeyboardEvent) => { this.atkKeys.delete(e.code); this.atkLatched.delete(e.code); };
+    const blur = () => { this.atkKeys.clear(); this.atkLatched.clear(); this.atkBtn.release(); this.atkTap = false; };
+    const hidden = () => { if (document.hidden) blur(); };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    window.addEventListener('blur', blur);
+    document.addEventListener('visibilitychange', hidden);
+    this.game.events.on(Phaser.Core.Events.BLUR, blur);
+    const pause = () => { this.atkPaused = true; this.releaseAttack(); };
+    const resume = () => { this.atkPaused = false; this.releaseAttack(); };
+    this.events.on(Phaser.Scenes.Events.PAUSE, pause);
+    this.events.on(Phaser.Scenes.Events.RESUME, resume);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', blur);
+      document.removeEventListener('visibilitychange', hidden);
+      this.game.events.off(Phaser.Core.Events.BLUR, blur);
+      this.events.off(Phaser.Scenes.Events.PAUSE, pause);
+      this.events.off(Phaser.Scenes.Events.RESUME, resume);
+    });
+  }
+
+  /** The button's taps (each one press for the next step), its look, and the first-run attack hint. */
+  private updateAttack(dt: number): void {
+    const sim = this.sim, p = sim.player;
+    const presses = this.atkBtn.takePresses();
+    if (presses && !this.atkPaused) { this.atkTap = this.atkCue = true; if (this.inputKind !== 'touch' && this.sys.game.device.input.touch) this.inputKind = 'touch'; }
+    const held = this.bot ? sim.attacking : this.attackHeld;
+    const live = p.alive && sim.phase === 'night';
+    if (this.atkCue && live) { this.view.pressCue(sim); this.attacked = true; }
+    this.atkCue = false;
+    const manual = sim.weapons.filter((w) => isManual(w.id));
+    const first = manual[0];
+    this.atkBtn.setIcon(first ? weaponArt(first.id, first.evo) : '');
+    this.atkBtn.draw(held && live, manual.map((w) => 1 - sim.cdFrac(w.id)), live && sim.reach, this.elapsed, dt, !live || !manual.length);
+    if (held && live) this.attacked = true;
+    // zombies in reach for a while and no attack yet: point at the button (first runs)
+    if (!this.attacked && live && sim.reach && !this.bot) {
+      this.idleReach += dt;
+      if (this.idleReach > 2.5) { this.idleReach = -999; this.hint(this.inputKind === 'touch' ? 'hintAttackTouch' : 'hintAttackKeys', true); this.atkBtn.kick(); }
+    }
   }
 
   // ------------------------------------------------------------------ frame
@@ -230,6 +346,7 @@ export class PlayScene extends ArcadeScene {
   private step(dt: number): void {
     if (this.frozen) { dt = this.pending; this.pending = 0; }
     const sim = this.sim;
+    this.updateAttack(dt);
     const target = this.barOpen || this.chestOpen ? BAR_SLOW : 1;
     this.slow += (target - this.slow) * Math.min(1, dt * SLOW_EASE);
     if (Math.abs(target - this.slow) < 0.004) this.slow = target;
@@ -865,6 +982,9 @@ export class PlayScene extends ArcadeScene {
 
   // ------------------------------------------------------------------ test hooks
 
+  /** Test hook: ATTACK held (screenshots, the smoke test), and one tap. */
+  testHold = false;
+  testTap(): void { this.atkTap = true; }
   /** The autopilot plays (store art, screenshots); with `cards` false it leaves the offers alone. */
   testAuto(on: boolean, cards = true): void { this.bot = on ? new Bot(this.sim, SKILL.good) : null; this.botCards = cards; }
   testTime(t: number): void { this.sim.setTime(t); }

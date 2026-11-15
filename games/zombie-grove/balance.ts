@@ -1,6 +1,6 @@
 // Headless balance check: the autopilot plays whole nights on the pure simulation.
 // Run: npx tsx games/zombie-grove/balance.ts [runs] [--skill=good|casual] [--mode=easy|normal]
-//        [--meta=none|old|full|curse] [--hero=survivor|ranger|…]
+//        [--meta=none|old|full|curse] [--hero=survivor|ranger|…] [--from=seed offset]
 //   old: the 1.0 camp (its seven upgrades at their top); full: every upgrade of 1.1 at its top;
 //   curse: the full camp with the Curse at its top.
 //   reports, per difficulty, skill and camp: survival time, win rate, level reached, kills, coins,
@@ -49,12 +49,13 @@ if (proc?.argv[1]?.endsWith('balance.ts')) {
   };
   const metas: [string, MetaFx][] = (opt('meta') ?? 'none,full').split(',').map((k) => all[k]);
   const verbose = argv.includes('-v');
+  const from = Number(opt('from') ?? 0);
   for (const mode of modes) {
     for (const sk of skills) {
       for (const [mName, mfx] of metas) {
         const res: RunResult[] = [];
         for (let i = 0; i < runs; i++) {
-          const r = playRun(mode, SKILL[sk as 'good' | 'casual'], mfx, 1000 + i);
+          const r = playRun(mode, SKILL[sk as 'good' | 'casual'], mfx, 1000 + from + i);
           res.push(r);
           if (verbose) console.log(`   ${mmss(r.seconds)} ${r.won ? 'WIN ' : 'dead'} L${r.level} k${r.kills} ${r.killer} peak ${r.maxZ} | ${r.weapons}`);
         }

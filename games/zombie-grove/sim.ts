@@ -1,6 +1,9 @@
 // Zombie Grove: the simulation. Deterministic for a seed and pure (no Phaser, no three.js), so
 // the Play scene, the menu's autopilot and the headless balance run (balance.ts) all use it.
-//   - The survivor moves; every weapon fires on its own at the nearest zombies.
+//   - The survivor moves; the hero's own weapons attack while the ATTACK input is held (each at its
+//     own rate; a tap is one attack each), auto-aimed at the nearest zombie in a cone ahead of the
+//     hero (else the nearest one in reach, else straight ahead). The Ward Shields and Sprocket the
+//     robot work on their own.
 //   - Zombies follow a flow field round the trees and rocks (a breadth-first search from the
 //     survivor's cell, refreshed a few times a second), keep apart through a spatial hash and
 //     bite on contact. Runners sprint, swarms come in packs, spitters lob goo from a distance,
@@ -16,7 +19,7 @@ import {
   TUNING, ZOMBIES, ARENA, PLAY_EDGE, PLAYER_SPEED, PLAYER_R, SPAWN_R, BITE_CD, FUSE_R, FUSE, BLAST_R, BLAST_DMG,
   SPIT_RANGE, SPIT_CD, GOO_DMG, GOO_SPEED, MINIS, PASSIVE_STEP, MAX_LEVEL, HEROES, isBoss, weaponStats, xpToNext,
   BUFF_IDS, BUFF_TIME, RAGE_K, BOOTS_K, STEW_HP, POWER_DROP, POWER_W, POWER_IDS, ENDLESS, BOSS_KINDS,
-  bladeCombo, BLADE_RESET, BLADE_WAVE, type BladeKind, type BladeStep,
+  bladeCombo, BLADE_RESET, BLADE_WAVE, isManual, AIM, TAP_BUFFER, TORCH_AHEAD, type BladeKind, type BladeStep,
   type Mode, type Tuning, type ZombieKind, type BossKind, type WeaponId, type PassiveId, type WeaponStats, type PowerId, type BuffId,
 } from './defs';
 import { arena, seeded, type Collider } from './arena';
@@ -25,8 +28,9 @@ import { NO_META, CURSE, type MetaFx } from './meta';
 
 export { seeded };
 
-export interface Input { mx: number; mz: number }
-export const NO_INPUT: Input = { mx: 0, mz: 0 };
+/** Movement (−1…1), the ATTACK input held, and a fresh press since the last step (a tap). */
+export interface Input { mx: number; mz: number; attack?: boolean; tap?: boolean }
+export const NO_INPUT: Input = { mx: 0, mz: 0, attack: false, tap: false };
 
 export type Act = 'walk' | 'windup' | 'charge' | 'slam' | 'spit' | 'summon' | 'spray';
 
@@ -184,8 +188,18 @@ export class Sim {
   robot = { x: 0, z: 0, face: 0, fire: 0, on: false };
   weapons: OwnedWeapon[] = [];
   passives: OwnedPassive[] = [];
-  /** Weapon timers by id. */
+  /** Weapon timers by id, and the manual weapons' last full cooldown (the ATTACK button's ring). */
   private wcd: Partial<Record<WeaponId, number>> = {};
+  private wfull: Partial<Record<WeaponId, number>> = {};
+  /** A tap's attack, waiting per weapon for its cooldown (s left). */
+  private armed: Partial<Record<WeaponId, number>> = {};
+  /** The ATTACK input this step. */
+  attacking = false;
+  /** Seconds since a manual weapon last attacked. */
+  sinceAttack = 99;
+  /** The zombie the next attack goes for (the aim marker), and whether one is in any manual weapon's reach. */
+  aim: Zombie | null = null;
+  reach = false;
   /** The wards' spin. */
   wardAng = 0;
   /** The blade's combo: the next hit (0–2), when the last one began, its wait (× cooldown) and the finisher's blow on its way. */
@@ -466,7 +480,8 @@ export class Sim {
     }
     this.moveZombies(dt);
     this.rebuildHash();
-    if (p.alive && this.phase === 'night') this.fireWeapons(dt);
+    if (p.alive && this.phase === 'night') this.fireWeapons(dt, input);
+    else { this.attacking = false; this.aim = null; this.reach = false; }
     this.moveShots(dt);
     this.moveWaves(dt);
     this.moveGoo(dt);
@@ -1022,23 +1037,96 @@ export class Sim {
 
   // ------------------------------------------------------------------ weapons
 
-  private fireWeapons(dt: number): void {
-    const p = this.player;
+  private fireWeapons(dt: number, input: Input): void {
     // the finisher's blow lands after its wind-up
     if (this.blow) {
       const b = this.blow;
       b.t -= dt;
       if (b.t <= 0) { this.blow = null; this.bladeHit(b.s, b.ang, b.st, b.evo); }
     }
+    const held = !!input.attack;
+    this.attacking = held;
+    this.sinceAttack += dt;
+    if (input.tap) for (const w of this.weapons) if (isManual(w.id)) this.armed[w.id] = TAP_BUFFER;
+    this.findAim();
     for (const w of this.weapons) {
       const st = weaponStats(w.id, w.lv, w.evo);
       if (w.id === 'wards') { this.spinWards(dt, st, w.evo); continue; }
+      if (isManual(w.id)) {
+        // the hero's own weapons: ready weapons attack while ATTACK is held, or once for a tap
+        const armed = this.armed[w.id] ?? 0;
+        this.armed[w.id] = Math.max(0, armed - dt);
+        const cd = (this.wcd[w.id] ?? 0) - dt;
+        if (cd > 0) { this.wcd[w.id] = cd; continue; }
+        this.wcd[w.id] = 0;
+        if (!held && armed <= 0) continue;
+        if (!this.fire(w, st)) continue;
+        const full = st.cd * this.stats.cdK * (w.id === 'blade' ? this.bladeGap : 1);
+        this.wcd[w.id] = this.wfull[w.id] = full;
+        this.armed[w.id] = 0;
+        this.sinceAttack = 0;
+        continue;
+      }
       const cd = (this.wcd[w.id] ?? 0.4) - dt;
       if (cd > 0) { this.wcd[w.id] = cd; continue; }
       const fired = this.fire(w, st);
-      this.wcd[w.id] = fired ? st.cd * this.stats.cdK * (w.id === 'blade' ? this.bladeGap : 1) : 0.12;
+      this.wcd[w.id] = fired ? st.cd * this.stats.cdK : 0.12;
     }
-    void p;
+  }
+
+  /** How far a manual weapon reaches for its target. */
+  reachOf(id: WeaponId, st: WeaponStats = this.ws(id)): number {
+    const A = this.stats.areaK;
+    switch (id) {
+      case 'blade': return st.size * A + 1.6;
+      case 'spear': return st.size * A + 0.5;
+      case 'shield': return st.size * A + 1.2;
+      case 'torch': return 8.5;
+      default: return st.size;
+    }
+  }
+
+  /**
+   * The auto-aim: the nearest zombie within `range` in a generous cone ahead of the hero (where they
+   * face or run); one outside the cone wins only when it is AIM.outside times nearer.
+   */
+  aimTarget(range: number, x = this.player.x, z = this.player.z): Zombie | null {
+    const face = this.player.face;
+    const fx = Math.sin(face), fz = Math.cos(face), cosC = Math.cos(AIM.cone);
+    let best: Zombie | null = null, bs = Infinity;
+    this.near(x, z, range, (zb) => {
+      if (zb.dead) return;
+      const dx = zb.x - x, dz = zb.z - z, d = Math.sqrt(dx * dx + dz * dz);
+      if (d > range) return;
+      const ahead = d < AIM.close || dx * fx + dz * fz >= cosC * d;
+      const s = ahead ? d : d * AIM.outside;
+      if (s < bs) { bs = s; best = zb; }
+    });
+    return best;
+  }
+
+  /** The aim marker's zombie (for the longest reach of the manual weapons) and whether any is in reach. */
+  private findAim(): void {
+    let far = 0;
+    for (const w of this.weapons) if (isManual(w.id)) far = Math.max(far, this.reachOf(w.id, weaponStats(w.id, w.lv, w.evo)));
+    this.aim = far > 0 ? this.aimTarget(far) : null;
+    this.reach = !!this.aim;
+  }
+
+  /** The direction an attack goes: at the aim target within `range`, else where the hero faces. */
+  private aimAng(range: number): { ang: number; t: Zombie | null } {
+    const p = this.player;
+    const t = this.aimTarget(range);
+    const ang = t ? Math.atan2(t.x - p.x, t.z - p.z) : p.face;
+    // standing still, the hero turns to the blow (and the cone with them)
+    if (t && !p.moving) p.face = ang;
+    return { ang, t };
+  }
+
+  /** A manual weapon's cooldown left, 0–1 of its full wait (0: ready), for the ATTACK button. */
+  cdFrac(id: WeaponId): number {
+    const left = this.wcd[id] ?? 0, full = this.wfull[id] ?? 0;
+    return left > 0 && full > 0 ? Math.min(1, left / full) : 0;
   }
 
   /** One blow of the blade's combo: everything in its arc and reach. */
@@ -1100,10 +1188,10 @@ export class Sim {
         if (this.time - this.bladeAt > BLADE_RESET) this.bladeStep = 0;
         const combo = bladeCombo(w.lv, w.evo);
         const s = combo[this.bladeStep];
-        // every blow goes at the nearest zombie (locking the combo onto one target made it far stronger)
-        const t = this.nearest(p.x, p.z, st.size * A + 1.6);
-        if (!t || this.blow) return false;
-        const ang = Math.atan2(t.x - p.x, t.z - p.z);
+        // every blow goes at the aim target (locking the combo onto one target made it far stronger);
+        // with nobody in reach the hero still swings, straight ahead
+        if (this.blow) return false;
+        const { ang } = this.aimAng(this.reachOf('blade', st));
         this.events.push({ type: 'swing', x: p.x, z: p.z, ang, arc: s.arc, r: st.size * s.reach * A, evo: w.evo, step: this.bladeStep, kind: s.kind, wind: s.wind });
         if (s.wind > 0) this.blow = { t: s.wind, s, ang, st, evo: w.evo };
         else this.bladeHit(s, ang, st, w.evo);
@@ -1113,9 +1201,7 @@ export class Sim {
         return true;
       }
       case 'bow': {
-        const t = this.nearest(p.x, p.z, st.size);
-        if (!t) return false;
-        const base = t ? Math.atan2(t.x - p.x, t.z - p.z) : p.face;
+        const base = this.aimAng(st.size).ang;
         const n = st.n;
         for (let k = 0; k < n; k++) {
           const a = w.evo ? base + (k / n) * Math.PI * 2 : base + (k - (n - 1) / 2) * 0.16;
@@ -1126,9 +1212,7 @@ export class Sim {
       }
       case 'spear': {
         const len = st.size * A;
-        const t = this.nearest(p.x, p.z, len + 0.5);
-        if (!t) return false;
-        const base = Math.atan2(t.x - p.x, t.z - p.z);
+        const base = this.aimAng(this.reachOf('spear', st)).ang;
         const angs = st.n === 1 ? [base] : st.n === 2 ? [base, base + Math.PI] : [base, base + 2.09, base - 2.09];
         for (const a of angs) {
           const ux = Math.sin(a), uz = Math.cos(a);
@@ -1161,9 +1245,7 @@ export class Sim {
         return true;
       }
       case 'blaster': {
-        const t = this.nearest(p.x, p.z, st.size);
-        if (!t) return false;
-        const a = Math.atan2(t.x - p.x, t.z - p.z);
+        const a = this.aimAng(st.size).ang;
         for (let k = 0; k < st.n; k++) {
           const off = st.n === 1 ? 0 : (k - 0.5) * 0.14;
           this.shoot(w.evo ? 'ember' : 'shot', p.x, p.z, a + off + (this.rnd() - 0.5) * 0.05, st.speed, st.dmg, st.pierce, st.size / st.speed + 0.1, w.evo);
@@ -1174,7 +1256,14 @@ export class Sim {
       case 'torch': {
         const targets: { x: number; z: number }[] = [];
         const seen = new Set<number>();
-        for (let k = 0; k < st.n; k++) {
+        // the first torch at the aim target (or ahead of the hero), the others into crowds near by
+        const aim = this.aimAng(this.reachOf('torch', st));
+        if (aim.t) { seen.add(aim.t.id); targets.push({ x: aim.t.x, z: aim.t.z }); }
+        else {
+          const x = Math.max(-PLAY_EDGE, Math.min(PLAY_EDGE, p.x + Math.sin(aim.ang) * TORCH_AHEAD)), z = Math.max(-PLAY_EDGE, Math.min(PLAY_EDGE, p.z + Math.cos(aim.ang) * TORCH_AHEAD));
+          targets.push({ x, z });
+        }
+        for (let k = 1; k < st.n; k++) {
           // a crowded spot near the survivor
           let best: Zombie | null = null, bs = -1;
           for (let tries = 0; tries < 6; tries++) {
@@ -1189,7 +1278,6 @@ export class Sim {
           }
           if (best) { seen.add(best.id); targets.push({ x: best.x, z: best.z }); }
         }
-        if (!targets.length) return false;
         for (const t of targets) {
           const d = Math.hypot(t.x - p.x, t.z - p.z);
           const torch: Torch = { x0: p.x, z0: p.z, x1: t.x, z1: t.z, t: 0, T: 0.35 + d * 0.05, r: st.size * A, dps: st.dmg, burn: st.speed, evo: w.evo };
@@ -1200,9 +1288,7 @@ export class Sim {
       }
       case 'shield': {
         const r = st.size * A;
-        const t = this.nearest(p.x, p.z, r + 1.2);
-        if (!t) return false;
-        const ang = Math.atan2(t.x - p.x, t.z - p.z);
+        const ang = this.aimAng(this.reachOf('shield', st)).ang;
         const arc = w.evo ? Math.PI * 2 : Math.PI * 0.72;
         let healed = 0;
         for (let k = 0; k < (w.evo ? 1 : st.n); k++) {
@@ -1565,6 +1651,7 @@ export class Sim {
 
   private compact(): void {
     if (this.zombies.some((z) => z.dead)) this.zombies = this.zombies.filter((z) => !z.dead);
+    if (this.aim?.dead) { this.aim = null; this.reach = false; }
     if (this.shots.some((s) => s.dead)) this.shots = this.shots.filter((s) => !s.dead);
     if (this.goo.some((g) => g.dead)) this.goo = this.goo.filter((g) => !g.dead);
     if (this.pickups.some((q) => q.dead)) this.pickups = this.pickups.filter((q) => !q.dead);
