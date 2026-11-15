@@ -271,6 +271,33 @@ const CARD = {
     }`,
     pick: 2,
   },
+  // Coaster Rush's card shows the steel train plunging down Windmill Hill's first drop over the
+  // town, every seat full and the riders' hands in the air, seen from the front side; the ride is
+  // stepped to the moment and held there (testAdvance stops the clock), so every frame shows it.
+  'coaster-rush': {
+    stage: `async () => {
+      const p = window.__ayvago.game.scene.getScene('Play');
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      p.testTutorial(false);
+      p.meta.seen = ['turbo', 'magnet', 'safety', 'slowmo', 'golden', 'balloon', 'loop', 'lean', 'fork', 'style_steel', 'style_mouse', 'style_hanging', 'style_monorail', 'style_flume'];
+      p.testAuto(true);
+      p.testArea(1);
+      const sim = p.sim;
+      sim.riders = sim.seats;
+      const sec = sim.sectionAt(sim.s);
+      const f = sec.features.find((q) => q.kind === 'drop' && q.s0 > sim.s);
+      sim.place(f.s0 + 0.3, 3.2);
+      for (let i = 0; i < 400; i++) { p.testAdvance(1000 / 60); if (sim.at(sim.s - sim.length * 0.55).ty < -0.6) break; }
+      p.view.forceMood = 'thrill';
+      p.testPower('golden');
+      for (let i = 0; i < 12; i++) p.testAdvance(1000 / 60);
+      p.testCam(Math.PI * 0.68, 5.4, 1.3, 1.2, -0.3);
+      p.testAdvance(16);
+      p.banners.clear();
+      p.testClearUi();
+      await sleep(1500);
+    }`,
+  },
   // Skull Isle's card shows the hero mid-combo against a skeleton crew on Sandy Cove's north
   // beach, Ernest the parrot over the fight and the crew's ship at anchor behind: the training is
   // skipped, nothing hurts the hero, the camera looks a little past them so the ship shows, and the

@@ -282,6 +282,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     version: '1.1.0',
   }),
   arcadeGame({
+    slug: 'coaster-rush',
+    title: { en: 'Coaster Rush', tr: 'Hız Treni' },
+    description: {
+      en: "You drive the roller coaster of a festive fair built among timber houses, windmills, watermills and market stalls! Climb the chain lift, fly down the drops, loop the loops, float in airtime and skim the rooftops. Take a corner too fast and the train leans and derails; run out of speed on a hill and it rolls back. Stop right in each station's glowing bay to let riders off and new ones on. Pick the safe or the thrill route at every junction, collect tokens and grab power-ups: turbo, magnet, safety bar, slow-mo brakes, golden ticket and balloon lift. Six areas, six track styles: wooden, steel, wild mouse, hanging, monorail and log flume. Upgrade and paint your train in the workshop!",
+      tr: 'Ahşap evlerin, yel değirmenlerinin, su değirmenlerinin ve pazar tezgâhlarının arasına kurulmuş şenlikli bir lunaparkta hız trenini sen sürüyorsun! Zincirle tepeye tırman, inişlerde uç, takla at, havada süzül ve çatıların kıl payı üstünden geç. Virajlara fazla hızlı girersen tren yatar ve raydan çıkar; tepeye yetecek hızın yoksa geri kayar. İstasyonlarda tam parlayan alanda dur, yolcuları indir ve yenilerini al. Makaslarda sakin ya da heyecanlı yolu seç, jeton topla, turbo, mıknatıs, emniyet barı, ağır çekim fren, altın bilet ve uçan balon güçlerini kap. Altı bölge, altı ray türü: ahşap, çelik, çılgın fare, asılı, monoray ve kütük kanalı. Atölyede treni geliştir ve boya!',
+    },
+    category: 'arcade',
+    categories: ['arcade', 'action', 'casual'],
+    tags: ['coaster', 'rush', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-15',
+  }),
+  arcadeGame({
     slug: 'coin-catcher',
     title: { en: 'Coin Catcher', tr: 'Altın Avcısı' },
     description: {

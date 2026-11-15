@@ -23,7 +23,12 @@ that folder (nothing in the zips is run, only the listed files are copied):
   unzip kenney_mini-forest.zip -d <dir>/kenney_mini-forest
   unzip kenney_mini-characters.zip -d <dir>/kenney_mini-characters
   python3 tools/import-kenney.py <dir> mini-forest mini-characters
-  python3 tools/import-kenney.py <jam-ready-assets-dir> retro-urban-kit"""
+  python3 tools/import-kenney.py <jam-ready-assets-dir> retro-urban-kit
+
+Coaster Kit 1.0 and Fantasy Town Kit 2.0 came the same way (the owner's zips, for Coaster Rush);
+unzip them as <dir>/kenney_coaster-kit/ and <dir>/kenney_fantasy-town-kit/ (License.txt +
+Models/GLB format/) and pass that folder, with Mini Characters for the riders it adds:
+  python3 tools/import-kenney.py <dir> coaster-kit fantasy-town-kit mini-characters"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -94,6 +99,10 @@ PACKS = {
     # Retro Urban Kit 2.0 (jam-ready-assets mirror, Git LFS, commit 397bf9e; pack root is the
     # mirror's own folder: License.txt + Models/GLB format/ with its 22 textures in Textures/)
     'kenney-retro-urban-kit/3D/city': 'retro-urban-kit',
+    # Coaster Kit 1.0 and Fantasy Town Kit 2.0: the owner's uploaded zips, unpacked as
+    # <dir>/kenney_coaster-kit/ and <dir>/kenney_fantasy-town-kit/ (License.txt + Models/GLB format/)
+    'kenney_coaster-kit': 'coaster-kit',
+    'kenney_fantasy-town-kit': 'fantasy-town-kit',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -253,6 +262,8 @@ MINI_CHARACTERS = [
     'weapon-sword', 'weapon-spear', 'weapon-shooter', 'weapon-arrow', 'shield-round',
     # Zombie Grove 1.1: the Medic and Scout heroes and the Tower Shield
     'character-female-c', 'character-female-e', 'shield-rectangle',
+    # Coaster Rush: more riders for the trains and the station queues
+    'character-female-a', 'character-female-b', 'character-female-d',
 ]
 FILES['mini-forest'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_FOREST]
 FILES['mini-characters'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in MINI_CHARACTERS]
@@ -278,6 +289,32 @@ RETRO_URBAN_TEXTURES = [
 ]
 FILES['retro-urban-kit'] = (['License.txt'] + [f'Models/GLB format/Textures/{n}.png' for n in RETRO_URBAN_TEXTURES]
                             + [f'Models/GLB format/{n}.glb' for n in RETRO_URBAN_KIT])
+
+# Coaster Rush (games/coaster-rush/kit.ts): the six track styles' pieces it lays its rides from
+# (COASTER_PIECES for every style in COASTER_STYLES), the trains, stations, supports and park bits,
+# and the Fantasy Town Kit models it builds the town, the windmills and the watermills from
+COASTER_STYLES = ['wood', 'steel', 'mouse', 'hanging', 'monorail', 'flume']
+COASTER_PIECES = [
+    'straight', 'corner-small', 'corner-large', 'corner-small-ramp', 'corner-large-ramp', 'curve', 'looping',
+    'straight-hill-beginning', 'straight-hill-end', 'straight-hill-complete', 'straight-hill-complete-half',
+    'straight-bump-up', 'straight-bump-down',
+]
+COASTER_KIT = [f'coaster-{s}-{p}' for s in COASTER_STYLES for p in COASTER_PIECES] + [
+    'coaster-train', 'coaster-train-front', 'coaster-train-safety', 'coaster-train-wooden', 'coaster-train-hanging',
+    'train-log-flume', 'train-monorail', 'station', 'station-gate', 'station-fence', 'support-small', 'support-small-bottom',
+    'support-large', 'support-large-bottom', 'park-entrance', 'ride-entrance', 'stall-food', 'stall-drinks', 'stall-information',
+    'tree', 'flowers', 'bench', 'trash',
+]
+FANTASY_TOWN_KIT = [
+    'wall', 'wall-door', 'wall-window-shutters', 'wall-window-small', 'wall-window-glass', 'wall-window-round',
+    'wall-wood', 'wall-wood-door', 'wall-wood-window-shutters', 'wall-wood-window-small', 'wall-wood-window-glass',
+    'wall-wood-detail-cross', 'wall-wood-detail-diagonal', 'roof-gable', 'roof-point', 'roof-high-point', 'roof-high-gable',
+    'chimney', 'windmill', 'watermill', 'fountain-round-detail', 'stall-red', 'stall-green', 'stall-bench', 'stall-stool',
+    'lantern', 'banner-red', 'banner-green', 'cart', 'cart-high', 'tree', 'tree-high', 'tree-crooked', 'tree-high-round',
+    'rock-large', 'rock-wide', 'rock-small', 'hedge', 'hedge-large', 'road', 'pillar-wood', 'stairs-wood',
+]
+FILES['coaster-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in COASTER_KIT]
+FILES['fantasy-town-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in FANTASY_TOWN_KIT]
 
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""

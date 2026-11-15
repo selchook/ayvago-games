@@ -1,5 +1,5 @@
 {
-  "count": 97,
+  "count": 98,
   "games": [
     {
       "id": "air-hockey",
@@ -454,6 +454,40 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/city-defender.png"
+    },
+    {
+      "id": "coaster-rush",
+      "title": {
+        "tr": "Hız Treni",
+        "en": "Coaster Rush"
+      },
+      "description": {
+        "tr": "Ahşap evlerin, yel değirmenlerinin, su değirmenlerinin ve pazar tezgâhlarının arasına kurulmuş şenlikli bir lunaparkta hız trenini sen sürüyorsun! Zincirle tepeye tırman, inişlerde uç, takla at, havada süzül ve çatıların kıl payı üstünden geç. Virajlara fazla hızlı girersen tren yatar ve raydan çıkar; tepeye yetecek hızın yoksa geri kayar. İstasyonlarda tam parlayan alanda dur, yolcuları indir ve yenilerini al. Makaslarda sakin ya da heyecanlı yolu seç, jeton topla, turbo, mıknatıs, emniyet barı, ağır çekim fren, altın bilet ve uçan balon güçlerini kap. Altı bölge, altı ray türü: ahşap, çelik, çılgın fare, asılı, monoray ve kütük kanalı. Atölyede treni geliştir ve boya!",
+        "en": "You drive the roller coaster of a festive fair built among timber houses, windmills, watermills and market stalls! Climb the chain lift, fly down the drops, loop the loops, float in airtime and skim the rooftops. Take a corner too fast and the train leans and derails; run out of speed on a hill and it rolls back. Stop right in each station's glowing bay to let riders off and new ones on. Pick the safe or the thrill route at every junction, collect tokens and grab power-ups: turbo, magnet, safety bar, slow-mo brakes, golden ticket and balloon lift. Six areas, six track styles: wooden, steel, wild mouse, hanging, monorail and log flume. Upgrade and paint your train in the workshop!"
+      },
+      "howTo": {
+        "tr": "Dokunmatik: sağdaki GAZ'ı basılı tut (zincir, hızlandırıcı), soldaki FREN ile yavaşla, makasta yandaki oklarla yolu seç. Klavye: Boşluk / ↑ gaz, ↓ fren, ← → yol seçimi, C kamera. YATMA göstergesine dikkat ve istasyonda parlayan alanda dur.",
+        "en": "Touch: hold GO on the right (chain lift, boosters), BRAKE on the left to slow down, tap the side arrows at a junction. Keys: Space / ↑ go, ↓ brake, ← → pick the route, C camera. Watch the LEAN meter and stop in each station's glowing bay."
+      },
+      "genres": [
+        "arcade",
+        "action",
+        "casual"
+      ],
+      "orientation": "portrait",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Kenney Coaster Kit, Fantasy Town Kit and Mini Characters (CC0) — kenney.nl",
+        "Sound effects: Kenney Impact Sounds and Foley Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org"
+      ],
+      "platform": {
+        "addedAt": "2026-11-15"
+      },
+      "thumb": "thumbs/coaster-rush.png"
     },
     {
       "id": "coin-catcher",
