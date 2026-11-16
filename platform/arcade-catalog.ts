@@ -560,15 +560,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'hex-realm',
     title: { en: 'Hex Realm', tr: 'Altıgen Diyar' },
     description: {
-      en: "A 3D action RPG on a hex map: pick one of six classes, explore the realm as the fog lifts, take quests in the village, buy potions at the market and upgrade your gear at the smithy. Chain each class's three combos, empower your moves with Sigils at the Shrine, draft power cards for the journey, roll out of the red warnings, use your two skills, and defeat the mine troll, the dark mage of the spire and the castle lord.",
-      tr: "Altıgen bir haritada 3B aksiyon RPG: altı sınıftan birini seç, sisi açarak diyarı keşfet, köyden görev al, pazardan iksir al, demircide silahını güçlendir. Her sınıfın üç kombosunu zincirle, Tapınak'ta güçlerini Mühürlerle geliştir, yolculuk boyunca güç kartları seç; kırmızı uyarılardan yuvarlanarak kaç, iki yeteneğini kullan; madendeki trolü, kuledeki kara büyücüyü ve kaledeki lordu yen.",
+      en: "A 3D action RPG on a hex map: pick one of six classes, explore the realm as the fog lifts, take quests in the village, buy potions at the market and upgrade your gear at the smithy. Chain each class's three combos, empower your moves with Sigils, draft power cards for the journey, roll out of the red warnings, use your two skills, and defeat the mine troll, the dark mage of the spire and the castle lord.",
+      tr: 'Altıgen bir haritada 3B aksiyon RPG: altı sınıftan birini seç, sisi açarak diyarı keşfet, köyden görev al, pazardan iksir al, demircide silahını güçlendir. Her sınıfın üç kombosunu zincirle, güçlerini Mühürlerle geliştir, yolculuk boyunca güç kartları seç; kırmızı uyarılardan yuvarlanarak kaç, iki yeteneğini kullan; madendeki trolü, kuledeki kara büyücüyü ve kaledeki lordu yen.',
     },
     category: 'action',
     categories: ['action', 'arcade'],
     tags: ['hex', 'realm', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-11-16',
   }),
   arcadeGame({
