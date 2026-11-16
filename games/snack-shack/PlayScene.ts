@@ -3,7 +3,8 @@
 // day's result card with stars, then the upgrade shop, until too many customers leave angry.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, txt, t, loc, upper, currentGame, popup, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, Button, shake, storage, burst,
+  ArcadeScene, txt, t, loc, upper, currentGame, popup, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, shake, storage, burst,
+  themeCard, themeLabel, skinImage, SkinButton, KitButton, FmtLine, GlyphText,
 } from '@core';
 import { World3D, THREE } from '@core/three';
 import {
@@ -18,7 +19,9 @@ import { Fx } from './fx3d';
 import { foodMat, furnMat } from './kit';
 import { Chef } from './chef';
 import { makeThumbs, itemThumb, upgradeThumb } from './thumbs';
-import { Bubble, glass, drawStar, chipLabel, UI_DEPTH } from './ui';
+import * as SCR from './screens';
+import { INTRO_CARD, TICKET, SHOP_W, shopH, ticketTexture, CHALK, CHALK_INK, RED, TEAL } from './theme';
+import { Bubble, drawStar, chipLabel, UI_DEPTH } from './ui';
 import { Bot, SKILL } from './bot';
 
 type Phase = 'intro' | 'play' | 'result' | 'shop';
@@ -250,8 +253,10 @@ export class PlayScene extends ArcadeScene {
     const newItems = ITEMS.filter((i) => ITEM_DAY[i] === day);
     const newStations = STATIONS.filter((s) => STATION_DAY[s] === day && day > 1);
     const dim = this.add.rectangle(0, 0, width, height, 0x0b1020, 0.35).setOrigin(0).setDepth(UI_DEPTH);
-    const g = glass(this.add.graphics().setDepth(UI_DEPTH + 1), 70, 430, width - 140, newItems.length ? 400 : 260);
-    const title = txt(this, width / 2, 500, t('dayN', { n: day }), { title: true, size: 64, color: '#ffd23f', strokeThickness: 8 }).setDepth(UI_DEPTH + 2);
+    // the menu theme's chalkboard and chalk lines (theme.ts, screens.ts), painted under the Ayvago intro
+    const ch = INTRO_CARD.h[newItems.length ? 0 : 1];
+    const g = themeCard(this, width / 2, 430 + ch / 2, INTRO_CARD.w, ch).setDepth(UI_DEPTH + 1);
+    const title = new FmtLine(this, width / 2, 500, SCR.DAY_TITLE).set('dayN', { n: day }).setDepth(UI_DEPTH + 2);
     title.setScale(0.3);
     this.tweens.add({ targets: title, scale: 1, duration: 420, ease: 'Back.easeOut' });
     const objs: Phaser.GameObjects.GameObject[] = [dim, g, title];
@@ -264,10 +269,10 @@ export class PlayScene extends ArcadeScene {
         objs.push(img);
       });
       const names = newItems.map((i) => t('i_' + i)).join(', ');
-      objs.push(txt(this, width / 2, y + 150, t('newOnMenu', { name: names }), { size: 30, color: '#ffffff', wrap: width - 180 }).setDepth(UI_DEPTH + 2));
-      if (newStations.length) objs.push(txt(this, width / 2, y + 194, t('newStation', { name: newStations.map((s) => this.stationName(s)).join(', ') }), { size: 24, color: '#9fe3ff' }).setDepth(UI_DEPTH + 2));
+      objs.push(txt(this, width / 2, y + 150, t('newOnMenu', { name: names }), { size: 30, color: CHALK_INK, wrap: width - 180, strokeThickness: 0, shadow: false }).setDepth(UI_DEPTH + 2));
+      if (newStations.length) objs.push(txt(this, width / 2, y + 194, t('newStation', { name: newStations.map((s) => this.stationName(s)).join(', ') }), { size: 24, color: '#9fe3ff', strokeThickness: 0, shadow: false }).setDepth(UI_DEPTH + 2));
     } else {
-      objs.push(txt(this, width / 2, y + 30, day > 5 ? t('rushDay') : t('goal'), { size: 30, color: '#ffffff' }).setDepth(UI_DEPTH + 2));
+      objs.push(themeLabel(this, width / 2, y + 30, day > 5 ? t('rushDay') : t('goal'), SCR.CHALK_LINE).setDepth(UI_DEPTH + 2));
     }
     this.card = objs;
     this.sfx('dayStart', { volume: 0.6, exact: true });
@@ -313,9 +318,12 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     const D = UI_DEPTH;
     const dim = this.add.rectangle(0, 0, width, height, 0x0b1020, 0.5).setOrigin(0).setDepth(D).setInteractive();
-    const g = glass(this.add.graphics().setDepth(D + 1), 60, 300, width - 120, 720);
+    // the order ticket (theme.ts, screens.ts), painted under the Ayvago intro
+    const g = this.add.image(width / 2, 300 + TICKET.h / 2, ticketTexture(this)).setDepth(D + 1);
     const objs: Phaser.GameObjects.GameObject[] = [dim, g];
-    objs.push(txt(this, width / 2, 370, t('dayDone', { n: sim.day }), { title: true, size: 48, color: '#ffd23f', strokeThickness: 8 }).setDepth(D + 2));
+    const head = new FmtLine(this, width / 2, 370, SCR.TICKET_TITLE).set('dayDone', { n: sim.day }).setDepth(D + 2);
+    if (head.textWidth > TICKET.w - 60) head.setScale((TICKET.w - 60) / head.textWidth);
+    objs.push(head);
     const stars = this.add.graphics().setDepth(D + 2);
     objs.push(stars);
     for (let k = 0; k < 3; k++) drawStar(stars, width / 2 + (k - 1) * 110, 480, 44, false);
@@ -331,21 +339,25 @@ export class PlayScene extends ArcadeScene {
         this.sfx('star', { rate: 1 + k * 0.12 });
       });
     }
-    const rows: [string, string, string?][] = [
-      [t('happy'), String(sim.stats.served), '#7dffa0'],
-      [t('angry'), String(sim.stats.angry), sim.stats.angry ? '#ff8a7a' : '#ffffff'],
-      [t('earned'), String(sim.stats.earned)],
-      [t('tipsToday'), '+' + sim.stats.tips, '#ffd23f'],
-      [t('starBonus'), '+' + close.bonus, '#ffd23f'],
-      [t('bestCombo'), '×' + Math.max(1, sim.bestCombo)],
+    const V = SCR.VALUE_COLORS;
+    const rows: [string, string, string][] = [
+      ['happy', String(sim.stats.served), V.happy],
+      ['angry', String(sim.stats.angry), sim.stats.angry ? V.angry : V.plain],
+      ['earned', String(sim.stats.earned), V.plain],
+      ['tipsToday', '+' + sim.stats.tips, V.gold],
+      ['starBonus', '+' + close.bonus, V.gold],
+      ['bestCombo', '×' + Math.max(1, sim.bestCombo), V.plain],
     ];
-    rows.forEach(([a, b, col], i) => {
+    rows.forEach(([k, b, col], i) => {
       const y = 580 + i * 52;
-      objs.push(txt(this, 110, y, a, { size: 28, color: '#dfe6f5', strokeThickness: 0, align: 'left' }).setOrigin(0, 0.5).setDepth(D + 2));
-      objs.push(txt(this, width - 110, y, b, { size: 30, color: col ?? '#ffffff', strokeThickness: 0, title: true }).setOrigin(1, 0.5).setDepth(D + 2));
+      const l = themeLabel(this, 110, y, t(k), SCR.TICKET_ROW).setDepth(D + 2);
+      l.setOrigin(0, l.originY);
+      objs.push(l);
+      objs.push(new GlyphText(this, width - 110, y, b, SCR.tickValue(col), 1).setDepth(D + 2));
     });
-    if (close.heart) objs.push(txt(this, width / 2, 900, t('heartBack'), { size: 26, color: '#ff8fb0' }).setDepth(D + 2));
-    const btn = new Button(this, width / 2, 965, t('toShop'), () => this.showShop(), { width: 420, height: 92, size: 32, color: 0x2fae5a }).setDepth(D + 3);
+    if (close.heart) objs.push(themeLabel(this, width / 2, 900, t('heartBack'), SCR.HEART_BACK).setDepth(D + 2));
+    const btn = new SkinButton(this, width / 2, 965, t('toShop'), () => this.showShop(),
+      { width: SCR.RESULT_BTN.w, height: SCR.RESULT_BTN.h, size: SCR.BTN.shop, color: TEAL, baked: true }).setDepth(D + 3);
     objs.push(btn);
     this.card = objs;
     this.cardKeys = [() => this.showShop()];
@@ -373,12 +385,20 @@ export class PlayScene extends ArcadeScene {
     const cw = width - 100, ch = 92, gy = 10;
     const top = 290;
     const panelH = 130 + list.length * (ch + gy) + 130;
-    const g = glass(this.add.graphics().setDepth(D + 1), 34, top - 120, width - 68, panelH);
+    // the chalkboard menu with awning rows (theme.ts, screens.ts), painted under the Ayvago intro
+    const g = skinImage(this, width / 2, top - 120 + panelH / 2, 'board', SHOP_W, shopH(list.length), 'up', CHALK).setDepth(D + 1);
     const objs: Phaser.GameObjects.GameObject[] = [dim, g];
-    objs.push(txt(this, width / 2, top - 74, t('shopTitle'), { title: true, size: 42, color: '#ffd23f', strokeThickness: 8 }).setDepth(D + 2));
-    objs.push(this.add.image(width / 2 - 70, top - 22, 'ss-coin').setDisplaySize(30, 30).setDepth(D + 2));
-    objs.push(txt(this, width / 2 - 48, top - 22, `${t('yourTips')}: ${sim.wallet}`, { size: 28, color: '#ffffff', strokeThickness: 0, align: 'left' }).setOrigin(0, 0.5).setDepth(D + 2));
+    objs.push(themeLabel(this, width / 2, top - 74, t('shopTitle'), SCR.SHOP_TITLE).setDepth(D + 2));
+    const walletL = themeLabel(this, 0, top - 22, t('yourTips') + ':', SCR.WALLET).setDepth(D + 2);
+    const walletN = new GlyphText(this, 0, top - 22, String(sim.wallet), SCR.WALLET, 0).setDepth(D + 2);
+    const ww = 30 + 10 + walletL.width + 8 + walletN.textWidth;
+    const wx = width / 2 - ww / 2;
+    objs.push(this.add.image(wx + 15, top - 22, 'ss-coin').setDisplaySize(30, 30).setDepth(D + 2));
+    walletL.setOrigin(0, walletL.originY).setX(wx + 40);
+    walletN.setX(wx + 40 + walletL.width + 8);
+    objs.push(walletL, walletN);
     const actions: (() => void)[] = [];
+    const showKeys = !this.sys.game.device.input.touch || this.keyboardUsed;
     list.forEach((id, i) => {
       const x = 50, y = top + 10 + i * (ch + gy);
       const cost = sim.upgradeCost(id);
@@ -386,24 +406,26 @@ export class PlayScene extends ArcadeScene {
       const max = UPGRADES.find((u) => u.id === id)!.cost.length;
       const can = cost !== null && cost <= sim.wallet;
       const focused = this.focus === i;
-      const bg = this.add.graphics().setDepth(D + 2);
-      bg.fillStyle(focused ? 0x2b3a63 : 0x1a2340, 0.95).fillRoundedRect(x, y, cw, ch, 20);
-      bg.lineStyle(focused ? 4 : 2, focused ? 0xffd23f : 0xffffff, focused ? 1 : 0.25).strokeRoundedRect(x, y, cw, ch, 20);
-      objs.push(bg);
+      objs.push(skinImage(this, x + cw / 2, y + ch / 2, 'plate', SCR.ROW.w, SCR.ROW.h, focused ? 'on' : 'up', SCR.ROW_COLOR).setDepth(D + 2));
       objs.push(this.add.image(x + 52, y + ch / 2, upgradeThumb(id)).setDisplaySize(84, 84).setDepth(D + 3));
-      objs.push(txt(this, x + 104, y + 26, t('u_' + id), { size: 25, title: true, color: '#ffffff', strokeThickness: 0, align: 'left' }).setOrigin(0, 0.5).setDepth(D + 3));
-      objs.push(txt(this, x + 104, y + 55, t('d_' + id), { size: 20, color: '#c9d3ea', strokeThickness: 0, align: 'left' }).setOrigin(0, 0.5).setDepth(D + 3));
+      const name = themeLabel(this, x + 104, y + 26, t('u_' + id), SCR.ROW_NAME).setDepth(D + 3);
+      name.setOrigin(0, name.originY);
+      if (name.width > cw - 260) name.setScale((cw - 260) / name.width);
+      const desc = themeLabel(this, x + 104, y + 55, t('d_' + id), SCR.ROW_DESC).setDepth(D + 3);
+      desc.setOrigin(0, desc.originY);
+      if (desc.width > cw - 250) desc.setScale((cw - 250) / desc.width);
+      objs.push(name, desc);
       const pips = this.add.graphics().setDepth(D + 3);
-      for (let k = 0; k < max; k++) pips.fillStyle(k < lv ? 0x7dffa0 : 0x3a4560, 1).fillRoundedRect(x + 104 + k * 26, y + 76, 20, 8, 4);
+      for (let k = 0; k < max; k++) pips.fillStyle(k < lv ? 0x7dffa0 : 0xfff7ee, k < lv ? 1 : 0.45).fillRoundedRect(x + 104 + k * 26, y + 72, 20, 8, 4).lineStyle(1.5, 0x10201a, 0.9).strokeRoundedRect(x + 104 + k * 26, y + 72, 20, 8, 4);
       objs.push(pips);
-      const label = cost === null ? t('maxed') : String(cost);
-      const pill = this.add.graphics().setDepth(D + 3);
-      const pw = 118, px = x + cw - pw - 14, py = y + ch / 2 - 22;
-      pill.fillStyle(cost === null ? 0x3a4560 : can ? 0x2fae5a : 0x6a3a3a, 1).fillRoundedRect(px, py, pw, 44, 22);
-      objs.push(pill);
-      if (cost !== null) objs.push(this.add.image(px + 26, py + 22, 'ss-coin').setDisplaySize(26, 26).setDepth(D + 4));
-      objs.push(txt(this, px + pw / 2 + (cost !== null ? 12 : 0), py + 23, label, { size: 24, title: true, strokeThickness: 0, color: '#ffffff' }).setDepth(D + 4));
-      if (!this.sys.game.device.input.touch || this.keyboardUsed) objs.push(chipLabel(this, x + 14, y + 14, String(i + 1), { size: 16, color: '#ffd23f' }).setDepth(D + 4));
+      const pw = SCR.PRICE.w, px = x + cw - pw - 14, py = y + ch / 2 - 22;
+      const pc = cost === null ? SCR.PRICE_COLOR.max : can ? SCR.PRICE_COLOR.can : SCR.PRICE_COLOR.poor;
+      objs.push(skinImage(this, px + pw / 2, py + 22, 'plate', pw, SCR.PRICE.h, 'up', pc).setDepth(D + 3));
+      if (cost !== null) {
+        objs.push(this.add.image(px + 26, py + 22, 'ss-coin').setDisplaySize(26, 26).setDepth(D + 4));
+        objs.push(new GlyphText(this, px + pw / 2 + 12, py + 22, String(cost), SCR.PRICE_STYLE).setDepth(D + 4));
+      } else objs.push(themeLabel(this, px + pw / 2, py + 22, t('maxed'), SCR.PRICE_STYLE).setDepth(D + 4));
+      if (showKeys) objs.push(new GlyphText(this, x + 22, y + 18, String(i + 1), SCR.KEY_TAG).setDepth(D + 4));
       const buy = () => this.buy(id, x + cw / 2, y + ch / 2);
       const zone = this.add.zone(x + cw / 2, y + ch / 2, cw, ch).setDepth(D + 5).setInteractive({ useHandCursor: true });
       zone.on('pointerup', buy);
@@ -418,7 +440,9 @@ export class PlayScene extends ArcadeScene {
       ring.lineStyle(4, 0xffd23f, 1).strokeRoundedRect(width / 2 - 244, by - 56, 488, 112, 36);
       objs.push(ring);
     }
-    objs.push(new Button(this, width / 2, by, t('openDay', { n: sim.day + 1 }), next, { width: 460, height: 96, size: 34, color: 0xec3013 }).setDepth(D + 4));
+    const open = new KitButton(this, width / 2, by, { w: SCR.OPEN_BTN.w, h: SCR.OPEN_BTN.h, color: RED }, next);
+    open.addContent(new FmtLine(this, 0, 0, SCR.OPEN_LABEL).set('openDay', { n: sim.day + 1 }));
+    objs.push(open.setDepth(D + 4));
     actions.push(next);
     this.card = objs;
     this.cardKeys = actions;

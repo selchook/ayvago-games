@@ -9,6 +9,8 @@ import { Bot, SKILL } from './bot';
 import { DungeonView, paletteOf, SKY } from './view';
 import { HeroFigure } from './hero';
 import { Fx } from './fx3d';
+import { CRYPT_THEME } from './theme';
+import { prebakeScreens } from './screens';
 
 launch({
   meta: meta as GameMeta,
@@ -91,7 +93,7 @@ launch({
     const hero = new HeroFigure(scene, playerCharacter3d());
     world.scene.add(hero.root);
     const fx = new Fx(world.scene, world.camera);
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0b0812, 0.35).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in theme.ts): one full-screen layer
     keepPrograms(world.renderer, world.scene, world.camera);
     let time = 0, acc = 0, swing = false;
     const cam = new THREE.Vector3(sim.hero.x, 0, sim.hero.z);
@@ -133,6 +135,9 @@ launch({
       world.followSun(cam);
     };
   },
+  // iron-banded crypt stone, a carved plaque, chains and a skull on a crypt door (theme.ts); the
+  // shrine, the cleared card and the camp in the same look (screens.ts paints them under the intro)
+  menuTheme: { ...CRYPT_THEME, prebake: prebakeScreens },
   scenes: [PlayScene],
   strings: STRINGS,
 });

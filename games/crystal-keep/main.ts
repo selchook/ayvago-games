@@ -10,6 +10,8 @@ import { Fx } from './fx3d';
 import { Sim } from './sim';
 import { Bot } from './bot';
 import { Thumbs } from './thumbs';
+import { KEEP_THEME } from './theme';
+import { prebakeScreens } from './screens';
 
 launch({
   meta: meta as GameMeta,
@@ -90,7 +92,7 @@ launch({
     enemies.onCrash = (x, z) => fx.boom(x, z, 0.6);
     const bot = new Bot(sim);
     const views = new Map<number, ReturnType<typeof buildTower>>();
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0b1a14, 0.32).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in theme.ts): one full-screen layer
     let time = 0;
     world.onFrame = (dt) => {
       time += dt;
@@ -129,6 +131,10 @@ launch({
       world.camera.lookAt(0, 0, 0.5);
     };
   },
+  // carved stone and glowing crystals, battlements and a crystal tower (theme.ts)
+  // (the map select, the cleared card, the draft, the card list and the talent board in the same
+  // look: screens.ts paints their pieces under the Ayvago intro)
+  menuTheme: { ...KEEP_THEME, prebake: prebakeScreens },
   scenes: [PlayScene],
   strings: STRINGS,
 });

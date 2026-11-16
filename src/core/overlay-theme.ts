@@ -368,7 +368,9 @@ export function themedResult(scene: Phaser.Scene, theme: MenuTheme, v: ResultVie
   const head = themeLabel(scene, width / 2, L.head, v.heading, v.win ? winStyle(theme, L.headSize) : headStyle(theme, L.headSize)).setDepth(3);
   if (head.width > L.card.w - 70) head.setScale((L.card.w - 70) / head.width);
   const hs = head.scale;
-  head.setScale(hs * 1.8).setAlpha(0);
+  // stamped on from a little larger, but never wider than the card at any point of the entrance
+  const from = Math.max(hs, Math.min(hs * 1.8, (L.card.w - 40) / head.width));
+  head.setScale(from).setAlpha(0);
   scene.tweens.add({
     targets: head, scale: hs, alpha: 1, duration: 260, delay: 160, ease: 'Cubic.easeIn',
     onComplete: () => { if (scene.scene.isActive()) scene.cameras.main.shake(120, 0.004); },
