@@ -1,0 +1,6 @@
+quaternius/rpg-characters/cleric.glb 413KB 3.06x2.95x0.81 clips: Death:1.17 Idle:3.13 Idle_Attacking:3.13 PickUp:1.25 Punch:0.75 Hit:0.63 Run:0.88 Spell1:1.21 Staff_Attack:0.75 Walk:1.25
+quaternius/rpg-characters/monk.glb 412KB 3.28x2.95x0.81 clips: Attack:0.83 Attack2:0.83 Death:1.17 Idle:3.13 Idle_Attacking:1.67 PickUp:1.25 Hit:0.63 Roll:1.00 Run:0.88 Walk:1.25
+quaternius/rpg-characters/ranger.glb 425KB 3.03x2.85x0.76 clips: Bow_Draw:1.25 Bow_Shoot:0.63 Death:1.17 Idle:3.13 Idle_Attacking:1.67 PickUp:1.25 Punch:0.75 Hit:0.63 Roll:1.00 Run:0.88 Walk:1.25
+quaternius/rpg-characters/rogue.glb 347KB 3.10x2.95x0.81 clips: Idle_Attacking:1.67 Dagger_Attack:0.75 Dagger_Attack2:1.25 Death:1.17 Idle:3.13 PickUp:1.25 Punch:0.75 Hit:0.63 Roll:1.00 Run:0.88 Walk:1.25
+quaternius/rpg-characters/warrior.glb 428KB 3.04x2.89x0.92 clips: Death:1.17 Idle:3.13 Idle_Attacking:1.67 PickUp:1.25 Punch:0.75 Hit:0.63 Roll:1.00 Run:0.88 Sword_Attack:0.83 Sword_Attack2:0.83 Walk:1.25
+quaternius/rpg-characters/wizard.glb 438KB 3.05x3.00x0.88 clips: Death:1.17 Idle:3.13 Idle_Attacking:1.67 PickUp:1.25 Punch:0.75 Hit:0.63 Roll:1.00 Run:0.88 Spell1:1.21 Spell2:1.46 Staff_Attack:0.75 Walk:1.25

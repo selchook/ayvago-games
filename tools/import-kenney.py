@@ -28,7 +28,14 @@ that folder (nothing in the zips is run, only the listed files are copied):
 Coaster Kit 1.0 and Fantasy Town Kit 2.0 came the same way (the owner's zips, for Coaster Rush);
 unzip them as <dir>/kenney_coaster-kit/ and <dir>/kenney_fantasy-town-kit/ (License.txt +
 Models/GLB format/) and pass that folder, with Mini Characters for the riders it adds:
-  python3 tools/import-kenney.py <dir> coaster-kit fantasy-town-kit mini-characters"""
+  python3 tools/import-kenney.py <dir> coaster-kit fantasy-town-kit mini-characters
+
+Retro Fantasy Kit 2.0 and Hexagon Kit 2.0 came the same way (the owner's zips, for Hex Realm);
+unzip them as <dir>/kenney_retro-fantasy-kit/ and <dir>/kenney_hexagon-kit/ (License.txt +
+Models/GLB format/). The Retro Fantasy Kit's textures keep their camel-case names
+(cobblestoneAlternative.png), as its GLBs reference them. `games/hex-realm/import-kit.mjs` copies
+the same files.
+  python3 tools/import-kenney.py <dir> retro-fantasy-kit hexagon-kit"""
 import os, re, shutil, subprocess, sys
 
 SRC = sys.argv[1]
@@ -103,6 +110,10 @@ PACKS = {
     # <dir>/kenney_coaster-kit/ and <dir>/kenney_fantasy-town-kit/ (License.txt + Models/GLB format/)
     'kenney_coaster-kit': 'coaster-kit',
     'kenney_fantasy-town-kit': 'fantasy-town-kit',
+    # Retro Fantasy Kit 2.0 and Hexagon Kit 2.0: the owner's uploaded zips, unpacked as
+    # <dir>/kenney_retro-fantasy-kit/ and <dir>/kenney_hexagon-kit/ (License.txt + Models/GLB format/)
+    'kenney_retro-fantasy-kit': 'retro-fantasy-kit',
+    'kenney_hexagon-kit': 'hexagon-kit',
 }
 # Kits imported only in part: the models the games load (plus the shared texture and the license).
 PICK = {
@@ -316,6 +327,34 @@ FANTASY_TOWN_KIT = [
 FILES['coaster-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in COASTER_KIT]
 FILES['fantasy-town-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in FANTASY_TOWN_KIT]
 
+# Hex Realm (games/hex-realm/kit.ts RETRO_MODELS / HEX_MODELS): the arenas' castle walls, towers,
+# floors, docks, crates and barrels with every texture they use, and the overworld's hex tiles,
+# rivers, roads, buildings and units
+RETRO_FANTASY_KIT = [
+    'floor', 'floor-flat', 'floor-steps', 'wall', 'wall-half', 'wall-low', 'wall-detail', 'wall-door', 'wall-window', 'wall-gate',
+    'wall-fortified', 'wall-fortified-gate', 'wall-fortified-window', 'wall-fortified-paint', 'wall-fortified-paint-gate',
+    'wall-paint', 'wall-paint-window', 'column', 'column-damaged', 'column-wood', 'column-paint', 'tower', 'tower-base', 'tower-top',
+    'tower-edge', 'tower-paint-base', 'battlement', 'battlement-corner-outer', 'bricks', 'barrels', 'detail-barrel', 'detail-crate',
+    'detail-crate-small', 'detail-crate-ropes', 'fence-wood', 'tree-large', 'tree-shrub', 'wood-floor', 'wood-floor-railing',
+    'dock-side', 'dock-corner', 'structure', 'structure-poles', 'pulley-crate', 'ladder', 'stairs-stone', 'overhang-round-railing',
+]
+RETRO_FANTASY_TEXTURES = ['barrel', 'cobblestone', 'cobblestoneAlternative', 'cobblestonePainted', 'details', 'fence', 'planks', 'roof', 'tree', 'water']
+HEXAGON_KIT = [
+    'grass', 'grass-forest', 'grass-hill', 'stone', 'stone-hill', 'stone-mountain', 'stone-rocks', 'sand', 'sand-rocks',
+    'water', 'water-rocks', 'water-island', 'dirt', 'dirt-lumber', 'river-straight', 'river-corner', 'river-corner-sharp',
+    'river-end', 'bridge', 'path-straight', 'path-corner', 'path-corner-sharp', 'path-end', 'path-crossing',
+    'path-intersectionA', 'path-intersectionB', 'path-intersectionC', 'path-intersectionD', 'path-intersectionE',
+    'path-intersectionF', 'path-intersectionG', 'path-intersectionH', 'building-castle', 'building-village', 'building-market',
+    'building-house', 'building-farm', 'building-sheep', 'building-mill', 'building-mine', 'building-wizard-tower',
+    'building-tower', 'building-port', 'building-dock', 'building-walls', 'building-wall', 'building-watermill',
+    'building-cabin', 'building-smelter', 'building-archery', 'unit-tree', 'unit-ship', 'unit-house', 'unit-wall-tower', 'unit-tower',
+]
+FILES['retro-fantasy-kit'] = (['License.txt'] + [f'Models/GLB format/Textures/{n}.png' for n in RETRO_FANTASY_TEXTURES]
+                              + [f'Models/GLB format/{n}.glb' for n in RETRO_FANTASY_KIT])
+FILES['hexagon-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in HEXAGON_KIT]
+# kits whose GLBs reference textures with capitals in their names: those keep their case
+KEEP_TEXTURE_CASE = {'retro-fantasy-kit'}
+
 def norm_file(rel):
     """FILES kits: GLBs in models/gltf_format/ (what kenney3d() expects), Textures/ kept as named."""
     out = norm(rel).replace('models/glb_format/', 'models/gltf_format/')
@@ -346,6 +385,8 @@ for pack, short in PACKS.items():
                 if fh.read(40).startswith(b'version https://git-lfs'):
                     sys.exit(f'{src} is a Git LFS pointer: fetch the file first')
             out = os.path.join(DST, short, norm_file(rel))
+            if short in KEEP_TEXTURE_CASE and '/Textures/' in rel:
+                out = os.path.join(os.path.dirname(out), os.path.basename(rel))
             os.makedirs(os.path.dirname(out), exist_ok=True)
             shutil.copyfile(src, out)
             count += 1

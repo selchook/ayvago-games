@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "hexrealm",
+  "title": {
+    "en": "Hex Realm",
+    "tr": "Altıgen Diyar"
+  },
+  "description": {
+    "en": "A 3D action RPG on a hex map: pick one of six classes, explore the realm as the fog lifts, take quests in the village, buy potions at the market and upgrade your gear at the smithy. Chain combos, roll out of the red warnings, use your two skills, and defeat the mine troll, the dark mage of the spire and the castle lord.",
+    "tr": "Altıgen bir haritada 3B aksiyon RPG: altı sınıftan birini seç, sisi açarak diyarı keşfet, köyden görev al, pazardan iksir al, demircide silahını güçlendir. Kombo yap, kırmızı uyarılardan yuvarlanarak kaç, iki yeteneğini kullan; madendeki trolü, kuledeki kara büyücüyü ve kaledeki lordu yen."
+  },
+  "category": "action",
+  "categories": [
+    "action",
+    "arcade"
+  ],
+  "tags": [
+    "hex",
+    "realm",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/hex-realm/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/hex-realm/ayvago/icon-512.png",
+    "cover": "/games/hex-realm/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/hex-realm/ayvago/screenshot.jpg",
+    "card": "/games/hex-realm/ayvago/card-640x360.webp",
+    "card2x": "/games/hex-realm/ayvago/card-1280x720.webp"
+  },
+  "version": "1.0.0"
+}

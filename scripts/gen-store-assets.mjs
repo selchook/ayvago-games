@@ -338,6 +338,33 @@ const CARD = {
       await sleep(1500);
     }`,
   },
+  // Hex Realm's card shows the troll fight in the Old Mine's cavern: the hero (a warrior, the
+  // default) mid-combo against Grukk the Mine Troll and his skeleton miners, with the red warning
+  // rings of a quake on the stone floor. The class choice and the training are skipped, nothing
+  // hurts the hero, the boss banners are cleared and the fight is slowed right down, so every
+  // candidate frame catches a swing.
+  'hex-realm': {
+    stage: `async () => {
+      const p = window.__ayvago.game.scene.getScene('Play');
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      p.testSkipTutorial();
+      p.quiet = true;
+      p.god = true;
+      p.camp.s.level = 9;
+      p.testRoom('mine', 2);
+      p.testAuto(true);
+      p.testStep(3.2);
+      const b = p.battle, h = b.hero, boss = b.bossUp;
+      h.x = -0.6; h.z = 3.4; boss.x = 0.4; boss.z = 0.6; boss.face = Math.PI; h.face = 0.2;
+      b.zones.length = 0;
+      b.spawn('skeleton', -3.2, 1.2, 0); b.spawn('ghoul', 3.0, 2.4, 0);
+      p.view.battle.camPos.set(0, 0, 0);
+      p.testStep(1.0);
+      p.children.list.filter((o) => o.depth === 9400).forEach((o) => o.destroy());
+      p.testSpeed = 0.2;
+      await sleep(1500);
+    }`,
+  },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },

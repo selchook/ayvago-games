@@ -555,6 +555,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'hex-realm',
+    title: { en: 'Hex Realm', tr: 'Altıgen Diyar' },
+    description: {
+      en: 'A 3D action RPG on a hex map: pick one of six classes, explore the realm as the fog lifts, take quests in the village, buy potions at the market and upgrade your gear at the smithy. Chain combos, roll out of the red warnings, use your two skills, and defeat the mine troll, the dark mage of the spire and the castle lord.',
+      tr: 'Altıgen bir haritada 3B aksiyon RPG: altı sınıftan birini seç, sisi açarak diyarı keşfet, köyden görev al, pazardan iksir al, demircide silahını güçlendir. Kombo yap, kırmızı uyarılardan yuvarlanarak kaç, iki yeteneğini kullan; madendeki trolü, kuledeki kara büyücüyü ve kaledeki lordu yen.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['hex', 'realm', 'retro'],
+    orientation: 'portrait',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-16',
+  }),
+  arcadeGame({
     slug: 'hoop-shot',
     title: { en: 'Hoop Shot', tr: 'Basket Atışı' },
     description: {
