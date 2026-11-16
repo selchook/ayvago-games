@@ -1,18 +1,18 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, t, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { CampScene } from './camp';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
-import { makeArt, COIN } from './art';
+import { makeArt } from './art';
 import { makeSounds } from './audio';
 import { View } from './view';
 import { Sim, NO_INPUT } from './sim';
 import { Bot, SKILL } from './bot';
 import { NO_META } from './meta';
 import { loadMeta } from './save';
-import { Pill } from './ui';
+import { campButton, GROVE_THEME } from './menu';
 
 launch({
   meta: meta as GameMeta,
@@ -104,7 +104,7 @@ launch({
     };
     let sim = fresh();
     let bot = new Bot(sim, SKILL.good);
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x060a08, 0.38).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in menu.ts): one full-screen layer
     let acc = 0;
     view.world.onFrame = (dt) => {
       acc += dt;
@@ -133,21 +133,19 @@ launch({
   menuOption: {
     build(scene, x, y) {
       makeArt(scene);
-      const btn = new Pill(scene, x, y + 6, 330, 86, 0x8a5a2a, () => open(), 28);
-      btn.setIcon(COIN);
-      const label = () => { const m = loadMeta(); btn.setLabels(t('camp'), String(m.coins)); };
-      label();
       const open = () => {
         if (!scene.scene.isActive()) return;
         scene.scene.pause();
         scene.scene.launch('Camp', { from: scene.scene.key });
       };
-      scene.events.on('camp-closed', label);
+      const { refresh } = campButton(scene, x, y + 6, open, () => loadMeta().coins);
+      scene.events.on('camp-closed', refresh);
       scene.input.keyboard?.on('keydown-C', open);
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('camp-closed', label));
-      scene.tweens.add({ targets: btn, scale: 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('camp-closed', refresh));
     },
   },
+  // mossy boards, brambles and a dark notice board, the logo over a zombie hand (menu.ts)
+  menuTheme: GROVE_THEME,
   scenes: [PlayScene, CampScene],
   strings: STRINGS,
 });

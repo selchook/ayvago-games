@@ -6,7 +6,7 @@
   "genres": ["action", "arcade"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "1.2.0",
+  "version": "1.2.1",
   "credits": ["3D models: Kenney Mini Forest and Mini Characters (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact, Foley and Casino Audio (CC0) — kenney.nl"],
   "platform": {"addedAt": "2026-11-13"}
 }

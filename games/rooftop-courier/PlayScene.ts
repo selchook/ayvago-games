@@ -8,7 +8,7 @@
 // run's summary.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang,
+  ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang, themeCard, themeLabel, overlayHeadingStyle,
   HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, HUD_CHIP_H,
 } from '@core';
 import type { World3D } from '@core/three';
@@ -19,6 +19,7 @@ import { THEMES, PRAISE_TIERS, POWERS, POWER_COLOR, clamp, smooth, isPower, type
 import { loadMeta, saveMeta, bankRun, missionAt, missionProgress, lookOf, districtName, type Meta, type Mission } from './meta';
 import { TouchPad, FlowMeter, toast, TutorialCard, PowerBar, HintCard, UI_DEPTH, type PowerShown } from './ui';
 import { Callouts } from './callouts';
+import { SUMMARY_W, SUMMARY_H } from './menu';
 import { makeSounds, Loop } from './audio';
 import { makeIcons, PARCEL_ICON, STAMP_ICON, FLAG_ICON, POWER_ICON, VIGNETTE } from './art';
 
@@ -470,7 +471,7 @@ export class PlayScene extends ArcadeScene {
       if (seen.includes(p.kind) || this.hintQueue.includes(p.kind)) continue;
       this.hintQueue.push(p.kind);
     }
-    if (!this.hintQueue.length || this.tut || (this.hint && this.hint.c.active)) return;
+    if (this.finished || !this.hintQueue.length || this.tut || (this.hint && this.hint.c.active)) return;
     const k = this.hintQueue.shift()!;
     if (!seen.includes(k)) { seen.push(k); saveMeta(this.meta); }
     this.hint = new HintCard(this, 278, POWER_ICON(k), t('hintHead', { name: t('pw_' + k) }), t('hint_' + k));
@@ -538,7 +539,8 @@ export class PlayScene extends ArcadeScene {
   // ------------------------------------------------------------------ the first-run tutorial
 
   private startTutorial(): void {
-    if (this.isOver || this.tut || this.bot || this.meta.tutorial) return;
+    // (never over the run's summary: the delayed start can land after a quick end on a slow device)
+    if (this.isOver || this.finished || this.tut || this.bot || this.meta.tutorial) return;
     this.tut = new TutorialCard(this, 265, t('tut_skip'), () => this.endTutorial(true));
     this.tutStep = 0;
     this.showLesson();
@@ -623,6 +625,8 @@ export class PlayScene extends ArcadeScene {
     this.summaryT = 0;
     this.pad?.setVisible(false);
     this.endTutorial(true);
+    // the summary stands alone: no lesson card, skip button or hint card over it
+    this.hint?.c.destroy(); this.hint = null; this.hintQueue.length = 0;
     const sim = this.sim;
     const { width } = this.scale;
     const c = this.add.container(width / 2, 620).setScrollFactor(0).setDepth(UI_DEPTH + 150);
@@ -635,21 +639,24 @@ export class PlayScene extends ArcadeScene {
       ...(sim.stats.powers ? [[t('sumPowers'), String(sim.stats.powers)] as [string, string]] : []),
     ];
     const H = 210 + rows.length * 44 + done.length * 40;
-    const g = this.add.graphics();
-    g.fillStyle(0x000000, 0.3).fillRoundedRect(-310, -H / 2 + 8, 620, H, 28);
-    g.fillStyle(0x14112a, 0.94).fillRoundedRect(-310, -H / 2, 620, H, 28);
-    g.lineStyle(2, 0xffb24a, 0.5).strokeRoundedRect(-310, -H / 2, 620, H, 28);
-    c.add(g);
-    c.add(txt(this, 0, -H / 2 + 50, t('runOver'), { title: true, size: 40, color: '#ffd23f', strokeThickness: 8 }));
-    c.add(txt(this, 0, -H / 2 + 98, t(sim.overReason === 'late' ? 'reasonLate' : 'reasonFell'), { size: 24, color: '#ffb0a0', strokeThickness: 0, shadow: false }));
+    // the menu theme's postage stamp (menu.ts), painted under the Ayvago intro in two heights;
+    // the content is centred on it
+    const ch = H <= 440 ? SUMMARY_H[0] : SUMMARY_H[1];
+    c.add(themeCard(this, 0, 0, SUMMARY_W, ch));
+    // under the stamp's title bar
+    const top = -ch / 2;
+    const head = themeLabel(this, 0, top + 104, t('runOver'), overlayHeadingStyle(false));
+    head.setScale(Math.min(56 / 84, (SUMMARY_W - 90) / head.width));
+    c.add(head);
+    c.add(txt(this, 0, top + 152, t(sim.overReason === 'late' ? 'reasonLate' : 'reasonFell'), { size: 24, color: '#8e2a1a', strokeThickness: 0, shadow: false }));
     rows.forEach(([k, v], i) => {
-      const y = -H / 2 + 150 + i * 44;
-      c.add(txt(this, -260, y, k, { size: 24, color: '#cfd2f0', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-      c.add(txt(this, 260, y, v, { title: true, size: 24, color: '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(1, 0.5));
+      const y = top + 200 + i * 44;
+      c.add(txt(this, -250, y, k, { size: 24, color: '#4a3a62', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
+      c.add(txt(this, 250, y, v, { title: true, size: 24, color: '#1d1230', strokeThickness: 0, shadow: false }).setOrigin(1, 0.5));
     });
     done.forEach((ms, i) => {
-      const y = -H / 2 + 160 + rows.length * 44 + i * 40;
-      c.add(txt(this, 0, y, '✓ ' + missionText(ms) + '  ' + t('missionReward', { n: ms.reward }), { size: 22, color: '#7dffa0', strokeThickness: 0, shadow: false, wrap: 580 }));
+      const y = top + 210 + rows.length * 44 + i * 40;
+      c.add(txt(this, 0, y, '✓ ' + missionText(ms) + '  ' + t('missionReward', { n: ms.reward }), { size: 22, color: '#1f7a3e', strokeThickness: 0, shadow: false, wrap: 540 }));
     });
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });
