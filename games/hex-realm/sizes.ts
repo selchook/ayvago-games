@@ -15,3 +15,9 @@ export const TUT_W = 640, TUT_H = 184;
 /** A first-time hint's card (no title). */
 export const HINT_H = 128;
 export const LOOT_ROW_H = 112;
+/** 1.1: a combo row (hero screen), a Shrine row. */
+export const COMBO_H = 226;
+export const SHRINE_H = 136;
+/** 1.1: a power card in the draft, and the strip of cards under the pause. */
+export const CARD_W = 206, CARD_H = 330;
+export const PCARDS_W = 600, PCARDS_H = 160;

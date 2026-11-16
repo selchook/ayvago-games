@@ -4,14 +4,15 @@
 // gold medallions. A castle's crenellated wall runs round the screen with a round tower in each
 // corner; the how-to and the pause / result cards are an illuminated manuscript page; behind the
 // logo a crowned heraldic shield with a crossed sword and staff stands over a hexagon. Display face:
-// MedievalSharp (SIL OFL, latin + latin-ext: Turkish). Also the menu's own row: the hero board (the
-// class and level, arrows to change class) and the NEW CAMPAIGN button.
-import Phaser from 'phaser';
-import { t, txt, playSfx, SkinButton, skinImage, themeText, isEasy, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
+// MedievalSharp (SIL OFL, latin + latin-ext: Turkish). The menu itself is the core's: PLAY, the
+// Easy / Normal switch and the how-to (the class is chosen after PLAY and changed at the inn, a new
+// campaign starts at the inn).
+import { type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { MEDIEVALSHARP } from '@core/fonts/medievalsharp';
-import { CLASS_IDS, CLASS, type ClassId } from './defs';
-import { Campaign } from './campaign';
 import { prebakeScreens, SCREEN_CARDS } from './screens';
+import { paintVellum } from './vellum';
+
+export { paintVellum };
 import { SUMMARY_W, SUMMARY_H } from './sizes';
 
 export const INK = '#1a1420';
@@ -190,60 +191,6 @@ export const stonePainter: SkinPainter = (c, kind, w, h, o) => {
   c.restore();
 };
 
-// ------------------------------------------------------------------ the manuscript page
-
-/** The how-to and the pause / result card: vellum with a gold-leaf frame, blue and red rules, vines in the corners. */
-export function paintVellum(c: CanvasRenderingContext2D, w: number, h: number): void {
-  const r = rng(w * 7 + h * 3);
-  c.save();
-  c.shadowColor = 'rgba(0,0,0,0.6)'; c.shadowBlur = 16; c.shadowOffsetY = 8;
-  c.fillStyle = '#e8d8b0';
-  c.beginPath(); c.roundRect(0, 0, w, h, 10); c.fill();
-  c.restore();
-  c.save();
-  c.beginPath(); c.roundRect(0, 0, w, h, 10); c.clip();
-  const base = c.createLinearGradient(0, 0, w * 0.4, h);
-  base.addColorStop(0, '#f7ecd0'); base.addColorStop(1, '#ead6a8');
-  c.fillStyle = base; c.fillRect(0, 0, w, h);
-  for (let i = 0; i < (w * h) / 1100; i++) {
-    const x = r() * w, y = r() * h, rad = 8 + r() * 26;
-    const g = c.createRadialGradient(x, y, 0, x, y, rad);
-    g.addColorStop(0, `rgba(160,110,50,${0.03 + r() * 0.05})`); g.addColorStop(1, 'rgba(160,110,50,0)');
-    c.fillStyle = g; c.fillRect(x - rad, y - rad, rad * 2, rad * 2);
-  }
-  const rim = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.38, w / 2, h / 2, Math.max(w, h) * 0.66);
-  rim.addColorStop(0, 'rgba(120,80,30,0)'); rim.addColorStop(1, 'rgba(110,70,20,0.28)');
-  c.fillStyle = rim; c.fillRect(0, 0, w, h);
-  c.restore();
-  // the gold-leaf frame: a thick gold band, a blue rule and a red rule inside
-  const gold = c.createLinearGradient(0, 0, w, h);
-  gold.addColorStop(0, '#fff0a8'); gold.addColorStop(0.35, '#d8a83a'); gold.addColorStop(0.65, '#f4d478'); gold.addColorStop(1, '#a87a1a');
-  c.lineWidth = 6; c.strokeStyle = gold;
-  c.beginPath(); c.roundRect(7, 7, w - 14, h - 14, 6); c.stroke();
-  c.lineWidth = 1.2; c.strokeStyle = '#5a3a10';
-  c.beginPath(); c.roundRect(4, 4, w - 8, h - 8, 8); c.stroke();
-  c.beginPath(); c.roundRect(10, 10, w - 20, h - 20, 4); c.stroke();
-  c.lineWidth = 2; c.strokeStyle = '#2c4a9a';
-  c.strokeRect(15, 15, w - 30, h - 30);
-  c.lineWidth = 1; c.strokeStyle = '#8a1c24';
-  c.strokeRect(19, 19, w - 38, h - 38);
-  // vines with gold berries curling out of each corner (not on the small cards)
-  if (w < 300 || h < 230) return;
-  for (const [x, y, sx, sy] of [[0, 0, 1, 1], [w, 0, -1, 1], [0, h, 1, -1], [w, h, -1, -1]] as number[][]) {
-    c.save(); c.translate(x, y); c.scale(sx, sy);
-    c.strokeStyle = '#2e6a3a'; c.lineWidth = 2; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(16, 16); c.bezierCurveTo(40, 18, 52, 30, 46, 44); c.bezierCurveTo(42, 54, 30, 50, 34, 42); c.stroke();
-    c.beginPath(); c.moveTo(16, 16); c.bezierCurveTo(18, 40, 30, 52, 44, 46); c.stroke();
-    c.fillStyle = '#2e6a3a';
-    for (const [lx, ly, a] of [[30, 20, 0.4], [20, 31, 1.2], [44, 30, 1.9]]) { c.save(); c.translate(lx, ly); c.rotate(a); c.beginPath(); c.ellipse(0, 0, 5, 2.4, 0, 0, Math.PI * 2); c.fill(); c.restore(); }
-    c.fillStyle = gold;
-    for (const [bx, by] of [[16, 16], [48, 40], [36, 50]]) { c.beginPath(); c.arc(bx, by, 3.4, 0, Math.PI * 2); c.fill(); }
-    c.fillStyle = '#8a1c24';
-    c.beginPath(); c.arc(16, 16, 1.6, 0, Math.PI * 2); c.fill();
-    c.restore();
-  }
-}
-
 // ------------------------------------------------------------------ the castle wall round the screen
 
 /** The top strip: a stone parapet along the edge with merlons standing inward and a gilt line. */
@@ -408,85 +355,8 @@ export const REALM_THEME: MenuTheme = {
     emblem: { draw: realmEmblem, size: 250, overlap: 0.3 },
   },
   skin: stonePainter,
-  // the hero board, its arrow medallions and the NEW CAMPAIGN tablet (menuRow)
-  pieces: [{ kind: 'board', w: 420, h: 104 }, { kind: 'round', w: 56, h: 56 }, { kind: 'button', w: 196, h: 104 }, { kind: 'button', w: 196, h: 104, color: CRIMSON }],
   frame: { border: CASTLE_BORDER, notes: paintVellum, vignette: 0.5, dim: 0.16 },
   overlays: { lose: '#8a1c24', win: '#2c4a9a', adColor: MOSS, titles: ['fallenTitle', 'chapterTitle', 'restTitle', 'victoryTitle', 'riftTitle'] },
   cards: [{ w: SUMMARY_W, h: SUMMARY_H }, ...SCREEN_CARDS],
   prebake: (scene) => prebakeScreens(scene),
 };
-
-// ------------------------------------------------------------------ the menu's row
-
-/**
- * The hero board (class, level; arrows or H change the class, which carries the campaign on) and
- * the NEW button (a fresh campaign: tap twice). `onHero` swaps the backdrop's hero.
- */
-export function menuRow(scene: Phaser.Scene, x: number, y: number, onHero: (cls: ClassId) => void): { refresh: () => void } {
-  const touch = scene.sys.game.device.input.touch;
-  const mode = () => (isEasy() ? 'easy' : 'normal') as 'easy' | 'normal';
-  let camp = Campaign.load(mode());
-  const sel = scene.add.container(x - 112, y + 4);
-  sel.add(skinImage(scene, 0, 0, 'board', 420, 104));
-  const name = themeText(scene, 0, -20, '', { size: 38 });
-  const desc = txt(scene, 0, 22, '', { size: 18, color: '#e8e0f0', strokeThickness: 0, shadow: false, wrap: 270 });
-  sel.add([name, desc]);
-  const arrow = (dx: number, dir: 1 | -1) => {
-    const knob = skinImage(scene, dx, 0, 'round', 56, 56);
-    const g = scene.add.graphics();
-    g.fillStyle(0x1a1420, 1).fillTriangle(dx + dir * 13, 1, dx - dir * 8, -13, dx - dir * 8, 15);
-    g.fillStyle(0xfff2cc, 1).fillTriangle(dx + dir * 11, 0, dx - dir * 6, -10, dx - dir * 6, 10);
-    const hit = scene.add.zone(dx, 0, 90, 104).setInteractive({ useHandCursor: true });
-    hit.on('pointerdown', () => knob.setScale(0.92));
-    hit.on('pointerout', () => knob.setScale(1));
-    hit.on('pointerup', () => { knob.setScale(1); cycle(dir); });
-    sel.add([knob, g, hit]);
-  };
-  arrow(-170, -1);
-  arrow(170, 1);
-  const show = () => {
-    const s = camp.s;
-    name.setText(t('c_' + s.cls)).setScale(1);
-    if (name.width > 260) name.setScale(260 / name.width);
-    name.setColor('#' + Phaser.Display.Color.IntegerToColor(CLASS[s.cls].color).lighten(18).color.toString(16).padStart(6, '0'));
-    desc.setText(s.chosen ? t('heroLevel', { n: s.level }) + (s.victory ? '  ·  ' + t('ngShort', { n: s.cycle + 1 }) : '') : t('cd_' + s.cls));
-    desc.setScale(desc.height > 40 ? 40 / desc.height : 1);
-  };
-  const cycle = (dir: 1 | -1) => {
-    const i = CLASS_IDS.indexOf(camp.s.cls);
-    const next = CLASS_IDS[(i + dir + CLASS_IDS.length) % CLASS_IDS.length];
-    camp.setClass(next);
-    camp.save();
-    playSfx(scene, 'move', { volume: 0.4 });
-    show();
-    scene.tweens.add({ targets: sel, scale: 1.04, duration: 80, yoyo: true });
-    onHero(next);
-  };
-  show();
-  // NEW CAMPAIGN: the first tap arms it (crimson, "SURE?"), the second starts over
-  let armed = 0;
-  const btn = new SkinButton(scene, x + 220, y + 4, t('newGame'), () => {
-    if (!camp.s.chosen) return;
-    if (!armed) {
-      armed = 1;
-      btn.setColor(CRIMSON).setText(t('sure')).fitLabel(170);
-      scene.time.delayedCall(2600, () => { if (armed) { armed = 0; label(); } });
-      return;
-    }
-    armed = 0;
-    camp.reset(camp.s.cls);
-    camp.save();
-    playSfx(scene, 'error', { volume: 0.35 });
-    label();
-    show();
-  }, { width: 196, height: 104, size: 30 });
-  const label = () => { btn.setColor(STONE).setText(t('newGame')).fitLabel(170); btn.setAlpha(camp.s.chosen ? 1 : 0.55); };
-  label();
-  scene.input.keyboard?.on('keydown-H', () => cycle(1));
-  if (!touch) txt(scene, x, y + 76, t('heroKeys'), { size: 17, color: '#d8d0e8', strokeThickness: 3, shadow: false });
-  // the difficulty switch picks the other save: follow it
-  let shown = mode();
-  const poll = scene.time.addEvent({ delay: 250, loop: true, callback: () => { if (mode() !== shown) { shown = mode(); camp = Campaign.load(shown); show(); label(); onHero(camp.s.cls); } } });
-  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => poll.remove());
-  return { refresh: () => { camp = Campaign.load(mode()); show(); label(); } };
-}

@@ -1,10 +1,14 @@
 // Hex Realm: the autopilot. In battle it plays like a player of a given skill: it closes in (or
-// keeps its distance with a bow or a staff), swings its combo, steps out of the red zones and rolls
-// through blows when it sees them (late and not always, when casual), uses its skills and drinks
-// potions. On the map it follows the tracked quest, rests and shops at the village when hurt,
-// equips what is better, spends talent points and fights camps when it is behind in level.
+// keeps its distance with a bow or a staff), plays the three combos (taps the blade chain, holds
+// for the heavy finisher against shields, brutes and bosses, attacks out of a roll for the dash
+// strike, and a good one rolls in on purpose), steps out of the red zones and rolls through blows
+// when it sees them (late and not always, when casual), uses its skills and drinks potions. On the
+// map it follows the tracked quest, rests and shops at the village when hurt, equips what is
+// better, spends talent points and Sigils at the Shrine, picks power cards and fights camps when it
+// is behind in level.
 // Used for the menu's live backdrop, the store art's stage and the headless balance (balance.ts).
-import { CLASS, PLACE_LEVEL, TALENT_IDS, TALENT_MAX, SLOTS, type TalentId } from './defs';
+import { CLASS, FOE, PLACE_LEVEL, TALENT_IDS, TALENT_MAX, SLOTS, type TalentId } from './defs';
+import { CARD, type TrackKind } from './powers';
 import { NO_INPUT, faceOf, makeRng, type Battle, type Input } from './battle';
 import { CAMPS, PLACE_HEX, START, hexDist } from './hexmap';
 import type { Campaign } from './campaign';
@@ -23,11 +27,15 @@ export interface Skill {
   kite: number;
   /** Levels it wants over a place before going in. */
   margin: number;
+  /** Chance per second it rolls in on purpose for the dash strike. */
+  rollIn: number;
+  /** How often it holds for the heavy finisher on an ordinary foe. */
+  heavy: number;
 }
 
 export const SKILL: Record<'casual' | 'good', Skill> = {
-  casual: { react: 0.42, dodge: 0.6, skills: 0.5, potion: 0.3, kite: 0.4, margin: 1 },
-  good: { react: 0.14, dodge: 0.93, skills: 2, potion: 0.42, kite: 0.9, margin: 0 },
+  casual: { react: 0.42, dodge: 0.6, skills: 0.5, potion: 0.3, kite: 0.4, margin: 1, rollIn: 0.1, heavy: 0.15 },
+  good: { react: 0.14, dodge: 0.93, skills: 2, potion: 0.42, kite: 0.9, margin: 0, rollIn: 0.5, heavy: 0.3 },
 };
 
 export class BattleBot {
@@ -36,6 +44,9 @@ export class BattleBot {
   private escaping = 0;
   private escDir = 0;
   private atkHold = 0;
+  /** The combo it is playing: tapping the chain or holding for the heavy finisher. */
+  private plan: 'tap' | 'hold' = 'tap';
+  private planT = 0;
   constructor(private b: Battle, private sk: Skill, seed: number) { this.rng = makeRng(seed * 31 + 7); }
 
   input(dt: number): Input {
@@ -85,15 +96,34 @@ export class BattleBot {
       return inp;
     }
     const dx = best.x - h.x, dz = best.z - h.z;
+    this.planT -= dt;
+    // the heavy finisher: let go once it is charged
+    if (h.state === 'charge') { inp.held = !h.charged && !danger; if (inp.mx === 0 && inp.mz === 0) { inp.mx = dx / bd * 0.5; inp.mz = dz / bd * 0.5; } }
+    const fresh = h.state === 'idle' || h.state === 'run';
+    const attack = (gap: number) => {
+      if (fresh && this.planT <= 0) {
+        const tough = best!.boss || FOE[best!.kind].ai === 'shield' || FOE[best!.kind].ai === 'slam' || FOE[best!.kind].ai === 'boss';
+        this.plan = (tough ? this.rng() < 0.7 : this.rng() < this.sk.heavy) ? 'hold' : 'tap';
+        this.planT = 1.6;
+      }
+      if (this.plan === 'hold') {
+        if (h.state !== 'charge') inp.held = true;
+        if (fresh) inp.attack = true;
+      } else { this.atkHold -= dt; if (this.atkHold <= 0) { inp.attack = true; this.atkHold = gap; } }
+    };
     if (!danger) {
       if (cls.ranged) {
         const want = 6;
         if (bd > want + 1.5) { inp.mx = dx / bd; inp.mz = dz / bd; }
         else if (bd < want - 2 && this.rng() < this.sk.kite) { inp.mx = -dx / bd; inp.mz = -dz / bd; }
-        if (bd < 11) { this.atkHold -= dt; if (this.atkHold <= 0) { inp.attack = true; this.atkHold = 0.12; } }
+        // a foe close in: roll away, then the dash strike (kick, twin shot, rain / jab, frost, meteor)
+        if (bd < 3 && h.dodgeCd <= 0 && fresh && this.rng() < this.sk.rollIn * dt * 4) { inp.mx = -dx / bd; inp.mz = -dz / bd; inp.dodge = true; }
+        if (bd < 11) attack(0.12);
       } else {
         if (bd > best.radius + 1.2) { inp.mx = dx / bd; inp.mz = dz / bd; }
-        if (bd < best.radius + 2.2) { this.atkHold -= dt; if (this.atkHold <= 0) { inp.attack = true; this.atkHold = 0.1; } }
+        // a good player rolls in on purpose and opens with the dash strike
+        if (bd > 3 && bd < 6.5 && h.dodgeCd <= 0 && fresh && this.rng() < this.sk.rollIn * dt) { inp.dodge = true; this.atkHold = 0; }
+        if (bd < best.radius + 2.2 || h.dashWin > 0 || h.state === 'dodge') attack(0.1);
       }
       // the shrine, when it is close
       if (b.shrine && Math.hypot(b.shrine.x - h.x, b.shrine.z - h.z) < 4) { const sx = b.shrine.x - h.x, sz = b.shrine.z - h.z, sd = Math.hypot(sx, sz); inp.mx = sx / sd; inp.mz = sz / sd; }
@@ -115,17 +145,39 @@ export class BattleBot {
 export class MapBot {
   constructor(private c: Campaign, private sk: Skill) {}
 
-  /** The village: rest, equip the best, spend points, buy potions, upgrade the weapon. */
+  /** The village: rest, equip the best, spend points, buy potions, the Shrine, upgrade the weapon. */
   village(): void {
     const c = this.c;
     c.rest();
     for (const it of [...c.s.bag].sort((a, b) => itemScore(b) - itemScore(a))) if (c.better(it)) c.equip(it.id);
     for (const it of [...c.s.bag]) if (!c.better(it)) c.sell(it.id);
     this.talents();
+    this.shrine();
     while (c.s.potions < c.s.potionMax && c.buyPotion()) { /* buy */ }
     if (c.beltPrice() !== null && c.s.gold > (c.beltPrice() ?? 0) + 120) c.buyBelt();
     for (const slot of SLOTS) while (c.s.gold > 150 && c.upgrade(slot)) { /* upgrade */ }
     c.s.market.forEach((it, i) => { if (c.better(it) && c.s.gold >= c.marketPrice(it) + 40) { c.buy(i); c.equip(it.id); } });
+  }
+
+  /** The Shrine: the finishers and the first skill first, while there are Sigils and gold. */
+  shrine(): void {
+    const c = this.c;
+    const order: TrackKind[] = ['chain', 'skill1', 'heavy', 'dash', 'skill2'];
+    for (let guard = 0; guard < 15; guard++) {
+      const k = [...order].sort((a, b) => c.rankOf(a) - c.rankOf(b))[0];
+      if (!c.buyRank(k)) { if (!order.some((o) => c.buyRank(o))) break; }
+    }
+  }
+
+  /** A card draft: the best card by its worth, one reroll when the best is weak. */
+  draft(rich: boolean): string | null {
+    const c = this.c;
+    const best = (o: string[]) => [...o].sort((a, b) => CARD[b].value - CARD[a].value)[0];
+    let offer = c.dealCards(rich);
+    if (offer.length && CARD[best(offer)].value < 5) offer = c.dealCards(rich);
+    const pick = offer.length ? best(offer) : null;
+    if (pick) c.takeCard(pick);
+    return pick;
   }
 
   talents(): void {
@@ -141,7 +193,9 @@ export class MapBot {
   goal(): [number, number] {
     const c = this.c, s = c.s;
     const [pc, pr] = s.pos;
-    const hurt = s.hp < c.maxHp * 0.5 || (s.potions === 0 && s.gold >= 25);
+    // hurt, out of potions, or Sigils to spend at the Shrine
+    const shrine = s.sigils >= 2 && c.tracks().some((k) => { const p = c.rankCost(k); return !!p && p.sigils <= s.sigils && p.gold + 40 <= s.gold; });
+    const hurt = s.hp < c.maxHp * 0.5 || (s.potions === 0 && s.gold >= 25) || shrine;
     if (hurt && hexDist(pc, pr, START[0], START[1]) > 0) return START;
     const target = c.trackedHex();
     const q = c.tracked();

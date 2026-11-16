@@ -514,6 +514,10 @@ menuTheme: {
   play.
 - **Driving games:** the core STEERING switch (`steeringOption`) wears the theme by itself; list
   `...STEERING_PIECES` in `pieces` so its track and knob are painted ahead (Delivery Dash).
+- **One place per choice (rule).** Never offer the same choice twice. When the game asks for a class,
+  character, vehicle, deck or level after PLAY, the menu shows no switcher for it: the menu is PLAY,
+  difficulty, the core options the game needs (steering) and the how-to; "new campaign" and similar
+  resets live in an inner screen (Hex Realm 1.1 moved its class row to the class choice and the inn).
 - **The game's own menu widgets** (`menuOption.build`) use the same pieces: `SkinButton` (label in
   the display face, `setText`, `fitLabel`, `setLabelY`), `skinImage(scene, x, y, kind, w, h)`,
   `skinIconButton` and `themeText`. Keep tap targets at least as large as the plain menu's.
@@ -621,6 +625,45 @@ menuTheme: {
 - **Check** EN at 720×1280 and TR at 405×720 (menu, pause, a lost and a NEW BEST result, the
   result with `?ads=sim` and a test `ads` option), the logo's entrance, hover and pressed states,
   and that the Turkish letters come from the display face.
+
+## 7g. Action combat and progression (melee, action RPG, roguelite)
+
+Reference: `games/hex-realm` (1.1): `defs.ts` (combo data), `battle.ts` (sim), `powers.ts`
+(Shrine ranks, power cards), `screens.ts` (Shrine, Combos, Cards, draft), `bot.ts` / `balance.ts`.
+
+- **Three distinct combos per character (rule)** for any game where the hero swings, shoots or
+  punches. They differ in input, rhythm, reach, hit shape and finisher, not in colour:
+  - A: tap, tap, tap: a quick chain ending in a finisher (a spin all round);
+  - B: tap, tap, then hold ATTACK (~0.35 s): a charged finisher (a cleave with a shockwave lane)
+    that breaks shields, with armour (less damage, no flinch) while it charges and a bigger hit-stop;
+  - C: ATTACK right after a dodge: a lunge, a launcher that throws light foes up, a leap with a
+    ring on landing.
+  Every class or weapon gets its own idiom of the three (bow: triple shot, power shot, arrow rain;
+  staff: bolt fan, lance, meteor). Build them from the model's own clips, varied by speed, lunge,
+  body spin, a held slow wind-up and a leap arc; never extra limbs.
+- **The sim owns the combo.** Input carries presses and `held` (the button still down); the
+  simulation decides the chain, step, buffering, the charge and every hitbox; the view only draws.
+  Holding ATTACK carries the chain on (no auto-repeat in the scene), so touch players get the heavy
+  chain by holding and the quick one by tapping.
+- **Show and teach them.** Pips over the hero for the step (coloured per combo, a charge ring),
+  the finisher's name popping up as a prebaked label, an impact per finisher (hit-stop, shake,
+  sound, its own FX), a short skippable tutorial step with all three inputs (touch and keys), a
+  first-time hint for each combo not used yet, and a themed "Combos" list in an inner screen.
+- **Two kinds of progression (rule)** for action RPGs and roguelites:
+  - a persistent upgrade path whose ranks change behaviour, not only numbers (rank I more power;
+    II and III: pulls foes in, leaves a burning line, stuns, splits, pierces, strikes twice), for
+    every skill and finisher, paid with gold and a rare currency from bosses, camps and elites;
+  - a per-run power-card draft: pick 1 of 3 (common, rare, epic, legendary; one reroll) after
+    won chapters, camps and some level-ups, lasting the run or session, 20+ cards over offence,
+    defence, combos, skills, economy and a few per class, listed in an inner screen and under the
+    pause (add objects to the core Pause scene on its CREATE), with a compact HUD chip.
+- **Theme and cost.** Every new screen (upgrades, draft, card list, combos) uses the menu theme's
+  panels and is prebaked under the intro (card faces per rarity with `bake`, every name and line
+  with `labelTexture` / `bakePara`); opening one adds no texture besides live Text (check
+  `game.textures.getTextureKeys()` before and after).
+- **Balance with bots.** The autopilot plays the combos (taps, holds against shields and bosses,
+  rolls in for the dash strike), buys ranks and picks cards; rerun the headless balance and retune
+  foe health / damage curves so the pacing targets still hold with the new power.
 
 ## 8. Ship
 

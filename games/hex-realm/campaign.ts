@@ -5,6 +5,9 @@
 //   - Items: weapons, armour and trinkets (rings, amulets, charms) in five rarities with clear stat
 //     lines, found in chests, bought at the market, upgraded at the smithy (+1 … +5).
 //   - Battles: random encounters on wild hexes, camps, the dungeons behind the places, the rift.
+//   - Powers (powers.ts): the Shrine's ranks of every skill and finisher (gold and Sigils, kept),
+//     and the power cards of the journey (dealt after won chapters, camps and level-ups, cleared
+//     when the session ends).
 import {
   CLASS, TUNING, QUEST, QUEST_IDS, DUNGEON, PLACE_LEVEL, CYCLE_LEVELS, RENOWN, FOE, TALENT_IDS, TALENT_MAX, SLOTS, TRINKETS,
   TRINKET_STAT, RARITY_MULT, RARITY_AFFIXES, STAT_CAP, MAX_UP, UP_BONUS, MAX_LEVEL,
@@ -14,6 +17,7 @@ import {
 } from './defs';
 import { HexMap, CAMPS, START, BRIDGE, PLACE_HEX, WILD, hexIndex, regionOf, type Hex } from './hexmap';
 import { makeRng, type HeroStats, type Battle } from './battle';
+import { HAND_MAX, MAX_RANK, TRACK_KINDS, classRanks, rankPrice, trackId, rollCards, type TrackKind } from './powers';
 
 export type QuestState = 'locked' | 'open' | 'done';
 
@@ -52,6 +56,13 @@ export interface Save {
   hints: string[];
   tutorial: boolean;
   time: number;
+  /** The Shrine's currency and the ranks bought (by track id, powers.ts). */
+  sigils: number;
+  ranks: Record<string, number>;
+  /** The power cards of this journey (cleared when it ends). */
+  cards: string[];
+  /** The finishers landed so far (combo hints). */
+  combosSeen: string[];
 }
 
 export const BAG_MAX = 12;
@@ -75,6 +86,10 @@ export interface Spoils {
   renown: number;
   lostGold: number;
   rift: number;
+  /** Sigils found; whether a card draft follows (and a rich one: after a boss or a camp). */
+  sigils: number;
+  draft: boolean;
+  rich: boolean;
 }
 
 /** A fight to start: where it comes from and what it holds. */
@@ -103,6 +118,7 @@ export function freshSave(cls: ClassId, mode: Mode): Save {
     gear: { weapon: null, armor: null, trinket: null }, bag: [], talents, points: 0, quests, staff: false,
     pos: [START[0], START[1]], seen: [], camps: [], cycle: 0, rift: 0, victory: false, renown: 0, market: [], marketAt: -1,
     nid: 1, rng: 12345, steps: 0, battles: 0, kills: 0, deaths: 0, goldEarned: 0, hints: [], tutorial: false, time: 0,
+    sigils: 0, ranks: {}, cards: [], combosSeen: [],
   };
 }
 
@@ -150,6 +166,10 @@ export class Campaign {
     for (const t of TALENT_IDS) if (typeof s.talents[t] !== 'number') s.talents[t] = 0;
     s.level = Math.max(1, Math.min(MAX_LEVEL, Math.floor(s.level)));
     if (!Array.isArray(s.bag)) s.bag = [];
+    if (!Array.isArray(s.cards)) s.cards = [];
+    if (!Array.isArray(s.combosSeen)) s.combosSeen = [];
+    if (typeof s.ranks !== 'object' || !s.ranks) s.ranks = {};
+    s.sigils = Math.max(0, Math.floor(Number(s.sigils) || 0));
     if (!this.map.passable(this.map.at(s.pos[0], s.pos[1]))) s.pos = [START[0], START[1]];
     s.hp = Math.max(1, Math.min(this.maxHp, Number(s.hp) || this.maxHp));
   }
@@ -165,28 +185,72 @@ export class Campaign {
 
   get maxHp(): number { return this.stats().maxHp; }
 
-  /** The hero's stats with gear and talents. */
+  /** The hero's stats with gear, talents, the Shrine's ranks and the journey's cards. */
   stats(): HeroStats {
     const s = this.s, t = s.talents;
     const base = baseStats(s.cls, s.level);
     const g = this.gearStats();
     const pct = (k: Stat) => Math.min(STAT_CAP[k] ?? 100, g[k] ?? 0) / 100;
+    const has = (c: string) => s.cards.includes(c);
+    // the cards that only move numbers: Keen Edge, Hawk Eye, Arcane Flow, Greed, Avatar of War
+    const atkK = (has('edge') ? 1.1 : 1) * (has('avatar') ? 1.2 : 1);
     return {
       cls: s.cls,
       level: s.level,
       maxHp: Math.round((base.hp + (g.hp ?? 0)) * (1 + 0.08 * t.vigor)),
-      atk: (base.atk + (g.atk ?? 0)) * (1 + 0.06 * t.might),
+      atk: (base.atk + (g.atk ?? 0)) * (1 + 0.06 * t.might) * atkK,
       def: pct('def'),
-      crit: Math.min(0.6, CLASS[s.cls].crit + pct('crit') + 0.04 * t.precision),
-      cdr: Math.min(0.5, pct('cdr') + 0.07 * t.focus),
+      crit: Math.min(0.6, CLASS[s.cls].crit + pct('crit') + 0.04 * t.precision + (has('hawk') ? 0.08 : 0)),
+      cdr: Math.min(0.6, pct('cdr') + 0.07 * t.focus + (has('flow') ? 0.12 : 0) + (has('avatar') ? 0.1 : 0)),
       leech: pct('leech'),
-      goldf: pct('goldf') + 0.1 * t.fortune,
-      speed: pct('speed'),
+      goldf: pct('goldf') + 0.1 * t.fortune + (has('greed') ? 0.3 : 0),
+      speed: pct('speed') + (has('avatar') ? 0.15 : 0),
       skill1: t.skill1,
       skill2: t.skill2,
       potion: t.potion,
+      ranks: classRanks(s.cls, s.ranks),
+      cards: [...s.cards],
     };
   }
+
+  // ------------------------------------------------------------------ the Shrine and the cards
+
+  rankOf(kind: TrackKind): number { return this.s.ranks[trackId(this.s.cls, kind)] ?? 0; }
+
+  /** The next rank's price, or null when maxed. */
+  rankCost(kind: TrackKind): { gold: number; sigils: number } | null {
+    const r = this.rankOf(kind);
+    return r >= MAX_RANK ? null : rankPrice(r, this.s.cycle);
+  }
+
+  /** The Shrine: one rank up for a move of the current class. */
+  buyRank(kind: TrackKind): boolean {
+    const c = this.rankCost(kind);
+    if (!c || this.s.gold < c.gold || this.s.sigils < c.sigils) return false;
+    this.s.gold -= c.gold;
+    this.s.sigils -= c.sigils;
+    this.s.ranks[trackId(this.s.cls, kind)] = this.rankOf(kind) + 1;
+    return true;
+  }
+
+  /** May a card be dealt now (room in the hand)? */
+  canDraft(): boolean { return this.s.cards.length < HAND_MAX; }
+
+  /** Three cards for a draft (a rich draft after a boss or a camp). */
+  dealCards(rich: boolean): string[] { return rollCards(this.s.cls, this.s.cards, () => this.rnd(), rich); }
+
+  takeCard(id: string): void {
+    if (this.s.cards.includes(id) || this.s.cards.length >= HAND_MAX) return;
+    const before = this.maxHp;
+    this.s.cards.push(id);
+    if (this.maxHp > before) this.s.hp += this.maxHp - before;
+  }
+
+  /** The journey ended: its cards are gone. */
+  endJourney(): void { this.s.cards = []; this.s.hp = Math.min(this.s.hp, this.maxHp); }
+
+  /** Every track of the class (for the screens and the bot). */
+  tracks(): TrackKind[] { return TRACK_KINDS; }
 
   gearStats(): Partial<Record<Stat, number>> {
     const out: Partial<Record<Stat, number>> = {};
@@ -202,7 +266,7 @@ export class Campaign {
   gainXp(n: number): number {
     const s = this.s;
     let gained = 0;
-    s.xp += Math.round(n * (1 + 0.1 * s.talents.fortune));
+    s.xp += Math.round(n * (1 + 0.1 * s.talents.fortune) * (s.cards.includes('scholar') ? 1.25 : 1));
     while (s.level < MAX_LEVEL && s.xp >= xpToNext(s.level)) {
       s.xp -= xpToNext(s.level);
       s.level++;
@@ -497,11 +561,16 @@ export class Campaign {
   settle(f: Fight, b: Battle): Spoils {
     const s = this.s;
     const won = b.over === 'won';
-    const out: Spoils = { won, gold: 0, xp: 0, items: [], sold: 0, levels: 0, quest: null, questGold: 0, boss: null, staff: false, renown: 0, lostGold: 0, rift: 0 };
+    const out: Spoils = { won, gold: 0, xp: 0, items: [], sold: 0, levels: 0, quest: null, questGold: 0, boss: null, staff: false, renown: 0, lostGold: 0, rift: 0, sigils: 0, draft: false, rich: false };
     s.battles++;
     s.kills += b.kills;
+    for (const c of b.finishers) if (!s.combosSeen.includes(c)) s.combosSeen.push(c);
+    // Sigils picked up are kept, even in a lost fight
+    out.sigils = b.sigils;
     s.potions = Math.min(s.potionMax + 2, b.hero.potions);
     const renown0 = s.renown;
+    s.sigils += out.sigils;
+    const sigil = () => { out.sigils++; s.sigils++; };
     if (!won) {
       s.deaths++;
       // what was learnt in a lost fight stays
@@ -521,7 +590,8 @@ export class Campaign {
     this.addGold(b.gold);
     out.levels = this.gainXp(b.xp);
     s.hp = Math.min(this.maxHp, Math.max(b.hero.hp, 1) + this.maxHp * TUNING[this.mode].heal);
-    s.renown += b.xp + Math.round(b.gold / 2);
+    // the Glory card: more renown from the battles of this journey
+    s.renown += Math.round((b.xp + Math.round(b.gold / 2)) * (s.cards.includes('glory') ? 1.2 : 1));
     const ilvl = f.level;
     const take = (it: Item) => { if (this.stow(it)) out.items.push(it); else out.sold++; };
     if (f.kind === 'encounter') { if (this.rnd() < 0.4) take(this.lootItem(ilvl, [['common', 55], ['uncommon', 33], ['rare', 10], ['epic', 2]])); }
@@ -529,9 +599,11 @@ export class Campaign {
       take(this.lootItem(ilvl + 1, [['uncommon', 50], ['rare', 38], ['epic', 12]]));
       if (f.camp) s.camps.push(f.camp);
       s.renown += RENOWN.camp;
+      sigil();
     } else if (f.kind === 'rift') {
       s.rift++;
       out.rift = s.rift;
+      sigil();
       s.renown += RENOWN.rift * Math.ceil(s.rift / 2);
       take(this.lootItem(ilvl, s.rift % 5 === 0 ? [['epic', 60], ['legendary', 40]] : [['uncommon', 30], ['rare', 50], ['epic', 20]]));
     } else if (f.place) {
@@ -554,6 +626,14 @@ export class Campaign {
       if (FOE[k].ai === 'boss' && (k === 'troll' || k === 'mage' || k === 'lord')) { out.boss = k; s.renown += RENOWN.boss * (1 + s.cycle); }
     }
     if (s.battles - s.marketAt >= 3) this.restock();
+    // Midas Touch: one more Sigil for every won chapter, camp or rift floor
+    if (s.cards.includes('midas') && f.kind !== 'encounter') sigil();
+    // a card draft after a won chapter, camp or rift floor and on reaching an even level (not when
+    // the journey ends here)
+    const chapterEnd = !!out.boss;
+    out.rich = f.kind === 'camp' || b.bossesKilled.length > 0;
+    const evenLevel = out.levels > 0 && (s.level % 2 === 0 || out.levels > 1);
+    out.draft = !chapterEnd && this.canDraft() && (f.kind !== 'encounter' || evenLevel);
     out.renown = s.renown - renown0;
     return out;
   }

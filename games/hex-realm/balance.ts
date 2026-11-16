@@ -1,6 +1,7 @@
 // Headless balance check: the autopilot plays whole campaigns on the pure simulation (map walking,
 // encounters, camps, dungeons, bosses, the village), with the time a player spends on the map and
-// in the screens counted in.
+// in the screens counted in. The bot spends Sigils at the Shrine and picks power cards like a
+// player; the cards end with the journey (a fall or a won boss chapter).
 // Run: npx tsx games/hex-realm/balance.ts [runs] [class]
 //   reports, per difficulty and skill: the minute each boss falls, the hero's level then, deaths,
 //   battles fought, and the minute of the final victory (or how far it got in the time limit).
@@ -21,6 +22,10 @@ export interface CampaignResult {
   level: number;
   minutes: number;
   renown: number;
+  /** Cards picked, Shrine ranks bought, Sigils found. */
+  cards: number;
+  ranks: number;
+  sigils: number;
 }
 
 export function runBattle(c: Campaign, f: Fight, sk: Skill, seed: number): { b: Battle; secs: number } {
@@ -40,12 +45,16 @@ export function playCampaign(mode: Mode, skillName: 'casual' | 'good', cls: Clas
   c.s.chosen = true;
   const mb = new MapBot(c, sk);
   let time = 0, n = seed * 1000;
-  const out: CampaignResult = { bosses: {}, victory: null, deaths: 0, battles: 0, level: 1, minutes: 0, renown: 0 };
+  const out: CampaignResult = { bosses: {}, victory: null, deaths: 0, battles: 0, level: 1, minutes: 0, renown: 0, cards: 0, ranks: 0, sigils: 0 };
   const fight = (f: Fight) => {
     const { b, secs } = runBattle(c, f, sk, n++);
     time += secs + scr.loot + scr.intro + (f.rooms.length - 1) * scr.room;
     const sp = c.settle(f, b);
     out.battles++;
+    out.sigils += sp.sigils;
+    if (sp.draft && mb.draft(sp.rich)) { out.cards++; time += scr.loot * 0.6; }
+    // the journey ends: on a fall and after a boss chapter (the cards go)
+    if (!sp.won || sp.boss) c.endJourney();
     if (!sp.won) { out.deaths++; time += scr.village; mb.village(); }
     if (sp.boss) out.bosses[sp.boss] = { min: time / 60, level: c.s.level };
     if (sp.levels) mb.talents();
@@ -70,17 +79,21 @@ export function playCampaign(mode: Mode, skillName: 'casual' | 'good', cls: Clas
     }
     const path = c.pathTo(gc, gr);
     if (!path) { c.s.pos = [START[0], START[1]]; continue; }
+    let met = false;
     for (const [hc, hr] of path) {
       const h = c.map.at(hc, hr);
       time += c.map.stepCost(h);
       const f = c.stepTo(hc, hr);
-      if (f) { fight(f); break; }
+      if (f) { fight(f); met = true; break; }
     }
+    // back at the village to heal, shop or visit the Shrine
+    if (!met && c.s.pos[0] === START[0] && c.s.pos[1] === START[1]) { mb.village(); time += scr.village; }
   }
   out.victory = c.s.victory ? time / 60 : null;
   out.level = c.s.level;
   out.minutes = time / 60;
   out.renown = c.s.renown;
+  out.ranks = Object.values(c.s.ranks).reduce((a, v) => a + v, 0);
   return out;
 }
 
@@ -99,7 +112,7 @@ if (proc?.argv[1]?.endsWith('balance.ts')) {
         return r.length ? `${avg(r.map((x) => x.bosses[k]!.min)).toFixed(1)}m L${avg(r.map((x) => x.bosses[k]!.level)).toFixed(1)} (${r.length}/${res.length})` : '—';
       };
       const won = res.filter((r) => r.victory !== null);
-      console.log(`${mode.padEnd(6)} ${sk.padEnd(6)} troll ${boss('troll')}  mage ${boss('mage')}  lord ${boss('lord')}  victory ${won.length}/${res.length} ${won.length ? avg(won.map((r) => r.victory!)).toFixed(1) + 'm' : ''}  deaths ${avg(res.map((r) => r.deaths)).toFixed(1)}  battles ${avg(res.map((r) => r.battles)).toFixed(0)}  level ${avg(res.map((r) => r.level)).toFixed(1)}  renown ${Math.round(avg(res.map((r) => r.renown)))}`);
+      console.log(`${mode.padEnd(6)} ${sk.padEnd(6)} troll ${boss('troll')}  mage ${boss('mage')}  lord ${boss('lord')}  victory ${won.length}/${res.length} ${won.length ? avg(won.map((r) => r.victory!)).toFixed(1) + 'm' : ''}  deaths ${avg(res.map((r) => r.deaths)).toFixed(1)}  battles ${avg(res.map((r) => r.battles)).toFixed(0)}  level ${avg(res.map((r) => r.level)).toFixed(1)}  renown ${Math.round(avg(res.map((r) => r.renown)))}  cards ${avg(res.map((r) => r.cards)).toFixed(1)}  ranks ${avg(res.map((r) => r.ranks)).toFixed(1)}  sigils ${avg(res.map((r) => r.sigils)).toFixed(1)}`);
       if (only) for (const r of res) console.log('   ', JSON.stringify(r));
     }
   }

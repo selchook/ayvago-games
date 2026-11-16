@@ -1,12 +1,15 @@
 // Hex Realm: the inner screens, in the menu theme (menu.ts): a slate board with a gilt frame, the
 // tabs and buttons carved stone (the main ones royal-blue enamel, leaving crimson), the wares,
 // quests and talents on illuminated vellum cards.
-//   - The village: the INN (rest and save, change class, end the day, New Game+), the MARKET
-//     (potions, a potion belt, the trader's four pieces), the SMITHY (upgrade what you wear to +5)
-//     and the QUEST board.
-//   - The hero: GEAR (stats, what is worn, the bag of twelve with a detail card: equip or sell) and
-//     TALENTS (eight talents with ranks).
-//   - Class select (the live 3D hero shows above the board), the world map, the battle's spoils.
+//   - The village: the INN (rest and save, change class, end the day, New Game+, a new campaign),
+//     the MARKET (potions, a potion belt, the trader's four pieces), the SMITHY (upgrade what you
+//     wear to +5), the SHRINE of Powers (three ranks for each skill and combo finisher: gold and
+//     Sigils) and the QUEST board.
+//   - The hero: GEAR (stats, what is worn, the bag of twelve with a detail card: equip or sell),
+//     TALENTS (eight talents with ranks), COMBOS (the class's three combos: inputs for touch and
+//     keys, what they do, their Shrine rank) and CARDS (the power cards of the journey).
+//   - Class select (the live 3D hero shows above the board), the world map, the battle's spoils,
+//     the power-card draft (three cards, one reroll) and the strip of cards under the pause.
 // Touch: tap a tile, a tab or a button. Keyboard: arrows move the focus, Enter presses, Tab and
 // Q/E switch tabs, Esc closes. Everything they show is painted under the Ayvago intro
 // (`prebakeScreens`, from the menu theme's prebake): opening a screen only places images.
@@ -16,16 +19,18 @@ import {
   labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, type LabelStyle,
 } from '@core';
 import {
-  CLASS, CLASS_IDS, QUEST, QUEST_IDS, TALENT_IDS, TALENT_MAX, TIERS, TRINKETS, RARITIES, STATS, PCT_STATS, SLOTS, MAX_UP, POWER_IDS,
+  CLASS, CLASS_IDS, QUEST, QUEST_IDS, TALENT_IDS, TALENT_MAX, TIERS, TRINKETS, RARITIES, STATS, PCT_STATS, SLOTS, MAX_UP, POWER_IDS, COMBO_IDS,
   tierOf, upgradeCost, itemValue, xpToNext, PLACE_IDS,
-  type ClassId, type Item, type Rarity, type Stat, type TalentId, type Slot, type QuestId,
+  type ClassId, type Item, type Rarity, type Stat, type TalentId, type Slot, type QuestId, type ComboId,
 } from './defs';
+import { CARDS, CARD, HAND_MAX, MAX_RANK, TRACK_KINDS, CARD_COLOR, rankKey, type TrackKind, type CardRarity } from './powers';
+import { paintVellum } from './vellum';
 import { Campaign, itemStats, BAG_MAX, POTION_PRICE, type Spoils } from './campaign';
 import { icon, itemIcon, makeArt } from './art';
 import { COLS, ROWS, PLACE_HEX, CAMPS, BRIDGE, type HexMap } from './hexmap';
 import {
   TILE_W, TILE_H, WARE_H, ROW_W, ROW_H, QUEST_H, GEAR_W, GEAR_H, SLOT_W, SLOT_H, DETAIL_H, CLASS_W, CLASS_H, STATS_H, TUT_W, TUT_H, HINT_H, LOOT_ROW_H,
-  SUMMARY_W, SUMMARY_H,
+  SUMMARY_W, SUMMARY_H, COMBO_H, SHRINE_H, CARD_W, CARD_H, PCARDS_W, PCARDS_H,
 } from './sizes';
 
 export const OVERLAY_DEPTH = 9600;
@@ -37,9 +42,13 @@ export const SCREEN_CARDS = [
   { w: TILE_W, h: TILE_H }, { w: TILE_W, h: WARE_H }, { w: ROW_W, h: ROW_H }, { w: ROW_W, h: QUEST_H }, { w: GEAR_W, h: GEAR_H }, { w: SLOT_W, h: SLOT_H },
   { w: ROW_W, h: DETAIL_H }, { w: CLASS_W, h: CLASS_H }, { w: ROW_W, h: STATS_H }, { w: TUT_W, h: TUT_H }, { w: TUT_W, h: HINT_H }, { w: ROW_W, h: LOOT_ROW_H },
   { w: 680, h: 1150 }, { w: SUMMARY_W, h: SUMMARY_H },
+  { w: ROW_W, h: COMBO_H }, { w: ROW_W, h: SHRINE_H }, { w: PCARDS_W, h: PCARDS_H },
 ];
 
 const BOARD_W = 690, BOARD_H = 1110;
+/** The draft's board height and the cards' row. */
+const DRAFT_Y = 478;
+const DRAFT_H = 740;
 /** The spoils' board heights (the smallest that fits is used). */
 const LOOT_BOARDS = [520, 660, 800, 940, 1080];
 
@@ -78,6 +87,23 @@ const S_CLASS: LabelStyle = { size: 22, color: '#2a1e14', stroke: null, shadow: 
 /** Place names floating over the 3D map. */
 export const S_MAP_TAG: LabelStyle = { size: 21, color: '#fff2cc', stroke: '#1a1420', strokeWidth: 5 };
 const S_CLASS_BIG: LabelStyle = { size: 40, fill: ['#fffbe0', '#ffd86a', '#c8901c'], stroke: INK, strokeWidth: 7 };
+const S_TAB5: LabelStyle = { size: 24 };
+const V_DESC2: LabelStyle = { size: 17, color: '#4a3424', stroke: null, shadow: false, body: true };
+const V_KEY: LabelStyle = { size: 17, color: '#1f4a8a', stroke: null, shadow: false, body: true };
+const V_CARD: LabelStyle = { size: 22, color: '#2a1e14', stroke: null, shadow: false };
+const V_CARD_D: LabelStyle = { size: 17, color: '#3a2a1a', stroke: null, shadow: false, body: true };
+const V_FIN: LabelStyle = { size: 27, color: '#8a1c24', stroke: null, shadow: false };
+/** The pause's strip of cards (on the dark pause backdrop). */
+const P_HEAD: LabelStyle = { size: 22, color: '#8a1c24', stroke: null, shadow: false };
+const P_NAME: LabelStyle = { size: 18, color: '#2a1e14', stroke: null, shadow: false, body: true };
+/** The finisher's name popping over the hero in battle. */
+export const S_POP: LabelStyle = { size: 40, fill: ['#fffbe0', '#ffd86a', '#e08a1c'], stroke: INK, strokeWidth: 7 };
+const CARD_KEY = (r: CardRarity): string => 'hr-card-' + r;
+const CARD_GLOW = 'hr-card-glow';
+/** The Shrine's and the combo screen's icon of a track. */
+export const trackIcon = (cls: ClassId, k: TrackKind): string => icon(k === 'skill1' ? 'sk-' + CLASS[cls].skills[0].id : k === 'skill2' ? 'sk-' + CLASS[cls].skills[1].id : 'cb-' + k);
+/** A track's name: the skill's, or the class's finisher of that combo. */
+export const trackName = (cls: ClassId, k: TrackKind): string => k === 'skill1' ? t('sk_' + CLASS[cls].skills[0].id) : k === 'skill2' ? t('sk_' + CLASS[cls].skills[1].id) : t(`fn_${cls}_${k}`);
 
 const fmtNum = (v: number): string => {
   const s = Math.abs(v) >= 10 || Number.isInteger(v) ? String(Math.round(v)) : v.toFixed(1);
@@ -173,7 +199,91 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   for (const k of ['staffFound', 'beltUp']) labelTexture(scene, t(k), S_GREEN_LINE);
   bakeFmt(scene, 'soldN', ['n'], S_SUB);
   labelTexture(scene, t('screenKeys'), S_KEYS);
+  prebakePowers(scene);
   void POWER_IDS;
+}
+
+/** A power card's face: vellum, a rarity gem frame and a jewel at the top, a glow for the rare ones. */
+function paintCard(c: CanvasRenderingContext2D, w: number, h: number, r: CardRarity): void {
+  const col = CARD_COLOR[r];
+  const hex = (v: number, a = 1) => `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`;
+  c.save();
+  c.translate(12, 12);
+  if (r !== 'common') { c.save(); c.shadowColor = hex(col.glow, r === 'legendary' ? 1 : 0.8); c.shadowBlur = r === 'legendary' ? 16 : 10; c.fillStyle = hex(col.glow); c.beginPath(); c.roundRect(0, 0, w, h, 12); c.fill(); c.restore(); }
+  paintVellum(c, w, h);
+  // the rarity frame: a coloured band inside the gold, and a gem on the top edge
+  c.lineWidth = 5; c.strokeStyle = hex(col.gem, 0.9);
+  c.beginPath(); c.roundRect(24, 24, w - 48, h - 48, 6); c.stroke();
+  // the picture's disc
+  const g = c.createRadialGradient(w / 2, 104, 6, w / 2, 104, 52);
+  g.addColorStop(0, hex(col.glow, 0.55)); g.addColorStop(1, hex(col.gem, 0.18));
+  c.fillStyle = g; c.beginPath(); c.arc(w / 2, 104, 50, 0, Math.PI * 2); c.fill();
+  c.lineWidth = 3; c.strokeStyle = hex(col.gem); c.stroke();
+  const gy = 12;
+  c.fillStyle = '#3a2a10'; c.beginPath(); c.moveTo(w / 2, gy - 12); c.lineTo(w / 2 + 14, gy + 2); c.lineTo(w / 2, gy + 16); c.lineTo(w / 2 - 14, gy + 2); c.closePath(); c.fill();
+  const jg = c.createLinearGradient(0, gy - 10, 0, gy + 14);
+  jg.addColorStop(0, '#ffffff'); jg.addColorStop(0.4, hex(col.glow)); jg.addColorStop(1, hex(col.gem));
+  c.fillStyle = jg; c.beginPath(); c.moveTo(w / 2, gy - 8); c.lineTo(w / 2 + 10, gy + 2); c.lineTo(w / 2, gy + 12); c.lineTo(w / 2 - 10, gy + 2); c.closePath(); c.fill();
+  if (r === 'legendary') {
+    // gold corner flourishes
+    c.strokeStyle = '#c08a20'; c.lineWidth = 2;
+    for (const [x, y, sx, sy] of [[30, 30, 1, 1], [w - 30, 30, -1, 1], [30, h - 30, 1, -1], [w - 30, h - 30, -1, -1]]) { c.beginPath(); c.moveTo(x, y + sy * 22); c.quadraticCurveTo(x, y, x + sx * 22, y); c.stroke(); }
+  }
+  c.restore();
+}
+
+/** Paints the 1.1 screens' pieces: the Shrine, the combos list, the card faces and lines, the pause strip. */
+export function prebakePowers(scene: Phaser.Scene): void {
+  for (const r of ['common', 'rare', 'epic', 'legendary'] as CardRarity[]) bake(scene, CARD_KEY(r), CARD_W + 24, CARD_H + 24, (c) => paintCard(c, CARD_W, CARD_H, r));
+  bake(scene, CARD_GLOW, CARD_W + 44, CARD_H + 44, (c) => { c.shadowColor = 'rgba(255,220,120,1)'; c.shadowBlur = 18; c.strokeStyle = 'rgba(255,236,170,1)'; c.lineWidth = 6; c.beginPath(); c.roundRect(22, 22, CARD_W, CARD_H, 12); c.stroke(); });
+  skinTexture(scene, 'board', BOARD_W, DRAFT_H);
+  for (const k of ['v_inn', 'v_market', 'v_smith', 'v_shrine', 'v_quests']) labelTexture(scene, t(k), S_TAB5);
+  for (const k of ['tabCombos', 'tabCards']) labelTexture(scene, t(k), S_TAB);
+  for (const k of ['shrineTitle', 'draftTitle']) labelTexture(scene, t(k), S_TITLE);
+  for (const k of ['shrineSub', 'draftSub']) bakePara(scene, t(k), S_SUB, 620);
+  for (const k of ['noSigils', 'empowered']) labelTexture(scene, t(k), S_TOAST);
+  for (const k of ['empower', 'maxed', 'reroll', 'newGame', 'sure']) labelTexture(scene, t(k), S_BTN_S);
+  // the inn's rows (their titles in the large face, the class's line under it)
+  for (const k of ['newCampT', 'rest', 'endDay', 'ngPlus']) labelTexture(scene, t(k), V_BIG);
+  for (const c of CLASS_IDS) { labelTexture(scene, t('c_' + c), V_BIG); labelTexture(scene, t('cd_' + c), V_DESC); }
+  labelTexture(scene, t('newCampSub'), V_DESC);
+  labelTexture(scene, t('nextRank') + ':', V_KEY);
+  labelTexture(scene, t('maxRank'), V_UP);
+  for (const k of ['touchL', 'keysL']) labelTexture(scene, t(k) + ':', V_KEY);
+  for (const c of COMBO_IDS) { labelTexture(scene, t('cb_' + c), V_DESC); labelTexture(scene, t('in_' + c + '_t'), V_DESC2); labelTexture(scene, t('in_' + c + '_k'), V_DESC2); }
+  bakeButton(scene, 'button', 124, 60, STONE, false, true);
+  bakeButton(scene, 'button', 124, 60, BLUE, false, true);
+  bakeButton(scene, 'button', 152, 54, GOLDC, true);
+  bakeButton(scene, 'button', 240, 70, STONE, true);
+  bakeButton(scene, 'plate', CARD_W, CARD_H, STONE);
+  bakeButton(scene, 'button', 200, 64, CRIMSON, true);
+  glyphAtlas(scene, V_KEY);
+  bakeFmt(scene, 'cardsN', ['n', 'of'], S_INFO);
+  bakePara(scene, t('noCards'), S_SUB, 560);
+  for (const cls of CLASS_IDS) {
+    labelTexture(scene, t('combosOf', { name: t('c_' + cls) }), S_INFO);
+    for (const c of COMBO_IDS) labelTexture(scene, t(`fn_${cls}_${c}`), S_INFO);
+    for (const k of TRACK_KINDS) {
+      labelTexture(scene, trackName(cls, k), V_BIG);
+      for (let r = 1; r <= MAX_RANK; r++) labelTexture(scene, t(rankKey(cls, k, r)), V_UP);
+    }
+    for (const c of COMBO_IDS) {
+      labelTexture(scene, t(`fn_${cls}_${c}`), V_FIN);
+      labelTexture(scene, t(`fn_${cls}_${c}`) + '!', S_POP);
+      bakePara(scene, t(`fd_${cls}_${c}`), V_DESC2, ROW_W - 70);
+    }
+  }
+  for (const card of CARDS) {
+    labelTexture(scene, t('k_' + card.id), V_CARD);
+    labelTexture(scene, t('k_' + card.id), V_NAME);
+    labelTexture(scene, t('k_' + card.id), P_NAME);
+    bakePara(scene, t('kd_' + card.id), V_CARD_D, CARD_W - 54);
+    bakePara(scene, t('kd_' + card.id), V_DESC, TILE_W - 110);
+  }
+  labelTexture(scene, t('yourCards'), P_HEAD);
+  labelTexture(scene, t('draftKeys'), S_KEYS);
+  labelTexture(scene, t('noCards'), P_NAME);
+  bakePara(scene, t('noCards'), P_NAME, PCARDS_W - 60);
 }
 
 // ------------------------------------------------------------------ the panel frame
@@ -221,10 +331,11 @@ export class Panel {
 
   /** Tab buttons in a row at y. */
   protected makeTabs(keys: string[], y: number, onTab: (i: number) => void): void {
-    const n = keys.length, w = 152, gap = 8;
+    // five tabs (the village) are narrower, in a smaller face
+    const n = keys.length, w = n > 4 ? 124 : 152, gap = n > 4 ? 6 : 8;
     keys.forEach((k, i) => {
       const x = this.scene.scale.width / 2 + (i - (n - 1) / 2) * (w + gap);
-      const b = new KitButton(this.scene, x, y, { w, h: 60, color: i === this.tab ? BLUE : STONE, on: i === this.tab, label: t(k), style: S_TAB, sfx: 'ui-click' }, () => { this.tab = i; this.refreshTabs(); onTab(i); });
+      const b = new KitButton(this.scene, x, y, { w, h: 60, color: i === this.tab ? BLUE : STONE, on: i === this.tab, label: t(k), style: n > 4 ? S_TAB5 : S_TAB, sfx: 'ui-click' }, () => { this.tab = i; this.refreshTabs(); onTab(i); });
       this.root.add(b);
       this.tabs.push(b);
     });
@@ -372,25 +483,27 @@ export class Panel {
 
   /** The purse and potions line. */
   protected purse(camp: Campaign, y: number): void {
-    const s = this.scene, { width } = s.scale;
-    this.content.add(s.add.image(width / 2 - 250, y, icon('coin')).setDisplaySize(34, 34));
-    this.content.add(new GlyphText(s, width / 2 - 228, y, String(camp.s.gold), S_PURSE, 0));
-    this.content.add(s.add.image(width / 2 + 40, y, icon('potion')).setDisplaySize(36, 36));
-    this.content.add(new GlyphText(s, width / 2 + 62, y, `${camp.s.potions}/${camp.s.potionMax}`, S_PURSE, 0));
-    this.content.add(s.add.image(width / 2 + 180, y, icon('heart')).setDisplaySize(32, 32));
-    this.content.add(new GlyphText(s, width / 2 + 202, y, `${Math.round(camp.s.hp)}/${camp.maxHp}`, S_PURSE, 0));
+    const s = this.scene, x0 = s.scale.width / 2;
+    const at = (x: number, ic: string, size: number, text: string) => {
+      this.content.add(s.add.image(x, y, icon(ic)).setDisplaySize(size, size));
+      this.content.add(new GlyphText(s, x + 22, y, text, S_PURSE, 0));
+    };
+    at(x0 - 296, 'coin', 34, String(camp.s.gold));
+    at(x0 - 132, 'sigil', 36, String(camp.s.sigils));
+    at(x0 - 18, 'potion', 36, `${camp.s.potions}/${camp.s.potionMax}`);
+    at(x0 + 122, 'heart', 32, `${Math.round(camp.s.hp)}/${camp.maxHp}`);
   }
 }
 
 // ------------------------------------------------------------------ the village
 
 export class VillageScreen extends Panel {
-  constructor(scene: Phaser.Scene, private camp: Campaign, host: ScreenHost, private act: { endDay: () => void; newGamePlus: () => void; chooseClass: () => void }, onClose: () => void, start = 0) {
+  constructor(scene: Phaser.Scene, private camp: Campaign, host: ScreenHost, private act: { endDay: () => void; newGamePlus: () => void; chooseClass: () => void; newCampaign: () => void }, onClose: () => void, start = 0) {
     super(scene, host, { board: BOARD_H, title: t('innTitle') });
     this.onClose = onClose;
     this.tab = start;
     this.titleImg = this.root.list[2] as Phaser.GameObjects.Image;
-    this.makeTabs(['v_inn', 'v_market', 'v_smith', 'v_quests'], 236, () => this.build());
+    this.makeTabs(['v_inn', 'v_market', 'v_smith', 'v_shrine', 'v_quests'], 236, () => { this.armed = false; this.build(); });
     this.root.add(labelAt(scene, scene.scale.width / 2, 1218, t('screenKeys'), S_KEYS));
     this.leaveButton();
     this.build();
@@ -400,14 +513,14 @@ export class VillageScreen extends Panel {
 
   private build(): void {
     this.clear();
-    const titles = ['innTitle', 'marketTitle', 'smithTitle', 'questsTitle'];
-    const subs = ['innSub', 'marketSub', 'smithSub', 'questsSub'];
+    const titles = ['innTitle', 'marketTitle', 'smithTitle', 'shrineTitle', 'questsTitle'];
+    const subs = ['innSub', 'marketSub', 'smithSub', 'shrineSub', 'questsSub'];
     this.titleImg.destroy();
     this.titleImg = fitWidth(labelAt(this.scene, this.scene.scale.width / 2, 148, t(titles[this.tab]), S_TITLE), 600);
     this.root.addAt(this.titleImg, 2);
     this.content.add(new Para(this.scene, this.scene.scale.width / 2, 176, t(subs[this.tab]), S_SUB, 620, 0.5, 24));
     this.purse(this.camp, 306);
-    [this.inn, this.market, this.smith, this.quests][this.tab].call(this);
+    [this.inn, this.market, this.smith, this.shrine, this.quests][this.tab].call(this);
     if (this.fi >= this.focus.length) this.fi = this.focus.length - 1;
     this.showFocus();
   }
@@ -440,6 +553,71 @@ export class VillageScreen extends Panel {
     this.actionRow(560, t('c_' + c.s.cls), t('cd_' + c.s.cls), { label: t('classBtn'), color: STONE, enabled: true, onTap: () => { this.host.sfx('move', 0.4); this.act.chooseClass(); } }, icon('sk-' + CLASS[c.s.cls].skills[0].id));
     this.actionRow(710, t('endDay'), t('endDaySub'), { label: t('endDay'), color: CRIMSON, enabled: true, onTap: () => this.act.endDay() }, icon('marker'));
     if (c.s.victory) this.actionRow(860, t('ngPlus'), t('ngPlusSub'), { label: t('ngPlus'), color: MOSS, enabled: true, onTap: () => { this.act.newGamePlus(); this.build(); } }, icon('skull'));
+    // a new campaign (it used to sit on the menu): the first tap arms it, the second starts over
+    this.actionRow(c.s.victory ? 1010 : 860, t('newCampT'), t('newCampSub'), { label: t(this.armed ? 'sure' : 'newGame'), color: this.armed ? CRIMSON : STONE, enabled: true, onTap: () => {
+      if (!this.armed) { this.armed = true; this.host.sfx('error', 0.3); this.build(); return; }
+      this.armed = false;
+      this.act.newCampaign();
+    } }, icon('banner'));
+  }
+
+  private armed = false;
+
+  /** The Shrine of Powers: five tracks of the current class, three ranks each. */
+  private shrine(): void {
+    const c = this.camp, s = this.scene, x0 = s.scale.width / 2, cls = c.s.cls;
+    TRACK_KINDS.forEach((k, i) => {
+      const y = 430 + i * (SHRINE_H + 10);
+      const box = s.add.container(x0, y);
+      box.add(themeCard(s, 0, 0, ROW_W, SHRINE_H));
+      box.add(s.add.image(-ROW_W / 2 + 54, -8, trackIcon(cls, k)).setDisplaySize(68, 68));
+      const lx = -ROW_W / 2 + 100;
+      box.add(fitWidth(labelAt(s, lx, -SHRINE_H / 2 + 32, trackName(cls, k), V_BIG, 0), 280));
+      const rank = c.rankOf(k);
+      const g = s.add.graphics();
+      for (let r = 0; r < MAX_RANK; r++) {
+        const px = lx + 10 + r * 30, py = -6;
+        g.fillStyle(r < rank ? 0xe0b24a : 0x8a7a6a, r < rank ? 1 : 0.35).fillCircle(px, py, 10);
+        g.lineStyle(2, 0x3a2a10, 1).strokeCircle(px, py, 10);
+      }
+      box.add(g);
+      // what the next rank does (or that every rank is open)
+      if (rank < MAX_RANK) {
+        const nx = labelAt(s, lx, 30, t('nextRank') + ':', V_KEY, 0);
+        box.add(nx);
+        box.add(fitWidth(labelAt(s, lx + nx.displayWidth + 8, 30, t(rankKey(cls, k, rank + 1)), V_UP, 0), ROW_W - 300 - nx.displayWidth));
+      } else box.add(fitWidth(labelAt(s, lx, 30, t('maxRank'), V_UP, 0), ROW_W - 300));
+      // the price and EMPOWER
+      const cost = c.rankCost(k);
+      const bx = ROW_W / 2 - 92;
+      if (cost) {
+        box.add(s.add.image(bx - 58, -34, icon('coin')).setDisplaySize(26, 26));
+        box.add(new GlyphText(s, bx - 42, -34, String(cost.gold), c.s.gold >= cost.gold ? V_PRICE : V_POOR, 0));
+        box.add(s.add.image(bx + 28, -34, icon('sigil')).setDisplaySize(28, 28));
+        box.add(new GlyphText(s, bx + 46, -34, String(cost.sigils), c.s.sigils >= cost.sigils ? V_PRICE : V_POOR, 0));
+      }
+      const ok = !!cost && c.s.gold >= cost.gold && c.s.sigils >= cost.sigils;
+      const b = new KitButton(s, bx, 28, { w: 152, h: 54, color: GOLDC, label: cost ? t('empower') : t('maxed'), style: S_BTN_S, tapWhenOff: true, sfx: null }, () => {
+        if (!b.enabled) { this.deny(b, !cost ? 'maxed' : c.s.sigils < cost.sigils ? 'noSigils' : 'poor'); return; }
+        c.buyRank(k); c.save(); this.host.sfx('levelup', 0.55); this.host.changed(); this.build(); this.toast('empowered');
+        this.sparkle(x0 + lx + 40, y - 6);
+      });
+      b.setEnabled(ok);
+      box.add(b);
+      this.content.add(box);
+      this.addFocus(b, x0 + bx, y + 28);
+    });
+  }
+
+  /** A burst of gold sparks (a rank bought). */
+  private sparkle(x: number, y: number): void {
+    const em = this.scene.add.particles(x, y, SPARK, {
+      speed: { min: 80, max: 260 }, angle: { min: 0, max: 360 }, scale: { start: 1, end: 0 }, alpha: { start: 1, end: 0 },
+      blendMode: Phaser.BlendModes.ADD, lifespan: { min: 300, max: 650 }, tint: [0xffd23f, 0xffffff, 0xe0b24a], emitting: false,
+    });
+    this.root.add(em);
+    em.explode(28);
+    this.scene.time.delayedCall(800, () => em.destroy());
   }
 
   private market(): void {
@@ -528,7 +706,7 @@ export class HeroScreen extends Panel {
     super(scene, host, { board: BOARD_H, title: t('heroTitle') });
     this.onClose = onClose;
     this.tab = start;
-    this.makeTabs(['tabGear', 'tabTalents'], 236, () => { this.pick = null; this.build(); });
+    this.makeTabs(['tabGear', 'tabTalents', 'tabCombos', 'tabCards'], 236, () => { this.pick = null; this.build(); });
     this.root.add(labelAt(scene, scene.scale.width / 2, 1218, t('screenKeys'), S_KEYS));
     this.leaveButton('close');
     this.build();
@@ -537,7 +715,7 @@ export class HeroScreen extends Panel {
   private build(): void {
     this.clear();
     this.purse(this.camp, 306);
-    if (this.tab === 0) this.gear(); else this.talents();
+    [this.gear, this.talents, this.combos, this.cards][this.tab].call(this);
     if (this.fi >= this.focus.length) this.fi = this.focus.length - 1;
     this.showFocus();
   }
@@ -620,6 +798,53 @@ export class HeroScreen extends Panel {
     }
   }
 
+  /** The class's three combos: name, finisher, what it does, the inputs for touch and keys, its Shrine rank. */
+  private combos(): void {
+    const c = this.camp, s = this.scene, x0 = s.scale.width / 2, cls = c.s.cls;
+    this.content.add(labelAt(s, x0, 366, t('combosOf', { name: t('c_' + cls) }), S_INFO));
+    COMBO_IDS.forEach((cb: ComboId, i) => {
+      const y = 516 + i * (COMBO_H + 8);
+      const box = s.add.container(x0, y);
+      box.add(themeCard(s, 0, 0, ROW_W, COMBO_H));
+      const L = -ROW_W / 2 + 30, top = -COMBO_H / 2;
+      // the title line: the combo's icon, its finisher, the kind of combo and the Shrine's rank
+      box.add(s.add.image(L + 22, top + 44, icon('cb-' + cb)).setDisplaySize(50, 50));
+      box.add(fitWidth(labelAt(s, L + 56, top + 44, t(`fn_${cls}_${cb}`), V_FIN, 0), 300));
+      const rank = c.rankOf(cb);
+      const g = s.add.graphics();
+      for (let r = 0; r < MAX_RANK; r++) {
+        const px = ROW_W / 2 - 92 + r * 26, py = top + 44;
+        g.fillStyle(r < rank ? 0xe0b24a : 0x8a7a6a, r < rank ? 1 : 0.35).fillCircle(px, py, 9);
+        g.lineStyle(2, 0x3a2a10, 1).strokeCircle(px, py, 9);
+      }
+      box.add(g);
+      box.add(labelAt(s, ROW_W / 2 - 112, top + 44, t('cb_' + cb), V_DESC, 1));
+      box.add(new Para(s, L, top + 72, t(`fd_${cls}_${cb}`), V_DESC2, ROW_W - 70, 0, 21));
+      // the inputs: touch and keys (the player's own first)
+      const row = (yy: number, k: string, v: string) => {
+        const a = labelAt(s, L, yy, t(k) + ':', V_KEY, 0);
+        box.add(a);
+        box.add(fitWidth(labelAt(s, L + a.displayWidth + 10, yy, t(v), V_DESC2, 0), ROW_W - 80 - a.displayWidth));
+      };
+      const touchFirst = this.host.touch;
+      row(top + 130, touchFirst ? 'touchL' : 'keysL', `in_${cb}_${touchFirst ? 't' : 'k'}`);
+      row(top + 154, touchFirst ? 'keysL' : 'touchL', `in_${cb}_${touchFirst ? 'k' : 't'}`);
+      if (rank) box.add(fitWidth(labelAt(s, L, top + 184, t(rankKey(cls, cb, rank)), V_UP, 0), ROW_W - 60));
+      this.content.add(box);
+    });
+  }
+
+  /** The power cards of the journey. */
+  private cards(): void {
+    const c = this.camp, s = this.scene, x0 = s.scale.width / 2;
+    this.content.add(new FmtLine(s, x0, 366, S_INFO, 0.5).set('cardsN', { n: c.s.cards.length, of: HAND_MAX }));
+    if (!c.s.cards.length) { this.content.add(new Para(s, x0, 420, t('noCards'), S_SUB, 560, 0.5, 26)); return; }
+    c.s.cards.forEach((id, i) => {
+      const x = x0 + (i % 2 ? 162 : -162), y = 470 + Math.floor(i / 2) * (TILE_H + 10);
+      this.content.add(cardTile(s, x, y, id));
+    });
+  }
+
   private talents(): void {
     const c = this.camp, s = this.scene, x0 = s.scale.width / 2;
     this.content.add(new FmtLine(s, x0, 370, S_INFO, 0.5).set('pointsN', { n: c.s.points }));
@@ -684,6 +909,12 @@ export class ClassScreen extends Panel {
       b.addContent(fitWidth(labelAt(s, 0, 40, t('c_' + cls), { ...S_CLASS, color: on ? '#fff2cc' : '#f4ead8', stroke: INK, strokeWidth: 4, shadow: true }), CLASS_W - 20));
       this.content.add(b);
       this.addFocus(b, x, y);
+    });
+    // its three combo finishers
+    COMBO_IDS.forEach((cb, i) => {
+      const cx = x0 + (i - 1) * 212;
+      this.content.add(s.add.image(cx - 78, 928, icon('cb-' + cb)).setDisplaySize(42, 42));
+      this.content.add(fitWidth(labelAt(s, cx - 50, 928, t(`fn_${this.sel}_${cb}`), S_INFO, 0), 140));
     });
     // the chosen class: name, line and both skills
     const c = CLASS[this.sel];
@@ -837,6 +1068,160 @@ export class LootScreen extends Panel {
     this.fi = 0;
     this.showFocus();
   }
+}
+
+// ------------------------------------------------------------------ power cards
+
+/** A card in a list (the hero screen): its picture on a rarity disc, name, rarity and what it does. */
+export function cardTile(s: Phaser.Scene, x: number, y: number, id: string): Phaser.GameObjects.Container {
+  const def = CARD[id];
+  const c = s.add.container(x, y);
+  c.add(themeCard(s, 0, 0, TILE_W, TILE_H));
+  const col = CARD_COLOR[def.rarity];
+  const g = s.add.graphics();
+  g.fillStyle(col.glow, 0.35).fillCircle(-TILE_W / 2 + 50, -TILE_H / 2 + 52, 32);
+  g.lineStyle(3, col.gem, 1).strokeCircle(-TILE_W / 2 + 50, -TILE_H / 2 + 52, 32);
+  c.add(g);
+  c.add(s.add.image(-TILE_W / 2 + 50, -TILE_H / 2 + 52, icon(def.icon)).setDisplaySize(48, 48));
+  c.add(fitWidth(labelAt(s, -TILE_W / 2 + 94, -TILE_H / 2 + 34, t('k_' + id), V_NAME, 0), TILE_W - 112));
+  c.add(labelAt(s, -TILE_W / 2 + 94, -TILE_H / 2 + 60, t('r_' + def.rarity), V_RARITY(def.rarity as Rarity), 0));
+  c.add(new Para(s, -TILE_W / 2 + 94, -TILE_H / 2 + 76, t('kd_' + id), V_DESC, TILE_W - 110, 0, 19));
+  return c;
+}
+
+/** A card face for the draft: the painted frame of its rarity, the picture, its name and what it does. */
+export function cardFace(s: Phaser.Scene, x: number, y: number, id: string): Phaser.GameObjects.Container {
+  const def = CARD[id];
+  const c = s.add.container(x, y);
+  c.add(s.add.image(0, 0, CARD_KEY(def.rarity)));
+  c.add(labelAt(s, 0, -CARD_H / 2 + 40, t('r_' + def.rarity), { ...V_RARITY(def.rarity as Rarity), size: 15 }));
+  c.add(s.add.image(0, -CARD_H / 2 + 104, icon(def.icon)).setDisplaySize(72, 72));
+  c.add(fitWidth(labelAt(s, 0, 2, t('k_' + id), V_CARD), CARD_W - 54));
+  c.add(new Para(s, 0, 24, t('kd_' + id), V_CARD_D, CARD_W - 54, 0.5, 21));
+  return c;
+}
+
+/**
+ * The draft: three cards (rarity odds richer after a boss or a camp), one reroll. A tap (or Enter on
+ * the focused card) takes it; the card stays until the journey ends.
+ */
+export class DraftScreen extends Panel {
+  private faces: { c: Phaser.GameObjects.Container; id: string; hit: KitButton }[] = [];
+  private glow: Phaser.GameObjects.Image;
+  private rerolled = false;
+  private picked = false;
+  private reroll!: KitButton;
+
+  constructor(scene: Phaser.Scene, private camp: Campaign, host: ScreenHost, private offer: string[], private rich: boolean, private onPick: (id: string) => void) {
+    super(scene, host, { board: DRAFT_H, title: t('draftTitle'), sub: t('draftSub'), dim: 0.7 });
+    this.glow = scene.add.image(0, 0, CARD_GLOW).setVisible(false);
+    this.root.add(this.glow);
+    this.deal(false);
+  }
+
+  /** Lays out the offer (dealt in with a flip and a sound). */
+  private deal(again: boolean): void {
+    const s = this.scene, x0 = s.scale.width / 2, y = DRAFT_Y;
+    for (const f of this.faces) f.c.destroy();
+    this.faces = [];
+    this.focus = [];
+    this.offer.forEach((id, i) => {
+      const x = x0 + (i - 1) * (CARD_W + 16);
+      const c = cardFace(s, x, y, id);
+      // the whole face is the button (its own skin face hidden)
+      const hit = new KitButton(s, 0, 0, { w: CARD_W, h: CARD_H, kind: 'plate', color: STONE, sfx: null }, () => this.take(i));
+      hit.face.setAlpha(0.001);
+      hit.on('pointerover', () => { this.fi = i; this.showGlow(); });
+      c.add(hit);
+      this.root.add(c);
+      this.faces.push({ c, id, hit });
+      this.addFocus(hit, x, y);
+      c.setScale(0.2, 1).setAlpha(0);
+      s.tweens.add({ targets: c, scaleX: 1, alpha: 1, duration: 220, delay: 80 + i * 110, ease: 'Back.easeOut' });
+      if (CARD[id].rarity === 'legendary') s.time.delayedCall(300 + i * 110, () => { if (!this.closed) this.host.sfx('fanfare', 0.35); });
+    });
+    if (!this.reroll) {
+      this.reroll = new KitButton(s, x0, y + CARD_H / 2 + 74, { w: 240, h: 70, color: STONE, label: t('reroll'), style: S_BTN_S, tapWhenOff: true, sfx: null }, () => {
+        if (this.rerolled || this.picked) { this.deny(this.reroll, 'maxed'); return; }
+        this.rerolled = true;
+        this.offer = this.camp.dealCards(this.rich);
+        this.host.sfx('page', 0.5);
+        this.reroll.setEnabled(false);
+        this.deal(true);
+      });
+      this.reroll.addContent(s.add.image(-96, 0, icon('card')).setDisplaySize(40, 40));
+      this.root.add(this.reroll);
+      if (!this.host.touch) this.root.add(labelAt(s, x0, y + CARD_H / 2 + 136, t('draftKeys'), S_KEYS));
+    }
+    this.addFocus(this.reroll, x0, y + CARD_H / 2 + 74);
+    this.fi = this.host.touch ? -1 : 1;
+    this.showGlow();
+    this.host.sfx(again ? 'page' : 'shrine', 0.45);
+  }
+
+  private showGlow(): void {
+    const f = this.faces[this.fi];
+    if (!f || this.host.touch) { this.glow.setVisible(false); return; }
+    this.glow.setVisible(true).setPosition(f.c.x, f.c.y);
+    this.root.bringToTop(this.glow);
+    this.root.bringToTop(f.c);
+  }
+
+  protected showFocus(): void { super.showFocus(); this.showGlow(); }
+
+  key(code: string): boolean {
+    if (code === 'Escape') return true;
+    if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3') { this.take(Number(code.slice(5)) - 1); return true; }
+    if (code === 'KeyR') { this.reroll.emit('pointerup', { wasTouch: false }); return true; }
+    return super.key(code);
+  }
+
+  /** The card is taken: it rises and glows, the others fall away. */
+  take(i: number): void {
+    const f = this.faces[i];
+    if (!f || this.picked) return;
+    this.picked = true;
+    this.camp.takeCard(f.id);
+    this.camp.save();
+    this.host.sfx(CARD[f.id].rarity === 'legendary' || CARD[f.id].rarity === 'epic' ? 'fanfare' : 'power', 0.5);
+    this.host.changed();
+    const s = this.scene;
+    this.faces.forEach((o, k) => { if (k !== i) s.tweens.add({ targets: o.c, y: o.c.y + 60, alpha: 0, duration: 260 }); });
+    this.glow.setVisible(true).setPosition(f.c.x, f.c.y);
+    s.tweens.add({ targets: [f.c, this.glow], x: s.scale.width / 2, y: DRAFT_Y, scale: 1.12, duration: 320, ease: 'Back.easeOut' });
+    s.time.delayedCall(330, () => {
+      if (this.closed) return;
+      const em = s.add.particles(s.scale.width / 2, DRAFT_Y, SPARK, {
+        speed: { min: 120, max: 380 }, angle: { min: 0, max: 360 }, scale: { start: 1.2, end: 0 }, alpha: { start: 1, end: 0 },
+        blendMode: Phaser.BlendModes.ADD, lifespan: { min: 300, max: 800 }, tint: [CARD_COLOR[CARD[f.id].rarity].glow, 0xffffff, 0xffd23f], emitting: false,
+      });
+      this.root.add(em);
+      em.explode(40);
+    });
+    s.time.delayedCall(900, () => { this.close(); this.onPick(f.id); });
+  }
+}
+
+/** The cards of the journey under the pause card (added to the Pause scene as it opens). */
+export function pauseCards(scene: Phaser.Scene, cards: string[]): void {
+  const { width } = scene.scale;
+  const y = 1106;
+  const root = scene.add.container(0, 0).setDepth(5);
+  root.add(themeCard(scene, width / 2, y, PCARDS_W, PCARDS_H));
+  root.add(labelAt(scene, width / 2, y - PCARDS_H / 2 + 30, t('yourCards'), P_HEAD));
+  if (!cards.length) root.add(new Para(scene, width / 2, y - 14, t('noCards'), P_NAME, PCARDS_W - 60, 0.5, 22));
+  cards.slice(0, 9).forEach((id, i) => {
+    const col = i % 3, row = Math.floor(i / 3);
+    const x = width / 2 - PCARDS_W / 2 + 34 + col * 186, yy = y - PCARDS_H / 2 + 66 + row * 34;
+    const def = CARD[id];
+    const g = scene.add.graphics();
+    g.fillStyle(CARD_COLOR[def.rarity].glow, 0.45).fillCircle(x, yy, 15).lineStyle(2, CARD_COLOR[def.rarity].gem, 1).strokeCircle(x, yy, 15);
+    root.add(g);
+    root.add(scene.add.image(x, yy, icon(def.icon)).setDisplaySize(24, 24));
+    root.add(fitWidth(labelAt(scene, x + 22, yy, t('k_' + id), P_NAME, 0), 146));
+  });
+  root.setAlpha(0);
+  scene.tweens.add({ targets: root, alpha: 1, duration: 160 });
 }
 
 export { xpToNext };
