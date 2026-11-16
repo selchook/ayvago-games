@@ -11,10 +11,13 @@ import { loadMeta } from './meta';
 
 /** The level's stars card (PlayScene.finish). */
 export const STARS_W = 600, STARS_H = 400;
+/** The Journey map's postcards (mapui.ts): a chapter, the Holiday Rush. */
+export const MAP_CARD = { w: 660, h: 262 }, RUSH_CARD = { w: 660, h: 160 };
 /** The Journey button under the difficulty switch. */
 const JOURNEY_W = 400, JOURNEY_H = 96;
 
-const RED = 0xd8343c, ICE = 0x3f8fd8, NAVY = '#12305e', GOLD = 0xffd56a;
+export const RED = 0xd8343c, ICE = 0x3f8fd8, NAVY = '#12305e';
+const GOLD = 0xffd56a;
 
 const rgba = (c: number, a = 1): string => `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${a})`;
 
@@ -349,7 +352,8 @@ export const SNOW_THEME: MenuTheme = {
   // dim: the backdrop's darkening (main.ts drew it as its own layer before the theme)
   frame: { border: RAIL_BORDER, notes: postcard, vignette: 0.5, dim: 0.34 },
   overlays: { lose: '#c8202e', titles: ['rushOver', 'crashEnd', 'allDone'] },
-  cards: [{ w: STARS_W, h: STARS_H }],
+  // the level's stars card (PlayScene.finish) and the Journey map's postcards (mapui.ts)
+  cards: [{ w: STARS_W, h: STARS_H }, MAP_CARD, RUSH_CARD],
 };
 
 /** The Journey button (M on the keyboard): the mode and level on top, "tap for the map" under it. */

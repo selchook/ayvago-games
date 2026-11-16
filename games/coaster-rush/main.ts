@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, lastRunTokens } from './PlayScene';
-import { ShopScene } from './shop';
+import { ShopScene, prebakeShop, prebakeFork } from './shop';
 import { FAIR_THEME, shopButton } from './menu';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
@@ -57,6 +57,14 @@ launch({
     loadSfx(l, 'boost', F + 'woosh/woosh7');
     loadSfx(l, 'splash', F + 'woosh/woosh6');
     loadSfx(l, 'brake', F + 'rocks/stonedrag3');
+    // the workshop's marquees, tickets and words (and the junction card's), painted under the Ayvago intro (shop.ts)
+    l.once(Phaser.Loader.Events.COMPLETE, () => {
+      const t0 = performance.now();
+      prebakeShop(scene);
+      prebakeFork(scene);
+      // how long that took (read by the screenshot and timing scripts)
+      scene.registry.set('innerPaintMs', Math.round(performance.now() - t0));
+    });
   },
   menuDecor(scene) {
     makeIcons(scene);

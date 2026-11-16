@@ -14,8 +14,9 @@ export const SUMMARY_H = [470, 600] as const;
 /** The SHOP button on the menu. */
 const SHOP_W = 360, SHOP_H = 100;
 
-const INK = '#1d1230';
-const ORANGE = 0xe8692a, INDIGO = 0x3b3d8c, CREAM = '#f6eedd', AMBER = 0xffc94a;
+export const INK = '#1d1230';
+export const ORANGE = 0xe8692a, INDIGO = 0x3b3d8c;
+const CREAM = '#f6eedd', AMBER = 0xffc94a;
 
 const css = (c: number, a = 1): string => {
   const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;

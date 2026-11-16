@@ -12,7 +12,7 @@
   "genres": ["action", "arcade"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "1.2.3",
+  "version": "1.2.4",
   "credits": ["3D models: Quaternius Pirate Kit (CC0) — quaternius.com", "Props and sounds: Kenney (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0)", "Music: supplied by the Ayvago owner", "Logo font: Pirata One by Rodrigo Fuenzalida and Nicolas Massi (SIL OFL 1.1)"],
   "platform": { "addedAt": "2026-11-14" }
 }

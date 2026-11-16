@@ -14,14 +14,15 @@ export const SUMMARY_W = 620, SUMMARY_H = 520;
 /** The SHOP button on the menu. */
 const SHOP_W = 360, SHOP_H = 100;
 
-const INK = '#4a0a12';
-const RED = 0xd42a36, BLUE = 0x2a5fa8, GOLD = 0xffcf4a, CREAM = '#fbf1dc', MAROON = 0x5a1420;
+export const INK = '#4a0a12';
+export const RED = 0xd42a36, BLUE = 0x2a5fa8, GOLD = 0xffcf4a;
+const CREAM = '#fbf1dc', MAROON = 0x5a1420;
 
-const css = (c: number, a = 1): string => {
+export const css = (c: number, a = 1): string => {
   const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
   return a >= 1 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${a})`;
 };
-const shade = (c: number, k: number): number => {
+export const shade = (c: number, k: number): number => {
   const f = (v: number) => Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k));
   return (f((c >> 16) & 255) << 16) | (f((c >> 8) & 255) << 8) | f(c & 255);
 };
@@ -46,7 +47,7 @@ function ticketShape(x: number, y: number, w: number, h: number, n: number): Pat
   return p;
 }
 
-function star(c: CanvasRenderingContext2D, x: number, y: number, R: number, fill: string, stroke?: string): void {
+export function star(c: CanvasRenderingContext2D, x: number, y: number, R: number, fill: string, stroke?: string): void {
   c.beginPath();
   for (let i = 0; i < 10; i++) {
     const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? R * 0.45 : R;
@@ -58,7 +59,7 @@ function star(c: CanvasRenderingContext2D, x: number, y: number, R: number, fill
 }
 
 /** A light bulb: lit (a warm glow) or dark (a dull glass). */
-function bulb(c: CanvasRenderingContext2D, x: number, y: number, R: number, lit = true): void {
+export function bulb(c: CanvasRenderingContext2D, x: number, y: number, R: number, lit = true): void {
   c.save();
   if (lit) {
     const halo = c.createRadialGradient(x, y, R * 0.4, x, y, R * 2.6);
@@ -76,7 +77,7 @@ function bulb(c: CanvasRenderingContext2D, x: number, y: number, R: number, lit 
 }
 
 /** Bulbs spaced evenly round a rounded rectangle's path (inset from the edge). */
-function bulbRing(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, spacing: number, R: number): void {
+export function bulbRing(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, spacing: number, R: number): void {
   const nx = Math.max(2, Math.round(w / spacing)), ny = Math.max(2, Math.round(h / spacing));
   for (let i = 0; i <= nx; i++) { bulb(c, x + (w * i) / nx, y, R); bulb(c, x + (w * i) / nx, y + h, R); }
   for (let i = 1; i < ny; i++) { bulb(c, x, y + (h * i) / ny, R); bulb(c, x + w, y + (h * i) / ny, R); }

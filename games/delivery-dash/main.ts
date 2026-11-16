@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { launch, loadAudio, loadSfx, kenney, t, steeringOption, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
-import { MapScene } from './mapui';
+import { MapScene, prebakeMap } from './mapui';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
 import { View, keepPrograms } from './view';
@@ -51,6 +51,13 @@ launch({
     loadSfx(l, 'glass', U + 'glass_003');
     loadSfx(l, 'slurp', U + 'pluck_001');
     loadSfx(l, 'whistle', U + 'confirmation_002');
+    // the town map's and the garage's labels, cards and buttons, painted under the Ayvago intro (mapui.ts)
+    l.once(Phaser.Loader.Events.COMPLETE, () => {
+      const t0 = performance.now();
+      prebakeMap(scene);
+      // how long that took (read by the screenshot and timing scripts)
+      scene.registry.set('innerPaintMs', Math.round(performance.now() - t0));
+    });
   },
   menuDecor(scene) {
     makeArt(scene);

@@ -6,7 +6,7 @@
   "genres": ["arcade", "action", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "1.0.1",
+  "version": "1.0.2",
   "credits": ["3D models: Kenney Coaster Kit, Fantasy Town Kit and Mini Characters (CC0) — kenney.nl", "Sound effects: Kenney Impact Sounds and Foley Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org"],
   "platform": { "addedAt": "2026-11-15" }
 }
