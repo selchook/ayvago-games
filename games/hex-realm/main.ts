@@ -11,16 +11,13 @@ import { BattleBot, SKILL } from './bot';
 import { Campaign, store } from './campaign';
 import { HexMap } from './hexmap';
 import { CLASS_IDS, PLACE_IDS, QUEST_IDS, type ArenaKind, type Room } from './defs';
-import { menuRow, REALM_THEME } from './menu';
+import { REALM_THEME } from './menu';
 import { TUT_W, SUMMARY_W } from './sizes';
 import { t } from '@core';
 
 // the campaign saves through the core storage
 store.get = <T>(k: string, fallback: T) => storage.get<T>(k, fallback);
 store.set = (k, v) => storage.set(k, v);
-
-/** The menu's live backdrop (the hero selector swaps its hero). */
-let menuView: View | null = null;
 
 /** Showcase fights behind the menu. */
 const MENU_FIGHTS: { arena: ArenaKind; room: Room; level: number }[] = [
@@ -99,6 +96,15 @@ launch({
     loadSfx(l, 'anvil', 'sfx-impact/audio/impactbell_heavy_000');
     loadSfx(l, 'equip', 'sfx-foley/audio/swords/swordslide1');
     loadSfx(l, 'page', 'sfx-foley/audio/plating/platesslide3');
+    // 1.1: the combos' and the powers' sounds
+    loadAudio(l, 'leap', J + 'movement/jumping-and-landing/sfx-movement-jump12');
+    loadAudio(l, 'land', J + 'movement/jumping-and-landing/sfx-movement-jump12-landing');
+    loadAudio(l, 'punch1', J + 'weapons/melee/sfx-wpn-punch1');
+    loadAudio(l, 'punch2', J + 'weapons/melee/sfx-wpn-punch3');
+    loadAudio(l, 'cleave', J + 'general-sounds/impacts/sfx-sounds-impact12');
+    loadAudio(l, 'charge', J + 'general-sounds/positive-sounds/sfx-sounds-powerup13');
+    loadAudio(l, 'charged', J + 'general-sounds/positive-sounds/sfx-sounds-powerup18');
+    loadAudio(l, 'sigil', J + 'general-sounds/coins/sfx-coin-double3');
     // the summary's, the training's and the place names' words, painted under the Ayvago intro
     l.once(Phaser.Loader.Events.COMPLETE, () => {
       const t0 = performance.now();
@@ -122,7 +128,6 @@ launch({
     // Building the world here also compiles every shader the Play scene uses (the map included).
     const camp = Campaign.load(isEasy() ? 'easy' : 'normal');
     const view = new View(scene, new HexMap(), camp.s.cls, { menu: true });
-    menuView = view;
     let seed = 3, k = Math.floor(Math.random() * MENU_FIGHTS.length);
     let battle: Battle, bot: BattleBot;
     const fresh = () => {
@@ -155,13 +160,7 @@ launch({
       if (n >= 4) acc = 0;
       view.syncBattle(battle, dt);
     };
-    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { view.dispose(); if (menuView === view) menuView = null; });
-  },
-  // the hero board and NEW CAMPAIGN: a row under the difficulty switch (H on the keyboard)
-  menuOption: {
-    build(scene, x, y) {
-      menuRow(scene, x, y, (cls) => { menuView?.setClass(cls); });
-    },
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => view.dispose());
   },
   // carved stone and gilded heraldry, a castle wall round the screen, the logo over a crowned shield (menu.ts)
   menuTheme: REALM_THEME,

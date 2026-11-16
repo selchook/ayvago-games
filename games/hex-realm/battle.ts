@@ -1,17 +1,22 @@
 // Hex Realm: the battle simulation. Deterministic (one seeded generator, a fixed 60 Hz step) and
 // free of drawing: the view (battleview.ts) and the Play scene read its state and its events.
-//   - The hero: move, a class combo (blows with their own hit time, reach and cone; arrows and
-//     bolts for the ranged classes, auto-aimed at the best foe ahead), a dodge with i-frames, two
-//     class skills on cooldowns, potions, the power-ups (haste, rage, shield, regen, double gold).
+//   - The hero: move, three class combos (blows with their own hit time, reach and shape; arrows
+//     and bolts for the ranged classes, auto-aimed at the best foe ahead): A the blade chain (tap),
+//     B the heavy chain (tap, tap, hold: a charged finisher with armour while it charges), C the
+//     dash strike (attack right after a roll: a lunge, a launcher, a leap); a dodge with i-frames,
+//     two class skills on cooldowns, potions, the power-ups (haste, rage, shield, regen, double
+//     gold), the Shrine's ranks (powers.ts: behaviour of every skill and finisher) and the power
+//     cards of the journey.
 //   - The foes: melee cones, archers, lunging ghouls, slamming brutes, healing acolytes, shielded
 //     knights, fire-casting cultists, three mini-bosses and three bosses with telegraphed patterns
 //     and phases. Every blow that can hurt the hero is announced first by a red zone on the ground
 //     (circle, cone, lane or ring) that fills up as the blow comes.
 //   - Rooms of waves in an arena (arena.ts), gold and power-up drops, a shrine, the result.
 import {
-  CLASS, FOE, TUNING, DODGE, POTION_HEAL, POWER_IDS, POWER_TIME, foeHpAt, foeDmgAt,
-  type ClassId, type FoeKind, type Mode, type PowerId, type Room, type Blow,
+  CLASS, FOE, TUNING, DODGE, POTION_HEAL, POWER_IDS, POWER_TIME, CHARGE_T, DASH_WINDOW, BOSS_KINDS, MINIBOSS_KINDS, foeHpAt, foeDmgAt,
+  type ClassId, type FoeKind, type Mode, type PowerId, type Room, type Blow, type ComboId, type BlowFx,
 } from './defs';
+import { trackMods, type Mods, type TrackKind } from './powers';
 import { buildArena, type ArenaLayout } from './arena';
 
 export interface HeroStats {
@@ -30,6 +35,10 @@ export interface HeroStats {
   skill1: number;
   skill2: number;
   potion: number;
+  /** The Shrine's ranks of the class's skills and finishers (powers.ts). */
+  ranks: Record<TrackKind, number>;
+  /** The power cards of the journey. */
+  cards: string[];
 }
 
 export interface BattleSetup {
@@ -44,8 +53,12 @@ export interface BattleSetup {
   tutorial?: boolean;
 }
 
-export interface Input { mx: number; mz: number; attack: boolean; dodge: boolean; skill1: boolean; skill2: boolean; potion: boolean }
-export const NO_INPUT: Input = { mx: 0, mz: 0, attack: false, dodge: false, skill1: false, skill2: false, potion: false };
+/** One step's input: presses (attack, dodge …) and `held`, ATTACK still down (the heavy chain's charge). */
+export interface Input { mx: number; mz: number; attack: boolean; held: boolean; dodge: boolean; skill1: boolean; skill2: boolean; potion: boolean }
+export const NO_INPUT: Input = { mx: 0, mz: 0, attack: false, held: false, dodge: false, skill1: false, skill2: false, potion: false };
+
+/** What a blow does besides its damage. */
+export interface HitOpts { stun?: number; breaks?: boolean; lift?: number; freeze?: number; burn?: number; root?: number; execute?: number; crit?: boolean }
 
 export type Shape = 'circle' | 'cone' | 'line' | 'ring';
 
@@ -70,12 +83,14 @@ export interface Zone {
   /** Zones that go away when their foe is stopped (melee wind-ups). */
   tied: boolean;
   done: boolean;
+  /** Hero zones: what they do besides damage. */
+  hit?: HitOpts;
 }
 
 export interface Shot {
   id: number;
   side: 'hero' | 'foe';
-  kind: 'arrow' | 'bolt' | 'fireball' | 'orb' | 'farrow' | 'knife' | 'dark';
+  kind: 'arrow' | 'bolt' | 'fireball' | 'orb' | 'farrow' | 'knife' | 'dark' | 'power' | 'hknife';
   x: number; z: number;
   vx: number; vz: number;
   dmg: number;
@@ -86,12 +101,16 @@ export interface Shot {
   hit: number[];
   crit: boolean;
   knock: number;
+  /** Hero shots: a burst on impact (radius, damage multiplier) and what a hit does. */
+  explode: number;
+  boom: number;
+  opts: HitOpts;
 }
 
-export interface Drop { id: number; kind: 'gold' | 'potion' | 'power'; power: PowerId | null; amount: number; x: number; z: number; vx: number; vz: number; t: number; magnet: boolean }
+export interface Drop { id: number; kind: 'gold' | 'potion' | 'power' | 'sigil'; power: PowerId | null; amount: number; x: number; z: number; vx: number; vz: number; t: number; magnet: boolean }
 export interface Trap { id: number; x: number; z: number; life: number; sprung: number }
 
-type HeroState = 'idle' | 'run' | 'attack' | 'dodge' | 'skill' | 'hit' | 'dead';
+type HeroState = 'idle' | 'run' | 'attack' | 'charge' | 'dodge' | 'skill' | 'hit' | 'dead';
 
 export interface Hero {
   x: number; z: number; face: number;
@@ -99,11 +118,27 @@ export interface Hero {
   hp: number;
   state: HeroState;
   t: number;
+  /** The combo under way (A chain, B heavy, C dash), its step and blow. */
+  chain: ComboId;
   combo: number;
   blow: Blow | null;
   struck: boolean;
   buffered: boolean;
   comboT: number;
+  /** ATTACK held for (s); the heavy finisher's charge (s) and whether it is full. */
+  heldT: number;
+  chargeT: number;
+  charged: boolean;
+  /** The dash strike's window after a roll; an attack pressed during the roll. */
+  dashWin: number;
+  dashQueued: boolean;
+  /** A leap's length and the hero's height off the ground (view). */
+  leapD: number;
+  air: number;
+  /** A finisher's echo (a second strike a moment later). */
+  echo: { t: number; blow: Blow; mult: number; wide: number } | null;
+  /** The Last Breath card was used this battle. */
+  phoenix: boolean;
   dodgeCd: number;
   dodgeDir: number;
   invuln: number;
@@ -165,10 +200,16 @@ export interface Foe {
   gold: number;
   /** Damage taken this fight (the healthbar's ghost reads hp). */
   healCd: number;
+  /** Thrown into the air: seconds left of the flight and its length (view). */
+  lift: number;
+  liftMax: number;
 }
 
 export type BattleEvent =
-  | { type: 'swing'; blow: number; finisher: boolean; x: number; z: number; face: number }
+  | { type: 'swing'; blow: number; finisher: boolean; chain: ComboId; len: number; fx: BlowFx; x: number; z: number; face: number }
+  | { type: 'strike'; fx: BlowFx; chain: ComboId; finisher: boolean; x: number; z: number; face: number; r: number; n: number; wave?: number }
+  | { type: 'charge'; full: boolean; x: number; z: number }
+  | { type: 'lastStand'; x: number; z: number }
   | { type: 'shot'; kind: Shot['kind']; side: 'hero' | 'foe'; x: number; z: number }
   | { type: 'hit'; id: number; x: number; z: number; dmg: number; crit: boolean; heavy: boolean; src: string }
   | { type: 'kill'; id: number; kind: FoeKind; x: number; z: number; boss: boolean }
@@ -238,6 +279,13 @@ export class Battle {
   bossesKilled: FoeKind[] = [];
   potionsUsed = 0;
   damageTaken = 0;
+  /** Sigils picked up (the Shrine's currency). */
+  sigils = 0;
+  /** The finishers landed this battle (first-time hints, the tutorial). */
+  finishers: ComboId[] = [];
+  /** The cards held (a set) and the Shrine's mods of the class's moves. */
+  private cardSet: Set<string>;
+  private mods: Record<TrackKind, Mods>;
   over: 'won' | 'lost' | null = null;
   /** Training: foes do not strike until released. */
   passive = false;
@@ -257,17 +305,28 @@ export class Battle {
     this.seed = setup.seed;
     this.rng = makeRng(setup.seed);
     this.passive = !!setup.tutorial;
+    this.cardSet = new Set(setup.stats.cards ?? []);
+    const ranks = setup.stats.ranks ?? { skill1: 0, skill2: 0, chain: 0, heavy: 0, dash: 0 };
+    this.mods = Object.fromEntries((['skill1', 'skill2', 'chain', 'heavy', 'dash'] as TrackKind[]).map((k) => [k, trackMods(setup.stats.cls, k, ranks[k] ?? 0)])) as Record<TrackKind, Mods>;
     const powers = Object.fromEntries(POWER_IDS.map((p) => [p, 0])) as Record<PowerId, number>;
     this.hero = {
       x: 0, z: 0, face: Math.PI, vx: 0, vz: 0, hp: Math.max(1, Math.min(setup.stats.maxHp, setup.hp)), state: 'idle', t: 0,
-      combo: 0, blow: null, struck: false, buffered: false, comboT: 0, dodgeCd: 0, dodgeDir: 0, invuln: 0,
+      chain: 'chain', combo: 0, blow: null, struck: false, buffered: false, comboT: 0, heldT: 0, chargeT: 0, charged: false,
+      dashWin: 0, dashQueued: false, leapD: 0, air: 0, echo: null, phoenix: false, dodgeCd: 0, dodgeDir: 0, invuln: 0,
       skillCd: [0, 0], skill: 0, skillTick: 0, skillHits: 0, potions: setup.potions, potionCd: 0, powers, shieldHits: 0,
       regen: 0, hidden: 0, critNext: 0, anim: this.cls.idle, animN: 0, animSpeed: 1, moving: 0,
     };
+    // the Guardian Ward card: every battle starts behind a two-hit ward
+    if (this.has('ward')) this.hero.shieldHits = 2;
     this.enterRoom(0);
   }
 
   get roomDef(): Room { return this.rooms[this.room]; }
+  /** A power card is held. */
+  has(card: string): boolean { return this.cardSet.has(card); }
+  /** The Shrine's mods of a finisher or a skill. */
+  finMods(c: ComboId): Mods { return this.mods[c]; }
+  skillMods(n: 1 | 2): Mods { return this.mods[n === 1 ? 'skill1' : 'skill2']; }
   get bossFight(): boolean { return !!this.roomDef.boss; }
 
   private emit(e: BattleEvent): void { this.events.push(e); }
@@ -327,7 +386,7 @@ export class Battle {
       kx: 0, kz: 0, stun: 0, freeze: 0, root: 0, blind: 0, burn: 0, atk: '', aim: 0, ax: 0, az: 0, step: 0,
       pat: 0, phase: 1, called: 0, guard: 0, blocks: 0, wander: this.rng() * TAU, anim: 'Idle', animN: 0, animSpeed: 1, deadT: 0,
       xp: Math.round(d.xp * (1 + 0.25 * (lvl - 1)) * this.tune.xp),
-      gold: Math.round(d.gold * (1 + 0.2 * (lvl - 1)) * this.tune.gold), healCd: 4,
+      gold: Math.round(d.gold * (1 + 0.2 * (lvl - 1)) * this.tune.gold), healCd: 4, lift: 0, liftMax: 0,
     };
     f.radius = d.radius;
     f.face = faceOf(this.hero.x - x, this.hero.z - z);
@@ -399,10 +458,15 @@ export class Battle {
     h.animSpeed = speed;
   }
 
-  /** Damage multiplier of the hero right now. */
-  private heroMult(): number { return this.hero.powers.rage > 0 ? 1.5 : 1; }
+  /** Damage multiplier of the hero right now (rage, the Berserker card). */
+  private heroMult(): number {
+    const h = this.hero;
+    return (h.powers.rage > 0 ? 1.5 : 1) * (this.has('berserk') && h.hp < this.st.maxHp * 0.5 ? 1.25 : 1);
+  }
 
   private hasteK(): number { return this.hero.powers.haste > 0 ? 1.3 : 1; }
+  /** Attack speed: haste and the Tempo card. */
+  private atkK(): number { return this.hasteK() * (this.has('tempo') ? 1.1 : 1); }
 
   private updateHero(dt: number, inp: Input): void {
     const h = this.hero;
@@ -411,14 +475,26 @@ export class Battle {
     h.invuln = Math.max(0, h.invuln - dt);
     h.potionCd = Math.max(0, h.potionCd - dt);
     h.hidden = Math.max(0, h.hidden - dt);
+    h.dashWin = Math.max(0, h.dashWin - dt);
+    h.heldT = inp.held ? h.heldT + dt : 0;
     h.skillCd[0] = Math.max(0, h.skillCd[0] - dt);
     h.skillCd[1] = Math.max(0, h.skillCd[1] - dt);
     for (const p of POWER_IDS) if (h.powers[p] > 0) { h.powers[p] = Math.max(0, h.powers[p] - dt); if (p === 'shield' && h.powers[p] <= 0) h.shieldHits = 0; }
-    if (h.state === 'dead') { h.vx = h.vz = 0; return; }
-    // regeneration (power-up, the cleric's light)
-    const regen = (h.powers.regen > 0 ? 0.03 : 0) + (h.regen > 0 ? 0.03 : 0);
+    if (h.state === 'dead') { h.vx = h.vz = 0; h.air = 0; return; }
+    // regeneration (power-up, the cleric's light, the Holy Aura card)
+    const regen = (h.powers.regen > 0 ? 0.03 : 0) + (h.regen > 0 ? 0.03 : 0) + (this.has('aura') ? 0.01 : 0);
     h.regen = Math.max(0, h.regen - dt);
     if (regen > 0) h.hp = Math.min(this.st.maxHp, h.hp + this.st.maxHp * regen * dt);
+    // a finisher's echo
+    if (h.echo) {
+      h.echo.t -= dt;
+      if (h.echo.t <= 0) {
+        const e = h.echo;
+        h.echo = null;
+        const n = this.hitShape(e.blow, e.mult, h.x, h.z, h.face, e.wide, { stun: e.blow.stun, freeze: e.blow.freeze }, 'echo');
+        this.emit({ type: 'strike', fx: e.blow.fx, chain: h.chain, finisher: true, x: h.x, z: h.z, face: h.face, r: e.blow.range * e.wide, n });
+      }
+    }
 
     if (inp.potion) this.drinkPotion();
     const mlen = Math.hypot(inp.mx, inp.mz);
@@ -426,15 +502,22 @@ export class Battle {
     const speed = this.cls.speed * (1 + this.st.speed) * this.hasteK();
 
     // inputs that may start a new action
-    const canAct = h.state === 'idle' || h.state === 'run' || (h.state === 'attack' && h.blow !== null && h.t >= h.blow.hit);
-    if (inp.dodge && h.dodgeCd <= 0 && (canAct || h.state === 'attack' || (h.state === 'skill' && h.t > 0.25) || h.state === 'hit')) { this.startDodge(mx, mz); }
-    else if ((inp.skill1 || inp.skill2) && (canAct || h.state === 'hit')) {
+    const canAct = h.state === 'idle' || h.state === 'run' || (h.state === 'attack' && h.blow !== null && h.t >= h.blow.hit / this.atkK());
+    const midLeap = h.state === 'attack' && !!h.blow?.leap && h.air > 0;
+    if (inp.dodge && h.dodgeCd <= 0 && !midLeap && (canAct || h.state === 'attack' || h.state === 'charge' || (h.state === 'skill' && h.t > 0.25) || h.state === 'hit')) { this.startDodge(mx, mz); }
+    else if ((inp.skill1 || inp.skill2) && (canAct || h.state === 'hit' || h.state === 'charge')) {
       const k = inp.skill1 ? 0 : 1;
       if (h.skillCd[k] <= 0) this.startSkill((k + 1) as 1 | 2, mx, mz);
     }
     if (inp.attack) {
       if (h.state === 'attack') h.buffered = true;
-      else if (h.state === 'idle' || h.state === 'run') this.startBlow(0, mx, mz);
+      else if (h.state === 'dodge') h.dashQueued = h.t > DODGE.time * 0.3;
+      else if (h.state === 'idle' || h.state === 'run') {
+        // right after a roll: the dash strike; soon after a blow: the chain goes on; else a fresh chain
+        if (h.dashWin > 0) this.startBlow('dash', 0, mx, mz);
+        else if (h.combo > 0 && h.comboT < 0.38) this.nextBlow(h.combo, inp, mx, mz);
+        else this.startBlow('chain', 0, mx, mz);
+      }
     }
 
     switch (h.state) {
@@ -453,30 +536,50 @@ export class Battle {
           h.moving = 0;
         }
         h.comboT += dt;
-        if (h.comboT > 0.6) h.combo = 0;
+        if (h.comboT > 0.38) h.combo = 0;
         break;
       }
       case 'attack': {
         const b = h.blow!;
-        const k = this.hasteK();
-        // a slow step while swinging, the lunge at the start
-        const lunge = h.t < 0.12 ? b.lunge * 7 : 0;
-        h.vx = Math.sin(h.face) * lunge + mx * speed * 0.22;
-        h.vz = Math.cos(h.face) * lunge + mz * speed * 0.22;
-        if (!h.struck && h.t >= b.hit / k) { h.struck = true; this.strike(b); }
-        if (h.t >= b.dur / k) {
-          const next = h.combo + 1;
-          if (h.buffered && next < this.cls.combo.length) this.startBlow(next, mx, mz);
-          else if (h.buffered) this.startBlow(0, mx, mz);
-          else { h.combo = next >= this.cls.combo.length ? 0 : next; h.comboT = 0; this.setHeroState('idle'); h.blow = null; }
+        const k = this.atkK();
+        if (b.leap) {
+          // airborne: an arc to the landing spot, the ring when the feet touch down
+          const tl = b.hit / k;
+          if (h.t < tl) {
+            const v = h.leapD / tl;
+            h.vx = Math.sin(h.face) * v; h.vz = Math.cos(h.face) * v;
+            h.air = Math.sin(Math.PI * Math.min(1, h.t / tl)) * 1.7;
+          } else { h.vx = h.vz = 0; h.air = 0; }
+        } else {
+          // a step while swinging, the lunge at the start
+          const lunge = h.t < 0.12 ? b.lunge * 7 : 0;
+          h.vx = Math.sin(h.face) * lunge + mx * speed * 0.22;
+          h.vz = Math.cos(h.face) * lunge + mz * speed * 0.22;
         }
+        if (!h.struck && h.t >= b.hit / k) { h.struck = true; h.air = 0; this.strike(b); }
+        if (h.t >= b.dur / k) this.nextBlow(h.combo + 1, inp, mx, mz);
+        break;
+      }
+      case 'charge': {
+        // the heavy finisher winds up while ATTACK is held: rooted, turning slowly with the stick
+        h.vx = h.vz = 0;
+        if (Math.hypot(mx, mz) > 0.3) h.face = turn(h.face, faceOf(mx, mz), dt * 5);
+        h.chargeT += dt;
+        const need = CHARGE_T * (this.has('quick') ? 0.5 : 1);
+        if (!h.charged && h.chargeT >= need) { h.charged = true; this.emit({ type: 'charge', full: true, x: h.x, z: h.z }); }
+        // let go: the charged finisher, or (too soon) the chain's own third blow
+        if (!inp.held || h.chargeT >= need + 0.9) this.startBlow(h.charged ? 'heavy' : 'chain', 2, mx, mz);
         break;
       }
       case 'dodge': {
         const k = 1 - h.t / DODGE.time;
         const v = (DODGE.dist / DODGE.time) * (0.55 + k * 0.9);
         h.vx = Math.sin(h.dodgeDir) * v; h.vz = Math.cos(h.dodgeDir) * v;
-        if (h.t >= DODGE.time) { this.setHeroState('idle'); h.vx = h.vz = 0; }
+        if (h.t >= DODGE.time) {
+          this.setHeroState('idle'); h.vx = h.vz = 0;
+          h.dashWin = DASH_WINDOW + (this.has('wind') ? 0.3 : 0);
+          if (h.dashQueued) { h.dashQueued = false; this.startBlow('dash', 0, mx, mz); }
+        }
         break;
       }
       case 'skill': this.updateSkill(dt, mx, mz, speed); break;
@@ -518,71 +621,202 @@ export class Battle {
     return best;
   }
 
-  private startBlow(i: number, mx: number, mz: number): void {
+  private list(c: ComboId): Blow[] { return this.cls.combos[c]; }
+
+  /** A blow ended (or a press came soon after): the next blow, the heavy charge, or rest. */
+  private nextBlow(next: number, inp: Input, mx: number, mz: number): void {
     const h = this.hero;
-    const b = this.cls.combo[i];
+    const list = this.list(h.chain);
+    const go = h.buffered || inp.held || inp.attack;
+    if (go && next < list.length) {
+      // the third blow of the chain with ATTACK held: the heavy finisher charges instead
+      if (h.chain === 'chain' && next === 2 && inp.held) this.startCharge();
+      else this.startBlow(h.chain, next, mx, mz);
+    } else if (go) this.startBlow('chain', 0, mx, mz);
+    else {
+      h.combo = next < list.length ? next : 0;
+      h.comboT = 0;
+      h.blow = null;
+      this.setHeroState('idle');
+    }
+  }
+
+  private startCharge(): void {
+    const h = this.hero;
+    const b = this.list('heavy')[2];
+    h.chain = 'heavy';
+    h.combo = 2;
+    h.blow = null;
+    h.buffered = false;
+    h.chargeT = 0;
+    h.charged = false;
+    this.setHeroState('charge', b.charge?.anim ?? b.anim, (b.charge?.speed ?? 0.12) * this.atkK());
+    this.emit({ type: 'charge', full: false, x: h.x, z: h.z });
+  }
+
+  private startBlow(chain: ComboId, i: number, mx: number, mz: number): void {
+    const h = this.hero;
+    const list = this.list(chain);
+    const b = list[i];
+    h.chain = chain;
     h.combo = i;
     h.blow = b;
     h.struck = false;
     h.buffered = false;
-    const t = this.aimTarget(this.cls.ranged ? b.range : 3.4, mx, mz);
+    h.charged = false;
+    h.chargeT = 0;
+    h.dashWin = 0;
+    const reach = this.cls.ranged || b.rain ? Math.max(b.range, 11) : b.leap ? b.leap + 2.6 : b.shape === 'line' ? b.range + 0.6 : 3.4;
+    const t = this.aimTarget(reach, mx, mz);
     if (t) h.face = faceOf(t.x - h.x, t.z - h.z);
     else if (Math.hypot(mx, mz) > 0.3) h.face = faceOf(mx, mz);
-    this.setHeroState('attack', b.anim, b.speed * this.hasteK());
-    this.emit({ type: 'swing', blow: i, finisher: i === this.cls.combo.length - 1, x: h.x, z: h.z, face: h.face });
+    if (b.leap) {
+      // land just short of the target (never further than the leap)
+      const d = t ? Math.hypot(t.x - h.x, t.z - h.z) - t.radius - 0.5 : b.leap;
+      h.leapD = Math.max(0.8, Math.min(b.leap, d));
+    }
+    this.setHeroState('attack', b.anim, b.speed * this.atkK());
+    this.emit({ type: 'swing', blow: i, finisher: i === list.length - 1, chain, len: list.length, fx: b.fx, x: h.x, z: h.z, face: h.face });
   }
 
-  private rollDamage(mult: number): { dmg: number; crit: boolean } {
+  private rollDamage(mult: number, forceCrit = false): { dmg: number; crit: boolean } {
     const h = this.hero;
-    let crit = this.rng() < this.st.crit;
+    let crit = forceCrit || this.rng() < this.st.crit;
     if (h.critNext > 0) { crit = true; h.critNext--; }
     const v = 0.9 + this.rng() * 0.2;
     return { dmg: this.st.atk * mult * this.heroMult() * v * (crit ? 1.8 : 1), crit };
   }
 
-  /** The blow lands: a cone for melee, arrows and bolts for the ranged classes. */
+  /** The blow lands: its shape (cone, all round, a lane), its shots or its rain, a finisher's extras. */
   private strike(b: Blow): void {
     const h = this.hero;
-    if (b.shots) {
-      const n = b.shots;
-      for (let i = 0; i < n; i++) {
-        const a = h.face + (n > 1 ? (i - (n - 1) / 2) * 0.2 : 0);
-        const { dmg, crit } = this.rollDamage(b.dmg);
-        this.fire('hero', this.cls.shot ?? 'arrow', h.x + Math.sin(a) * 0.5, h.z + Math.cos(a) * 0.5, a, this.cls.shot === 'bolt' ? 15 : 19, dmg, b.range, { pierce: !!b.pierce, crit, knock: b.knock });
-      }
+    const fin = h.combo === this.list(h.chain).length - 1;
+    const m: Mods = fin ? this.finMods(h.chain) : {};
+    const mult = b.dmg * (m.dmg ?? 1) * (fin && this.has('finale') ? 1.25 : 1);
+    const wide = m.wide ?? 1;
+    const o: HitOpts = {
+      stun: (b.stun ?? 0) + (m.stun ?? 0), freeze: b.freeze, lift: b.lift ?? m.lift, breaks: b.breaks || m.breaks, crit: b.crit,
+      burn: Math.max(m.burn ?? 0, fin && this.has('ember') ? 3 : 0), execute: m.execute, root: m.root,
+    };
+    if (fin) { if (!this.finishers.includes(h.chain)) this.finishers.push(h.chain); }
+    let n = 0;
+    if (b.rain) {
+      // an arrow rain or a meteor on the best target ahead (or ahead of the hero)
+      const tg = this.aimTarget(12, 0, 0);
+      const x = tg ? tg.x : h.x + Math.sin(h.face) * 5, z = tg ? tg.z : h.z + Math.cos(h.face) * 5;
+      const kind = b.fx === 'meteor' ? 'meteor' : 'rain';
+      this.heroZone('circle', x, z, b.rain * wide, 0.5, mult, b.knock, o.stun ?? 0, kind, o);
+      if (m.again) this.heroZone('circle', x + (this.rng() - 0.5) * 2, z + (this.rng() - 0.5) * 2, b.rain * wide, 1.1, mult * 0.8, b.knock, o.stun ?? 0, kind, o);
+      this.emit({ type: 'strike', fx: b.fx, chain: h.chain, finisher: fin, x, z, face: h.face, r: b.rain * wide, n: 0 });
       return;
     }
-    this.coneHit(h.x, h.z, h.face, b.range, b.arc, b.dmg, b.knock, 'melee', b.knock >= 1.5 ? 0.35 : 0);
+    if (b.shots) {
+      const shots = b.shots + (m.shots ?? 0);
+      const spread = b.spread ?? 0.2;
+      const kind = b.fx === 'power' ? 'power' : this.cls.shot ?? 'arrow';
+      const pierce = !!b.pierce || !!m.pierce || (this.has('ricochet') && kind === 'arrow');
+      const so: HitOpts = { ...o };
+      if (this.has('frostbite') && kind === 'bolt') so.freeze = Math.max(so.freeze ?? 0, 0.5);
+      for (let i = 0; i < shots; i++) {
+        const a = h.face + (shots > 1 ? (i - (shots - 1) / 2) * (spread * (shots > 3 ? 0.75 : 1)) : 0);
+        const { dmg, crit } = this.rollDamage(mult, b.crit);
+        const sp = kind === 'bolt' ? 15 : kind === 'power' ? 24 : 19;
+        this.fire('hero', kind, h.x + Math.sin(a) * 0.5, h.z + Math.cos(a) * 0.5, a, sp, dmg, b.range, { pierce, crit, knock: b.knock, explode: m.explode ?? 0, boom: mult * 0.6, opts: so, r: kind === 'power' ? 0.45 * wide : undefined });
+      }
+      this.emit({ type: 'strike', fx: b.fx, chain: h.chain, finisher: fin, x: h.x, z: h.z, face: h.face, r: 1, n: 0 });
+      return;
+    }
+    if (m.pull) this.pull(h.x, h.z, b.range * wide + 2.6);
+    n = this.hitShape(b, mult, h.x, h.z, h.face, wide, o, 'melee');
+    if (b.wave) {
+      // the shockwave lane ahead (Cleave, Iron Palm, the Arcane Lance), or a ring (Iron Palm III)
+      if (m.ring) this.heroZone('circle', h.x, h.z, 4.2 * wide, 0.06, mult * 0.6, b.knock * 0.7, o.stun ?? 0, b.fx, o);
+      else {
+        const w = (b.fx === 'lance' ? b.arc : 1.6) * wide;
+        this.heroZone('line', h.x, h.z, 0, 0.08, mult * (b.fx === 'lance' ? 1 : 0.6), b.knock * 0.6, o.stun ?? 0, b.fx, o, { a: w, len: b.wave * wide, ang: h.face });
+      }
+    }
     if (b.burst) {
-      this.emit({ type: 'boom', kind: 'holy', x: h.x + Math.sin(h.face) * 1.4, z: h.z + Math.cos(h.face) * 1.4, r: b.burst });
-      this.circleHit(h.x + Math.sin(h.face) * 1.4, h.z + Math.cos(h.face) * 1.4, b.burst, b.dmg * 0.5, 1.2, 'holy', 0);
+      const bx = h.x + Math.sin(h.face) * 1.4, bz = h.z + Math.cos(h.face) * 1.4;
+      this.emit({ type: 'boom', kind: 'holy', x: bx, z: bz, r: b.burst * wide });
+      this.circleHit(bx, bz, b.burst * wide, mult * 0.5, 1.2, 'holy', 0);
+    }
+    // the rogue's knives round a Blade Dance
+    if (m.shots && !b.shots) {
+      for (let i = 0; i < m.shots; i++) {
+        const a = h.face + (i / m.shots) * Math.PI * 2;
+        const { dmg, crit } = this.rollDamage(mult * 0.45);
+        this.fire('hero', 'hknife', h.x + Math.sin(a) * 0.5, h.z + Math.cos(a) * 0.5, a, 16, dmg, 7, { pierce: true, crit, knock: 0.5 });
+      }
+    }
+    if (m.heal) {
+      const k = b.leap ? m.heal : m.heal * Math.min(4, n);
+      if (k > 0) { h.hp = Math.min(this.st.maxHp, h.hp + this.st.maxHp * k); this.emit({ type: 'heal', amount: Math.round(this.st.maxHp * k), x: h.x, z: h.z }); }
+    }
+    if (fin && this.has('chi')) { h.hp = Math.min(this.st.maxHp, h.hp + this.st.maxHp * 0.04); this.emit({ type: 'heal', amount: Math.round(this.st.maxHp * 0.04), x: h.x, z: h.z }); }
+    if (m.hide) h.hidden = Math.max(h.hidden, m.hide);
+    if (fin && (m.twice || this.has('echo'))) h.echo = { t: 0.32, blow: b, mult: mult * (m.twice ? 0.6 : 0.4), wide };
+    this.emit({ type: 'strike', fx: b.fx, chain: h.chain, finisher: fin, x: h.x, z: h.z, face: h.face, r: b.range * wide, n, wave: b.wave ? b.wave * wide * (m.ring ? 0 : 1) : 0 });
+  }
+
+  /** A blow's own shape at a spot: all round, a lane ahead or a cone; returns the foes hit. */
+  private hitShape(b: Blow, mult: number, x: number, z: number, face: number, wide: number, o: HitOpts, src: string): number {
+    if (b.shape === 'circle') return this.circleHit(x, z, b.range * wide, mult, b.knock, src, o.stun ?? 0, undefined, o);
+    if (b.shape === 'line') return this.lineHit(x, z, face, b.range * wide, b.arc * wide, mult, b.knock, src, o);
+    return this.coneHit(x, z, face, b.range * wide, b.arc, mult, b.knock, src, (o.stun ?? 0) || (b.knock >= 1.5 ? 0.35 : 0), o);
+  }
+
+  /** Draws the foes round a spot in towards it (Whirl, Tornado Kick). */
+  private pull(x: number, z: number, r: number): void {
+    for (const f of this.foes) {
+      if (f.state === 'dead' || f.state === 'spawn' || f.boss || FOE[f.kind].ai === 'boss') continue;
+      const dx = x - f.x, dz = z - f.z, d = Math.hypot(dx, dz);
+      if (d > r || d < 1.2) continue;
+      const k = (d - 1.1) / d;
+      this.moveCircle(f, dx * k * 0.85, dz * k * 0.85, f.radius);
     }
   }
 
   /** Hits every foe in a cone (melee): returns how many. */
-  private coneHit(x: number, z: number, face: number, range: number, arc: number, mult: number, knock: number, src: string, stun: number): number {
+  private coneHit(x: number, z: number, face: number, range: number, arc: number, mult: number, knock: number, src: string, stun: number, o: HitOpts = {}): number {
     let n = 0;
     for (const f of this.foes) {
       if (f.state === 'dead' || f.state === 'spawn') continue;
       const dx = f.x - x, dz = f.z - z, d = Math.hypot(dx, dz);
       if (d > range + f.radius) continue;
       if (d > f.radius + 0.3 && Math.abs(angDiff(faceOf(dx, dz), face)) > arc / 2) continue;
-      const { dmg, crit } = this.rollDamage(mult);
-      this.damageFoe(f, dmg, crit, faceOf(dx, dz), knock, src, stun);
+      const { dmg, crit } = this.rollDamage(mult, o.crit);
+      this.damageFoe(f, dmg, crit, faceOf(dx, dz), knock, src, stun, o);
       n++;
     }
     return n;
   }
 
-  private circleHit(x: number, z: number, r: number, mult: number, knock: number, src: string, stun: number, extra?: (f: Foe) => void): number {
+  /** Hits every foe in a lane ahead (thrusts, lunges). */
+  private lineHit(x: number, z: number, face: number, len: number, width: number, mult: number, knock: number, src: string, o: HitOpts = {}): number {
+    let n = 0;
+    const ux = Math.sin(face), uz = Math.cos(face);
+    for (const f of this.foes) {
+      if (f.state === 'dead' || f.state === 'spawn') continue;
+      const dx = f.x - x, dz = f.z - z;
+      const along = dx * ux + dz * uz, side = Math.abs(dx * uz - dz * ux);
+      if (along < -0.4 || along > len + f.radius || side > width / 2 + f.radius) continue;
+      const { dmg, crit } = this.rollDamage(mult, o.crit);
+      this.damageFoe(f, dmg, crit, face, knock, src, o.stun ?? 0, o);
+      n++;
+    }
+    return n;
+  }
+
+  private circleHit(x: number, z: number, r: number, mult: number, knock: number, src: string, stun: number, extra?: (f: Foe) => void, o: HitOpts = {}): number {
     let n = 0;
     for (const f of this.foes) {
       if (f.state === 'dead' || f.state === 'spawn') continue;
       const dx = f.x - x, dz = f.z - z;
       if (Math.hypot(dx, dz) > r + f.radius) continue;
       if (mult > 0) {
-        const { dmg, crit } = this.rollDamage(mult);
-        this.damageFoe(f, dmg, crit, faceOf(dx, dz), knock, src, stun);
+        const { dmg, crit } = this.rollDamage(mult, o.crit);
+        this.damageFoe(f, dmg, crit, faceOf(dx, dz), knock, src, stun, o);
       } else if (knock) { f.kx += Math.sin(faceOf(dx, dz)) * knock * 3; f.kz += Math.cos(faceOf(dx, dz)) * knock * 3; }
       extra?.(f);
       n++;
@@ -591,27 +825,45 @@ export class Battle {
   }
 
   /** A blow of the hero's lands on a foe. */
-  damageFoe(f: Foe, dmg: number, crit: boolean, dir: number, knock: number, src: string, stun = 0): void {
+  damageFoe(f: Foe, dmg: number, crit: boolean, dir: number, knock: number, src: string, stun = 0, o: HitOpts = {}): void {
     if (f.state === 'dead') return;
-    // a knight's shield and a lord's guard turn frontal blows
+    const big = f.boss || FOE[f.kind].ai === 'boss';
+    // a knight's shield and a lord's guard turn frontal blows (a heavy finisher breaks them at once)
     const front = Math.abs(angDiff(dir + Math.PI, f.face)) < 1.05;
     if ((FOE[f.kind].ai === 'shield' || f.guard > 0) && front && f.stun <= 0 && f.freeze <= 0 && src !== 'burn' && src !== 'trap') {
-      dmg *= f.guard > 0 ? 0.15 : 0.4;
-      knock *= 0.3;
-      // a guard breaks after a few blocked blows: stunned, open
-      f.blocks++;
-      const broke = f.blocks >= (f.guard > 0 ? 6 : 4);
-      if (broke) { f.blocks = 0; f.guard = 0; f.stun = Math.max(f.stun, f.boss ? 1.2 : 1.6); this.cancelZones(f.id); }
-      this.emit({ type: 'block', x: f.x, z: f.z, broke });
+      if (o.breaks) {
+        f.blocks = 0; f.guard = 0; f.stun = Math.max(f.stun, big ? 1.2 : 1.6); this.cancelZones(f.id);
+        this.emit({ type: 'block', x: f.x, z: f.z, broke: true });
+      } else {
+        dmg *= f.guard > 0 ? 0.15 : 0.4;
+        knock *= 0.3;
+        // a guard breaks after a few blocked blows: stunned, open
+        f.blocks++;
+        const broke = f.blocks >= (f.guard > 0 ? 6 : 4);
+        if (broke) { f.blocks = 0; f.guard = 0; f.stun = Math.max(f.stun, f.boss ? 1.2 : 1.6); this.cancelZones(f.id); }
+        this.emit({ type: 'block', x: f.x, z: f.z, broke });
+      }
+    }
+    // frozen foes shatter (Frost Nova III); the Executioner card; Eviscerate III
+    if (f.freeze > 0 && this.skillMods(2).shatter && this.cls.skills[1].id === 'nova') dmg *= 1.5;
+    if (this.has('execute') && f.hp < f.maxHp * 0.3) dmg *= 1.4;
+    if (o.execute) {
+      if (big) dmg *= 1.5;
+      else if (f.hp - dmg < f.maxHp * o.execute) dmg = Math.max(dmg, f.hp);
     }
     f.hp -= dmg;
     const heavy = knock >= 1.5 || crit;
     if (this.st.leech > 0 && src !== 'burn') this.hero.hp = Math.min(this.st.maxHp, this.hero.hp + dmg * this.st.leech);
-    const big = f.boss || FOE[f.kind].ai === 'boss';
     const kres = big ? 0.15 : FOE[f.kind].ai === 'slam' ? 0.4 : 1;
     f.kx += Math.sin(dir) * knock * 3 * kres;
     f.kz += Math.cos(dir) * knock * 3 * kres;
     if (stun > 0) f.stun = Math.max(f.stun, big ? stun * 0.35 : stun);
+    if (o.freeze) f.freeze = Math.max(f.freeze, o.freeze * (big ? 0.35 : 1));
+    if (o.root) f.root = Math.max(f.root, o.root * (big ? 0.4 : 1));
+    const burn = Math.max(o.burn ?? 0, this.has('venom') && src !== 'burn' ? 1.5 : 0);
+    if (burn > 0) f.burn = Math.max(f.burn, burn);
+    // thrown into the air: light foes fly and cannot act until they land
+    if (o.lift && !big && FOE[f.kind].ai !== 'slam' && FOE[f.kind].ai !== 'shield') { f.lift = f.liftMax = o.lift; f.stun = Math.max(f.stun, o.lift); }
     this.emit({ type: 'hit', id: f.id, x: f.x, z: f.z, dmg: Math.round(dmg), crit, heavy, src });
     if (f.hp <= 0) { this.killFoe(f); return; }
     // a flinch: breaks wind-ups of the small ones on a heavy blow
@@ -626,6 +878,7 @@ export class Battle {
     f.hp = 0;
     f.state = 'dead';
     f.t = 0;
+    f.lift = 0;
     f.anim = 'Death'; f.animN++; f.animSpeed = 1.2;
     this.cancelZones(f.id);
     this.kills++;
@@ -633,12 +886,23 @@ export class Battle {
     const isBoss = f.boss;
     if (isBoss) this.bossesKilled.push(f.kind);
     this.emit({ type: 'kill', id: f.id, kind: f.kind, x: f.x, z: f.z, boss: isBoss });
-    // gold, now and then a potion or a power-up
+    const h = this.hero;
+    // the cards that feed on kills
+    if (this.has('vamp') && h.state !== 'dead') { const a = this.st.maxHp * 0.03; h.hp = Math.min(this.st.maxHp, h.hp + a); }
+    if (this.has('bloodlust')) { h.skillCd[0] = Math.max(0, h.skillCd[0] - 1); h.skillCd[1] = Math.max(0, h.skillCd[1] - 1); }
+    if (this.has('kindle')) for (const p of POWER_IDS) if (h.powers[p] > 0) h.powers[p] += 1.5;
+    if (h.state === 'skill' && this.skillDef(h.skill as 1 | 2)?.id === 'dash' && this.skillMods(1).reset) h.skillCd[0] = 0;
+    // gold, now and then a potion or a power-up; Sigils from bosses, mini-bosses and elites
     const coins = Math.min(isBoss ? 12 : 4, 1 + Math.floor(f.gold / 6));
     for (let i = 0; i < coins; i++) this.dropAt('gold', f.x, f.z, Math.max(1, Math.round(f.gold / coins)), null);
     const r = this.rng();
     if (r < (isBoss ? 1 : 0.07)) this.dropAt('power', f.x, f.z, 1, POWER_IDS[Math.floor(this.rng() * POWER_IDS.length)]);
     else if (r < 0.1) this.dropAt('potion', f.x, f.z, 1, null);
+    const major = BOSS_KINDS.includes(f.kind), mini = MINIBOSS_KINDS.includes(f.kind);
+    const elite = FOE[f.kind].ai === 'slam' || FOE[f.kind].ai === 'shield';
+    let sig = major ? 2 : mini ? 1 : elite && this.rng() < 0.06 * (this.has('sigil') ? 2 : 1) ? 1 : 0;
+    if ((major || mini) && this.has('sigil')) sig++;
+    for (let i = 0; i < sig; i++) this.dropAt('sigil', f.x, f.z, 1, null);
     if (isBoss) { for (const o of this.foes) if (o !== f && o.state !== 'dead') this.killFoe(o); this.zones = this.zones.filter((z) => z.side === 'hero'); this.shots = this.shots.filter((s) => s.side === 'hero'); }
   }
 
@@ -650,12 +914,17 @@ export class Battle {
   private startDodge(mx: number, mz: number): void {
     const h = this.hero;
     const dir = Math.hypot(mx, mz) > 0.2 ? faceOf(mx, mz) : h.face;
+    // the Frost Step card: the roll leaves a patch of frost where it started
+    if (this.has('frost')) this.heroZone('circle', h.x, h.z, 2.0, 0.2, 0.3, 0, 0, 'frostpatch', { freeze: 1.2 });
     h.dodgeDir = dir;
     h.face = dir;
     h.blow = null;
     h.buffered = false;
     h.combo = 0;
-    h.dodgeCd = DODGE.cd + DODGE.time;
+    h.charged = false;
+    h.dashQueued = false;
+    h.air = 0;
+    h.dodgeCd = DODGE.cd * (this.has('wind') ? 0.65 : 1) + DODGE.time;
     h.invuln = Math.max(h.invuln, DODGE.iframes);
     this.setHeroState('dodge', this.cls.dodgeAnim, this.cls.dodgeAnim === 'Roll' ? 2.4 : 2.2);
     this.emit({ type: 'dodge', x: h.x, z: h.z });
@@ -667,8 +936,10 @@ export class Battle {
     h.potions--;
     h.potionCd = 1;
     this.potionsUsed++;
-    const amount = this.st.maxHp * (POTION_HEAL + 0.1 * this.st.potion);
+    const alch = this.has('alchemist');
+    const amount = this.st.maxHp * (POTION_HEAL + 0.1 * this.st.potion + (alch ? 0.15 : 0));
     h.hp = Math.min(this.st.maxHp, h.hp + amount);
+    if (alch) h.shieldHits = Math.max(h.shieldHits, 3);
     this.emit({ type: 'potion', x: h.x, z: h.z });
     this.emit({ type: 'heal', amount: Math.round(amount), x: h.x, z: h.z });
     return true;
@@ -678,58 +949,81 @@ export class Battle {
 
   private skillDef(n: 1 | 2) { return this.cls.skills[n - 1]; }
   private rank(n: 1 | 2): number { return n === 1 ? this.st.skill1 : this.st.skill2; }
-  private boost(n: 1 | 2): number { return 1 + 0.25 * this.rank(n); }
+  /** A skill's power: its talent ranks, the Shrine's rank I and the Mastery card. */
+  private boost(n: 1 | 2): number { return (1 + 0.25 * this.rank(n)) * (this.skillMods(n).dmg ?? 1) * (this.has('mastery') ? 1.3 : 1); }
 
   private startSkill(n: 1 | 2, mx: number, mz: number): void {
     const h = this.hero;
     const sd = this.skillDef(n);
-    h.skillCd[n - 1] = sd.cd * (1 - this.st.cdr);
+    const m = this.skillMods(n);
+    h.skillCd[n - 1] = sd.cd * (1 - this.st.cdr) * (m.cd ?? 1);
     h.skill = n;
     h.skillTick = 0;
     h.skillHits = 0;
     h.blow = null;
     h.buffered = false;
+    h.charged = false;
+    h.air = 0;
     const t = this.aimTarget(sd.id === 'fireball' || sd.id === 'volley' || sd.id === 'smite' ? 11 : 5, mx, mz);
     if (t) h.face = faceOf(t.x - h.x, t.z - h.z);
     else if (Math.hypot(mx, mz) > 0.3) h.face = faceOf(mx, mz);
     this.setHeroState('skill', sd.anim, sd.speed);
     this.emit({ type: 'skill', id: sd.id, x: h.x, z: h.z, face: h.face });
     switch (sd.id) {
+      case 'bash': if (this.has('bulwark')) h.shieldHits = Math.max(h.shieldHits, 2); break;
       case 'dash': h.invuln = Math.max(h.invuln, 0.4); break;
       case 'smoke': {
-        h.hidden = 3 + this.rank(n);
+        const long = m.longer ?? 0;
+        h.hidden = 3 + this.rank(n) + long * 0.5;
         h.critNext = 3;
-        this.circleHit(h.x, h.z, 3.6, 0, 1, 'smoke', 0, (f) => { f.blind = 3 + this.rank(n); this.cancelZones(f.id); if (f.state === 'wind') { f.state = 'idle'; f.t = 0; } });
+        this.circleHit(h.x, h.z, 3.6, 0, 1, 'smoke', 0, (f) => {
+          f.blind = 3 + this.rank(n) + long;
+          if (m.burn) f.burn = Math.max(f.burn, m.burn);
+          this.cancelZones(f.id);
+          if (f.state === 'wind') { f.state = 'idle'; f.t = 0; }
+        });
         this.emit({ type: 'boom', kind: 'smoke', x: h.x, z: h.z, r: 3.6 });
         break;
       }
       case 'heal': {
         const amount = this.st.maxHp * (0.26 + 0.06 * this.rank(n));
         h.hp = Math.min(this.st.maxHp, h.hp + amount);
-        h.regen = 4;
+        h.regen = 4 + (m.longer ?? 0);
+        if (m.ward) h.shieldHits = Math.max(h.shieldHits, m.ward);
         this.emit({ type: 'heal', amount: Math.round(amount), x: h.x, z: h.z });
         this.circleHit(h.x, h.z, 2.8, 0, 1.6, 'holy', 0);
         this.emit({ type: 'boom', kind: 'heal', x: h.x, z: h.z, r: 2.8 });
         break;
       }
       case 'trap': {
-        const tx = h.x + Math.sin(h.face) * 2.2, tz = h.z + Math.cos(h.face) * 2.2;
-        const p = { x: tx, z: tz };
-        this.moveCircle(p, 0, 0, 0.5);
-        this.traps.push({ id: this.nid++, x: p.x, z: p.z, life: 16, sprung: 0 });
-        if (this.traps.length > 2) this.traps.shift();
-        this.emit({ type: 'trap', x: p.x, z: p.z, sprung: false });
+        // one snare ahead (three in a fan at rank III)
+        const n3 = m.shots ? 3 : 1;
+        for (let i = 0; i < n3; i++) {
+          const a = h.face + (n3 > 1 ? (i - 1) * 0.6 : 0);
+          const p = { x: h.x + Math.sin(a) * 2.2, z: h.z + Math.cos(a) * 2.2 };
+          this.moveCircle(p, 0, 0, 0.5);
+          this.traps.push({ id: this.nid++, x: p.x, z: p.z, life: 16, sprung: 0 });
+          this.emit({ type: 'trap', x: p.x, z: p.z, sprung: false });
+        }
+        while (this.traps.length > (m.shots ? 4 : 2)) this.traps.shift();
         break;
       }
       case 'smite': {
         const tg = this.aimTarget(11, mx, mz);
         const x = tg ? tg.x : h.x + Math.sin(h.face) * 4, z = tg ? tg.z : h.z + Math.cos(h.face) * 4;
-        this.heroZone('circle', x, z, 2.5, 0, 0, 0.42, 2.6 * this.boost(n), 1.2, 0.9, 'smite');
+        const stun = 0.9 + (m.stun ?? 0);
+        this.heroZone('circle', x, z, 2.5, 0.42, 2.6 * this.boost(n), 1.2, stun, 'smite');
+        if (m.again) {
+          // two more pillars on the next foes (or round the first)
+          const others = this.foes.filter((f) => f !== tg && f.state !== 'dead' && f.state !== 'spawn' && Math.hypot(f.x - h.x, f.z - h.z) < 11).slice(0, 2);
+          others.forEach((f, i) => this.heroZone('circle', f.x, f.z, 2.2, 0.62 + i * 0.18, 1.8 * this.boost(n), 1, stun, 'smite'));
+        }
         break;
       }
       case 'nova': {
-        this.emit({ type: 'boom', kind: 'nova', x: h.x, z: h.z, r: 4.4 });
-        this.circleHit(h.x, h.z, 4.4, 1.4 * this.boost(n), 1.2, 'nova', 0, (f) => { if (f.state !== 'dead') { f.freeze = (2.4 + 0.5 * this.rank(n)) * (f.boss ? 0.35 : 1); this.cancelZones(f.id); if (f.state === 'wind') { f.state = 'idle'; f.t = 0; } } });
+        const r = 4.4 * (m.wide ?? 1);
+        this.emit({ type: 'boom', kind: 'nova', x: h.x, z: h.z, r });
+        this.circleHit(h.x, h.z, r, 1.4 * this.boost(n), 1.2, 'nova', 0, (f) => { if (f.state !== 'dead') { f.freeze = (2.4 + 0.5 * this.rank(n)) * (f.boss ? 0.35 : 1); this.cancelZones(f.id); if (f.state === 'wind') { f.state = 'idle'; f.t = 0; } } });
         this.emit({ type: 'freeze', x: h.x, z: h.z });
         break;
       }
@@ -740,6 +1034,7 @@ export class Battle {
     const h = this.hero;
     const sd = this.skillDef(h.skill as 1 | 2);
     const n = h.skill as 1 | 2;
+    const m = this.skillMods(n);
     const t = h.t;
     let dur = 0.5;
     h.vx = h.vz = 0;
@@ -747,14 +1042,25 @@ export class Battle {
       case 'bash': {
         dur = 0.5;
         if (t < 0.22) { h.vx = Math.sin(h.face) * 10; h.vz = Math.cos(h.face) * 10; }
-        if (h.skillHits === 0 && t >= 0.2) { h.skillHits = 1; this.coneHit(h.x, h.z, h.face, 2.5, 1.8, 1.7 * this.boost(n), 3.2, 'bash', 1.3 + 0.3 * this.rank(n)); this.emit({ type: 'boom', kind: 'bash', x: h.x + Math.sin(h.face), z: h.z + Math.cos(h.face), r: 1.6 }); }
+        if (h.skillHits === 0 && t >= 0.2) {
+          h.skillHits = 1;
+          const reach = 2.5 * (m.wide ?? 1);
+          this.coneHit(h.x, h.z, h.face, reach, 1.8, 1.7 * this.boost(n), 3.2, 'bash', 1.3 + 0.3 * this.rank(n) + (m.stun ?? 0), { breaks: m.breaks });
+          this.emit({ type: 'boom', kind: 'bash', x: h.x + Math.sin(h.face) * reach * 0.5, z: h.z + Math.cos(h.face) * reach * 0.5, r: 1.6 * (m.wide ?? 1) });
+        }
         break;
       }
       case 'whirl': {
-        dur = 1.6 + 0.3 * this.rank(n);
-        h.vx = mx * speed * 0.7; h.vz = mz * speed * 0.7;
+        dur = 1.6 + 0.3 * this.rank(n) + (m.longer ?? 0);
+        const k = m.longer ? 0.95 : 0.7;
+        h.vx = mx * speed * k; h.vz = mz * speed * k;
         h.skillTick -= dt;
-        if (h.skillTick <= 0) { h.skillTick = 0.22; this.circleHit(h.x, h.z, 2.5, 0.55 * this.boost(n), 0.8, 'whirl', 0); this.emit({ type: 'boom', kind: 'whirl', x: h.x, z: h.z, r: 2.5 }); }
+        if (h.skillTick <= 0) {
+          h.skillTick = 0.22;
+          if (m.pull) this.pull(h.x, h.z, 5);
+          this.circleHit(h.x, h.z, 2.5, 0.55 * this.boost(n), 0.8, 'whirl', 0);
+          this.emit({ type: 'boom', kind: 'whirl', x: h.x, z: h.z, r: 2.5 });
+        }
         if (h.anim !== 'Sword_Attack2' || h.t % 0.35 < dt) { h.animN++; h.anim = 'Sword_Attack2'; h.animSpeed = 2.4; }
         break;
       }
@@ -776,33 +1082,44 @@ export class Battle {
             }
           }
         } else if (h.skillHits === 0) { h.skillHits = 1; h.anim = 'Dagger_Attack'; h.animN++; h.animSpeed = 2.4; }
+        if (t + dt >= dur) {
+          // out of the shadows: the dash strike is ready (and the shadows hide the rogue at rank II)
+          h.dashWin = DASH_WINDOW;
+          if (m.hide) h.hidden = Math.max(h.hidden, m.hide);
+        }
         break;
       }
       case 'smoke': dur = 0.45; break;
       case 'volley': {
-        dur = 0.6;
-        if (h.skillHits === 0 && t >= 0.2) {
-          h.skillHits = 1;
-          const k = 7 + 2 * this.rank(n);
+        dur = m.again ? 0.85 : 0.6;
+        const fireVolley = () => {
+          const k = 7 + 2 * this.rank(n) + (m.shots ?? 0);
           for (let i = 0; i < k; i++) {
             const a = h.face + (i - (k - 1) / 2) * (1.25 / (k - 1));
-            const r = this.rollDamage(0.95);
+            const r = this.rollDamage(0.95 * (m.dmg ?? 1) * (this.has('mastery') ? 1.3 : 1));
             this.fire('hero', 'arrow', h.x + Math.sin(a) * 0.5, h.z + Math.cos(a) * 0.5, a, 18, r.dmg, 12, { pierce: true, crit: r.crit, knock: 0.6 });
           }
-        }
+        };
+        if (h.skillHits === 0 && t >= 0.2) { h.skillHits = 1; fireVolley(); }
+        if (m.again && h.skillHits === 1 && t >= 0.5) { h.skillHits = 2; h.anim = 'Bow_Shoot'; h.animN++; h.animSpeed = 1.6; fireVolley(); }
         break;
       }
       case 'trap': dur = 0.42; break;
       case 'flurry': {
-        dur = 0.95;
-        const hits = 6 + 2 * this.rank(n);
+        dur = 0.95 + (m.longer ?? 0);
+        const hits = 6 + 2 * this.rank(n) + (m.longer ? 3 : 0);
         h.vx = Math.sin(h.face) * 1.6 + mx * speed * 0.2; h.vz = Math.cos(h.face) * 1.6 + mz * speed * 0.2;
         const due = Math.floor((t / dur) * hits);
         while (h.skillHits < Math.min(hits, due + 1) && t > 0.05) {
           h.skillHits++;
-          this.coneHit(h.x, h.z, h.face, 2.1, 2.0, 0.5, 0.25, 'flurry', 0);
+          this.coneHit(h.x, h.z, h.face, 2.1, 2.0, 0.5 * (m.dmg ?? 1) * (this.has('mastery') ? 1.3 : 1), 0.25, 'flurry', 0);
           h.anim = h.skillHits % 2 ? 'Attack' : 'Attack2'; h.animN++; h.animSpeed = 3;
-          this.emit({ type: 'swing', blow: h.skillHits % 3, finisher: false, x: h.x, z: h.z, face: h.face });
+          this.emit({ type: 'swing', blow: h.skillHits % 3, finisher: false, chain: 'chain', len: 3, fx: 'kick', x: h.x, z: h.z, face: h.face });
+          // rank II: the last punch sends a push wave
+          if (m.again && h.skillHits === hits) {
+            this.coneHit(h.x, h.z, h.face, 4.4, 1.4, 1.2 * this.boost(n), 4.5, 'palm', 0.5);
+            this.emit({ type: 'boom', kind: 'palm', x: h.x + Math.sin(h.face) * 2.2, z: h.z + Math.cos(h.face) * 2.2, r: 2.2 });
+          }
         }
         break;
       }
@@ -810,8 +1127,9 @@ export class Battle {
         dur = 0.65;
         if (h.skillHits === 0 && t >= 0.24) {
           h.skillHits = 1;
-          this.coneHit(h.x, h.z, h.face, 5.2, 1.5, 2.2 * this.boost(n), 6, 'palm', 0.7);
-          this.emit({ type: 'boom', kind: 'palm', x: h.x + Math.sin(h.face) * 2.6, z: h.z + Math.cos(h.face) * 2.6, r: 2.6 });
+          const reach = 5.2 * (m.wide ?? 1);
+          this.coneHit(h.x, h.z, h.face, reach, 1.5, 2.2 * this.boost(n), 6, 'palm', 0.7 + (m.stun ?? 0));
+          this.emit({ type: 'boom', kind: 'palm', x: h.x + Math.sin(h.face) * reach * 0.5, z: h.z + Math.cos(h.face) * reach * 0.5, r: reach * 0.5 });
         }
         break;
       }
@@ -821,7 +1139,12 @@ export class Battle {
         dur = 0.55;
         if (h.skillHits === 0 && t >= 0.22) {
           h.skillHits = 1;
-          this.fire('hero', 'fireball', h.x + Math.sin(h.face) * 0.6, h.z + Math.cos(h.face) * 0.6, h.face, 13, 2.4 * this.boost(n), 10, { pierce: false, crit: false, knock: 2 });
+          // one fireball, or three in a fan (rank II); a bigger, longer burn at rank III
+          const k = m.shots ? 3 : 1;
+          for (let i = 0; i < k; i++) {
+            const a = h.face + (k > 1 ? (i - 1) * 0.28 : 0);
+            this.fire('hero', 'fireball', h.x + Math.sin(a) * 0.6, h.z + Math.cos(a) * 0.6, a, 13, 2.4 * this.boost(n) * (k > 1 ? 0.7 : 1), 10, { pierce: false, crit: false, knock: 2, explode: m.explode ?? 0, opts: { burn: m.burn ?? 3 } });
+          }
         }
         break;
       }
@@ -830,17 +1153,18 @@ export class Battle {
     if (t >= dur) { this.setHeroState('idle'); h.skill = 0; }
   }
 
-  /** A delayed area of the hero's (smite, the fireball's blast). */
-  private heroZone(shape: Shape, x: number, z: number, r: number, a: number, ang: number, delay: number, mult: number, knock: number, stun: number, kind: string): void {
-    this.zones.push({ id: this.nid++, owner: 0, side: 'hero', shape, x, z, r, a, len: 0, ang, delay, total: delay, dmg: mult, knock, stun, kind, tied: false, done: false });
+  /** A delayed area of the hero's (smite, a rain, a meteor, a shockwave lane, a frost patch). */
+  private heroZone(shape: Shape, x: number, z: number, r: number, delay: number, mult: number, knock: number, stun: number, kind: string, hit?: HitOpts, lane: { a?: number; len?: number; ang?: number } = {}): void {
+    this.zones.push({ id: this.nid++, owner: 0, side: 'hero', shape, x, z, r, a: lane.a ?? 0, len: lane.len ?? 0, ang: lane.ang ?? 0, delay, total: delay, dmg: mult, knock, stun, kind, tied: false, done: false, hit });
   }
 
   // ------------------------------------------------------------------ shots
 
-  private fire(side: 'hero' | 'foe', kind: Shot['kind'], x: number, z: number, ang: number, speed: number, dmg: number, range: number, o: { pierce?: boolean; crit?: boolean; knock?: number; homing?: number } = {}): void {
+  private fire(side: 'hero' | 'foe', kind: Shot['kind'], x: number, z: number, ang: number, speed: number, dmg: number, range: number, o: { pierce?: boolean; crit?: boolean; knock?: number; homing?: number; explode?: number; boom?: number; opts?: HitOpts; r?: number } = {}): void {
     this.shots.push({
-      id: this.nid++, side, kind, x, z, vx: Math.sin(ang) * speed, vz: Math.cos(ang) * speed, dmg, r: kind === 'orb' || kind === 'fireball' || kind === 'dark' ? 0.45 : 0.3,
+      id: this.nid++, side, kind, x, z, vx: Math.sin(ang) * speed, vz: Math.cos(ang) * speed, dmg, r: o.r ?? (kind === 'orb' || kind === 'fireball' || kind === 'dark' || kind === 'power' ? 0.45 : 0.3),
       life: range / speed, pierce: !!o.pierce, homing: o.homing ?? 0, hit: [], crit: !!o.crit, knock: o.knock ?? 0.5,
+      explode: o.explode ?? 0, boom: o.boom ?? 0, opts: o.opts ?? {},
     });
     this.emit({ type: 'shot', kind, side, x, z });
   }
@@ -865,13 +1189,16 @@ export class Battle {
           if (Math.hypot(f.x - s.x, f.z - s.z) > f.radius + s.r) continue;
           s.hit.push(f.id);
           if (s.kind === 'fireball') { s.life = 0; break; }
-          this.damageFoe(f, s.dmg, s.crit, faceOf(s.vx, s.vz), s.knock, s.kind, 0);
+          this.damageFoe(f, s.dmg, s.crit, faceOf(s.vx, s.vz), s.knock, s.kind, s.opts.stun ?? 0, s.opts);
+          // an exploding shot (Power Shot II) bursts on its first foe
+          if (s.explode > 0 && s.hit.length === 1) { this.emit({ type: 'boom', kind: 'fire', x: s.x, z: s.z, r: s.explode }); this.circleHit(s.x, s.z, s.explode, s.boom, 1.4, 'blast', 0, undefined, { burn: 2 }); }
           if (!s.pierce) { s.life = 0; break; }
         }
         if (s.kind === 'fireball' && s.life <= 0) {
-          const r = 2.7;
+          const r = s.explode || 2.7;
           this.emit({ type: 'boom', kind: 'fire', x: s.x, z: s.z, r });
-          this.circleHit(s.x, s.z, r, s.dmg, 2, 'fireball', 0, (f) => { f.burn = 3; });
+          const burn = s.opts.burn ?? 3;
+          this.circleHit(s.x, s.z, r, s.dmg, 2, 'fireball', 0, (f) => { f.burn = Math.max(f.burn, burn); });
         }
       } else if (h.state !== 'dead' && Math.hypot(h.x - s.x, h.z - s.z) < 0.42 + s.r) {
         if (h.invuln <= 0) { this.hurtHero(s.dmg, faceOf(s.vx, s.vz), 0.6); s.life = 0; }
@@ -914,12 +1241,13 @@ export class Battle {
       if (z.delay > 0 || z.done) continue;
       z.done = true;
       if (z.side === 'hero') {
-        this.emit({ type: 'boom', kind: z.kind, x: z.x, z: z.z, r: z.r });
+        if (z.shape === 'line') this.emit({ type: 'boom', kind: z.kind, x: z.x + Math.sin(z.ang) * z.len * 0.5, z: z.z + Math.cos(z.ang) * z.len * 0.5, r: z.len * 0.5 });
+        else this.emit({ type: 'boom', kind: z.kind, x: z.x, z: z.z, r: z.r });
         for (const f of this.foes) {
           if (f.state === 'dead' || f.state === 'spawn') continue;
           if (!this.inZone(z, f.x, f.z, f.radius)) continue;
-          const r = this.rollDamage(z.dmg);
-          this.damageFoe(f, r.dmg, r.crit, faceOf(f.x - z.x, f.z - z.z), z.knock, z.kind, z.stun);
+          const r = this.rollDamage(z.dmg, z.hit?.crit);
+          this.damageFoe(f, r.dmg, r.crit, z.shape === 'line' ? z.ang : faceOf(f.x - z.x, f.z - z.z), z.knock, z.kind, z.stun, z.hit);
         }
         continue;
       }
@@ -940,20 +1268,34 @@ export class Battle {
       this.emit({ type: 'shieldHit', x: h.x, z: h.z });
       return;
     }
-    let d = dmg * (1 - this.st.def);
+    let d = dmg * (1 - this.st.def) * (this.has('iron') ? 0.88 : 1);
     if (h.state === 'skill' && this.skillDef(h.skill as 1 | 2)?.id === 'whirl') d *= 0.6;
+    // the heavy finisher's armour: less damage and no flinch while it charges and strikes
+    const armoured = h.state === 'charge' || (h.state === 'attack' && h.chain === 'heavy' && h.combo === 2);
+    if (armoured) d *= 0.7;
     d = Math.max(1, Math.round(d));
     h.hp -= d;
     this.damageTaken += d;
     h.invuln = 0.45;
     this.emit({ type: 'hurt', dmg: d, x: h.x, z: h.z });
     if (h.hp <= 0) {
+      // the Last Breath card: once a battle, a deadly blow leaves the hero standing
+      if (this.has('phoenix') && !h.phoenix) {
+        h.phoenix = true;
+        h.hp = this.st.maxHp * 0.3;
+        h.invuln = 1.6;
+        this.emit({ type: 'lastStand', x: h.x, z: h.z });
+        this.emit({ type: 'heal', amount: Math.round(h.hp), x: h.x, z: h.z });
+        return;
+      }
       h.hp = 0;
+      h.air = 0;
       this.setHeroState('dead', 'Death', 1);
       return;
     }
     h.vx = Math.sin(dir) * knock * 5; h.vz = Math.cos(dir) * knock * 5;
-    if (h.state !== 'skill' && h.state !== 'dodge' && d >= this.st.maxHp * 0.06) { h.blow = null; h.buffered = false; this.setHeroState('hit', 'Hit', 1.7); }
+    const leaping = h.state === 'attack' && !!h.blow?.leap;
+    if (h.state !== 'skill' && h.state !== 'dodge' && !armoured && !leaping && d >= this.st.maxHp * 0.06) { h.blow = null; h.buffered = false; h.combo = 0; this.setHeroState('hit', 'Hit', 1.7); }
   }
 
   // ------------------------------------------------------------------ traps, drops, the shrine
@@ -967,8 +1309,10 @@ export class Battle {
       t.sprung = 1;
       t.life = Math.min(t.life, 0.6);
       const n = this.rank(2);
+      const burn = this.skillMods(2).burn ?? 0;
       this.emit({ type: 'trap', x: t.x, z: t.z, sprung: true });
-      this.circleHit(t.x, t.z, 2.2, 2.2 * (1 + 0.25 * n), 0, 'trap', 0, (o) => { o.root = (3 + 0.5 * n) * (o.boss ? 0.4 : 1); });
+      if (burn) this.emit({ type: 'boom', kind: 'fire', x: t.x, z: t.z, r: 2.2 });
+      this.circleHit(t.x, t.z, 2.2, 2.2 * (1 + 0.25 * n) * (this.skillMods(2).dmg ?? 1), 0, 'trap', 0, (o) => { o.root = (3 + 0.5 * n) * (o.boss ? 0.4 : 1); if (burn) o.burn = Math.max(o.burn, burn); });
     }
     this.traps = this.traps.filter((t) => t.life > 0);
   }
@@ -986,8 +1330,11 @@ export class Battle {
       const near = dist < 0.6 + Math.hypot(d.vx, d.vz) * dt || (this.phase === 'roomClear' && this.phaseT > 5);
       if (near && d.t > 0.3 && h.state !== 'dead') {
         d.t = -99;
-        if (d.kind === 'gold') {
-          const g = Math.round(d.amount * (1 + this.st.goldf) * (h.powers.gold > 0 ? 2 : 1));
+        if (d.kind === 'sigil') {
+          this.sigils++;
+          this.emit({ type: 'pickup', kind: 'sigil', amount: 1, power: null, x: d.x, z: d.z });
+        } else if (d.kind === 'gold') {
+          const g = Math.round(d.amount * (1 + this.st.goldf) * (h.powers.gold > 0 ? 2 : 1) * (this.has('midas') ? 2 : 1));
           this.gold += g;
           this.emit({ type: 'pickup', kind: 'gold', amount: g, power: null, x: d.x, z: d.z });
         } else if (d.kind === 'potion') {
@@ -1004,7 +1351,7 @@ export class Battle {
 
   givePower(p: PowerId): void {
     const h = this.hero;
-    h.powers[p] = POWER_TIME[p];
+    h.powers[p] = POWER_TIME[p] * (this.has('kindle') ? 1.5 : 1);
     if (p === 'shield') h.shieldHits = 3;
   }
 
@@ -1068,6 +1415,7 @@ export class Battle {
     for (const f of this.foes) {
       if (f.state === 'dead') { f.deadT += dt; continue; }
       f.t += dt;
+      if (f.lift > 0) f.lift = Math.max(0, f.lift - dt);
       // pushes fade; burning hurts
       const kd = Math.exp(-7 * dt);
       if (Math.abs(f.kx) + Math.abs(f.kz) > 0.01) { this.moveCircle(f, f.kx * dt, f.kz * dt, f.radius); f.kx *= kd; f.kz *= kd; }

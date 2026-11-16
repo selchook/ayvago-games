@@ -183,9 +183,81 @@ const BUTTONS: Record<string, Painter> = {
   hero: (c, s) => POWER_ART.shield(c, s),
 };
 
+// ------------------------------------------------------------------ 1.1: cards, Sigils, combos
+
+const EXTRA: Record<string, Painter> = {
+  /** A power card (the HUD's card chip): a vellum card with a gold star. */
+  card: (c, s) => {
+    for (const [dx, a] of [[-0.1, -0.22], [0.08, 0.12]] as [number, number][]) {
+      c.save(); c.translate(s / 2 + dx * s, s / 2); c.rotate(a);
+      const p = new Path2D(); p.roundRect(-s * 0.22, -s * 0.32, s * 0.44, s * 0.64, 6);
+      outline(c, p, grad(c, -s * 0.32, s * 0.32, ['#fff6dc', '#e0c890']), 4);
+      c.strokeStyle = '#c08a20'; c.lineWidth = 2; c.strokeRect(-s * 0.16, -s * 0.26, s * 0.32, s * 0.52);
+      c.restore();
+    }
+    c.save(); c.translate(s * 0.58, s * 0.52); c.rotate(0.12);
+    const st = new Path2D();
+    for (let i = 0; i < 10; i++) { const r = i % 2 ? s * 0.07 : s * 0.16, a = -Math.PI / 2 + (i * Math.PI) / 5; i ? st.lineTo(Math.cos(a) * r, Math.sin(a) * r) : st.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+    st.closePath();
+    outline(c, st, grad(c, -s * 0.16, s * 0.16, ['#fff6b8', '#ffc83a', '#c07a10']), 3);
+    c.restore();
+  },
+  /** A Sigil: a crimson wax seal with a gold hexagon. */
+  sigil: (c, s) => {
+    const p = new Path2D();
+    for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2, r = s * (i % 2 ? 0.36 : 0.4); i ? p.lineTo(s / 2 + Math.cos(a) * r, s / 2 + Math.sin(a) * r) : p.moveTo(s / 2 + Math.cos(a) * r, s / 2 + Math.sin(a) * r); }
+    p.closePath();
+    outline(c, p, grad(c, s * 0.1, s * 0.9, ['#e8505a', '#a01828', '#5a0a14']), 4);
+    const h = new Path2D();
+    for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + (i * Math.PI) / 3; i ? h.lineTo(s / 2 + Math.cos(a) * s * 0.2, s / 2 + Math.sin(a) * s * 0.2) : h.moveTo(s / 2 + Math.cos(a) * s * 0.2, s / 2 + Math.sin(a) * s * 0.2); }
+    h.closePath();
+    outline(c, h, grad(c, s * 0.3, s * 0.7, ['#fff2b0', '#e0b24a', '#9a6a14']), 3);
+    c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.ellipse(s * 0.38, s * 0.3, s * 0.08, s * 0.04, -0.6, 0, Math.PI * 2); c.fill();
+  },
+  /** An eye (Hawk Eye). */
+  eye: (c, s) => {
+    const p = new Path2D(); p.moveTo(s * 0.1, s / 2); p.quadraticCurveTo(s / 2, s * 0.12, s * 0.9, s / 2); p.quadraticCurveTo(s / 2, s * 0.88, s * 0.1, s / 2); p.closePath();
+    outline(c, p, '#fff6e6');
+    const i = new Path2D(); i.arc(s / 2, s / 2, s * 0.17, 0, Math.PI * 2);
+    outline(c, i, grad(c, s * 0.33, s * 0.67, ['#ffd86a', '#c07a10']), 3);
+    c.fillStyle = INK; c.beginPath(); c.arc(s / 2, s / 2, s * 0.07, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(s * 0.46, s * 0.45, s * 0.03, 0, Math.PI * 2); c.fill();
+  },
+  /** A flame (Ember Strike, Last Breath). */
+  flame: (c, s) => {
+    const f = new Path2D(); f.moveTo(s / 2, s * 0.1); f.bezierCurveTo(s * 0.8, s * 0.4, s * 0.82, s * 0.66, s / 2, s * 0.9); f.bezierCurveTo(s * 0.18, s * 0.66, s * 0.24, s * 0.44, s * 0.4, s * 0.3); f.quadraticCurveTo(s * 0.42, s * 0.46, s * 0.5, s * 0.5); f.quadraticCurveTo(s * 0.56, s * 0.3, s / 2, s * 0.1); f.closePath();
+    outline(c, f, grad(c, s * 0.1, s * 0.9, ['#fff2a0', '#ffa83a', '#e83a1a']));
+    const g = new Path2D(); g.moveTo(s / 2, s * 0.5); g.bezierCurveTo(s * 0.64, s * 0.62, s * 0.62, s * 0.78, s / 2, s * 0.82); g.bezierCurveTo(s * 0.38, s * 0.78, s * 0.38, s * 0.64, s / 2, s * 0.5);
+    c.fillStyle = '#fff8d0'; c.fill(g);
+  },
+  /** The quick chain: three slashes. */
+  'cb-chain': (c, s) => {
+    disc(c, s, '#8a2a2a');
+    c.lineCap = 'round';
+    [0.32, 0.5, 0.68].forEach((y, i) => {
+      c.strokeStyle = INK; c.lineWidth = 9; c.beginPath(); c.moveTo(s * 0.22, s * (y + 0.08)); c.quadraticCurveTo(s * 0.5, s * (y - 0.12), s * 0.78, s * (y + 0.02 - i * 0.02)); c.stroke();
+      c.strokeStyle = i === 2 ? '#ffd86a' : '#fff2e0'; c.lineWidth = 5; c.stroke();
+    });
+  },
+  /** The heavy chain: a sword striking down with a shockwave. */
+  'cb-heavy': (c, s) => {
+    disc(c, s, '#a85a1a');
+    c.strokeStyle = '#ffd8a0'; c.lineWidth = 4;
+    for (const r of [0.12, 0.2]) { c.beginPath(); c.ellipse(s / 2, s * 0.74, s * r * 1.6, s * r * 0.5, 0, Math.PI, 0); c.stroke(); }
+    blade(c, s / 2, s * 0.62, s * 0.4, Math.PI, 9);
+  },
+  /** The dash strike: speed lines and a forward thrust. */
+  'cb-dash': (c, s) => {
+    disc(c, s, '#2a5a9a');
+    c.strokeStyle = '#d8f0ff'; c.lineWidth = 5; c.lineCap = 'round';
+    for (const [y, l] of [[0.36, 0.2], [0.5, 0.26], [0.64, 0.2]]) { c.beginPath(); c.moveTo(s * 0.16, s * y); c.lineTo(s * (0.16 + l), s * y); c.stroke(); }
+    blade(c, s * 0.42, s / 2, s * 0.36, Math.PI / 2, 8);
+  },
+};
+
 /** Paints every icon (once per page). */
 export function makeArt(scene: Phaser.Scene): void {
-  const all: Record<string, Painter> = { coin, potion, heart, skull, marker, banner, ...BUTTONS };
+  const all: Record<string, Painter> = { coin, potion, heart, skull, marker, banner, ...BUTTONS, ...EXTRA };
   for (const [k, p] of Object.entries(POWER_ART)) all['pw-' + k] = p;
   for (const [k, p] of Object.entries(SKILL_ART)) all['sk-' + k] = p;
   for (const [k, p] of Object.entries(ITEM_ART)) all[k] = p;

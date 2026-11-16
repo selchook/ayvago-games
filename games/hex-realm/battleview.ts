@@ -2,9 +2,12 @@
 // pieces on their runtime atlas, the Hexagon Kit tiles on their colour map); the hero and the foes
 // are rigged Quaternius models from pools (recoloured per foe kind, animation LOD with distance);
 // warnings, health bars, shots, drops, sparks, embers and slashes are instanced billboards. It reads
-// the simulation (battle.ts) every frame and turns its events into effects.
+// the simulation (battle.ts) every frame and turns its events into effects: each combo move has its
+// own trail and impact (slash arcs, a spin, a cleave's shockwave lane, a thrust's streak, a launcher's
+// sparks, a plunge's landing ring, a lance, rains and meteors), the hero leaps and spins with its own
+// clips and launched foes fly.
 import { THREE } from '@core/three';
-import { FOE, CLASS, POWER_COLOR, type FoeKind, type ArenaKind, type ClassId } from './defs';
+import { FOE, CLASS, POWER_COLOR, type FoeKind, type ArenaKind, type ClassId, type ComboId } from './defs';
 import { buildArena, type ArenaLayout } from './arena';
 import type { Battle, BattleEvent, Foe } from './battle';
 import { Figure, FigurePool } from './figure';
@@ -66,7 +69,7 @@ export class BattleView {
   readonly marks: Billboards;
   readonly tele: Telegraphs;
   readonly bars: HealthBars;
-  private fx: { kind: string; x: number; z: number; r: number; t: number; max: number; color: number; ang: number }[] = [];
+  private fx: { kind: string; x: number; z: number; r: number; t: number; max: number; color: number; ang: number; len?: number }[] = [];
   private time = 0;
   shakeT = 0;
   shakeK = 0;
@@ -209,13 +212,78 @@ export class BattleView {
   // ------------------------------------------------------------------ events
 
   handle(ev: BattleEvent, b: Battle): void {
-    const fx = (kind: string, x: number, z: number, r: number, max: number, color: number, ang = 0) => this.fx.push({ kind, x, z, r, t: 0, max, color, ang });
+    const fx = (kind: string, x: number, z: number, r: number, max: number, color: number, ang = 0, len?: number) => this.fx.push({ kind, x, z, r, t: 0, max, color, ang, len });
+    const ahead = (d: number, a = 0): [number, number] => [b.hero.x + Math.sin(a) * d, b.hero.z + Math.cos(a) * d];
     switch (ev.type) {
       case 'swing': {
-        const col = CLASS[b.st.cls].color;
-        if (!CLASS[b.st.cls].ranged) fx('slash', ev.x + Math.sin(ev.face) * 0.8, ev.z + Math.cos(ev.face) * 0.8, ev.finisher ? 2.6 : 2.0, 0.22, ev.finisher ? 0xffe8a0 : col, ev.face);
+        // the trail of each move, coloured by its combo (the class's own, ember for the heavy chain, sky for the dash)
+        const col = trailColor(b.st.cls, ev.chain, ev.finisher);
+        const [ax, az] = ahead(0.8, ev.face);
+        switch (ev.fx) {
+          case 'slash': fx('slash', ax, az, ev.finisher ? 2.6 : 2.0, 0.22, col, ev.face); break;
+          case 'stab': fx('slash', ax, az, 1.3, 0.16, col, ev.face); fx('streak', ev.x, ev.z, 0.35, 0.16, col, ev.face, 2.0); break;
+          case 'kick': fx('slash', ax, az, 1.5, 0.18, col, ev.face); this.dust.burst(ev.x, 0.15, ev.z, 4, 1.5, [0xc8b8a0], 0.35, 0.4, 0.2); break;
+          case 'spin': fx('spin', ev.x, ev.z, 2.3, 0.5, col); break;
+          case 'cleave': fx('slash', ax, az, 3.2, 0.32, col, ev.face); this.sparks.burst(ev.x, 2.2, ev.z, 10, 2, [col, 0xffffff], 0.35, 0.3, 0.6); break;
+          case 'thrust': fx('streak', ev.x, ev.z, 0.7, 0.28, col, ev.face, 3.6); this.dust.burst(ev.x, 0.15, ev.z, 8, 2.5, [0xc8b8a0, 0xa89880], 0.4, 0.5, 0.2); break;
+          case 'rise': fx('slash', ax, az, 2.0, 0.24, col, ev.face + Math.PI); this.sparks.burst(ax, 0.4, az, 10, 2.5, [col, 0xffffff], 0.4, 0.3, 5); break;
+          case 'plunge': this.dust.burst(ev.x, 0.15, ev.z, 10, 2.5, [0xc8b8a0, 0xa89880], 0.5, 0.6, 0.6); this.sparks.burst(ev.x, 0.6, ev.z, 8, 2, [col], 0.4, 0.3, 3); break;
+          case 'power': this.sparks.burst(ax, 0.9, az, 12, 3, [col, 0xffffff], 0.3, 0.3, 0.3); fx('flash', ax, az, 0.9, 0.2, col); break;
+          case 'burst': case 'consecrate': case 'lance': case 'palm': fx('flash', ev.x, ev.z, 1.2, 0.25, col); break;
+        }
         break;
       }
+      case 'strike': {
+        const col = trailColor(b.st.cls, ev.chain, ev.finisher);
+        switch (ev.fx) {
+          case 'spin':
+            fx('ring', ev.x, ev.z, ev.r, 0.35, col); fx('flash', ev.x, ev.z, ev.r * 0.8, 0.2, col);
+            for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; this.sparks.emit(ev.x + Math.sin(a) * ev.r * 0.8, 0.8, ev.z + Math.cos(a) * ev.r * 0.8, Math.cos(a) * 4, 0.6, -Math.sin(a) * 4, 0.35, 0.3, 0.05, col, 2); }
+            break;
+          case 'cleave': case 'palm': {
+            // the shockwave lane: a bright crack along the ground, dust and stones flying
+            const len = ev.wave || 4;
+            fx('streak', ev.x, ev.z, 1.0, 0.45, col, ev.face, len + 0.6);
+            fx('crack', ev.x, ev.z, 1.2, 1.6, 0x1a1008, ev.face, len);
+            for (let i = 1; i <= 6; i++) { const d = (i / 6) * len; this.dust.burst(ev.x + Math.sin(ev.face) * d, 0.3, ev.z + Math.cos(ev.face) * d, 4, 2, [0x9a8a70, 0x7a6a58], 0.6, 0.8, 1.2); this.sparks.burst(ev.x + Math.sin(ev.face) * d, 0.4, ev.z + Math.cos(ev.face) * d, 3, 2.5, [col, 0xffe8c0], 0.4, 0.3, 2); }
+            fx('ring', ev.x + Math.sin(ev.face) * 1.6, ev.z + Math.cos(ev.face) * 1.6, 2.2, 0.35, col);
+            this.shake(0.4, 0.3);
+            break;
+          }
+          case 'plunge': {
+            fx('ring', ev.x, ev.z, ev.r, 0.42, col); fx('ring', ev.x, ev.z, ev.r * 0.6, 0.3, 0xffffff); fx('flash', ev.x, ev.z, ev.r, 0.25, col);
+            this.dust.burst(ev.x, 0.3, ev.z, 26, ev.r * 1.8, [0x9a8a70, 0x7a6a58, 0xc8b8a0], 0.9, 1.0, 0.8);
+            this.sparks.burst(ev.x, 0.4, ev.z, 20, ev.r * 2, [col, 0xffffff], 0.5, 0.35, 2);
+            this.mark(ev.x, ev.z, ev.r * 0.8, 0x2a2018);
+            this.shake(0.45, 0.3);
+            break;
+          }
+          case 'rise': { const [x, z] = ahead(1.2, ev.face); fx('flash', x, z, 1.2, 0.2, col); for (let i = 0; i < 12; i++) this.sparks.emit(x + (Math.random() - 0.5), 0.3, z + (Math.random() - 0.5), 0, 6 + Math.random() * 3, 0, 0.45, 0.28, 0.04, col, 0.5, 5); break; }
+          case 'thrust': { const [x, z] = ahead(ev.r * 0.7, ev.face); this.sparks.burst(x, 0.8, z, 10, 3.5, [col, 0xffffff], 0.3, 0.3, 0.5); break; }
+          case 'lance': {
+            const len = ev.wave || 10;
+            fx('streak', ev.x, ev.z, 1.5, 0.45, 0xc8a8ff, ev.face, len);
+            fx('streak', ev.x, ev.z, 0.6, 0.45, 0xffffff, ev.face, len);
+            for (let i = 1; i <= 8; i++) { const d = (i / 8) * len; this.sparks.burst(ev.x + Math.sin(ev.face) * d, 0.9, ev.z + Math.cos(ev.face) * d, 3, 2, [0xb08aff, 0xffffff, 0x7ac8ff], 0.45, 0.3, 1); }
+            this.shake(0.3, 0.25);
+            break;
+          }
+          case 'consecrate': {
+            fx('ring', ev.x, ev.z, ev.r, 0.5, 0xffe27a); fx('ring', ev.x, ev.z, ev.r * 0.65, 0.4, 0xffffff); fx('flash', ev.x, ev.z, ev.r, 0.3, 0xffe27a);
+            for (let i = 0; i < 20; i++) { const a = Math.random() * Math.PI * 2, d = Math.random() * ev.r; this.sparks.emit(ev.x + Math.sin(a) * d, 0.2, ev.z + Math.cos(a) * d, 0, 3 + Math.random() * 3, 0, 0.7, 0.3, 0.05, 0xffe27a, 0.5); }
+            this.shake(0.3, 0.25);
+            break;
+          }
+        }
+        break;
+      }
+      case 'charge': {
+        const col = trailColor(b.st.cls, 'heavy', true);
+        if (ev.full) { fx('ring', ev.x, ev.z, 1.6, 0.3, 0xffffff); this.sparks.burst(ev.x, 1.0, ev.z, 16, 3, [col, 0xffffff], 0.35, 0.3, 1); }
+        else fx('ring', ev.x, ev.z, 1.2, 0.3, col);
+        break;
+      }
+      case 'lastStand': fx('ring', ev.x, ev.z, 3, 0.6, 0xffd86a); this.sparks.burst(ev.x, 0.8, ev.z, 40, 5, [0xffd86a, 0xff7a2a, 0xffffff], 0.8, 0.4, 2); break;
       case 'hit': {
         const y = 0.75;
         this.sparks.burst(ev.x, y, ev.z, ev.crit ? 18 : 9, ev.crit ? 7 : 5, ev.crit ? [0xffe27a, 0xffffff, 0xff9a3a] : [0xffffff, 0xffd8a0], 0.35, 0.32);
@@ -245,12 +313,23 @@ export class BattleView {
       }
       case 'boom': {
         const col: Record<string, number> = {
+          rain: 0xfff0c8, frostpatch: 0x8ae8ff, cleave: 0xffb06a, lance: 0xc8a8ff, consecrate: 0xffe27a,
           holy: 0xffe27a, smoke: 0x9aa4b8, heal: 0x7aff9a, nova: 0x8ae8ff, fire: 0xff7a2a, smite: 0xffe27a, bash: 0xffb04a, palm: 0x7ad8ff,
           whirl: 0xff6a4a, slam: 0xff9a5a, slamLand: 0xff9a5a, quake: 0xd8a070, rock: 0xb09070, frost: 0x8ae8ff, meteor: 0xff6a2a, blast: 0xff8a3a,
           cut: 0xffd0c0, blink: 0xc87aff, whirlBoss: 0xff5a4a,
         };
         const c = col[ev.kind] ?? 0xffffff;
         if (ev.kind === 'whirl') { this.sparks.burst(ev.x, 0.7, ev.z, 4, 4, [c], 0.25, 0.3); break; }
+        // the shockwave lanes are drawn by their strike; their zone only adds a puff
+        if (ev.kind === 'cleave' || ev.kind === 'lance' || ev.kind === 'palm' && ev.r > 2.4) { this.sparks.burst(ev.x, 0.5, ev.z, 6, 2, [c], 0.3, 0.3); break; }
+        if (ev.kind === 'rain') {
+          // the arrows come down: streaks falling into the circle, splinters and dust
+          fx('ring', ev.x, ev.z, ev.r, 0.4, c);
+          for (let i = 0; i < 18; i++) { const a = Math.random() * Math.PI * 2, d = Math.random() * ev.r; this.sparks.emit(ev.x + Math.sin(a) * d, 2.5, ev.z + Math.cos(a) * d, 0, -14, 0, 0.18, 0.22, 0.05, 0xfff0c8, 0); }
+          this.dust.burst(ev.x, 0.3, ev.z, 14, ev.r * 1.4, [0x9a8a70, 0x7a6a58], 0.7, 0.8, 0.5);
+          this.sparks.burst(ev.x, 0.3, ev.z, 12, ev.r * 2, [0xfff0c8, 0xd8b04a], 0.4, 0.25, 1.5);
+          break;
+        }
         fx('ring', ev.x, ev.z, ev.r, 0.4, c);
         if (ev.kind !== 'cut') fx('flash', ev.x, ev.z, ev.r * 0.9, 0.25, c);
         const n = Math.round(10 + ev.r * 6);
@@ -262,7 +341,8 @@ export class BattleView {
         break;
       }
       case 'pickup': {
-        const c = ev.kind === 'gold' ? 0xffd23f : ev.kind === 'potion' ? 0xff5a6a : POWER_COLOR[ev.power!];
+        const c = ev.kind === 'sigil' ? 0xff5a7a : ev.kind === 'gold' ? 0xffd23f : ev.kind === 'potion' ? 0xff5a6a : POWER_COLOR[ev.power!];
+        if (ev.kind === 'sigil') fx('ring', this.heroPos.x, this.heroPos.z, 1.8, 0.45, c);
         this.sparks.burst(ev.x, 0.6, ev.z, ev.kind === 'gold' ? 4 : 18, 3, [c, 0xffffff], 0.4, 0.25, 0.8);
         if (ev.kind === 'power') fx('ring', this.heroPos.x, this.heroPos.z, 2.2, 0.45, c);
         break;
@@ -291,17 +371,28 @@ export class BattleView {
     // the hero
     const hf = this.hero;
     hf.root.visible = true;
-    hf.root.position.set(h.x, 0, h.z);
+    // a leap lifts the hero off the ground along its arc
+    hf.root.position.set(h.x, h.air, h.z);
     hf.root.rotation.y = h.face;
     if (h.animN !== this.heroAnimN) {
       this.heroAnimN = h.animN;
-      const once = h.state === 'attack' || h.state === 'skill' || h.state === 'dodge' || h.state === 'hit' || h.state === 'dead';
+      const once = h.state === 'attack' || h.state === 'charge' || h.state === 'skill' || h.state === 'dodge' || h.state === 'hit' || h.state === 'dead';
       hf.play(h.anim, { speed: h.animSpeed, once, restart: once, fade: once ? 0.06 : 0.15 });
     } else if (h.state === 'run' || h.state === 'idle') hf.play(h.anim, { speed: h.animSpeed });
     // the blessed step (the cleric's dodge) glides; the whirlwind spins
     const whirl = h.state === 'skill' && b.cls.skills[h.skill - 1]?.id === 'whirl';
-    hf.root.rotation.y = whirl ? h.face + this.time * 16 : h.face;
-    hf.setGlow(h.powers.rage > 0 ? 0x2a0400 : h.hidden > 0 ? 0x101828 : h.state === 'dodge' && b.cls.dodgeAnim === 'Run' ? 0x3a3418 : 0);
+    // a spinning finisher turns the body full circles over the blow
+    const bl = h.state === 'attack' ? h.blow : null;
+    const spin = bl?.spin ? Math.min(1, h.t / (bl.dur / Math.max(0.1, h.animSpeed / bl.speed) * 0.8)) * Math.PI * 2 * bl.spin : 0;
+    hf.root.rotation.y = whirl ? h.face + this.time * 16 : h.face + spin;
+    // charging the heavy finisher: a pulsing ember glow, white when it is full
+    const charge = h.state === 'charge' ? (h.charged ? 0x5a4a30 : (0.5 + 0.5 * Math.sin(this.time * 18)) > 0.5 ? 0x3a1a04 : 0x200a00) : 0;
+    hf.setGlow(charge || (h.powers.rage > 0 ? 0x2a0400 : h.hidden > 0 ? 0x101828 : h.state === 'dodge' && b.cls.dodgeAnim === 'Run' ? 0x3a3418 : 0));
+    if (h.state === 'charge' && Math.random() < dt * 30) {
+      // sparks drawn in towards the hero
+      const a = Math.random() * Math.PI * 2, d = 1.4 + Math.random() * 0.6, col = trailColor(b.st.cls, 'heavy', true);
+      this.sparks.emit(h.x + Math.sin(a) * d, 0.3 + Math.random() * 1.2, h.z + Math.cos(a) * d, -Math.sin(a) * d * 2.6, 0.4, -Math.cos(a) * d * 2.6, 0.35, 0.22, 0.05, h.charged ? 0xffffff : col, 0);
+    }
     hf.mat.transparent = h.hidden > 0;
     hf.mat.opacity = h.hidden > 0 ? 0.45 : 1;
     hf.update(dt);
@@ -348,6 +439,8 @@ export class BattleView {
     let y = (rise - 1) * 1.2;
     // the leap: up in an arc over the wind-up
     if (f.atk === 'leap' && f.state === 'wind') { const w = d.windup * 1.3; const k = Math.max(0, (f.t - w * 0.45) / (w * 0.55)); y += Math.sin(Math.min(1, k) * Math.PI) * 3.2; }
+    // thrown into the air by a launcher
+    if (f.lift > 0 && f.liftMax > 0) y += Math.sin((1 - f.lift / f.liftMax) * Math.PI) * 1.5;
     fig.root.position.set(f.x, y, f.z);
     fig.root.rotation.y = f.face;
     if (f.state === 'dead') { fig.root.position.y = -Math.max(0, f.deadT - 1.4) * 0.8; }
@@ -376,7 +469,7 @@ export class BattleView {
     this.tele.begin();
     this.bars.begin();
     // blob shadows
-    this.shadows.add(h.x, 0.03, h.z, 1.3, 1.3, 0, 0xffffff, 0.8);
+    this.shadows.add(h.x, 0.03, h.z, 1.3 - h.air * 0.2, 1.3 - h.air * 0.2, 0, 0xffffff, 0.8 - h.air * 0.2);
     for (const f of b.foes) if (f.state !== 'dead' || f.deadT < 1.4) this.shadows.add(f.x, 0.03, f.z, f.radius * 2.6, f.radius * 2.6, 0, 0xffffff, f.state === 'spawn' ? 0.3 : 0.75);
     // the warnings
     for (const z of b.zones) {
@@ -388,6 +481,7 @@ export class BattleView {
       else if (z.shape === 'ring') this.tele.add(SHAPE.ring, z.x, z.z, z.r, 0, 0, 0, z.a / z.r, fill, col, pulse);
       else if (z.shape === 'cone') this.tele.add(SHAPE.cone, z.x, z.z, z.r, 0, 0, z.ang, z.a, fill, col, pulse);
       else this.tele.add(SHAPE.line, z.x, z.z, 0, z.a, z.len, z.ang, 0, fill, z.kind === 'aim' ? 0xff8a3a : col, pulse);
+      if (z.kind === 'rain' && fill > 0.3 && Math.random() < 0.5) this.streaks.add(z.x + (Math.random() - 0.5) * z.r * 1.6, 4 * (1 - fill) + 0.6, z.z + (Math.random() - 0.5) * z.r * 1.6, 0.18, 0.9, 0, 0xfff0c8, 0.9);
       if ((z.kind === 'meteor' || z.kind === 'rock') && fill > 0.4) {
         // the falling stone or fire, seen coming down
         const k = (fill - 0.4) / 0.6;
@@ -413,7 +507,9 @@ export class BattleView {
     for (const s of b.shots) {
       const a = Math.atan2(s.vx, s.vz);
       const y = 0.85;
-      if (s.kind === 'arrow' || s.kind === 'farrow' || s.kind === 'knife') this.streaks.add(s.x, y, s.z, 0.28, 1.4, -a, s.side === 'hero' ? 0xfff0c8 : 0xff8a6a, 1);
+      if (s.kind === 'power') { this.streaks.add(s.x, y, s.z, 0.55 * (s.r / 0.45), 2.6, -a, 0xffe8a0, 1); this.glows.add(s.x, y, s.z, 1.0, 1.0, 0, 0xffd86a, 0.9); if (Math.random() < 0.6) this.sparks.emit(s.x, y, s.z, (Math.random() - 0.5), 0.4, (Math.random() - 0.5), 0.3, 0.3, 0.05, 0xffd86a, 3); }
+      else if (s.kind === 'hknife') this.streaks.add(s.x, y, s.z, 0.22, 0.9, -a, 0xc8a8ff, 1);
+      else if (s.kind === 'arrow' || s.kind === 'farrow' || s.kind === 'knife') this.streaks.add(s.x, y, s.z, 0.28, 1.4, -a, s.side === 'hero' ? 0xfff0c8 : 0xff8a6a, 1);
       else {
         const col = s.kind === 'bolt' ? 0x7ac8ff : s.kind === 'fireball' ? 0xff7a2a : s.kind === 'orb' ? 0xc87aff : 0xb05aff;
         const sz = s.kind === 'fireball' ? 1.4 : 0.9;
@@ -426,10 +522,11 @@ export class BattleView {
     for (const d of b.drops) {
       const bob = Math.sin(this.time * 6 + d.id) * 0.08 + 0.35;
       if (d.kind === 'gold') { this.glows.add(d.x, bob, d.z, 0.42, 0.42, 0, 0xffc83a, 1); this.glows.add(d.x, bob, d.z, 0.18, 0.18, 0, 0xffffff, 1); }
+      else if (d.kind === 'sigil') { this.glows.add(d.x, bob + 0.3, d.z, 1.1, 1.1, 0, 0xff3a5a, 1); this.glows.add(d.x, bob + 0.3, d.z, 0.4, 0.4, 0, 0xffd86a, 1); this.flats.add(d.x, 0.05, d.z, 1.3, 1.3, -this.time * 3, 0xff5a7a, 0.8); }
       else { const col = d.kind === 'potion' ? 0xff4a5a : POWER_COLOR[d.power!]; this.glows.add(d.x, bob + 0.25, d.z, 0.9, 0.9, 0, col, 1); this.glows.add(d.x, bob + 0.25, d.z, 0.35, 0.35, 0, 0xffffff, 1); this.flats.add(d.x, 0.05, d.z, 1.1, 1.1, this.time * 2, col, 0.7); }
     }
     // the hero's power-ups
-    if (h.powers.shield > 0) this.bubbles.add(h.x, 0.75, h.z, 2.1, 2.1, 0, 0x8ab8ff, 0.9);
+    if (h.powers.shield > 0 || h.shieldHits > 0) this.bubbles.add(h.x, 0.75 + h.air, h.z, 2.1, 2.1, 0, 0x8ab8ff, h.powers.shield > 0 ? 0.9 : 0.6);
     if (h.powers.haste > 0 && Math.random() < dt * 20) this.sparks.emit(h.x, 0.3, h.z, 0, 0.6, 0, 0.4, 0.3, 0.05, 0x5ae8ff, 2);
     if (h.powers.rage > 0) this.glows.add(h.x, 0.9, h.z, 2.0, 2.0, 0, 0x5a1004, 1);
     if (h.powers.regen > 0 && Math.random() < dt * 10) this.sparks.emit(h.x + (Math.random() - 0.5) * 0.8, 0.2, h.z + (Math.random() - 0.5) * 0.8, 0, 1.4, 0, 0.7, 0.22, 0.05, 0x6aff8a, 0);
@@ -451,6 +548,25 @@ export class BattleView {
         case 'flash': this.glows.add(e.x, 0.5, e.z, e.r * 1.7, e.r * 1.7, 0, e.color, (1 - k) * 0.55); break;
         case 'slash': this.slashes.add(e.x, 0.75, e.z, e.r * (0.8 + k * 0.4), e.r * (0.8 + k * 0.4), -e.ang + Math.PI, e.color, 1 - k * k); break;
         case 'whirl': this.slashes.add(this.heroPos.x, 0.7, this.heroPos.z, e.r * 2, e.r * 2, -this.time * 14, e.color, 0.8 * (1 - k)); this.slashes.add(this.heroPos.x, 0.7, this.heroPos.z, e.r * 2, e.r * 2, -this.time * 14 + Math.PI, e.color, 0.8 * (1 - k)); break;
+        case 'spin': {
+          // a finisher's spin: two arcs round the hero that sweep a full turn
+          const a = -this.time * 20;
+          this.slashes.add(this.heroPos.x, 0.75, this.heroPos.z, e.r * 2, e.r * 2, a, e.color, 0.95 * (1 - k * k));
+          this.slashes.add(this.heroPos.x, 0.75, this.heroPos.z, e.r * 2, e.r * 2, a + Math.PI, e.color, 0.95 * (1 - k * k));
+          this.slashes.add(this.heroPos.x, 0.75, this.heroPos.z, e.r * 1.4, e.r * 1.4, a + Math.PI / 2, 0xffffff, 0.5 * (1 - k));
+          break;
+        }
+        case 'streak': {
+          // a lane along the ground: centred half way along it, laid flat
+          const len = e.len ?? 3;
+          this.streaks.add(e.x + Math.sin(e.ang) * len / 2, 0.08, e.z + Math.cos(e.ang) * len / 2, e.r * (1 - k * 0.5), len, -e.ang, e.color, 0.75 * (1 - k));
+          break;
+        }
+        case 'crack': {
+          const len = e.len ?? 3;
+          for (let i = 0; i < 5; i++) { const d = ((i + 0.5) / 5) * len; this.marks.add(e.x + Math.sin(e.ang) * d, 0.04, e.z + Math.cos(e.ang) * d, e.r, e.r, e.ang + i, e.color, Math.min(1, (1 - k) * 2) * 0.55); }
+          break;
+        }
         case 'spawn': this.flats.add(e.x, 0.06, e.z, e.r * 2 * (1.2 - k * 0.4), e.r * 2 * (1.2 - k * 0.4), this.time, e.color, Math.sin(k * Math.PI) * 0.7); break;
         case 'mark': this.marks.add(e.x, 0.04, e.z, e.r * 2, e.r * 2, e.ang, e.color, Math.min(1, (1 - k) * 2) * 0.6); break;
       }
@@ -470,6 +586,13 @@ export class BattleView {
     for (const p of this.pools.values()) p.dispose();
     for (const f of this.heroFigs.values()) f.dispose();
   }
+}
+
+/** The trail of a combo: the class's colour for the chain (gold on its finisher), ember for the heavy chain, sky blue for the dash. */
+function trailColor(cls: ClassId, chain: ComboId, finisher: boolean): number {
+  if (chain === 'heavy' && finisher) return 0xff8a3a;
+  if (chain === 'dash') return finisher ? 0x9ae8ff : 0x7ac8ff;
+  return finisher ? 0xffe8a0 : CLASS[cls].color;
 }
 
 export type { FoeKind };

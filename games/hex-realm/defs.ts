@@ -34,6 +34,14 @@ export const TUNING: Record<Mode, Tuning> = {
 export const CLASS_IDS = ['warrior', 'rogue', 'ranger', 'monk', 'cleric', 'wizard'] as const;
 export type ClassId = (typeof CLASS_IDS)[number];
 
+/** The three combos every class has: A, the blade chain (tap ATTACK); B, the heavy chain (tap, tap,
+ * then hold ATTACK: a charged finisher); C, the dash strike (ATTACK right after a ROLL). */
+export const COMBO_IDS = ['chain', 'heavy', 'dash'] as const;
+export type ComboId = (typeof COMBO_IDS)[number];
+
+/** How a blow looks (its trail, its impact) in the view. */
+export type BlowFx = 'slash' | 'stab' | 'spin' | 'cleave' | 'thrust' | 'rise' | 'plunge' | 'shot' | 'power' | 'rain' | 'meteor' | 'burst' | 'consecrate' | 'lance' | 'palm' | 'kick';
+
 /** One blow of a combo. */
 export interface Blow {
   anim: string;
@@ -45,15 +53,40 @@ export interface Blow {
   dur: number;
   dmg: number;
   range: number;
-  /** Cone in radians. */
+  /** Cone in radians; the lane's width for a 'line'. */
   arc: number;
   lunge: number;
   knock: number;
   /** Ranged: projectiles fired (spread) instead of a melee cone. */
   shots?: number;
+  /** The fan of several shots (radians between two). */
+  spread?: number;
   pierce?: boolean;
   /** A small burst round the target (the cleric's finisher). */
   burst?: number;
+  /** The hit's shape: a cone (default), all round (a spin) or a lane ahead (a thrust). */
+  shape?: 'cone' | 'circle' | 'line';
+  /** The body turns this many full circles over the blow (view). */
+  spin?: number;
+  /** Throws light foes into the air for this long. */
+  lift?: number;
+  /** A leap: the hero flies this far ahead and lands on the hit, a ring all round. */
+  leap?: number;
+  stun?: number;
+  freeze?: number;
+  /** Breaks shields and guards at once. */
+  breaks?: boolean;
+  /** Always a critical hit. */
+  crit?: boolean;
+  /** A delayed area at the target (arrow rain, meteor): its radius. */
+  rain?: number;
+  /** A shockwave lane ahead after the hit (cleave, lance): its length. */
+  wave?: number;
+  /** The clip held (played slowly) while a heavy finisher charges. */
+  charge?: { anim: string; speed: number };
+  /** Hit-stop on impact (seconds). */
+  stop?: number;
+  fx: BlowFx;
 }
 
 export interface SkillDef {
@@ -73,7 +106,8 @@ export interface ClassDef {
   ranged: boolean;
   /** Projectile of a ranged class's blows. */
   shot?: 'arrow' | 'bolt';
-  combo: Blow[];
+  /** The three combos (B shares A's first two blows; its third is the charged finisher). */
+  combos: Record<ComboId, Blow[]>;
   skills: [SkillDef, SkillDef];
   /** The roll (the cleric has none: a blessed step, Run sped up). */
   dodgeAnim: string;
@@ -83,84 +117,128 @@ export interface ClassDef {
 }
 
 const B = (anim: string, speed: number, hit: number, dur: number, dmg: number, range: number, arc: number, lunge = 0.6, knock = 0.6, o: Partial<Blow> = {}): Blow =>
-  ({ anim, speed, hit, dur, dmg, range, arc, lunge, knock, ...o });
+  ({ anim, speed, hit, dur, dmg, range, arc, lunge, knock, fx: 'slash', ...o });
+const TAU = Math.PI * 2;
+/** A full combo set: A's blows, the heavy finisher (after A's first two) and C's three blows. */
+const C = (chain: Blow[], heavy: Blow, dash: Blow[]): Record<ComboId, Blow[]> => ({ chain, heavy: [chain[0], chain[1], heavy], dash });
 
 export const CLASS: Record<ClassId, ClassDef> = {
+  // the sword: slash, backslash and a spinning Whirl; an overhead Cleave with a shockwave; a
+  // lunging thrust, a rising slash that throws light foes up and a leaping Plunge
   warrior: {
     hp: 150, atk: 12, speed: 4.9, crit: 0.05, ranged: false, color: 0xd8574a, dodgeAnim: 'Roll', idle: 'Idle_Attacking',
-    combo: [
+    combos: C([
       B('Sword_Attack', 1.7, 0.2, 0.42, 1, 1.9, 2.4, 0.7, 0.7),
       B('Sword_Attack2', 1.7, 0.2, 0.42, 1.1, 1.9, 2.6, 0.7, 0.8),
-      B('Sword_Attack', 1.4, 0.26, 0.6, 1.9, 2.2, 2.8, 1.2, 2.6),
-    ],
+      B('Sword_Attack2', 1.45, 0.26, 0.62, 1.75, 2.45, TAU, 0.35, 1.7, { shape: 'circle', spin: 1, fx: 'spin', stop: 0.05 }),
+    ], B('Sword_Attack', 1.35, 0.28, 0.78, 2.6, 2.6, 1.7, 1.0, 2.8, { wave: 4.6, breaks: true, stun: 0.5, fx: 'cleave', charge: { anim: 'Sword_Attack', speed: 0.11 }, stop: 0.09 }), [
+      B('Sword_Attack', 2.3, 0.12, 0.4, 1.3, 3.3, 1.2, 2.7, 0.9, { shape: 'line', fx: 'thrust' }),
+      B('Sword_Attack2', 1.6, 0.2, 0.48, 1.2, 2.1, 2.4, 0.4, 0.3, { lift: 0.9, fx: 'rise' }),
+      B('Sword_Attack', 1.1, 0.42, 0.8, 2.4, 2.6, TAU, 0, 2.0, { shape: 'circle', leap: 3.2, stun: 0.4, fx: 'plunge', stop: 0.08 }),
+    ]),
     skills: [
       { id: 'bash', cd: 7, anim: 'Punch', speed: 1.5, color: 0xffb04a },
       { id: 'whirl', cd: 12, anim: 'Sword_Attack2', speed: 2.4, color: 0xff6a4a },
     ],
   },
+  // twin daggers: four quick stabs and a spinning Blade Dance; a crouched Eviscerate that always
+  // crits; a shadow lunge, an uppercut and Death from Above
   rogue: {
     hp: 112, atk: 10, speed: 5.7, crit: 0.16, ranged: false, color: 0x8a6ad8, dodgeAnim: 'Roll', idle: 'Idle_Attacking',
-    combo: [
-      B('Dagger_Attack', 2.1, 0.13, 0.27, 0.85, 1.6, 2.2, 0.5, 0.3),
-      B('Dagger_Attack2', 2.6, 0.17, 0.3, 0.85, 1.6, 2.2, 0.5, 0.3),
-      B('Dagger_Attack', 2.1, 0.13, 0.27, 0.9, 1.6, 2.2, 0.5, 0.3),
-      B('Dagger_Attack2', 2.0, 0.22, 0.5, 1.7, 1.8, 2.4, 1.0, 1.6),
-    ],
+    combos: C([
+      B('Dagger_Attack', 2.1, 0.13, 0.27, 0.85, 1.6, 2.2, 0.5, 0.3, { fx: 'stab' }),
+      B('Dagger_Attack2', 2.6, 0.17, 0.3, 0.85, 1.6, 2.2, 0.5, 0.3, { fx: 'stab' }),
+      B('Dagger_Attack', 2.1, 0.13, 0.27, 0.9, 1.6, 2.2, 0.5, 0.3, { fx: 'stab' }),
+      B('Dagger_Attack2', 2.0, 0.22, 0.52, 1.7, 2.2, TAU, 0.4, 1.4, { shape: 'circle', spin: 2, fx: 'spin', stop: 0.05 }),
+    ], B('Dagger_Attack2', 1.7, 0.2, 0.62, 2.3, 2.0, 1.3, 1.8, 1.6, { crit: true, breaks: true, fx: 'stab', charge: { anim: 'Dagger_Attack', speed: 0.1 }, stop: 0.09 }), [
+      B('Dagger_Attack', 2.5, 0.1, 0.34, 1.1, 3.5, 1.1, 3.0, 0.6, { shape: 'line', fx: 'thrust' }),
+      B('Punch', 1.8, 0.16, 0.4, 1.1, 2.0, 2.2, 0.4, 0.3, { lift: 0.9, fx: 'rise' }),
+      B('Dagger_Attack2', 1.25, 0.4, 0.72, 2.2, 2.4, TAU, 0, 1.6, { shape: 'circle', leap: 3.4, stun: 0.3, fx: 'plunge', stop: 0.08 }),
+    ]),
     skills: [
       { id: 'dash', cd: 6, anim: 'Roll', speed: 2.2, color: 0xb08aff },
       { id: 'smoke', cd: 14, anim: 'Punch', speed: 1.6, color: 0x9aa4b8 },
     ],
   },
+  // the bow: two shots and a Triple Shot; a fully drawn Power Shot that pierces; a kick, a twin
+  // shot and an Arrow Rain on the target
   ranger: {
     hp: 106, atk: 11, speed: 5.3, crit: 0.1, ranged: true, shot: 'arrow', color: 0x5ab84a, dodgeAnim: 'Roll', idle: 'Idle_Attacking',
-    combo: [
-      B('Bow_Shoot', 1.6, 0.16, 0.36, 1, 13, 0, 0, 0.4, { shots: 1 }),
-      B('Bow_Shoot', 1.6, 0.16, 0.36, 1, 13, 0, 0, 0.4, { shots: 1 }),
-      B('Bow_Shoot', 1.3, 0.22, 0.55, 1.6, 14, 0, 0, 1.2, { shots: 1, pierce: true }),
-    ],
+    combos: C([
+      B('Bow_Shoot', 1.6, 0.16, 0.36, 1, 13, 0, 0, 0.4, { shots: 1, fx: 'shot' }),
+      B('Bow_Shoot', 1.6, 0.16, 0.36, 1, 13, 0, 0, 0.4, { shots: 1, fx: 'shot' }),
+      B('Bow_Shoot', 1.3, 0.22, 0.55, 0.95, 14, 0, 0, 1.0, { shots: 3, spread: 0.2, fx: 'shot' }),
+    ], B('Bow_Shoot', 1.0, 0.12, 0.6, 3.0, 16, 0, 0, 2.6, { shots: 1, pierce: true, breaks: true, fx: 'power', charge: { anim: 'Bow_Draw', speed: 0.55 }, stop: 0.07 }), [
+      B('Punch', 1.8, 0.14, 0.34, 1.0, 1.9, 2.0, 0.3, 3.2, { fx: 'kick' }),
+      B('Bow_Shoot', 2.0, 0.12, 0.32, 0.9, 13, 0, 0, 0.5, { shots: 2, spread: 0.12, fx: 'shot' }),
+      B('Bow_Shoot', 1.2, 0.25, 0.6, 2.4, 12, 0, 0, 1.2, { rain: 2.7, fx: 'rain' }),
+    ]),
     skills: [
       { id: 'volley', cd: 7, anim: 'Bow_Shoot', speed: 1.2, color: 0x9aff6a },
       { id: 'trap', cd: 10, anim: 'PickUp', speed: 2.4, color: 0xd8b04a },
     ],
   },
+  // bare hands: jab, cross, jab and a Tornado Kick; a charged Iron Palm with a shock wave; a flying
+  // knee, a rising dragon uppercut and a Falling Star
   monk: {
     hp: 126, atk: 9.5, speed: 5.6, crit: 0.08, ranged: false, color: 0xf0a030, dodgeAnim: 'Roll', idle: 'Idle_Attacking',
-    combo: [
-      B('Attack', 2.2, 0.14, 0.28, 0.85, 1.6, 2.2, 0.6, 0.4),
-      B('Attack2', 2.2, 0.14, 0.28, 0.85, 1.6, 2.2, 0.6, 0.4),
-      B('Attack', 2.4, 0.13, 0.26, 0.9, 1.6, 2.2, 0.6, 0.4),
-      B('Attack2', 1.7, 0.2, 0.5, 1.8, 1.9, 2.6, 1.1, 3.0),
-    ],
+    combos: C([
+      B('Attack', 2.2, 0.14, 0.28, 0.85, 1.6, 2.2, 0.6, 0.4, { fx: 'kick' }),
+      B('Attack2', 2.2, 0.14, 0.28, 0.85, 1.6, 2.2, 0.6, 0.4, { fx: 'kick' }),
+      B('Attack', 2.4, 0.13, 0.26, 0.9, 1.6, 2.2, 0.6, 0.4, { fx: 'kick' }),
+      B('Attack2', 1.6, 0.2, 0.52, 1.7, 2.3, TAU, 0.4, 2.4, { shape: 'circle', spin: 1, fx: 'spin', stop: 0.05 }),
+    ], B('Attack', 1.25, 0.22, 0.7, 2.4, 2.3, 1.5, 0.9, 3.0, { wave: 4.2, breaks: true, stun: 0.7, fx: 'palm', charge: { anim: 'Attack', speed: 0.1 }, stop: 0.09 }), [
+      B('Attack2', 2.4, 0.12, 0.36, 1.2, 3.1, 1.2, 2.8, 1.0, { shape: 'line', fx: 'thrust' }),
+      B('Attack', 1.8, 0.16, 0.42, 1.1, 2.0, 2.2, 0.4, 0.3, { lift: 1.0, fx: 'rise' }),
+      B('Attack2', 1.2, 0.42, 0.74, 2.3, 2.5, TAU, 0, 2.0, { shape: 'circle', leap: 3.2, stun: 0.4, fx: 'plunge', stop: 0.08 }),
+    ]),
     skills: [
       { id: 'flurry', cd: 7, anim: 'Attack', speed: 3, color: 0xffd04a },
       { id: 'palm', cd: 9, anim: 'Attack2', speed: 1.4, color: 0x7ad8ff },
     ],
   },
+  // the holy staff: two blows and a Judgement burst; a charged Consecrate ring all round; a staff
+  // thrust, a rising light and a Holy Leap
   cleric: {
     hp: 136, atk: 10, speed: 4.9, crit: 0.06, ranged: false, color: 0xf2e08a, dodgeAnim: 'Run', idle: 'Idle_Attacking',
-    combo: [
+    combos: C([
       B('Staff_Attack', 1.7, 0.18, 0.4, 1, 1.9, 2.4, 0.6, 0.6),
       B('Staff_Attack', 1.9, 0.16, 0.38, 1.05, 1.9, 2.4, 0.6, 0.6),
-      B('Staff_Attack', 1.4, 0.24, 0.6, 1.5, 2.0, 2.6, 0.8, 1.8, { burst: 2.2 }),
-    ],
+      B('Staff_Attack', 1.4, 0.24, 0.6, 1.5, 2.0, 2.6, 0.8, 1.8, { burst: 2.2, fx: 'burst' }),
+    ], B('Spell1', 1.15, 0.4, 0.85, 2.2, 3.4, TAU, 0, 1.6, { shape: 'circle', breaks: true, stun: 0.5, fx: 'consecrate', charge: { anim: 'Spell1', speed: 0.12 }, stop: 0.08 }), [
+      B('Staff_Attack', 2.2, 0.12, 0.36, 1.2, 3.0, 1.2, 2.4, 0.9, { shape: 'line', fx: 'thrust' }),
+      B('Punch', 1.6, 0.18, 0.42, 1.1, 2.0, 2.2, 0.4, 0.3, { lift: 0.9, fx: 'rise' }),
+      B('Staff_Attack', 1.1, 0.42, 0.76, 2.2, 2.5, TAU, 0, 1.8, { shape: 'circle', leap: 3.0, stun: 0.3, fx: 'plunge', stop: 0.08 }),
+    ]),
     skills: [
       { id: 'heal', cd: 12, anim: 'Spell1', speed: 1.6, color: 0x7aff9a },
       { id: 'smite', cd: 8, anim: 'Staff_Attack', speed: 1.3, color: 0xffe27a },
     ],
   },
+  // the wizard's staff: two bolts and a Starburst fan; a charged Arcane Lance down a lane; a staff
+  // jab, a frost burst that freezes and a Meteor on the target
   wizard: {
     hp: 96, atk: 12, speed: 5.0, crit: 0.08, ranged: true, shot: 'bolt', color: 0x5ab0ff, dodgeAnim: 'Roll', idle: 'Idle_Attacking',
-    combo: [
-      B('Staff_Attack', 1.8, 0.16, 0.38, 1, 12, 0, 0, 0.5, { shots: 1 }),
-      B('Staff_Attack', 1.8, 0.16, 0.38, 1, 12, 0, 0, 0.5, { shots: 1 }),
-      B('Spell2', 2.2, 0.3, 0.6, 0.8, 12, 0, 0, 0.8, { shots: 3 }),
-    ],
+    combos: C([
+      B('Staff_Attack', 1.8, 0.16, 0.38, 1, 12, 0, 0, 0.5, { shots: 1, fx: 'shot' }),
+      B('Staff_Attack', 1.8, 0.16, 0.38, 1, 12, 0, 0, 0.5, { shots: 1, fx: 'shot' }),
+      B('Spell2', 2.2, 0.3, 0.6, 0.8, 12, 0, 0, 0.8, { shots: 3, spread: 0.24, fx: 'shot' }),
+    ], B('Spell1', 1.25, 0.3, 0.75, 2.6, 11, 1.3, 0, 1.8, { wave: 11, breaks: true, fx: 'lance', charge: { anim: 'Spell1', speed: 0.12 }, stop: 0.07 }), [
+      B('Staff_Attack', 2.2, 0.12, 0.34, 1.0, 2.4, 1.2, 2.2, 2.4, { shape: 'line', fx: 'thrust' }),
+      B('Spell2', 1.9, 0.2, 0.45, 0.9, 2.7, TAU, 0, 1.0, { shape: 'circle', freeze: 0.8, fx: 'burst' }),
+      B('Spell1', 1.3, 0.3, 0.65, 2.6, 12, 0, 0, 1.6, { rain: 2.9, fx: 'meteor' }),
+    ]),
     skills: [
       { id: 'fireball', cd: 6, anim: 'Spell1', speed: 1.8, color: 0xff7a2a },
       { id: 'nova', cd: 11, anim: 'Spell2', speed: 1.6, color: 0x8ae8ff },
     ],
   },
 };
+
+/** Seconds ATTACK must be held at the third blow to charge the heavy finisher. */
+export const CHARGE_T = 0.35;
+/** After a roll ends, an attack in this window starts the dash strike. */
+export const DASH_WINDOW = 0.45;
 
 /** The model of every class: public/assets/quaternius/rpg-characters/<id>.glb. */
 export const HERO_MODELS = CLASS_IDS;
@@ -225,16 +303,17 @@ export const FOE: Record<FoeKind, FoeDef> = {
   chief: { model: 'rogue', scale: 1.35, hue: 0.45, sat: 1.1, tint: 0xffe0c8, glow: 0x301008, hp: 320, dmg: 13, speed: 4.4, radius: 0.6, xp: 60, gold: 40, ai: 'boss', reach: 2.0, windup: 0.6, rate: 1.5, attack: 'Dagger_Attack2', stagger: 0 },
   warden: { model: 'skeleton', scale: 1.55, hue: 0, sat: 1, tint: 0xd8f0ff, glow: 0x002040, hp: 520, dmg: 16, speed: 3.4, radius: 0.7, xp: 90, gold: 60, ai: 'boss', reach: 2.4, windup: 0.7, rate: 1.6, attack: 'Sword', stagger: 0 },
   captain: { model: 'ranger', scale: 1.35, hue: 2.4, sat: 1.0, tint: 0xffd0b0, glow: 0x180c04, hp: 560, dmg: 15, speed: 3.8, radius: 0.6, xp: 100, gold: 80, ai: 'boss', reach: 10, windup: 0.8, rate: 1.4, attack: 'Bow_Shoot', stagger: 0 },
-  troll: { model: 'monk', scale: 2.15, hue: 2.0, sat: 1.1, tint: 0xf0ffe0, glow: 0x24381a, hp: 760, dmg: 24, speed: 3.0, radius: 1.1, xp: 220, gold: 150, ai: 'boss', reach: 3.2, windup: 1.0, rate: 1.4, attack: 'Attack2', stagger: 0 },
-  mage: { model: 'wizard', scale: 1.6, hue: 0.87, sat: 1.2, tint: 0xe0c8ff, glow: 0x200838, hp: 880, dmg: 22, speed: 3.6, radius: 0.8, xp: 380, gold: 220, ai: 'boss', reach: 10, windup: 1.0, rate: 1.3, attack: 'Spell1', stagger: 0 },
-  lord: { model: 'warrior', scale: 1.85, hue: 0, sat: 0.35, tint: 0xa098a8, glow: 0x300404, hp: 1350, dmg: 30, speed: 3.6, radius: 1.0, xp: 600, gold: 400, ai: 'boss', reach: 3.6, windup: 0.85, rate: 1.2, attack: 'Sword_Attack', stagger: 0 },
+  troll: { model: 'monk', scale: 2.15, hue: 2.0, sat: 1.1, tint: 0xf0ffe0, glow: 0x24381a, hp: 800, dmg: 24, speed: 3.0, radius: 1.1, xp: 220, gold: 150, ai: 'boss', reach: 3.2, windup: 1.0, rate: 1.4, attack: 'Attack2', stagger: 0 },
+  mage: { model: 'wizard', scale: 1.6, hue: 0.87, sat: 1.2, tint: 0xe0c8ff, glow: 0x200838, hp: 1060, dmg: 22, speed: 3.6, radius: 0.8, xp: 380, gold: 220, ai: 'boss', reach: 10, windup: 1.0, rate: 1.3, attack: 'Spell1', stagger: 0 },
+  lord: { model: 'warrior', scale: 1.85, hue: 0, sat: 0.35, tint: 0xa098a8, glow: 0x300404, hp: 1700, dmg: 30, speed: 3.6, radius: 1.0, xp: 600, gold: 400, ai: 'boss', reach: 3.6, windup: 0.85, rate: 1.2, attack: 'Sword_Attack', stagger: 0 },
 };
 
 /** A foe's level scaling. */
-export const foeHpAt = (base: number, lvl: number): number => base * HP_SCALE * (1 + 0.3 * (lvl - 1));
-/** All foes' health (tuned with balance.ts). */
-export const HP_SCALE = 1.7;
-export const foeDmgAt = (base: number, lvl: number): number => base * (1 + 0.15 * (lvl - 1));
+export const foeHpAt = (base: number, lvl: number): number => base * HP_SCALE * (1 + 0.46 * (lvl - 1));
+/** All foes' health and damage (tuned with balance.ts; 1.1 added the combos, the Shrine and the cards). */
+export const HP_SCALE = 1.9;
+export const DMG_SCALE = 1.12;
+export const foeDmgAt = (base: number, lvl: number): number => base * DMG_SCALE * (1 + 0.21 * (lvl - 1));
 
 // ------------------------------------------------------------------ power-ups
 
