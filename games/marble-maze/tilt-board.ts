@@ -6,7 +6,7 @@
 //
 // The menu switch CONTROL: STICK | TILT (touch screens only) is the game's `menuOption`.
 import Phaser from 'phaser';
-import { t, txt, popup, storage, playSfx, touchScreen, type TiltResult } from '@core';
+import { t, txt, popup, storage, playSfx, touchScreen, menuTheme, skinImage, skinTexture, themeText, type TiltResult, type SkinKind } from '@core';
 
 /** Degrees ignored around level, and the tilt that gives full board tilt. */
 const DEADZONE = 2;
@@ -138,6 +138,12 @@ export function setControlMode(m: ControlMode): void {
 const SEG = 170;
 const H = 84;
 
+/** The switch's pieces in the menu theme, painted under the Ayvago intro (theme.ts `pieces`). */
+export const CTRL_PIECES: Array<{ kind: SkinKind; w: number; h: number; variant?: 'primary' }> = [
+  { kind: 'track', w: SEG * 2 + 16, h: H + 14 },
+  { kind: 'button', w: SEG - 12, h: H - 12, variant: 'primary' },
+];
+
 function drawIcon(g: Phaser.GameObjects.Graphics, m: ControlMode, color: number): void {
   g.clear().lineStyle(4, color, 1).fillStyle(color, 1);
   if (m === 'stick') g.strokeCircle(0, 0, 14).fillCircle(4, -3, 7);
@@ -151,23 +157,45 @@ export function controlMenu(scene: Phaser.Scene, x: number, y0: number): void {
   let mode = controlMode();
   const left = x - W / 2;
   const segX = (i: number) => left + SEG * i + SEG / 2;
-  txt(scene, x, y - H / 2 - 22, t('ctrlTitle'), { title: true, size: 18, color: '#ffd23f' });
-  scene.add.graphics()
-    .fillStyle(0x000000, 0.28).fillRoundedRect(left, y - H / 2 + 6, W, H, 22)
-    .fillStyle(0x0b1020, 0.72).fillRoundedRect(left, y - H / 2, W, H, 22)
-    .lineStyle(3, 0xffffff, 0.35).strokeRoundedRect(left, y - H / 2, W, H, 22);
-  const knob = scene.add.graphics().fillStyle(0xffd23f, 1).fillRoundedRect(-SEG / 2 + 6, -H / 2 + 6, SEG - 12, H - 12, 18);
-  knob.setPosition(segX(MODES.indexOf(mode)), y);
-  const parts = MODES.map((m, i) => ({
-    ic: scene.add.graphics().setPosition(segX(i), y - 14).setAngle(m === 'tilt' ? -22 : 0),
-    lb: txt(scene, segX(i), y + 22, t(`ctrl_${m}`), { title: true, size: 17, color: '#ffffff', strokeThickness: 4 }),
-  }));
-  for (const p of parts) if (p.lb.width > SEG - 12) p.lb.setScale((SEG - 12) / p.lb.width);
-  const paint = () => MODES.forEach((m, i) => {
-    const on = m === mode;
-    drawIcon(parts[i].ic, m, on ? 0x1a1320 : 0xffffff);
-    parts[i].lb.setColor(on ? '#1a1320' : '#ffffff').setStroke('#000000', on ? 0 : 4).setShadowFill(!on).setShadowStroke(!on);
-  });
+  const theme = menuTheme();
+  let knob: Phaser.GameObjects.Components.Transform;
+  let paint: () => void;
+  if (theme) {
+    // the menu theme's skin: a sunk track, the chosen mode on a raised piece in the primary colour
+    const P = theme.palette;
+    const hex = (c: string) => parseInt(c.replace('#', ''), 16);
+    themeText(scene, x, y - H / 2 - 26, t('ctrlTitle'), { size: 24, color: P.accent });
+    skinImage(scene, x, y, 'track', W + 16, H + 14);
+    knob = scene.add.image(0, y + 7, skinTexture(scene, 'button', SEG - 12, H - 12, 'up', P.primary));
+    const parts = MODES.map((m, i) => ({
+      ic: scene.add.graphics().setPosition(segX(i), y - 13).setAngle(m === 'tilt' ? -22 : 0),
+      lb: themeText(scene, segX(i), y + 21, t(`ctrl_${m}`), { size: 20 }),
+    }));
+    for (const p of parts) if (p.lb.width > SEG - 18) p.lb.setScale((SEG - 18) / p.lb.width);
+    paint = () => MODES.forEach((m, i) => {
+      const on = m === mode;
+      drawIcon(parts[i].ic, m, on ? hex(P.label) : hex(P.muted));
+      parts[i].lb.setColor(on ? P.label : P.muted);
+    });
+  } else {
+    txt(scene, x, y - H / 2 - 22, t('ctrlTitle'), { title: true, size: 18, color: '#ffd23f' });
+    scene.add.graphics()
+      .fillStyle(0x000000, 0.28).fillRoundedRect(left, y - H / 2 + 6, W, H, 22)
+      .fillStyle(0x0b1020, 0.72).fillRoundedRect(left, y - H / 2, W, H, 22)
+      .lineStyle(3, 0xffffff, 0.35).strokeRoundedRect(left, y - H / 2, W, H, 22);
+    knob = scene.add.graphics().fillStyle(0xffd23f, 1).fillRoundedRect(-SEG / 2 + 6, -H / 2 + 6, SEG - 12, H - 12, 18).setPosition(0, y);
+    const parts = MODES.map((m, i) => ({
+      ic: scene.add.graphics().setPosition(segX(i), y - 14).setAngle(m === 'tilt' ? -22 : 0),
+      lb: txt(scene, segX(i), y + 22, t(`ctrl_${m}`), { title: true, size: 17, color: '#ffffff', strokeThickness: 4 }),
+    }));
+    for (const p of parts) if (p.lb.width > SEG - 12) p.lb.setScale((SEG - 12) / p.lb.width);
+    paint = () => MODES.forEach((m, i) => {
+      const on = m === mode;
+      drawIcon(parts[i].ic, m, on ? 0x1a1320 : 0xffffff);
+      parts[i].lb.setColor(on ? '#1a1320' : '#ffffff').setStroke('#000000', on ? 0 : 4).setShadowFill(!on).setShadowStroke(!on);
+    });
+  }
+  knob.x = segX(MODES.indexOf(mode));
   paint();
   const choose = (m: ControlMode) => {
     mode = m;

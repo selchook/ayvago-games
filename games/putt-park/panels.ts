@@ -1,8 +1,13 @@
 // Screens drawn over the 3D course: the course picker, the hole card, the scorecard and the
 // big call-outs (BIRDIE!, HOLE IN ONE! …). Touch, mouse and keys (arrows, Space / Enter).
+// The picker, the hole card and the scorecard wear the menu theme (theme.ts): the wooden
+// scorecard as the card, felt buttons, labels in the display face. Every card, face and fixed line
+// is painted in Boot under the Ayvago intro (`prebakeCourse`, the theme's `prebake`) and the
+// numbers are set from painted glyphs, so opening a screen only places images.
 import Phaser from 'phaser';
-import { Button, txt, t, upper, playSfx } from '@core';
-import { callOf, type Call } from './scoring';
+import { t, upper, loc, playSfx, txt, themeCard, labelTexture, labelAt, fitWidth, GlyphText, Para, KitButton, bakeButton, bakePara, glyphAtlas, type LabelStyle } from '@core';
+import { callOf, TUNING, type Call } from './scoring';
+import { HOLES, MEADOW, CASTLE } from './holes';
 
 export const PANEL_DEPTH = 9500;
 
@@ -15,12 +20,87 @@ export interface CardRow {
   points: number;
 }
 
-function glass(scene: Phaser.Scene, cx: number, cy: number, w: number, h: number, alpha = 0.93): Phaser.GameObjects.Graphics {
-  const g = scene.add.graphics();
-  g.fillStyle(0x000000, 0.3).fillRoundedRect(cx - w / 2, cy - h / 2 + 10, w, h, 32);
-  g.fillStyle(0x12203a, alpha).fillRoundedRect(cx - w / 2, cy - h / 2, w, h, 32);
-  g.lineStyle(2, 0xffffff, 0.14).strokeRoundedRect(cx - w / 2, cy - h / 2, w, h, 32);
-  return g;
+// ------------------------------------------------------------------ the painted pieces
+
+// the theme's colours (theme.ts imports this file, so they are repeated here)
+const RED = 0xe0392b, FELT = 0x2e8b45, ORANGE = 0xec7a1a, PURPLE = 0x7a5cd6, INK = '#173016';
+
+/** The cards (`menuTheme.cards`): the picker, the hole card (with and without a tip), the scorecard (9 and 18 holes). */
+export const PICK_CARD = { w: 640, h: 730 };
+const HOLE_W = 560;
+const CARD_W = 680, BLOCK_H = 230;
+const cardH = (blocks: number): number => 250 + blocks * BLOCK_H + 40;
+export const COURSE_CARDS = [PICK_CARD, { w: HOLE_W, h: 200 }, { w: HOLE_W, h: 250 }, { w: CARD_W, h: cardH(1) }, { w: CARD_W, h: cardH(2) }];
+const PICK_BTN = { w: 520, h: 100 }, GO_BTN = { w: 400, h: 92 };
+const DIGITS = '0123456789';
+
+const S = {
+  title: { size: 40, fill: ['#ffffff', '#fff2a8', '#ffc21a'], stroke: INK } as LabelStyle,
+  sub: { size: 22, color: '#3a3020', stroke: null, shadow: false, body: true } as LabelStyle,
+  btn: { size: 34 } as LabelStyle,
+  go: { size: 32 } as LabelStyle,
+  holeN: { size: 26, color: '#2e8b45', stroke: null, shadow: false } as LabelStyle,
+  name: { size: 44, fill: ['#ffffff', '#fff2a8', '#ffc21a'], stroke: INK } as LabelStyle,
+  parLine: { size: 26, color: '#2a2014', stroke: null, shadow: false, body: true } as LabelStyle,
+  tip: { size: 22, color: '#4a4030', stroke: null, shadow: false, body: true } as LabelStyle,
+  card: { size: 36, fill: ['#ffffff', '#fff2a8', '#ffc21a'], stroke: INK } as LabelStyle,
+  row: { size: 20, color: '#3a5a3a', stroke: null, shadow: false, body: true } as LabelStyle,
+  num: { size: 20, color: '#2a2014', stroke: null, shadow: false } as LabelStyle,
+  cur: { size: 20, color: '#b5281e', stroke: null, shadow: false } as LabelStyle,
+  par: { size: 22, color: '#2a2014', stroke: null, shadow: false, body: true } as LabelStyle,
+  pts: { size: 18, color: '#2e8b45', stroke: null, shadow: false, body: true } as LabelStyle,
+  sum: { size: 26, color: '#2a2014', stroke: null, shadow: false, body: true } as LabelStyle,
+  total: { size: 32, color: '#b5281e', stroke: null, shadow: false } as LabelStyle,
+};
+
+/** The colours of the stroke marks on the card (on paper: darker than the call-outs). */
+const INK_CALL: Record<Call, string> = {
+  holeInOne: '#c08a00', albatross: '#c08a00', eagle: '#c08a00', birdie: '#1f8a3a', par: '#2a2014',
+  bogey: '#d0661a', double: '#c8401e', worse: '#b5281e', pickedUp: '#b5281e',
+};
+const strokeStyle = (c: Call): LabelStyle => ({ size: 22, color: INK_CALL[c], stroke: null, shadow: false });
+
+/** The characters of the totals lines: digits and the words in them (the current language). */
+function sumChars(): string {
+  const words = [t('strokes'), t('par'), t('evenPar'), t('underPar', { n: '' }), t('overPar', { n: '' }), t('points')].join('');
+  return [...new Set([...DIGITS + '/·: ' + words])].join('');
+}
+const sumLine = (strokes: number, par: number, rel: string): string => `${t('strokes')} ${strokes} / ${t('par')} ${par}  ·  ${rel}`;
+const parLine = (par: number, limit: number): string => `${upper(t('par'))} ${par}   ·   ${t('limit', { n: limit })}`;
+const COURSES = (): Array<[string, string, number]> => [[t('meadow'), t('meadowSub'), FELT], [t('castle'), t('castleSub'), PURPLE], [t('full'), t('fullSub'), ORANGE]];
+const parsOf = (): number[] => {
+  const m = MEADOW.reduce((a, h) => a + h.par, 0), c = CASTLE.reduce((a, h) => a + h.par, 0);
+  return [m, c, m + c];
+};
+
+/**
+ * Paints everything the picker, the hole cards and the scorecard show (the theme's `prebake`, in
+ * Boot under the Ayvago intro): the buttons' faces, every fixed line in the current language
+ * (courses, holes' names, tips and par lines) and the glyphs of the numbers.
+ */
+export function prebakeCourse(scene: Phaser.Scene): void {
+  const pars = parsOf();
+  labelTexture(scene, t('pickCourse'), S.title);
+  COURSES().forEach(([title, sub, color], i) => {
+    bakeButton(scene, 'button', PICK_BTN.w, PICK_BTN.h, color, false, true);
+    labelTexture(scene, title, S.btn);
+    bakePara(scene, `${sub}  ·  ${t('par')} ${pars[i]}`, S.sub, 600);
+  });
+  for (let n = 1; n <= HOLES.length; n++) labelTexture(scene, t('holeN', { n }), S.holeN);
+  for (const h of HOLES) {
+    labelTexture(scene, loc(h.name), S.name);
+    for (const tu of Object.values(TUNING)) labelTexture(scene, parLine(h.par, h.par + tu.extraStrokes), S.parLine);
+    if (h.tip) bakePara(scene, loc(h.tip), S.tip, HOLE_W - 40);
+  }
+  labelTexture(scene, t('scorecard'), S.card);
+  for (const k of ['hole', 'par', 'strokes', 'points']) labelTexture(scene, t(k), S.row);
+  for (const o of [S.num, S.cur, S.par, S.pts]) glyphAtlas(scene, o, DIGITS);
+  for (const c of Object.keys(INK_CALL) as Call[]) glyphAtlas(scene, strokeStyle(c), DIGITS);
+  glyphAtlas(scene, S.sum, sumChars());
+  glyphAtlas(scene, S.total, sumChars());
+  bakeButton(scene, 'button', GO_BTN.w, GO_BTN.h, FELT);
+  bakeButton(scene, 'button', GO_BTN.w, GO_BTN.h, ORANGE);
+  for (const k of ['next', 'finish']) labelTexture(scene, t(k), S.go);
 }
 
 /** Base for a modal screen: dim backdrop, a container, keys, cleanup. */
@@ -70,36 +150,29 @@ class Panel {
 /** The three ways to play: Meadow (1–9), Castle (10–18) or all 18 holes. */
 export class CoursePicker extends Panel {
   private focus = 0;
-  private rings: Phaser.GameObjects.Graphics[] = [];
+  private buttons: KitButton[] = [];
 
   constructor(scene: Phaser.Scene, pars: [number, number, number], private onPick: (i: number) => void, start = 0) {
     super(scene, 0.35);
     const cx = scene.scale.width / 2;
     const r = this.root;
-    r.add(glass(scene, cx, 615, 640, 730));
-    r.add(txt(scene, cx, 315, t('pickCourse'), { title: true, size: 40, color: '#ffd23f', strokeThickness: 0 }));
-    const items: [string, string, number][] = [
-      [t('meadow'), t('meadowSub'), 0x2fae5a],
-      [t('castle'), t('castleSub'), 0x7a5cd6],
-      [t('full'), t('fullSub'), 0xec6a13],
-    ];
-    items.forEach(([title, sub, color], i) => {
+    r.add(themeCard(scene, cx, 615, PICK_CARD.w, PICK_CARD.h));
+    r.add(fitWidth(labelAt(scene, cx, 318, t('pickCourse'), S.title), PICK_CARD.w - 80));
+    COURSES().forEach(([title, sub, color], i) => {
       const y = 450 + i * 200;
-      const ring = scene.add.graphics();
-      ring.lineStyle(5, 0xffd23f, 1).strokeRoundedRect(cx - 275, y - 66, 550, 132, 40);
-      ring.setVisible(false);
-      this.rings.push(ring);
-      r.add(ring);
-      const b = new Button(scene, cx, y - 8, title, () => this.pick(i), { width: 520, height: 100, size: 34, color });
+      const b = new KitButton(scene, cx, y - 8, { ...PICK_BTN, color, label: title, style: S.btn, sfx: null }, () => this.pick(i));
+      b.on('pointerover', () => { this.focus = i; this.showFocus(); });
+      this.buttons.push(b);
       r.add(b);
-      r.add(txt(scene, cx, y + 70, `${sub}  ·  ${t('par')} ${pars[i]}`, { size: 22, color: '#cfe0ff', strokeThickness: 0, wrap: 600 }));
+      const line = new Para(scene, cx, y + 58, `${sub}  ·  ${t('par')} ${pars[i]}`, S.sub, 600, 0.5, 26);
+      r.add(line);
     });
     this.focus = start;
     this.showFocus();
   }
 
   private showFocus(): void {
-    this.rings.forEach((g, i) => g.setVisible(i === this.focus));
+    this.buttons.forEach((b, i) => b.setSelected(i === this.focus));
   }
 
   protected key(code: string): void {
@@ -122,11 +195,15 @@ export function holeCard(scene: Phaser.Scene, o: { n: number; name: string; par:
   const cx = scene.scale.width / 2, cy = 300;
   const c = scene.add.container(0, 0).setDepth(PANEL_DEPTH - 10).setScrollFactor(0);
   const h = o.tip ? 250 : 200;
-  c.add(glass(scene, cx, cy, 560, h, 0.82));
-  c.add(txt(scene, cx, cy - h / 2 + 44, t('holeN', { n: o.n }), { title: true, size: 26, color: '#9fe7b8', strokeThickness: 0 }));
-  c.add(txt(scene, cx, cy - h / 2 + 96, o.name, { title: true, size: 44, color: '#ffd23f', strokeThickness: 0 }));
-  c.add(txt(scene, cx, cy - h / 2 + 148, `${upper(t('par'))} ${o.par}   ·   ${t('limit', { n: o.limit })}`, { size: 26, color: '#ffffff', strokeThickness: 0 }));
-  if (o.tip) c.add(txt(scene, cx, cy - h / 2 + 200, o.tip, { size: 22, color: '#cfe0ff', strokeThickness: 0, wrap: 520 }));
+  c.add(themeCard(scene, cx, cy, HOLE_W, h));
+  c.add(labelAt(scene, cx, cy - h / 2 + 46, t('holeN', { n: o.n }), S.holeN));
+  c.add(fitWidth(labelAt(scene, cx, cy - h / 2 + 96, o.name, S.name), HOLE_W - 60));
+  c.add(labelAt(scene, cx, cy - h / 2 + 146, parLine(o.par, o.limit), S.parLine));
+  if (o.tip) {
+    const tip = new Para(scene, cx, 0, o.tip, S.tip, HOLE_W - 40, 0.5, 26);
+    tip.y = cy - h / 2 + 196 - tip.textHeight / 2;
+    c.add(tip);
+  }
   c.setAlpha(0).setScale(0.9);
   scene.tweens.add({ targets: c, alpha: 1, scale: 1, duration: 280, ease: 'Back.easeOut' });
   return c;
@@ -164,38 +241,39 @@ export class Scorecard extends Panel {
     const cx = scene.scale.width / 2;
     const r = this.root;
     const blocks = o.rows.length > 9 ? 2 : 1;
-    const blockH = 230;
-    const h = 250 + blocks * blockH + 40;
+    const h = cardH(blocks);
     const cy = 640;
     const top = cy - h / 2;
-    r.add(glass(scene, cx, cy, 680, h));
-    r.add(txt(scene, cx, top + 50, o.title ?? t('scorecard'), { title: true, size: 36, color: '#ffd23f', strokeThickness: 0 }));
+    r.add(themeCard(scene, cx, cy, CARD_W, h));
+    r.add(labelAt(scene, cx, top + 56, o.title ?? t('scorecard'), S.card));
 
     const labelW = 112, colW = 54, x0 = cx - 330 + 8;
     for (let b = 0; b < blocks; b++) {
       const rows = o.rows.slice(b * 9, b * 9 + 9);
-      const y0 = top + 100 + b * blockH;
+      const y0 = top + 100 + b * BLOCK_H;
       const g = scene.add.graphics();
-      g.fillStyle(0xffffff, 0.06).fillRoundedRect(x0, y0, 660 - 16, blockH - 20, 18);
-      g.fillStyle(0x2fae5a, 0.25).fillRoundedRect(x0, y0, 660 - 16, 44, { tl: 18, tr: 18, bl: 0, br: 0 });
+      g.fillStyle(0x2e8b45, 0.07).fillRoundedRect(x0, y0, 660 - 16, BLOCK_H - 20, 12);
+      g.fillStyle(0x2e8b45, 0.2).fillRoundedRect(x0, y0, 660 - 16, 44, { tl: 12, tr: 12, bl: 0, br: 0 });
+      g.lineStyle(1.5, 0x2e8b45, 0.35).strokeRoundedRect(x0, y0, 660 - 16, BLOCK_H - 20, 12);
+      for (const dy of [96, 148]) g.lineStyle(1, 0x2e8b45, 0.18).lineBetween(x0 + 8, y0 + dy, x0 + 636, y0 + dy);
       r.add(g);
       const lines: [string, number][] = [[t('hole'), 22], [t('par'), 72], [t('strokes'), 124], [t('points'), 176]];
-      for (const [label, dy] of lines) r.add(txt(scene, x0 + 12, y0 + dy, label, { size: 20, color: '#cfe0ff', strokeThickness: 0, align: 'left' }).setOrigin(0, 0.5));
+      for (const [label, dy] of lines) r.add(fitWidth(labelAt(scene, x0 + 12, y0 + dy, label, S.row, 0), labelW - 14));
       rows.forEach((row, i) => {
         const x = x0 + labelW + colW * i + colW / 2;
         const cur = row.n - 1 === o.current;
         if (cur) {
           const hl = scene.add.graphics();
-          hl.fillStyle(0xffd23f, 0.16).fillRoundedRect(x - colW / 2 + 2, y0 + 2, colW - 4, blockH - 24, 10);
+          hl.fillStyle(0xffd23f, 0.28).fillRoundedRect(x - colW / 2 + 2, y0 + 2, colW - 4, BLOCK_H - 24, 8);
           r.add(hl);
         }
-        r.add(txt(scene, x, y0 + 22, String(row.n), { title: true, size: 20, color: cur ? '#ffd23f' : '#ffffff', strokeThickness: 0 }));
-        r.add(txt(scene, x, y0 + 72, String(row.par), { size: 22, color: '#ffffff', strokeThickness: 0 }));
+        r.add(new GlyphText(scene, x, y0 + 22, String(row.n), cur ? S.cur : S.num, 0.5, DIGITS));
+        r.add(new GlyphText(scene, x, y0 + 72, String(row.par), S.par, 0.5, DIGITS));
         if (row.strokes !== null) {
           const call = callOf(row.par, row.strokes, row.holed);
           const mark = scene.add.graphics();
           const my = y0 + 124;
-          mark.lineStyle(3, Phaser.Display.Color.HexStringToColor(CALL_COLOR[call]).color, 0.95);
+          mark.lineStyle(3, Phaser.Display.Color.HexStringToColor(INK_CALL[call]).color, 0.95);
           // golf card marks: circles under par, squares over par
           if (call === 'birdie' || call === 'eagle' || call === 'albatross' || call === 'holeInOne') {
             mark.strokeCircle(x, my, 19);
@@ -205,8 +283,8 @@ export class Scorecard extends Panel {
             if (call !== 'bogey') mark.strokeRect(x - 13, my - 13, 26, 26);
           }
           r.add(mark);
-          r.add(txt(scene, x, my, row.holed ? String(row.strokes) : `${row.strokes}`, { title: true, size: 22, color: CALL_COLOR[call], strokeThickness: 0 }));
-          r.add(txt(scene, x, y0 + 176, String(row.points), { size: 18, color: '#9fe7b8', strokeThickness: 0 }));
+          r.add(new GlyphText(scene, x, my, String(row.strokes), strokeStyle(call), 0.5, DIGITS));
+          r.add(new GlyphText(scene, x, y0 + 176, String(row.points), S.pts, 0.5, DIGITS));
         }
       });
     }
@@ -216,10 +294,12 @@ export class Scorecard extends Panel {
     const par = played.reduce((s, x) => s + x.par, 0);
     const diff = strokes - par;
     const rel = diff === 0 ? t('evenPar') : diff < 0 ? t('underPar', { n: -diff }) : t('overPar', { n: diff });
-    const yT = top + 100 + blocks * blockH + 10;
-    r.add(txt(scene, cx, yT, `${t('strokes')} ${strokes} / ${t('par')} ${par}  ·  ${rel}`, { size: 26, color: '#ffffff', strokeThickness: 0 }));
-    r.add(txt(scene, cx, yT + 44, `${t('points')}: ${o.total}`, { title: true, size: 32, color: '#ffd23f', strokeThickness: 0 }));
-    const btn = new Button(scene, cx, top + h - 6, o.last ? t('finish') : t('next'), () => this.go(), { width: 400, height: 92, size: 32, color: o.last ? 0xec6a13 : 0x2fae5a });
+    const yT = top + 100 + blocks * BLOCK_H + 10;
+    const sum = new GlyphText(scene, cx, yT, sumLine(strokes, par, rel), S.sum, 0.5, sumChars());
+    if (sum.textWidth > CARD_W - 60) sum.setScale((CARD_W - 60) / sum.textWidth);
+    r.add(sum);
+    r.add(new GlyphText(scene, cx, yT + 44, `${t('points')}: ${o.total}`, S.total, 0.5, sumChars()));
+    const btn = new KitButton(scene, cx, top + h - 6, { ...GO_BTN, color: o.last ? ORANGE : FELT, label: o.last ? t('finish') : t('next'), style: S.go }, () => this.go());
     r.add(btn);
   }
 
