@@ -6,7 +6,7 @@
   "genres": ["action", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "1.0.0",
+  "version": "1.0.1",
   "credits": ["3D models: Kenney Road Pack (3D road tiles), City Kit Suburban, City Kit Commercial, City Kit Roads, Nature Kit, Car Kit, Food Kit and Mini Characters (CC0) — kenney.nl", "Sound effects: Kenney Impact Sounds and Interface Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org; the horn, doorbell, till, tyre screech, rain and town ambience are made in the game"],
   "platform": { "addedAt": "2026-11-13" }
 }

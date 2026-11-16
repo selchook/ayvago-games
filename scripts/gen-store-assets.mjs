@@ -35,6 +35,14 @@ const slugs = (only.length ? only : readdirSync(join(root, 'public', 'games')))
   .filter((s) => existsSync(join(root, 'public', 'games', s, 'ayvago.json')));
 
 // Cover title size: smaller for long titles, and small enough that the longest word fits the text column.
+/**
+ * The cover's description size: 40 px, smaller for a long text so the column (brand, logo, text,
+ * category chip) still fits the 1080 px height (a themed logo with its emblem is taller).
+ */
+function descSize(text) {
+  return text.length <= 420 ? 40 : Math.max(24, Math.round(38 * Math.sqrt(420 / text.length)));
+}
+
 function titleSize(title) {
   const size = title.length > 14 ? 74 : 92;
   const longest = Math.max(...title.split(/[\s-]+/).map((w) => w.length));
@@ -113,7 +121,7 @@ function coverHtml(m, menu, play, hero, logo) {
   .brand .mark { width: 58px; height: 58px; }
   .brand b { color: #ec3013; font-size: 16px; letter-spacing: 6px; font-weight: normal; }
   h1 { font-family: P2P; font-weight: normal; font-size: ${titleSize(m.title.en)}px; line-height: 1.25; color: #ffd23f; text-shadow: 0 10px 0 #000, 0 0 40px rgba(255,210,63,.35); }
-  p { font-size: 40px; font-weight: 700; line-height: 1.3; color: #d8d4d2; max-width: 820px; }
+  p { font-size: ${descSize(m.description.en)}px; font-weight: 700; line-height: 1.3; color: #d8d4d2; max-width: 820px; }
   .chip { align-self: flex-start; font-family: P2P; font-size: 20px; background: #ec3013; color: #fff; padding: 14px 20px; box-shadow: 0 6px 0 #000; }
   .shot { position: absolute; z-index: 3; border: 10px solid #0a0909; box-shadow: 0 30px 0 rgba(0,0,0,.5), 0 0 0 4px #ec3013; background: #000; }
   .shot img { display: block; width: 100%; height: 100%; object-fit: cover; }

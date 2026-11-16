@@ -1,16 +1,15 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, t, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
 import { TalentScene } from './talentsui';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
-import { makeArt, DUST } from './art';
+import { makeArt } from './art';
 import { View } from './view';
 import { Sim, NO_INPUT } from './sim';
 import { Bot, SKILL } from './bot';
-import { loadMeta } from './meta';
-import { Pill } from './ui';
+import { STAR_THEME, talentsButton } from './theme';
 
 launch({
   meta: meta as GameMeta,
@@ -80,7 +79,7 @@ launch({
     let seed = 11;
     let sim = new Sim('easy', seed);
     let bot = new Bot(sim, SKILL.good);
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x060818, 0.42).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in theme.ts): one full-screen layer
     let acc = 0;
     view.world.onFrame = (dt) => {
       acc += dt;
@@ -105,26 +104,22 @@ launch({
       view.sync(sim, dt);
     };
   },
-  // the talent board: a button under the difficulty switch (T on the keyboard)
+  // the talent board: a button under the difficulty switch (T on the keyboard), in the theme's skin
   menuOption: {
     build(scene, x, y) {
-      const m = loadMeta();
-      const btn = new Pill(scene, x, y + 6, 330, 86, 0x7a3fd0, () => open(), 28);
-      btn.setIcon(DUST);
-      const label = () => { const mm = loadMeta(); btn.setLabels(t('talents'), String(mm.dust)); };
-      label();
-      void m;
       const open = () => {
         if (!scene.scene.isActive()) return;
         scene.scene.pause();
         scene.scene.launch('Talents', { from: scene.scene.key });
       };
-      scene.events.on('talents-closed', label);
+      const btn = talentsButton(scene, x, y + 6, open);
+      scene.events.on('talents-closed', btn.refresh);
       scene.input.keyboard?.on('keydown-T', open);
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('talents-closed', label));
-      scene.tweens.add({ targets: btn, scale: 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('talents-closed', btn.refresh));
     },
   },
+  // brushed-metal plates, a HUD frame and a squadron badge behind the logo (theme.ts)
+  menuTheme: STAR_THEME,
   scenes: [PlayScene, TalentScene],
   strings: STRINGS,
 });

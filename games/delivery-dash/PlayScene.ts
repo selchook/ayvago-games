@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, CarSteering, txt, t, isEasy, hudChip, HudChip, flash, burst, registerStrings,
-  HUD_MARGIN, HUD_ROW2_Y, hudRightEdge, getLang,
+  HUD_MARGIN, HUD_ROW2_Y, hudRightEdge, getLang, themeCard, themeLabel, themeText, overlayHeadingStyle,
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type SimEvent, type SimInput, type Order } from './sim';
@@ -17,6 +17,7 @@ import { shift, rushShift, SHIFTS, type ShiftDef } from './shifts';
 import { loadMeta, saveMeta, recordShift, nextShift, bank, type Meta } from './meta';
 import { handling, vehicle, METRES, SHOP_CSS, FRAGILE, TURBO_MAX, clamp, type Mode } from './defs';
 import { makeArt, OrderPanel, MiniMap, Badges, banner, glass, mmss, UI_DEPTH, badgeKey } from './ui';
+import { STARS_W, STARS_H } from './theme';
 import { makeSounds, Loop } from './audio';
 import { cx, cz, type Bay } from './town';
 import { fmt, money } from './money';
@@ -599,8 +600,11 @@ export class PlayScene extends ArcadeScene {
     if (next) { this.meta.shift = next; saveMeta(this.meta); registerStrings({ tr: { retry: 'SONRAKİ' }, en: { retry: 'NEXT' } }); }
     // the stars card
     const c = this.add.container(W / 2, 600).setScrollFactor(0).setDepth(UI_DEPTH + 150);
-    c.add(glass(this, 620, 470, { color: 0x14204a, alpha: 0.95 }));
-    c.add(txt(this, 0, -190, won ? t('shiftDone', { n: this.def.id }) : t('shiftFail'), { title: true, size: 38, color: won ? '#ffd23f' : '#ff9a7a', strokeThickness: 8 }));
+    // the menu theme's shipping label (theme.ts), the heading painted like the result screen's
+    c.add(themeCard(this, 0, 0, STARS_W, STARS_H));
+    const head = themeLabel(this, 0, -184, won ? t('shiftDone', { n: this.def.id }) : t('shiftFail'), overlayHeadingStyle(won));
+    head.setScale(Math.min(52 / 84, (STARS_W - 130) / head.width));
+    c.add(head);
     const starImgs: Phaser.GameObjects.Image[] = [];
     for (let i = 0; i < 3; i++) {
       const s = this.add.image(-120 + i * 120, -112, 'icon-star').setDisplaySize(84, 84).setTint(0x46507a);
@@ -616,12 +620,12 @@ export class PlayScene extends ArcadeScene {
     ];
     rows.forEach(([k, v], i) => {
       const y = -36 + i * 38;
-      c.add(txt(this, -200, y, k, { size: 26, color: '#cfe0ff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-      c.add(txt(this, 200, y, v, { title: true, size: 26, color: '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(1, 0.5));
+      c.add(txt(this, -200, y, k, { size: 26, color: '#5a4630', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
+      c.add(txt(this, 200, y, v, { title: true, size: 26, color: '#2b1d10', strokeThickness: 0, shadow: false }).setOrigin(1, 0.5));
     });
-    const sc = txt(this, 0, 145, money(0), { title: true, size: 50, color: '#ffe27a', strokeThickness: 7 });
+    const sc = themeText(this, 0, 145, money(0), { size: 52, color: '#ffd23f' });
     c.add(sc);
-    if (opened.length) c.add(txt(this, 0, 202, t('newDistrict', { d: t('d' + opened[0]) }), { title: true, size: 24, color: '#7dffa0', strokeThickness: 5 }));
+    if (opened.length) c.add(txt(this, 0, 202, t('newDistrict', { d: t('d' + opened[0]) }), { title: true, size: 24, color: '#1d8a3c', strokeThickness: 0, shadow: false }));
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
     for (let i = 0; i < stars; i++) {

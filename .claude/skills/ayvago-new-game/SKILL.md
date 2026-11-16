@@ -512,10 +512,14 @@ menuTheme: {
   track | round` and the states `up | over | down | on | off`. Every piece is a canvas texture
   baked once per size and state (`skinTexture`); nothing is redrawn per frame and nothing runs in
   play.
+- **Driving games:** the core STEERING switch (`steeringOption`) wears the theme by itself; list
+  `...STEERING_PIECES` in `pieces` so its track and knob are painted ahead (Delivery Dash).
 - **The game's own menu widgets** (`menuOption.build`) use the same pieces: `SkinButton` (label in
   the display face, `setText`, `fitLabel`, `setLabelY`), `skinImage(scene, x, y, kind, w, h)`,
   `skinIconButton` and `themeText`. Keep tap targets at least as large as the plain menu's.
-- **Frame.** `border: 'rope'` (a rope round the screen with brass corner rings), `notes`: the card
+- **Frame.** `border: 'rope'` (a rope round the screen with brass corner rings) or the game's own
+  `BorderStyle` (`{ thick, inset, edge, corner }`: an edge strip and a corner piece painted once and
+  mirrored round the screen; Star Squadron's HUD brackets, Snow Express's railway), `notes`: the card
   behind the how-to (`'board'` or the game's painter; the how-to is then drawn in `palette.body`),
   `vignette`: the darkening over the live backdrop, `dim`: a flat darkening under it. A game that
   dims its backdrop itself moves that into `dim` and drops its own full-screen layer.

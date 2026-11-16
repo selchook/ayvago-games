@@ -422,6 +422,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['delivery', 'dash', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
@@ -592,7 +593,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['kickflip', 'park', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.1',
+    version: '1.2.2',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
@@ -1192,6 +1193,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['snow', 'express', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
@@ -1262,7 +1264,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['star', 'squadron', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-11-13',
   }),
   arcadeGame({

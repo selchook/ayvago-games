@@ -87,9 +87,33 @@ export type SkinPainter = (c: CanvasRenderingContext2D, kind: SkinKind, w: numbe
 /** Paints the card behind the how-to text: w x h, top-left (0, 0), SKIN_PAD room around it. */
 export type NotesPainter = (c: CanvasRenderingContext2D, w: number, h: number) => void;
 
+/**
+ * A game's own ornament round the screen edge, the counterpart of the rope: an edge strip and a
+ * corner piece, each painted once on a canvas (four strips and four corners, plain images).
+ */
+export interface BorderStyle {
+  /** Thickness of the edge strips in px. */
+  thick: number;
+  /** Distance of the strips' outer side from the screen edge (default 8). */
+  inset?: number;
+  /**
+   * Paints the top strip, `len` x `thick`, its outer side (towards the screen edge) at y = 0. The
+   * bottom strip is its mirror image, the sides the same strip turned. Omit for corners only.
+   */
+  edge?: (c: CanvasRenderingContext2D, len: number, thick: number) => void;
+  /**
+   * Paints the top-left corner piece, `size` x `size`, the screen's corner at (0, 0); the other
+   * corners are its mirror images. It sits `inset` from the screen edge (default the strips').
+   */
+  corner?: { size: number; draw: (c: CanvasRenderingContext2D, size: number) => void; inset?: number };
+}
+
 export interface MenuFrame {
-  /** An ornament around the screen edge: 'rope' (a twisted rope with brass corner rings). */
-  border?: 'rope' | null;
+  /**
+   * An ornament around the screen edge: 'rope' (a twisted rope with brass corner rings) or the
+   * game's own strips and corners (`BorderStyle`).
+   */
+  border?: 'rope' | BorderStyle | null;
   /** The card behind the how-to text: 'board' (the skin's board) or the game's own painter. */
   notes?: 'board' | NotesPainter | null;
   /** Strength of the vignette over the live backdrop (0 to 1, default 0.6). */
@@ -143,7 +167,7 @@ export interface OverlayStyle {
   vignette?: number;
   /** The emblem on the card's top edge (portrait): default the logo's emblem; null: none. */
   emblem?: EmblemPainter | null;
-  /** The frame's rope round the screen on these screens too (default: as on the menu). */
+  /** The frame's border (the rope or the game's own) round the screen on these screens too (default: as on the menu). */
   border?: boolean;
   /** Text drawn on the card (labels, the best line, notes): default palette.body. */
   ink?: string;
@@ -902,6 +926,56 @@ function ropeStrip(scene: Phaser.Scene, len: number, vertical: boolean): string 
   });
 }
 
+/**
+ * The theme's ornament round the screen (the rope or the game's `BorderStyle`), or nothing
+ * without one. Depth -40, under the menu's widgets.
+ */
+export function frameBorder(scene: Phaser.Scene): Phaser.GameObjects.GameObject[] {
+  const border = menuTheme()?.frame?.border;
+  if (!border) return [];
+  if (border === 'rope') return ropeBorder(scene);
+  const { width: W, height: H } = scene.scale;
+  const inset = border.inset ?? 8;
+  const out: Phaser.GameObjects.Image[] = [];
+  if (border.edge) {
+    const across = borderStrip(scene, border, W - inset * 2, false), down = borderStrip(scene, border, H - inset * 2, true);
+    out.push(
+      scene.add.image(W / 2, inset, across).setOrigin(0.5, 0),
+      scene.add.image(W / 2, H - inset, across).setOrigin(0.5, 1).setFlipY(true),
+      scene.add.image(inset, H / 2, down).setOrigin(0, 0.5),
+      scene.add.image(W - inset, H / 2, down).setOrigin(1, 0.5).setFlipX(true),
+    );
+  }
+  if (border.corner) {
+    const key = borderCorner(scene, border), ci = border.corner.inset ?? inset;
+    out.push(
+      scene.add.image(ci, ci, key).setOrigin(0, 0),
+      scene.add.image(W - ci, ci, key).setOrigin(1, 0).setFlipX(true),
+      scene.add.image(ci, H - ci, key).setOrigin(0, 1).setFlipY(true),
+      scene.add.image(W - ci, H - ci, key).setOrigin(1, 1).setFlipX(true).setFlipY(true),
+    );
+  }
+  for (const o of out) o.setDepth(-40);
+  return out;
+}
+
+/** One edge strip of a `BorderStyle`, across or down (cached); down: its outer side at x = 0. */
+function borderStrip(scene: Phaser.Scene, b: BorderStyle, len: number, vertical: boolean): string {
+  len = Math.round(len);
+  const t = Math.ceil(b.thick);
+  return bake(scene, `mt-border-${hash(String(b.edge))}-${vertical ? 'v' : 'h'}-${len}x${t}`, vertical ? t : len, vertical ? len : t, (c) => {
+    // turned a quarter clockwise and mirrored: the strip's y = 0 lies on x = 0, its start on top
+    if (vertical) c.setTransform(0, 1, 1, 0, 0, 0);
+    b.edge!(c, len, t);
+  });
+}
+
+/** The corner piece of a `BorderStyle` (cached). */
+function borderCorner(scene: Phaser.Scene, b: BorderStyle): string {
+  const s = Math.ceil(b.corner!.size);
+  return bake(scene, `mt-corner-${hash(String(b.corner!.draw))}-${s}`, s, s, (c) => b.corner!.draw(c, s));
+}
+
 /** The card behind the how-to text: the theme's notes painter or the skin's board. */
 export function notesCard(scene: Phaser.Scene, x: number, y: number, w: number, h: number): Phaser.GameObjects.Image | null {
   const key = notesTexture(scene, w, h);
@@ -932,11 +1006,16 @@ export function prebakeMenuTheme(scene: Phaser.Scene, brandW: number): void {
   if (!theme) return;
   const P = theme.palette;
   shadeTexture(scene, theme.frame?.vignette ?? 0.6, theme.frame?.dim ?? 0);
-  if (theme.frame?.border === 'rope') {
+  const border = theme.frame?.border;
+  if (border === 'rope') {
     const { width: W, height: H } = scene.scale, a = ROPE_INSET + ROPE_T / 2;
     ropeStrip(scene, W - a * 2, false);
     ropeStrip(scene, H - a * 2, true);
     ringTexture(scene, ROPE_RING, P.trim);
+  } else if (border) {
+    const { width: W, height: H } = scene.scale, inset = border.inset ?? 8;
+    if (border.edge) { borderStrip(scene, border, W - inset * 2, false); borderStrip(scene, border, H - inset * 2, true); }
+    if (border.corner) borderCorner(scene, border);
   }
   const states = (kind: SkinKind, w: number, h: number, color?: number) => {
     for (const st of ['up', 'over', 'down'] as SkinState[]) skinTexture(scene, kind, w, h, st, color);

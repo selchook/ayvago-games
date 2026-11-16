@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash, popup,
-  HUD_MARGIN, HUD_ROW2_Y,
+  HUD_MARGIN, HUD_ROW2_Y, themeCard, themeLabel, themeText, overlayHeadingStyle,
 } from '@core';
 import { THREE, type World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent, type CardId, type Offer } from './sim';
@@ -17,6 +17,7 @@ import { talentFx, stardustFor } from './talents';
 import { loadMeta, bankRun, type Meta } from './meta';
 import { makeArt, COIN, DUST, OFFER, cardArt } from './art';
 import { PowerButton, HullBar, BossBar, banner, bossWarning, UI_DEPTH } from './ui';
+import { SUMMARY_W, SUMMARY_H } from './theme';
 import { CardBar, CardTray, CardList, OfferButton, DRAFT_DEPTH, BAR_BOTTOM, BAR_H } from './cardsui';
 
 const BAR_Y = 1212;
@@ -714,19 +715,21 @@ export class PlayScene extends ArcadeScene {
     const { width } = this.scale;
     const c = this.add.container(width / 2, 560).setScrollFactor(0).setDepth(9500);
     this.summaryBox = c;
-    const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.3).fillRoundedRect(-300, -170 + 8, 600, 340, 28);
-    bg.fillStyle(0x0d1430, 0.92).fillRoundedRect(-300, -170, 600, 340, 28);
-    bg.lineStyle(2, 0xffffff, 0.2).strokeRoundedRect(-300, -170, 600, 340, 28);
-    c.add(bg);
-    c.add(txt(this, 0, -118, t('runOver'), { title: true, size: 44, color: '#ff7a6a', strokeThickness: 8 }));
+    // the menu theme's cockpit display (theme.ts), the heading painted like the result screen's
+    c.add(themeCard(this, 0, 0, SUMMARY_W, SUMMARY_H));
+    const head = themeLabel(this, 0, -112, t('runOver'), overlayHeadingStyle(false));
+    head.setScale(Math.min(56 / 84, (SUMMARY_W - 90) / head.width));
+    c.add(head);
     c.add(txt(this, 0, -56, t('reached', { n: sim.sector + 1 }) + ' · ' + t('sec_' + sim.sectorDef.id), { size: 26, color: '#e6ecff', strokeThickness: 0 }));
     c.add(txt(this, 0, -16, t('runStats', { w: sim.run.wavesCleared, b: sim.run.bosses, k: sim.run.kills }), { size: 22, color: '#9fb0d8', strokeThickness: 0 }));
     const lost = sim.offers.length;
     if (lost > 0) c.add(txt(this, 0, 16, t('offersLost', { n: lost }), { size: 19, color: '#ff9aab', strokeThickness: 0 }));
     const dy = lost > 0 ? 14 : 0;
-    const dustIcon = this.add.image(-120, 50 + dy, DUST).setDisplaySize(56, 56);
-    const dustTxt = txt(this, 10, 50 + dy, t('dustEarned', { n: 0 }), { title: true, size: 36, color: '#f0d0ff', strokeThickness: 6 });
+    // the icon and the count centred together (at the final count; the count grows to the right)
+    const dustTxt = themeText(this, 0, 50 + dy, t('dustEarned', { n: this.dustEarned }), { size: 38, color: '#f0d0ff' }).setOrigin(0, 0.5);
+    const row = 56 + 10 + dustTxt.width;
+    const dustIcon = this.add.image(-row / 2 + 28, 50 + dy, DUST).setDisplaySize(56, 56);
+    dustTxt.setX(-row / 2 + 66).setText(t('dustEarned', { n: 0 }));
     c.add([dustIcon, dustTxt]);
     c.add(txt(this, 0, 118 + dy / 2, t('dustTotal', { n: this.meta.dust }), { size: 20, color: '#cfd8f0', strokeThickness: 0 }));
     c.setScale(0.6).setAlpha(0);
