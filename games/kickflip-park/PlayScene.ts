@@ -116,9 +116,10 @@ export class PlayScene extends ArcadeScene {
     this.hintBox = null;
     this.bot = null;
     this.forced = null;
-    // PLAY on the menu opens the setup first; a "play again" (result screen, pause) skates the
-    // same park on the same board at once
-    if (takeFromMenu()) {
+    // PLAY on the menu opens the setup first until a park and board were ever chosen (the menu's
+    // PARK & BOARD page is the place to change them); a "play again" (result screen, pause) and
+    // PLAY after that skate the saved park on the saved board at once
+    if (takeFromMenu() && !this.meta.picked) {
       this.phase = 'setup';
       this.useHud = false;
       // the turntable draws in the scene's world; the session's View takes it over on START

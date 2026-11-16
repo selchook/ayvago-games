@@ -125,7 +125,7 @@ const S: Record<string, Pair> = {
   newBoardTitle: ['YENİ KAYKAY AÇILDI!', 'NEW BOARD UNLOCKED!'],
   sessionTitle: ['{park}', '{park}'],
 
-  // the session setup (PLAY on the menu)
+  // the session setup (PARK & BOARD on the menu, and PLAY until a choice was made)
   setupTitle: ['PARKINI VE KAYKAYINI SEÇ', 'PICK YOUR PARK AND BOARD'],
   start: ['BAŞLA', 'START'],
   setupKeys: ['←/→ park · ↑/↓ kaykay · Enter başla · Esc geri', '←/→ park · ↑/↓ board · Enter start · Esc back'],
@@ -138,6 +138,8 @@ const S: Record<string, Pair> = {
   bestIn: ['En iyi: {n}', 'Best: {n}'],
   board: ['KAYKAY', 'BOARD'],
   back: ['GERİ', 'BACK'],
+  done: ['TAMAM', 'DONE'],
+  parkBoard: ['PARK & KAYKAY', 'PARK & BOARD'],
   rarity_common: ['SIRADAN', 'COMMON'],
   rarity_rare: ['NADİR', 'RARE'],
   rarity_epic: ['DESTANSI', 'EPIC'],

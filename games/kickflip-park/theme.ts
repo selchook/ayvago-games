@@ -3,12 +3,18 @@
 // a slight tilt), switches and plates sit on grip tape, masking tape holds the screen's corners
 // and the how-to is a flyer taped up. A skateboard deck, wheels up, flies behind the logo. Every
 // piece is painted once on a canvas (the core caches it); nothing here runs in play.
-import { shadeColor, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
+import Phaser from 'phaser';
+import { t, loc, shadeColor, SkinButton, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { SHRIKHAND } from '@core/fonts/shrikhand';
+import { prebakeSetup, SETUP_FLYER } from './setup';
+import { loadMeta } from './meta';
+import { usableBoard } from './boardmodel';
 
 /** The session summary's card heights (PlayScene.finish: 190 + 46 per line), painted ahead. */
 export const SUMMARY_W = 620;
 export const summaryH = (lines: number): number => 190 + lines * 46;
+/** The PARK & BOARD button on the menu. */
+const PICK_W = 360, PICK_H = 100;
 
 const PINK = 0xff3b5c, BLUE = 0x1f8fff, YELLOW = 0xffe14a, INK = '#1a1020';
 
@@ -305,6 +311,25 @@ export const KICKFLIP_THEME: MenuTheme = {
   // dim: the backdrop's darkening (main.ts drew it as its own layer before the theme)
   frame: { border: TAPE_BORDER, notes: flyer, vignette: 0.5, dim: 0.3 },
   overlays: { lose: '#e8264a', titles: ['sessionOver'] },
-  // the session summary's flyer with one, two or three lines (PlayScene.finish)
-  cards: [1, 2, 3].map((n) => ({ w: SUMMARY_W, h: summaryH(n) })),
+  // the PARK & BOARD button (main.ts menuOption)
+  pieces: [{ kind: 'button', w: PICK_W, h: PICK_H }],
+  // the session summary's flyer with one, two or three lines (PlayScene.finish), the setup's goals
+  cards: [...[1, 2, 3].map((n) => ({ w: SUMMARY_W, h: summaryH(n) })), SETUP_FLYER],
+  // the setup's stickers, grip tape, buttons and labels (setup.ts)
+  prebake: (scene) => prebakeSetup(scene),
 };
+
+/**
+ * The PARK & BOARD button under the difficulty switch: a blue sticker with the label and, under
+ * it, the park and the board that PLAY skates. Returns a refresh for that line.
+ */
+export function pickButton(scene: Phaser.Scene, x: number, y: number, open: () => void): { btn: SkinButton; refresh: () => void } {
+  const btn = new SkinButton(scene, x, y, t('parkBoard'), open, { width: PICK_W, height: PICK_H, size: 36 });
+  const refresh = () => {
+    const m = loadMeta();
+    btn.setText(t('parkBoard')).fitLabel(PICK_W - 60);
+    btn.setSub(t('park_' + m.park) + ' · ' + loc(usableBoard(m.board).name), { size: 19, color: '#fff3c4' });
+  };
+  refresh();
+  return { btn, refresh };
+}

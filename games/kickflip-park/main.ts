@@ -10,7 +10,9 @@ import { Bot, SKILL } from './bot';
 import { loadMeta } from './meta';
 import { park } from './parks';
 import { makeIcons } from './art';
-import { KICKFLIP_THEME } from './theme';
+import { KICKFLIP_THEME, pickButton } from './theme';
+import { GarageScene } from './garage';
+import Phaser from 'phaser';
 
 launch({
   meta: meta as GameMeta,
@@ -63,7 +65,8 @@ launch({
   },
   menuDecor(scene) {
     makeIcons(scene);
-    // PLAY (or Enter) from here opens the session setup in the Play scene
+    // PLAY (or Enter) from here starts a session from the menu (the setup first until a park and
+    // board were ever chosen)
     menuOpened();
     // a live autopilot skates the chosen park behind the menu. Building it here also compiles
     // every shader the Play scene uses (keepPrograms), so the first Play frame compiles none.
@@ -95,8 +98,23 @@ launch({
       if (!warm) { warm = true; keepPrograms(view.world.renderer, view.world.scene, view.world.camera); }
     };
   },
+  // the PARK & BOARD page: a button under the difficulty switch (B on the keyboard). PLAY then
+  // skates the saved choice at once (the setup comes first only until one was ever made).
+  menuOption: {
+    build(scene, x, y) {
+      const open = () => {
+        if (!scene.scene.isActive()) return;
+        scene.scene.pause();
+        scene.scene.launch('Garage', { from: scene.scene.key });
+      };
+      const { refresh } = pickButton(scene, x, y + 6, open);
+      scene.events.on('garage-closed', refresh);
+      scene.input.keyboard?.on('keydown-B', open);
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('garage-closed', refresh));
+    },
+  },
   // die-cut stickers on grip tape, taped corners and a flying deck behind the logo (theme.ts)
   menuTheme: KICKFLIP_THEME,
-  scenes: [PlayScene],
+  scenes: [PlayScene, GarageScene],
   strings: STRINGS,
 });
