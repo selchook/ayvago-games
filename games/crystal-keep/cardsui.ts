@@ -2,13 +2,17 @@
 // screen that deals three or four of them, the tray of owned cards in the HUD (tooltips on hover,
 // a tap opens the full list) and that list.
 import Phaser from 'phaser';
-import { txt, t, hudChip, HudChip, HUD_GAP, HUD_ROW2_Y } from '@core';
+import { txt, t, upper, hudChip, HudChip, HUD_GAP, HUD_ROW2_Y, SkinButton, skinImage, themeLabel, FmtLine, GlyphText } from '@core';
 import { CARD, RARITY_COLOR, type Rarity } from './cards';
 import { cardArt } from './art';
-import { glass, Pill } from './ui';
 import type { CardId, Sim } from './sim';
+import * as SCR from './screens';
+
+import { EMERALD, STONE } from './theme';
 
 export const DRAFT_DEPTH = 9700;
+/** The owned-cards list: above the draft and above a taken card still flying to the tray. */
+export const LIST_DEPTH = 9760;
 
 /** A card's text (Gold Rain names its gold). */
 export function cardDesc(sim: Sim, id: CardId): string {
@@ -125,8 +129,8 @@ export class DraftScreen {
   private cards: CardFace[] = [];
   private focus = -1;
   private rerolls: number;
-  private rerollBtn: Pill | null = null;
-  private takeBtn: Pill;
+  private rerollBtn: SkinButton | null = null;
+  private takeBtn: SkinButton;
   private busy = true;
   done = false;
 
@@ -137,21 +141,28 @@ export class DraftScreen {
     const dim = scene.add.rectangle(0, 0, width, height, 0x070a14, 0.66).setOrigin(0).setInteractive();
     const four = o.offer.length > 3;
     const ty = four ? 176 : 290;
-    const title = txt(scene, width / 2, ty, t('chooseCard'), { title: true, size: 46, color: '#ffd23f', strokeThickness: 8 });
-    const sub = txt(scene, width / 2, ty + 52, t('draftSub', { n: o.wave }), { size: 22, color: '#e6ecff', strokeThickness: 4, wrap: 660 });
+    // the menu theme's labels and buttons (screens.ts), painted under the Ayvago intro
+    const title = themeLabel(scene, width / 2, ty, t('chooseCard'), SCR.GOLD_TITLE);
+    const ts = Math.min(1, 640 / title.width);
+    const sub = new FmtLine(scene, width / 2, ty + 54, SCR.DRAFT_SUB).set('draftSub', { n: o.wave });
+    if (sub.textWidth > 660) sub.setScale(660 / sub.textWidth);
     const by = four ? 1120 : 920;
-    this.takeBtn = new Pill(scene, width / 2 + 130, by, 220, 84, 0x2f9e56, () => { if (this.focus >= 0) this.pick(this.focus); }, 26);
-    this.takeBtn.setLabels(t('take')).setEnabled(false);
-    const hint = txt(scene, width / 2, by + 78, o.input === 'keys' ? t('draftKeys') : o.input === 'touch' ? t('draftTouch') : t('draftMouse'), { size: 20, color: '#cfd8f0', strokeThickness: 4 });
+    const D = SCR.DRAFT_BTN;
+    this.takeBtn = new SkinButton(scene, width / 2 + 130, by, t('take'), () => { if (this.focus >= 0) this.pick(this.focus); },
+      { width: D.w, height: D.h, size: SCR.BTN.draft, color: EMERALD, baked: true, sfx: '' });
+    this.takeBtn.setEnabled(false);
+    const hint = themeLabel(scene, width / 2, by + 78, o.input === 'keys' ? t('draftKeys') : o.input === 'touch' ? t('draftTouch') : t('draftMouse'), SCR.HINT);
+    hint.setScale(Math.min(1, 660 / hint.width));
     this.root.add([dim, title, sub, this.takeBtn, hint]);
     if (this.rerolls > 0) {
-      this.rerollBtn = new Pill(scene, width / 2 - 130, by, 220, 84, 0x3d5a9e, () => this.reroll(), 24);
-      this.rerollBtn.setLabels(t('reroll', { n: this.rerolls }));
+      this.rerollBtn = new SkinButton(scene, width / 2 - 130, by, t('reroll', { n: this.rerolls }), () => this.reroll(),
+        { width: D.w, height: D.h, size: SCR.BTN.draft, color: STONE, baked: true, sfx: '' });
+      this.rerollBtn.onDenied = () => this.reroll();
       this.root.add(this.rerollBtn);
     }
     this.root.setScrollFactor(0, 0, true);
-    title.setScale(0.4).setAlpha(0);
-    scene.tweens.add({ targets: title, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });
+    title.setScale(0.4 * ts).setAlpha(0);
+    scene.tweens.add({ targets: title, scale: ts, alpha: 1, duration: 320, ease: 'Back.easeOut' });
     dim.setAlpha(0);
     scene.tweens.add({ targets: dim, alpha: 1, duration: 220 });
     this.deal(o.offer, 260);
@@ -202,7 +213,7 @@ export class DraftScreen {
     if (this.busy || this.done || this.rerolls <= 0) return;
     this.rerolls--;
     this.o.sfx('reroll', 0.6);
-    this.rerollBtn?.setLabels(t('reroll', { n: this.rerolls })).setEnabled(this.rerolls > 0);
+    this.rerollBtn?.setText(t('reroll', { n: this.rerolls })).setEnabled(this.rerolls > 0);
     const old = this.cards;
     this.cards = [];
     this.setFocus(-1);
@@ -400,39 +411,50 @@ export class CardTray {
 
 // ------------------------------------------------------------------ the full list
 
-/** Every owned card with its text: opened from the tray (tap) or with C. */
+/**
+ * Every owned card with its text: opened from the tray (tap) or with C. On the menu theme's dark
+ * slate board (one of a few heights painted ahead, screens.ts); the names, rarities and title are
+ * painted labels, the descriptions (Gold Rain names its gold) live text.
+ */
 export class CardList {
   private root: Phaser.GameObjects.Container;
   constructor(scene: Phaser.Scene, sim: Sim, private onClose: () => void) {
     const { width, height } = scene.scale;
-    this.root = scene.add.container(0, 0).setScrollFactor(0, 0, true).setDepth(DRAFT_DEPTH);
-    const dim = scene.add.rectangle(0, 0, width, height, 0x070a14, 0.6).setOrigin(0).setInteractive();
+    this.root = scene.add.container(0, 0).setScrollFactor(0, 0, true).setDepth(LIST_DEPTH);
+    const dim = scene.add.rectangle(0, 0, width, height, 0x070a14, 0.72).setOrigin(0).setInteractive();
     dim.on('pointerup', () => this.close());
     const ids = sim.cardOrder;
     // rows as tall as their text
     const rows = ids.map((id) => {
-      const desc = txt(scene, -216, 0, cardDesc(sim, id), { size: 19, color: '#dfe7fb', strokeThickness: 0, shadow: false, wrap: 500, align: 'left' }).setOrigin(0, 0);
+      const desc = txt(scene, -216, 0, cardDesc(sim, id), { size: 19, color: '#e8e0f8', strokeThickness: 0, shadow: false, wrap: 500, align: 'left' }).setOrigin(0, 0);
       return { id, desc, h: Math.max(80, 44 + desc.height + 10) };
     });
-    const h = 150 + rows.reduce((a, r) => a + r.h, 0);
+    const need = 150 + rows.reduce((a, r) => a + r.h, 0);
+    const h = SCR.LIST_H.find((b) => b >= need) ?? need;
     const panel = scene.add.container(width / 2, height / 2 - 40);
-    panel.add(glass(scene, 660, h, { alpha: 0.95 }));
-    panel.add(txt(scene, 0, -h / 2 + 50, t('cardsTitle'), { title: true, size: 38, color: '#ffd23f', strokeThickness: 6 }));
+    panel.add(skinImage(scene, 0, 0, 'board', SCR.LIST_W, h));
+    const title = themeLabel(scene, 0, -h / 2 + 52, t('cardsTitle'), SCR.LIST_TITLE);
+    title.setScale(Math.min(1, 560 / title.width));
+    panel.add(title);
+    // the rows start under the title; a taller board than needed leaves its room at the bottom
     let y0 = -h / 2 + 96;
     for (const { id, desc, h: rh } of rows) {
-      const col = RARITY_COLOR[CARD[id].rarity];
+      const rar = CARD[id].rarity;
+      const col = RARITY_COLOR[rar];
       const g = scene.add.graphics();
       const cy = y0 + 34;
       g.fillStyle(col.dark, 1).fillRoundedRect(-300, cy - 34, 68, 68, 14).lineStyle(3, col.frame, 1).strokeRoundedRect(-300, cy - 34, 68, 68, 14);
       const n = sim.stacks(id);
       desc.setY(y0 + 32);
-      panel.add([g, scene.add.image(-266, cy, cardArt(id)).setDisplaySize(62, 62),
-        txt(scene, -216, y0 + 14, t('c_' + id) + (n > 1 ? '  ×' + n : ''), { title: true, size: 24, color: col.text, strokeThickness: 0, shadow: false }).setOrigin(0, 0.5),
-        desc,
-        txt(scene, 296, y0 + 14, t('r_' + CARD[id].rarity as Rarity), { size: 14, color: col.text, strokeThickness: 0, shadow: false }).setOrigin(1, 0.5)]);
+      const name = themeLabel(scene, -216, y0 + 14, upper(t('c_' + id)), SCR.cardName(rar));
+      name.setOrigin(0, name.originY);
+      const tag = themeLabel(scene, 296, y0 + 14, t('r_' + rar as Rarity), SCR.RARITY_TAG(rar));
+      tag.setOrigin(1, tag.originY);
+      panel.add([g, scene.add.image(-266, cy, cardArt(id)).setDisplaySize(62, 62), name, desc, tag]);
+      if (n > 1) panel.add(new GlyphText(scene, -216 + name.width - 6, y0 + 14, '×' + n, SCR.cardName(rar), 0));
       y0 += rh;
     }
-    panel.add(txt(scene, 0, h / 2 - 30, t('cardsClose'), { size: 19, color: '#9fb0d8', strokeThickness: 0, shadow: false }));
+    panel.add(themeLabel(scene, 0, h / 2 - 34, t('cardsClose'), SCR.LIST_HINT));
     this.root.add([dim, panel]);
     this.root.setScrollFactor(0, 0, true);
     const fit = Math.min(1, 1140 / h);

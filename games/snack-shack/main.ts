@@ -10,6 +10,8 @@ import { Fx } from './fx3d';
 import { Sim, seeded } from './sim';
 import { Bot, SKILL } from './bot';
 import { makeThumbs } from './thumbs';
+import { SNACK_THEME } from './theme';
+import { prebakeScreens } from './screens';
 
 launch({
   meta: meta as GameMeta,
@@ -63,7 +65,7 @@ launch({
     const chef = new Chef(world.scene);
     const fx = new Fx(world.scene, seeded(3));
     const bot = new Bot(sim, SKILL.expert, seeded(5));
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x1a1020, 0.42).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in theme.ts): one full-screen layer
     let time = 0;
     // the bar sits between the title and PLAY, where the menu leaves room to watch
     const menuLook = CAMERA.look.clone().add(new THREE.Vector3(0, 0, 1.1));
@@ -87,6 +89,9 @@ launch({
       world.camera.lookAt(menuLook);
     };
   },
+  // awning buttons, a chalkboard menu, gingham and a burger stall (theme.ts); the day's cards, the
+  // order ticket and the upgrade shop in the same look (screens.ts paints them under the intro)
+  menuTheme: { ...SNACK_THEME, prebake: prebakeScreens },
   scenes: [PlayScene],
   strings: STRINGS,
 });

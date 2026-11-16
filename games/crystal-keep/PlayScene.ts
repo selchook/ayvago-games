@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, txt, t, popup, storage, isEasy, playMusic, hudChip, HudChip,
-  HUD_MARGIN, HUD_ROW2_Y, Button, pushModal, upper,
+  HUD_MARGIN, HUD_ROW2_Y, pushModal, upper, SkinButton, skinImage, skinTexture, themeLabel, FmtLine, GlyphText, Para,
 } from '@core';
 import { World3D, THREE } from '@core/three';
 import { Sim, MAPS, ENEMIES, TOWER_KINDS, METEOR, POWERS, POWER_IDS, type Tower, type TowerKind, type SimEvent, type EnemyKind, type Enemy, type PowerId, type CardId } from './sim';
@@ -12,13 +12,17 @@ import { EnemyView, FLY_Y } from './enemies';
 import { Fx } from './fx3d';
 import { kitMat } from './kit';
 import { Thumbs, mapThumb, enemyThumb, shardIcon } from './thumbs';
-import { BuildDock, TowerCard, WaveButton, Pill, glass, drawStar, UI_DEPTH, isPower, POWER_COLOR, type ArmKind, type PowerState } from './ui';
+import { BuildDock, TowerCard, WaveButton, glass, drawStar, UI_DEPTH, isPower, POWER_COLOR, type ArmKind, type PowerState } from './ui';
 import { Bot } from './bot';
 import { rollDraft, glowTowers, CARD, RARITY_COLOR } from './cards';
 import { DraftScreen, CardTray, CardList, type CardFace } from './cardsui';
 import { TalentBoard } from './talentsui';
 import { loadMeta, saveMeta, talentFx, slots, powerUnlocked, toggleLoadout, shardsFor, owns, type Meta, type TalentId } from './meta';
 import { powerArt } from './art';
+import * as SCR from './screens';
+
+import { lockTexture } from './talentsui';
+import { STONE, SLATE, EMERALD } from './theme';
 
 type Phase = 'select' | 'play' | 'clear';
 
@@ -117,6 +121,8 @@ export class PlayScene extends ArcadeScene {
   // powers, cards and talents
   meta!: Meta;
   private draft: DraftScreen | null = null;
+  /** A taken card is flying from the draft to the tray. */
+  private cardFlying = false;
   private draftWait = 0;
   private cardList: CardList | null = null;
   private talentBoard: TalentBoard | null = null;
@@ -170,6 +176,7 @@ export class PlayScene extends ArcadeScene {
     this.bot = null;
     this.meta = loadMeta();
     this.draft = null;
+    this.cardFlying = false;
     this.draftWait = 0;
     this.cardList = null;
     this.talentBoard = null;
@@ -281,30 +288,37 @@ export class PlayScene extends ArcadeScene {
     this.focus = Math.max(0, Math.min(this.focus, MAPS.length - 1));
     if (!this.selectable(this.focus)) this.focus = MAPS.findIndex((_, i) => this.selectable(i));
     if (this.focus < 0) this.focus = 0;
-    add(txt(this, width / 2, 196, t('chooseMap'), { title: true, size: 46, color: '#ffffff', strokeThickness: 8 }).setScrollFactor(0).setDepth(UI_DEPTH));
+    // the menu theme's pieces and labels (screens.ts), painted under the Ayvago intro
+    const title = add(themeLabel(this, width / 2, 196, t('chooseMap'), SCR.TITLE).setScrollFactor(0).setDepth(UI_DEPTH));
+    title.setScale(Math.min(1, 640 / title.width));
     if (meta) this.talentRow(add);
-    const cw = 214, ch = 316, y = meta ? 600 : 900;
+    const cw = SCR.MAP_TILE.w, ch = SCR.MAP_TILE.h, y = meta ? 600 : 900;
     MAPS.forEach((def, i) => {
       const x = width / 2 + (i - 1) * (cw + 12);
       const box = this.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH);
       const open = this.selectable(i);
-      const bg = this.add.graphics();
+      const bg = skinImage(this, 0, 0, 'board', cw, ch, open ? 'up' : 'off');
       const img = this.add.image(0, -66, this.textures.exists(mapThumb(i)) ? mapThumb(i) : '__WHITE').setDisplaySize(186, 186).setAlpha(open ? 1 : 0.35);
       if (!this.textures.exists(mapThumb(i))) img.setTint(0x22304f);
       img.setData('thumb', mapThumb(i));
       box.setData('img', img);
-      const name = txt(this, 0, 50, t('m_' + def.id), { title: true, size: 24, strokeThickness: 0, wrap: cw - 16 });
-      const waves = txt(this, 0, 84, t('wavesN', { n: def.waves.length }), { size: 20, color: '#cfd8f0', strokeThickness: 0 });
+      const name = themeLabel(this, 0, 50, upper(t('m_' + def.id)), SCR.MAP_NAME);
+      name.setScale(Math.min(1, (cw - 18) / name.width));
+      const waves = themeLabel(this, 0, 84, t('wavesN', { n: def.waves.length }), SCR.MAP_SUB);
       const stars = this.add.graphics();
       for (let k = 0; k < 3; k++) drawStar(stars, (k - 1) * 40, 124, 15, prog.stars[i] > k);
       box.add([bg, img, name, waves, stars]);
       if (!open) {
         // inside a run the maps already played say so; others are still locked
         const done = this.mapsCleared > 0 && i <= this.mapIx;
-        const lock = txt(this, 0, -66, done ? t('mapDone') : t('locked'), { title: done, size: done ? 30 : 20, color: done ? '#9dffb8' : '#ffd23f', strokeThickness: 5, wrap: cw - 30 });
-        box.add(lock);
+        if (done) box.add(themeLabel(this, 0, -66, t('mapDone'), SCR.DONE));
+        else {
+          const lock = new Para(this, 0, 0, t('locked'), SCR.LOCK, SCR.LOCK_W, 0.5);
+          lock.setY(-66 - lock.textHeight / 2);
+          box.add(lock);
+        }
       } else if (this.mapsCleared > 0) {
-        box.add(txt(this, 0, -ch / 2 + 22, t('mapNext'), { title: true, size: 18, color: '#9dffb8', strokeThickness: 4 }));
+        box.add(themeLabel(this, 0, -ch / 2 + 24, t('mapNext'), SCR.NEXT_TAG));
       }
       box.setData('bg', bg).setData('open', open);
       box.setSize(cw, ch).setInteractive({ useHandCursor: open });
@@ -317,9 +331,11 @@ export class PlayScene extends ArcadeScene {
       add(box);
     });
     if (meta) this.loadoutRow(add);
-    add(new Button(this, width / 2, meta ? 1124 : 1166, t('playMap'), () => { if (!this.talentBoard) this.startMap(this.focus); }, { width: 340, height: 96, color: 0x2f9e56 }).setScrollFactor(0).setDepth(UI_DEPTH));
+    add(new SkinButton(this, width / 2, meta ? 1124 : 1166, t('playMap'), () => { if (!this.talentBoard) this.startMap(this.focus); },
+      { width: SCR.PLAY_BTN.w, height: SCR.PLAY_BTN.h, size: SCR.BTN.play, variant: 'primary', baked: true }).setScrollFactor(0).setDepth(UI_DEPTH));
     const touch = this.sys.game.device.input.touch;
-    add(txt(this, width / 2, 1240, touch ? t('selectTouch') : meta ? t('selectKeys2') : t('selectKeys'), { size: 22, color: '#e6ecff', strokeThickness: 4 }).setScrollFactor(0).setDepth(UI_DEPTH));
+    const hint = add(themeLabel(this, width / 2, 1240, touch ? t('selectTouch') : meta ? t('selectKeys2') : t('selectKeys'), SCR.HINT).setScrollFactor(0).setDepth(UI_DEPTH));
+    hint.setScale(Math.min(1, 660 / hint.width));
     this.drawSelect();
     this.previewMap(this.focus);
   }
@@ -329,17 +345,16 @@ export class PlayScene extends ArcadeScene {
     const { width } = this.scale;
     const y = 282;
     const chip = add(this.add.container(width / 2 - 150, y).setScrollFactor(0).setDepth(UI_DEPTH));
-    const text = txt(this, 18, 0, String(this.meta.shards), { title: true, size: 30, color: '#f0d0ff', strokeThickness: 0, shadow: false });
-    const w = Math.max(150, text.width + 100);
-    chip.add([this.add.graphics().fillStyle(0x000000, 0.3).fillRoundedRect(-w / 2, -34, w, 76, 34).fillStyle(0x1a1430, 0.88).fillRoundedRect(-w / 2, -38, w, 76, 34).lineStyle(2, 0xd27bff, 0.8).strokeRoundedRect(-w / 2, -38, w, 76, 34),
-      this.add.image(-w / 2 + 40, 0, shardIcon()).setDisplaySize(52, 52), text.setX(-w / 2 + 70).setOrigin(0, 0.5)]);
-    chip.setData('shardText', text);
-    const btn = add(new Pill(this, width / 2 + 100, y, 270, 76, 0x8a3fd0, () => this.openTalents(), 26).setScrollFactor(0, 0, true).setDepth(UI_DEPTH));
-    btn.setLabels(t('talents'));
+    const w = SCR.SHARD_CHIP.w;
+    const count = new GlyphText(this, -w / 2 + 72, 0, String(this.meta.shards), SCR.SHARDS, 0);
+    chip.add([skinImage(this, 0, 0, 'plate', w, SCR.SHARD_CHIP.h, 'up', SLATE), this.add.image(-w / 2 + 40, 0, shardIcon()).setDisplaySize(52, 52), count]);
+    if (count.textWidth > w - 86) count.setScale((w - 86) / count.textWidth);
+    chip.setData('shardText', count);
+    const btn = add(new SkinButton(this, width / 2 + 100, y, t('talents'), () => this.openTalents(),
+      { width: SCR.TALENTS_BTN.w, height: SCR.TALENTS_BTN.h, size: SCR.BTN.talents, color: STONE, baked: true }).setScrollFactor(0).setDepth(UI_DEPTH));
     if (!this.meta.seenBoard) {
       const badge = this.add.container(width / 2 + 210, y - 36).setScrollFactor(0).setDepth(UI_DEPTH + 1);
-      const bt = txt(this, 0, 0, t('newBadge'), { title: true, size: 17, strokeThickness: 0, shadow: false });
-      badge.add([this.add.graphics().fillStyle(0xff4a6a, 1).fillRoundedRect(-bt.width / 2 - 12, -15, bt.width + 24, 30, 15), bt]);
+      badge.add([this.add.image(0, 0, SCR.badgeTexture(this)), themeLabel(this, 0, 0, t('newBadge'), SCR.BADGE)]);
       add(badge);
       this.tweens.add({ targets: badge, scale: 1.15, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.tweens.add({ targets: btn, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -352,40 +367,29 @@ export class PlayScene extends ArcadeScene {
     const m = this.meta;
     const c = add(this.add.container(0, 0).setScrollFactor(0).setDepth(UI_DEPTH));
     this.loadoutUi = c;
-    const y = 930, tw = 124;
-    const panelW = 4 * tw + 3 * 14 + 40;
-    c.add(glass(this, panelW, 236, { alpha: 0.82 }).setPosition(width / 2, y - 10));
-    const title = txt(this, width / 2, y - 102, t('powersTitle', { n: m.loadout.length, m: slots(m) }), { title: true, size: 22, color: '#ffd27a', strokeThickness: 0, shadow: false });
-    c.add(title);
+    const y = 930, tw = SCR.POWER_TILE;
+    c.add(skinImage(this, width / 2, y - 10, 'board', SCR.LOADOUT.w, SCR.LOADOUT.h));
+    c.add(new FmtLine(this, width / 2, y - 98, SCR.POWERS_HEAD).set('powersTitle', { n: m.loadout.length, m: slots(m) }));
     POWER_IDS.forEach((id, i) => {
       const x = width / 2 + (i - 1.5) * (tw + 14);
       const unlocked = powerUnlocked(m, id), on = m.loadout.includes(id);
-      const g = this.add.graphics();
-      g.fillStyle(0x000000, 0.25).fillRoundedRect(x - tw / 2, y - tw / 2 + 5, tw, tw, 18);
-      g.fillStyle(on ? POWER_COLOR[id] : unlocked ? 0x24345a : 0x1a1f30, 1).fillRoundedRect(x - tw / 2, y - tw / 2, tw, tw, 18);
-      g.fillStyle(0xffffff, 0.08).fillRoundedRect(x - tw / 2 + 4, y - tw / 2 + 4, tw - 8, tw * 0.4, { tl: 15, tr: 15, bl: 6, br: 6 });
-      g.lineStyle(on ? 4 : 2, on ? 0xffe0b0 : 0xffffff, on ? 1 : 0.16).strokeRoundedRect(x - tw / 2, y - tw / 2, tw, tw, 18);
+      const tile = on ? skinImage(this, x, y, 'plate', tw, tw, 'on', POWER_COLOR[id]) : skinImage(this, x, y, 'plate', tw, tw, unlocked ? 'up' : 'off', STONE);
       const art = this.add.image(x, y - 12, this.textures.exists(powerArt(id)) ? powerArt(id) : '__WHITE').setDisplaySize(82, 82).setAlpha(unlocked ? (on ? 1 : 0.6) : 0.22);
-      const name = txt(this, x, y + 46, t('p_' + id), { title: true, size: 16, strokeThickness: 0, shadow: false, color: on ? '#ffffff' : '#9fb0d8' });
-      name.setScale(Math.min(1, (tw - 10) / name.width));
-      const key = txt(this, x - tw / 2 + 15, y - tw / 2 + 15, POWERS[id].key, { size: 16, color: '#cfd8f0', strokeThickness: 0, shadow: false });
-      c.add([g, art, name, key]);
+      const name = themeLabel(this, x, y + 44, upper(t('p_' + id)), SCR.powerName(on));
+      name.setScale(Math.min(1, (tw - 12) / name.width));
+      const key = themeLabel(this, x - tw / 2 + 17, y - tw / 2 + 17, POWERS[id].key, SCR.POWER_KEY);
+      c.add([tile, art, name, key]);
       if (on) {
-        const ck = this.add.graphics().fillStyle(0x2f9e56, 1).fillCircle(x + tw / 2 - 16, y - tw / 2 + 16, 14).lineStyle(4, 0xffffff, 1);
+        const ck = this.add.graphics().fillStyle(EMERALD, 1).fillCircle(x + tw / 2 - 16, y - tw / 2 + 16, 14).lineStyle(4, 0xffffff, 1);
         ck.beginPath(); ck.moveTo(x + tw / 2 - 23, y - tw / 2 + 16); ck.lineTo(x + tw / 2 - 18, y - tw / 2 + 22); ck.lineTo(x + tw / 2 - 9, y - tw / 2 + 10); ck.strokePath();
         c.add(ck);
       }
-      if (!unlocked) {
-        const l = this.add.graphics();
-        l.lineStyle(6, 0x9fb0d8, 1).strokeCircle(x, y - 26, 14);
-        l.fillStyle(0x9fb0d8, 1).fillRoundedRect(x - 20, y - 22, 40, 32, 7);
-        c.add(l);
-      }
+      if (!unlocked) c.add(this.add.image(x, y - 14, lockTexture(this)));
       const hit = this.add.zone(x, y, tw, tw).setInteractive({ useHandCursor: true });
       hit.on('pointerup', () => { if (!this.talentBoard) this.toggleLoadout(id); });
       c.add(hit);
     });
-    if (m.loadout.length >= 3) c.add(txt(this, width / 2, y + 86, t('threeSlower'), { size: 18, color: '#ffc27a', strokeThickness: 0, shadow: false }));
+    if (m.loadout.length >= 3) c.add(themeLabel(this, width / 2, y + 86, t('threeSlower'), SCR.SLOWER));
   }
 
   private toggleLoadout(id: PowerId): void {
@@ -427,16 +431,12 @@ export class PlayScene extends ArcadeScene {
   }
 
   private drawSelect(): void {
-    const cw = 214, ch = 316;
     const boxes = this.selectUi.filter((q) => q.getData?.('bg'));
     boxes.forEach((o, i) => {
-      const bg = o.getData('bg') as Phaser.GameObjects.Graphics;
+      const bg = o.getData('bg') as Phaser.GameObjects.Image;
       const on = i === this.focus;
       const open = o.getData('open') as boolean;
-      bg.clear();
-      bg.fillStyle(0x000000, 0.3).fillRoundedRect(-cw / 2, -ch / 2 + 8, cw, ch, 24);
-      bg.fillStyle(on ? 0x1f5a3a : 0x14203a, open ? 0.94 : 0.8).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 24);
-      bg.lineStyle(on ? 5 : 2, on ? 0x9dffb8 : 0xffffff, on ? 1 : 0.16).strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 24);
+      bg.setTexture(skinTexture(this, 'board', SCR.MAP_TILE.w, SCR.MAP_TILE.h, !open ? 'off' : on ? 'on' : 'up'));
       (o as Phaser.GameObjects.Container).setScale(on ? 1.04 : 1);
     });
   }
@@ -755,7 +755,7 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     if (this.phase === 'clear') {
-      if (code === 'Enter' || code === 'Space') (this.clearUi.find((o) => o.getData?.('primary')) as Button | undefined)?.press();
+      if (code === 'Enter' || code === 'Space') (this.clearUi.find((o) => o.getData?.('primary')) as SkinButton | undefined)?.press();
       return;
     }
     if (!this.sim) return;
@@ -1541,9 +1541,12 @@ export class PlayScene extends ArcadeScene {
     face.setPosition(p.tx, p.ty).setScrollFactor(0, 0, true).setDepth(9750);
     this.add.existing(face);
     draft?.close();
+    // the card list waits until the card has landed in its slot (it would open over a flying card)
+    this.cardFlying = true;
     this.tweens.add({
       targets: face, x: to.x, y: to.y, scale: 0.14, angle: 360, duration: 560, ease: 'Cubic.easeIn',
       onComplete: () => {
+        this.cardFlying = false;
         face.destroy();
         this.tray.hide(id, false);
         this.tray.sync(sim);
@@ -1591,7 +1594,7 @@ export class PlayScene extends ArcadeScene {
   /** All owned cards with their texts (a tap on the tray, or C). */
   private openCardList(): void {
     const sim = this.sim;
-    if (!sim || this.cardList || this.draft || this.phase !== 'play' || !sim.cardOrder.length) return;
+    if (!sim || this.cardList || this.draft || this.cardFlying || this.phase !== 'play' || !sim.cardOrder.length) return;
     this.holdOverlay(true);
     this.sfx('cardSlide', { volume: 0.5 });
     this.tray.hideTip();
@@ -1680,12 +1683,13 @@ export class PlayScene extends ArcadeScene {
     const last = this.mapIx >= MAPS.length - 1;
     const add = <O extends Phaser.GameObjects.GameObject>(o: O): O => { this.clearUi.push(o); return o; };
     const box = add(this.add.container(width / 2, 700).setScrollFactor(0).setDepth(9600));
-    box.add(glass(this, 620, last ? 640 : 720, { alpha: 0.93 }).setY(last ? -40 : 0));
+    // the menu theme's board and labels (screens.ts), painted under the Ayvago intro
+    box.add(skinImage(this, 0, last ? -40 : 0, 'board', SCR.CLEAR_CARD.w, SCR.CLEAR_CARD.h[last ? 1 : 0]));
     // one line, shrunk to fit the card (the Turkish "all maps cleared" is long)
-    const head = txt(this, 0, -296, last ? t('allClear') : t('mapClear'), { title: true, size: 44, color: '#9dffb8', strokeThickness: 8 });
+    const head = themeLabel(this, 0, -296, last ? t('allClear') : t('mapClear'), SCR.CLEAR_TITLE);
     if (head.width > 570) head.setScale(570 / head.width);
     box.add(head);
-    box.add(txt(this, 0, -238, t('m_' + sim.map.def.id), { size: 28, color: '#cfd8f0', strokeThickness: 0 }));
+    box.add(themeLabel(this, 0, -238, upper(t('m_' + sim.map.def.id)), SCR.CLEAR_MAP));
     const sg = this.add.graphics();
     box.add(sg);
     for (let i = 0; i < 3; i++) {
@@ -1698,35 +1702,44 @@ export class PlayScene extends ArcadeScene {
         this.tweens.add({ targets: st, scale: 1, duration: 360, delay: 400 + i * 300, ease: 'Back.easeOut', onStart: () => this.sfx('star', { volume: 0.6 }) });
       }
     }
-    box.add(txt(this, 0, -50, t('livesLeft', { n: sim.lives }) + '   ' + t('killsN', { n: sim.kills }), { size: 26, color: '#ffffff', strokeThickness: 0 }));
-    box.add(txt(this, 0, -4, t('bonusPts', { n: bonus }), { size: 30, color: '#ffd23f', strokeThickness: 0 }));
+    // lives and kills on one line, centred together
+    const lives = new FmtLine(this, 0, -50, SCR.LINE, 0).set('livesLeft', { n: sim.lives });
+    const kills = new FmtLine(this, 0, -50, SCR.LINE, 0).set('killsN', { n: sim.kills });
+    const lw = lives.textWidth + 34 + kills.textWidth;
+    lives.setX(-lw / 2);
+    kills.setX(-lw / 2 + lives.textWidth + 34);
+    box.add([lives, kills]);
+    box.add(new FmtLine(this, 0, -4, SCR.BONUS).set('bonusPts', { n: bonus }));
     // the shards: a crystal and a number that counts up
     const sh = this.add.container(0, 56);
-    const shText = txt(this, 0, 0, t('shardsEarned', { n: 0 }), { title: true, size: 30, color: '#f0d0ff', strokeThickness: 0, shadow: false });
+    const shText = new FmtLine(this, 0, 0, SCR.EARNED, 0).set('shardsEarned', { n: shards });
     const gem = this.add.image(0, 0, shardIcon()).setDisplaySize(54, 54);
-    const lay = () => { const w = gem.displayWidth + 10 + shText.width; gem.x = -w / 2 + gem.displayWidth / 2; shText.setOrigin(0, 0.5).setX(gem.x + gem.displayWidth / 2 + 10); };
-    shText.setText(t('shardsEarned', { n: shards }));
-    lay();
-    shText.setText(t('shardsEarned', { n: 0 }));
+    const w0 = gem.displayWidth + 10 + shText.textWidth;
+    gem.x = -w0 / 2 + gem.displayWidth / 2;
+    shText.setX(gem.x + gem.displayWidth / 2 + 10).set('shardsEarned', { n: 0 });
     sh.add([gem, shText]);
     box.add(sh);
     const count = { v: 0 };
     this.tweens.add({
       targets: count, v: shards, duration: 700, delay: 1500, ease: 'Quad.easeOut',
-      onUpdate: () => shText.setText(t('shardsEarned', { n: Math.round(count.v) })),
+      onUpdate: () => shText.set('shardsEarned', { n: Math.round(count.v) }),
       onStart: () => this.sfx('shards', { volume: 0.6 }),
       onComplete: () => { this.tweens.add({ targets: gem, scale: gem.scale * 1.4, duration: 140, yoyo: true }); this.sfx('star', { volume: 0.5 }); },
     });
     if (firstShards) {
-      const hint = txt(this, 0, 104, t('talentHintFirst'), { size: 21, color: '#ffd27a', strokeThickness: 0, wrap: 560 });
+      const hint = new Para(this, 0, 0, t('talentHintFirst'), SCR.TALENT_HINT, SCR.HINT_W, 0.5);
+      hint.setY(104 - hint.textHeight / 2);
       box.add(hint);
       this.tweens.add({ targets: hint, alpha: 0.55, duration: 600, yoyo: true, repeat: -1 });
     }
-    const next = new Button(this, 0, last ? 196 : 186, last ? t('finish') : t('nextMap'), () => last ? this.finishRun() : this.toNextMap(), { width: 380, height: 92, color: 0x2f9e56 });
+    const next = new SkinButton(this, 0, last ? 196 : 186, last ? t('finish') : t('nextMap'), () => last ? this.finishRun() : this.toNextMap(),
+      { width: SCR.NEXT_BTN.w, height: SCR.NEXT_BTN.h, size: SCR.BTN.next, color: EMERALD, baked: true });
+    // clear of the crystals set in the button's ends
+    next.fitLabel(SCR.NEXT_BTN.w - 104);
     next.setData('primary', true);
     box.add(next);
     this.clearUi.push(next);
-    if (!last) box.add(new Button(this, 0, 284, t('finish'), () => this.finishRun(), { width: 300, height: 76, color: 0x4a5a86, size: 26 }));
+    if (!last) box.add(new SkinButton(this, 0, 284, t('finish'), () => this.finishRun(), { width: SCR.FINISH_BTN.w, height: SCR.FINISH_BTN.h, size: SCR.BTN.finish, color: STONE, baked: true }));
     box.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: box, scale: 1, alpha: 1, duration: 360, delay: 500, ease: 'Back.easeOut' });
   }

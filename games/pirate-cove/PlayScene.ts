@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, CarSteering, t, txt, shake, flash, popup, playMusic, touchScreen,
-  hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, HUD_CHIP_H, hudRightEdge,
+  hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, HUD_CHIP_H, hudRightEdge, themeCard, themeLabel,
 } from '@core';
 import { World3D, THREE, model } from '@core/three';
 import { Sea, Clouds, Gulls, Rain, PALETTES, mixPalette, freeOwnGeometry, type Palette } from './sea';
@@ -12,6 +12,7 @@ import { Ambience } from './sounds';
 import { WAVES, FOES, tuning, waveBonus, TUNING, type FoeKind, type FoeStats, type WaveDef } from './waves';
 import { Minimap, viewQuad, type MapState } from './minimap';
 import { CannonSfx } from './cannon-sfx';
+import { WAVE_CARD_W, WAVE_CARD_H, WAVE_NO_STYLE, WAVE_TITLE_STYLE, WAVE_CLEAR_STYLE, INK } from './theme';
 
 // ---------------------------------------------------------------- constants
 
@@ -388,15 +389,15 @@ export class PlayScene extends ArcadeScene {
     this.card?.destroy();
     const { width } = this.scale;
     const goal = t(this.def.goal, { n: this.def.mission === 'sink' ? this.sinkGoal : this.chestGoal });
-    const g = this.add.graphics();
-    g.fillStyle(0x0b1430, 0.62).fillRoundedRect(-300, -96, 600, 192, 28);
-    g.lineStyle(2, 0xffffff, 0.35).strokeRoundedRect(-300, -96, 600, 192, 28);
-    const n = txt(this, 0, -58, t('waveN', { n: this.wave + 1 }), { size: 24, color: '#ffd23f' });
-    const title = txt(this, 0, -10, t(this.def.title), { title: true, size: 44, color: '#ffffff' });
-    const sub = txt(this, 0, 50, goal, { size: 24, color: '#d7f3ff', wrap: 560 });
+    // the ship's log of the menu theme (theme.ts): painted under the Ayvago intro, placed here
+    const bg = themeCard(this, 0, 0, WAVE_CARD_W, WAVE_CARD_H);
+    const n = themeLabel(this, 0, -64, t('waveN', { n: this.wave + 1 }), WAVE_NO_STYLE);
+    const title = themeLabel(this, 0, -14, t(this.def.title), WAVE_TITLE_STYLE);
+    if (title.width > WAVE_CARD_W - 60) title.setScale((WAVE_CARD_W - 60) / title.width);
+    const sub = txt(this, 0, 52, goal, { size: 24, color: INK, wrap: 540, strokeThickness: 0, shadow: false });
     // below the large sea chart when it is open
     const y = this.minimap?.big ? Math.max(430, this.minimap.bottom + 110) : 430;
-    this.card = this.add.container(width / 2, y, [g, n, title, sub]).setDepth(9100).setScrollFactor(0).setScale(0.6).setAlpha(0);
+    this.card = this.add.container(width / 2, y, [bg, n, title, sub]).setDepth(9100).setScrollFactor(0).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.card, scale: 1, alpha: 1, duration: 360, ease: 'Back.easeOut' });
   }
 
@@ -431,7 +432,7 @@ export class PlayScene extends ArcadeScene {
     if (this.hull > before) this.hud.setLives(this.hull, this.tune.hull);
     const title = this.failed ? '' : t('waveClear');
     if (title) {
-      const big = txt(this, width / 2, 420, title, { title: true, size: 56, color: '#ffd23f' }).setDepth(9100).setScrollFactor(0).setScale(0.4);
+      const big = themeLabel(this, width / 2, 420, title, WAVE_CLEAR_STYLE).setDepth(9100).setScrollFactor(0).setScale(0.4);
       this.tweens.add({ targets: big, scale: 1, duration: 420, ease: 'Back.easeOut' });
       this.tweens.add({ targets: big, alpha: 0, delay: 1900, duration: 400, onComplete: () => big.destroy() });
       popup(this, width / 2, 500, t('bonus', { n: bonus }), '#9fe7b8', 30);

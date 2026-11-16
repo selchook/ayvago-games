@@ -7,6 +7,7 @@ import { Sea, Gulls, Clouds, PALETTES, freeOwnGeometry } from './sea';
 import { Ship } from './ship';
 import { Archipelago, BERTH, ISLAND_MODELS } from './islands';
 import { makeSeaSounds } from './sounds';
+import { NAVAL_THEME } from './theme';
 
 const SHIPS = ['ship-pirate-medium', 'ship-pirate-small', 'ship-small', 'ship-medium', 'ship-large', 'ship-ghost'];
 const PROPS = ['cannon-ball', 'chest', 'barrel', 'bottle-large'];
@@ -68,8 +69,7 @@ launch({
     const ship = new Ship(world.scene, 'pk:ship-pirate-medium', 1);
     const gulls = new Gulls(world.scene, 4);
     const clouds = new Clouds(world.scene, 6);
-    // a dim veil keeps the menu text readable
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0b1430, 0.3).setOrigin(0).setDepth(-90);
+    // the veil that keeps the menu readable is the menu theme's (frame.dim in theme.ts): one full-screen layer
     const t0 = performance.now();
     const centre = new THREE.Vector3(BERTH.x + 6, 0, BERTH.z + 34);
     world.onFrame = (dt) => {
@@ -99,6 +99,8 @@ launch({
   difficulty: true,
   // touch screens choose ARROWS | WHEEL | TILT for the helm under PLAY (the shared steering switch)
   menuOption: steeringOption,
+  // brass ship-plates, a sea chart and a ship's wheel over crossed cannons (theme.ts)
+  menuTheme: NAVAL_THEME,
   music: { play: 'stage2' },
   scenes: [PlayScene],
   strings: STRINGS,
