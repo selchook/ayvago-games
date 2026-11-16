@@ -4,9 +4,11 @@
 // floor, the floor-clear card, until the hero's hearts run out.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, Button, txt, t, upper, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, shake, flash, popup,
-  storage, playMusic, getLang,
+  ArcadeScene, Controls, txt, t, upper, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, shake, flash, popup,
+  storage, playMusic, themeLabel, skinImage, skinTexture, SkinButton, FmtLine, GlyphText, Para,
 } from '@core';
+import * as SCR from './screens';
+import { NIGHT, MOSSY, CRYPT } from './theme';
 import { World3D, THREE, playerCharacter3d } from '@core/three';
 import {
   Sim, ENEMIES, META, META_MAX, META_COST, UPGRADES, type SimEvent, type UpgradeId, type MetaLevels, type MetaId, type Chest, type Enemy,
@@ -803,27 +805,34 @@ export class PlayScene extends ArcadeScene {
     const dim = this.add.rectangle(0, 0, width, height, 0x07050c, 0.55).setOrigin(0).setDepth(UI_DEPTH + 40).setInteractive();
     dim.setData('offer', offer);
     this.card.push(dim);
-    const title = txt(this, width / 2, 300, t('shrine'), { title: true, size: 46, color: '#ffd27a', strokeThickness: 8 }).setDepth(UI_DEPTH + 41);
-    const sub = txt(this, width / 2, 356, t('choose'), { size: 28, color: '#ffffff' }).setDepth(UI_DEPTH + 41);
+    // the menu theme's slabs and labels (theme.ts, screens.ts), painted under the Ayvago intro
+    const title = themeLabel(this, width / 2, 300, t('shrine'), SCR.TITLE).setDepth(UI_DEPTH + 41);
+    title.setScale(Math.min(1, 640 / title.width));
+    const sub = themeLabel(this, width / 2, 358, t('choose'), SCR.SUB).setDepth(UI_DEPTH + 41);
     this.card.push(title, sub);
     let sel = 0;
     const frames: Phaser.GameObjects.Graphics[] = [];
-    const H = 176, W = 620;
+    const plates: Phaser.GameObjects.Image[] = [];
+    const H = SCR.BLESSING.h, W = SCR.BLESSING.w;
     offer.forEach((u, i) => {
       const y = 420 + i * (H + 22);
       const box = this.add.container(width / 2, y + H / 2).setDepth(UI_DEPTH + 42);
-      const g = this.add.graphics();
-      glass(g, -W / 2, -H / 2, W, H, 26, 0x1c1630, 0.94);
+      const g = skinImage(this, 0, 0, 'plate', W, H, 'up', SCR.BLESS_COLOR);
+      plates.push(g);
       const fr = this.add.graphics();
       frames.push(fr);
       const ic = this.add.graphics();
       drawIcon(ic, u, -W / 2 + 84, 0, 48);
       const lvl = s.upgrades[u];
-      const name = txt(this, -W / 2 + 160, -34, t(upKey(u)), { size: 34, color: '#ffffff', title: true, strokeThickness: 0 }).setOrigin(0, 0.5);
-      const badge = txt(this, W / 2 - 24, -34, lvl ? t('levelN', { n: lvl + 1 }) : 'NEW', { size: 22, color: lvl ? '#ffd27a' : '#8aff9a', strokeThickness: 0 }).setOrigin(1, 0.5);
-      if (!lvl) badge.setText(getLang() === 'tr' ? 'YENİ' : 'NEW');
-      const desc = txt(this, -W / 2 + 160, 22, t(upKey(u) + '_d'), { size: 25, color: '#d8d0f0', strokeThickness: 0, wrap: W - 190, align: 'left' }).setOrigin(0, 0.5);
-      const num = txt(this, -W / 2 + 30, -H / 2 + 26, String(i + 1), { size: 22, color: '#ffffff', strokeThickness: 0 }).setAlpha(0.6);
+      const name = themeLabel(this, -W / 2 + 160, -38, t(upKey(u)), SCR.NAME);
+      name.setOrigin(0, name.originY);
+      const badge = lvl ? new FmtLine(this, W / 2 - 26, -38, SCR.LEVEL, 1).set('levelN', { n: lvl + 1 }) : themeLabel(this, W / 2 - 26, -38, SCR.newWord(), SCR.NEW_TAG);
+      if (!lvl) (badge as Phaser.GameObjects.Image).setOrigin(1, (badge as Phaser.GameObjects.Image).originY);
+      const room = W - 160 - 30 - (lvl ? (badge as FmtLine).textWidth : (badge as Phaser.GameObjects.Image).width) - 12;
+      if (name.width > room) name.setScale(room / name.width);
+      const desc = new Para(this, -W / 2 + 160, 0, t(upKey(u) + '_d'), SCR.DESC, SCR.DESC_W, 0);
+      desc.setY(22 - desc.textHeight / 2);
+      const num = new GlyphText(this, -W / 2 + 30, -H / 2 + 26, String(i + 1), SCR.NUM);
       box.add([g, fr, ic, name, badge, desc, num]);
       box.setSize(W, H).setInteractive({ useHandCursor: true });
       box.on('pointerover', () => { sel = i; paint(); });
@@ -833,8 +842,9 @@ export class PlayScene extends ArcadeScene {
       this.card.push(box);
     });
     const paint = () => frames.forEach((f, i) => {
+      plates[i].setTexture(skinTexture(this, 'plate', W, H, i === sel ? 'over' : 'up', SCR.BLESS_COLOR));
       f.clear();
-      if (i === sel) f.lineStyle(5, UP_COLOR[offer[i]], 1).strokeRoundedRect(-W / 2 - 3, -H / 2 - 3, W + 6, H + 6, 28);
+      if (i === sel) f.lineStyle(5, UP_COLOR[offer[i]], 1).strokeRoundedRect(-W / 2 - 3, -H / 2 - 3, W + 6, H + 6, 10);
     });
     paint();
     this.cardKeys = (code) => {
@@ -870,26 +880,28 @@ export class PlayScene extends ArcadeScene {
     this.hero.cheer();
     const { width, height } = this.scale;
     const dim = this.add.rectangle(0, 0, width, height, 0x07050c, 0.5).setOrigin(0).setDepth(UI_DEPTH + 40).setInteractive();
-    const g = this.add.graphics().setDepth(UI_DEPTH + 41);
-    glass(g, 70, 330, width - 140, 560, 34, 0x1c1630, 0.95);
-    const title = txt(this, width / 2, 400, t('floorClear', { n: s.floorNo }), { title: true, size: 44, color: '#ffe9b0', strokeThickness: 8 }).setDepth(UI_DEPTH + 42);
+    // the menu theme's slab and labels (theme.ts, screens.ts), painted under the Ayvago intro
+    const g = skinImage(this, width / 2, 330 + SCR.CLEAR.h / 2, 'board', SCR.CLEAR.w, SCR.CLEAR.h, 'up', NIGHT).setDepth(UI_DEPTH + 41);
+    const title = new FmtLine(this, width / 2, 400, SCR.CLEAR_TITLE).set('floorClear', { n: s.floorNo }).setDepth(UI_DEPTH + 42);
+    if (title.textWidth > SCR.CLEAR.w - 60) title.setScale((SCR.CLEAR.w - 60) / title.textWidth);
     const secs = Math.round(s.time - this.floorStart);
     const rows: [string, string][] = [
-      [t('statGold'), String(s.hero.gold)],
-      [t('statKills'), String(s.hero.kills - this.killsAtFloor)],
-      [t('statTime'), `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`],
-      [t('statUpgrades'), String(UPGRADES.reduce((a, u) => a + s.upgrades[u], 0))],
+      ['statGold', String(s.hero.gold)],
+      ['statKills', String(s.hero.kills - this.killsAtFloor)],
+      ['statTime', `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`],
+      ['statUpgrades', String(UPGRADES.reduce((a, u) => a + s.upgrades[u], 0))],
     ];
     const objs: Phaser.GameObjects.GameObject[] = [dim, g, title];
     rows.forEach(([k, v], i) => {
       const y = 480 + i * 58;
-      objs.push(txt(this, 130, y, k, { size: 30, color: '#d8d0f0', strokeThickness: 0 }).setOrigin(0, 0.5).setDepth(UI_DEPTH + 42));
-      const val = txt(this, width - 130, y, v, { size: 32, color: '#ffffff', strokeThickness: 0, title: true }).setOrigin(1, 0.5).setDepth(UI_DEPTH + 42);
+      const l = themeLabel(this, 130, y, t(k), SCR.STAT).setDepth(UI_DEPTH + 42);
+      objs.push(l.setOrigin(0, l.originY));
+      const val = new GlyphText(this, width - 130, y, v, SCR.STAT_VALUE, 1).setDepth(UI_DEPTH + 42);
       val.setScale(0);
       this.tweens.add({ targets: val, scale: 1, delay: 250 + i * 140, duration: 260, ease: 'Back.easeOut', onStart: () => this.sfx('tick', { volume: 0.35 }) });
       objs.push(val);
     });
-    const btn = new Button(this, width / 2, 800, t('next'), () => this.nextFloor(), { width: 400, height: 96, color: 0x3a8a5a }).setDepth(UI_DEPTH + 43);
+    const btn = new SkinButton(this, width / 2, 800, t('next'), () => this.nextFloor(), { width: SCR.NEXT_BTN.w, height: SCR.NEXT_BTN.h, size: SCR.BTN.next, color: MOSSY, baked: true }).setDepth(UI_DEPTH + 43);
     objs.push(btn);
     g.setAlpha(0);
     this.tweens.add({ targets: g, alpha: 1, duration: 250 });
@@ -905,11 +917,24 @@ export class PlayScene extends ArcadeScene {
     this.sim.frozen = true;
     const { width, height } = this.scale;
     const dim = this.add.rectangle(0, 0, width, height, 0x07050c, 0.6).setOrigin(0).setDepth(UI_DEPTH + 40).setInteractive();
-    const g = this.add.graphics().setDepth(UI_DEPTH + 41);
-    glass(g, 40, 230, width - 80, 845, 34, 0x1c1630, 0.95);
-    const title = txt(this, width / 2, 296, t('camp'), { title: true, size: 52, color: '#ffd27a', strokeThickness: 8 }).setDepth(UI_DEPTH + 42);
-    const sub = txt(this, width / 2, 350, t('campSub'), { size: 24, color: '#d8d0f0', strokeThickness: 0, wrap: width - 140 }).setDepth(UI_DEPTH + 42);
-    const bank = hudChip(this, width / 2, 410, { align: 'center', icon: 'cc-coin', iconSize: 28, text: String(this.meta.bank), color: '#ffd23f', label: t('bank') }).setDepth(UI_DEPTH + 42);
+    // the menu theme's slab, rows and labels (theme.ts, screens.ts), painted under the Ayvago intro
+    const g = skinImage(this, width / 2, 230 + SCR.CAMP.h / 2, 'board', SCR.CAMP.w, SCR.CAMP.h, 'up', NIGHT).setDepth(UI_DEPTH + 41);
+    const title = themeLabel(this, width / 2, 296, t('camp'), SCR.TITLE).setDepth(UI_DEPTH + 42);
+    const sub = new Para(this, width / 2, 0, t('campSub'), SCR.CAMP_SUB, SCR.SUB_W, 0.5).setDepth(UI_DEPTH + 42);
+    sub.setY(352 - sub.textHeight / 2);
+    // the bank: a stone plate with the coin, the word and the gold
+    const bank = this.add.container(width / 2, 410).setDepth(UI_DEPTH + 42);
+    const bankL = themeLabel(this, 0, 0, t('bank'), SCR.BANK_LABEL);
+    const bankN = new GlyphText(this, 0, 0, String(this.meta.bank), SCR.BANK_VALUE, 0);
+    const layBank = () => {
+      const w = 28 + 10 + bankL.width + 12 + bankN.textWidth;
+      const x0 = -w / 2;
+      (bank.getAt(1) as Phaser.GameObjects.Image).setX(x0 + 14);
+      bankL.setOrigin(0, bankL.originY).setX(x0 + 38);
+      bankN.setX(x0 + 38 + bankL.width + 12);
+    };
+    bank.add([skinImage(this, 0, 0, 'plate', SCR.BANK.w, SCR.BANK.h, 'up', CRYPT), this.add.image(0, 0, 'cc-coin').setDisplaySize(28, 28), bankL, bankN]);
+    layBank();
     const objs: Phaser.GameObjects.GameObject[] = [dim, g, title, sub, bank];
     let sel: number = META.length;   // the start button
     const rowFrames: Phaser.GameObjects.Graphics[] = [];
@@ -923,22 +948,25 @@ export class PlayScene extends ArcadeScene {
       this.meta.levels[m] = lv + 1;
       saveMeta(this.meta);
       this.sfx('buy', { volume: 0.8 });
-      bank.setText(String(this.meta.bank));
+      bankN.setText(String(this.meta.bank));
+      layBank();
       refresh.forEach((f) => f());
     };
     META.forEach((m, i) => {
       const y = rowY(i);
       const row = this.add.container(width / 2, y).setDepth(UI_DEPTH + 42);
-      const bg = this.add.graphics();
-      bg.fillStyle(0xffffff, 0.06).fillRoundedRect(-300, -46, 600, 92, 18);
+      const bg = skinImage(this, 0, 0, 'plate', SCR.CAMP_ROW.w, SCR.CAMP_ROW.h, 'up', SCR.ROW_COLOR);
       const fr = this.add.graphics();
       rowFrames.push(fr);
       const ic = this.add.graphics();
       drawIcon(ic, m, -246, 0, 32);
-      const name = txt(this, -196, -20, t(metaKey(m)), { size: 28, color: '#ffffff', title: true, strokeThickness: 0 }).setOrigin(0, 0.5);
-      const desc = txt(this, -196, 18, t(metaKey(m) + '_d'), { size: 21, color: '#c8c0e0', strokeThickness: 0 }).setOrigin(0, 0.5);
+      const name = themeLabel(this, -196, -20, t(metaKey(m)), SCR.ROW_NAME);
+      name.setOrigin(0, name.originY);
+      const desc = themeLabel(this, -196, 18, t(metaKey(m) + '_d'), SCR.ROW_DESC);
+      desc.setOrigin(0, desc.originY);
+      if (desc.width > 390) desc.setScale(390 / desc.width);
       const pips = this.add.graphics();
-      const price = txt(this, 236, 0, '', { size: 26, color: '#ffd23f', strokeThickness: 0, title: true }).setOrigin(0.5);
+      const price = this.add.container(236, 0);
       row.add([bg, fr, ic, name, desc, pips, price]);
       row.setSize(600, 92).setInteractive({ useHandCursor: true });
       row.on('pointerover', () => { sel = i; paint(); });
@@ -946,10 +974,11 @@ export class PlayScene extends ArcadeScene {
       const upd = () => {
         const lv = this.meta.levels[m] ?? 0;
         pips.clear();
-        for (let k = 0; k < META_MAX[m]; k++) pips.fillStyle(k < lv ? 0xffd23f : 0x4a4560, 1).fillCircle(130 + k * 20, -20, 7);
+        for (let k = 0; k < META_MAX[m]; k++) pips.fillStyle(k < lv ? 0xffd23f : 0x0e0a10, k < lv ? 1 : 0.55).fillCircle(130 + k * 20, -20, 7).lineStyle(2, k < lv ? 0x8a5a10 : 0xa8a0b0, 1).strokeCircle(130 + k * 20, -20, 7);
         const cost = META_COST[m][lv];
-        price.setText(lv >= META_MAX[m] ? t('maxed') : `${cost}`);
-        price.setColor(lv >= META_MAX[m] ? '#8aff9a' : this.meta.bank >= (cost ?? 1e9) ? '#ffd23f' : '#8a7a6a');
+        price.removeAll(true);
+        if (lv >= META_MAX[m]) price.add(themeLabel(this, 0, 0, t('maxed'), SCR.price('max')));
+        else price.add(new GlyphText(this, 0, 0, `${cost}`, SCR.price(this.meta.bank >= (cost ?? 1e9) ? 'can' : 'poor')));
       };
       upd();
       refresh.push(upd);
@@ -962,11 +991,11 @@ export class PlayScene extends ArcadeScene {
       this.hud.setLives(this.sim.hero.hp, this.sim.hero.maxHp);
       this.beginFloor();
     };
-    const btn = new Button(this, width / 2, 1000, t('enter'), start, { width: 460, height: 96, color: 0xb0482a }).setDepth(UI_DEPTH + 43);
+    const btn = new SkinButton(this, width / 2, 1000, t('enter'), start, { width: SCR.ENTER_BTN.w, height: SCR.ENTER_BTN.h, size: SCR.BTN.enter, variant: 'primary', baked: true }).setDepth(UI_DEPTH + 43);
     objs.push(btn);
     const paint = () => {
-      rowFrames.forEach((f, i) => { f.clear(); if (i === sel) f.lineStyle(4, 0xffd23f, 1).strokeRoundedRect(-302, -48, 604, 96, 20); });
-      btn.setScale(sel === META.length ? 1.05 : 1);
+      rowFrames.forEach((f, i) => { f.clear(); if (i === sel) f.lineStyle(4, 0xffd23f, 1).strokeRoundedRect(-302, -48, 604, 96, 10); });
+      btn.setScale(sel === META.length ? 1.05 : 1).setHighlight(sel === META.length);
     };
     paint();
     this.card = objs;

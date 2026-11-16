@@ -8,6 +8,7 @@ import { buildAlley, drawScreen } from './alley';
 import { Person } from './bowler';
 import { poseBowler, approachPose, HOLD_T, WALK_T } from './approach';
 import { SPOTS, PIN_COM, HEAD_Z } from './sim';
+import { ALLEY_THEME } from './theme';
 
 const SPECTATORS = ['character-male-a', 'character-male-c', 'character-male-e'];
 
@@ -60,7 +61,7 @@ launch({
     scene.events.once('shutdown', () => bowler.dispose());
     world.followSun(new THREE.Vector3(0.1, 0, 1.9));
     drawScreen(a, { title: t('lane'), big: '300', sub: t('perfect'), color: '#ffd23f' });
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0b0620, 0.36).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in theme.ts): one full-screen layer
     const t0 = performance.now();
     // a practice swing on the spot, over and over: steps in place, push-away, backswing, the
     // forward swing into a slide and the follow-through (the ball stays in the hand)
@@ -98,6 +99,8 @@ launch({
       world.camera.lookAt(-0.05, 1.25, HEAD_Z * 0.7);
     };
   },
+  // lane-wood buttons in neon, a scorecard and a ball smashing the pins (theme.ts)
+  menuTheme: ALLEY_THEME,
   scenes: [PlayScene],
   strings: STRINGS,
 });
