@@ -4,17 +4,157 @@
 //   GARAGE: vehicles (van, flatbed, truck), upgrades (engine, handling, capacity, padding) and
 //           paints, bought with the wallet.
 // Touch, mouse and keyboard (arrows move, Enter picks, Tab switches tabs, Esc goes back).
+// It wears the menu theme (theme.ts): the road round the screen, districts and vehicles on
+// shipping labels, cardboard buttons with packing tape, every heading in Bungee. Everything it
+// shows is painted under the Ayvago intro (`prebakeMap`, from main.ts), so opening it or switching
+// a tab only places images.
 import Phaser from 'phaser';
-import { txt, t, playSfx, getBest, burst } from '@core';
+import { t, upper, playSfx, getBest, burst, labelTexture, skinTexture, SKIN_PAD, type LabelStyle } from '@core';
+import { frameBorder } from '@core/menu-theme';
 import { SHIFTS, DISTRICTS } from './shifts';
 import { loadMeta, saveMeta, shiftOpen, districtOpen, totalStars, type Meta } from './meta';
-import { VEHICLES, UPGRADES, PAINTS, handling, vehicle } from './defs';
-import { glass, Pill, makeArt } from './ui';
+import { VEHICLES, UPGRADES, PAINTS, vehicle } from './defs';
+import { makeArt } from './ui';
 import { money } from './money';
+import { ORANGE, KRAFT, INK } from './theme';
+import { bakeTex, bakeButton, bakeFmt, bakePara, glyphAtlas, labelAt, fit, GlyphText, FmtLine, Para, KitButton } from './panels';
 
 interface Cell { x: number; y: number; w: number; h: number; act: () => void; box: Phaser.GameObjects.Container }
 
 const DIST_COLORS = [0x2f5f9a, 0x1f7a6e, 0x6a4f9a];
+const RUSH_RED = 0xc8402a, USING = 0x2f9f5a, OWNED = 0x3a9a5a;
+const CW = 670, CH = 252, RUSH_H = 150, VW = 204, VH = 210, UW = 660, UH = 80;
+const TILE_W = 184, TILE_H = 62;
+
+// the styles (shared with the prebake, so the painted keys match); Bungee is set in capitals
+const TITLE: LabelStyle = { size: 56, fill: ['#fff6d0', '#ffd23f', '#ff8a1a'], stroke: INK, strokeWidth: 9 };
+const WALLET: LabelStyle = { size: 32, color: '#ffffff', stroke: INK };
+const TAB: LabelStyle = { size: 30 };
+const BAND: LabelStyle = { size: 32, color: '#ffffff', stroke: INK, strokeWidth: 5 };
+const BAND_NUM: LabelStyle = { size: 26, color: '#ffffff', stroke: INK, strokeWidth: 5 };
+const NEED: LabelStyle = { size: 19, color: '#fff4c8', stroke: INK, strokeWidth: 4, body: true };
+const TILE: LabelStyle = { size: 28 };
+const BODY: LabelStyle = { size: 19, color: '#2b1d10', stroke: null, shadow: false, body: true };
+const BEST: LabelStyle = { size: 21, color: '#ffffff', stroke: INK, strokeWidth: 4, body: true };
+const BTN: LabelStyle = { size: 32 };
+const SECTION: LabelStyle = { size: 30, color: '#ffd23f', stroke: INK, strokeWidth: 6 };
+const V_NAME: LabelStyle = { size: 24, color: '#2b1d10', stroke: null, shadow: false };
+const V_CAP: LabelStyle = { size: 18, color: '#5a4630', stroke: null, shadow: false, body: true };
+const V_BTN: LabelStyle = { size: 22 };
+const U_NAME: LabelStyle = { size: 26, color: '#ffffff', stroke: INK, strokeWidth: 5 };
+const U_DESC: LabelStyle = { size: 18, color: '#3a2410', stroke: null, shadow: false, body: true };
+const U_BTN: LabelStyle = { size: 24 };
+const P_PRICE: LabelStyle = { size: 20, color: '#ffe27a', stroke: INK, strokeWidth: 5 };
+const P_NAME: LabelStyle = { size: 16, color: '#e8dcc8', stroke: INK, strokeWidth: 3, body: true };
+const TIP: LabelStyle = { size: 30, color: '#ff9a7a', stroke: INK, strokeWidth: 7 };
+
+const needKey = (d: number) => t('needStars', { n: DISTRICTS[d].need });
+
+/** Paints the map's and the garage's every texture in the current language (Boot, under the Ayvago intro). */
+export function prebakeMap(scene: Phaser.Scene): void {
+  bgTexture(scene);
+  labelTexture(scene, upper(t('mapTitle')), TITLE);
+  for (const o of [WALLET, BAND_NUM]) glyphAtlas(scene, o);
+  for (const k of ['tabShifts', 'tabGarage']) labelTexture(scene, upper(t(k)), TAB);
+  bakeButton(scene, 'button', 300, 68, KRAFT);
+  bakeButton(scene, 'button', 300, 68, ORANGE, false, true);
+  bakeButton(scene, 'plate', 460, 60, KRAFT);
+  // shifts
+  DISTRICTS.forEach((d, di) => {
+    cardTexture(scene, CW, CH, DIST_COLORS[di]);
+    labelTexture(scene, upper(t('d' + d.id)), BAND);
+    if (d.need) labelTexture(scene, needKey(di), NEED);
+  });
+  for (const s of SHIFTS) labelTexture(scene, upper(t('shiftN', { n: s.id })), TILE);
+  bakeButton(scene, 'button', TILE_W, TILE_H, KRAFT, true);
+  bakeButton(scene, 'button', TILE_W, TILE_H, ORANGE, false, true);
+  cardTexture(scene, CW, RUSH_H, RUSH_RED, 50);
+  labelTexture(scene, upper(t('rush')), BAND);
+  bakePara(scene, t('rushDesc'), BODY, 420);
+  bakeFmt(scene, 'rushBest', ['n'], BEST);
+  labelTexture(scene, upper(t('start')), BTN);
+  bakeButton(scene, 'button', 180, 62, ORANGE);
+  // garage
+  for (const k of ['vehicles', 'upgrades', 'paints']) labelTexture(scene, upper(t(k)), SECTION);
+  for (const c of [USING, KRAFT]) cardTexture(scene, VW, VH, c, 30);
+  for (const v of VEHICLES) {
+    for (const p of PAINTS) vanIcon(scene, `dd-vanicon-${v.id}-${PAINTS.indexOf(p)}`, p.color, v.id);
+    labelTexture(scene, upper(t('v_' + v.id)), V_NAME);
+    labelTexture(scene, t('capN', { n: v.capacity }), V_CAP);
+    labelTexture(scene, money(v.price), V_BTN);
+  }
+  for (const k of ['inUse', 'use']) labelTexture(scene, upper(t(k)), V_BTN);
+  for (const c of [OWNED, ORANGE, KRAFT]) bakeButton(scene, 'button', 160, 42, c, true);
+  bakeButton(scene, 'plate', UW, UH, KRAFT);
+  for (const u of UPGRADES) {
+    labelTexture(scene, upper(t('up_' + u.id)), U_NAME);
+    labelTexture(scene, t('upd_' + u.id), U_DESC);
+    for (const c of u.cost) labelTexture(scene, money(c), U_BTN);
+  }
+  labelTexture(scene, upper(t('maxed')), U_BTN);
+  bakeButton(scene, 'button', 140, 50, ORANGE, true);
+  for (const p of PAINTS) { labelTexture(scene, money(p.price), P_PRICE); labelTexture(scene, t('p_' + p.id), P_NAME); }
+  labelTexture(scene, upper(t('notEnough')), TIP);
+  labelTexture(scene, upper(t('back')), BTN);
+  bakeButton(scene, 'button', 300, 72, KRAFT);
+}
+
+/** The screen behind the map: dusk asphalt blue (a small gradient, scaled up). */
+function bgTexture(scene: Phaser.Scene): string {
+  return bakeTex(scene, 'dd-map-bg', 8, 128, (c) => {
+    const g = c.createLinearGradient(0, 0, 0, 128);
+    g.addColorStop(0, '#0e1628'); g.addColorStop(0.6, '#16223c'); g.addColorStop(1, '#22304a');
+    c.fillStyle = g; c.fillRect(0, 0, 8, 128);
+  });
+}
+
+const PAD = 14;
+
+/**
+ * A shipping label as a card: cream paper with fibres, a coloured band across the top (the
+ * district's, the heading sits on it) torn off along a dashed line, a barcode down the right edge
+ * and an ink rim. Painted once per size and colour (cached).
+ */
+function cardTexture(scene: Phaser.Scene, w: number, h: number, band: number, bandH = 56): string {
+  const css = (c: number, k = 0) => {
+    const f = (v: number) => Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k));
+    return `rgb(${f((c >> 16) & 255)},${f((c >> 8) & 255)},${f(c & 255)})`;
+  };
+  return bakeTex(scene, `dd-card-${w}x${h}-${band.toString(16)}-${bandH}`, w + PAD * 2, h + PAD * 3, (c) => {
+    c.translate(PAD, PAD);
+    let seed = w * 7 + h * 13 + band;
+    const r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const shape = new Path2D(); shape.roundRect(0, 0, w, h, 12);
+    c.save();
+    c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 12; c.shadowOffsetY = 6;
+    c.fillStyle = '#f7f1e3'; c.fill(shape);
+    c.restore();
+    c.save();
+    c.clip(shape);
+    for (let i = 0; i < (w * h) / 70; i++) { c.fillStyle = `rgba(90,70,40,${r() * 0.06})`; c.fillRect(r() * w, r() * h, 1.5, 1.5); }
+    const g = c.createLinearGradient(0, 0, 0, bandH);
+    g.addColorStop(0, css(band, 0.18)); g.addColorStop(1, css(band, -0.12));
+    c.fillStyle = g; c.fillRect(0, 0, w, bandH);
+    c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(0, 0, w, 3);
+    c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(0, bandH - 3, w, 3);
+    // the perforation under the band
+    c.fillStyle = 'rgba(58,36,16,0.45)';
+    for (let x = 8; x < w - 8; x += 12) c.fillRect(x, bandH + 5, 6, 2);
+    // a barcode down the right edge (big cards)
+    if (h > 120 && w > 300) {
+      c.fillStyle = INK;
+      let y = bandH + 16;
+      while (y < h - 14) { const tt = 1 + Math.floor(r() * 4); c.fillRect(w - 18, y, 9, tt); y += tt + 1 + Math.floor(r() * 4); }
+    }
+    c.restore();
+    c.lineWidth = 2.5; c.strokeStyle = 'rgba(58,36,16,0.85)'; c.stroke(shape);
+  });
+}
+
+/** A shipping-label card as an image centred on (x, y). */
+function card(scene: Phaser.Scene, x: number, y: number, w: number, h: number, band: number, bandH = 56): Phaser.GameObjects.Image {
+  return scene.add.image(x, y + PAD / 2, cardTexture(scene, w, h, band, bandH));
+}
 
 /** A van seen from the side, in a paint colour (canvas). */
 function vanIcon(scene: Phaser.Scene, key: string, color: number, kind: string): void {
@@ -47,8 +187,7 @@ export class MapScene extends Phaser.Scene {
   private root!: Phaser.GameObjects.Container;
   private page!: Phaser.GameObjects.Container;
   private tab: 'shifts' | 'garage' = 'shifts';
-  private cashTxt!: Phaser.GameObjects.Text;
-  private tabs: Pill[] = [];
+  private tabs: KitButton[] = [];
 
   constructor() { super('Map'); }
 
@@ -60,37 +199,36 @@ export class MapScene extends Phaser.Scene {
     makeArt(this);
     const { width, height } = this.scale;
     this.root = this.add.container(0, 0);
-    this.root.add(this.add.rectangle(0, 0, width, height, 0x101a30, 1).setOrigin(0).setInteractive());
-    this.root.add(txt(this, width / 2, 52, t('mapTitle'), { title: true, size: 42, color: '#ffd23f', strokeThickness: 9 }));
-    // wallet and stars
-    const row = this.add.container(width / 2, 104);
-    this.cashTxt = txt(this, 0, 0, '', { title: true, size: 26, color: '#ffe27a', strokeThickness: 5 }).setOrigin(0, 0.5);
-    const starTxt = txt(this, 0, 0, `${totalStars(this.meta)}/54`, { title: true, size: 26, color: '#ffffff', strokeThickness: 5 }).setOrigin(0, 0.5);
-    const coin = this.add.image(0, 0, 'dd-coin').setDisplaySize(34, 34);
-    const star = this.add.image(0, 0, 'icon-star').setDisplaySize(32, 32).setTint(0xffd23f);
-    row.add([coin, this.cashTxt, star, starTxt]);
+    this.root.add(this.add.image(0, 0, bgTexture(this)).setOrigin(0).setDisplaySize(width, height).setInteractive());
+    this.root.add(frameBorder(this));
+    this.root.add(fit(labelAt(this, width / 2, 54, upper(t('mapTitle')), TITLE), width - 120));
+    // wallet and stars on a cardboard plate
+    const row = this.add.container(width / 2, 112);
+    row.add(this.add.image(0, SKIN_PAD / 2, skinTexture(this, 'plate', 460, 60, 'up', KRAFT)));
+    const cash = new GlyphText(this, 0, 0, '', WALLET, 0);
+    const starTxt = new GlyphText(this, 0, 0, `${totalStars(this.meta)}/54`, WALLET, 0);
+    const coin = this.add.image(0, 0, 'dd-coin').setDisplaySize(36, 36);
+    const star = this.add.image(0, 0, 'icon-star').setDisplaySize(34, 34).setTint(0xffd23f);
+    row.add([coin, cash, star, starTxt]);
     this.root.add(row);
     const layoutRow = () => {
-      this.cashTxt.setText(money(this.meta.cash));
-      const wAll = 34 + 8 + this.cashTxt.width + 40 + 32 + 8 + starTxt.width;
+      cash.setText(money(this.meta.cash));
+      const wAll = 36 + 8 + cash.textWidth + 40 + 34 + 8 + starTxt.textWidth;
       let x = -wAll / 2;
-      coin.x = x + 17; x += 42;
-      this.cashTxt.x = x; x += this.cashTxt.width + 40;
-      star.x = x + 16; x += 40;
+      coin.x = x + 18; x += 44;
+      cash.x = x; x += cash.textWidth + 40;
+      star.x = x + 17; x += 42;
       starTxt.x = x;
     };
     layoutRow();
     this.events.on('cash', layoutRow);
-    // tabs
+    // tabs: the open one orange with a yellow ring, the other plain cardboard
     this.tabs = [
-      new Pill(this, width / 2 - 160, 172, 300, 68, 0x2f7fd8, () => this.setTab('shifts'), 24),
-      new Pill(this, width / 2 + 160, 172, 300, 68, 0x2f7fd8, () => this.setTab('garage'), 24),
+      new KitButton(this, width / 2 - 160, 186, { w: 300, h: 68, color: KRAFT, label: upper(t('tabShifts')), style: TAB, sfx: null }, () => this.setTab('shifts')),
+      new KitButton(this, width / 2 + 160, 186, { w: 300, h: 68, color: KRAFT, label: upper(t('tabGarage')), style: TAB, sfx: null }, () => this.setTab('garage')),
     ];
-    this.tabs[0].setLabels(t('tabShifts'));
-    this.tabs[1].setLabels(t('tabGarage'));
     this.root.add(this.tabs);
-    const back = new Pill(this, width / 2, 1222, 300, 72, 0x3b4466, () => this.close(), 26);
-    back.setLabels(t('back'));
+    const back = new KitButton(this, width / 2, 1218, { w: 300, h: 72, color: KRAFT, label: upper(t('back')), style: BTN }, () => this.close());
     this.root.add(back);
     this.page = this.add.container(0, 0);
     this.root.add(this.page);
@@ -123,8 +261,8 @@ export class MapScene extends Phaser.Scene {
   private build(): void {
     this.page.removeAll(true);
     this.cells = [];
-    this.tabs[0].setColor(this.tab === 'shifts' ? 0xff8a1a : 0x3b4466);
-    this.tabs[1].setColor(this.tab === 'garage' ? 0xff8a1a : 0x3b4466);
+    this.tabs[0].setLook(this.tab === 'shifts' ? ORANGE : KRAFT, this.tab === 'shifts');
+    this.tabs[1].setLook(this.tab === 'garage' ? ORANGE : KRAFT, this.tab === 'garage');
     if (this.tab === 'shifts') this.buildShifts(); else this.buildGarage();
     this.cursor = Math.min(this.cursor, this.cells.length - 1);
     if (this.tab === 'shifts') this.cursor = Math.max(0, this.cells.findIndex((c) => c.box.getData('cur')));
@@ -135,63 +273,58 @@ export class MapScene extends Phaser.Scene {
 
   private buildShifts(): void {
     const { width } = this.scale;
-    const CW = 670, CH = 252;
     DISTRICTS.forEach((d, di) => {
       const y = 360 + di * 262;
       const open = districtOpen(this.meta, d.id);
-      const card = this.add.container(width / 2, y);
-      card.add(glass(this, CW, CH, { color: DIST_COLORS[di], alpha: 0.95 }));
-      card.add(txt(this, -CW / 2 + 24, -CH / 2 + 30, t('d' + d.id), { title: true, size: 28, color: '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
+      const box = this.add.container(width / 2, y);
+      const face = card(this, 0, 0, CW, CH, DIST_COLORS[di]);
+      if (!open) face.setTint(0xc8c0b4);
+      box.add(face);
+      const hy = -CH / 2 + 28;
+      box.add(fit(labelAt(this, -CW / 2 + 24, hy, upper(t('d' + d.id)), BAND, 0), 330));
       const list = SHIFTS.filter((s) => s.district === d.id);
       const got = list.reduce((s, q) => s + (this.meta.stars[q.id] ?? 0), 0);
       if (open) {
-        card.add(this.add.image(CW / 2 - 104, -CH / 2 + 30, 'icon-star').setDisplaySize(26, 26).setTint(0xffd23f));
-        card.add(txt(this, CW / 2 - 86, -CH / 2 + 31, `${got}/18`, { title: true, size: 22, color: '#ffe9a0', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
+        box.add(this.add.image(CW / 2 - 108, hy, 'icon-star').setDisplaySize(28, 28).setTint(0xffd23f));
+        box.add(new GlyphText(this, CW / 2 - 88, hy, `${got}/18`, BAND_NUM, 0));
       } else {
-        const need = txt(this, CW / 2 - 24, -CH / 2 + 31, t('needStars', { n: d.need }), { title: true, size: 20, color: '#ffe9a0', strokeThickness: 0, shadow: false }).setOrigin(1, 0.5);
-        card.add(need);
-        card.add(this.add.image(need.x - need.width - 20, -CH / 2 + 30, 'icon-locked').setDisplaySize(26, 26));
+        const need = fit(labelAt(this, CW / 2 - 24, hy, needKey(di), NEED, 1), 260);
+        box.add(need);
+        box.add(this.add.image(need.x - need.displayWidth - 22, hy, 'icon-locked').setDisplaySize(26, 26));
       }
-      this.page.add(card);
+      this.page.add(box);
       list.forEach((s, k) => {
         const col = k % 3, rowI = Math.floor(k / 3);
-        const x = width / 2 - 210 + col * 210, yy = y - 40 + rowI * 104;
+        const x = width / 2 - 210 + col * 210, yy = y - 30 + rowI * 98;
         const sOpen = open && shiftOpen(this.meta, s.id);
         const cur = this.meta.mode === 'shift' && this.meta.shift === s.id;
-        const box = this.add.container(x, yy);
-        const g = this.add.graphics();
-        const c = sOpen ? (cur ? 0x2f9f5a : 0x2f7fd8) : 0x46507a;
-        g.fillStyle(0x000000, 0.3).fillRoundedRect(-92, -32, 184, 66, 20);
-        g.fillStyle(c, 1).fillRoundedRect(-92, -36, 184, 66, 20);
-        g.fillStyle(0xffffff, 0.16).fillRoundedRect(-87, -32, 174, 24, 12);
-        if (cur) g.lineStyle(3, 0xffd23f, 1).strokeRoundedRect(-92, -36, 184, 66, 20);
-        box.add(g);
-        if (sOpen) box.add(txt(this, 0, -4, t('shiftN', { n: s.id }), { title: true, size: 24, color: '#ffffff', strokeThickness: 0, shadow: false }));
-        else box.add(this.add.image(0, -4, 'icon-locked').setDisplaySize(30, 30).setAlpha(0.8));
+        const act = () => this.pickShift(s.id, sOpen, tile);
+        const tile = new KitButton(this, x, yy, { w: TILE_W, h: TILE_H, color: cur ? ORANGE : KRAFT, on: cur, tapWhenOff: true, sfx: null, style: TILE }, act);
+        if (!sOpen) tile.setEnabled(false);
+        if (sOpen) tile.setLabel(upper(t('shiftN', { n: s.id })), -2);
+        else tile.addContent(this.add.image(0, -2, 'icon-locked').setDisplaySize(30, 30).setAlpha(0.85));
         const st = this.meta.stars[s.id] ?? 0;
-        for (let q = 0; q < 3; q++) box.add(this.add.image(-24 + q * 24, 42, 'icon-star').setDisplaySize(22, 22).setTint(q < st ? 0xffd23f : 0x2a3150));
-        box.setData('cur', cur);
-        box.setSize(190, 100).setInteractive({ useHandCursor: true });
-        const act = () => this.pickShift(s.id, sOpen, box);
-        box.on('pointerup', act);
-        this.page.add(box);
-        this.cells.push({ x, y: yy, w: 196, h: 80, act, box });
+        for (let q = 0; q < 3; q++) tile.add(this.add.image(-24 + q * 24, 43, 'icon-star').setDisplaySize(22, 22).setTint(q < st ? 0xf2b81c : 0xcdbf9f));
+        tile.setData('cur', cur);
+        tile.setHit(196, 96, 0, 12);
+        this.page.add(tile);
+        this.cells.push({ x, y: yy, w: 200, h: 76, act, box: tile });
       });
     });
     // the Endless Rush
     const ry = 1098;
     const rush = this.add.container(width / 2, ry);
-    rush.add(glass(this, CW, 150, { color: 0x7a2a3a, alpha: 0.95, rim: this.meta.mode === 'rush' ? 0xffd23f : undefined }));
-    rush.add(txt(this, -CW / 2 + 24, -46, t('rush'), { title: true, size: 28, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-    rush.add(txt(this, -CW / 2 + 24, -20, t('rushDesc'), { size: 19, color: '#ffe4ee', strokeThickness: 0, shadow: false, wrap: 420 }).setOrigin(0, 0).setAlign('left'));
-    rush.add(txt(this, CW / 2 - 110, -44, t('rushBest', { n: money(getBest('delivery-dash')) }), { size: 20, color: '#ffffff', strokeThickness: 0, shadow: false }));
+    rush.add(card(this, 0, 0, CW, RUSH_H, RUSH_RED, 50));
+    if (this.meta.mode === 'rush') rush.add(this.add.graphics().lineStyle(5, 0xffd23f, 1).strokeRoundedRect(-CW / 2 - 4, -RUSH_H / 2 - 4, CW + 8, RUSH_H + 8, 16));
+    rush.add(fit(labelAt(this, -CW / 2 + 24, -RUSH_H / 2 + 25, upper(t('rush')), BAND, 0), 380));
+    rush.add(new FmtLine(this, CW / 2 - 24, -RUSH_H / 2 + 26, BEST, 1).set('rushBest', { n: money(getBest('delivery-dash')) }));
+    rush.add(new Para(this, -CW / 2 + 24, -12, t('rushDesc'), BODY, 420, 0, 23));
     const goAct = () => this.pickRush();
-    const go = new Pill(this, CW / 2 - 110, 18, 180, 66, 0xe8453c, goAct, 26);
-    go.setLabels(t('start'));
+    const go = new KitButton(this, CW / 2 - 110, 30, { w: 180, h: 62, color: ORANGE, label: upper(t('start')), style: BTN, sfx: null }, goAct);
     rush.add(go);
     rush.setData('cur', this.meta.mode === 'rush');
     this.page.add(rush);
-    this.cells.push({ x: width / 2 + CW / 2 - 110, y: ry + 18, w: 196, h: 80, act: goAct, box: rush });
+    this.cells.push({ x: width / 2 + CW / 2 - 110, y: ry + 30, w: 196, h: 76, act: goAct, box: rush });
   }
 
   private pickShift(id: number, open: boolean, box: Phaser.GameObjects.Container): void {
@@ -228,61 +361,68 @@ export class MapScene extends Phaser.Scene {
   private buildGarage(): void {
     const { width } = this.scale;
     const m = this.meta;
-    const section = (y: number, key: string) => this.page.add(txt(this, 40, y, t(key), { title: true, size: 24, color: '#9fd8ff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
+    const section = (y: number, key: string) => this.page.add(labelAt(this, 40, y, upper(t(key)), SECTION, 0));
     // vehicles
-    section(244, 'vehicles');
+    section(250, 'vehicles');
     VEHICLES.forEach((v, i) => {
-      const x = width / 2 - 220 + i * 220, y = 368;
+      const x = width / 2 - 220 + i * 220, y = 380;
       const owned = m.vehicles.includes(v.id), using = m.vehicle === v.id;
-      const box = this.add.container(x, y);
-      box.add(glass(this, 204, 210, { color: using ? 0x2f6f4a : 0x1f2f5a, alpha: 0.95, rim: using ? 0xffd23f : undefined, r: 20 }));
-      const key = `dd-vanicon-${v.id}-${m.paint}`;
-      vanIcon(this, key, PAINTS[m.paint].color, v.id);
-      box.add(this.add.image(0, -44, key).setDisplaySize(150, 90));
-      box.add(txt(this, 0, 14, t('v_' + v.id), { title: true, size: 22, color: '#ffffff', strokeThickness: 0, shadow: false }));
-      box.add(txt(this, 0, 42, t('capN', { n: v.capacity }), { size: 18, color: '#cfe0ff', strokeThickness: 0, shadow: false }));
-      const label = using ? t('inUse') : owned ? t('use') : money(v.price);
-      const btn = this.add.graphics().fillStyle(using ? 0x3b4466 : owned ? 0x2fae5a : 0xff8a1a, 1).fillRoundedRect(-80, 60, 160, 38, 19);
-      box.add([btn, txt(this, 0, 79, label, { title: true, size: 20, color: '#ffffff', strokeThickness: 0, shadow: false })]);
-      box.setSize(204, 210).setInteractive({ useHandCursor: true });
       const act = () => this.vehicleAct(v.id, box);
+      const box = this.add.container(x, y);
+      box.add(card(this, 0, 0, VW, VH, using ? USING : KRAFT, 30));
+      if (using) box.add(this.add.graphics().lineStyle(4, 0xffd23f, 1).strokeRoundedRect(-VW / 2 - 3, -VH / 2 - 3, VW + 6, VH + 6, 14));
+      box.add(this.add.image(0, -40, `dd-vanicon-${v.id}-${m.paint}`).setDisplaySize(150, 90));
+      box.add(fit(labelAt(this, 0, 18, upper(t('v_' + v.id)), V_NAME), VW - 20));
+      box.add(labelAt(this, 0, 44, t('capN', { n: v.capacity }), V_CAP));
+      const btn = new KitButton(this, 0, 78, { w: 160, h: 42, color: using ? KRAFT : owned ? OWNED : ORANGE, label: using ? upper(t('inUse')) : owned ? upper(t('use')) : money(v.price), style: V_BTN, sfx: null }, act);
+      if (using) btn.setEnabled(false);
+      box.add(btn);
+      box.setSize(VW, VH).setInteractive({ useHandCursor: true });
       box.on('pointerup', act);
       this.page.add(box);
       this.cells.push({ x, y, w: 212, h: 218, act, box });
     });
     // upgrades
-    section(510, 'upgrades');
-    const base = handling(vehicle(m.vehicle), m.up);
-    void base;
+    section(522, 'upgrades');
     UPGRADES.forEach((u, i) => {
-      const y = 572 + i * 92;
+      const y = 584 + i * 92;
       const lvl = m.up[u.id];
-      const box = this.add.container(width / 2, y);
-      box.add(glass(this, 660, 80, { color: 0x1f2f5a, alpha: 0.95, r: 20 }));
-      box.add(txt(this, -306, -14, t('up_' + u.id), { title: true, size: 24, color: '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-      box.add(txt(this, -306, 16, t('upd_' + u.id), { size: 18, color: '#cfe0ff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-      for (let q = 0; q < u.max; q++) box.add(this.add.rectangle(70 + q * 30, 0, 22, 22, q < lvl ? 0xffd23f : 0x2a3150).setStrokeStyle(2, 0xffffff, 0.4));
-      const max = lvl >= u.max;
-      const btn = this.add.graphics().fillStyle(max ? 0x3b4466 : 0xff8a1a, 1).fillRoundedRect(180, -24, 136, 48, 24);
-      box.add([btn, txt(this, 248, 0, max ? t('maxed') : money(u.cost[lvl]), { title: true, size: 22, color: '#ffffff', strokeThickness: 0, shadow: false })]);
-      box.setSize(660, 80).setInteractive({ useHandCursor: true });
       const act = () => this.upgradeAct(u.id, box);
+      const box = this.add.container(width / 2, y);
+      box.add(this.add.image(0, SKIN_PAD / 2, skinTexture(this, 'plate', UW, UH, 'up', KRAFT)));
+      box.add(fit(labelAt(this, -306, -14, upper(t('up_' + u.id)), U_NAME, 0), 330));
+      box.add(fit(labelAt(this, -306, 18, t('upd_' + u.id), U_DESC, 0), 330));
+      const pips = this.add.graphics();
+      for (let q = 0; q < u.max; q++) {
+        pips.fillStyle(0x3a2410, 0.55).fillRoundedRect(58 + q * 30, -11 + 3, 22, 22, 5);
+        pips.fillStyle(q < lvl ? 0xffd23f : 0x8a6440, 1).fillRoundedRect(58 + q * 30, -11, 22, 22, 5);
+        pips.lineStyle(2, 0x3a2410, 0.9).strokeRoundedRect(58 + q * 30, -11, 22, 22, 5);
+      }
+      box.add(pips);
+      const max = lvl >= u.max;
+      const btn = new KitButton(this, 248, 0, { w: 140, h: 50, color: ORANGE, label: max ? upper(t('maxed')) : money(u.cost[lvl]), style: U_BTN, sfx: null, tapWhenOff: true }, act);
+      if (max) btn.setEnabled(false);
+      box.add(btn);
+      box.setSize(UW, UH).setInteractive({ useHandCursor: true });
       box.on('pointerup', act);
       this.page.add(box);
-      this.cells.push({ x: width / 2 + 248, y, w: 146, h: 58, act, box });
+      this.cells.push({ x: width / 2 + 248, y, w: 150, h: 62, act, box });
     });
     // paints
-    section(958, 'paints');
+    section(970, 'paints');
     PAINTS.forEach((p, i) => {
-      const x = width / 2 - 270 + i * 90, y = 1028;
+      const x = width / 2 - 270 + i * 90, y = 1040;
       const owned = m.paints.includes(i), using = m.paint === i;
-      const box = this.add.container(x, y);
-      box.add(this.add.circle(0, 4, 34, 0x000000, 0.3));
-      box.add(this.add.circle(0, 0, 34, p.color).setStrokeStyle(using ? 5 : 2, using ? 0xffd23f : 0xffffff, using ? 1 : 0.5));
-      if (!owned) box.add(txt(this, 0, 52, money(p.price), { title: true, size: 17, color: '#ffe27a', strokeThickness: 4 }));
-      else box.add(txt(this, 0, 52, t('p_' + p.id), { size: 16, color: '#cfe0ff', strokeThickness: 0, shadow: false }));
-      box.setSize(84, 110).setInteractive({ useHandCursor: true });
       const act = () => this.paintAct(i, box);
+      const box = this.add.container(x, y);
+      const g = this.add.graphics();
+      g.fillStyle(0x000000, 0.35).fillCircle(0, 5, 34);
+      g.fillStyle(p.color, 1).fillCircle(0, 0, 34);
+      g.fillStyle(0xffffff, 0.22).fillEllipse(-8, -14, 30, 14);
+      g.lineStyle(using ? 5 : 3, using ? 0xffd23f : 0xe0c9a6, 1).strokeCircle(0, 0, 34);
+      box.add(g);
+      box.add(fit(labelAt(this, 0, 54, owned ? t('p_' + p.id) : money(p.price), owned ? P_NAME : P_PRICE), 88));
+      box.setSize(84, 110).setInteractive({ useHandCursor: true });
       box.on('pointerup', act);
       this.page.add(box);
       this.cells.push({ x, y, w: 80, h: 80, act, box });
@@ -293,7 +433,7 @@ export class MapScene extends Phaser.Scene {
     if (this.meta.cash < price) {
       playSfx(this, 'error', { volume: 0.4 });
       this.tweens.add({ targets: box, x: box.x + 8, duration: 50, yoyo: true, repeat: 2 });
-      const tip = txt(this, this.scale.width / 2, box.y - 70, t('notEnough'), { title: true, size: 26, color: '#ff9a7a', strokeThickness: 7 });
+      const tip = labelAt(this, this.scale.width / 2, box.y - 70, upper(t('notEnough')), TIP);
       this.page.add(tip);
       this.tweens.add({ targets: tip, y: tip.y - 30, alpha: 0, delay: 800, duration: 400, onComplete: () => tip.destroy() });
       return false;

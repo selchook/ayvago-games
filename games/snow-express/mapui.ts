@@ -2,16 +2,71 @@
 // chapter cards with their eight levels (stars earned under each, locked ones with a padlock and
 // what opens them) and the Holiday Rush card. Touch, mouse and keyboard (arrows move, Enter plays,
 // Esc goes back).
+// It wears the menu theme (theme.ts): a night sky with the railway round the screen, the chapters
+// and the Rush on frosty postcards, the levels and buttons on ice plates, every word in Baloo 2.
+// Everything it shows is painted under the Ayvago intro (`prebakeMap`, from main.ts), so opening
+// it only places images.
 import Phaser from 'phaser';
-import { txt, t, playSfx, getBest, isEasy } from '@core';
-import { CHAPTERS, LEVELS } from './levels';
+import { t, playSfx, getBest, themeCard, skinTexture, labelTexture, SKIN_PAD } from '@core';
+import { frameBorder } from '@core/menu-theme';
+import { CHAPTERS } from './levels';
 import { loadMeta, saveMeta, levelOpen, chapterOpen, totalStars, type Meta } from './meta';
-import { glass, Pill, makeArt } from './ui';
+import { makeArt } from './ui';
 import { fmt } from './PlayScene';
+import { ICE, RED, NAVY, MAP_CARD, RUSH_CARD } from './theme';
+import { bakeTex, bakeButton, bakeFmt, bakePara, glyphAtlas, labelAt, fit, GlyphText, FmtLine, Para, KitButton } from './panels';
 
-const CARD_W = 660, CARD_H = 262;
+const CARD_W = MAP_CARD.w, CARD_H = MAP_CARD.h;
 const CARD_Y = [272, 556, 840];
 const RUSH_Y = 1080;
+const TILE_W = 120, TILE_H = 62;
+const GREEN = 0x2f9f5a, SLATE = 0x6a7aa0;
+/** The chapters' ink on the postcards. */
+const CH_INK = ['#1f4f9a', '#17676a', '#5a3f9a'];
+
+// the styles (shared with the prebake, so the painted keys match)
+const TITLE = { size: 56, fill: ['#ffd0d0', '#ef3b47', '#a3121f'], stroke: '#ffffff', strokeWidth: 9 };
+const TOTAL = { size: 30, color: '#ffffff', stroke: NAVY };
+const HEAD = (ci: number) => ({ size: 30, color: CH_INK[ci], stroke: null, shadow: false });
+const COUNT = { size: 26, color: NAVY, stroke: null, shadow: false };
+const NUM = { size: 36, color: '#ffffff', stroke: NAVY, strokeWidth: 6 };
+const TIP = { size: 30, color: '#ffe9a0', stroke: NAVY, strokeWidth: 7 };
+const RUSH_HEAD = { size: 36, color: '#c8202e', stroke: null, shadow: false };
+const BODY = { size: 19, color: '#16325a', stroke: null, shadow: false, body: true };
+const BEST = { size: 21, color: NAVY, stroke: null, shadow: false, body: true };
+const BTN = { size: 32 };
+
+const header = (ci: number): string => t('chapterN', { n: ci + 1 }) + ' · ' + t('ch' + ci);
+
+/** Paints the map's every texture in the current language (Boot, under the Ayvago intro). */
+export function prebakeMap(scene: Phaser.Scene): void {
+  skyTexture(scene);
+  labelTexture(scene, t('mapTitle'), TITLE);
+  CHAPTERS.forEach((ch, ci) => {
+    labelTexture(scene, header(ci), HEAD(ci));
+    if (ch.need) labelTexture(scene, t('needStars', { n: ch.need }), TIP);
+  });
+  for (const o of [TOTAL, COUNT, NUM]) glyphAtlas(scene, o);
+  labelTexture(scene, t('rush'), RUSH_HEAD);
+  bakePara(scene, t('rushDesc'), BODY, 400);
+  bakeFmt(scene, 'rushBest', ['n'], BEST);
+  for (const k of ['playIt', 'back']) labelTexture(scene, t(k), BTN);
+  bakeButton(scene, 'button', TILE_W, TILE_H, ICE);
+  bakeButton(scene, 'button', TILE_W, TILE_H, GREEN, false, true);
+  bakeButton(scene, 'button', TILE_W, TILE_H, SLATE, true);
+  bakeButton(scene, 'button', 190, 70, RED);
+  bakeButton(scene, 'button', 300, 76, ICE);
+  bakeButton(scene, 'plate', 220, 58, ICE);
+}
+
+/** The night sky behind the map: deep blue to the horizon's glow (a small gradient, scaled up). */
+function skyTexture(scene: Phaser.Scene): string {
+  return bakeTex(scene, 'se-map-sky', 8, 128, (c) => {
+    const g = c.createLinearGradient(0, 0, 0, 128);
+    g.addColorStop(0, '#081028'); g.addColorStop(0.55, '#10245a'); g.addColorStop(1, '#1d3f7a');
+    c.fillStyle = g; c.fillRect(0, 0, 8, 128);
+  });
+}
 
 interface Cell { id: number | 'rush'; x: number; y: number; open: boolean; box: Phaser.GameObjects.Container }
 
@@ -34,55 +89,55 @@ export class MapScene extends Phaser.Scene {
     makeArt(this);
     const { width, height } = this.scale;
     this.root = this.add.container(0, 0);
-    const shade = this.add.rectangle(0, 0, width, height, 0x0a1230, 1).setOrigin(0).setInteractive();
+    const shade = this.add.image(0, 0, skyTexture(this)).setOrigin(0).setDisplaySize(width, height).setInteractive();
     this.root.add(shade);
-    this.root.add(txt(this, width / 2, 56, t('mapTitle'), { title: true, size: 44, color: '#ffd23f', strokeThickness: 9 }));
+    this.root.add(frameBorder(this));
+    this.root.add(fit(labelAt(this, width / 2, 58, t('mapTitle'), TITLE), width - 120));
+    // the stars won so far, on an ice plate
     const total = totalStars(this.meta);
-    const starRow = this.add.container(width / 2, 108);
-    const totalTxt = txt(this, 0, 0, `${total}/72`, { title: true, size: 26, color: '#ffffff', strokeThickness: 5 }).setOrigin(0, 0.5);
-    const rowW = 34 + 10 + totalTxt.width;
+    const plate = this.add.container(width / 2, 120);
+    plate.add(this.add.image(0, SKIN_PAD / 2, skinTexture(this, 'plate', 220, 58, 'up', ICE)));
+    const totalTxt = new GlyphText(this, 0, 0, `${total}/72`, TOTAL, 0);
+    const rowW = 34 + 10 + totalTxt.textWidth;
     totalTxt.setX(-rowW / 2 + 44);
-    starRow.add([this.add.image(-rowW / 2 + 17, 0, 'icon-star').setDisplaySize(34, 34).setTint(0xffd23f), totalTxt]);
-    this.root.add(starRow);
+    plate.add([this.add.image(-rowW / 2 + 17, 0, 'icon-star').setDisplaySize(34, 34).setTint(0xffd23f), totalTxt]);
+    this.root.add(plate);
 
     CHAPTERS.forEach((ch, ci) => {
       const y = CARD_Y[ci];
       const open = chapterOpen(this.meta, ch.id);
       const card = this.add.container(width / 2, y);
-      card.add(glass(this, CARD_W, CARD_H, { color: [0x1f3a6e, 0x1d4c6e, 0x3a2f6e][ci], alpha: 0.95 }));
+      const face = themeCard(this, 0, 0, CARD_W, CARD_H);
+      // a chapter still locked is iced over
+      if (!open) face.setTint(0xb4c4dc);
+      card.add(face);
+      const hy = -CARD_H / 2 + 33;
+      card.add(fit(labelAt(this, -CARD_W / 2 + 30, hy, header(ci), HEAD(ci), 0), CARD_W - 230));
       const got = ch.levels.reduce((s, id) => s + (this.meta.stars[id] ?? 0), 0);
-      card.add(txt(this, -CARD_W / 2 + 26, -CARD_H / 2 + 30, t('chapterN', { n: ci + 1 }) + ' · ' + t('ch' + ci), { title: true, size: 26, color: '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
       if (open) {
-        card.add(this.add.image(CARD_W / 2 - 110, -CARD_H / 2 + 30, 'icon-star').setDisplaySize(26, 26).setTint(0xffd23f));
-        card.add(txt(this, CARD_W / 2 - 92, -CARD_H / 2 + 31, `${got}/24`, { title: true, size: 22, color: '#ffe9a0', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
+        card.add(this.add.image(CARD_W / 2 - 112, hy, 'icon-star').setDisplaySize(28, 28).setTint(0xf2b81c));
+        card.add(new GlyphText(this, CARD_W / 2 - 94, hy, `${got}/24`, COUNT, 0));
       } else {
-        // a locked chapter shows what opens it in its header: a padlock and the stars it needs
-        const hy = -CARD_H / 2 + 30;
-        card.add(this.add.image(CARD_W / 2 - 36, hy, 'icon-star').setDisplaySize(26, 26).setTint(0xffd23f));
-        const need = txt(this, CARD_W / 2 - 54, hy + 1, String(ch.need), { title: true, size: 22, color: '#ffe9a0', strokeThickness: 0, shadow: false }).setOrigin(1, 0.5);
+        // what opens it: a padlock and the stars it needs
+        card.add(this.add.image(CARD_W / 2 - 38, hy, 'icon-star').setDisplaySize(28, 28).setTint(0xf2b81c));
+        const need = new GlyphText(this, CARD_W / 2 - 58, hy, String(ch.need), COUNT, 1);
         card.add(need);
-        card.add(this.add.image(need.x - need.width - 20, hy, 'icon-locked').setDisplaySize(26, 26));
+        card.add(this.add.image(need.x - need.textWidth - 20, hy, 'icon-locked').setDisplaySize(28, 28).setTint(0x16325a));
       }
       this.root.add(card);
       ch.levels.forEach((id, k) => {
         const col = k % 4, row = Math.floor(k / 4);
-        const x = width / 2 - 234 + col * 156, yy = y - 30 + row * 108;
+        const x = width / 2 - 234 + col * 156, yy = y - 40 + row * 100;
         const lvOpen = open && levelOpen(this.meta, id);
-        const box = this.add.container(x, yy);
-        const g = this.add.graphics();
         const cur = this.meta.mode === 'journey' && this.meta.level === id;
-        const c = lvOpen ? (cur ? 0x2f9f5a : 0x2f7fd8) : 0x46507a;
-        g.fillStyle(0x000000, 0.3).fillRoundedRect(-60, -34, 120, 70, 22);
-        g.fillStyle(c, 1).fillRoundedRect(-60, -38, 120, 70, 22);
-        g.fillStyle(0xffffff, 0.16).fillRoundedRect(-55, -34, 110, 26, 12);
-        if (cur) g.lineStyle(3, 0xffd23f, 1).strokeRoundedRect(-60, -38, 120, 70, 22);
-        box.add(g);
-        if (lvOpen) box.add(txt(this, 0, -4, String(id), { title: true, size: 32, color: '#ffffff', strokeThickness: 0, shadow: false }));
-        else box.add(this.add.image(0, -4, 'icon-locked').setDisplaySize(34, 34).setAlpha(0.8));
+        const box = new KitButton(this, x, yy, { w: TILE_W, h: TILE_H, color: lvOpen ? (cur ? GREEN : ICE) : SLATE, on: cur, tapWhenOff: true, sfx: null }, () => this.choose(this.cells.findIndex((q) => q.id === id)));
+        if (!lvOpen) box.setEnabled(false);
+        if (lvOpen) box.addContent(new GlyphText(this, 0, -2, String(id), NUM));
+        else box.addContent(this.add.image(0, -2, 'icon-locked').setDisplaySize(34, 34).setAlpha(0.85));
         const st = this.meta.stars[id] ?? 0;
-        for (let s = 0; s < 3; s++) box.add(this.add.image(-26 + s * 26, 46, 'icon-star').setDisplaySize(24, 24).setTint(s < st ? 0xffd23f : 0x3a4266));
-        box.setSize(140, 110).setInteractive({ useHandCursor: true });
-        box.on('pointerup', () => this.choose(this.cells.findIndex((q) => q.id === id)));
+        for (let s = 0; s < 3; s++) box.add(this.add.image(-26 + s * 26, 44, 'icon-star').setDisplaySize(24, 24).setTint(s < st ? 0xf2b81c : 0xbccbe0));
+        // the whole cell (the stars too) takes the tap
+        box.setHit(154, 100, 0, 12);
         this.root.add(box);
         this.cells.push({ id, x, y: yy, open: lvOpen, box });
       });
@@ -90,20 +145,18 @@ export class MapScene extends Phaser.Scene {
 
     // Holiday Rush
     const rush = this.add.container(width / 2, RUSH_Y);
-    rush.add(glass(this, CARD_W, 160, { color: 0x6e1f3a, alpha: 0.95, rim: this.meta.mode === 'rush' ? 0xffd23f : undefined }));
-    rush.add(txt(this, -CARD_W / 2 + 26, -50, t('rush'), { title: true, size: 30, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-    rush.add(txt(this, -CARD_W / 2 + 26, -24, t('rushDesc'), { size: 19, color: '#ffe4ee', strokeThickness: 0, shadow: false, wrap: 400 }).setOrigin(0, 0).setAlign('left'));
+    rush.add(themeCard(this, 0, 0, RUSH_CARD.w, RUSH_CARD.h));
+    if (this.meta.mode === 'rush') rush.add(this.add.graphics().lineStyle(5, 0xffc93a, 1).strokeRoundedRect(-CARD_W / 2 - 4, -RUSH_CARD.h / 2 - 4, CARD_W + 8, RUSH_CARD.h + 8, 26));
+    rush.add(fit(labelAt(this, -CARD_W / 2 + 30, -40, t('rush'), RUSH_HEAD, 0), 380));
+    rush.add(new Para(this, -CARD_W / 2 + 30, -18, t('rushDesc'), BODY, 400, 0, 23));
     const best = getBest('snow-express');
-    rush.add(txt(this, CARD_W / 2 - 120, -46, t('rushBest', { n: fmt(best) }), { size: 20, color: '#ffffff', strokeThickness: 0, shadow: false }));
-    const go = new Pill(this, CARD_W / 2 - 120, 22, 190, 70, 0xe8453c, () => this.choose(this.cells.length - 1), 26);
-    go.setLabels(t('playIt'));
+    rush.add(new FmtLine(this, CARD_W / 2 - 120, -40, BEST, 0.5).set('rushBest', { n: fmt(best) }));
+    const go = new KitButton(this, CARD_W / 2 - 120, 24, { w: 190, h: 70, color: RED, label: t('playIt'), style: BTN, sfx: null }, () => this.choose(this.cells.length - 1));
     rush.add(go);
     this.root.add(rush);
-    this.cells.push({ id: 'rush', x: width / 2 + CARD_W / 2 - 120, y: RUSH_Y + 22, open: true, box: rush });
-    void isEasy;
+    this.cells.push({ id: 'rush', x: width / 2 + CARD_W / 2 - 120, y: RUSH_Y + 24, open: true, box: rush });
 
-    const back = new Pill(this, width / 2, 1218, 300, 76, 0x3b4466, () => this.close(), 26);
-    back.setLabels(t('back'));
+    const back = new KitButton(this, width / 2, 1214, { w: 300, h: 76, color: ICE, label: t('back'), style: BTN }, () => this.close());
     this.root.add(back);
 
     this.sel = this.add.graphics();
@@ -135,8 +188,8 @@ export class MapScene extends Phaser.Scene {
     const c = this.cells[this.cursor];
     const g = this.sel.clear();
     if (!c) return;
-    const w = c.id === 'rush' ? 206 : 132, h = c.id === 'rush' ? 86 : 84;
-    g.lineStyle(5, 0xffd23f, 1).strokeRoundedRect(c.x - w / 2, c.y - h / 2 - (c.id === 'rush' ? 0 : 4), w, h, 26);
+    const w = c.id === 'rush' ? 206 : 134, h = c.id === 'rush' ? 86 : 76;
+    g.lineStyle(5, 0xffd23f, 1).strokeRoundedRect(c.x - w / 2, c.y - h / 2, w, h, 24);
   }
 
   private choose(i: number): void {
@@ -150,7 +203,7 @@ export class MapScene extends Phaser.Scene {
       // a locked chapter says what opens it
       const ch = CHAPTERS.find((q) => typeof c.id === 'number' && q.levels.includes(c.id));
       if (ch && !chapterOpen(this.meta, ch.id)) {
-        const tip = txt(this, this.scale.width / 2, c.y - 70, t('needStars', { n: ch.need }), { title: true, size: 26, color: '#ffe9a0', strokeThickness: 7 });
+        const tip = labelAt(this, this.scale.width / 2, c.y - 70, t('needStars', { n: ch.need }), TIP);
         this.root.add(tip);
         this.tweens.add({ targets: tip, y: tip.y - 30, alpha: 0, delay: 900, duration: 400, onComplete: () => tip.destroy() });
       }

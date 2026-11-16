@@ -18,7 +18,8 @@ export const STARS_W = 620, STARS_H = 470;
 const MAP_W = 470, MAP_H = 80;
 export const MAP_Y = 88;
 
-const ORANGE = 0xff8a1a, KRAFT = 0xb98552, INK = '#3a2410', YELLOW = 0xffd23f;
+export const ORANGE = 0xff8a1a, KRAFT = 0xb98552, INK = '#3a2410';
+const YELLOW = 0xffd23f;
 
 const rgba = (c: number, a = 1): string => `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${a})`;
 

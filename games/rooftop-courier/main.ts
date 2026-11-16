@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, lastRunStamps } from './PlayScene';
-import { ShopScene } from './shop';
+import { ShopScene, prebakeShop } from './shop';
 import { COURIER_THEME, shopButton } from './menu';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
@@ -81,6 +81,13 @@ launch({
     loadAudio(l, 'stamp2', G + 'coins/sfx-coin-single4');
     loadAudio(l, 'hint', G + 'interactions/sfx-sounds-interaction9');
     loadAudio(l, 'levelUp', G + 'fanfares/sfx-sounds-fanfare2');
+    // the shop's stamps, signs and words, painted under the Ayvago intro (shop.ts)
+    l.once(Phaser.Loader.Events.COMPLETE, () => {
+      const t0 = performance.now();
+      prebakeShop(scene);
+      // how long that took (read by the screenshot and timing scripts)
+      scene.registry.set('innerPaintMs', Math.round(performance.now() - t0));
+    });
   },
   menuDecor(scene) {
     makeIcons(scene);

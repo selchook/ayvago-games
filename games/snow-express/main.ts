@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { launch, loadAudio, loadSfx, kenney, t, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
-import { MapScene } from './mapui';
+import { MapScene, prebakeMap } from './mapui';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
 import { View, keepPrograms } from './view';
@@ -46,6 +46,13 @@ launch({
     loadAudio(l, 'tick', J + 'menu-sounds/sfx-menu-move2');
     loadAudio(l, 'crash', 'oga/junkala-sfx/explosions/short/sfx-exp-short-soft6');
     loadAudio(l, 'crash2', 'oga/junkala-sfx/explosions/short/sfx-exp-short-hard4');
+    // the Journey map's postcards, plates and words, painted under the Ayvago intro (mapui.ts)
+    l.once(Phaser.Loader.Events.COMPLETE, () => {
+      const t0 = performance.now();
+      prebakeMap(scene);
+      // how long that took (read by the screenshot and timing scripts)
+      scene.registry.set('innerPaintMs', Math.round(performance.now() - t0));
+    });
   },
   menuDecor(scene) {
     makeArt(scene);

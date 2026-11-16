@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
-import { BoardScene } from './board';
+import { BoardScene, prebakeBoard } from './board';
+import { prebakeIsleScreens } from './shop';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
 import { makeArt } from './art';
@@ -94,6 +95,15 @@ launch({
     loadSfx(l, 'rockHit', 'sfx-foley/audio/rocks/stonehit2');
     loadSfx(l, 'gust', 'sfx-foley/audio/woosh/woosh2');
     loadSfx(l, 'card', 'sfx-casino/audio/cardslide3');
+    // the treasure map's and the between-island screens' charts, planks, notes and words, painted
+    // under the Ayvago intro (board.ts, shop.ts)
+    l.once(Phaser.Loader.Events.COMPLETE, () => {
+      const t0 = performance.now();
+      prebakeBoard(scene);
+      prebakeIsleScreens(scene);
+      // how long that took (read by the screenshot and timing scripts)
+      scene.registry.set('innerPaintMs', Math.round(performance.now() - t0));
+    });
   },
   menuDecor(scene) {
     makeArt(scene);

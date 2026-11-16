@@ -13,6 +13,7 @@ import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent } from './sim';
 import { View } from './view';
 import { SUMMARY_W, SUMMARY_H } from './menu';
+import { forkTickets } from './shop';
 import { Bot, SKILL } from './bot';
 import { AREAS, KMH, POWERS, POWER_COLOR, areaOf, clamp, isPower, lapOf, type Mode, type Power } from './defs';
 import { loadMeta, saveMeta, lookOf, type Meta } from './meta';
@@ -394,9 +395,9 @@ export class PlayScene extends ArcadeScene {
       this.forkSide = sim.choice;
       if (forkOn) {
         const f = sim.fork!;
-        const lt = t(f.thrillSide > 0 ? 'thrill' : 'safe'), rt = t(f.thrillSide < 0 ? 'thrill' : 'safe');
-        this.pad?.setFork(true, sim.choice, lt, rt);
-        this.forkCard(true, sim.choice, lt, rt);
+        const ltKey = f.thrillSide > 0 ? 'thrill' : 'safe', rtKey = f.thrillSide < 0 ? 'thrill' : 'safe';
+        this.pad?.setFork(true, sim.choice, t(ltKey), t(rtKey));
+        this.forkCard(true, sim.choice, ltKey, rtKey);
       } else { this.pad?.setFork(false); this.forkCard(false, 0, '', ''); }
     }
     // power-ups as chips with rings
@@ -410,24 +411,15 @@ export class PlayScene extends ArcadeScene {
     if (this.flashT > 0) this.flashT -= dt;
   }
 
-  /** On keyboards the junction shows as a card naming the two branches (← and →). */
+  /** On keyboards the junction shows as a card naming the two branches (← and →): two tickets painted in Boot (shop.ts). */
   private forkLabel: Phaser.GameObjects.Container | null = null;
-  private forkCard(on: boolean, chosen: number, lt: string, rt: string): void {
+  private forkCard(on: boolean, chosen: number, ltKey: string, rtKey: string): void {
     this.forkLabel?.destroy();
     this.forkLabel = null;
     if (!on || this.pad) return;
     const W = this.scale.width;
     const c = this.add.container(W / 2, 760).setScrollFactor(0).setDepth(UI_DEPTH + 20);
-    const mk = (x: number, label: string, sel: boolean, arrow: string) => {
-      const g = this.add.graphics();
-      g.fillStyle(0x000000, 0.3).fillRoundedRect(x - 130, -38 + 5, 260, 76, 38);
-      g.fillStyle(sel ? 0x2c2460 : 0x14112a, sel ? 0.95 : 0.7).fillRoundedRect(x - 130, -38, 260, 76, 38);
-      g.lineStyle(3, sel ? 0xffd23f : 0xffffff, sel ? 1 : 0.3).strokeRoundedRect(x - 130, -38, 260, 76, 38);
-      c.add(g);
-      c.add(txt(this, x, 0, `${arrow}  ${label}`, { title: true, size: 26, color: sel ? '#ffd23f' : '#c8c4e8', strokeThickness: 0, shadow: false }));
-    };
-    mk(-150, lt, chosen > 0, '←');
-    mk(150, rt, chosen < 0, '→');
+    forkTickets(this, c, chosen, ltKey, rtKey);
     this.forkLabel = c;
   }
 
