@@ -7,14 +7,16 @@
 // Everything it shows is painted under the Ayvago intro (`prebakeMap`, from main.ts), so opening
 // it only places images.
 import Phaser from 'phaser';
-import { t, playSfx, getBest, themeCard, skinTexture, labelTexture, SKIN_PAD } from '@core';
+import {
+  t, playSfx, getBest, themeCard, skinTexture, labelTexture, SKIN_PAD, bake, bakeButton, bakeFmt, bakePara,
+  glyphAtlas, labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton,
+} from '@core';
 import { frameBorder } from '@core/menu-theme';
 import { CHAPTERS } from './levels';
 import { loadMeta, saveMeta, levelOpen, chapterOpen, totalStars, type Meta } from './meta';
 import { makeArt } from './ui';
 import { fmt } from './PlayScene';
 import { ICE, RED, NAVY, MAP_CARD, RUSH_CARD } from './theme';
-import { bakeTex, bakeButton, bakeFmt, bakePara, glyphAtlas, labelAt, fit, GlyphText, FmtLine, Para, KitButton } from './panels';
 
 const CARD_W = MAP_CARD.w, CARD_H = MAP_CARD.h;
 const CARD_Y = [272, 556, 840];
@@ -61,7 +63,7 @@ export function prebakeMap(scene: Phaser.Scene): void {
 
 /** The night sky behind the map: deep blue to the horizon's glow (a small gradient, scaled up). */
 function skyTexture(scene: Phaser.Scene): string {
-  return bakeTex(scene, 'se-map-sky', 8, 128, (c) => {
+  return bake(scene, 'se-map-sky', 8, 128, (c) => {
     const g = c.createLinearGradient(0, 0, 0, 128);
     g.addColorStop(0, '#081028'); g.addColorStop(0.55, '#10245a'); g.addColorStop(1, '#1d3f7a');
     c.fillStyle = g; c.fillRect(0, 0, 8, 128);
@@ -92,7 +94,7 @@ export class MapScene extends Phaser.Scene {
     const shade = this.add.image(0, 0, skyTexture(this)).setOrigin(0).setDisplaySize(width, height).setInteractive();
     this.root.add(shade);
     this.root.add(frameBorder(this));
-    this.root.add(fit(labelAt(this, width / 2, 58, t('mapTitle'), TITLE), width - 120));
+    this.root.add(fitWidth(labelAt(this, width / 2, 58, t('mapTitle'), TITLE), width - 120));
     // the stars won so far, on an ice plate
     const total = totalStars(this.meta);
     const plate = this.add.container(width / 2, 120);
@@ -112,7 +114,7 @@ export class MapScene extends Phaser.Scene {
       if (!open) face.setTint(0xb4c4dc);
       card.add(face);
       const hy = -CARD_H / 2 + 33;
-      card.add(fit(labelAt(this, -CARD_W / 2 + 30, hy, header(ci), HEAD(ci), 0), CARD_W - 230));
+      card.add(fitWidth(labelAt(this, -CARD_W / 2 + 30, hy, header(ci), HEAD(ci), 0), CARD_W - 230));
       const got = ch.levels.reduce((s, id) => s + (this.meta.stars[id] ?? 0), 0);
       if (open) {
         card.add(this.add.image(CARD_W / 2 - 112, hy, 'icon-star').setDisplaySize(28, 28).setTint(0xf2b81c));
@@ -147,7 +149,7 @@ export class MapScene extends Phaser.Scene {
     const rush = this.add.container(width / 2, RUSH_Y);
     rush.add(themeCard(this, 0, 0, RUSH_CARD.w, RUSH_CARD.h));
     if (this.meta.mode === 'rush') rush.add(this.add.graphics().lineStyle(5, 0xffc93a, 1).strokeRoundedRect(-CARD_W / 2 - 4, -RUSH_CARD.h / 2 - 4, CARD_W + 8, RUSH_CARD.h + 8, 26));
-    rush.add(fit(labelAt(this, -CARD_W / 2 + 30, -40, t('rush'), RUSH_HEAD, 0), 380));
+    rush.add(fitWidth(labelAt(this, -CARD_W / 2 + 30, -40, t('rush'), RUSH_HEAD, 0), 380));
     rush.add(new Para(this, -CARD_W / 2 + 30, -18, t('rushDesc'), BODY, 400, 0, 23));
     const best = getBest('snow-express');
     rush.add(new FmtLine(this, CARD_W / 2 - 120, -40, BEST, 0.5).set('rushBest', { n: fmt(best) }));

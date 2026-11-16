@@ -7,12 +7,14 @@
 // planks (menu.ts); the chart and every word are painted under the Ayvago intro (`prebakeBoard`,
 // from main.ts), so opening the map only places images.
 import Phaser from 'phaser';
-import { t, playSfx, labelTexture, skinTexture, menuTheme, SKIN_PAD, type LabelStyle } from '@core';
+import {
+  t, playSfx, labelTexture, skinTexture, menuTheme, SKIN_PAD, bakeButton, bakePara, glyphAtlas, labelAt,
+  fitWidth, GlyphText, Para, KitButton, type LabelStyle,
+} from '@core';
 import { NODES, NODE, BARBAROSSA_COST, type NodeId } from './upgrades';
 import { loadMeta, saveMeta, nodeState, buyNode, buyBarbarossa, type Meta } from './meta';
 import { nodeArt, DOUBLOON, LOCK, makeArt } from './art';
 import { chartTexture, compassRose, rhumbLines, inkIsland, serpent, shipDoodle, waves, xMark, scrollBanner, dashedPath, RED_INK } from './chart';
-import { bakeButton, bakePara, glyphAtlas, labelAt, fit, GlyphText, Para, KitButton } from './panels';
 
 type Item = { kind: 'node'; id: NodeId } | { kind: 'hero' };
 interface Spot { item: Item; x: number; y: number; box: Phaser.GameObjects.Container; ring: Phaser.GameObjects.Graphics; cost: GlyphText; costPoor: GlyphText; coin: Phaser.GameObjects.Image; lock: Phaser.GameObjects.Image; state: Phaser.GameObjects.Image }
@@ -158,7 +160,7 @@ export class BoardScene extends Phaser.Scene {
     const ring = this.add.graphics();
     const hero = item.kind === 'hero';
     const art = hero ? null : this.add.image(0, -14, nodeArt(item.id)).setDisplaySize(62, 62);
-    const name = fit(labelAt(this, 0, hero ? -16 : 34, hero ? t('h_barbarossa') : t('n_' + item.id), hero ? HERO_NAME : NODE_NAME), 250);
+    const name = fitWidth(labelAt(this, 0, hero ? -16 : 34, hero ? t('h_barbarossa') : t('n_' + item.id), hero ? HERO_NAME : NODE_NAME), 250);
     const cy = hero ? 22 : 57;
     const coin = this.add.image(0, cy, DOUBLOON).setDisplaySize(24, 24);
     const cost = new GlyphText(this, 0, cy, '', COST, 0);
@@ -230,7 +232,7 @@ export class BoardScene extends Phaser.Scene {
     const st = this.state(s.item);
     const nameText = s.item.kind === 'hero' ? t('h_barbarossa') : t('n_' + s.item.id);
     this.infoName?.destroy();
-    this.infoName = fit(labelAt(this, -296, -30, nameText, INFO_NAME, 0), 390);
+    this.infoName = fitWidth(labelAt(this, -296, -30, nameText, INFO_NAME, 0), 390);
     this.info.add(this.infoName);
     this.infoDesc.setText(s.item.kind === 'hero' ? heroDesc(st === 'owned') : nodeDesc(s.item.id, st === 'locked'));
     this.buyBtn.setVisible(st !== 'owned');

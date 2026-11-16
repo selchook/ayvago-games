@@ -8,14 +8,16 @@
 // Everything it shows is painted under the Ayvago intro (`prebakeShop`, from main.ts): opening
 // it, picking a card or switching a tab only places images.
 import Phaser from 'phaser';
-import { t, playSfx, burst, getLang, labelTexture, skinTexture, SKIN_PAD, type LabelStyle } from '@core';
+import {
+  t, playSfx, burst, getLang, labelTexture, skinTexture, SKIN_PAD, bake, bakeButton, bakeFmt, bakePara,
+  glyphAtlas, labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, type LabelStyle,
+} from '@core';
 import { frameBorder } from '@core/menu-theme';
 import { PAINTS as BAGS, TRAILS as CAPS, loadMeta, saveMeta, type Meta } from './meta';
 import { UPGRADES, UPGRADE_IDS, UP, BASE, type UpgradeId } from './upgrades';
 import { TUNING, KMH } from './defs';
 import { TOKEN_ICON as STAMP_ICON, UPGRADE_ICON, makeIcons } from './art';
 import { RED as ORANGE, BLUE as INDIGO, GOLD, INK, css, shade, bulb, star } from './menu';
-import { bakeTex, bakeButton, bakeFmt, bakePara, glyphAtlas, labelAt, fit, GlyphText, FmtLine, Para, KitButton } from './panels';
 
 type Item = { kind: 'bag' | 'cap'; id: string } | { kind: 'up'; id: UpgradeId };
 type Tab = 'up' | 'look';
@@ -128,7 +130,7 @@ export function prebakeFork(scene: Phaser.Scene): void {
 export function forkTickets(scene: Phaser.Scene, c: Phaser.GameObjects.Container, chosen: number, ltKey: string, rtKey: string): void {
   const mk = (x: number, key: string, sel: boolean, arrow: string) => {
     c.add(scene.add.image(x, SKIN_PAD / 2, skinTexture(scene, 'plate', 260, 76, sel ? 'on' : 'up', sel ? ORANGE : INDIGO)).setAlpha(sel ? 0.96 : 0.8));
-    c.add(fit(labelAt(scene, x, 0, forkText(arrow, key), sel ? FORK_ON : FORK_OFF), 236));
+    c.add(fitWidth(labelAt(scene, x, 0, forkText(arrow, key), sel ? FORK_ON : FORK_OFF), 236));
   };
   mk(-150, ltKey, chosen > 0, '←');
   mk(150, rtKey, chosen < 0, '→');
@@ -136,7 +138,7 @@ export function forkTickets(scene: Phaser.Scene, c: Phaser.GameObjects.Container
 
 /** A night at the fair behind the workshop: deep blue to a warm glow of lights (a small gradient, scaled up). */
 function skyTexture(scene: Phaser.Scene): string {
-  return bakeTex(scene, 'cr-shop-sky', 8, 128, (c) => {
+  return bake(scene, 'cr-shop-sky', 8, 128, (c) => {
     const g = c.createLinearGradient(0, 0, 0, 128);
     g.addColorStop(0, '#0a0f24'); g.addColorStop(0.55, '#1a2050'); g.addColorStop(0.85, '#3a2048'); g.addColorStop(1, '#6a2a30');
     c.fillStyle = g; c.fillRect(0, 0, 8, 128);
@@ -151,7 +153,7 @@ const PAD = 14;
  * (cached).
  */
 function cardTexture(scene: Phaser.Scene, w: number, h: number): string {
-  return bakeTex(scene, `cr-marquee-${w}x${h}`, w + PAD * 2, h + PAD * 3, (c) => {
+  return bake(scene, `cr-marquee-${w}x${h}`, w + PAD * 2, h + PAD * 3, (c) => {
     c.translate(PAD, PAD);
     const R = 12, band = 11;
     const outer = new Path2D(); outer.roundRect(0, 0, w, h, R);
@@ -219,7 +221,7 @@ export class ShopScene extends Phaser.Scene {
     this.root.add(frameBorder(this));
     // the title on a street sign
     this.root.add(this.add.image(width / 2, 84 + SKIN_PAD / 2, skinTexture(this, 'board', 480, 96)));
-    this.root.add(fit(labelAt(this, width / 2, 84, t('shopTitle'), TITLE), 420));
+    this.root.add(fitWidth(labelAt(this, width / 2, 84, t('shopTitle'), TITLE), 420));
     const chip = this.add.container(width / 2, 164);
     chip.add(this.add.image(0, SKIN_PAD / 2, skinTexture(this, 'plate', 240, 58, 'up', INDIGO)));
     chip.add(this.add.image(-80, 0, STAMP_ICON).setDisplaySize(36, 36));
@@ -237,7 +239,7 @@ export class ShopScene extends Phaser.Scene {
     this.root.add(this.body);
     const back = new KitButton(this, width / 2, 1204, { w: 300, h: 84, color: INDIGO, label: t('back'), style: BTN }, () => this.close());
     this.root.add(back);
-    if (!this.sys.game.device.input.touch) this.root.add(fit(labelAt(this, width / 2, 1142, t('shopKeys'), KEYS), width - 80));
+    if (!this.sys.game.device.input.touch) this.root.add(fitWidth(labelAt(this, width / 2, 1142, t('shopKeys'), KEYS), width - 80));
     this.setTab('up', true);
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
       if (this.closed) return;
@@ -388,11 +390,11 @@ export class ShopScene extends Phaser.Scene {
       const L = -CARD_W / 2 + 22;
       c.add(this.add.graphics().fillStyle(INDIGO, 1).fillCircle(L + 28, -CARD_H / 2 + 50, 28).lineStyle(2, 0xe8692a, 1).strokeCircle(L + 28, -CARD_H / 2 + 50, 25));
       c.add(this.add.image(L + 28, -CARD_H / 2 + 50, UPGRADE_ICON(id)).setDisplaySize(42, 42));
-      c.add(fit(labelAt(this, L + 66, -CARD_H / 2 + 34, t('up_' + id), NAME, 0), SUB_W));
+      c.add(fitWidth(labelAt(this, L + 66, -CARD_H / 2 + 34, t('up_' + id), NAME, 0), SUB_W));
       // what it does (up to two lines under the name)
       c.add(new Para(this, L + 66, -CARD_H / 2 + 46, t('up_' + id + 'Sub'), SUB, SUB_W, 0, 17));
       // now → next
-      c.add(fit(labelAt(this, L, 16, effectLine(id, lv), done ? EFF_DONE : EFF, 0), CARD_W - 44));
+      c.add(fitWidth(labelAt(this, L, 16, effectLine(id, lv), done ? EFF_DONE : EFF, 0), CARD_W - 44));
       // level pips
       const pips = this.add.graphics();
       for (let k = 0; k < max; k++) {
@@ -449,8 +451,8 @@ export class ShopScene extends Phaser.Scene {
           for (let k = 0; k < 4; k++) g.lineStyle(6 - k, col, 1 - k * 0.2).lineBetween(-30 + k * 5, -44 + k * 10, 30 - k * 4, -36 + k * 10);
         }
         c.add(g);
-        c.add(fit(labelAt(this, 0, 30, t((kind === 'bag' ? 'paint_' : 'trail_') + q.id), SW_NAME), cw - 26));
-        if (worn || own) c.add(fit(labelAt(this, 0, 60, t(worn ? 'worn' : 'wear'), worn ? TAG_WORN : TAG_WEAR), cw - 24));
+        c.add(fitWidth(labelAt(this, 0, 30, t((kind === 'bag' ? 'paint_' : 'trail_') + q.id), SW_NAME), cw - 26));
+        if (worn || own) c.add(fitWidth(labelAt(this, 0, 60, t(worn ? 'worn' : 'wear'), worn ? TAG_WORN : TAG_WEAR), cw - 24));
         else {
           const tag = new GlyphText(this, 12, 60, String(q.price), m.tokens >= q.price ? TAG_OK : TAG_POOR);
           c.add([tag, this.add.image(12 - tag.textWidth / 2 - 14, 60, STAMP_ICON).setDisplaySize(22, 22)]);
