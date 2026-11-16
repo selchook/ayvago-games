@@ -8,6 +8,7 @@ import { loadCast, playerKey, pickRivals } from './cast';
 import { buildVenues, TEAM_COLORS } from './stadium';
 import { Confetti } from './fx3d';
 import { makeCrowdSounds } from './crowd-audio';
+import { PODIUM_THEME } from './theme';
 
 launch({
   meta: meta as GameMeta,
@@ -79,7 +80,7 @@ launch({
     // the podium stands on the left, beside PLAY and above the how-to text
     world.camera.position.set(pod.x + 10.8, 3.6, pod.z + 22);
     world.camera.lookAt(pod.x + 10.8, 3.25, pod.z);
-    scene.add.rectangle(0, 0, 1280, 720, 0x0b1430, 0.28).setOrigin(0).setDepth(-90);
+    // the stadium's darkening is the menu theme's (frame.dim in theme.ts): one full-screen layer
     const t0 = performance.now() / 1000;
     world.onFrame = (dt) => {
       const time = performance.now() / 1000;
@@ -95,6 +96,8 @@ launch({
       world.camera.position.x = pod.x + 10.8 + Math.sin(time * 0.25) * 0.3;
     };
   },
+  // podium steps, a laurel garland round the screen, a gold medal behind the logo (theme.ts)
+  menuTheme: PODIUM_THEME,
   scenes: [PlayScene],
   strings: STRINGS,
 });

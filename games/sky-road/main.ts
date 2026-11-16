@@ -2,6 +2,7 @@ import { launch, loadAudio, steeringOption, type GameMeta } from '@core';
 import { World3D, THREE, loadKenney3d, model, grounded } from '@core/three';
 import meta from './game.json';
 import { PlayScene } from './PlayScene';
+import { SKY_THEME } from './theme';
 
 launch({
   meta: meta as GameMeta,
@@ -28,8 +29,8 @@ launch({
     loadAudio(l, 'level', J + 'general-sounds/fanfares/sfx-sounds-fanfare2');
   },
   menuDecor(scene) {
-    // the car turning slowly on a floating block, in the free band between the title and the best
-    // score (the bottom row holds the Ayvago logo)
+    // the car turning slowly on a floating block, in the free band between the how-to card and the
+    // bottom row (the themed logo and its emblem fill the top)
     const world = new World3D(scene, { background: null, shadows: true, fov: 40 });
     world.addLights({ ambient: 1.8, intensity: 2.2, extent: 4 });
     const stage = new THREE.Group();
@@ -42,9 +43,9 @@ launch({
     stage.add(block, car);
     stage.scale.setScalar(0.5);
     world.scene.add(stage);
-    // looking below the car puts it in the upper part of the screen, under the title
+    // looking above the car puts it in the lower part of the screen, over the bottom row
     world.camera.position.set(0, 1.6, 16);
-    world.camera.lookAt(0, -2.45, 0);
+    world.camera.lookAt(0, 4.15, 0);
     world.onFrame = (dt) => {
       stage.rotation.y += dt * 0.6;
       stage.position.y = Math.sin(performance.now() / 700) * 0.08;
@@ -52,6 +53,8 @@ launch({
   },
   // touch screens choose ARROWS | WHEEL | TILT under PLAY (the shared driving-game switch)
   menuOption: steeringOption,
+  // glossy road signs, clouds round the screen, a winged car on a floating road behind the logo (theme.ts)
+  menuTheme: SKY_THEME,
   scenes: [PlayScene],
   strings: {
     tr: { levelUp: 'HIZ ARTIYOR!', jump: 'ZIPLA' },

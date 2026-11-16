@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, Button, txt, t, loc, burst, shake, flash, popup, storage, isEasy, COLORS, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y } from '@core';
+import { ArcadeScene, Controls, Button, txt, t, loc, burst, shake, flash, popup, storage, isEasy, COLORS, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, skinTexture, themeCard, SKIN_PAD, labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton } from '@core';
 import { World3D, THREE } from '@core/three';
 import { LEVELS, WORLDS, LEVELS_PER_WORLD } from './levels';
 import { THEMES, type Theme } from './look';
@@ -8,6 +8,7 @@ import { Sim, parseLevel, TUNE, T, type Tuning } from './sim';
 import { Bot } from './bot';
 import { boardTilt, controlMode } from './tilt-board';
 import { RollLoop } from './rollsound';
+import { MS, NUMS, BTN, TILE, MAPLE, WALNUT, GREEN, PLUM, CLEAR_CARD, worldLine } from './screens';
 
 /** Normal and Easy side by side (§7c). Easy: slower, softer marble, smaller holes, more marbles, longer star times. */
 interface RunTuning { sim: Tuning; marbles: number; parScale: number }
@@ -199,42 +200,45 @@ export class PlayScene extends ArcadeScene {
     const add = <O extends Phaser.GameObjects.GameObject>(o: O): O => { this.selectUi.push(o); return o; };
     const { width } = this.scale;
     add(this.add.rectangle(0, 0, width, this.scale.height, 0x080610, 0.5).setOrigin(0).setDepth(-40));
-    add(txt(this, width / 2, 140, t('chooseLevel'), { title: true, size: 40, color: '#ffd23f', strokeThickness: 8 }).setDepth(10));
+    add(labelAt(this, width / 2, 140, t('chooseLevel'), MS.title).setDepth(10));
     const prog = this.progress();
     const total = prog.stars.reduce((a, b) => a + (b || 0), 0);
     add(this.add.image(width / 2 - 52, 196, 'icon-star').setScale(0.5).setTint(0xffd23f).setDepth(10));
-    add(txt(this, width / 2 - 24, 196, `${total} / ${LEVELS.length * 3}`, { size: 30 }).setOrigin(0, 0.5).setDepth(10));
+    add(new GlyphText(this, width / 2 - 24, 196, `${total} / ${LEVELS.length * 3}`, MS.count, 0, NUMS).setDepth(10));
     WORLDS.forEach((w, wi) => {
       const th = THEMES[wi];
       const y0 = 268 + wi * 214;
-      add(txt(this, 49, y0, `${t('worldN', { n: wi + 1 })} · ${loc(w.name)}`, { title: true, size: 22, color: th.accent }).setOrigin(0, 0.5).setDepth(10));
+      add(fitWidth(labelAt(this, 49, y0, worldLine(wi), MS.world(th.accent), 0), width - 98).setDepth(10));
+      void w;
       for (let k = 0; k < LEVELS_PER_WORLD; k++) {
         const i = wi * LEVELS_PER_WORLD + k;
         const { x, y } = this.tilePos(i);
         const open = this.unlocked(i);
         const st = prog.stars[i] ?? 0;
         const box = add(this.add.container(x, y).setDepth(10));
-        const g = this.add.graphics();
-        const col = Phaser.Display.Color.HexStringToColor(th.accent).color;
-        g.fillStyle(0x000000, 0.35).fillRoundedRect(-46, -40, 92, 92, 18);
-        g.fillStyle(open ? 0x1c1830 : 0x15131f, 0.92).fillRoundedRect(-46, -46, 92, 92, 18);
-        g.lineStyle(3, open ? col : 0x3a3552, open ? 0.95 : 0.6).strokeRoundedRect(-46, -46, 92, 92, 18);
-        box.add(g);
+        // a lacquered maple tile (dark walnut while locked), its hover face on the pointer
+        const face = this.add.image(0, SKIN_PAD / 2, skinTexture(this, 'plate', TILE, TILE, open ? 'up' : 'off', open ? MAPLE : WALNUT));
+        box.add(face);
         if (open) {
-          box.add(txt(this, 0, -12, String(i + 1), { title: true, size: 34, color: '#ffffff', strokeThickness: 5 }));
+          box.add(labelAt(this, 0, -12, String(i + 1), MS.tile));
           for (let s = 0; s < 3; s++) {
-            box.add(this.add.image((s - 1) * 26, 26, 'icon-star').setScale(0.36).setTint(st > s ? 0xffd23f : 0x3f3a58));
+            box.add(this.add.image((s - 1) * 26, 26, 'icon-star').setScale(0.36).setTint(st > s ? 0xffd23f : 0x5a4030));
           }
-          box.setSize(92, 92).setInteractive({ useHandCursor: true });
+          box.setSize(TILE, TILE).setInteractive({ useHandCursor: true });
           box.on('pointerup', () => {
             if (this.phase !== 'select') return;
             this.focus = i;
             this.startLevel(i);
           });
-          box.on('pointerover', () => { if (this.phase === 'select' && this.focus !== i) { this.focus = i; this.placeFocus(); } });
+          box.on('pointerdown', () => face.setTexture(skinTexture(this, 'plate', TILE, TILE, 'down', MAPLE)));
+          box.on('pointerover', () => {
+            face.setTexture(skinTexture(this, 'plate', TILE, TILE, 'over', MAPLE));
+            if (this.phase === 'select' && this.focus !== i) { this.focus = i; this.placeFocus(); }
+          });
+          box.on('pointerout', () => face.setTexture(skinTexture(this, 'plate', TILE, TILE, 'up', MAPLE)));
         } else {
           box.add(this.add.image(0, 0, 'mm-lock').setScale(0.9).setAlpha(0.7));
-          box.setSize(92, 92).setInteractive();
+          box.setSize(TILE, TILE).setInteractive();
           box.on('pointerup', () => {
             if (this.phase !== 'select') return;
             this.sfx('locked', { volume: 0.4 });
@@ -246,12 +250,18 @@ export class PlayScene extends ArcadeScene {
       }
     });
     this.focusRing = add(this.add.graphics().setDepth(11));
-    this.focusRing.lineStyle(5, 0xffffff, 1).strokeRoundedRect(-53, -53, 106, 106, 22);
+    this.focusRing.lineStyle(5, 0xffd36b, 1).strokeRoundedRect(-53, -53, 106, 106, 26);
     this.placeFocus();
     if (this.score > 0) {
-      add(new Button(this, width / 2, 1150, t('finishRun', { score: this.score }), () => this.finishRun(), { width: 420, height: 92, size: 30, color: COLORS.green }).setDepth(10));
+      const fin = new KitButton(this, width / 2, 1150, { w: BTN.finish.w, h: BTN.finish.h, color: GREEN }, () => this.finishRun());
+      const line = new FmtLine(this, 0, 0, MS.btn, 0.5, NUMS).set('finishRun', { score: this.score });
+      fin.addContent(line);
+      if (line.textWidth > BTN.finish.w - 30) line.setScale((BTN.finish.w - 30) / line.textWidth);
+      add(fin.setDepth(10));
     } else {
-      add(txt(this, width / 2, 1150, t('selectHint'), { size: 26, color: '#cfcadf', wrap: 600 }).setDepth(10));
+      const hint = new Para(this, width / 2, 1150, t('selectHint'), MS.hint, 600, 0.5, 34);
+      hint.y = 1150 - hint.textHeight / 2;
+      add(hint.setDepth(10));
     }
   }
 
@@ -829,16 +839,13 @@ export class PlayScene extends ArcadeScene {
     const add = <O extends Phaser.GameObjects.GameObject>(o: O): O => { this.panelUi.push(o); return o; };
     add(this.add.rectangle(0, 0, width, height, 0x05040a, 0.45).setOrigin(0).setDepth(55));
     const cy = height * 0.45;
-    const top = cy - 340, h = 750;
-    const card = add(this.add.graphics().setDepth(56));
-    card.fillStyle(0x000000, 0.3).fillRoundedRect(width / 2 - 300, top + 8, 600, h, 34);
-    card.fillStyle(0x15122a, 0.95).fillRoundedRect(width / 2 - 300, top, 600, h, 34);
-    card.lineStyle(3, Phaser.Display.Color.HexStringToColor(this.theme.accent).color, 0.9).strokeRoundedRect(width / 2 - 300, top, 600, h, 34);
-    add(txt(this, width / 2, cy - 280, t('levelDone'), { title: true, size: 44, color: '#5dff7a', strokeThickness: 8 }).setDepth(57));
-    add(txt(this, width / 2, cy - 224, loc(LEVELS[this.li].name), { size: 28, color: '#cfcadf' }).setDepth(57));
+    const top = cy - 340, h = CLEAR_CARD.h;
+    add(themeCard(this, width / 2, top + h / 2, CLEAR_CARD.w, h).setDepth(56));
+    add(labelAt(this, width / 2, cy - 280, t('levelDone'), MS.done).setDepth(57));
+    add(fitWidth(labelAt(this, width / 2, cy - 224, loc(LEVELS[this.li].name), MS.name), CLEAR_CARD.w - 80).setDepth(57));
     for (let s = 0; s < 3; s++) {
       const on = s < stars;
-      const st = add(this.add.image(width / 2 + (s - 1) * 130, cy - 120 - (s === 1 ? 18 : 0), 'icon-star').setDepth(57).setScale(0).setTint(on ? 0xffd23f : 0x3f3a58));
+      const st = add(this.add.image(width / 2 + (s - 1) * 130, cy - 120 - (s === 1 ? 18 : 0), 'icon-star').setDepth(57).setScale(0).setTint(on ? 0xffd23f : 0x9a8468));
       this.tweens.add({ targets: st, scale: s === 1 ? 2 : 1.7, duration: 320, delay: 300 + s * 260, ease: 'Back.easeOut' });
       if (on) this.time.delayedCall(300 + s * 260, () => {
         if (this.phase !== 'clear') return;
@@ -846,19 +853,19 @@ export class PlayScene extends ArcadeScene {
         burst(this, st.x, st.y, [0xffd23f, 0xffffff], 12, 220);
       });
     }
-    const line = (k: number, ok: boolean, s: string) => {
+    const line = (k: number, ok: boolean, key: string, vars?: Record<string, string | number>) => {
       const y = cy - 14 + k * 42;
-      add(this.add.image(width / 2 - 200, y, 'icon-star').setScale(0.4).setTint(ok ? 0xffd23f : 0x3f3a58).setDepth(57));
-      add(txt(this, width / 2 - 172, y, s, { size: 27, color: ok ? '#ffffff' : '#8a849c' }).setOrigin(0, 0.5).setDepth(57));
+      add(this.add.image(width / 2 - 200, y, 'icon-star').setScale(0.4).setTint(ok ? 0xffd23f : 0x9a8468).setDepth(57));
+      const o = ok ? MS.line : MS.lineOff;
+      add((vars ? new FmtLine(this, width / 2 - 172, y, o, 0, NUMS).set(key, vars) : labelAt(this, width / 2 - 172, y, t(key), o, 0)).setDepth(57));
     };
-    line(0, true, t('finishedLine'));
-    line(1, allGems, t('gemsLine', { n: sim.gems, max: sim.L.gems.length }));
-    line(2, fast, t('timeLine', { t: clock(this.levelTime), par: clock(par) }));
-    const extra = [t('levelScore', { n: pts })];
-    if (record) extra.push(t('newRecord'));
-    add(txt(this, width / 2, cy + 124, extra.join('  ·  '), { size: 26, color: '#ffe9a8', wrap: 560 }).setDepth(57));
+    line(0, true, 'finishedLine');
+    line(1, allGems, 'gemsLine', { n: sim.gems, max: sim.L.gems.length });
+    line(2, fast, 'timeLine', { t: clock(this.levelTime), par: clock(par) });
+    add(new FmtLine(this, width / 2, cy + 104, MS.extra, 0.5, NUMS).set('levelScore', { n: pts }).setDepth(57));
+    if (record) add(labelAt(this, width / 2, cy + 136, t('newRecord'), MS.extra).setDepth(57));
     if (bonusMarble) {
-      const b = add(txt(this, width / 2, cy + 166, t('extraMarble'), { title: true, size: 24, color: '#ff4fa3' }).setDepth(57));
+      const b = add(labelAt(this, width / 2, cy + 168, t('extraMarble'), MS.bonus).setDepth(57));
       this.tweens.add({ targets: b, scale: 1.15, duration: 400, yoyo: true, repeat: -1 });
       this.time.delayedCall(1100, () => this.sfx('life', { volume: 0.5 }));
     }
@@ -882,9 +889,9 @@ export class PlayScene extends ArcadeScene {
     };
     this.panelKeys = { next, retry, levels };
     const by = cy + 250;
-    add(new Button(this, width / 2 + 95, by, last ? t('allClear') : t('next'), next, { width: 330, height: 96, size: 32, color: COLORS.green }).setDepth(58));
-    add(new Button(this, width / 2 - 175, by, t('again'), retry, { width: 190, height: 96, size: 26, color: COLORS.purple }).setDepth(58));
-    add(new Button(this, width / 2, by + 108, t('levels'), levels, { width: 300, height: 76, size: 24, color: 0x333344 }).setDepth(58));
+    add(new KitButton(this, width / 2 + 95, by, { ...BTN.next, color: GREEN, label: last ? t('allClear') : t('next'), style: MS.btn }, next).setDepth(58));
+    add(new KitButton(this, width / 2 - 175, by, { ...BTN.again, color: PLUM, label: t('again'), style: MS.small }, retry).setDepth(58));
+    add(new KitButton(this, width / 2, by + 108, { ...BTN.levels, color: WALNUT, label: t('levels'), style: MS.smaller }, levels).setDepth(58));
   }
 
   /** Ends the run: the summed best of each level played goes to the leaderboard. */

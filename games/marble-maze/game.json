@@ -6,7 +6,7 @@
   "genres": ["puzzle", "arcade", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "1.0.0",
+  "version": "1.0.1",
   "credits": ["3D models: Kenney Platformer Kit and Nature Kit (CC0) — kenney.nl", "Sound effects: Kenney Impact Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org"],
   "platform": { "addedAt": "2026-11-10" }
 }

@@ -8,6 +8,7 @@ import { makeRollSound } from './rollsound';
 import { Board3D, envMap } from './board';
 import { THEMES } from './look';
 import { Sim, parseLevel, TUNE } from './sim';
+import { MAZE_THEME } from './theme';
 
 /** The menu's backdrop board: a small workshop maze rocking slowly while its marble rolls. */
 const MENU_MAP = [
@@ -77,8 +78,7 @@ launch({
     world.camera.position.set(cx, 15.5, cz + 9.5);
     world.camera.lookAt(cx, -2.2, cz - 1.2);
     world.followSun(board.pivot.position);
-    // the menu reads over a dimmed board
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x120b06, 0.5).setOrigin(0).setDepth(-50);
+    // the menu reads over a dimmed board: the menu theme's darkening (frame.dim in theme.ts), one full-screen layer
     let time = 0;
     world.onFrame = (dt) => {
       time += dt;
@@ -95,6 +95,8 @@ launch({
   },
   difficulty: true,
   menuOption: controlOption,
+  // lacquered wood, a maze rail round the screen, a marble in a maze behind the logo (theme.ts)
+  menuTheme: MAZE_THEME,
   scenes: [PlayScene],
   strings: STRINGS,
 });

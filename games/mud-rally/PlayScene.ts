@@ -176,6 +176,15 @@ export class PlayScene extends ArcadeScene {
     this.aiDelay = new Map();
     this.aiSteer = new Map();
     this.hint = null;
+    // the first-race hints stay out from under the pause and result overlays
+    const hideHints = () => { this.hint?.setVisible(false); this.camHint?.setVisible(false); };
+    const showHints = () => { this.hint?.setVisible(true); this.camHint?.setVisible(true); };
+    this.events.on(Phaser.Scenes.Events.PAUSE, hideHints);
+    this.events.on(Phaser.Scenes.Events.RESUME, showHints);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off(Phaser.Scenes.Events.PAUSE, hideHints);
+      this.events.off(Phaser.Scenes.Events.RESUME, showHints);
+    });
     this.skidCd = 0;
     this.wasBraking = false;
     this.fovKick = 0;
@@ -871,6 +880,9 @@ export class PlayScene extends ArcadeScene {
     this.nitroIcon.setVisible(false);
     this.steering.end();
     this.wrongArrow.visible = false;
+    // the race is over: the first-race hints go at once, so nothing shows over the results and the garage
+    this.hint?.destroy(); this.hint = null;
+    this.camHint?.destroy(); this.camHint = null;
     new ResultsPanel(this, this.raceNo, rows, this.raceCash, prize + this.raceCash, note, () => {
       if (this.lives <= 0) {
         this.endGame({ title: t('champOver'), delay: 200 });

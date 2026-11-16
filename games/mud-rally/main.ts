@@ -6,6 +6,7 @@ import { STRINGS } from './strings';
 import { Truck, TRUCK_MODELS } from './truck';
 import { noise2 } from './terrain';
 import { SPECTATORS } from './scenery';
+import { MUD_THEME } from './theme';
 
 /** A dirt mound with flat-shaded facets, for the menu stage. */
 function mound(radius: number, seed: number): THREE.Mesh {
@@ -107,6 +108,8 @@ launch({
   },
   difficulty: true,
   menuOption: steeringOption,
+  // muddy steel plates, a tyre tread and chequered flags round the screen, a monster truck behind the logo (theme.ts)
+  menuTheme: MUD_THEME,
   scenes: [PlayScene],
   strings: STRINGS,
 });

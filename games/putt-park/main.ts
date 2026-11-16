@@ -8,6 +8,7 @@ import { makeMovers } from './movers';
 import { HOLES } from './holes';
 import { THEMES, DECOR_MODELS, buildHole3D, dressWorld, addClouds } from './course3d';
 import { makeSounds } from './sounds';
+import { PUTT_THEME } from './theme';
 
 launch({
   meta: meta as GameMeta,
@@ -51,8 +52,7 @@ launch({
     const h = buildHole3D(world.scene, def, p, th, movers, 6);
     addClouds(world.scene, h.center);
     world.followSun(h.center);
-    // a dim veil keeps the menu text readable
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0b1430, 0.32).setOrigin(0).setDepth(-90);
+    // a dim veil keeps the menu text readable: the menu theme's (frame.dim in theme.ts), one full-screen layer
     const t0 = performance.now();
     world.onFrame = () => {
       const time = (performance.now() - t0) / 1000;
@@ -67,6 +67,8 @@ launch({
     };
     void THREE;
   },
+  // putting-green felt, pennant bunting round the screen, a flag and a ball on the lip behind the logo (theme.ts)
+  menuTheme: PUTT_THEME,
   scenes: [PlayScene],
   strings: STRINGS,
 });
