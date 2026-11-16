@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash, shake, storage,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle,
 } from '@core';
 import { ChestReveal } from './chestui';
 import type { Card as ChestCard } from './cards';
@@ -21,6 +21,7 @@ import { metaFx, runBonus, bankRun, type Meta } from './meta';
 import { loadMeta, saveMeta } from './save';
 import { makeArt, cardArt, weaponArt, COIN, SKULL, MOON, SUN, OFFER, INFINITY, POWER_HUE } from './art';
 import { HpBar, XpChip, WeaponTray, BossBar, BuffChips, AttackButton, banner, bossWarning, glass, Pill, UI_DEPTH } from './ui';
+import { SUMMARY_W, SUMMARY_H } from './menu';
 import { CardBar, OfferButton, DRAFT_DEPTH, BAR_BOTTOM, BAR_H, cardText } from './cardsui';
 import { xpToNext } from './defs';
 
@@ -882,7 +883,7 @@ export class PlayScene extends ArcadeScene {
 
   /** A first-run hint (each shown once per browser; `force` shows it on the first runs). */
   private hint(key: string, firstRuns = false): void {
-    if (this.isOver || this.bot || this.quiet) return;
+    if (this.isOver || this.summaryBox || this.bot || this.quiet) return;
     if (this.seen.has(key) && !(firstRuns && this.meta.runs < 2 && !this.seen.has(key + ':2'))) return;
     if (this.seen.has(key)) this.seen.add(key + ':2'); else this.seen.add(key);
     storage.set(SEEN_KEY, [...this.seen]);
@@ -918,19 +919,19 @@ export class PlayScene extends ArcadeScene {
   /** The night's summary: how long, how far, who did it, what was earned. */
   private showSummary(won: boolean): void {
     if (this.summaryBox) return;
+    // the summary stands alone: no hint box over it
+    this.hintText?.destroy(); this.hintText = null;
     const sim = this.sim;
     const { width } = this.scale;
     const c = this.add.container(width / 2, 560).setScrollFactor(0).setDepth(9500);
     this.summaryBox = c;
     const extra = (sim.endless ? 34 : 0) + (this.newHeroes.length ? 46 : 0);
-    const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.3).fillRoundedRect(-310, -180 + 8, 620, 360 + extra, 28);
-    bg.fillStyle(0x0d140f, 0.93).fillRoundedRect(-310, -180, 620, 360 + extra, 28);
-    bg.lineStyle(2, won ? 0xffd27a : 0xff7a6a, 0.5).strokeRoundedRect(-310, -180, 620, 360 + extra, 28);
-    c.add(bg);
+    // the menu theme's notice board (menu.ts), painted under the Ayvago intro in two heights
+    const ch = extra > 0 ? SUMMARY_H[1] : SUMMARY_H[0];
+    c.add(themeCard(this, 0, -186 + ch / 2, SUMMARY_W, ch));
     const title = sim.endless ? t('endlessOver') : won ? t('survived') : t('youFell');
-    const tt = txt(this, 0, -128, title, { title: true, size: 46, color: won ? '#ffd27a' : '#ff7a6a', strokeThickness: 8 });
-    if (tt.width > 580) tt.setScale(580 / tt.width);
+    const tt = themeLabel(this, 0, -128, title, overlayHeadingStyle(won || sim.endless));
+    tt.setScale(Math.min(60 / 84, (SUMMARY_W - 90) / tt.width));
     c.add(tt);
     const secs = Math.floor(sim.run.time);
     c.add(txt(this, 0, -62, t('runStats', { t: `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, l: sim.level, k: sim.run.kills }), { size: 24, color: '#e6efdf', strokeThickness: 0 }));
@@ -940,8 +941,11 @@ export class PlayScene extends ArcadeScene {
     const row = this.add.container(0, 30);
     sim.weapons.forEach((w, i) => row.add(this.add.image((i - (sim.weapons.length - 1) / 2) * 56, 0, cardArt(w.evo ? 'evo' : 'weapon', w.id)).setDisplaySize(50, 50)));
     c.add(row);
-    const coin = this.add.image(-110, 96, COIN).setDisplaySize(48, 48);
-    const earned = txt(this, 10, 96, t('coinsEarned', { n: 0 }), { title: true, size: 34, color: '#ffe68a', strokeThickness: 6 });
+    // the coin and the count centred together (at the final count; the count grows to the right)
+    const earned = themeText(this, 0, 94, t('coinsEarned', { n: this.coinsEarned }), { size: 46, color: '#e4ff8a' }).setOrigin(0, 0.5);
+    const rowW = 48 + 10 + earned.width;
+    const coin = this.add.image(-rowW / 2 + 24, 96, COIN).setDisplaySize(48, 48);
+    earned.setX(-rowW / 2 + 58).setText(t('coinsEarned', { n: 0 }));
     c.add([coin, earned]);
     c.add(txt(this, 0, 148, t('purse', { n: this.meta.coins }), { size: 20, color: '#cfd8c8', strokeThickness: 0 }));
     let y = 148;
@@ -952,9 +956,10 @@ export class PlayScene extends ArcadeScene {
     }
     if (this.newHeroes.length) {
       y += 46;
-      const nh = txt(this, 0, y, t('newHero', { h: this.newHeroes.map((h) => t('h_' + h)).join(', ') }), { title: true, size: 26, color: '#7affc0', strokeThickness: 5 });
+      const nh = themeText(this, 0, y, t('newHero', { h: this.newHeroes.map((h) => t('h_' + h)).join(', ') }), { size: 32, color: '#7affc0' });
+      if (nh.width > SUMMARY_W - 60) nh.setScale((SUMMARY_W - 60) / nh.width);
       c.add(nh);
-      this.tweens.add({ targets: nh, scale: { from: 1.25, to: 1 }, duration: 500, delay: 900, ease: 'Back.easeOut', onStart: () => this.sfx('evolve', { volume: 0.6 }) });
+      this.tweens.add({ targets: nh, scale: { from: nh.scale * 1.25, to: nh.scale }, duration: 500, delay: 900, ease: 'Back.easeOut', onStart: () => this.sfx('evolve', { volume: 0.6 }) });
     }
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });

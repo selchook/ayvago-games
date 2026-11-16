@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, t, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, lastRunStamps } from './PlayScene';
-import { ShopScene, Pill } from './shop';
+import { ShopScene } from './shop';
+import { COURIER_THEME, shopButton } from './menu';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
 import { View, keepPrograms } from './view';
@@ -90,7 +91,7 @@ launch({
     const bot = new Bot(sim, SKILL.good, seed);
     const view = new View(scene, sim, lookOf(loadMeta()));
     view.menuShift = 0.3;
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0c0818, 0.4).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in menu.ts): one full-screen layer
     let acc = 0;
     let warm = false;
     view.world.onFrame = (dt) => {
@@ -113,20 +114,19 @@ launch({
   // the shop: a button under the difficulty switch
   menuOption: {
     build(scene, x, y) {
-      const btn = new Pill(scene, x, y + 6, 360, 86, 0xd0702a, () => open(), 28);
-      const label = () => btn.setLabels(t('shop'), t('shopStamps', { n: loadMeta().stamps }));
-      label();
       const open = () => {
         if (!scene.scene.isActive()) return;
         scene.scene.pause();
         scene.scene.launch('Shop', { from: scene.scene.key });
       };
-      scene.events.on('shop-closed', label);
+      const { refresh } = shopButton(scene, x, y + 6, open, () => loadMeta().stamps);
+      scene.events.on('shop-closed', refresh);
       scene.input.keyboard?.on('keydown-M', open);
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('shop-closed', label));
-      scene.tweens.add({ targets: btn, scale: 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('shop-closed', refresh));
     },
   },
+  // street signs, airmail stripes and a postage stamp, the logo over a winged parcel (menu.ts)
+  menuTheme: COURIER_THEME,
   ads: {
     continue: (play) => (play as PlayScene).revive(),
     double: {

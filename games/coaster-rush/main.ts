@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, t, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, lastRunTokens } from './PlayScene';
-import { ShopScene, Pill } from './shop';
+import { ShopScene } from './shop';
+import { FAIR_THEME, shopButton } from './menu';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
 import { View, keepPrograms } from './view';
@@ -70,7 +71,7 @@ launch({
     view.menuShift = 0.25;
     // test hook: the menu's world (the warm-up check compares its programs with the Play scene's)
     scene.data.set('world', view.world);
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0c1020, 0.35).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in menu.ts): one full-screen layer
     // compile every shader the ride uses now, while the menu is built (the first Play frame then
     // compiles none)
     keepPrograms(view.world.renderer, view.world.scene, view.world.camera);
@@ -94,20 +95,19 @@ launch({
   // the workshop: a button under the difficulty switch
   menuOption: {
     build(scene, x, y) {
-      const btn = new Pill(scene, x, y + 6, 360, 86, 0xd0702a, () => open(), 28);
-      const label = () => btn.setLabels(t('shop'), t('shopTokens', { n: loadMeta().tokens }));
-      label();
       const open = () => {
         if (!scene.scene.isActive()) return;
         scene.scene.pause();
         scene.scene.launch('Shop', { from: scene.scene.key });
       };
-      scene.events.on('shop-closed', label);
+      const { refresh } = shopButton(scene, x, y + 6, open, () => loadMeta().tokens);
+      scene.events.on('shop-closed', refresh);
       scene.input.keyboard?.on('keydown-M', open);
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('shop-closed', label));
-      scene.tweens.add({ targets: btn, scale: 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('shop-closed', refresh));
     },
   },
+  // circus tickets, bunting and a bulb-lit marquee, the logo over a coaster loop (menu.ts)
+  menuTheme: FAIR_THEME,
   ads: {
     continue: (play) => (play as PlayScene).revive(),
     double: {
