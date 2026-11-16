@@ -17,6 +17,7 @@ import {
   bakeMenuLogo, menuTheme, notesCard, notesTexture, playMenuIntro, prebakeMenuTheme, ropeBorder, SkinButton, skinIconButton, skinImage, skinTexture, SKIN_PAD,
   themeLogo, themeShade, themeText, type MenuTheme,
 } from './menu-theme';
+import { overlayTheme, prebakeOverlays, themedPause, themedResult } from './overlay-theme';
 
 /** "Play again" presses from the result screen this session (every Nth may bring an interstitial). */
 let replays = 0;
@@ -68,6 +69,8 @@ export class BootScene extends Phaser.Scene {
       bakeMenuLogo(this, loc(currentGame().meta.title), room.maxW, room.bottom - room.top);
       prebakeMenuTheme(this, brandPlateWidth(this));
       themedHowTo(this, theme, menuHowY(this), currentGame().meta.orientation === 'landscape', true);
+      // and the pause and result screens' (they then open without painting anything)
+      prebakeOverlays(this);
     }
     await introDone;
     // work started during preload that the game needs before the menu (3D models being parsed)
@@ -421,6 +424,11 @@ export class PauseScene extends Phaser.Scene {
   }
 
   create(): void {
+    const theme = overlayTheme();
+    if (theme) {
+      this.themed(theme);
+      return;
+    }
     const { width, height } = this.scale;
     const land = currentGame().meta.orientation === 'landscape';
     const top = height * (land ? 0.36 : 0.45), gap = land ? 118 : 140;
@@ -447,6 +455,33 @@ export class PauseScene extends Phaser.Scene {
       this.scene.start('Menu');
     }, { color: 0x333344 });
     soundButton(this, land ? width - 70 : width / 2, land ? height - 70 : top + gap * 2 + 130);
+    this.input.keyboard?.once('keydown-ESC', resume);
+    this.input.keyboard?.once('keydown-P', resume);
+  }
+
+  /** The pause in the game's menu theme (src/core/overlay-theme.ts): same buttons, keys and flow. */
+  private themed(theme: MenuTheme): void {
+    duckMusic();
+    const resume = () => {
+      restoreMusic();
+      this.scene.stop();
+      this.scene.resume('Play');
+      sdk.emit('resume');
+    };
+    themedPause(this, theme, {
+      resume,
+      retry: () => {
+        sdk.gameplayStop();
+        this.scene.stop();
+        this.scene.get('Play').scene.restart();
+      },
+      menu: () => {
+        sdk.gameplayStop();
+        this.scene.stop('Play');
+        this.scene.start('Menu');
+      },
+      sound: (x, y) => soundButton(this, x, y, true),
+    });
     this.input.keyboard?.once('keydown-ESC', resume);
     this.input.keyboard?.once('keydown-P', resume);
   }
@@ -503,6 +538,11 @@ export class GameOverScene extends Phaser.Scene {
     if (!offerContinue) finish();
     sdk.emit('gameOver', { score, best, win: !!data.win, newBest, difficulty: difficulty(), continueOffered: offerContinue, continues: sdk.continues });
 
+    const theme = overlayTheme();
+    if (theme) {
+      this.themed(theme, { data, score, best, newBest, easy, offerContinue, offerDouble, run, play, finish, end: () => { ended = true; } });
+      return;
+    }
     backdrop(this, 0.78);
     if (def.meta.orientation === 'landscape') overlayCard(this, 0.07, 0.93, 900);
     else overlayCard(this, 0.14, 0.84);
@@ -578,6 +618,67 @@ export class GameOverScene extends Phaser.Scene {
         play.continueRun?.();
       });
     }
+    this.time.delayedCall(400, () => this.input.keyboard?.once('keydown-ENTER', retry));
+  }
+
+  /** The result in the game's menu theme (src/core/overlay-theme.ts): same buttons, keys, ad flow and hit points. */
+  private themed(theme: MenuTheme, r: {
+    data: ResultData; score: number; best: number; newBest: boolean; easy: boolean; offerContinue: boolean; offerDouble: boolean;
+    run: { score: number; win: boolean }; play: Phaser.Scene & { continueRun?: () => void }; finish: () => void; end: () => void;
+  }): void {
+    const def = currentGame();
+    let leaving = false;
+    const leave = (placement: 'menu' | 'replay' | null, go: () => void) => {
+      if (leaving || adBusy() || !this.scene.isActive()) return;
+      r.finish();
+      if (!placement || !adsAvailable()) {
+        go();
+        return;
+      }
+      leaving = true;
+      showInterstitial(placement, this).then(() => {
+        if (this.scene.isActive()) go();
+      });
+    };
+    const retry = () => leave(++replays % REPLAY_INTERSTITIAL_EVERY === 0 ? 'replay' : null, () => {
+      this.scene.stop();
+      this.scene.get('Play').scene.restart();
+    });
+    const toMenu = () => leave('menu', () => {
+      this.scene.stop('Play');
+      this.scene.start('Menu');
+    });
+    const offer = r.offerContinue ? 'continue' : r.offerDouble ? 'double' : null;
+    themedResult(this, theme, {
+      score: r.score, best: r.best, win: !!r.data.win, newBest: r.newBest, easy: r.easy, offer,
+      heading: r.data.title ?? (r.data.win ? t('youWin') : t('gameOver')),
+      retry, menu: toMenu,
+      busy: adBusy,
+      watch: async () => {
+        const rewarded = await showRewarded(offer!, this);
+        if (!this.scene.isActive()) return 'gone';
+        if (rewarded && offer === 'continue') {
+          // the continue: the run goes on in the same score session
+          sdk.markContinue();
+          r.end();
+          this.scene.stop();
+          r.play.continueRun?.();
+          return 'gone';
+        }
+        this.adHit = null;
+        if (rewarded) {
+          def.ads?.double?.grant(this, r.run);
+          playSfx(this, 'jingle-win', { exact: true });
+          return 'rewarded';
+        }
+        return 'failed';
+      },
+      placed: (hits) => {
+        this.menuHit = hits.menu;
+        this.adHit = hits.ad && offer ? { placement: offer, ...hits.ad } : null;
+      },
+      playJingle: (key) => playSfx(this, key, { exact: true }),
+    });
     this.time.delayedCall(400, () => this.input.keyboard?.once('keydown-ENTER', retry));
   }
 

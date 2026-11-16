@@ -7,8 +7,10 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, shake,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, hudRightEdge,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, hudRightEdge, themeCard, themeLabel, themeText, overlayHeadingStyle,
 } from '@core';
+import { SUMMARY_W, SUMMARY_H } from './menu';
+import { INK } from './chart';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent } from './sim';
 import {
@@ -1034,23 +1036,36 @@ export class PlayScene extends ArcadeScene {
     this.meta = m;
   }
 
-  /** The voyage's summary: how far, how many, who did it, what was earned. */
+  /**
+   * The voyage's summary: how far, how many, who did it, what was earned. On the menu theme's
+   * parchment (painted in Boot, menu.ts `cards`), the heading in the result screen's painted style.
+   */
   private showSummary(): void {
     if (this.summaryBox) return;
+    // the run is over: lesson cards and hints must not sit over the summary
+    this.tutCard?.destroy(); this.tutCard = null;
+    this.tutSkip?.destroy(); this.tutSkip = null;
+    this.hintBox?.destroy(); this.hintBox = null;
     const sim = this.sim;
     const { width } = this.scale;
     const c = this.add.container(width / 2, 560).setScrollFactor(0).setDepth(9500);
     this.summaryBox = c;
-    c.add(glass(this, 620, 380, { r: 28, color: 0x0e1a24, alpha: 0.94, rim: 0xff7a6a }));
-    c.add(txt(this, 0, -138, t('defeated'), { title: true, size: 46, color: '#ff8a6a', strokeThickness: 8 }));
-    c.add(txt(this, 0, -76, t('runStats', { i: sim.islandsCleared, k: sim.kills, g: sim.goldEarned }), { size: 24, color: '#e6eef4', strokeThickness: 0 }));
+    const ink = { strokeThickness: 0, shadow: false } as const;
+    c.add(themeCard(this, 0, 0, SUMMARY_W, SUMMARY_H));
+    const head = themeLabel(this, 0, -138, t('defeated'), overlayHeadingStyle(false));
+    head.setScale(Math.min(64 / 84, (SUMMARY_W - 90) / head.width));
+    c.add(head);
+    c.add(txt(this, 0, -74, t('runStats', { i: sim.islandsCleared, k: sim.kills, g: sim.goldEarned }), { size: 25, color: INK, ...ink }));
     const who = sim.cause;
-    if (who) c.add(txt(this, 0, -38, t('fallenTo', { who: t('f_' + who) }), { size: 22, color: '#ffb0a0', strokeThickness: 0 }));
-    const coin = this.add.image(-120, 30, DOUBLOON).setDisplaySize(54, 54);
-    const earned = txt(this, 14, 30, t('doubloonsEarned', { n: 0 }), { title: true, size: 34, color: '#ffe68a', strokeThickness: 6 });
+    if (who) c.add(txt(this, 0, -38, t('fallenTo', { who: t('f_' + who) }), { size: 23, color: '#8e1c22', ...ink }));
+    // the coin and the count centred together (at the final count; the count grows to the right)
+    const earned = themeText(this, 0, 22, t('doubloonsEarned', { n: this.earned }), { size: 50, color: '#ffd23f' }).setOrigin(0, 0.5);
+    const row = 58 + 8 + earned.width;
+    const coin = this.add.image(-row / 2 + 29, 26, DOUBLOON).setDisplaySize(58, 58);
+    earned.setX(-row / 2 + 66).setText(t('doubloonsEarned', { n: 0 }));
     c.add([coin, earned]);
-    c.add(txt(this, 0, 86, t('purse', { n: this.meta.doubloons }) + (this.mode === 'easy' ? '  ·  ' + t('easyHalf') : ''), { size: 20, color: '#cfd8e0', strokeThickness: 0 }));
-    if (this.freedBarb) c.add(txt(this, 0, 132, t('barbFreed'), { title: true, size: 24, color: '#7affa0', strokeThickness: 5 }));
+    c.add(txt(this, 0, 92, t('purse', { n: this.meta.doubloons }) + (this.mode === 'easy' ? '  ·  ' + t('easyHalf') : ''), { size: 21, color: INK, ...ink }));
+    if (this.freedBarb) c.add(themeText(this, 0, 140, t('barbFreed'), { size: 34, color: '#1f6b2a', strokeWidth: 0, shadow: false }));
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });
     this.tweens.addCounter({ from: 0, to: this.earned, duration: 900, delay: 350, onUpdate: (tw) => earned.setText(t('doubloonsEarned', { n: Math.round(tw.getValue() ?? 0) })), onComplete: () => { if (this.earned > 0) this.sfx('bag', { volume: 0.6 }); } });
