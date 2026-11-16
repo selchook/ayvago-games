@@ -10,14 +10,16 @@
 // the chart's words in Pirata One. Everything they show, the sea charts too, is painted under the
 // Ayvago intro (`prebakeIsleScreens`, from main.ts): opening one between islands only places images.
 import Phaser from 'phaser';
-import { t, getLang, labelTexture, skinTexture, SKIN_PAD, menuTheme, type LabelStyle } from '@core';
+import {
+  t, getLang, labelTexture, skinTexture, SKIN_PAD, menuTheme, bake, bakeButton, bakeFmt, bakePara, glyphAtlas,
+  labelAt, fitWidth, wrapLines, GlyphText, FmtLine, Para, KitButton, type LabelStyle,
+} from '@core';
 import type { Sim } from './sim';
 import { SHOP_IDS, SHOP_COST, PATCH, SHIP_IDS, SHIP_COST, shipStats, REPAIR, BOON_IDS, type ShopId, type ShipId, type BoonId } from './upgrades';
 import { shopArt, boonArt, shipArt, routeArt, GOLD, SHIP } from './art';
 import { BOON_SYM } from './art';
 import { chartTexture, compassRose, rhumbLines, inkIsland, serpent, shipDoodle, stormDoodle, waves, xMark, scrollBanner, dashedPath, INK, INK_N, RED_INK, BLUE_INK } from './chart';
 import { ISLAND_IDS, ROUTES, type Route } from './defs';
-import { bakeTex, bakeButton, bakeFmt, bakePara, glyphAtlas, labelAt, fit, wrapLines, GlyphText, FmtLine, Para, KitButton } from './panels';
 
 export const OVERLAY_DEPTH = 9600;
 
@@ -79,7 +81,7 @@ const PAD = 14;
  * in each top corner. Painted once per size with a soft shadow (cached).
  */
 function noteTexture(scene: Phaser.Scene, w: number, h: number): string {
-  return bakeTex(scene, `si-note-${w}x${h}`, w + PAD * 2, h + PAD * 3, (c) => {
+  return bake(scene, `si-note-${w}x${h}`, w + PAD * 2, h + PAD * 3, (c) => {
     let seed = w * 7 + h * 3;
     const r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     c.translate(PAD, PAD);
@@ -253,7 +255,7 @@ export class ShopOverlay {
     const panel = scene.add.container(width / 2, 650);
     panel.add(scene.add.image(0, SKIN_PAD / 2, skinTexture(scene, 'board', PANEL_W, PANEL_H)));
     this.root.add(panel);
-    this.root.add(fit(labelAt(scene, width / 2, 180, t('shopTitle'), GOLD_HEAD), 600));
+    this.root.add(fitWidth(labelAt(scene, width / 2, 180, t('shopTitle'), GOLD_HEAD), 600));
     this.root.add(new Para(scene, width / 2, 214, shopSub(sim.k), CREAM, 640, 0.5, 26));
     // the purse
     const chip = scene.add.container(width / 2, 284);
@@ -279,7 +281,7 @@ export class ShopOverlay {
     this.sail = new KitButton(scene, width / 2, 1104, { w: 360, h: 94, color: FLAG_RED, label: t('setSail'), style: SAIL, sfx: null }, () => this.leave());
     this.root.add(this.sail);
     this.fixed.push({ id: 'sail', x: width / 2, y: 1104, w: 360, h: 94, box: this.sail, parts: null });
-    if (!host.touch) this.root.add(fit(labelAt(scene, width / 2, 1166, t('shopKeys2'), KEYS), 640));
+    if (!host.touch) this.root.add(fitWidth(labelAt(scene, width / 2, 1166, t('shopKeys2'), KEYS), 640));
     // a battered hull opens on the ship's tab
     this.buildTab(sim.hull < shipStats(sim.shipLv, sim.tune).maxHull * 0.5 ? 'ship' : 'crew');
     this.focus = Math.max(0, this.tiles.findIndex((tl) => this.state(tl.id) === 'ok' && tl.parts));
@@ -324,7 +326,7 @@ export class ShopOverlay {
     const art = ship ? shipArt(id as ShipId | 'repair') : shopArt(id as ShopId | 'patch');
     const icon = s.add.image(-w / 2 + 54, -12, art).setDisplaySize(74, 74);
     const L = -w / 2 + 100;
-    const name = fit(labelAt(s, L, -h / 2 + 32, t((ship ? 'sh_' : 's_') + id), T_NAME, 0), w - 116);
+    const name = fitWidth(labelAt(s, L, -h / 2 + 32, t((ship ? 'sh_' : 's_') + id), T_NAME, 0), w - 116);
     const parts: Array<Phaser.GameObjects.GameObject> = [face, frame, icon, name];
     let next: FmtLine | null = null;
     if (ship) {
@@ -564,7 +566,7 @@ export class RouteOverlay {
     this.routes = scene.add.graphics();
     this.root.add(this.routes);
     this.root.add(scene.add.image(176, 438, SHIP).setDisplaySize(56, 56));
-    this.root.add(fit(labelAt(scene, width / 2, 114, t('chartTitle'), CH_TITLE), 420));
+    this.root.add(fitWidth(labelAt(scene, width / 2, 114, t('chartTitle'), CH_TITLE), 420));
     const nextId = ISLAND_IDS[(sim.k + 1) % ISLAND_IDS.length];
     this.root.add(new Para(scene, width / 2, 158, t('chartSub', { name: t('i_' + nextId) }), CH_SUB, 600, 0.5, 28));
     const low = sim.hull < sim.shipSt.maxHull * 0.4;
@@ -580,7 +582,7 @@ export class RouteOverlay {
       const box = scene.add.container(width / 2, y);
       const bg = scene.add.graphics();
       const icon = scene.add.image(-222, 0, routeArt(id)).setDisplaySize(140, 140);
-      const name = fit(labelAt(scene, -132, -56, t('r_' + id), id === 'calm' ? CH_NAME_CALM : CH_NAME_STORM, 0), 400);
+      const name = fitWidth(labelAt(scene, -132, -56, t('r_' + id), id === 'calm' ? CH_NAME_CALM : CH_NAME_STORM, 0), 400);
       const desc = new Para(scene, -132, -30, t('rd_' + id), CH_DESC, 410, 0, 27);
       box.add([bg, icon, name, desc]);
       if (id === 'storm' && ghost) box.add(labelAt(scene, -132, 74, t('rd_ghost'), CH_GHOST, 0));
@@ -654,7 +656,7 @@ export class DraftOverlay {
     const { width, height } = scene.scale;
     this.root = scene.add.container(0, 0).setScrollFactor(0).setDepth(OVERLAY_DEPTH);
     this.root.add(scene.add.rectangle(0, 0, width, height, 0x040a10, 0.66).setOrigin(0).setInteractive());
-    this.root.add(fit(labelAt(scene, width / 2, 250, t('draftTitle'), GOLD_HEAD), 640));
+    this.root.add(fitWidth(labelAt(scene, width / 2, 250, t('draftTitle'), GOLD_HEAD), 640));
     this.root.add(new Para(scene, width / 2, 296, t('draftSub'), { ...CREAM, size: 24 }, 640, 0.5, 30));
     boons.forEach((id, i) => {
       const y = 470 + i * 230;
@@ -662,7 +664,7 @@ export class DraftOverlay {
       const face = note(scene, 0, 0, DRAFT_W, DRAFT_H);
       const bg = scene.add.graphics();
       const icon = scene.add.image(-222, 0, boonArt(id)).setDisplaySize(130, 130);
-      const name = fit(labelAt(scene, -134, -44, t('bn_' + id), boonName(id), 0), 390);
+      const name = fitWidth(labelAt(scene, -134, -44, t('bn_' + id), boonName(id), 0), 390);
       const desc = new Para(scene, -134, -18, t('bd_' + id), D_DESC, 400, 0, 27);
       const num = labelAt(scene, 262, -64, String(i + 1), D_NUM);
       if (host.touch) num.setVisible(false);

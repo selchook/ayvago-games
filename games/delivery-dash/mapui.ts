@@ -9,7 +9,10 @@
 // shows is painted under the Ayvago intro (`prebakeMap`, from main.ts), so opening it or switching
 // a tab only places images.
 import Phaser from 'phaser';
-import { t, upper, playSfx, getBest, burst, labelTexture, skinTexture, SKIN_PAD, type LabelStyle } from '@core';
+import {
+  t, upper, playSfx, getBest, burst, labelTexture, skinTexture, SKIN_PAD, bake, bakeButton, bakeFmt, bakePara,
+  glyphAtlas, labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, type LabelStyle,
+} from '@core';
 import { frameBorder } from '@core/menu-theme';
 import { SHIFTS, DISTRICTS } from './shifts';
 import { loadMeta, saveMeta, shiftOpen, districtOpen, totalStars, type Meta } from './meta';
@@ -17,7 +20,6 @@ import { VEHICLES, UPGRADES, PAINTS, vehicle } from './defs';
 import { makeArt } from './ui';
 import { money } from './money';
 import { ORANGE, KRAFT, INK } from './theme';
-import { bakeTex, bakeButton, bakeFmt, bakePara, glyphAtlas, labelAt, fit, GlyphText, FmtLine, Para, KitButton } from './panels';
 
 interface Cell { x: number; y: number; w: number; h: number; act: () => void; box: Phaser.GameObjects.Container }
 
@@ -101,7 +103,7 @@ export function prebakeMap(scene: Phaser.Scene): void {
 
 /** The screen behind the map: dusk asphalt blue (a small gradient, scaled up). */
 function bgTexture(scene: Phaser.Scene): string {
-  return bakeTex(scene, 'dd-map-bg', 8, 128, (c) => {
+  return bake(scene, 'dd-map-bg', 8, 128, (c) => {
     const g = c.createLinearGradient(0, 0, 0, 128);
     g.addColorStop(0, '#0e1628'); g.addColorStop(0.6, '#16223c'); g.addColorStop(1, '#22304a');
     c.fillStyle = g; c.fillRect(0, 0, 8, 128);
@@ -120,7 +122,7 @@ function cardTexture(scene: Phaser.Scene, w: number, h: number, band: number, ba
     const f = (v: number) => Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k));
     return `rgb(${f((c >> 16) & 255)},${f((c >> 8) & 255)},${f(c & 255)})`;
   };
-  return bakeTex(scene, `dd-card-${w}x${h}-${band.toString(16)}-${bandH}`, w + PAD * 2, h + PAD * 3, (c) => {
+  return bake(scene, `dd-card-${w}x${h}-${band.toString(16)}-${bandH}`, w + PAD * 2, h + PAD * 3, (c) => {
     c.translate(PAD, PAD);
     let seed = w * 7 + h * 13 + band;
     const r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -201,7 +203,7 @@ export class MapScene extends Phaser.Scene {
     this.root = this.add.container(0, 0);
     this.root.add(this.add.image(0, 0, bgTexture(this)).setOrigin(0).setDisplaySize(width, height).setInteractive());
     this.root.add(frameBorder(this));
-    this.root.add(fit(labelAt(this, width / 2, 54, upper(t('mapTitle')), TITLE), width - 120));
+    this.root.add(fitWidth(labelAt(this, width / 2, 54, upper(t('mapTitle')), TITLE), width - 120));
     // wallet and stars on a cardboard plate
     const row = this.add.container(width / 2, 112);
     row.add(this.add.image(0, SKIN_PAD / 2, skinTexture(this, 'plate', 460, 60, 'up', KRAFT)));
@@ -281,14 +283,14 @@ export class MapScene extends Phaser.Scene {
       if (!open) face.setTint(0xc8c0b4);
       box.add(face);
       const hy = -CH / 2 + 28;
-      box.add(fit(labelAt(this, -CW / 2 + 24, hy, upper(t('d' + d.id)), BAND, 0), 330));
+      box.add(fitWidth(labelAt(this, -CW / 2 + 24, hy, upper(t('d' + d.id)), BAND, 0), 330));
       const list = SHIFTS.filter((s) => s.district === d.id);
       const got = list.reduce((s, q) => s + (this.meta.stars[q.id] ?? 0), 0);
       if (open) {
         box.add(this.add.image(CW / 2 - 108, hy, 'icon-star').setDisplaySize(28, 28).setTint(0xffd23f));
         box.add(new GlyphText(this, CW / 2 - 88, hy, `${got}/18`, BAND_NUM, 0));
       } else {
-        const need = fit(labelAt(this, CW / 2 - 24, hy, needKey(di), NEED, 1), 260);
+        const need = fitWidth(labelAt(this, CW / 2 - 24, hy, needKey(di), NEED, 1), 260);
         box.add(need);
         box.add(this.add.image(need.x - need.displayWidth - 22, hy, 'icon-locked').setDisplaySize(26, 26));
       }
@@ -316,7 +318,7 @@ export class MapScene extends Phaser.Scene {
     const rush = this.add.container(width / 2, ry);
     rush.add(card(this, 0, 0, CW, RUSH_H, RUSH_RED, 50));
     if (this.meta.mode === 'rush') rush.add(this.add.graphics().lineStyle(5, 0xffd23f, 1).strokeRoundedRect(-CW / 2 - 4, -RUSH_H / 2 - 4, CW + 8, RUSH_H + 8, 16));
-    rush.add(fit(labelAt(this, -CW / 2 + 24, -RUSH_H / 2 + 25, upper(t('rush')), BAND, 0), 380));
+    rush.add(fitWidth(labelAt(this, -CW / 2 + 24, -RUSH_H / 2 + 25, upper(t('rush')), BAND, 0), 380));
     rush.add(new FmtLine(this, CW / 2 - 24, -RUSH_H / 2 + 26, BEST, 1).set('rushBest', { n: money(getBest('delivery-dash')) }));
     rush.add(new Para(this, -CW / 2 + 24, -12, t('rushDesc'), BODY, 420, 0, 23));
     const goAct = () => this.pickRush();
@@ -372,7 +374,7 @@ export class MapScene extends Phaser.Scene {
       box.add(card(this, 0, 0, VW, VH, using ? USING : KRAFT, 30));
       if (using) box.add(this.add.graphics().lineStyle(4, 0xffd23f, 1).strokeRoundedRect(-VW / 2 - 3, -VH / 2 - 3, VW + 6, VH + 6, 14));
       box.add(this.add.image(0, -40, `dd-vanicon-${v.id}-${m.paint}`).setDisplaySize(150, 90));
-      box.add(fit(labelAt(this, 0, 18, upper(t('v_' + v.id)), V_NAME), VW - 20));
+      box.add(fitWidth(labelAt(this, 0, 18, upper(t('v_' + v.id)), V_NAME), VW - 20));
       box.add(labelAt(this, 0, 44, t('capN', { n: v.capacity }), V_CAP));
       const btn = new KitButton(this, 0, 78, { w: 160, h: 42, color: using ? KRAFT : owned ? OWNED : ORANGE, label: using ? upper(t('inUse')) : owned ? upper(t('use')) : money(v.price), style: V_BTN, sfx: null }, act);
       if (using) btn.setEnabled(false);
@@ -390,8 +392,8 @@ export class MapScene extends Phaser.Scene {
       const act = () => this.upgradeAct(u.id, box);
       const box = this.add.container(width / 2, y);
       box.add(this.add.image(0, SKIN_PAD / 2, skinTexture(this, 'plate', UW, UH, 'up', KRAFT)));
-      box.add(fit(labelAt(this, -306, -14, upper(t('up_' + u.id)), U_NAME, 0), 330));
-      box.add(fit(labelAt(this, -306, 18, t('upd_' + u.id), U_DESC, 0), 330));
+      box.add(fitWidth(labelAt(this, -306, -14, upper(t('up_' + u.id)), U_NAME, 0), 330));
+      box.add(fitWidth(labelAt(this, -306, 18, t('upd_' + u.id), U_DESC, 0), 330));
       const pips = this.add.graphics();
       for (let q = 0; q < u.max; q++) {
         pips.fillStyle(0x3a2410, 0.55).fillRoundedRect(58 + q * 30, -11 + 3, 22, 22, 5);
@@ -421,7 +423,7 @@ export class MapScene extends Phaser.Scene {
       g.fillStyle(0xffffff, 0.22).fillEllipse(-8, -14, 30, 14);
       g.lineStyle(using ? 5 : 3, using ? 0xffd23f : 0xe0c9a6, 1).strokeCircle(0, 0, 34);
       box.add(g);
-      box.add(fit(labelAt(this, 0, 54, owned ? t('p_' + p.id) : money(p.price), owned ? P_NAME : P_PRICE), 88));
+      box.add(fitWidth(labelAt(this, 0, 54, owned ? t('p_' + p.id) : money(p.price), owned ? P_NAME : P_PRICE), 88));
       box.setSize(84, 110).setInteractive({ useHandCursor: true });
       box.on('pointerup', act);
       this.page.add(box);

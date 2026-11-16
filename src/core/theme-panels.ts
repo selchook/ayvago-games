@@ -1,75 +1,49 @@
-// Pieces for the game's own themed screens (the menu theme's look, src/core/menu-theme.ts), built
-// so that opening a screen only places images: every face, card and line of text is a canvas
-// texture painted once under the Ayvago intro (the screen's `prebake`) and cached by key.
-//   - label / labelAt: a line in the display face (or the body font), the core's painted label;
+// Pieces for a themed game's own inner screens (a shop, a map, a draft: the menu theme's look,
+// src/core/menu-theme.ts), built so that opening a screen only places images: every face, card and
+// line of text is a canvas texture painted once under the Ayvago intro (`menuTheme.prebake`) and
+// cached by key.
+//   - labelAt: a painted label (`labelTexture`) anchored at its letters' left edge, centre or right edge;
 //   - GlyphText: a changing line (counts, prices) set from a glyph atlas painted once per style;
 //   - FmtLine: a translated line with values in it ("Best: {n}"): the words as painted labels,
 //     the values in glyphs;
 //   - Para: a paragraph wrapped into painted lines;
-//   - KitButton: a button in the skin with up / over / down / off faces and a painted label.
-// The same file sits in each themed game's folder (games own their code); nothing here runs in play
-// beyond placing images.
+//   - KitButton: a button in the skin with up / over / down / on / off faces and a painted label.
+// Each has a `bake*` (or `glyphAtlas`) companion for the prebake. Nothing here runs in play beyond
+// placing images. References: Skull Isle (shop.ts, board.ts), Snow Express and Delivery Dash
+// (mapui.ts), Rooftop Courier and Coaster Rush (shop.ts).
 import Phaser from 'phaser';
-import { t, menuTheme, labelTexture, skinTexture, playSfx, SKIN_PAD, type LabelStyle, type SkinKind, type SkinState } from '@core';
-
-// ------------------------------------------------------------------ canvases
-
-/** A texture painted once on a software canvas (cached by key). */
-export function bakeTex(scene: Phaser.Scene, key: string, w: number, h: number, draw: (c: CanvasRenderingContext2D) => void): string {
-  if (scene.textures.exists(key)) return key;
-  const cv = document.createElement('canvas');
-  cv.width = Math.max(1, Math.ceil(w)); cv.height = Math.max(1, Math.ceil(h));
-  const c = cv.getContext('2d', { willReadFrequently: true })!;
-  draw(c);
-  scene.textures.addCanvas(key, cv)?.setFilter(Phaser.Textures.FilterMode.LINEAR);
-  return key;
-}
-
-const probe = (() => {
-  let c: CanvasRenderingContext2D | null = null;
-  return () => (c ??= document.createElement('canvas').getContext('2d', { willReadFrequently: true })!);
-})();
-
-/** The CSS font a label style paints with (as `labelTexture` does: modern style, display face scaled by fontScale). */
-export function fontOf(o: LabelStyle): { font: string; size: number } {
-  const theme = menuTheme()!;
-  const base = o.size ?? 32;
-  if (o.body) {
-    const size = Math.round(base * 0.92);
-    return { font: `800 ${size}px "Nunito", sans-serif`, size };
-  }
-  const size = Math.round(base * (theme.fontScale ?? 1));
-  return { font: `${size}px "${theme.font}", serif`, size };
-}
-
-/** The advance width of a line in a label style. */
-export function textWidth(s: string, o: LabelStyle): number {
-  const c = probe();
-  c.font = fontOf(o).font;
-  return c.measureText(s).width;
-}
-
-const strokeOf = (o: LabelStyle, size: number): number => (o.stroke === null ? 0 : Math.round(o.strokeWidth ?? size * 0.14));
-const padOf = (o: LabelStyle, size: number): number => Math.ceil(strokeOf(o, size) / 2 + (o.shadow === false ? 0 : Math.round(size * 0.12)) + 2);
+import { t } from './i18n';
+import { playSfx } from './audio';
+import {
+  menuTheme, labelTexture, themeLabel, labelFont, glyphTexture, skinTexture, canvas2d, hash, SKIN_PAD,
+  type LabelStyle, type SkinKind, type SkinState,
+} from './menu-theme';
 
 // ------------------------------------------------------------------ labels
 
-/**
- * A painted label (cached) with its letters' box anchored at x: `ax` 0 = left edge of the
- * letters, 0.5 = centre, 1 = right edge. The image's y is the letters' middle.
- */
-export function labelAt(scene: Phaser.Scene, x: number, y: number, s: string, o: LabelStyle, ax = 0.5): Phaser.GameObjects.Image {
-  const key = labelTexture(scene, s, o);
-  const img = scene.add.image(x, y, key);
-  const tex = scene.textures.get(key);
-  const oy = ((tex.customData as Record<string, unknown>).originY as number | undefined) ?? 0.5;
-  const w = img.width, pad = (w - Math.ceil(textWidth(s, o))) / 2;
-  img.setOrigin(ax === 0.5 ? 0.5 : ax === 0 ? pad / w : 1 - pad / w, oy);
-  return img;
+let probeCtx: CanvasRenderingContext2D | null = null;
+const probe = (): CanvasRenderingContext2D => (probeCtx ??= canvas2d(1, 1));
+
+/** The advance width of a line in a label style (as `labelTexture` paints it). */
+export function labelWidth(s: string, o: LabelStyle): number {
+  const c = probe();
+  c.font = labelFont(o).font;
+  return c.measureText(s).width;
 }
 
-/** Shrinks an object to fit `room` px wide (labels for long Turkish words). */
-export function fit<T extends Phaser.GameObjects.Components.Transform & { width: number }>(o: T, room: number, base = 1): T {
+/**
+ * A painted label (`labelTexture`, cached) with its letters' box anchored at x: `ax` 0 = left edge
+ * of the letters, 0.5 = centre (as `themeLabel`), 1 = right edge. The image's y is the letters' middle.
+ */
+export function labelAt(scene: Phaser.Scene, x: number, y: number, s: string, o: LabelStyle, ax = 0.5): Phaser.GameObjects.Image {
+  const img = themeLabel(scene, x, y, s, o);
+  if (ax === 0.5) return img;
+  const w = img.width, pad = (w - Math.ceil(labelWidth(s, o))) / 2;
+  return img.setOrigin(ax === 0 ? pad / w : 1 - pad / w, img.originY);
+}
+
+/** Scales an object to `base`, shrunk further to fit `room` px wide (labels for long Turkish words). */
+export function fitWidth<T extends Phaser.GameObjects.Components.Transform & { width: number }>(o: T, room: number, base = 1): T {
   o.setScale(base);
   if (o.width * base > room) o.setScale(room / o.width);
   return o;
@@ -78,76 +52,37 @@ export function fit<T extends Phaser.GameObjects.Components.Transform & { width:
 // ------------------------------------------------------------------ glyphs
 
 /** The characters a GlyphText can show by default: counts, prices, ratios, the locale's separators. */
-export const NUMERIC = '0123456789/.,:%+-−×x→ $₺★';
+export const NUMERIC_GLYPHS = '0123456789/.,:%+-−×x→ $₺★';
 
-interface Atlas { key: string; adv: Record<string, number>; originY: number }
-const atlases = new Map<string, Atlas>();
-
-/**
- * One texture with every character of `chars` painted in a label style (fill or gradient,
- * outline, shadow: as the core's labels), one frame each, and their advances.
- */
-export function glyphAtlas(scene: Phaser.Scene, o: LabelStyle, chars = NUMERIC): Atlas {
-  const theme = menuTheme()!;
-  const id = `${JSON.stringify(o)}|${chars}`;
-  const key = `pn-gly-${hashStr(id)}`;
-  const known = atlases.get(key);
-  if (known && scene.textures.exists(key)) return known;
-  const { font, size } = fontOf(o);
-  const c0 = probe();
-  c0.font = font;
-  const m = c0.measureText('ÇĞİÖŞÜ' + chars);
-  const asc = Math.ceil(Math.max(m.actualBoundingBoxAscent || 0, size * 0.78));
-  const desc = Math.ceil(Math.max(m.actualBoundingBoxDescent || 0, size * 0.2));
-  const sw = strokeOf(o, size), pad = padOf(o, size);
-  const offY = o.shadow === false ? 0 : Math.max(2, Math.round(size * 0.06));
-  const list = [...new Set([...chars])];
-  const adv: Record<string, number> = {};
-  const cells = list.map((ch) => { adv[ch] = c0.measureText(ch).width; return Math.ceil(adv[ch]) + pad * 2; });
-  const W = cells.reduce((a, b) => a + b, 0), H = asc + desc + pad * 2 + offY;
-  const P = theme.palette;
-  bakeTex(scene, key, W, H, (c) => {
-    c.font = font; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.lineJoin = 'round'; c.miterLimit = 2;
-    let x = 0;
-    list.forEach((ch, i) => {
-      const cx = x + cells[i] / 2, y = pad + asc;
-      let fill: string | CanvasGradient = o.color ?? P.label;
-      if (o.fill?.length) {
-        const g = c.createLinearGradient(0, y - asc * 0.8, 0, y + desc * 0.3);
-        o.fill.forEach((f, k) => g.addColorStop(k / Math.max(1, o.fill!.length - 1), f));
-        fill = g;
-      }
-      c.save();
-      if (o.shadow !== false) { c.shadowColor = 'rgba(0,0,0,0.55)'; c.shadowBlur = Math.round(size * 0.12); c.shadowOffsetY = offY; }
-      if (sw > 0) { c.strokeStyle = o.stroke ?? P.labelStroke; c.lineWidth = sw; c.strokeText(ch, cx, y); c.shadowColor = 'transparent'; }
-      c.fillStyle = fill; c.fillText(ch, cx, y);
-      c.restore();
-      x += cells[i];
-    });
-  });
-  const tex = scene.textures.get(key);
-  let x = 0;
-  list.forEach((ch, i) => { if (!tex.has(ch)) tex.add(ch, 0, x, 0, cells[i], H); x += cells[i]; });
-  const at: Atlas = { key, adv, originY: (pad + (asc + desc) / 2) / H };
-  atlases.set(key, at);
-  return at;
+export interface GlyphAtlas {
+  key: string;
+  /** Each character's advance width (unrounded). */
+  adv: Record<string, number>;
+  /** The frames' origin on the letters' middle. */
+  originY: number;
 }
 
-function hashStr(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return h >>> 0;
+/**
+ * One texture with every character of `chars` painted in a label style (as the core's labels:
+ * fill or gradient, outline, shadow), one frame each, and their advances (cached). Paint it in
+ * the prebake for every style a GlyphText or FmtLine uses.
+ */
+export function glyphAtlas(scene: Phaser.Scene, o: LabelStyle, chars = NUMERIC_GLYPHS): GlyphAtlas {
+  const key = glyphTexture(scene, `mt-gly-${hash(`${JSON.stringify(o)}|${chars}`)}`, o, chars);
+  const data = scene.textures.get(key).customData as { adv: Record<string, number>; originY: number };
+  return { key, adv: data.adv, originY: data.originY };
 }
 
 /** A line that changes (a count, a price) set from a glyph atlas: setText swaps frames, paints nothing. */
 export class GlyphText extends Phaser.GameObjects.Container {
-  private atlas: Atlas;
+  private atlas: GlyphAtlas;
   private imgs: Phaser.GameObjects.Image[] = [];
   text = '';
   /** Width of the line as set (unscaled). */
   textWidth = 0;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, s: string, o: LabelStyle, private align: 0 | 0.5 | 1 = 0.5, chars = NUMERIC) {
+  /** `align` 0 / 0.5 / 1 anchors the line's left edge, centre or right edge at x. */
+  constructor(scene: Phaser.Scene, x: number, y: number, s: string, o: LabelStyle, private align: 0 | 0.5 | 1 = 0.5, chars = NUMERIC_GLYPHS) {
     super(scene, x, y);
     this.atlas = glyphAtlas(scene, o, chars);
     scene.add.existing(this);
@@ -183,7 +118,7 @@ export class GlyphText extends Phaser.GameObjects.Container {
 
 const MARK = ['\u0001', '\u0002', '\u0003', '\u0004'];
 
-/** A translation split round its values: words (static, painted labels) and the value names. */
+/** A translation split round its values (at most four): the words and the value names, in order. */
 export function fmtParts(key: string, names: string[]): Array<{ s: string } | { v: string }> {
   const vars: Record<string, string> = {};
   names.forEach((n, i) => { vars[n] = MARK[i]; });
@@ -196,8 +131,8 @@ export function fmtParts(key: string, names: string[]): Array<{ s: string } | { 
   return out;
 }
 
-/** Paints a FmtLine's words ahead (the values come from the glyph atlas). */
-export function bakeFmt(scene: Phaser.Scene, key: string, names: string[], o: LabelStyle, chars = NUMERIC): void {
+/** Paints a FmtLine's words ahead (in the current language) and its style's glyph atlas. */
+export function bakeFmt(scene: Phaser.Scene, key: string, names: string[], o: LabelStyle, chars = NUMERIC_GLYPHS): void {
   for (const p of fmtParts(key, names)) if ('s' in p && p.s.trim()) labelTexture(scene, p.s, o);
   glyphAtlas(scene, o, chars);
 }
@@ -210,7 +145,7 @@ export class FmtLine extends Phaser.GameObjects.Container {
   textWidth = 0;
   private key = '';
 
-  constructor(scene: Phaser.Scene, x: number, y: number, private o: LabelStyle, private align: 0 | 0.5 | 1 = 0.5, private chars = NUMERIC) {
+  constructor(scene: Phaser.Scene, x: number, y: number, private o: LabelStyle, private align: 0 | 0.5 | 1 = 0.5, private chars = NUMERIC_GLYPHS) {
     super(scene, x, y);
     scene.add.existing(this);
   }
@@ -222,11 +157,11 @@ export class FmtLine extends Phaser.GameObjects.Container {
     this.key = sig;
     this.removeAll(true);
     const parts = fmtParts(key, names);
-    const items: Array<{ obj: Phaser.GameObjects.Image | GlyphText; w: number; text: boolean }> = [];
+    const items: Array<{ obj: Phaser.GameObjects.Image | GlyphText | null; w: number; text: boolean }> = [];
     for (const p of parts) {
       if ('s' in p) {
-        const w = textWidth(p.s, this.o);
-        if (!p.s.trim()) { items.push({ obj: null as unknown as Phaser.GameObjects.Image, w, text: false }); continue; }
+        const w = labelWidth(p.s, this.o);
+        if (!p.s.trim()) { items.push({ obj: null, w, text: false }); continue; }
         items.push({ obj: labelAt(this.scene, 0, 0, p.s, this.o, 0.5), w, text: true });
       } else {
         const g = new GlyphText(this.scene, 0, 0, String(vars[p.v]), this.o, 0, this.chars);
@@ -256,7 +191,7 @@ export function wrapLines(s: string, o: LabelStyle, maxW: number): string[] {
     let line = '';
     for (const word of para.split(/\s+/).filter(Boolean)) {
       const next = line ? line + ' ' + word : word;
-      if (line && textWidth(next, o) > maxW) { out.push(line); line = word; } else line = next;
+      if (line && labelWidth(next, o) > maxW) { out.push(line); line = word; } else line = next;
     }
     out.push(line);
   }
@@ -294,7 +229,7 @@ export class Para extends Phaser.GameObjects.Container {
 
 // ------------------------------------------------------------------ buttons
 
-/** Paints a button's faces ahead: up, over, down (off for one that can be disabled, on for a selected one). */
+/** Paints a KitButton's faces ahead: up, over, down (off for one that can be disabled, on for a selected one). */
 export function bakeButton(scene: Phaser.Scene, kind: SkinKind, w: number, h: number, color: number, off = false, on = false): void {
   for (const st of ['up', 'over', 'down'] as SkinState[]) skinTexture(scene, kind, w, h, st, color);
   if (off) skinTexture(scene, kind, w, h, 'off', color);
@@ -307,10 +242,11 @@ export interface KitButtonOptions {
   kind?: SkinKind;
   /** Face colour (default the palette's secondary). */
   color?: number;
-  /** The label (painted once, cached) and its style (default the display face at `size`). */
+  /** The label (painted once, cached) and its style (default the display face at `size`, default 30). */
   label?: string;
   size?: number;
   style?: LabelStyle;
+  /** The tap's sound (default 'ui-click'; null for none, when the action plays its own). */
   sfx?: string | null;
   /** Shown selected: the skin's 'on' face (a rim) in place of 'up'. */
   on?: boolean;
@@ -319,9 +255,11 @@ export interface KitButtonOptions {
 }
 
 /**
- * A button in the theme's skin: its faces painted once (`bakeButton`), the label a painted label,
- * a pressed face and a little drop of the label while held, the disabled face ('off') when off.
- * Tappable over its whole w x h. Extra content (an icon, a GlyphText) can be added to it.
+ * A button in the theme's skin for inner screens: its faces painted once (`bakeButton`), the label
+ * a painted label fitted to the face, a pressed face and a little drop of the label while held, the
+ * selected face ('on', a tab or a tile) and the disabled face ('off'). Tappable over its whole
+ * w x h (`setHit` for more); the tap does not reach objects under it. Extra content (an icon, a
+ * GlyphText) is added with `addContent` and drops with the label.
  */
 export class KitButton extends Phaser.GameObjects.Container {
   readonly face: Phaser.GameObjects.Image;
@@ -375,13 +313,14 @@ export class KitButton extends Phaser.GameObjects.Container {
     return this;
   }
 
+  /** Another label (a prebaked one: `labelTexture` with the button's style), centred at y; '' for none. */
   setLabel(s: string, y = 0): this {
     this.label?.destroy();
     this.label = null;
     if (s) {
       const style = this.o.style ?? { size: this.o.size ?? 30 };
       this.label = labelAt(this.scene, 0, y, s, style, 0.5).setData('y0', y);
-      fit(this.label, this.o.w - 28);
+      fitWidth(this.label, this.o.w - 28);
       this.add(this.label);
     }
     return this;

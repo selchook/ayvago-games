@@ -312,12 +312,21 @@ export interface LabelStyle {
 
 interface LabelMetrics { font: string; size: number; sw: number; pad: number; padBottom: number; asc: number; desc: number }
 
-function labelMetrics(theme: MenuTheme, o: LabelStyle, probeText: string): LabelMetrics {
+/**
+ * The CSS font and pixel size a label style paints with: the display face scaled by the theme's
+ * fontScale, or the style's body font. Measure with it to lay out painted labels.
+ */
+export function labelFont(o: LabelStyle, theme: MenuTheme = menuTheme()!): { font: string; size: number } {
   const base = o.size ?? 32;
   const size = o.body ? Math.round(base * (isModern() ? 0.92 : 1)) : Math.round(base * (theme.fontScale ?? 1));
   const font = o.body
     ? (isModern() ? `800 ${size}px "Nunito", sans-serif` : `${size}px "Pixelify Sans", sans-serif`)
     : `${size}px "${theme.font}", serif`;
+  return { font, size };
+}
+
+function labelMetrics(theme: MenuTheme, o: LabelStyle, probeText: string): LabelMetrics {
+  const { font, size } = labelFont(o, theme);
   const sw = o.stroke === null ? 0 : Math.round(o.strokeWidth ?? size * 0.14);
   const blur = o.shadow === false ? 0 : Math.round(size * 0.12);
   const offY = o.shadow === false ? 0 : Math.max(2, Math.round(size * 0.06));
@@ -396,6 +405,31 @@ export function themeLabel(scene: Phaser.Scene, x: number, y: number, s: string,
   return placeLabel(scene.add.image(x, y, '__DEFAULT'), labelTexture(scene, s, o));
 }
 
+/**
+ * Paints the characters `list` side by side in a label style into the texture `key`, one frame
+ * per character named by it, each cell as wide as the character plus the label's padding, and
+ * the frames' originY (the letters' middle) in its customData. `probeText` sets the ascent and
+ * descent (as a label of that text). Returns each character's advance, unrounded.
+ */
+function paintGlyphs(scene: Phaser.Scene, key: string, list: string[], o: LabelStyle, probeText: string): number[] {
+  const theme = menuTheme()!;
+  const M = labelMetrics(theme, o, probeText);
+  const probe = canvas2d(1, 1);
+  probe.font = M.font;
+  const adv = list.map((ch) => probe.measureText(ch).width);
+  const cells = adv.map((a) => Math.ceil(a) + M.pad * 2);
+  const w = cells.reduce((a, b) => a + b, 0), h = M.asc + M.desc + M.pad + M.padBottom;
+  bake(scene, key, w, h, (c) => {
+    let x = 0;
+    list.forEach((ch, i) => { paintLabel(c, ch, x + cells[i] / 2, M.pad + M.asc, M, o, theme.palette); x += cells[i]; });
+  });
+  const tex = scene.textures.get(key);
+  let x = 0;
+  list.forEach((ch, i) => { if (!tex.has(ch)) tex.add(ch, 0, x, 0, cells[i], h); x += cells[i]; });
+  (tex.customData as Record<string, unknown>).originY = (M.pad + (M.asc + M.desc) / 2) / h;
+  return adv;
+}
+
 const DIGITS = '0123456789';
 
 /** The ten digits in one label style, one frame each (cached): what `ThemeNumber` counts with. */
@@ -420,6 +454,19 @@ export function digitTexture(scene: Phaser.Scene, o: LabelStyle = {}): string {
   const data = tex.customData as Record<string, unknown>;
   data.adv = Object.fromEntries([...DIGITS].map((d, i) => [d, adv[i]]));
   data.originY = (M.pad + (M.asc + M.desc) / 2) / h;
+  return key;
+}
+
+/**
+ * Every character of `chars` in one label style, one frame each, as the texture `key` (cached):
+ * customData `adv` (each character's advance, unrounded) and `originY`. What `GlyphText`
+ * (src/core/theme-panels.ts) sets its lines from.
+ */
+export function glyphTexture(scene: Phaser.Scene, key: string, o: LabelStyle, chars: string): string {
+  if (scene.textures.exists(key)) return key;
+  const list = [...new Set([...chars])];
+  const adv = paintGlyphs(scene, key, list, o, chars);
+  (scene.textures.get(key).customData as Record<string, unknown>).adv = Object.fromEntries(list.map((ch, i) => [ch, adv[i]]));
   return key;
 }
 

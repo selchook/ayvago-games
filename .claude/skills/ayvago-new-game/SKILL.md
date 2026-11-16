@@ -576,6 +576,41 @@ menuTheme: {
     the frame round a scene of its own. Only text that really changes (descriptions, a count up)
     stays a live Text. Check with the texture manager: opening the screen adds no keys besides
     those Texts (`game.textures.getTextureKeys()` before and after).
+  - **Panels** (`src/core/theme-panels.ts`; references: Skull Isle's `shop.ts` and `board.ts`, Snow
+    Express's and Delivery Dash's `mapui.ts`, Rooftop Courier's and Coaster Rush's `shop.ts`): a
+    screen with no live Text at all. Each piece has a prebake companion that paints the same keys:
+    - `labelAt(scene, x, y, text, style, ax)`: a painted label anchored at its letters' left edge
+      (`ax` 0), centre (0.5, as `themeLabel`) or right edge (1); `fitWidth(obj, room)` shrinks it
+      to a width (long Turkish words). Prebake: `labelTexture(scene, text, style)`.
+    - `GlyphText(scene, x, y, text, style, align)`: a line that changes (a purse, a price, a
+      ratio) set from a glyph atlas (`NUMERIC_GLYPHS` by default: digits, `/ . , : % + - × →`,
+      `$ ₺ ★`); `setText` only swaps frames. Prebake: `glyphAtlas(scene, style, chars?)`.
+    - `FmtLine(scene, x, y, style, align).set(key, { n })`: a translated line with values ("{n}
+      more stamps", "{a} → {b}"), the words painted labels, the values glyphs. Prebake:
+      `bakeFmt(scene, key, ['n'], style)`.
+    - `Para(scene, x, y, text, style, maxW, align, lineH)`: a paragraph wrapped into painted lines
+      (`wrapLines` gives the lines). Prebake: `bakePara(scene, text, style, maxW)`.
+    - `KitButton(scene, x, y, { w, h, kind, color, label, style, sfx, on, tapWhenOff }, onTap)`: a
+      skin button with a painted label fitted to its face; `setLook(color, on)` / `setSelected`
+      for a tab or tile (the skin's `'on'` face), `setEnabled(false)` for the `'off'` face
+      (`tapWhenOff` still calls back to say why), `setLabel`, `setHit` for a larger tap area,
+      `addContent(icon, glyphText)` for content that drops with the label when pressed; its tap
+      does not fall through to objects under it. Prebake: `bakeButton(scene, kind, w, h, color,
+      off?, on?)`. `SkinButton` stays the one for menu rows (`menuOption`) and live labels.
+    ```ts
+    const PRICE: LabelStyle = { size: 24, color: '#fff6e6', stroke: INK, strokeWidth: 4 };
+    export function prebakeShop(scene: Phaser.Scene): void {        // from menuTheme.prebake
+      labelTexture(scene, t('shopTitle'), TITLE);
+      glyphAtlas(scene, PRICE);
+      bakeFmt(scene, 'shopNeed', ['n'], NEED);
+      bakeButton(scene, 'button', 128, 46, GREEN, true);
+    }
+    // on open: only images placed
+    this.add(fitWidth(labelAt(this, width / 2, 70, t('shopTitle'), TITLE), 430));
+    const buy = new KitButton(this, x, y, { w: 128, h: 46, color: GREEN, sfx: null }, () => this.buy(id));
+    buy.addContent(new GlyphText(this, 14, 0, String(price), PRICE)).setEnabled(price <= purse);
+    this.add(new FmtLine(this, x, y - 60, NEED).set('shopNeed', { n: price - purse }));
+    ```
 - **Cost (overlays).** Boot paints every texture of these screens in the current language
   (`prebakeOverlays`); opening the pause or the result creates no texture and rasterises no text
   (only a language switch mid-session paints the new labels on first use). Check the platform
