@@ -6,7 +6,7 @@
   "genres": ["puzzle", "casual"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "1.0.0",
+  "version": "1.0.1",
   "credits": ["3D models: Kenney Holiday Kit and Train Kit (CC0) — kenney.nl", "Sound effects: Kenney Impact Sounds and Interface Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org; the chug, whistle, sleigh bells, trombone and jingle are made in the game"],
   "platform": { "addedAt": "2026-11-13" }
 }

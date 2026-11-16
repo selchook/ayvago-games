@@ -14,7 +14,7 @@ import { isModern } from './style';
 import { difficulty, isEasy, offersDifficulty, setDifficulty, type Difficulty } from './difficulty';
 import { adBusy, adsAvailable, REPLAY_INTERSTITIAL_EVERY, showInterstitial, showRewarded } from './ads';
 import {
-  bakeMenuLogo, menuTheme, notesCard, notesTexture, playMenuIntro, prebakeMenuTheme, ropeBorder, SkinButton, skinIconButton, skinImage, skinTexture, SKIN_PAD,
+  bakeMenuLogo, menuTheme, notesCard, notesTexture, playMenuIntro, prebakeMenuTheme, frameBorder, SkinButton, skinIconButton, skinImage, skinTexture, SKIN_PAD,
   themeLogo, themeShade, themeText, type MenuTheme,
 } from './menu-theme';
 import { overlayTheme, prebakeOverlays, themedPause, themedResult } from './overlay-theme';
@@ -107,7 +107,7 @@ export class MenuScene extends Phaser.Scene {
     if (theme) {
       // the themed menu: a vignette and the frame over the live backdrop, the logo from the title
       themeShade(this, theme.frame?.vignette ?? 0.6, theme.frame?.dim);
-      if (theme.frame?.border === 'rope') ropeBorder(this);
+      frameBorder(this);
       const room = logoRoom(this);
       logo = themeLogo(this, width / 2, room.top, room.bottom, loc(meta.title), room.maxW);
     } else {
@@ -194,7 +194,7 @@ export class MenuScene extends Phaser.Scene {
     const theme = menuTheme();
     if (theme) {
       themeShade(this, theme.frame?.vignette ?? 0.6, theme.frame?.dim);
-      if (theme.frame?.border === 'rope') ropeBorder(this);
+      frameBorder(this);
       const logo = themeLogo(this, width / 2, land ? 26 : 40, height * (land ? 0.3 : 0.29), loc(def.meta.title), width - (land ? 360 : 80));
       playMenuIntro(this, logo, [], () => {
         this.tweens.add({ targets: logo, y: logo.y - 8, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });

@@ -44,12 +44,12 @@ export {
   themeLabel, labelTexture, ThemeNumber,
 } from './menu-theme';
 export type {
-  MenuTheme, MenuPalette, MenuFrame, LogoStyle, EmblemPainter, SkinPainter, SkinKind, SkinState, SkinPaint, NotesPainter, SkinButtonOptions,
+  MenuTheme, MenuPalette, MenuFrame, BorderStyle, LogoStyle, EmblemPainter, SkinPainter, SkinKind, SkinState, SkinPaint, NotesPainter, SkinButtonOptions,
   LabelStyle, OverlayStyle,
 } from './menu-theme';
 export { overlayTheme, overlayHeadingStyle, themeCard } from './overlay-theme';
 export {
-  CarSteering, CarPad, Tilt, tilt, TILT_FULL_LOCK, STEER_MODES, steerMode, setSteerMode, touchScreen, steeringMenu, steeringOption,
+  CarSteering, CarPad, Tilt, tilt, TILT_FULL_LOCK, STEER_MODES, steerMode, setSteerMode, touchScreen, steeringMenu, steeringOption, STEERING_PIECES,
   RAMP_TIME, WHEEL_LOCK, STEER_CURVE, steerCurve,
 } from './steering';
 export type { SteerMode, TiltResult, CarPadButton, CarPadOptions, CarSteeringOptions } from './steering';

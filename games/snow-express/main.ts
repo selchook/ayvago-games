@@ -10,7 +10,8 @@ import { Sim, NO_INPUT } from './sim';
 import { Bot, SKILL } from './bot';
 import { loadMeta } from './meta';
 import { level, RUSH, timetable } from './levels';
-import { makeArt, Overlay, Pill } from './ui';
+import { makeArt, Overlay } from './ui';
+import { SNOW_THEME, journeyButton } from './theme';
 
 launch({
   meta: meta as GameMeta,
@@ -59,7 +60,7 @@ launch({
     let sim = fresh();
     let bot = new Bot(sim, SKILL.good, seed);
     const overlay = new Overlay(scene, view, false);
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0a1230, 0.4).setOrigin(0).setDepth(-60);
+    // the backdrop's darkening is the menu theme's (frame.dim in theme.ts): one full-screen layer
     let acc = 0;
     let warm = false;
     view.world.onFrame = (dt) => {
@@ -81,26 +82,22 @@ launch({
       if (!warm) { warm = true; keepPrograms(view.world.renderer, view.world.scene, view.world.camera); }
     };
   },
-  // the Journey map (levels by chapter, Holiday Rush): a button under the difficulty switch
+  // the Journey map (levels by chapter, Holiday Rush): a button under the difficulty switch, in the theme's skin
   menuOption: {
     build(scene, x, y) {
-      const btn = new Pill(scene, x, y + 6, 380, 86, 0x2f7fd8, () => open(), 26);
-      const label = () => {
-        const mm = loadMeta();
-        btn.setLabels(mm.mode === 'rush' ? t('menuRush') : t('menuJourney', { n: mm.level }), t('menuSub'));
-      };
-      label();
       const open = () => {
         if (!scene.scene.isActive()) return;
         scene.scene.pause();
         scene.scene.launch('Map', { from: scene.scene.key });
       };
-      scene.events.on('map-closed', label);
+      const btn = journeyButton(scene, x, y + 6, open);
+      scene.events.on('map-closed', btn.refresh);
       scene.input.keyboard?.on('keydown-M', open);
-      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('map-closed', label));
-      scene.tweens.add({ targets: btn, scale: 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('map-closed', btn.refresh));
     },
   },
+  // frosted ice with snow on top, a railway round the screen, a locomotive behind the logo (theme.ts)
+  menuTheme: SNOW_THEME,
   scenes: [PlayScene, MapScene],
   strings: STRINGS,
 });

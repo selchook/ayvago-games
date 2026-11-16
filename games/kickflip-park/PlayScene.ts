@@ -5,10 +5,11 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, loc, isEasy, hudChip, HudChip, flash, burst, getLang,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, overlayHeadingStyle,
 } from '@core';
 import { World3D } from '@core/three';
 import { Setup, takeFromMenu } from './setup';
+import { SUMMARY_W } from './theme';
 import { Sim, NO_INPUT, type Input, type SimEvent, type Entry } from './sim';
 import { View } from './view';
 import { Bot, SKILL } from './bot';
@@ -703,15 +704,16 @@ export class PlayScene extends ArcadeScene {
     for (const p of res.parks) lines.push([t('newPark', { name: t('park_' + p) }), '#ffd23f', 26]);
     for (const b of res.boards) lines.push([t('newBoard', { name: loc(boardDef(b).name) }), '#ff9ae6', 24]);
     const H = 190 + lines.length * 46;
-    const g = this.add.graphics();
-    g.fillStyle(0x000000, 0.3).fillRoundedRect(-310, -H / 2 + 8, 620, H, 28);
-    g.fillStyle(0x10162e, 0.94).fillRoundedRect(-310, -H / 2, 620, H, 28);
-    g.lineStyle(2, 0xffffff, 0.2).strokeRoundedRect(-310, -H / 2, 620, H, 28);
-    c.add(g);
-    c.add(txt(this, 0, -H / 2 + 50, t('sessionOver'), { title: true, size: 40, color: '#ffd23f', strokeThickness: 8 }));
-    c.add(txt(this, 0, -H / 2 + 100, t('park_' + this.parkId) + ' · ' + fmt(this.sim.score), { size: 26, color: '#ffffff', strokeThickness: 0, shadow: false }));
-    if (this.newGoals.length) c.add(txt(this, 0, -H / 2 + 140, t('goalsThis'), { size: 20, color: '#9fb0d8', strokeThickness: 0, shadow: false }));
-    lines.forEach(([s, col, size], i) => c.add(txt(this, 0, -H / 2 + 186 + i * 46, s, { title: i >= this.newGoals.length, size, color: col, strokeThickness: 0, shadow: false, wrap: 580 })));
+    // the menu theme's flyer (theme.ts), the heading painted like the result screen's, ink on paper
+    c.add(themeCard(this, 0, 0, SUMMARY_W, H));
+    const head = themeLabel(this, 0, -H / 2 + 54, t('sessionOver'), overlayHeadingStyle(false));
+    head.setScale(Math.min(54 / 84, (SUMMARY_W - 90) / head.width));
+    c.add(head);
+    const ink = { strokeThickness: 0, shadow: false } as const;
+    const onPaper: Record<string, string> = { '#7dffa0': '#1d8a3c', '#cfd8f0': '#4a4458', '#ffd23f': '#c2560a', '#ff9ae6': '#c2187a' };
+    c.add(txt(this, 0, -H / 2 + 104, t('park_' + this.parkId) + ' · ' + fmt(this.sim.score), { size: 26, color: '#221c2a', ...ink }));
+    if (this.newGoals.length) c.add(txt(this, 0, -H / 2 + 140, t('goalsThis'), { size: 20, color: '#5a5468', ...ink }));
+    lines.forEach(([s, col, size], i) => c.add(txt(this, 0, -H / 2 + 186 + i * 46, s, { title: i >= this.newGoals.length, size, color: onPaper[col] ?? col, ...ink, wrap: 580 })));
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });
     this.tweens.add({ targets: c, alpha: 0, delay: 3100, duration: 300 });

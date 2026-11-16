@@ -11,7 +11,8 @@ import { Bot, SKILL } from './bot';
 import { loadMeta } from './meta';
 import { shift, rushShift } from './shifts';
 import { handling, vehicle } from './defs';
-import { makeArt, Pill, Badges } from './ui';
+import { makeArt, Badges } from './ui';
+import { DELIVERY_THEME, mapButton } from './theme';
 
 launch({
   meta: meta as GameMeta,
@@ -65,7 +66,7 @@ launch({
     const view = new View(scene, sim, { menu: true, vehicle: m.vehicle, paint: m.paint });
     let bot = new Bot(sim, SKILL.good, seed);
     const badges = new Badges(scene, view, false);
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x0a1430, 0.42).setOrigin(0).setDepth(-60);
+    // the backdrop's darkening is the menu theme's (frame.dim in theme.ts): one full-screen layer
     let acc = 0;
     let warm = false;
     view.world.onFrame = (dt) => {
@@ -88,24 +89,20 @@ launch({
       if (!warm) { warm = true; keepPrograms(view.world.renderer, view.world.scene, view.world.camera); }
     };
     void NO_INPUT;
-    // the town map (shifts, Endless Rush, garage): a button at the top
-    const btn = new Pill(scene, scene.scale.width / 2, 136, 460, 92, 0xff8a1a, () => open(), 28);
-    btn.setDepth(10);
-    const label = () => {
-      const mm = loadMeta();
-      btn.setLabels(mm.mode === 'rush' ? t('menuRush') : t('menuShift', { n: mm.shift, d: t('d' + shift(mm.shift).district) }), t('menuSub'));
-    };
-    label();
+    // the town map (shifts, Endless Rush, garage): a button at the top, in the theme's skin
     const open = () => {
       if (!scene.scene.isActive()) return;
       scene.scene.pause();
       scene.scene.launch('Map', { from: scene.scene.key });
     };
-    scene.events.on('map-closed', label);
+    const map = mapButton(scene, open);
+    map.button.setDepth(10);
+    scene.events.on('map-closed', map.refresh);
     scene.input.keyboard?.on('keydown-M', open);
-    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('map-closed', label));
-    scene.tweens.add({ targets: btn, scale: 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('map-closed', map.refresh));
   },
+  // cardboard and packing tape, a road round the screen, a winged parcel behind the logo (theme.ts)
+  menuTheme: DELIVERY_THEME,
   scenes: [PlayScene, MapScene],
   strings: STRINGS,
 });

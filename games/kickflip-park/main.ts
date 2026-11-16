@@ -10,6 +10,7 @@ import { Bot, SKILL } from './bot';
 import { loadMeta } from './meta';
 import { park } from './parks';
 import { makeIcons } from './art';
+import { KICKFLIP_THEME } from './theme';
 
 launch({
   meta: meta as GameMeta,
@@ -73,7 +74,7 @@ launch({
     let seed = 21;
     let sim = new Sim(park(m.park), 'easy', seed);
     let bot = new Bot(sim, SKILL.good, seed);
-    scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x060a18, 0.38).setOrigin(0).setDepth(-90);
+    // the backdrop's darkening is the menu theme's (frame.dim in theme.ts): one full-screen layer
     let acc = 0;
     let warm = false;
     view.world.onFrame = (dt) => {
@@ -94,6 +95,8 @@ launch({
       if (!warm) { warm = true; keepPrograms(view.world.renderer, view.world.scene, view.world.camera); }
     };
   },
+  // die-cut stickers on grip tape, taped corners and a flying deck behind the logo (theme.ts)
+  menuTheme: KICKFLIP_THEME,
   scenes: [PlayScene],
   strings: STRINGS,
 });

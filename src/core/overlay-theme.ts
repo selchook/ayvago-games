@@ -12,7 +12,7 @@ import { net } from './net';
 import { t } from './i18n';
 import { burst } from './fx';
 import {
-  bake, canvas2d, css, hash, labelTexture, menuTheme, notesTexture, placeLabel, ropeBorder, shadeColor, skinTexture, themeLabel, themeShade,
+  bake, canvas2d, css, hash, labelTexture, menuTheme, notesTexture, placeLabel, frameBorder, ropeBorder, shadeColor, skinTexture, themeLabel, themeShade,
   SkinButton, ThemeNumber, SKIN_PAD, type LabelStyle, type MenuTheme, type OverlayStyle, type SkinState,
 } from './menu-theme';
 
@@ -265,7 +265,7 @@ function frame(scene: Phaser.Scene, theme: MenuTheme, card: Box, quick: boolean)
   shade.setAlpha(quick ? 0.55 : 0);
   scene.tweens.add({ targets: shade, alpha: 1, duration: quick ? 100 : 220, ease: 'Quad.easeOut' });
   const items: Phaser.GameObjects.GameObject[] = [];
-  if (o.border ?? theme.frame?.border === 'rope') for (const r of ropeBorder(scene) as Phaser.GameObjects.Image[]) { r.setDepth(1); items.push(r); }
+  if (o.border ?? !!theme.frame?.border) for (const r of (theme.frame?.border ? frameBorder(scene) : ropeBorder(scene)) as Phaser.GameObjects.Image[]) { r.setDepth(1); items.push(r); }
   const img = themeCard(scene, card.x, card.y, card.w, card.h).setDepth(2);
   return { card: img, items };
 }

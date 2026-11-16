@@ -6,7 +6,7 @@
   "genres": ["action", "arcade"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard", "mouse"],
-  "version": "1.1.0",
+  "version": "1.1.1",
   "credits": ["3D models: Kenney Space Kit (CC0) — kenney.nl", "Planets: Kenney Planets (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Sci-Fi Sounds and Casino Audio (CC0) — kenney.nl"],
   "platform": {"addedAt": "2026-11-13"}
 }

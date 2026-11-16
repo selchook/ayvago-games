@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang, registerStrings,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle, ThemeNumber,
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, type SimEvent, type SimInput } from './sim';
@@ -17,6 +17,7 @@ import { Board } from './graph';
 import { loadMeta, saveMeta, recordLevel, nextLevel, type Meta } from './meta';
 import { CSS, HEX, POWER_EVERY, COCOA_TIME, GLOBE_TIME, clamp, type ColorId, type Mode } from './defs';
 import { makeArt, Overlay, PowerButton, banner, badgeKey, glass, UI_DEPTH } from './ui';
+import { STARS_W, STARS_H } from './theme';
 import { makeSounds, Loop } from './audio';
 
 /** Numbers with thousands separators (TR: 12.345, EN: 12,345). */
@@ -591,19 +592,22 @@ export class PlayScene extends ArcadeScene {
     this.setScore(score);
     // the stars card over the board
     const c = this.add.container(W / 2, 600).setScrollFactor(0).setDepth(UI_DEPTH + 150);
-    const g = glass(this, 600, 400, { color: 0x14204a, alpha: 0.94 });
-    c.add(g);
-    c.add(txt(this, 0, -150, LEVELS.length === this.def.id ? t('allDone') : t('levelDone', { n: this.def.id }), { title: true, size: 40, color: '#ffd23f', strokeThickness: 8 }));
+    // the menu theme's postcard (theme.ts), the heading painted like the result screen's
+    c.add(themeCard(this, 0, 0, STARS_W, STARS_H));
+    const head = themeLabel(this, 0, -146, LEVELS.length === this.def.id ? t('allDone') : t('levelDone', { n: this.def.id }), overlayHeadingStyle(true));
+    head.setScale(Math.min(60 / 84, (STARS_W - 90) / head.width));
+    c.add(head);
     const starImgs: Phaser.GameObjects.Image[] = [];
     for (let i = 0; i < 3; i++) {
       const s = this.add.image(-120 + i * 120, -50, 'icon-star').setDisplaySize(96, 96).setTint(0x46507a);
       starImgs.push(s);
       c.add(s);
     }
-    c.add(txt(this, 0, 40, t('timeIs', { t: mmss(sim.time), p: mmss(this.par) }), { size: 26, color: '#cfe0ff', strokeThickness: 0, shadow: false }));
-    const sc = txt(this, 0, 100, '0', { title: true, size: 48, color: '#ffffff', strokeThickness: 6 });
+    c.add(txt(this, 0, 40, t('timeIs', { t: mmss(sim.time), p: mmss(this.par) }), { size: 26, color: '#16325a', strokeThickness: 0, shadow: false }));
+    // the score counts up in the theme's painted digits
+    const sc = new ThemeNumber(this, 0, 100, 0, { size: 56, fill: ['#fff7c8', '#ffe27a', '#d08a18'], stroke: '#12305e' });
     c.add(sc);
-    if (opened.length) c.add(txt(this, 0, 160, t('newChapter', { c: t('ch' + opened[0]) }), { title: true, size: 24, color: '#7dffa0', strokeThickness: 5 }));
+    if (opened.length) c.add(themeText(this, 0, 160, t('newChapter', { c: t('ch' + opened[0]) }), { size: 28, color: '#1d8a3c', strokeWidth: 0, shadow: false }));
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
     for (let i = 0; i < stars; i++) {
@@ -615,7 +619,7 @@ export class PlayScene extends ArcadeScene {
         this.sfx('star', { volume: 0.6, rate: 1 + i * 0.15 });
       });
     }
-    this.tweens.addCounter({ from: 0, to: score, duration: 900, delay: 400, onUpdate: (tw) => sc.setText(fmt(tw.getValue() ?? 0)) });
+    this.tweens.addCounter({ from: 0, to: score, duration: 900, delay: 400, onUpdate: (tw) => sc.setValue(tw.getValue() ?? 0) });
     this.sfx('se-jingle', { volume: 0.5, exact: true });
     this.time.delayedCall(2900, () => {
       this.tweens.add({ targets: c, alpha: 0, scale: 0.92, duration: 200, onComplete: () => c.destroy() });
