@@ -71,6 +71,8 @@ export class BootScene extends Phaser.Scene {
       themedHowTo(this, theme, menuHowY(this), currentGame().meta.orientation === 'landscape', true);
       // and the pause and result screens' (they then open without painting anything)
       prebakeOverlays(this);
+      // and the game's own themed screens (a shop, a talent board ...)
+      theme.prebake?.(this);
     }
     await introDone;
     // work started during preload that the game needs before the menu (3D models being parsed)

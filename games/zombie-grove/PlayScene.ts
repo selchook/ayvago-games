@@ -7,9 +7,9 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash, shake, storage,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle, SkinButton,
 } from '@core';
-import { ChestReveal } from './chestui';
+import { ChestReveal, CHOICE_CARD, CHOICE_BTN, CHOICE_TITLE } from './chestui';
 import type { Card as ChestCard } from './cards';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent, type Offer } from './sim';
@@ -20,7 +20,7 @@ import { Bot, SKILL } from './bot';
 import { metaFx, runBonus, bankRun, type Meta } from './meta';
 import { loadMeta, saveMeta } from './save';
 import { makeArt, cardArt, weaponArt, COIN, SKULL, MOON, SUN, OFFER, INFINITY, POWER_HUE } from './art';
-import { HpBar, XpChip, WeaponTray, BossBar, BuffChips, AttackButton, banner, bossWarning, glass, Pill, UI_DEPTH } from './ui';
+import { HpBar, XpChip, WeaponTray, BossBar, BuffChips, AttackButton, banner, bossWarning, UI_DEPTH } from './ui';
 import { SUMMARY_W, SUMMARY_H } from './menu';
 import { CardBar, OfferButton, DRAFT_DEPTH, BAR_BOTTOM, BAR_H, cardText } from './cardsui';
 import { xpToNext } from './defs';
@@ -58,7 +58,7 @@ export class PlayScene extends ArcadeScene {
   private buffChips!: BuffChips;
   private chest: ChestReveal | null = null;
   private chestQueue: { cards: ChestCard[]; coins: number }[] = [];
-  private choice: { root: Phaser.GameObjects.Container; pills: Pill[]; focus: number } | null = null;
+  private choice: { root: Phaser.GameObjects.Container; pills: SkinButton[]; focus: number } | null = null;
   private newHeroes: HeroId[] = [];
   private killChip!: HudChip;
   private coinChip!: HudChip;
@@ -654,15 +654,24 @@ export class PlayScene extends ArcadeScene {
     if (this.choice || this.isOver || this.sim.phase !== 'won') return;
     const { width } = this.scale;
     const root = this.add.container(width / 2, 700).setScrollFactor(0).setDepth(9600);
-    root.add(this.add.zone(0, 0, 640, 470).setInteractive());
-    root.add(glass(this, 640, 470, { alpha: 0.92, r: 30, color: 0x1a1410, rim: 0xffd27a }));
-    root.add(txt(this, 0, -180, t('dawnChoice'), { title: true, size: 36, color: '#ffd27a', strokeThickness: 6 }));
-    const keep = new Pill(this, 0, -70, 500, 120, 0xa0304a, () => this.choose(0), 34);
-    keep.setLabels(t('keepGoing'), t('keepSub'));
-    const end = new Pill(this, 0, 80, 500, 120, 0x2f8a5a, () => this.choose(1), 34);
-    end.setLabels(t('endNight'), t('endSub'));
+    root.add(this.add.zone(0, 0, CHOICE_CARD.w, CHOICE_CARD.h).setInteractive());
+    // the theme's notice board and boards (menu.ts, chestui.ts prebakePanels)
+    root.add(themeCard(this, 0, 0, CHOICE_CARD.w, CHOICE_CARD.h));
+    const head = themeLabel(this, 0, -176, t('dawnChoice'), CHOICE_TITLE);
+    head.setScale(Math.min(1, (CHOICE_CARD.w - 80) / head.width));
+    root.add(head);
+    const button = (y: number, color: number, i: number, label: string, sub: string) => {
+      const b = new SkinButton(this, 0, y, label, () => this.choose(i), { width: CHOICE_BTN.w, height: CHOICE_BTN.h, size: CHOICE_BTN.size, color, baked: true, sfx: '' });
+      b.fitLabel(CHOICE_BTN.w - 40).setSub(sub, { size: 21, color: '#fff3c4' });
+      // the mouse moves the focus; leaving a button keeps the focus's hover face
+      b.on('pointerover', () => this.focusChoice(i));
+      b.on('pointerout', () => { if (this.choice) this.focusChoice(this.choice.focus); });
+      return b;
+    };
+    const keep = button(-70, CHOICE_BTN.keep, 0, t('keepGoing'), t('keepSub'));
+    const end = button(80, CHOICE_BTN.end, 1, t('endNight'), t('endSub'));
     root.add([keep, end]);
-    if (this.inputKind === 'keys') root.add(txt(this, 0, 196, t('choiceKeys'), { size: 18, color: '#b8c8b0', strokeThickness: 0, shadow: false }));
+    if (this.inputKind === 'keys') root.add(txt(this, 0, 196, t('choiceKeys'), { size: 18, color: '#c8d8c0', strokeThickness: 0, shadow: false }));
     this.choice = { root, pills: [keep, end], focus: 0 };
     this.focusChoice(0);
     root.setScale(0.5).setAlpha(0);
@@ -674,7 +683,7 @@ export class PlayScene extends ArcadeScene {
     const c = this.choice;
     if (!c) return;
     c.focus = i;
-    c.pills.forEach((p, k) => { p.setScale(k === i ? 1.04 : 0.96); p.setAlpha(k === i ? 1 : 0.75); });
+    c.pills.forEach((p, k) => { p.setScale(k === i ? 1.04 : 0.96).setAlpha(k === i ? 1 : 0.8).setHighlight(k === i); });
   }
 
   private choiceKey(code: string): boolean {
@@ -1025,6 +1034,16 @@ export class PlayScene extends ArcadeScene {
   /** Sets a timed power-up running. */
   testBuff(id: BuffId, s: number): void { this.sim.buffs[id] = s; }
   get testChestReady(): boolean { return !!this.chest?.ready; }
+  /** Opens the gold chest with `n` sample upgrades (screenshots). */
+  testChest(n = 3): void {
+    const pool: Card[] = [
+      { kind: 'weapon', id: 'blade', rarity: 'rare', add: 1, to: 3 },
+      { kind: 'passive', id: 'vigor', rarity: 'epic', add: 2, to: 2 },
+      { kind: 'weapon', id: 'bow', rarity: 'legend', add: 1, to: 1 },
+    ];
+    this.chestQueue.push({ cards: pool.slice(0, n), coins: 15 });
+    if (!this.chest) this.openChest();
+  }
   get testChoice(): boolean { return !!this.choice; }
 }
 

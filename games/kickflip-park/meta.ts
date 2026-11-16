@@ -1,6 +1,7 @@
 // Kickflip Park: what carries over between sessions, kept in the core storage: the park picked,
 // the goals done per park (Normal and Easy both count), the best session score, the mixtapes ever
-// found per park, the board ridden, and whether the first-session tutorial was done.
+// found per park, the board ridden, whether the first-session tutorial was done and whether a park
+// and board were ever chosen.
 //
 // Saves from 1.0 had a deck and a wheel colour instead of a board: they map onto the board that
 // stands for them (boards.ts `legacy`), and every board's rule reads the same progress the old
@@ -25,6 +26,11 @@ export interface Meta {
   /** First-session tutorial: steps done (TUTORIAL_STEPS when finished or skipped). */
   tutorial: number;
   sessions: number;
+  /**
+   * The player has chosen a park and a board (the setup's START, or the menu's PARK & BOARD page
+   * closed): PLAY on the menu then starts at once; before that it opens the setup first.
+   */
+  picked: boolean;
 }
 
 /** The tutorial's step count (PlayScene). */
@@ -51,6 +57,8 @@ export function loadMeta(): Meta {
     // players from 1.0 with sessions behind them skip the tutorial
     tutorial: m.tutorial ?? (sessions > 0 ? TUTORIAL_STEPS : 0),
     sessions,
+    // before 1.2.3 every session from the menu went through the setup: a played save has chosen
+    picked: m.picked ?? sessions > 0,
   };
   if (!unlocked(meta, meta.park)) meta.park = 'plaza';
   // a 1.0 save (decks and wheels, no board yet): what it had opened stays open under the new ladder

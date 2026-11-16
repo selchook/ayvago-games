@@ -1,18 +1,32 @@
-// Kickflip Park: the session setup, the first thing the Play scene shows when PLAY was pressed on
-// the menu (a "play again" from the result screen skips it and skates the same park on the same
-// board at once). From the top: the park (‹ › or a swipe; a locked park says what opens it), that
-// park's goals ticked off, the board picker (the board turning on a small 3D turntable, its name,
-// rarity, and whether you ride it or what unlocks it) and a big START that begins the session.
-// While a locked park or a locked board is on show START reads LOCKED, greyed, with a hint under
-// it, and nothing starts the session (a tap only shakes it with a bonk). The setup opens on the
-// park and the board last ridden, which are always open.
-// BACK returns to the menu. Keyboard: ←/→ park, ↑/↓ board, Enter (or Space) start, Esc back.
+// Kickflip Park: the session setup. Two places show it:
+//   - the menu's PARK & BOARD button opens it as a page of its own over the menu (GarageScene in
+//     garage.ts): pick there, and the choice is saved; START skates it at once, DONE goes back;
+//   - PLAY on the menu shows it first in the Play scene only until a park and board were ever
+//     chosen (`Meta.picked`); after that PLAY skates the saved park on the saved board at once, and
+//     a "play again" from the result screen always does.
+// From the top: the park (‹ › or a swipe; a locked park says what opens it), that park's goals
+// ticked off, the board picker (the board turning on a small 3D turntable, its name, rarity, and
+// whether you ride it or what unlocks it) and a big START that begins the session. While a locked
+// park or a locked board is on show START reads LOCKED, greyed, with a hint under it, and nothing
+// starts the session (a tap only shakes it with a bonk). It opens on the park and the board last
+// ridden, which are always open.
+// BACK (DONE on the menu's page) returns to the menu. Keyboard: ←/→ park, ↑/↓ board, Enter (or
+// Space) start, Esc back.
 //
-// The setup lives in the Play scene (not a scene of its own) so the platform's and the tests'
-// "start a round" (Enter or PLAY on the menu → the Play scene runs) works unchanged; its turntable
-// draws in the Play scene's World3D, which the session's View takes over on START.
+// It wears the menu theme (theme.ts): the park on a die-cut sticker in the park's colour, the
+// goals on a flyer taped up, the turntable on a slab of grip tape with the board's name on a
+// sticker in its rarity colour, sticker arrows and buttons, the tape frame round the screen. Every
+// piece and fixed label is painted in Boot under the Ayvago intro (`prebakeSetup`, the theme's
+// `prebake`): opening the setup paints nothing.
+//
+// The setup can live in the Play scene (not only a scene of its own) so the platform's and the
+// tests' "start a round" (Enter or PLAY on the menu → the Play scene runs) works unchanged; its
+// turntable draws in the scene's World3D, which the session's View takes over on START.
 import Phaser from 'phaser';
-import { txt, t, loc, playSfx, isEasy } from '@core';
+import {
+  txt, t, loc, playSfx, isEasy, SkinButton, skinImage, skinTexture, themeCard, themeLabel, labelTexture, placeLabel, bake, frameBorder,
+  type LabelStyle, type SkinState,
+} from '@core';
 import { THREE, type World3D } from '@core/three';
 import { PARKS, UNLOCK_GOALS, park, type ParkId } from './parks';
 import { saveMeta, unlocked, boardIsOpen, progress, type Meta } from './meta';
@@ -28,72 +42,6 @@ let fromMenu = false;
 export function menuOpened(): void { fromMenu = true; }
 /** Whether this Play start comes from the menu (read once). */
 export function takeFromMenu(): boolean { const v = fromMenu; fromMenu = false; return v; }
-
-// ------------------------------------------------------------------ UI pieces
-
-/** A frosted panel (the core's modern glass look). */
-export function glass(scene: Phaser.Scene, w: number, h: number, o: { r?: number; color?: number; alpha?: number; rim?: number; sheen?: boolean } = {}): Phaser.GameObjects.Graphics {
-  const r = o.r ?? 26;
-  const g = scene.add.graphics();
-  g.fillStyle(0x000000, 0.28).fillRoundedRect(-w / 2, -h / 2 + 8, w, h, r);
-  g.fillStyle(o.color ?? 0x121a33, o.alpha ?? 0.9).fillRoundedRect(-w / 2, -h / 2, w, h, r);
-  if (o.sheen !== false) g.fillStyle(0xffffff, 0.06).fillRoundedRect(-w / 2 + 4, -h / 2 + 4, w - 8, h * 0.4, { tl: r - 3, tr: r - 3, bl: 6, br: 6 });
-  g.lineStyle(2, o.rim ?? 0xffffff, o.rim ? 0.9 : 0.16).strokeRoundedRect(-w / 2, -h / 2, w, h, r);
-  return g;
-}
-
-/** A rounded, tappable button with a main label and an optional second line. */
-export class Pill extends Phaser.GameObjects.Container {
-  private g: Phaser.GameObjects.Graphics;
-  readonly main: Phaser.GameObjects.Text;
-  readonly sub: Phaser.GameObjects.Text;
-  enabled = true;
-  /** A tap while the button is disabled (a locked choice on show). */
-  onDenied: (() => void) | null = null;
-
-  constructor(scene: Phaser.Scene, x: number, y: number, readonly w: number, readonly h: number, private color: number, private onTap: () => void, size = 28) {
-    super(scene, x, y);
-    this.g = scene.add.graphics();
-    this.main = txt(scene, 0, 0, '', { title: true, size, strokeThickness: 0, shadow: false });
-    this.sub = txt(scene, 0, 0, '', { size: Math.round(size * 0.55), color: '#fff3c4', strokeThickness: 0, shadow: false });
-    this.add([this.g, this.main, this.sub]);
-    this.setSize(w, h).setInteractive({ useHandCursor: true });
-    this.on('pointerdown', () => { if (this.enabled) scene.tweens.add({ targets: this, scale: 0.95, duration: 70 }); });
-    this.on('pointerout', () => scene.tweens.add({ targets: this, scale: 1, duration: 120 }));
-    this.on('pointerup', () => {
-      scene.tweens.add({ targets: this, scale: 1, duration: 200, ease: 'Back.easeOut' });
-      if (this.enabled) this.onTap();
-      else this.onDenied?.();
-    });
-    this.draw();
-    scene.add.existing(this);
-  }
-
-  setColor(c: number): this { if (c !== this.color) { this.color = c; this.draw(); } return this; }
-  setEnabled(on: boolean): this { if (on !== this.enabled) { this.enabled = on; this.draw(); } return this; }
-
-  setLabels(main: string, sub = ''): this {
-    this.main.setText(main);
-    this.sub.setText(sub).setVisible(!!sub);
-    this.main.y = sub ? -this.h * 0.14 : 0;
-    this.sub.y = this.h * 0.24;
-    return this;
-  }
-
-  private draw(): void {
-    const { w, h } = this;
-    const r = Math.min(30, h / 2);
-    const c = this.enabled ? this.color : 0x4a5168;
-    const dark = Phaser.Display.Color.IntegerToColor(c).darken(22).color;
-    const g = this.g.clear();
-    g.fillStyle(0x000000, 0.3).fillRoundedRect(-w / 2, -h / 2 + 7, w, h, r);
-    g.fillStyle(dark, 1).fillRoundedRect(-w / 2, -h / 2 + 3, w, h, r);
-    g.fillStyle(c, 1).fillRoundedRect(-w / 2, -h / 2, w, h, r);
-    g.fillStyle(0xffffff, 0.16).fillRoundedRect(-w / 2 + 5, -h / 2 + 4, w - 10, h * 0.42, { tl: r - 4, tr: r - 4, bl: 8, br: 8 });
-    g.lineStyle(2, 0xffffff, 0.22).strokeRoundedRect(-w / 2 + 1, -h / 2 + 1, w - 2, h - 2, r);
-    this.main.setAlpha(this.enabled ? 1 : 0.7);
-  }
-}
 
 // ------------------------------------------------------------------ the turntable
 
@@ -175,17 +123,108 @@ class Turntable {
   }
 }
 
+// ------------------------------------------------------------------ the painted pieces
+
+const PINK = 0xff3b5c, BLUE = 0x1f8fff, YELLOW = 0xffe14a, INK = '#1a1020';
+/** Each park's sticker colour. */
+const PARK_COLOR: Record<ParkId, number> = { plaza: BLUE, yard: 0xff8a1f, roofs: 0x8a4dff };
+const PARK_STICKER = { w: 470, h: 118 };
+/** The goals flyer and the grip-tape slab under the turntable. */
+export const SETUP_FLYER = { w: 650, h: 316 };
+const GRIP = { w: 650, h: 368 };
+const NAME_STICKER = { w: 400, h: 62 };
+const START_BTN = { w: 460, h: 120 }, BACK_BTN = { w: 280, h: 84 }, ARROW = 96;
+const TITLE_STYLE: LabelStyle = { size: 36, fill: ['#fffbe0', '#ffe14a', '#ff9a1f'], stroke: INK, strokeWidth: 7 };
+const PARK_NAME: LabelStyle = { size: 40, color: '#ffffff', stroke: INK, strokeWidth: 7 };
+const PARK_SUB: LabelStyle = { size: 19, color: '#ffffff', stroke: INK, strokeWidth: 5, shadow: false, body: true };
+const BOARD_NAME: LabelStyle = { size: 30, color: '#ffffff', stroke: INK, strokeWidth: 6 };
+const LOCKED_HEAD: LabelStyle = { size: 38, color: '#e8264a', stroke: null, shadow: false };
+const KEYS_STYLE: LabelStyle = { size: 19, color: '#c9c3dc', stroke: null, shadow: false, body: true };
+const BTN = { start: 50, back: 32 };
+/** The backdrop: a dark wall with spray-paint glows (painted small, shown full screen). */
+const BG = { w: 240, h: 428 };
+
+function backdropTexture(scene: Phaser.Scene): string {
+  return bake(scene, 'kp-setup-bg', BG.w, BG.h, (c) => {
+    const g = c.createLinearGradient(0, 0, 0, BG.h);
+    g.addColorStop(0, '#13213a'); g.addColorStop(0.5, '#0d1628'); g.addColorStop(1, '#070b16');
+    c.fillStyle = g; c.fillRect(0, 0, BG.w, BG.h);
+    const blob = (x: number, y: number, r: number, col: string) => {
+      const b = c.createRadialGradient(x, y, 0, x, y, r);
+      b.addColorStop(0, col); b.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = b; c.fillRect(0, 0, BG.w, BG.h);
+    };
+    blob(30, 40, 120, 'rgba(255,59,92,0.28)');
+    blob(220, 260, 140, 'rgba(31,143,255,0.24)');
+    blob(60, 400, 110, 'rgba(255,225,74,0.12)');
+    // concrete speckle
+    let k = 11;
+    const r = () => { k = (k * 16807) % 2147483647; return k / 2147483647; };
+    for (let i = 0; i < 900; i++) { c.fillStyle = r() < 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.22)'; c.fillRect(r() * BG.w, r() * BG.h, 1, 1); }
+  });
+}
+
+/** A tick in a green dot (a goal done) or an empty ink ring (to do), drawn on the flyer. */
+function markTexture(scene: Phaser.Scene, done: boolean): string {
+  return bake(scene, done ? 'kp-goal-done' : 'kp-goal-todo', 30, 30, (c) => {
+    c.lineWidth = 3;
+    if (done) {
+      c.fillStyle = '#2fae5a'; c.beginPath(); c.arc(15, 15, 12, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = INK; c.lineWidth = 2; c.stroke();
+      c.strokeStyle = '#ffffff'; c.lineWidth = 4; c.lineCap = 'round'; c.lineJoin = 'round';
+      c.beginPath(); c.moveTo(9, 15); c.lineTo(14, 20); c.lineTo(22, 10); c.stroke();
+    } else {
+      c.strokeStyle = 'rgba(26,16,32,0.55)'; c.beginPath(); c.arc(15, 15, 11, 0, Math.PI * 2); c.stroke();
+    }
+  });
+}
+
+const parkSubStyle = PARK_SUB;
+
+/**
+ * Paints everything the setup shows (the theme's `prebake`, in Boot under the intro): the stickers
+ * in every colour and state, the grip-tape slab, the arrows and buttons, the backdrop, the goal
+ * marks and every fixed label in the current language. Opening the setup paints nothing.
+ */
+export function prebakeSetup(scene: Phaser.Scene): void {
+  for (const id of PARKS) for (const st of ['up', 'off'] as SkinState[]) skinTexture(scene, 'button', PARK_STICKER.w, PARK_STICKER.h, st, PARK_COLOR[id]);
+  skinTexture(scene, 'board', GRIP.w, GRIP.h);
+  for (const c of Object.values(RARITY_COLOR)) for (const st of ['up', 'off'] as SkinState[]) skinTexture(scene, 'plate', NAME_STICKER.w, NAME_STICKER.h, st, c);
+  for (const st of ['up', 'over', 'down'] as SkinState[]) {
+    skinTexture(scene, 'round', ARROW, ARROW, st, YELLOW);
+    skinTexture(scene, 'button', BACK_BTN.w, BACK_BTN.h, st, BLUE);
+  }
+  for (const st of ['up', 'over', 'down', 'off'] as SkinState[]) skinTexture(scene, 'button', START_BTN.w, START_BTN.h, st, PINK);
+  backdropTexture(scene);
+  markTexture(scene, true); markTexture(scene, false);
+  labelTexture(scene, t('setupTitle'), TITLE_STYLE);
+  for (const id of PARKS) { labelTexture(scene, t('park_' + id), PARK_NAME); labelTexture(scene, t('parkSub_' + id), parkSubStyle); }
+  // every board (the models may still be parsing: boardReady is asked when the setup opens)
+  for (const b of BOARDS) labelTexture(scene, loc(b.name), BOARD_NAME);
+  labelTexture(scene, t('lockedShort'), LOCKED_HEAD);
+  labelTexture(scene, t('setupKeys'), KEYS_STYLE);
+  for (const k of ['start', 'lockedShort']) labelTexture(scene, t(k), { size: BTN.start });
+  for (const k of ['back', 'done']) labelTexture(scene, t(k), { size: BTN.back });
+  // the arrows' (empty) label
+  labelTexture(scene, '', { size: 30 });
+}
+
 // ------------------------------------------------------------------ the setup panel
 
 /** The park card's and the board picker's centre lines. */
 const PARK_Y = 168, GOALS_Y = 408, BOARD_Y = 742, START_Y = 1004, HINT_Y = 1088, BACK_Y = 1158;
+
+export interface SetupOptions {
+  /** 'garage': the menu's PARK & BOARD page (its way out reads DONE); 'play': PLAY's first setup. */
+  mode?: 'play' | 'garage';
+}
 
 export class Setup {
   private root: Phaser.GameObjects.Container;
   private card: Phaser.GameObjects.Container;
   private boardC: Phaser.GameObjects.Container;
   private under: Phaser.GameObjects.GameObject[] = [];
-  private go: Pill;
+  private go: SkinButton;
   /** Under START while it is locked: what to do instead. */
   private hint: Phaser.GameObjects.Text;
   private pulse: Phaser.Tweens.Tween;
@@ -196,8 +235,14 @@ export class Setup {
   private openedAt: number;
   private done = false;
   private swipe: { x: number; y: number; zone: 'park' | 'board' } | null = null;
+  // the park sticker and the board's name sticker (their textures change with the choice)
+  private parkSticker!: Phaser.GameObjects.Image;
+  private parkName!: Phaser.GameObjects.Image;
+  private parkSub!: Phaser.GameObjects.Image;
+  private nameSticker!: Phaser.GameObjects.Image;
+  private boardName!: Phaser.GameObjects.Image;
 
-  constructor(private scene: Phaser.Scene, world: World3D, private meta: Meta, private onStart: () => void, private onBack: () => void) {
+  constructor(private scene: Phaser.Scene, world: World3D, private meta: Meta, private onStart: () => void, private onBack: () => void, o: SetupOptions = {}) {
     const s = scene;
     const { width, height } = s.scale;
     this.openedAt = s.time.now;
@@ -205,21 +250,21 @@ export class Setup {
     this.boards = BOARDS.filter(boardReady);
     this.bIdx = Math.max(0, this.boards.findIndex((b) => b.id === usableBoard(meta.board).id));
     this.root = s.add.container(0, 0).setDepth(9200);
-    // an opaque backdrop and the glass boxes sit under the turntable's 3D image (WORLD_DEPTH −100);
-    // the text and buttons above it
-    const bg = s.add.graphics().setDepth(-300);
-    bg.fillGradientStyle(0x0d1a2e, 0x0d1a2e, 0x060a18, 0x060a18, 1).fillRect(0, 0, width, height);
-    const goalsBox = s.add.container(width / 2, GOALS_Y, [glass(s, 650, 316, { color: 0x0b1020, alpha: 0.88, r: 24, sheen: false })]).setDepth(-250);
-    const boardBox = s.add.container(width / 2, BOARD_Y + 14, [glass(s, 650, 368, { color: 0x0b1020, alpha: 0.88, r: 24, sheen: false })]).setDepth(-250);
-    this.under = [bg, goalsBox, boardBox];
-    this.root.add(txt(s, width / 2, 58, t('setupTitle'), { title: true, size: 26, color: '#9fe8ff', strokeThickness: 0, shadow: false }));
-    // arrows: parks at the top, boards beside the turntable
+    // the wall, the flyer and the grip tape sit under the turntable's 3D image (WORLD_DEPTH −100);
+    // the stickers, text and buttons above it
+    const bg = s.add.image(0, 0, backdropTexture(s)).setOrigin(0).setDisplaySize(width, height).setDepth(-300);
+    const flyer = themeCard(s, width / 2, GOALS_Y, SETUP_FLYER.w, SETUP_FLYER.h).setDepth(-250);
+    const grip = skinImage(s, width / 2, BOARD_Y + 14, 'board', GRIP.w, GRIP.h).setDepth(-250);
+    const frame = frameBorder(s).map((f) => (f as Phaser.GameObjects.Image).setDepth(9190));
+    this.under = [bg, flyer, grip, ...frame];
+    const title = themeLabel(s, width / 2, 56, t('setupTitle'), TITLE_STYLE);
+    title.setScale(Math.min(1, 560 / title.width));
+    this.root.add(title);
+    // sticker arrows: parks at the top, boards beside the turntable
     const arrow = (x: number, y: number, d: number, icon: string, on: (d: number) => void) => {
-      const c = s.add.container(x, y);
-      const g = s.add.graphics().fillStyle(0xffffff, 0.12).fillCircle(0, 0, 40).lineStyle(2, 0xffffff, 0.35).strokeCircle(0, 0, 40);
-      c.add([g, s.add.image(0, 0, icon).setDisplaySize(42, 42)]);
-      c.setSize(96, 96).setInteractive({ useHandCursor: true }).on('pointerup', () => on(d));
-      this.root.add(c);
+      const b = new SkinButton(s, x, y, '', () => on(d), { width: ARROW, height: ARROW, kind: 'round', color: YELLOW, baked: true, sfx: '' });
+      b.add(s.add.image(0, 0, icon).setDisplaySize(44, 44).setTint(0x1a1020));
+      this.root.add(b);
     };
     // swipes: across the park card or the goals for parks, across the turntable for boards
     const swipeZone = (x: number, y: number, w: number, h: number, zone: 'park' | 'board') => {
@@ -231,22 +276,33 @@ export class Setup {
     swipeZone(width / 2, (PARK_Y + GOALS_Y) / 2 + 30, 520, 470, 'park');
     swipeZone(width / 2, BOARD_Y, 380, 230, 'board');
     s.input.on('pointerup', this.onUp, this);
+    // the park's sticker (under the arrows, so their taps come first)
+    this.parkSticker = skinImage(s, width / 2, PARK_Y + 2, 'button', PARK_STICKER.w, PARK_STICKER.h, 'up', PARK_COLOR[this.id]);
+    this.parkName = themeLabel(s, width / 2, PARK_Y - 16, t('park_' + this.id), PARK_NAME);
+    this.parkSub = themeLabel(s, width / 2, PARK_Y + 30, t('parkSub_' + this.id), parkSubStyle);
+    this.root.add([this.parkSticker, this.parkName, this.parkSub]);
     arrow(70, PARK_Y, -1, 'icon-arrowleft', (d) => this.step(d));
     arrow(width - 70, PARK_Y, 1, 'icon-arrowright', (d) => this.step(d));
-    arrow(96, BOARD_Y, -1, 'icon-arrowleft', (d) => this.stepBoard(d));
-    arrow(width - 96, BOARD_Y, 1, 'icon-arrowright', (d) => this.stepBoard(d));
+    arrow(92, BOARD_Y, -1, 'icon-arrowleft', (d) => this.stepBoard(d));
+    arrow(width - 92, BOARD_Y, 1, 'icon-arrowright', (d) => this.stepBoard(d));
     this.card = s.add.container(0, 0);
     this.boardC = s.add.container(0, 0);
-    this.root.add([this.card, this.boardC]);
-    this.go = new Pill(s, width / 2, START_Y, 460, 120, 0x2fae5a, () => this.start(), 44);
+    // the board's name on a sticker in its rarity colour
+    this.nameSticker = skinImage(s, width / 2, BOARD_Y + 88, 'plate', NAME_STICKER.w, NAME_STICKER.h, 'up', RARITY_COLOR.common);
+    this.boardName = themeLabel(s, width / 2, BOARD_Y + 87, loc(this.boards[this.bIdx]?.name ?? ''), BOARD_NAME);
+    this.root.add([this.card, this.nameSticker, this.boardName, this.boardC]);
+    this.go = new SkinButton(s, width / 2, START_Y, t('start'), () => this.start(), { width: START_BTN.w, height: START_BTN.h, size: BTN.start, variant: 'primary', baked: true, sfx: '' });
     this.go.onDenied = () => this.deny();
-    this.hint = txt(s, width / 2, HINT_Y, '', { size: 21, color: '#ffd23f', strokeThickness: 0, shadow: false });
+    this.hint = txt(s, width / 2, HINT_Y, '', { size: 22, color: '#ffe14a', strokeThickness: 4, stroke: INK, shadow: false });
     this.root.add(this.hint);
-    const back = new Pill(s, width / 2, BACK_Y, 280, 84, 0x3b4466, () => this.back(), 28);
-    back.setLabels(t('back'));
+    const back = new SkinButton(s, width / 2, BACK_Y, t(o.mode === 'garage' ? 'done' : 'back'), () => this.back(), { width: BACK_BTN.w, height: BACK_BTN.h, size: BTN.back, color: BLUE, baked: true, sfx: '' });
     this.root.add([this.go, back]);
-    if (!s.sys.game.device.input.touch) this.root.add(txt(s, width / 2, 1234, t('setupKeys'), { size: 20, color: '#8f9bc0', strokeThickness: 0, shadow: false }));
-    this.table = new Turntable(world, width / 2, BOARD_Y + 4, 9.5, width, height);
+    if (!s.sys.game.device.input.touch) {
+      const keys = themeLabel(s, width / 2, 1234, t('setupKeys'), KEYS_STYLE);
+      keys.setScale(Math.min(1, 640 / keys.width));
+      this.root.add(keys);
+    }
+    this.table = new Turntable(world, width / 2, BOARD_Y - 8, 9.5, width, height);
     this.pulse = s.tweens.add({ targets: this.go, scale: 1.04, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.draw();
     this.drawBoard(false);
@@ -291,8 +347,12 @@ export class Setup {
     if (unlocked(this.meta, this.id) && this.meta.park !== this.id) { this.meta.park = this.id; saveMeta(this.meta); }
     playSfx(this.scene, 'ui-click');
     this.draw();
-    this.card.setX(d * 40).setAlpha(0.3);
-    this.scene.tweens.add({ targets: this.card, x: 0, alpha: 1, duration: 200, ease: 'Quad.easeOut' });
+    const slide = [this.card, this.parkSticker, this.parkName, this.parkSub];
+    for (const o of slide) {
+      const x = o === this.card ? 0 : this.scene.scale.width / 2;
+      o.setX(x + d * 40).setAlpha(0.3);
+      this.scene.tweens.add({ targets: o, x, alpha: 1, duration: 200, ease: 'Quad.easeOut' });
+    }
   }
 
   private draw(): void {
@@ -302,45 +362,45 @@ export class Setup {
     const id = this.id, p = park(id), m = this.meta;
     const open = unlocked(m, id);
     const done = m.goals[id];
-    c.add(txt(s, width / 2, PARK_Y - 18, t('park_' + id), { title: true, size: 36, color: '#ffffff', strokeThickness: 6 }));
-    const sub = txt(s, width / 2, PARK_Y + 16, t('parkSub_' + id), { size: 19, color: '#cfd8f0', strokeThickness: 0, shadow: false, wrap: 480 }).setOrigin(0.5, 0);
-    c.add(sub);
-    // which park of three: dots between the title and the park's name
+    // the park's sticker: its colour, faded and worn while locked
+    this.parkSticker.setTexture(skinTexture(s, 'button', PARK_STICKER.w, PARK_STICKER.h, open ? 'up' : 'off', PARK_COLOR[id]));
+    placeLabel(this.parkName, labelTexture(s, t('park_' + id), PARK_NAME));
+    this.parkName.setScale(Math.min(1, (PARK_STICKER.w - 60) / this.parkName.width)).setAlpha(open ? 1 : 0.8);
+    placeLabel(this.parkSub, labelTexture(s, t('parkSub_' + id), parkSubStyle));
+    this.parkSub.setScale(Math.min(1, (PARK_STICKER.w - 50) / this.parkSub.width)).setAlpha(open ? 1 : 0.8);
+    // which park of three: dots between the title and the park's sticker
     PARKS.forEach((_q, i) => {
-      c.add(s.add.graphics().fillStyle(i === this.idx ? 0xffd23f : 0xffffff, i === this.idx ? 1 : 0.3).fillCircle(width / 2 + (i - 1) * 26, PARK_Y - 62, 7));
+      const on = i === this.idx;
+      c.add(s.add.graphics().fillStyle(0x1a1020, 0.8).fillCircle(width / 2 + (i - 1) * 26, PARK_Y - 74, on ? 9 : 7)
+        .fillStyle(on ? YELLOW : 0xffffff, on ? 1 : 0.35).fillCircle(width / 2 + (i - 1) * 26, PARK_Y - 74, on ? 7 : 5));
     });
-    // the goals, compact
+    // the goals, on the flyer (ink on paper)
     const box = s.add.container(width / 2, GOALS_Y);
     c.add(box);
+    const ink = { strokeThickness: 0, shadow: false } as const;
     if (!open) {
       // a locked park: only the lock, what opens it and how far along that is (no goal list)
       const prev = PARKS[this.idx - 1], have = Math.min(UNLOCK_GOALS, m.goals[prev].length);
-      box.add(s.add.image(0, -104, 'icon-locked').setDisplaySize(72, 72).setTint(0xffd23f));
-      box.add(txt(s, 0, -42, t('lockedShort'), { title: true, size: 34, color: '#ffd23f', strokeThickness: 0, shadow: false }));
-      const why = txt(s, 0, -10, t('lockedWhy', { park: t('park_' + prev), n: UNLOCK_GOALS }), { size: 23, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: 540 }).setOrigin(0.5, 0);
+      box.add(s.add.image(0, -100, 'icon-locked').setDisplaySize(68, 68).setTint(0x1a1020));
+      box.add(themeLabel(s, 0, -40, t('lockedShort'), LOCKED_HEAD));
+      const why = txt(s, 0, -8, t('lockedWhy', { park: t('park_' + prev), n: UNLOCK_GOALS }), { size: 23, color: '#221c2a', ...ink, wrap: 540 }).setOrigin(0.5, 0);
       box.add(why);
       // one pip per goal needed, filled for those done
       const py = why.y + why.height + 26;
-      const pips = s.add.graphics();
-      for (let i = 0; i < UNLOCK_GOALS; i++) {
-        const x = (i - (UNLOCK_GOALS - 1) / 2) * 44;
-        if (i < have) pips.fillStyle(0x2fae5a, 1).fillCircle(x, py, 14).lineStyle(3, 0xffffff, 0.9).strokeCircle(x, py, 14);
-        else pips.lineStyle(3, 0xffffff, 0.4).strokeCircle(x, py, 13);
-      }
-      box.add(pips);
-      box.add(txt(s, 0, py + 38, t('lockedHave', { n: have, m: UNLOCK_GOALS }), { size: 20, color: '#cfd8f0', strokeThickness: 0, shadow: false }));
+      for (let i = 0; i < UNLOCK_GOALS; i++) box.add(s.add.image((i - (UNLOCK_GOALS - 1) / 2) * 44, py, markTexture(s, i < have)).setScale(1.1));
+      box.add(txt(s, 0, py + 38, t('lockedHave', { n: have, m: UNLOCK_GOALS }), { size: 20, color: '#5a5468', ...ink }));
       this.label();
       return;
     }
-    box.add(txt(s, 0, -132, t('goalsCount', { n: done.length, m: p.goals.length }) + '   ·   ' + t('bestIn', { n: fmt(m.best[id]) }), { title: true, size: 21, color: '#ffd23f', strokeThickness: 0, shadow: false }));
+    box.add(txt(s, 0, -128, t('goalsCount', { n: done.length, m: p.goals.length }) + '   ·   ' + t('bestIn', { n: fmt(m.best[id]) }), { title: true, size: 22, color: '#c2185b', ...ink }));
     const mode = isEasy() ? 'easy' : 'normal';
+    const todo = markTexture(s, false), tick = markTexture(s, true);
     p.goals.forEach((g, i) => {
-      const y = -96 + i * 31;
+      const y = -94 + i * 31;
       const ok = done.includes(g.id);
-      const mark = s.add.graphics();
-      if (ok) mark.fillStyle(0x2fae5a, 1).fillCircle(-280, y, 12).lineStyle(4, 0xffffff, 1).beginPath().moveTo(-286, y).lineTo(-281, y + 5).lineTo(-273, y - 5).strokePath();
-      else mark.lineStyle(3, 0xffffff, 0.45).strokeCircle(-280, y, 11);
-      const tx = txt(s, -256, y, goalText(g, goalNeed(g, mode)), { size: 19, color: ok ? '#9dffb8' : '#ffffff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+      const mark = s.add.image(-280, y, ok ? tick : todo);
+      const tx = txt(s, -256, y, goalText(g, goalNeed(g, mode)), { size: 19, color: ok ? '#1d8a3c' : '#221c2a', ...ink }).setOrigin(0, 0.5);
+      if (tx.width > 560) tx.setScale(560 / tx.width);
       box.add([mark, tx]);
     });
     this.label();
@@ -362,11 +422,11 @@ export class Setup {
     const lock = this.lockedChoice();
     this.go.setEnabled(!lock);
     if (!lock) {
-      this.go.setLabels(t('start'), t('park_' + this.id) + ' · ' + loc(usableBoard(this.meta.board).name));
+      this.go.setText(t('start')).fitLabel(START_BTN.w - 60).setSub(t('park_' + this.id) + ' · ' + loc(usableBoard(this.meta.board).name), { size: 22, color: '#fff3c4' });
       this.hint.setText('');
       if (this.pulse.isPaused()) this.pulse.resume();
     } else {
-      this.go.setLabels(t('lockedShort'));
+      this.go.setText(t('lockedShort')).fitLabel(START_BTN.w - 60).setSub('');
       this.hint.setText(t(lock === 'park' ? 'lockedParkHint' : 'lockedBoardHint'));
       this.pulse.pause();
       this.go.setScale(1);
@@ -410,10 +470,12 @@ export class Setup {
     this.table.show(b);
     const open = boardIsOpen(this.meta, b.id);
     const rc = '#' + RARITY_COLOR[b.rarity].toString(16).padStart(6, '0');
-    c.add(txt(s, width / 2, BOARD_Y - 150, t('board') + '  ' + (this.bIdx + 1) + '/' + this.boards.length, { title: true, size: 21, color: '#9fe8ff', strokeThickness: 0, shadow: false }));
-    const name = txt(s, width / 2, BOARD_Y + 92, loc(b.name), { title: true, size: 30, color: '#ffffff', strokeThickness: 6 });
-    const rar = txt(s, width / 2, BOARD_Y + 128, t('rarity_' + b.rarity), { title: true, size: 17, color: rc, strokeThickness: 4 });
-    c.add([name, rar]);
+    c.add(txt(s, width / 2, BOARD_Y - 152, t('board') + '  ' + (this.bIdx + 1) + '/' + this.boards.length, { title: true, size: 21, color: '#ffe14a', strokeThickness: 0, shadow: false }));
+    this.nameSticker.setTexture(skinTexture(s, 'plate', NAME_STICKER.w, NAME_STICKER.h, open ? 'up' : 'off', RARITY_COLOR[b.rarity]));
+    placeLabel(this.boardName, labelTexture(s, loc(b.name), BOARD_NAME));
+    this.boardName.setScale(Math.min(1, (NAME_STICKER.w - 40) / this.boardName.width));
+    const rar = txt(s, width / 2, BOARD_Y + 132, t('rarity_' + b.rarity), { title: true, size: 17, color: rc, strokeThickness: 4, stroke: INK });
+    c.add(rar);
     let status: string, col: string;
     if (!open) {
       const [have, need] = boardProgress(b, progress(this.meta));
@@ -424,25 +486,31 @@ export class Setup {
         case 'free': status = ''; break;
         default: status = t('unlock_' + u.kind, { n: need, have, need });
       }
-      col = '#ffd23f';
-      c.add(s.add.image(width / 2 + 160, BOARD_Y - 74, 'icon-locked').setDisplaySize(46, 46));
+      col = '#ffe14a';
+      c.add(s.add.image(width / 2 + 170, BOARD_Y - 80, 'icon-locked').setDisplaySize(46, 46).setTint(YELLOW));
     } else {
       status = usableBoard(this.meta.board).id === b.id ? '✓ ' + t('boardRiding') : t('boardOpen');
       col = '#7dffa0';
     }
-    c.add(txt(s, width / 2, BOARD_Y + 164, status, { size: 19, color: col, strokeThickness: 0, shadow: false, wrap: 580 }));
+    // one line, or two under each other when the unlock rule is long
+    const st = txt(s, width / 2, BOARD_Y + 146, status, { size: 18, color: col, strokeThickness: 0, shadow: false, wrap: 600 }).setOrigin(0.5, 0);
+    if (st.height > 54) st.setScale(54 / st.height);
+    c.add(st);
     // where in the list: a row of rarity-coloured pips (bright: open)
     const n = this.boards.length, gap = Math.min(24, 440 / n);
     const g = s.add.graphics();
     this.boards.forEach((q, i) => {
-      const x = width / 2 + (i - (n - 1) / 2) * gap, y = BOARD_Y - 120;
+      const x = width / 2 + (i - (n - 1) / 2) * gap, y = BOARD_Y - 122;
       const on = boardIsOpen(this.meta, q.id);
       g.fillStyle(RARITY_COLOR[q.rarity], i === this.bIdx ? 1 : on ? 0.55 : 0.18).fillCircle(x, y, i === this.bIdx ? 6 : 4);
     });
     c.add(g);
     if (anim) {
-      name.setScale(0.8);
-      s.tweens.add({ targets: name, scale: 1, duration: 200, ease: 'Back.easeOut' });
+      for (const o of [this.nameSticker, this.boardName]) {
+        const k = o.scale;
+        o.setScale(k * 0.8);
+        s.tweens.add({ targets: o, scale: k, duration: 200, ease: 'Back.easeOut' });
+      }
     }
   }
 
@@ -452,6 +520,7 @@ export class Setup {
   private start(): void {
     if (this.done || this.lockedChoice()) return;
     this.meta.park = this.id;
+    this.meta.picked = true;
     saveMeta(this.meta);
     playSfx(this.scene, 'ui-select');
     this.close();
@@ -480,13 +549,16 @@ export class Setup {
     this.under.forEach((o) => o.destroy());
   }
 
+  /** DONE / BACK, as Esc (the garage's B). */
+  dismiss(): void { this.back(); }
+
   /** Test hooks. */
   testStep(d: number): void { this.step(d); }
   testBoard(id: string): void { const i = this.boards.findIndex((b) => b.id === id); if (i >= 0) { this.bIdx = (i - 1 + this.boards.length) % this.boards.length; this.stepBoard(1); } }
   testInfo(): { park: string; shown: string; board: string; owned: string[]; open: string[]; listed: string[]; locked: string | null; button: string; hint: string; enabled: boolean } {
     return {
       park: this.id, shown: this.boards[this.bIdx]?.id, board: this.meta.board, owned: this.meta.owned, open: BOARDS.filter((b) => boardIsOpen(this.meta, b.id)).map((b) => b.id), listed: this.boards.map((b) => b.id),
-      locked: this.lockedChoice(), button: this.go.main.text, hint: this.hint.text, enabled: this.go.enabled,
+      locked: this.lockedChoice(), button: this.lockedChoice() ? t('lockedShort') : t('start'), hint: this.hint.text, enabled: this.go.enabled,
     };
   }
 }

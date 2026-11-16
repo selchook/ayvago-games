@@ -556,6 +556,26 @@ menuTheme: {
   text and style; `overlayHeadingStyle(win)` is the result heading's style, so a declared title is
   reused) and `ThemeNumber` (a number from painted digits that can count every frame). Skull Isle's
   run summary (`PlayScene.showSummary`) is the example.
+- **Inner screens** (a shop, a talent board, a setup page; references: Star Squadron's
+  `talentsui.ts`, Zombie Grove's `camp.ts` and `chestui.ts`, Kickflip Park's `setup.ts`):
+  - `menuTheme.prebake(scene)` paints the game's own pieces in Boot under the intro, after the
+    core's: `skinTexture` for each size, colour and state, `labelTexture` for every fixed label
+    (titles, tab and button labels, item names) in the current language, `bake(scene, key, w, h,
+    draw)` for anything else (a backdrop, a halo, a padlock), and `new ThemeNumber(scene, 0, 0, 0,
+    style).destroy()` for the digits of prices and purses. `pieces` also take `color` (any face
+    colour: a tile per state, a red RESET) and `states` (e.g. `['up', 'on']` for a tile with a
+    focus glow, `'off'` for a disabled button).
+  - `SkinButton` for every button: `setEnabled(false)` shows the skin's `'off'` face and sends taps
+    to `onDenied` (shake it, say why); `setColor(c)` swaps the face colour (a selected tab, an
+    armed RESET); `setSub(text)` adds a small second line in the body font (a price, what START
+    skates); `setHighlight(on)` shows the hover face for the keyboard's focus; `sfx: ''` when the
+    action plays its own sound. Tiles are `skinImage` faces whose texture is swapped by state
+    (`skinTexture(..., on ? 'on' : 'up', colour)`); labels that change swap prebaked textures with
+    `placeLabel(img, labelTexture(...))`.
+  - `themeCard` for the page's panel (declare the size in `cards`) and `frameBorder(scene)` for
+    the frame round a scene of its own. Only text that really changes (descriptions, a count up)
+    stays a live Text. Check with the texture manager: opening the screen adds no keys besides
+    those Texts (`game.textures.getTextureKeys()` before and after).
 - **Cost (overlays).** Boot paints every texture of these screens in the current language
   (`prebakeOverlays`); opening the pause or the result creates no texture and rasterises no text
   (only a language switch mid-session paints the new labels on first use). Check the platform

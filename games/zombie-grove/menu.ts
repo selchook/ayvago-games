@@ -7,6 +7,8 @@ import Phaser from 'phaser';
 import { t, txt, SkinButton, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { RUBIK_WET_PAINT } from '@core/fonts/rubik-wet-paint';
 import { COIN } from './art';
+import { prebakeCamp, CAMP_PANEL } from './camp';
+import { prebakePanels, CHEST_CARDS, CHOICE_CARD } from './chestui';
 
 /** The run summary's card (PlayScene.showSummary): short and tall (endless or a new hero). */
 export const SUMMARY_W = 620;
@@ -545,8 +547,11 @@ export const GROVE_THEME: MenuTheme = {
     // the headings PlayScene.finish passes to endGame, and the summary's
     titles: ['runOver', 'survived', 'endlessOver', 'youFell'],
   },
-  // the night's summary (PlayScene.showSummary)
-  cards: SUMMARY_H.map((h) => ({ w: SUMMARY_W, h })),
+  // the night's summary (PlayScene.showSummary), the camp's notice board, the gold chest and the
+  // dawn's choice
+  cards: [...SUMMARY_H.map((h) => ({ w: SUMMARY_W, h })), CAMP_PANEL, ...CHEST_CARDS, CHOICE_CARD],
+  // the camp's tabs, tiles, buttons and labels, the chest's and the dawn's (camp.ts, chestui.ts)
+  prebake: (scene) => { prebakeCamp(scene); prebakePanels(scene); },
 };
 
 /**

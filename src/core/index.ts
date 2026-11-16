@@ -41,7 +41,7 @@ export type { PlayerCardInfo, StatRow, LifetimeStats } from './playercard';
 export { isModalOpen, pushModal } from './modal';
 export {
   menuTheme, SkinButton, skinIconButton, skinImage, skinTexture, themeText, renderLogo, plankPainter, shadeColor, SKIN_PAD,
-  themeLabel, labelTexture, ThemeNumber,
+  themeLabel, labelTexture, placeLabel, ThemeNumber, bake, canvas2d, frameBorder,
 } from './menu-theme';
 export type {
   MenuTheme, MenuPalette, MenuFrame, BorderStyle, LogoStyle, EmblemPainter, SkinPainter, SkinKind, SkinState, SkinPaint, NotesPainter, SkinButtonOptions,

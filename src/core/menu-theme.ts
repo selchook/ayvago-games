@@ -144,7 +144,13 @@ export interface MenuTheme {
    * The skin pieces the game's own menu widgets use (`menuOption`), painted ahead in Boot under
    * the Ayvago intro like the core's own. Buttons, plates and round knobs get all three states.
    */
-  pieces?: Array<{ kind: SkinKind; w: number; h: number; variant?: 'primary' | 'secondary' }>;
+  pieces?: Array<{
+    kind: SkinKind; w: number; h: number; variant?: 'primary' | 'secondary';
+    /** Any face colour (wins over `variant`): a tile per state colour, a red RESET ... */
+    color?: number;
+    /** The states to paint (default: all three of a button, plate or knob; 'up' of a board or track). */
+    states?: SkinState[];
+  }>;
   /**
    * The pause overlay and the result screen in the same look (src/core/overlay-theme.ts): on by
    * default for a themed game; `false` keeps the plain screens.
@@ -152,6 +158,12 @@ export interface MenuTheme {
   overlays?: OverlayStyle | false;
   /** Sizes of the cards (`themeCard`) the game's own panels use, painted ahead in Boot. */
   cards?: Array<{ w: number; h: number }>;
+  /**
+   * The game's own textures for its themed inner screens (a shop, a talent board, a setup page):
+   * painted in Boot under the Ayvago intro, after the core's pieces, cards and overlays, so opening
+   * those screens only places images. Paint with `bake` / `skinTexture` / `labelTexture`.
+   */
+  prebake?: (scene: Phaser.Scene) => void;
 }
 
 /** How the pause overlay and the result screen wear the theme. Every field is optional. */
@@ -1028,8 +1040,9 @@ export function prebakeMenuTheme(scene: Phaser.Scene, brandW: number): void {
   states('plate', 100, 72);                                  // language
   skinTexture(scene, 'plate', brandW, 72, 'up', P.board);    // under the Ayvago logo
   for (const p of theme.pieces ?? []) {
-    const color = p.variant === 'primary' ? P.primary : undefined;
-    if (p.kind === 'board' || p.kind === 'track') skinTexture(scene, p.kind, p.w, p.h, 'up', color);
+    const color = p.color ?? (p.variant === 'primary' ? P.primary : undefined);
+    if (p.states) for (const st of p.states) skinTexture(scene, p.kind, p.w, p.h, st, color);
+    else if (p.kind === 'board' || p.kind === 'track') skinTexture(scene, p.kind, p.w, p.h, 'up', color);
     else states(p.kind, p.w, p.h, color);
   }
 }
@@ -1044,6 +1057,7 @@ export interface SkinButtonOptions {
   kind?: SkinKind;
   /** Label size before the theme's fontScale (default 30). */
   size?: number;
+  /** The tap's sound (default 'ui-click'; '' for none, when the action plays its own). */
   sfx?: string;
   /**
    * The label as a texture painted once and cached by text (`labelTexture`) instead of a live
@@ -1065,43 +1079,123 @@ export class SkinButton extends Phaser.GameObjects.Container {
   readonly face: Phaser.GameObjects.Image;
   /** A live Text, or with `baked` an image of the painted label. */
   readonly label: Phaser.GameObjects.Text | Phaser.GameObjects.Image;
+  /** The small second line under the label (`setSub`), made on first use. */
+  sub: Phaser.GameObjects.Text | null = null;
   readonly w: number;
   readonly h: number;
+  /** False: the face shows the skin's 'off' state and a tap calls `onDenied` instead (`setEnabled`). */
+  enabled = true;
+  /** A tap while disabled (a locked choice on show): shake it, say why. */
+  onDenied: (() => void) | null = null;
   private keys: Record<'up' | 'over' | 'down', string>;
+  private kind: SkinKind;
+  private color: number;
   private labelY = 0;
   private labelSize: number;
+  private shown: 'up' | 'over' | 'down' = 'up';
 
   constructor(scene: Phaser.Scene, x: number, y: number, text: string, private onClick: () => void, o: SkinButtonOptions = {}) {
     super(scene, x, y);
     const theme = menuTheme()!;
     this.w = o.width ?? 360; this.h = o.height ?? 96;
-    const kind = o.kind ?? 'button';
-    const color = o.color ?? (o.variant === 'primary' ? theme.palette.primary : theme.palette.secondary);
+    this.kind = o.kind ?? 'button';
+    this.color = o.color ?? (o.variant === 'primary' ? theme.palette.primary : theme.palette.secondary);
     this.labelSize = o.size ?? 30;
-    this.keys = {
-      up: skinTexture(scene, kind, this.w, this.h, 'up', color),
-      over: skinTexture(scene, kind, this.w, this.h, 'over', color),
-      down: skinTexture(scene, kind, this.w, this.h, 'down', color),
-    };
+    this.keys = this.faceKeys();
     this.face = scene.add.image(0, SKIN_PAD / 2, this.keys.up);
     this.label = o.baked ? themeLabel(scene, 0, 0, text, buttonLabelStyle(this.labelSize)) : themeText(scene, 0, 0, text, { size: this.labelSize });
     this.add([this.face, this.label]);
     this.fitLabel();
     this.setSize(this.w, this.h).setInteractive({ useHandCursor: true });
-    const set = (s: 'up' | 'over' | 'down') => {
-      this.face.setTexture(this.keys[s]);
-      this.label.y = this.labelY + (s === 'down' ? 3 : 0);
-    };
-    this.on('pointerover', () => set('over'));
-    this.on('pointerout', () => set('up'));
-    this.on('pointerdown', () => set('down'));
+    this.on('pointerover', () => this.show('over'));
+    this.on('pointerout', () => this.show('up'));
+    this.on('pointerdown', () => this.show('down'));
     // a finger leaves no hover behind
     this.on('pointerup', (p: Phaser.Input.Pointer) => {
-      set(p.wasTouch ? 'up' : 'over');
-      playSfx(scene, o.sfx ?? 'ui-click');
+      this.show(p.wasTouch ? 'up' : 'over');
+      if (!this.enabled) { this.onDenied?.(); return; }
+      if (o.sfx !== '') playSfx(scene, o.sfx ?? 'ui-click');
       this.onClick();
     });
     scene.add.existing(this);
+  }
+
+  private faceKeys(): Record<'up' | 'over' | 'down', string> {
+    const { scene, kind, w, h, color } = this;
+    return {
+      up: skinTexture(scene, kind, w, h, 'up', color),
+      over: skinTexture(scene, kind, w, h, 'over', color),
+      down: skinTexture(scene, kind, w, h, 'down', color),
+    };
+  }
+
+  private show(s: 'up' | 'over' | 'down'): void {
+    this.shown = s;
+    // a disabled button keeps its 'off' face (no hover, no press)
+    this.face.setTexture(this.enabled ? this.keys[s] : skinTexture(this.scene, this.kind, this.w, this.h, 'off', this.color));
+    const dy = this.enabled && s === 'down' ? 3 : 0;
+    this.label.y = this.labelY + dy;
+    if (this.sub) this.sub.y = this.subY + dy;
+  }
+
+  /**
+   * Enables or disables the button. Disabled, it shows the skin's 'off' state (declare it in
+   * `pieces` with `states`, or it is painted on first use) and taps go to `onDenied`.
+   */
+  setEnabled(on: boolean): this {
+    if (on === this.enabled) return this;
+    this.enabled = on;
+    this.label.setAlpha(on ? 1 : 0.6);
+    this.sub?.setAlpha(on ? 1 : 0.6);
+    this.show(this.shown);
+    return this;
+  }
+
+  /** Shows the hover face while `on` (the keyboard's focus), the plain face when not. */
+  setHighlight(on: boolean): this {
+    this.show(on ? 'over' : 'up');
+    return this;
+  }
+
+  /** Another face colour (each colour's states are textures of their own: declare them in `pieces`). */
+  setColor(color: number): this {
+    if (color === this.color) return this;
+    this.color = color;
+    this.keys = this.faceKeys();
+    this.show(this.shown);
+    return this;
+  }
+
+  private subY = 0;
+
+  /**
+   * A small second line in the body font under the label (the price, what it starts); the label
+   * moves up to make room. An empty string takes it away again.
+   */
+  setSub(s: string, o: { size?: number; color?: string } = {}): this {
+    const theme = menuTheme()!;
+    if (!this.sub) {
+      this.sub = this.scene.add.text(0, 0, '', {
+        fontFamily: isModern() ? '"Nunito", sans-serif' : '"Pixelify Sans", sans-serif',
+        fontStyle: isModern() ? '800' : 'normal',
+        fontSize: `${o.size ?? Math.round(this.labelSize * 0.52)}px`,
+        color: o.color ?? theme.palette.label,
+        stroke: theme.palette.labelStroke,
+        strokeThickness: isModern() ? 6 : 3,
+        align: 'center',
+        padding: { x: 4, y: 3 },
+      }).setOrigin(0.5).setAlpha(this.enabled ? 1 : 0.6);
+      this.add(this.sub);
+    }
+    if (o.color) this.sub.setColor(o.color);
+    if (this.sub.text !== s) this.sub.setText(s);
+    this.sub.setVisible(!!s).setScale(1);
+    if (this.sub.width > this.w - 30) this.sub.setScale((this.w - 30) / this.sub.width);
+    const lh = (this.label.height * this.label.scaleY) * 0.5;
+    this.setLabelY(s ? -Math.min(this.h * 0.2, lh * 0.6) : 0);
+    this.subY = s ? Math.min(this.h / 2 - 16, this.labelY + lh + 4) : 0;
+    this.sub.y = this.subY;
+    return this;
   }
 
   /** Moves the label (e.g. to make room for an icon or a second line). */

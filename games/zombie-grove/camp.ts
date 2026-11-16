@@ -7,8 +7,19 @@
 //     (the Curse is free and opt-in: a tap steps it up, and from the top back to off).
 //   - Weapons: all eight weapons; coins unlock the five that start locked for the drafts.
 // Mouse, touch and keyboard (Q/E or 1–3 tabs, arrows choose, Enter buys or picks, Esc back).
+//
+// It wears the menu theme (menu.ts): the camp is a dark notice board nailed together under the
+// bramble frame, the tabs, tiles and buttons are mossy boards that glow toxic green in focus, the
+// hero stands on a mound of grave dirt under the moon, and the coins sit on a board chip. Every
+// piece and every fixed label is painted in Boot under the Ayvago intro (`prebakeCamp`, the
+// theme's `prebake`); opening the camp only places images (the 3D portraits are rendered on the
+// first visit, as before). Prices and purses count in painted digits; the texts that change with
+// the focus are its only live text.
 import Phaser from 'phaser';
-import { txt, t, playSfx } from '@core';
+import {
+  txt, t, playSfx, SkinButton, skinImage, skinTexture, themeCard, themeLabel, labelTexture, placeLabel, ThemeNumber, bake, frameBorder,
+  type LabelStyle, type SkinState,
+} from '@core';
 import { World3D, THREE, playerCharacter3d, miniKey } from '@core/three';
 import { HEROES, HERO_IDS, WEAPON_IDS, EVOLVES_WITH, type HeroId, type WeaponId } from './defs';
 import {
@@ -17,7 +28,6 @@ import {
 } from './meta';
 import { loadMeta, saveMeta } from './save';
 import { upgradeArt, weaponArt, COIN, LOCK, makeArt } from './art';
-import { glass, Pill } from './ui';
 import { heroFigure, holdClip, disposeHeroFigure } from './heroes3d';
 import { Figure } from './figure';
 
@@ -25,7 +35,7 @@ type Tab = 'heroes' | 'upgrades' | 'weapons';
 const TABS: Tab[] = ['heroes', 'upgrades', 'weapons'];
 type Item = { kind: 'up'; id: UpgradeId } | { kind: 'weapon'; id: WeaponId } | { kind: 'hero'; id: HeroId };
 
-interface Tile { item: Item; x: number; y: number; w: number; h: number; box: Phaser.GameObjects.Container; bg: Phaser.GameObjects.Graphics; draw: () => void }
+interface Tile { item: Item; x: number; y: number; w: number; h: number; box: Phaser.GameObjects.Container; bg: Phaser.GameObjects.Image; draw: () => void }
 
 /** Where the turntable's hero stands on the screen (feet), and the gallery and info rows. */
 const STAGE = { x: 360, y: 560, top: 214 };
@@ -36,14 +46,132 @@ const PORTRAIT = 160;
 /** The camp's world image sits over the panel (the world draws itself under everything by default). */
 const WORLD_IMAGE_DEPTH = 2;
 
+// ------------------------------------------------------------------ the painted pieces
+
+/** The notice board behind the camp (the theme's card, menu.ts paintNotice). */
+export const CAMP_PANEL = { w: 700, h: 1240 };
+const WOOD = 0x5d5040, DARK = 0x2e2820, MOSS = 0x557f2a, GOLD = 0x8a6a22, CURSE = 0x6a2424, MAXED = 0x3f5a2a, BLOOD = 0x6a2a3a;
+const TAB = { w: 212, h: 62 }, BACK = { w: 260, h: 76 }, ARROW = 76, CHIP = { w: 220, h: 56 };
+const HERO_TILE = { w: 150, h: 128 }, UP_TILE = { w: 152, h: 150 }, WEAPON_TILE = { w: 152, h: 190 };
+const HERO_INFO = { w: 640, h: 194 }, ITEM_INFO = { w: 640, h: 230 };
+const HERO_ACT = { w: 280, h: 66 }, ITEM_ACT = { w: 180, h: 84 };
+const TILE_COLOR = { owned: WOOD, locked: DARK, selected: MOSS, ok: WOOD, poor: DARK, max: MAXED, curse: CURSE } as const;
+const INK = '#0b1208';
+const TITLE_STYLE: LabelStyle = { size: 58, fill: ['#f4ffd8', '#b6ff5a', '#4f8a1a'], stroke: INK, strokeWidth: 9 };
+const NOTE_STYLE: LabelStyle = { size: 18, color: '#c8d8c0', stroke: null, shadow: false, body: true };
+const HINT_STYLE: LabelStyle = { size: 16, color: '#9fb09a', stroke: null, shadow: false, body: true };
+const COIN_STYLE: LabelStyle = { size: 30, color: '#ffe68a', stroke: INK, strokeWidth: 5 };
+const PRICE_STYLE: LabelStyle = { size: 22, color: '#ffe68a', stroke: INK, strokeWidth: 4, shadow: false, body: true };
+const ACT_PRICE_STYLE: LabelStyle = { size: 30, color: '#fff3c4', stroke: INK, strokeWidth: 5 };
+const HEAD_STYLE: LabelStyle = { size: 36, color: '#ffe68a', stroke: INK, strokeWidth: 6 };
+const ITEM_HEAD_STYLE: LabelStyle = { size: 30, color: '#ffe68a', stroke: INK, strokeWidth: 5, shadow: false };
+const tileName = (col: string): LabelStyle => ({ size: 16, color: col, stroke: INK, strokeWidth: 4, shadow: false, body: true });
+const STATE_STYLE: LabelStyle = { size: 17, color: '#7affc0', stroke: INK, strokeWidth: 4, shadow: false, body: true };
+const HERO_NAME_COL = { selected: '#ffd23f', owned: '#ffffff', locked: '#a0aa9a' };
+const BTN = { tab: 26, back: 30, act: 26 };
+
+/** Moonlight behind the turntable: a soft pale glow. */
+function moonTexture(scene: Phaser.Scene): string {
+  return bake(scene, 'zg-camp-moon', 440, 520, (c) => {
+    const g = c.createRadialGradient(220, 230, 10, 220, 250, 250);
+    g.addColorStop(0, 'rgba(230,255,190,0.34)'); g.addColorStop(0.45, 'rgba(160,220,120,0.14)'); g.addColorStop(1, 'rgba(120,200,80,0)');
+    c.fillStyle = g; c.fillRect(0, 0, 440, 520);
+  });
+}
+
+/** The mound the hero stands on: grave dirt with moss round its rim and a faint toxic ring. */
+function stageTexture(scene: Phaser.Scene): string {
+  return bake(scene, 'zg-camp-stage', 360, 110, (c) => {
+    let s = 7;
+    const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+    c.save();
+    c.shadowColor = 'rgba(156,255,58,0.55)'; c.shadowBlur = 16;
+    c.strokeStyle = 'rgba(156,255,58,0.6)'; c.lineWidth = 3;
+    c.beginPath(); c.ellipse(180, 52, 158, 34, 0, 0, Math.PI * 2); c.stroke();
+    c.restore();
+    const soil = c.createRadialGradient(170, 44, 10, 180, 54, 160);
+    soil.addColorStop(0, '#5a4028'); soil.addColorStop(0.7, '#36261a'); soil.addColorStop(1, '#1a120a');
+    c.fillStyle = soil;
+    c.beginPath(); c.ellipse(180, 54, 150, 30, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#0b0805'; c.lineWidth = 2.5; c.stroke();
+    // clods and pebbles, moss on the rim
+    for (let i = 0; i < 40; i++) {
+      const a = r() * Math.PI * 2, d = Math.sqrt(r());
+      c.fillStyle = r() < 0.5 ? '#4a3420' : '#24180c';
+      c.beginPath(); c.arc(180 + Math.cos(a) * 140 * d, 54 + Math.sin(a) * 26 * d, 1.5 + r() * 2.5, 0, Math.PI * 2); c.fill();
+    }
+    const greens = ['#2f5a1c', '#3f7424', '#5a8f2e', '#78a83a'];
+    for (let i = 0; i < 160; i++) {
+      const a = r() * Math.PI * 2;
+      c.fillStyle = greens[Math.floor(r() * greens.length)];
+      c.beginPath(); c.arc(180 + Math.cos(a) * (146 + r() * 8), 54 + Math.sin(a) * (27 + r() * 4), 1.4 + r() * 2.6, 0, Math.PI * 2); c.fill();
+    }
+  });
+}
+
+/** A carved arrow head for the hero arrows (pointing right; flipped for left). */
+function chevronTexture(scene: Phaser.Scene): string {
+  return bake(scene, 'zg-camp-chev', 40, 50, (c) => {
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    const path = () => { c.beginPath(); c.moveTo(12, 8); c.lineTo(30, 25); c.lineTo(12, 42); };
+    c.strokeStyle = INK; c.lineWidth = 13; path(); c.stroke();
+    c.strokeStyle = '#eef3d6'; c.lineWidth = 7; path(); c.stroke();
+  });
+}
+
+/**
+ * Paints everything the camp shows (the theme's `prebake`, in Boot under the intro): the tabs,
+ * tiles and buttons in each state and colour, the info boards, the chip, the moon, the mound and
+ * every fixed label in the current language. Opening the camp then paints nothing.
+ */
+export function prebakeCamp(scene: Phaser.Scene): void {
+  const press: SkinState[] = ['up', 'over', 'down'];
+  for (const st of press) {
+    for (const c of [MOSS, WOOD]) skinTexture(scene, 'button', TAB.w, TAB.h, st, c);
+    skinTexture(scene, 'button', BACK.w, BACK.h, st, BLOOD);
+    skinTexture(scene, 'round', ARROW, ARROW, st, WOOD);
+  }
+  for (const st of [...press, 'off'] as SkinState[]) {
+    for (const c of [MOSS, GOLD]) skinTexture(scene, 'button', HERO_ACT.w, HERO_ACT.h, st, c);
+    for (const c of [MOSS, CURSE]) skinTexture(scene, 'button', ITEM_ACT.w, ITEM_ACT.h, st, c);
+  }
+  for (const st of ['up', 'on'] as SkinState[]) {
+    for (const c of [WOOD, DARK, MOSS]) skinTexture(scene, 'plate', HERO_TILE.w, HERO_TILE.h, st, c);
+    for (const c of [WOOD, DARK, MAXED, CURSE]) skinTexture(scene, 'plate', UP_TILE.w, UP_TILE.h, st, c);
+    for (const c of [WOOD, DARK, MAXED]) skinTexture(scene, 'plate', WEAPON_TILE.w, WEAPON_TILE.h, st, c);
+  }
+  skinTexture(scene, 'plate', CHIP.w, CHIP.h);
+  skinTexture(scene, 'board', HERO_INFO.w, HERO_INFO.h);
+  skinTexture(scene, 'board', ITEM_INFO.w, ITEM_INFO.h);
+  moonTexture(scene); stageTexture(scene); chevronTexture(scene);
+  labelTexture(scene, t('campTitle'), TITLE_STYLE);
+  labelTexture(scene, t('campSub'), NOTE_STYLE);
+  labelTexture(scene, t('campKeys'), HINT_STYLE);
+  for (const tb of TABS) labelTexture(scene, t(tabKey(tb)), { size: BTN.tab });
+  labelTexture(scene, t('campBack'), { size: BTN.back });
+  labelTexture(scene, '', { size: 30 });   // the hero arrows' (empty) label
+  for (const k of ['selected', 'pick', 'curseSet', 'max', 'owned', '']) labelTexture(scene, k ? t(k) : '', { size: BTN.act });
+  for (const k of ['max', 'owned']) labelTexture(scene, t(k), STATE_STYLE);
+  for (const h of HERO_IDS) {
+    labelTexture(scene, t('h_' + h), HEAD_STYLE);
+    for (const col of Object.values(HERO_NAME_COL)) labelTexture(scene, t('h_' + h), tileName(col));
+  }
+  for (const id of UPGRADE_IDS) for (const col of ['#ffffff', '#a0aa9a']) labelTexture(scene, t('u_' + id), tileName(col));
+  for (const id of UPGRADE_IDS) labelTexture(scene, t('u_' + id), ITEM_HEAD_STYLE);
+  for (const id of WEAPON_IDS) { for (const col of ['#ffffff', '#a0aa9a']) labelTexture(scene, t('w_' + id), tileName(col)); labelTexture(scene, t('w_' + id), ITEM_HEAD_STYLE); }
+  for (const o of [COIN_STYLE, PRICE_STYLE, ACT_PRICE_STYLE]) new ThemeNumber(scene, 0, 0, 0, o).destroy();
+}
+
+const tabKey = (tb: Tab) => 'tab' + tb[0].toUpperCase() + tb.slice(1);
+
 export class CampScene extends Phaser.Scene {
   private meta!: Meta;
   private tab: Tab = 'heroes';
   private layer!: Phaser.GameObjects.Container;
   private tiles: Tile[] = [];
   private focus = 0;
-  private coinText!: Phaser.GameObjects.Text;
-  private tabPills: Pill[] = [];
+  private coins!: ThemeNumber;
+  private tabPills: SkinButton[] = [];
   private closed = false;
   private from = 'Menu';
   private heroAtOpen: HeroId = 'survivor';
@@ -59,21 +187,28 @@ export class CampScene extends Phaser.Scene {
   private popT = 1;
   private worldImage: Phaser.GameObjects.Image | null = null;
   // the hero tab's info panel
-  private heroName!: Phaser.GameObjects.Text;
+  private heroName!: Phaser.GameObjects.Image;
   private heroTwist!: Phaser.GameObjects.Text;
   private heroWeapon!: Phaser.GameObjects.Text;
   private heroWeaponIcon!: Phaser.GameObjects.Image;
   private heroUnlock!: Phaser.GameObjects.Text;
-  private actBtn!: Pill;
+  private actBtn!: SkinButton;
   private actCoin!: Phaser.GameObjects.Image;
+  private actPrice!: ThemeNumber;
+  /** The action button's two colours (MOSS and another) for the current tab. */
+  private actAlt = GOLD;
   // the upgrade / weapon tabs' info panel
-  private infoName!: Phaser.GameObjects.Text;
+  private infoName!: Phaser.GameObjects.Image;
   private infoLevel!: Phaser.GameObjects.Text;
   private infoDesc!: Phaser.GameObjects.Text;
+
+  /** How long create() took (ms; a test hook for the open time). */
+  openMs = 0;
 
   constructor() { super('Camp'); }
 
   create(data: { from?: string }): void {
+    const t0 = performance.now();
     makeArt(this);
     this.from = data?.from ?? 'Menu';
     this.meta = loadMeta();
@@ -88,24 +223,26 @@ export class CampScene extends Phaser.Scene {
     this.tab = 'heroes';
     const { width, height } = this.scale;
     this.add.rectangle(0, 0, width, height, 0x050a06, 0.82).setOrigin(0).setInteractive();
-    const panel = this.add.container(width / 2, 648);
-    panel.add(glass(this, 700, 1240, { alpha: 0.96, r: 30, sheen: false }));
-    txt(this, 44, 70, t('campTitle'), { title: true, size: 46, color: '#ffd23f', strokeThickness: 7 }).setOrigin(0, 0.5);
-    const chip = this.add.container(width - 150, 70);
-    chip.add(this.add.graphics().fillStyle(0x0b120d, 0.85).fillRoundedRect(-110, -28, 220, 56, 28).lineStyle(2, 0xffd23f, 0.8).strokeRoundedRect(-110, -28, 220, 56, 28));
-    chip.add(this.add.image(-70, 0, COIN).setDisplaySize(40, 40));
-    this.coinText = txt(this, 12, 1, '', { title: true, size: 28, color: '#ffe68a', strokeThickness: 0, shadow: false });
-    chip.add(this.coinText);
-    const sub = txt(this, width / 2, 124, t('campSub'), { size: 18, color: '#c8d8c0', strokeThickness: 0, shadow: false });
-    if (sub.width > 650) sub.setScale(650 / sub.width);
+    // the notice board (menu.ts paintNotice through the theme's card) inside the bramble frame
+    themeCard(this, width / 2, 648, CAMP_PANEL.w, CAMP_PANEL.h);
+    frameBorder(this).forEach((o) => (o as Phaser.GameObjects.Image).setDepth(0));
+    const title = themeLabel(this, 44, 72, t('campTitle'), TITLE_STYLE);
+    title.setOrigin(0, title.originY).setScale(Math.min(1, 380 / title.width));
+    const chip = this.add.container(width - 150, 72);
+    this.coins = new ThemeNumber(this, 18, 0, this.meta.coins, COIN_STYLE);
+    chip.add([skinImage(this, 0, 0, 'plate', CHIP.w, CHIP.h), this.add.image(-68, 0, COIN).setDisplaySize(40, 40), this.coins]);
+    const sub = themeLabel(this, width / 2, 126, t('campSub'), NOTE_STYLE);
+    sub.setScale(Math.min(1, 640 / sub.width));
     TABS.forEach((tb, i) => {
-      const p = new Pill(this, width / 2 + (i - 1) * 222, 176, 212, 62, 0x2a3a30, () => this.setTab(tb), 22);
-      p.setLabels(t('tab' + tb[0].toUpperCase() + tb.slice(1)));
+      const p = new SkinButton(this, width / 2 + (i - 1) * 222, 176, t(tabKey(tb)), () => this.setTab(tb), { width: TAB.w, height: TAB.h, size: BTN.tab, color: WOOD, baked: true, sfx: '' });
+      p.fitLabel(TAB.w - 24);
       this.tabPills.push(p);
     });
-    const back = new Pill(this, width / 2, 1196, 260, 76, 0x5a3048, () => this.close(), 28);
-    back.setLabels(t('campBack'));
-    if (!this.sys.game.device.input.touch) txt(this, width / 2, 1252, t('campKeys'), { size: 17, color: '#9fb09a', strokeThickness: 0, shadow: false });
+    new SkinButton(this, width / 2, 1192, t('campBack'), () => this.close(), { width: BACK.w, height: BACK.h, size: BTN.back, color: BLOOD, baked: true, sfx: '' });
+    if (!this.sys.game.device.input.touch) {
+      const keys = themeLabel(this, width / 2, 1250, t('campKeys'), HINT_STYLE);
+      keys.setScale(Math.min(1, 640 / keys.width));
+    }
 
     this.initWorld();
     this.layer = this.add.container(0, 0);
@@ -125,6 +262,7 @@ export class CampScene extends Phaser.Scene {
       if (dir) this.move(dir[0], dir[1]);
     });
     this.setTab('heroes', true);
+    this.openMs = performance.now() - t0;
   }
 
   // ------------------------------------------------------------------ the 3D turntable
@@ -280,7 +418,7 @@ export class CampScene extends Phaser.Scene {
     if (this.tab === tab && !first) return;
     if (!first) playSfx(this, 'move', { volume: 0.35 });
     this.tab = tab;
-    this.tabPills.forEach((p, i) => { p.setColor(TABS[i] === tab ? 0xc8902a : 0x2a3a30); p.setScale(TABS[i] === tab ? 1.04 : 1); });
+    this.tabPills.forEach((p, i) => { p.setColor(TABS[i] === tab ? MOSS : WOOD); p.setScale(TABS[i] === tab ? 1.04 : 1); });
     this.layer.removeAll(true);
     this.tiles = [];
     const hero = tab === 'heroes';
@@ -297,15 +435,12 @@ export class CampScene extends Phaser.Scene {
   private buildHeroes(): void {
     const { width } = this.scale;
     const L = this.layer;
-    // the stage: a warm spotlight behind the turntable
-    const spot = this.add.graphics();
-    for (let i = 10; i >= 1; i--) spot.fillStyle(0xffd27a, 0.025).fillEllipse(STAGE.x, STAGE.y - 150, 120 + i * 34, 220 + i * 30);
-    spot.fillStyle(0x000000, 0.25).fillEllipse(STAGE.x, STAGE.y + 4, 300, 56);
-    spot.lineStyle(3, 0xffd27a, 0.35).strokeEllipse(STAGE.x, STAGE.y + 4, 300, 56);
-    L.add(spot);
+    // the stage: moonlight behind the turntable, the hero on a mound of grave dirt
+    L.add(this.add.image(STAGE.x, STAGE.y - 170, moonTexture(this)));
+    L.add(this.add.image(STAGE.x, STAGE.y + 4, stageTexture(this)));
     const arrow = (x: number, d: number) => {
-      const p = new Pill(this, x, STAGE.y - 170, 76, 76, 0x2a3a30, () => this.cycle(d), 34);
-      p.setLabels(d < 0 ? '‹' : '›');
+      const p = new SkinButton(this, x, STAGE.y - 170, '', () => this.cycle(d), { width: ARROW, height: ARROW, kind: 'round', color: WOOD, baked: true, sfx: '' });
+      p.add(this.add.image(d < 0 ? -2 : 2, 0, chevronTexture(this)).setFlipX(d < 0));
       p.setDepth(WORLD_IMAGE_DEPTH + 1);
       L.add(p);
     };
@@ -313,16 +448,14 @@ export class CampScene extends Phaser.Scene {
     arrow(width - 66, 1);
     // the info: name, twist, weapon, unlock, and the action button
     const info = this.add.container(width / 2, INFO_Y);
-    info.add(this.add.graphics().fillStyle(0x0b120d, 0.72).fillRoundedRect(-320, -62, 640, 194, 22));
-    this.heroName = txt(this, 0, -32, '', { title: true, size: 36, color: '#ffe68a', strokeThickness: 6 });
+    info.add(skinImage(this, 0, -62 + HERO_INFO.h / 2, 'board', HERO_INFO.w, HERO_INFO.h));
+    this.heroName = themeLabel(this, 0, -30, t('h_' + this.shown), HEAD_STYLE);
     this.heroTwist = txt(this, 0, 14, '', { size: 21, color: '#e6efdf', strokeThickness: 0, shadow: false, wrap: 600 });
     this.heroWeaponIcon = this.add.image(0, 58, weaponArt('blade')).setDisplaySize(38, 38);
     this.heroWeapon = txt(this, 0, 59, '', { size: 20, color: '#cfe0ff', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
     this.heroUnlock = txt(this, 0, 100, '', { size: 18, color: '#ffb0a0', strokeThickness: 0, shadow: false, wrap: 600 });
     info.add([this.heroName, this.heroTwist, this.heroWeaponIcon, this.heroWeapon, this.heroUnlock]);
-    this.actBtn = new Pill(this, 0, 168, 280, 66, 0x2f9a5a, () => this.act(), 26);
-    this.actCoin = this.add.image(0, 0, COIN).setDisplaySize(32, 32);
-    this.actBtn.add(this.actCoin);
+    this.makeAct(0, 168, HERO_ACT, GOLD);
     info.add(this.actBtn);
     info.setDepth(WORLD_IMAGE_DEPTH + 1);
     L.add(info);
@@ -338,11 +471,10 @@ export class CampScene extends Phaser.Scene {
 
   private heroTile(id: HeroId, x: number, y: number, w: number, h: number): void {
     const box = this.add.container(x, y);
-    const bg = this.add.graphics();
+    const bg = skinImage(this, 0, 0, 'plate', w, h, 'up', WOOD);
     const own = playerCharacter3d();
-    const img = this.add.image(0, -10, portraitKey(id, own)).setDisplaySize(112, 112);
-    const name = txt(this, 0, h / 2 - 18, t('h_' + id), { title: true, size: 17, strokeThickness: 3 });
-    if (name.width > w - 10) name.setScale((w - 10) / name.width);
+    const img = this.add.image(0, -12, portraitKey(id, own)).setDisplaySize(108, 108);
+    const name = themeLabel(this, 0, h / 2 - 17, t('h_' + id), tileName(HERO_NAME_COL.owned));
     const lock = this.add.image(w / 2 - 22, -h / 2 + 22, LOCK).setDisplaySize(32, 32);
     const hit = this.add.zone(0, 0, w, h).setInteractive({ useHandCursor: true });
     box.add([bg, img, name, lock, hit]);
@@ -350,14 +482,12 @@ export class CampScene extends Phaser.Scene {
     const i = this.tiles.length;
     const draw = () => {
       const m = this.meta, on = this.shown === id, ownd = m.heroes.includes(id), sel = m.hero === id;
-      const frame = sel ? 0xffd23f : ownd ? 0x7ab8ff : 0x5a6a5a;
-      bg.clear()
-        .fillStyle(0x000000, 0.3).fillRoundedRect(-w / 2, -h / 2 + 6, w, h, 18)
-        .fillStyle(ownd ? 0x1c2a30 : 0x141a16, 0.95).fillRoundedRect(-w / 2, -h / 2, w, h, 18)
-        .lineStyle(on ? 5 : 3, on ? 0xfff3a0 : frame, on ? 1 : 0.85).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
+      const k = sel ? 'selected' : ownd ? 'owned' : 'locked';
+      bg.setTexture(skinTexture(this, 'plate', w, h, on ? 'on' : 'up', TILE_COLOR[k]));
       img.setTint(ownd ? 0xffffff : 0x808a80).setAlpha(ownd ? 1 : 0.85);
       lock.setVisible(!ownd);
-      name.setColor(sel ? '#ffd23f' : ownd ? '#ffffff' : '#a0aa9a');
+      placeLabel(name, labelTexture(this, t('h_' + id), tileName(HERO_NAME_COL[k])));
+      name.setScale(Math.min(1, (w - 14) / name.width));
       box.setScale(on ? 1.05 : 1);
     };
     hit.on('pointerup', () => {
@@ -403,14 +533,13 @@ export class CampScene extends Phaser.Scene {
   /** An upgrade or weapon tile: icon, name, level pips and the price (or its state). */
   private itemTile(item: Item, x: number, y: number, w: number, h: number): void {
     const box = this.add.container(x, y);
-    const bg = this.add.graphics();
+    const bg = skinImage(this, 0, 0, 'plate', w, h, 'up', WOOD);
     const art = item.kind === 'up' ? upgradeArt(item.id) : weaponArt(item.id as WeaponId);
     const icon = this.add.image(0, -h / 2 + 46, art).setDisplaySize(item.kind === 'up' ? 66 : 84, item.kind === 'up' ? 66 : 84);
-    const name = txt(this, 0, h / 2 - 62, this.name(item), { title: true, size: 17, strokeThickness: 0, shadow: false });
-    if (name.width > w - 12) name.setScale((w - 12) / name.width);
-    const coin = this.add.image(0, h / 2 - 20, COIN).setDisplaySize(24, 24);
-    const cost = txt(this, 0, h / 2 - 19, '', { title: true, size: 18, color: '#ffe68a', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
-    const state = txt(this, 0, h / 2 - 19, '', { title: true, size: 16, color: '#7affc0', strokeThickness: 0, shadow: false });
+    const name = themeLabel(this, 0, h / 2 - 62, this.name(item), tileName('#ffffff'));
+    const coin = this.add.image(0, h / 2 - 22, COIN).setDisplaySize(24, 24);
+    const cost = new ThemeNumber(this, 0, h / 2 - 22, 0, PRICE_STYLE);
+    const state = themeLabel(this, 0, h / 2 - 22, t('max'), STATE_STYLE);
     const pips = this.add.graphics();
     const hit = this.add.zone(0, 0, w, h).setInteractive({ useHandCursor: true });
     box.add([bg, icon, name, pips, coin, cost, state, hit]);
@@ -420,18 +549,23 @@ export class CampScene extends Phaser.Scene {
       const st = this.state(item);
       const on = i === this.focus;
       const curse = item.kind === 'up' && item.id === 'curse';
-      const frame = curse ? 0xc01a2a : st === 'ok' ? 0x5ad08a : st === 'poor' ? 0x5a6a5a : 0x7ab8ff;
-      bg.clear()
-        .fillStyle(0x000000, 0.3).fillRoundedRect(-w / 2, -h / 2 + 6, w, h, 18)
-        .fillStyle(curse ? 0x2a1014 : st === 'poor' ? 0x161c18 : 0x1c2a20, 0.95).fillRoundedRect(-w / 2, -h / 2, w, h, 18)
-        .lineStyle(on ? 5 : 3, on ? 0xfff3a0 : frame, on ? 1 : 0.8).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
+      const col = curse ? TILE_COLOR.curse : st === 'poor' ? TILE_COLOR.poor : st === 'max' || st === 'owned' ? TILE_COLOR.max : TILE_COLOR.ok;
+      bg.setTexture(skinTexture(this, 'plate', w, h, on ? 'on' : 'up', col));
       const c = this.cost(item);
       const label = curse ? '' : st === 'max' ? t('max') : st === 'owned' ? t('owned') : '';
-      state.setText(label).setVisible(!!label);
+      if (label) placeLabel(state, labelTexture(this, label, STATE_STYLE));
+      state.setVisible(!!label);
+      placeLabel(name, labelTexture(this, this.name(item), tileName(st === 'poor' ? '#a0aa9a' : '#ffffff')));
+      name.setScale(Math.min(1, (w - 14) / name.width));
       const showCost = !label && !curse && c !== null;
-      cost.setText(showCost ? String(c) : '').setVisible(showCost).setColor(st === 'poor' ? '#a0806a' : '#ffe68a');
-      coin.setVisible(showCost).setX(-(cost.width + 28) / 2 + 12);
-      cost.setX(coin.x + 16);
+      cost.setVisible(showCost).setAlpha(st === 'poor' ? 0.55 : 1);
+      coin.setVisible(showCost).setAlpha(st === 'poor' ? 0.6 : 1);
+      if (showCost) {
+        cost.setValue(c!);
+        const rowW = 24 + 4 + cost.textWidth;
+        coin.setX(-rowW / 2 + 12);
+        cost.setX(-rowW / 2 + 28 + cost.textWidth / 2);
+      }
       icon.setAlpha(st === 'poor' ? 0.6 : 1);
       // level pips (the Curse's are red)
       pips.clear();
@@ -439,7 +573,10 @@ export class CampScene extends Phaser.Scene {
         const max = UPGRADES[item.id].max, n = lvl(this.meta, item.id);
         const pw = 16, gap = 4, w0 = max * pw + (max - 1) * gap;
         const py = curse ? h / 2 - 22 : h / 2 - 40;
-        for (let k = 0; k < max; k++) pips.fillStyle(k < n ? (curse ? 0xff3a4a : 0xfff07a) : 0x2a3340, 1).fillRoundedRect(-w0 / 2 + k * (pw + gap), py, pw, 7, 3);
+        for (let k = 0; k < max; k++) {
+          pips.fillStyle(0x0b0805, 0.85).fillRoundedRect(-w0 / 2 + k * (pw + gap) - 1, py - 1, pw + 2, 9, 4);
+          pips.fillStyle(k < n ? (curse ? 0xff3a4a : 0xc8ff66) : 0x3a3228, 1).fillRoundedRect(-w0 / 2 + k * (pw + gap), py, pw, 7, 3);
+        }
       }
       box.setScale(on ? 1.04 : 1);
     };
@@ -454,13 +591,11 @@ export class CampScene extends Phaser.Scene {
   private buildInfo(y: number): void {
     const { width } = this.scale;
     const info = this.add.container(width / 2, y);
-    info.add(this.add.graphics().fillStyle(0x0b120d, 0.72).fillRoundedRect(-320, -115, 640, 230, 22));
-    this.infoName = txt(this, -298, -88, '', { title: true, size: 26, color: '#ffe68a', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
-    this.infoLevel = txt(this, -298, -68, '', { title: true, size: 17, color: '#9fe8c0', strokeThickness: 0, shadow: false, wrap: 410, align: 'left' }).setOrigin(0, 0);
-    this.infoDesc = txt(this, -298, -8, '', { size: 18, color: '#e6efdf', strokeThickness: 0, shadow: false, wrap: 410, align: 'left' }).setOrigin(0, 0);
-    this.actBtn = new Pill(this, 214, 0, 180, 84, 0x2f9a5a, () => this.act(), 26);
-    this.actCoin = this.add.image(0, 0, COIN).setDisplaySize(30, 30);
-    this.actBtn.add(this.actCoin);
+    info.add(skinImage(this, 0, 0, 'board', ITEM_INFO.w, ITEM_INFO.h));
+    this.infoName = themeLabel(this, -290, -84, this.name(this.tiles[0].item), ITEM_HEAD_STYLE).setOrigin(0, 0.5);
+    this.infoLevel = txt(this, -290, -66, '', { title: true, size: 17, color: '#b6ff5a', strokeThickness: 0, shadow: false, wrap: 400, align: 'left' }).setOrigin(0, 0);
+    this.infoDesc = txt(this, -290, -8, '', { size: 18, color: '#e8e4cf', strokeThickness: 0, shadow: false, wrap: 400, align: 'left' }).setOrigin(0, 0);
+    this.makeAct(206, 0, ITEM_ACT, CURSE);
     info.add([this.infoName, this.infoLevel, this.infoDesc, this.actBtn]);
     this.layer.add(info);
   }
@@ -487,23 +622,36 @@ export class CampScene extends Phaser.Scene {
     return this.meta.heroes.includes(it.id) ? null : HEROES[it.id].cost;
   }
 
-  /** The action button: a label, or a price with a coin. */
-  private setAction(label: string | null, price: number | null, enabled: boolean, color = 0x2f9a5a): void {
+  /** The action button (a mossy board; `alt` its other colour on this tab), with a price row. */
+  private makeAct(x: number, y: number, size: { w: number; h: number }, alt: number): void {
+    this.actAlt = alt;
+    this.actBtn = new SkinButton(this, x, y, '', () => this.act(), { width: size.w, height: size.h, size: BTN.act, color: MOSS, baked: true, sfx: '' });
+    this.actBtn.onDenied = () => this.act();
+    this.actCoin = this.add.image(0, 0, COIN).setDisplaySize(32, 32);
+    this.actPrice = new ThemeNumber(this, 0, 0, 0, ACT_PRICE_STYLE);
+    this.actBtn.add([this.actCoin, this.actPrice]);
+  }
+
+  /** The action button: a label, or a price with a coin; `alt` paints it in the tab's other colour. */
+  private setAction(label: string | null, price: number | null, enabled: boolean, alt = false): void {
     const b = this.actBtn;
     b.setVisible(label !== null || price !== null);
-    b.setColor(color);
-    b.setLabels(price !== null ? String(price) : label ?? '');
+    b.setColor(alt ? this.actAlt : MOSS);
+    b.setText(price !== null ? '' : label ?? '');
+    b.fitLabel(b.w - 24);
     this.actCoin.setVisible(price !== null);
+    this.actPrice.setVisible(price !== null);
     if (price !== null) {
-      const w = b.main.width * b.main.scaleX;
-      this.actCoin.setPosition(-(w + 38) / 2 + 15, 0);
-      b.main.setX(this.actCoin.x + 21 + w / 2);
-    } else b.main.setX(0);
+      this.actPrice.setValue(price);
+      const w = this.actPrice.textWidth;
+      this.actCoin.setPosition(-(w + 40) / 2 + 16, 0);
+      this.actPrice.setX(this.actCoin.x + 22 + w / 2);
+    }
     b.setEnabled(enabled);
   }
 
   private refresh(): void {
-    this.coinText.setText(String(this.meta.coins));
+    this.coins.setValue(this.meta.coins);
     for (const tl of this.tiles) tl.draw();
     if (this.tab === 'heroes') this.refreshHero();
     else this.refreshItem();
@@ -511,7 +659,8 @@ export class CampScene extends Phaser.Scene {
 
   private refreshHero(): void {
     const h = this.shown, d = HEROES[h], m = this.meta;
-    this.heroName.setText(t('h_' + h));
+    placeLabel(this.heroName, labelTexture(this, t('h_' + h), HEAD_STYLE));
+    this.heroName.setScale(Math.min(1, 600 / this.heroName.width));
     this.heroTwist.setText(t('ht_' + h));
     this.heroWeaponIcon.setTexture(weaponArt(d.start)).setDisplaySize(38, 38);
     this.heroWeapon.setText(t('heroStarts', { w: t('w_' + d.start) }));
@@ -528,17 +677,17 @@ export class CampScene extends Phaser.Scene {
       unlock = t('ms_' + ms.kind, { n }) + ' ' + prog + ' · ' + t('orBuy');
     }
     this.heroUnlock.setText(unlock).setVisible(!!unlock);
-    if (st === 'selected') this.setAction(t('selected'), null, true, 0xc8902a);
+    if (st === 'selected') this.setAction(t('selected'), null, true, true);
     else if (st === 'pick') this.setAction(t('pick'), null, true);
     else this.setAction(null, d.cost, st === 'ok');
-    this.actBtn.setAlpha(st === 'selected' ? 0.9 : 1);
   }
 
   private refreshItem(): void {
     const tl = this.tiles[this.focus];
     if (!tl) return;
     const it = tl.item, m = this.meta;
-    this.infoName.setText(this.name(it));
+    placeLabel(this.infoName, labelTexture(this, this.name(it), ITEM_HEAD_STYLE)).setOrigin(0, this.infoName.originY);
+    this.infoName.setScale(Math.min(1, 380 / this.infoName.width));
     if (it.kind === 'up') {
       const def = UPGRADES[it.id], n = lvl(m, it.id);
       const fx = (k: number) => (it.id === 'curse' && k === 0 ? t('upOff') : t('ue_' + it.id, { v: def.v(k) }));
@@ -552,11 +701,11 @@ export class CampScene extends Phaser.Scene {
       this.infoDesc.setText(t('wd_' + it.id) + (WEAPON_COST[it.id] !== undefined && !m.weapons.includes(it.id) ? ' ' + t('unlockWeapon') : ''));
     }
     // stack the lines from the name's real height so a tall title font never overlaps the level line
-    this.infoLevel.setY(this.infoName.y + this.infoName.height / 2 + 4);
+    this.infoLevel.setY(this.infoName.y + (this.infoName.height * this.infoName.scaleY) / 2 + 2);
     this.infoDesc.setY(this.infoLevel.y + this.infoLevel.height + 6);
     const st = this.state(it);
-    if (it.kind === 'up' && it.id === 'curse') this.setAction(t('curseSet'), null, true, 0xa0304a);
-    else if (st === 'max' || st === 'owned') this.setAction(st === 'max' ? t('max') : t('owned'), null, false, 0x3a5a7a);
+    if (it.kind === 'up' && it.id === 'curse') this.setAction(t('curseSet'), null, true, true);
+    else if (st === 'max' || st === 'owned') this.setAction(st === 'max' ? t('max') : t('owned'), null, false);
     else this.setAction(null, this.cost(it), st === 'ok');
   }
 
