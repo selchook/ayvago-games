@@ -58,7 +58,7 @@ const font = (pkg, file) => readFileSync(join(root, 'node_modules', '@fontsource
 const FONTS = `
 @font-face { font-family: P2P; src: url(data:font/woff2;base64,${font('press-start-2p', 'press-start-2p-latin-400-normal.woff2')}) format('woff2'); }
 @font-face { font-family: P2P; src: url(data:font/woff2;base64,${font('press-start-2p', 'press-start-2p-latin-ext-400-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }
-@font-face { font-family: PTR; src: url(data:font/woff;base64,${readFileSync(join(root, 'src', 'core', 'fonts', 'ayvago-pixel-tr.woff')).toString('base64')}) format('woff'); unicode-range: U+0130; }
+@font-face { font-family: PTR; src: url(data:font/woff;base64,${readFileSync(join(root, 'src', 'core', 'fonts', 'ayvago-pixel-tr.woff')).toString('base64')}) format('woff'); unicode-range: U+0130, U+00D6, U+00DC; }
 @font-face { font-family: PX; font-weight: 700; src: url(data:font/woff2;base64,${font('pixelify-sans', 'pixelify-sans-latin-700-normal.woff2')}) format('woff2'); }
 @font-face { font-family: PX; font-weight: 700; src: url(data:font/woff2;base64,${font('pixelify-sans', 'pixelify-sans-latin-ext-700-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }
 @font-face { font-family: MT; font-weight: 700; src: url(data:font/woff2;base64,${font('fredoka', 'fredoka-latin-700-normal.woff2')}) format('woff2'); }
