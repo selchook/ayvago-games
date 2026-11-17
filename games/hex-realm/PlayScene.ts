@@ -3,14 +3,19 @@
 // village its screens) and the battles (the simulation at a fixed 60 Hz, drawn in 3D, read from
 // the stick, the action buttons and the keys, with hit-stop, banners, damage numbers and sounds).
 // The first run starts with the class choice and a short, skippable training (with a combo lesson);
-// first-time hints follow. Combos show as pips over the hero and the finisher's name pops up; after
-// won chapters, camps and even levels a power-card draft follows the spoils (a card chip in the HUD,
-// the cards under the pause). A session ends when the hero falls, a boss chapter is won or the player ends the day at
+// first-time hints follow. After won chapters, camps and even levels a power-card draft follows the
+// spoils (a card chip in the HUD, the cards beside the pause).
+// 1.2 (landscape 1280 × 720): the HUD chips along the top (health on the second row), the stick on
+// the left, ATTACK / ROLL / the skills / POTION on a right-thumb arc. The combos chain only in combat
+// (battle.ts); nothing floats over the hero's head: the heavy charge fills a ring on the ATTACK button
+// (and a gold ring on the ground and a glow on the weapon hand), a landed finisher's name pops small
+// at the impact. A perfect dodge slows time for a moment; foes winding up off screen get an arrow
+// at the edge; the HERO button wears a dot while a talent point or a better item waits. A session ends when the hero falls, a boss chapter is won or the player ends the day at
 // the inn: a summary card, then the result screen with the campaign's renown as the score.
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, shake, flash, playMusic,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, hudRightEdge, themeCard, overlayHeadingStyle, labelAt, fitWidth, Para, FmtLine, GlyphText, KitButton,
+  HUD_MARGIN, HUD_ROW_Y, HUD_ROW2_Y, HUD_GAP, themeCard, overlayHeadingStyle, labelAt, fitWidth, Para, FmtLine, GlyphText, KitButton,
   type LabelStyle,
 } from '@core';
 import type { World3D } from '@core/three';
@@ -20,30 +25,41 @@ import { View } from './view';
 import { BattleBot, MapBot, SKILL } from './bot';
 import {
   DT, CLASS, FOE, POWER_IDS, POWER_COLOR, BOSS_KINDS, MINIBOSS_KINDS, xpToNext, CYCLE_LEVELS, CHARGE_T,
-  PLACE_IDS, type ClassId, type PowerId, type FoeKind, type PlaceId, type Mode, type ComboId,
+  PLACE_IDS, RARITY_COLOR, type ClassId, type PowerId, type FoeKind, type PlaceId, type Mode, type ComboId, type BlowFx, type Item,
 } from './defs';
 import { neighbours, CAMPS, BRIDGE, PLACE_HEX, type Hex } from './hexmap';
 import { groundY } from './mapview';
 import { icon, makeArt } from './art';
 import { HpBar, PowerChips, BossBar, actionButton, drawButton, showButton, banner, bossIntro, type ActionButton } from './ui';
-import { VillageScreen, HeroScreen, ClassScreen, MapScreen, LootScreen, DraftScreen, pauseCards, OVERLAY_DEPTH, S_MAP_TAG, S_POP, type Panel, type ScreenHost } from './screens';
+import { VillageScreen, HeroScreen, ClassScreen, MapScreen, LootScreen, DraftScreen, pauseCards, OVERLAY_DEPTH, S_MAP_TAG, S_POP, S_PERFECT, type Panel, type ScreenHost } from './screens';
+import { WEAPON_FEEL, weaponOf, SHIELD_BY_RARITY, type WeaponModel } from './weapons';
+import { SHIELD_GRIP } from './weaponview';
 import { SUMMARY_W, SUMMARY_H, TUT_W, TUT_H, HINT_H } from './sizes';
 import { HAND_MAX } from './powers';
 
 const STEP = DT;
+/** The model an item shows on the ground: a weapon its own, the warrior's armour a shield, the rest an orb (null). */
+const lootModel = (it: Item, cls: ClassId): WeaponModel | null => it.slot === 'weapon' ? weaponOf(it, cls).model : it.slot === 'armor' && cls === 'warrior' ? SHIELD_BY_RARITY[it.rarity] : null;
 /** Battle keys (besides the held ones read each frame). */
 const BATTLE_KEYS: Record<string, 'attack' | 'dodge' | 'skill1' | 'skill2' | 'potion'> = {
   KeyJ: 'attack', Space: 'attack', KeyZ: 'attack', Enter: 'attack', KeyK: 'dodge', ShiftLeft: 'dodge', ShiftRight: 'dodge', KeyX: 'dodge',
   KeyL: 'skill1', Digit1: 'skill1', KeyU: 'skill2', Digit2: 'skill2', KeyE: 'potion', KeyQ: 'potion', KeyR: 'potion',
 };
-const BOTTOM_Y = 1214;
-const BTN_A: [number, number] = [598, 1110];
-const BTN_B: [number, number] = [446, 1188];
-const BTN_S1: [number, number] = [622, 924];
-const BTN_S2: [number, number] = [476, 1012];
-const BTN_POT: [number, number] = [650, 790];
-const BTN_HERO: [number, number] = [640, 1180];
-const BTN_MAP: [number, number] = [520, 1194];
+// landscape: the keyboard's skill chips at the foot; the right thumb's arc round ATTACK
+const BOTTOM_Y = 672;
+const BTN_A: [number, number] = [1150, 592];
+const BTN_B: [number, number] = [984, 642];
+const BTN_S1: [number, number] = [1006, 486];
+const BTN_S2: [number, number] = [1146, 414];
+const BTN_POT: [number, number] = [1226, 296];
+const BTN_HERO: [number, number] = [1196, 638];
+const BTN_MAP: [number, number] = [1064, 656];
+/** Banners, the tutorial's card and hints, the place's name and ENTER. */
+const BANNER_Y = 236;
+const TUT_Y = 226;
+const PLACE_Y = 560;
+/** The third HUD row (power-ups). */
+const HUD_ROW3_Y = HUD_ROW2_Y + 66;
 
 type Phase = 'select' | 'map' | 'battle' | 'screen' | 'summary';
 type TutStep = 'move' | 'farm' | 'fight' | 'dodge' | 'skill' | 'combo' | null;
@@ -62,10 +78,8 @@ export const TUT_KEYS = [
   'tut_move_t', 'tut_move_k', 'tut_move_d', 'tut_farm_d', 'tut_fight_t', 'tut_fight_d_touch', 'tut_fight_d_keys', 'tut_dodge_t', 'tut_dodge_d_touch',
   'tut_dodge_d_keys', 'tut_skill_t', 'tut_skill_d_touch', 'tut_skill_d_keys', 'hint_market', 'hint_points', 'hint_bag', 'hint_shrine', 'hint_potion', 'hint_camp', 'hint_bridge',
   'sealedTower', 'sealedBridge', 'placeDone', 'placeLocked',
-  'tut_combo_t', 'tut_combo_d_touch', 'tut_combo_d_keys', 'hint_heavy', 'hint_dash', 'hint_sigil', 'hint_cards',
+  'tut_combo_t', 'tut_combo_d_touch', 'tut_combo_d_keys', 'hint_heavy', 'hint_dash', 'hint_sigil', 'hint_cards', 'hint_perfect',
 ];
-/** The combo pips' colour per combo. */
-const PIP_COLOR: Record<ComboId, number> = { chain: 0xffd86a, heavy: 0xff7a3a, dash: 0x7ad8ff };
 export { T_TITLE, T_BODY, S_SUM, S_SUM_SMALL, S_PLACE };
 
 export class PlayScene extends ArcadeScene {
@@ -86,9 +100,11 @@ export class PlayScene extends ArcadeScene {
   private infoChip!: HudChip;
   private potChip!: HudChip;
   private cardChip!: HudChip;
-  /** The combo under way over the hero: its pips and how long they stay. */
-  private comboUi = { chain: 'chain' as ComboId, step: -1, len: 3, t: 0 };
-  private pips!: Phaser.GameObjects.Graphics;
+  /** Arrows at the screen's edge towards foes winding up off screen. */
+  private threats!: Phaser.GameObjects.Graphics;
+  /** The HERO button's dot: a talent point or a better item waits. */
+  private heroDot!: Phaser.GameObjects.Arc;
+  private dotT = 0;
   private skillChips: HudChip[] = [];
   private btn: Record<string, ActionButton | null> = {};
   private vignette!: Phaser.GameObjects.Graphics;
@@ -141,7 +157,6 @@ export class PlayScene extends ArcadeScene {
     this.battle = null; this.fight = null; this.panel = null; this.path = []; this.stepT = 0;
     this.acc = 0; this.hitStop = 0; this.slowT = 0; this.dmg = []; this.dmgPool = [];
     this.shown = { gold: -1, level: -1, info: '', pot: -1, renown: -1, cards: -1 };
-    this.comboUi = { chain: 'chain', step: -1, len: 3, t: 0 };
     // a new journey: the cards of the last one are gone
     this.camp.endJourney();
     this.sfxGap = {}; this.redT = 0; this.lowWarned = false; this.ended = false;
@@ -180,11 +195,10 @@ export class PlayScene extends ArcadeScene {
 
     this.setupInput();
     this.setupHud();
-    this.pips = this.add.graphics().setDepth(9150).setScrollFactor(0);
-    // the cards of the journey under the pause card
+    // the cards of the journey, the quest and the controls beside the pause card
     this.events.on(Phaser.Scenes.Events.PAUSE, () => {
       const ps = this.scene.get('Pause');
-      ps?.events.once(Phaser.Scenes.Events.CREATE, () => { if (!this.isOver) pauseCards(ps, this.camp.s.cards); });
+      ps?.events.once(Phaser.Scenes.Events.CREATE, () => { if (!this.isOver) pauseCards(ps, this.camp.s.cards, this.camp.tracked(), this.camp.s.victory, this.controls.touchUi); });
     });
     this.vignette = this.add.graphics().setDepth(60).setScrollFactor(0);
     this.fade = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x06040c, 1).setOrigin(0).setScrollFactor(0).setDepth(9300);
@@ -200,7 +214,7 @@ export class PlayScene extends ArcadeScene {
 
   private setupInput(): void {
     this.touch = this.sys.game.device.input.touch;
-    this.controls = new Controls(this, { joystick: true, buttons: ['A', 'B'], buttonPos: { A: BTN_A, B: BTN_B }, buttonScale: 1.06 });
+    this.controls = new Controls(this, { joystick: true, buttons: ['A', 'B'], buttonPos: { A: BTN_A, B: BTN_B }, buttonScale: 1.15 });
     // the floating stick's two circles (shown only in battle; a tap on the map walks)
     this.stickParts = this.children.list.filter((o) => o instanceof Phaser.GameObjects.Arc && (o as Phaser.GameObjects.Arc).depth === 9500 && ((o as Phaser.GameObjects.Arc).radius === 80 || (o as Phaser.GameObjects.Arc).radius === 38)) as Phaser.GameObjects.Arc[];
     if (this.controls.touchUi) {
@@ -214,15 +228,17 @@ export class PlayScene extends ArcadeScene {
         else if (o instanceof Phaser.GameObjects.Text) o.setVisible(false);
       }
       const cls = CLASS[this.camp.s.cls];
-      this.btn.attack = actionButton(this, BTN_A[0], BTN_A[1], 78, t('btnAttack'), false, { size: 21 });
-      this.btn.dodge = actionButton(this, BTN_B[0], BTN_B[1], 58, t('btnDodge'), false, { size: 19 });
-      this.btn.s1 = actionButton(this, BTN_S1[0], BTN_S1[1], 54, '', true, { icon: icon('sk-' + cls.skills[0].id) });
-      this.btn.s2 = actionButton(this, BTN_S2[0], BTN_S2[1], 54, '', true, { icon: icon('sk-' + cls.skills[1].id) });
-      this.btn.pot = actionButton(this, BTN_POT[0], BTN_POT[1], 42, '', true, { icon: icon('potion'), badge: true });
+      this.btn.attack = actionButton(this, BTN_A[0], BTN_A[1], 84, t('btnAttack'), false, { size: 22 });
+      this.btn.dodge = actionButton(this, BTN_B[0], BTN_B[1], 62, t('btnDodge'), false, { size: 20 });
+      this.btn.s1 = actionButton(this, BTN_S1[0], BTN_S1[1], 56, '', true, { icon: icon('sk-' + cls.skills[0].id) });
+      this.btn.s2 = actionButton(this, BTN_S2[0], BTN_S2[1], 56, '', true, { icon: icon('sk-' + cls.skills[1].id) });
+      this.btn.pot = actionButton(this, BTN_POT[0], BTN_POT[1], 46, '', true, { icon: icon('potion'), badge: true });
     }
     // map buttons (touch and mouse): the hero screen and the world map
-    this.btn.hero = actionButton(this, BTN_HERO[0], BTN_HERO[1], 50, t('btnHero'), true, { icon: icon('hero'), size: 14 });
-    this.btn.map = actionButton(this, BTN_MAP[0], BTN_MAP[1], 44, t('btnMap'), true, { icon: icon('map'), size: 14 });
+    this.btn.hero = actionButton(this, BTN_HERO[0], BTN_HERO[1], 56, t('btnHero'), true, { icon: icon('hero'), size: 14 });
+    this.btn.map = actionButton(this, BTN_MAP[0], BTN_MAP[1], 48, t('btnMap'), true, { icon: icon('map'), size: 14 });
+    this.heroDot = this.add.circle(40, -40, 11, 0xff3a3a).setStrokeStyle(3, 0xfff2cc).setVisible(false);
+    this.btn.hero.root.add(this.heroDot);
     const kb = this.input.keyboard;
     if (kb) {
       const K = Phaser.Input.Keyboard.KeyCodes;
@@ -305,7 +321,7 @@ export class PlayScene extends ArcadeScene {
 
   private tapMap(px: number, py: number): void {
     // the HUD's own spots never walk
-    if (py < 150) return;
+    if (py < 140) return;
     const p = this.view.pick(px, py);
     if (!p) return;
     const hexAt = this.pickHex(p.x, p.z);
@@ -364,16 +380,19 @@ export class PlayScene extends ArcadeScene {
 
   // ------------------------------------------------------------------ HUD
 
+  /** Landscape: health, gold, potions and cards along the second row; the quest or the wave on its right. */
   private setupHud(): void {
     const { width } = this.scale;
+    this.threats = this.add.graphics().setDepth(9150).setScrollFactor(0);
     this.hud.setLevel(this.camp.s.level);
-    this.goldChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { icon: icon('coin'), iconSize: 32, text: '0', color: '#ffe68a', minWidth: 96 });
-    this.infoChip = hudChip(this, width - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', text: '', size: 20, minWidth: 150 });
-    this.potChip = hudChip(this, this.goldChip.right + HUD_GAP, HUD_ROW2_Y, { icon: icon('potion'), iconSize: 34, text: '0', minWidth: 80 });
-    this.cardChip = hudChip(this, this.potChip.right + HUD_GAP, HUD_ROW2_Y, { icon: icon('card'), iconSize: 36, text: '0', minWidth: 76, color: '#ffe8b0' });
-    this.powerChips = new PowerChips<PowerId>(this, HUD_MARGIN, HUD_ROW2_Y + 70, POWER_IDS, (id) => icon('pw-' + id), (id) => POWER_COLOR[id]);
-    this.bossBar = new BossBar(this, width / 2, HUD_ROW2_Y + 140);
-    this.hp = new HpBar(this, HUD_MARGIN, BOTTOM_Y);
+    this.hp = new HpBar(this, HUD_MARGIN, HUD_ROW2_Y + 6);
+    this.goldChip = hudChip(this, this.hp.chip.right + HUD_GAP, HUD_ROW2_Y + 6, { icon: icon('coin'), iconSize: 32, text: '0', color: '#ffe68a', minWidth: 96 });
+    this.infoChip = hudChip(this, width - HUD_MARGIN, HUD_ROW2_Y + 6, { align: 'right', text: '', size: 20, minWidth: 150 });
+    this.potChip = hudChip(this, this.goldChip.right + HUD_GAP, HUD_ROW2_Y + 6, { icon: icon('potion'), iconSize: 34, text: '0', minWidth: 80 });
+    this.cardChip = hudChip(this, this.potChip.right + HUD_GAP, HUD_ROW2_Y + 6, { icon: icon('card'), iconSize: 36, text: '0', minWidth: 76, color: '#ffe8b0' });
+    this.powerChips = new PowerChips<PowerId>(this, HUD_MARGIN, HUD_ROW3_Y + 6, POWER_IDS, (id) => icon('pw-' + id), (id) => POWER_COLOR[id]);
+    // the boss bar takes the level badge's place in the middle of the top row
+    this.bossBar = new BossBar(this, width / 2, HUD_ROW_Y);
     if (!this.controls.touchUi) {
       // keyboard players read the skills and potions in chips by the corner
       const cls = CLASS[this.camp.s.cls];
@@ -412,7 +431,8 @@ export class PlayScene extends ArcadeScene {
     this.potChip.setVisible(this.phase !== 'select');
     this.cardChip.setVisible(this.phase !== 'select' && this.phase !== 'summary' && this.camp.s.cards.length > 0);
     this.hud.levelChip.setVisible(this.phase !== 'select');
-    if (!battle) { this.powerChips.clear(); this.bossBar.hide(); }
+    if (!battle) { this.powerChips.clear(); this.bossBar.hide(); this.threats.clear(); }
+    this.heroDot.setVisible(false);
     if (this.phase !== 'map') { for (const tg of this.tags) tg.setVisible(false); this.arrow?.setVisible(false); }
     this.shown.info = '';
   }
@@ -435,22 +455,22 @@ export class PlayScene extends ArcadeScene {
       if (this.shown.gold >= 0 && gold > this.shown.gold) this.tweens.add({ targets: this.goldChip, scale: 1.12, duration: 70, yoyo: true });
       this.shown.gold = gold;
       this.goldChip.setText(String(gold));
-      this.potChip.setAnchor(this.goldChip.right + HUD_GAP, HUD_ROW2_Y);
-      this.cardChip.setAnchor(this.potChip.right + HUD_GAP, HUD_ROW2_Y);
+      this.potChip.setAnchor(this.goldChip.right + HUD_GAP, HUD_ROW2_Y + 6);
+      this.cardChip.setAnchor(this.potChip.right + HUD_GAP, HUD_ROW2_Y + 6);
     }
     const cards = s.cards.length;
     if (cards !== this.shown.cards) {
       if (this.shown.cards >= 0 && cards > this.shown.cards) this.tweens.add({ targets: this.cardChip, scale: 1.18, duration: 90, yoyo: true });
       this.shown.cards = cards;
       this.cardChip.setText(cards >= HAND_MAX ? `${cards}/${HAND_MAX}` : String(cards));
-      this.cardChip.setAnchor(this.potChip.right + HUD_GAP, HUD_ROW2_Y);
+      this.cardChip.setAnchor(this.potChip.right + HUD_GAP, HUD_ROW2_Y + 6);
       this.cardChip.setVisible(this.phase !== 'select' && this.phase !== 'summary' && cards > 0);
     }
     const pots = b && this.phase === 'battle' ? b.hero.potions : s.potions;
     if (pots !== this.shown.pot) {
       this.shown.pot = pots;
       this.potChip.setText(`${pots}/${s.potionMax}`);
-      this.cardChip.setAnchor(this.potChip.right + HUD_GAP, HUD_ROW2_Y);
+      this.cardChip.setAnchor(this.potChip.right + HUD_GAP, HUD_ROW2_Y + 6);
       if (this.btn.pot?.badge) this.btn.pot.badge.setText(String(pots));
     }
     // the info chip: the wave in battle, the tracked quest on the map
@@ -476,19 +496,30 @@ export class PlayScene extends ArcadeScene {
     this.hp.update(hp, max, dt, this.elapsed);
     if (this.phase === 'battle' && b) this.updateBattleHud(b, dt);
     else this.edge(dt, false);
+    // the HERO button's dot: a talent point to spend or a better item in the bag (checked now and then)
+    this.dotT -= dt;
+    if (this.dotT <= 0 && this.phase === 'map') {
+      this.dotT = 0.5;
+      const on = s.points > 0 || s.bag.some((it) => c.better(it));
+      if (on !== this.heroDot.visible) { this.heroDot.setVisible(on); if (on) this.tweens.add({ targets: this.heroDot, scale: { from: 1.8, to: 1 }, duration: 300, ease: 'Back.easeOut' }); }
+    }
   }
 
   private updateBattleHud(b: Battle, dt: number): void {
     const h = b.hero;
     this.powerChips.update(h.powers, { shieldHits: h.shieldHits }, this.elapsed);
     const boss = b.bossUp;
-    if (boss && boss.state !== 'dead') {
-      this.bossBar.show(t('f_' + boss.kind));
-      this.bossBar.update(Math.max(0, boss.hp / boss.maxHp), boss.guard > 0, boss.phase >= 3, dt, this.elapsed);
+    const bossOn = !!boss && boss.state !== 'dead';
+    if (bossOn) {
+      this.bossBar.show(t('f_' + boss!.kind));
+      this.bossBar.update(Math.max(0, boss!.hp / boss!.maxHp), boss!.guard > 0, boss!.phase >= 3, dt, this.elapsed);
     } else this.bossBar.hide();
+    this.hud.levelChip.setVisible(!bossOn);
     const cls = CLASS[b.st.cls];
     const ring = (k: 0 | 1) => [Math.max(0, 1 - h.skillCd[k] / (cls.skills[k].cd * (1 - b.st.cdr)))];
-    if (this.btn.attack) drawButton(this.btn.attack, 0xc8463a, { held: this.controls.a });
+    // the heavy finisher's charge fills a ring round ATTACK (gold and pulsing when it is ready)
+    const charge = h.state === 'charge' ? Math.min(1, h.chargeT / (CHARGE_T * (b.has('quick') ? 0.5 : 1))) : 0;
+    if (this.btn.attack) drawButton(this.btn.attack, h.state === 'charge' ? 0xe0702a : 0xc8463a, { held: this.controls.a || h.state === 'charge', ring: charge > 0 ? [charge] : undefined, ready: h.charged, time: this.elapsed });
     if (this.btn.dodge) drawButton(this.btn.dodge, 0x3a7ab8, { held: this.controls.b, ring: [Math.max(0, 1 - h.dodgeCd / 1.17)], dim: h.dodgeCd > 0 });
     if (this.btn.s1) drawButton(this.btn.s1, cls.skills[0].color, { ring: ring(0), ready: h.skillCd[0] <= 0, dim: h.skillCd[0] > 0, time: this.elapsed, held: this.btn.s1.down });
     if (this.btn.s2) drawButton(this.btn.s2, cls.skills[1].color, { ring: ring(1), ready: h.skillCd[1] <= 0, dim: h.skillCd[1] > 0, time: this.elapsed, held: this.btn.s2.down });
@@ -500,50 +531,48 @@ export class PlayScene extends ArcadeScene {
       g.lineStyle(5, k >= 1 ? 0xffd23f : 0xffffff, 1).beginPath().arc(0, 0, 22, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k).strokePath();
       chip.setAlpha(k >= 1 ? 1 : 0.7);
     });
-    this.drawPips(b, dt);
+    this.drawThreats(b);
     const low = h.state !== 'dead' && h.hp < b.st.maxHp * 0.3;
     if (low && !this.lowWarned) { this.lowWarned = true; this.floatAt(h.x, h.z, t('lowHp'), '#ff7a6a', 28); if (h.potions > 0) this.hint('hint_potion'); this.sfx('alarm', { volume: 0.3, exact: true }); }
     if (h.hp > b.st.maxHp * 0.5) this.lowWarned = false;
     this.edge(dt, low);
   }
 
-  /** The combo's pips over the hero (filled up to the blow under way), the heavy finisher's charge ring. */
-  private drawPips(b: Battle, dt: number): void {
-    const u = this.comboUi, h = b.hero, g = this.pips.clear();
-    const charging = h.state === 'charge';
-    if (charging || h.state === 'attack') u.t = 1;
-    else u.t = Math.max(0, u.t - dt * 1.6);
-    if (u.t <= 0 || u.step < 0 || h.state === 'dead') return;
-    const p = this.sx(h.x, h.z, 2.65 + h.air);
-    const col = charging ? PIP_COLOR.heavy : PIP_COLOR[u.chain];
-    const n = u.len, gap = 24, x0 = p.x - ((n - 1) * gap) / 2, y = p.y;
-    const a = Math.min(1, u.t * 2.2);
-    for (let i = 0; i < n; i++) {
-      const x = x0 + i * gap, on = i <= u.step || (charging && i === 2);
-      const r = on && i === u.step ? 9 : 7;
-      g.fillStyle(0x1a1420, 0.8 * a).fillPoints([{ x, y: y - r - 2 }, { x: x + r + 2, y }, { x, y: y + r + 2 }, { x: x - r - 2, y }], true);
-      g.fillStyle(on ? col : 0x6a6070, (on ? 1 : 0.6) * a).fillPoints([{ x, y: y - r }, { x: x + r, y }, { x, y: y + r }, { x: x - r, y }], true);
-    }
-    if (charging) {
-      // the charge ring round the third pip: full when the finisher is ready
-      const need = CHARGE_T * (b.has('quick') ? 0.5 : 1);
-      const k = Math.min(1, h.chargeT / need), x = x0 + 2 * gap;
-      g.lineStyle(4, 0x1a1420, 0.8).strokeCircle(x, y, 16);
-      g.lineStyle(4, h.charged ? 0xffffff : col, 1).beginPath().arc(x, y, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k).strokePath();
-      if (h.charged) g.lineStyle(3, col, 0.5 + 0.5 * Math.sin(this.elapsed * 20)).strokeCircle(x, y, 22);
+  /**
+   * Arrows at the screen's edge towards foes winding up a blow off screen (and a boss out of view),
+   * so nothing hits from where the player cannot see.
+   */
+  private drawThreats(b: Battle): void {
+    const g = this.threats.clear();
+    if (b.hero.state === 'dead') return;
+    const { width: W, height: H } = this.scale;
+    const x0 = 34, x1 = W - 34, y0 = 150, y1 = H - 30;
+    for (const f of b.foes) {
+      if (f.state === 'dead' || f.state === 'spawn') continue;
+      const winding = f.state === 'wind' || f.state === 'act';
+      if (!winding && !f.boss) continue;
+      const p = this.sx(f.x, f.z, 1);
+      if (p.x > x0 && p.x < x1 && p.y > y0 && p.y < y1) continue;
+      const cx = W / 2, cy = H / 2 + 40, dx = p.x - cx, dy = p.y - cy;
+      const k = Math.min((x1 - cx) / Math.max(1, Math.abs(dx)), (y1 - cy) / Math.max(1, Math.abs(dy)), (cy - y0) / Math.max(1, Math.abs(dy)));
+      const ax = cx + dx * k, ay = cy + dy * k, a = Math.atan2(dy, dx);
+      const pulse = winding ? 0.65 + 0.35 * Math.sin(this.elapsed * 16) : 0.7;
+      const col = winding ? 0xff3a2a : 0xffa04a, r = f.boss ? 24 : 18;
+      const pt = (d: number, s: number) => ({ x: ax + Math.cos(a) * d - Math.sin(a) * s, y: ay + Math.sin(a) * d + Math.cos(a) * s });
+      g.fillStyle(0x1a1420, 0.75 * pulse).fillTriangle(pt(r + 4, 0).x, pt(r + 4, 0).y, pt(-r, r + 2).x, pt(-r, r + 2).y, pt(-r, -r - 2).x, pt(-r, -r - 2).y);
+      g.fillStyle(col, pulse).fillTriangle(pt(r, 0).x, pt(r, 0).y, pt(-r + 4, r - 3).x, pt(-r + 4, r - 3).y, pt(-r + 4, -r + 3).x, pt(-r + 4, -r + 3).y);
     }
   }
 
-  /** The finisher's name over the hero ("Whirl!", "Cleave!", "Plunge!"): a painted label that rises. */
-  private finisherPop(b: Battle, chain: ComboId): void {
-    const h = b.hero;
-    const p = this.sx(h.x, h.z, 3.7);
+  /** A landed finisher's name at the impact ("Whirl!", "Cleave!"): a small painted label that pops and fades. */
+  private finisherPop(b: Battle, chain: ComboId, x: number, z: number): void {
+    const p = this.sx(x, z, 1.9);
     const img = labelAt(this, p.x, p.y, t(`fn_${b.st.cls}_${chain}`) + '!', S_POP).setScrollFactor(0).setDepth(9210);
-    fitWidth(img, 600);
+    fitWidth(img, 360);
     const s0 = img.scale;
-    img.setScale(s0 * 0.4);
-    this.tweens.add({ targets: img, scale: s0, duration: 180, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: img, y: p.y - 70, alpha: 0, delay: 520, duration: 420, ease: 'Quad.easeIn', onComplete: () => img.destroy() });
+    img.setScale(s0 * 0.5);
+    this.tweens.add({ targets: img, scale: s0, duration: 140, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: img, y: p.y - 34, alpha: 0, delay: 360, duration: 280, ease: 'Quad.easeIn', onComplete: () => img.destroy() });
   }
 
   /** The red edge: a hit, low health. */
@@ -704,7 +733,7 @@ export class PlayScene extends ArcadeScene {
       const tag = this.tags[i];
       if (!show || !seen.has(h.i) || (h.c === here.c && h.r === here.r && !this.view.walking)) { tag.setVisible(false); return; }
       const p = this.view.toScreen(h.x, groundY(h) - 0.05, h.z + 0.42);
-      tag.setPosition(p.x, p.y).setVisible(p.y > 160 && p.y < 1150 && p.x > 40 && p.x < 680);
+      tag.setPosition(p.x, p.y).setVisible(p.y > 150 && p.y < this.scale.height - 40 && p.x > 60 && p.x < this.scale.width - 60);
     });
     const th = this.camp.trackedHex();
     const a = this.arrow!;
@@ -712,10 +741,10 @@ export class PlayScene extends ArcadeScene {
     const h = this.camp.map.at(th[0], th[1]);
     const p = this.view.toScreen(h.x, groundY(h) + 0.8, h.z);
     const { width, height } = this.scale;
-    const inside = p.x > 40 && p.x < width - 40 && p.y > 170 && p.y < height - 140;
+    const inside = p.x > 40 && p.x < width - 40 && p.y > 160 && p.y < height - 40;
     if (inside) { a.setVisible(false); return; }
-    const cx = width / 2, cy = height / 2, dx = p.x - cx, dy = p.y - cy;
-    const k = Math.min((width / 2 - 60) / Math.max(1, Math.abs(dx)), (height / 2 - 200) / Math.max(1, Math.abs(dy)));
+    const cx = width / 2, cy = height / 2 + 40, dx = p.x - cx, dy = p.y - cy;
+    const k = Math.min((width / 2 - 70) / Math.max(1, Math.abs(dx)), (height / 2 - 130) / Math.max(1, Math.abs(dy)));
     a.setPosition(cx + dx * k, cy + dy * k).setRotation(Math.atan2(dy, dx)).setVisible(true);
     (a.list[1] as Phaser.GameObjects.Image).setRotation(-Math.atan2(dy, dx));
     a.setScale(1 + Math.sin(this.elapsed * 6) * 0.06);
@@ -732,8 +761,8 @@ export class PlayScene extends ArcadeScene {
     this.placeBtn?.destroy(); this.placeBtn = null;
     if (!key) return;
     const { width } = this.scale;
-    this.placeLabel = labelAt(this, width / 2, 1040, t(key), S_PLACE).setScrollFactor(0).setDepth(9050);
-    this.placeBtn = new KitButton(this, width / 2, 1108, { w: 200, h: 64, color: 0x2c4a9a, label: h.place === 'village' ? t('enter') : t('enter'), style: { size: 22 }, sfx: 'ui-click' }, () => this.openPlace(h));
+    this.placeLabel = labelAt(this, width / 2, PLACE_Y, t(key), S_PLACE).setScrollFactor(0).setDepth(9050);
+    this.placeBtn = new KitButton(this, width / 2, PLACE_Y + 66, { w: 200, h: 64, color: 0x2c4a9a, label: h.place === 'village' ? t('enter') : t('enter'), style: { size: 22 }, sfx: 'ui-click' }, () => this.openPlace(h));
     this.placeBtn.setScrollFactor(0).setDepth(9050);
     this.placeLabel.setScale(0.6);
     this.tweens.add({ targets: this.placeLabel, scale: 1, duration: 200, ease: 'Back.easeOut' });
@@ -858,11 +887,13 @@ export class PlayScene extends ArcadeScene {
     const i = Math.floor(cycle);
     fig.play(moves[i], { speed: i === 0 || i === moves.length - 1 ? 1 : 1.1, once: i > 0 && i < moves.length - 1, restart: Math.abs(cycle - i) < dt * 1.5 });
     fig.update(dt);
+    fig.hideWeapon = false;
+    b.rack.clear();
     const cam = v.world.camera;
-    cam.position.set(0.3, 1.9, 5.2);
-    cam.lookAt(0, 0.55, 0);
-    // the hero stands in the upper half (the tiles cover the lower): shift the view
-    cam.setViewOffset(this.scale.width, this.scale.height, 0, this.scale.height * 0.2, this.scale.width, this.scale.height);
+    cam.position.set(0.3, 1.45, 3.9);
+    cam.lookAt(0, 0.62, 0);
+    // the hero stands on the left (the class board covers the right): shift the view
+    cam.setViewOffset(this.scale.width, this.scale.height, this.scale.width * 0.25, 0, this.scale.width, this.scale.height);
     v.world.followSun(cam.position);
   }
 
@@ -876,7 +907,7 @@ export class PlayScene extends ArcadeScene {
     const b = new Battle({ mode: this.mode, seed: (Math.random() * 1e9) | 0, stats: this.camp.stats(), hp: this.camp.s.hp, potions: this.camp.s.potions, rooms: f.rooms, level: f.level, tutorial });
     this.battle = b;
     this.bot = this.autoplay ? new BattleBot(b, SKILL.good, 7) : null;
-    this.acc = 0; this.hitStop = 0; this.slowT = 0; this.lowWarned = false;
+    this.acc = 0; this.hitStop = 0; this.slowT = 0; this.lowWarned = false; this.lastKill = null;
     this.phase = 'battle';
     this.view.battle.clear();
     this.view.world.camera.clearViewOffset();
@@ -891,7 +922,7 @@ export class PlayScene extends ArcadeScene {
     this.fade.setAlpha(1);
     this.tweens.add({ targets: this.fade, alpha: 0, duration: 380 });
     const title = f.kind === 'encounter' ? t('ambush') : f.kind === 'camp' ? t('campFight') : f.kind === 'rift' ? t('enterRift', { n: this.camp.s.rift + 1 }) : t('p_' + f.place);
-    banner(this, 420, title, f.rooms.length > 1 ? t('room', { n: 1, of: f.rooms.length }) : '', { color: f.kind === 'encounter' ? '#ff9a6a' : '#ffd86a', size: 46, hold: 1.1 });
+    banner(this, BANNER_Y, title, f.rooms.length > 1 ? t('room', { n: 1, of: f.rooms.length }) : '', { color: f.kind === 'encounter' ? '#ff9a6a' : '#ffd86a', size: 46, hold: 1.1 });
     this.sfx(f.kind === 'encounter' ? 'ambush' : 'horn', { volume: 0.5 });
     if (tutorial) this.time.delayedCall(900, () => { if (this.phase === 'battle' && this.battle === b && !b.over) this.tutStep('fight'); });
   }
@@ -918,6 +949,7 @@ export class PlayScene extends ArcadeScene {
     if (this.phase !== 'battle') return;
     if (this.tut) this.updateTutorial();
     this.view.syncBattle(b, dt * (this.slowT > 0 ? 0.35 : this.hitStop > 0 ? 0.15 : 1) * Math.min(1, this.testSpeed || 0.0001));
+    if (this.camOverride) { const [x, y, z, lx, ly, lz] = this.camOverride; this.world.camera.position.set(x, y, z); this.world.camera.lookAt(lx, ly, lz); }
     if (this.programsBattle < 0 && this.perf.frames > 30) this.programsBattle = (this.world.renderer.info.programs ?? []).length;
     if (b.over && !this.ended) this.endFight();
   }
@@ -938,13 +970,14 @@ export class PlayScene extends ArcadeScene {
       case 'swing': {
         if (this.tut === 'fight') this.tutCount++;
         const melee = ev.fx !== 'shot' && ev.fx !== 'power' && ev.fx !== 'rain' && ev.fx !== 'meteor';
-        if (b.hero.state === 'attack') {
-          this.comboUi = { chain: ev.chain, step: ev.blow, len: ev.len, t: 1 };
-          if (ev.finisher) this.finisherPop(b, ev.chain);
-        }
         if (ev.fx === 'plunge') this.s('leap', 0.5, 0.05);
         else if (ev.fx === 'kick' || ev.fx === 'rise' && b.st.cls === 'monk') this.s(ev.blow % 2 ? 'punch2' : 'punch1', 0.45, 0.04);
-        else if (melee) this.s(ev.finisher ? 'swing3' : ev.blow % 2 ? 'swing2' : 'swing1', ev.finisher ? 0.55 : 0.4, 0.04);
+        else if (melee) {
+          // the weapon's weight in the swing: heavy ones lower and slower, light ones quicker
+          const wt = b.st.weapon ?? 'plain', key = ev.finisher ? 'swing3' : ev.blow % 2 ? 'swing2' : 'swing1';
+          if (wt === 'heavy' || wt === 'light') { if (!this.quiet && (this.sfxGap[key] ?? 0) <= 0) { this.sfxGap[key] = 0.04; this.sfx(key, { volume: ev.finisher ? 0.6 : 0.45, rate: wt === 'heavy' ? 0.78 : 1.18 }); } }
+          else this.s(key, ev.finisher ? 0.55 : 0.4, 0.04);
+        }
         break;
       }
       case 'strike': {
@@ -959,16 +992,38 @@ export class PlayScene extends ArcadeScene {
         else if (ev.fx === 'thrust') this.s('dash', 0.45, 0.06, x);
         else if (ev.fx === 'rise' && ev.n) { this.s('trapSnap', 0.45, 0.06, x); this.hitStop = Math.max(this.hitStop, 0.04); }
         if (ev.finisher && this.tut === 'combo') this.tutCount++;
+        // the finisher's name where it lands: only when it hits something (melee), at the target (rains), ahead (shots)
+        if (ev.finisher) {
+          const far: Partial<Record<BlowFx, number>> = { shot: 3, power: 3.5, lance: 3.5, rain: 0, meteor: 0 };
+          const ranged = far[ev.fx] !== undefined;
+          const ahead = far[ev.fx] ?? Math.min(ev.r, 1.4);
+          if (ev.n > 0 || ranged) this.finisherPop(b, ev.chain, ev.x + Math.sin(ev.face) * ahead, ev.z + Math.cos(ev.face) * ahead);
+        }
+        // a heavy weapon lands harder
+        if (ev.n && WEAPON_FEEL[b.st.weapon ?? 'plain'].stop > 1.2) this.hitStop = Math.max(this.hitStop, 0.06);
         break;
       }
       case 'charge':
         if (ev.full) { this.s('charged', 0.6, 0.1); }
-        else { this.s('charge', 0.45, 0.1); this.comboUi = { chain: 'heavy', step: 1, len: 3, t: 1 }; }
+        else this.s('charge', 0.45, 0.1);
         break;
+      case 'perfect': {
+        // a perfect dodge: a breath of slow motion, the word over the hero, the next blow critical
+        this.slowT = Math.max(this.slowT, 0.45);
+        this.s('blink', 0.55, 0.3);
+        const p = this.sx(ev.x, ev.z, 2.3);
+        const img = labelAt(this, p.x, p.y, t('perfect'), S_PERFECT).setScrollFactor(0).setDepth(9210);
+        img.setScale(0.5);
+        this.tweens.add({ targets: img, scale: 1, duration: 160, ease: 'Back.easeOut' });
+        this.tweens.add({ targets: img, y: p.y - 40, alpha: 0, delay: 420, duration: 300, onComplete: () => img.destroy() });
+        if (!this.camp.s.hints.includes('hint_perfect')) this.hint('hint_perfect');
+        break;
+      }
+      case 'smash': this.s('bones', 0.55, 0.05, this.sx(ev.x, ev.z).x); this.s('coin', 0.25, 0.1); break;
       case 'lastStand':
         this.slowT = 0.8; flash(this, 0xffd86a);
         this.s('levelup', 0.7, 0.5);
-        banner(this, 470, t('lastStand'), '', { color: '#ffd86a', size: 50, hold: 0.9 });
+        banner(this, BANNER_Y + 40, t('lastStand'), '', { color: '#ffd86a', size: 50, hold: 0.9 });
         break;
       case 'shot':
         if (ev.side === 'hero') this.s(ev.kind === 'arrow' ? 'bow' : ev.kind === 'fireball' ? 'fireball' : 'zap', 0.4, 0.05);
@@ -980,18 +1035,19 @@ export class PlayScene extends ArcadeScene {
         this.s(ev.crit ? 'crit' : 'hit', ev.crit ? 0.5 : 0.36, 0.05, sxv);
         if (ev.crit) this.hitStop = Math.max(this.hitStop, 0.06);
         else if (ev.heavy) this.hitStop = Math.max(this.hitStop, 0.045);
-        else if (ev.src === 'melee') this.hitStop = Math.max(this.hitStop, 0.025);
+        else if (ev.src === 'melee') this.hitStop = Math.max(this.hitStop, 0.025 * WEAPON_FEEL[b.st.weapon ?? 'plain'].stop);
         if (ev.heavy) shake(this, 0.004, 90);
         break;
       }
       case 'kill': {
+        this.lastKill = { x: ev.x, z: ev.z };
         const sxv = this.sx(ev.x, ev.z).x;
         const bone = FOE[ev.kind].model === 'skeleton' || FOE[ev.kind].model === 'headless';
         this.s(bone ? 'bones' : 'kill', 0.5, 0.06, sxv);
         if (ev.boss) {
           this.slowT = 1.4; this.view.battle.shake(0.6, 0.8); flash(this, 0xffffff);
           this.s('bossDie', 0.8, 1);
-          banner(this, 430, t('victory'), t('f_' + ev.kind), { color: '#ffd86a', size: 64, hold: 1.6 });
+          banner(this, BANNER_Y, t('victory'), t('f_' + ev.kind), { color: '#ffd86a', size: 64, hold: 1.6 });
         } else if (FOE[ev.kind].ai === 'slam' || FOE[ev.kind].ai === 'shield') { this.hitStop = Math.max(this.hitStop, 0.08); this.view.battle.shake(0.25, 0.15); }
         break;
       }
@@ -1024,7 +1080,7 @@ export class PlayScene extends ArcadeScene {
         if (ev.kind === 'sigil') { this.s('sigil', 0.6, 0.1); this.floatAt(ev.x, ev.z, '+1 ' + t('sigil'), '#ff9aa8', 28); this.hint('hint_sigil'); }
         else if (ev.kind === 'gold') { this.s('coin', 0.35, 0.04); }
         else if (ev.kind === 'potion') { this.s('heal', 0.5, 0.1); this.floatAt(ev.x, ev.z, t('potion'), '#ff8a9a', 26); }
-        else if (ev.power) { this.s('power', 0.6, 0.1); banner(this, 520, t('pw_' + ev.power), '', { color: '#' + POWER_COLOR[ev.power].toString(16).padStart(6, '0'), size: 40, hold: 0.7 }); }
+        else if (ev.power) { this.s('power', 0.6, 0.1); banner(this, BANNER_Y + 70, t('pw_' + ev.power), '', { color: '#' + POWER_COLOR[ev.power].toString(16).padStart(6, '0'), size: 40, hold: 0.7 }); }
         break;
       case 'potion': this.s('drink', 0.6, 0.2); break;
       case 'heal': if (ev.amount > 0 && Math.hypot(ev.x - b.hero.x, ev.z - b.hero.z) < 0.5) this.dmgNumber(ev.x, ev.z, ev.amount, false, '#7aff9a', '+'); break;
@@ -1039,7 +1095,7 @@ export class PlayScene extends ArcadeScene {
         }
         break;
       }
-      case 'wave': if (ev.n > 1) { banner(this, 420, t('wave', { n: ev.n, of: ev.of }), '', { color: '#ffd86a', size: 46, hold: 0.8 }); this.s('wave', 0.4, 0.5); } break;
+      case 'wave': if (ev.n > 1) { banner(this, BANNER_Y, t('wave', { n: ev.n, of: ev.of }), '', { color: '#ffd86a', size: 46, hold: 0.8 }); this.s('wave', 0.4, 0.5); } break;
       case 'room':
         if (ev.n > 0) {
           this.fade.setAlpha(1);
@@ -1047,13 +1103,13 @@ export class PlayScene extends ArcadeScene {
           this.view.setMode('battle', ev.arena as never);
           this.view.battle.showArena(ev.arena as never, b.layoutSeed);
           this.view.battle.camPos.set(0, 0, 0);
-          banner(this, 420, t('room', { n: ev.n + 1, of: ev.of }), '', { color: '#ffd86a', size: 48, hold: 1 });
+          banner(this, BANNER_Y, t('room', { n: ev.n + 1, of: ev.of }), '', { color: '#ffd86a', size: 48, hold: 1 });
           this.s('door', 0.5, 0.3);
         }
         break;
-      case 'roomClear': this.s('clear', 0.5, 0.3); if (!b.bossesKilled.length || b.room < b.rooms.length - 1) banner(this, 420, t('roomClear'), '', { color: '#a8ff9a', size: 44, hold: 0.9 }); break;
+      case 'roomClear': this.s('clear', 0.5, 0.3); if (!b.bossesKilled.length || b.room < b.rooms.length - 1) banner(this, BANNER_Y, t('roomClear'), '', { color: '#a8ff9a', size: 44, hold: 0.9 }); break;
       case 'bossPhase': this.s('bossRoar', 0.6, 0.5); this.view.battle.shake(0.35, 0.4); break;
-      case 'tele': if (FOE[ev.kind].ai === 'boss') this.s('tele', 0.35, 0.15); break;
+      case 'tele': if (FOE[ev.kind].ai === 'boss') this.s('tele', 0.35, 0.15); else if (FOE[ev.kind].ai === 'slam' || FOE[ev.kind].ai === 'shield') this.s('tele', 0.18, 0.4); break;
       case 'cast': if (ev.atk === 'fire') this.s('cast', 0.35, 0.1); else if (ev.atk === 'heal') this.s('heal', 0.3, 0.2); break;
       case 'shrine': this.hint('hint_shrine'); this.s('shrine', 0.4, 0.5); break;
       case 'trap': this.s(ev.sprung ? 'trapSnap' : 'trap', 0.5, 0.1); break;
@@ -1071,8 +1127,15 @@ export class PlayScene extends ArcadeScene {
     if (this.tut) this.endTutorial(false);
     this.camp.save();
     const won = b.over === 'won';
-    this.comboUi.t = 0;
-    this.time.delayedCall(won ? 700 : 300, () => {
+    // the spoils fall where the last foe fell, in their rarity's beams (weapons and shields as models)
+    if (won && sp.items.length) {
+      const L = this.view.battle.layout, at = this.lastKill ?? { x: b.hero.x, z: b.hero.z - 2 };
+      const x = L ? Math.max(-L.hx + 1.5, Math.min(L.hx - 1.5, at.x)) : at.x, z = L ? Math.max(-L.hz + 1.5, Math.min(L.hz - 1.5, at.z)) : at.z;
+      this.view.battle.dropLoot(sp.items.slice(0, 4).map((it) => ({ model: lootModel(it, this.camp.s.cls), color: RARITY_COLOR[it.rarity] })), x, z);
+      this.s('reveal', 0.45, 0.3);
+      if (sp.items.some((it) => it.rarity === 'epic' || it.rarity === 'legendary')) this.time.delayedCall(350, () => this.s('fanfare', 0.35, 1));
+    }
+    this.time.delayedCall(won ? (sp.items.length ? 2300 : 700) : 300, () => {
       if (!won) { this.summary('fallenTitle', false, sp); return; }
       for (const d of this.dmg) { d.t.setVisible(false); this.dmgPool.push(d.t); }
       this.dmg.length = 0;
@@ -1129,7 +1192,7 @@ export class PlayScene extends ArcadeScene {
     const { width, height } = this.scale;
     const root = this.add.container(0, 0).setScrollFactor(0).setDepth(OVERLAY_DEPTH);
     root.add(this.add.rectangle(0, 0, width, height, 0x06040c, 0.6).setOrigin(0).setInteractive().on('pointerup', () => this.finishSession()));
-    const cy = height * 0.47;
+    const cy = height / 2 + 6;
     root.add(themeCard(this, width / 2, cy, SUMMARY_W, SUMMARY_H));
     let y = cy - SUMMARY_H / 2 + 74;
     root.add(fitWidth(labelAt(this, width / 2, y, t(titleKey), overlayHeadingStyle(win)), SUMMARY_W - 70, 0.62));
@@ -1156,6 +1219,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private summaryWin = false;
+  /** Where the last foe fell (the spoils drop there). */
+  private lastKill: { x: number; z: number } | null = null;
   private summaryTitle = '';
 
   private finishSession(): void {
@@ -1169,7 +1234,7 @@ export class PlayScene extends ArcadeScene {
   private startTutorial(): void {
     this.tutStep('move');
     const { width } = this.scale;
-    this.tutSkip = new KitButton(this, width - 110, 432, { w: 152, h: 60, color: 0x6c6a74, label: t('tutSkip'), style: { size: 24 } }, () => this.endTutorial(true));
+    this.tutSkip = new KitButton(this, width - 104, 196, { w: 152, h: 60, color: 0x6c6a74, label: t('tutSkip'), style: { size: 24 } }, () => this.endTutorial(true));
     this.tutSkip.setScrollFactor(0).setDepth(9450);
   }
 
@@ -1189,7 +1254,7 @@ export class PlayScene extends ArcadeScene {
       combo: ['tut_combo_t', touch ? 'tut_combo_d_touch' : 'tut_combo_d_keys'],
     };
     const [title, body] = lines[step];
-    this.tutCard = this.card(t(title), t(body), 300);
+    this.tutCard = this.card(t(title), t(body), TUT_Y);
     if (step === 'dodge' && this.battle) this.battle.lessonSlam();
     this.s('page', 0.4, 0.2);
   }
@@ -1225,7 +1290,7 @@ export class PlayScene extends ArcadeScene {
     this.tutSkip = null;
     this.camp.s.tutorial = true;
     this.camp.save();
-    if (this.battle) { this.battle.passive = false; if (!skipped) banner(this, 420, t('tut_go'), '', { color: '#ffd86a', size: 44, hold: 1.1 }); }
+    if (this.battle) { this.battle.passive = false; if (!skipped) banner(this, BANNER_Y, t('tut_go'), '', { color: '#ffd86a', size: 44, hold: 1.1 }); }
   }
 
   /** A first-time hint (once per campaign), or a reminder (`always`). */
@@ -1234,7 +1299,7 @@ export class PlayScene extends ArcadeScene {
     if (!always && s.hints.includes(key)) return;
     if (!always) s.hints.push(key);
     if (this.hintCard) { if (!this.hintQueue.includes(key)) this.hintQueue.push(key); return; }
-    this.hintCard = this.card('', t(key), this.tut ? 470 : 270);
+    this.hintCard = this.card('', t(key), this.tut ? TUT_Y + 170 : TUT_Y - 20);
     const c = this.hintCard;
     c.setDepth(9430);
     this.tweens.add({ targets: c, alpha: 0, delay: 3200, duration: 380, onComplete: () => { c.destroy(); if (this.hintCard === c) this.hintCard = null; const n = this.hintQueue.shift(); if (n) this.hint(n, true); } });
@@ -1274,6 +1339,18 @@ export class PlayScene extends ArcadeScene {
     this.panel?.close(); this.panel = null; this.phase = 'map';
     const f = this.camp.dungeon(place);
     this.startFight({ ...f, rooms: [f.rooms[room]] });
+  }
+  /** A test hook: a fixed camera (x, y, z, look-at x, y, z) for close-ups, or null. */
+  camOverride: number[] | null = null;
+  /** A test hook: spoils of these slots and rarities fall at (x, z) in their beams. */
+  testLoot(list: [Item['slot'], Item['rarity']][], x: number, z: number): void {
+    const items = list.map(([sl, r]) => this.camp.makeItem(sl, 9, r));
+    this.view.battle.dropLoot(items.map((it) => ({ model: lootModel(it, this.camp.s.cls), color: RARITY_COLOR[it.rarity] })), x, z);
+  }
+  /** A test hook: places the shield on the forearm (tuning). */
+  testShield(pos: [number, number, number], rot: [number, number, number], scale: number): void {
+    Object.assign(SHIELD_GRIP, { pos, rot, scale });
+    this.view.battle.rack.retuneShield();
   }
   testAuto(on: boolean): void { this.autoplay = on; if (this.battle) this.bot = on ? new BattleBot(this.battle, SKILL.good, 7) : null; }
   testStep(secs: number): void { const b = this.battle; if (!b) return; for (let t0 = 0; t0 < secs && !b.over; t0 += STEP) { b.step(STEP, this.bot ? this.bot.input(STEP) : NO_INPUT); for (const ev of b.events) this.onEvent(ev); b.events.length = 0; } }

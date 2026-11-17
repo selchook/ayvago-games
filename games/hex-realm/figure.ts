@@ -34,6 +34,10 @@ export class Figure {
   private pending = 0;
   private skip = 0;
   height = 1;
+  /** 1.2: the hand's weapon bone; `hideWeapon` shrinks it so the welded weapon vanishes (another is held). */
+  weaponBone: THREE.Object3D | null = null;
+  hideWeapon = false;
+  private hidden = false;
 
   constructor(readonly key: string, scale = 1, o: { shadows?: boolean; mid?: number } = {}) {
     this.body = model(key, { shadows: o.shadows ?? false });
@@ -57,6 +61,7 @@ export class Figure {
         mesh.frustumCulled = false;
       }
     });
+    this.weaponBone = this.bones.get('WeaponR') ?? null;
     this.mixer = new THREE.AnimationMixer(this.body);
     for (const c of modelClips(key)) this.clips.set(c.name, c);
   }
@@ -111,7 +116,10 @@ export class Figure {
       this.skip = 0;
       this.mixer.update(this.pending);
       this.pending = 0;
+      if (this.hideWeapon) this.weaponBone?.scale.setScalar(1e-4);
     }
+    // the welded weapon comes back at once when nothing replaces it
+    if (this.hidden !== this.hideWeapon) { this.hidden = this.hideWeapon; this.weaponBone?.scale.setScalar(this.hideWeapon ? 1e-4 : 1); }
     this.flashT = Math.max(0, this.flashT - dt);
     this.hurt = Math.max(0, this.hurt - dt * 3);
     const f = this.flashT > 0 ? 0.55 : 0;
@@ -135,6 +143,7 @@ export class Figure {
     this.mat.sat.value = 1;
     this.mat.transparent = false;
     this.mat.opacity = 1;
+    this.hideWeapon = false;
   }
 
   dispose(): void {

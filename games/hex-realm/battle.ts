@@ -12,12 +12,26 @@
 //     and phases. Every blow that can hurt the hero is announced first by a red zone on the ground
 //     (circle, cone, lane or ring) that fills up as the blow comes.
 //   - Rooms of waves in an arena (arena.ts), gold and power-up drops, a shrine, the result.
+//   - 1.2: the hero is "in combat" while a hostile foe is close (or winding up at the hero) or a blow
+//     was dealt or taken in the last 2.5 s; only then do the three combos chain. Out of combat
+//     ATTACK is one clean single swing with a short recovery (crates and barrels break to any blow).
+//     The foe a blow would turn to is the soft target (the view rings it); rolling through a blow
+//     inside the i-frames is a perfect dodge (a short slow-motion, the next blow a critical).
 import {
   CLASS, FOE, TUNING, DODGE, POTION_HEAL, POWER_IDS, POWER_TIME, CHARGE_T, DASH_WINDOW, BOSS_KINDS, MINIBOSS_KINDS, foeHpAt, foeDmgAt,
   type ClassId, type FoeKind, type Mode, type PowerId, type Room, type Blow, type ComboId, type BlowFx,
 } from './defs';
 import { trackMods, type Mods, type TrackKind } from './powers';
 import { buildArena, type ArenaLayout } from './arena';
+import { WEAPON_FEEL, type WeaponType, type WeaponModel, type WeaponFeel } from './weapons';
+
+/** Combat: a hostile foe this close (melee classes) engages the hero; ranged classes engage at their reach. */
+export const ENGAGE = 6.5;
+export const ENGAGE_RANGED = 11;
+/** Seconds the hero stays in combat after dealing or taking a blow. */
+export const COMBAT_LINGER = 2.5;
+/** A single swing out of combat ends this soon after its hit (fraction of the blow's recovery). */
+const SOLO_RECOVERY = 0.55;
 
 export interface HeroStats {
   cls: ClassId;
@@ -39,6 +53,10 @@ export interface HeroStats {
   ranks: Record<TrackKind, number>;
   /** The power cards of the journey. */
   cards: string[];
+  /** 1.2: the weapon's kind (its feel), its model in hand and the warrior's shield (views). */
+  weapon?: WeaponType;
+  weaponModel?: WeaponModel | null;
+  shield?: WeaponModel | null;
 }
 
 export interface BattleSetup {
@@ -108,6 +126,8 @@ export interface Shot {
 }
 
 export interface Drop { id: number; kind: 'gold' | 'potion' | 'power' | 'sigil'; power: PowerId | null; amount: number; x: number; z: number; vx: number; vz: number; t: number; magnet: boolean }
+/** A loose crate or barrel of the arena (layout.breakables, same order). */
+export interface Crate { i: number; x: number; z: number; r: number; broken: boolean }
 export interface Trap { id: number; x: number; z: number; life: number; sprung: number }
 
 type HeroState = 'idle' | 'run' | 'attack' | 'charge' | 'dodge' | 'skill' | 'hit' | 'dead';
@@ -139,6 +159,14 @@ export interface Hero {
   echo: { t: number; blow: Blow; mult: number; wide: number } | null;
   /** The Last Breath card was used this battle. */
   phoenix: boolean;
+  /** Seconds of combat left after the last blow dealt or taken. */
+  combatT: number;
+  /** The blow under way is a single swing out of combat (no chain follows). */
+  solo: boolean;
+  /** The soft target: the foe an attack would turn to now (0: none). */
+  target: number;
+  /** This roll already earned its perfect dodge. */
+  perfect: boolean;
   dodgeCd: number;
   dodgeDir: number;
   invuln: number;
@@ -233,7 +261,9 @@ export type BattleEvent =
   | { type: 'freeze'; x: number; z: number }
   | { type: 'victory' }
   | { type: 'defeat' }
-  | { type: 'roomClear' };
+  | { type: 'roomClear' }
+  | { type: 'smash'; i: number; x: number; z: number }
+  | { type: 'perfect'; x: number; z: number };
 
 /** A small seeded generator (mulberry32). */
 export function makeRng(seed: number): () => number {
@@ -289,6 +319,12 @@ export class Battle {
   over: 'won' | 'lost' | null = null;
   /** Training: foes do not strike until released. */
   passive = false;
+  /** The hero is in combat (combos chain); out of combat ATTACK is a single swing. */
+  engaged = false;
+  /** The loose crates and barrels of the room. */
+  crates: Crate[] = [];
+  /** Perfect dodges this battle (test hook, balance). */
+  perfects = 0;
   bossUp: Foe | null = null;
   /** The seed the current room's arena was built from (the view builds the same). */
   layoutSeed = 0;
@@ -312,7 +348,7 @@ export class Battle {
     this.hero = {
       x: 0, z: 0, face: Math.PI, vx: 0, vz: 0, hp: Math.max(1, Math.min(setup.stats.maxHp, setup.hp)), state: 'idle', t: 0,
       chain: 'chain', combo: 0, blow: null, struck: false, buffered: false, comboT: 0, heldT: 0, chargeT: 0, charged: false,
-      dashWin: 0, dashQueued: false, leapD: 0, air: 0, echo: null, phoenix: false, dodgeCd: 0, dodgeDir: 0, invuln: 0,
+      dashWin: 0, dashQueued: false, leapD: 0, air: 0, echo: null, phoenix: false, combatT: 0, solo: false, target: 0, perfect: false, dodgeCd: 0, dodgeDir: 0, invuln: 0,
       skillCd: [0, 0], skill: 0, skillTick: 0, skillHits: 0, potions: setup.potions, potionCd: 0, powers, shieldHits: 0,
       regen: 0, hidden: 0, critNext: 0, anim: this.cls.idle, animN: 0, animSpeed: 1, moving: 0,
     };
@@ -342,6 +378,7 @@ export class Battle {
     this.traps = [];
     this.drops = [];
     this.bossUp = null;
+    this.crates = this.layout.breakables.map((c, i) => ({ i, x: c.x, z: c.z, r: c.r, broken: false }));
     const h = this.hero;
     h.x = this.layout.hero.x; h.z = this.layout.hero.z; h.face = Math.PI; h.vx = h.vz = 0;
     this.setHeroState('idle');
@@ -465,8 +502,10 @@ export class Battle {
   }
 
   private hasteK(): number { return this.hero.powers.haste > 0 ? 1.3 : 1; }
-  /** Attack speed: haste and the Tempo card. */
-  private atkK(): number { return this.hasteK() * (this.has('tempo') ? 1.1 : 1); }
+  /** The weapon's feel (light, balanced, heavy, reach). */
+  get feel(): WeaponFeel { return WEAPON_FEEL[this.st.weapon ?? 'plain']; }
+  /** Attack speed: haste, the Tempo card and the weapon. */
+  private atkK(): number { return this.hasteK() * (this.has('tempo') ? 1.1 : 1) * this.feel.speed; }
 
   private updateHero(dt: number, inp: Input): void {
     const h = this.hero;
@@ -480,6 +519,8 @@ export class Battle {
     h.skillCd[0] = Math.max(0, h.skillCd[0] - dt);
     h.skillCd[1] = Math.max(0, h.skillCd[1] - dt);
     for (const p of POWER_IDS) if (h.powers[p] > 0) { h.powers[p] = Math.max(0, h.powers[p] - dt); if (p === 'shield' && h.powers[p] <= 0) h.shieldHits = 0; }
+    h.combatT = Math.max(0, h.combatT - dt);
+    this.engaged = this.inCombat();
     if (h.state === 'dead') { h.vx = h.vz = 0; h.air = 0; return; }
     // regeneration (power-up, the cleric's light, the Holy Aura card)
     const regen = (h.powers.regen > 0 ? 0.03 : 0) + (h.regen > 0 ? 0.03 : 0) + (this.has('aura') ? 0.01 : 0);
@@ -513,12 +554,17 @@ export class Battle {
       if (h.state === 'attack') h.buffered = true;
       else if (h.state === 'dodge') h.dashQueued = h.t > DODGE.time * 0.3;
       else if (h.state === 'idle' || h.state === 'run') {
-        // right after a roll: the dash strike; soon after a blow: the chain goes on; else a fresh chain
-        if (h.dashWin > 0) this.startBlow('dash', 0, mx, mz);
+        // in combat: right after a roll the dash strike; soon after a blow the chain goes on; else a
+        // fresh chain. Out of combat: one clean single swing.
+        if (!this.engaged) this.startBlow('chain', 0, mx, mz, true);
+        else if (h.dashWin > 0) this.startBlow('dash', 0, mx, mz);
         else if (h.combo > 0 && h.comboT < 0.38) this.nextBlow(h.combo, inp, mx, mz);
         else this.startBlow('chain', 0, mx, mz);
       }
     }
+    // the soft target: the foe an attack would turn to (the view rings it)
+    const tg = this.engaged && h.state !== 'dodge' ? this.aimTarget(this.cls.ranged ? ENGAGE_RANGED : 3.4, mx, mz) : null;
+    h.target = tg ? tg.id : 0;
 
     switch (h.state) {
       case 'idle':
@@ -557,7 +603,9 @@ export class Battle {
           h.vz = Math.cos(h.face) * lunge + mz * speed * 0.22;
         }
         if (!h.struck && h.t >= b.hit / k) { h.struck = true; h.air = 0; this.strike(b); }
-        if (h.t >= b.dur / k) this.nextBlow(h.combo + 1, inp, mx, mz);
+        // a single swing out of combat recovers quickly (unless a foe came close: then the chain goes on)
+        const end = h.solo && !this.engaged ? (b.hit + (b.dur - b.hit) * SOLO_RECOVERY) / k : b.dur / k;
+        if (h.t >= end) this.nextBlow(h.combo + 1, inp, mx, mz);
         break;
       }
       case 'charge': {
@@ -577,8 +625,8 @@ export class Battle {
         h.vx = Math.sin(h.dodgeDir) * v; h.vz = Math.cos(h.dodgeDir) * v;
         if (h.t >= DODGE.time) {
           this.setHeroState('idle'); h.vx = h.vz = 0;
-          h.dashWin = DASH_WINDOW + (this.has('wind') ? 0.3 : 0);
-          if (h.dashQueued) { h.dashQueued = false; this.startBlow('dash', 0, mx, mz); }
+          h.dashWin = DASH_WINDOW + (this.has('wind') ? 0.3 : 0) + (h.perfect ? 0.3 : 0);
+          if (h.dashQueued) { h.dashQueued = false; this.startBlow('dash', 0, mx, mz, !this.engaged); }
         }
         break;
       }
@@ -602,7 +650,51 @@ export class Battle {
       const ddx = x - c.x, ddz = z - c.z, d = Math.hypot(ddx, ddz), min = c.r + r;
       if (d < min && d > 1e-4) { x = c.x + (ddx / d) * min; z = c.z + (ddz / d) * min; }
     }
+    for (const c of this.crates) {
+      if (c.broken) continue;
+      const ddx = x - c.x, ddz = z - c.z, d = Math.hypot(ddx, ddz), min = c.r + r;
+      if (d < min && d > 1e-4) { x = c.x + (ddx / d) * min; z = c.z + (ddz / d) * min; }
+    }
     o.x = x; o.z = z;
+  }
+
+  /**
+   * In combat: a hostile foe within reach (melee classes ENGAGE, ranged their aim), a foe winding up
+   * or striking at the hero, a boss on its feet, or a blow dealt or taken in the last COMBAT_LINGER s.
+   */
+  inCombat(): boolean {
+    const h = this.hero;
+    if (h.combatT > 0) return true;
+    if (this.bossUp && this.bossUp.state !== 'dead' && this.bossUp.state !== 'spawn') return true;
+    const reach = this.cls.ranged ? ENGAGE_RANGED : ENGAGE;
+    for (const f of this.foes) {
+      if (f.state === 'dead' || f.state === 'spawn') continue;
+      if (f.state === 'wind' || f.state === 'act') return true;
+      if (Math.hypot(f.x - h.x, f.z - h.z) - f.radius < reach) return true;
+    }
+    return false;
+  }
+
+  /** Breaks the loose crates a blow's shape reaches: splinters, gold, now and then a potion. */
+  private smash(test: (x: number, z: number, r: number) => boolean): void {
+    for (const c of this.crates) {
+      if (c.broken || !test(c.x, c.z, c.r)) continue;
+      c.broken = true;
+      this.emit({ type: 'smash', i: c.i, x: c.x, z: c.z });
+      const coins = 1 + Math.floor(this.rng() * 2);
+      for (let k = 0; k < coins; k++) this.dropAt('gold', c.x, c.z, Math.max(1, Math.round((1 + this.level * 0.6) * this.tune.gold)), null);
+      if (this.rng() < 0.1) this.dropAt('potion', c.x, c.z, 1, null);
+    }
+  }
+
+  /** A roll carried the hero through a blow inside its i-frames: once per roll. */
+  private perfectDodge(): void {
+    const h = this.hero;
+    if (h.state !== 'dodge' || h.perfect) return;
+    h.perfect = true;
+    h.critNext = Math.max(h.critNext, 1);
+    this.perfects++;
+    this.emit({ type: 'perfect', x: h.x, z: h.z });
   }
 
   /** The foe the hero should turn to: in reach, ahead of where they look or steer. */
@@ -627,6 +719,15 @@ export class Battle {
   private nextBlow(next: number, inp: Input, mx: number, mz: number): void {
     const h = this.hero;
     const list = this.list(h.chain);
+    if (!this.engaged) {
+      // out of combat: another press is another single swing; nothing chains or charges
+      const again = h.buffered || inp.attack;
+      if (again) { this.startBlow('chain', 0, mx, mz, true); return; }
+      h.combo = 0; h.comboT = 0; h.blow = null; h.solo = false;
+      this.setHeroState('idle');
+      return;
+    }
+    h.solo = false;
     const go = h.buffered || inp.held || inp.attack;
     if (go && next < list.length) {
       // the third blow of the chain with ATTACK held: the heavy finisher charges instead
@@ -654,10 +755,12 @@ export class Battle {
     this.emit({ type: 'charge', full: false, x: h.x, z: h.z });
   }
 
-  private startBlow(chain: ComboId, i: number, mx: number, mz: number): void {
+  private startBlow(chain: ComboId, i: number, mx: number, mz: number, solo = false): void {
     const h = this.hero;
+    if (solo) { chain = 'chain'; i = 0; }
     const list = this.list(chain);
     const b = list[i];
+    h.solo = solo;
     h.chain = chain;
     h.combo = i;
     h.blow = b;
@@ -670,13 +773,25 @@ export class Battle {
     const t = this.aimTarget(reach, mx, mz);
     if (t) h.face = faceOf(t.x - h.x, t.z - h.z);
     else if (Math.hypot(mx, mz) > 0.3) h.face = faceOf(mx, mz);
+    // out of combat a swing turns to a crate close in front (touch players connect)
+    if (!t && solo) {
+      let best: Crate | null = null, bs = Infinity;
+      for (const c of this.crates) {
+        if (c.broken) continue;
+        const d = Math.hypot(c.x - h.x, c.z - h.z) - c.r;
+        const a = Math.abs(angDiff(faceOf(c.x - h.x, c.z - h.z), h.face));
+        if (d > (this.cls.ranged ? 8 : 2.2) || a > 1.3) continue;
+        if (d + a * 2 < bs) { bs = d + a * 2; best = c; }
+      }
+      if (best) h.face = faceOf(best.x - h.x, best.z - h.z);
+    }
     if (b.leap) {
       // land just short of the target (never further than the leap)
       const d = t ? Math.hypot(t.x - h.x, t.z - h.z) - t.radius - 0.5 : b.leap;
       h.leapD = Math.max(0.8, Math.min(b.leap, d));
     }
     this.setHeroState('attack', b.anim, b.speed * this.atkK());
-    this.emit({ type: 'swing', blow: i, finisher: i === list.length - 1, chain, len: list.length, fx: b.fx, x: h.x, z: h.z, face: h.face });
+    this.emit({ type: 'swing', blow: i, finisher: !solo && i === list.length - 1, chain, len: solo ? 1 : list.length, fx: b.fx, x: h.x, z: h.z, face: h.face });
   }
 
   private rollDamage(mult: number, forceCrit = false): { dmg: number; crit: boolean } {
@@ -690,12 +805,12 @@ export class Battle {
   /** The blow lands: its shape (cone, all round, a lane), its shots or its rain, a finisher's extras. */
   private strike(b: Blow): void {
     const h = this.hero;
-    const fin = h.combo === this.list(h.chain).length - 1;
+    const fin = !h.solo && h.combo === this.list(h.chain).length - 1;
     const m: Mods = fin ? this.finMods(h.chain) : {};
-    const mult = b.dmg * (m.dmg ?? 1) * (fin && this.has('finale') ? 1.25 : 1);
+    const mult = b.dmg * (m.dmg ?? 1) * (fin && this.has('finale') ? 1.25 : 1) * this.feel.dmg;
     const wide = m.wide ?? 1;
     const o: HitOpts = {
-      stun: (b.stun ?? 0) + (m.stun ?? 0), freeze: b.freeze, lift: b.lift ?? m.lift, breaks: b.breaks || m.breaks, crit: b.crit,
+      stun: (b.stun ?? 0) + (m.stun ?? 0), freeze: b.freeze, lift: b.lift ?? m.lift, breaks: b.breaks || m.breaks || (fin && this.feel.breaks), crit: b.crit,
       burn: Math.max(m.burn ?? 0, fin && this.has('ember') ? 3 : 0), execute: m.execute, root: m.root,
     };
     if (fin) { if (!this.finishers.includes(h.chain)) this.finishers.push(h.chain); }
@@ -760,10 +875,22 @@ export class Battle {
   }
 
   /** A blow's own shape at a spot: all round, a lane ahead or a cone; returns the foes hit. */
-  private hitShape(b: Blow, mult: number, x: number, z: number, face: number, wide: number, o: HitOpts, src: string): number {
+  private hitShape(b: Blow, mult: number, x: number, z: number, face: number, wide0: number, o: HitOpts, src: string): number {
+    // the weapon's reach and cone (melee blows of the hero; an echo uses the same)
+    const wide = wide0 * this.feel.reach;
+    const arcK = this.feel.arc;
+    if (this.crates.length) {
+      const range = b.range * wide, ux = Math.sin(face), uz = Math.cos(face);
+      this.smash((cx, cz, r) => {
+        const dx = cx - x, dz = cz - z, d = Math.hypot(dx, dz);
+        if (b.shape === 'circle') return d < range + r;
+        if (b.shape === 'line') { const along = dx * ux + dz * uz; return along > -0.4 && along < range + r && Math.abs(dx * uz - dz * ux) < (b.arc * wide) / 2 + r; }
+        return d < range + r && (d < r + 0.3 || Math.abs(angDiff(faceOf(dx, dz), face)) < (b.arc * arcK) / 2);
+      });
+    }
     if (b.shape === 'circle') return this.circleHit(x, z, b.range * wide, mult, b.knock, src, o.stun ?? 0, undefined, o);
     if (b.shape === 'line') return this.lineHit(x, z, face, b.range * wide, b.arc * wide, mult, b.knock, src, o);
-    return this.coneHit(x, z, face, b.range * wide, b.arc, mult, b.knock, src, (o.stun ?? 0) || (b.knock >= 1.5 ? 0.35 : 0), o);
+    return this.coneHit(x, z, face, b.range * wide, Math.min(Math.PI * 2, b.arc * arcK), mult, b.knock, src, (o.stun ?? 0) || (b.knock >= 1.5 ? 0.35 : 0), o);
   }
 
   /** Draws the foes round a spot in towards it (Whirl, Tornado Kick). */
@@ -852,6 +979,7 @@ export class Battle {
       else if (f.hp - dmg < f.maxHp * o.execute) dmg = Math.max(dmg, f.hp);
     }
     f.hp -= dmg;
+    if (src !== 'burn') this.hero.combatT = COMBAT_LINGER;
     const heavy = knock >= 1.5 || crit;
     if (this.st.leech > 0 && src !== 'burn') this.hero.hp = Math.min(this.st.maxHp, this.hero.hp + dmg * this.st.leech);
     const kres = big ? 0.15 : FOE[f.kind].ai === 'slam' ? 0.4 : 1;
@@ -924,6 +1052,8 @@ export class Battle {
     h.charged = false;
     h.dashQueued = false;
     h.air = 0;
+    h.perfect = false;
+    h.solo = false;
     h.dodgeCd = DODGE.cd * (this.has('wind') ? 0.65 : 1) + DODGE.time;
     h.invuln = Math.max(h.invuln, DODGE.iframes);
     this.setHeroState('dodge', this.cls.dodgeAnim, this.cls.dodgeAnim === 'Roll' ? 2.4 : 2.2);
@@ -1183,6 +1313,7 @@ export class Battle {
       const out = Math.abs(s.x) > L.hx + 1 || Math.abs(s.z) > L.hz + 1 || L.colliders.some((c) => Math.hypot(c.x - s.x, c.z - s.z) < c.r * 0.8);
       if (out) s.life = Math.min(s.life, 0);
       if (s.side === 'hero') {
+        if (this.crates.length && s.life > 0) this.smash((cx, cz, r) => Math.hypot(cx - s.x, cz - s.z) < r + s.r);
         for (const f of this.foes) {
           if (s.life <= 0 && !out) break;
           if (f.state === 'dead' || f.state === 'spawn' || s.hit.includes(f.id)) continue;
@@ -1202,6 +1333,7 @@ export class Battle {
         }
       } else if (h.state !== 'dead' && Math.hypot(h.x - s.x, h.z - s.z) < 0.42 + s.r) {
         if (h.invuln <= 0) { this.hurtHero(s.dmg, faceOf(s.vx, s.vz), 0.6); s.life = 0; }
+        else this.perfectDodge();
       }
     }
     this.shots = this.shots.filter((s) => s.life > 0);
@@ -1243,6 +1375,7 @@ export class Battle {
       if (z.side === 'hero') {
         if (z.shape === 'line') this.emit({ type: 'boom', kind: z.kind, x: z.x + Math.sin(z.ang) * z.len * 0.5, z: z.z + Math.cos(z.ang) * z.len * 0.5, r: z.len * 0.5 });
         else this.emit({ type: 'boom', kind: z.kind, x: z.x, z: z.z, r: z.r });
+        if (this.crates.length && z.dmg > 0) this.smash((cx, cz, r) => this.inZone(z, cx, cz, r));
         for (const f of this.foes) {
           if (f.state === 'dead' || f.state === 'spawn') continue;
           if (!this.inZone(z, f.x, f.z, f.radius)) continue;
@@ -1252,7 +1385,10 @@ export class Battle {
         continue;
       }
       if (z.kind !== 'charge' && z.kind !== 'aim') this.emit({ type: 'boom', kind: z.kind, x: z.shape === 'line' ? z.x + Math.sin(z.ang) * z.len * 0.5 : z.x, z: z.shape === 'line' ? z.z + Math.cos(z.ang) * z.len * 0.5 : z.z, r: z.shape === 'ring' ? z.r : z.r });
-      if (z.dmg > 0 && h.state !== 'dead' && h.invuln <= 0 && this.inZone(z, h.x, h.z, 0.3)) this.hurtHero(z.dmg, faceOf(h.x - z.x, h.z - z.z), z.knock);
+      if (z.dmg > 0 && h.state !== 'dead' && this.inZone(z, h.x, h.z, 0.3)) {
+        if (h.invuln <= 0) this.hurtHero(z.dmg, faceOf(h.x - z.x, h.z - z.z), z.knock);
+        else this.perfectDodge();
+      }
     }
     this.zones = this.zones.filter((z) => !z.done || z.delay > -0.25);
   }
@@ -1262,6 +1398,7 @@ export class Battle {
     const h = this.hero;
     if (h.state === 'dead' || h.invuln > 0) return;
     if (h.shieldHits > 0) {
+      h.combatT = COMBAT_LINGER;
       h.shieldHits--;
       if (h.shieldHits <= 0) h.powers.shield = 0;
       h.invuln = 0.4;
@@ -1276,6 +1413,7 @@ export class Battle {
     d = Math.max(1, Math.round(d));
     h.hp -= d;
     this.damageTaken += d;
+    h.combatT = COMBAT_LINGER;
     h.invuln = 0.45;
     this.emit({ type: 'hurt', dmg: d, x: h.x, z: h.z });
     if (h.hp <= 0) {
@@ -1606,7 +1744,7 @@ export class Battle {
       const dur = f.ax / 13;
       if (f.t < dur) {
         this.moveCircle(f, Math.sin(f.aim) * 13 * dt, Math.cos(f.aim) * 13 * dt, f.radius);
-        if (f.step === 0 && Math.hypot(h.x - f.x, h.z - f.z) < f.radius + 0.5) { f.step = 1; this.hurtHero(f.dmg, f.aim, 1.2); }
+        if (f.step === 0 && Math.hypot(h.x - f.x, h.z - f.z) < f.radius + 0.5) { f.step = 1; if (h.invuln > 0) this.perfectDodge(); else this.hurtHero(f.dmg, f.aim, 1.2); }
         return;
       }
       this.foeAnim(f, 'Punch', 1.4, true);
@@ -1796,7 +1934,7 @@ export class Battle {
         if (f.state === 'wind') { if (f.t >= w * (f.atk === 'charge' ? 1.1 : 1)) { f.state = 'act'; f.t = 0; this.foeAnim(f, 'Run', 2.6, true); } break; }
         if (f.t < f.ax / sp) {
           this.moveCircle(f, Math.sin(f.aim) * sp * dt, Math.cos(f.aim) * sp * dt, f.radius);
-          if (f.step === 0 && Math.hypot(h.x - f.x, h.z - f.z) < f.radius + 0.6) { f.step = 1; this.hurtHero(f.dmg * 1.1, f.aim, 2); }
+          if (f.step === 0 && Math.hypot(h.x - f.x, h.z - f.z) < f.radius + 0.6) { f.step = 1; if (h.invuln > 0) this.perfectDodge(); else this.hurtHero(f.dmg * 1.1, f.aim, 2); }
         } else {
           if (f.atk === 'charge' && f.step < 2) { f.step = 2; this.foeZone(f, 'circle', f.x, f.z, 2.6, 0, 0, 0, 0.35, 0.9, 'slam', { knock: 1.6 }); this.foeAnim(f, 'Attack2', 1.6, true); }
           if (f.t > f.ax / sp + 0.45) done();

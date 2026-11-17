@@ -3,7 +3,8 @@
 // the map and hero buttons. Each is a 96 px texture shown at any size.
 import Phaser from 'phaser';
 import { bake } from '@core';
-import type { PowerId } from './defs';
+import type { PowerId, Item, ClassId } from './defs';
+import { weaponOf, weaponIcon } from './weapons';
 
 export const ICON = 96;
 export const icon = (name: string): string => 'hr-ic-' + name;
@@ -172,9 +173,12 @@ const ITEM_ART: Record<string, Painter> = {
 };
 
 /** The item icon of a slot / kind / class. */
-export function itemIcon(slot: string, kind: string | undefined, cls: string): string {
-  if (slot === 'armor') return icon('armor');
-  if (slot === 'trinket') return icon(kind ?? 'ring');
+/** An item's icon: a weapon shows its own model (rendered by import-weapons.mjs), the rest a painted icon. */
+export function itemIcon(it: Item, cls: ClassId): string {
+  if (it.slot === 'armor') return icon('armor');
+  if (it.slot === 'trinket') return icon(it.kind ?? 'ring');
+  const w = weaponOf(it, cls);
+  if (w.model) return weaponIcon(w.model);
   return icon(({ warrior: 'sword', rogue: 'daggers', ranger: 'bow', monk: 'wraps', cleric: 'staff', wizard: 'staff' } as Record<string, string>)[cls] ?? 'sword');
 }
 

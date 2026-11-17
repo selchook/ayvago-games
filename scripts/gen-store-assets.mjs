@@ -344,11 +344,12 @@ const CARD = {
       await sleep(1500);
     }`,
   },
-  // Hex Realm's card shows the troll fight in the Old Mine's cavern: the hero (a warrior, the
-  // default) mid-combo against Grukk the Mine Troll and his skeleton miners, with the red warning
-  // rings of a quake on the stone floor. The class choice and the training are skipped, nothing
-  // hurts the hero, the boss banners are cleared and the fight is slowed right down, so every
-  // candidate frame catches a swing.
+  // Hex Realm's card (landscape since 1.2, cover-fit) shows the troll fight in the Old Mine's
+  // cavern: the hero (a warrior, the default) with an epic weapon and a golden shield mid-combo
+  // against Grukk the Mine Troll and his skeleton miners, with the red warning rings of a quake on
+  // the stone floor. The class choice and the training are skipped, nothing hurts the hero, the
+  // boss banners are cleared and the fight is slowed right down, so every candidate frame catches
+  // a swing.
   'hex-realm': {
     stage: `async () => {
       const p = window.__ayvago.game.scene.getScene('Play');
@@ -357,6 +358,8 @@ const CARD = {
       p.quiet = true;
       p.god = true;
       p.camp.s.level = 9;
+      p.camp.s.gear.weapon = p.camp.makeItem('weapon', 9, 'epic');
+      p.camp.s.gear.armor = p.camp.makeItem('armor', 9, 'legendary');
       p.testRoom('mine', 2);
       p.testAuto(true);
       p.testStep(3.2);

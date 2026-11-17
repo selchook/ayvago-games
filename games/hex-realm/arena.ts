@@ -10,6 +10,8 @@
 //   docks             planks over the lake, crates and barrels, a ship moored
 //   court/hall/throne the dark castle: the courtyard with its towers, the pillared hall, the throne
 //   rift              a ruined platform for the endless rift
+// 1.2: the arenas are wider than deep (the game is landscape: the whole width shows), and a few
+// crates, barrels and small crates stand loose: any blow breaks them (gold, now and then a potion).
 import type { ArenaKind } from './defs';
 import { retroKey, hexKey, type Placed } from './keys';
 
@@ -27,7 +29,11 @@ export interface ArenaLayout {
   water: boolean;
   /** Torches / braziers: glow spots (x, y, z). */
   lights: [number, number, number][];
+  /** Loose crates and barrels a blow breaks (drawn apart from the merged arena). */
+  breakables: Breakable[];
 }
+
+export interface Breakable { key: string; x: number; z: number; rot: number; s: number; r: number }
 
 /** Retro pieces are scaled ×2 (a wall is two units high, about twice the hero). */
 const S = 2;
@@ -49,6 +55,7 @@ class Builder {
   hex: Placed[] = [];
   colliders: Collider[] = [];
   lights: [number, number, number][] = [];
+  breakables: Breakable[] = [];
   constructor(readonly hx: number, readonly hz: number, readonly r: () => number) {}
 
   piece(name: string, x: number, z: number, rot = 0, s = S, y = 0, sy?: number): void {
@@ -124,6 +131,21 @@ class Builder {
     }
   }
 
+  /** `n` loose crates and barrels a blow breaks, clear of the middle, the hero's start and other props. */
+  loose(n: number): void {
+    const list: [string, number, number][] = [['detail-barrel', 1.05, 0.42], ['detail-crate', 0.95, 0.45], ['detail-crate-small', 1.15, 0.38]];
+    let tries = 0;
+    while (n > 0 && tries++ < 200) {
+      const x = (this.r() * 2 - 1) * (this.hx - 1.4), z = (this.r() * 2 - 1) * (this.hz - 1.4);
+      if (Math.hypot(x, z) < 3.4 || Math.hypot(x, z - (this.hz - 3)) < 3.2) continue;
+      if (this.colliders.some((c) => Math.hypot(c.x - x, c.z - z) < c.r + 1.6)) continue;
+      if (this.breakables.some((c) => Math.hypot(c.x - x, c.z - z) < 2.2)) continue;
+      const [name, sc, rad] = list[Math.floor(this.r() * list.length)];
+      this.breakables.push({ key: retroKey(name), x, z, rot: this.r() * Math.PI * 2, s: S * sc, r: rad });
+      n--;
+    }
+  }
+
   /** Pines (the Hexagon Kit's tree, scaled up) scattered inside, each a collider. */
   trees(n: number): void {
     let tries = 0;
@@ -154,15 +176,18 @@ class Builder {
 /** Where foes come in: along the far side and down the flanks. */
 function spawnPoints(hx: number, hz: number): { x: number; z: number }[] {
   const out: { x: number; z: number }[] = [];
-  for (let i = 0; i < 5; i++) out.push({ x: -hx + 1.2 + ((hx * 2 - 2.4) * i) / 4, z: -hz + 1.4 });
-  for (const s of [-1, 1]) for (let j = 0; j < 3; j++) out.push({ x: s * (hx - 1.2), z: -hz + 4 + j * 3.2 });
+  for (let i = 0; i < 6; i++) out.push({ x: -hx + 1.4 + ((hx * 2 - 2.8) * i) / 5, z: -hz + 1.4 });
+  for (const s of [-1, 1]) for (let j = 0; j < 3; j++) out.push({ x: s * (hx - 1.2), z: -hz + 3.6 + j * 3.0 });
   return out;
 }
 
 export function buildArena(kind: ArenaKind, seed: number): ArenaLayout {
   const r = rng(seed * 7919 + kind.length * 31);
   const big = kind === 'cavern' || kind === 'spire' || kind === 'throne';
-  const hx = big ? 8.5 : 7.5, hz = big ? 11 : 10.5;
+  // landscape: wider than deep (1.1's portrait arenas were 15 × 21)
+  const hx = big ? 12 : 11, hz = big ? 8.5 : 7.5;
+  /** Pieces along a side: the half-count of two-unit steps. */
+  const nx = Math.ceil(hx / S), nz = Math.ceil(hz / S);
   const b = new Builder(hx, hz, r);
   let water = false;
   switch (kind) {
@@ -171,14 +196,16 @@ export function buildArena(kind: ArenaKind, seed: number): ArenaLayout {
       b.hexFloor('grass', kind === 'forest' ? ['grass-forest', 'grass-forest', 'grass-hill'] : ['grass-forest', 'grass-hill', 'stone-rocks', 'grass']);
       b.walls('fence-wood', null, null, { inset: 0.2 });
       b.trees(kind === 'forest' ? 7 : 3);
-      if (kind === 'field') b.scatter([['detail-barrel', 1.1, 0.35], ['bricks', 1.1, 0.4], ['detail-crate', 1.0, 0.4]], 3);
+      if (kind === 'field') b.scatter([['bricks', 1.1, 0.4], ['detail-crate', 1.0, 0.4]], 2);
+      b.loose(kind === 'field' ? 3 : 2);
       break;
     }
     case 'farm': {
       b.hexFloor('grass', ['building-farm', 'grass', 'building-sheep', 'grass-forest', 'building-mill']);
       b.walls('fence-wood', 'fence-wood', null, { inset: 0.2 });
-      b.scatter([['detail-crate', 1.1, 0.4], ['barrels', 1.0, 0.45], ['detail-crate-ropes', 1.1, 0.4], ['detail-barrel', 1.1, 0.35]], 6);
+      b.scatter([['detail-crate', 1.1, 0.4], ['barrels', 1.0, 0.45], ['detail-crate-ropes', 1.1, 0.4]], 5);
       b.edges([['detail-crate-small', 1.2], ['detail-barrel', 1.1]], 5);
+      b.loose(4);
       break;
     }
     case 'mine':
@@ -187,13 +214,15 @@ export function buildArena(kind: ArenaKind, seed: number): ArenaLayout {
       if (kind === 'mine') {
         b.walls('wall-detail', 'wall', null);
         b.walls('wall', null, null);
-        for (const s of [-1, 1]) for (const z of [-6, 0, 6]) { b.piece('column-wood', s * 3.6, z, 0, S * 0.8); b.block(s * 3.6, z, 0.4); }
+        for (const x of [-6.6, 6.6]) for (const z of [-3.4, 2.4]) { b.piece('column-wood', x, z, 0, S * 0.8); b.block(x, z, 0.4); }
         b.edges([['detail-crate-ropes', 1.1], ['pulley-crate', 1.0], ['ladder', 1.0], ['barrels', 1.0]], 6);
-        b.scatter([['detail-crate', 1.1, 0.4], ['bricks', 1.3, 0.45]], 3);
+        b.scatter([['detail-crate', 1.1, 0.4], ['bricks', 1.3, 0.45]], 2);
+        b.loose(3);
       } else {
         b.hexFloor('stone', ['stone-mountain', 'stone-hill', 'stone-rocks', 'stone-mountain'], 4);
         b.scatter([['bricks', 1.8, 0.65]], 4, { clear: 4.5 });
         b.edges([['detail-crate-ropes', 1.1], ['barrels', 1.0], ['column-wood', 1.2]], 5);
+        b.loose(2);
       }
       for (const [x, z] of [[-hx + 0.8, -hz + 1], [hx - 0.8, -hz + 1], [-hx + 0.8, 0], [hx - 0.8, 0]] as [number, number][]) b.lights.push([x, 1.6, z]);
       break;
@@ -203,42 +232,46 @@ export function buildArena(kind: ArenaKind, seed: number): ArenaLayout {
       b.walls('wall-fortified', 'wall-fortified-window', null, { gateBack: 'wall-fortified-gate' });
       b.towers('tower-base', false);
       b.scatter([['column-damaged', 1.1, 0.4], ['bricks', 1.3, 0.45], ['column', 1.1, 0.4]], 7);
+      b.loose(2);
       break;
     }
     case 'tower': {
       b.floor('wood-floor', 0, -0.26);
       b.walls('wall-paint-window', 'wall-paint', null);
-      for (const s of [-1, 1]) for (const z of [-5, 1]) { b.piece('column-paint', s * 4, z, 0, S * 1.2); b.block(s * 4, z, 0.45); }
+      for (const s of [-1, 1]) for (const x of [4, 7.5]) { b.piece('column-paint', s * x, -2.6, 0, S * 1.2); b.block(s * x, -2.6, 0.45); }
       b.edges([['barrels', 1.0], ['detail-crate-small', 1.2]], 4);
+      b.loose(2);
       for (const [x, z] of [[-4, -hz + 0.8], [4, -hz + 0.8]] as [number, number][]) b.lights.push([x, 1.8, z]);
       break;
     }
     case 'spire': {
       b.hexFloor('stone', [], 1);
-      for (let i = -4; i <= 4; i++) {
+      for (let i = -nx; i <= nx; i++) {
         b.piece('battlement', i * S, -hz - 1.6, 0);
         b.piece('battlement', i * S, hz + 1.6, Math.PI);
       }
-      for (let j = -5; j <= 5; j++) { b.piece('battlement', -hx - 1.6, j * S, Math.PI / 2); b.piece('battlement', hx + 1.6, j * S, -Math.PI / 2); }
-      for (const [x, z] of [[-4.5, -5], [4.5, -5], [-4.5, 4], [4.5, 4]] as [number, number][]) { b.piece('column-paint', x, z, 0, S * 0.8); b.block(x, z, 0.4); b.lights.push([x, 1.9, z]); }
+      for (let j = -nz; j <= nz; j++) { b.piece('battlement', -hx - 1.6, j * S, Math.PI / 2); b.piece('battlement', hx + 1.6, j * S, -Math.PI / 2); }
+      for (const [x, z] of [[-6.5, -3.6], [6.5, -3.6], [-6.5, 3.4], [6.5, 3.4]] as [number, number][]) { b.piece('column-paint', x, z, 0, S * 0.8); b.block(x, z, 0.4); b.lights.push([x, 1.9, z]); }
       break;
     }
     case 'docks': {
       water = true;
       b.floor('wood-floor', 0, -0.25);
-      for (let i = -3; i <= 3; i++) { b.piece('dock-side', i * S, -hz - 1, 0); }
-      for (let j = -5; j <= 5; j++) { b.piece('wood-floor-railing', -hx - 1, j * S, Math.PI / 2); b.piece('wood-floor-railing', hx + 1, j * S, -Math.PI / 2); }
-      b.scatter([['detail-crate', 1.1, 0.4], ['barrels', 1.0, 0.45], ['detail-crate-ropes', 1.1, 0.4], ['pulley-crate', 0.9, 0.4]], 6);
+      for (let i = -nx; i <= nx; i++) { b.piece('dock-side', i * S, -hz - 1, 0); }
+      for (let j = -nz; j <= nz; j++) { b.piece('wood-floor-railing', -hx - 1, j * S, Math.PI / 2); b.piece('wood-floor-railing', hx + 1, j * S, -Math.PI / 2); }
+      b.scatter([['barrels', 1.0, 0.45], ['detail-crate-ropes', 1.1, 0.4], ['pulley-crate', 0.9, 0.4]], 5);
       b.edges([['detail-barrel', 1.1], ['detail-crate-small', 1.2]], 5);
+      b.loose(4);
       b.tile('unit-ship', -hx - 5, -3, 0.4, 6, -1.2);
-      b.tile('unit-ship', hx + 6, -8, 2.6, 5, -1.2);
+      b.tile('unit-ship', hx + 6, -6, 2.6, 5, -1.2);
       break;
     }
     case 'court': {
       b.hexFloor('stone', ['stone-hill', 'stone', 'stone-rocks'], 2);
       b.walls('wall-fortified-paint', 'wall-fortified-paint', null, { gateBack: 'wall-fortified-paint-gate' });
       b.towers('tower-paint-base');
-      b.scatter([['column-damaged', 1.1, 0.4], ['detail-barrel', 1.1, 0.35], ['bricks', 1.2, 0.4]], 5);
+      b.scatter([['column-damaged', 1.1, 0.4], ['bricks', 1.2, 0.4]], 5);
+      b.loose(2);
       for (const [x, z] of [[-hx + 0.8, -hz + 0.8], [hx - 0.8, -hz + 0.8]] as [number, number][]) b.lights.push([x, 2.0, z]);
       break;
     }
@@ -246,20 +279,23 @@ export function buildArena(kind: ArenaKind, seed: number): ArenaLayout {
     case 'throne': {
       b.hexFloor('stone', ['stone-mountain', 'stone-hill'], 2);
       b.walls('wall-paint-window', 'wall-paint', null);
-      const zs = kind === 'hall' ? [-7, -2, 3] : [-8, -3, 2];
-      for (const s of [-1, 1]) for (const z of zs) { b.piece('column-paint', s * (hx - 2.5), z, 0, S * 1.3); b.block(s * (hx - 2.5), z, 0.45); b.lights.push([s * (hx - 2.5), 2.2, z + 0.6]); }
+      // two rows of pillars across the hall (the long side runs left to right)
+      const xs = kind === 'hall' ? [3.4, 8] : [4, 8.8];
+      const zs = kind === 'hall' ? [-3.6, 2.8] : [-4.4, 3];
+      for (const s of [-1, 1]) for (const x of xs) for (const z of zs) { b.piece('column-paint', s * x, z, 0, S * 1.3); b.block(s * x, z, 0.45); if (x === xs[1]) b.lights.push([s * x, 2.2, z + 0.6]); }
+      if (kind === 'hall') b.loose(2);
       if (kind === 'throne') { b.piece('stairs-stone', 0, -hz - 0.4, Math.PI / 2, S * 0.9, 0, S * 0.4); }
       break;
     }
     case 'rift': {
       b.hexFloor('stone', ['stone-mountain', 'stone-rocks', 'stone-hill'], 3);
       b.scatter([['column-damaged', 1.1, 0.4], ['bricks', 1.3, 0.45], ['column', 1.2, 0.4]], 6);
-      for (let i = -4; i <= 4; i++) b.piece('battlement', i * S, -hz - 1.6, 0);
+      for (let i = -nx; i <= nx; i++) b.piece('battlement', i * S, -hz - 1.6, 0);
       break;
     }
   }
   return {
     kind, hx, hz, retro: b.retro, hex: b.hex, colliders: b.colliders, spawns: spawnPoints(hx, hz),
-    hero: { x: 0, z: hz - 3 }, shrine: { x: (r() < 0.5 ? -1 : 1) * (hx - 2.6), z: -1 + r() * 3 }, water, lights: b.lights,
+    hero: { x: 0, z: hz - 3 }, shrine: { x: (r() < 0.5 ? -1 : 1) * (hx - 2.6), z: -1 + r() * 3 }, water, lights: b.lights, breakables: b.breakables,
   };
 }

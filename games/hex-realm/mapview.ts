@@ -87,15 +87,20 @@ export class MapView {
         if (f) list.push({ key: hexKey(f[0]), x: h.x, y: 0.2, z: h.z, rot: f[1] * (Math.PI / 3), s: 1, hex: i });
       }
     }
-    // a ring of mountains, forest and sea beyond the map's edge
+    // a land of mountains, forest and sea beyond the map's edge (wide: the landscape view sees past
+    // the realm's sides)
     const ring: Placed[] = [];
-    for (let r = -2; r < ROWS + 2; r++) {
-      for (let c = -1; c < COLS + 1; c++) {
+    for (let r = -3; r < ROWS + 3; r++) {
+      for (let c = -7; c < COLS + 7; c++) {
         if (c >= 0 && c < COLS && r >= 0 && r < ROWS) continue;
         const x = c + (((r % 2) + 2) % 2 ? 0.5 : 0) - (COLS - 1) / 2 - 0.25, z = (r - (ROWS - 1) / 2) * (Math.sqrt(3) / 2);
         const near = Math.max(-c - 1, c - COLS, -r - 1, r - ROWS);
-        const t = r < 0 ? 'stone-mountain' : r >= ROWS ? (c < 4 ? 'water' : 'grass-forest') : c < 0 ? (r > 12 ? 'water' : r < 5 ? 'stone-mountain' : 'grass-forest') : r > 4 && r < 12 ? 'water' : r <= 4 ? 'stone-mountain' : 'grass-forest';
-        ring.push({ key: hexKey(near > 0 && t === 'grass-forest' ? 'grass-hill' : t), x, y: 0, z, rot: ((c * 5 + r * 3 + 60) % 6) * (Math.PI / 3), s: 1, hex: N });
+        const k = (c * 7 + r * 13 + 400) % 5;
+        let t = r < 0 ? 'stone-mountain' : r >= ROWS ? (c < 4 ? 'water' : 'grass-forest') : c < 0 ? (r > 12 ? 'water' : r < 5 ? 'stone-mountain' : 'grass-forest') : r > 4 && r < 12 ? 'water' : r <= 4 ? 'stone-mountain' : 'grass-forest';
+        if (near > 0 && t === 'grass-forest') t = k < 2 ? 'grass-hill' : k < 4 ? 'grass-forest' : 'grass';
+        else if (near > 0 && t === 'stone-mountain') t = k < 2 ? 'stone-mountain' : k < 4 ? 'stone-hill' : 'stone-rocks';
+        else if (near > 1 && t === 'water' && k === 0) t = 'water-island';
+        ring.push({ key: hexKey(t), x, y: 0, z, rot: ((c * 5 + r * 3 + 60) % 6) * (Math.PI / 3), s: 1, hex: N });
       }
     }
     const geo = mergeModels([...list, ...ring], { hex: true });

@@ -8,6 +8,7 @@
 //   - Powers (powers.ts): the Shrine's ranks of every skill and finisher (gold and Sigils, kept),
 //     and the power cards of the journey (dealt after won chapters, camps and level-ups, cleared
 //     when the session ends).
+import { weaponOf, FAMILY, SHIELD_BY_RARITY, type WeaponType, type WeaponModel } from './weapons';
 import {
   CLASS, TUNING, QUEST, QUEST_IDS, DUNGEON, PLACE_LEVEL, CYCLE_LEVELS, RENOWN, FOE, TALENT_IDS, TALENT_MAX, SLOTS, TRINKETS,
   TRINKET_STAT, RARITY_MULT, RARITY_AFFIXES, STAT_CAP, MAX_UP, UP_BONUS, MAX_LEVEL,
@@ -210,6 +211,7 @@ export class Campaign {
       potion: t.potion,
       ranks: classRanks(s.cls, s.ranks),
       cards: [...s.cards],
+      ...gearLook(s.cls, s.gear.weapon, s.gear.armor),
     };
   }
 
@@ -657,6 +659,12 @@ export class Campaign {
 const round1 = (v: number): number => Math.round(v * 10) / 10;
 
 /** An item's stats with its smithy levels. */
+/** The weapon's kind and model in hand, and the warrior's shield (by the armour's rarity). */
+export function gearLook(cls: ClassId, weapon: Item | null | undefined, armor: Item | null | undefined): { weapon: WeaponType; weaponModel: WeaponModel | null; shield: WeaponModel | null } {
+  const w = weapon ? weaponOf(weapon, cls) : FAMILY[cls][0];
+  return { weapon: w.type, weaponModel: w.model, shield: cls === 'warrior' ? SHIELD_BY_RARITY[armor?.rarity ?? 'common'] : null };
+}
+
 export function itemStats(it: Item): Partial<Record<Stat, number>> {
   const k = 1 + it.up * UP_BONUS;
   const out: Partial<Record<Stat, number>> = {};

@@ -6,13 +6,18 @@
 // own trail and impact (slash arcs, a spin, a cleave's shockwave lane, a thrust's streak, a launcher's
 // sparks, a plunge's landing ring, a lance, rains and meteors), the hero leaps and spins with its own
 // clips and launched foes fly.
+// 1.2: the loose crates (one merged mesh, rebuilt as they break), a ring under the soft target, the
+// heavy charge as a filling gold ring on the ground and a glow on the weapon hand (no pips over the
+// head), the perfect dodge, and the foes' states shown on them (burning embers, stun stars, roots).
 import { THREE } from '@core/three';
-import { FOE, CLASS, POWER_COLOR, type FoeKind, type ArenaKind, type ClassId, type ComboId } from './defs';
+import { FOE, CLASS, POWER_COLOR, CHARGE_T, type FoeKind, type ArenaKind, type ClassId, type ComboId } from './defs';
 import { buildArena, type ArenaLayout } from './arena';
 import type { Battle, BattleEvent, Foe } from './battle';
 import { Figure, FigurePool } from './figure';
 import { heroKey, modelKey, mergeModels, retroAtlas, retroMaterial, hexMap, hexMaterial, RETRO_CELLS, soloGeometry, retroKey } from './kit';
 import { Billboards, Particles, Telegraphs, HealthBars, TEX, SHAPE, stepBar, type BarState } from './fx3d';
+import { WeaponRack } from './weaponview';
+import { FOE_GEAR, type WeaponModel } from './weapons';
 
 /** Model sizes: the RPG heroes are 2.9 units tall, the pirate skeletons 1.5. */
 export const HERO_SCALE = 0.4;
@@ -35,11 +40,12 @@ export const ARENA_LOOK: Record<ArenaKind, { sky: number; fog: number; ground: n
   rift: { sky: 0x160a24, fog: 0x24103a, ground: 0x1a1028, sun: 1.3, amb: 1.4, hemi: [0xd8c8ff, 0x281838], floor: 0x76688a },
 };
 
-interface ArenaBuilt { group: THREE.Group; layout: ArenaLayout; water: THREE.Mesh | null; shrine: THREE.Mesh }
+interface ArenaBuilt { group: THREE.Group; layout: ArenaLayout; water: THREE.Mesh | null; shrine: THREE.Mesh; crates: THREE.Mesh | null; mask: string }
 
 export interface FoeView { fig: Figure; pool: FigurePool; bar: BarState; animN: number; spawnT: number }
 
 const tmpV = new THREE.Vector3();
+const tmpW = new THREE.Vector3();
 
 export class BattleView {
   readonly root = new THREE.Group();
@@ -69,6 +75,10 @@ export class BattleView {
   readonly marks: Billboards;
   readonly tele: Telegraphs;
   readonly bars: HealthBars;
+  /** 1.2: every weapon in sight, one draw call. */
+  readonly rack: WeaponRack;
+  /** 1.2: the spoils lying on the ground after a won fight (a weapon's model, a shield, an orb), with a beam of their rarity. */
+  private loot: { model: WeaponModel | null; color: number; x: number; z: number; vx: number; vz: number; t: number; spin: number }[] = [];
   private fx: { kind: string; x: number; z: number; r: number; t: number; max: number; color: number; ang: number; len?: number }[] = [];
   private time = 0;
   shakeT = 0;
@@ -96,6 +106,7 @@ export class BattleView {
     this.marks = new Billboards(this.root, TEX.splat(), 40, { blend: 'normal', flat: true, order: 3, fade: true });
     this.tele = new Telegraphs(this.root, 64);
     this.bars = new HealthBars(this.root, 40);
+    this.rack = new WeaponRack(this.root);
     // every foe look, one figure each ahead (so the shaders and the first spawns are ready)
     for (const m of ['rogue', 'ranger', 'skeleton', 'headless', 'monk', 'cleric', 'warrior', 'wizard']) this.pool(modelKey(m), modelScale(m), menu ? 1 : 2);
   }
@@ -160,6 +171,13 @@ export class BattleView {
         water.position.y = -0.5;
         group.add(water);
       }
+      // the loose crates: one mesh of the ones still standing
+      let crates: THREE.Mesh | null = null;
+      if (layout.breakables.length) {
+        crates = new THREE.Mesh(this.crateGeometry(layout, ''), this.retroMat);
+        crates.castShadow = true; crates.receiveShadow = true;
+        group.add(crates);
+      }
       const shrine = new THREE.Mesh(soloGeometry(retroKey('column-paint'), { cells: RETRO_CELLS }), this.retroMat);
       shrine.scale.set(1.5, 0.75, 1.5);
       shrine.castShadow = true;
@@ -167,7 +185,7 @@ export class BattleView {
       group.add(shrine);
       group.visible = false;
       this.root.add(group);
-      a = { group, layout, water, shrine };
+      a = { group, layout, water, shrine, crates, mask: '' };
       this.arenas.set(key, a);
     }
     if (this.arena && this.arena !== a) this.arena.group.visible = false;
@@ -180,6 +198,25 @@ export class BattleView {
 
   get layout(): ArenaLayout | null { return this.arena?.layout ?? null; }
 
+  /** The merged geometry of the crates not broken (`mask`: '1' per broken one). */
+  private crateGeometry(layout: ArenaLayout, mask: string): THREE.BufferGeometry {
+    const list = layout.breakables.filter((_, i) => mask[i] !== '1').map((c) => ({ key: c.key, x: c.x, y: 0, z: c.z, rot: c.rot, s: c.s }));
+    return list.length ? mergeModels(list, { cells: RETRO_CELLS }) : new THREE.BufferGeometry();
+  }
+
+  /** Follows the battle's broken crates (rebuilds the mesh when one breaks). */
+  private syncCrates(b: Battle): void {
+    const a = this.arena;
+    if (!a?.crates || b.crates.length !== a.layout.breakables.length) return;
+    let mask = '';
+    for (const c of b.crates) mask += c.broken ? '1' : '0';
+    if (mask === a.mask) return;
+    a.mask = mask;
+    const old = a.crates.geometry;
+    a.crates.geometry = this.crateGeometry(a.layout, mask);
+    old.dispose();
+  }
+
   /** The arena shown now (to come back to after building another ahead). */
   current: { kind: ArenaKind; seed: number } | null = null;
 
@@ -190,7 +227,42 @@ export class BattleView {
     this.fx.length = 0;
     this.sparks.clear();
     this.dust.clear();
+    this.rack.clear();
+    this.loot.length = 0;
     this.heroAnimN = -1;
+  }
+
+  /** The spoils fall out round a spot, stand in their rarity's beam, then fly to the hero. */
+  dropLoot(items: { model: WeaponModel | null; color: number }[], x: number, z: number): void {
+    items.forEach((it, i) => {
+      const a = (i / Math.max(1, items.length)) * Math.PI * 2 + 0.6, v = 1.6 + (i % 2) * 0.6;
+      this.loot.push({ ...it, x, z, vx: Math.sin(a) * v, vz: Math.cos(a) * v, t: -i * 0.12, spin: a });
+    });
+  }
+
+  private syncLoot(b: Battle, dt: number): void {
+    const h = b.hero;
+    for (const l of this.loot) {
+      l.t += dt;
+      if (l.t < 0) continue;
+      let y = 0.35 + Math.sin(this.time * 3 + l.spin) * 0.06;
+      if (l.t < 0.55) { const k = l.t / 0.55; l.x += l.vx * dt; l.z += l.vz * dt; y = 0.2 + Math.sin(k * Math.PI) * 1.3; }
+      else if (l.t > 1.6) {
+        // drawn to the hero
+        const dx = h.x - l.x, dz = h.z - l.z, d = Math.hypot(dx, dz), v = Math.min(d, dt * (6 + (l.t - 1.6) * 18));
+        if (d < 0.4) { this.sparks.burst(l.x, 0.8, l.z, 14, 3, [l.color, 0xffffff], 0.45, 0.3, 1); l.t = -99; continue; }
+        l.x += (dx / d) * v; l.z += (dz / d) * v; y += Math.min(0.6, (l.t - 1.6) * 1.2);
+      }
+      l.spin += dt * 1.8;
+      // the beam of its rarity, a ring on the ground, the item itself
+      const beam = Math.min(1, l.t * 3) * (l.t > 1.6 ? 0.5 : 1);
+      this.glows.add(l.x, 1.7, l.z, 0.55, 3.4, 0, l.color, 0.55 * beam);
+      this.glows.add(l.x, 1.7, l.z, 0.2, 3.2, 0, 0xffffff, 0.5 * beam);
+      this.flats.add(l.x, 0.05, l.z, 1.4, 1.4, this.time * 2, l.color, 0.7 * beam);
+      if (l.model) this.rack.onGround(l.model, l.x, l.z, y, l.spin);
+      else { this.glows.add(l.x, y + 0.2, l.z, 0.8, 0.8, 0, l.color, 1); this.glows.add(l.x, y + 0.2, l.z, 0.3, 0.3, 0, 0xffffff, 1); }
+    }
+    this.loot = this.loot.filter((l) => l.t > -50);
   }
 
   /** Frees the arenas built so far (they are rebuilt when needed). */
@@ -353,6 +425,18 @@ export class BattleView {
         this.dust.burst(ev.x, 0.2, ev.z, ev.boss ? 24 : 8, 2, [0x4a3a5a, 0x2a2030], 0.8, 0.8, 0.5);
         break;
       }
+      case 'smash': {
+        // splinters, dust and a puff of straw
+        this.dust.burst(ev.x, 0.4, ev.z, 14, 2.4, [0x9a7a4a, 0x7a5a32, 0xc8a878], 0.6, 0.7, 1.2);
+        this.sparks.burst(ev.x, 0.6, ev.z, 10, 3.2, [0xd8b078, 0xffe0a0], 0.45, 0.22, 3);
+        fx('ring', ev.x, ev.z, 1.0, 0.25, 0xffe0a0);
+        break;
+      }
+      case 'perfect': {
+        fx('ring', ev.x, ev.z, 2.4, 0.45, 0x8ae8ff); fx('ring', ev.x, ev.z, 1.4, 0.35, 0xffffff); fx('flash', ev.x, ev.z, 1.6, 0.3, 0x8ae8ff);
+        this.sparks.burst(ev.x, 0.9, ev.z, 22, 4.5, [0x8ae8ff, 0xffffff, 0xc8f4ff], 0.5, 0.3, 1);
+        break;
+      }
       case 'trap': if (ev.sprung) { this.sparks.burst(ev.x, 0.3, ev.z, 16, 4, [0xd8b04a, 0xffffff], 0.4, 0.3); fx('ring', ev.x, ev.z, 2.2, 0.35, 0xd8b04a); } break;
       case 'freeze': break;
       case 'room': this.clear(); break;
@@ -367,6 +451,7 @@ export class BattleView {
 
   sync(b: Battle, dt: number, cam: THREE.PerspectiveCamera, camQ: THREE.Quaternion): void {
     this.time += dt;
+    this.rack.begin();
     const h = b.hero;
     // the hero
     const hf = this.hero;
@@ -386,8 +471,10 @@ export class BattleView {
     const spin = bl?.spin ? Math.min(1, h.t / (bl.dur / Math.max(0.1, h.animSpeed / bl.speed) * 0.8)) * Math.PI * 2 * bl.spin : 0;
     hf.root.rotation.y = whirl ? h.face + this.time * 16 : h.face + spin;
     // charging the heavy finisher: a pulsing ember glow, white when it is full
-    const charge = h.state === 'charge' ? (h.charged ? 0x5a4a30 : (0.5 + 0.5 * Math.sin(this.time * 18)) > 0.5 ? 0x3a1a04 : 0x200a00) : 0;
-    hf.setGlow(charge || (h.powers.rage > 0 ? 0x2a0400 : h.hidden > 0 ? 0x101828 : h.state === 'dodge' && b.cls.dodgeAnim === 'Run' ? 0x3a3418 : 0));
+    const charge = h.state === 'charge' ? (h.charged ? 0x3a2c14 : 0x1c0c02) : 0;
+    // i-frames: a cool sheen while the roll carries the hero through blows
+    const iframes = h.state === 'dodge' && h.invuln > 0 ? (b.cls.dodgeAnim === 'Run' ? 0x3a3418 : 0x0c2430) : 0;
+    hf.setGlow(charge || iframes || (h.powers.rage > 0 ? 0x2a0400 : h.hidden > 0 ? 0x101828 : 0));
     if (h.state === 'charge' && Math.random() < dt * 30) {
       // sparks drawn in towards the hero
       const a = Math.random() * Math.PI * 2, d = 1.4 + Math.random() * 0.6, col = trailColor(b.st.cls, 'heavy', true);
@@ -396,7 +483,11 @@ export class BattleView {
     hf.mat.transparent = h.hidden > 0;
     hf.mat.opacity = h.hidden > 0 ? 0.45 : 1;
     hf.update(dt);
+    // the weapon in hand (the equipped item's model) and the warrior's shield
+    if (b.st.weaponModel) this.rack.inHand(hf, b.st.cls, b.st.weaponModel); else hf.hideWeapon = false;
+    if (b.st.shield) this.rack.onArm(hf, b.st.shield);
     this.heroPos.set(h.x, 0.9, h.z);
+    this.syncCrates(b);
     // the foes
     const live = new Set<number>();
     for (const f of b.foes) {
@@ -417,8 +508,11 @@ export class BattleView {
     // the camera follows the hero, a little ahead
     const L = this.layout;
     const look = 1;
-    const tx = L ? Math.max(-L.hx + 3.2, Math.min(L.hx - 3.2, h.x)) : h.x;
-    const tz = h.z - 1.2 - this.lookAhead;
+    // landscape: the camera keeps near the arena's middle sideways (the wide view shows the rest) and
+    // holds the hero a little above the screen's middle, clear of the thumbs
+    const cx = L ? Math.max(0, L.hx - 6.5) : 99;
+    const tx = Math.max(-cx, Math.min(cx, h.x));
+    const tz = h.z + 0.4 - this.lookAhead;
     const want = tmpV.set(tx, 10.6 * look * this.camDist, tz + 7.4 * look * this.camDist);
     if (this.camPos.lengthSq() === 0) this.camPos.copy(want); else this.camPos.lerp(want, Math.min(1, dt * 6));
     this.shakeT = Math.max(0, this.shakeT - dt);
@@ -455,6 +549,10 @@ export class BattleView {
     // animation LOD: far or off screen updates less often
     const dist = cam.position.distanceTo(fig.root.position);
     fig.update(f.freeze > 0 ? 0 : dt, dist > 22 ? 3 : dist > 15 ? 2 : 1);
+    // the foe's own weapon and shield (hero models only; the skeletons keep theirs)
+    const gear = d.model !== 'skeleton' && d.model !== 'headless' ? FOE_GEAR[f.kind] : undefined;
+    if (gear?.hand && fig.root.visible) this.rack.inHand(fig, d.model, gear.hand); else fig.hideWeapon = false;
+    if (gear?.shield && fig.root.visible && f.state !== 'dead') this.rack.onArm(fig, gear.shield);
   }
 
   private syncFx(b: Battle, dt: number, camQ: THREE.Quaternion): void {
@@ -488,6 +586,34 @@ export class BattleView {
         this.glows.add(z.x, 9 * (1 - k) + 0.4, z.z, 1.2, 1.2, 0, z.kind === 'meteor' ? 0xff7a2a : 0xc8a888, 0.9);
       }
     }
+    // the heavy finisher's charge: a gold ring filling on the ground, the weapon hand glowing
+    if (h.state === 'charge') {
+      const need = CHARGE_T * (b.has('quick') ? 0.5 : 1);
+      const k = Math.min(1, h.chargeT / need);
+      this.tele.add(SHAPE.ring, h.x, h.z, 1.25, 0, 0, 0, 0.72, k, h.charged ? 0xfff0c0 : 0xffb04a, h.charged ? 0.5 + 0.5 * Math.sin(this.time * 20) : 0);
+      const hand = this.hero.bones.get('WeaponR') ?? this.hero.bones.get('FistR');
+      if (hand) {
+        hand.getWorldPosition(tmpW);
+        const col = h.charged ? 0xfff0c0 : trailColor(b.st.cls, 'heavy', true);
+        const sz = (h.charged ? 0.9 : 0.45 + k * 0.35) * (1 + Math.sin(this.time * 22) * 0.08);
+        this.glows.add(tmpW.x, tmpW.y, tmpW.z, sz, sz, 0, col, h.charged ? 1 : 0.75);
+      }
+    }
+    // the soft target: a ring under the foe an attack would turn to
+    if (h.target && h.state !== 'dead') {
+      const f = b.foes.find((o) => o.id === h.target);
+      if (f && f.state !== 'dead') { const r = f.radius * 2.7 + 0.3; this.flats.add(f.x, 0.06, f.z, r, r, this.time * 1.5, 0xfff2cc, 0.55); }
+    }
+    // the foes' states: burning embers, stun stars over the head, roots at the feet
+    for (const f of b.foes) {
+      if (f.state === 'dead' || f.state === 'spawn') continue;
+      if (f.burn > 0 && Math.random() < dt * 14) this.sparks.emit(f.x + (Math.random() - 0.5) * f.radius * 1.6, 0.3 + Math.random() * 0.9, f.z + (Math.random() - 0.5) * f.radius * 1.6, 0, 1.2, 0, 0.5, 0.2, 0.04, Math.random() < 0.5 ? 0xff7a2a : 0xffc04a, 1, -1.5);
+      if (f.stun > 0 && f.freeze <= 0 && f.lift <= 0) {
+        const top = FOE[f.kind].scale * 1.25 + 0.5;
+        for (let i = 0; i < 3; i++) { const a = this.time * 5 + (i * Math.PI * 2) / 3; this.glows.add(f.x + Math.sin(a) * 0.38, top, f.z + Math.cos(a) * 0.38, 0.32, 0.32, 0, 0xffe27a, 0.95); }
+      }
+      if (f.root > 0) this.flats.add(f.x, 0.05, f.z, f.radius * 2.4, f.radius * 2.4, 0, 0xc8a04a, 0.6);
+    }
     // the trap, the shrine
     for (const t of b.traps) this.flats.add(t.x, 0.06, t.z, 1.6, 1.6, this.time, t.sprung ? 0xffffff : 0xd8b04a, 0.8);
     const sh = this.arena?.shrine;
@@ -509,7 +635,8 @@ export class BattleView {
       const y = 0.85;
       if (s.kind === 'power') { this.streaks.add(s.x, y, s.z, 0.55 * (s.r / 0.45), 2.6, -a, 0xffe8a0, 1); this.glows.add(s.x, y, s.z, 1.0, 1.0, 0, 0xffd86a, 0.9); if (Math.random() < 0.6) this.sparks.emit(s.x, y, s.z, (Math.random() - 0.5), 0.4, (Math.random() - 0.5), 0.3, 0.3, 0.05, 0xffd86a, 3); }
       else if (s.kind === 'hknife') this.streaks.add(s.x, y, s.z, 0.22, 0.9, -a, 0xc8a8ff, 1);
-      else if (s.kind === 'arrow' || s.kind === 'farrow' || s.kind === 'knife') this.streaks.add(s.x, y, s.z, 0.28, 1.4, -a, s.side === 'hero' ? 0xfff0c8 : 0xff8a6a, 1);
+      else if (s.kind === 'arrow' || s.kind === 'farrow') { this.rack.arrow(s.x, y, s.z, a); this.streaks.add(s.x - Math.sin(a) * 0.5, y, s.z - Math.cos(a) * 0.5, 0.16, 1.2, -a, s.side === 'hero' ? 0xfff0c8 : 0xff8a6a, 0.7); }
+      else if (s.kind === 'knife') this.streaks.add(s.x, y, s.z, 0.28, 1.4, -a, 0xff8a6a, 1);
       else {
         const col = s.kind === 'bolt' ? 0x7ac8ff : s.kind === 'fireball' ? 0xff7a2a : s.kind === 'orb' ? 0xc87aff : 0xb05aff;
         const sz = s.kind === 'fireball' ? 1.4 : 0.9;
@@ -571,11 +698,13 @@ export class BattleView {
         case 'mark': this.marks.add(e.x, 0.04, e.z, e.r * 2, e.r * 2, e.ang, e.color, Math.min(1, (1 - k) * 2) * 0.6); break;
       }
     }
+    this.syncLoot(b, dt);
     this.fx = this.fx.filter((e) => e.t < e.max);
     this.sparks.update(dt, camQ);
     this.dust.update(dt, camQ);
     this.shadows.end(); this.glows.end(); this.flats.end(); this.slashes.end(); this.streaks.end(); this.bubbles.end(); this.marks.end();
     this.tele.end(); this.bars.end();
+    this.rack.end();
     if (this.arena?.water) { const w = this.arena.water; w.position.y = -0.5 + Math.sin(this.time * 1.2) * 0.05; }
   }
 
@@ -583,6 +712,7 @@ export class BattleView {
   foeTop(f: Foe): THREE.Vector3 { return tmpV.set(f.x, FOE[f.kind].scale * 1.2 + 0.6, f.z); }
 
   dispose(): void {
+    this.rack.dispose();
     for (const p of this.pools.values()) p.dispose();
     for (const f of this.heroFigs.values()) f.dispose();
   }
