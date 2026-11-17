@@ -52,8 +52,14 @@
     "icon": "/games/color-gate/ayvago/icon-512.png",
     "cover": "/games/color-gate/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/color-gate/ayvago/screenshot.jpg",
-    "card": "/games/color-gate/ayvago/card-640x360.webp",
-    "card2x": "/games/color-gate/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/color-gate/ayvago/card-640x360.webp",
+      "tr": "/games/color-gate/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/color-gate/ayvago/card-1280x720.webp",
+      "tr": "/games/color-gate/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/color-gate/ayvago/logo-en.png",
       "tr": "/games/color-gate/ayvago/logo-tr.png"

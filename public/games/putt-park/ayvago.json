@@ -53,8 +53,14 @@
     "icon": "/games/putt-park/ayvago/icon-512.png",
     "cover": "/games/putt-park/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/putt-park/ayvago/screenshot.jpg",
-    "card": "/games/putt-park/ayvago/card-640x360.webp",
-    "card2x": "/games/putt-park/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/putt-park/ayvago/card-640x360.webp",
+      "tr": "/games/putt-park/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/putt-park/ayvago/card-1280x720.webp",
+      "tr": "/games/putt-park/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/putt-park/ayvago/logo-en.png",
       "tr": "/games/putt-park/ayvago/logo-tr.png"

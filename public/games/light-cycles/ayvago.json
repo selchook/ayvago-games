@@ -54,8 +54,14 @@
     "icon": "/games/light-cycles/ayvago/icon-512.png",
     "cover": "/games/light-cycles/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/light-cycles/ayvago/screenshot.jpg",
-    "card": "/games/light-cycles/ayvago/card-640x360.webp",
-    "card2x": "/games/light-cycles/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/light-cycles/ayvago/card-640x360.webp",
+      "tr": "/games/light-cycles/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/light-cycles/ayvago/card-1280x720.webp",
+      "tr": "/games/light-cycles/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/light-cycles/ayvago/logo-en.png",
       "tr": "/games/light-cycles/ayvago/logo-tr.png"

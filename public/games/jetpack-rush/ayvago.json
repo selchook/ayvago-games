@@ -52,8 +52,14 @@
     "icon": "/games/jetpack-rush/ayvago/icon-512.png",
     "cover": "/games/jetpack-rush/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/jetpack-rush/ayvago/screenshot.jpg",
-    "card": "/games/jetpack-rush/ayvago/card-640x360.webp",
-    "card2x": "/games/jetpack-rush/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/jetpack-rush/ayvago/card-640x360.webp",
+      "tr": "/games/jetpack-rush/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/jetpack-rush/ayvago/card-1280x720.webp",
+      "tr": "/games/jetpack-rush/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/jetpack-rush/ayvago/logo-en.png",
       "tr": "/games/jetpack-rush/ayvago/logo-tr.png"

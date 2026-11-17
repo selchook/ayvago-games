@@ -52,8 +52,14 @@
     "icon": "/games/delivery-dash/ayvago/icon-512.png",
     "cover": "/games/delivery-dash/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/delivery-dash/ayvago/screenshot.jpg",
-    "card": "/games/delivery-dash/ayvago/card-640x360.webp",
-    "card2x": "/games/delivery-dash/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/delivery-dash/ayvago/card-640x360.webp",
+      "tr": "/games/delivery-dash/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/delivery-dash/ayvago/card-1280x720.webp",
+      "tr": "/games/delivery-dash/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/delivery-dash/ayvago/logo-en.png",
       "tr": "/games/delivery-dash/ayvago/logo-tr.png"

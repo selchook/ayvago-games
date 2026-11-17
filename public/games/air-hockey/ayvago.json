@@ -54,8 +54,14 @@
     "icon": "/games/air-hockey/ayvago/icon-512.png",
     "cover": "/games/air-hockey/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/air-hockey/ayvago/screenshot.jpg",
-    "card": "/games/air-hockey/ayvago/card-640x360.webp",
-    "card2x": "/games/air-hockey/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/air-hockey/ayvago/card-640x360.webp",
+      "tr": "/games/air-hockey/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/air-hockey/ayvago/card-1280x720.webp",
+      "tr": "/games/air-hockey/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/air-hockey/ayvago/logo-en.png",
       "tr": "/games/air-hockey/ayvago/logo-tr.png"

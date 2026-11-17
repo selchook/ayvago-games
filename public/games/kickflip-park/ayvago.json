@@ -52,8 +52,14 @@
     "icon": "/games/kickflip-park/ayvago/icon-512.png",
     "cover": "/games/kickflip-park/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/kickflip-park/ayvago/screenshot.jpg",
-    "card": "/games/kickflip-park/ayvago/card-640x360.webp",
-    "card2x": "/games/kickflip-park/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/kickflip-park/ayvago/card-640x360.webp",
+      "tr": "/games/kickflip-park/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/kickflip-park/ayvago/card-1280x720.webp",
+      "tr": "/games/kickflip-park/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/kickflip-park/ayvago/logo-en.png",
       "tr": "/games/kickflip-park/ayvago/logo-tr.png"

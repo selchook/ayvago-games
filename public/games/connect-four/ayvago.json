@@ -54,8 +54,14 @@
     "icon": "/games/connect-four/ayvago/icon-512.png",
     "cover": "/games/connect-four/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/connect-four/ayvago/screenshot.jpg",
-    "card": "/games/connect-four/ayvago/card-640x360.webp",
-    "card2x": "/games/connect-four/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/connect-four/ayvago/card-640x360.webp",
+      "tr": "/games/connect-four/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/connect-four/ayvago/card-1280x720.webp",
+      "tr": "/games/connect-four/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/connect-four/ayvago/logo-en.png",
       "tr": "/games/connect-four/ayvago/logo-tr.png"

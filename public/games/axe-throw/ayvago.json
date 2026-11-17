@@ -52,8 +52,14 @@
     "icon": "/games/axe-throw/ayvago/icon-512.png",
     "cover": "/games/axe-throw/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/axe-throw/ayvago/screenshot.jpg",
-    "card": "/games/axe-throw/ayvago/card-640x360.webp",
-    "card2x": "/games/axe-throw/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/axe-throw/ayvago/card-640x360.webp",
+      "tr": "/games/axe-throw/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/axe-throw/ayvago/card-1280x720.webp",
+      "tr": "/games/axe-throw/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/axe-throw/ayvago/logo-en.png",
       "tr": "/games/axe-throw/ayvago/logo-tr.png"

@@ -53,8 +53,14 @@
     "icon": "/games/mud-rally/ayvago/icon-512.png",
     "cover": "/games/mud-rally/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/mud-rally/ayvago/screenshot.jpg",
-    "card": "/games/mud-rally/ayvago/card-640x360.webp",
-    "card2x": "/games/mud-rally/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/mud-rally/ayvago/card-640x360.webp",
+      "tr": "/games/mud-rally/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/mud-rally/ayvago/card-1280x720.webp",
+      "tr": "/games/mud-rally/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/mud-rally/ayvago/logo-en.png",
       "tr": "/games/mud-rally/ayvago/logo-tr.png"

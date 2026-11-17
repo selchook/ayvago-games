@@ -52,8 +52,14 @@
     "icon": "/games/reversi/ayvago/icon-512.png",
     "cover": "/games/reversi/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/reversi/ayvago/screenshot.jpg",
-    "card": "/games/reversi/ayvago/card-640x360.webp",
-    "card2x": "/games/reversi/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/reversi/ayvago/card-640x360.webp",
+      "tr": "/games/reversi/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/reversi/ayvago/card-1280x720.webp",
+      "tr": "/games/reversi/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/reversi/ayvago/logo-en.png",
       "tr": "/games/reversi/ayvago/logo-tr.png"

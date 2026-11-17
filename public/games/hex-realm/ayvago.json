@@ -52,8 +52,14 @@
     "icon": "/games/hex-realm/ayvago/icon-512.png",
     "cover": "/games/hex-realm/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/hex-realm/ayvago/screenshot.jpg",
-    "card": "/games/hex-realm/ayvago/card-640x360.webp",
-    "card2x": "/games/hex-realm/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/hex-realm/ayvago/card-640x360.webp",
+      "tr": "/games/hex-realm/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/hex-realm/ayvago/card-1280x720.webp",
+      "tr": "/games/hex-realm/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/hex-realm/ayvago/logo-en.png",
       "tr": "/games/hex-realm/ayvago/logo-tr.png"

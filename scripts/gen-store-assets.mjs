@@ -4,6 +4,8 @@
 //   public/games/<slug>/ayvago/screenshot.jpg        in-game frame (platform Arcade theme tiles)
 //   public/games/<slug>/ayvago/card-640x360.webp     catalog card (Minimal / Modern theme tiles)
 //   public/games/<slug>/ayvago/card-1280x720.webp    the same card for high-density screens
+//   public/games/<slug>/ayvago/card-tr-640x360.webp, card-tr-1280x720.webp  the Turkish cards: the
+//                                                    same frame with the Turkish logo
 //   public/games/<slug>/ayvago/logo-en.png, logo-tr.png  the title logo on a transparent background
 //   public/thumbs/<slug>.png                         thumbnail for this repo's own portal
 // Each game is opened (no intro), its menu and a few seconds of play are captured, then the
@@ -11,9 +13,15 @@
 // busiest, most colourful of several frames from the run (frameStats) with only a small title logo.
 // A game with a menu theme (src/core/menu-theme.ts) gets its themed logo (the English title,
 // rendered by the game itself: window.__ayvago.menuLogo) on the card and the cover instead of the
-// plain title, so it looks the same on ayvago.com as on its menu.
+// plain title, so it looks the same on ayvago.com as on its menu; the Turkish card gets the
+// Turkish one (menuLogo('tr')), a plain card the Turkish title in upper case (tr-TR).
 // Usage: npm run build && node scripts/gen-store-assets.mjs [--dev] [--card-only] [slug ...]
-//   --card-only   regenerate just the cards (covers, icons, screenshots and thumbnails stay)
+//   --card-only   regenerate just the cards, both languages (covers, icons, screenshots and
+//                 thumbnails stay)
+//   --tr-from-en  re-compose just the Turkish cards of portrait games from their current English
+//                 cards, which stay as they are: the frame is taken from the English card (the logo
+//                 sits beside it) and its logo colour is matched. A landscape card's logo covers
+//                 part of its frame, so a landscape game needs --card-only
 //   --logo-only   regenerate just the logos (logo-en.png, logo-tr.png); a plain logo takes its colour
 //                 from the game's current card, a themed one is rendered by the game
 //   CARD_FRAMES=<dir> keeps the card candidate frames; with --card-only --from-frames the cards are
@@ -35,6 +43,7 @@ const args = process.argv.slice(2);
 const dev = args.includes('--dev');
 const cardOnly = args.includes('--card-only');
 const logoOnly = args.includes('--logo-only');
+const trFromEn = args.includes('--tr-from-en');
 const only = args.filter((a) => !a.startsWith('--'));
 const slugs = (only.length ? only : readdirSync(join(root, 'public', 'games')))
   .filter((s) => existsSync(join(root, 'public', 'games', s, 'ayvago.json')));
@@ -378,6 +387,9 @@ const CARD = {
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },
   'lights-out': { pick: 3 },
+  // mid-run with coins in the air (the runner often falls soon after, so the frame is not "live")
+  'pixel-runner': { pick: 2 },
+  'rope-swing': { pick: 2 },
   'simon-says': { pick: 1 },
   // Snow Express's card shows a busy evening village: a Holiday Rush on the frozen-lake board,
   // the autopilot well into the run (several trains out, five cabins lit, the fairy lights on),
@@ -500,11 +512,12 @@ const plainLogoCss = (accent) => `
   .retro-logo .back { color: #000; -webkit-text-stroke: 6px #000; text-shadow: 3px 3px 0 #000, 0 4px 10px rgba(0,0,0,.6); }
   .retro-logo .front { color: ${accent}; }`;
 
-function cardHtml(m, b64, accent, logo) {
+/** The card in `lang`: the frame (base64 PNG), the logo in `accent`, or the themed logo image. */
+function cardHtml(m, b64, accent, logo, lang = 'en') {
   const land = m.orientation === 'landscape';
   const modern = isModern(m);
   const shot = `data:image/png;base64,${b64}`;
-  const title = esc(m.title.en.toUpperCase());
+  const text = esc(title(m, lang));
   // Logo width limit: 45% of the card, or the free band left of a portrait frame.
   const maxW = land ? 270 : 192;
   return `<!doctype html><html><head><style>${FONTS}
@@ -530,47 +543,131 @@ function cardHtml(m, b64, accent, logo) {
   ${land ? `<img class="bg" src="${shot}">` : `<img class="bg blur" src="${shot}"><div class="vig"></div><div class="glow"></div>
   <div class="frame ${modern ? 'modern' : 'retro'}"><img src="${shot}"></div>`}
   <div class="scrim"></div>
-  ${logo ? `<img class="logo-img" src="data:image/png;base64,${logo}">` : `<div class="logo ${modern ? 'modern-logo' : 'retro-logo'}" style="font-size:${modern ? 30 : 20}px"><span class="back">${title}</span><span class="front">${title}</span></div>`}
+  ${logo ? `<img class="logo-img" src="data:image/png;base64,${logo}">` : `<div class="logo ${modern ? 'modern-logo' : 'retro-logo'}" style="font-size:${modern ? 30 : 20}px"><span class="back">${text}</span><span class="front">${text}</span></div>`}
   <script>
   // Shrink the logo until it fits its width on at most two lines (a themed logo image is fitted by CSS).
   window.fitLogo = () => {
     const img = document.querySelector('.logo-img');
-    if (img) return { size: Math.round(img.getBoundingClientRect().height), lines: 1, w: Math.round(img.getBoundingClientRect().width) };
+    if (img) return { size: Math.round(img.getBoundingClientRect().height), lines: 1, w: Math.round(img.getBoundingClientRect().width), fits: true };
     const el = document.querySelector('.logo');
     let size = parseFloat(el.style.fontSize);
     const lh = parseFloat(getComputedStyle(el).lineHeight) / size;
     const fits = () => el.scrollWidth <= ${maxW} + 1 && el.offsetHeight <= 2 * size * lh + 2;
     while (!fits() && size > 12) el.style.fontSize = (size -= 0.5) + 'px';
-    return { size, lines: Math.round(el.offsetHeight / (size * lh)), w: el.offsetWidth };
+    return { size, lines: Math.round(el.offsetHeight / (size * lh)), w: el.offsetWidth, fits: fits() };
   };
   </script></body></html>`;
 }
 
-/** Renders the card at device scale `scale` and encodes it as WebP no larger than `maxBytes`. */
-async function renderCard(browser, lab, html, scale, maxBytes) {
+/** Draws the card at device scale `scale`: the screenshot (base64 PNG) and the logo's fit. */
+async function shootCard(browser, html, scale, text) {
   const page = await browser.newPage({ viewport: { width: 640, height: 360 }, deviceScaleFactor: scale });
   await page.setContent(html);
+  // the faces for the title's letters: the latin-ext subsets (İ, Ş, Ğ ...) only load on demand,
+  // and fonts.ready can settle before the page asks for them
+  await page.evaluate((text) => Promise.all(['700 30px MT', '20px P2P', '20px PTR'].map((f) => document.fonts.load(f, text))), text);
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(() => Promise.all([...document.images].map((i) => i.decode())));
   const fit = await page.evaluate(() => window.fitLogo());
   const png = (await page.screenshot({ type: 'png' })).toString('base64');
   await page.close();
-  const webp = await lab.evaluate(async ({ src, maxBytes }) => {
+  return { png, fit };
+}
+
+/**
+ * Renders the card at device scale `scale` and encodes it as WebP no larger than `maxBytes`.
+ * `keep` ({ src: base64 WebP of the same card at this scale, rect: [x, y, w, h] in CSS px }) puts
+ * that area of an existing card back over the new one (--tr-from-en: the English card's frame).
+ */
+async function renderCard(browser, lab, html, scale, maxBytes, text, keep = null) {
+  const { png, fit } = await shootCard(browser, html, scale, text);
+  const webp = await lab.evaluate(async ({ src, maxBytes, keep, scale }) => {
     const img = new Image();
     img.src = `data:image/png;base64,${src}`;
     await img.decode();
     const c = document.createElement('canvas');
     c.width = img.width; c.height = img.height;
     c.getContext('2d').drawImage(img, 0, 0);
+    if (keep) {
+      const old = new Image();
+      old.src = `data:image/webp;base64,${keep.src}`;
+      await old.decode();
+      const [x, y, w, h] = keep.rect.map((v) => v * scale);
+      c.getContext('2d').drawImage(old, x, y, w, h, x, y, w, h);
+    }
     let url;
     for (const q of [0.92, 0.88, 0.84, 0.8, 0.75, 0.7, 0.65, 0.6]) {
       url = c.toDataURL('image/webp', q);
       if ((url.length - 23) * 0.75 <= maxBytes) break;
     }
     return url;
-  }, { src: png, maxBytes });
+  }, { src: png, maxBytes, keep, scale });
   if (!webp.startsWith('data:image/webp')) throw new Error('this Chromium cannot encode WebP');
   return { buf: Buffer.from(webp.split(',')[1], 'base64'), fit };
+}
+
+// ---- Turkish cards from the English ones (--tr-from-en, portrait games). The frame of a portrait
+// card stands in the middle, clear of the logo: it is cut out of the English 1280×720 card back to
+// the capture's size (its border trimmed, the edges stretched over the margin the frame's crop hid),
+// the Turkish card is drawn from it in the English card's logo colour, and the English card's frame
+// area (KEEP_FRAME) is put back over it at each size, so both cards show the very same frame.
+const KEEP_FRAME = [222, 8, 196, 344];
+// The logo colours frameStats can give (its accent hues and the default gold).
+const ACCENTS = ['#ffd23f', ...Array.from({ length: 12 }, (_, i) => `hsl(${i * 30 + 15} 92% 64%)`)];
+
+/** The captured 720×1280 frame of a portrait card (base64 WebP at 1280×720), as base64 PNG. */
+async function recoverFrame(lab, card, modern) {
+  return lab.evaluate(async ({ src, modern }) => {
+    const img = new Image();
+    img.src = `data:image/webp;base64,${src}`;
+    await img.decode();
+    const S = img.width / 640, W = 720, H = 1280;
+    // cardHtml's .frame: 94 % of the height, 9:16, centred; retro frames have a 2 px border inside
+    const fh = 0.94 * 360, fw = (fh * 9) / 16, b = modern ? 0 : 2;
+    const vb = { x: 320 - fw / 2 + b, y: 180 - fh / 2 + b, w: fw - 2 * b, h: fh - 2 * b };
+    const k = Math.max(vb.w / W, vb.h / H);
+    const ib = { x: vb.x + (vb.w - W * k) / 2, y: vb.y + (vb.h - H * k) / 2 };
+    // the visible box, one device pixel in from its edges, mapped back to frame pixels
+    const e = 1 / S, x0 = vb.x + e, y0 = vb.y + e, x1 = vb.x + vb.w - e, y1 = vb.y + vb.h - e;
+    const [ix0, iy0, ix1, iy1] = [(x0 - ib.x) / k, (y0 - ib.y) / k, (x1 - ib.x) / k, (y1 - ib.y) / k];
+    const c = new OffscreenCanvas(W, H), g = c.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S, ix0, iy0, ix1 - ix0, iy1 - iy0);
+    // the margins the frame's crop and border hid: the edge columns and rows stretched over them
+    const L = Math.ceil(ix0), T = Math.ceil(iy0), R = Math.floor(ix1), B = Math.floor(iy1);
+    if (L > 0) g.drawImage(c, L, 0, 1, H, 0, 0, L, H);
+    if (R < W) g.drawImage(c, R - 1, 0, 1, H, R, 0, W - R, H);
+    if (T > 0) g.drawImage(c, 0, T, W, 1, 0, 0, W, T);
+    if (B < H) g.drawImage(c, 0, B - 1, W, 1, 0, B, W, H - B);
+    const bytes = new Uint8Array(await (await c.convertToBlob({ type: 'image/png' })).arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }, { src: card, modern });
+}
+
+/**
+ * The English card's logo colour: the card is redrawn from its recovered frame in every colour
+ * frameStats can give and compared with the English card left of the frame (logo, scrim, glow).
+ * Returns the closest colour, its mean difference per channel and the runner-up's.
+ */
+async function matchAccent(browser, lab, m, frame, logo, card) {
+  const tries = [];
+  for (const accent of ACCENTS) {
+    const { png } = await shootCard(browser, cardHtml(m, frame, accent, logo, 'en'), 2, title(m, 'en'));
+    const diff = await lab.evaluate(async ({ a, b }) => {
+      const load = async (src) => { const i = new Image(); i.src = src; await i.decode(); return i; };
+      const [x, y] = await Promise.all([load(`data:image/png;base64,${a}`), load(`data:image/webp;base64,${b}`)]);
+      const px = (i) => { const c = new OffscreenCanvas(444, 420).getContext('2d'); c.drawImage(i, 0, 300, 444, 420, 0, 0, 444, 420); return c.getImageData(0, 0, 444, 420).data; };
+      const [p, q] = [px(x), px(y)];
+      let d = 0;
+      for (let i = 0; i < p.length; i += 4) d += Math.abs(p[i] - q[i]) + Math.abs(p[i + 1] - q[i + 1]) + Math.abs(p[i + 2] - q[i + 2]);
+      return d / (p.length * 0.75);
+    }, { a: png, b: card });
+    tries.push({ accent, diff });
+  }
+  tries.sort((a, b) => a.diff - b.diff);
+  return { accent: tries[0].accent, diff: tries[0].diff, next: tries[1].diff };
 }
 
 // ---- Game logos: logo-en.png / logo-tr.png (manifest assets.logo), the game's title art on a
@@ -949,21 +1046,44 @@ for (const slug of slugs) {
       made++;
       continue;
     }
-    let shots, logo = null;
+    if (trFromEn) {
+      if (land) throw new Error('a landscape card\'s logo covers part of its frame: use --card-only');
+      const themed = hasTheme(slug) ? await themedLogos(browser, slug, land) : null;
+      const [en1, en2] = ['card-640x360.webp', 'card-1280x720.webp'].map((f) => readFileSync(join(out, f)).toString('base64'));
+      const frame = await recoverFrame(lab, en2, isModern(m));
+      const match = tune.accent ? { accent: tune.accent } : await matchAccent(browser, lab, m, frame, themed?.en ?? null, en2);
+      const html = cardHtml(m, frame, match.accent, themed?.tr ?? null, 'tr');
+      const big = await renderCard(browser, lab, html, 2, 110_000, title(m, 'tr'), { src: en2, rect: KEEP_FRAME });
+      const small = await renderCard(browser, lab, html, 1, 45_000, title(m, 'tr'), { src: en1, rect: KEEP_FRAME });
+      if (!big.fit.fits || !small.fit.fits) throw new Error(`the Turkish logo does not fit (${big.fit.size}px x${big.fit.lines})`);
+      writeFileSync(join(out, 'card-tr-1280x720.webp'), big.buf);
+      writeFileSync(join(out, 'card-tr-640x360.webp'), small.buf);
+      const how = match.diff === undefined ? 'tuned' : `matched ${match.diff.toFixed(1)} (next ${match.next.toFixed(1)})`;
+      console.log(`ok    ${slug}  card tr ${Math.round(small.buf.length / 1024)}+${Math.round(big.buf.length / 1024)} KB, accent ${match.accent} ${how}, logo ${themed ? `themed ${big.fit.w}x${big.fit.size}px` : `${big.fit.size}px x${big.fit.lines}`}`);
+      made++;
+      continue;
+    }
+    let shots, logo = null, logoTr = null;
     if (fromFrames) {
       const live = JSON.parse(readFileSync(join(framesDir, `${slug}.json`), 'utf8'));
       shots = live.map((l, n) => ({ live: l, b64: readFileSync(join(framesDir, `${slug}-${n}.png`)).toString('base64') }));
       const kept = join(framesDir, `${slug}-logo.png`);
       if (existsSync(kept)) logo = readFileSync(kept).toString('base64');
+      const keptTr = join(framesDir, `${slug}-logo-tr.png`);
+      if (logo && !existsSync(keptTr)) throw new Error(`${keptTr} missing (the Turkish menu logo)`);
+      if (logo) logoTr = readFileSync(keptTr).toString('base64');
     } else {
       const cap = await capture(browser, slug, land, tune);
       shots = cap.shots;
       logo = cap.logo;
+      // the Turkish menu logo, rendered by the game in Turkish
+      if (logo) logoTr = await themedLogo(browser, slug, land, 'tr');
       if (framesDir) {
         mkdirSync(framesDir, { recursive: true });
         shots.forEach((s, n) => writeFileSync(join(framesDir, `${slug}-${n}.png`), Buffer.from(s.b64, 'base64')));
         writeFileSync(join(framesDir, `${slug}.json`), JSON.stringify(shots.map((s) => s.live)));
         if (logo) writeFileSync(join(framesDir, `${slug}-logo.png`), Buffer.from(logo, 'base64'));
+        if (logoTr) writeFileSync(join(framesDir, `${slug}-logo-tr.png`), Buffer.from(logoTr, 'base64'));
       }
       if (!cardOnly) {
         mkdirSync(join(root, 'public', 'thumbs'), { recursive: true });
@@ -989,15 +1109,24 @@ for (const slug of slugs) {
     for (const s of shots) s.rank = s.score + 3 * s.n;
     const ranked = [...shots].sort((a, b) => (b.live - a.live) || (b.rank - a.rank));
     const best = tune.pick !== undefined ? shots[tune.pick] : ranked[0];
-    const html = cardHtml(m, best.b64, tune.accent ?? best.accent, logo);
-    const big = await renderCard(browser, lab, html, 2, 110_000);
-    const small = await renderCard(browser, lab, html, 1, 45_000);
-    writeFileSync(join(out, 'card-1280x720.webp'), big.buf);
-    writeFileSync(join(out, 'card-640x360.webp'), small.buf);
+    // the same frame in both languages, only the logo differs (card-*, card-tr-*)
+    const sizes = [];
+    let big;
+    for (const lang of ['en', 'tr']) {
+      const html = cardHtml(m, best.b64, tune.accent ?? best.accent, lang === 'en' ? logo : logoTr, lang);
+      const b = await renderCard(browser, lab, html, 2, 110_000, title(m, lang));
+      const small = await renderCard(browser, lab, html, 1, 45_000, title(m, lang));
+      if (!b.fit.fits || !small.fit.fits) throw new Error(`the ${lang} logo does not fit (${b.fit.size}px x${b.fit.lines})`);
+      const name = lang === 'en' ? 'card' : 'card-tr';
+      writeFileSync(join(out, `${name}-1280x720.webp`), b.buf);
+      writeFileSync(join(out, `${name}-640x360.webp`), small.buf);
+      sizes.push(`${lang} ${Math.round(small.buf.length / 1024)}+${Math.round(b.buf.length / 1024)} KB`);
+      big ??= b;
+    }
     const stats = shots.map((s) => `${s.n}${s === best ? '*' : ''}:${s.live ? '' : 'x'}${Math.round(s.rank)}`).join(' ');
     // the logo files with the full set (the card's colour, the menu logo in both languages)
-    const logos = cardOnly || fromFrames ? '' : `, ${await writeLogos(browser, lab, m, out, logo && { en: logo, tr: await themedLogo(browser, slug, land, 'tr') }, tune.accent ?? best.accent)}`;
-    console.log(`ok    ${slug}  card [${stats}] ${Math.round(small.buf.length / 1024)}+${Math.round(big.buf.length / 1024)} KB, logo ${logo ? `themed ${big.fit.w}x${big.fit.size}px` : `${big.fit.size}px x${big.fit.lines}`}${logos}`);
+    const logos = cardOnly || fromFrames ? '' : `, ${await writeLogos(browser, lab, m, out, logo && { en: logo, tr: logoTr }, tune.accent ?? best.accent)}`;
+    console.log(`ok    ${slug}  card [${stats}] ${sizes.join(', ')}, logo ${logo ? `themed ${big.fit.w}x${big.fit.size}px` : `${big.fit.size}px x${big.fit.lines}`}${logos}`);
     made++;
   } catch (e) {
     console.log(`FAIL  ${slug}: ${String(e.message).split('\n')[0]}`);

@@ -52,8 +52,14 @@
     "icon": "/games/tile-triple/ayvago/icon-512.png",
     "cover": "/games/tile-triple/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/tile-triple/ayvago/screenshot.jpg",
-    "card": "/games/tile-triple/ayvago/card-640x360.webp",
-    "card2x": "/games/tile-triple/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/tile-triple/ayvago/card-640x360.webp",
+      "tr": "/games/tile-triple/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/tile-triple/ayvago/card-1280x720.webp",
+      "tr": "/games/tile-triple/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/tile-triple/ayvago/logo-en.png",
       "tr": "/games/tile-triple/ayvago/logo-tr.png"

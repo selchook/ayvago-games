@@ -52,8 +52,14 @@
     "icon": "/games/archery/ayvago/icon-512.png",
     "cover": "/games/archery/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/archery/ayvago/screenshot.jpg",
-    "card": "/games/archery/ayvago/card-640x360.webp",
-    "card2x": "/games/archery/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/archery/ayvago/card-640x360.webp",
+      "tr": "/games/archery/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/archery/ayvago/card-1280x720.webp",
+      "tr": "/games/archery/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/archery/ayvago/logo-en.png",
       "tr": "/games/archery/ayvago/logo-tr.png"

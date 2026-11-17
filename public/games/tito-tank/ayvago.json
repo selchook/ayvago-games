@@ -54,8 +54,14 @@
     "icon": "/games/tito-tank/ayvago/icon-512.png",
     "cover": "/games/tito-tank/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/tito-tank/ayvago/screenshot.jpg",
-    "card": "/games/tito-tank/ayvago/card-640x360.webp",
-    "card2x": "/games/tito-tank/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/tito-tank/ayvago/card-640x360.webp",
+      "tr": "/games/tito-tank/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/tito-tank/ayvago/card-1280x720.webp",
+      "tr": "/games/tito-tank/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/tito-tank/ayvago/logo-en.png",
       "tr": "/games/tito-tank/ayvago/logo-tr.png"

@@ -53,8 +53,14 @@
     "icon": "/games/slide-puzzle/ayvago/icon-512.png",
     "cover": "/games/slide-puzzle/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/slide-puzzle/ayvago/screenshot.jpg",
-    "card": "/games/slide-puzzle/ayvago/card-640x360.webp",
-    "card2x": "/games/slide-puzzle/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/slide-puzzle/ayvago/card-640x360.webp",
+      "tr": "/games/slide-puzzle/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/slide-puzzle/ayvago/card-1280x720.webp",
+      "tr": "/games/slide-puzzle/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/slide-puzzle/ayvago/logo-en.png",
       "tr": "/games/slide-puzzle/ayvago/logo-tr.png"

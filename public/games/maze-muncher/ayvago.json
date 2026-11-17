@@ -53,8 +53,14 @@
     "icon": "/games/maze-muncher/ayvago/icon-512.png",
     "cover": "/games/maze-muncher/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/maze-muncher/ayvago/screenshot.jpg",
-    "card": "/games/maze-muncher/ayvago/card-640x360.webp",
-    "card2x": "/games/maze-muncher/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/maze-muncher/ayvago/card-640x360.webp",
+      "tr": "/games/maze-muncher/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/maze-muncher/ayvago/card-1280x720.webp",
+      "tr": "/games/maze-muncher/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/maze-muncher/ayvago/logo-en.png",
       "tr": "/games/maze-muncher/ayvago/logo-tr.png"
