@@ -9,8 +9,8 @@
     "en": "A 3D action RPG on a hex map: pick one of six classes, explore the realm as the fog lifts, take quests in the village, buy potions at the market, and wield and upgrade swords, axes, hammers and bows. Chain each class's three combos, empower your moves with Sigils, draft power cards for the journey, roll out of the red warnings, use your two skills, and defeat the mine troll, the dark mage of the spire and the castle lord."
   },
   "howTo": {
-    "tr": "Haritada bir altıgene dokun ya da oklarla yürü. Savaşta solda sürükleyerek yürü; düşman yakınken SALDIR'a art arda dokun, üçüncüde basılı tut (ağır bitiriş) ya da KAÇIŞ'tan sonra saldır (atılma vuruşu). Klavye: WASD, J saldırı, K kaçış, L/U yetenekler, E iksir, M harita, I kahraman.",
-    "en": "Tap a hex or use the arrows to walk the map. In battle drag on the left to move; with a foe near, tap ATTACK for a combo, hold it on the third blow (heavy finisher) or attack after a ROLL (dash strike). Keys: WASD, J attack, K roll, L/U skills, E potion, M map, I hero."
+    "tr": "Haritada bir altıgene dokun ya da oklarla yürü; iki parmakla, fare tekerleğiyle ya da + / - ile yakınlaştır. Savaşta solda sürükleyerek yürü; düşman yakınken SALDIR'a art arda dokun, üçüncüde basılı tut (ağır bitiriş) ya da KAÇIŞ'tan sonra saldır (atılma vuruşu). Klavye: WASD, J saldırı, K kaçış, L/U yetenekler, E iksir, M harita, I kahraman.",
+    "en": "Tap a hex or use the arrows to walk the map; pinch, scroll the mouse wheel or press + / - to zoom it. In battle drag on the left to move; with a foe near, tap ATTACK for a combo, hold it on the third blow (heavy finisher) or attack after a ROLL (dash strike). Keys: WASD, J attack, K roll, L/U skills, E potion, M map, I hero."
   },
   "genres": [
     "action",
@@ -21,7 +21,7 @@
     "touch",
     "keyboard"
   ],
-  "version": "1.2.0",
+  "version": "1.2.1",
   "credits": [
     "3D heroes: Quaternius RPG Characters (CC0) — quaternius.com",
     "Weapons: Quaternius Medieval Weapons (CC0) — quaternius.com",

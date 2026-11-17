@@ -439,6 +439,13 @@ export class Panel {
     if (this.closed) return;
     this.closed = true;
     this.release();
+    // 1.2.1: nothing of a closing screen takes a tap while it fades (its dim layer covered the map's
+    // buttons for that moment, so a quick tap after LEAVE or Esc went nowhere)
+    const off = (o: Phaser.GameObjects.GameObject): void => {
+      if (o.input) o.disableInteractive();
+      if (o instanceof Phaser.GameObjects.Container) o.list.forEach(off);
+    };
+    off(this.root);
     this.scene.tweens.add({ targets: this.root, alpha: 0, duration: 120, onComplete: () => this.root.destroy() });
     this.onClose?.();
   }

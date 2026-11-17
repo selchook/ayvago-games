@@ -54,6 +54,16 @@ export function groundY(h: Hex): number {
   }
 }
 
+/**
+ * 1.2.1: the land beyond the ring, out to where the zoomed-out camera may look: rows −11 … ROWS + 3,
+ * as wide as `wN` in the north (the view widens towards the top of the screen) and `wS` in the
+ * south, centred on `x0`. The camera keeps its view inside this trapezoid (view.ts).
+ */
+export const SCENERY = { zN: (-11 - (ROWS - 1) / 2) * (Math.sqrt(3) / 2), zS: (ROWS + 3 - (ROWS - 1) / 2) * (Math.sqrt(3) / 2), wN: 19.5, wS: 13, x0: 0 };
+/** Where the far band's northern rows begin (their southern tips). */
+export const FAR_NORTH_Z = (-3.5 - (ROWS - 1) / 2) * (Math.sqrt(3) / 2);
+const sceneryWidth = (z: number) => SCENERY.wS + (SCENERY.wN - SCENERY.wS) * Math.min(1, Math.max(0, (SCENERY.zS - z) / (SCENERY.zS - SCENERY.zN)));
+
 export class MapView {
   readonly root = new THREE.Group();
   readonly fog: THREE.DataTexture;
@@ -67,6 +77,8 @@ export class MapView {
   readonly glows: Billboards;
   private time = 0;
   private mesh: THREE.Mesh;
+  /** The far band's northern rows (beyond FAR_NORTH_Z). */
+  readonly farNorth: THREE.Mesh;
 
   constructor(private map: HexMap) {
     const N = COLS * ROWS;
@@ -89,18 +101,28 @@ export class MapView {
     }
     // a land of mountains, forest and sea beyond the map's edge (wide: the landscape view sees past
     // the realm's sides)
-    const ring: Placed[] = [];
-    for (let r = -3; r < ROWS + 3; r++) {
-      for (let c = -7; c < COLS + 7; c++) {
+    // 1.2.1: and a wider band of lighter tiles past it (its own mesh, casting no shadow), so the
+    // zoomed-out view never runs off the land
+    const ring: Placed[] = [], far: Placed[] = [], farNorth: Placed[] = [];
+    for (let r = -11; r < ROWS + 4; r++) {
+      const z = (r - (ROWS - 1) / 2) * (Math.sqrt(3) / 2), w = sceneryWidth(z) + 0.6;
+      for (let c = -16; c < COLS + 16; c++) {
         if (c >= 0 && c < COLS && r >= 0 && r < ROWS) continue;
-        const x = c + (((r % 2) + 2) % 2 ? 0.5 : 0) - (COLS - 1) / 2 - 0.25, z = (r - (ROWS - 1) / 2) * (Math.sqrt(3) / 2);
+        const x = c + (((r % 2) + 2) % 2 ? 0.5 : 0) - (COLS - 1) / 2 - 0.25;
+        const inner = r >= -3 && r < ROWS + 3 && c >= -7 && c < COLS + 7;
+        if (!inner && Math.abs(x - SCENERY.x0) > w) continue;
         const near = Math.max(-c - 1, c - COLS, -r - 1, r - ROWS);
         const k = (c * 7 + r * 13 + 400) % 5;
         let t = r < 0 ? 'stone-mountain' : r >= ROWS ? (c < 4 ? 'water' : 'grass-forest') : c < 0 ? (r > 12 ? 'water' : r < 5 ? 'stone-mountain' : 'grass-forest') : r > 4 && r < 12 ? 'water' : r <= 4 ? 'stone-mountain' : 'grass-forest';
-        if (near > 0 && t === 'grass-forest') t = k < 2 ? 'grass-hill' : k < 4 ? 'grass-forest' : 'grass';
+        if (!inner) {
+          if (t === 'grass-forest') t = k === 0 ? 'grass-forest' : k === 1 ? 'stone-hill' : 'grass';
+          // fewer peaks in the farthest rows (seen only from the realm's north, through the haze)
+          else if (t === 'stone-mountain') t = k < (r < -6 ? 1 : 2) ? 'stone-mountain' : k < 4 ? 'stone-hill' : 'stone';
+          else if (k === 0 && (c * 3 + r) % 3 === 0) t = 'water-island';
+        } else if (near > 0 && t === 'grass-forest') t = k < 2 ? 'grass-hill' : k < 4 ? 'grass-forest' : 'grass';
         else if (near > 0 && t === 'stone-mountain') t = k < 2 ? 'stone-mountain' : k < 4 ? 'stone-hill' : 'stone-rocks';
         else if (near > 1 && t === 'water' && k === 0) t = 'water-island';
-        ring.push({ key: hexKey(t), x, y: 0, z, rot: ((c * 5 + r * 3 + 60) % 6) * (Math.PI / 3), s: 1, hex: N });
+        (inner ? ring : r < -3 ? farNorth : far).push({ key: hexKey(t), x, y: 0, z, rot: ((c * 5 + r * 3 + 60) % 6) * (Math.PI / 3), s: 1, hex: N });
       }
     }
     const geo = mergeModels([...list, ...ring], { hex: true });
@@ -115,8 +137,16 @@ export class MapView {
     this.mesh.receiveShadow = true;
     this.mesh.castShadow = true;
     this.root.add(this.mesh);
+    // the far band: the same material (no new shader), no shadow pass; its northern rows (most of
+    // its triangles) only drawn while the view reaches them (view.ts)
+    const farMesh = new THREE.Mesh(mergeModels(far, { hex: true }), this.mesh.material);
+    farMesh.receiveShadow = true;
+    this.root.add(farMesh);
+    this.farNorth = new THREE.Mesh(mergeModels(farNorth, { hex: true }), this.mesh.material);
+    this.farNorth.receiveShadow = true;
+    this.root.add(this.farNorth);
     // the ground under it all
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshLambertMaterial({ color: 0x3f6a4a }));
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshLambertMaterial({ color: 0x3f6a4a }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.02;
     ground.receiveShadow = true;

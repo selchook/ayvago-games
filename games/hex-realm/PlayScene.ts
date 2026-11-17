@@ -14,11 +14,11 @@
 // the inn: a summary card, then the result screen with the campaign's renown as the score.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, shake, flash, playMusic,
+  ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, shake, flash, playMusic, storage,
   HUD_MARGIN, HUD_ROW_Y, HUD_ROW2_Y, HUD_GAP, themeCard, overlayHeadingStyle, labelAt, fitWidth, Para, FmtLine, GlyphText, KitButton,
   type LabelStyle,
 } from '@core';
-import type { World3D } from '@core/three';
+import type { World3D, THREE } from '@core/three';
 import { Battle, NO_INPUT, type Input, type BattleEvent } from './battle';
 import { Campaign, type Fight, type Spoils } from './campaign';
 import { View } from './view';
@@ -36,6 +36,7 @@ import { WEAPON_FEEL, weaponOf, SHIELD_BY_RARITY, type WeaponModel } from './wea
 import { SHIELD_GRIP } from './weaponview';
 import { SUMMARY_W, SUMMARY_H, TUT_W, TUT_H, HINT_H } from './sizes';
 import { HAND_MAX } from './powers';
+import { MAP_MUSIC, BATTLE_MUSIC } from './audio';
 
 const STEP = DT;
 /** The model an item shows on the ground: a weapon its own, the warrior's armour a shield, the rest an orb (null). */
@@ -61,6 +62,12 @@ const PLACE_Y = 560;
 /** The third HUD row (power-ups). */
 const HUD_ROW3_Y = HUD_ROW2_Y + 66;
 
+/** 1.2.1: the map's zoom, kept for the session and saved. */
+const ZOOM_KEY = 'hex-realm:zoom';
+let sessionZoom: number | null = null;
+const savedZoom = (): number => { sessionZoom ??= Number(storage.get<number>(ZOOM_KEY, 1)) || 1; return sessionZoom; };
+const saveZoom = (z: number): void => { sessionZoom = z; storage.set(ZOOM_KEY, Math.round(z * 1000) / 1000); };
+
 type Phase = 'select' | 'map' | 'battle' | 'screen' | 'summary';
 type TutStep = 'move' | 'farm' | 'fight' | 'dodge' | 'skill' | 'combo' | null;
 
@@ -79,6 +86,7 @@ export const TUT_KEYS = [
   'tut_dodge_d_keys', 'tut_skill_t', 'tut_skill_d_touch', 'tut_skill_d_keys', 'hint_market', 'hint_points', 'hint_bag', 'hint_shrine', 'hint_potion', 'hint_camp', 'hint_bridge',
   'sealedTower', 'sealedBridge', 'placeDone', 'placeLocked',
   'tut_combo_t', 'tut_combo_d_touch', 'tut_combo_d_keys', 'hint_heavy', 'hint_dash', 'hint_sigil', 'hint_cards', 'hint_perfect',
+  'hint_zoom_touch', 'hint_zoom_keys',
 ];
 export { T_TITLE, T_BODY, S_SUM, S_SUM_SMALL, S_PLACE };
 
@@ -224,7 +232,12 @@ export class PlayScene extends ArcadeScene {
         if (d.depth < 9500 || d.depth > 9501) continue;
         const atA = Math.hypot(d.x - BTN_A[0], d.y - BTN_A[1]) < 2, atB = Math.hypot(d.x - BTN_B[0], d.y - BTN_B[1]) < 2;
         if (!atA && !atB) continue;
-        if (o instanceof Phaser.GameObjects.Arc) { o.setFillStyle(0xffffff, 0.001).setStrokeStyle(0, 0, 0); (o as unknown as { __core: boolean }).__core = true; }
+        if (o instanceof Phaser.GameObjects.Arc) {
+          o.setFillStyle(0xffffff, 0.001).setStrokeStyle(0, 0, 0);
+          (o as unknown as { __core: boolean }).__core = true;
+          // 1.2.1: a press is queued as it lands (like a key), so a tap shorter than a frame still counts
+          o.on('pointerdown', () => { if (this.phase === 'battle') this.queued[atA ? 'attack' : 'dodge'] = true; });
+        }
         else if (o instanceof Phaser.GameObjects.Text) o.setVisible(false);
       }
       const cls = CLASS[this.camp.s.cls];
@@ -234,9 +247,14 @@ export class PlayScene extends ArcadeScene {
       this.btn.s2 = actionButton(this, BTN_S2[0], BTN_S2[1], 56, '', true, { icon: icon('sk-' + cls.skills[1].id) });
       this.btn.pot = actionButton(this, BTN_POT[0], BTN_POT[1], 46, '', true, { icon: icon('potion'), badge: true });
     }
-    // map buttons (touch and mouse): the hero screen and the world map
-    this.btn.hero = actionButton(this, BTN_HERO[0], BTN_HERO[1], 56, t('btnHero'), true, { icon: icon('hero'), size: 14 });
-    this.btn.map = actionButton(this, BTN_MAP[0], BTN_MAP[1], 48, t('btnMap'), true, { icon: icon('map'), size: 14 });
+    // map buttons (touch and mouse): the hero screen and the world map. 1.2.1: they open their
+    // screens on a tap (before, their zones only set a `pressed` flag that nothing read), wear a
+    // disc like the battle's buttons and name what they open under the mouse
+    this.btn.hero = actionButton(this, BTN_HERO[0], BTN_HERO[1], 56, t('btnHero'), true, { icon: icon('hero'), size: 14, onTap: () => this.openHero() });
+    this.btn.map = actionButton(this, BTN_MAP[0], BTN_MAP[1], 48, t('btnMap'), true, { icon: icon('map'), size: 14, onTap: () => this.openMapScreen() });
+    drawButton(this.btn.hero, 0x2c4a9a);
+    drawButton(this.btn.map, 0x7a5a2a);
+    if (!this.controls.touchUi) { this.tooltip(this.btn.hero, 'tipHero'); this.tooltip(this.btn.map, 'tipMap'); }
     this.heroDot = this.add.circle(40, -40, 11, 0xff3a3a).setStrokeStyle(3, 0xfff2cc).setVisible(false);
     this.btn.hero.root.add(this.heroDot);
     const kb = this.input.keyboard;
@@ -245,24 +263,101 @@ export class PlayScene extends ArcadeScene {
       for (const [n, c] of Object.entries({ j: K.J, k: K.K, l: K.L, u: K.U, one: K.ONE, two: K.TWO, e: K.E, q: K.Q, r: K.R, i: K.I, m: K.M })) this.keys[n] = kb.addKey(c, false, false);
       kb.on('keydown', (ev: KeyboardEvent) => this.onKey(ev));
     }
-    // the map: drag to look around, tap a hex to walk there
+    // the map: drag to look around, tap a hex to walk there, pinch or wheel to zoom (1.2.1)
+    // two touch pointers at least (the mouse's is the first)
+    const need = 3 - this.input.manager.pointersTotal;
+    if (this.touch && need > 0) this.input.addPointer(need);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.phase !== 'map' || this.panel) return;
+      // forget fingers whose release went to a button
+      for (const id of [...this.fingers.keys()]) if (!this.input.manager.pointers.some((q) => q.id === id && q.isDown)) this.fingers.delete(id);
+      this.fingers.set(p.id, { x: p.x, y: p.y });
+      if (this.fingers.size >= 2) { this.startPinch(); return; }
       this.drag = { on: true, x: p.x, y: p.y, moved: 0, id: p.id };
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!this.drag.on || p.id !== this.drag.id || this.phase !== 'map') return;
+      const f = this.fingers.get(p.id);
+      if (f) { f.x = p.x; f.y = p.y; }
+      if (this.phase !== 'map') return;
+      if (this.pinchAt) { if (f) this.movePinch(); return; }
+      if (!this.drag.on || p.id !== this.drag.id) return;
       const dx = p.x - this.drag.x, dy = p.y - this.drag.y;
       this.drag.moved += Math.hypot(dx, dy);
-      if (this.drag.moved > 14) this.view.pan(dx, dy);
+      if (this.drag.moved > 14 && !this.panel) this.view.pan(this.drag.x, this.drag.y, p.x, p.y);
       this.drag.x = p.x; this.drag.y = p.y;
     });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
+    const up = (p: Phaser.Input.Pointer) => {
+      this.fingers.delete(p.id);
+      if (this.pinchAt) {
+        // the pinch is over: a finger left on the screen drags on from where it is, never taps
+        this.pinchAt = null;
+        this.drag.on = false;
+        const [id, f] = [...this.fingers.entries()][0] ?? [];
+        if (f && id !== undefined) this.drag = { on: true, x: f.x, y: f.y, moved: 99, id };
+        return;
+      }
       if (!this.drag.on || p.id !== this.drag.id) return;
       this.drag.on = false;
       if (this.drag.moved > 14 || this.phase !== 'map' || this.panel) return;
       this.tapMap(p.x, p.y);
+    };
+    this.input.on('pointerup', up);
+    this.input.on('pointerupoutside', up);
+    this.input.on('wheel', (p: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => {
+      if (this.phase !== 'map' || this.panel || !dy) return;
+      // a notch (about 100) is a step of about 15 %; trackpads send many small ones
+      this.view.zoomBy(Math.exp(-Phaser.Math.Clamp(dy, -300, 300) * 0.0016), p.x, p.y);
+      this.zoomUsed();
     });
+    this.view.setZoom(savedZoom());
+    // a zoom still waiting to be saved when the round ends
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { if (this.zoomSaveT > 0) { this.zoomSaveT = 0; saveZoom(this.view.zoomGoal); } });
+  }
+
+  /** The fingers down on the map (a pinch takes two). */
+  private fingers = new Map<number, { x: number; y: number }>();
+  /** A pinch: the fingers' spread and the zoom when it began, the ground under their middle. */
+  private pinchAt: { spread: number; zoom: number; w: THREE.Vector3 } | null = null;
+
+  private pinchPair(): { x: number; y: number; spread: number } {
+    const [a, b] = [...this.fingers.values()];
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, spread: Math.max(20, Math.hypot(a.x - b.x, a.y - b.y)) };
+  }
+
+  private startPinch(): void {
+    // a second finger: no tap and no drag from the first one
+    this.drag.on = false;
+    this.drag.moved = 99;
+    const m = this.pinchPair();
+    this.view.placeCam();
+    const w = this.view.pick(m.x, m.y);
+    this.pinchAt = w ? { spread: m.spread, zoom: this.view.zoom, w } : null;
+  }
+
+  private movePinch(): void {
+    const pa = this.pinchAt;
+    if (!pa || this.fingers.size < 2) return;
+    const m = this.pinchPair();
+    this.view.pinch(pa.zoom * (m.spread / pa.spread), m.x, m.y, pa.w);
+    this.zoomUsed();
+  }
+
+  /** The zoom changed: kept for the session and saved (a moment after it settles). */
+  private zoomUsed(): void { this.zoomSaveT = 0.6; }
+  private zoomSaveT = 0;
+
+  /** A short line over a map button while the mouse is on it (what it opens, its key). */
+  private tooltip(b: ActionButton, key: string): void {
+    let chip: HudChip | null = null;
+    b.zone?.on('pointerover', () => {
+      if (this.phase !== 'map' || this.panel) return;
+      chip ??= hudChip(this, b.x + b.r * 0.6, b.y - b.r - 40, { align: 'right', text: t(key), size: 18, depth: 9530 });
+      chip.setVisible(true);
+    });
+    const hide = () => chip?.setVisible(false);
+    b.zone?.on('pointerout', hide);
+    b.zone?.on('pointerup', hide);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { chip = null; });
   }
 
   private onKey(ev: KeyboardEvent): void {
@@ -277,6 +372,9 @@ export class PlayScene extends ArcadeScene {
       return;
     }
     if (this.phase !== 'map') return;
+    // zoom: + and − (by the character, so every keyboard layout works) or the numpad's
+    const zin = ev.key === '+' || ev.key === '=' || ev.code === 'NumpadAdd', zout = ev.key === '-' || ev.key === '_' || ev.code === 'NumpadSubtract';
+    if (zin || zout) { this.view.zoomBy(zin ? 1.25 : 0.8); this.zoomUsed(); return; }
     switch (ev.code) {
       case 'KeyM': this.openMapScreen(); break;
       case 'KeyI': case 'KeyH': this.openHero(); break;
@@ -607,11 +705,12 @@ export class PlayScene extends ArcadeScene {
 
   private enterMap(first = false): void {
     this.phase = 'map';
+    this.view.world.camera.clearViewOffset();
     this.view.setMode('map');
     this.view.setClass(this.camp.s.cls);
     this.view.placeParty(this.camp);
     this.view.mapView.syncFog(this.camp, first);
-    playMusic(this, 'stage1');
+    playMusic(this, MAP_MUSIC);
     this.switchHud();
     this.relabelSkills();
     if (first && !this.camp.s.tutorial) this.startTutorial();
@@ -620,6 +719,8 @@ export class PlayScene extends ArcadeScene {
 
   private mapHints(): void {
     const s = this.camp.s;
+    // 1.2.1: the map zooms (once, on the first map after the training)
+    this.hint('hint_zoom', false, this.controls.touchUi ? 'hint_zoom_touch' : 'hint_zoom_keys');
     if (s.points > 0) this.hint('hint_points');
     // the combos not tried yet, a battle or two after the training
     if (s.battles >= 2 && !s.combosSeen.includes('heavy')) this.hint('hint_heavy');
@@ -647,6 +748,7 @@ export class PlayScene extends ArcadeScene {
       }
     }
     v.updateMap(dt);
+    if (this.zoomSaveT > 0) { this.zoomSaveT -= dt; if (this.zoomSaveT <= 0) saveZoom(v.zoomGoal); }
     this.updateMapMarks();
     this.updatePlaceLabel();
     this.updateTags();
@@ -727,13 +829,15 @@ export class PlayScene extends ArcadeScene {
     }
     const seen = new Set(this.camp.s.seen);
     const here = this.hereHex();
+    // the names shrink a little as the map zooms out, so they do not crowd the whole realm
+    const tagScale = 1 - this.view.zoomOut * 0.3;
     PLACE_IDS.forEach((pl, i) => {
       const [c, r] = PLACE_HEX[pl];
       const h = this.camp.map.at(c, r);
       const tag = this.tags[i];
       if (!show || !seen.has(h.i) || (h.c === here.c && h.r === here.r && !this.view.walking)) { tag.setVisible(false); return; }
       const p = this.view.toScreen(h.x, groundY(h) - 0.05, h.z + 0.42);
-      tag.setPosition(p.x, p.y).setVisible(p.y > 150 && p.y < this.scale.height - 40 && p.x > 60 && p.x < this.scale.width - 60);
+      tag.setScale(tagScale).setPosition(p.x, p.y).setVisible(p.y > 150 && p.y < this.scale.height - 40 && p.x > 60 && p.x < this.scale.width - 60);
     });
     const th = this.camp.trackedHex();
     const a = this.arrow!;
@@ -917,8 +1021,7 @@ export class PlayScene extends ArcadeScene {
     this.switchHud();
     for (const ev of b.events) this.onEvent(ev);
     b.events.length = 0;
-    const boss = f.rooms.some((r) => r.boss && BOSS_KINDS.includes(r.boss));
-    playMusic(this, boss && f.rooms.length === 1 ? 'boss' : 'level2');
+    playMusic(this, BATTLE_MUSIC);
     this.fade.setAlpha(1);
     this.tweens.add({ targets: this.fade, alpha: 0, duration: 380 });
     const title = f.kind === 'encounter' ? t('ambush') : f.kind === 'camp' ? t('campFight') : f.kind === 'rift' ? t('enterRift', { n: this.camp.s.rift + 1 }) : t('p_' + f.place);
@@ -1090,7 +1193,6 @@ export class PlayScene extends ArcadeScene {
           this.s('bossRoar', 0.7, 1);
           if (BOSS_KINDS.includes(ev.kind) || MINIBOSS_KINDS.includes(ev.kind)) {
             bossIntro(this, t('f_' + ev.kind), t('bs_' + ev.kind));
-            playMusic(this, 'boss');
           }
         }
         break;
@@ -1293,13 +1395,13 @@ export class PlayScene extends ArcadeScene {
     if (this.battle) { this.battle.passive = false; if (!skipped) banner(this, BANNER_Y, t('tut_go'), '', { color: '#ffd86a', size: 44, hold: 1.1 }); }
   }
 
-  /** A first-time hint (once per campaign), or a reminder (`always`). */
-  hint(key: string, always = false): void {
+  /** A first-time hint (once per campaign), or a reminder (`always`); `text` when its words differ by device. */
+  hint(key: string, always = false, text = key): void {
     const s = this.camp.s;
     if (!always && s.hints.includes(key)) return;
     if (!always) s.hints.push(key);
-    if (this.hintCard) { if (!this.hintQueue.includes(key)) this.hintQueue.push(key); return; }
-    this.hintCard = this.card('', t(key), this.tut ? TUT_Y + 170 : TUT_Y - 20);
+    if (this.hintCard) { if (!this.hintQueue.includes(text)) this.hintQueue.push(text); return; }
+    this.hintCard = this.card('', t(text), this.tut ? TUT_Y + 170 : TUT_Y - 20);
     const c = this.hintCard;
     c.setDepth(9430);
     this.tweens.add({ targets: c, alpha: 0, delay: 3200, duration: 380, onComplete: () => { c.destroy(); if (this.hintCard === c) this.hintCard = null; const n = this.hintQueue.shift(); if (n) this.hint(n, true); } });
