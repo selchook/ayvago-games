@@ -52,8 +52,14 @@
     "icon": "/games/color-road/ayvago/icon-512.png",
     "cover": "/games/color-road/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/color-road/ayvago/screenshot.jpg",
-    "card": "/games/color-road/ayvago/card-640x360.webp",
-    "card2x": "/games/color-road/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/color-road/ayvago/card-640x360.webp",
+      "tr": "/games/color-road/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/color-road/ayvago/card-1280x720.webp",
+      "tr": "/games/color-road/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/color-road/ayvago/logo-en.png",
       "tr": "/games/color-road/ayvago/logo-tr.png"

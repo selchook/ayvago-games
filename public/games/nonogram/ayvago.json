@@ -51,8 +51,14 @@
     "icon": "/games/nonogram/ayvago/icon-512.png",
     "cover": "/games/nonogram/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/nonogram/ayvago/screenshot.jpg",
-    "card": "/games/nonogram/ayvago/card-640x360.webp",
-    "card2x": "/games/nonogram/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/nonogram/ayvago/card-640x360.webp",
+      "tr": "/games/nonogram/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/nonogram/ayvago/card-1280x720.webp",
+      "tr": "/games/nonogram/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/nonogram/ayvago/logo-en.png",
       "tr": "/games/nonogram/ayvago/logo-tr.png"

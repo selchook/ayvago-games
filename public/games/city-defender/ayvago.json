@@ -53,8 +53,14 @@
     "icon": "/games/city-defender/ayvago/icon-512.png",
     "cover": "/games/city-defender/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/city-defender/ayvago/screenshot.jpg",
-    "card": "/games/city-defender/ayvago/card-640x360.webp",
-    "card2x": "/games/city-defender/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/city-defender/ayvago/card-640x360.webp",
+      "tr": "/games/city-defender/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/city-defender/ayvago/card-1280x720.webp",
+      "tr": "/games/city-defender/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/city-defender/ayvago/logo-en.png",
       "tr": "/games/city-defender/ayvago/logo-tr.png"

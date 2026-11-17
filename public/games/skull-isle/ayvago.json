@@ -52,8 +52,14 @@
     "icon": "/games/skull-isle/ayvago/icon-512.png",
     "cover": "/games/skull-isle/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/skull-isle/ayvago/screenshot.jpg",
-    "card": "/games/skull-isle/ayvago/card-640x360.webp",
-    "card2x": "/games/skull-isle/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/skull-isle/ayvago/card-640x360.webp",
+      "tr": "/games/skull-isle/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/skull-isle/ayvago/card-1280x720.webp",
+      "tr": "/games/skull-isle/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/skull-isle/ayvago/logo-en.png",
       "tr": "/games/skull-isle/ayvago/logo-tr.png"

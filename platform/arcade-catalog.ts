@@ -69,8 +69,14 @@ function arcadeGame({
         icon: `/games/${slug}/ayvago/icon-512.png`,
         cover: `/games/${slug}/ayvago/cover-1920x1080.jpg`,
         screenshot: `/games/${slug}/ayvago/screenshot.jpg`,
-        card: `/games/${slug}/ayvago/card-640x360.webp`,
-        card2x: `/games/${slug}/ayvago/card-1280x720.webp`,
+        card: {
+          en: `/games/${slug}/ayvago/card-640x360.webp`,
+          tr: `/games/${slug}/ayvago/card-tr-640x360.webp`,
+        },
+        card2x: {
+          en: `/games/${slug}/ayvago/card-1280x720.webp`,
+          tr: `/games/${slug}/ayvago/card-tr-1280x720.webp`,
+        },
         logo: { en: `/games/${slug}/ayvago/logo-en.png`, tr: `/games/${slug}/ayvago/logo-tr.png` },
       },
       version: version ?? '1.0.0',

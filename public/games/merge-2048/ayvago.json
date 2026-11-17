@@ -52,8 +52,14 @@
     "icon": "/games/merge-2048/ayvago/icon-512.png",
     "cover": "/games/merge-2048/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/merge-2048/ayvago/screenshot.jpg",
-    "card": "/games/merge-2048/ayvago/card-640x360.webp",
-    "card2x": "/games/merge-2048/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/merge-2048/ayvago/card-640x360.webp",
+      "tr": "/games/merge-2048/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/merge-2048/ayvago/card-1280x720.webp",
+      "tr": "/games/merge-2048/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/merge-2048/ayvago/logo-en.png",
       "tr": "/games/merge-2048/ayvago/logo-tr.png"

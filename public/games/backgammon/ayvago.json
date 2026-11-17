@@ -52,8 +52,14 @@
     "icon": "/games/backgammon/ayvago/icon-512.png",
     "cover": "/games/backgammon/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/backgammon/ayvago/screenshot.jpg",
-    "card": "/games/backgammon/ayvago/card-640x360.webp",
-    "card2x": "/games/backgammon/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/backgammon/ayvago/card-640x360.webp",
+      "tr": "/games/backgammon/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/backgammon/ayvago/card-1280x720.webp",
+      "tr": "/games/backgammon/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/backgammon/ayvago/logo-en.png",
       "tr": "/games/backgammon/ayvago/logo-tr.png"

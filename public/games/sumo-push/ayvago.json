@@ -54,8 +54,14 @@
     "icon": "/games/sumo-push/ayvago/icon-512.png",
     "cover": "/games/sumo-push/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/sumo-push/ayvago/screenshot.jpg",
-    "card": "/games/sumo-push/ayvago/card-640x360.webp",
-    "card2x": "/games/sumo-push/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/sumo-push/ayvago/card-640x360.webp",
+      "tr": "/games/sumo-push/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/sumo-push/ayvago/card-1280x720.webp",
+      "tr": "/games/sumo-push/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/sumo-push/ayvago/logo-en.png",
       "tr": "/games/sumo-push/ayvago/logo-tr.png"

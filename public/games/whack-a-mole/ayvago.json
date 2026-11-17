@@ -52,8 +52,14 @@
     "icon": "/games/whack-a-mole/ayvago/icon-512.png",
     "cover": "/games/whack-a-mole/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/whack-a-mole/ayvago/screenshot.jpg",
-    "card": "/games/whack-a-mole/ayvago/card-640x360.webp",
-    "card2x": "/games/whack-a-mole/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/whack-a-mole/ayvago/card-640x360.webp",
+      "tr": "/games/whack-a-mole/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/whack-a-mole/ayvago/card-1280x720.webp",
+      "tr": "/games/whack-a-mole/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/whack-a-mole/ayvago/logo-en.png",
       "tr": "/games/whack-a-mole/ayvago/logo-tr.png"

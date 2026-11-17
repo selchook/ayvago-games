@@ -52,8 +52,14 @@
     "icon": "/games/plinko-drop/ayvago/icon-512.png",
     "cover": "/games/plinko-drop/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/plinko-drop/ayvago/screenshot.jpg",
-    "card": "/games/plinko-drop/ayvago/card-640x360.webp",
-    "card2x": "/games/plinko-drop/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/plinko-drop/ayvago/card-640x360.webp",
+      "tr": "/games/plinko-drop/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/plinko-drop/ayvago/card-1280x720.webp",
+      "tr": "/games/plinko-drop/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/plinko-drop/ayvago/logo-en.png",
       "tr": "/games/plinko-drop/ayvago/logo-tr.png"

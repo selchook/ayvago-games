@@ -53,8 +53,14 @@
     "icon": "/games/simon-says/ayvago/icon-512.png",
     "cover": "/games/simon-says/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/simon-says/ayvago/screenshot.jpg",
-    "card": "/games/simon-says/ayvago/card-640x360.webp",
-    "card2x": "/games/simon-says/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/simon-says/ayvago/card-640x360.webp",
+      "tr": "/games/simon-says/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/simon-says/ayvago/card-1280x720.webp",
+      "tr": "/games/simon-says/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/simon-says/ayvago/logo-en.png",
       "tr": "/games/simon-says/ayvago/logo-tr.png"

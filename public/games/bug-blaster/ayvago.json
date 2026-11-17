@@ -53,8 +53,14 @@
     "icon": "/games/bug-blaster/ayvago/icon-512.png",
     "cover": "/games/bug-blaster/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/bug-blaster/ayvago/screenshot.jpg",
-    "card": "/games/bug-blaster/ayvago/card-640x360.webp",
-    "card2x": "/games/bug-blaster/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/bug-blaster/ayvago/card-640x360.webp",
+      "tr": "/games/bug-blaster/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/bug-blaster/ayvago/card-1280x720.webp",
+      "tr": "/games/bug-blaster/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/bug-blaster/ayvago/logo-en.png",
       "tr": "/games/bug-blaster/ayvago/logo-tr.png"

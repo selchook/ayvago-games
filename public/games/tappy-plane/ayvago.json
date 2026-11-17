@@ -53,8 +53,14 @@
     "icon": "/games/tappy-plane/ayvago/icon-512.png",
     "cover": "/games/tappy-plane/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/tappy-plane/ayvago/screenshot.jpg",
-    "card": "/games/tappy-plane/ayvago/card-640x360.webp",
-    "card2x": "/games/tappy-plane/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/tappy-plane/ayvago/card-640x360.webp",
+      "tr": "/games/tappy-plane/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/tappy-plane/ayvago/card-1280x720.webp",
+      "tr": "/games/tappy-plane/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/tappy-plane/ayvago/logo-en.png",
       "tr": "/games/tappy-plane/ayvago/logo-tr.png"

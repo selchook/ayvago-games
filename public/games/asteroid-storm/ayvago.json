@@ -53,8 +53,14 @@
     "icon": "/games/asteroid-storm/ayvago/icon-512.png",
     "cover": "/games/asteroid-storm/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/asteroid-storm/ayvago/screenshot.jpg",
-    "card": "/games/asteroid-storm/ayvago/card-640x360.webp",
-    "card2x": "/games/asteroid-storm/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/asteroid-storm/ayvago/card-640x360.webp",
+      "tr": "/games/asteroid-storm/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/asteroid-storm/ayvago/card-1280x720.webp",
+      "tr": "/games/asteroid-storm/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/asteroid-storm/ayvago/logo-en.png",
       "tr": "/games/asteroid-storm/ayvago/logo-tr.png"

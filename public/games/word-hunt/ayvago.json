@@ -53,8 +53,14 @@
     "icon": "/games/word-hunt/ayvago/icon-512.png",
     "cover": "/games/word-hunt/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/word-hunt/ayvago/screenshot.jpg",
-    "card": "/games/word-hunt/ayvago/card-640x360.webp",
-    "card2x": "/games/word-hunt/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/word-hunt/ayvago/card-640x360.webp",
+      "tr": "/games/word-hunt/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/word-hunt/ayvago/card-1280x720.webp",
+      "tr": "/games/word-hunt/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/word-hunt/ayvago/logo-en.png",
       "tr": "/games/word-hunt/ayvago/logo-tr.png"

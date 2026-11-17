@@ -54,8 +54,14 @@
     "icon": "/games/turkish-draughts/ayvago/icon-512.png",
     "cover": "/games/turkish-draughts/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/turkish-draughts/ayvago/screenshot.jpg",
-    "card": "/games/turkish-draughts/ayvago/card-640x360.webp",
-    "card2x": "/games/turkish-draughts/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/turkish-draughts/ayvago/card-640x360.webp",
+      "tr": "/games/turkish-draughts/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/turkish-draughts/ayvago/card-1280x720.webp",
+      "tr": "/games/turkish-draughts/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/turkish-draughts/ayvago/logo-en.png",
       "tr": "/games/turkish-draughts/ayvago/logo-tr.png"

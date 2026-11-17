@@ -52,8 +52,14 @@
     "icon": "/games/rope-swing/ayvago/icon-512.png",
     "cover": "/games/rope-swing/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/rope-swing/ayvago/screenshot.jpg",
-    "card": "/games/rope-swing/ayvago/card-640x360.webp",
-    "card2x": "/games/rope-swing/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/rope-swing/ayvago/card-640x360.webp",
+      "tr": "/games/rope-swing/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/rope-swing/ayvago/card-1280x720.webp",
+      "tr": "/games/rope-swing/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/rope-swing/ayvago/logo-en.png",
       "tr": "/games/rope-swing/ayvago/logo-tr.png"

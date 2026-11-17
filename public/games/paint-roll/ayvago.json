@@ -52,8 +52,14 @@
     "icon": "/games/paint-roll/ayvago/icon-512.png",
     "cover": "/games/paint-roll/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/paint-roll/ayvago/screenshot.jpg",
-    "card": "/games/paint-roll/ayvago/card-640x360.webp",
-    "card2x": "/games/paint-roll/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/paint-roll/ayvago/card-640x360.webp",
+      "tr": "/games/paint-roll/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/paint-roll/ayvago/card-1280x720.webp",
+      "tr": "/games/paint-roll/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/paint-roll/ayvago/logo-en.png",
       "tr": "/games/paint-roll/ayvago/logo-tr.png"

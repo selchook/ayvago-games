@@ -53,8 +53,14 @@
     "icon": "/games/ufo-abduction/ayvago/icon-512.png",
     "cover": "/games/ufo-abduction/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/ufo-abduction/ayvago/screenshot.jpg",
-    "card": "/games/ufo-abduction/ayvago/card-640x360.webp",
-    "card2x": "/games/ufo-abduction/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/ufo-abduction/ayvago/card-640x360.webp",
+      "tr": "/games/ufo-abduction/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/ufo-abduction/ayvago/card-1280x720.webp",
+      "tr": "/games/ufo-abduction/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/ufo-abduction/ayvago/logo-en.png",
       "tr": "/games/ufo-abduction/ayvago/logo-tr.png"

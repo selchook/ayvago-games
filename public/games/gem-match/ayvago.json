@@ -52,8 +52,14 @@
     "icon": "/games/gem-match/ayvago/icon-512.png",
     "cover": "/games/gem-match/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/gem-match/ayvago/screenshot.jpg",
-    "card": "/games/gem-match/ayvago/card-640x360.webp",
-    "card2x": "/games/gem-match/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/gem-match/ayvago/card-640x360.webp",
+      "tr": "/games/gem-match/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/gem-match/ayvago/card-1280x720.webp",
+      "tr": "/games/gem-match/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/gem-match/ayvago/logo-en.png",
       "tr": "/games/gem-match/ayvago/logo-tr.png"

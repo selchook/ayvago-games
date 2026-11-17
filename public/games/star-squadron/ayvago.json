@@ -52,8 +52,14 @@
     "icon": "/games/star-squadron/ayvago/icon-512.png",
     "cover": "/games/star-squadron/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/star-squadron/ayvago/screenshot.jpg",
-    "card": "/games/star-squadron/ayvago/card-640x360.webp",
-    "card2x": "/games/star-squadron/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/star-squadron/ayvago/card-640x360.webp",
+      "tr": "/games/star-squadron/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/star-squadron/ayvago/card-1280x720.webp",
+      "tr": "/games/star-squadron/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/star-squadron/ayvago/logo-en.png",
       "tr": "/games/star-squadron/ayvago/logo-tr.png"

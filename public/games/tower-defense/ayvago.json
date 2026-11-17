@@ -53,8 +53,14 @@
     "icon": "/games/tower-defense/ayvago/icon-512.png",
     "cover": "/games/tower-defense/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/tower-defense/ayvago/screenshot.jpg",
-    "card": "/games/tower-defense/ayvago/card-640x360.webp",
-    "card2x": "/games/tower-defense/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/tower-defense/ayvago/card-640x360.webp",
+      "tr": "/games/tower-defense/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/tower-defense/ayvago/card-1280x720.webp",
+      "tr": "/games/tower-defense/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/tower-defense/ayvago/logo-en.png",
       "tr": "/games/tower-defense/ayvago/logo-tr.png"

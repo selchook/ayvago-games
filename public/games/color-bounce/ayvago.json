@@ -52,8 +52,14 @@
     "icon": "/games/color-bounce/ayvago/icon-512.png",
     "cover": "/games/color-bounce/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/color-bounce/ayvago/screenshot.jpg",
-    "card": "/games/color-bounce/ayvago/card-640x360.webp",
-    "card2x": "/games/color-bounce/ayvago/card-1280x720.webp",
+    "card": {
+      "en": "/games/color-bounce/ayvago/card-640x360.webp",
+      "tr": "/games/color-bounce/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/color-bounce/ayvago/card-1280x720.webp",
+      "tr": "/games/color-bounce/ayvago/card-tr-1280x720.webp"
+    },
     "logo": {
       "en": "/games/color-bounce/ayvago/logo-en.png",
       "tr": "/games/color-bounce/ayvago/logo-tr.png"

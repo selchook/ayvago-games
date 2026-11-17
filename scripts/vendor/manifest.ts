@@ -31,6 +31,12 @@ const localizedAsset = z.strictObject({
   tr: assetRef.optional(),
 });
 
+// An asset that may be localized: a single ref for every locale, or a localized map. Used for
+// images with text baked in (the card art carries the game's logo).
+const maybeLocalizedAsset = z.union([assetRef, localizedAsset], {
+  error: 'asset must be a path, an https URL or an { en, tr? } map of them',
+});
+
 function isAllowedUrl(value: string): boolean {
   let url: URL;
   try {
@@ -99,10 +105,13 @@ export const gameManifestSchema = z
       // An in-game screenshot in the game's orientation; the Arcade theme's tiles show it.
       screenshot: assetRef.optional(),
       // Card art for the catalog tiles of the Minimal and Cartoon themes: in-game frames with a
-      // small logo and no text block, 640×360 WebP. Without it the tiles show the cover.
-      card: assetRef.optional(),
-      // The same card art at 1280×720 WebP for dense screens; only used together with `card`.
-      card2x: assetRef.optional(),
+      // small logo and no text block, 640×360 WebP. Without it the tiles show the cover. One ref
+      // for every locale, or a `{ en, tr? }` map when the logo in the art is localized (English
+      // required, the fallback).
+      card: maybeLocalizedAsset.optional(),
+      // The same card art at 1280×720 WebP for dense screens, in the same shape; only used
+      // together with `card`, and only in the language of the card it sharpens.
+      card2x: maybeLocalizedAsset.optional(),
       // The game's own logo (its title art, may include an emblem) per locale, English required:
       // a transparent PNG of at most 640×320, drawn over in-game art such as the player overlay
       // before Play. Other locales fall back to English; without a logo the platform writes the
@@ -124,6 +133,7 @@ export const gameManifestSchema = z
 
 export type LocalizedText = z.infer<typeof localizedText>;
 export type LocalizedAsset = z.infer<typeof localizedAsset>;
+export type MaybeLocalizedAsset = z.infer<typeof maybeLocalizedAsset>;
 export type GameManifest = z.infer<typeof gameManifestSchema>;
 export type GameManifestInput = z.input<typeof gameManifestSchema>;
 
@@ -153,6 +163,11 @@ export function gameCategories(
 // Resolves an asset reference from the manifest against the game's entry URL.
 export function resolveAssetUrl(manifest: Pick<GameManifest, 'entry'>, ref: string): string {
   return new URL(ref, manifest.entry).toString();
+}
+
+// A localized asset as a map: a single ref becomes the English (fallback) version.
+export function localizedAssetMap(ref: MaybeLocalizedAsset): LocalizedAsset {
+  return typeof ref === 'string' ? { en: ref } : ref;
 }
 
 // Picks the text (or a localized asset) for a locale, falling back to English.
