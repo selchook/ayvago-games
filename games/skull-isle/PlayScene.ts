@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, shake,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, hudRightEdge, themeCard, themeLabel, themeText, overlayHeadingStyle,
+  HUD_MARGIN, HUD_ROW_Y, HUD_ROW2_Y, HUD_GAP, hudRightEdge, themeCard, themeLabel, themeText, overlayHeadingStyle,
 } from '@core';
 import { SUMMARY_W, SUMMARY_H } from './menu';
 import { INK } from './chart';
@@ -27,14 +27,26 @@ import { ShopOverlay, DraftOverlay, RouteOverlay, type OverlayHost } from './sho
 import type { ShopId, BoonId, ShipId } from './upgrades';
 
 const STEP = DT;
-const BOTTOM_Y = 1214;
+/** The training card's width. */
+const TUT_W = 560;
+// 1.3: landscape (1280 × 720). The HUD runs in rows along the top (the core's score, level and
+// pause; health or hull and gold, the wave or the sails and the combo; the power-ups), the
+// keyboard's special and keg chips sit in the bottom-right corner; on touch the stick floats on the
+// left half and ATTACK, DODGE, SPECIAL and KEG make an arc round the right thumb, sized for 720 × 405
+// and 844 × 390 phones.
+const BOTTOM_Y = 672;
+/** The second and third HUD rows (a little lower than the core's row 2: the HP chip is taller). */
+const ROW2_Y = HUD_ROW2_Y + 6;
+const ROW3_Y = ROW2_Y + 68;
 /** Where the core's A and B buttons (ATTACK, DODGE) sit on touch screens. */
-const BTN_A: [number, number] = [598, 1110];
-const BTN_B: [number, number] = [448, 1188];
-const BTN_SPECIAL: [number, number] = [612, 930];
-const BTN_KEG: [number, number] = [468, 1030];
-/** The touch sail lever at sea: up the right edge, clear of the ships fighting alongside and of FIRE. */
-const SAIL_LEVER: [number, number] = [656, 636];
+const BTN_A: [number, number] = [1150, 594];
+const BTN_B: [number, number] = [982, 642];
+const BTN_SPECIAL: [number, number] = [1004, 484];
+const BTN_KEG: [number, number] = [1148, 414];
+/** The touch sail lever at sea: up the right edge, above FIRE (SPECIAL and KEG are away at sea). */
+const SAIL_LEVER: [number, number] = [1192, 330];
+/** Banners: between the HUD rows and the hero (who stands a little above the screen's middle). */
+const BANNER_Y = 236;
 
 interface DmgText { t: Phaser.GameObjects.Text; life: number; x: number; y: number }
 type TutStep = 'move' | 'combo' | 'dodge' | 'power' | 'done';
@@ -73,6 +85,8 @@ export class PlayScene extends ArcadeScene {
   private btnSpecial: ActionButton | null = null;
   private btnKeg: ActionButton | null = null;
   private vignette!: Phaser.GameObjects.Graphics;
+  /** 1.3: arrows at the screen's edge towards foes out of sight (red and pulsing while they wind up). */
+  private threats!: Phaser.GameObjects.Graphics;
   private fade!: Phaser.GameObjects.Rectangle;
   private shop: ShopOverlay | null = null;
   private draft: DraftOverlay | null = null;
@@ -103,6 +117,8 @@ export class PlayScene extends ArcadeScene {
   private tutTele: { x: number; z: number; r: number; id: number } | null = null;
   private tutT = 0;
   private hintBox: Phaser.GameObjects.Container | null = null;
+  private calloutBox: Phaser.GameObjects.Container | null = null;
+  private bannerBox: Phaser.GameObjects.Container | null = null;
   /** Test hooks. */
   quiet = false;
   testSpeed = 1;
@@ -129,7 +145,7 @@ export class PlayScene extends ArcadeScene {
     this.redT = 0; this.lowWarned = false; this.ended = false; this.banked = false; this.earned = 0; this.freedBarb = false;
     this.summaryBox = null; this.shop = null; this.draft = null; this.route = null; this.seaCard = null; this.seaCardT = 0; this.seaHud = false;
     this.specialWasReady = false;
-    this.tut = null; this.tutCard = null; this.tutSkip = null; this.tutMoved = 0; this.tutAt = null; this.tutTele = null; this.tutT = 0; this.hintBox = null;
+    this.tut = null; this.tutCard = null; this.tutSkip = null; this.tutMoved = 0; this.tutAt = null; this.tutTele = null; this.tutT = 0; this.hintBox = null; this.calloutBox = null; this.bannerBox = null;
     this.quiet = false; this.testSpeed = 1; this.god = false; this.frozen = false; this.pending = 0;
     this.firstFrames = []; this.frameStart = 0;
     this.btnAttack = this.btnDodge = this.btnSpecial = this.btnKeg = null;
@@ -160,6 +176,7 @@ export class PlayScene extends ArcadeScene {
     this.setupInput();
     this.setupHud();
     this.vignette = this.add.graphics().setDepth(60).setScrollFactor(0);
+    this.threats = this.add.graphics().setDepth(70).setScrollFactor(0);
     this.fade = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x02060a, 1).setOrigin(0).setScrollFactor(0).setDepth(9300);
     this.tweens.add({ targets: this.fade, alpha: 0, duration: 500 });
 
@@ -176,7 +193,7 @@ export class PlayScene extends ArcadeScene {
 
   private setupInput(): void {
     this.touch = this.sys.game.device.input.touch;
-    this.controls = new Controls(this, { joystick: true, buttons: ['A', 'B'], buttonPos: { A: BTN_A, B: BTN_B }, buttonScale: 1.06 });
+    this.controls = new Controls(this, { joystick: true, buttons: ['A', 'B'], buttonPos: { A: BTN_A, B: BTN_B }, buttonScale: 1.15 });
     if (this.controls.touchUi) {
       // the core's A/B circles keep doing the hit testing; this game draws its own buttons over them
       for (const o of this.children.list) {
@@ -187,10 +204,10 @@ export class PlayScene extends ArcadeScene {
         if (o instanceof Phaser.GameObjects.Arc) o.setFillStyle(0xffffff, 0.001).setStrokeStyle(0, 0, 0);
         else if (o instanceof Phaser.GameObjects.Text) o.setVisible(false);
       }
-      this.btnAttack = actionButton(this, BTN_A[0], BTN_A[1], 78, t('btnAttack'), false, { size: 22 });
-      this.btnDodge = actionButton(this, BTN_B[0], BTN_B[1], 60, t('btnDodge'), false, { size: 18 });
+      this.btnAttack = actionButton(this, BTN_A[0], BTN_A[1], 84, t('btnAttack'), false, { size: 23 });
+      this.btnDodge = actionButton(this, BTN_B[0], BTN_B[1], 62, t('btnDodge'), false, { size: 19 });
       this.btnSpecial = actionButton(this, BTN_SPECIAL[0], BTN_SPECIAL[1], 56, t('btnSpecial'), true, { size: 19 });
-      this.btnKeg = actionButton(this, BTN_KEG[0], BTN_KEG[1], 46, t('btnKeg'), true, { badge: true, size: 17 });
+      this.btnKeg = actionButton(this, BTN_KEG[0], BTN_KEG[1], 48, t('btnKeg'), true, { badge: true, size: 17 });
     }
     const kb = this.input.keyboard;
     if (kb) {
@@ -241,18 +258,21 @@ export class PlayScene extends ArcadeScene {
   private setupHud(): void {
     const { width } = this.scale;
     this.hud.setLevel(1);
-    this.goldChip = hudChip(this, HUD_MARGIN, HUD_ROW2_Y, { icon: GOLD, iconSize: 30, text: '0', color: '#ffe68a', minWidth: 96 });
-    this.waveChip = hudChip(this, width / 2, HUD_ROW2_Y, { align: 'center', text: '', size: 22, minWidth: 120 });
-    this.comboChip = hudChip(this, width - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', text: '', size: 24, color: '#ffd25a' });
-    this.comboChip.setVisible(false);
-    this.powerChips = new PowerChips<TimedPower>(this, HUD_MARGIN, HUD_ROW2_Y + 66, TIMED_POWERS, (id) => powerArt(id), (id) => POWER_COLOR[id]);
-    this.seaChips = new PowerChips<SeaPower>(this, HUD_MARGIN, HUD_ROW2_Y + 66, SEA_POWERS, (id) => seaPowerArt(id), (id) => SEA_POWER_COLOR[id]);
-    this.bossBar = new BossBar(this, width / 2, HUD_ROW2_Y + 130);
-    this.hp = new HpBar(this, HUD_MARGIN, BOTTOM_Y);
-    this.hullBar = new HpBar(this, HUD_MARGIN, BOTTOM_Y, 'hull');
+    // row 2: health (the hull at sea) and gold on the left, the wave in the middle, the combo (the
+    // sails at sea) on the right; row 3: the power-ups. The boss bar and, at sea, the way to the
+    // island take the level badge's place on the top row.
+    this.hp = new HpBar(this, HUD_MARGIN, ROW2_Y);
+    this.hullBar = new HpBar(this, HUD_MARGIN, ROW2_Y, 'hull');
     this.hullBar.chip.setVisible(false);
-    this.progress = new ProgressChip(this, width / 2, HUD_ROW2_Y);
-    this.sailChip = new SailChip(this, width - HUD_MARGIN, HUD_ROW2_Y);
+    this.goldChip = hudChip(this, this.hp.chip.right + HUD_GAP, ROW2_Y, { icon: GOLD, iconSize: 30, text: '0', color: '#ffe68a', minWidth: 96 });
+    this.waveChip = hudChip(this, width / 2, ROW2_Y, { align: 'center', text: '', size: 22, minWidth: 120 });
+    this.comboChip = hudChip(this, width - HUD_MARGIN, ROW2_Y, { align: 'right', text: '', size: 24, color: '#ffd25a' });
+    this.comboChip.setVisible(false);
+    this.powerChips = new PowerChips<TimedPower>(this, HUD_MARGIN, ROW3_Y, TIMED_POWERS, (id) => powerArt(id), (id) => POWER_COLOR[id]);
+    this.seaChips = new PowerChips<SeaPower>(this, HUD_MARGIN, ROW3_Y, SEA_POWERS, (id) => seaPowerArt(id), (id) => SEA_POWER_COLOR[id]);
+    this.bossBar = new BossBar(this, width / 2, HUD_ROW_Y);
+    this.progress = new ProgressChip(this, width / 2, HUD_ROW_Y);
+    this.sailChip = new SailChip(this, width - HUD_MARGIN, ROW2_Y);
     if (this.touch) this.sailLever = new SailLever(this, SAIL_LEVER[0], SAIL_LEVER[1], (d) => { this.sailStep += d; });
     if (!this.touch) {
       // keyboard players read the special meter and the kegs in chips by the corner
@@ -272,6 +292,7 @@ export class PlayScene extends ArcadeScene {
     this.waveChip.setVisible(!sea);
     if (sea) { this.comboChip.setVisible(false); this.shown.combo = -1; this.progress.show(t('i_' + islandOf(this.sim.voyage?.dest ?? this.sim.k + 1).id)); }
     else this.progress.hide();
+    this.hud.levelChip.setVisible(!sea);
     this.powerChips.clear();
     this.seaChips.clear();
     this.bossBar.hide();
@@ -298,7 +319,8 @@ export class PlayScene extends ArcadeScene {
       this.shown.gold = sim.gold;
       this.goldChip.setText(String(sim.gold));
     }
-    if (sea) { this.updateSeaHud(dt); return; }
+    if (sea) { this.threats.clear(); this.updateSeaHud(dt); return; }
+    this.drawThreats();
     const waveText = sim.phase === 'tutorial' ? t('tutTitle') : sim.phase === 'wreck' ? t('i_' + sim.L.id) : sim.bossActive ? t('bossWave') : t('wave', { n: Math.max(1, sim.wave), of: sim.waves });
     if (waveText !== this.shown.wave) {
       this.shown.wave = waveText;
@@ -322,6 +344,7 @@ export class PlayScene extends ArcadeScene {
       const shielded = boss.kind === 'head' ? boss.state !== 'open' : boss.state === 'ship';
       this.bossBar.update(Math.max(0, boss.hp / boss.maxHp), shielded, boss.kind === 'captain' && sim.bossPhase === 3, dt, this.elapsed);
     } else this.bossBar.hide();
+    this.hud.levelChip.setVisible(!this.bossBar.chip.visible);
     // special meter and kegs (dimmed while swimming: no attacks in deep water)
     const pip = PLAYER.pip, pips = sim.st.pips;
     const seg = Array.from({ length: pips }, (_, i) => Math.max(0, Math.min(1, (p.special - i * pip) / pip)));
@@ -356,6 +379,44 @@ export class PlayScene extends ArcadeScene {
     if (low && !this.lowWarned) { this.lowWarned = true; this.floatAt(p.x, p.z, t('lowHp'), '#ff7a6a', 28); }
     if (p.hp > sim.st.maxHp * 0.5) this.lowWarned = false;
     this.edge(dt, low);
+  }
+
+  /**
+   * The wide view is shallower than the portrait one was: a foe out of sight above or below (or
+   * past a side) gets a small arrow on the screen's edge pointing at it, inside the room left by the
+   * HUD rows and the thumbs; red and pulsing while it winds up an attack.
+   */
+  private drawThreats(): void {
+    const g = this.threats.clear();
+    const sim = this.sim, p = sim.p;
+    if (sim.p.state === 'dead' || sim.phase === 'tutorial') return;
+    const { width: W, height: H } = this.scale;
+    const x0 = 34, x1 = W - 34, y0 = ROW2_Y + 50, y1 = H - 30;
+    const cx = W / 2, cy = (y0 + y1) / 2;
+    let n = 0;
+    const winding = new Set<number>();
+    for (const T of sim.teles) if (!T.friendly) winding.add(T.owner);
+    for (const f of sim.foes) {
+      if (n >= 6) break;
+      if (f.state === 'dead' || f.passive || f.kind === 'head' || f.kind === 'arm') continue;
+      if (Math.hypot(f.x - p.x, f.z - p.z) > 17) continue;
+      const s = this.sx(f.x, f.z, 0.8);
+      if (s.x > 0 && s.x < W && s.y > ROW3_Y + 20 && s.y < H) continue;
+      // where the line from the middle to the foe leaves the room
+      const dx = s.x - cx, dy = s.y - cy;
+      const k = Math.min(dx ? Math.abs((dx > 0 ? x1 - cx : cx - x0) / dx) : 1e9, dy ? Math.abs((dy > 0 ? y1 - cy : cy - y0) / dy) : 1e9);
+      const ax = cx + dx * k, ay = cy + dy * k, a = Math.atan2(dy, dx);
+      const warn = winding.has(f.id);
+      const pulse = warn ? 0.65 + 0.35 * Math.sin(this.elapsed * 14) : 0.75;
+      const col = warn ? 0xff4a3a : 0xffd27a, r = warn ? 18 : 14;
+      // a notched arrowhead pointing at the foe
+      const at = (d: number, side: number) => new Phaser.Math.Vector2(ax + Math.cos(a) * d - Math.sin(a) * side, ay + Math.sin(a) * d + Math.cos(a) * side);
+      const pts = [at(r * 1.15, 0), at(-r * 0.75, r * 0.8), at(-r * 0.3, 0), at(-r * 0.75, -r * 0.8)];
+      g.fillStyle(0x000000, 0.3 * pulse).fillCircle(ax, ay + 2, r + 6);
+      g.fillStyle(col, pulse).fillPoints(pts, true);
+      g.lineStyle(2.5, 0x2a1206, 0.85 * pulse).strokePoints(pts, true);
+      n++;
+    }
   }
 
   private drawPips(seg: number[], ready: boolean): void {
@@ -394,6 +455,9 @@ export class PlayScene extends ArcadeScene {
       this.bossBar.show(t('b_ghost'));
       this.bossBar.update(Math.max(0, ghost.hp / ghost.maxHp), ghost.state === 'rise', false, dt, this.elapsed);
     } else this.bossBar.hide();
+    // the ghost ship's bar takes the way to the island's place while it fights
+    if (this.bossBar.chip.visible === this.progress.chip.visible) this.progress.chip.setVisible(!this.bossBar.chip.visible);
+    this.hud.levelChip.setVisible(false);
     const max = sim.shipSt.reload;
     const seg = [0, 1].map((i) => Math.max(0, Math.min(1, 1 - s.reload[i] / max)));
     const ready = !!v.aim && s.reload[v.aim.side] <= 0;
@@ -503,7 +567,7 @@ export class PlayScene extends ArcadeScene {
       case 'block': this.sfx('clang', { volume: 0.55 }); this.floatAt(ev.x, ev.z, t('blocked'), '#7fe8ff', 26); break;
       case 'dodge': this.s('roll', 0.45, 0.05); break;
       case 'special':
-        if (ev.which === 'barrage') { this.sfx('horn', { volume: 0.6 }); banner(this, 420, t('barrage'), '', { color: '#ffc23a', size: 44, hold: 0.8 }); }
+        if (ev.which === 'barrage') { this.sfx('horn', { volume: 0.6 }); this.say(BANNER_Y, t('barrage'), '', { color: '#ffc23a', size: 44, hold: 0.8 }); }
         break;
       case 'fire':
         if (ev.kind === 'bullet') this.sfx('pistol', { volume: 0.6 });
@@ -526,7 +590,7 @@ export class PlayScene extends ArcadeScene {
       case 'power': {
         this.sfx(ev.power === 'parrot' ? 'squawk' : ev.power === 'fish' ? 'heal' : 'power', { volume: 0.6 });
         const name = t('p_' + ev.power), sub = ev.power === 'fish' ? t('pd_fish', { n: FISH_HEAL }) : t('pd_' + ev.power);
-        this.floatAt(sim.p.x, sim.p.z, name, '#' + POWER_COLOR[ev.power].toString(16).padStart(6, '0'), 34, sub);
+        this.callout(name, sub, '#' + POWER_COLOR[ev.power].toString(16).padStart(6, '0'));
         this.flyIcon(ev.power);
         if (ev.power === 'keg' && sim.phase !== 'tutorial') this.hint(this.touch ? 'hintKegTouch' : 'hintKegKeys');
         break;
@@ -538,7 +602,7 @@ export class PlayScene extends ArcadeScene {
         break;
       case 'wave':
         if (!sim.bossActive || ev.n < ev.of) {
-          banner(this, 390, t('waveN', { n: ev.n }), '', { color: '#ffe6c0', size: 44, hold: 0.8 });
+          this.say(BANNER_Y, t('waveN', { n: ev.n }), '', { color: '#ffe6c0', size: 44, hold: 0.8 });
           this.sfx('wave', { volume: 0.45, exact: true });
         }
         break;
@@ -548,7 +612,7 @@ export class PlayScene extends ArcadeScene {
         break;
       case 'cleared':
         this.sfx('fanfare', { volume: 0.7, exact: true });
-        banner(this, 470, t('islandClear'), t('bonus', { n: ev.bonus }), { color: '#ffd23f', size: 50, hold: 1.8 });
+        this.say(BANNER_Y + 20, t('islandClear'), t('bonus', { n: ev.bonus }), { color: '#ffd23f', size: 50, hold: 1.8 });
         flash(this, 0xfff0c0, 200, 0.3);
         break;
       case 'shop': this.openShop(); break;
@@ -575,13 +639,13 @@ export class PlayScene extends ArcadeScene {
         if (at) this.view.focus(at.x, at.z + (ev.kind === 'kraken' ? 3 : 4), 2.3);
         this.view.zoomTarget = 1.18;
         this.time.delayedCall(300, () => { this.sfx('roar', { volume: 0.7 }); this.view.shake(0.4, 0.5); });
-        bossIntro(this, t('b_' + ev.kind), t(ev.kind === 'kraken' ? 'bossKrakenSub' : 'bossCaptainSub'));
+        this.bannerBox?.destroy(); bossIntro(this, t('b_' + ev.kind), t(ev.kind === 'kraken' ? 'bossKrakenSub' : 'bossCaptainSub'));
         break;
       }
       case 'bossPhase':
-        if (ev.kind === 'kraken' && ev.phase === 2) { banner(this, 460, t('krakenHead'), '', { color: '#ff9ad0', size: 42, hold: 1.4 }); this.sfx('roar', { volume: 0.6, rate: 1.2 }); }
-        if (ev.kind === 'captain' && ev.phase === 2) { banner(this, 460, t('captainLands'), '', { color: '#ffb04a', size: 42, hold: 1.2 }); this.sfx('roar', { volume: 0.6 }); }
-        if (ev.kind === 'captain' && ev.phase === 3) { banner(this, 460, t('captainRage'), '', { color: '#ff5a7a', size: 42, hold: 1.2 }); this.sfx('roar', { volume: 0.7, rate: 0.8 }); }
+        if (ev.kind === 'kraken' && ev.phase === 2) { this.say(BANNER_Y + 10, t('krakenHead'), '', { color: '#ff9ad0', size: 42, hold: 1.4 }); this.sfx('roar', { volume: 0.6, rate: 1.2 }); }
+        if (ev.kind === 'captain' && ev.phase === 2) { this.say(BANNER_Y + 10, t('captainLands'), '', { color: '#ffb04a', size: 42, hold: 1.2 }); this.sfx('roar', { volume: 0.6 }); }
+        if (ev.kind === 'captain' && ev.phase === 3) { this.say(BANNER_Y + 10, t('captainRage'), '', { color: '#ff5a7a', size: 42, hold: 1.2 }); this.sfx('roar', { volume: 0.7, rate: 0.8 }); }
         break;
       case 'bossDown':
         this.slowT = 1.2;
@@ -590,13 +654,13 @@ export class PlayScene extends ArcadeScene {
         this.view.zoomTarget = 1;
         this.time.delayedCall(800, () => {
           this.sfx('fanfare2', { volume: 0.7, exact: true });
-          banner(this, 420, t('bossDown', { name: t('b_' + ev.kind) }), '', { color: '#ffd23f', hold: 1.6, size: 46 });
+          this.say(BANNER_Y, t('bossDown', { name: t('b_' + ev.kind) }), '', { color: '#ffd23f', hold: 1.6, size: 46 });
         });
         break;
       case 'secondWind':
         this.sfx('revive', { volume: 0.8 });
         flash(this, 0xfff0b0, 400, 0.6);
-        banner(this, 420, t('secondWindOn'), '', { color: '#ffd27a', hold: 1.2 });
+        this.say(BANNER_Y, t('secondWindOn'), '', { color: '#ffd27a', hold: 1.2 });
         break;
       case 'death':
         this.sfx('death', { volume: 0.9 });
@@ -627,7 +691,7 @@ export class PlayScene extends ArcadeScene {
         this.tweens.killTweensOf(this.fade);
         this.tweens.add({ targets: this.fade, alpha: 0, duration: 600 });
         const name = t('i_' + islandOf(ev.dest).id);
-        banner(this, 430, t('r_' + ev.route), t('sailing', { name }), { color: ev.route === 'storm' ? '#c8d4e8' : '#9fe8ff', size: 46, hold: 1.6 });
+        this.say(BANNER_Y, t('r_' + ev.route), t('sailing', { name }), { color: ev.route === 'storm' ? '#c8d4e8' : '#9fe8ff', size: 46, hold: 1.6 });
         this.sfx(ev.route === 'storm' ? 'thunder' : 'horn', { volume: 0.45, exact: true });
         this.lowWarned = false;
         if (!this.bot && !this.quiet && !this.meta.hints.includes('seaTut')) this.time.delayedCall(700, () => this.openSeaCard());
@@ -672,7 +736,7 @@ export class PlayScene extends ArcadeScene {
           shake(this, 0.007, 220);
           if (ev.kind === 'ghost') {
             this.slowT = 1;
-            this.time.delayedCall(500, () => { this.sfx('fanfare2', { volume: 0.7, exact: true }); banner(this, 420, t('bossDown', { name: t('b_ghost') }), '', { color: '#7affc0', hold: 1.4, size: 46 }); });
+            this.time.delayedCall(500, () => { this.sfx('fanfare2', { volume: 0.7, exact: true }); this.say(BANNER_Y, t('bossDown', { name: t('b_ghost') }), '', { color: '#7affc0', hold: 1.4, size: 46 }); });
           }
         } else this.s(ev.kind === 'tentacle' ? 'squish' : 'splash', 0.55, 0.08, sxv(ev.x, ev.z));
         break;
@@ -683,7 +747,7 @@ export class PlayScene extends ArcadeScene {
         this.sfx('power', { volume: 0.55 });
         const extra: Record<SeaPower, string> = { wind: 'wind', chain: 'clang', mermaid: 'bling', fire: 'fireUp', spyglass: 'spy' };
         this.time.delayedCall(120, () => this.sfx(extra[k], { volume: 0.5 }));
-        if (v) this.floatAt(v.ship.x, v.ship.z, t('sp_' + k), '#' + SEA_POWER_COLOR[k].toString(16).padStart(6, '0'), 34, t('spd_' + k));
+        this.callout(t('sp_' + k), t('spd_' + k), '#' + SEA_POWER_COLOR[k].toString(16).padStart(6, '0'));
         this.flySea(k);
         break;
       }
@@ -700,14 +764,14 @@ export class PlayScene extends ArcadeScene {
       case 'ghost':
         this.sfx('ghost', { volume: 0.7, exact: true });
         this.time.delayedCall(250, () => this.sfx('roar', { volume: 0.5, rate: 1.3 }));
-        bossIntro(this, t('ghostShip'), t('ghostSub'));
+        this.bannerBox?.destroy(); bossIntro(this, t('ghostShip'), t('ghostSub'));
         break;
       case 'seaSpawn':
         if (ev.kind === 'tentacle') this.s('splash', 0.5, 0.1);
         break;
       case 'dock':
         this.sfx('horn', { volume: 0.55, exact: true });
-        if (v) banner(this, 420, t('landHo'), v.salvaged || v.sunkFoes ? t('seaHaul', { g: v.salvaged, n: v.sunkFoes }) : '', { color: '#ffe6a0', size: 48, hold: 1.4 });
+        if (v) this.say(BANNER_Y, t('landHo'), v.salvaged || v.sunkFoes ? t('seaHaul', { g: v.salvaged, n: v.sunkFoes }) : '', { color: '#ffe6a0', size: 48, hold: 1.4 });
         break;
       case 'jumpAshore': this.sfx('toss', { volume: 0.5 }); break;
       case 'sink':
@@ -715,14 +779,14 @@ export class PlayScene extends ArcadeScene {
         this.time.delayedCall(300, () => this.sfx('splash', { volume: 0.8 }));
         flash(this, 0x2060a0, 400, 0.4);
         this.slowT = 1;
-        banner(this, 420, t('sunk'), '', { color: '#ff8a6a', size: 52, hold: 1.6 });
+        this.say(BANNER_Y, t('sunk'), '', { color: '#ff8a6a', size: 52, hold: 1.6 });
         this.time.delayedCall(1300, () => this.tweens.add({ targets: this.fade, alpha: 1, duration: 600 }));
         break;
       case 'wreck':
         this.tweens.killTweensOf(this.fade);
         this.fade.setAlpha(1);
         this.tweens.add({ targets: this.fade, alpha: 0, duration: 600 });
-        banner(this, 430, t('sunkSub', { n: ev.lost }), '', { color: '#bfe8ff', size: 38, hold: 1.6 });
+        this.say(BANNER_Y, t('sunkSub', { n: ev.lost }), '', { color: '#bfe8ff', size: 38, hold: 1.6 });
         this.sfx('splash', { volume: 0.7 });
         break;
       case 'washed':
@@ -743,7 +807,7 @@ export class PlayScene extends ArcadeScene {
         break;
       case 'islet':
         this.sfx('treasure', { volume: 0.7, exact: true });
-        banner(this, 290, t('isletFound'), t('doubloonsEarned', { n: ev.n }), { color: '#ffd23f', size: 46, hold: 1.4 });
+        this.say(BANNER_Y, t('isletFound'), t('doubloonsEarned', { n: ev.n }), { color: '#ffd23f', size: 46, hold: 1.4 });
         break;
       default: break;
     }
@@ -774,7 +838,7 @@ export class PlayScene extends ArcadeScene {
   private islandBanner(k: number): void {
     const isle = islandOf(k);
     const lap = Math.floor(k / 5);
-    banner(this, 370, t('islandN', { n: k + 1 }), t('i_' + isle.id) + (lap > 0 ? '  ·  ' + t('lapN', { n: lap + 1 }) : ''), { color: '#ffe6a0', size: 52, hold: 1.25 });
+    this.say(BANNER_Y, t('islandN', { n: k + 1 }), t('i_' + isle.id) + (lap > 0 ? '  ·  ' + t('lapN', { n: lap + 1 }) : ''), { color: '#ffe6a0', size: 52, hold: 1.25 });
     this.sfx('horn', { volume: 0.45, exact: true });
   }
 
@@ -782,7 +846,7 @@ export class PlayScene extends ArcadeScene {
   private flyIcon(id: PowerId): void {
     const p = this.sx(this.sim.p.x, this.sim.p.z, 1.4);
     const to = id === 'keg' ? (this.btnKeg ? { x: this.btnKeg.x, y: this.btnKeg.y } : this.kegChip ? { x: this.kegChip.x - this.kegChip.chipWidth / 2, y: BOTTOM_Y } : p)
-      : id === 'fish' ? { x: HUD_MARGIN + 40, y: BOTTOM_Y } : this.powerChips.slot(id);
+      : id === 'fish' ? { x: HUD_MARGIN + 40, y: ROW2_Y } : this.powerChips.slot(id);
     const img = this.add.image(p.x, p.y, powerArt(id)).setDisplaySize(60, 60).setScrollFactor(0).setDepth(9350);
     this.tweens.add({ targets: img, x: to.x, y: to.y, displayWidth: 36, displayHeight: 36, duration: 520, ease: 'Cubic.easeIn', onComplete: () => img.destroy() });
   }
@@ -822,7 +886,7 @@ export class PlayScene extends ArcadeScene {
     const m = loadMeta();
     if (!m.hints.includes('seaTut')) { m.hints.push('seaTut'); saveMeta(m); }
     const { width } = this.scale;
-    const c = this.add.container(width / 2, 770).setScrollFactor(0).setDepth(9450);
+    const c = this.add.container(width / 2, 380).setScrollFactor(0).setDepth(9450);
     const lines = [
       [SHIP, t(this.touch ? 'seaTut_steer_touch' : 'seaTut_steer_keys')],
       [seaPowerArt('fire'), t(this.touch ? 'seaTut_fire_touch' : 'seaTut_fire_keys')],
@@ -874,22 +938,26 @@ export class PlayScene extends ArcadeScene {
     this.tutMoved = 0;
     this.tutT = 0;
     const { width } = this.scale;
-    this.tutSkip = new Pill(this, width / 2, 912, 170, 60, 0x5a4a6a, () => this.endTutorial(true), 24);
+    // under the HUD rows in the middle (the card sits low, between the thumbs)
+    this.tutSkip = new Pill(this, width / 2, ROW3_Y + 4, 170, 56, 0x5a4a6a, () => this.endTutorial(true), 24);
     this.tutSkip.setLabels(t('skip') + (this.touch ? '' : ' (Q)')).setScrollFactor(0).setDepth(9450);
     this.tutPrompt();
   }
+
+  /** The middle of the room between the thumbs: a little left of centre on touch (the buttons' arc). */
+  private get midX(): number { return this.touch ? 596 : this.scale.width / 2; }
 
   private tutPrompt(): void {
     const step = this.tut;
     if (!step) return;
     this.tutCard?.destroy();
-    const { width } = this.scale;
     const n = { move: 1, combo: 2, dodge: 3, power: 4, done: 4 }[step];
     const key = step === 'done' ? 'tut_done' : step === 'power' ? 'tut_power' : `tut_${step}_${this.touch ? 'touch' : 'keys'}`;
-    const c = this.add.container(width / 2, 790).setScrollFactor(0).setDepth(9420);
-    const tx = txt(this, 0, 8, t(key), { size: 27, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: 560 });
-    const h = Math.max(110, tx.height + 66);
-    c.add(glass(this, 620, h, { r: 24, color: 0x0e1a24, alpha: 0.86, rim: step === 'done' ? 0x7affa0 : 0xffd23f }));
+    // low in the middle, under the hero and clear of the right thumb's buttons
+    const tx = txt(this, 0, 8, t(key), { size: 25, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: 520 });
+    const h = Math.max(104, tx.height + 62);
+    const c = this.add.container(this.midX, 676 - h / 2).setScrollFactor(0).setDepth(9420);
+    c.add(glass(this, TUT_W, h, { r: 24, color: 0x0e1a24, alpha: 0.86, rim: step === 'done' ? 0x7affa0 : 0xffd23f }));
     c.add(txt(this, 0, -h / 2 + 22, t('tutTitle') + '  ' + t('tutStep', { n }), { title: true, size: 18, color: '#ffd23f', strokeThickness: 0, shadow: false }));
     c.add(tx);
     c.setScale(0.6).setAlpha(0);
@@ -978,9 +1046,8 @@ export class PlayScene extends ArcadeScene {
     const m = loadMeta();
     if (!m.hints.includes(key)) { m.hints.push(key); saveMeta(m); }
     this.hintBox?.destroy();
-    const { width } = this.scale;
-    const c = this.add.container(width / 2, 800).setScrollFactor(0).setDepth(9400).setAlpha(0);
-    const tx = txt(this, 0, 0, t(key), { size: 25, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: 600 });
+    const tx = txt(this, 0, 0, t(key), { size: 24, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: 520 });
+    const c = this.add.container(this.midX, 660 - tx.height / 2).setScrollFactor(0).setDepth(9400).setAlpha(0);
     const bg = this.add.graphics().fillStyle(0x0b1620, 0.78).fillRoundedRect(-tx.width / 2 - 24, -tx.height / 2 - 16, tx.width + 48, tx.height + 32, 22)
       .lineStyle(2, 0xffd27a, 0.6).strokeRoundedRect(-tx.width / 2 - 24, -tx.height / 2 - 16, tx.width + 48, tx.height + 32, 22);
     c.add([bg, tx]);
@@ -1013,13 +1080,41 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
+  /** A banner in the one banner slot between the HUD and the hero: a new one replaces the one showing. */
+  private say(...a: Parameters<typeof banner> extends [unknown, ...infer R] ? R : never): void {
+    this.bannerBox?.destroy();
+    this.bannerBox = banner(this, ...a);
+  }
+
+  /**
+   * A pickup's name and what it does (a power-up ashore or at sea): a small banner in the middle,
+   * between the HUD rows and the hero, clear of the thumbs (a new one replaces the last).
+   */
+  private callout(name: string, sub: string, color: string): void {
+    this.calloutBox?.destroy();
+    // just under the HUD rows (lower in the training, where SKIP sits there), above the hero's own floating text
+    const y = this.tut ? BANNER_Y + 30 : ROW3_Y - 6;
+    this.calloutBox = banner(this, y, name, sub, { color, size: 36, subSize: 22, hold: 0.9, x: this.midX, wrap: 480 });
+  }
+
+  /**
+   * Text that floats up from a spot in the world, kept whole on the screen: inside its edges, under
+   * the HUD rows (it rises 70 px) and, on touch, left of the right thumb's buttons.
+   */
   private floatAt(x: number, z: number, s: string, color: string, size = 26, sub = ''): void {
     const p = this.sx(x, z, 2);
-    const c = this.add.container(p.x, p.y - 20).setScrollFactor(0).setDepth(9300).setScale(0.5);
-    c.add(txt(this, 0, 0, s, { title: true, size, color, strokeThickness: 6 }));
-    if (sub) c.add(txt(this, 0, size * 0.85, sub, { size: Math.round(size * 0.62), color: '#ffffff', strokeThickness: 4 }));
+    const main = txt(this, 0, 0, s, { title: true, size, color, strokeThickness: 6 });
+    const small = sub ? txt(this, 0, size * 0.85, sub, { size: Math.round(size * 0.62), color: '#ffffff', strokeThickness: 4 }) : null;
+    const half = Math.max(main.width, small?.width ?? 0) / 2 + 10;
+    const { width: W, height: H } = this.scale;
+    const right = this.touch ? BTN_B[0] - 70 : W - 12;
+    const y = Phaser.Math.Clamp(p.y - 20, ROW3_Y + 112, H - 40 - (small ? size : 0));
+    const cx = Phaser.Math.Clamp(p.x, 12 + half, Math.max(12 + half, right - half));
+    const c = this.add.container(cx, y).setScrollFactor(0).setDepth(9300).setScale(0.5);
+    c.add(main);
+    if (small) c.add(small);
     this.tweens.add({ targets: c, scale: 1, duration: 200, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: c, y: p.y - 90, alpha: 0, delay: 750, duration: 500, onComplete: () => c.destroy() });
+    this.tweens.add({ targets: c, y: y - 70, alpha: 0, delay: 750, duration: 500, onComplete: () => c.destroy() });
   }
 
   // ------------------------------------------------------------------ the end
@@ -1048,7 +1143,7 @@ export class PlayScene extends ArcadeScene {
     this.hintBox?.destroy(); this.hintBox = null;
     const sim = this.sim;
     const { width } = this.scale;
-    const c = this.add.container(width / 2, 560).setScrollFactor(0).setDepth(9500);
+    const c = this.add.container(width / 2, 380).setScrollFactor(0).setDepth(9500);
     this.summaryBox = c;
     const ink = { strokeThickness: 0, shadow: false } as const;
     c.add(themeCard(this, 0, 0, SUMMARY_W, SUMMARY_H));

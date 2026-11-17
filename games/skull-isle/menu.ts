@@ -13,6 +13,13 @@ import { loadMeta, saveMeta } from './meta';
 const INK = '#2a1206';
 /** The run summary's card (PlayScene.showSummary). */
 export const SUMMARY_W = 620, SUMMARY_H = 430;
+/**
+ * The menu row (1.3, landscape): the pirate board and the MAP button side by side in the right
+ * column under the Easy / Normal switch, the keys' line between the two.
+ */
+const SEL_W = 384, MAP_W = 124, ROW_H = 96, ROW_GAP = 12, ROW_LEFT = 668;
+/** The room for the pirate's name and line between the arrows. */
+const TEXT_W = SEL_W - 2 * 66;
 
 /** One cutlass along +x: the pommel at the left, the curved blade's tip at the right (unit = size / 100). */
 function cutlass(c: CanvasRenderingContext2D, u: number): void {
@@ -153,7 +160,7 @@ export const SKULL_THEME: MenuTheme = {
   },
   skin: 'plank',
   // the pirate board, its arrow knobs and the MAP button (menuRow)
-  pieces: [{ kind: 'board', w: 420, h: 104 }, { kind: 'round', w: 56, h: 56 }, { kind: 'button', w: 196, h: 104 }],
+  pieces: [{ kind: 'board', w: SEL_W, h: ROW_H }, { kind: 'round', w: 52, h: 52 }, { kind: 'button', w: MAP_W, h: ROW_H }],
   // dim: the backdrop's darkening (main.ts drew it as its own layer before the theme)
   frame: { border: 'rope', notes: (c, w, h) => paintSheet(c, w, h, 31), vignette: 0.6, dim: 0.34 },
   // the pause and the result screen wear the same (the parchment card, the Jolly Roger on top);
@@ -169,28 +176,30 @@ export const SKULL_THEME: MenuTheme = {
  */
 export function menuRow(scene: Phaser.Scene, x: number, y: number, onHero: (id: HeroId) => void, open: () => void): { refresh: () => void } {
   const touch = scene.sys.game.device.input.touch;
-  const sel = scene.add.container(x - 112, y + 4);
-  sel.add(skinImage(scene, 0, 0, 'board', 420, 104));
-  const name = themeText(scene, 0, -22, '', { size: 40 });
-  const desc = txt(scene, 0, 18, '', { size: 16, color: '#f3e3c0', strokeThickness: 0, shadow: false, wrap: 270 });
+  // the right column starts clear of PLAY's right end (the core centres the option at x)
+  const left = Math.max(x - (SEL_W + ROW_GAP + MAP_W) / 2, ROW_LEFT);
+  const sel = scene.add.container(left + SEL_W / 2, y + 4);
+  sel.add(skinImage(scene, 0, 0, 'board', SEL_W, ROW_H));
+  const name = themeText(scene, 0, -21, '', { size: 36 });
+  const desc = txt(scene, 0, 18, '', { size: 16, color: '#f3e3c0', strokeThickness: 0, shadow: false, wrap: TEXT_W });
   sel.add([name, desc]);
   const arrow = (dx: number, dir: 1 | -1) => {
-    const knob = skinImage(scene, dx, 0, 'round', 56, 56);
+    const knob = skinImage(scene, dx, 0, 'round', 52, 52);
     const g = scene.add.graphics();
-    g.fillStyle(0x2a1206, 1).fillTriangle(dx + dir * 14, 1, dx - dir * 9, -14, dx - dir * 9, 16);
-    g.fillStyle(0xffd23f, 1).fillTriangle(dx + dir * 12, 0, dx - dir * 7, -11, dx - dir * 7, 11);
-    const hit = scene.add.zone(dx, 0, 90, 104).setInteractive({ useHandCursor: true });
+    g.fillStyle(0x2a1206, 1).fillTriangle(dx + dir * 13, 1, dx - dir * 8, -13, dx - dir * 8, 15);
+    g.fillStyle(0xffd23f, 1).fillTriangle(dx + dir * 11, 0, dx - dir * 6, -10, dx - dir * 6, 10);
+    const hit = scene.add.zone(dx, 0, 84, ROW_H).setInteractive({ useHandCursor: true });
     hit.on('pointerdown', () => knob.setScale(0.92));
     hit.on('pointerout', () => knob.setScale(1));
     hit.on('pointerup', () => { knob.setScale(1); cycle(dir); });
     sel.add([knob, g, hit]);
   };
-  arrow(-170, -1);
-  arrow(170, 1);
+  arrow(-SEL_W / 2 + 34, -1);
+  arrow(SEL_W / 2 - 34, 1);
   const show = () => {
     const mm = loadMeta();
     name.setText(t('h_' + mm.hero)).setScale(1);
-    if (name.width > 270) name.setScale(270 / name.width);
+    if (name.width > TEXT_W) name.setScale(TEXT_W / name.width);
     desc.setText(t('hd_' + mm.hero));
     desc.setScale(desc.height > 44 ? 44 / desc.height : 1);
     name.setColor('#' + Phaser.Display.Color.IntegerToColor(HERO[mm.hero].color).lighten(12).color.toString(16).padStart(6, '0'));
@@ -208,24 +217,30 @@ export function menuRow(scene: Phaser.Scene, x: number, y: number, onHero: (id: 
   };
   show();
 
-  const map = new SkinButton(scene, x + 220, y + 4, t('map'), open, { width: 196, height: 104, size: 36 });
-  const mapIcon = scene.add.image(0, 0, MAP).setDisplaySize(40, 40);
-  const coin = scene.add.image(0, 0, DOUBLOON).setDisplaySize(24, 24);
-  const count = txt(scene, 0, 0, '', { size: 22, color: '#fff3c4', strokeThickness: 4 });
-  map.add([mapIcon, coin, count]);
+  // the MAP button: the chart over its label, the purse of doubloons on a tag at its top-right corner
+  const mx = left + SEL_W + ROW_GAP + MAP_W / 2;
+  const map = new SkinButton(scene, mx, y + 4, t('map'), open, { width: MAP_W, height: ROW_H, size: 30 });
+  const mapIcon = scene.add.image(0, -17, MAP).setDisplaySize(40, 40);
+  map.add(mapIcon);
+  const tag = scene.add.graphics();
+  const coin = scene.add.image(0, 0, DOUBLOON).setDisplaySize(22, 22);
+  const count = txt(scene, 0, 0, '', { size: 19, color: '#fff3c4', strokeThickness: 4 });
+  const badge = scene.add.container(mx + MAP_W / 2 - 10, y + 4 - ROW_H / 2 - 4, [tag, coin, count]);
   const label = () => {
-    map.setText(t('map')).fitLabel(196 - 84);
+    map.setText(t('map')).fitLabel(MAP_W - 20);
+    map.label.setX(0);
+    map.setLabelY(22);
     count.setText(String(loadMeta().doubloons));
-    const lw = map.label.displayWidth, total = 40 + 8 + lw;
-    mapIcon.setPosition(-total / 2 + 20, -16);
-    map.label.setX(-total / 2 + 48 + lw / 2);
-    map.setLabelY(-16);
-    const cw = 24 + 6 + count.width;
-    coin.setPosition(-cw / 2 + 12, 24);
-    count.setPosition(-cw / 2 + 30 + count.width / 2, 24);
+    const cw = 22 + 5 + count.width, w = cw + 18;
+    tag.clear().fillStyle(0x000000, 0.35).fillRoundedRect(-w + 2, -13, w, 30, 15)
+      .fillStyle(0x3d2614, 1).fillRoundedRect(-w, -15, w, 30, 15).lineStyle(2, 0xe0a93a, 1).strokeRoundedRect(-w, -15, w, 30, 15);
+    coin.setPosition(-w + 9 + 11, 0);
+    count.setPosition(-w + 9 + 27 + count.width / 2, 0);
   };
+  void badge;
   label();
   scene.input.keyboard?.on('keydown-H', () => cycle(1));
-  if (!touch) txt(scene, x, y + 76, t('heroKeys'), { size: 17, color: '#e8d6a8', strokeThickness: 3, shadow: false });
+  // the keys' line between the Easy / Normal switch and the row
+  if (!touch) txt(scene, left + (SEL_W + ROW_GAP + MAP_W) / 2, y - ROW_H / 2 - 14, t('heroKeys'), { size: 17, color: '#e8d6a8', strokeThickness: 3, shadow: false });
   return { refresh: () => { label(); show(); } };
 }

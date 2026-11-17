@@ -46,7 +46,7 @@ const tr: S = {
   nd_hardy: '+15 azami can', nd_whetstone: '+%10 hasar', nd_nimble: '−%15 yuvarlanma beklemesi', nd_gunpowder: 'Özel güç %25 hızlı dolar',
   nd_secondWind: 'Her yolculukta bir kez ölümden dön', nd_seaLegs: '+%8 koşu hızı', nd_luckyCoin: '+%15 altın', nd_lootHook: 'Altınları daha uzaktan çek',
   nd_powderMonkey: 'Her yolculuğa 2 fıçıyla başla', nd_cannonDrill: 'Top yağmuru ilk adadan açık',
-  owned: 'ALINDI', needAbove: 'Önce üsttekini al', heroOwned: 'AÇIK',
+  owned: 'ALINDI', needAbove: 'Önce rotadaki bir öncekini al', heroOwned: 'AÇIK',
   // HUD and play
   hits: 'vuruş', barrage: 'TOP YAĞMURU!', hintBarrel: 'Fıçılar turuncu şeridi izler: yoldan çekil ya da kır!',
   wave: 'Dalga {n}/{of}', bossWave: 'BOSS', combo: '×{n}', ready: 'HAZIR',
@@ -134,7 +134,7 @@ const en: S = {
   nd_hardy: '+15 max HP', nd_whetstone: '+10% damage', nd_nimble: '−15% dodge cooldown', nd_gunpowder: 'Special charges 25% faster',
   nd_secondWind: 'Come back from death once per voyage', nd_seaLegs: '+8% run speed', nd_luckyCoin: '+15% gold', nd_lootHook: 'Pull gold from further away',
   nd_powderMonkey: 'Start every voyage with 2 kegs', nd_cannonDrill: 'The cannon barrage from the first island',
-  owned: 'OWNED', needAbove: 'Buy the one above first', heroOwned: 'UNLOCKED',
+  owned: 'OWNED', needAbove: 'Buy the one before it first', heroOwned: 'UNLOCKED',
   hits: 'hits', barrage: 'CANNON BARRAGE!', hintBarrel: 'Barrels follow the orange lane: step aside or smash them!',
   wave: 'Wave {n}/{of}', bossWave: 'BOSS', combo: '×{n}', ready: 'READY',
   waveN: 'WAVE {n}', waveClear: 'Wave clear!', islandClear: 'ISLAND RAIDED!', bonus: '+{n} points',

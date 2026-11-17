@@ -18,9 +18,18 @@ import { Figure, FigurePool } from './figure';
 import { SeaView, SHIP_SCALE, DECK, SHIP_GUNS } from './seaview';
 import type { Voyage } from './voyage';
 
-export const CAM = { fov: 42, tilt: 58, dist: 21 };
-/** The sea camera: behind and above the ship, low enough for the horizon. */
-const SEA_CAM = { y: Math.sin(THREE.MathUtils.degToRad(30)) * 40, z: Math.cos(THREE.MathUtils.degToRad(30)) * 40 };
+/**
+ * The island camera (1.3: landscape, 1280 × 720). Closer than the portrait camera (21), so the
+ * people stay large on a phone held sideways while the wide view takes in the island from shore to
+ * shore (about 23 units across at the hero, 15 deep).
+ */
+export const CAM = { fov: 42, tilt: 58, dist: 17 };
+/** How far the hero may stray sideways from the camera's centre (units): ~250 px, clear of the thumbs. */
+const HERO_SIDE = 4.6;
+/** The sea camera: behind and above the ship, low enough for the horizon (1.3: closer and lower for the wide view). */
+const SEA_CAM = { y: Math.sin(THREE.MathUtils.degToRad(27)) * 33, z: Math.cos(THREE.MathUtils.degToRad(27)) * 33 };
+/** The sea's lens (vertical, degrees) and how far ahead of the ship the camera looks. */
+const SEA_FOV = 44, SEA_AHEAD = 9;
 /** A stormy passage's greys. */
 const STORM = { sky: 0x4d5a68, fog: 0x5a6672, deep: 0x1c3348, shallow: 0x3a6a78, sun: 0xc8d4e0, sunI: 0.95, hemiSky: 0x9aa8b8, hemiGround: 0x2a3038, ambient: 1.15 };
 const TENTACLE_H = 15.67;
@@ -826,22 +835,27 @@ export class View {
     const hp = this.heroPos;
     let tx = hp.x, tz = hp.z - this.lookAhead;
     if (this.focusT > 0) { this.focusT -= rdt; tx = this.focusAt.x; tz = this.focusAt.z; }
-    // keep a little of the island's middle in view so the far shore shows (but never lose a swimmer)
-    tx = THREE.MathUtils.clamp(tx, -sim.L.rx + 4, sim.L.rx - 4);
-    tx = THREE.MathUtils.clamp(tx, hp.x - 3.6, hp.x + 3.6);
+    // landscape: the wide view shows the island from shore to shore, so the camera keeps near its
+    // middle sideways and only follows a hero who strays far (a swimmer is never lost, and the hero
+    // stays clear of the thumbs at the screen's sides)
+    const side = Math.max(0, sim.L.rx - 8);
+    tx = THREE.MathUtils.clamp(tx, -side, side);
+    tx = THREE.MathUtils.clamp(tx, hp.x - HERO_SIDE, hp.x + HERO_SIDE);
     const e = seaK * seaK * (3 - 2 * seaK);
     if (sea) {
       const s = v!.ship;
-      tx += (s.x * 0.45 - tx) * e;
-      tz += (s.z - 12 - tz) * e;
+      tx += (s.x * 0.3 - tx) * e;
+      tz += (s.z - SEA_AHEAD - tz) * e;
     }
     const k = Math.min(1, rdt * (this.focusT > 0 ? 2.2 : sea && seaK >= 1 ? 9 : 4));
     look.x += (tx - look.x) * k;
     look.z += (tz - look.z) * k;
+    // ashore the hero never strays past the thumbs, however fast they run
+    if (!sea && this.focusT <= 0) look.x = THREE.MathUtils.clamp(look.x, hp.x - HERO_SIDE, hp.x + HERO_SIDE);
     if ((this.snapSea && sea) || (this.snapHero && !sea)) { look.x = tx; look.z = tz; this.snapSea = this.snapHero = false; }
     const cam = world.camera;
-    // a wider lens at sea, so the whole lane fits a phone held upright
-    const fov = CAM.fov + 10 * e;
+    // a little wider lens at sea, for the horizon and the ships alongside
+    const fov = CAM.fov + (SEA_FOV - CAM.fov) * e;
     if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); }
     const ox = 0, oy = THREE.MathUtils.lerp(this.camOff.y * this.zoom, SEA_CAM.y, e), oz = THREE.MathUtils.lerp(this.camOff.z * this.zoom, SEA_CAM.z, e);
     cam.position.set(look.x + ox, oy, look.z + oz);
