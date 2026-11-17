@@ -53,7 +53,11 @@
     "cover": "/games/rooftop-courier/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/rooftop-courier/ayvago/screenshot.jpg",
     "card": "/games/rooftop-courier/ayvago/card-640x360.webp",
-    "card2x": "/games/rooftop-courier/ayvago/card-1280x720.webp"
+    "card2x": "/games/rooftop-courier/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/rooftop-courier/ayvago/logo-en.png",
+      "tr": "/games/rooftop-courier/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.2"
 }

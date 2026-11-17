@@ -38,7 +38,7 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 | `npm run test:platform` | GHA protocol check of every game embedded like ayvago.com |
 | `npm run test:three-memory` | GPU memory check of the 3D games: three.js textures and geometries must stay flat across restarts of the Play scene (`World3D` frees what it created) |
 | `npm run platform` | regenerate ayvago.json manifests + `platform/arcade-catalog.ts` |
-| `npm run store-assets` | regenerate platform covers, icons, screenshots, catalog cards + portal thumbnails (`-- --card-only <slug ...>` redoes just the cards) |
+| `npm run store-assets` | regenerate platform covers, icons, screenshots, catalog cards, logos + portal thumbnails (`-- --card-only <slug ...>` redoes just the cards, `-- --logo-only` just the logos) |
 | `npm run release` | build + smoke + platform checks + manifests + art |
 
 ## Non-negotiables
@@ -80,9 +80,10 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
   - `cover-1920x1080.jpg`: the branded banner (title, description, phone mock-ups) for the game page;
   - `icon-512.png` and `screenshot.jpg` (in-game frame for the platform's Arcade theme tiles);
   - `card-640x360.webp` + `card-1280x720.webp` (manifest `assets.card` / `card2x`): the catalog tile of the Minimal and Modern themes. The liveliest frame of the run, cover-fit for landscape games, a sharp portrait frame on a blurred copy of itself for portrait games, with only a small logo (the English title in the game's font) bottom-left, clear of the platform's top-left badges; ~25–45 KB and ~60–110 KB. A per-game `CARD` table in the script picks another frame or logo colour when the default misses the action, or stages the scene the card should show through the game's own test hooks (`stage`, e.g. Crystal Keep's card draft);
+  - `logo-en.png` + `logo-tr.png` (manifest `assets.logo: { en, tr }`): the game's title art in each language on a transparent background, trimmed, at most 640×320 and 60 KB (palette PNG), which the platform draws over a screenshot on the game page before Play. A game with a menu theme gets its themed logo (the game's own `menuLogo`, emblem included); any other game the card's plain title logo;
   - and the portal thumbnail `public/thumbs/<slug>.png`.
 
-  `--card-only` regenerates just the cards and leaves the other files untouched. `npm run validate:platform` checks every file exists at its size.
+  `--card-only` regenerates just the cards and `--logo-only` just the logos (a plain logo takes its colour from the current card); both leave the other files untouched. `npm run validate:platform` checks every file exists at its size.
 - **Platform harness.** `npm run test:platform` embeds every game cross-origin from `http://localhost:3000` and checks the full GHA flow.
 - **Deployment.** One Vercel project serves everything: `vercel.json` sets `frame-ancestors` for ayvago.com and `Cross-Origin-Resource-Policy: cross-origin`. Each game's entry is `https://<origin>/games/<slug>/`; the default origin is `https://ayvago-games-nine.vercel.app` (the Vercel project under the ayvagogames account). Pass `--origin` to `gen-platform.mjs` if the domain differs.
 - **Release.** `npm run release` builds, tests (smoke + platform) and regenerates manifests and art.

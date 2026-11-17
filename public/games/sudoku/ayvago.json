@@ -52,7 +52,11 @@
     "cover": "/games/sudoku/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/sudoku/ayvago/screenshot.jpg",
     "card": "/games/sudoku/ayvago/card-640x360.webp",
-    "card2x": "/games/sudoku/ayvago/card-1280x720.webp"
+    "card2x": "/games/sudoku/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/sudoku/ayvago/logo-en.png",
+      "tr": "/games/sudoku/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

@@ -54,7 +54,11 @@
     "cover": "/games/fish-frenzy/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/fish-frenzy/ayvago/screenshot.jpg",
     "card": "/games/fish-frenzy/ayvago/card-640x360.webp",
-    "card2x": "/games/fish-frenzy/ayvago/card-1280x720.webp"
+    "card2x": "/games/fish-frenzy/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/fish-frenzy/ayvago/logo-en.png",
+      "tr": "/games/fish-frenzy/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

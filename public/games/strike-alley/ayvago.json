@@ -54,7 +54,11 @@
     "cover": "/games/strike-alley/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/strike-alley/ayvago/screenshot.jpg",
     "card": "/games/strike-alley/ayvago/card-640x360.webp",
-    "card2x": "/games/strike-alley/ayvago/card-1280x720.webp"
+    "card2x": "/games/strike-alley/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/strike-alley/ayvago/logo-en.png",
+      "tr": "/games/strike-alley/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.1"
 }

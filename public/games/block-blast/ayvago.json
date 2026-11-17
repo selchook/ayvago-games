@@ -53,7 +53,11 @@
     "cover": "/games/block-blast/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/block-blast/ayvago/screenshot.jpg",
     "card": "/games/block-blast/ayvago/card-640x360.webp",
-    "card2x": "/games/block-blast/ayvago/card-1280x720.webp"
+    "card2x": "/games/block-blast/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/block-blast/ayvago/logo-en.png",
+      "tr": "/games/block-blast/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.0"
 }

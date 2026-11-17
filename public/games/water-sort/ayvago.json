@@ -53,7 +53,11 @@
     "cover": "/games/water-sort/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/water-sort/ayvago/screenshot.jpg",
     "card": "/games/water-sort/ayvago/card-640x360.webp",
-    "card2x": "/games/water-sort/ayvago/card-1280x720.webp"
+    "card2x": "/games/water-sort/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/water-sort/ayvago/logo-en.png",
+      "tr": "/games/water-sort/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

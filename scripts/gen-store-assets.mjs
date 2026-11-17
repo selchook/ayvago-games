@@ -4,6 +4,7 @@
 //   public/games/<slug>/ayvago/screenshot.jpg        in-game frame (platform Arcade theme tiles)
 //   public/games/<slug>/ayvago/card-640x360.webp     catalog card (Minimal / Modern theme tiles)
 //   public/games/<slug>/ayvago/card-1280x720.webp    the same card for high-density screens
+//   public/games/<slug>/ayvago/logo-en.png, logo-tr.png  the title logo on a transparent background
 //   public/thumbs/<slug>.png                         thumbnail for this repo's own portal
 // Each game is opened (no intro), its menu and a few seconds of play are captured, then the
 // captures are composed on a branded HTML template and rendered by Chromium. The card uses the
@@ -13,6 +14,8 @@
 // plain title, so it looks the same on ayvago.com as on its menu.
 // Usage: npm run build && node scripts/gen-store-assets.mjs [--dev] [--card-only] [slug ...]
 //   --card-only   regenerate just the cards (covers, icons, screenshots and thumbnails stay)
+//   --logo-only   regenerate just the logos (logo-en.png, logo-tr.png); a plain logo takes its colour
+//                 from the game's current card, a themed one is rendered by the game
 //   CARD_FRAMES=<dir> keeps the card candidate frames; with --card-only --from-frames the cards are
 //   re-composed from them without opening the games
 import { createRequire } from 'node:module';
@@ -20,6 +23,7 @@ import { spawn } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
+import { deflateSync, crc32 } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
@@ -30,6 +34,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const dev = args.includes('--dev');
 const cardOnly = args.includes('--card-only');
+const logoOnly = args.includes('--logo-only');
 const only = args.filter((a) => !a.startsWith('--'));
 const slugs = (only.length ? only : readdirSync(join(root, 'public', 'games')))
   .filter((s) => existsSync(join(root, 'public', 'games', s, 'ayvago.json')));
@@ -53,6 +58,7 @@ const font = (pkg, file) => readFileSync(join(root, 'node_modules', '@fontsource
 const FONTS = `
 @font-face { font-family: P2P; src: url(data:font/woff2;base64,${font('press-start-2p', 'press-start-2p-latin-400-normal.woff2')}) format('woff2'); }
 @font-face { font-family: P2P; src: url(data:font/woff2;base64,${font('press-start-2p', 'press-start-2p-latin-ext-400-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }
+@font-face { font-family: PTR; src: url(data:font/woff;base64,${readFileSync(join(root, 'src', 'core', 'fonts', 'ayvago-pixel-tr.woff')).toString('base64')}) format('woff'); unicode-range: U+0130; }
 @font-face { font-family: PX; font-weight: 700; src: url(data:font/woff2;base64,${font('pixelify-sans', 'pixelify-sans-latin-700-normal.woff2')}) format('woff2'); }
 @font-face { font-family: PX; font-weight: 700; src: url(data:font/woff2;base64,${font('pixelify-sans', 'pixelify-sans-latin-ext-700-normal.woff2')}) format('woff2'); unicode-range: U+0100-024F, U+1E00-1EFF; }
 @font-face { font-family: MT; font-weight: 700; src: url(data:font/woff2;base64,${font('fredoka', 'fredoka-latin-700-normal.woff2')}) format('woff2'); }
@@ -436,10 +442,10 @@ const CAPTURES = [7, 11, 15, 19, 23];
 const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** Colour statistics of a captured frame: how lively it is (score) and its accent hue. */
-async function frameStats(lab, b64) {
-  return lab.evaluate(async (src) => {
+async function frameStats(lab, b64, type = 'png') {
+  return lab.evaluate(async ({ src, type }) => {
     const img = new Image();
-    img.src = `data:image/png;base64,${src}`;
+    img.src = `data:image/${type};base64,${src}`;
     await img.decode();
     const w = 96, h = Math.round((96 * img.height) / img.width);
     const ctx = new OffscreenCanvas(w, h).getContext('2d');
@@ -473,8 +479,23 @@ async function frameStats(lab, b64) {
     const top = hues.indexOf(Math.max(...hues));
     const accent = hues[top] > n * 6 ? `hsl(${top * 30 + 15} 92% 64%)` : '#ffd23f';
     return { score, accent, colourful, edge, darkShare };
-  }, b64);
+  }, { src: b64, type });
 }
+
+// The plain title logo (games without a menu theme), on the card and as logo-en/tr.png: the modern
+// style's Fredoka with a gradient fill in the frame's accent over a dark stroke, or Press Start 2P
+// (with the İ face in front) in the accent for retro games.
+const plainLogoCss = (accent) => `
+  .logo span { display: block; }
+  .logo .front { position: absolute; inset: 0; }
+  .modern-logo { font-family: MT, MB; font-weight: 700; line-height: .98; letter-spacing: .5px; }
+  .modern-logo .back { color: #1a1310; -webkit-text-stroke: 8px #1a1310;
+    text-shadow: 0 3px 0 #1a1310, 0 5px 12px rgba(0,0,0,.7); }
+  .modern-logo .front { background: linear-gradient(#fff 0%, color-mix(in srgb, ${accent} 55%, #fff) 30%, ${accent} 75%);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .retro-logo { font-family: PTR, P2P; line-height: 1.3; letter-spacing: 1px; }
+  .retro-logo .back { color: #000; -webkit-text-stroke: 6px #000; text-shadow: 3px 3px 0 #000, 0 4px 10px rgba(0,0,0,.6); }
+  .retro-logo .front { color: ${accent}; }`;
 
 function cardHtml(m, b64, accent, logo) {
   const land = m.orientation === 'landscape';
@@ -499,16 +520,7 @@ function cardHtml(m, b64, accent, logo) {
   .scrim { position: absolute; left: 0; bottom: 0; width: 64%; height: 50%;
     background: radial-gradient(farthest-side at 0 100%, rgba(0,0,0,.62), rgba(0,0,0,.32) 55%, transparent); }
   .logo { position: absolute; left: 18px; bottom: 14px; display: inline-block; max-width: ${maxW}px; text-wrap: balance; }
-  .logo span { display: block; }
-  .logo .front { position: absolute; inset: 0; }
-  .modern-logo { font-family: MT; font-weight: 700; line-height: .98; letter-spacing: .5px; }
-  .modern-logo .back { color: #1a1310; -webkit-text-stroke: 8px #1a1310;
-    text-shadow: 0 3px 0 #1a1310, 0 5px 12px rgba(0,0,0,.7); }
-  .modern-logo .front { background: linear-gradient(#fff 0%, color-mix(in srgb, ${accent} 55%, #fff) 30%, ${accent} 75%);
-    -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .retro-logo { font-family: P2P; line-height: 1.3; letter-spacing: 1px; }
-  .retro-logo .back { color: #000; -webkit-text-stroke: 6px #000; text-shadow: 3px 3px 0 #000, 0 4px 10px rgba(0,0,0,.6); }
-  .retro-logo .front { color: ${accent}; }
+  ${plainLogoCss(accent)}
   .logo-img { position: absolute; left: 12px; bottom: 8px; max-width: ${maxW + 12}px; max-height: ${land ? 150 : 138}px;
     filter: drop-shadow(0 3px 6px rgba(0,0,0,.6)); }
   </style></head><body>
@@ -556,6 +568,302 @@ async function renderCard(browser, lab, html, scale, maxBytes) {
   }, { src: png, maxBytes });
   if (!webp.startsWith('data:image/webp')) throw new Error('this Chromium cannot encode WebP');
   return { buf: Buffer.from(webp.split(',')[1], 'base64'), fit };
+}
+
+// ---- Game logos: logo-en.png / logo-tr.png (manifest assets.logo), the game's title art on a
+// transparent background, which ayvago.com draws over a screenshot on the game page. A themed
+// game's logo is its menu logo (window.__ayvago.menuLogo, rendered by the game in that language);
+// any other game's is the card's plain title logo in that language. Trimmed to the art with a
+// small margin, fitted into LOGO_MAX (drawn at twice the size or more, then scaled down) and
+// written as a PNG compressed here (zlib level 9, the best filter per row).
+const LOGO_MAX = [640, 320];
+const LOGO_MARGIN = 6;
+const title = (m, lang) => (lang === 'tr' ? m.title.tr.toLocaleUpperCase('tr-TR') : m.title.en.toLocaleUpperCase('en-US'));
+
+function logoHtml(m, lang, accent) {
+  const modern = isModern(m);
+  const text = esc(title(m, lang));
+  // the card's logo at about 1.8 times its size, at most two lines of a 300 px column
+  const maxW = 300;
+  return `<!doctype html><html><head><style>${FONTS}
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: transparent; }
+  .logo { position: absolute; left: 30px; top: 30px; display: inline-block; max-width: ${maxW}px; text-wrap: balance; }
+  ${plainLogoCss(accent)}
+  </style></head><body>
+  <div class="logo ${modern ? 'modern-logo' : 'retro-logo'}" style="font-size:${modern ? 54 : 36}px"><span class="back">${text}</span><span class="front">${text}</span></div>
+  <script>
+  window.fitLogo = () => {
+    const el = document.querySelector('.logo');
+    let size = parseFloat(el.style.fontSize);
+    const lh = parseFloat(getComputedStyle(el).lineHeight) / size;
+    const fits = () => el.scrollWidth <= ${maxW} + 1 && el.offsetHeight <= 2 * size * lh + 2;
+    while (!fits() && size > 12) el.style.fontSize = (size -= 0.5) + 'px';
+  };
+  </script></body></html>`;
+}
+
+/** The plain logo in `lang`, rendered at device scale 2 on a transparent page (PNG, base64). */
+async function renderPlainLogo(browser, m, lang, accent) {
+  const page = await browser.newPage({ viewport: { width: 380, height: 220 }, deviceScaleFactor: 2 });
+  try {
+    await page.setContent(logoHtml(m, lang, accent));
+    // load the faces for this title's letters first: the latin-ext subsets (Ğ, İ ...) only load on
+    // demand, and fonts.ready can settle before the page asks for them
+    await page.evaluate((text) => Promise.all(['700 54px MT', '800 54px MB', '36px P2P', '36px PTR'].map((f) => document.fonts.load(f, text))), title(m, lang));
+    await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(() => window.fitLogo());
+    return (await page.screenshot({ type: 'png', omitBackground: true })).toString('base64');
+  } finally {
+    await page.close();
+  }
+}
+
+/** A themed game's menu logo in `lang`, rendered by the game itself (null without a menu theme). */
+async function themedLogo(browser, slug, land, lang) {
+  const page = await browser.newPage({ viewport: land ? { width: 1280, height: 720 } : { width: 720, height: 1280 } });
+  try {
+    await page.goto(`http://localhost:${PORT}/games/${slug}/?nointro&lang=${lang}`);
+    await page.waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: dev ? 60000 : 20000 });
+    return await page.evaluate(async (lang) => {
+      const a = window.__ayvago;
+      if (!a.menuLogo) return null;
+      // the display face's subset for this title's letters (latin-ext: ç ğ ı İ ö ş ü) loads on demand
+      await document.fonts.load(`64px "${a.def.menuTheme.font}"`, a.def.meta.title[lang]);
+      return a.menuLogo(lang).split(',')[1];
+    }, lang);
+  } finally {
+    await page.close();
+  }
+}
+
+/** Whether a game has a menu theme (its definition sets `menuTheme`); the game itself has the last word. */
+const hasTheme = (slug) => {
+  const dir = join(root, 'games', slug);
+  return existsSync(dir) && readdirSync(dir).some((f) => f.endsWith('.ts') && /\bmenuTheme\b/.test(readFileSync(join(dir, f), 'utf8')));
+};
+
+/** Both menu logos of a themed game, or null when it has no menu theme. */
+async function themedLogos(browser, slug, land) {
+  const en = await themedLogo(browser, slug, land, 'en');
+  return en && { en, tr: await themedLogo(browser, slug, land, 'tr') };
+}
+
+/** Trims a logo to its art plus LOGO_MARGIN and scales it into LOGO_MAX; RGBA pixels back. */
+async function fitLogoImage(lab, b64) {
+  const r = await lab.evaluate(async ({ src, max, margin }) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${src}`;
+    await img.decode();
+    const c = new OffscreenCanvas(img.width, img.height), g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, img.width, img.height).data;
+    let x0 = img.width, y0 = img.height, x1 = -1, y1 = -1;
+    for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {
+      if (d[(y * img.width + x) * 4 + 3] <= 6) continue;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    if (x1 < 0) throw new Error('empty logo');
+    const w = x1 - x0 + 1, h = y1 - y0 + 1;
+    const k = Math.min(1, (max[0] - 2 * margin) / w, (max[1] - 2 * margin) / h);
+    const W = Math.round(w * k) + 2 * margin, H = Math.round(h * k) + 2 * margin;
+    const out = new OffscreenCanvas(W, H), o = out.getContext('2d');
+    o.imageSmoothingEnabled = true;
+    o.imageSmoothingQuality = 'high';
+    o.drawImage(c, x0, y0, w, h, margin, margin, W - 2 * margin, H - 2 * margin);
+    const px = o.getImageData(0, 0, W, H).data;
+    let bin = '';
+    for (let i = 0; i < px.length; i += 0x8000) bin += String.fromCharCode(...px.subarray(i, i + 0x8000));
+    return { W, H, rgba: btoa(bin) };
+  }, { src: b64, max: LOGO_MAX, margin: LOGO_MARGIN });
+  return { w: r.W, h: r.H, rgba: Buffer.from(r.rgba, 'base64') };
+}
+
+/**
+ * Filtered, deflated scanlines (`bpp` bytes a pixel): every row with no filter, or the
+ * smallest-sum filter per row, whichever deflates smaller.
+ */
+function pngData(w, h, px, bpp) {
+  const stride = w * bpp, plain = Buffer.alloc((stride + 1) * h), adaptive = Buffer.alloc((stride + 1) * h);
+  const row = Buffer.alloc(stride), zero = Buffer.alloc(stride);
+  for (let y = 0; y < h; y++) {
+    const cur = px.subarray(y * stride, (y + 1) * stride), prev = y ? px.subarray((y - 1) * stride, y * stride) : zero;
+    cur.copy(plain, y * (stride + 1) + 1);
+    let best = -1, bestSum = Infinity;
+    for (let f = 0; f < 5; f++) {
+      let sum = 0;
+      for (let i = 0; i < stride; i++) {
+        const a = i >= bpp ? cur[i - bpp] : 0, b = prev[i], c = i >= bpp ? prev[i - bpp] : 0;
+        let p;
+        if (f === 0) p = cur[i];
+        else if (f === 1) p = cur[i] - a;
+        else if (f === 2) p = cur[i] - b;
+        else if (f === 3) p = cur[i] - ((a + b) >> 1);
+        else {
+          const q = a + b - c, pa = Math.abs(q - a), pb = Math.abs(q - b), pc = Math.abs(q - c);
+          p = cur[i] - (pa <= pb && pa <= pc ? a : pb <= pc ? b : c);
+        }
+        p &= 0xff;
+        row[i] = p;
+        sum += p < 128 ? p : 256 - p;
+      }
+      if (sum < bestSum) { bestSum = sum; best = f; row.copy(adaptive, y * (stride + 1) + 1); }
+    }
+    adaptive[y * (stride + 1)] = best;
+  }
+  const z = (raw) => deflateSync(raw, { level: 9, memLevel: 9 });
+  const [x, y] = [z(plain), z(adaptive)];
+  return x.length < y.length ? x : y;
+}
+
+function pngFile(w, h, colourType, chunks) {
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4), crc = Buffer.alloc(4), td = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    len.writeUInt32BE(data.length);
+    crc.writeUInt32BE(crc32(td));
+    return Buffer.concat([len, td, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 8; ihdr[9] = colourType;   // 8 bits: 6 RGBA, 3 indexed
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr), ...chunks.map(([t, d]) => chunk(t, d)), chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+/**
+ * Up to 256 RGBA colours for the pixels (median cut on a 5-bit histogram, refined by a few
+ * k-means rounds, colours compared premultiplied so faint shadow pixels weigh little).
+ */
+function palette(rgba) {
+  const hist = new Map();
+  for (let i = 0; i < rgba.length; i += 4) {
+    if (rgba[i + 3] === 0) continue;
+    const key = ((rgba[i] >> 3) << 15) | ((rgba[i + 1] >> 3) << 10) | ((rgba[i + 2] >> 3) << 5) | (rgba[i + 3] >> 3);
+    let e = hist.get(key);
+    if (!e) hist.set(key, (e = [0, 0, 0, 0, 0]));
+    e[0] += rgba[i]; e[1] += rgba[i + 1]; e[2] += rgba[i + 2]; e[3] += rgba[i + 3]; e[4]++;
+  }
+  // one entry a histogram cell: its mean colour (premultiplied rgb + alpha) and its pixel count
+  const cells = [...hist.values()].map(([r, g, b, a, n]) => {
+    const al = a / n / 255;
+    return [(r / n) * al, (g / n) * al, (b / n) * al, a / n, n];
+  });
+  const boxes = [cells];
+  const spread = (box) => {
+    let best = [0, 0];
+    for (let c = 0; c < 4; c++) {
+      let lo = Infinity, hi = -Infinity;
+      for (const e of box) { if (e[c] < lo) lo = e[c]; if (e[c] > hi) hi = e[c]; }
+      const n = box.reduce((s, e) => s + e[4], 0);
+      const v = (hi - lo) * Math.sqrt(n);
+      if (v > best[0]) best = [v, c];
+    }
+    return best;
+  };
+  while (boxes.length < 255) {
+    let pick = -1, ch = 0, top = 0;
+    boxes.forEach((box, i) => {
+      if (box.length < 2) return;
+      const [v, c] = spread(box);
+      if (v > top) { top = v; pick = i; ch = c; }
+    });
+    if (pick < 0) break;
+    const box = boxes[pick].sort((x, y) => x[ch] - y[ch]);
+    const half = box.reduce((s, e) => s + e[4], 0) / 2;
+    let acc = 0, cut = 1;
+    for (; cut < box.length - 1; cut++) { acc += box[cut - 1][4]; if (acc >= half) break; }
+    boxes.splice(pick, 1, box.slice(0, cut), box.slice(cut));
+  }
+  let pal = boxes.map((box) => {
+    const t = [0, 0, 0, 0, 0];
+    for (const e of box) for (let c = 0; c < 4; c++) t[c] += e[c] * e[4];
+    const n = box.reduce((s, e) => s + e[4], 0);
+    return [t[0] / n, t[1] / n, t[2] / n, t[3] / n];
+  });
+  const nearest = (e) => {
+    let bi = 0, bd = Infinity;
+    for (let j = 0; j < pal.length; j++) {
+      const p = pal[j], d = (e[0] - p[0]) ** 2 + (e[1] - p[1]) ** 2 + (e[2] - p[2]) ** 2 + (e[3] - p[3]) ** 2;
+      if (d < bd) { bd = d; bi = j; }
+    }
+    return bi;
+  };
+  for (let round = 0; round < 4; round++) {
+    const sums = pal.map(() => [0, 0, 0, 0, 0]);
+    for (const e of cells) { const s = sums[nearest(e)]; for (let c = 0; c < 4; c++) s[c] += e[c] * e[4]; s[4] += e[4]; }
+    pal = pal.map((p, j) => (sums[j][4] ? sums[j].slice(0, 4).map((v) => v / sums[j][4]) : p));
+  }
+  return pal;
+}
+
+/**
+ * The pixels as an 8-bit RGBA PNG, or as an indexed PNG (palette() with a light Floyd–Steinberg
+ * dither, index 0 fully transparent) when that saves more than a third: big themed logos with
+ * their gradients, glows and emblems come out at about a third of the RGBA size.
+ */
+function encodePng(w, h, rgba) {
+  // fully transparent pixels carry no colour (they compress to runs of zeros)
+  for (let i = 0; i < rgba.length; i += 4) if (rgba[i + 3] === 0) rgba[i] = rgba[i + 1] = rgba[i + 2] = 0;
+  const full = pngFile(w, h, 6, [['IDAT', pngData(w, h, rgba, 4)]]);
+  const pal = palette(rgba);   // premultiplied
+  const cache = new Map();
+  const nearest = (r, g, b, a) => {
+    let bi = 0, bd = Infinity;
+    for (let j = 0; j < pal.length; j++) {
+      const p = pal[j], d = (r - p[0]) ** 2 + (g - p[1]) ** 2 + (b - p[2]) ** 2 + (a - p[3]) ** 2;
+      if (d < bd) { bd = d; bi = j; }
+    }
+    return bi;
+  };
+  // error diffusion in premultiplied space, at 3/4 strength so flat areas stay clean
+  const idx = Buffer.alloc(w * h), err = new Float32Array((w + 2) * 2 * 4);
+  for (let y = 0; y < h; y++) {
+    const cur = (y & 1) * (w + 2) * 4, nxt = ((y + 1) & 1) * (w + 2) * 4;
+    err.fill(0, nxt, nxt + (w + 2) * 4);
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (rgba[i + 3] === 0) continue;   // index 0
+      const al = rgba[i + 3] / 255, e = cur + (x + 1) * 4;
+      const v = [rgba[i] * al + err[e], rgba[i + 1] * al + err[e + 1], rgba[i + 2] * al + err[e + 2], rgba[i + 3] + err[e + 3]];
+      const key = v.map((q) => Math.round(Math.max(0, Math.min(255, q)) / 2)).join();
+      let j = cache.get(key);
+      if (j === undefined) cache.set(key, (j = nearest(v[0], v[1], v[2], v[3])));
+      idx[y * w + x] = j + 1;
+      for (let c = 0; c < 4; c++) {
+        const d = (v[c] - pal[j][c]) * 0.75;
+        err[e + 4 + c] += (d * 7) / 16;
+        err[nxt + x * 4 + c] += (d * 3) / 16;
+        err[nxt + (x + 1) * 4 + c] += (d * 5) / 16;
+        err[nxt + (x + 2) * 4 + c] += d / 16;
+      }
+    }
+  }
+  const plte = Buffer.alloc((pal.length + 1) * 3), trns = Buffer.alloc(pal.length + 1);
+  pal.forEach((p, j) => {
+    const a = Math.max(1, Math.round(p[3])), k = 255 / a;
+    for (let c = 0; c < 3; c++) plte[(j + 1) * 3 + c] = Math.max(0, Math.min(255, Math.round(p[c] * k)));
+    trns[j + 1] = a;
+  });
+  const indexed = pngFile(w, h, 3, [['PLTE', plte], ['tRNS', trns], ['IDAT', pngData(w, h, idx, 1)]]);
+  return indexed.length < full.length * 0.67 ? indexed : full;
+}
+
+/**
+ * Writes logo-en.png and logo-tr.png. `themed` holds a themed game's menu logos ({ en, tr }, base64
+ * PNG); without them the plain logo is drawn in the card's accent.
+ */
+async function writeLogos(browser, lab, m, out, themed, accent) {
+  const sizes = [];
+  for (const lang of ['en', 'tr']) {
+    const src = themed?.[lang] ?? (await renderPlainLogo(browser, m, lang, accent));
+    const { w, h, rgba } = await fitLogoImage(lab, src);
+    const png = encodePng(w, h, rgba);
+    writeFileSync(join(out, `logo-${lang}.png`), png);
+    sizes.push(`${w}x${h} ${Math.round(png.length / 1024)} KB`);
+  }
+  return `logo ${themed ? 'themed' : 'plain'} ${sizes.join(' / ')}`;
 }
 
 // Opens a game, captures its menu and a scripted few seconds of play. The cover, icon, screenshot
@@ -630,6 +938,14 @@ for (const slug of slugs) {
   const out = join(root, 'public', 'games', slug, 'ayvago');
   mkdirSync(out, { recursive: true });
   try {
+    if (logoOnly) {
+      const themed = hasTheme(slug) ? await themedLogos(browser, slug, land) : null;
+      const card = join(out, 'card-640x360.webp');
+      const accent = themed ? null : tune.accent ?? (await frameStats(lab, readFileSync(card).toString('base64'), 'webp')).accent;
+      console.log(`ok    ${slug}  ${await writeLogos(browser, lab, m, out, themed, accent)}`);
+      made++;
+      continue;
+    }
     let shots, logo = null;
     if (fromFrames) {
       const live = JSON.parse(readFileSync(join(framesDir, `${slug}.json`), 'utf8'));
@@ -676,7 +992,9 @@ for (const slug of slugs) {
     writeFileSync(join(out, 'card-1280x720.webp'), big.buf);
     writeFileSync(join(out, 'card-640x360.webp'), small.buf);
     const stats = shots.map((s) => `${s.n}${s === best ? '*' : ''}:${s.live ? '' : 'x'}${Math.round(s.rank)}`).join(' ');
-    console.log(`ok    ${slug}  card [${stats}] ${Math.round(small.buf.length / 1024)}+${Math.round(big.buf.length / 1024)} KB, logo ${logo ? `themed ${big.fit.w}x${big.fit.size}px` : `${big.fit.size}px x${big.fit.lines}`}`);
+    // the logo files with the full set (the card's colour, the menu logo in both languages)
+    const logos = cardOnly || fromFrames ? '' : `, ${await writeLogos(browser, lab, m, out, logo && { en: logo, tr: await themedLogo(browser, slug, land, 'tr') }, tune.accent ?? best.accent)}`;
+    console.log(`ok    ${slug}  card [${stats}] ${Math.round(small.buf.length / 1024)}+${Math.round(big.buf.length / 1024)} KB, logo ${logo ? `themed ${big.fit.w}x${big.fit.size}px` : `${big.fit.size}px x${big.fit.lines}`}${logos}`);
     made++;
   } catch (e) {
     console.log(`FAIL  ${slug}: ${String(e.message).split('\n')[0]}`);

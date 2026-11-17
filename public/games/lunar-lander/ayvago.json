@@ -54,7 +54,11 @@
     "cover": "/games/lunar-lander/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/lunar-lander/ayvago/screenshot.jpg",
     "card": "/games/lunar-lander/ayvago/card-640x360.webp",
-    "card2x": "/games/lunar-lander/ayvago/card-1280x720.webp"
+    "card2x": "/games/lunar-lander/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/lunar-lander/ayvago/logo-en.png",
+      "tr": "/games/lunar-lander/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

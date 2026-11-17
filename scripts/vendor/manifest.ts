@@ -24,6 +24,13 @@ const assetRef = z
     'asset must be a path or https URL',
   );
 
+// An asset with a version per platform locale, like localizedText: English is required (the
+// fallback), other locales are optional.
+const localizedAsset = z.strictObject({
+  en: assetRef,
+  tr: assetRef.optional(),
+});
+
 function isAllowedUrl(value: string): boolean {
   let url: URL;
   try {
@@ -96,6 +103,11 @@ export const gameManifestSchema = z
       card: assetRef.optional(),
       // The same card art at 1280×720 WebP for dense screens; only used together with `card`.
       card2x: assetRef.optional(),
+      // The game's own logo (its title art, may include an emblem) per locale, English required:
+      // a transparent PNG of at most 640×320, drawn over in-game art such as the player overlay
+      // before Play. Other locales fall back to English; without a logo the platform writes the
+      // title as text there.
+      logo: localizedAsset.optional(),
     }),
     version: z.string().regex(/^\d+\.\d+\.\d+$/, 'version must be semver (x.y.z)'),
     // Enables ?ayvagoTest=... hooks used by the automated harness; ignored in production.
@@ -111,6 +123,7 @@ export const gameManifestSchema = z
   });
 
 export type LocalizedText = z.infer<typeof localizedText>;
+export type LocalizedAsset = z.infer<typeof localizedAsset>;
 export type GameManifest = z.infer<typeof gameManifestSchema>;
 export type GameManifestInput = z.input<typeof gameManifestSchema>;
 
@@ -142,7 +155,7 @@ export function resolveAssetUrl(manifest: Pick<GameManifest, 'entry'>, ref: stri
   return new URL(ref, manifest.entry).toString();
 }
 
-// Picks the text for a locale, falling back to English.
-export function pickLocalized(text: LocalizedText, locale: Locale): string {
+// Picks the text (or a localized asset) for a locale, falling back to English.
+export function pickLocalized(text: LocalizedText | LocalizedAsset, locale: Locale): string {
   return text[locale] ?? text.en;
 }

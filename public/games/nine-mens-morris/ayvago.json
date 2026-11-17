@@ -55,7 +55,11 @@
     "cover": "/games/nine-mens-morris/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/nine-mens-morris/ayvago/screenshot.jpg",
     "card": "/games/nine-mens-morris/ayvago/card-640x360.webp",
-    "card2x": "/games/nine-mens-morris/ayvago/card-1280x720.webp"
+    "card2x": "/games/nine-mens-morris/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/nine-mens-morris/ayvago/logo-en.png",
+      "tr": "/games/nine-mens-morris/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.0"
 }

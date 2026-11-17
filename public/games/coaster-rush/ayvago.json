@@ -54,7 +54,11 @@
     "cover": "/games/coaster-rush/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/coaster-rush/ayvago/screenshot.jpg",
     "card": "/games/coaster-rush/ayvago/card-640x360.webp",
-    "card2x": "/games/coaster-rush/ayvago/card-1280x720.webp"
+    "card2x": "/games/coaster-rush/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/coaster-rush/ayvago/logo-en.png",
+      "tr": "/games/coaster-rush/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.2"
 }

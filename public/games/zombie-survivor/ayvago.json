@@ -54,7 +54,11 @@
     "cover": "/games/zombie-survivor/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/zombie-survivor/ayvago/screenshot.jpg",
     "card": "/games/zombie-survivor/ayvago/card-640x360.webp",
-    "card2x": "/games/zombie-survivor/ayvago/card-1280x720.webp"
+    "card2x": "/games/zombie-survivor/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/zombie-survivor/ayvago/logo-en.png",
+      "tr": "/games/zombie-survivor/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.0"
 }

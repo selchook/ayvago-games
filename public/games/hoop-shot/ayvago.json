@@ -54,7 +54,11 @@
     "cover": "/games/hoop-shot/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/hoop-shot/ayvago/screenshot.jpg",
     "card": "/games/hoop-shot/ayvago/card-640x360.webp",
-    "card2x": "/games/hoop-shot/ayvago/card-1280x720.webp"
+    "card2x": "/games/hoop-shot/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/hoop-shot/ayvago/logo-en.png",
+      "tr": "/games/hoop-shot/ayvago/logo-tr.png"
+    }
   },
   "version": "1.2.0"
 }

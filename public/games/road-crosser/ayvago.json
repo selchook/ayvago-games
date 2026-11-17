@@ -54,7 +54,11 @@
     "cover": "/games/road-crosser/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/road-crosser/ayvago/screenshot.jpg",
     "card": "/games/road-crosser/ayvago/card-640x360.webp",
-    "card2x": "/games/road-crosser/ayvago/card-1280x720.webp"
+    "card2x": "/games/road-crosser/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/road-crosser/ayvago/logo-en.png",
+      "tr": "/games/road-crosser/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }
