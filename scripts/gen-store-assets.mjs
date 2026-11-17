@@ -192,6 +192,21 @@ function iconHtml(m, play) {
 const CARD = {
   // a 3D tip-off that runs slowly in software WebGL: wait for the ball to be in play
   'blacktop-kings': { wait: 30000 },
+  // Air Hockey's card shows a live rally: the default capture caught the serve (a still puck) or
+  // a "CONCEDED!" banner, so once the countdown is over the stage strikes the puck up the table
+  // from the player's mallet; the frames show it flying with its trail and the CPU going for it.
+  'air-hockey': {
+    stage: `async () => {
+      const p = window.__ayvago.game.scene.getScene('Play');
+      for (let i = 0; i < 100 && p.phase !== 'live'; i++) await new Promise((r) => setTimeout(r, 100));
+      const puck = p.pucks[0];
+      p.me.x = 470; p.me.y = 1010;
+      puck.x = 430; puck.y = 900; puck.vx = -620; puck.vy = -1450;
+      await new Promise((r) => setTimeout(r, 120));
+    }`,
+    // frame 1: the puck streaking at the CPU's goal (later frames reach the goal and its replay)
+    pick: 1,
+  },
   'color-bounce': { pick: 2 },
   'crypt-crawler': { wait: 2500 },
   // Crystal Keep's card shows a card draft over a built-up defence: the autopilot plays the
