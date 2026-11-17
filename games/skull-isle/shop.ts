@@ -33,8 +33,18 @@ const isShip = (id: Item): id is ShipId => (SHIP_IDS as string[]).includes(id);
 // ------------------------------------------------------------------ painted pieces
 
 const WOOD = 0x8a5a2e, FLAG_RED = 0x8e1c22, SEA_BLUE = 0x2f6a8e;
-const PANEL_W = 690, PANEL_H = 1060, TILE_W = 312, TILE_H = 150;
-const DRAFT_W = 620, DRAFT_H = 200;
+// 1.3: landscape (1280 × 720). The shop's board fills the screen but a margin: a left column with the
+// title, the purse, the two tabs stacked like bookmarks and SET SAIL, the wares on notes in two
+// columns on the right. The draft's three boons stand side by side; the sea chart's map is on the
+// left, its two routes' cards on the right.
+const PANEL_W = 1236, PANEL_H = 690, TILE_W = 380, TILE_H = 150;
+/** The shop's left column (centre, width) and the wares' column (centre). */
+const SIDE_X = 228, SIDE_W = 340, WARES_X = 846;
+const TAB_W = 300, TAB_H = 64, SAIL_W = 320, SAIL_H = 92, PLATE_W = 240;
+const DRAFT_W = 360, DRAFT_H = 400;
+/** The draft's description width and the sea chart's cards (right column). */
+const DRAFT_TEXT = 300;
+const ROUTE_X = 950, ROUTE_W = 540, ROUTE_H = 220, ROUTE_TEXT = 350;
 
 // the styles (shared with the prebake, so the painted keys match)
 const GOLD_HEAD: LabelStyle = { size: 60, fill: ['#fff7c8', '#ffd23f', '#c07a10'], stroke: '#2a1206', strokeWidth: 9 };
@@ -42,15 +52,15 @@ const CREAM: LabelStyle = { size: 21, color: '#f3e3c0', stroke: '#2a1206', strok
 const PURSE: LabelStyle = { size: 32, color: '#ffe68a', stroke: '#2a1206', strokeWidth: 5 };
 const TAB: LabelStyle = { size: 34 };
 const T_NAME: LabelStyle = { size: 26, color: INK, stroke: null, shadow: false };
-const T_DESC: LabelStyle = { size: 16, color: '#5a3a1c', stroke: null, shadow: false, body: true };
-const T_DESC_S: LabelStyle = { size: 14, color: '#5a3a1c', stroke: null, shadow: false, body: true };
+const T_DESC: LabelStyle = { size: 18, color: '#5a3a1c', stroke: null, shadow: false, body: true };
+const T_DESC_S: LabelStyle = { size: 16, color: '#5a3a1c', stroke: null, shadow: false, body: true };
 /**
  * A tile's lines of what it does (`key`: shd_ or sd_ + id): up to two lines; a longer one a size
  * smaller on tighter lines, so the values and the pips under it keep their room.
  */
 const tileDesc = (key: string): { style: LabelStyle; lineH: number; n: number } => {
   const n = wrapLines(t(key), T_DESC, TILE_W - 116).length;
-  return n <= 2 ? { style: T_DESC, lineH: 18, n } : { style: T_DESC_S, lineH: 15, n: wrapLines(t(key), T_DESC_S, TILE_W - 116).length };
+  return n <= 2 ? { style: T_DESC, lineH: 20, n } : { style: T_DESC_S, lineH: 17, n: wrapLines(t(key), T_DESC_S, TILE_W - 116).length };
 };
 const T_NEXT: LabelStyle = { size: 17, color: '#1f5a8a', stroke: null, shadow: false, body: true };
 const T_COST: LabelStyle = { size: 26, color: '#7a3a12', stroke: null, shadow: false };
@@ -131,6 +141,33 @@ function noteTexture(scene: Phaser.Scene, w: number, h: number): string {
 }
 const note = (scene: Phaser.Scene, x: number, y: number, w: number, h: number): Phaser.GameObjects.Image => scene.add.image(x, y + PAD / 2, noteTexture(scene, w, h));
 
+/** The keys' line under SET SAIL, in two lines (the left column is narrow). */
+const shopKeys = (): string[] => {
+  const p = t('shopKeys2').split('  ·  ');
+  return [p.slice(0, 2).join('  ·  '), p.slice(2).join('  ·  ')].filter(Boolean);
+};
+/** The sea chart: the middle of its map (left), the cards' rows (right). */
+const CHART_MID = 345;
+const ROUTE_Y = [262, 506];
+
+/**
+ * The tile in direction (dx, dy) from `from` among `items` (centres): the nearest inside a cone
+ * round that direction, the sideways offset counting more. Shared by the shop's arrows.
+ */
+export function stepFocus<T extends { x: number; y: number }>(items: T[], from: number, dx: number, dy: number): number {
+  const cur = items[from];
+  let best = -1, bd = Infinity;
+  items.forEach((it, i) => {
+    if (i === from) return;
+    const along = (it.x - cur.x) * dx + (it.y - cur.y) * dy;
+    const side = Math.abs(dx ? it.y - cur.y : it.x - cur.x);
+    if (along < 12 || side > along * 2.2) return;
+    const d = along + side * 2.5;
+    if (d < bd) { bd = d; best = i; }
+  });
+  return best;
+}
+
 const shopSub = (k: number): string => t('shopSub') + '  ·  ' + t('sailing', { name: t('i_' + ISLAND_IDS[(k + 1) % ISLAND_IDS.length]) });
 
 /** The sea chart's texture (with the ghost ship from the third island on). */
@@ -139,10 +176,10 @@ function seaChart(scene: Phaser.Scene, ghost: boolean): string {
   const ox = 14, oy = 10;
   return chartTexture(scene, ghost ? 'si-chart-sea-g' : 'si-chart-sea', width - ox * 2, height - oy * 2, ghost ? 977 : 976, (g, r) => {
     const at = (x: number, y: number): [number, number] => [x - ox, y - oy];
-    rhumbLines(g, ...at(118, 262), 1400, 0.13);
-    for (let i = 0; i < 9; i++) waves(g, ...at(150 + (i % 3) * 210, 230 + Math.floor(i / 3) * 120), 3, r);
-    inkIsland(g, ...at(132, 476), 52, r, { palms: 2 });
-    inkIsland(g, ...at(586, 262), 66, r, { palms: 2 });
+    rhumbLines(g, ...at(118, 352), 1500, 0.13);
+    for (let i = 0; i < 9; i++) waves(g, ...at(150 + (i % 3) * 210, 320 + Math.floor(i / 3) * 120), 3, r);
+    inkIsland(g, ...at(132, 566), 52, r, { palms: 2 });
+    inkIsland(g, ...at(586, 352), 66, r, { palms: 2 });
     // both routes, faint (the chosen one is drawn over them)
     for (const id of ROUTES) {
       const pts = ROUTE_PTS[id];
@@ -155,18 +192,20 @@ function seaChart(scene: Phaser.Scene, ghost: boolean): string {
       g.stroke();
       g.restore();
     }
-    stormDoodle(g, ...at(420, 520), 0.9);
-    serpent(g, ...at(300, 548), 0.5, -1);
-    if (ghost) shipDoodle(g, ...at(470, 540), 0.6, -1, true);
-    xMark(g, ...at(600, 262), 15);
-    compassRose(g, ...at(118, 262), 46);
-    scrollBanner(g, ...at(width / 2, 116), 440, 62);
+    stormDoodle(g, ...at(420, 610), 0.9);
+    serpent(g, ...at(300, 638), 0.5, -1);
+    if (ghost) shipDoodle(g, ...at(470, 630), 0.6, -1, true);
+    xMark(g, ...at(600, 352), 15);
+    compassRose(g, ...at(118, 352), 46);
+    scrollBanner(g, ...at(CHART_MID, 96), 440, 62);
+    // a sea serpent's lair and a few more waves on the right, under the cards
+    for (let i = 0; i < 4; i++) waves(g, ...at(720 + (i % 2) * 400, 160 + Math.floor(i / 2) * 470), 3, r);
     // the cards' places: two lighter panels of parchment
-    for (const y of [722, 980]) {
+    for (const y of ROUTE_Y) {
       g.save();
       g.fillStyle = 'rgba(255,248,225,0.35)';
       g.strokeStyle = 'rgba(58,34,16,0.5)'; g.lineWidth = 1.5;
-      g.beginPath(); g.roundRect(...at(40, y - 115), 640, 230, 22); g.fill(); g.stroke();
+      g.beginPath(); g.roundRect(...at(ROUTE_X - ROUTE_W / 2, y - ROUTE_H / 2), ROUTE_W, ROUTE_H, 22); g.fill(); g.stroke();
       g.restore();
     }
   });
@@ -182,12 +221,12 @@ export function prebakeIsleScreens(scene: Phaser.Scene): void {
   skinTexture(scene, 'board', PANEL_W, PANEL_H);
   noteTexture(scene, TILE_W, TILE_H);
   labelTexture(scene, t('shopTitle'), GOLD_HEAD);
-  ISLAND_IDS.forEach((_, k) => bakePara(scene, shopSub(k), CREAM, 640));
-  bakeButton(scene, 'plate', 220, 56, P.board);
+  ISLAND_IDS.forEach((_, k) => bakePara(scene, shopSub(k), CREAM, SIDE_W));
+  bakeButton(scene, 'plate', PLATE_W, 56, P.board);
   for (const o of [PURSE, T_COST, T_POOR]) glyphAtlas(scene, o);
   for (const k of ['tabCrew', 'tabShip']) labelTexture(scene, t(k), TAB);
-  bakeButton(scene, 'button', 228, 66, WOOD);
-  bakeButton(scene, 'button', 228, 66, FLAG_RED, false, true);
+  bakeButton(scene, 'button', TAB_W, TAB_H, WOOD);
+  bakeButton(scene, 'button', TAB_W, TAB_H, FLAG_RED, false, true);
   for (const id of [...SHOP_IDS, 'patch']) {
     labelTexture(scene, t('s_' + id), T_NAME);
     const d = tileDesc('sd_' + id);
@@ -201,25 +240,25 @@ export function prebakeIsleScreens(scene: Phaser.Scene): void {
   }
   for (const k of ['maxed', 'full', 'bought']) labelTexture(scene, t(k), T_STATE);
   labelTexture(scene, t('setSail'), SAIL);
-  bakeButton(scene, 'button', 360, 94, FLAG_RED);
-  labelTexture(scene, t('shopKeys2'), KEYS);
+  bakeButton(scene, 'button', SAIL_W, SAIL_H, FLAG_RED);
+  for (const line of shopKeys()) labelTexture(scene, line, KEYS);
   // the boon draft
   noteTexture(scene, DRAFT_W, DRAFT_H);
   labelTexture(scene, t('draftTitle'), GOLD_HEAD);
-  bakePara(scene, t('draftSub'), { ...CREAM, size: 24 }, 640);
-  for (const id of BOON_IDS) { labelTexture(scene, t('bn_' + id), boonName(id)); bakePara(scene, t('bd_' + id), D_DESC, 400); }
+  bakePara(scene, t('draftSub'), { ...CREAM, size: 24 }, 900);
+  for (const id of BOON_IDS) { labelTexture(scene, t('bn_' + id), boonName(id)); bakePara(scene, t('bd_' + id), D_DESC, DRAFT_TEXT); }
   for (const n of ['1', '2', '3']) labelTexture(scene, n, D_NUM);
   labelTexture(scene, t('draftKeys'), KEYS);
   // the sea chart
   seaChart(scene, false);
   seaChart(scene, true);
   labelTexture(scene, t('chartTitle'), CH_TITLE);
-  for (const id of ISLAND_IDS) bakePara(scene, t('chartSub', { name: t('i_' + id) }), CH_SUB, 600);
+  for (const id of ISLAND_IDS) bakePara(scene, t('chartSub', { name: t('i_' + id) }), CH_SUB, 560);
   bakeFmt(scene, 'hullNow', ['n', 'max'], CH_HULL);
   bakeFmt(scene, 'hullNow', ['n', 'max'], CH_LOW);
   labelTexture(scene, t('r_calm'), CH_NAME_CALM);
   labelTexture(scene, t('r_storm'), CH_NAME_STORM);
-  for (const id of ROUTES) bakePara(scene, t('rd_' + id), CH_DESC, 410);
+  for (const id of ROUTES) bakePara(scene, t('rd_' + id), CH_DESC, ROUTE_TEXT);
   labelTexture(scene, t('rd_ghost'), CH_GHOST);
   for (const n of ['1', '2']) { labelTexture(scene, n, CH_NUM_CALM); labelTexture(scene, n, CH_NUM); }
   labelTexture(scene, t('chartKeys'), INK_KEYS);
@@ -251,22 +290,24 @@ export class ShopOverlay {
     this.root = scene.add.container(0, 0).setScrollFactor(0).setDepth(OVERLAY_DEPTH);
     const dim = scene.add.rectangle(0, 0, width, height, 0x040a10, 0.62).setOrigin(0).setInteractive();
     this.root.add(dim);
-    // the notice board on the dock
-    const panel = scene.add.container(width / 2, 650);
+    // the notice board on the dock: the whole screen but a margin
+    const panel = scene.add.container(width / 2, height / 2);
     panel.add(scene.add.image(0, SKIN_PAD / 2, skinTexture(scene, 'board', PANEL_W, PANEL_H)));
     this.root.add(panel);
-    this.root.add(fitWidth(labelAt(scene, width / 2, 180, t('shopTitle'), GOLD_HEAD), 600));
-    this.root.add(new Para(scene, width / 2, 214, shopSub(sim.k), CREAM, 640, 0.5, 26));
+    // the left column: the title, where the ship sails next, the purse, the tabs, SET SAIL
+    this.root.add(fitWidth(labelAt(scene, SIDE_X, 92, t('shopTitle'), GOLD_HEAD), SIDE_W));
+    this.root.add(new Para(scene, SIDE_X, 132, shopSub(sim.k), CREAM, SIDE_W, 0.5, 26));
     // the purse
-    const chip = scene.add.container(width / 2, 284);
-    chip.add(scene.add.image(0, SKIN_PAD / 2, skinTexture(scene, 'plate', 220, 56, 'up', P.board)));
-    chip.add(scene.add.image(-64, 0, GOLD).setDisplaySize(40, 40));
+    const chip = scene.add.container(SIDE_X, 236);
+    chip.add(scene.add.image(0, SKIN_PAD / 2, skinTexture(scene, 'plate', PLATE_W, 56, 'up', P.board)));
+    chip.add(scene.add.image(-72, 0, GOLD).setDisplaySize(40, 40));
     this.goldText = new GlyphText(scene, 14, 0, '', PURSE);
     chip.add(this.goldText);
     this.root.add(chip);
-    // the tabs: the crew's upgrades, the ship's
-    const tab = (x: number, key: string, to: Tab) => new KitButton(scene, x, 356, { w: 228, h: 66, color: WOOD, label: t(key), style: TAB, sfx: null }, () => this.setTab(to));
-    this.tabs = { crew: tab(width / 2 - 122, 'tabCrew', 'crew'), ship: tab(width / 2 + 122, 'tabShip', 'ship') };
+    // the tabs: the crew's upgrades, the ship's (stacked like bookmarks)
+    const TAB_Y = [326, 402];
+    const tab = (y: number, key: string, to: Tab) => new KitButton(scene, SIDE_X, y, { w: TAB_W, h: TAB_H, color: WOOD, label: t(key), style: TAB, sfx: null }, () => this.setTab(to));
+    this.tabs = { crew: tab(TAB_Y[0], 'tabCrew', 'crew'), ship: tab(TAB_Y[1], 'tabShip', 'ship') };
     // the ship's tab carries a little ship
     const sl = this.tabs.ship.label!;
     const icon = scene.add.image(0, 0, SHIP).setDisplaySize(34, 34);
@@ -274,14 +315,15 @@ export class ShopOverlay {
     icon.x = -tw / 2 + 17; sl.x = icon.x + 23 + sl.displayWidth / 2;
     this.tabs.ship.addContent(icon);
     this.root.add([this.tabs.crew, this.tabs.ship]);
-    this.fixed.push({ id: 'tabCrew', x: width / 2 - 122, y: 356, w: 228, h: 66, box: this.tabs.crew, parts: null });
-    this.fixed.push({ id: 'tabShip', x: width / 2 + 122, y: 356, w: 228, h: 66, box: this.tabs.ship, parts: null });
+    this.fixed.push({ id: 'tabCrew', x: SIDE_X, y: TAB_Y[0], w: TAB_W, h: TAB_H, box: this.tabs.crew, parts: null });
+    this.fixed.push({ id: 'tabShip', x: SIDE_X, y: TAB_Y[1], w: TAB_W, h: TAB_H, box: this.tabs.ship, parts: null });
     this.grid = scene.add.container(0, 0);
     this.root.add(this.grid);
-    this.sail = new KitButton(scene, width / 2, 1104, { w: 360, h: 94, color: FLAG_RED, label: t('setSail'), style: SAIL, sfx: null }, () => this.leave());
+    const sailY = host.touch ? 588 : 556;
+    this.sail = new KitButton(scene, SIDE_X, sailY, { w: SAIL_W, h: SAIL_H, color: FLAG_RED, label: t('setSail'), style: SAIL, sfx: null }, () => this.leave());
     this.root.add(this.sail);
-    this.fixed.push({ id: 'sail', x: width / 2, y: 1104, w: 360, h: 94, box: this.sail, parts: null });
-    if (!host.touch) this.root.add(fitWidth(labelAt(scene, width / 2, 1166, t('shopKeys2'), KEYS), 640));
+    this.fixed.push({ id: 'sail', x: SIDE_X, y: sailY, w: SAIL_W, h: SAIL_H, box: this.sail, parts: null });
+    if (!host.touch) shopKeys().forEach((line, i) => this.root.add(fitWidth(labelAt(scene, SIDE_X, 630 + i * 26, line, KEYS), SIDE_W)));
     // a battered hull opens on the ship's tab
     this.buildTab(sim.hull < shipStats(sim.shipLv, sim.tune).maxHull * 0.5 ? 'ship' : 'crew');
     this.focus = Math.max(0, this.tiles.findIndex((tl) => this.state(tl.id) === 'ok' && tl.parts));
@@ -308,12 +350,12 @@ export class ShopOverlay {
     this.tab = tab;
     this.grid.removeAll(true);
     this.tiles = [...this.fixed];
-    const { width } = this.scene.scale;
     const items: Item[] = tab === 'crew' ? [...SHOP_IDS, 'patch'] : [...SHIP_IDS, 'repair'];
-    const w = TILE_W, h = TILE_H, gx = 16, gy = 14;
+    const w = TILE_W, h = TILE_H, gx = 14, gy = 12;
+    // two columns of four rows on the right of the board
     items.forEach((id, i) => {
       const col = i % 2, row = Math.floor(i / 2);
-      this.tile(id, width / 2 + (col ? 1 : -1) * (w + gx) / 2, 472 + row * (h + gy), w, h);
+      this.tile(id, WARES_X + (col ? 1 : -1) * (w + gx) / 2, 360 + (row - 1.5) * (h + gy), w, h);
     });
   }
 
@@ -481,16 +523,7 @@ export class ShopOverlay {
   }
 
   private move(dx: number, dy: number): void {
-    const cur = this.tiles[this.focus];
-    let best = -1, bd = Infinity;
-    this.tiles.forEach((tl, i) => {
-      if (i === this.focus) return;
-      const ddx = tl.x - cur.x, ddy = tl.y - cur.y;
-      if (dx && (Math.sign(ddx) !== dx || Math.abs(ddy) > 20)) return;
-      if (dy && (Math.sign(ddy) !== dy || Math.abs(ddy) < 20)) return;
-      const d = Math.abs(ddx) * (dy ? 0.3 : 1) + Math.abs(ddy) * (dy ? 1 : 3);
-      if (d < bd) { bd = d; best = i; }
-    });
+    const best = stepFocus(this.tiles, this.focus, dx, dy);
     if (best >= 0) { this.focus = best; this.host.sfx('move', 0.3); this.refresh(); }
   }
 
@@ -537,11 +570,10 @@ export class ShopOverlay {
   destroy(): void { this.done = true; this.root.destroy(); }
 }
 
-/** The sea chart: two routes to the next island, side by side on a card each. */
-/** The sea chart's routes in screen space: from the island just raided to the next (calm above, storm below). */
+/** The sea chart's routes in screen space (its map on the left): from the island just raided to the next (calm above, storm below). */
 const ROUTE_PTS: Record<Route, [number, number][]> = {
-  calm: [[176, 452], [250, 340], [372, 282], [500, 262], [548, 280]],
-  storm: [[182, 476], [290, 500], [380, 452], [452, 470], [520, 400], [560, 310]],
+  calm: [[176, 542], [250, 430], [372, 372], [500, 352], [548, 370]],
+  storm: [[182, 566], [290, 590], [380, 542], [452, 560], [520, 490], [560, 400]],
 };
 
 /**
@@ -565,30 +597,33 @@ export class RouteOverlay {
     this.root.add(scene.add.image(width / 2, height / 2, seaChart(scene, ghost)));
     this.routes = scene.add.graphics();
     this.root.add(this.routes);
-    this.root.add(scene.add.image(176, 438, SHIP).setDisplaySize(56, 56));
-    this.root.add(fitWidth(labelAt(scene, width / 2, 114, t('chartTitle'), CH_TITLE), 420));
+    this.root.add(scene.add.image(176, 528, SHIP).setDisplaySize(56, 56));
+    // the map on the left: the title on its scroll, the next island, the hull under the map
+    this.root.add(fitWidth(labelAt(scene, CHART_MID, 94, t('chartTitle'), CH_TITLE), 420));
     const nextId = ISLAND_IDS[(sim.k + 1) % ISLAND_IDS.length];
-    this.root.add(new Para(scene, width / 2, 158, t('chartSub', { name: t('i_' + nextId) }), CH_SUB, 600, 0.5, 28));
+    this.root.add(new Para(scene, CHART_MID, 142, t('chartSub', { name: t('i_' + nextId) }), CH_SUB, 560, 0.5, 28));
     const low = sim.hull < sim.shipSt.maxHull * 0.4;
-    this.root.add(new FmtLine(scene, width / 2, 576, low ? CH_LOW : CH_HULL, 0.5).set('hullNow', { n: Math.round(sim.hull), max: sim.shipSt.maxHull }));
+    this.root.add(new FmtLine(scene, CHART_MID, 214, low ? CH_LOW : CH_HULL, 0.5).set('hullNow', { n: Math.round(sim.hull), max: sim.shipSt.maxHull }));
     // the routes' numbers on the chart
     for (const [i, id] of ROUTES.entries()) {
       const [x, y] = ROUTE_PTS[id][2];
       const b = scene.add.graphics().fillStyle(0xf3e3b8, 1).fillCircle(x, y - 26, 17).lineStyle(2.5, id === 'calm' ? BLUE_INK : INK_N, 1).strokeCircle(x, y - 26, 17);
       this.root.add([b, labelAt(scene, x, y - 26, String(i + 1), id === 'calm' ? CH_NUM_CALM : CH_NUM)]);
     }
+    // the two routes' cards on the right
+    const L = -ROUTE_W / 2 + 178;
     ROUTES.forEach((id, i) => {
-      const y = 722 + i * 258;
-      const box = scene.add.container(width / 2, y);
+      const y = ROUTE_Y[i];
+      const box = scene.add.container(ROUTE_X, y);
       const bg = scene.add.graphics();
-      const icon = scene.add.image(-222, 0, routeArt(id)).setDisplaySize(140, 140);
-      const name = fitWidth(labelAt(scene, -132, -56, t('r_' + id), id === 'calm' ? CH_NAME_CALM : CH_NAME_STORM, 0), 400);
-      const desc = new Para(scene, -132, -30, t('rd_' + id), CH_DESC, 410, 0, 27);
+      const icon = scene.add.image(-ROUTE_W / 2 + 90, 0, routeArt(id)).setDisplaySize(132, 132);
+      const name = fitWidth(labelAt(scene, L, -60, t('r_' + id), id === 'calm' ? CH_NAME_CALM : CH_NAME_STORM, 0), ROUTE_W / 2 - 20 - L - 30);
+      const desc = new Para(scene, L, -34, t('rd_' + id), CH_DESC, ROUTE_TEXT, 0, 27);
       box.add([bg, icon, name, desc]);
-      if (id === 'storm' && ghost) box.add(labelAt(scene, -132, 74, t('rd_ghost'), CH_GHOST, 0));
-      const num = scene.add.container(272, -82);
+      if (id === 'storm' && ghost) box.add(fitWidth(labelAt(scene, L, 78, t('rd_ghost'), CH_GHOST, 0), ROUTE_TEXT));
+      const num = scene.add.container(ROUTE_W / 2 - 36, -ROUTE_H / 2 + 32);
       num.add([scene.add.graphics().fillStyle(0xf3e3b8, 1).fillCircle(0, 0, 19).lineStyle(2.5, id === 'calm' ? BLUE_INK : INK_N, 1).strokeCircle(0, 0, 19), labelAt(scene, 0, 0, String(i + 1), id === 'calm' ? CH_NUM_CALM : CH_NUM)]);
-      const hit = scene.add.zone(0, 0, 640, 230).setInteractive({ useHandCursor: true });
+      const hit = scene.add.zone(0, 0, ROUTE_W, ROUTE_H).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => ev?.stopPropagation?.());
       hit.on('pointerover', () => { if (!this.done && this.focus !== i) { this.focus = i; this.refresh(); } });
       hit.on('pointerup', () => this.pick(i));
@@ -598,7 +633,7 @@ export class RouteOverlay {
       this.root.add(box);
       this.cards.push({ box, bg, id });
     });
-    if (!host.touch) this.root.add(labelAt(scene, width / 2, 1180, t('chartKeys'), INK_KEYS));
+    if (!host.touch) this.root.add(labelAt(scene, ROUTE_X, 662, t('chartKeys'), INK_KEYS));
     this.refresh();
   }
 
@@ -610,15 +645,16 @@ export class RouteOverlay {
       const pts = ROUTE_PTS[id].map(([x, y]) => new Phaser.Math.Vector2(x, y));
       dashedPath(g, pts, id === 'calm' ? BLUE_INK : INK_N, 0.95, 5, 14, 9);
     });
+    const w = ROUTE_W, h = ROUTE_H;
     this.cards.forEach((c, i) => {
       const on = i === this.focus;
       const ink = c.id === 'calm' ? BLUE_INK : INK_N;
       c.bg.clear()
-        .fillStyle(0x3a2210, 0.18).fillRoundedRect(-316, -108, 640, 230, 22)
-        .fillStyle(0xf3e3b8, 0.97).fillRoundedRect(-320, -115, 640, 230, 22)
-        .fillStyle(c.id === 'calm' ? 0x9fc8e8 : 0xa8a8b4, 0.22).fillRoundedRect(-316, -111, 632, 84, { tl: 18, tr: 18, bl: 6, br: 6 })
-        .lineStyle(on ? 6 : 3, on ? RED_INK : ink, on ? 1 : 0.75).strokeRoundedRect(-320, -115, 640, 230, 22)
-        .lineStyle(1, 0x3a2210, 0.45).strokeRoundedRect(-310, -105, 620, 210, 16);
+        .fillStyle(0x3a2210, 0.18).fillRoundedRect(-w / 2 + 4, -h / 2 + 7, w, h, 22)
+        .fillStyle(0xf3e3b8, 0.97).fillRoundedRect(-w / 2, -h / 2, w, h, 22)
+        .fillStyle(c.id === 'calm' ? 0x9fc8e8 : 0xa8a8b4, 0.22).fillRoundedRect(-w / 2 + 4, -h / 2 + 4, w - 8, 84, { tl: 18, tr: 18, bl: 6, br: 6 })
+        .lineStyle(on ? 6 : 3, on ? RED_INK : ink, on ? 1 : 0.75).strokeRoundedRect(-w / 2, -h / 2, w, h, 22)
+        .lineStyle(1, 0x3a2210, 0.45).strokeRoundedRect(-w / 2 + 10, -h / 2 + 10, w - 20, h - 20, 16);
     });
   }
 
@@ -656,19 +692,20 @@ export class DraftOverlay {
     const { width, height } = scene.scale;
     this.root = scene.add.container(0, 0).setScrollFactor(0).setDepth(OVERLAY_DEPTH);
     this.root.add(scene.add.rectangle(0, 0, width, height, 0x040a10, 0.66).setOrigin(0).setInteractive());
-    this.root.add(fitWidth(labelAt(scene, width / 2, 250, t('draftTitle'), GOLD_HEAD), 640));
-    this.root.add(new Para(scene, width / 2, 296, t('draftSub'), { ...CREAM, size: 24 }, 640, 0.5, 30));
+    this.root.add(fitWidth(labelAt(scene, width / 2, 82, t('draftTitle'), GOLD_HEAD), 900));
+    this.root.add(new Para(scene, width / 2, 124, t('draftSub'), { ...CREAM, size: 24 }, 900, 0.5, 30));
+    // the three boons side by side
     boons.forEach((id, i) => {
-      const y = 470 + i * 230;
-      const box = scene.add.container(width / 2, y);
+      const y = 382;
+      const box = scene.add.container(width / 2 + (i - (boons.length - 1) / 2) * (DRAFT_W + 34), y);
       const face = note(scene, 0, 0, DRAFT_W, DRAFT_H);
       const bg = scene.add.graphics();
-      const icon = scene.add.image(-222, 0, boonArt(id)).setDisplaySize(130, 130);
-      const name = fitWidth(labelAt(scene, -134, -44, t('bn_' + id), boonName(id), 0), 390);
-      const desc = new Para(scene, -134, -18, t('bd_' + id), D_DESC, 400, 0, 27);
-      const num = labelAt(scene, 262, -64, String(i + 1), D_NUM);
+      const icon = scene.add.image(0, -88, boonArt(id)).setDisplaySize(140, 140);
+      const name = fitWidth(labelAt(scene, 0, 20, t('bn_' + id), boonName(id)), DRAFT_W - 40);
+      const desc = new Para(scene, 0, 50, t('bd_' + id), D_DESC, DRAFT_TEXT, 0.5, 27);
+      const num = labelAt(scene, DRAFT_W / 2 - 34, -DRAFT_H / 2 + 40, String(i + 1), D_NUM);
       if (host.touch) num.setVisible(false);
-      const hit = scene.add.zone(0, 0, 620, 200).setInteractive({ useHandCursor: true });
+      const hit = scene.add.zone(0, 0, DRAFT_W, DRAFT_H).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => ev?.stopPropagation?.());
       hit.on('pointerup', () => this.pick(i));
       box.add([face, bg, icon, name, desc, num, hit]);
@@ -677,7 +714,7 @@ export class DraftOverlay {
       this.root.add(box);
       this.cards.push({ box, bg, y, id });
     });
-    if (!host.touch) this.root.add(labelAt(scene, width / 2, 1180, t('draftKeys'), KEYS));
+    if (!host.touch) this.root.add(labelAt(scene, width / 2, 640, t('draftKeys'), KEYS));
     this.refresh();
   }
 
@@ -695,8 +732,8 @@ export class DraftOverlay {
   key(code: string): boolean {
     if (this.done) return false;
     if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3') { this.pick(Number(code.slice(5)) - 1); return true; }
-    if (code === 'ArrowUp' || code === 'KeyW') { this.focus = (this.focus + 2) % 3; this.host.sfx('move', 0.3); this.refresh(); return true; }
-    if (code === 'ArrowDown' || code === 'KeyS') { this.focus = (this.focus + 1) % 3; this.host.sfx('move', 0.3); this.refresh(); return true; }
+    if (code === 'ArrowLeft' || code === 'KeyA' || code === 'ArrowUp' || code === 'KeyW') { this.focus = (this.focus + 2) % 3; this.host.sfx('move', 0.3); this.refresh(); return true; }
+    if (code === 'ArrowRight' || code === 'KeyD' || code === 'ArrowDown' || code === 'KeyS') { this.focus = (this.focus + 1) % 3; this.host.sfx('move', 0.3); this.refresh(); return true; }
     if (code === 'Enter' || code === 'Space' || code === 'KeyJ') { this.pick(this.focus); return true; }
     return false;
   }

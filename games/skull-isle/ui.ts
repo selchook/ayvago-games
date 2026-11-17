@@ -486,12 +486,15 @@ export function drawButton(b: ActionButton, color: number, o: { held?: boolean; 
 // ------------------------------------------------------------------ banners
 
 /** A big title that pops in, holds and flies out. */
-export function banner(scene: Phaser.Scene, y: number, title: string, sub: string, o: { color?: string; hold?: number; size?: number } = {}): Phaser.GameObjects.Container {
+export function banner(scene: Phaser.Scene, y: number, title: string, sub: string, o: { color?: string; hold?: number; size?: number; x?: number; wrap?: number; subSize?: number } = {}): Phaser.GameObjects.Container {
   const { width } = scene.scale;
-  const c = scene.add.container(width / 2, y).setScrollFactor(0).setDepth(9400);
-  const tt = txt(scene, 0, 0, title, { title: true, size: o.size ?? 54, color: o.color ?? '#ffffff', strokeThickness: 9, wrap: 660 });
+  const wrap = o.wrap ?? 660;
+  const c = scene.add.container(o.x ?? width / 2, y).setScrollFactor(0).setDepth(9400);
+  const tt = txt(scene, 0, 0, title, { title: true, size: o.size ?? 54, color: o.color ?? '#ffffff', strokeThickness: 9, wrap });
+  if (tt.width > wrap) tt.setScale(wrap / tt.width);
   c.add(tt);
-  if (sub) c.add(txt(scene, 0, tt.height / 2 + 26, sub, { size: 26, color: '#fff6e6', strokeThickness: 5, wrap: 640 }));
+  const ss = o.subSize ?? 26;
+  if (sub) c.add(txt(scene, 0, tt.displayHeight / 2 + ss, sub, { size: ss, color: '#fff6e6', strokeThickness: 5, wrap: wrap - 20 }));
   c.setScale(0.3).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: c, alpha: 0, y: y - 40, delay: (o.hold ?? 1.2) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });

@@ -81,7 +81,7 @@ export const BOON_IDS: BoonId[] = ['vampire', 'thunder', 'ironclad', 'cursedGold
 
 export type NodeId = 'hardy' | 'whetstone' | 'seaLegs' | 'luckyCoin' | 'nimble' | 'powderMonkey' | 'gunpowder' | 'lootHook' | 'cannonDrill' | 'secondWind';
 export interface NodeDef { id: NodeId; cost: number; req?: NodeId; col: number; row: number }
-/** Two columns of five; a node below needs the one above it. */
+/** Two trails of five (`col` the trail, `row` the step along it); a node needs the one before it. */
 export const NODES: NodeDef[] = [
   { id: 'hardy', cost: 8, col: 0, row: 0 },
   { id: 'whetstone', cost: 10, req: 'hardy', col: 0, row: 1 },
