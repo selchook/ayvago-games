@@ -1,5 +1,5 @@
 {
-  "count": 99,
+  "count": 100,
   "games": [
     {
       "id": "air-hockey",
@@ -2831,6 +2831,40 @@
         "addedAt": "2026-11-04"
       },
       "thumb": "thumbs/sumo-push.png"
+    },
+    {
+      "id": "sushi-rush",
+      "title": {
+        "tr": "Suşi Telaşı",
+        "en": "Sushi Rush"
+      },
+      "description": {
+        "tr": "Sevimli bir 3B suşi barını işlet: tavşan müşteriler gelip tezgâha oturur ve sipariş verir. Pirinci koy, noriyi ser, dolaptan balığı seç, doğra, sar, ramen haşla, gyoza buharla ve sabırları tükenmeden servis et. Her günün hedefini tuttur, mutfağını geliştir, her sabah bir güç kartı seç ve ünlü eleştirmeni memnun et.",
+        "en": "Run a cozy 3D sushi bar: rabbit customers walk in, sit at the counter and order. Scoop rice, lay the nori, pick fish from the fridge, chop, roll, boil ramen and steam gyoza, and serve before their patience runs out. Hit each day's goal, upgrade your kitchen, pick a power card every morning and keep the food critic happy."
+      },
+      "howTo": {
+        "tr": "Dokunmatik: şefi göndermek için bir istasyona dokun, yemek hazır olunca müşteriye dokun; AT tabağı boşaltır. Klavye: 1–7 istasyonlar, ←/→ koltuk seçer, Enter ya da Boşluk servis eder, Backspace atar, B zili çalar.",
+        "en": "Touch: tap a station to send the chef, then tap the customer once the dish is ready; BIN empties the plate. Keys: 1–7 stations, ←/→ choose a seat, Enter or Space serve, Backspace bins, B rings the bell."
+      },
+      "genres": [
+        "casual",
+        "arcade"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Quaternius Sushi Restaurant Kit (CC0) — quaternius.com",
+        "Sounds: Juhani Junkala and Kenney (CC0) — kenney.nl",
+        "Logo font: Grandstander by the Grandstander Project Authors (Etcetera Type Co) (SIL OFL 1.1)"
+      ],
+      "platform": {
+        "addedAt": "2026-11-17"
+      },
+      "thumb": "thumbs/sushi-rush.png"
     },
     {
       "id": "tank-arena",

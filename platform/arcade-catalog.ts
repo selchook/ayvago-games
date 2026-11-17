@@ -1351,6 +1351,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'sushi-rush',
+    title: { en: 'Sushi Rush', tr: 'Suşi Telaşı' },
+    description: {
+      en: "Run a cozy 3D sushi bar: rabbit customers walk in, sit at the counter and order. Scoop rice, lay the nori, pick fish from the fridge, chop, roll, boil ramen and steam gyoza, and serve before their patience runs out. Hit each day's goal, upgrade your kitchen, pick a power card every morning and keep the food critic happy.",
+      tr: 'Sevimli bir 3B suşi barını işlet: tavşan müşteriler gelip tezgâha oturur ve sipariş verir. Pirinci koy, noriyi ser, dolaptan balığı seç, doğra, sar, ramen haşla, gyoza buharla ve sabırları tükenmeden servis et. Her günün hedefini tuttur, mutfağını geliştir, her sabah bir güç kartı seç ve ünlü eleştirmeni memnun et.',
+    },
+    category: 'casual',
+    categories: ['casual', 'arcade'],
+    tags: ['sushi', 'rush', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-17',
+  }),
+  arcadeGame({
     slug: 'tank-arena',
     title: { en: 'Tank Arena', tr: 'Tank Arenası' },
     description: {

@@ -13,6 +13,7 @@ import {
   ArcadeScene, t, isEasy, hudChip, HUD_ROW2_Y, HUD_MARGIN, hudRightEdge, labelAt, labelTexture, fitWidth, KitButton, skinImage,
   bakeButton, isModalOpen, type HudChip, type LabelStyle,
 } from '@core';
+import type { World3D } from '@core/three';
 import { View } from './view';
 import { Day, mulberry, plateDish, type RunState, type SimEvent, type Action } from './sim';
 import { Bot, SKILL } from './bot';
@@ -73,6 +74,8 @@ interface TimerUi { root: Phaser.GameObjects.Container; icon: Phaser.GameObjects
 
 export class PlayScene extends ArcadeScene {
   view!: View;
+  /** The 3D world (the view's; the GPU memory check finds the renderer through it). */
+  world!: World3D;
   day!: Day;
   run!: RunState;
   meta!: Meta;
@@ -139,6 +142,7 @@ export class PlayScene extends ArcadeScene {
     this.day = new Day(this.run, seed);
     this.day.frozen = true;
     this.view = new View(this, { chef: this.meta.chef, ranks: this.run.ranks, day: 1, seats: this.day.seats });
+    this.world = this.view.world;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.view.dispose());
     this.setupHud();
     this.setupTray();
@@ -455,7 +459,7 @@ export class PlayScene extends ArcadeScene {
     });
   }
 
-  private startDay(): void {
+  private startDay(quiet = false): void {
     // the card may change the day (hearts, seats, speed …): build it again with the cards
     this.day = new Day(this.run, this.run.seed * 31 + this.run.day);
     this.view.build(this.run.ranks, this.day.seats, this.run.day);
@@ -465,6 +469,7 @@ export class PlayScene extends ArcadeScene {
     this.hintsOn = isEasy() || this.run.day <= 2;
     this.bot?.setDay(this.day);
     this.refreshHud();
+    if (quiet) return;
     this.banner(t('dayN', { n: this.run.day }));
     this.sfx('start', { volume: 0.5 });
   }
@@ -504,8 +509,9 @@ export class PlayScene extends ArcadeScene {
 
   /** A rewarded continue: the failed day goes on (hearts back, or 30 more seconds). */
   revive(): void {
-    this.day.revive();
     this.revived = true;
+    if (this.phase !== 'end') return;
+    this.day.revive();
     this.phase = 'play';
     this.refreshHud();
   }
@@ -778,14 +784,17 @@ export class PlayScene extends ArcadeScene {
     const neg = coins < 0;
     const txt = this.add.text(x, y, (neg ? '' : '+') + coins + (tip > 0 ? `  +${tip}` : ''), {
       fontFamily: '"Grandstander", "Fredoka", sans-serif', fontSize: '34px', color: neg ? '#ff7a6a' : '#ffe08a', stroke: '#3a1a0e', strokeThickness: 7,
-    }).setOrigin(0.5).setDepth(9060);
-    this.tweens.add({ targets: txt, y: y - 80, alpha: 0, duration: 1100, ease: 'Cubic.easeOut', onComplete: () => txt.destroy() });
+    }).setOrigin(0.5).setDepth(9060).setScale(0.5);
+    this.tweens.add({ targets: txt, scale: 1, duration: 220, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: txt, y: y - 90, duration: 1500, ease: 'Cubic.easeOut' });
+    this.tweens.add({ targets: txt, alpha: 0, delay: 950, duration: 550, onComplete: () => txt.destroy() });
     if (neg) return;
     const n = Math.min(6, 2 + Math.floor((coins + tip) / 8));
     const target = { x: this.hud.scoreChip.x + 60, y: this.hud.scoreChip.y };
     for (let i = 0; i < n; i++) {
       const c = iconImg(this, x + (Math.random() - 0.5) * 50, y + (Math.random() - 0.5) * 30, 'p-coin', 26).setDepth(9055);
-      this.tweens.add({ targets: c, x: target.x, y: target.y, scale: c.scale * 0.6, duration: 520 + i * 60, delay: 120 + i * 40, ease: 'Cubic.easeIn', onComplete: () => c.destroy() });
+      this.tweens.add({ targets: c, y: c.y - 40 - Math.random() * 30, duration: 260, ease: 'Quad.easeOut' });
+      this.tweens.add({ targets: c, x: target.x, y: target.y, scale: c.scale * 0.6, duration: 620 + i * 70, delay: 300 + i * 50, ease: 'Cubic.easeIn', onComplete: () => c.destroy() });
     }
     const em = this.add.particles(x, y, 'sr-spark', { speed: { min: 80, max: 260 }, angle: { min: 200, max: 340 }, scale: { start: 1, end: 0 }, lifespan: 500, tint: [0xffd23f, 0xffffff], blendMode: 'ADD', emitting: false }).setDepth(9054);
     em.explode(14);
@@ -817,13 +826,13 @@ export class PlayScene extends ArcadeScene {
     };
   }
 
-  private skipToDay(o: { day?: number; ranks?: Partial<Meta['ranks']>; cards?: CardId[] }): void {
+  private skipToDay(o: { day?: number; ranks?: Partial<Meta['ranks']>; cards?: CardId[]; quiet?: boolean }): void {
     this.panel?.close();
     this.panel = null;
     if (o.day) this.run.day = o.day;
     if (o.ranks) Object.assign(this.run.ranks, o.ranks);
     if (o.cards) this.run.cards = [...o.cards];
-    this.startDay();
+    this.startDay(o.quiet);
   }
 
   private fastForward(sec: number): void {
@@ -851,12 +860,27 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  /** A busy moment for the store art: day 6, a full bar, the pot and steamer going, coins popping. */
+  /**
+   * A busy moment for the store art: day 6 with a full bar of six, the pot and the steamer going,
+   * and the chef just about to hand a finished dish to the customer who ordered it (the coins pop
+   * in the first frames). Nothing is saved: the upgrades are this run's only.
+   */
   private stage(name: string): void {
     if (name !== 'busy') return;
-    this.skipToDay({ day: 6, ranks: { decor: 2, seats: 2, pot: 2, steamer: 2, tea: 2, knife: 2 }, cards: ['happyHour', 'luckyCat', 'goldenPlate'] });
-    this.bot = new Bot(this.day, SKILL.good, this.rnd);
-    this.fastForward(26);
+    this.run.ranks = { ...this.run.ranks, decor: 2, seats: 2, pot: 2, steamer: 2, tea: 2, knife: 2 };
+    this.skipToDay({ day: 6, cards: ['happyHour', 'luckyCat', 'goldenPlate'], quiet: true });
+    this.bot = new Bot(this.day, SKILL.good, mulberry(6));
+    this.fastForward(30);
+    // on until a dish is served while at least four others wait: that serve plays live (coins fly)
+    for (let i = 0; i < 60 * 40; i++) {
+      this.bot.step(DT);
+      this.day.step(DT);
+      const serve = this.day.events.find((e) => e.type === 'serve');
+      const busy = this.day.customers.filter((c) => c.state === 'wait').length >= 4;
+      for (const ev of this.day.events) { this.view.handle(ev); if (ev === serve && busy) this.react(ev); }
+      this.day.events.length = 0;
+      if (serve && busy) break;
+    }
   }
 }
 

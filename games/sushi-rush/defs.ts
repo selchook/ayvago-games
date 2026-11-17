@@ -156,7 +156,7 @@ export interface DayTune {
 /** Normal and Easy side by side (§7c). */
 export const TUNING = {
   normal: { patience: 1, gap: 1, hearts: 3, length: 0, goal: 1 },
-  easy: { patience: 1.4, gap: 1.2, hearts: 4, length: 10, goal: 0.85 },
+  easy: { patience: 1.3, gap: 1.15, hearts: 4, length: 6, goal: 0.92 },
 };
 
 /** A day's tuning (before upgrades and cards). */

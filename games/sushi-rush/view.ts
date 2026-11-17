@@ -589,7 +589,7 @@ export class View {
   /** A cooker's screen position (its timer ring). */
   cookerAt(st: 'pot' | 'steamer', slot: number): { x: number; y: number } {
     const v = (st === 'pot' ? this.pots : this.baskets)[slot];
-    return v ? this.screen(v.x, v.y + 0.9, v.z + 0.4) : { x: -100, y: -100 };
+    return v ? this.screen(v.x, v.y + 0.45, v.z + 0.7) : { x: -100, y: -100 };
   }
   get chefScreen(): { x: number; y: number } { return this.screen(this.chef.root.position.x, 4.4, AISLE_Z); }
   get handScreen(): { x: number; y: number } { return this.screen(this.handAt.x, this.handAt.y + 0.4, this.handAt.z); }

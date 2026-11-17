@@ -44,7 +44,7 @@ export const CARD_W = 250, CARD_H = 340;
 /** The chef board, its rows. */
 const CHEF_BOARD_W = 440, CHEF_BOARD_H = 600, CHEF_ROW_W = 390, CHEF_ROW_H = 78;
 /** The day's opening card and the summary card. */
-export const DAY_W = 680, DAY_H = 500;
+export const DAY_W = 680, DAY_H = 540;
 /** The pause's side cards. */
 export const PSIDE_W = 300, PSIDE_H = 580;
 /** The left column of the shop. */
@@ -387,7 +387,19 @@ export class DayScreen extends Panel {
         s.tweens.add({ targets: [img], scale: img.scale * 1.12, duration: 520, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
     });
-    let y = top + 228 + Math.ceil(menu.length / per) * 86;
+    let y = top + 228 + Math.ceil(menu.length / per) * 86 - 30;
+    // the new dishes' recipes: the dish = its steps
+    const fresh = menu.filter((d) => d.day === day).slice(0, 2);
+    for (const d of fresh) {
+      const n = d.steps.length, size = 40, gap = 14;
+      const w = 52 + 34 + n * (size + gap) - gap;
+      const x0 = cx - w / 2;
+      this.root.add(iconImg(s, x0 + 26, y, dishIcon(d.id), 52));
+      this.root.add(labelAt(s, x0 + 52 + 17, y, '=', V_NAME));
+      this.root.add(stepsRow(s, x0 + 86, y, d, size, gap));
+      y += 54;
+    }
+    y += 6;
     if (coach) {
       const p = new Para(s, cx, y - 10, t('hintStart'), V_DESC_L, DAY_W - 80, 0.5, 22);
       this.root.add(p);
@@ -630,8 +642,10 @@ export class ShopScreen extends Panel {
               this.build();
             }
           });
-          b.addContent(iconImg(s, -36, 0, 'p-coin', 26), new GlyphText(s, -18, 1, String(price), S_PRICE, 0));
+          const coin = iconImg(s, -36, 0, 'p-coin', 26), num = new GlyphText(s, -18, 1, String(price), S_PRICE, 0);
+          b.addContent(coin, num);
           b.setEnabled(afford);
+          if (!afford) { coin.setAlpha(0.55); num.setAlpha(0.55); }
           c.add(b);
           this.addFocus(b, x, y + UP_H / 2 - 34);
         }
@@ -783,7 +797,8 @@ export function pauseSides(scene: Phaser.Scene, cards: CardId[], day: number): v
     const yy = top + 86 + i * step;
     const x = rx - PSIDE_W / 2 + 36;
     root.add(iconImg(scene, x, yy, dishIcon(d.id), Math.min(58, step + 4)));
-    root.add(stepsRow(scene, x + 42, yy, d, Math.min(46, step - 2), 8));
+    const room = PSIDE_W - 42 - 64;
+    root.add(stepsRow(scene, x + 42, yy, d, Math.min(46, step - 2, Math.floor(room / d.steps.length) - 8), 8));
   });
   root.setAlpha(0);
   scene.tweens.add({ targets: root, alpha: 1, duration: 160 });

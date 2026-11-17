@@ -1,0 +1,69 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "sushirush",
+  "title": {
+    "en": "Sushi Rush",
+    "tr": "Suşi Telaşı"
+  },
+  "description": {
+    "en": "Run a cozy 3D sushi bar: rabbit customers walk in, sit at the counter and order. Scoop rice, lay the nori, pick fish from the fridge, chop, roll, boil ramen and steam gyoza, and serve before their patience runs out. Hit each day's goal, upgrade your kitchen, pick a power card every morning and keep the food critic happy.",
+    "tr": "Sevimli bir 3B suşi barını işlet: tavşan müşteriler gelip tezgâha oturur ve sipariş verir. Pirinci koy, noriyi ser, dolaptan balığı seç, doğra, sar, ramen haşla, gyoza buharla ve sabırları tükenmeden servis et. Her günün hedefini tuttur, mutfağını geliştir, her sabah bir güç kartı seç ve ünlü eleştirmeni memnun et."
+  },
+  "category": "casual",
+  "categories": [
+    "casual",
+    "arcade"
+  ],
+  "tags": [
+    "sushi",
+    "rush",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/sushi-rush/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/sushi-rush/ayvago/icon-512.png",
+    "cover": "/games/sushi-rush/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/sushi-rush/ayvago/screenshot.jpg",
+    "card": {
+      "en": "/games/sushi-rush/ayvago/card-640x360.webp",
+      "tr": "/games/sushi-rush/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/sushi-rush/ayvago/card-1280x720.webp",
+      "tr": "/games/sushi-rush/ayvago/card-tr-1280x720.webp"
+    },
+    "logo": {
+      "en": "/games/sushi-rush/ayvago/logo-en.png",
+      "tr": "/games/sushi-rush/ayvago/logo-tr.png"
+    }
+  },
+  "version": "1.0.0"
+}

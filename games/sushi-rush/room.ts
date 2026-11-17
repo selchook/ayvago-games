@@ -74,7 +74,7 @@ export function roomLayout(o: RoomOpts): Placed[] {
   out.push(P('counter-end', 8.0 + 1.46, 0, BAR_Z, Math.PI, 1, { sy: BAR_SY }));
   for (const x of seatXs(o.seats)) {
     out.push(P('stool', x, 0, STOOL_Z));
-    if (r.tea >= 2) out.push(stand('bottle', x + 0.75, BAR_TOP, BAR_Z + 0.55, 0, 0.42));
+    if (r.tea >= 2) out.push(stand('bowl', x + 0.8, BAR_TOP, BAR_Z + 0.5, 0, 0.42), stand('bottle', x - 0.8, BAR_TOP, BAR_Z + 0.4, 0, 0.62));
   }
   if (r.bell >= 1) out.push(stand('bell', 8.6, BAR_TOP, BAR_Z + 0.2, Math.PI, 0.32));
   // the dining room: tables in the corners, plants, a carpet, paintings
@@ -88,8 +88,11 @@ export function roomLayout(o: RoomOpts): Placed[] {
   out.push(stand('plant1', -12.6, 0, 1.8));
   out.push(P('sign', 0, 6.4, BACK_Z - 0.9, 0, 0.85));
   // decor upgrades: lanterns over the bar, a sakura tree, more lanterns
-  const lanterns = r.decor >= 3 ? [-9, -4.5, 0, 4.5, 9] : r.decor >= 1 ? [-6, 0, 6] : [-3, 3];
-  for (const x of lanterns) out.push(P('lantern', x, 6.2, BAR_Z - 0.3, 0, 0.7));
+  // standing paper lanterns: one at each end of the bar, then along the dining room's front
+  const lanterns: [number, number, number, number][] = [[-9.7, BAR_TOP, BAR_Z, 0.8], [9.7, BAR_TOP, BAR_Z, 0.8]];
+  if (r.decor >= 1) lanterns.push([-10.4, 0, 3.9, 1.3], [10.4, 0, 3.9, 1.3]);
+  if (r.decor >= 3) lanterns.push([-7.4, 0, 4.3, 1.3], [7.4, 0, 4.3, 1.3]);
+  for (const [x, y, z, sc] of lanterns) out.push(stand('lantern', x, y, z, 0.3, sc));
   if (r.decor >= 2) out.push(stand('sakura-tree', 11.4, 0, 1.6, -0.6, 0.85));
   else out.push(stand('sakura-flower', 10.8, BAR_TOP, BAR_Z, 0, 1.2));
   if (r.decor >= 3) out.push(stand('sakura-tree', -11.2, 0, 1.0, 0.5, 0.75));
