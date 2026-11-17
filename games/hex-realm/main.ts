@@ -4,7 +4,7 @@ import meta from './game.json';
 import { PlayScene, TUT_KEYS, T_TITLE, T_BODY, S_SUM, S_SUM_SMALL, S_PLACE } from './PlayScene';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
-import { makeSounds } from './audio';
+import { makeSounds, MAP_MUSIC } from './audio';
 import { View } from './view';
 import { Battle, NO_INPUT } from './battle';
 import { BattleBot, SKILL } from './bot';
@@ -32,7 +32,8 @@ launch({
   background: '#0e0b16',
   physics: 'none',
   difficulty: true,
-  music: { menu: 'select', play: 'stage1' },
+  // 1.2.1: the owner's Ancient Echoes on the menu and the map (the Play scene switches to Measured Pulse in battle)
+  music: { menu: MAP_MUSIC, play: MAP_MUSIC },
   preload(scene) {
     const l = scene.load;
     loadKit(l);

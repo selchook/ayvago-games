@@ -2,6 +2,7 @@
 // buffers and added to Phaser's audio cache (as Skull Isle does), so they play like any loaded
 // sound and follow the mute switch: the bosses' roar.
 import Phaser from 'phaser';
+import type { MusicFile } from '@core';
 
 function buffer(ctx: BaseAudioContext, seconds: number, fn: (t: number, i: number) => number): AudioBuffer {
   const rate = ctx.sampleRate;
@@ -48,3 +49,9 @@ export function makeSounds(game: Phaser.Game): void {
     /* no Web Audio: the game simply has none of these */
   }
 }
+
+// 1.2.1: the owner's two tracks, made loop-ready (docs/assets/LICENSES.md): Ancient Echoes on the
+// menu and the map, Measured Pulse in every battle. The core loads each the first time it plays and
+// cross-fades between them.
+export const MAP_MUSIC: MusicFile = { file: 'music/owner/ancient-echoes.mp3', gain: 1.85 };
+export const BATTLE_MUSIC: MusicFile = { file: 'music/owner/measured-pulse.mp3', gain: 1.8 };

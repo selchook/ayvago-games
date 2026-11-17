@@ -263,8 +263,12 @@ export interface ActionButton {
   zone: Phaser.GameObjects.Zone | null;
 }
 
-/** A round action button drawn by the game (the core's A/B circles do the hit testing for ATTACK and DODGE). */
-export function actionButton(scene: Phaser.Scene, x: number, y: number, r: number, label: string, own: boolean, o: { badge?: boolean; size?: number; icon?: string } = {}): ActionButton {
+/**
+ * A round action button drawn by the game (the core's A/B circles do the hit testing for ATTACK and DODGE).
+ * `own` gives it its own touch zone: the battle reads `pressed` each frame; a menu button (the map's
+ * HERO and MAP) passes `onTap`, called when a press is released on the button.
+ */
+export function actionButton(scene: Phaser.Scene, x: number, y: number, r: number, label: string, own: boolean, o: { badge?: boolean; size?: number; icon?: string; onTap?: () => void } = {}): ActionButton {
   const root = scene.add.container(x, y).setScrollFactor(0).setDepth(9520);
   const g = scene.add.graphics();
   const ic = o.icon ? scene.add.image(0, label ? -r * 0.18 : 0, o.icon).setDisplaySize(r * (label ? 1.05 : 1.4), r * (label ? 1.05 : 1.4)) : null;
@@ -280,7 +284,11 @@ export function actionButton(scene: Phaser.Scene, x: number, y: number, r: numbe
   if (own) {
     const zone = b.zone = scene.add.zone(x, y, r * 2.3, r * 2.3).setScrollFactor(0).setDepth(9519).setInteractive(new Phaser.Geom.Circle(r * 1.15, r * 1.15, r * 1.15), Phaser.Geom.Circle.Contains);
     zone.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { ev?.stopPropagation?.(); b.down = true; b.pressed = true; });
-    zone.on('pointerup', () => { b.down = false; });
+    zone.on('pointerup', () => {
+      const tap = b.down;
+      b.down = false;
+      if (tap && o.onTap) { scene.tweens.add({ targets: root, scale: { from: 0.9, to: 1 }, duration: 160, ease: 'Back.easeOut' }); o.onTap(); }
+    });
     zone.on('pointerout', () => { b.down = false; });
   }
   return b;
