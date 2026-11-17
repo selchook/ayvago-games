@@ -55,7 +55,11 @@
     "cover": "/games/light-cycles/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/light-cycles/ayvago/screenshot.jpg",
     "card": "/games/light-cycles/ayvago/card-640x360.webp",
-    "card2x": "/games/light-cycles/ayvago/card-1280x720.webp"
+    "card2x": "/games/light-cycles/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/light-cycles/ayvago/logo-en.png",
+      "tr": "/games/light-cycles/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.0"
 }

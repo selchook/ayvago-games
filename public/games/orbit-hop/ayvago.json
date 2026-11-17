@@ -53,7 +53,11 @@
     "cover": "/games/orbit-hop/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/orbit-hop/ayvago/screenshot.jpg",
     "card": "/games/orbit-hop/ayvago/card-640x360.webp",
-    "card2x": "/games/orbit-hop/ayvago/card-1280x720.webp"
+    "card2x": "/games/orbit-hop/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/orbit-hop/ayvago/logo-en.png",
+      "tr": "/games/orbit-hop/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

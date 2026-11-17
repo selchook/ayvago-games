@@ -55,7 +55,11 @@
     "cover": "/games/penalty-kick/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/penalty-kick/ayvago/screenshot.jpg",
     "card": "/games/penalty-kick/ayvago/card-640x360.webp",
-    "card2x": "/games/penalty-kick/ayvago/card-1280x720.webp"
+    "card2x": "/games/penalty-kick/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/penalty-kick/ayvago/logo-en.png",
+      "tr": "/games/penalty-kick/ayvago/logo-tr.png"
+    }
   },
   "version": "1.2.0"
 }

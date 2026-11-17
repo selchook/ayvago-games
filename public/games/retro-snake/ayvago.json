@@ -53,7 +53,11 @@
     "cover": "/games/retro-snake/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/retro-snake/ayvago/screenshot.jpg",
     "card": "/games/retro-snake/ayvago/card-640x360.webp",
-    "card2x": "/games/retro-snake/ayvago/card-1280x720.webp"
+    "card2x": "/games/retro-snake/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/retro-snake/ayvago/logo-en.png",
+      "tr": "/games/retro-snake/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

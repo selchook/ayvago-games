@@ -53,7 +53,11 @@
     "cover": "/games/sky-jumper/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/sky-jumper/ayvago/screenshot.jpg",
     "card": "/games/sky-jumper/ayvago/card-640x360.webp",
-    "card2x": "/games/sky-jumper/ayvago/card-1280x720.webp"
+    "card2x": "/games/sky-jumper/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/sky-jumper/ayvago/logo-en.png",
+      "tr": "/games/sky-jumper/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

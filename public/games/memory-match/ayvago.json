@@ -55,7 +55,11 @@
     "cover": "/games/memory-match/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/memory-match/ayvago/screenshot.jpg",
     "card": "/games/memory-match/ayvago/card-640x360.webp",
-    "card2x": "/games/memory-match/ayvago/card-1280x720.webp"
+    "card2x": "/games/memory-match/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/memory-match/ayvago/logo-en.png",
+      "tr": "/games/memory-match/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

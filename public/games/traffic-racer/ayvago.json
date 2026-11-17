@@ -54,7 +54,11 @@
     "cover": "/games/traffic-racer/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/traffic-racer/ayvago/screenshot.jpg",
     "card": "/games/traffic-racer/ayvago/card-640x360.webp",
-    "card2x": "/games/traffic-racer/ayvago/card-1280x720.webp"
+    "card2x": "/games/traffic-racer/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/traffic-racer/ayvago/logo-en.png",
+      "tr": "/games/traffic-racer/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.0"
 }

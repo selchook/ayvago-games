@@ -54,7 +54,11 @@
     "cover": "/games/secret-word/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/secret-word/ayvago/screenshot.jpg",
     "card": "/games/secret-word/ayvago/card-640x360.webp",
-    "card2x": "/games/secret-word/ayvago/card-1280x720.webp"
+    "card2x": "/games/secret-word/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/secret-word/ayvago/logo-en.png",
+      "tr": "/games/secret-word/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

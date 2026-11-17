@@ -53,7 +53,11 @@
     "cover": "/games/solitaire/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/solitaire/ayvago/screenshot.jpg",
     "card": "/games/solitaire/ayvago/card-640x360.webp",
-    "card2x": "/games/solitaire/ayvago/card-1280x720.webp"
+    "card2x": "/games/solitaire/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/solitaire/ayvago/logo-en.png",
+      "tr": "/games/solitaire/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.0"
 }

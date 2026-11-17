@@ -54,7 +54,11 @@
     "cover": "/games/gomoku/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/gomoku/ayvago/screenshot.jpg",
     "card": "/games/gomoku/ayvago/card-640x360.webp",
-    "card2x": "/games/gomoku/ayvago/card-1280x720.webp"
+    "card2x": "/games/gomoku/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/gomoku/ayvago/logo-en.png",
+      "tr": "/games/gomoku/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.0"
 }

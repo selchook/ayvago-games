@@ -53,7 +53,11 @@
     "cover": "/games/delivery-dash/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/delivery-dash/ayvago/screenshot.jpg",
     "card": "/games/delivery-dash/ayvago/card-640x360.webp",
-    "card2x": "/games/delivery-dash/ayvago/card-1280x720.webp"
+    "card2x": "/games/delivery-dash/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/delivery-dash/ayvago/logo-en.png",
+      "tr": "/games/delivery-dash/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.2"
 }

@@ -54,7 +54,11 @@
     "cover": "/games/hex-merge/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/hex-merge/ayvago/screenshot.jpg",
     "card": "/games/hex-merge/ayvago/card-640x360.webp",
-    "card2x": "/games/hex-merge/ayvago/card-1280x720.webp"
+    "card2x": "/games/hex-merge/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/hex-merge/ayvago/logo-en.png",
+      "tr": "/games/hex-merge/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

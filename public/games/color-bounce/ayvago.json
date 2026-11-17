@@ -53,7 +53,11 @@
     "cover": "/games/color-bounce/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/color-bounce/ayvago/screenshot.jpg",
     "card": "/games/color-bounce/ayvago/card-640x360.webp",
-    "card2x": "/games/color-bounce/ayvago/card-1280x720.webp"
+    "card2x": "/games/color-bounce/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/color-bounce/ayvago/logo-en.png",
+      "tr": "/games/color-bounce/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.0"
 }

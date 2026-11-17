@@ -1,6 +1,7 @@
 // Generates the Ayvago platform integration files for every finished game:
 //   public/games/<slug>/ayvago.json   manifest served next to the game (schema: selchook/ayvago
-//                                     packages/shared/src/manifest.ts, sdkVersion 2)
+//                                     packages/shared/src/manifest.ts, sdkVersion 2; the art in
+//                                     public/games/<slug>/ayvago/ comes from gen-store-assets.mjs)
 //   platform/arcade-catalog.ts        SeedGame entries; the platform's "Sync arcade catalog" workflow
 //                                     pulls it from main into packages/shared/src/arcade-catalog.ts
 // Usage: node scripts/gen-platform.mjs [--origin https://games.example.com] [--live] [--require-smoke]
@@ -81,6 +82,8 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
       screenshot: `/games/${slug}/ayvago/screenshot.jpg`,
       card: `/games/${slug}/ayvago/card-640x360.webp`,
       card2x: `/games/${slug}/ayvago/card-1280x720.webp`,
+      // the game's title art per language, transparent PNG (game page overlay before Play)
+      logo: { en: `/games/${slug}/ayvago/logo-en.png`, tr: `/games/${slug}/ayvago/logo-tr.png` },
     },
     version: /^\d+\.\d+\.\d+$/.test(m.version) ? m.version : '1.0.0',
   };
@@ -166,6 +169,7 @@ function arcadeGame({ slug, addedAt, featured, multiplayer, ageRating, scoring, 
         screenshot: \`/games/\${slug}/ayvago/screenshot.jpg\`,
         card: \`/games/\${slug}/ayvago/card-640x360.webp\`,
         card2x: \`/games/\${slug}/ayvago/card-1280x720.webp\`,
+        logo: { en: \`/games/\${slug}/ayvago/logo-en.png\`, tr: \`/games/\${slug}/ayvago/logo-tr.png\` },
       },
       version: version ?? '1.0.0',
     },

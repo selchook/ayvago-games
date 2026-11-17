@@ -54,7 +54,11 @@
     "cover": "/games/hex-bridge/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/hex-bridge/ayvago/screenshot.jpg",
     "card": "/games/hex-bridge/ayvago/card-640x360.webp",
-    "card2x": "/games/hex-bridge/ayvago/card-1280x720.webp"
+    "card2x": "/games/hex-bridge/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/hex-bridge/ayvago/logo-en.png",
+      "tr": "/games/hex-bridge/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.0"
 }

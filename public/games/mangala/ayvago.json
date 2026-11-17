@@ -54,7 +54,11 @@
     "cover": "/games/mangala/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/mangala/ayvago/screenshot.jpg",
     "card": "/games/mangala/ayvago/card-640x360.webp",
-    "card2x": "/games/mangala/ayvago/card-1280x720.webp"
+    "card2x": "/games/mangala/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/mangala/ayvago/logo-en.png",
+      "tr": "/games/mangala/ayvago/logo-tr.png"
+    }
   },
   "version": "1.1.0"
 }

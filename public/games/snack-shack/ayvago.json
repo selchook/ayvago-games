@@ -53,7 +53,11 @@
     "cover": "/games/snack-shack/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/snack-shack/ayvago/screenshot.jpg",
     "card": "/games/snack-shack/ayvago/card-640x360.webp",
-    "card2x": "/games/snack-shack/ayvago/card-1280x720.webp"
+    "card2x": "/games/snack-shack/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/snack-shack/ayvago/logo-en.png",
+      "tr": "/games/snack-shack/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.1"
 }

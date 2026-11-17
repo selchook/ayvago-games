@@ -1,6 +1,7 @@
 // Validates every public/games/*/ayvago.json (and the generated platform catalog) against the
 // platform's own zod schema (vendored from selchook/ayvago) and checks the art exists with the
-// right dimensions. Run: npx tsx scripts/validate-manifests.ts
+// right dimensions (the logos: transparent PNGs within their size).
+// Run: npx tsx scripts/validate-manifests.ts
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseGameManifest } from './vendor/manifest';
@@ -38,6 +39,24 @@ function webpSize(file: string): [number, number] {
 }
 // Catalog card art (assets.card / card2x), both required for the studio's games.
 const CARDS = [['card', '640x360'], ['card2x', '1280x720']] as const;
+// Game logos (assets.logo, en + tr, both required here): PNG with transparency, at most
+// 640×320 px and 60 KB.
+const LOGO_MAX = [640, 320] as const;
+const LOGO_BYTES = 60 * 1024;
+function logoProblem(file: string): string | null {
+  const b = readFileSync(file);
+  if (b.toString('latin1', 1, 4) !== 'PNG') return 'not a PNG';
+  const [w, h] = [b.readUInt32BE(16), b.readUInt32BE(20)];
+  const type = b[25];
+  // alpha: an RGBA or grey + alpha image, or a palette image with a tRNS chunk
+  const chunks: string[] = [];
+  for (let i = 8; i + 8 <= b.length; i += 12 + b.readUInt32BE(i)) chunks.push(b.toString('latin1', i + 4, i + 8));
+  const alpha = type === 6 || type === 4 || (type === 3 && chunks.includes('tRNS'));
+  if (!alpha) return 'has no transparency';
+  if (w > LOGO_MAX[0] || h > LOGO_MAX[1]) return `is ${w}x${h}, over ${LOGO_MAX.join('x')}`;
+  if (b.length > LOGO_BYTES) return `is ${Math.round(b.length / 1024)} KB, over ${LOGO_BYTES / 1024} KB`;
+  return null;
+}
 
 for (const slug of readdirSync(dir).sort()) {
   const file = join(dir, slug, 'ayvago.json');
@@ -63,6 +82,16 @@ for (const slug of readdirSync(dir).sort()) {
       if (!file) problems.push(`assets.${key} missing`);
       else if (!existsSync(file)) problems.push(`${key} file missing`);
       else if (webpSize(file).join('x') !== size) problems.push(`${key} is ${webpSize(file).join('x')}, not a ${size} WebP`);
+    }
+    for (const lang of ['en', 'tr'] as const) {
+      const ref = m.assets.logo?.[lang];
+      const file = ref && join(root, 'public', ref);
+      if (!file) problems.push(`assets.logo.${lang} missing`);
+      else if (!existsSync(file)) problems.push(`logo ${lang} file missing`);
+      else {
+        const problem = logoProblem(file);
+        if (problem) problems.push(`logo ${lang} ${problem}`);
+      }
     }
   }
   if (problems.length) failed++;

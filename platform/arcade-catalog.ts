@@ -71,6 +71,7 @@ function arcadeGame({
         screenshot: `/games/${slug}/ayvago/screenshot.jpg`,
         card: `/games/${slug}/ayvago/card-640x360.webp`,
         card2x: `/games/${slug}/ayvago/card-1280x720.webp`,
+        logo: { en: `/games/${slug}/ayvago/logo-en.png`, tr: `/games/${slug}/ayvago/logo-tr.png` },
       },
       version: version ?? '1.0.0',
     },

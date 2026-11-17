@@ -53,7 +53,11 @@
     "cover": "/games/crypt-crawler/ayvago/cover-1920x1080.jpg",
     "screenshot": "/games/crypt-crawler/ayvago/screenshot.jpg",
     "card": "/games/crypt-crawler/ayvago/card-640x360.webp",
-    "card2x": "/games/crypt-crawler/ayvago/card-1280x720.webp"
+    "card2x": "/games/crypt-crawler/ayvago/card-1280x720.webp",
+    "logo": {
+      "en": "/games/crypt-crawler/ayvago/logo-en.png",
+      "tr": "/games/crypt-crawler/ayvago/logo-tr.png"
+    }
   },
   "version": "1.0.1"
 }
