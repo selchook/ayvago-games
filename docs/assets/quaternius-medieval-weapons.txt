@@ -1,0 +1,48 @@
+quaternius/medieval-weapons/weapons.glb 217KB (24 meshes, vertex colours, quantized)
+  Sword 1.14x5.45x0.26 436 tris, y -0.82..4.63
+  Sword_2 1.22x5.36x0.31 470 tris, y -0.84..4.52
+  Sword_Big 1.02x6.44x0.24 414 tris, y -0.35..6.09
+  Sword_Golden 1.21x5.97x0.24 502 tris, y -0.62..5.35
+  Claymore 0.98x6.59x0.27 514 tris, y -0.32..6.27
+  Axe 1.17x5.26x0.25 564 tris, y -1.72..3.54
+  Axe_Small 1.17x2.95x0.25 626 tris, y -1.23..1.72
+  Axe_Double 2.06x6.35x0.26 946 tris, y -3.18..3.18
+  Hammer_Small 1.49x4.33x0.81 860 tris, y -1.18..3.15
+  Hammer_Double 2.22x4.97x0.81 994 tris, y -1.78..3.19
+  Dagger 0.56x2.61x0.21 446 tris, y -0.58..2.03
+  Dagger_2 0.64x3.11x0.26 486 tris, y -0.67..2.43
+  Spear 0.53x9.65x0.33 600 tris, y -2.16..7.50
+  Scythe 3.03x5.58x0.28 654 tris, y -2.22..3.37
+  Bow_Wooden 1.45x5.44x0.24 364 tris, y -2.72..2.72
+  Bow_Wooden2 1.45x5.44x0.24 332 tris, y -2.72..2.72
+  Bow_Evil 1.56x5.68x0.23 386 tris, y -2.84..2.83
+  Bow_Golden 1.56x5.44x0.24 388 tris, y -2.72..2.72
+  Shield_Round 2.00x2.00x0.60 730 tris, y -1.00..1.00
+  Shield_Round_2 2.00x2.00x0.60 838 tris, y -1.00..1.00
+  Shield_Heater 2.01x2.56x0.59 1226 tris, y -1.30..1.26
+  Shield_Heater_2 2.01x2.56x0.59 930 tris, y -1.50..1.06
+  Shield_Celtic_Golden 2.10x4.28x1.41 622 tris, y -2.27..2.01
+  Arrow 0.27x2.73x0.24 128 tris, y -0.04..2.69
+quaternius/medieval-weapons/icons/Sword.png 96x96 1.5KB
+quaternius/medieval-weapons/icons/Sword_2.png 96x96 1.4KB
+quaternius/medieval-weapons/icons/Sword_Big.png 96x96 1.2KB
+quaternius/medieval-weapons/icons/Sword_Golden.png 96x96 1.6KB
+quaternius/medieval-weapons/icons/Claymore.png 96x96 1.3KB
+quaternius/medieval-weapons/icons/Axe.png 96x96 1.6KB
+quaternius/medieval-weapons/icons/Axe_Small.png 96x96 1.7KB
+quaternius/medieval-weapons/icons/Axe_Double.png 96x96 1.8KB
+quaternius/medieval-weapons/icons/Hammer_Small.png 96x96 1.7KB
+quaternius/medieval-weapons/icons/Hammer_Double.png 96x96 1.8KB
+quaternius/medieval-weapons/icons/Dagger.png 96x96 1.6KB
+quaternius/medieval-weapons/icons/Dagger_2.png 96x96 1.8KB
+quaternius/medieval-weapons/icons/Spear.png 96x96 1.0KB
+quaternius/medieval-weapons/icons/Scythe.png 96x96 1.6KB
+quaternius/medieval-weapons/icons/Bow_Wooden.png 96x96 1.3KB
+quaternius/medieval-weapons/icons/Bow_Wooden2.png 96x96 1.3KB
+quaternius/medieval-weapons/icons/Bow_Evil.png 96x96 1.6KB
+quaternius/medieval-weapons/icons/Bow_Golden.png 96x96 1.7KB
+quaternius/medieval-weapons/icons/Shield_Round.png 96x96 2.0KB
+quaternius/medieval-weapons/icons/Shield_Round_2.png 96x96 2.3KB
+quaternius/medieval-weapons/icons/Shield_Heater.png 96x96 1.8KB
+quaternius/medieval-weapons/icons/Shield_Heater_2.png 96x96 1.6KB
+quaternius/medieval-weapons/icons/Shield_Celtic_Golden.png 96x96 2.4KB

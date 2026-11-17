@@ -9,6 +9,8 @@
 //     the shader repeats inside the cell);
 //   - keepPrograms() compiles a copy of every material kind behind the menu, so the first Play
 //     frame finds its shader programs ready.
+import { WEAPON_MODELS, weaponIcon } from './weapons';
+import { WEAPONS_KEY } from './weaponview';
 import Phaser from 'phaser';
 import { THREE, model, loadModel, kenney3d } from '@core/three';
 import { asset } from '@core';
@@ -48,6 +50,9 @@ export function loadKit(load: Phaser.Loader.LoaderPlugin): void {
   for (const m of ['skeleton', 'headless']) loadModel(load, pirateKey(m), asset(`quaternius/pirate-kit/${m}.glb`));
   for (const m of RETRO_MODELS) loadModel(load, retroKey(m), kenney3d('retro-fantasy-kit', m));
   for (const m of HEX_MODELS) loadModel(load, hexKey(m), kenney3d('hexagon-kit', m));
+  // 1.2: the Medieval Weapons (one GLB) and their icons
+  loadModel(load, WEAPONS_KEY, asset('quaternius/medieval-weapons/weapons.glb'));
+  for (const m of WEAPON_MODELS) if (m !== 'Arrow') load.image(weaponIcon(m), asset(`quaternius/medieval-weapons/icons/${m}.png`));
 }
 
 // ------------------------------------------------------------------ geometry

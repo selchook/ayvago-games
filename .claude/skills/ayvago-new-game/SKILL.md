@@ -629,8 +629,9 @@ menuTheme: {
 
 ## 7g. Action combat and progression (melee, action RPG, roguelite)
 
-Reference: `games/hex-realm` (1.1): `defs.ts` (combo data), `battle.ts` (sim), `powers.ts`
-(Shrine ranks, power cards), `screens.ts` (Shrine, Combos, Cards, draft), `bot.ts` / `balance.ts`.
+Reference: `games/hex-realm` (1.2): `defs.ts` (combo data), `battle.ts` (sim), `powers.ts`
+(Shrine ranks, power cards), `weapons.ts` (weapon kinds and models), `screens.ts` (Shrine, Combos,
+Cards, draft), `bot.ts` / `balance.ts`.
 
 - **Three distinct combos per character (rule)** for any game where the hero swings, shoots or
   punches. They differ in input, rhythm, reach, hit shape and finisher, not in colour:
@@ -646,10 +647,22 @@ Reference: `games/hex-realm` (1.1): `defs.ts` (combo data), `battle.ts` (sim), `
   simulation decides the chain, step, buffering, the charge and every hitbox; the view only draws.
   Holding ATTACK carries the chain on (no auto-repeat in the scene), so touch players get the heavy
   chain by holding and the quick one by tapping.
-- **Show and teach them.** Pips over the hero for the step (coloured per combo, a charge ring),
-  the finisher's name popping up as a prebaked label, an impact per finisher (hit-stop, shake,
-  sound, its own FX), a short skippable tutorial step with all three inputs (touch and keys), a
-  first-time hint for each combo not used yet, and a themed "Combos" list in an inner screen.
+- **Combos only in combat (rule).** The sim decides "in combat" (a hostile foe within engage range,
+  ~6.5 m for melee or the class's aim for ranged, a foe winding up, a boss up, or a blow dealt or
+  taken in the last ~2.5 s). Out of combat ATTACK is one clean single swing with a short recovery
+  (crates, exploring); a chain goes on seamlessly when a foe comes close mid-swing. A soft target
+  assist turns the blow to the best foe ahead (no hard lock) and the view rings that foe.
+- **Show and teach them, without clutter.** Nothing floats over the hero's head (no combo pips or
+  charge rings there): the heavy charge fills a ring on the touch ATTACK button and on the ground
+  under the hero, with a glow on the weapon hand; a landed finisher's name pops small at the impact
+  (only when it hits); each finisher has its own impact (hit-stop, shake, sound, FX). A short
+  skippable tutorial step with all three inputs (touch and keys), a first-time hint for each combo
+  not used yet, and a themed "Combos" list in an inner screen that says combos chain in combat.
+- **Weapons you can see.** When gear has weapons, the equipped one is the model in the hero's hand
+  (hide a welded weapon by shrinking its bone; one `BatchedMesh` for every weapon in sight keeps it
+  to one draw call), its icon is the model (pre-rendered offline, loaded as images), drops show the
+  model in a beam of the rarity's colour, and its kind changes the feel (light, balanced, heavy,
+  reach) by a few numbers shown on the item card.
 - **Two kinds of progression (rule)** for action RPGs and roguelites:
   - a persistent upgrade path whose ranks change behaviour, not only numbers (rank I more power;
     II and III: pulls foes in, leaves a burning line, stuns, splits, pierces, strikes twice), for

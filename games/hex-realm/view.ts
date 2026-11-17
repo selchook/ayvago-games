@@ -9,6 +9,7 @@ import { BattleView, ARENA_LOOK } from './battleview';
 import { MapView, groundY } from './mapview';
 import { Figure } from './figure';
 import { heroKey, keepPrograms } from './kit';
+import { keepRackProgram } from './weaponview';
 import { hexPos, type HexMap } from './hexmap';
 import { CLASS, type ClassId, type ArenaKind } from './defs';
 import type { Battle } from './battle';
@@ -87,7 +88,12 @@ export class View {
     if (cur) this.battle.showArena(cur.kind, cur.seed);
     const vis = [this.mapView.root.visible, this.battle.root.visible];
     this.mapView.root.visible = this.battle.root.visible = true;
+    // the weapon batch is warmed as a batch (the core's keepPrograms would warm a plain mesh of it)
+    const rack = this.battle.rack.batch, parent = rack.parent;
+    parent?.remove(rack);
     keepPrograms(this.world.renderer, s, this.world.camera);
+    parent?.add(rack);
+    keepRackProgram(this.world.renderer, s, this.world.camera, this.battle.rack);
     [this.mapView.root.visible, this.battle.root.visible] = vis;
   }
 

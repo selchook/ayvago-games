@@ -312,7 +312,7 @@ export const FOE: Record<FoeKind, FoeDef> = {
 export const foeHpAt = (base: number, lvl: number): number => base * HP_SCALE * (1 + 0.46 * (lvl - 1));
 /** All foes' health and damage (tuned with balance.ts; 1.1 added the combos, the Shrine and the cards). */
 export const HP_SCALE = 1.9;
-export const DMG_SCALE = 1.12;
+export const DMG_SCALE = 1.18;
 export const foeDmgAt = (base: number, lvl: number): number => base * DMG_SCALE * (1 + 0.21 * (lvl - 1));
 
 // ------------------------------------------------------------------ power-ups
