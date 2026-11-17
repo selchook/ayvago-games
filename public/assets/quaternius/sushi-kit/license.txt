@@ -1,0 +1,2 @@
+Sushi Restaurant Kit (May 2023) by Quaternius (quaternius.com), CC0 1.0 Universal (public domain). Obtained as the .gltf files of the official Google Drive distribution folder shared by the project owner; the folder has no licence file; Quaternius publishes its kits under CC0 1.0.
+icons.png is rendered from the kit's own models (games/sushi-rush/icons.ts, make-icons.mjs).
