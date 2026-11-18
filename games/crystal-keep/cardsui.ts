@@ -2,7 +2,7 @@
 // screen that deals three or four of them, the tray of owned cards in the HUD (tooltips on hover,
 // a tap opens the full list) and that list.
 import Phaser from 'phaser';
-import { txt, t, upper, hudChip, HudChip, HUD_GAP, HUD_ROW2_Y, SkinButton, skinImage, themeLabel, FmtLine, GlyphText } from '@core';
+import { txt, t, upper, hudChip, HudChip, HUD_GAP, HUD_ROW2_Y, SkinButton, skinImage, themeLabel, fitWidth, FmtLine, GlyphText } from '@core';
 import { CARD, RARITY_COLOR, type Rarity } from './cards';
 import { cardArt } from './art';
 import type { CardId, Sim } from './sim';
@@ -49,10 +49,11 @@ export class CardFace extends Phaser.GameObjects.Container {
     bg.fillStyle(0xffffff, 0.07).fillRoundedRect(-W / 2 + 5, -H / 2 + 5, W - 10, H * 0.3, { tl: 18, tr: 18, bl: 6, br: 6 });
     bg.lineStyle(5, col.frame, 1).strokeRoundedRect(-W / 2, -H / 2, W, H, 22);
     bg.lineStyle(2, 0xffffff, 0.25).strokeRoundedRect(-W / 2 + 6, -H / 2 + 6, W - 12, H - 12, 17);
-    const tag = txt(scene, 0, -H / 2 + 24, t('r_' + rar), { title: true, size: 17, color: col.text, strokeThickness: 0, shadow: false });
+    // the rarity and the name in the menu theme's styles (screens.ts, painted under the Ayvago intro)
+    const tag = themeLabel(scene, 0, -H / 2 + 24, t('r_' + rar), SCR.RARITY_TAG(rar));
     const art = scene.add.image(0, -H / 2 + 113, scene.textures.exists(cardArt(id)) ? cardArt(id) : '__WHITE').setDisplaySize(136, 136);
-    const name = txt(scene, 0, 10, t('c_' + id), { title: true, size: 24, strokeThickness: 0, wrap: W - 22, shadow: false }).setOrigin(0.5, 0);
-    if (name.height > 64) name.setScale(64 / name.height);
+    const name = fitWidth(themeLabel(scene, 0, 0, upper(t('c_' + id)), SCR.cardName(rar)), W - 22);
+    name.setY(10 + name.displayHeight / 2);
     const desc = txt(scene, 0, 0, cardDesc(sim, id), { size: 18, color: '#dfe7fb', strokeThickness: 0, wrap: W - 24, shadow: false });
     desc.setOrigin(0.5, 0).setY(10 + name.displayHeight + 8);
     const bottom = H / 2 - (sim.stacks(id) > 0 ? 34 : 14);

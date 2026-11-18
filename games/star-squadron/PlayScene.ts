@@ -4,9 +4,10 @@
 // slow motion), plays the sounds and banners, and banks the run's Stardust at the end.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash, popup,
-  HUD_MARGIN, HUD_ROW2_Y, themeCard, themeLabel, themeText, overlayHeadingStyle,
+  ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash,
+  HUD_MARGIN, HUD_ROW2_Y, themeCard, themeLabel, themeText, overlayHeadingStyle, labelAt, fitWidth, Para,
 } from '@core';
+import { prebakePlay, scorePopup, critLine, floatStyle, S_HINT } from './labels';
 import { THREE, type World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent, type CardId, type Offer } from './sim';
 import { TUNING, FIELD, playerHalfWidth, type Mode, type PowerId, POWER_IDS } from './defs';
@@ -79,6 +80,7 @@ export class PlayScene extends ArcadeScene {
   private frameStart = 0;
 
   createGame(): void {
+    prebakePlay(this);
     this.mode = isEasy() ? 'easy' : 'normal';
     this.meta = loadMeta();
     this.sim = new Sim(this.mode, Math.floor(Math.random() * 1e9), talentFx(this.meta.talents));
@@ -337,13 +339,13 @@ export class PlayScene extends ArcadeScene {
         const p = sx(ev.e.x, ev.e.z);
         const big = ev.e.kind === 'gunship' || ev.e.kind === 'bomber' || ev.e.kind === 'carrier';
         this.sfxAt(big ? 'boomBig' : 'boom', p.x, { volume: big ? 0.7 : 0.4 });
-        if (big && ev.score) popup(this, p.x, p.y - 20, '+' + ev.score, '#ffd23f', 24);
+        if (big && ev.score) scorePopup(this, p.x, p.y - 20, '+' + ev.score, 24);
         break;
       }
       case 'partKill': {
         const p = sx(ev.part.x, ev.part.z);
         this.sfxAt('partBoom', p.x, { volume: 0.8 });
-        popup(this, p.x, p.y - 20, '+' + Math.round(800 * sim.scoreMul), '#ffd23f', 26);
+        scorePopup(this, p.x, p.y - 20, '+' + Math.round(800 * sim.scoreMul), 26);
         if (!ev.boss.parts.some((q) => q.alive)) {
           banner(this, 470, t('armourDown'), '', { color: '#9fe8ff', hold: 1, size: 44 });
           this.sfx('fanfare', { volume: 0.4 });
@@ -672,22 +674,27 @@ export class PlayScene extends ArcadeScene {
   }
 
   private dmgNumber(x: number, y: number, n: number): void {
-    const tx = txt(this, x + (Math.random() - 0.5) * 30, y, t('crit') + ' ' + n, { title: true, size: 22, color: '#fff3b0', strokeThickness: 5 }).setScrollFactor(0).setDepth(6000);
+    const tx = critLine(this, x + (Math.random() - 0.5) * 30, y, n);
     this.tweens.add({ targets: tx, y: y - 50, alpha: 0, duration: 650, ease: 'Quad.easeOut', onComplete: () => tx.destroy() });
   }
 
   private floatText(x: number, y: number, s: string, color: string, size = 26): void {
-    const tx = txt(this, x, y, s, { title: true, size, color, strokeThickness: 6 }).setScrollFactor(0).setDepth(9300).setScale(0.5);
-    this.tweens.add({ targets: tx, scale: 1, duration: 200, ease: 'Back.easeOut' });
+    const tx = fitWidth(labelAt(this, x, y, s, floatStyle(color, size)), this.scale.width - 24).setScrollFactor(0).setDepth(9300);
+    const sc = tx.scale;
+    tx.setScale(sc * 0.5);
+    // kept on the screen
+    tx.x = Phaser.Math.Clamp(x, tx.displayWidth / 2 + 12, this.scale.width - tx.displayWidth / 2 - 12);
+    this.tweens.add({ targets: tx, scale: sc, duration: 200, ease: 'Back.easeOut' });
     this.tweens.add({ targets: tx, y: y - 60, alpha: 0, delay: 600, duration: 500, onComplete: () => tx.destroy() });
   }
 
-  private hintText: Phaser.GameObjects.Text | null = null;
+  private hintText: Phaser.GameObjects.Container | null = null;
   private hint(key: string): void {
     if (seenHints.has(key) || this.isOver) return;
     seenHints.add(key);
     this.hintText?.destroy();
-    const h = txt(this, this.scale.width / 2, 640, t(key), { size: 25, color: '#ffffff', strokeThickness: 6, wrap: 620 }).setScrollFactor(0).setDepth(9400).setAlpha(0);
+    const h = new Para(this, this.scale.width / 2, 640, t(key), S_HINT, 620, 0.5).setScrollFactor(0).setDepth(9400).setAlpha(0);
+    h.y -= h.textHeight / 2;
     this.hintText = h;
     this.tweens.add({ targets: h, alpha: 1, duration: 300 });
     this.tweens.add({ targets: h, alpha: 0, delay: 3800, duration: 500, onComplete: () => h.destroy() });

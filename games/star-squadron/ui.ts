@@ -1,7 +1,8 @@
 // Star Squadron: the game's own UI pieces in the modern style (glass, rounded buttons): the power
 // buttons with their cooldown sweeps, the hull bar, the boss bar and the banners. Fixed to the camera.
 import Phaser from 'phaser';
-import { txt, t, hudChip, HudChip } from '@core';
+import { txt, t, hudChip, HudChip , labelAt, fitWidth } from '@core';
+import { bannerStyle, S_SUB, S_WARN, S_WARN_SUB } from './labels';
 import { powerArt } from './art';
 import type { PowerId } from './defs';
 
@@ -257,9 +258,10 @@ export class BossBar {
 export function banner(scene: Phaser.Scene, y: number, title: string, sub: string, o: { color?: string; hold?: number; size?: number } = {}): void {
   const { width } = scene.scale;
   const c = scene.add.container(width / 2, y).setScrollFactor(0).setDepth(9400);
-  const tt = txt(scene, 0, 0, title, { title: true, size: o.size ?? 54, color: o.color ?? '#ffffff', strokeThickness: 9 });
+  // the theme's display face (labels.ts), long Turkish lines shrunk to fit; a sub line per '\n'
+  const tt = fitWidth(labelAt(scene, 0, 0, title, bannerStyle(o.color ?? '#ffffff', o.size ?? 54)), 660);
   c.add(tt);
-  if (sub) c.add(txt(scene, 0, tt.height / 2 + 26, sub, { size: 26, color: '#e6ecff', strokeThickness: 5, wrap: 640 }));
+  if (sub) sub.split('\n').forEach((line, i) => c.add(fitWidth(labelAt(scene, 0, tt.displayHeight * 0.42 + 26 + i * 34, line, S_SUB), 640)));
   c.setScale(0.3).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: c, alpha: 0, y: y - 40, delay: (o.hold ?? 1.2) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
@@ -282,16 +284,17 @@ export function bossWarning(scene: Phaser.Scene, name: string): void {
     stripes.fillPoints([new Phaser.Math.Vector2(i * 40, y - 92), new Phaser.Math.Vector2(i * 40 + 20, y - 92), new Phaser.Math.Vector2(i * 40 + 4, y - 76), new Phaser.Math.Vector2(i * 40 - 16, y - 76)], true);
     stripes.fillPoints([new Phaser.Math.Vector2(i * 40, y + 76), new Phaser.Math.Vector2(i * 40 + 20, y + 76), new Phaser.Math.Vector2(i * 40 + 4, y + 92), new Phaser.Math.Vector2(i * 40 - 16, y + 92)], true);
   }
-  const w = txt(scene, width / 2, y - 22, t('warning'), { title: true, size: 72, color: '#ff3b4f', strokeThickness: 10 });
-  const n = txt(scene, width / 2, y + 44, name, { title: true, size: 34, color: '#ffe0e4', strokeThickness: 6 });
+  const w = fitWidth(labelAt(scene, width / 2, y - 22, t('warning'), S_WARN), 660);
+  const n = fitWidth(labelAt(scene, width / 2, y + 44, name, S_WARN_SUB), 660);
   root.add([tint, band, stripes, w, n]);
   band.setAlpha(0);
   scene.tweens.add({ targets: band, alpha: 1, duration: 200 });
   stripes.setX(-width);
   scene.tweens.add({ targets: stripes, x: 0, duration: 300, ease: 'Quad.easeOut' });
   scene.tweens.add({ targets: stripes, x: 40, duration: 400, repeat: -1, delay: 300 });
-  w.setScale(2).setAlpha(0);
-  scene.tweens.add({ targets: w, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut' });
+  const ws = w.scale;
+  w.setScale(ws * 2).setAlpha(0);
+  scene.tweens.add({ targets: w, scale: ws, alpha: 1, duration: 260, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: w, alpha: 0.35, duration: 220, yoyo: true, repeat: 5, delay: 300 });
   scene.tweens.add({ targets: root, alpha: 0, delay: 2600, duration: 400, onComplete: () => root.destroy() });
 }

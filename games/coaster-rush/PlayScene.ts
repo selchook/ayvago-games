@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang, themeCard, themeLabel, overlayHeadingStyle,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_CHIP_H,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_CHIP_H, labelAt, labelTexture, type LabelStyle,
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent } from './sim';
@@ -17,7 +17,34 @@ import { forkTickets } from './shop';
 import { Bot, SKILL } from './bot';
 import { AREAS, KMH, POWERS, POWER_COLOR, areaOf, clamp, isPower, lapOf, type Mode, type Power } from './defs';
 import { loadMeta, saveMeta, lookOf, type Meta } from './meta';
-import { TouchPad, SpeedPanel, PowerBar, TutorialCard, HintCard, Banners, popWord, UI_DEPTH, type PowerShown } from './ui';
+import { TouchPad, SpeedPanel, PowerBar, TutorialCard, HintCard, Banners, popWord, UI_DEPTH, calloutStyle, subStyle, HEAD_STYLE, WORD_PX, type PowerShown } from './ui';
+
+/** The run summary's values on the marquee card: the theme's face in its ink. */
+const SUM_VALUE: LabelStyle = { size: 25, color: '#3a1a10', stroke: null, shadow: false };
+
+/**
+ * Paints the fixed callouts ahead (main.ts under the Ayvago intro; again in create, cached by text
+ * and style, so only a language change paints anything), so a ride paints nothing new when they show.
+ */
+export function prebakePlay(scene: Phaser.Scene): void {
+  const B: Array<[string, string]> = [
+    ['loopDone', '#7dffa0'], ['derailed', '#ff5a4f'], ['safetySaved', '#7fe0ff'], ['stalled', '#ffb24a'], ['stationAhead', '#7dffa0'],
+    ['stop_perfect', '#ffd23f'], ['stop_good', '#7dffa0'], ['stop_ok', '#7dffa0'], ['missedStation', '#ff9a6a'], ['tut_done', '#7dffa0'],
+  ];
+  for (const [k, c] of B) labelTexture(scene, t(k), calloutStyle(c));
+  for (const k of ['derailSub', 'safetySavedSub', 'stalledSub', 'stationSubTouch', 'stationSubKeys', 'missedSub']) labelTexture(scene, t(k), subStyle('#ffffff'));
+  labelTexture(scene, t('tut_doneSub'), subStyle('#ffd23f'));
+  for (const a of AREAS) labelTexture(scene, t('a_' + a.id), calloutStyle('#ffffff'));
+  for (const k of POWERS) {
+    labelTexture(scene, t('pw_' + k), calloutStyle('#' + POWER_COLOR[k].toString(16).padStart(6, '0')));
+    labelTexture(scene, t('pwSub_' + k), subStyle('#ffffff'));
+    labelTexture(scene, t('pwEnd', { name: t('pw_' + k) }), calloutStyle('#c8cce0', WORD_PX));
+  }
+  const W: Array<[string, string]> = [['launch', '#7fe0ff'], ['harsh', '#ff9a6a'], ['thrillRide', '#ff9ad8'], ['safeRide', '#9fe8ff'], ['tut_nice', '#7dffa0'], ['camRide', '#ffffff'], ['camChase', '#ffffff']];
+  for (const [k, c] of W) labelTexture(scene, t(k), calloutStyle(c, WORD_PX));
+  labelTexture(scene, '+5', calloutStyle('#ff9ad8', WORD_PX));
+  for (let n = 1; n <= 4; n++) labelTexture(scene, t('tut_head', { n }), HEAD_STYLE);
+}
 import { makeSounds, Loop } from './audio';
 import { makeIcons, TOKEN_ICON, SEAT_ICON, POWER_ICON, VIGNETTE, happyKey } from './art';
 
@@ -87,6 +114,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     makeIcons(this);
+    prebakePlay(this);
     makeSounds(this.game);
     this.meta = loadMeta();
     this.mode = isEasy() ? 'easy' : 'normal';
@@ -617,7 +645,7 @@ export class PlayScene extends ArcadeScene {
     rows.forEach(([k, v], i) => {
       const y = -H / 2 + 152 + i * 44;
       c.add(txt(this, -250, y, k, { size: 24, color: '#6a4030', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-      c.add(txt(this, 250, y, v, { title: true, size: 24, color: '#3a1a10', strokeThickness: 0, shadow: false }).setOrigin(1, 0.5));
+      c.add(labelAt(this, 250, y, v, SUM_VALUE, 1));
     });
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });

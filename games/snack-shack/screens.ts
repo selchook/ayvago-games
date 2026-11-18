@@ -6,6 +6,7 @@
 import Phaser from 'phaser';
 import { t, skinTexture, labelTexture, bakeFmt, glyphAtlas, type LabelStyle, type SkinState } from '@core';
 import { UPGRADES } from './sim';
+import { prebakePlay } from './callouts';
 import { RED, TEAL, GREEN, CHALK, INK, LABEL_STROKE, CHALK_INK, SHOP_W, shopH, ticketTexture } from './theme';
 
 const S = LABEL_STROKE;
@@ -68,4 +69,6 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   glyphAtlas(scene, KEY_TAG);
   btn(OPEN_BTN.w, OPEN_BTN.h, RED);
   bakeFmt(scene, 'openDay', ['n'], OPEN_LABEL);
+  // the Play scene's banners, callouts and station tags (callouts.ts)
+  prebakePlay(scene);
 }

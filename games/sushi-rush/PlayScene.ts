@@ -39,6 +39,9 @@ const S_BANNER: LabelStyle = { size: 64, fill: ['#fffdf6', '#ffe2a8', '#f7a63a']
 const S_TOAST: LabelStyle = { size: 26, color: '#fff2cc', stroke: '#3a1a0e', strokeWidth: 5 };
 const S_TRAY: LabelStyle = { size: 17, color: '#fff8ec', stroke: '#3a1a0e', strokeWidth: 4 };
 const S_KEY: LabelStyle = { size: 16, color: '#ffe08a', stroke: '#3a1a0e', strokeWidth: 4 };
+/** The coins a dish brings (and a refund's loss), floating up from the customer. */
+const S_COIN: LabelStyle = { size: 34, fill: ['#fff6cc', '#ffe08a', '#f2b23a'], stroke: '#3a1a0e', strokeWidth: 7 };
+const S_COIN_LOST: LabelStyle = { size: 34, color: '#ff7a6a', stroke: '#3a1a0e', strokeWidth: 7 };
 const BANNERS = ['goalHit', 'closing', 'lastSecs', 'vip', 'wrong', 'forgiven', 'golden', 'lucky', 'burnt', 'zen', 'calm', 'lostOne', 'bellRing', 'pickFish', 'pickCook'];
 const DENIES = ['full', 'queueFull', 'hasRice', 'hasNori', 'hasFilling', 'noCut', 'cantRoll', 'needCut', 'busy', 'notEmpty', 'nothing', 'noDish', 'noCustomer', 'rolled', 'notReady', 'bell'];
 const WOOD = 0xd9a066;
@@ -55,6 +58,7 @@ export function prebakePlay(scene: Phaser.Scene): void {
   makeArt(scene);
   for (const k of BANNERS) { labelTexture(scene, t(k), S_BANNER); labelTexture(scene, t(k), S_TOAST); }
   for (let n = 2; n <= 12; n++) labelTexture(scene, t('streakN', { n }), S_TOAST);
+  for (let n = 1; n <= 40; n++) labelTexture(scene, '+' + n, S_COIN);
   for (const k of DENIES) labelTexture(scene, t('no_' + k), S_TOAST);
   for (const st of STATION_IDS) labelTexture(scene, t('sb_' + st), S_TRAY);
   for (const k of ['bin', 'bell']) labelTexture(scene, t(k), S_TRAY);
@@ -782,9 +786,8 @@ export class PlayScene extends ArcadeScene {
   /** "+12" and the tip floating up from the customer, coins flying to the HUD. */
   private coinPop(x: number, y: number, coins: number, tip: number): void {
     const neg = coins < 0;
-    const txt = this.add.text(x, y, (neg ? '' : '+') + coins + (tip > 0 ? `  +${tip}` : ''), {
-      fontFamily: '"Grandstander", "Fredoka", sans-serif', fontSize: '34px', color: neg ? '#ff7a6a' : '#ffe08a', stroke: '#3a1a0e', strokeThickness: 7,
-    }).setOrigin(0.5).setDepth(9060).setScale(0.5);
+    // a painted label (cached by its string): a repeat amount only places an image
+    const txt = labelAt(this, x, y, (neg ? '' : '+') + coins + (tip > 0 ? `  +${tip}` : ''), neg ? S_COIN_LOST : S_COIN).setDepth(9060).setScale(0.5);
     this.tweens.add({ targets: txt, scale: 1, duration: 220, ease: 'Back.easeOut' });
     this.tweens.add({ targets: txt, y: y - 90, duration: 1500, ease: 'Cubic.easeOut' });
     this.tweens.add({ targets: txt, alpha: 0, delay: 950, duration: 550, onComplete: () => txt.destroy() });

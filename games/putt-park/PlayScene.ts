@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, t, loc, upper, txt, shake, flash, popup, playSfx, hudChip, HudChip, HUD_ROW2_Y } from '@core';
+import { ArcadeScene, t, loc, upper, txt, shake, flash, playSfx, hudChip, HudChip, HUD_ROW2_Y } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { HOLES } from './holes';
 import { parseHole, buildField, type HoleDef, type ParsedHole } from './kit';
@@ -8,7 +8,8 @@ import { makeMovers } from './movers';
 import { aimDir, shotBall, shotSpeed, MAX_SPEED } from './bot';
 import { THEMES, buildHole3D, disposeHole3D, dressWorld, addClouds, kitTris, type Hole3D, type Theme } from './course3d';
 import { Particles } from './fx3d';
-import { CoursePicker, Scorecard, holeCard, callout, callText, callColor, type CardRow } from './panels';
+import { CoursePicker, Scorecard, holeCard, callout, callText, callColor, pop, type CardRow } from './panels';
+import { INK } from './theme';
 import { callOf, pointsOf, strokeLimit, tuning, TUNING } from './scoring';
 
 const SIM_DT = 1 / 120;
@@ -159,7 +160,7 @@ export class PlayScene extends ArcadeScene {
     // UI
     const { width, height } = this.scale;
     this.info = hudChip(this, width / 2, HUD_ROW2_Y, { align: 'center', size: 22 }).setVisible(false);
-    this.hint = txt(this, width / 2, 170, '', { size: 26, color: '#ffffff', strokeThickness: 6, wrap: 640 }).setDepth(9000).setScrollFactor(0);
+    this.hint = txt(this, width / 2, 170, '', { size: 26, color: '#ffffff', stroke: INK, strokeThickness: 7, wrap: 640 }).setDepth(9000).setScrollFactor(0);
     this.band = this.add.graphics().setDepth(8800);
     this.meter = this.add.graphics().setDepth(8800);
     this.makeCamButtons();
@@ -315,7 +316,7 @@ export class PlayScene extends ArcadeScene {
     const over = strokes - this.def.par;
     callout(this, callText(call, over), callColor(call), call === 'holeInOne' ? 58 : 66);
     const p = this.world.toScreen(new THREE.Vector3(this.cup.x, this.cup.y + 0.1, this.cup.z));
-    if (pts > 0) popup(this, Phaser.Math.Clamp(p.x, 120, 600), Phaser.Math.Clamp(p.y, 200, 1000) - 40, `+${pts}`, '#9fe7b8', 40);
+    if (pts > 0) pop(this, Phaser.Math.Clamp(p.x, 120, 600), Phaser.Math.Clamp(p.y, 200, 1000) - 40, `+${pts}`, '#9fe7b8', 40);
     if (call === 'holeInOne' || call === 'eagle' || call === 'albatross') {
       this.sfx('fanfare', { exact: true, volume: 0.8 });
       this.sfx('applause', { exact: true, volume: 0.7 });
@@ -529,7 +530,7 @@ export class PlayScene extends ArcadeScene {
     this.setAimGoal(true);
     this.showCamButtons(true);
     this.hint.setText(this.hi === 0 && this.strokes === 0 ? (this.sys.game.device.input.touch ? t('dragHint') : `${t('dragHint')}\n${t('keyHint')}`) : '');
-    if (this.strokes === this.limit - 1) popup(this, this.scale.width / 2, 170, t('lastStroke'), '#ffb36b', 32);
+    if (this.strokes === this.limit - 1) pop(this, this.scale.width / 2, 170, t('lastStroke'), '#ffb36b', 32);
   }
 
   private putt(): void {
@@ -792,7 +793,7 @@ export class PlayScene extends ArcadeScene {
     if (ev.lip) {
       this.sfx('lip', { volume: 0.7 });
       const p = this.ballScreen();
-      popup(this, Phaser.Math.Clamp(p.x, 160, 560), Phaser.Math.Clamp(p.y - 50, 200, 1000), t('lipOut'), '#ffd23f', 28);
+      pop(this, Phaser.Math.Clamp(p.x, 160, 560), Phaser.Math.Clamp(p.y - 50, 200, 1000), t('lipOut'), '#ffd23f', 28);
     }
     if (result === 'sunk') this.onSunk();
     else if (result === 'out') this.onOut();
@@ -842,13 +843,13 @@ export class PlayScene extends ArcadeScene {
       this.fx.splash(at);
       this.sfx('splash', { volume: 0.8 });
       this.tweens.add({ targets: this.ballObj.position, y: -0.1, duration: 400 });
-      popup(this, Phaser.Math.Clamp(p.x, 190, 530), Phaser.Math.Clamp(p.y - 40, 200, 1000), t('water'), '#7ee6ff', 34);
+      pop(this, Phaser.Math.Clamp(p.x, 190, 530), Phaser.Math.Clamp(p.y - 40, 200, 1000), t('water'), '#7ee6ff', 34);
     } else {
       this.ball.y = 0;
       this.placeBall();
       this.sfx('thud', { volume: 0.6 });
       this.fx.puff(at, this.theme.ground);
-      popup(this, Phaser.Math.Clamp(p.x, 210, 510), Phaser.Math.Clamp(p.y - 40, 200, 1000), t('out'), '#ffb36b', 34);
+      pop(this, Phaser.Math.Clamp(p.x, 210, 510), Phaser.Math.Clamp(p.y - 40, 200, 1000), t('out'), '#ffb36b', 34);
     }
     this.sfx('penalty', { volume: 0.6 });
     this.strokes++;

@@ -15,7 +15,7 @@ import {
 import { TALENTS, TALENT, buyState, buy, resetTalents, type Meta, type TalentId, type BuyState } from './meta';
 import { talentArt } from './art';
 import { shardIcon } from './thumbs';
-import { CRYSTAL, EMERALD, AMETHYST, STONE, SLATE } from './theme';
+import { CRYSTAL, EMERALD, AMETHYST, STONE, SLATE, LABEL_STROKE } from './theme';
 
 export const BOARD_DEPTH = 9800;
 const COLS = ['col_keep', 'col_powers', 'col_mastery'];
@@ -106,6 +106,7 @@ export function prebakeTalents(scene: Phaser.Scene): void {
   }
   for (const c of new Set(TALENTS.map((tl) => tl.cost))) { labelTexture(scene, String(c), costStyle(true)); labelTexture(scene, String(c), costStyle(false)); }
   labelTexture(scene, t('ownedTalent'), OWNED_STYLE);
+  labelTexture(scene, t('notEnoughShards'), { size: 26, color: '#ffb0a0', stroke: LABEL_STROKE, strokeWidth: 6, body: true });
   for (const k of ['unlock', 'ownedTalent']) labelTexture(scene, t(k), { size: BTN.buy });
   for (const k of ['reset', 'sure', 'close']) labelTexture(scene, t(k), { size: BTN.row });
   new ThemeNumber(scene, 0, 0, 0, SHARD_STYLE).destroy();
@@ -306,7 +307,8 @@ export class TalentBoard {
   }
 
   private flash(s: string, color = '#ffb0a0'): void {
-    const p = txt(this.scene, this.scene.scale.width / 2, 1000, s, { size: 26, color, strokeThickness: 5 });
+    // a sentence: the theme's body font with the keep's violet ink outline
+    const p = themeLabel(this.scene, this.scene.scale.width / 2, 1000, s, { size: 26, color, stroke: LABEL_STROKE, strokeWidth: 6, body: true });
     this.root.add(p);
     this.scene.tweens.add({ targets: p, y: 960, alpha: 0, delay: 700, duration: 500, onComplete: () => p.destroy() });
   }

@@ -7,8 +7,9 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash, shake, storage,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle, SkinButton,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle, SkinButton, GlyphText, labelAt, fitWidth,
 } from '@core';
+import { prebakePlay, floatStyle, S_FLOAT_SUB, S_DMG, S_CRIT } from './labels';
 import { ChestReveal, CHOICE_CARD, CHOICE_BTN, CHOICE_TITLE } from './chestui';
 import type { Card as ChestCard } from './cards';
 import type { World3D } from '@core/three';
@@ -41,7 +42,7 @@ const ATK_Y = { touch: 1172, keys: 1146 };
 const POWER_SFX: Record<PowerId, string> = { heal: 'heal', vacuum: 'magnet', nuke: 'nuke', freeze: 'bell', rage: 'rage', boots: 'boots' };
 const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
 
-interface DmgText { t: Phaser.GameObjects.Text; life: number; x: number; y: number }
+interface DmgText { t: GlyphText; crit: boolean; life: number; x: number; y: number }
 
 export class PlayScene extends ArcadeScene {
   view!: View;
@@ -89,7 +90,9 @@ export class PlayScene extends ArcadeScene {
   private bot: Bot | null = null;
   private botCards = true;
   private dmg: DmgText[] = [];
-  private dmgPool: Phaser.GameObjects.Text[] = [];
+  /** Spare damage numbers (glyph lines in the theme's face), plain and crit. */
+  private dmgPool: GlyphText[] = [];
+  private critPool: GlyphText[] = [];
   private bolts: { pts: { x: number; z: number }[]; t: number; seed: number }[] = [];
   private groanT = 2;
   private stepT = 0;
@@ -120,6 +123,7 @@ export class PlayScene extends ArcadeScene {
   testSpeed = 1;
 
   createGame(): void {
+    prebakePlay(this);
     this.mode = isEasy() ? 'easy' : 'normal';
     this.meta = loadMeta();
     const fx = metaFx(this.meta);
@@ -134,6 +138,7 @@ export class PlayScene extends ArcadeScene {
     this.botCards = true;
     this.dmg = [];
     this.dmgPool = [];
+    this.critPool = [];
     this.bolts = [];
     this.groanT = 2;
     this.stepT = 0;
@@ -858,18 +863,19 @@ export class PlayScene extends ArcadeScene {
     if (this.dmg.length > 18) return;
     const s = this.sx(x, z, 1.3);
     if (s.x < -20 || s.x > this.scale.width + 20 || s.y < 0 || s.y > this.scale.height) return;
-    const tx = this.dmgPool.pop() ?? txt(this, 0, 0, '', { title: true, size: 22, strokeThickness: 5 }).setScrollFactor(0).setDepth(6000);
-    tx.setText(String(Math.round(n))).setColor(crit ? '#ffe04a' : '#ffffff').setFontSize(crit ? 30 : 21).setVisible(true).setAlpha(1).setScale(crit ? 1.3 : 1);
+    const pool = crit ? this.critPool : this.dmgPool;
+    const tx = pool.pop() ?? new GlyphText(this, 0, 0, '', crit ? S_CRIT : S_DMG).setScrollFactor(0).setDepth(6000);
+    tx.setText(String(Math.round(n))).setVisible(true).setAlpha(1).setScale(crit ? 1.3 : 1);
     const ox = (Math.random() - 0.5) * 24;
     tx.setPosition(s.x + ox, s.y);
-    this.dmg.push({ t: tx, life: crit ? 0.75 : 0.55, x: s.x + ox, y: s.y });
+    this.dmg.push({ t: tx, crit, life: crit ? 0.75 : 0.55, x: s.x + ox, y: s.y });
   }
 
   private updateDmg(dt: number): void {
     for (let i = this.dmg.length - 1; i >= 0; i--) {
       const d = this.dmg[i];
       d.life -= dt;
-      if (d.life <= 0) { d.t.setVisible(false); this.dmgPool.push(d.t); this.dmg.splice(i, 1); continue; }
+      if (d.life <= 0) { d.t.setVisible(false); (d.crit ? this.critPool : this.dmgPool).push(d.t); this.dmg.splice(i, 1); continue; }
       d.y -= dt * 70;
       d.t.setPosition(d.x, d.y).setAlpha(Math.min(1, d.life * 4));
       if (d.t.scale > 1) d.t.setScale(Math.max(1, d.t.scale - dt * 2));
@@ -879,10 +885,11 @@ export class PlayScene extends ArcadeScene {
   private floatText(x: number, y: number, s: string, color: string, size = 26, sub = ''): void {
     // kept on the screen (a hero near the edge still shows the whole text)
     const c = this.add.container(0, y).setScrollFactor(0).setDepth(9300).setScale(0.5);
-    const tx = txt(this, 0, 0, s, { title: true, size, color, strokeThickness: 6 });
+    const room = this.scale.width - 24;
+    const tx = fitWidth(labelAt(this, 0, 0, s, floatStyle(color, size)), room);
     c.add(tx);
-    let w = tx.width;
-    if (sub) { const st = txt(this, 0, size * 0.5 + 16, sub, { size: 20, color: '#ffffff', strokeThickness: 5 }); c.add(st); w = Math.max(w, st.width); }
+    let w = tx.displayWidth;
+    if (sub) { const st = fitWidth(labelAt(this, 0, size * 0.5 + 16, sub, S_FLOAT_SUB), room); c.add(st); w = Math.max(w, st.displayWidth); }
     c.x = Math.max(w / 2 + 12, Math.min(this.scale.width - w / 2 - 12, x));
     this.tweens.add({ targets: c, scale: 1, duration: 200, ease: 'Back.easeOut' });
     this.tweens.add({ targets: c, y: y - 60, alpha: 0, delay: sub ? 1100 : 650, duration: 500, onComplete: () => c.destroy() });

@@ -1,4 +1,4 @@
-import { Phaser, ArcadeScene, Controls, CarSteering, RAMP_TIME, shake, flash, popup, t, loc, txt, storage, isEasy, hudChip, HudChip, HUD_MARGIN, iconButton, tilt, type CarPadButton } from '@core';
+import { Phaser, ArcadeScene, Controls, CarSteering, RAMP_TIME, shake, flash, t, loc, storage, labelAt, fitWidth, Para, type LabelStyle, isEasy, hudChip, HudChip, HUD_MARGIN, iconButton, tilt, type CarPadButton } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { LAYOUTS, Track } from './tracks';
 import { buildArena, type Arena } from './scenery';
@@ -10,6 +10,7 @@ import { money, ordinal } from './strings';
 import { matte } from './look';
 import { SkidMarks } from './marks';
 import { Cockpit, COCKPIT_LAYER } from './cockpit';
+import { S_BANNER, S_BANNER_SUB, S_HINT_HEAD, S_HINT_KEY, S_HINT_BODY, S_CAP, shoutStyle, popStyle, pop } from './callouts';
 
 const LAPS = 4;
 const NCP = 4;                 // checkpoints per lap (besides the line)
@@ -411,9 +412,10 @@ export class PlayScene extends ArcadeScene {
     const pad = this.steering.pad;
     if (pad) {
       const a = { steer: pad.steerAnchor, pedals: PEDALS_HINT };
-      const steer = txt(this, a.steer.x, a.steer.y - 34, t('hintSteer'), { title: true, size: 26, color: '#ffd23f', strokeThickness: 6 });
-      const ped = txt(this, a.pedals.x, a.pedals.y - 50, t('hintPedals'), { size: 22, color: '#ffffff', strokeThickness: 6, wrap: 400 });
-      c.add([pill(a.steer.x, a.steer.y - 34, steer.width + 44, 52), steer, pill(a.pedals.x, a.pedals.y - 50, ped.width + 44, ped.height + 22), ped]);
+      const steer = labelAt(this, a.steer.x, a.steer.y - 34, t('hintSteer'), S_HINT_HEAD);
+      const ped = new Para(this, a.pedals.x, 0, t('hintPedals'), S_HINT_BODY, 400, 0.5, 27);
+      ped.y = a.pedals.y - 50 - ped.textHeight / 2;
+      c.add([pill(a.steer.x, a.steer.y - 34, steer.width + 30, 52), steer, pill(a.pedals.x, a.pedals.y - 50, Math.max(...(ped.list as Phaser.GameObjects.Image[]).map((l) => l.width)) + 36, ped.textHeight + 22), ped]);
       pad.pulse();
     } else {
       // key caps: arrows drawn as triangles (they read the same in every font)
@@ -427,14 +429,14 @@ export class PlayScene extends ArcadeScene {
           g.fillTriangle(x + ux * 11, y - 1 + uy * 11, x - ux * 8 - uy * 10, y - 1 - uy * 8 + ux * 10, x - ux * 8 + uy * 10, y - 1 - uy * 8 - ux * 10);
         }
         c.add(g);
-        if (label) c.add(txt(this, x, y - 1, label, { title: true, size: 16, color: '#24324a', strokeThickness: 0 }));
+        if (label) c.add(labelAt(this, x, y - 1, label, S_CAP));
       };
       // laid out left to right from the label widths, then centred
       const y = 520;
       const groups: [Array<number | string>, string][] = [
         [[Math.PI, 0], t('hintSteer')], [[-Math.PI / 2], t('gas')], [[Math.PI / 2], t('hintBrake')], [[t('keySpace')], t('nitroUp')],
       ];
-      const labels = groups.map(([, l]) => txt(this, 0, y, l, { title: true, size: 22, color: '#ffd23f', strokeThickness: 0 }).setOrigin(0, 0.5));
+      const labels = groups.map(([, l]) => labelAt(this, 0, y, l, S_HINT_KEY, 0));
       const capW = (k: number | string) => (typeof k === 'string' ? 34 + k.length * 12 : 46);
       const widths = groups.map(([keys], i) => keys.reduce<number>((w, k) => w + capW(k) + 6, 0) + 8 + labels[i].width);
       const gap = 44;
@@ -468,21 +470,23 @@ export class PlayScene extends ArcadeScene {
 
   private banner(title: string, sub: string): void {
     const { width } = this.scale;
-    const a = txt(this, width / 2, 250, title, { title: true, size: 64, color: '#ffd23f', strokeThickness: 10 }).setDepth(7000);
-    const b = txt(this, width / 2, 320, sub, { title: true, size: 34, color: '#ffffff', strokeThickness: 8 }).setDepth(7000);
+    const a = fitWidth(labelAt(this, width / 2, 250, title, S_BANNER), width - 160).setDepth(7000);
+    const b = fitWidth(labelAt(this, width / 2, 320, sub, S_BANNER_SUB), width - 200).setDepth(7000);
     for (const [o, d] of [[a, 0], [b, 120]] as const) {
-      o.setScale(0.6).setAlpha(0);
-      this.tweens.add({ targets: o, scale: 1, alpha: 1, duration: 360, delay: d, ease: 'Back.easeOut' });
+      const sc = o.scale;
+      o.setScale(sc * 0.6).setAlpha(0);
+      this.tweens.add({ targets: o, scale: sc, alpha: 1, duration: 360, delay: d, ease: 'Back.easeOut' });
       this.tweens.add({ targets: o, alpha: 0, y: o.y - 30, duration: 300, delay: 1500 + d, onComplete: () => o.destroy() });
     }
   }
 
-  private shout(s: string, color = '#ffd23f', size = 120, hold = 520): void {
+  private shout(s: string, style: LabelStyle, hold = 520): void {
     const { width } = this.scale;
-    const o = txt(this, width / 2, 300, s, { title: true, size, color, strokeThickness: 12 }).setDepth(7000);
-    o.setScale(1.8).setAlpha(0);
-    this.tweens.add({ targets: o, scale: 1, alpha: 1, duration: 220, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: o, scale: 0.7, alpha: 0, duration: 260, delay: hold, onComplete: () => o.destroy() });
+    const o = fitWidth(labelAt(this, width / 2, 300, s, style), width - 120).setDepth(7000);
+    const sc = o.scale;
+    o.setScale(sc * 1.8).setAlpha(0);
+    this.tweens.add({ targets: o, scale: sc, alpha: 1, duration: 220, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: o, scale: sc * 0.7, alpha: 0, duration: 260, delay: hold, onComplete: () => o.destroy() });
   }
 
   private setCenter(s: string): void {
@@ -513,10 +517,10 @@ export class PlayScene extends ArcadeScene {
       const n = Math.floor(this.phaseT / 0.85);
       if (n >= this.count && this.count <= 3) {
         if (this.count < 3) {
-          this.shout(String(3 - this.count), '#ffd23f', 130, 420);
+          this.shout(String(3 - this.count), shoutStyle('count'), 420);
           this.sfx('beep', { exact: true, volume: 0.8 });
         } else {
-          this.shout(t('go'), '#7dff9a', 120, 380);
+          this.shout(t('go'), shoutStyle('go'), 380);
           this.sfx('beep', { exact: true, rate: 1.6, volume: 0.9 });
           this.sfx('go', { volume: 0.6 });
           this.arena?.cheer();
@@ -662,7 +666,7 @@ export class PlayScene extends ArcadeScene {
     this.sfxAt('nitro', p.x, { volume: tr.isPlayer ? 0.75 : 0.35 });
     if (tr.isPlayer) {
       this.updateNitroHud();
-      popup(this, p.x, p.y - 40, t('nitroGo'), '#ffb02e', 30);
+      pop(this, p.x, p.y - 40, t('nitroGo'), popStyle('nitroGo'));
       this.camShake = Math.max(this.camShake, 0.18);
       this.fovKick = 1;
     }
@@ -761,7 +765,7 @@ export class PlayScene extends ArcadeScene {
       this.wrongT = ds < -0.02 && tr.speed > 3 ? this.wrongT + this.dtNow : Math.max(0, this.wrongT - this.dtNow * 2);
       if (this.wrongT > 1.2 && this.elapsed - this.wrongShown > 2.5) {
         this.wrongShown = this.elapsed;
-        this.shout(t('wrongWay'), '#ff6b6b', 60, 900);
+        this.shout(t('wrongWay'), shoutStyle('wrongWay'), 900);
         this.sfx('nope', { volume: 0.5 });
       }
     }
@@ -772,7 +776,7 @@ export class PlayScene extends ArcadeScene {
         tr.cpNext = 0;
         this.onLap(tr);
       } else if (tr.isPlayer && tr.lapsDone >= 0) {
-        this.shout(t('missedCp'), '#ff6b6b', 40, 1300);
+        this.shout(t('missedCp'), shoutStyle('missedCp'), 1300);
         this.sfx('nope', { volume: 0.6 });
       }
     } else if (ds < 0 && prev < s) {
@@ -800,7 +804,7 @@ export class PlayScene extends ArcadeScene {
         this.phase = 'finish';
         this.phaseT = 0;
         this.lateT = -1;
-        this.shout(t('placeShout', { p: ordinal(place) }), place === 1 ? '#ffd23f' : place < 4 ? '#ffffff' : '#ff7a7a', 76, 1400);
+        this.shout(t('placeShout', { p: ordinal(place) }), shoutStyle(place === 1 ? 'first' : place < 4 ? 'podium' : 'back'), 1400);
         this.sfx(place < 4 ? 'finish' : 'lose', { exact: true, volume: 0.8 });
         if (place < 4) this.arena?.cheer();
         if (place === 1) {
@@ -817,7 +821,7 @@ export class PlayScene extends ArcadeScene {
     }
     if (tr.isPlayer && tr.lapsDone >= 1) {
       const lap = tr.lapsDone + 1;
-      this.shout(lap === LAPS ? t('finalLap') : t('lapN', { n: lap }), lap === LAPS ? '#ff9f43' : '#ffffff', 64, 700);
+      this.shout(lap === LAPS ? t('finalLap') : t('lapN', { n: lap }), shoutStyle(lap === LAPS ? 'finalLap' : 'lap'), 700);
       this.sfx('lap', { exact: true, volume: 0.7 });
       this.arena?.cheer();
     }
@@ -901,7 +905,7 @@ export class PlayScene extends ArcadeScene {
       const p = price(u, lvl);
       if (lvl >= MAX_LEVEL || this.bank < p) {
         this.sfx('nope', { volume: 0.6 });
-        if (lvl < MAX_LEVEL) popup(this, 640, 210, t('noMoney'), '#ff7a7a', 28);
+        if (lvl < MAX_LEVEL) pop(this, 640, 210, t('noMoney'), popStyle('noMoney'));
         return false;
       }
       this.bank -= p;
@@ -1008,11 +1012,11 @@ export class PlayScene extends ArcadeScene {
       this.bank += v;
       this.setScore(this.earned);
       this.sfxAt('cash', sc.x, { volume: 0.7 });
-      popup(this, sc.x, sc.y, '+' + money(v), '#ffd23f', 26);
+      pop(this, sc.x, sc.y, '+' + money(v), popStyle('cash'));
     } else {
       this.updateNitroHud();
       this.sfxAt('nitroPick', sc.x, { volume: 0.7 });
-      popup(this, sc.x, sc.y, '+1 ' + t('nitroUp'), '#ff9f43', 26);
+      pop(this, sc.x, sc.y, '+1 ' + t('nitroUp'), popStyle('nitroUp'));
       this.tweens.add({ targets: this.nitroIcon, scale: { from: 1.4, to: 1 }, duration: 300, ease: 'Back.easeOut' });
     }
   }
@@ -1169,7 +1173,7 @@ export class PlayScene extends ArcadeScene {
     storage.set(CAM_KEY, this.view);
     (this.camBtn.getData('icon') as Phaser.GameObjects.Image).setTexture(this.viewIcon()).setDisplaySize(72 * 0.62, 72 * 0.62);
     this.sfx('move', { volume: 0.4, rate: 0.85 });
-    popup(this, this.scale.width / 2, 196, t(this.view === 'cockpit' ? 'camCockpit' : 'camClassic'), '#ffffff', 24);
+    pop(this, this.scale.width / 2, 196, t(this.view === 'cockpit' ? 'camCockpit' : 'camClassic'), popStyle('view'));
     this.tweens.add({ targets: this.camBtn, scale: { from: 1.18, to: 1 }, duration: 260, ease: 'Back.easeOut' });
     this.dropCamHint();
   }
@@ -1221,7 +1225,7 @@ export class PlayScene extends ArcadeScene {
     if (!this.steering.pad) {
       // desktop: the key on a small cap in the button's corner
       const cap = this.add.graphics().fillStyle(0xf3f2f2, 1).fillRoundedRect(12, 12, 24, 24, 6).lineStyle(2, 0x24324a, 0.6).strokeRoundedRect(12, 12, 24, 24, 6);
-      const key = txt(this, 24, 24, 'C', { title: true, size: 15, color: '#24324a', strokeThickness: 0 });
+      const key = labelAt(this, 24, 24, 'C', S_CAP);
       this.camBtn.add([cap, key]);
     }
     // C switches the view; a key event, so even a very short tap counts (listeners go with the scene)
@@ -1247,7 +1251,7 @@ export class PlayScene extends ArcadeScene {
   private showCamHint(): void {
     // it names the view the button leads to
     const s = t((this.steering.pad ? 'camHintTouch' : 'camHintKeys') + (this.view === 'cockpit' ? 'Out' : ''));
-    const label = txt(this, 0, 0, s, { size: 20, color: '#ffffff', strokeThickness: 5 }).setOrigin(1, 0.5);
+    const label = labelAt(this, 0, 0, s, S_HINT_BODY, 1);
     const w = label.width + 36;
     const x = CAM_BTN.x - 50;
     const pill = this.add.graphics().fillStyle(0x0b1020, 0.72).fillRoundedRect(-w + 8, -22, w, 44, 22)

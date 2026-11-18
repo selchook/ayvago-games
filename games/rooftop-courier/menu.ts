@@ -6,6 +6,7 @@
 import Phaser from 'phaser';
 import { t, txt, SkinButton, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { SAIRA_STENCIL_ONE } from '@core/fonts/saira-stencil-one';
+import { prebakePlay } from './labels';
 import { STAMP_ICON } from './art';
 
 /** The shift's summary card (PlayScene.finish): without and with the missions done. */
@@ -460,6 +461,8 @@ export const COURIER_THEME: MenuTheme = {
   },
   // the shift's summary (PlayScene.finish)
   cards: SUMMARY_H.map((h) => ({ w: SUMMARY_W, h })),
+  // the run's banners, stamp and callouts (labels.ts), painted under the intro
+  prebake: (scene) => prebakePlay(scene),
 };
 
 /** The SHOP button under the difficulty switch: a street sign with the label and the stamp count. */

@@ -1,12 +1,16 @@
 // Crystal Keep: the game's own UI pieces in the modern style (glass panels, rounded buttons):
 // the build bar, the tower card, the wave button and stars. Fixed to the camera.
 import Phaser from 'phaser';
-import { txt, t } from '@core';
+import { txt, t, GlyphText, type LabelStyle } from '@core';
+import { LABEL_STROKE } from './theme';
 import { TOWERS, TOWER_KINDS, ENEMIES, POWERS, POWER_IDS, type TowerKind, type Tower, type Sim, type EnemyKind, type TargetMode, type PowerId } from './sim';
 import { towerThumb, enemyThumb, meteorThumb } from './thumbs';
 import { powerArt } from './art';
 
 export const UI_DEPTH = 9100;
+
+/** A power's cooldown seconds on its dock card: the theme's display face (glyphs painted once). */
+export const CD_STYLE: LabelStyle = { size: 38, fill: ['#ffffff', '#f2dcff', '#c58cff'], stroke: LABEL_STROKE, strokeWidth: 7 };
 
 /** A glass panel centred on (0, 0) of a container. */
 export function glass(scene: Phaser.Scene, w: number, h: number, o: { r?: number; color?: number; alpha?: number; rim?: number } = {}): Phaser.GameObjects.Graphics {
@@ -107,7 +111,7 @@ interface DockCard {
   coin: Phaser.GameObjects.Image | null;
   cost: Phaser.GameObjects.Text;
   cd: Phaser.GameObjects.Graphics;
-  cdText: Phaser.GameObjects.Text;
+  cdText: GlyphText;
 }
 
 export interface PowerState { cd: number; max: number; ready: boolean }
@@ -186,7 +190,7 @@ export class BuildDock extends Phaser.GameObjects.Container {
       if (!power) cost.setOrigin(0, 0.5);
       const key = txt(this.scene, -cw / 2 + 15, -CH / 2 + 15, power ? POWERS[kind].key : String(i + 1), { size: 16, color: '#9fb0d8', strokeThickness: 0, shadow: false });
       const cd = this.scene.add.graphics();
-      const cdText = txt(this.scene, 0, -14, '', { title: true, size: 34, strokeThickness: 6 });
+      const cdText = new GlyphText(this.scene, 0, -14, '', CD_STYLE, 0.5, '0123456789');
       const hit = this.scene.add.zone(0, 0, cw, CH).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', () => this.scene.tweens.add({ targets: box, scale: 0.93, duration: 60 }));
       hit.on('pointerup', () => {

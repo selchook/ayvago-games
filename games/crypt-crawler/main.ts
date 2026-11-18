@@ -11,6 +11,7 @@ import { HeroFigure } from './hero';
 import { Fx } from './fx3d';
 import { CRYPT_THEME } from './theme';
 import { prebakeScreens } from './screens';
+import { prebakeCallouts } from './callouts';
 
 launch({
   meta: meta as GameMeta,
@@ -137,7 +138,7 @@ launch({
   },
   // iron-banded crypt stone, a carved plaque, chains and a skull on a crypt door (theme.ts); the
   // shrine, the cleared card and the camp in the same look (screens.ts paints them under the intro)
-  menuTheme: { ...CRYPT_THEME, prebake: prebakeScreens },
+  menuTheme: { ...CRYPT_THEME, prebake: (scene) => { prebakeScreens(scene); prebakeCallouts(scene); } },
   scenes: [PlayScene],
   strings: STRINGS,
 });

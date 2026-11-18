@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene } from './PlayScene';
+import { PlayScene, prebakePlay } from './PlayScene';
 import { BoardScene, prebakeBoard } from './board';
 import { prebakeIsleScreens } from './shop';
 import { STRINGS } from './strings';
@@ -101,6 +101,7 @@ launch({
       const t0 = performance.now();
       prebakeBoard(scene);
       prebakeIsleScreens(scene);
+      prebakePlay(scene);
       // how long that took (read by the screenshot and timing scripts)
       scene.registry.set('innerPaintMs', Math.round(performance.now() - t0));
     });

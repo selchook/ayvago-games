@@ -3,8 +3,8 @@
 // day's result card with stars, then the upgrade shop, until too many customers leave angry.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, txt, t, loc, upper, currentGame, popup, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, shake, storage, burst,
-  themeCard, themeLabel, skinImage, SkinButton, KitButton, FmtLine, GlyphText,
+  ArcadeScene, txt, t, loc, upper, currentGame, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, shake, storage, burst,
+  themeCard, themeLabel, skinImage, SkinButton, KitButton, FmtLine, GlyphText, labelAt, fitWidth,
 } from '@core';
 import { World3D, THREE } from '@core/three';
 import {
@@ -20,8 +20,9 @@ import { foodMat, furnMat } from './kit';
 import { Chef } from './chef';
 import { makeThumbs, itemThumb, upgradeThumb } from './thumbs';
 import * as SCR from './screens';
-import { INTRO_CARD, TICKET, SHOP_W, shopH, ticketTexture, CHALK, CHALK_INK, RED, TEAL } from './theme';
+import { INTRO_CARD, TICKET, SHOP_W, shopH, ticketTexture, CHALK, CHALK_INK, RED, TEAL, LABEL_STROKE } from './theme';
 import { Bubble, drawStar, chipLabel, UI_DEPTH } from './ui';
+import { pop, bannerStyle } from './callouts';
 import { Bot, SKILL } from './bot';
 
 type Phase = 'intro' | 'play' | 'result' | 'shop';
@@ -129,7 +130,7 @@ export class PlayScene extends ArcadeScene {
     this.comboChip = hudChip(this, width - HUD_MARGIN, HUD_ROW2_Y, { align: 'right', text: '', color: '#ff9a3c', minWidth: 120 }).setVisible(false);
     this.hl = this.add.graphics().setDepth(UI_DEPTH - 60);
     this.rings = this.add.graphics().setDepth(UI_DEPTH - 55);
-    this.hint = txt(this, width / 2, 1196, '', { size: 26, color: '#ffffff', strokeThickness: 6, wrap: 660 }).setDepth(UI_DEPTH + 10).setAlpha(0);
+    this.hint = txt(this, width / 2, 1196, '', { size: 26, color: '#fff8ec', stroke: LABEL_STROKE, strokeThickness: 7, wrap: 660 }).setDepth(UI_DEPTH + 10).setAlpha(0);
 
     this.setupInput();
     this.startDay();
@@ -454,12 +455,12 @@ export class PlayScene extends ArcadeScene {
     if (cost === null) return;
     if (!this.sim.buy(id)) {
       this.sfx('error', { volume: 0.5 });
-      popup(this, x, y, t('poor'), '#ff8a7a', 26);
+      pop(this, x, y, t('poor'), '#ff8a7a', 26, false, UI_DEPTH + 20);
       return;
     }
     this.sfx('buy', { volume: 0.7 });
     burst(this, x, y, [0xffd23f, 0x7dffa0, 0xffffff], 22, 300);
-    popup(this, x, y - 30, t('bought'), '#7dffa0', 30);
+    pop(this, x, y - 30, t('bought'), '#7dffa0', 30, false, UI_DEPTH + 20);
     this.tipChip.setText(String(this.sim.wallet));
     this.renderShop();
   }
@@ -560,7 +561,7 @@ export class PlayScene extends ArcadeScene {
     if (!this.sim.open(st)) {
       this.sfx('error', { volume: 0.4 });
       const z = this.zones.get(st)!;
-      popup(this, z.centerX, z.y, t('lockDay', { n: STATION_DAY[st] }), '#ffb0a0', 24);
+      pop(this, z.centerX, z.y, t('lockDay', { n: STATION_DAY[st] }), '#ffb0a0', 24);
       return;
     }
     const ok = this.sim.act(st);
@@ -736,7 +737,7 @@ export class PlayScene extends ArcadeScene {
           this.fx.puff(p.x, TOP + 0.1, p.z, 0x2a2a2a, 10, { size: 0.08, up: 1.4, life: 1.2 });
           this.sfxAt('burnt', this.screen(p).x, { volume: 0.6 });
           const s = this.screen(p.clone().setY(TOP + 0.4));
-          popup(this, s.x, s.y, t('burnt'), '#ff8a7a', 26);
+          pop(this, s.x, s.y, t('burnt'), '#ff8a7a', 26);
           this.showHint('h_burnt');
           break;
         }
@@ -750,7 +751,7 @@ export class PlayScene extends ArcadeScene {
           } });
           if (ev.item) this.showHint('h_trash');
           const s = this.screen(from);
-          popup(this, s.x, s.y - 30, t('binned'), '#c9d3ea', 22);
+          pop(this, s.x, s.y - 30, t('binned'), '#c9d3ea', 22);
           break;
         }
         case 'plate': {
@@ -793,7 +794,7 @@ export class PlayScene extends ArcadeScene {
         }
         case 'error': {
           const z = this.zones.get(ev.st);
-          if (z) popup(this, z.centerX, z.y + 10, t('e_' + ev.reason), '#ffb0a0', 24);
+          if (z) pop(this, z.centerX, z.y + 10, t('e_' + ev.reason), '#ffb0a0', 24, true);
           this.sfx('error', { volume: 0.35 });
           break;
         }
@@ -850,19 +851,19 @@ export class PlayScene extends ArcadeScene {
     this.time.delayedCall(450, () => {
       if (!this.scene.isActive()) return;
       this.setScore(this.sim.score);
-      popup(this, head.x, head.y - 60, '+' + (base + tip), '#ffd23f', 34);
-      if (tip > 0) popup(this, head.x, head.y - 14, t('tipPop', { n: tip }), '#7dffa0', 24);
+      pop(this, head.x, head.y - 60, '+' + (base + tip), '#ffd23f', 34);
+      if (tip > 0) pop(this, head.x, head.y - 14, t('tipPop', { n: tip }), '#7dffa0', 24);
       this.flyCoins(head.x, head.y, Math.min(8, 2 + Math.round(tip / 3)));
       this.fx.spark(headV.x, headV.y + 0.2, headV.z, 0xffd23f, 14, 1.6, 2.2);
       this.fx.ring(headV.x, 0.05, headV.z, 0xffd23f, 0.7, 0.5);
       this.sfx(tip >= 8 ? 'coins' : 'coin', { volume: 0.6 });
       this.nudge(0, -0.06, -0.08);
       if (combo >= 2) {
-        popup(this, this.scale.width / 2, 300, t('comboPop', { n: combo }), '#ff9a3c', 40);
+        pop(this, this.scale.width / 2, 300, t('comboPop', { n: combo }), '#ff9a3c', 40);
         this.sfx('combo', { rate: Math.min(1.6, 1 + (combo - 2) * 0.1) });
         this.showHint('h_combo');
       }
-      if (c.patience / c.max > 0.75) popup(this, head.x, head.y - 100, t('fast'), '#9fe3ff', 24);
+      if (c.patience / c.max > 0.75) pop(this, head.x, head.y - 100, t('fast'), '#9fe3ff', 24);
     });
   }
 
@@ -890,7 +891,7 @@ export class PlayScene extends ArcadeScene {
     const head = this.screen(headV);
     const b = this.bubbles.get(c.id);
     if (b) { this.bubbles.delete(c.id); b.leave(false); }
-    popup(this, head.x, head.y - 50, t('angryPop'), '#ff6a5a', 30);
+    pop(this, head.x, head.y - 50, t('angryPop'), '#ff6a5a', 30);
     this.fx.puff(headV.x, headV.y + 0.1, headV.z, 0xff4a3a, 10, { size: 0.07, up: 1.4, speed: 0.6 });
     this.sfx('angry', { volume: 0.7 });
     shake(this, 0.008, 220);
@@ -900,8 +901,11 @@ export class PlayScene extends ArcadeScene {
 
   private banner(s: string, color: string): void {
     const { width } = this.scale;
-    const b = txt(this, width / 2, 260, s, { title: true, size: 34, color, strokeThickness: 8, wrap: 640 }).setDepth(UI_DEPTH + 10).setScale(0.4);
-    this.tweens.add({ targets: b, scale: 1, duration: 300, ease: 'Back.easeOut' });
+    // the theme's face and colours (callouts.ts)
+    const b = fitWidth(labelAt(this, width / 2, 260, s, bannerStyle(color)), width - 60).setDepth(UI_DEPTH + 10);
+    const sc = b.scale;
+    b.setScale(sc * 0.4);
+    this.tweens.add({ targets: b, scale: sc, duration: 300, ease: 'Back.easeOut' });
     this.tweens.add({ targets: b, alpha: 0, y: 230, delay: 1800, duration: 400, onComplete: () => b.destroy() });
   }
 

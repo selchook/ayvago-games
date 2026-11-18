@@ -2,7 +2,7 @@
 // bar, the power-up chips with their timer rings, the special meter, the touch action buttons,
 // the boss bar and the banners. Every always-visible readout sits in a core HUD chip.
 import Phaser from 'phaser';
-import { txt, t, hudChip, HudChip } from '@core';
+import { txt, t, hudChip, HudChip, labelAt, fitWidth, wrapLines, type LabelStyle } from '@core';
 import { HEART, SKULL, SHIP } from './art';
 
 export const UI_DEPTH = 9100;
@@ -485,16 +485,49 @@ export function drawButton(b: ActionButton, color: number, o: { held?: boolean; 
 
 // ------------------------------------------------------------------ banners
 
+/** The board's dark ink: every callout's outline (the menu theme's labelStroke). */
+const CALLOUT_INK = '#2a1206';
+/** The size the banner titles are painted at (scaled to each banner's size). */
+export const TITLE_PX = 56;
+/** The size floating callouts and damage numbers are painted at. */
+export const FLOAT_PX = 34;
+
+/** `c` mixed toward `to` by k (both #rrggbb). */
+function mix(c: string, to: string, k: number): string {
+  const a = parseInt(c.slice(1), 16), b = parseInt(to.slice(1), 16);
+  const ch = (sh: number) => Math.round(((a >> sh) & 255) * (1 - k) + ((b >> sh) & 255) * k);
+  return '#' + ((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0');
+}
+
+/**
+ * A pirate callout's look: the theme's Pirata One, gilded in the callout's colour (bright on top,
+ * deep at the foot) and outlined in the board's dark ink, as the menu's and the shop's labels.
+ */
+export function calloutStyle(color: string, size = TITLE_PX): LabelStyle {
+  return { size, fill: [mix(color, '#ffffff', 0.6), color, mix(color, '#000000', 0.32)], stroke: CALLOUT_INK, strokeWidth: Math.round(size * 0.17) };
+}
+
+/** A banner's second line: parchment cream in the display face. */
+export const SUB_STYLE: LabelStyle = { size: 26, color: '#fff3c4', stroke: CALLOUT_INK, strokeWidth: 5 };
+
+/** A second line under a callout, wrapped to `room` px at `size` (painted labels, one per line). */
+function subLines(scene: Phaser.Scene, c: Phaser.GameObjects.Container, y: number, sub: string, size: number, room: number): void {
+  const k = size / (SUB_STYLE.size ?? 26);
+  for (const line of wrapLines(sub, SUB_STYLE, room / k)) {
+    c.add(fitWidth(labelAt(scene, 0, y, line, SUB_STYLE), room, k));
+    y += size * 1.12;
+  }
+}
+
 /** A big title that pops in, holds and flies out. */
 export function banner(scene: Phaser.Scene, y: number, title: string, sub: string, o: { color?: string; hold?: number; size?: number; x?: number; wrap?: number; subSize?: number } = {}): Phaser.GameObjects.Container {
   const { width } = scene.scale;
   const wrap = o.wrap ?? 660;
+  const size = o.size ?? 54;
   const c = scene.add.container(o.x ?? width / 2, y).setScrollFactor(0).setDepth(9400);
-  const tt = txt(scene, 0, 0, title, { title: true, size: o.size ?? 54, color: o.color ?? '#ffffff', strokeThickness: 9, wrap });
-  if (tt.width > wrap) tt.setScale(wrap / tt.width);
-  c.add(tt);
+  c.add(fitWidth(labelAt(scene, 0, 0, title, calloutStyle(o.color ?? '#ffffff')), wrap, size / TITLE_PX));
   const ss = o.subSize ?? 26;
-  if (sub) c.add(txt(scene, 0, tt.displayHeight / 2 + ss, sub, { size: ss, color: '#fff6e6', strokeThickness: 5, wrap: wrap - 20 }));
+  if (sub) subLines(scene, c, size * 0.5 + ss * 0.8, sub, ss, wrap - 20);
   c.setScale(0.3).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: c, alpha: 0, y: y - 40, delay: (o.hold ?? 1.2) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
@@ -512,13 +545,15 @@ export function bossIntro(scene: Phaser.Scene, name: string, sub: string): void 
   band.fillStyle(0x12060a, 0.88).fillRect(0, y - 100, width, 200);
   band.fillStyle(0xff6a3a, 1).fillRect(0, y - 100, width, 6).fillRect(0, y + 94, width, 6);
   const skull = scene.add.image(width / 2, y - 58, SKULL).setDisplaySize(72, 72);
-  const n = txt(scene, width / 2, y + 10, name, { title: true, size: 52, color: '#ffb04a', strokeThickness: 10, wrap: 680 });
-  const s = txt(scene, width / 2, y + 66, sub, { size: 26, color: '#ffe6d8', strokeThickness: 5, wrap: 660 });
+  const n = fitWidth(labelAt(scene, width / 2, y + 10, name, calloutStyle('#ffb04a', 64)), 680);
+  const s = scene.add.container(width / 2, y + 66);
+  subLines(scene, s, 0, sub, 26, 660);
   root.add([tint, band, skull, n, s]);
   band.setAlpha(0);
   scene.tweens.add({ targets: band, alpha: 1, duration: 220 });
-  n.setScale(2.2).setAlpha(0);
-  scene.tweens.add({ targets: n, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut', delay: 120 });
+  const ns = n.scale;
+  n.setScale(ns * 2.2).setAlpha(0);
+  scene.tweens.add({ targets: n, scale: ns, alpha: 1, duration: 320, ease: 'Back.easeOut', delay: 120 });
   skull.setScale(0).setAngle(-30);
   scene.tweens.add({ targets: skull, displayWidth: 72, displayHeight: 72, angle: 0, duration: 380, ease: 'Back.easeOut', delay: 60 });
   s.setAlpha(0);

@@ -4,7 +4,8 @@
 // tooltip with a card's full text (hover or long-press), the tray of owned cards in the HUD (a tap
 // opens the full list) and that list.
 import Phaser from 'phaser';
-import { txt, t, hudChip, HudChip, HUD_GAP } from '@core';
+import { txt, t, hudChip, HudChip, HUD_GAP, labelAt, labelWidth } from '@core';
+import { S_BAR_TITLE, bannerStyle } from './labels';
 import { CARD, RARITY_COLOR, type CardId, type Rarity } from './cards';
 import { cardArt, COIN, OFFER } from './art';
 import { glass, Pill, UI_DEPTH } from './ui';
@@ -273,8 +274,8 @@ export class CardBar {
     // see-through glass: the ship may be behind it
     const bg = glass(scene, BAR_W, BAR_H, { alpha: 0.5, r: 24 });
     const top = -BAR_H / 2;
-    const title = txt(scene, -BAR_W / 2 + 22, top + BAR_HEAD / 2 + 2, t('barTitle'), { title: true, size: 24, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
-    this.sub = txt(scene, title.x + title.width + 12, top + BAR_HEAD / 2 + 3, o.sub, { size: 18, color: '#cfd8f0', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+    const title = labelAt(scene, -BAR_W / 2 + 22, top + BAR_HEAD / 2 + 2, t('barTitle'), S_BAR_TITLE, 0);
+    this.sub = txt(scene, title.x + labelWidth(t('barTitle'), S_BAR_TITLE) + 12, top + BAR_HEAD / 2 + 3, o.sub, { size: 18, color: '#cfd8f0', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
     this.more = txt(scene, 0, top + BAR_HEAD / 2 + 3, '', { title: true, size: 16, color: '#ff9aab', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
     const sub = this.sub;
     // reroll (credits) and close, top right
@@ -605,7 +606,7 @@ export class CardList {
     const h = 150 + rows.reduce((a, r) => a + r.h, 0);
     const panel = scene.add.container(width / 2, height / 2 - 30);
     panel.add(glass(scene, 660, h, { alpha: 0.95 }));
-    panel.add(txt(scene, 0, -h / 2 + 50, t('cardsTitle'), { title: true, size: 38, color: '#ffd23f', strokeThickness: 6 }));
+    panel.add(labelAt(scene, 0, -h / 2 + 50, t('cardsTitle'), bannerStyle('#ffd23f', 38)));
     let y0 = -h / 2 + 96;
     for (const { id, desc, h: rh } of rows) {
       const col = RARITY_COLOR[CARD[id].rarity];

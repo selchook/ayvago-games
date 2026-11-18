@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import {
-  ArcadeScene, CarSteering, t, txt, shake, flash, popup, playMusic, touchScreen,
+  ArcadeScene, CarSteering, t, txt, shake, flash, playMusic, touchScreen,
   hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, HUD_CHIP_H, hudRightEdge, themeCard, themeLabel,
 } from '@core';
 import { World3D, THREE, model } from '@core/three';
@@ -12,7 +12,8 @@ import { Ambience } from './sounds';
 import { WAVES, FOES, tuning, waveBonus, TUNING, type FoeKind, type FoeStats, type WaveDef } from './waves';
 import { Minimap, viewQuad, type MapState } from './minimap';
 import { CannonSfx } from './cannon-sfx';
-import { WAVE_CARD_W, WAVE_CARD_H, WAVE_NO_STYLE, WAVE_TITLE_STYLE, WAVE_CLEAR_STYLE, INK } from './theme';
+import { WAVE_CARD_W, WAVE_CARD_H, WAVE_NO_STYLE, WAVE_TITLE_STYLE, WAVE_CLEAR_STYLE, INK, LABEL_STROKE } from './theme';
+import { pop } from './callouts';
 
 // ---------------------------------------------------------------- constants
 
@@ -288,7 +289,7 @@ export class PlayScene extends ArcadeScene {
     this.makeHud();
     this.marks = this.add.graphics().setDepth(8500).setScrollFactor(0);
     this.rings = this.add.graphics().setDepth(9450).setScrollFactor(0);
-    this.hint = txt(this, width / 2, 238, '', { size: 25, color: '#ffffff', strokeThickness: 6, wrap: 620 }).setDepth(9000).setScrollFactor(0).setAlpha(0);
+    this.hint = txt(this, width / 2, 238, '', { size: 25, color: '#fff6dc', stroke: LABEL_STROKE, strokeThickness: 7, wrap: 620 }).setDepth(9000).setScrollFactor(0).setAlpha(0);
 
     // the sea chart (top right, under the gun chip); it hides under the pause and result screens
     this.mapIslands = this.map.islands.filter((i) => i.root.children.length).map((i) => ({ x: i.x, z: i.z, r: i.r, home: i === this.map.home, rock: !!i.rock }));
@@ -435,7 +436,7 @@ export class PlayScene extends ArcadeScene {
       const big = themeLabel(this, width / 2, 420, title, WAVE_CLEAR_STYLE).setDepth(9100).setScrollFactor(0).setScale(0.4);
       this.tweens.add({ targets: big, scale: 1, duration: 420, ease: 'Back.easeOut' });
       this.tweens.add({ targets: big, alpha: 0, delay: 1900, duration: 400, onComplete: () => big.destroy() });
-      popup(this, width / 2, 500, t('bonus', { n: bonus }), '#9fe7b8', 30);
+      pop(this, width / 2, 500, t('bonus', { n: bonus }), '#9fe7b8', 30);
       this.sfx('fanfare', { exact: true, volume: 0.75 });
       this.fx.sparkle(this.player.point(0, 0, 6), 0xffd23f, 30);
     }
@@ -587,20 +588,20 @@ export class PlayScene extends ArcadeScene {
       this.sfx('chest', { volume: 0.8 });
       if (l.mission) {
         this.chestsGot++;
-        popup(this, p.x, p.y - 30, `${this.chestsGot}/${this.chestGoal}`, '#ffd23f', 30);
+        pop(this, p.x, p.y - 30, `${this.chestsGot}/${this.chestGoal}`, '#ffd23f', 30);
         if (this.chestsGot >= this.chestGoal) this.waveComplete();
       }
     } else if (l.kind === 'barrel') {
       if (this.hull < this.tune.hull) {
         this.hull++;
         this.hud.setLives(this.hull, this.tune.hull);
-        popup(this, p.x, p.y - 20, t('repaired'), '#7dff9a', 28);
+        pop(this, p.x, p.y - 20, t('repaired'), '#7dff9a', 28);
       } else this.giveGold(10, p.x, p.y);
       this.sfx('repair', { volume: 0.7 });
     } else {
       this.rapidT = 10;
       this.reloadL = this.reloadR = 0;
-      popup(this, p.x, p.y - 20, t('rapid'), '#7fd8ff', 30);
+      pop(this, p.x, p.y - 20, t('rapid'), '#7fd8ff', 30);
       this.sfx('rapid', { volume: 0.7 });
     }
     this.updateGoal();
@@ -778,7 +779,7 @@ export class PlayScene extends ArcadeScene {
       this.stormT -= dt;
       this.stormK = Phaser.Math.Clamp(1 - this.stormT / Math.max(30, this.stormTotal * 0.45), 0, 1) * 0.85;
       if (this.stormT < 20 && this.stormT + dt >= 20) {
-        popup(this, this.scale.width / 2, 300, t('stormSoon'), '#ffb36b', 30);
+        pop(this, this.scale.width / 2, 300, t('stormSoon'), '#ffb36b', 30);
         this.sfx('thunder', { volume: 0.6 });
       }
       if (Math.random() < dt * this.stormK * 0.25) this.lightning(false);
@@ -788,7 +789,7 @@ export class PlayScene extends ArcadeScene {
         this.failed = true;
         this.stormK = 1;
         this.lightning(true);
-        popup(this, this.scale.width / 2, 340, t('stormHit'), '#ff8a6a', 34);
+        pop(this, this.scale.width / 2, 340, t('stormHit'), '#ff8a6a', 34);
         this.damagePlayer(true);
         this.waveComplete();
       }
@@ -857,7 +858,7 @@ export class PlayScene extends ArcadeScene {
       this.edgeT -= dt;
       if (this.edgeT <= 0) {
         this.edgeT = 4;
-        popup(this, this.scale.width / 2, 300, t('turnBack'), '#ffb36b', 26);
+        pop(this, this.scale.width / 2, 300, t('turnBack'), '#ffb36b', 26);
       }
     }
     const f = fwd(p.heading);
@@ -897,7 +898,7 @@ export class PlayScene extends ArcadeScene {
         this.stats.repairs++;
         this.hud.setLives(this.hull, this.tune.hull);
         const s = this.world.toScreen(p.point(0, 0, 6));
-        popup(this, s.x, s.y, this.hull >= this.tune.hull ? t('repairFull') : t('repaired'), '#7dff9a', 28);
+        pop(this, s.x, s.y, this.hull >= this.tune.hull ? t('repairFull') : t('repaired'), '#7dff9a', 28);
         this.sfx('repair', { volume: 0.6 });
       }
     } else this.repairT = 0;
@@ -1153,19 +1154,19 @@ export class PlayScene extends ArcadeScene {
     this.bumpCombo();
     const pts = 10 * this.comboMult();
     this.addScore(pts);
-    popup(this, sp.x, sp.y, `+${pts}`, '#ffffff', 22);
+    pop(this, sp.x, sp.y, `+${pts}`, '#ffffff', 22);
     if (foe === this.boss) {
       this.updateGoal();
       if (!foe.summoned && sh.hp <= sh.maxHp / 2 && sh.hp > 0) {
         foe.summoned = true;
-        popup(this, this.scale.width / 2, 320, t('bossSummons'), '#3dffb0', 28);
+        pop(this, this.scale.width / 2, 320, t('bossSummons'), '#3dffb0', 28);
         this.pending.unshift({ kind: 'sloop', at: 0 }, { kind: 'sloop', at: 0 });
       }
       if (!foe.enraged && sh.hp <= sh.maxHp / 4 && sh.hp > 0) {
         foe.enraged = true;
         foe.reloadK *= 0.8;
         foe.speedK *= 1.15;
-        popup(this, this.scale.width / 2, 360, t('bossRage'), '#ff5a3c', 30);
+        pop(this, this.scale.width / 2, 360, t('bossRage'), '#ff5a3c', 30);
         this.sfx('bossHorn', { volume: 0.6, exact: true });
       }
     }
@@ -1186,8 +1187,8 @@ export class PlayScene extends ArcadeScene {
     const pts = foe.stats.points * mult;
     this.addScore(pts);
     const sp = this.world.toScreen(at.clone().setY(at.y + 6));
-    popup(this, sp.x, sp.y - 20, `${t('sunk')} +${pts}`, '#ffd23f', boss ? 40 : 32);
-    if (mult >= 2) popup(this, sp.x, sp.y + 26, t('combo', { n: mult }), '#ff9a3c', 26);
+    pop(this, sp.x, sp.y - 20, `${t('sunk')} +${pts}`, '#ffd23f', boss ? 40 : 32);
+    if (mult >= 2) pop(this, sp.x, sp.y + 26, t('combo', { n: mult }), '#ff9a3c', 26);
     if (this.def.mission === 'sink' || this.def.mission === 'escort' || this.def.mission === 'fort' || this.def.mission === 'treasure') this.sunk++;
     // loot floats up where it sank
     const drop = (kind: LootKind) => {
@@ -1227,7 +1228,7 @@ export class PlayScene extends ArcadeScene {
     flash(this, 0xff4d3a, 160, 0.3);
     this.combo = 0;
     this.updateCombo();
-    if (this.hull === 1) popup(this, this.scale.width / 2, 300, t('lowHull'), '#ff5a3c', 32);
+    if (this.hull === 1) pop(this, this.scale.width / 2, 300, t('lowHull'), '#ff5a3c', 32);
     if (this.hull <= 0) {
       this.dead = true;
       this.phase = 'over';
@@ -1362,7 +1363,7 @@ export class PlayScene extends ArcadeScene {
     this.collideIslands(a, false);
     if (this.phase === 'play' && d < BERTH.r + 3 && !this.escortDone) {
       this.escortDone = true;
-      popup(this, this.scale.width / 2, 340, t('convoyHome'), '#7dff9a', 34);
+      pop(this, this.scale.width / 2, 340, t('convoyHome'), '#7dff9a', 34);
       this.addScore(400 + this.allyHp * 50);
       this.giveGold(60, this.scale.width / 2, 400);
       this.fx.sparkle(a.point(0, 0, 4), 0xffd23f, 40);
@@ -1381,7 +1382,7 @@ export class PlayScene extends ArcadeScene {
       a.startSinking();
       this.fx.wreck(new THREE.Vector3(a.x, a.waterY, a.z), a.halfL);
       this.guns.sinking(ax);
-      popup(this, this.scale.width / 2, 340, t('convoyLost'), '#ff8a6a', 32);
+      pop(this, this.scale.width / 2, 340, t('convoyLost'), '#ff8a6a', 32);
       this.failed = true;
     }
   }
@@ -1427,7 +1428,7 @@ export class PlayScene extends ArcadeScene {
     this.bumpCombo();
     const pts = 10 * this.comboMult();
     this.addScore(pts);
-    popup(this, sp.x, sp.y, `+${pts}`, '#ffffff', 22);
+    pop(this, sp.x, sp.y, `+${pts}`, '#ffffff', 22);
     // the tower shudders
     this.tweens.add({ targets: fort.tower.scale, x: 1.62, z: 1.62, duration: 60, yoyo: true });
     if (fort.hp <= 0) {
@@ -1435,7 +1436,7 @@ export class PlayScene extends ArcadeScene {
       this.fortsDown++;
       const pts2 = 300 * this.comboMult();
       this.addScore(pts2);
-      popup(this, sp.x, sp.y - 30, `${t('fortDown')} +${pts2}`, '#ffd23f', 32);
+      pop(this, sp.x, sp.y - 30, `${t('fortDown')} +${pts2}`, '#ffd23f', 32);
       this.guns.sinking(sp.x, true);
       this.camShake = 1.2;
       shake(this, 0.008, 400);

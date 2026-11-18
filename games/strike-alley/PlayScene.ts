@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, t, txt, flash, burst, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, popup } from '@core';
+import { ArcadeScene, t, txt, flash, burst, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, labelAt, fitWidth } from '@core';
 import { World3D, THREE, playerCharacter3d, miniKey } from '@core/three';
 import {
   LaneSim, SIM_DT, LANE_HALF, HEAD_Z, PIT_Z, BALL_R, PIN_COM, PIN_H, SPOTS, OIL_LEN, isSplit, newEvents, ballPath, POCKET_X, SPIN_MAX,
@@ -10,6 +10,7 @@ import { buildAlley, drawScreen, canvasTex, type Alley, RETURN_X, HOOD_Z, RACK_E
 import { Person } from './bowler';
 import { Particles } from './fx3d';
 import { scorecardChip, callout, Summary, RackView, type CardView } from './panels';
+import { NUDGE, REPLAY_TAG, CALL_COLORS } from './theme';
 import { aimBoards } from './bot';
 import { TUNING, type Tuning } from './tuning';
 import {
@@ -730,7 +731,7 @@ export class PlayScene extends ArcadeScene {
     const f = this.readFlick(true);
     this.gesture = null;
     if (!f || !this.canAim()) {
-      if (this.canAim()) popup(this, this.scale.width / 2, this.scale.height - 360, t('flickMore'), '#ffd23f', 30);
+      if (this.canAim()) this.nudge(t('flickMore'));
       this.liveHook = this.hook;
       this.guideKey = '';
       this.updateAimUi();
@@ -849,6 +850,16 @@ export class PlayScene extends ArcadeScene {
     const p = this.bowler.root.position;
     this.goalPos.set(-3.9, 2.35, Phaser.Math.Clamp(p.z - 2.4, -2, 2.4));
     this.goalLook.set(p.x - 0.35, 0.55, p.z + 0.25);
+  }
+
+  /** A word that pops up over the aim (in the theme's script) and floats away. */
+  private nudge(s: string): void {
+    const y = this.scale.height - 360;
+    const img = fitWidth(labelAt(this, this.scale.width / 2, y, s, NUDGE), this.scale.width - 60).setDepth(9000).setScrollFactor(0);
+    const k = img.scale;
+    img.setScale(k * 0.5);
+    this.tweens.add({ targets: img, scale: k, duration: 160, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: img, y: y - 50, alpha: 0, delay: 700, duration: 400, onComplete: () => img.destroy() });
   }
 
   /** A line of advice that fades in under the HUD and away again. */
@@ -1521,7 +1532,7 @@ export class PlayScene extends ArcadeScene {
       const perfect = this.sheet.over && this.sheet.total() === 300;
       const text = perfect ? t('perfect') : streak >= 4 ? t('streakN', { n: streak }) : streak === 3 ? t('turkey') : streak === 2 ? t('double') : t('strike');
       const sub = streak === 3 ? t('turkeySub') : streak === 2 ? t('doubleSub') : t('strikeSub');
-      callout(this, text, sub, '#ffd23f', streak >= 4 ? 60 : 82);
+      callout(this, text, sub, CALL_COLORS.strike, streak >= 4 ? 60 : 82);
       this.fx.confetti(deck, 90 + Math.min(4, streak) * 30);
       flash(this, 0xfff2b0, 220, 0.4);
       this.shakeAmp = Math.max(this.shakeAmp, 0.03);
@@ -1532,25 +1543,25 @@ export class PlayScene extends ArcadeScene {
       this.laneLightT = 0;
       burst(this, this.scale.width / 2, 420, [0xffd23f, 0xff3fa4, 0x34e7ff], 40, 520);
     } else if (call === 'spare' || call === 'splitConverted') {
-      callout(this, t(call), t('spareSub'), '#34e7ff', 82);
+      callout(this, t(call), t('spareSub'), CALL_COLORS.spare, 82);
       this.fx.confetti(deck, 50);
       this.sfx('spare', { exact: true, volume: 0.7 });
       this.sfx('cheer', { exact: true, volume: 0.55 });
       this.neonPulse = 1;
       burst(this, this.scale.width / 2, 420, [0x34e7ff, 0xffffff], 26, 420);
     } else if (call === 'gutter') {
-      callout(this, t('gutter'), t('gutterSub'), '#ff6b6b', 76);
+      callout(this, t('gutter'), t('gutterSub'), CALL_COLORS.gutter, 76);
       this.sfx('aww', { volume: 0.8 });
       this.sfx('bad', { volume: 0.5 });
     } else if (call === 'split') {
-      callout(this, t('split'), t('leftN', { n: left }), '#ff9f43', 78);
+      callout(this, t('split'), t('leftN', { n: left }), CALL_COLORS.split, 78);
       this.sfx('aww', { volume: 0.5 });
       this.sfx('split', { volume: 0.6 });
     } else if (call === 'miss') {
-      callout(this, t('miss'), t('leftN', { n: left }), '#c9cfee', 70);
+      callout(this, t('miss'), t('leftN', { n: left }), CALL_COLORS.miss, 70);
       this.sfx('bad', { volume: 0.5 });
     } else {
-      callout(this, t('pinsN', { n: down }), left > 0 && this.sheet.ball > 0 && !this.sheet.freshRack() ? t('leftN', { n: left }) : '', '#ffffff', 70);
+      callout(this, t('pinsN', { n: down }), left > 0 && this.sheet.ball > 0 && !this.sheet.freshRack() ? t('leftN', { n: left }) : '', CALL_COLORS.pins, 70);
       this.sfx(down >= 7 ? 'good' : 'count', { volume: 0.55 });
     }
   }
@@ -1585,7 +1596,7 @@ export class PlayScene extends ArcadeScene {
     g.fillStyle(0xe0182d, 0.92).fillRoundedRect(-120, -28, 240, 56, 28);
     g.fillStyle(0xffffff, 1).fillCircle(-88, 0, 9);
     c.add(g);
-    c.add(txt(this, 12, 1, t('replay'), { title: true, size: 30, color: '#ffffff', strokeThickness: 0 }));
+    c.add(fitWidth(labelAt(this, 12, 1, t('replay'), REPLAY_TAG), 180));
     c.add(txt(this, 0, 58, t('tapSkip'), { size: 22, color: '#ffffff', strokeThickness: 5, stroke: '#140a2a' }));
     this.tweens.add({ targets: g, alpha: 0.6, duration: 450, yoyo: true, repeat: -1 });
     this.replayTag = c;

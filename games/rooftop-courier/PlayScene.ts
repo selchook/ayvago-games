@@ -8,7 +8,7 @@
 // run's summary.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang, themeCard, themeLabel, overlayHeadingStyle,
+  ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang, themeCard, themeLabel, overlayHeadingStyle, Para,
   HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, HUD_CHIP_H,
 } from '@core';
 import type { World3D } from '@core/three';
@@ -19,6 +19,7 @@ import { THEMES, PRAISE_TIERS, POWERS, POWER_COLOR, clamp, smooth, isPower, type
 import { loadMeta, saveMeta, bankRun, missionAt, missionProgress, lookOf, districtName, type Meta, type Mission } from './meta';
 import { TouchPad, FlowMeter, toast, TutorialCard, PowerBar, HintCard, UI_DEPTH, type PowerShown } from './ui';
 import { Callouts } from './callouts';
+import { prebakePlay, S_TIP } from './labels';
 import { SUMMARY_W, SUMMARY_H } from './menu';
 import { makeSounds, Loop } from './audio';
 import { makeIcons, PARCEL_ICON, STAMP_ICON, FLAG_ICON, POWER_ICON, VIGNETTE } from './art';
@@ -101,6 +102,7 @@ export class PlayScene extends ArcadeScene {
   perf = { frames: 0, update: 0, render: 0, maxUpdate: 0, maxRender: 0, calls: 0, maxCalls: 0, tris: 0 };
 
   createGame(): void {
+    prebakePlay(this);
     makeIcons(this);
     makeSounds(this.game);
     this.meta = loadMeta();
@@ -531,7 +533,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private tip(s: string): void {
-    const h = txt(this, this.scale.width / 2, 960, s, { size: 26, color: '#ffffff', strokeThickness: 6, wrap: 620 }).setScrollFactor(0).setDepth(UI_DEPTH + 40).setAlpha(0);
+    const h = new Para(this, this.scale.width / 2, 960, s, S_TIP, 620, 0.5).setScrollFactor(0).setDepth(UI_DEPTH + 40).setAlpha(0);
+    h.y -= h.textHeight / 2;
     this.tweens.add({ targets: h, alpha: 1, duration: 220 });
     this.tweens.add({ targets: h, alpha: 0, delay: 2600, duration: 400, onComplete: () => h.destroy() });
   }

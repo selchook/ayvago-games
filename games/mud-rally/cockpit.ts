@@ -116,7 +116,8 @@ export function wheelAngle(steer: number): number {
 
 // ---------------------------------------------------------------- canvas art
 
-const FONT = '"Fredoka", "Nunito", sans-serif';
+/** The theme's display face (theme.ts), on the dials and the dash screens. */
+const FONT = '"Black Ops One", "Fredoka", sans-serif';
 
 /** One gauge face: dark dial, ticks, numbers, a coloured zone and a caption. */
 function drawDial(c: CanvasRenderingContext2D, x0: number, y0: number, size: number, o: {
@@ -144,17 +145,17 @@ function drawDial(c: CanvasRenderingContext2D, x0: number, y0: number, size: num
   }
   c.fillStyle = '#ffffff';
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.font = `700 ${Math.round(size * 0.13)}px ${FONT}`;
+  c.font = `${Math.round(size * 0.13)}px ${FONT}`;
   for (const v of o.numbers) {
     const a = ang(v), r = R - 112;
     c.fillText(String(Math.round(v / (o.scale ?? 1))), cx + Math.cos(a) * r, cy + Math.sin(a) * r);
   }
   c.fillStyle = '#9fb1cc';
-  c.font = `700 ${Math.round(size * 0.075)}px ${FONT}`;
+  c.font = `${Math.round(size * 0.075)}px ${FONT}`;
   c.fillText(o.caption, cx, cy - R * 0.27);
   if (o.sub) {
     c.fillStyle = '#ffd23f';
-    c.font = `700 ${Math.round(size * 0.07)}px ${FONT}`;
+    c.font = `${Math.round(size * 0.07)}px ${FONT}`;
     c.fillText(o.sub, cx, cy - R * 0.36);
   }
 }
@@ -181,7 +182,7 @@ function drawNitroDial(c: CanvasRenderingContext2D, x0: number, y0: number, size
   }
   c.fillStyle = '#ffffff';
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.font = `700 ${Math.round(size * 0.15)}px ${FONT}`;
+  c.font = `${Math.round(size * 0.15)}px ${FONT}`;
   c.fillText('E', cx + Math.cos(ang(0)) * (R - 130), cy + Math.sin(ang(0)) * (R - 130));
   c.fillText('F', cx + Math.cos(ang(1)) * (R - 130), cy + Math.sin(ang(1)) * (R - 130));
   // a bolt above the hub
@@ -774,14 +775,14 @@ export class Cockpit {
     };
     win(0, 192);
     c.fillStyle = '#e9f6ff';
-    c.font = `700 62px ${FONT}`;
+    c.font = `62px ${FONT}`;
     c.fillText(String(kmh), 96, 43);
     win(192, 128);
     c.fillStyle = gear === 'R' ? '#ff6b5a' : '#ffd23f';
     c.fillText(gear, 256, 43);
     win(320, 128);
     c.fillStyle = low ? (blinkOn ? '#ff3b30' : '#5a1a14') : boosting ? '#ffd23f' : '#ffffff';
-    c.font = `700 54px ${FONT}`;
+    c.font = `54px ${FONT}`;
     c.fillText(`×${cans}`, 384, 43);
 
     // the map screen
@@ -810,7 +811,7 @@ export class Cockpit {
     c.fillStyle = 'rgba(5,10,12,0.75)';
     c.beginPath(); c.roundRect(4, 100, 66, 40, 10); c.fill();
     c.fillStyle = place === 1 ? '#ffd23f' : '#ffffff';
-    c.font = `700 30px ${FONT}`;
+    c.font = `27px ${FONT}`;
     c.fillText(ordinal(place), 37, 121);
     this.dyn.needsUpdate = true;
   }

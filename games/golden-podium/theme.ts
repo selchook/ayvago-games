@@ -7,6 +7,7 @@
 import { shadeColor, labelTexture, overlayHeadingStyle, t, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { RUSSO_ONE } from '@core/fonts/russo-one';
 import { prebakePodium, BOARD_CARD, EVENT_CARD } from './panels';
+import { prebakeCallouts } from './callouts';
 import { ordinal } from './strings';
 
 export const GOLD = 0xe2a514, BLUE = 0x2453b4, NAVY = 0x172552, TRACK = 0xc4482c, RED = 0xd8382a, GREEN = 0x2f9a4c;
@@ -265,6 +266,7 @@ export const PODIUM_THEME: MenuTheme = {
   cards: [EVENT_CARD, BOARD_CARD],
   prebake: (scene) => {
     prebakePodium(scene);
+    prebakeCallouts(scene);
     // the result heading of a 2nd, 3rd or 4th place ("YOU FINISHED 2nd"), as the result screen paints it
     for (let n = 2; n <= 4; n++) labelTexture(scene, t('placeTitle', { n: ordinal(n) }), overlayHeadingStyle(false));
   },

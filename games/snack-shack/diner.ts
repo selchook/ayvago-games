@@ -3,6 +3,7 @@
 // model), food flying to plates and customers, the customers (instanced rigs) and the chef.
 import Phaser from 'phaser';
 import { THREE } from '@core/three';
+import { SPICY_RICE } from '@core/fonts/spicy-rice';
 import {
   Sim, walkTime, QUEUE_WALK, HAPPY_T, MAX_SEATS, STATION_DAY,
   type Customer, type Item, type StationId, type Ref,
@@ -199,7 +200,8 @@ function sign(title: string): THREE.Mesh {
   g.roundRect(22, 22, 980, 148, 38);
   g.stroke();
   g.fillStyle = '#fff3d6';
-  g.font = '700 104px "Fredoka", "Nunito", sans-serif';
+  // the menu theme's diner-sign face (theme.ts), loaded under the Ayvago intro
+  g.font = `104px "${SPICY_RICE}", "Fredoka", sans-serif`;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.fillText(title, 512, 102, 920);
