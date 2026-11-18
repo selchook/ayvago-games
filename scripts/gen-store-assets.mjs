@@ -414,6 +414,18 @@ const CARD = {
       await sleep(300);
     }`,
   },
+  // Neon Ronin's card (landscape, cover-fit) shows a fight on the neon rooftops of 2-3 (Night
+  // Bazaar): the hero (upgraded katana and blaster, three implants) mid-combo among walkers, a gunner
+  // and drones, the signs and the rain behind. The map is skipped; the autopilot plays the level
+  // ahead headless until three foes are close and a swing is out, then keeps fighting (it cannot be
+  // hurt) while the frames are taken, the camera a little closer than in play.
+  'neon-ronin': {
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      window.__neon.stage('busy');
+      await sleep(400);
+    }`,
+  },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },
