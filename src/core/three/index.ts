@@ -14,6 +14,7 @@
 //   - When its scene shuts down, a World3D frees every GPU resource it created (geometries,
 //     materials, textures, skeletons, shadow maps); only the loaded models' own resources, which
 //     every copy shares, stay. Games do not dispose what they put in the world.
+import '../polyfills';
 import Phaser from 'phaser';
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
