@@ -10,6 +10,8 @@ import { makeSeaSounds } from './sounds';
 import { NAVAL_THEME } from './theme';
 import { prebakeCallouts } from './callouts';
 
+/** The menu camera (landscape): how far out and up it rides, and how far it turns from the ship (radians). */
+const MENU_CAM = { dist: 70, y: 30, yaw: 0.42, pitch: 0.2 };
 const SHIPS = ['ship-pirate-medium', 'ship-pirate-small', 'ship-small', 'ship-medium', 'ship-large', 'ship-ghost'];
 const PROPS = ['cannon-ball', 'chest', 'barrel', 'bottle-large'];
 
@@ -85,14 +87,17 @@ launch({
       sea.update(dt, centre.x, centre.z);
       ship.update(dt, (x, z) => sea.height(x, z), time);
       gulls.update(dt, ship.x, ship.z, time);
-      clouds.update(dt, centre.x, centre.z, 2);
+      clouds.update(dt, centre.x, centre.z, 2, world.camera.position);
       map.update(time);
       world.followSun(centre);
-      // the camera trails the ship from outside its circle and looks down past it, so the ship
-      // sails across the open top of the screen above the title, with the cove behind
+      // the camera trails the ship from outside its circle and turns a little right and down of
+      // it, so the ship sails on in the open top-left of the landscape menu (left of the logo,
+      // above PLAY), with the cove behind
       const ca = a + 0.35;
-      world.camera.position.set(centre.x + Math.cos(ca) * 78, 34, centre.z + Math.sin(ca) * 78);
-      world.camera.lookAt(ship.x, -25, ship.z);
+      world.camera.position.set(centre.x + Math.cos(ca) * MENU_CAM.dist, MENU_CAM.y, centre.z + Math.sin(ca) * MENU_CAM.dist);
+      world.camera.lookAt(ship.x, 0, ship.z);
+      world.camera.rotateY(-MENU_CAM.yaw);
+      world.camera.rotateX(-MENU_CAM.pitch);
       // islands the camera passes over step aside (a palm right under the lens fills the screen)
       for (const i of map.islands) i.root.visible = Math.hypot(i.x - world.camera.position.x, i.z - world.camera.position.z) > i.r + 34;
     };

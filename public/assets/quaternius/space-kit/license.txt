@@ -1,0 +1,6 @@
+Ultimate Space Kit (March 2023) by Quaternius (quaternius.com), CC0 1.0 Universal (public domain).
+Obtained as the .gltf files of the Google Drive folder shared by the project owner; the folder's own
+License.txt says the kit is released under CC0 1.0 Universal.
+The .glb files here are converted by games/astro-crew/import-kit.mjs (atlas baked into vertex
+colours, rigs shared, unused clips dropped, simplified, quantized).
+icons.png is rendered from the kit's own models (games/astro-crew/icons.ts, make-icons.mjs).

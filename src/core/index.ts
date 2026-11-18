@@ -1,4 +1,6 @@
 // @core — shared Ayvago game runtime. Games import everything from here.
+// Polyfills first: evaluated before any other core or game module (ES modules run in import order).
+import './polyfills';
 export { default as Phaser } from 'phaser';
 export { launch } from './launch';
 export { ArcadeScene } from './ArcadeScene';

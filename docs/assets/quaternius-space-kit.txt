@@ -1,0 +1,179 @@
+# Quaternius Ultimate Space Kit (March 2023, CC0 1.0): what public/assets/quaternius/space-kit holds
+# (games/astro-crew/import-kit.mjs). Each line: file, size, bounding box in model units (x × y × z),
+# the skinned meshes of a shared rig and the clips with their length in seconds. Characters face +z.
+quaternius/space-kit/astronauts.glb 712KB 4.65x3.30x1.44 meshes: a-bee a-flamingo a-frog a-panda clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Idle_Gun:1.00 Jump:0.37 No:1.67 Punch:0.87 Run_Gun:0.57 Run_Gun_Shoot:0.57 Wave:1.67 Yes:1.67
+quaternius/space-kit/base-large.glb 63KB 8.53x4.97x8.53
+quaternius/space-kit/blobs.glb 78KB 1.25x2.35x1.49 meshes: e-xs e-s clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.17 Headbutt:1.17 HitReact:0.47 Punch:1.17 Yes:1.17
+quaternius/space-kit/brute.glb 288KB 4.65x3.80x1.34 clips: Death:0.77 HitReact:0.60 Idle:1.00 Jump:0.37 Jump_Land:0.37 Punch:0.87 Run:0.57 Walk:1.00 Weapon:0.87 Yes:1.67
+quaternius/space-kit/building-l.glb 71KB 7.80x4.31x7.79
+quaternius/space-kit/bullets.glb 14KB 0.83x0.84x0.28
+quaternius/space-kit/bush-1.glb 27KB 3.24x2.46x0.98
+quaternius/space-kit/bush-2.glb 20KB 1.81x1.59x0.62
+quaternius/space-kit/bush-3.glb 10KB 1.86x1.58x0.63
+quaternius/space-kit/connector.glb 12KB 3.37x2.21x2.17
+quaternius/space-kit/crate.glb 34KB 0.87x0.86x0.90
+quaternius/space-kit/dome.glb 55KB 8.53x5.28x8.53
+quaternius/space-kit/flyer.glb 69KB 1.26x3.70x1.24 clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.17 Headbutt:1.17 HitReact:0.47 Punch:1.17 Yes:1.17
+quaternius/space-kit/grass-1.glb 9KB 1.27x0.99x0.91
+quaternius/space-kit/grass-2.glb 6KB 1.70x1.40x1.17
+quaternius/space-kit/grass-3.glb 9KB 2.23x2.38x1.49
+quaternius/space-kit/health.glb 27KB 0.97x1.00x0.44
+quaternius/space-kit/house-cylinder.glb 28KB 5.61x4.32x5.61
+quaternius/space-kit/house-long.glb 61KB 3.92x4.31x7.79
+quaternius/space-kit/house-single.glb 20KB 3.99x4.00x3.80
+quaternius/space-kit/house-support.glb 17KB 3.58x0.87x3.58
+quaternius/space-kit/jar.glb 9KB 0.69x1.02x0.69
+quaternius/space-kit/keycard.glb 8KB 1.04x0.67x0.09
+quaternius/space-kit/mech-bee.glb 200KB 2.91x3.00x2.05 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Yes:1.40
+quaternius/space-kit/mech-flamingo.glb 189KB 2.70x3.55x2.06 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Yes:1.40
+quaternius/space-kit/mech-frog.glb 216KB 3.38x3.06x1.99 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Yes:1.40
+quaternius/space-kit/mech-panda.glb 183KB 2.70x3.09x1.92 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Yes:1.40
+quaternius/space-kit/metal-support.glb 24KB 0.14x1.20x5.95
+quaternius/space-kit/planet-1.glb 30KB 3.78x3.93x3.80
+quaternius/space-kit/planet-10.glb 29KB 5.74x4.68x5.74
+quaternius/space-kit/planet-11.glb 33KB 5.59x5.67x5.74
+quaternius/space-kit/planet-2.glb 33KB 3.80x3.82x3.84
+quaternius/space-kit/planet-3.glb 24KB 3.63x3.65x3.37
+quaternius/space-kit/planet-4.glb 24KB 4.49x4.08x3.96
+quaternius/space-kit/planet-5.glb 26KB 4.23x4.52x4.03
+quaternius/space-kit/planet-6.glb 28KB 3.76x3.75x3.75
+quaternius/space-kit/planet-7.glb 34KB 4.81x2.87x4.46
+quaternius/space-kit/planet-8.glb 27KB 3.45x3.75x3.75
+quaternius/space-kit/planet-9.glb 33KB 3.82x3.75x3.81
+quaternius/space-kit/plant-1.glb 11KB 1.80x2.18x0.64
+quaternius/space-kit/plant-2.glb 5KB 1.06x1.97x1.01
+quaternius/space-kit/plant-3.glb 14KB 2.12x2.97x1.44
+quaternius/space-kit/ramp.glb 10KB 1.87x1.39x3.11
+quaternius/space-kit/rock-1.glb 8KB 3.10x3.61x2.83
+quaternius/space-kit/rock-2.glb 8KB 2.74x2.71x2.52
+quaternius/space-kit/rock-3.glb 8KB 3.30x3.83x3.01
+quaternius/space-kit/rock-4.glb 14KB 2.16x3.46x1.70
+quaternius/space-kit/rock-large-1.glb 8KB 7.67x3.29x7.33
+quaternius/space-kit/rock-large-2.glb 14KB 8.54x8.21x7.62
+quaternius/space-kit/rock-large-3.glb 14KB 5.31x7.43x5.19
+quaternius/space-kit/roof-antenna.glb 11KB 1.41x3.54x1.43
+quaternius/space-kit/roof-radar.glb 17KB 1.63x2.71x1.65
+quaternius/space-kit/roof-vent.glb 5KB 1.15x1.15x1.43
+quaternius/space-kit/rover-1.glb 166KB 4.58x4.88x5.16
+quaternius/space-kit/rover-2.glb 190KB 4.58x4.88x6.56
+quaternius/space-kit/rover-round.glb 162KB 5.79x5.17x3.69
+quaternius/space-kit/ship-bee.glb 65KB 7.33x5.68x4.96
+quaternius/space-kit/ship-flamingo.glb 64KB 11.14x2.53x8.66
+quaternius/space-kit/ship-frog.glb 64KB 11.62x3.06x4.11
+quaternius/space-kit/ship-panda.glb 56KB 9.95x2.35x11.17
+quaternius/space-kit/solar-ground.glb 18KB 1.29x1.10x1.67
+quaternius/space-kit/solar-structure.glb 64KB 4.00x3.07x4.00
+quaternius/space-kit/sphere.glb 23KB 0.89x0.89x0.89
+quaternius/space-kit/stairs.glb 11KB 1.87x1.39x3.11
+quaternius/space-kit/thunder.glb 6KB 0.97x0.86x0.88
+quaternius/space-kit/tree-blob-1.glb 26KB 3.86x5.88x3.86
+quaternius/space-kit/tree-blob-2.glb 26KB 3.69x4.61x3.86
+quaternius/space-kit/tree-blob-3.glb 17KB 2.80x3.42x2.77
+quaternius/space-kit/tree-floating-1.glb 15KB 2.06x4.61x0.82
+quaternius/space-kit/tree-floating-2.glb 19KB 2.61x5.86x0.84
+quaternius/space-kit/tree-lava-1.glb 15KB 1.20x3.24x1.20
+quaternius/space-kit/tree-lava-2.glb 14KB 1.23x3.08x1.15
+quaternius/space-kit/tree-lava-3.glb 15KB 1.12x2.09x1.13
+quaternius/space-kit/tree-light-1.glb 20KB 2.63x3.76x1.96
+quaternius/space-kit/tree-light-2.glb 12KB 1.45x2.51x1.51
+quaternius/space-kit/tree-spikes-1.glb 23KB 4.05x5.15x4.05
+quaternius/space-kit/tree-spikes-2.glb 18KB 2.42x4.49x2.11
+quaternius/space-kit/tree-spiral-1.glb 16KB 2.36x4.49x2.23
+quaternius/space-kit/tree-spiral-2.glb 26KB 3.80x6.19x2.20
+quaternius/space-kit/tree-spiral-3.glb 24KB 4.22x4.05x2.54
+quaternius/space-kit/tree-swirl-1.glb 19KB 4.61x7.35x1.68
+quaternius/space-kit/tree-swirl-2.glb 12KB 3.07x5.15x1.15
+
+# The kit as shared by the owner (glTF with embedded buffers and atlas; not in the repository):
+characters/Astronaut_BarbaraTheBee.gltf 1734KB
+characters/Astronaut_FernandoTheFlamingo.gltf 1668KB
+characters/Astronaut_FinnTheFrog.gltf 1707KB
+characters/Astronaut_RaeTheRedPanda.gltf 1737KB
+characters/Enemy_ExtraSmall.gltf 160KB
+characters/Enemy_Flying.gltf 278KB
+characters/Enemy_Large.gltf 1185KB
+characters/Enemy_Small.gltf 183KB
+characters/Mech_BarbaraTheBee.gltf 857KB
+characters/Mech_FernandoTheFlamingo.gltf 766KB
+characters/Mech_FinnTheFrog.gltf 1014KB
+characters/Mech_RaeTheRedPanda.gltf 757KB
+vehicles/Rover_1.gltf 431KB
+vehicles/Rover_2.gltf 470KB
+vehicles/Rover_Round.gltf 402KB
+vehicles/Spaceship_BarbaraTheBee.gltf 339KB
+vehicles/Spaceship_FernandoTheFlamingo.gltf 215KB
+vehicles/Spaceship_FinnTheFrog.gltf 240KB
+vehicles/Spaceship_RaeTheRedPanda.gltf 140KB
+items/Pickup_Bullets.gltf 36KB
+items/Pickup_Crate.gltf 94KB
+items/Pickup_Health.gltf 57KB
+items/Pickup_Jar.gltf 22KB
+items/Pickup_KeyCard.gltf 20KB
+items/Pickup_Sphere.gltf 91KB
+items/Pickup_Thunder.gltf 15KB
+environment/Base_Large.gltf 160KB
+environment/Building_L.gltf 172KB
+environment/Bush_1.gltf 102KB
+environment/Bush_2.gltf 71KB
+environment/Bush_3.gltf 31KB
+environment/Connector.gltf 31KB
+environment/GeodesicDome.gltf 113KB
+environment/Grass_1.gltf 20KB
+environment/Grass_2.gltf 13KB
+environment/Grass_3.gltf 29KB
+environment/House_Cylinder.gltf 65KB
+environment/House_Long.gltf 140KB
+environment/House_Open.gltf 54KB
+environment/House_OpenBack.gltf 55KB
+environment/House_Single.gltf 48KB
+environment/House_Single_Support.gltf 36KB
+environment/MetalSupport.gltf 50KB
+environment/Planet_1.gltf 143KB
+environment/Planet_10.gltf 110KB
+environment/Planet_11.gltf 107KB
+environment/Planet_2.gltf 148KB
+environment/Planet_3.gltf 124KB
+environment/Planet_4.gltf 127KB
+environment/Planet_5.gltf 61KB
+environment/Planet_6.gltf 71KB
+environment/Planet_7.gltf 91KB
+environment/Planet_8.gltf 53KB
+environment/Planet_9.gltf 79KB
+environment/Plant_1.gltf 31KB
+environment/Plant_2.gltf 17KB
+environment/Plant_3.gltf 90KB
+environment/Ramp.gltf 21KB
+environment/Rock_1.gltf 18KB
+environment/Rock_2.gltf 18KB
+environment/Rock_3.gltf 18KB
+environment/Rock_4.gltf 32KB
+environment/Rock_Large_1.gltf 18KB
+environment/Rock_Large_2.gltf 33KB
+environment/Rock_Large_3.gltf 32KB
+environment/Roof_Antenna.gltf 32KB
+environment/Roof_Opening.gltf 24KB
+environment/Roof_Radar.gltf 51KB
+environment/Roof_VentL.gltf 12KB
+environment/Roof_VentR.gltf 12KB
+environment/SolarPanel_Ground.gltf 37KB
+environment/SolarPanel_Roof.gltf 78KB
+environment/SolarPanel_Structure.gltf 132KB
+environment/Stairs.gltf 24KB
+environment/Tree_Blob_1.gltf 222KB
+environment/Tree_Blob_2.gltf 209KB
+environment/Tree_Blob_3.gltf 81KB
+environment/Tree_Floating_1.gltf 106KB
+environment/Tree_Floating_2.gltf 176KB
+environment/Tree_Floating_3.gltf 174KB
+environment/Tree_Lava_1.gltf 58KB
+environment/Tree_Lava_2.gltf 54KB
+environment/Tree_Lava_3.gltf 51KB
+environment/Tree_Light_1.gltf 95KB
+environment/Tree_Light_2.gltf 48KB
+environment/Tree_Spikes_1.gltf 102KB
+environment/Tree_Spikes_2.gltf 75KB
+environment/Tree_Spiral_1.gltf 41KB
+environment/Tree_Spiral_2.gltf 77KB
+environment/Tree_Spiral_3.gltf 67KB
+environment/Tree_Swirl_1.gltf 90KB
+environment/Tree_Swirl_2.gltf 51KB
