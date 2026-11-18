@@ -75,6 +75,24 @@ export class Figure {
   }
 
   private flashK = 0.32;
+  /**
+   * A neon rim: a fresnel glow on the figure's edges in `color`, so it reads against busy scenes
+   * and big foes (added to its own material's shader; the program is cached by the key).
+   */
+  rim(color: number, strength: number): void {
+    const m = this.flashMat;
+    const c = new THREE.Color(color);
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.rimColor = { value: c.multiplyScalar(strength) };
+      sh.fragmentShader = 'uniform vec3 rimColor;\n' + sh.fragmentShader.replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\n  totalEmissiveRadiance += rimColor * pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 2.2);',
+      );
+    };
+    m.customProgramCacheKey = () => 'nr-rim';
+    m.needsUpdate = true;
+  }
+
   flash(t = 0.1, k = 0.32): void { this.flashT = t; this.flashK = k; }
   setGlow(c: number): void { this.glow.setHex(c); }
 

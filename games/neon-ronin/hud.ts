@@ -190,6 +190,8 @@ export class BossBar {
     this.name.setVisible(false);
   }
 
+  get active(): boolean { return this.chip.visible; }
+
   show(name: string): void {
     this.chip.setVisible(true);
     this.name.setTexture(labelTexture(this.scene, upper(name), BOSS_LABEL)).setVisible(true);

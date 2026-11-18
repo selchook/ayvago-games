@@ -23,7 +23,11 @@ import { ATTACKS, FOE_SCALE, MOVE, type FoeKind } from './defs';
 import { hazardBox, mulberry, type Sim, type SimEvent, type Foe, type Shot, type Pickup, type Prop, type Hazard, type Faller, type Gate } from './sim';
 
 const CHUNK = 24;
-const CAM_Z = 14.5;
+const CAM_Z = 12.4;
+/** The hero a little larger than the kit's figure, so it reads next to the big robots. */
+const HERO_SCALE = 1.18;
+/** Big foes stand a little behind the play line (the hero always in front of them). */
+const FOE_Z: Partial<Record<FoeKind, number>> = { boss: -1.7, brute: -0.8, turret: -0.3, cannon: -0.3, double: -0.3 };
 const FOV = 36;
 export function dimHex(c: number, k: number): number { return (Math.round(((c >> 16) & 255) * k) << 16) | (Math.round(((c >> 8) & 255) * k) << 8) | Math.round((c & 255) * k); }
 export const NEON = { cyan: 0x3ff0ff, magenta: 0xff3fa8, yellow: 0xffe040, red: 0xff3344, orange: 0xff9a3c, lime: 0x7cff6a, violet: 0xa98bff, white: 0xffffff };
@@ -130,7 +134,8 @@ export class View {
       w.scene.add(s);
       this.slashes.push(s);
     }
-    this.hero = new Figure('hero', 1, this.mats);
+    this.hero = new Figure('hero', HERO_SCALE, this.mats);
+    this.hero.rim(0x3ff0ff, 0.9);
     this.hero.show(['body', 'sword']);
     this.heroShadow = this.blob(1.1);
     this.chargeRing = glowQuad(this.tex.ring, NEON.cyan, 2.2, 2.2);
@@ -569,7 +574,7 @@ export class View {
 
   private syncHero(sim: Sim, dt: number, rdt: number): void {
     const p = sim.p, f = this.hero;
-    f.root.position.set(p.x, p.y, 0);
+    f.root.position.set(p.x, p.y, 0.35);
     const want = p.face > 0 ? Math.PI / 2 : -Math.PI / 2;
     f.root.rotation.y += (want - f.root.rotation.y) * Math.min(1, rdt * 22);
     const shooting = p.shootT > 0 && p.state !== 'attack' && p.state !== 'roll' && p.state !== 'dead';
@@ -639,7 +644,7 @@ export class View {
       if (far) continue;
       const sc = FOE_SCALE[f.kind];
       if (f.spawned && v.obj.scale.x < 1 && f.state !== 'dead') v.obj.scale.setScalar(Math.min(1, v.obj.scale.x + rdt * 2.5));
-      v.obj.position.set(f.x, f.y, 0);
+      v.obj.position.set(f.x, f.y, FOE_Z[f.kind] ?? 0);
       if (v.fig) {
         const want = f.face > 0 ? Math.PI / 2 : -Math.PI / 2;
         v.obj.rotation.y += (want - v.obj.rotation.y) * Math.min(1, rdt * 10);
@@ -957,7 +962,7 @@ export class View {
       sx = (Math.random() - 0.5) * a;
       sy = (Math.random() - 0.5) * a;
     }
-    const z = CAM_Z * this.zoom * (sim.L.boss ? 1.25 : 1);
+    const z = CAM_Z * this.zoom * (sim.L.boss ? 1.14 : 1);
     cam.position.set(this.camX + sx, this.camY + 2.6 + sy, z);
     cam.lookAt(this.camX + sx * 0.5, this.camY + 1.25 + sy * 0.5, 0);
     this.sky.position.set(this.camX, this.camY + 36, -170);

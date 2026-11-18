@@ -213,6 +213,9 @@ export class PlayScene extends ArcadeScene {
     const combo = s.combo >= 2 && this.hudOn;
     if (combo !== this.comboChip.visible) this.comboChip.setVisible(combo);
     if (combo) this.comboChip.setText('×' + s.combo);
+    // the boss bar from the moment the boss engages (also after a jump ahead in the test hooks)
+    if (s.boss && s.bossOn && !this.bossBar.active) this.bossBar.show(t('lv_' + s.L.id));
+    if ((!s.boss || !s.bossOn) && this.bossBar.active) this.bossBar.hide();
     if (s.boss && s.bossOn) this.bossBar.set(s.boss.hp, s.boss.maxHp, s.boss.state === 'vent', this.game.loop.delta / 1000);
     if (this.pad) this.pad.charge = p.state === 'charge' ? p.charge : 0;
   }
