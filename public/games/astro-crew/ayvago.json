@@ -1,0 +1,69 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "astrocrew",
+  "title": {
+    "en": "Astro Crew",
+    "tr": "Uzay Tayfası"
+  },
+  "description": {
+    "en": "Lead a crew of animal astronauts across a galaxy of tiny alien planets! A 3D action adventure: your blaster aims by itself while you run, roll and fire your signature skill through bouncing blobs, spitting flyers, ground-slamming brutes and three huge bosses. Every planet is a new mission: clear the waves, defend the dome, hunt keycards, rescue stranded rovers. Level up and pick power cards, charge your giant mech for a few smashing seconds, and grow your base with crystals between missions. Four crew members, twelve planets, Easy or Normal.",
+    "tr": "Hayvan astronotlardan oluşan tayfanı minik uzaylı gezegenlerle dolu bir galakside yönet! 3B bir aksiyon macerası: sen koşar, takla atar ve özel yeteneğini kullanırken silahın kendi nişan alır; zıplayan balçıklar, tüküren uçanlar, yeri döven devler ve üç dev boss seni bekliyor. Her gezegen yeni bir görev: dalgaları temizle, kubbeyi koru, anahtar kart avla, mahsur kalan gezicileri kurtar. Seviye atla, güç kartı seç, dev mekanı doldurup birkaç saniyeliğine her şeyi ez ve görevler arasında kristallerle üssünü büyüt. Dört tayfa, on iki gezegen, Kolay ya da Normal."
+  },
+  "category": "action",
+  "categories": [
+    "action",
+    "arcade"
+  ],
+  "tags": [
+    "astro",
+    "crew",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/astro-crew/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/astro-crew/ayvago/icon-512.png",
+    "cover": "/games/astro-crew/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/astro-crew/ayvago/screenshot.jpg",
+    "card": {
+      "en": "/games/astro-crew/ayvago/card-640x360.webp",
+      "tr": "/games/astro-crew/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/astro-crew/ayvago/card-1280x720.webp",
+      "tr": "/games/astro-crew/ayvago/card-tr-1280x720.webp"
+    },
+    "logo": {
+      "en": "/games/astro-crew/ayvago/logo-en.png",
+      "tr": "/games/astro-crew/ayvago/logo-tr.png"
+    }
+  },
+  "version": "1.0.0"
+}

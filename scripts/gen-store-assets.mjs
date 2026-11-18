@@ -414,6 +414,18 @@ const CARD = {
       await sleep(300);
     }`,
   },
+  // Astro Crew's card (landscape, cover-fit) shows a heroic fight on the Dune Titan's orange planet:
+  // the autopilot plays until the boss is in, a ring of aliens closes round the crew member and it
+  // jumps into its mech (the arrival's shockwave, cannon shells, damage numbers and the boss's bar);
+  // the simulation then runs slowly so every candidate frame keeps the moment.
+  'astro-crew': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      window.__astro.stage('busy');
+      await sleep(300);
+    }`,
+  },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },

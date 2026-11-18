@@ -145,6 +145,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     version: '1.2.1',
   }),
   arcadeGame({
+    slug: 'astro-crew',
+    title: { en: 'Astro Crew', tr: 'Uzay Tayfası' },
+    description: {
+      en: 'Lead a crew of animal astronauts across a galaxy of tiny alien planets! A 3D action adventure: your blaster aims by itself while you run, roll and fire your signature skill through bouncing blobs, spitting flyers, ground-slamming brutes and three huge bosses. Every planet is a new mission: clear the waves, defend the dome, hunt keycards, rescue stranded rovers. Level up and pick power cards, charge your giant mech for a few smashing seconds, and grow your base with crystals between missions. Four crew members, twelve planets, Easy or Normal.',
+      tr: 'Hayvan astronotlardan oluşan tayfanı minik uzaylı gezegenlerle dolu bir galakside yönet! 3B bir aksiyon macerası: sen koşar, takla atar ve özel yeteneğini kullanırken silahın kendi nişan alır; zıplayan balçıklar, tüküren uçanlar, yeri döven devler ve üç dev boss seni bekliyor. Her gezegen yeni bir görev: dalgaları temizle, kubbeyi koru, anahtar kart avla, mahsur kalan gezicileri kurtar. Seviye atla, güç kartı seç, dev mekanı doldurup birkaç saniyeliğine her şeyi ez ve görevler arasında kristallerle üssünü büyüt. Dört tayfa, on iki gezegen, Kolay ya da Normal.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['astro', 'crew', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'mouse'],
+    addedAt: '2026-11-18',
+  }),
+  arcadeGame({
     slug: 'axe-throw',
     title: { en: 'Axe Throw', tr: 'Balta Atışı' },
     description: {
