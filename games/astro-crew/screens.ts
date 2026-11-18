@@ -55,7 +55,7 @@ const S_NAME_S: LabelStyle = { size: 18, color: '#ffffff', stroke: INK, strokeWi
 const S_DESC: LabelStyle = { size: 16, color: '#ddd6ff', stroke: null, shadow: false, body: true };
 const S_DESC_L: LabelStyle = { size: 18, color: '#ece8ff', stroke: null, shadow: false, body: true };
 const S_TAG: LabelStyle = { size: 17, color: '#ffd84a', stroke: INK, strokeWidth: 3 };
-const S_LOCK: LabelStyle = { size: 15, color: '#a8a0d8', stroke: null, shadow: false, body: true };
+const S_LOCK: LabelStyle = { size: 15, color: '#cfc8f4', stroke: null, shadow: false, body: true };
 const S_STAT: LabelStyle = { size: 24, color: '#ffffff', stroke: INK, strokeWidth: 4 };
 const S_GOLD: LabelStyle = { size: 44, fill: ['#fff6c8', '#ffd84a', '#ff8a2a'], stroke: INK, strokeWidth: 6 };
 const S_PURSE: LabelStyle = { size: 34, color: '#9ae8ff', stroke: INK, strokeWidth: 5 };
@@ -86,7 +86,7 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   for (const k of ['crewSub', 'draftSub']) bakePara(scene, t(k), S_SUB, 600);
   bakePara(scene, t('baseSub'), S_SUB, 520);
   for (const [w, h, col, off] of [[300, 72, ORANGE, false], [240, 66, VIOLET, true], [200, 62, ORANGE, true], [190, 62, VIOLET, false], [BUY_W, BUY_H, GREEN, true]] as [number, number, number, boolean][]) bakeButton(scene, 'button', w, h, col, off);
-  bakeButton(scene, 'plate', TILE_W, TILE_H, VIOLET, false, true);
+  bakeButton(scene, 'plate', TILE_W, TILE_H, VIOLET, true, true);
   bakeButton(scene, 'plate', CARD_W, CARD_H, VIOLET);
   for (const k of ['launch', 'go', 'toBase', 'land', 'reroll', 'toBaseBtn', 'toMap', 'buy', 'maxed']) { labelTexture(scene, t(k), S_BTN); labelTexture(scene, t(k), S_BTN_S); }
   for (const k of ['poor', 'bought', 'maxed', 'mapLocked']) labelTexture(scene, t(k), S_TOAST);
@@ -98,7 +98,7 @@ export function prebakeScreens(scene: Phaser.Scene): void {
     labelTexture(scene, t('h_' + h), S_NAME); labelTexture(scene, t('h_' + h), S_NAME_S); labelTexture(scene, t('h_' + h), P_NAME);
     labelTexture(scene, t('w_' + h), S_TAG); labelTexture(scene, t('s_' + h), S_TAG);
     bakePara(scene, t('wd_' + h), S_DESC, 520); bakePara(scene, t('sd_' + h), S_DESC, 520);
-    if (HERO[h].unlock) bakePara(scene, t('unlockAt', { n: HERO[h].unlock }), S_LOCK, TILE_W - 16);
+    if (HERO[h].unlock) { bakePara(scene, t('unlockAt', { n: HERO[h].unlock }), S_LOCK, TILE_W - 16); labelTexture(scene, t('unlockAt', { n: HERO[h].unlock }), S_TOAST); }
   }
   for (const k of ['statHp', 'statSpeed', 'statPower']) labelTexture(scene, t(k), S_DESC_L);
   for (const k of ['weapon', 'skill']) labelTexture(scene, t(k) + ':', S_DESC_L);
@@ -262,9 +262,12 @@ export class Panel {
 
   protected escape(): void { this.close(); }
 
-  toast(key: string, y = this.scene.scale.height - 44, x = this.scene.scale.width / 2): void {
+  toast(key: string, y = this.scene.scale.height - 44, x = this.scene.scale.width / 2): void { this.say(t(key), y, x); }
+
+  /** A short painted line (prebaked with S_TOAST). */
+  say(text: string, y = this.scene.scale.height - 44, x = this.scene.scale.width / 2): void {
     this.toastImg?.destroy();
-    this.toastImg = labelAt(this.scene, x, y, t(key), S_TOAST);
+    this.toastImg = labelAt(this.scene, x, y, text, S_TOAST);
     this.root.add(this.toastImg);
     const img = this.toastImg;
     img.setScale(0.6);
@@ -272,10 +275,17 @@ export class Panel {
     this.scene.tweens.add({ targets: img, alpha: 0, delay: 1200, duration: 300, onComplete: () => { if (this.toastImg === img) this.toastImg = null; img.destroy(); } });
   }
 
-  protected deny(b: Phaser.GameObjects.Container, why: string, y?: number, x?: number): void {
-    this.scene.tweens.add({ targets: b, x: b.x + 6, duration: 40, yoyo: true, repeat: 2 });
+  protected deny(b: Phaser.GameObjects.Container, why: string, y?: number, x?: number): void { this.denyText(b, t(why), y, x); }
+
+  /** Shakes a button, plays the deny sound and says why (already translated). */
+  protected denyText(b: Phaser.GameObjects.Container, text: string, y?: number, x?: number): void {
+    const x0 = (b.getData('x0') as number | undefined) ?? b.x;
+    b.setData('x0', x0);
+    this.scene.tweens.killTweensOf(b);
+    b.x = x0;
+    this.scene.tweens.add({ targets: b, x: x0 + 6, duration: 40, yoyo: true, repeat: 2, onComplete: () => { b.x = x0; } });
     this.host.sfx('deny', 0.4);
-    this.toast(why, y, x);
+    this.say(text, y, x);
   }
 
   close(): void {
@@ -336,17 +346,21 @@ export class CrewScreen extends Panel {
     HERO_IDS.forEach((h, i) => {
       const x = CREW_X + (i - 1.5) * (TILE_W + 10), y = 318;
       const open = crewOpen(meta, h);
+      // a locked member is a disabled tile: a tap (or its number key) shakes it and says when it opens
       const b = new KitButton(s, x, y, { w: TILE_W, h: TILE_H, kind: 'plate', color: VIOLET, on: h === crew, sfx: null, tapWhenOff: true }, () => {
-        if (!open) { this.deny(b, 'locked', 640); return; }
+        if (!b.enabled) { this.locked(h); return; }
         this.select(h);
       });
-      const pic = iconImg(s, 0, -16, 'hero-' + h, 104);
+      b.setEnabled(open);
+      const pic = iconImg(s, 0, open ? -16 : -22, 'hero-' + h, open ? 104 : 92);
       b.addContent(pic);
       if (open) b.addContent(fitWidth(labelAt(s, 0, 50, shortName(h), S_NAME_S), TILE_W - 16));
       else {
-        pic.setTint(0x3a3460);
-        b.addContent(iconImg(s, 0, -20, 'p-lock', 52));
-        b.addContent(new Para(s, 0, 38, t('unlockAt', { n: HERO[h].unlock }), S_LOCK, TILE_W - 16, 0.5, 16));
+        pic.setTint(0x2a2450).setAlpha(0.7);
+        b.addContent(iconImg(s, 0, -24, 'p-lock', 50));
+        const why = new Para(s, 0, 0, t('unlockAt', { n: HERO[h].unlock }), S_LOCK, TILE_W - 16, 0.5, 16);
+        why.y = 52 - why.textHeight / 2;
+        b.addContent(why);
       }
       this.root.add(b);
       this.tiles.push(b);
@@ -355,10 +369,12 @@ export class CrewScreen extends Panel {
     this.detail = s.add.container(0, 0);
     this.root.add(this.detail);
     this.showDetail();
-    const go = new KitButton(s, CREW_X, 646, { w: 300, h: 72, color: ORANGE, label: t('launch'), style: S_BTN, sfx: null }, () => this.finish());
+    // LAUNCH; with a keyboard the keys' hint sits beside it, inside the board
+    const gx = host.touch ? CREW_X : CREW_X - 110;
+    const go = new KitButton(s, gx, 640, { w: 300, h: 72, color: ORANGE, label: t('launch'), style: S_BTN, sfx: null }, () => this.finish());
     this.root.add(go);
-    this.addFocus(go, CREW_X, 646);
-    if (!host.touch) this.root.add(labelAt(s, CREW_X, 694, t('crewKeys'), S_KEYS));
+    this.addFocus(go, gx, 640);
+    if (!host.touch) this.root.add(fitWidth(labelAt(s, CREW_X + 165, 640, t('crewKeys'), S_KEYS), 230));
     this.fi = this.host.touch ? -1 : HERO_IDS.length;
     this.showFocus();
   }
@@ -381,9 +397,21 @@ export class CrewScreen extends Panel {
     });
   }
 
+  /** A locked tile: it shakes and says which mission unlocks it. */
+  private locked(h: HeroId): void {
+    if (this.closed) return;
+    // the reason takes the detail's place for a moment (the detail fades under it)
+    this.denyText(this.tiles[HERO_IDS.indexOf(h)], t('unlockAt', { n: HERO[h].unlock }), 432, CREW_X);
+    this.scene.tweens.killTweensOf(this.detail);
+    this.scene.tweens.add({ targets: this.detail, alpha: 0.12, duration: 120 });
+    this.scene.tweens.add({ targets: this.detail, alpha: 1, delay: 1350, duration: 250 });
+  }
+
   private select(h: HeroId): void {
     if (this.closed || h === this.crew) return;
     this.crew = h;
+    this.scene.tweens.killTweensOf(this.detail);
+    this.detail.setAlpha(1);
     this.tiles.forEach((b, i) => b.setSelected(HERO_IDS[i] === h));
     this.host.sfx('pick', 0.5);
     this.showDetail();
@@ -392,7 +420,7 @@ export class CrewScreen extends Panel {
 
   key(code: string): boolean {
     const n = Number(code.replace('Digit', ''));
-    if (code.startsWith('Digit') && n >= 1 && n <= HERO_IDS.length) { if (crewOpen(this.meta, HERO_IDS[n - 1])) this.select(HERO_IDS[n - 1]); return true; }
+    if (code.startsWith('Digit') && n >= 1 && n <= HERO_IDS.length) { if (crewOpen(this.meta, HERO_IDS[n - 1])) this.select(HERO_IDS[n - 1]); else this.locked(HERO_IDS[n - 1]); return true; }
     if (code === 'ArrowLeft' || code === 'ArrowRight' || code === 'KeyA' || code === 'KeyD') {
       const open = HERO_IDS.filter((h) => crewOpen(this.meta, h));
       const i = open.indexOf(this.crew), d = code === 'ArrowLeft' || code === 'KeyA' ? -1 : 1;
@@ -570,11 +598,12 @@ export class DraftScreen extends Panel {
   private rerolled = false;
   private picked = false;
   private reroll!: KitButton;
-  private y = 368;
+  private y = 384;
 
   constructor(scene: Phaser.Scene, host: ScreenHost, level: number, private held: CardId[], private offer: CardId[], private dealAgain: () => CardId[], private onPick: (id: CardId) => void) {
-    super(scene, host, { board: [DRAFT_W, DRAFT_H, 640, 384], title: t('draftTitle'), titleY: 118, sub: t('draftSub'), dim: 0.5 });
-    this.root.add(labelAt(scene, 640, 74, t('levelN', { n: level }), S_TAG).setScale(1.3));
+    super(scene, host, { board: [DRAFT_W, DRAFT_H, 640, 384], title: t('draftTitle'), titleY: 146, sub: t('draftSub'), dim: 0.5 });
+    // the level reached, inside the board above the title
+    this.root.add(labelAt(scene, 640, 108, t('levelN', { n: level }), S_TAG).setScale(1.3));
     this.glow = scene.add.image(0, 0, CARD_GLOW).setVisible(false);
     this.root.add(this.glow);
     this.deal(false);
