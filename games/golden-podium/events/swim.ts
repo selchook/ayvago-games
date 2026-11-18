@@ -2,11 +2,12 @@
 // strokes keep the speed up, off-beat or doubled ones lose it, so rhythm beats mashing. The air
 // runs down: BREATHE when it is low (it skips one stroke); with no air the swimmer slows hard.
 import Phaser from 'phaser';
-import { t, txt } from '@core';
+import { t, labelTexture, placeLabel } from '@core';
 import { THREE } from '@core/three';
 import { SportEvent, StartCalls, racePlan, planSpeed } from './base';
 import { poolLaneZ, POOL_LEN, WATER_Y, waveWater } from '../stadium';
 import { Meter, RaceStrip } from '../panels';
+import { judgeStyle } from '../callouts';
 import { rivalMark, type EventId } from '../scoring';
 import { secs, num } from '../strings';
 import type { PadButton } from '../pad';
@@ -29,7 +30,6 @@ const DIVE_X = 3.6;
 
 type Judge = 'perfect' | 'good' | 'ok' | 'miss';
 const QUALITY: Record<Judge, number> = { perfect: 1, good: 0.86, ok: 0.6, miss: 0.15 };
-const COLOR: Record<Judge, string> = { perfect: '#7dff9a', good: '#3ee6ff', ok: '#ffd23f', miss: '#ff9a7a' };
 
 export class Swim extends SportEvent {
   readonly id: EventId = 'swim';
@@ -55,7 +55,7 @@ export class Swim extends SportEvent {
   private strip!: RaceStrip;
   private airMeter!: Meter;
   private ring!: Phaser.GameObjects.Graphics;
-  private judgeText!: Phaser.GameObjects.Text;
+  private judgeText!: Phaser.GameObjects.Image;
   private warnT = 0;
   private inWater = [false, false, false, false];
   private breaths = [0, 0, 0, 0];
@@ -109,7 +109,7 @@ export class Swim extends SportEvent {
     this.strip = new RaceStrip(s, s.entrants);
     this.airMeter = new Meter(s, 640, 636, 300, t('air'), [0x3ee6ff, 0x3ee6ff, 0xff6b4a]);
     this.ring = s.add.graphics().setDepth(9000);
-    this.judgeText = txt(s, 1110, 246, '', { title: true, size: 30 }).setDepth(9001);
+    this.judgeText = s.add.image(1110, 246, '__DEFAULT').setDepth(9001).setAlpha(0);
     s.ui.add([this.strip.root, this.airMeter.root, this.ring, this.judgeText]);
     this.calls = new StartCalls(s, (st) => {
       // on the blocks, then bent forward ready to dive
@@ -332,7 +332,7 @@ export class Swim extends SportEvent {
   }
 
   private judge(j: Judge): void {
-    this.judgeText.setText(t(j)).setColor(COLOR[j]).setScale(1.25).setAlpha(1);
+    placeLabel(this.judgeText, labelTexture(this.s, t(j), judgeStyle(j))).setScale(1.25).setAlpha(1);
     this.s.tweens.killTweensOf(this.judgeText);
     this.s.tweens.add({ targets: this.judgeText, scale: 1, duration: 120 });
     this.s.tweens.add({ targets: this.judgeText, alpha: 0, delay: 350, duration: 200 });

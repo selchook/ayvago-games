@@ -34,6 +34,7 @@ import { paintVellum } from './vellum';
 import { Campaign, itemStats, BAG_MAX, POTION_PRICE, type Spoils } from './campaign';
 import { weaponOf, ITEM_NOUNS, WEAPON_TYPES } from './weapons';
 import { icon, itemIcon, makeArt } from './art';
+import { prebakeBanners } from './ui';
 import { COLS, ROWS, PLACE_HEX, CAMPS, BRIDGE, type HexMap } from './hexmap';
 import {
   BOARD_W, BOARD_H, SIDE_X, CX, CW, TILE_W, TILE_H, QUEST_H, TILE3_W, TILE3_H, ROW_W, ROW_H, SMITH_H, GEAR_W, GEAR_H, SLOT_W, SLOT_H, DETAIL_H,
@@ -277,6 +278,7 @@ export function prebakePowers(scene: Phaser.Scene): void {
     }
   }
   labelTexture(scene, t('perfect'), S_PERFECT);
+  prebakeBanners(scene);
   for (const card of CARDS) {
     labelTexture(scene, t('k_' + card.id), V_CARD);
     labelTexture(scene, t('k_' + card.id), V_NAME);

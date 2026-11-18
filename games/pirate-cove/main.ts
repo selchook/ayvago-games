@@ -8,6 +8,7 @@ import { Ship } from './ship';
 import { Archipelago, BERTH, ISLAND_MODELS } from './islands';
 import { makeSeaSounds } from './sounds';
 import { NAVAL_THEME } from './theme';
+import { prebakeCallouts } from './callouts';
 
 const SHIPS = ['ship-pirate-medium', 'ship-pirate-small', 'ship-small', 'ship-medium', 'ship-large', 'ship-ghost'];
 const PROPS = ['cannon-ball', 'chest', 'barrel', 'bottle-large'];
@@ -100,7 +101,8 @@ launch({
   // touch screens choose ARROWS | WHEEL | TILT for the helm under PLAY (the shared steering switch)
   menuOption: steeringOption,
   // brass ship-plates, a sea chart and a ship's wheel over crossed cannons (theme.ts)
-  menuTheme: NAVAL_THEME,
+  // the theme's prebake (the wave cards) and the Play scene's callouts (callouts.ts)
+  menuTheme: { ...NAVAL_THEME, prebake: (scene) => { NAVAL_THEME.prebake?.(scene); prebakeCallouts(scene); } },
   music: { play: 'stage2' },
   scenes: [PlayScene],
   strings: STRINGS,

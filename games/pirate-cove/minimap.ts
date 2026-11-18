@@ -6,8 +6,9 @@
 // Drawn with one Phaser Graphics clipped to the disc by a geometry mask, redrawn at REDRAW_HZ;
 // nothing is rendered a second time in 3D.
 import Phaser from 'phaser';
-import { hudChip, HudChip, txt, t, HUD_MARGIN, HUD_ROW2_Y, HUD_CHIP_H, HUD_GAP } from '@core';
+import { hudChip, HudChip, labelAt, t, HUD_MARGIN, HUD_ROW2_Y, HUD_CHIP_H, HUD_GAP } from '@core';
 import { THREE } from '@core/three';
+import { NORTH } from './callouts';
 
 export interface MapPoint { x: number; z: number }
 export interface MapShip extends MapPoint { heading: number }
@@ -69,7 +70,7 @@ export class Minimap {
   private chips: HudChip[] = [];
   private g: Phaser.GameObjects.Graphics;
   private maskG: Phaser.GameObjects.Graphics;
-  private north: Phaser.GameObjects.Text;
+  private north: Phaser.GameObjects.Image;
   private zone: Phaser.GameObjects.Zone;
   private acc = 1;
   private time = 0;
@@ -91,8 +92,8 @@ export class Minimap {
     this.g = scene.add.graphics().setDepth(DEPTH).setScrollFactor(0);
     this.maskG = scene.make.graphics({}, false).setScrollFactor(0);
     this.g.setMask(this.maskG.createGeometryMask());
-    this.north = txt(scene, 0, 0, t('north'), { title: true, size: 15, color: '#ffffff', strokeThickness: 4 })
-      .setOrigin(0.5).setDepth(DEPTH + 1).setScrollFactor(0);
+    // in the theme's face and brass (callouts.ts)
+    this.north = labelAt(scene, 0, 0, t('north'), NORTH).setDepth(DEPTH + 1).setScrollFactor(0);
     this.zone = scene.add.zone(0, 0, 10, 10).setScrollFactor(0).setDepth(DEPTH).setInteractive();
     this.zone.on('pointerdown', () => this.toggle());
     this.setSize(false);

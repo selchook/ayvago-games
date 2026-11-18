@@ -136,13 +136,16 @@ function boards(g: THREE.Group, x0: number, x1: number, z: number, cup: string):
   g.add(m);
 }
 
-/** Centred bold text, shrunk to fit a width. */
+/** The stadium's lettering: the theme's display face (theme.ts), Fredoka for what it lacks (★). */
+const SIGN_FONT = '"Russo One", "Fredoka", "Nunito", sans-serif';
+
+/** Centred text, shrunk to fit a width. */
 function fitText(c: CanvasRenderingContext2D, s: string, x: number, y: number, size: number, maxW: number): void {
   c.textAlign = 'center';
   c.textBaseline = 'middle';
-  c.font = `bold ${size}px "Fredoka", "Nunito", sans-serif`;
+  c.font = `${size}px ${SIGN_FONT}`;
   const w = c.measureText(s).width;
-  if (w > maxW) c.font = `bold ${Math.floor((size * maxW) / w)}px "Fredoka", "Nunito", sans-serif`;
+  if (w > maxW) c.font = `${Math.floor((size * maxW) / w)}px ${SIGN_FONT}`;
   c.fillText(s, x, y);
 }
 
@@ -231,7 +234,7 @@ function lineAcross(g: THREE.Group, x: number, width: number, z0: number, z1: nu
 function groundLabel(g: THREE.Group, text: string, x: number, z: number, size: number, color = '#ffffff', rot = 0): void {
   const tex = canvasTex(`lbl:${text}:${color}`, 128, 128, (c) => {
     c.fillStyle = color;
-    c.font = 'bold 92px "Fredoka", "Nunito", sans-serif';
+    c.font = `92px ${SIGN_FONT}`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillText(text, 64, 70);
@@ -249,7 +252,7 @@ function signBoard(g: THREE.Group, text: string, x: number, z: number): void {
     c.fillStyle = '#201e1d';
     c.fillRect(0, 0, 128, 64);
     c.fillStyle = '#ffd23f';
-    c.font = 'bold 44px "Fredoka", "Nunito", sans-serif';
+    c.font = `44px ${SIGN_FONT}`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillText(text, 64, 35);
@@ -336,7 +339,7 @@ export function buildVenues(scene: THREE.Scene, cup: string): Venues {
     c.fillStyle = '#ffd23f';
     fitText(c, cup, 256, 112, 66, 470);
     c.fillStyle = '#ffffff';
-    c.font = 'bold 40px "Fredoka", sans-serif';
+    c.font = `40px ${SIGN_FONT}`;
     c.fillText('★ ★ ★ ★ ★', 256, 190);
   });
   const jumbo = new THREE.Group();
@@ -391,7 +394,7 @@ export function buildVenues(scene: THREE.Scene, cup: string): Venues {
       c.fillStyle = '#' + pcol[i].toString(16).padStart(6, '0');
       c.fillRect(0, 0, 128, 128);
       c.fillStyle = '#ffffff';
-      c.font = 'bold 84px "Fredoka", sans-serif';
+      c.font = `84px ${SIGN_FONT}`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       c.fillText(String(i + 1), 64, 70);
@@ -550,7 +553,7 @@ export function buildVenues(scene: THREE.Scene, cup: string): Venues {
       c.fillStyle = '#' + TEAM_COLORS[i].toString(16).padStart(6, '0');
       c.fillRect(0, 0, 64, 64);
       c.fillStyle = '#ffffff';
-      c.font = 'bold 44px "Fredoka", sans-serif';
+      c.font = `44px ${SIGN_FONT}`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       c.fillText(String(i + 1), 32, 36);

@@ -3,7 +3,8 @@
 // Several fingers work at once; every press is counted, so quick taps are never lost between
 // frames. Archery also reads a finger dragged anywhere else on the screen to aim.
 import Phaser from 'phaser';
-import { txt } from '@core';
+import { labelAt, fitWidth } from '@core';
+import { calloutStyle } from './callouts';
 
 export interface PadButton {
   id: string;
@@ -24,7 +25,7 @@ const PAUSE_ZONE = 130;
 interface Visual {
   def: PadButton;
   ring: Phaser.GameObjects.Arc;
-  label: Phaser.GameObjects.Text;
+  label: Phaser.GameObjects.Image;
 }
 
 export class Pad {
@@ -74,7 +75,8 @@ export class Pad {
       if (def.hidden) continue;
       const r = def.r ?? 92;
       const ring = this.scene.add.circle(def.x, def.y, r, def.color, 0.38).setStrokeStyle(5, 0xffffff, 0.7).setDepth(DEPTH).setScrollFactor(0);
-      const label = txt(this.scene, def.x, def.y, def.label, { title: true, size: def.label.length > 6 ? 22 : 28, strokeThickness: 5 }).setDepth(DEPTH + 1).setScrollFactor(0);
+      // the button's word in the theme's face (white on navy ink), kept inside the ring
+      const label = fitWidth(labelAt(this.scene, def.x, def.y, def.label, calloutStyle('#ffffff', def.label.length > 6 ? 22 : 28)), r * 1.8).setDepth(DEPTH + 1).setScrollFactor(0);
       this.visuals.push({ def, ring, label });
     }
   }

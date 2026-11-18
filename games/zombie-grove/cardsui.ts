@@ -3,7 +3,8 @@
 // small cards, a reroll, a banish (camp upgrade) and a close button; the fight runs on in slow
 // motion), with a tooltip for a card's full text (hover or long-press).
 import Phaser from 'phaser';
-import { txt, t, hudChip, HudChip } from '@core';
+import { txt, t, hudChip, HudChip, labelAt, labelWidth } from '@core';
+import { S_BAR_TITLE, S_STAMP, S_BANISH_HINT } from './labels';
 import { RARITY_COLOR, type Card } from './cards';
 import { EVOLVES_WITH, type WeaponId, type PassiveId } from './defs';
 import { cardArt, OFFER } from './art';
@@ -261,7 +262,7 @@ export class CardBar {
   private banishBtn: Pill | null = null;
   /** Banish mode: the next card picked is banished instead of taken. */
   private banishing = false;
-  private banishHint: Phaser.GameObjects.Text;
+  private banishHint: Phaser.GameObjects.Image;
   private hintText!: Phaser.GameObjects.Text;
   private sub: Phaser.GameObjects.Text;
   private more: Phaser.GameObjects.Text;
@@ -281,8 +282,8 @@ export class CardBar {
     panel.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => ev.stopPropagation());
     const bg = glass(scene, BAR_W, BAR_H, { alpha: 0.55, r: 24 });
     const top = -BAR_H / 2;
-    const title = txt(scene, -BAR_W / 2 + 22, top + BAR_HEAD / 2 + 2, t('barTitle'), { title: true, size: 24, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
-    this.sub = txt(scene, title.x + title.width + 12, top + BAR_HEAD / 2 + 3, o.sub, { size: 18, color: '#d8e6d0', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+    const title = labelAt(scene, -BAR_W / 2 + 22, top + BAR_HEAD / 2 + 2, t('barTitle'), S_BAR_TITLE, 0);
+    this.sub = txt(scene, title.x + labelWidth(t('barTitle'), S_BAR_TITLE) + 12, top + BAR_HEAD / 2 + 3, o.sub, { size: 18, color: '#d8e6d0', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
     this.more = txt(scene, 0, top + BAR_HEAD / 2 + 3, '', { title: true, size: 16, color: '#ff9aab', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
     const close = new Pill(scene, BAR_W / 2 - 34, top + BAR_HEAD / 2 + 2, 52, 42, 0x5a3048, () => this.close(), 22);
     close.setLabels('✕');
@@ -291,7 +292,8 @@ export class CardBar {
     const canBanish = o.banishes() > 0;
     const hint = txt(scene, 0, BAR_H / 2 - 12, o.input === 'touch' ? t('barTouch') : canBanish ? t('barDesk2') : t('barDesk'), { size: 16, color: '#b8c8b0', strokeThickness: 0, shadow: false });
     if (hint.width > BAR_W - 30) hint.setScale((BAR_W - 30) / hint.width);
-    this.banishHint = txt(scene, 0, BAR_H / 2 - 12, t('banishPick'), { title: true, size: 17, color: '#ff8a9a', strokeThickness: 0, shadow: false }).setVisible(false);
+    this.banishHint = labelAt(scene, 0, BAR_H / 2 - 12, t('banishPick'), S_BANISH_HINT).setVisible(false);
+    if (this.banishHint.width > BAR_W - 30) this.banishHint.setScale((BAR_W - 30) / this.banishHint.width);
     this.root.add([panel, bg, title, this.sub, this.more, this.rerollBtn, close, hint, this.banishHint]);
     if (canBanish) {
       this.banishBtn = new Pill(scene, BAR_W / 2 - 150 - 80 - 8 - 66, top + BAR_HEAD / 2 + 2, 132, 42, 0x8a3048, () => this.toggleBanish(), 17);
@@ -346,7 +348,7 @@ export class CardBar {
     this.tip.hide();
     this.busy = true;
     c.disableInteractive();
-    const stamp = txt(this.scene, c.x, c.y, t('banished'), { title: true, size: 22, color: '#ff4a5a', strokeThickness: 5 }).setAngle(-12).setScale(1.8).setAlpha(0);
+    const stamp = labelAt(this.scene, c.x, c.y, t('banished'), S_STAMP).setAngle(-12).setScale(1.8).setAlpha(0);
     this.root.add(stamp);
     this.scene.tweens.add({ targets: stamp, scale: 1, alpha: 1, duration: 160, ease: 'Back.easeOut' });
     this.scene.tweens.add({ targets: [c, stamp], alpha: 0, y: c.y + 50, angle: 14, delay: 420, duration: 220, ease: 'Quad.easeIn', onComplete: () => { c.destroy(); stamp.destroy(); } });

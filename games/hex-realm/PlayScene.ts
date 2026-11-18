@@ -14,7 +14,7 @@
 // the inn: a summary card, then the result screen with the campaign's renown as the score.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, shake, flash, playMusic, storage,
+  ArcadeScene, Controls, t, isEasy, hudChip, HudChip, shake, flash, playMusic, storage,
   HUD_MARGIN, HUD_ROW_Y, HUD_ROW2_Y, HUD_GAP, themeCard, overlayHeadingStyle, labelAt, fitWidth, Para, FmtLine, GlyphText, KitButton,
   type LabelStyle,
 } from '@core';
@@ -30,7 +30,7 @@ import {
 import { neighbours, CAMPS, BRIDGE, PLACE_HEX, type Hex } from './hexmap';
 import { groundY } from './mapview';
 import { icon, makeArt } from './art';
-import { HpBar, PowerChips, BossBar, actionButton, drawButton, showButton, banner, bossIntro, type ActionButton } from './ui';
+import { HpBar, PowerChips, BossBar, actionButton, drawButton, showButton, banner, bossIntro, bannerBand, floatStyle, S_DMG, type ActionButton } from './ui';
 import { VillageScreen, HeroScreen, ClassScreen, MapScreen, LootScreen, DraftScreen, pauseCards, OVERLAY_DEPTH, S_MAP_TAG, S_POP, S_PERFECT, type Panel, type ScreenHost } from './screens';
 import { WEAPON_FEEL, weaponOf, SHIELD_BY_RARITY, type WeaponModel } from './weapons';
 import { SHIELD_GRIP } from './weaponview';
@@ -78,7 +78,7 @@ const S_SUM: LabelStyle = { size: 28, color: '#2a1e14', stroke: null, shadow: fa
 const S_SUM_SMALL: LabelStyle = { size: 22, color: '#4a3424', stroke: null, shadow: false, body: true };
 const S_PLACE: LabelStyle = { size: 30, color: '#fff2cc', stroke: INK, strokeWidth: 6 };
 
-interface DmgText { t: Phaser.GameObjects.Text; life: number; x: number; y: number; z: number }
+interface DmgText { t: GlyphText; life: number; x: number; y: number; z: number }
 
 /** The themed lines of the tutorial cards and hints, painted in Boot (main.ts). */
 export const TUT_KEYS = [
@@ -124,7 +124,7 @@ export class PlayScene extends ArcadeScene {
   private hitStop = 0;
   private slowT = 0;
   private dmg: DmgText[] = [];
-  private dmgPool: Phaser.GameObjects.Text[] = [];
+  private dmgPool: GlyphText[] = [];
   private shown = { gold: -1, level: -1, info: '', pot: -1, renown: -1, cards: -1 };
   private sfxGap: Record<string, number> = {};
   private redT = 0;
@@ -665,6 +665,7 @@ export class PlayScene extends ArcadeScene {
   /** A landed finisher's name at the impact ("Whirl!", "Cleave!"): a small painted label that pops and fades. */
   private finisherPop(b: Battle, chain: ComboId, x: number, z: number): void {
     const p = this.sx(x, z, 1.9);
+    p.y = this.clearOfBanner(p.y, 34);
     const img = labelAt(this, p.x, p.y, t(`fn_${b.st.cls}_${chain}`) + '!', S_POP).setScrollFactor(0).setDepth(9210);
     fitWidth(img, 360);
     const s0 = img.scale;
@@ -1115,6 +1116,7 @@ export class PlayScene extends ArcadeScene {
         this.slowT = Math.max(this.slowT, 0.45);
         this.s('blink', 0.55, 0.3);
         const p = this.sx(ev.x, ev.z, 2.3);
+        p.y = this.clearOfBanner(p.y, 40);
         const img = labelAt(this, p.x, p.y, t('perfect'), S_PERFECT).setScrollFactor(0).setDepth(9210);
         img.setScale(0.5);
         this.tweens.add({ targets: img, scale: 1, duration: 160, ease: 'Back.easeOut' });
@@ -1410,15 +1412,31 @@ export class PlayScene extends ArcadeScene {
   // ------------------------------------------------------------------ numbers over heads
 
   private dmgNumber(x: number, z: number, n: number, crit: boolean, color?: string, prefix = ''): void {
-    const t0 = this.dmgPool.pop() ?? txt(this, 0, 0, '', { title: true, size: 30, strokeThickness: 6 }).setDepth(9200).setScrollFactor(0);
-    t0.setText(prefix + n).setColor(color ?? (crit ? '#ffd23f' : '#ffffff')).setFontSize(crit ? 40 : 30).setVisible(true).setAlpha(1).setScale(crit ? 1.25 : 1);
+    // a pooled line from the realm's white glyph atlas, tinted: nothing is painted per hit
+    const t0 = this.dmgPool.pop() ?? new GlyphText(this, 0, 0, '', S_DMG).setDepth(9200).setScrollFactor(0);
+    t0.setText(prefix + n).setVisible(true).setAlpha(1).setScale(crit ? 1.25 : 0.75);
+    const tint = parseInt((color ?? (crit ? '#ffd23f' : '#ffffff')).slice(1), 16);
+    for (const g of t0.list as Phaser.GameObjects.Image[]) g.setTint(tint);
     this.dmg.push({ t: t0, life: 0.8, x: x + (Math.random() - 0.5) * 0.6, y: 1.4, z });
   }
 
   private floatAt(x: number, z: number, s: string, color: string, size: number): void {
     const p = this.sx(x, z, 2);
-    const tt = txt(this, p.x, p.y, s, { title: true, size, color, strokeThickness: 6 }).setDepth(9200).setScrollFactor(0);
+    p.y = this.clearOfBanner(p.y, 60);
+    const tt = labelAt(this, p.x, p.y, s, floatStyle(color, size)).setDepth(9200).setScrollFactor(0);
     this.tweens.add({ targets: tt, y: p.y - 60, alpha: 0, duration: 1100, ease: 'Quad.easeOut', onComplete: () => tt.destroy() });
+  }
+
+  /**
+   * A floating word's screen y, kept out of the banner up now (it rises `rise` px as it fades):
+   * under the hero instead, and under the banner's band whatever happens.
+   */
+  private clearOfBanner(y: number, rise: number): number {
+    const band = bannerBand(this);
+    if (!band || y < band.top - 10 || y - rise > band.bottom + 10) return y;
+    const h = this.battle?.hero;
+    const under = h ? this.sx(h.x, h.z, 0).y + 46 : y;
+    return Math.min(this.scale.height - 40, Math.max(under, band.bottom + rise + 16));
   }
 
   private updateDmg(dt: number): void {

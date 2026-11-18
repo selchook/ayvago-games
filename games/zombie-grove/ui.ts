@@ -2,7 +2,8 @@
 // bar, the level and XP chip, the weapon tray with level pips, the boss bar and the banners. Every
 // always-visible readout sits in a core HUD chip.
 import Phaser from 'phaser';
-import { txt, t, hudChip, HudChip, HUD_GAP } from '@core';
+import { txt, t, hudChip, HudChip, HUD_GAP, labelAt, fitWidth } from '@core';
+import { bannerStyle, S_SUB, S_WARN, S_WARN_SUB } from './labels';
 import { MAX_LEVEL, BUFF_IDS, BUFF_TIME, type WeaponId, type PassiveId, type BuffId } from './defs';
 import { weaponArt, passiveArt, powerArt, POWER_HUE, HEART } from './art';
 import type { OwnedWeapon, OwnedPassive } from './cards';
@@ -320,9 +321,10 @@ export class BossBar {
 export function banner(scene: Phaser.Scene, y: number, title: string, sub: string, o: { color?: string; hold?: number; size?: number } = {}): void {
   const { width } = scene.scale;
   const c = scene.add.container(width / 2, y).setScrollFactor(0).setDepth(9400);
-  const tt = txt(scene, 0, 0, title, { title: true, size: o.size ?? 54, color: o.color ?? '#ffffff', strokeThickness: 9, wrap: 660 });
+  // the theme's display face (labels.ts), long Turkish lines shrunk to fit
+  const tt = fitWidth(labelAt(scene, 0, 0, title, bannerStyle(o.color ?? '#eef3d6', o.size ?? 54)), 660);
   c.add(tt);
-  if (sub) c.add(txt(scene, 0, tt.height / 2 + 26, sub, { size: 26, color: '#eef4e6', strokeThickness: 5, wrap: 640 }));
+  if (sub) c.add(fitWidth(labelAt(scene, 0, tt.displayHeight * 0.42 + 26, sub, S_SUB), 640));
   c.setScale(0.3).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: c, alpha: 0, y: y - 40, delay: (o.hold ?? 1.2) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
@@ -344,16 +346,17 @@ export function bossWarning(scene: Phaser.Scene, name: string): void {
     stripes.fillPoints([new Phaser.Math.Vector2(i * 40, y - 92), new Phaser.Math.Vector2(i * 40 + 20, y - 92), new Phaser.Math.Vector2(i * 40 + 4, y - 76), new Phaser.Math.Vector2(i * 40 - 16, y - 76)], true);
     stripes.fillPoints([new Phaser.Math.Vector2(i * 40, y + 76), new Phaser.Math.Vector2(i * 40 + 20, y + 76), new Phaser.Math.Vector2(i * 40 + 4, y + 92), new Phaser.Math.Vector2(i * 40 - 16, y + 92)], true);
   }
-  const w = txt(scene, width / 2, y - 22, t('warning'), { title: true, size: 70, color: '#ff4a3a', strokeThickness: 10 });
-  const n = txt(scene, width / 2, y + 44, name + ' ' + t('bossComing'), { title: true, size: 32, color: '#ffe6d8', strokeThickness: 6, wrap: 660 });
+  const w = fitWidth(labelAt(scene, width / 2, y - 22, t('warning'), S_WARN), 660);
+  const n = fitWidth(labelAt(scene, width / 2, y + 44, name + ' ' + t('bossComing'), S_WARN_SUB), 660);
   root.add([tint, band, stripes, w, n]);
   band.setAlpha(0);
   scene.tweens.add({ targets: band, alpha: 1, duration: 200 });
   stripes.setX(-width);
   scene.tweens.add({ targets: stripes, x: 0, duration: 300, ease: 'Quad.easeOut' });
   scene.tweens.add({ targets: stripes, x: 40, duration: 400, repeat: -1, delay: 300 });
-  w.setScale(2).setAlpha(0);
-  scene.tweens.add({ targets: w, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut' });
+  const ws = w.scale;
+  w.setScale(ws * 2).setAlpha(0);
+  scene.tweens.add({ targets: w, scale: ws, alpha: 1, duration: 260, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: w, alpha: 0.35, duration: 220, yoyo: true, repeat: 5, delay: 300 });
   scene.tweens.add({ targets: root, alpha: 0, delay: 2700, duration: 400, onComplete: () => root.destroy() });
 }

@@ -8,7 +8,34 @@
 //     tutorial card, the first-time hint card, banners and floating words. Every always-visible
 //     readout sits in a core hudChip.
 import Phaser from 'phaser';
-import { txt, hudChip, HudChip, HUD_GAP } from '@core';
+import { txt, hudChip, HudChip, HUD_GAP, labelAt, fitWidth, type LabelStyle } from '@core';
+import { INK } from './menu';
+
+// ------------------------------------------------------------------ the callouts' looks
+
+/** The size banners are painted at (scaled to each banner's size). */
+export const BANNER_PX = 56;
+/** The size floating words are painted at. */
+export const WORD_PX = 32;
+
+/** `c` mixed toward `to` by k (both #rrggbb). */
+function mix(c: string, to: string, k: number): string {
+  const a = parseInt(c.slice(1), 16), b = parseInt(to.slice(1), 16);
+  const ch = (sh: number) => Math.round(((a >> sh) & 255) * (1 - k) + ((b >> sh) & 255) * k);
+  return '#' + ((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0');
+}
+
+/**
+ * A callout in the theme's circus face (Sancreek): a marquee-bright top fading into the callout's
+ * colour, outlined in the theme's deep red ink, as the menu's and the shop's labels.
+ */
+export function calloutStyle(color: string, size = BANNER_PX): LabelStyle {
+  return { size, fill: [mix(color, '#fffbe8', 0.62), color, mix(color, INK, 0.3)], stroke: INK, strokeWidth: Math.round(size * 0.17) };
+}
+/** A banner's second line (in its own colour, flat). */
+export const subStyle = (color: string): LabelStyle => ({ size: 26, color, stroke: INK, strokeWidth: 6 });
+/** The tutorial's and the hints' headings on the night-blue cards. */
+export const HEAD_STYLE: LabelStyle = { size: 24, fill: ['#fffbe8', '#ffe27a', '#f6b21c'], stroke: INK, strokeWidth: 5 };
 import { clamp } from './defs';
 
 export const UI_DEPTH = 9300;
@@ -269,9 +296,9 @@ export class PowerBar {
 /** A big word that pops in and floats away. */
 export function banner(scene: Phaser.Scene, x: number, y: number, s: string, o: { color?: string; size?: number; hold?: number; sub?: string; subColor?: string } = {}): Phaser.GameObjects.Container {
   const c = scene.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 50);
-  const main = txt(scene, 0, 0, s, { title: true, size: o.size ?? 54, color: o.color ?? '#ffd23f', strokeThickness: 10, wrap: 660 });
-  c.add(main);
-  if (o.sub) c.add(txt(scene, 0, main.height / 2 + 26, o.sub, { title: true, size: 26, color: o.subColor ?? '#ffffff', strokeThickness: 7, wrap: 640 }));
+  const size = o.size ?? 54;
+  c.add(fitWidth(labelAt(scene, 0, 0, s, calloutStyle(o.color ?? '#ffd23f')), 660, size / BANNER_PX));
+  if (o.sub) c.add(fitWidth(labelAt(scene, 0, size * 0.55 + 22, o.sub, subStyle(o.subColor ?? '#ffffff')), 640));
   c.setScale(0.3).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 220, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: c, y: y - 50, alpha: 0, delay: 220 + (o.hold ?? 0.8) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
@@ -337,7 +364,7 @@ export class Banners {
   clear(): void { this.drop(); this.queue = []; }
 }
 
-const words: { t: Phaser.GameObjects.Text; at: number }[] = [];
+const words: { t: Phaser.GameObjects.Image; at: number }[] = [];
 
 /**
  * A small word (points, a move, "ended"): a lane of its own. It keeps out of the centre banner's
@@ -356,17 +383,18 @@ export function popWord(scene: Phaser.Scene, x: number, y: number, s: string, co
     if (!moved) break;
   }
   y = Math.min(y, 900);
-  const t = txt(scene, x, y, s, { title: true, size, color, strokeThickness: 7 }).setScrollFactor(0).setDepth(UI_DEPTH + 40);
+  const t = fitWidth(labelAt(scene, x, y, s, calloutStyle(color, WORD_PX)), scene.scale.width - 40, size / WORD_PX).setScrollFactor(0).setDepth(UI_DEPTH + 40);
+  const k = t.scale;
   words.push({ t, at: now });
-  t.setScale(0.4).setAlpha(0);
-  scene.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 150, ease: 'Back.easeOut' });
+  t.setScale(k * 0.4).setAlpha(0);
+  scene.tweens.add({ targets: t, scale: k, alpha: 1, duration: 150, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: t, y: y - 70, alpha: 0, delay: 520, duration: 380, onComplete: () => t.destroy() });
 }
 
 /** The tutorial's prompt: step count, what to do, a tick when done, and a SKIP pill. */
 export class TutorialCard {
   readonly c: Phaser.GameObjects.Container;
-  private head: Phaser.GameObjects.Text;
+  private head: Phaser.GameObjects.Image | null = null;
   private body: Phaser.GameObjects.Text;
   private g: Phaser.GameObjects.Graphics;
   private tick: Phaser.GameObjects.Graphics;
@@ -376,7 +404,6 @@ export class TutorialCard {
     const s = scene;
     this.c = s.add.container(s.scale.width / 2, y).setScrollFactor(0).setDepth(UI_DEPTH + 30);
     this.g = s.add.graphics();
-    this.head = txt(s, -TutorialCard.W / 2 + 28, 0, '', { title: true, size: 20, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
     this.body = txt(s, -TutorialCard.W / 2 + 28, 0, '', { size: 23, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: TutorialCard.W - 270, align: 'left' }).setOrigin(0, 0.5);
     this.tick = s.add.graphics().setVisible(false);
     const sg = s.add.graphics();
@@ -384,14 +411,16 @@ export class TutorialCard {
     const st = txt(s, 0, 0, skipLabel, { title: true, size: 20, color: '#ffffff', strokeThickness: 0, shadow: false });
     const skip = s.add.container(TutorialCard.W / 2 - 88, 0, [sg, st]).setSize(150, 90).setInteractive({ useHandCursor: true });
     skip.on('pointerup', onSkip);
-    this.c.add([this.g, this.head, this.body, this.tick, skip]);
+    this.c.add([this.g, this.body, this.tick, skip]);
   }
 
   set(head: string, body: string): void {
-    this.head.setText(head);
     this.body.setText(body);
     const h = Math.max(116, this.body.height + 64);
-    this.head.setY(-h / 2 + 24);
+    // the heading in the theme's face (one painted label per step, cached)
+    this.head?.destroy();
+    this.head = labelAt(this.scene, -TutorialCard.W / 2 + 28, -h / 2 + 26, head, HEAD_STYLE, 0);
+    this.c.addAt(this.head, 1);
     this.body.setY(-h / 2 + 46 + this.body.height / 2);
     this.g.clear();
     this.g.fillStyle(0x000000, 0.28).fillRoundedRect(-TutorialCard.W / 2, -h / 2 + 6, TutorialCard.W, h, 24);
@@ -423,10 +452,10 @@ export class HintCard {
   constructor(private scene: Phaser.Scene, y: number, icon: string, head: string, body: string, hold = 3.6) {
     const s = scene, W = HintCard.W;
     this.c = s.add.container(s.scale.width / 2, y).setScrollFactor(0).setDepth(UI_DEPTH + 30);
-    const ht = txt(s, -W / 2 + 104, 0, head, { title: true, size: 22, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+    const ht = fitWidth(labelAt(s, -W / 2 + 104, 0, head, HEAD_STYLE, 0), W - 130);
     const bt = txt(s, -W / 2 + 104, 0, body, { size: 23, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: W - 130, align: 'left' }).setOrigin(0, 0.5);
     const h = Math.max(104, bt.height + 62);
-    ht.setY(-h / 2 + 24);
+    ht.setY(-h / 2 + 26);
     bt.setY(-h / 2 + 44 + bt.height / 2);
     const g = s.add.graphics();
     g.fillStyle(0x000000, 0.28).fillRoundedRect(-W / 2, -h / 2 + 6, W, h, 24);

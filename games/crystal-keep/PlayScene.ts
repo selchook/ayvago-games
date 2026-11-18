@@ -2,8 +2,9 @@
 // select, then one map at a time (rules in sim.ts), drawn by three.js under a Phaser HUD.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, txt, t, popup, storage, isEasy, playMusic, hudChip, HudChip,
+  ArcadeScene, txt, t, storage, isEasy, playMusic, hudChip, HudChip,
   HUD_MARGIN, HUD_ROW2_Y, pushModal, upper, SkinButton, skinImage, skinTexture, themeLabel, FmtLine, GlyphText, Para,
+  labelAt, fitWidth,
 } from '@core';
 import { World3D, THREE } from '@core/three';
 import { Sim, MAPS, ENEMIES, TOWER_KINDS, METEOR, POWERS, POWER_IDS, type Tower, type TowerKind, type SimEvent, type EnemyKind, type Enemy, type PowerId, type CardId } from './sim';
@@ -12,7 +13,7 @@ import { EnemyView, FLY_Y } from './enemies';
 import { Fx } from './fx3d';
 import { kitMat } from './kit';
 import { Thumbs, mapThumb, enemyThumb, shardIcon } from './thumbs';
-import { BuildDock, TowerCard, WaveButton, glass, drawStar, UI_DEPTH, isPower, POWER_COLOR, type ArmKind, type PowerState } from './ui';
+import { BuildDock, TowerCard, WaveButton, drawStar, UI_DEPTH, isPower, POWER_COLOR, type ArmKind, type PowerState } from './ui';
 import { Bot } from './bot';
 import { rollDraft, glowTowers, CARD, RARITY_COLOR } from './cards';
 import { DraftScreen, CardTray, CardList, type CardFace } from './cardsui';
@@ -22,7 +23,8 @@ import { powerArt } from './art';
 import * as SCR from './screens';
 
 import { lockTexture } from './talentsui';
-import { STONE, SLATE, EMERALD } from './theme';
+import { STONE, SLATE, EMERALD, LABEL_STROKE } from './theme';
+import { pop, bannerStyle, subStyle, COUNT, BOSS_TAG, BOSS_NAME } from './callouts';
 
 type Phase = 'select' | 'play' | 'clear';
 
@@ -110,6 +112,8 @@ export class PlayScene extends ArcadeScene {
   private hint!: Phaser.GameObjects.Text;
   private hintQueue: string[] = [];
   private hintT = 0;
+  /** A wave banner covers the hint's spot: the hint hides and its time stands still until it goes. */
+  private hintCovered = false;
   private selectUi: Phaser.GameObjects.GameObject[] = [];
   private clearUi: Phaser.GameObjects.GameObject[] = [];
   private focus = 0;
@@ -190,6 +194,7 @@ export class PlayScene extends ArcadeScene {
     this.time3 = 0;
     this.frameN = 0;
     this.bannerBox = null;
+    this.hintCovered = false;
 
     // the 3D world
     this.world = new World3D(this, { fov: FOV, near: 0.5, far: 140, background: PALETTE_LOOK.green.sky });
@@ -223,7 +228,7 @@ export class PlayScene extends ArcadeScene {
     speedHit.on('pointerup', () => this.toggleSpeed());
     this.bars = this.add.graphics().setDepth(40).setScrollFactor(0);
     this.boltG = this.add.graphics().setDepth(45).setScrollFactor(0);
-    this.hint = txt(this, width / 2, 262, '', { size: 25, color: '#ffffff', strokeThickness: 6, wrap: 640 }).setDepth(9400).setScrollFactor(0).setAlpha(0);
+    this.hint = txt(this, width / 2, 262, '', { size: 25, color: '#f4ecff', stroke: LABEL_STROKE, strokeThickness: 7, wrap: 640 }).setDepth(9400).setScrollFactor(0).setAlpha(0);
 
     this.waveBtn = new WaveButton(this, (HUD_MARGIN + (width - HUD_MARGIN - 136 - 14)) / 2, BAR_Y, width - 2 * HUD_MARGIN - 136 - 14, 92, () => this.callWave());
     this.dock = new BuildDock(this, width / 2, DOCK_Y, (k) => { this.pickKind(k); this.syncModal(); });
@@ -396,12 +401,12 @@ export class PlayScene extends ArcadeScene {
     const m = this.meta;
     if (!powerUnlocked(m, id)) {
       this.sfx('error', { volume: 0.4 });
-      popup(this, this.scale.width / 2, 840, t('powerLocked'), '#ffc27a', 24);
+      pop(this, this.scale.width / 2, 840, t('powerLocked'), '#ffc27a', 24, true);
       return;
     }
     if (!toggleLoadout(m, id)) {
       this.sfx('error', { volume: 0.4 });
-      if (!m.loadout.includes(id)) popup(this, this.scale.width / 2, 840, t('slotsFull'), '#ffc27a', 24);
+      if (!m.loadout.includes(id)) pop(this, this.scale.width / 2, 840, t('slotsFull'), '#ffc27a', 24, true);
       return;
     }
     this.sfx(m.loadout.includes(id) ? 'arm' : 'move', { volume: 0.55 });
@@ -508,8 +513,11 @@ export class PlayScene extends ArcadeScene {
     this.setPlayUi(true);
     playMusic(this, 'stage1');
     this.sfx('portal', { volume: 0.6 });
-    const title = txt(this, this.scale.width / 2, 420, t('m_' + m.def.id), { title: true, size: 54, color: '#ffffff', strokeThickness: 10 }).setScrollFactor(0).setDepth(9500).setScale(0.3);
-    this.tweens.add({ targets: title, scale: 1, duration: 420, ease: 'Back.easeOut' });
+    const title = labelAt(this, this.scale.width / 2, 420, upper(t('m_' + m.def.id)), bannerStyle('#ffffff', 56)).setScrollFactor(0).setDepth(9500);
+    fitWidth(title, this.scale.width - 60);
+    const ts = title.scale;
+    title.setScale(ts * 0.3);
+    this.tweens.add({ targets: title, scale: ts, duration: 420, ease: 'Back.easeOut' });
     this.tweens.add({ targets: title, alpha: 0, y: 380, delay: 1600, duration: 500, onComplete: () => title.destroy() });
     const touch = this.sys.game.device.input.touch;
     this.time.delayedCall(900, () => {
@@ -854,7 +862,7 @@ export class PlayScene extends ArcadeScene {
   private denied(c: number, r: number): void {
     if (!this.board) return;
     const s = this.screen(this.board.X(c), GRASS_Y, this.board.Z(r));
-    popup(this, s.x, s.y - 30, t('cantBuild'), '#ffb0a0', 22);
+    pop(this, s.x, s.y - 30, t('cantBuild'), '#ffb0a0', 22, true);
     this.sfx('error', { volume: 0.35 });
   }
 
@@ -884,7 +892,7 @@ export class PlayScene extends ArcadeScene {
       if (!sim.powerReady(kind)) {
         this.dock.shake(kind);
         const c = this.dock.card(kind);
-        if (c) popup(this, this.dock.x + c.box.x, this.dock.y - 96, sim.wave === 0 ? t('powersFirst') : t('powerWait', { name: t('p_' + kind), n: Math.ceil(sim.cd[kind]) }), '#ffc27a', 22);
+        if (c) pop(this, this.dock.x + c.box.x, this.dock.y - 96, sim.wave === 0 ? t('powersFirst') : t('powerWait', { name: t('p_' + kind), n: Math.ceil(sim.cd[kind]) }), '#ffc27a', 22, true);
         this.sfx('error', { volume: 0.4 });
         return;
       }
@@ -939,7 +947,7 @@ export class PlayScene extends ArcadeScene {
 
   private noGold(kind?: ArmKind): void {
     const s = this.goldChip;
-    popup(this, s.x + 80, s.y + 40, t('notEnough'), '#ff8a7a', 22);
+    pop(this, s.x + 80, s.y + 40, t('notEnough'), '#ff8a7a', 22, true);
     this.sfx('error', { volume: 0.4 });
     this.tweens.add({ targets: s, scale: 1.15, duration: 90, yoyo: true });
     if (kind) this.dock.shake(kind);
@@ -1050,7 +1058,7 @@ export class PlayScene extends ArcadeScene {
     this.seenHint('h_target');
     this.sfx('arm', { volume: 0.45 });
     const s = this.screen(tw.x, weaponY(tw.kind, tw.tier) + 0.6, tw.z);
-    popup(this, s.x, s.y, t('tmd_' + mode), '#9fd8ff', 22);
+    pop(this, s.x, s.y, t('tmd_' + mode), '#9fd8ff', 22, true);
     this.tweens.add({ targets: this.towerCard.mode, scale: 1.08, duration: 80, yoyo: true });
   }
 
@@ -1060,7 +1068,7 @@ export class PlayScene extends ArcadeScene {
     if (!sim.castPower(id, x, z)) {
       this.dock.shake(id);
       this.sfx('error', { volume: 0.4 });
-      if (id === 'lightning' && sim.powerReady(id)) { const c = this.dock.card(id); if (c) popup(this, this.dock.x + c.box.x, this.dock.y - 96, t('noTarget'), '#ffc27a', 22); }
+      if (id === 'lightning' && sim.powerReady(id)) { const c = this.dock.card(id); if (c) pop(this, this.dock.x + c.box.x, this.dock.y - 96, t('noTarget'), '#ffc27a', 22, true); }
       return;
     }
     if (this.armed === id) { this.armed = null; this.aim = null; }
@@ -1083,7 +1091,7 @@ export class PlayScene extends ArcadeScene {
     this.markers.showRing(tw.x, tw.z, sim.towerStats(tw.kind, tw.tier).range, 0x9fd8ff);
     this.sfx('upgrade', { volume: 0.7 });
     const s = this.screen(tw.x, weaponY(tw.kind, tw.tier) + 0.6, tw.z);
-    popup(this, s.x, s.y, t('upgraded', { n: tw.tier + 1 }), '#9dffb8', 26);
+    pop(this, s.x, s.y, t('upgraded', { n: tw.tier + 1 }), '#9dffb8', 26);
     this.fx.spark(tw.x, weaponY(tw.kind, tw.tier), tw.z, 0xfff3a0, 18, 3);
     this.fx.ring(tw.x, GRASS_Y + 0.05, tw.z, 1.1, 0x9dffb8, 0.5);
   }
@@ -1100,7 +1108,7 @@ export class PlayScene extends ArcadeScene {
     }
     this.fx.dustRing(tw.x, GRASS_Y, tw.z, 14);
     const s = this.screen(tw.x, 0.6, tw.z);
-    popup(this, s.x, s.y, t('sold', { n: g }), '#ffd23f', 26);
+    pop(this, s.x, s.y, t('sold', { n: g }), '#ffd23f', 26);
     this.flyCoins(s.x, s.y, 4);
     this.sfx('sell', { volume: 0.7 });
     this.deselect();
@@ -1153,7 +1161,7 @@ export class PlayScene extends ArcadeScene {
     if (v.buildT >= 1) {
       if (v.tier === 0) {
         const s = this.screen(v.root.position.x, weaponY(v.kind, 0) + 0.7, v.root.position.z);
-        popup(this, s.x, s.y, t('built'), '#9dffb8', 24);
+        pop(this, s.x, s.y, t('built'), '#9dffb8', 24);
       }
       // standing: the masonry becomes one mesh
       const tw = this.sim?.towers.find((q) => q.id === v.id);
@@ -1176,7 +1184,7 @@ export class PlayScene extends ArcadeScene {
     if (early > 0) {
       this.seenHint('h_early');
       const b = this.waveBtn;
-      popup(this, b.x, b.y - 70, t('earlyGold', { n: early }), '#ffd23f', 28);
+      pop(this, b.x, b.y - 70, t('earlyGold', { n: early }), '#ffd23f', 28);
       this.flyCoins(b.x, b.y - 40, 3);
       this.sfx('coins', { volume: 0.6 });
     }
@@ -1199,21 +1207,35 @@ export class PlayScene extends ArcadeScene {
     const main1 = y === 360;
     if (main1) this.bannerBox?.destroy();
     const box = this.add.container(width / 2, y).setScrollFactor(0).setDepth(9500);
-    if (main1) this.bannerBox = box;
+    if (main1) { this.bannerBox = box; this.coverHint(true); }
     const n = Math.min(5, kinds.length);
     const h = n ? 196 : sub ? 128 : 96;
-    box.add(glass(this, 560, h, { alpha: 0.78 }));
-    box.add(txt(this, 0, -h / 2 + 40, main, { title: true, size: 42, color, strokeThickness: 7 }));
-    if (sub) box.add(txt(this, 0, -h / 2 + 86, sub, { size: 24, color: subColor, strokeThickness: 4 }));
+    // a slate board of the menu theme (theme.ts, painted ahead in callouts.ts)
+    box.add(skinImage(this, 0, 0, 'board', 560, h).setAlpha(0.94));
+    box.add(fitWidth(labelAt(this, 0, -h / 2 + 42, upper(main), bannerStyle(color)), 520));
+    if (sub) box.add(fitWidth(labelAt(this, 0, -h / 2 + 88, sub, subStyle(subColor)), 520));
     kinds.slice(0, n).forEach((k, i) => {
       const x = (i - (n - 1) / 2) * 96;
       if (ENEMIES[k.kind].boss) box.add(this.add.circle(x, h / 2 - 46, 34, 0xc8343c, 0.85));
       box.add(this.add.image(x, h / 2 - 48, enemyThumb(k.kind)).setDisplaySize(70, 70));
-      box.add(txt(this, x + 28, h / 2 - 20, '×' + k.count, { size: 20, strokeThickness: 4 }));
+      box.add(labelAt(this, x + 28, h / 2 - 20, '×' + k.count, COUNT));
     });
     box.setScale(0.4).setAlpha(0);
     this.tweens.add({ targets: box, scale: 1, alpha: 1, duration: 280, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: box, alpha: 0, y: y - 40, delay: 1600, duration: 400, onComplete: () => { box.destroy(); if (this.bannerBox === box) this.bannerBox = null; } });
+    this.tweens.add({ targets: box, alpha: 0, y: y - 40, delay: 1600, duration: 400, onComplete: () => { box.destroy(); if (this.bannerBox === box) { this.bannerBox = null; this.coverHint(false); } } });
+  }
+
+  /** Hides the hint under a wave banner (both sit at the top of the field) and brings it back after. */
+  private coverHint(on: boolean): void {
+    if (on === this.hintCovered) return;
+    this.hintCovered = on;
+    if (this.draft) return;
+    this.hint.setVisible(!on);
+    if (!on && this.hintT > 0) {
+      this.tweens.killTweensOf(this.hint);
+      this.hint.setAlpha(0).setScale(0.9);
+      this.tweens.add({ targets: this.hint, alpha: 1, scale: 1, duration: 260, ease: 'Back.easeOut' });
+    }
   }
 
   // ------------------------------------------------------------------ events
@@ -1263,7 +1285,7 @@ export class PlayScene extends ArcadeScene {
         this.sfxAt('shatter', s.x, { volume: 0.45 });
         this.glow(0x9fe0ff, 0.22, 320);
         this.shake3(0.12, 0.2);
-        if (ev.hits > 0) popup(this, s.x, s.y - 50, t('frozenN', { n: ev.hits }), '#bfe8ff', 30);
+        if (ev.hits > 0) pop(this, s.x, s.y - 50, t('frozenN', { n: ev.hits }), '#bfe8ff', 30);
         break;
       }
       case 'thaw': {
@@ -1286,7 +1308,7 @@ export class PlayScene extends ArcadeScene {
         this.sfx('thunder', { volume: 0.6 });
         this.glow(0xcfe0ff, 0.28, 220);
         this.shake3(0.16, 0.25);
-        if (ev.hits >= 3) popup(this, s.x, s.y - 50, t('meteorHits', { n: ev.hits }), '#dfe8ff', 30);
+        if (ev.hits >= 3) pop(this, s.x, s.y - 50, t('meteorHits', { n: ev.hits }), '#dfe8ff', 30);
         break;
       }
       case 'allySpawn': {
@@ -1300,7 +1322,7 @@ export class PlayScene extends ArcadeScene {
           this.sfx('portal', { volume: 0.4 });
           const k = this.board!.keepTop();
           const s = this.screen(k.x, k.y, k.z);
-          popup(this, s.x, s.y - 50, t('guardsOut'), '#ffd27a', 28);
+          pop(this, s.x, s.y - 50, t('guardsOut'), '#ffd27a', 28);
         }
         break;
       }
@@ -1321,7 +1343,7 @@ export class PlayScene extends ArcadeScene {
         this.fx.ring(k.x, PATH_Y + 0.1, k.z, 2.4, 0x9fe36a, 0.6);
         this.fx.spark(k.x, 0.6, k.z, 0x9fe36a, 18, 4);
         const s = this.screen(k.x, k.y, k.z);
-        popup(this, s.x + 60, s.y - 10, t('thornsHit'), '#bff58a', 24);
+        pop(this, s.x + 60, s.y - 10, t('thornsHit'), '#bff58a', 24);
         break;
       }
       case 'blast': {
@@ -1331,26 +1353,26 @@ export class PlayScene extends ArcadeScene {
       }
       case 'crit': {
         const s = this.screen(ev.x, ev.fly ? FLY_Y + 0.4 : PATH_Y + 0.8, ev.z);
-        popup(this, s.x, s.y, t('crit'), '#ff7a5a', 24);
+        pop(this, s.x, s.y, t('crit'), '#ff7a5a', 24);
         this.fx.spark(ev.x, ev.fly ? FLY_Y : PATH_Y + 0.4, ev.z, 0xff7a5a, 8, 3);
         break;
       }
       case 'goldShower': {
         const s = this.screen(ev.e.x, 0.6, ev.e.z);
-        popup(this, s.x, s.y - 60, t('goldShower', { n: ev.gold }), '#ffd23f', 32);
+        pop(this, s.x, s.y - 60, t('goldShower', { n: ev.gold }), '#ffd23f', 32);
         this.flyCoins(s.x, s.y, 14);
         this.fx.spark(ev.e.x, 0.8, ev.e.z, 0xffd23f, 30, 4);
         this.sfx('sell', { volume: 0.8 });
         break;
       }
       case 'interest':
-        popup(this, this.goldChip.x + 90, this.goldChip.y + 44, t('interestGold', { n: ev.gold }), '#ffd23f', 24);
+        pop(this, this.goldChip.x + 90, this.goldChip.y + 44, t('interestGold', { n: ev.gold }), '#ffd23f', 24);
         this.sfx('coins', { volume: 0.5 });
         break;
       case 'regen': {
         const k = this.board!.keepTop();
         const s = this.screen(k.x, k.y, k.z);
-        popup(this, s.x, s.y - 40, t('regenLife', { n: ev.lives }), '#9dffb8', 28);
+        pop(this, s.x, s.y - 40, t('regenLife', { n: ev.lives }), '#9dffb8', 28);
         this.fx.ring(k.x, PATH_Y + 0.1, k.z, 1.6, 0x9dffb8, 0.6);
         break;
       }
@@ -1374,7 +1396,7 @@ export class PlayScene extends ArcadeScene {
         this.sfxAt('bigBoom', s.x, { volume: 0.9 });
         this.shake3(0.38, 0.45);
         this.glow(0xffa040, 0.32, 260);
-        if (ev.hits >= 3) popup(this, s.x, s.y - 50, t('meteorHits', { n: ev.hits }), '#ffc27a', 30);
+        if (ev.hits >= 3) pop(this, s.x, s.y - 50, t('meteorHits', { n: ev.hits }), '#ffc27a', 30);
         break;
       }
       case 'waveSpawned':
@@ -1383,9 +1405,11 @@ export class PlayScene extends ArcadeScene {
       case 'waveClear': {
         const k = this.screen(this.board!.keep.position.x, 1.6, this.board!.keep.position.z);
         if (sim.over !== 'win') {
-          const box = txt(this, this.scale.width / 2, 610, t('waveClear'), { title: true, size: 44, color: '#9dffb8', strokeThickness: 8 }).setScrollFactor(0).setDepth(9500).setScale(0.3);
-          const sub = txt(this, this.scale.width / 2, 664, t('bonusGold', { n: ev.gold }), { size: 28, color: '#ffd23f', strokeThickness: 5 }).setScrollFactor(0).setDepth(9500).setAlpha(0);
-          this.tweens.add({ targets: box, scale: 1, duration: 300, ease: 'Back.easeOut' });
+          const box = fitWidth(labelAt(this, this.scale.width / 2, 610, upper(t('waveClear')), bannerStyle('#9dffb8', 44)), this.scale.width - 60).setScrollFactor(0).setDepth(9500);
+          const sub = labelAt(this, this.scale.width / 2, 666, upper(t('bonusGold', { n: ev.gold })), bannerStyle('#ffd23f', 30)).setScrollFactor(0).setDepth(9500).setAlpha(0);
+          const bs = box.scale;
+          box.setScale(bs * 0.3);
+          this.tweens.add({ targets: box, scale: bs, duration: 300, ease: 'Back.easeOut' });
           this.tweens.add({ targets: sub, alpha: 1, duration: 300, delay: 150 });
           this.tweens.add({ targets: [box, sub], alpha: 0, delay: 1500, duration: 400, onComplete: () => { box.destroy(); sub.destroy(); } });
           this.sfx('waveClear', { volume: 0.6 });
@@ -1449,7 +1473,7 @@ export class PlayScene extends ArcadeScene {
           this.banner(t('bossDown'), '', '#ffd23f', [], 800);
           this.fx.ring(e.x, 0.2, e.z, 2.4, 0xffd23f, 0.7);
         }
-        popup(this, s.x, s.y - 20, '+' + ev.gold, '#ffd23f', def.boss ? 34 : 22);
+        pop(this, s.x, s.y - 20, '+' + ev.gold, '#ffd23f', def.boss ? 34 : 22);
         this.flyCoins(s.x, s.y, def.boss ? 8 : 1);
         break;
       }
@@ -1457,7 +1481,7 @@ export class PlayScene extends ArcadeScene {
         this.enemiesV.drop(ev.e);
         const k = this.board!.keepTop();
         const s = this.screen(k.x, k.y, k.z);
-        popup(this, s.x, s.y - 30, '-' + ev.lives, '#ff5a5a', ev.lives > 1 ? 40 : 30);
+        pop(this, s.x, s.y - 30, '-' + ev.lives, '#ff5a5a', ev.lives > 1 ? 40 : 30);
         this.board!.hurtT = 0.6;
         this.fx.spark(k.x, k.y, k.z, 0xff5ab0, 14, 3);
         this.fx.ring(k.x, PATH_Y + 0.1, k.z, 1.4, 0xff4a6a, 0.5);
@@ -1556,7 +1580,7 @@ export class PlayScene extends ArcadeScene {
     });
     this.draft = null;
     this.holdOverlay(false);
-    this.hint.setVisible(true);
+    this.hint.setVisible(!this.hintCovered);
     this.queueHint('h_draft');
     if (this.phase === 'play' && !this.isOver) {
       this.dock.open();
@@ -1580,11 +1604,11 @@ export class PlayScene extends ArcadeScene {
       const k = this.board!.keepTop();
       this.fx.ring(k.x, PATH_Y + 0.1, k.z, 2.2, 0x9dffb8, 0.8);
       const s = this.screen(k.x, k.y, k.z);
-      popup(this, s.x, s.y - 30, '+' + (sim.lives - lives), '#9dffb8', 34);
+      pop(this, s.x, s.y - 30, '+' + (sim.lives - lives), '#9dffb8', 34);
       this.tweens.add({ targets: this.hud.livesChip, scale: 1.2, duration: 120, yoyo: true });
     }
     if (sim.gold > gold) {
-      popup(this, this.goldChip.x + 80, this.goldChip.y + 44, '+' + (sim.gold - gold), '#ffd23f', 28);
+      pop(this, this.goldChip.x + 80, this.goldChip.y + 44, '+' + (sim.gold - gold), '#ffd23f', 28);
       this.flyCoins(this.scale.width / 2, 640, 8);
       this.sfx('coins', { volume: 0.6 });
     }
@@ -1790,7 +1814,7 @@ export class PlayScene extends ArcadeScene {
     this.fx.ring(k.x, PATH_Y + 0.1, k.z, 3, 0x9dffb8, 0.8);
     this.hud.setLives(sim.lives, sim.maxLives);
     const s = this.screen(k.x, k.y, k.z);
-    popup(this, s.x, s.y - 40, t('revived'), '#9dffb8', 30);
+    pop(this, s.x, s.y - 40, t('revived'), '#9dffb8', 30);
   }
 
   // ------------------------------------------------------------------ boss intro and the vignette
@@ -1807,8 +1831,9 @@ export class PlayScene extends ArcadeScene {
     band.lineStyle(4, 0xffb0a0, 0.9).lineBetween(-width / 2 - 40, -76, width / 2 + 40, -76).lineBetween(-width / 2 - 40, 76, width / 2 + 40, 76);
     const disc = this.add.circle(-width / 2 + 130, 0, 70, 0x2a0a10, 0.9).setStrokeStyle(4, 0xffb0a0);
     const img = this.add.image(-width / 2 + 130, 0, enemyThumb(e.kind)).setDisplaySize(132, 132);
-    const tag = txt(this, -width / 2 + 236, -30, t('bossTag'), { title: true, size: 26, color: '#ffd23f', strokeThickness: 5 }).setOrigin(0, 0.5);
-    const name = txt(this, -width / 2 + 236, 22, upper(t('e_' + e.kind)), { title: true, size: 44, color: '#ffffff', strokeThickness: 8 }).setOrigin(0, 0.5);
+    const tag = labelAt(this, -width / 2 + 236, -32, upper(t('bossTag')), BOSS_TAG, 0);
+    const name = labelAt(this, -width / 2 + 236, 22, upper(t('e_' + e.kind)), BOSS_NAME, 0);
+    if (name.width > width - 270) name.setScale((width - 270) / name.width);
     box.add([band, disc, img, tag, name]);
     this.tweens.add({ targets: box, x: width / 2, duration: 380, ease: 'Back.easeOut' });
     this.tweens.add({ targets: img, scale: { from: img.scale * 1.25, to: img.scale }, duration: 500, delay: 250, ease: 'Bounce.easeOut' });
@@ -1929,7 +1954,7 @@ export class PlayScene extends ArcadeScene {
     this.updateCamera(dt);
     // hints
     if (this.hintT > 0) {
-      this.hintT -= dt;
+      if (!this.hintCovered) this.hintT -= dt;
       if (this.hintT <= 0) this.tweens.add({ targets: this.hint, alpha: 0, duration: 350 });
     } else if (this.hintQueue.length && this.hint.alpha < 0.05) this.displayHint(this.hintQueue.shift()!);
     if (this.phase === 'play' && sim) this.updateHud(sim);
@@ -1974,7 +1999,7 @@ export class PlayScene extends ArcadeScene {
         const c = this.dock.card(id);
         if (c && this.dock.visible) {
           this.tweens.add({ targets: c.box, scale: 1.12, duration: 140, yoyo: true, ease: 'Quad.easeOut' });
-          if (sim.wave > 1) popup(this, this.dock.x + c.box.x, this.dock.y - 96, t('powerReady', { name: t('p_' + id) }), '#ffc27a', 22);
+          if (sim.wave > 1) pop(this, this.dock.x + c.box.x, this.dock.y - 96, t('powerReady', { name: t('p_' + id) }), '#ffc27a', 22);
         }
       }
       this.powerWasReady[id] = ready;

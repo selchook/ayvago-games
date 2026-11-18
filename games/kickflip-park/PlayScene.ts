@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, loc, isEasy, hudChip, HudChip, flash, burst, getLang,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, overlayHeadingStyle,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, overlayHeadingStyle, labelAt, fitWidth, Para,
 } from '@core';
 import { World3D } from '@core/three';
 import { Setup, takeFromMenu } from './setup';
@@ -22,6 +22,7 @@ import { boardDef, RARITY_COLOR } from './boards';
 import { usableBoard } from './boardmodel';
 import { TouchPad, Meter, BalanceBar, banner, goalToast, dirOf, comboSummary, popWord, TutorialCard, UI_DEPTH } from './ui';
 import { makeLoops, Loop } from './audio';
+import { prebakePlay, WordFlow, S_TRICKS, S_OK, S_TIP } from './labels';
 import { makeIcons, TAPE_ICON, CLOCK_ICON } from './art';
 
 /** A trick's name in the combo string. */
@@ -64,7 +65,7 @@ export class PlayScene extends ArcadeScene {
   private tapesChip!: HudChip;
   private meter!: Meter;
   private comboChip!: HudChip;
-  private comboText!: Phaser.GameObjects.Text;
+  private comboText!: WordFlow;
   private balance!: BalanceBar;
   private speedLines!: Phaser.GameObjects.Graphics;
   private roll!: Loop;
@@ -104,6 +105,7 @@ export class PlayScene extends ArcadeScene {
   private leaving = false;
 
   createGame(): void {
+    prebakePlay(this);
     makeIcons(this);
     makeLoops(this.game);
     this.meta = loadMeta();
@@ -209,7 +211,8 @@ export class PlayScene extends ArcadeScene {
     this.meter = new Meter(this, this.scale.width - HUD_MARGIN, HUD_ROW2_Y, t('special'), 140);
     this.comboChip = hudChip(this, this.scale.width / 2, 196, { align: 'center', label: t('combo'), text: '0', color: '#ffd23f', size: 30, depth: UI_DEPTH });
     this.comboChip.setVisible(false);
-    this.comboText = txt(this, this.scale.width / 2, 250, '', { title: true, size: 26, color: '#ffffff', strokeThickness: 7, wrap: 640 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(UI_DEPTH);
+    // the trick line in the theme's face: one painted label per trick (labels.ts)
+    this.comboText = new WordFlow(this, this.scale.width / 2, 250, S_TRICKS, 640).setScrollFactor(0).setDepth(UI_DEPTH);
     this.balance = new BalanceBar(this);
     this.speedLines = this.add.graphics().setDepth(40).setScrollFactor(0);
     this.updateGoalsChip();
@@ -448,10 +451,10 @@ export class PlayScene extends ArcadeScene {
     this.comboShown = false;
     const chip = this.comboChip, text = this.comboText;
     this.tweens.killTweensOf([chip, text]);
-    if (lost) { chip.setTextColor('#ff5a4f'); text.setColor('#ff9a9a'); }
+    if (lost) { chip.setTextColor('#ff5a4f'); text.tint(0xff9a9a); }
     this.tweens.add({ targets: [chip, text], alpha: 0, y: `+=${lost ? 40 : -30}`, duration: 380, delay: 220, onComplete: () => {
       chip.setVisible(false).setAlpha(1).setY(196).setTextColor('#ffd23f');
-      text.setText('').setAlpha(1).setY(250).setColor('#ffffff');
+      text.set([]).tint(null).setAlpha(1).setY(250);
     } });
     this.lastCombo = '';
   }
@@ -497,7 +500,7 @@ export class PlayScene extends ArcadeScene {
         this.comboChip.setText(`${fmt(sim.comboSum())} × ${sim.combo.length}`);
         const names = sim.combo.map(trickName);
         const shown = names.length > 6 ? ['…', ...names.slice(-6)] : names;
-        this.comboText.setText(shown.join(' + '));
+        this.comboText.set(shown);
         if (grew) {
           this.tweens.add({ targets: this.comboChip, scale: { from: 1.18, to: 1 }, duration: 180, ease: 'Back.easeOut' });
           this.sfx('trick', { volume: 0.25, rate: 1 + Math.min(0.6, sim.combo.length * 0.05) });
@@ -649,7 +652,7 @@ export class PlayScene extends ArcadeScene {
     msg.setY(-h / 2 + 36 + msg.height / 2);
     const okW = 240, okY = h / 2 - 62;
     const ok = this.add.graphics().fillStyle(0x2fae5a, 1).fillRoundedRect(-okW / 2, okY - 34, okW, 68, 34).fillStyle(0xffffff, 0.18).fillRoundedRect(-okW / 2 + 6, okY - 30, okW - 12, 26, 14);
-    const okT = txt(this, 0, okY, t('hintGotIt'), { title: true, size: 28, color: '#ffffff', strokeThickness: 0, shadow: false });
+    const okT = fitWidth(labelAt(this, 0, okY, t('hintGotIt'), S_OK), okW - 30);
     const zone = this.add.zone(0, 0, 640, h).setInteractive();
     zone.on('pointerup', () => this.closeHint());
     c.add([g, msg, ok, okT, zone]);
@@ -676,7 +679,8 @@ export class PlayScene extends ArcadeScene {
   }
 
   private tip(s: string): void {
-    const h = txt(this, this.scale.width / 2, 700, s, { size: 25, color: '#ffffff', strokeThickness: 6, wrap: 620 }).setScrollFactor(0).setDepth(UI_DEPTH + 40).setAlpha(0);
+    const h = new Para(this, this.scale.width / 2, 700, s, S_TIP, 620, 0.5).setScrollFactor(0).setDepth(UI_DEPTH + 40).setAlpha(0);
+    h.y -= h.textHeight / 2;
     this.tweens.add({ targets: h, alpha: 1, duration: 260 });
     this.tweens.add({ targets: h, alpha: 0, delay: 3200, duration: 400, onComplete: () => h.destroy() });
   }

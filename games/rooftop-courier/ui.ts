@@ -6,7 +6,8 @@
 //     its icon), the rubber stamp of a delivery, banners, words, the tutorial card and the
 //     first-time power-up hint. Every always-visible readout sits in a core hudChip.
 import Phaser from 'phaser';
-import { txt, hudChip, HudChip, HUD_CHIP_H, HUD_GAP } from '@core';
+import { txt, hudChip, HudChip, HUD_CHIP_H, HUD_GAP, labelAt, labelTexture, labelWidth, placeLabel, fitWidth } from '@core';
+import { bannerStyle, subStyle, popStyle, S_STAMP, S_STAMP_SUB, S_CARD_HEAD, S_SKIP } from './labels';
 import { clamp } from './defs';
 
 export const UI_DEPTH = 9300;
@@ -172,9 +173,10 @@ export class FlowMeter {
 /** A big word that pops in and floats away. */
 export function banner(scene: Phaser.Scene, x: number, y: number, s: string, o: { color?: string; size?: number; hold?: number; sub?: string; subColor?: string } = {}): Phaser.GameObjects.Container {
   const c = scene.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 50);
-  const main = txt(scene, 0, 0, s, { title: true, size: o.size ?? 54, color: o.color ?? '#ffd23f', strokeThickness: 10, wrap: 660 });
+  // the theme's display face (labels.ts), long Turkish lines shrunk to fit
+  const main = fitWidth(labelAt(scene, 0, 0, s, bannerStyle(o.color ?? '#ffd23f', o.size ?? 54)), 660);
   c.add(main);
-  if (o.sub) c.add(txt(scene, 0, main.height / 2 + 26, o.sub, { title: true, size: 28, color: o.subColor ?? '#ffffff', strokeThickness: 7, wrap: 640 }));
+  if (o.sub) c.add(fitWidth(labelAt(scene, 0, main.displayHeight * 0.42 + 26, o.sub, subStyle(o.subColor ?? '#ffffff')), 640));
   c.setScale(0.3).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 220, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: c, y: y - 50, alpha: 0, delay: 220 + (o.hold ?? 0.8) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
@@ -183,7 +185,7 @@ export function banner(scene: Phaser.Scene, x: number, y: number, s: string, o: 
 
 /** A small word by the courier (a move and its points). */
 export function popWord(scene: Phaser.Scene, x: number, y: number, s: string, color: string, size = 28): void {
-  const t = txt(scene, x, y, s, { title: true, size, color, strokeThickness: 7 }).setScrollFactor(0).setDepth(UI_DEPTH + 40);
+  const t = labelAt(scene, x, y, s, popStyle(color, size)).setScrollFactor(0).setDepth(UI_DEPTH + 40);
   t.setScale(0.4).setAlpha(0);
   scene.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 150, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: t, y: y - 70, alpha: 0, delay: 480, duration: 380, onComplete: () => t.destroy() });
@@ -192,15 +194,15 @@ export function popWord(scene: Phaser.Scene, x: number, y: number, s: string, co
 /** The rubber stamp of a delivery: thumps down at an angle in red ink, then fades. */
 export function rubberStamp(scene: Phaser.Scene, x: number, y: number, word: string, sub: string): void {
   const c = scene.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 60);
-  const t = txt(scene, 0, 0, word, { title: true, size: 64, color: '#e8443a', strokeThickness: 0, shadow: false });
-  const w = t.width + 60, h = t.height + 34;
+  const t = fitWidth(labelAt(scene, 0, 0, word, S_STAMP), 520);
+  const w = t.displayWidth + 40, h = t.displayHeight + 20;
   const g = scene.add.graphics();
   g.lineStyle(9, 0xe8443a, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 18);
   g.lineStyle(3, 0xe8443a, 0.8).strokeRoundedRect(-w / 2 + 12, -h / 2 + 12, w - 24, h - 24, 10);
   // a worn ink texture: a few gaps
   g.fillStyle(0xffffff, 0.0);
   c.add([g, t]);
-  if (sub) c.add(txt(scene, 0, h / 2 + 30, sub, { title: true, size: 26, color: '#fff3c4', strokeThickness: 6 }));
+  if (sub) c.add(fitWidth(labelAt(scene, 0, h / 2 + 30, sub, S_STAMP_SUB), 640));
   c.setAngle(-9).setScale(2.4).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 170, ease: 'Quad.easeIn', onComplete: () => {
     scene.tweens.add({ targets: c, scale: 1.04, duration: 70, yoyo: true });
@@ -219,7 +221,7 @@ export function toast(scene: Phaser.Scene, y: number, title: string, text: strin
 /** The tutorial's prompt: step count, what to do, a tick when done, and a SKIP pill. */
 export class TutorialCard {
   readonly c: Phaser.GameObjects.Container;
-  private head: Phaser.GameObjects.Text;
+  private head: Phaser.GameObjects.Image;
   private body: Phaser.GameObjects.Text;
   private g: Phaser.GameObjects.Graphics;
   private tick: Phaser.GameObjects.Graphics;
@@ -229,19 +231,22 @@ export class TutorialCard {
     const s = scene;
     this.c = s.add.container(s.scale.width / 2, y).setScrollFactor(0).setDepth(UI_DEPTH + 30);
     this.g = s.add.graphics();
-    this.head = txt(s, -TutorialCard.W / 2 + 28, 0, '', { title: true, size: 20, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+    this.head = labelAt(s, -TutorialCard.W / 2 + 28, 0, '', S_CARD_HEAD, 0);
     this.body = txt(s, -TutorialCard.W / 2 + 28, 0, '', { size: 23, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: TutorialCard.W - 230, align: 'left' }).setOrigin(0, 0.5);
     this.tick = s.add.graphics().setVisible(false);
     const sg = s.add.graphics();
     sg.fillStyle(0xffffff, 0.14).fillRoundedRect(-70, -40, 140, 80, 40).lineStyle(2, 0xffffff, 0.4).strokeRoundedRect(-70, -40, 140, 80, 40);
-    const st = txt(s, 0, 0, skipLabel, { title: true, size: 20, color: '#ffffff', strokeThickness: 0, shadow: false });
+    const st = fitWidth(labelAt(s, 0, 0, skipLabel, S_SKIP), 124);
     const skip = s.add.container(TutorialCard.W / 2 - 90, 0, [sg, st]).setSize(150, 88).setInteractive({ useHandCursor: true });
     skip.on('pointerup', onSkip);
     this.c.add([this.g, this.head, this.body, this.tick, skip]);
   }
 
   set(head: string, body: string): void {
-    this.head.setText(head);
+    // left-aligned on the letters (as labelAt's ax 0)
+    placeLabel(this.head, labelTexture(this.scene, head, S_CARD_HEAD));
+    const hw = this.head.width;
+    this.head.setOrigin((hw - Math.ceil(labelWidth(head, S_CARD_HEAD))) / 2 / hw, this.head.originY);
     this.body.setText(body);
     const h = Math.max(116, this.body.height + 64);
     this.head.setY(-h / 2 + 24);
@@ -345,7 +350,7 @@ export class HintCard {
   constructor(private scene: Phaser.Scene, y: number, icon: string, head: string, body: string, hold = 3.6) {
     const s = scene, W = HintCard.W;
     this.c = s.add.container(s.scale.width / 2, y).setScrollFactor(0).setDepth(UI_DEPTH + 30);
-    const ht = txt(s, -W / 2 + 104, 0, head, { title: true, size: 22, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+    const ht = fitWidth(labelAt(s, -W / 2 + 104, 0, head, S_CARD_HEAD, 0), W - 130);
     const bt = txt(s, -W / 2 + 104, 0, body, { size: 23, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: W - 130, align: 'left' }).setOrigin(0, 0.5);
     const h = Math.max(104, bt.height + 62);
     ht.setY(-h / 2 + 24);

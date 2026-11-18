@@ -1,7 +1,8 @@
 // Snack Shack: the 2D parts drawn over the 3D diner: order bubbles with patience bars, glass
 // panels, stars and the upgrade cards.
 import Phaser from 'phaser';
-import { txt } from '@core';
+import { labelAt, labelWidth } from '@core';
+import { tagStyle } from './callouts';
 import type { Customer } from './sim';
 import { itemThumb } from './thumbs';
 
@@ -118,9 +119,11 @@ export class Bubble {
 
 /** A text label on a station (key number, lock), as a small glass chip. */
 export function chipLabel(scene: Phaser.Scene, x: number, y: number, s: string, o: { size?: number; color?: string; icon?: string } = {}): Phaser.GameObjects.Container {
-  const t = txt(scene, 0, 0, s, { size: o.size ?? 20, color: o.color ?? '#ffffff', strokeThickness: 0, title: true });
+  // the words in the theme's face (callouts.ts, painted ahead)
+  const st = tagStyle(o.color ?? '#ffffff', o.size ?? 20);
+  const t = labelAt(scene, 0, 0, s, st);
   const iconW = o.icon ? 24 : 0;
-  const w = Math.max(34, t.width + 18 + iconW), h = (o.size ?? 20) + 14;
+  const w = Math.max(34, labelWidth(s, st) + 18 + iconW), h = (o.size ?? 20) + 14;
   const g = scene.add.graphics();
   g.fillStyle(0x0b1020, 0.72).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
   g.lineStyle(2, 0xffffff, 0.35).strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2);

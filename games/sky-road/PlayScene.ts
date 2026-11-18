@@ -1,4 +1,5 @@
-import { Phaser, ArcadeScene, Controls, CarSteering, shake, flash, popup, t, rng } from '@core';
+import { Phaser, ArcadeScene, Controls, CarSteering, shake, flash, t, rng } from '@core';
+import { pop, S_LEVEL, S_COIN, S_HEART, COIN_POP, HEART_POP } from './callouts';
 import { World3D, THREE, model, grounded } from '@core/three';
 
 // A lane-based track of floating blocks, driven along -z.
@@ -309,7 +310,7 @@ export class PlayScene extends ArcadeScene {
       this.level = lvl;
       this.hud.setLevel(lvl);
       this.sfx('level', { exact: true });
-      popup(this, this.scale.width / 2, 260, t('levelUp'), '#ffd23f', 40);
+      pop(this, this.scale.width / 2, 260, t('levelUp'), S_LEVEL);
     }
 
     // steering
@@ -389,12 +390,12 @@ export class PlayScene extends ArcadeScene {
       this.lives = Math.min(START_LIVES, this.lives + 1);
       this.hud.setLives(this.lives, START_LIVES);
       this.sfx('heart');
-      popup(this, p.x, p.y, '+1 ♥', '#ff5d8f', 34);
+      pop(this, p.x, p.y, HEART_POP, S_HEART);
       return;
     }
     this.coins++;
     this.sfx('coin', { volume: 0.6 });
-    popup(this, p.x, p.y, '+10', '#ffd23f', 26);
+    pop(this, p.x, p.y, COIN_POP, S_COIN);
   }
 
   private crash(o: Obj): void {

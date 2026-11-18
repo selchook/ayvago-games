@@ -6,10 +6,11 @@
 // theme's `prebake`) and the marks and points are set from painted glyphs, so opening a screen
 // only places images (the athletes' 3D portraits are rendered by the game as before).
 import Phaser from 'phaser';
-import { t, playSfx, hudChip, hudText, txt, themeCard, labelTexture, HUD_ROW2_Y, HUD_MARGIN, type HudChip, type LabelStyle, labelAt, fitWidth, GlyphText, Para, KitButton, bakeButton, bakePara, glyphAtlas, labelWidth } from '@core';
+import { t, playSfx, hudChip, hudText, themeCard, labelTexture, HUD_ROW2_Y, HUD_MARGIN, type HudChip, type LabelStyle, labelAt, fitWidth, GlyphText, Para, KitButton, bakeButton, bakePara, glyphAtlas, labelWidth } from '@core';
 import { ordinal } from './strings';
 import { EVENTS, RECORDS, markText } from './scoring';
 import { RIVAL_NAMES } from './cast';
+import { calloutStyle } from './callouts';
 
 export const PANEL_DEPTH = 9550;
 const DIM_DEPTH = 8000;
@@ -409,10 +410,11 @@ export class ChipBoard {
 }
 
 /** A big word in the middle of the screen that pops and fades. */
-export function callout(scene: Phaser.Scene, s: string, color = '#ffd23f', o: { y?: number; size?: number; hold?: number } = {}): Phaser.GameObjects.Text {
-  const text = txt(scene, 640, o.y ?? 250, s, { title: true, size: o.size ?? 64, color, strokeThickness: 10 }).setDepth(9100).setScrollFactor(0);
-  text.setScale(0.4).setAlpha(0);
-  scene.tweens.add({ targets: text, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut' });
+export function callout(scene: Phaser.Scene, s: string, color = '#ffd23f', o: { y?: number; size?: number; hold?: number } = {}): Phaser.GameObjects.Image {
+  const text = fitWidth(labelAt(scene, 640, o.y ?? 250, s, calloutStyle(color, o.size ?? 64)), 1160).setDepth(9100).setScrollFactor(0);
+  const sc = text.scale;
+  text.setScale(sc * 0.4).setAlpha(0);
+  scene.tweens.add({ targets: text, scale: sc, alpha: 1, duration: 260, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: text, alpha: 0, y: text.y - 30, delay: o.hold ?? 750, duration: 350, onComplete: () => text.destroy() });
   return text;
 }

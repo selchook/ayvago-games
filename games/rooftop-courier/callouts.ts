@@ -7,7 +7,8 @@
 //     to be, never over each other, the banner, the stamp, the courier or the touch buttons;
 //   - style moves landing within a moment of each other merge into one line ("Gap · Vault +345").
 import Phaser from 'phaser';
-import { txt, getLang } from '@core';
+import { getLang } from '@core';
+import { ThemeLine, popStyle } from './labels';
 import { banner, rubberStamp, UI_DEPTH } from './ui';
 
 type Rect = { x0: number; y0: number; x1: number; y1: number };
@@ -25,8 +26,8 @@ export class Callouts {
   private queue: Queued[] = [];
   private current: { c: Phaser.GameObjects.Container; until: number; prio: number } | null = null;
   private stampUntil = 0;
-  private pops: { o: Phaser.GameObjects.Text; until: number; rise: number; gone?: boolean }[] = [];
-  private move: { o: Phaser.GameObjects.Text; names: string[]; pts: number; until: number; color: string } | null = null;
+  private pops: { o: ThemeLine; until: number; rise: number; gone?: boolean }[] = [];
+  private move: { o: ThemeLine; names: string[]; pts: number; until: number; color: string } | null = null;
   /** The courier on screen (set every frame) and fixed no-go boxes (touch buttons). */
   private courier: Rect | null = null;
   private blocked: Rect[] = [];
@@ -99,7 +100,7 @@ export class Callouts {
   // ------------------------------------------------------------------ small lines
 
   /** A small line near (x, y), moved to the nearest free spot. */
-  pop(x: number, y: number, s: string, color: string, size = 26): Phaser.GameObjects.Text | null {
+  pop(x: number, y: number, s: string, color: string, size = 26): ThemeLine | null {
     const t = this.placeText(x, y, s, color, size);
     return t;
   }
@@ -132,10 +133,11 @@ export class Callouts {
     this.move = o ? { o, names: [name], pts, until: this.now + 600, color } : null;
   }
 
-  private placeText(x: number, y: number, s: string, color: string, size: number): Phaser.GameObjects.Text | null {
+  private placeText(x: number, y: number, s: string, color: string, size: number): ThemeLine | null {
     const sc = this.scene;
     const W = sc.scale.width;
-    const o = txt(sc, x, y, s, { title: true, size, color, strokeThickness: 7 }).setScrollFactor(0).setDepth(UI_DEPTH + 40);
+    // the theme's face: words painted once, the points in glyphs (labels.ts)
+    const o = new ThemeLine(sc, x, y, s, popStyle(color, size)).setScrollFactor(0).setDepth(UI_DEPTH + 40);
     const rise = 60;
     const w = o.width, h = o.height;
     const taken = this.taken();
@@ -174,7 +176,7 @@ export class Callouts {
     return out;
   }
 
-  private rectOf(o: Phaser.GameObjects.Text, rise: number): Rect {
+  private rectOf(o: ThemeLine, rise: number): Rect {
     const w = o.width, h = o.height;
     return { x0: o.x - w / 2 - 6, y0: o.y - h / 2 - rise - 6, x1: o.x + w / 2 + 6, y1: o.y + h / 2 + 6 };
   }

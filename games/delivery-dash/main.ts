@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { launch, loadAudio, loadSfx, kenney, t, steeringOption, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene } from './PlayScene';
+import { PlayScene, prebakePlay } from './PlayScene';
 import { MapScene, prebakeMap } from './mapui';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
@@ -55,6 +55,7 @@ launch({
     l.once(Phaser.Loader.Events.COMPLETE, () => {
       const t0 = performance.now();
       prebakeMap(scene);
+      prebakePlay(scene);
       // how long that took (read by the screenshot and timing scripts)
       scene.registry.set('innerPaintMs', Math.round(performance.now() - t0));
     });

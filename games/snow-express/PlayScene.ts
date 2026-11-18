@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang, registerStrings,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle, ThemeNumber,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle, ThemeNumber, GlyphText, labelAt, fitWidth,
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, type SimEvent, type SimInput } from './sim';
@@ -17,6 +17,7 @@ import { Board } from './graph';
 import { loadMeta, saveMeta, recordLevel, nextLevel, type Meta } from './meta';
 import { CSS, HEX, POWER_EVERY, COCOA_TIME, GLOBE_TIME, clamp, type ColorId, type Mode } from './defs';
 import { makeArt, Overlay, PowerButton, banner, badgeKey, glass, UI_DEPTH } from './ui';
+import { prebakePlay, plusStyle, S_OK } from './labels';
 import { STARS_W, STARS_H } from './theme';
 import { makeSounds, Loop } from './audio';
 
@@ -73,6 +74,7 @@ export class PlayScene extends ArcadeScene {
   perf = { frames: 0, update: 0, render: 0, maxUpdate: 0, maxRender: 0, calls: 0, maxCalls: 0 };
 
   createGame(): void {
+    prebakePlay(this);
     makeArt(this);
     makeSounds(this.game);
     registerStrings({ tr: { retry: 'TEKRAR' }, en: { retry: 'RETRY' } });
@@ -377,7 +379,8 @@ export class PlayScene extends ArcadeScene {
       const c = this.add.container(clamp(p.x, 80, W - 80), p.y - 20).setDepth(UI_DEPTH + 40);
       const icon = this.add.image(-34, 0, badgeKey(st.color)).setDisplaySize(44, 44);
       const label = this.rush ? '+' + fmt(ev.points) : '+1';
-      const tx = txt(this, 14, 0, label, { title: true, size: 36, color, strokeThickness: 8 }).setOrigin(0, 0.5);
+      // in the theme's face: "+1" painted once, Rush points in glyphs (labels.ts)
+      const tx = this.rush ? new GlyphText(this, 14, 0, label, plusStyle(color), 0, '0123456789+.,') : labelAt(this, 14, 0, label, plusStyle(color), 0);
       c.add([icon, tx]);
       c.setScale(0.4);
       this.tweens.add({ targets: c, scale: 1, duration: 200, ease: 'Back.easeOut' });
@@ -507,7 +510,7 @@ export class PlayScene extends ArcadeScene {
     if (wait === 'ok') {
       const okY = h / 2 - 46;
       const ok = this.add.graphics().fillStyle(0x2fae5a, 1).fillRoundedRect(-110, okY - 30, 220, 60, 30).fillStyle(0xffffff, 0.18).fillRoundedRect(-104, okY - 26, 208, 24, 12);
-      c.add([ok, txt(this, 0, okY, t('tut_ok'), { title: true, size: 26, color: '#ffffff', strokeThickness: 0, shadow: false })]);
+      c.add([ok, fitWidth(labelAt(this, 0, okY, t('tut_ok'), S_OK), 190)]);
     }
     if (wait === 'flip' && want) {
       // a hand points at the switch
