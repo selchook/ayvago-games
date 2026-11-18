@@ -401,6 +401,19 @@ const CARD = {
       await sleep(1500);
     }`,
   },
+  // Sushi Rush's card (landscape, cover-fit) shows a busy evening at the bar on day 6: six rabbits
+  // on the stools with their orders over them, the noodle pot and the steamer going, the lanterns
+  // and the sakura tree in, and the chef just handing a finished dish to the customer who ordered
+  // it, so the first frame catches the coins popping (picked; the critic walks in at the front).
+  // The chef choice is skipped; the autopilot keeps cooking while the frames are taken.
+  'sushi-rush': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      window.__sushi.stage('busy');
+      await sleep(300);
+    }`,
+  },
   'fruit-slash': { pick: 3 },
   'golden-podium': { pick: 0 },
   'light-cycles': { pick: 4 },
