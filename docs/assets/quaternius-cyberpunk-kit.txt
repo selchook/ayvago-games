@@ -1,0 +1,66 @@
+# Quaternius Cyberpunk Game Kit (CC0 1.0), the part Neon Ronin loads: file, size on disk, the rigs' height in model units (facing +z) with their skinned meshes and clips, and every model in props.glb with its bounding box (x × y × z) and triangle count.
+# Made by games/neon-ronin/import-kit.mjs: flat material colours baked into vertex colours (materials lit / glow / sign), the props without normals (drawn flat-shaded), quantized. sign.png is the kit's Texture_Signs at 512 px, used by every prop part whose material is 'sign' (keep the UVs, flipY off).
+quaternius/cyberpunk-kit/brute.glb 178KB about 0.97 tall, 2924 tris, skinned: body; clips: Attack Attack.001 Death Idle Jump Run Shoot Walk
+quaternius/cyberpunk-kit/drone.glb 221KB about 0.64 tall (plain), 0.70 (gun), 5970 tris, skinned: gun, plain; clips: Attack Dead Idle Run Shoot
+quaternius/cyberpunk-kit/hero.glb 501KB about 1.40 tall, 7520 tris, skinned: body, sword; clips: Death Gun_Shoot HitRecieve HitRecieve_2 Idle_Neutral Idle_Sword Interact Kick_Left Kick_Right Punch_Left Punch_Right Roll Run Run_Shoot Sword_Slash Wave
+quaternius/cyberpunk-kit/license.txt 0KB
+quaternius/cyberpunk-kit/mech.glb 398KB about 1.28 tall, 6902 tris, skinned: body; clips: Attack Attack.001 Death Idle Jump Run Shoot Walk
+quaternius/cyberpunk-kit/props.glb 430KB 28087 tris, 56 models:
+  plat-4x4 3.92x3.71x3.90 1839 tris
+  plat-4x2 4.87x4.93x2.68 1667 tris
+  plat-2x2 3.09x3.81x2.15 1665 tris
+  plat-4x1 3.86x2.81x1.73 1401 tris
+  slab-4x1 3.86x0.22x0.98 76 tris
+  slab-2x1 1.89x0.22x0.77 76 tris
+  slab-1x1 0.81x0.22x0.77 76 tris
+  slab-4x4 3.86x0.22x3.89 76 tris
+  support 0.69x0.40x0.29 60 tris
+  support-long 1.11x3.56x0.09 524 tris
+  support-short 1.11x2.21x0.09 288 tris
+  rail-long 2.29x0.24x0.06 256 tris
+  rail-short 1.25x0.24x0.06 256 tris
+  fence 0.69x1.26x0.05 160 tris
+  door 0.69x1.16x0.10 324 tris
+  pipe-1 2.44x0.21x0.56 224 tris
+  pipe-2 4.62x0.21x0.55 192 tris
+  cable-long 0.29x2.51x0.13 768 tris
+  cable-small 0.17x0.95x0.12 384 tris
+  cable-thick 0.55x1.64x0.39 384 tris
+  ac 1.04x0.69x0.77 946 tris
+  ac-side 1.62x0.85x0.77 924 tris
+  ac-stacked 0.67x1.01x0.51 776 tris
+  antenna-1 0.40x1.66x0.06 88 tris
+  antenna-2 0.62x0.73x0.66 412 tris
+  computer 0.47x1.01x0.63 1008 tris
+  computer-large 1.29x2.38x0.69 1521 tris
+  tv-1 1.20x1.38x0.41 312 tris
+  tv-2 0.81x1.21x0.34 336 tris
+  tv-3 0.73x2.38x0.63 554 tris
+  light-square 0.27x0.49x0.27 148 tris
+  light-street-1 0.18x2.87x0.67 526 tris
+  light-street-2 1.35x2.65x1.19 664 tris
+  sign-1 1.29x0.46x0.06 52 tris
+  sign-2 1.29x0.46x0.06 52 tris
+  sign-3 1.27x0.46x0.06 52 tris
+  sign-4 0.51x1.27x0.06 52 tris
+  sign-corner-1 1.09x0.73x1.19 124 tris
+  sign-corner-2 1.09x0.73x1.68 124 tris
+  sign-corner-3 1.09x0.73x1.68 124 tris
+  sign-hazard 1.09x0.20x1.21 124 tris
+  sign-small-1 0.48x0.46x0.06 52 tris
+  sign-small-2 0.48x0.46x0.06 52 tris
+  sign-small-3 0.48x0.46x0.06 52 tris
+  turret-cannon 1.16x0.65x1.11 998 tris (parts: base, top)
+  turret-gun 1.16x0.59x1.16 918 tris (parts: base, top)
+  turret-double 1.16x0.59x1.16 1190 tris (parts: base, top)
+  teleporter 1.16x0.23x1.11 912 tris
+  chip 0.35x0.32x0.05 280 tris
+  gear 0.35x0.40x0.32 280 tris
+  lever 0.40x0.45x0.66 328 tris (parts: base, top)
+  lootbox 0.59x0.51x0.61 640 tris (parts: base, top)
+  health 0.24x0.24x0.24 512 tris
+  heart 0.25x0.24x0.25 528 tris
+  tank 0.20x0.26x0.20 562 tris
+  barrel 0.57x0.83x0.62 1168 tris
+quaternius/cyberpunk-kit/sign.png 35KB
+quaternius/cyberpunk-kit/walker.glb 455KB about 0.71 tall (plain), 0.95 (gun), 9122 tris, skinned: gun, plain; clips: Attack Death Idle Jump Run Shoot Walk

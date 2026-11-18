@@ -1,0 +1,7 @@
+Cyberpunk Game Kit by Quaternius (quaternius.com), CC0 1.0 Universal (public domain). Obtained as the .gltf files of the folder shared by the project owner, with the pack's own License.txt:
+
+  Cyberpunk Game Kit by @Quaternius
+  License: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+  https://creativecommons.org/publicdomain/zero/1.0/
+
+The GLB files here are converted from those models by games/neon-ronin/import-kit.mjs (vertex colours, merged rigs, simplified and quantized props); sign.png is the kit's Texture_Signs image at 512 px.
