@@ -306,6 +306,50 @@ export const SUM_COUNT: LabelStyle = { size: 50, color: INK, stroke: null, shado
 export const SUM_COUNT_COLORS = ['#d8247e', '#1f7fd0', '#6a5a9a'];
 export const SUM_TOTAL: LabelStyle = { size: 84, fill: ['#ffffff', '#ffd0ec', '#ff3fa4'], stroke: LABEL_STROKE, strokeWidth: 10 };
 
+// ------------------------------------------------------------------ the call-outs over the alley
+
+/** The size the call-outs are painted at (scaled to each one's size). */
+export const CALL_PX = 80;
+
+/** `c` mixed toward `to` by k (both #rrggbb). */
+function mix(c: string, to: string, k: number): string {
+  const a = parseInt(c.slice(1), 16), b = parseInt(to.slice(1), 16);
+  const ch = (sh: number) => Math.round(((a >> sh) & 255) * (1 - k) + ((b >> sh) & 255) * k);
+  return '#' + ((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0');
+}
+
+/**
+ * A call-out in the theme's neon script (Lobster): white-hot on top, the call's colour below,
+ * outlined in the alley's night purple, as the menu's and the summary's labels.
+ */
+export function callStyle(color: string, size = CALL_PX): LabelStyle {
+  return { size, fill: ['#ffffff', mix(color, '#ffffff', 0.35), color], stroke: LABEL_STROKE, strokeWidth: Math.round(size * 0.15) };
+}
+/** The line under a call-out. */
+export const CALL_SUB: LabelStyle = { size: 32, color: '#ffffff', stroke: LABEL_STROKE, strokeWidth: 6 };
+/** The calls and their colours (PlayScene.showCall). */
+export const CALL_COLORS = { strike: '#ffd23f', spare: '#34e7ff', gutter: '#ff6b6b', split: '#ff9f43', miss: '#c9cfee', pins: '#ffffff' };
+/** "Throw it harder!" and the replay tag. */
+export const NUDGE: LabelStyle = callStyle('#ffd23f', 34);
+export const REPLAY_TAG: LabelStyle = { size: 34, color: '#ffffff', stroke: null };
+
+/** Paints the call-outs (current language) under the Ayvago intro: a frame's call paints nothing new. */
+function prebakeCalls(scene: Phaser.Scene): void {
+  for (const k of ['strike', 'double', 'turkey', 'perfect']) labelTexture(scene, t(k), callStyle(CALL_COLORS.strike));
+  for (let n = 4; n <= 12; n++) labelTexture(scene, t('streakN', { n }), callStyle(CALL_COLORS.strike));
+  for (const k of ['spare', 'splitConverted']) labelTexture(scene, t(k), callStyle(CALL_COLORS.spare));
+  labelTexture(scene, t('gutter'), callStyle(CALL_COLORS.gutter));
+  labelTexture(scene, t('split'), callStyle(CALL_COLORS.split));
+  labelTexture(scene, t('miss'), callStyle(CALL_COLORS.miss));
+  for (let n = 0; n <= 10; n++) {
+    labelTexture(scene, t('pinsN', { n }), callStyle(CALL_COLORS.pins));
+    labelTexture(scene, t('leftN', { n }), CALL_SUB);
+  }
+  for (const k of ['strikeSub', 'turkeySub', 'doubleSub', 'spareSub', 'gutterSub']) labelTexture(scene, t(k), CALL_SUB);
+  labelTexture(scene, t('flickMore'), NUDGE);
+  labelTexture(scene, t('replay'), REPLAY_TAG);
+}
+
 export const ALLEY_THEME: MenuTheme = {
   font: LOBSTER,
   palette: {
@@ -330,7 +374,7 @@ export const ALLEY_THEME: MenuTheme = {
     titles: ['gameDone'],
   },
   cards: [{ w: SUMMARY_W, h: SUMMARY_H }],
-  prebake: prebakeSummary,
+  prebake: (scene) => { prebakeSummary(scene); prebakeCalls(scene); },
 };
 
 /** Paints the summary's fixed lines (current language) under the Ayvago intro. */

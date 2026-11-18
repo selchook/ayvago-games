@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene, lastRunTokens } from './PlayScene';
+import { PlayScene, lastRunTokens, prebakePlay } from './PlayScene';
 import { ShopScene, prebakeShop, prebakeFork } from './shop';
 import { FAIR_THEME, shopButton } from './menu';
 import { STRINGS } from './strings';
@@ -62,6 +62,7 @@ launch({
       const t0 = performance.now();
       prebakeShop(scene);
       prebakeFork(scene);
+      prebakePlay(scene);
       // how long that took (read by the screenshot and timing scripts)
       scene.registry.set('innerPaintMs', Math.round(performance.now() - t0));
     });

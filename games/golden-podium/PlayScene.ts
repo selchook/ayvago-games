@@ -2,7 +2,7 @@
 // the podium ceremony. The 3D world (venues, athletes) lives for the whole session; each event
 // is a small state machine in events/*.ts driven from here.
 import Phaser from 'phaser';
-import { ArcadeScene, t, isEasy, burst, flash, shake, txt } from '@core';
+import { ArcadeScene, t, isEasy, burst, flash, shake, labelAt, labelTexture, placeLabel, fitWidth } from '@core';
 import { World3D, THREE } from '@core/three';
 import { Athlete, celebrate } from './athlete';
 import { playerKey, pickRivals } from './cast';
@@ -13,6 +13,7 @@ import { Pad } from './pad';
 import { Particles3D, Confetti } from './fx3d';
 import { CrowdLoop } from './crowd-audio';
 import { EventCard, ResultsBoard, MedalTable, callout, type Panel, type ResultLine, type TableLine } from './panels';
+import { calloutStyle, S_HINT } from './callouts';
 import {
   EVENTS, type EventId, basePoints, beatsRecord, ranking, markText, MEDAL_BONUS, RECORD_BONUS, RECORDS, RIVAL_FORM,
 } from './scoring';
@@ -75,7 +76,7 @@ export class PlayScene extends ArcadeScene {
   panel: Panel | null = null;
   /** Event widgets (cleared when the event ends). */
   ui!: Phaser.GameObjects.Container;
-  private hintText!: Phaser.GameObjects.Text;
+  private hintText!: Phaser.GameObjects.Image;
   private clock = 0;
   private podiumTime = 0;
   private podiumMedals: { img: Phaser.GameObjects.Image; e: Entrant; y: number }[] = [];
@@ -124,7 +125,7 @@ export class PlayScene extends ArcadeScene {
     this.confetti = new Confetti(this.venues.track, this.venues.podium.position.clone(), 7);
 
     this.ui = this.add.container(0, 0).setDepth(9000);
-    this.hintText = txt(this, 640, HINT_Y, '', { size: 21, color: '#ffffff', strokeThickness: 5 }).setDepth(9000).setAlpha(0);
+    this.hintText = this.add.image(640, HINT_Y, '__DEFAULT').setDepth(9000).setAlpha(0);
     this.hud.setCenter('');
     this.world.onFrame = (dt) => this.frame(dt);
 
@@ -220,7 +221,7 @@ export class PlayScene extends ArcadeScene {
   popAt(p: THREE.Vector3, s: string, color = '#ffffff', size = 30): void {
     const sp = this.screenOf(p);
     if (!sp.visible) return;
-    const text = txt(this, sp.x, sp.y, s, { title: true, size, color, strokeThickness: 6 }).setDepth(9050);
+    const text = labelAt(this, sp.x, sp.y, s, calloutStyle(color, size)).setDepth(9050);
     text.setScale(0.5);
     this.tweens.add({ targets: text, scale: 1, duration: 180, ease: 'Back.easeOut' });
     this.tweens.add({ targets: text, y: sp.y - 60, alpha: 0, delay: 500, duration: 500, onComplete: () => text.destroy() });
@@ -366,8 +367,8 @@ export class PlayScene extends ArcadeScene {
    */
   private showHint(s: string): void {
     const maxW = this.pad.touch ? HINT_W_TOUCH : HINT_W_KEYS;
-    this.hintText.setScale(1).setText(s).setAlpha(0.95);
-    if (this.hintText.width > maxW) this.hintText.setScale(maxW / this.hintText.width);
+    placeLabel(this.hintText, labelTexture(this, s, S_HINT)).setAlpha(0.95);
+    fitWidth(this.hintText, maxW);
   }
 
   private standings(): Entrant[] {
@@ -425,8 +426,10 @@ export class PlayScene extends ArcadeScene {
     const title = place === 0 ? t('champion') : t('placeTitle', { n: ordinal(place + 1) });
     this.time.delayedCall(2200, () => {
       if (this.isOver) return;
-      const big = txt(this, 640, 150, title, { title: true, size: 66, color: place === 0 ? '#ffd23f' : '#ffffff', strokeThickness: 10 }).setDepth(9100).setScale(0.3);
-      this.tweens.add({ targets: big, scale: 1, duration: 400, ease: 'Back.easeOut' });
+      const big = fitWidth(labelAt(this, 640, 150, title, calloutStyle(place === 0 ? '#ffd23f' : '#ffffff', 66)), 1160).setDepth(9100);
+      const sc = big.scale;
+      big.setScale(sc * 0.3);
+      this.tweens.add({ targets: big, scale: sc, duration: 400, ease: 'Back.easeOut' });
       if (place === 0) burst(this, 640, 150, [0xffd23f, 0xffffff], 50, 380);
       this.podiumDone = true;
     });

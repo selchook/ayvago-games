@@ -5,7 +5,8 @@
 //     quick swipe is a flip, a swipe held down is a grab (both by direction).
 //   - Meter, BalanceBar, banners and toasts for the HUD (every readout in a core hudChip).
 import Phaser from 'phaser';
-import { txt, t, hudChip, HudChip, HUD_CHIP_H } from '@core';
+import { txt, t, hudChip, HudChip, HUD_CHIP_H, labelAt, labelTexture, labelWidth, placeLabel, fitWidth, GlyphText } from '@core';
+import { bannerStyle, subStyle, popStyle, S_SUM_LINE, qualityStyle, totalStyle, S_PRAISE, S_CARD_HEAD, S_SKIP, ThemeLine } from './labels';
 import { clamp, type Dir } from './defs';
 
 export const UI_DEPTH = 9300;
@@ -247,9 +248,10 @@ export class BalanceBar {
 /** A big word that pops in and floats away. */
 export function banner(scene: Phaser.Scene, x: number, y: number, s: string, o: { color?: string; size?: number; hold?: number; sub?: string; subColor?: string } = {}): Phaser.GameObjects.Container {
   const c = scene.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 50);
-  const main = txt(scene, 0, 0, s, { title: true, size: o.size ?? 54, color: o.color ?? '#ffd23f', strokeThickness: 10, wrap: 660 });
+  // the theme's display face (labels.ts), long Turkish lines shrunk to fit
+  const main = fitWidth(labelAt(scene, 0, 0, s, bannerStyle(o.color ?? '#ffd23f', o.size ?? 54)), 660);
   c.add(main);
-  if (o.sub) c.add(txt(scene, 0, main.height / 2 + 26, o.sub, { title: true, size: 30, color: o.subColor ?? '#ffffff', strokeThickness: 7 }));
+  if (o.sub) c.add(fitWidth(labelAt(scene, 0, main.displayHeight * 0.42 + 26, o.sub, subStyle(o.subColor ?? '#ffffff')), 660));
   c.setScale(0.3).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 220, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: c, y: y - 50, alpha: 0, delay: 220 + (o.hold ?? 0.8) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
@@ -304,13 +306,16 @@ export function comboSummary(scene: Phaser.Scene, x: number, y: number, o: { nam
   const c = scene.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 45);
   const shown = o.names.length > 5 ? ['…', ...o.names.slice(-5)] : o.names;
   const names = txt(scene, 0, 0, shown.join(' + '), { size: 19, color: '#dfe6ff', strokeThickness: 0, shadow: false, wrap: 560 });
-  const line = txt(scene, 0, 0, `${o.sum} × ${o.count}`, { title: true, size: 24, color: '#ffffff', strokeThickness: 0, shadow: false });
-  const q = txt(scene, 0, 0, o.mult ? `${o.quality}  ${o.mult}` : o.quality, { title: true, size: 20, color: o.qualityColor, strokeThickness: 0, shadow: false });
-  const total = txt(scene, 0, 0, '+' + o.total, { title: true, size: o.big ? 58 : 46, color: o.tier >= 3 ? '#ffb020' : '#7dffa0', strokeThickness: 8 });
-  const praise = o.praise ? txt(scene, 0, 0, o.praise, { title: true, size: 26, color: '#ffffff', strokeThickness: 6 }) : null;
-  const h = 34 + names.height + 10 + line.height + 6 + q.height + 4 + total.height + (praise ? praise.height : 0) + 22;
+  // the theme's face: the numbers in glyphs, the words painted once (labels.ts)
+  const line = new GlyphText(scene, 0, 0, `${o.sum} × ${o.count}`, S_SUM_LINE);
+  const q = new ThemeLine(scene, 0, 0, o.mult ? `${o.quality}  ${o.mult}` : o.quality, qualityStyle(o.qualityColor));
+  const total = new GlyphText(scene, 0, 0, '+' + o.total, totalStyle(o.tier)).setScale(o.big ? 1 : 46 / 58);
+  const praise = o.praise ? labelAt(scene, 0, 0, o.praise, S_PRAISE) : null;
+  // heights of the lines (glyph lines have no height of their own)
+  const hOf = (t: Phaser.GameObjects.GameObject): number => t === names ? names.height : t === line ? 30 : t === q ? 26 : t === total ? (o.big ? 66 : 54) : 34;
+  const h = 34 + names.height + 10 + hOf(line) + 6 + hOf(q) + 4 + hOf(total) + (praise ? hOf(praise) : 0) + 22;
   let yy = -h / 2 + 20;
-  const place = (t: Phaser.GameObjects.Text) => { t.setY(yy + t.height / 2); yy += t.height + 6; };
+  const place = (t: Phaser.GameObjects.GameObject & { setY: (y: number) => unknown }) => { const th = hOf(t); t.setY(yy + th / 2); yy += th + 6; };
   place(names); place(line); place(q); yy += 2; place(total); if (praise) place(praise);
   c.add([card(scene, 600, h, o.qualityColor === '#ffd23f' ? 0xffd23f : 0xffffff, o.qualityColor === '#ffd23f' ? 0.7 : 0.22), names, line, q, total, ...(praise ? [praise] : [])]);
   c.setScale(0.5).setAlpha(0);
@@ -322,7 +327,7 @@ export function comboSummary(scene: Phaser.Scene, x: number, y: number, o: { nam
 
 /** A small word by the rider (a landing's quality). */
 export function popWord(scene: Phaser.Scene, x: number, y: number, s: string, color: string, size = 30): void {
-  const t = txt(scene, x, y, s, { title: true, size, color, strokeThickness: 7 }).setScrollFactor(0).setDepth(UI_DEPTH + 40);
+  const t = labelAt(scene, x, y, s, popStyle(color, size)).setScrollFactor(0).setDepth(UI_DEPTH + 40);
   t.setScale(0.4).setAlpha(0);
   scene.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 160, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: t, y: y - 60, alpha: 0, delay: 520, duration: 360, onComplete: () => t.destroy() });
@@ -331,7 +336,7 @@ export function popWord(scene: Phaser.Scene, x: number, y: number, s: string, co
 /** The tutorial's prompt: step count, what to do, a tick when done, and a SKIP pill. */
 export class TutorialCard {
   readonly c: Phaser.GameObjects.Container;
-  private head: Phaser.GameObjects.Text;
+  private head: Phaser.GameObjects.Image;
   private body: Phaser.GameObjects.Text;
   private g: Phaser.GameObjects.Graphics;
   private tick: Phaser.GameObjects.Graphics;
@@ -342,20 +347,23 @@ export class TutorialCard {
     const s = scene;
     this.c = s.add.container(s.scale.width / 2, y).setScrollFactor(0).setDepth(UI_DEPTH + 30);
     this.g = s.add.graphics();
-    this.head = txt(s, -TutorialCard.W / 2 + 28, 0, '', { title: true, size: 20, color: '#ffd23f', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5);
+    this.head = labelAt(s, -TutorialCard.W / 2 + 28, 0, '', S_CARD_HEAD, 0);
     this.body = txt(s, -TutorialCard.W / 2 + 28, 0, '', { size: 23, color: '#ffffff', strokeThickness: 0, shadow: false, wrap: TutorialCard.W - 230, align: 'left' }).setOrigin(0, 0.5);
     this.tick = s.add.graphics().setVisible(false);
     // the SKIP pill (an 84 px tall tap target)
     const sg = s.add.graphics();
     sg.fillStyle(0xffffff, 0.14).fillRoundedRect(-70, -36, 140, 72, 36).lineStyle(2, 0xffffff, 0.4).strokeRoundedRect(-70, -36, 140, 72, 36);
-    const st = txt(s, 0, 0, skipLabel, { title: true, size: 20, color: '#ffffff', strokeThickness: 0, shadow: false });
+    const st = fitWidth(labelAt(s, 0, 0, skipLabel, S_SKIP), 124);
     this.skip = s.add.container(TutorialCard.W / 2 - 90, 0, [sg, st]).setSize(150, 84).setInteractive({ useHandCursor: true });
     this.skip.on('pointerup', onSkip);
     this.c.add([this.g, this.head, this.body, this.tick, this.skip]);
   }
 
   set(head: string, body: string): void {
-    this.head.setText(head);
+    // left-aligned on the letters (as labelAt's ax 0)
+    placeLabel(this.head, labelTexture(this.scene, head, S_CARD_HEAD));
+    const hw = this.head.width;
+    this.head.setOrigin((hw - Math.ceil(labelWidth(head, S_CARD_HEAD))) / 2 / hw, this.head.originY);
     this.body.setText(body);
     const h = Math.max(110, this.body.height + 64);
     this.head.setY(-h / 2 + 24);

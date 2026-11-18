@@ -6,6 +6,7 @@
 // core caches it under the Ayvago intro); nothing here runs in play.
 import { shadeColor, STEERING_PIECES, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { RACING_SANS_ONE } from '@core/fonts/racing-sans-one';
+import { prebakeCallouts } from './callouts';
 
 const GREEN = 0x168a4a, BLUE = 0x1d63c4, ASPHALT = 0x2e3440, YELLOW = 0xffd23f;
 const NAVY = '#0d2a55';
@@ -303,4 +304,6 @@ export const SKY_THEME: MenuTheme = {
   pieces: [...STEERING_PIECES],
   frame: { border: CLOUD_BORDER, notes: cloudCard, vignette: 0.42, dim: 0 },
   overlays: { lose: '#c4321e', win: '#ffd23f' },
+  // the run's level-up and pickup words (callouts.ts)
+  prebake: (scene) => prebakeCallouts(scene),
 };

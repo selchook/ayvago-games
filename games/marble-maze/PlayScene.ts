@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, Button, txt, t, loc, burst, shake, flash, popup, storage, isEasy, COLORS, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, skinTexture, themeCard, SKIN_PAD, labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton } from '@core';
+import { ArcadeScene, Controls, Button, txt, t, loc, burst, shake, flash, storage, isEasy, COLORS, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, skinTexture, themeCard, SKIN_PAD, labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton } from '@core';
 import { World3D, THREE } from '@core/three';
 import { LEVELS, WORLDS, LEVELS_PER_WORLD } from './levels';
 import { THEMES, type Theme } from './look';
@@ -8,6 +8,8 @@ import { Sim, parseLevel, TUNE, T, type Tuning } from './sim';
 import { Bot } from './bot';
 import { boardTilt, controlMode } from './tilt-board';
 import { RollLoop } from './rollsound';
+import { pop, LEVEL_NAME, GO, CENTRE } from './callouts';
+import { INK } from './theme';
 import { MS, NUMS, BTN, TILE, MAPLE, WALNUT, GREEN, PLUM, CLEAR_CARD, worldLine } from './screens';
 
 /** Normal and Easy side by side (§7c). Easy: slower, softer marble, smaller holes, more marbles, longer star times. */
@@ -441,12 +443,14 @@ export class PlayScene extends ArcadeScene {
     // the level's name, and a hint when it brings a new idea
     const { width, height } = this.scale;
     const add = <O extends Phaser.GameObjects.GameObject>(o: O): O => { this.playUi.push(o); return o; };
-    const name = add(txt(this, width / 2, height * 0.36, loc(lv.name), { title: true, size: 48, color: '#ffffff', strokeThickness: 10, wrap: 640 }).setDepth(50));
-    name.setScale(0.3).setAlpha(0);
-    this.tweens.add({ targets: name, scale: 1, alpha: 1, duration: 380, ease: 'Back.easeOut' });
+    // the theme's face and colours (callouts.ts, painted ahead)
+    const name = add(fitWidth(labelAt(this, width / 2, height * 0.36, loc(lv.name), LEVEL_NAME), width - 80).setDepth(50));
+    const ns = name.scale;
+    name.setScale(ns * 0.3).setAlpha(0);
+    this.tweens.add({ targets: name, scale: ns, alpha: 1, duration: 380, ease: 'Back.easeOut' });
     this.tweens.add({ targets: name, alpha: 0, delay: 1500, duration: 400 });
     if (lv.tip) {
-      const tip = add(txt(this, width / 2, height * 0.36 + 76, loc(lv.tip), { size: 30, color: '#ffe9a8', wrap: 600, strokeThickness: 6 }).setDepth(50));
+      const tip = add(txt(this, width / 2, height * 0.36 + 76, loc(lv.tip), { size: 30, color: '#ffe9a8', stroke: INK, strokeThickness: 7, wrap: 600 }).setDepth(50));
       tip.setAlpha(0);
       this.tweens.add({ targets: tip, alpha: 1, delay: 250, duration: 300 });
       this.tweens.add({ targets: tip, alpha: 0, delay: 3600, duration: 500 });
@@ -462,7 +466,7 @@ export class PlayScene extends ArcadeScene {
     const g = this.add.graphics();
     g.fillStyle(0x0b1020, 0.55).fillCircle(0, 0, 62).lineStyle(3, 0xffffff, 0.45).strokeCircle(0, 0, 62);
     g.lineStyle(4, 0xffd23f, 1).strokeCircle(0, -10, 18).lineBetween(-26, -10, 26, -10).lineBetween(0, -36, 0, 16);
-    c.add([g, txt(this, 0, 34, t('centre'), { title: true, size: 16, strokeThickness: 4 })]);
+    c.add([g, fitWidth(labelAt(this, 0, 34, t('centre'), CENTRE), 116)]);
     c.setSize(124, 124).setInteractive({ useHandCursor: true });
     c.on('pointerup', () => this.centreTilt());
     this.playUi.push(c);
@@ -471,7 +475,7 @@ export class PlayScene extends ArcadeScene {
   private centreTilt(): void {
     boardTilt.calibrate();
     this.sfx('beep', { volume: 0.4 });
-    popup(this, this.scale.width / 2, 260, t('centred'), '#5dff7a', 24);
+    pop(this, this.scale.width / 2, 260, t('centred'), '#5dff7a', 24);
   }
 
   /** iOS wants a tap before the motion sensors start: a pulsing TURN TILT ON button. */
@@ -485,8 +489,8 @@ export class PlayScene extends ArcadeScene {
           this.tiltBtn?.destroy();
           this.tiltBtn = null;
           boardTilt.calibrate();
-          popup(this, width / 2, 260, t('centred'), '#5dff7a', 24);
-        } else popup(this, width / 2, height - 320, t(r === 'denied' ? 'tiltDenied' : 'tiltNone'), '#ff9a7a', 22);
+          pop(this, width / 2, 260, t('centred'), '#5dff7a', 24);
+        } else pop(this, width / 2, height - 320, t(r === 'denied' ? 'tiltDenied' : 'tiltNone'), '#ff9a7a', 22);
       });
     }, { width: 360, height: 90, size: 28, color: COLORS.purple }).setDepth(9450);
     this.tweens.add({ targets: btn, scale: 1.06, duration: 500, yoyo: true, repeat: -1 });
@@ -562,7 +566,7 @@ export class PlayScene extends ArcadeScene {
     this.phaseTime = 0;
     if (boardTilt.active) boardTilt.calibrate();
     this.sfx('beep', { volume: 0.5, exact: true, rate: 1.4 });
-    const g = txt(this, this.scale.width / 2, this.scale.height * 0.42, t('go'), { title: true, size: 64, color: '#5dff7a', strokeThickness: 10 }).setDepth(50);
+    const g = labelAt(this, this.scale.width / 2, this.scale.height * 0.42, t('go'), GO).setDepth(50);
     this.playUi.push(g);
     g.setScale(0.4);
     this.tweens.add({ targets: g, scale: 1.25, alpha: 0, duration: 650, ease: 'Quad.easeOut' });
@@ -631,7 +635,7 @@ export class PlayScene extends ArcadeScene {
         const p = this.screen(gem.x, gem.y, 0.4);
         this.sfxAt('gem', p.x, { volume: 0.7 });
         burst(this, p.x, p.y, [0x7cf0ff, 0xc77dff, 0xffffff], 16, 260);
-        popup(this, p.x, p.y - 30, `${sim.gems}/${sim.L.gems.length}`, '#7cf0ff', 26);
+        pop(this, p.x, p.y - 30, `${sim.gems}/${sim.L.gems.length}`, '#7cf0ff', 26);
         this.tweens.add({ targets: gem.obj.scale, x: 2.6, y: 2.6, z: 2.6, duration: 160, yoyo: true, onComplete: () => { gem.obj.visible = false; } });
         this.tweens.add({ targets: gem.obj.position, y: 1.2, duration: 320 });
         this.pulse(this.infoGems);
@@ -649,7 +653,7 @@ export class PlayScene extends ArcadeScene {
           this.time.delayedCall(350, () => {
             this.sfx('unlock', { volume: 0.7, exact: true });
             const g = this.screen(sim.L.goal.x, sim.L.goal.y, 0.4);
-            popup(this, g.x, g.y - 40, t('goalOpen'), '#5dff7a', 26);
+            pop(this, g.x, g.y - 40, t('goalOpen'), '#5dff7a', 26);
             burst(this, g.x, g.y, [0x5dff7a, 0xffffff], 18, 240);
           });
         }
@@ -662,7 +666,7 @@ export class PlayScene extends ArcadeScene {
         this.sfxAt('button', p.x, { volume: 0.7 });
         this.time.delayedCall(120, () => this.sfx('gate', { volume: 0.6 }));
         burst(this, p.x, p.y, [col, 0xffffff], 14, 220);
-        popup(this, this.scale.width / 2, 300, t('gateOpen'), Phaser.Display.Color.IntegerToColor(col).rgba, 26);
+        pop(this, this.scale.width / 2, 300, t('gateOpen'), Phaser.Display.Color.IntegerToColor(col).rgba, 26);
         break;
       }
       case 'checkpoint': {
@@ -671,13 +675,13 @@ export class PlayScene extends ArcadeScene {
         const p = this.screen(c.x, c.y, 0.3);
         this.sfxAt('checkpoint', p.x, { volume: 0.6 });
         burst(this, p.x, p.y, [0x5dff7a, 0xffffff], 14, 220);
-        popup(this, p.x, p.y - 40, t('checkpoint'), '#5dff7a', 24);
+        pop(this, p.x, p.y - 40, t('checkpoint'), '#5dff7a', 24);
         break;
       }
       case 'locked': {
         const g = this.screen(sim.L.goal.x, sim.L.goal.y, 0.4);
         this.sfx('locked', { volume: 0.5 });
-        popup(this, g.x, g.y - 40, t('keysFirst', { n: sim.keys, max: sim.L.keys.length }), '#ff9a7a', 24);
+        pop(this, g.x, g.y - 40, t('keysFirst', { n: sim.keys, max: sim.L.keys.length }), '#ff9a7a', 24);
         break;
       }
       case 'fall':

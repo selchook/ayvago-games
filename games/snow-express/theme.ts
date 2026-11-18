@@ -8,6 +8,7 @@ import Phaser from 'phaser';
 import { t, txt, SkinButton, shadeColor, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { BALOO_2 } from '@core/fonts/baloo-2';
 import { loadMeta } from './meta';
+import { prebakePlay } from './labels';
 
 /** The level's stars card (PlayScene.finish). */
 export const STARS_W = 600, STARS_H = 400;
@@ -354,6 +355,8 @@ export const SNOW_THEME: MenuTheme = {
   overlays: { lose: '#c8202e', titles: ['rushOver', 'crashEnd', 'allDone'] },
   // the level's stars card (PlayScene.finish) and the Journey map's postcards (mapui.ts)
   cards: [{ w: STARS_W, h: STARS_H }, MAP_CARD, RUSH_CARD],
+  // the run's banners and callouts (labels.ts), painted under the intro
+  prebake: (scene) => prebakePlay(scene),
 };
 
 /** The Journey button (M on the keyboard): the mode and level on top, "tap for the map" under it. */

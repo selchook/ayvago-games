@@ -1,4 +1,5 @@
-// The sea chart: a round radar in a glass HUD chip under the gun chip (top right). Heading-up
+// The sea chart: a round radar in a glass HUD chip under the gun chip (top right, clear of the
+// touch buttons in the bottom corners). Heading-up
 // (it turns with the camera, so left on the chart is left on the screen), centred a little below
 // the player's ship so more of the sea ahead shows. A tap on it (or M) swaps between the close
 // chart and a larger one that shows the whole archipelago.
@@ -6,8 +7,9 @@
 // Drawn with one Phaser Graphics clipped to the disc by a geometry mask, redrawn at REDRAW_HZ;
 // nothing is rendered a second time in 3D.
 import Phaser from 'phaser';
-import { hudChip, HudChip, txt, t, HUD_MARGIN, HUD_ROW2_Y, HUD_CHIP_H, HUD_GAP } from '@core';
+import { hudChip, HudChip, labelAt, t, HUD_MARGIN, HUD_ROW2_Y, HUD_CHIP_H, HUD_GAP } from '@core';
 import { THREE } from '@core/three';
+import { NORTH } from './callouts';
 
 export interface MapPoint { x: number; z: number }
 export interface MapShip extends MapPoint { heading: number }
@@ -34,10 +36,13 @@ export interface MapState {
   view: MapPoint[] | null;
 }
 
-/** Chart radius in px (small and large), and the sea radius in world units each shows. */
+/**
+ * Chart radius in px (small and large), and the sea radius in world units each shows. 1.1
+ * (landscape): the large chart is a little smaller, so it ends above the touch sail button.
+ */
 const SIZES = [
   { r: 80, range: 88 },
-  { r: 132, range: 178 },
+  { r: 118, range: 178 },
 ];
 /** The player sits this share of the radius below the centre (more sea ahead). */
 const AHEAD = 0.2;
@@ -69,7 +74,7 @@ export class Minimap {
   private chips: HudChip[] = [];
   private g: Phaser.GameObjects.Graphics;
   private maskG: Phaser.GameObjects.Graphics;
-  private north: Phaser.GameObjects.Text;
+  private north: Phaser.GameObjects.Image;
   private zone: Phaser.GameObjects.Zone;
   private acc = 1;
   private time = 0;
@@ -91,8 +96,8 @@ export class Minimap {
     this.g = scene.add.graphics().setDepth(DEPTH).setScrollFactor(0);
     this.maskG = scene.make.graphics({}, false).setScrollFactor(0);
     this.g.setMask(this.maskG.createGeometryMask());
-    this.north = txt(scene, 0, 0, t('north'), { title: true, size: 15, color: '#ffffff', strokeThickness: 4 })
-      .setOrigin(0.5).setDepth(DEPTH + 1).setScrollFactor(0);
+    // in the theme's face and brass (callouts.ts)
+    this.north = labelAt(scene, 0, 0, t('north'), NORTH).setDepth(DEPTH + 1).setScrollFactor(0);
     this.zone = scene.add.zone(0, 0, 10, 10).setScrollFactor(0).setDepth(DEPTH).setInteractive();
     this.zone.on('pointerdown', () => this.toggle());
     this.setSize(false);

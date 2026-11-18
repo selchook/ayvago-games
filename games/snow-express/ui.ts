@@ -2,7 +2,8 @@
 // the two powers), rounded buttons and glass panels in the core's modern look, banners, the power
 // buttons, and the Overlay that keeps badges over the cabins, the trains and the switches.
 import Phaser from 'phaser';
-import { txt, hudChip, HudChip, playSfx } from '@core';
+import { txt, hudChip, HudChip, playSfx, labelAt, fitWidth } from '@core';
+import { bannerStyle, subStyle } from './labels';
 import { CSS, HEX, ICON, COLORS, type ColorId } from './defs';
 import type { Sim } from './sim';
 import type { View } from './view';
@@ -212,9 +213,10 @@ export class Pill extends Phaser.GameObjects.Container {
 /** A big word that pops in and floats away. */
 export function banner(scene: Phaser.Scene, x: number, y: number, s: string, o: { color?: string; size?: number; hold?: number; sub?: string; subColor?: string } = {}): Phaser.GameObjects.Container {
   const c = scene.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 50);
-  const main = txt(scene, 0, 0, s, { title: true, size: o.size ?? 54, color: o.color ?? '#ffd23f', strokeThickness: 10, wrap: 660 });
+  // the theme's display face (labels.ts), long Turkish lines shrunk to fit
+  const main = fitWidth(labelAt(scene, 0, 0, s, bannerStyle(o.color ?? '#ffd23f', o.size ?? 54)), 660);
   c.add(main);
-  if (o.sub) c.add(txt(scene, 0, main.height / 2 + 26, o.sub, { title: true, size: 28, color: o.subColor ?? '#ffffff', strokeThickness: 7, wrap: 640 }));
+  if (o.sub) c.add(fitWidth(labelAt(scene, 0, main.displayHeight * 0.42 + 26, o.sub, subStyle(o.subColor ?? '#ffffff')), 660));
   c.setScale(0.3).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 220, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: c, y: y - 50, alpha: 0, delay: 220 + (o.hold ?? 0.8) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });

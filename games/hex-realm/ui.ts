@@ -3,9 +3,9 @@
 // rings, the touch action buttons with icons and cooldown rings, the boss bar and the banners.
 // Every always-visible readout sits in a core HUD chip.
 import Phaser from 'phaser';
-import { txt, t, hudChip, HudChip } from '@core';
-import { MEDIEVALSHARP } from '@core/fonts/medievalsharp';
+import { txt, t, hudChip, HudChip, labelAt, labelTexture, fitWidth, shadeColor, glyphAtlas, type LabelStyle } from '@core';
 import { icon } from './art';
+import { FOE, POWER_IDS, POWER_COLOR, BOSS_KINDS, MINIBOSS_KINDS, PLACE_IDS } from './defs';
 
 const HEART = icon('heart'), SKULL = icon('skull');
 
@@ -341,22 +341,154 @@ export function drawButton(b: ActionButton, color: number, o: { held?: boolean; 
 
 // ------------------------------------------------------------------ banners
 
-/** A big title that pops in, holds and flies out. */
-export function banner(scene: Phaser.Scene, y: number, title: string, sub: string, o: { color?: string; hold?: number; size?: number } = {}): Phaser.GameObjects.Container {
-  const { width } = scene.scale;
-  const c = scene.add.container(width / 2, y).setScrollFactor(0).setDepth(9400);
-  const tt = txt(scene, 0, 0, title, { title: true, size: o.size ?? 54, color: o.color ?? '#ffffff', strokeThickness: 9, wrap: 660 });
-  tt.setFontFamily(MEDIEVALSHARP); // the theme's face, like the screens around the battle
-  c.add(tt);
-  if (sub) c.add(txt(scene, 0, tt.height / 2 + 26, sub, { size: 26, color: '#fff6e6', strokeThickness: 5, wrap: 640 }));
-  c.setScale(0.3).setAlpha(0);
-  scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
-  scene.tweens.add({ targets: c, alpha: 0, y: y - 40, delay: (o.hold ?? 1.2) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
-  return c;
+const INK = '#1a1420';
+const hex6 = (n: number): string => '#' + n.toString(16).padStart(6, '0');
+/** The banners' gold, as the realm's titles (S_TITLE in screens.ts). */
+export const BANNER_GOLD = '#ffd86a';
+
+/** A banner's title in the realm's display face: a gradient from pale to the colour to its shade, inked. */
+export function bannerStyle(color: string, size: number): LabelStyle {
+  const c = parseInt(color.slice(1), 16);
+  return { size, fill: [hex6(shadeColor(c, 0.78)), color, hex6(shadeColor(c, -0.32))], stroke: INK, strokeWidth: Math.round(size * 0.17) };
+}
+/** A banner's second line (the room, the foe's name) in the display face, parchment on ink. */
+const S_BANNER_SUB: LabelStyle = { size: 28, color: '#fff2cc', stroke: INK, strokeWidth: 6 };
+/** The boss's line under its name: a sentence, in the body font. */
+const S_BOSS_SUB: LabelStyle = { size: 25, color: '#ffe6d8', stroke: INK, strokeWidth: 5, body: true };
+const S_BOSS_NAME = bannerStyle('#ffb04a', 52);
+/** A word floating up from someone in battle ("Blocked", "Low health!"). */
+export function floatStyle(color: string, size: number): LabelStyle {
+  // a lighter shade at the foot than the banners': small words stay bright over the grass
+  const c = parseInt(color.slice(1), 16);
+  return { size, fill: [hex6(shadeColor(c, 0.8)), color, hex6(shadeColor(c, -0.15))], stroke: INK, strokeWidth: Math.max(5, Math.round(size * 0.2)) };
+}
+/** The floating words of the battle, with their colour and size (PlayScene.floatAt). */
+export const FLOATS: Record<string, [string, number]> = {
+  lowHp: ['#ff7a6a', 28], blocked: ['#9ad8ff', 24], guardBreak: ['#9ad8ff', 28], sigil: ['#ff9aa8', 28], potion: ['#ff8a9a', 26],
+};
+/** Damage and healing numbers: a white glyph atlas the numbers tint (crits gold, hurt red, heals green). */
+export const S_DMG: LabelStyle = { size: 40, fill: ['#ffffff', '#ffffff', '#d8d0c4'], stroke: INK, strokeWidth: 7 };
+
+/** Paints the battle's banners and callouts ahead (the theme's prebake, under the intro). */
+export function prebakeBanners(scene: Phaser.Scene): void {
+  const gold = (s: string, size: number): void => { labelTexture(scene, s, bannerStyle(BANNER_GOLD, size)); };
+  labelTexture(scene, t('ambush'), bannerStyle('#ff9a6a', 46));
+  gold(t('campFight'), 46);
+  for (const p of PLACE_IDS) gold(t('p_' + p), 46);
+  for (let n = 1; n <= 10; n++) gold(t('enterRift', { n }), 46);
+  for (let of = 2; of <= 5; of++) for (let n = 1; n <= of; n++) {
+    labelTexture(scene, t('room', { n, of }), S_BANNER_SUB);
+    if (n > 1) { gold(t('room', { n, of }), 48); gold(t('wave', { n, of }), 46); }
+  }
+  gold(t('lastStand'), 50);
+  gold(t('victory'), 64);
+  gold(t('tut_go'), 44);
+  labelTexture(scene, t('roomClear'), bannerStyle('#a8ff9a', 44));
+  for (const p of POWER_IDS) labelTexture(scene, t('pw_' + p), bannerStyle(hex6(POWER_COLOR[p]), 40));
+  for (const k of Object.keys(FOE)) labelTexture(scene, t('f_' + k), S_BANNER_SUB);
+  for (const k of [...BOSS_KINDS, ...MINIBOSS_KINDS]) { labelTexture(scene, t('f_' + k), S_BOSS_NAME); labelTexture(scene, t('bs_' + k), S_BOSS_SUB); }
+  glyphAtlas(scene, S_DMG);
+  for (const [k, [c, size]] of Object.entries(FLOATS)) labelTexture(scene, k === 'sigil' ? '+1 ' + t('sigil') : t(k), floatStyle(c, size));
+}
+
+// One banner at a time: a banner (or the boss's entrance) that comes while another is up waits
+// in a short queue, in order (the place's name before its first wave), and the one up is cut short:
+// once it has been readable for a moment it fades fast and the next pops in.
+
+/** A banner on screen: its band (screen y, for words to keep out of) and how to cut it short. */
+interface Shown { top: number; bottom: number; cut: () => void }
+interface Lane { cur: Shown | null; queue: (() => Shown)[] }
+const lanes = new WeakMap<Phaser.Scene, Lane>();
+/** A banner shows at least this long (ms) before the next cuts it short; the cut fades this fast. */
+const MIN_SHOW = 550, CUT_FADE = 150;
+/** At most this many banners wait (the oldest waiting one gives way). */
+const MAX_QUEUE = 3;
+
+function laneOf(scene: Phaser.Scene): Lane {
+  let l = lanes.get(scene);
+  if (!l) {
+    l = { cur: null, queue: [] };
+    lanes.set(scene, l);
+    // a restarted scene is the same object: start it with an empty lane
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => lanes.delete(scene));
+  }
+  return l;
+}
+
+function enqueue(scene: Phaser.Scene, make: (done: () => void) => Shown): void {
+  const l = laneOf(scene);
+  const start = (): void => {
+    let shown: Shown | null = null;
+    const done = (): void => {
+      if (lanes.get(scene) !== l || l.cur !== shown) return;
+      l.cur = null;
+      const next = l.queue.shift();
+      if (next) l.cur = next();
+    };
+    shown = make(done);
+    l.cur = shown;
+  };
+  if (!l.cur) { start(); return; }
+  if (l.queue.length >= MAX_QUEUE) l.queue.shift();
+  l.queue.push(() => { start(); return l.cur!; });
+  l.cur.cut();
+}
+
+/** The screen band of the banner up now (with room for its fly-out), or null. */
+export function bannerBand(scene: Phaser.Scene): { top: number; bottom: number } | null {
+  const c = lanes.get(scene)?.cur;
+  return c ? { top: c.top, bottom: c.bottom } : null;
+}
+
+/**
+ * Holds a shown banner, then fades it (`out`); `cut` brings the fade forward once the banner has
+ * been up MIN_SHOW ms, and makes it quick. Calls `done` once, when it is gone.
+ */
+function holdThenFade(scene: Phaser.Scene, root: Phaser.GameObjects.Container, holdMs: number, out: (ms: number) => Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'targets'>, done: () => void): () => void {
+  const born = scene.time.now;
+  let fading = false;
+  let timer: Phaser.Time.TimerEvent | null = null;
+  const fade = (fast: boolean): void => {
+    if (fading || !root.active) return;
+    fading = true;
+    timer?.remove();
+    scene.tweens.add({ ...out(fast ? CUT_FADE : 380), targets: root, onComplete: () => { root.destroy(); done(); } });
+  };
+  timer = scene.time.delayedCall(holdMs, () => fade(false));
+  return () => {
+    if (fading) return;
+    timer?.remove();
+    timer = scene.time.delayedCall(Math.max(0, MIN_SHOW - (scene.time.now - born)), () => fade(true));
+  };
+}
+
+/** A big title that pops in, holds and flies out (after the banner before it, see enqueue). */
+export function banner(scene: Phaser.Scene, y: number, title: string, sub: string, o: { color?: string; hold?: number; size?: number } = {}): void {
+  enqueue(scene, (done) => {
+    const { width } = scene.scale;
+    const size = o.size ?? 54;
+    const c = scene.add.container(width / 2, y).setScrollFactor(0).setDepth(9400);
+    const tt = fitWidth(labelAt(scene, 0, 0, title, bannerStyle(o.color ?? BANNER_GOLD, size)), width - 220);
+    c.add(tt);
+    let bottom = y + tt.displayHeight / 2;
+    if (sub) {
+      const st = fitWidth(labelAt(scene, 0, size * 0.62 + 22, sub, S_BANNER_SUB), width - 260);
+      c.add(st);
+      bottom = y + size * 0.62 + 22 + st.displayHeight / 2;
+    }
+    c.setScale(0.3).setAlpha(0);
+    scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
+    const cut = holdThenFade(scene, c, 300 + (o.hold ?? 1.2) * 1000, (ms) => ({ alpha: 0, y: y - 40, duration: ms, ease: 'Quad.easeIn' }), done);
+    return { top: y - tt.displayHeight / 2 - 40, bottom, cut };
+  });
 }
 
 /** The boss's entrance: dark bands sweep in with a skull, the boss's name and what to do. */
 export function bossIntro(scene: Phaser.Scene, name: string, sub: string): void {
+  enqueue(scene, (done) => showBossIntro(scene, name, sub, done));
+}
+
+function showBossIntro(scene: Phaser.Scene, name: string, sub: string, done: () => void): Shown {
   const { width, height } = scene.scale;
   const root = scene.add.container(0, 0).setScrollFactor(0).setDepth(9400);
   const tint = scene.add.rectangle(0, 0, width, height, 0x200010, 0).setOrigin(0);
@@ -366,18 +498,18 @@ export function bossIntro(scene: Phaser.Scene, name: string, sub: string): void 
   band.fillStyle(0x12060a, 0.88).fillRect(0, y - 100, width, 200);
   band.fillStyle(0xd9a93a, 1).fillRect(0, y - 100, width, 6).fillRect(0, y + 94, width, 6);
   const skull = scene.add.image(width / 2, y - 58, SKULL).setDisplaySize(72, 72);
-  const n = txt(scene, width / 2, y + 10, name, { title: true, size: 52, color: '#ffb04a', strokeThickness: 10, wrap: 680 });
-  n.setFontFamily(MEDIEVALSHARP);
-  const s = txt(scene, width / 2, y + 66, sub, { size: 26, color: '#ffe6d8', strokeThickness: 5, wrap: 660 });
+  const n = fitWidth(labelAt(scene, width / 2, y + 10, name, S_BOSS_NAME), width - 200);
+  const s = fitWidth(labelAt(scene, width / 2, y + 64, sub, S_BOSS_SUB), width - 160);
   root.add([tint, band, skull, n, s]);
   band.setAlpha(0);
   scene.tweens.add({ targets: band, alpha: 1, duration: 220 });
-  n.setScale(2.2).setAlpha(0);
-  scene.tweens.add({ targets: n, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut', delay: 120 });
+  const ns = n.scale;
+  n.setScale(ns * 2.2).setAlpha(0);
+  scene.tweens.add({ targets: n, scale: ns, alpha: 1, duration: 320, ease: 'Back.easeOut', delay: 120 });
   skull.setScale(0).setAngle(-30);
   scene.tweens.add({ targets: skull, displayWidth: 72, displayHeight: 72, angle: 0, duration: 380, ease: 'Back.easeOut', delay: 60 });
   s.setAlpha(0);
   scene.tweens.add({ targets: s, alpha: 1, duration: 300, delay: 420 });
-  scene.tweens.add({ targets: root, alpha: 0, delay: 2600, duration: 420, onComplete: () => root.destroy() });
+  const cut = holdThenFade(scene, root, 2600, (ms) => ({ alpha: 0, duration: ms === CUT_FADE ? ms : 420 }), done);
+  return { top: y - 100, bottom: y + 100, cut };
 }
-

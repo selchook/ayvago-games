@@ -5,7 +5,7 @@
 // is painted in Boot under the Ayvago intro (`prebakeCourse`, the theme's `prebake`) and the
 // numbers are set from painted glyphs, so opening a screen only places images.
 import Phaser from 'phaser';
-import { t, upper, loc, playSfx, txt, themeCard, labelTexture, labelAt, fitWidth, GlyphText, Para, KitButton, bakeButton, bakePara, glyphAtlas, type LabelStyle } from '@core';
+import { t, upper, loc, playSfx, themeCard, labelTexture, labelAt, fitWidth, GlyphText, Para, KitButton, bakeButton, bakePara, glyphAtlas, type LabelStyle } from '@core';
 import { callOf, TUNING, type Call } from './scoring';
 import { HOLES, MEADOW, CASTLE } from './holes';
 
@@ -101,6 +101,8 @@ export function prebakeCourse(scene: Phaser.Scene): void {
   bakeButton(scene, 'button', GO_BTN.w, GO_BTN.h, FELT);
   bakeButton(scene, 'button', GO_BTN.w, GO_BTN.h, ORANGE);
   for (const k of ['next', 'finish']) labelTexture(scene, t(k), S.go);
+  // the Play scene's call-outs (Birdie!, Splash! ...)
+  for (const [s, c, size, small] of fixedCalls()) labelTexture(scene, s, calloutStyle(c, small ? Math.round(size * 1.15) : size));
 }
 
 /** Base for a modal screen: dim backdrop, a container, keys, cleanup. */
@@ -222,16 +224,51 @@ export function callText(call: Call, over: number): string {
   return call === 'worse' ? t('worse', { n: over }) : t(CALL_KEY[call]);
 }
 
-/** A big call-out in the middle of the screen. */
+/** The call-outs' fills: the theme's gold of the titles, a felt green, white and the warning oranges. */
+const CALL_FILL: Record<string, string[]> = {
+  '#ffd23f': ['#ffffff', '#fff2a8', '#ffc21a'],
+  '#7dff9a': ['#f2fff4', '#aaffbc', '#3fbf5a'],
+  '#ffffff': ['#ffffff', '#ffffff', '#d8ead8'],
+  '#ffb36b': ['#fff6ea', '#ffc890', '#ec7a1a'],
+  '#ff8a6b': ['#fff0ea', '#ffa890', '#e0502b'],
+  '#ff6b6b': ['#fff0f0', '#ff9090', '#e0392b'],
+  '#7ee6ff': ['#f0fcff', '#a8eeff', '#2aa8e0'],
+  '#9fe7b8': ['#f2fff6', '#bff2cf', '#4ab878'],
+};
+
+/** A call-out in the theme's face (Righteous) with the course's ink outline, as the menu's titles. */
+export const calloutStyle = (color: string, size: number): LabelStyle =>
+  ({ size, fill: CALL_FILL[color] ?? [color, color], stroke: INK, strokeWidth: Math.max(5, Math.round(size * 0.16)) });
+
+/** A big call-out in the middle of the screen (painted ahead in `prebakeCourse`). */
 export function callout(scene: Phaser.Scene, text: string, color = '#ffd23f', size = 64, y = 470): void {
   const cx = scene.scale.width / 2;
-  const tx = txt(scene, cx, y, text, { title: true, size, color, strokeThickness: 10, wrap: 660 }).setDepth(PANEL_DEPTH - 5).setScrollFactor(0);
-  tx.setScale(0.2).setAlpha(0);
-  scene.tweens.add({ targets: tx, scale: 1, alpha: 1, duration: 360, ease: 'Back.easeOut' });
+  const tx = fitWidth(labelAt(scene, cx, y, text, calloutStyle(color, size)), 660).setDepth(PANEL_DEPTH - 5).setScrollFactor(0);
+  const sc = tx.scale;
+  tx.setScale(sc * 0.2).setAlpha(0);
+  scene.tweens.add({ targets: tx, scale: sc, alpha: 1, duration: 360, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: tx, y: y - 40, alpha: 0, delay: 1500, duration: 450, ease: 'Quad.easeIn', onComplete: () => tx.destroy() });
 }
 
 export const callColor = (c: Call): string => CALL_COLOR[c];
+
+/** A smaller call-out that floats up and fades (as the core's popup, in the theme's look). */
+export function pop(scene: Phaser.Scene, x: number, y: number, s: string, color = '#ffd23f', size = 28): void {
+  const img = labelAt(scene, x, y, s, calloutStyle(color, Math.round(size * 1.15))).setDepth(6000).setScrollFactor(0);
+  fitWidth(img, scene.scale.width - 40);
+  const m = 20;
+  img.x = Phaser.Math.Clamp(x, img.displayWidth / 2 + m, scene.scale.width - img.displayWidth / 2 - m);
+  scene.tweens.add({ targets: img, y: y - 70, alpha: 0, duration: 700, ease: 'Cubic.easeOut', onComplete: () => img.destroy() });
+}
+
+/** The Play scene's call-outs and pops with a fixed text: [text, colour, size]. */
+function fixedCalls(): Array<[string, string, number, boolean]> {
+  const calls = (Object.keys(CALL_KEY) as Call[]).filter((c) => c !== 'worse')
+    .map((c): [string, string, number, boolean] => [callText(c, 0), callColor(c), c === 'holeInOne' ? 58 : 66, false]);
+  const worse: Array<[string, string, number, boolean]> = [3, 4, 5, 6].map((n) => [callText('worse', n), callColor('worse'), 66, false]);
+  return [...calls, ...worse,
+    [t('lastStroke'), '#ffb36b', 32, true], [t('lipOut'), '#ffd23f', 28, true], [t('water'), '#7ee6ff', 34, true], [t('out'), '#ffb36b', 34, true]];
+}
 
 /** The scorecard after each hole (and at the end of the round). */
 export class Scorecard extends Panel {

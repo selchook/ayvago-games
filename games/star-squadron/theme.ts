@@ -9,6 +9,7 @@ import { AUDIOWIDE } from '@core/fonts/audiowide';
 import { DUST } from './art';
 import { loadMeta } from './meta';
 import { prebakeTalents, TALENT_PANEL } from './talentsui';
+import { prebakePlay } from './labels';
 
 /** The run summary's card (PlayScene.showSummary). */
 export const SUMMARY_W = 600, SUMMARY_H = 340;
@@ -377,7 +378,7 @@ export const STAR_THEME: MenuTheme = {
   // the run summary's card and the talent board's cockpit display (talentsui.ts)
   cards: [{ w: SUMMARY_W, h: SUMMARY_H }, TALENT_PANEL],
   // the talent board's plates, buttons and labels, painted under the intro
-  prebake: (scene) => prebakeTalents(scene),
+  prebake: (scene) => { prebakeTalents(scene); prebakePlay(scene); },
 };
 
 /** The TALENTS button (T on the keyboard) in the theme's skin: the label, and the stardust under it. */

@@ -1,9 +1,9 @@
 // 2D screens over the alley: the ten-frame scorecard (a HUD chip, and big on the summary), the
 // call-outs (STRIKE!, SPARE!, TURKEY! …) and the end-of-game summary.
 import Phaser from 'phaser';
-import { txt, t, playSfx, hudChip, HudChip, themeCard, themeLabel, ThemeNumber, SkinButton } from '@core';
+import { txt, t, playSfx, hudChip, HudChip, themeCard, themeLabel, ThemeNumber, SkinButton, labelAt, fitWidth } from '@core';
 import { ScoreSheet, FRAMES } from './scoring';
-import { SUMMARY_W, SUMMARY_H, SUM_HEAD, SUM_LABEL, SUM_COUNT, SUM_TOTAL, INK } from './theme';
+import { SUMMARY_W, SUMMARY_H, SUM_HEAD, SUM_LABEL, SUM_COUNT, SUM_TOTAL, INK, CALL_PX, CALL_SUB, callStyle } from './theme';
 
 export const PANEL_DEPTH = 9500;
 const MARK_COLOR: Record<string, string> = { X: '#ffd23f', '/': '#34e7ff', '-': '#8f97b8' };
@@ -122,9 +122,10 @@ export function callout(scene: Phaser.Scene, text: string, sub = '', color = '#f
   if (lastCallout?.scene) { scene.tweens.killTweensOf([lastCallout, ...lastCallout.list]); lastCallout.destroy(); }
   const c = scene.add.container(cx, y).setDepth(PANEL_DEPTH - 5).setScrollFactor(0);
   lastCallout = c;
-  const tx = txt(scene, 0, 0, text, { title: true, size, color, strokeThickness: 12, stroke: '#1a0b2e', wrap: 680 });
+  // the theme's neon script, painted ahead (theme.ts prebakeCalls)
+  const tx = fitWidth(labelAt(scene, 0, 0, text, callStyle(color)), 680, size / CALL_PX);
   c.add(tx);
-  if (sub) c.add(txt(scene, 0, size * 0.5 + 34, sub, { size: 30, color: '#ffffff', strokeThickness: 6, stroke: '#1a0b2e', wrap: 640 }));
+  if (sub) c.add(fitWidth(labelAt(scene, 0, size * 0.5 + 36, sub, CALL_SUB), 640));
   c.setScale(0.2).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 380, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: tx, angle: { from: -4, to: 4 }, duration: 520, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' });

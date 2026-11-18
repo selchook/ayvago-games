@@ -8,6 +8,7 @@
 // pins and the ball are drawn upside down under the boards, and the boards are slightly
 // see-through, so the pins stand on their own reflections.
 import { THREE, type World3D } from '@core/three';
+import { LOBSTER } from '@core/fonts/lobster';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
   LANE_HALF, GUTTER_W, WALL_X, GUTTER_DEPTH, HEAD_Z, PIT_Z, BACK_Z, PIN_COM, SPOTS, BALL_R, OIL_LEN,
@@ -172,8 +173,8 @@ function maskingTexture(seed: number, hue: number): THREE.CanvasTexture {
     g.fillRect(-13, -30, 26, 6);
     g.fillRect(-13, -20, 26, 6);
     g.restore();
-    // the lane number
-    g.font = 'bold 96px Fredoka, Nunito, sans-serif';
+    // the lane number, in the theme's neon script
+    g.font = `110px "${LOBSTER}", Nunito, sans-serif`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.lineWidth = 10;
@@ -619,10 +620,15 @@ export function drawScreen(a: Alley, o: { title: string; big: string; sub: strin
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.fillStyle = '#9fb4ff';
-  g.font = 'bold 34px Fredoka, Nunito, sans-serif';
+  // the title and the count in the theme's neon script (Lobster), the line under it in the body face
+  g.font = `38px "${LOBSTER}", Nunito, sans-serif`;
   g.fillText(o.title, w / 2, 44);
   g.fillStyle = o.color;
-  g.font = 'bold 104px Fredoka, Nunito, sans-serif';
+  g.font = `116px "${LOBSTER}", Nunito, sans-serif`;
+  g.lineJoin = 'round';
+  g.lineWidth = 8;
+  g.strokeStyle = '#0b0620';
+  g.strokeText(o.big, w / 2, 136);
   g.fillText(o.big, w / 2, 136);
   g.fillStyle = '#ffffff';
   g.font = 'bold 32px Nunito, sans-serif';

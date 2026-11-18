@@ -8,6 +8,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, CarSteering, txt, t, isEasy, hudChip, HudChip, flash, burst, registerStrings,
   HUD_MARGIN, HUD_ROW2_Y, hudRightEdge, getLang, themeCard, themeLabel, themeText, overlayHeadingStyle,
+  labelTexture, fitWidth, type LabelStyle,
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type SimEvent, type SimInput, type Order } from './sim';
@@ -16,7 +17,33 @@ import { Bot, SKILL } from './bot';
 import { shift, rushShift, SHIFTS, type ShiftDef } from './shifts';
 import { loadMeta, saveMeta, recordShift, nextShift, bank, type Meta } from './meta';
 import { handling, vehicle, METRES, SHOP_CSS, FRAGILE, TURBO_MAX, clamp, type Mode } from './defs';
-import { makeArt, OrderPanel, MiniMap, Badges, banner, glass, mmss, UI_DEPTH, badgeKey } from './ui';
+import { makeArt, OrderPanel, MiniMap, Badges, banner, glass, mmss, UI_DEPTH, badgeKey, calloutStyle, subStyle, calloutAt, caps, WORD_PX } from './ui';
+
+/** The stars card's values and its new-district line: the theme's face in the label's ink. */
+const CARD_VALUE: LabelStyle = { size: 27, color: '#2b1d10', stroke: null, shadow: false };
+const CARD_NEW: LabelStyle = { size: 25, color: '#1d8a3c', stroke: null, shadow: false };
+
+/**
+ * Paints the fixed callouts ahead (main.ts under the Ayvago intro; again in create, cached by text
+ * and style), so a shift paints nothing new when they first show.
+ */
+export function prebakePlay(scene: Phaser.Scene): void {
+  const B: Array<[string, string]> = [
+    ['vip', '#ffd23f'], ['crash', '#ff5a4f'], ['wrongWay', '#ff9a7a'], ['dusk', '#ffcf8a'], ['night', '#ffcf8a'], ['rain', '#9fd8ff'],
+    ['timeLow', '#ff9a7a'], ['rush', '#ffd23f'],
+  ];
+  for (const [k, c] of B) labelTexture(scene, caps(t(k)), calloutStyle(c));
+  labelTexture(scene, caps(t('go')), subStyle('#ffffff'));
+  const W: Array<[string, string]> = [['careful', '#ffb35a'], ['full', '#ff9a7a'], ['expired', '#ff9a7a'], ['lateMsg', '#ffb35a'], ['coffee', '#ffcf8a'], ['turboGo', '#ffb35a']];
+  for (const [k, c] of W) labelTexture(scene, caps(t(k)), calloutStyle(c, WORD_PX));
+  for (const c of new Set(Object.values(SHOP_CSS))) labelTexture(scene, caps(t('pickedUp')), calloutStyle(c, WORD_PX));
+  labelTexture(scene, caps(t('perfect')), calloutStyle('#7dffa0', WORD_PX));
+  labelTexture(scene, caps(t('ruined')), calloutStyle('#ff9a7a', WORD_PX));
+  for (const d of SHIFTS) {
+    labelTexture(scene, caps(t('shiftN', { n: d.id }) + ' · ' + t('d' + d.district)), calloutStyle('#ffffff'));
+    labelTexture(scene, caps(t(d.intro)), subStyle('#ffd23f'));
+  }
+}
 import { STARS_W, STARS_H } from './theme';
 import { makeSounds, Loop } from './audio';
 import { cx, cz, type Bay } from './town';
@@ -32,7 +59,7 @@ interface Tip { box: Phaser.GameObjects.Container; step: number }
  * up or down to the nearest free band.
  */
 class TextLanes {
-  private items: { o: Phaser.GameObjects.Container | Phaser.GameObjects.Text; rise: number }[] = [];
+  private items: { o: Phaser.GameObjects.Container | Phaser.GameObjects.Image; rise: number }[] = [];
   constructor(private scene: Phaser.Scene) {}
 
   /** What floats now: each item's full-size box, stretched up by how far it still rises. */
@@ -50,7 +77,7 @@ class TextLanes {
    * Moves a new floating text (its centre now at y, `h` high, rising `rise` px) to the nearest
    * band where it touches nothing else that floats, then keeps track of it.
    */
-  place(o: Phaser.GameObjects.Container | Phaser.GameObjects.Text, rise: number, fixed = false): void {
+  place(o: Phaser.GameObjects.Container | Phaser.GameObjects.Image, rise: number, fixed = false): void {
     const rects = this.rects();
     const b = o.getBounds(), k = Math.max(0.05, o.scale);
     const w = b.width / k, h = b.height / k, x = b.centerX, cy = o.y + (b.centerY - o.y) / k;
@@ -149,6 +176,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     makeArt(this);
+    prebakePlay(this);
     makeSounds(this.game);
     registerStrings({ tr: { retry: 'TEKRAR' }, en: { retry: 'RETRY' } });
     this.meta = loadMeta();
@@ -387,11 +415,12 @@ export class PlayScene extends ArcadeScene {
 
   private floatWord(x: number, y: number, s: string, color: string, size: number): void {
     const W = this.scale.width;
-    const tx = txt(this, 0, 0, s, { title: true, size, color, strokeThickness: 7 }).setDepth(UI_DEPTH + 30);
-    tx.setPosition(clamp(x, tx.width / 2 + 20, W - tx.width / 2 - 20), clamp(y, 200, 1000));
+    const tx = fitWidth(calloutAt(this, 0, 0, s, calloutStyle(color, WORD_PX)), W - 40, size / WORD_PX).setDepth(UI_DEPTH + 30);
+    const k = tx.scale, hw = tx.displayWidth / 2;
+    tx.setPosition(clamp(x, hw + 20, W - hw - 20), clamp(y, 200, 1000));
     this.lanes.place(tx, 60);
-    tx.setScale(0.4);
-    this.tweens.add({ targets: tx, scale: 1, duration: 180, ease: 'Back.easeOut' });
+    tx.setScale(k * 0.4);
+    this.tweens.add({ targets: tx, scale: k, duration: 180, ease: 'Back.easeOut' });
     this.tweens.add({ targets: tx, y: tx.y - 60, alpha: 0, delay: 650, duration: 450, onComplete: () => tx.destroy() });
   }
 
@@ -409,10 +438,12 @@ export class PlayScene extends ArcadeScene {
     const p = this.at(b.x, b.y + 2.2, b.z);
     // "+pay" and "+tip" float up, coins fly to the score
     const c = this.add.container(clamp(p.x, 140, W - 140), 0).setDepth(UI_DEPTH + 40);
-    c.add(txt(this, 0, 0, '+' + money(ev.pay), { title: true, size: 44, color: '#ffffff', strokeThickness: 8 }));
-    if (ev.tip > 0) c.add(txt(this, 0, 46, t('tipN', { n: money(ev.tip) }), { title: true, size: 32, color: '#ffe27a', strokeThickness: 7 }));
-    if (ev.perfect) c.add(txt(this, 0, -48, t('perfect'), { title: true, size: 30, color: '#7dffa0', strokeThickness: 7 }));
-    if (ev.order.late || ev.order.cond < 0.25) c.add(txt(this, 0, 46, ev.order.late ? t('lateMsg') : t('ruined'), { title: true, size: 26, color: '#ff9a7a', strokeThickness: 6 }));
+    // the pay in the theme's face (painted on demand: a handful of amounts, cached by text)
+    const word = (y: number, s: string, color: string, size: number) => c.add(calloutAt(this, 0, y, s, calloutStyle(color, WORD_PX)).setScale(size / WORD_PX));
+    word(0, '+' + money(ev.pay), '#ffffff', 46);
+    if (ev.tip > 0) word(46, t('tipN', { n: money(ev.tip) }), '#ffe27a', 32);
+    if (ev.perfect) word(-48, t('perfect'), '#7dffa0', 30);
+    if (ev.order.late || ev.order.cond < 0.25) word(46, ev.order.late ? t('lateMsg') : t('ruined'), '#ff9a7a', 26);
     c.y = clamp(p.y - 30, 240, 960);
     this.lanes.place(c, 50);
     this.payPopups.push(c);
@@ -621,11 +652,11 @@ export class PlayScene extends ArcadeScene {
     rows.forEach(([k, v], i) => {
       const y = -36 + i * 38;
       c.add(txt(this, -200, y, k, { size: 26, color: '#5a4630', strokeThickness: 0, shadow: false }).setOrigin(0, 0.5));
-      c.add(txt(this, 200, y, v, { title: true, size: 26, color: '#2b1d10', strokeThickness: 0, shadow: false }).setOrigin(1, 0.5));
+      c.add(calloutAt(this, 200, y, v, CARD_VALUE, 1));
     });
     const sc = themeText(this, 0, 145, money(0), { size: 52, color: '#ffd23f' });
     c.add(sc);
-    if (opened.length) c.add(txt(this, 0, 202, t('newDistrict', { d: t('d' + opened[0]) }), { title: true, size: 24, color: '#1d8a3c', strokeThickness: 0, shadow: false }));
+    if (opened.length) c.add(fitWidth(calloutAt(this, 0, 202, t('newDistrict', { d: t('d' + opened[0]) }), CARD_NEW), STARS_W - 80));
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
     for (let i = 0; i < stars; i++) {

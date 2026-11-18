@@ -13,6 +13,7 @@ import { POWER_COLOR } from './ui';
 
 import { AMETHYST, STONE, SLATE, EMERALD, LABEL_STROKE } from './theme';
 import { prebakeTalents } from './talentsui';
+import { prebakePlay } from './callouts';
 
 const S = LABEL_STROKE;
 
@@ -149,4 +150,6 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   labelTexture(scene, t('cardsClose'), LIST_HINT);
   // and the talent board
   prebakeTalents(scene);
+  // the Play scene's banners and callouts (callouts.ts)
+  prebakePlay(scene);
 }

@@ -7,6 +7,7 @@
 import { shadeColor, STEERING_PIECES, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { BLACK_OPS_ONE } from '@core/fonts/black-ops-one';
 import { prebakeGarage, GARAGE_PIECES, RESULTS_CARD, SHOP_CARD } from './panels';
+import { prebakeCallouts } from './callouts';
 
 export const ORANGE = 0xf0761a, STEEL = 0x6c7580, DARK = 0x3a3f47, HAZARD = 0xffc21a, GREEN = 0x3f9a3a, RED = 0xc8332a;
 export const INK = '#1a1410';
@@ -336,5 +337,5 @@ export const MUD_THEME: MenuTheme = {
   overlays: { lose: '#b8320e', titles: ['champOver'] },
   // the race results and the garage (panels.ts)
   cards: [RESULTS_CARD, SHOP_CARD],
-  prebake: (scene) => prebakeGarage(scene),
+  prebake: (scene) => { prebakeGarage(scene); prebakeCallouts(scene); },
 };

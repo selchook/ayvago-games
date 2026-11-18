@@ -2,11 +2,12 @@
 // foul), keep holding to raise the take-off angle and let go near 45°. Three jumps; the best
 // counts. The flight plays in slow motion.
 import Phaser from 'phaser';
-import { t, txt, hudChip, HUD_ROW2_Y, type HudChip } from '@core';
+import { t, hudChip, HUD_ROW2_Y, GlyphText, type HudChip } from '@core';
 import { THREE } from '@core/three';
 import { SportEvent, Cadence, stride } from './base';
 import { BOARD_X, JUMP_Z } from '../stadium';
-import { Meter, ChipBoard, hexs } from '../panels';
+import { Meter, ChipBoard } from '../panels';
+import { S_ANGLE, angleChars } from '../callouts';
 import { rivalMark, type EventId } from '../scoring';
 import { metres, num } from '../strings';
 import { box } from '../look';
@@ -42,7 +43,7 @@ export class LongJump extends SportEvent {
   private rivals: number[][] = [];
   private meter!: Meter;
   private gauge!: Phaser.GameObjects.Graphics;
-  private gaugeText!: Phaser.GameObjects.Text;
+  private gaugeText!: GlyphText;
   private board!: ChipBoard;
   /** JUMP n / 3, under the event title. */
   private attemptChip!: HudChip;
@@ -100,7 +101,7 @@ export class LongJump extends SportEvent {
     const s = this.s;
     this.meter = new Meter(s, 640, 636, 340, t('speed'));
     this.gauge = s.add.graphics().setDepth(9000);
-    this.gaugeText = txt(s, 640, 330, '', { title: true, size: 30, color: '#ffffff' }).setDepth(9001);
+    this.gaugeText = new GlyphText(s, 640, 330, '', S_ANGLE, 0.5, angleChars()).setDepth(9001);
     this.board = new ChipBoard(s, t('best'), s.entrants, '–');
     this.boardRows = this.board.values;
     this.attemptChip = hudChip(s, 640, HUD_ROW2_Y, { align: 'center' });
@@ -246,6 +247,7 @@ export class LongJump extends SportEvent {
     this.stateT = 0;
     this.s.slowMo(0.45, 2600);
     this.gaugeText.setText(t('angle', { a: Math.round(this.angle) }));
+    this.tintGauge(0xffffff);
     this.s.tweens.add({ targets: [this.gaugeText, this.gauge], alpha: 0, delay: 700, duration: 300, onComplete: () => { if (!this.gaugeText.active) return; this.gauge.clear(); this.gauge.setAlpha(1); this.gaugeText.setText('').setAlpha(1); } });
   }
 
@@ -310,7 +312,13 @@ export class LongJump extends SportEvent {
     const a = Phaser.Math.DegToRad(-this.angle);
     g.lineStyle(7, 0xffd23f, 1).lineBetween(cx, cy, cx + Math.cos(a) * r, cy + Math.sin(a) * r);
     g.fillStyle(0xffffff, 1).fillCircle(cx, cy, 8);
-    this.gaugeText.setPosition(cx + 70, cy + 30).setText(`${Math.round(this.angle)}°`).setColor(hexs(this.angle >= zone[0] && this.angle <= zone[1] ? 0x7dff9a : 0xffffff));
+    this.gaugeText.setPosition(cx + 70, cy + 30).setText(`${Math.round(this.angle)}°`);
+    this.tintGauge(this.angle >= zone[0] && this.angle <= zone[1] ? 0x7dff9a : 0xffffff);
+  }
+
+  /** Tints the angle's glyphs (the atlas is white). */
+  private tintGauge(c: number): void {
+    for (const g of this.gaugeText.list as Phaser.GameObjects.Image[]) g.setTint(c);
   }
 
   /** A jump worth a nod: within 40 cm of the best rival's mark. */

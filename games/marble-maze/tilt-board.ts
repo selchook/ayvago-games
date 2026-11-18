@@ -6,7 +6,8 @@
 //
 // The menu switch CONTROL: STICK | TILT (touch screens only) is the game's `menuOption`.
 import Phaser from 'phaser';
-import { t, txt, popup, storage, playSfx, touchScreen, menuTheme, skinImage, skinTexture, themeText, type TiltResult, type SkinKind } from '@core';
+import { t, txt, storage, playSfx, touchScreen, menuTheme, skinImage, skinTexture, themeText, type TiltResult, type SkinKind } from '@core';
+import { pop } from './callouts';
 
 /** Degrees ignored around level, and the tilt that gives full board tilt. */
 const DEADZONE = 2;
@@ -217,7 +218,7 @@ export function controlMenu(scene: Phaser.Scene, x: number, y0: number): void {
       void boardTilt.enable().then((r) => {
         if (!scene.sys.isActive()) return;
         if (r === 'on') choose('tilt');
-        else popup(scene, x, y + H / 2 + 30, t(r === 'denied' ? 'tiltDenied' : 'tiltNone'), '#ff9a7a', 22);
+        else pop(scene, x, y + H / 2 + 30, t(r === 'denied' ? 'tiltDenied' : 'tiltNone'), '#ff9a7a', 22);
       });
     });
   });

@@ -7,6 +7,7 @@ import Phaser from 'phaser';
 import { t, loc, labelTexture, type LabelStyle, type SkinKind, type SkinState, bakeButton, bakeFmt, bakePara, glyphAtlas } from '@core';
 import { LEVELS, WORLDS } from './levels';
 import { THEMES } from './look';
+import { prebakePlay } from './callouts';
 
 // the theme's colours (theme.ts imports this file, so they are repeated here)
 export const MAPLE = 0xa8743e, WALNUT = 0x4a2d18, CHERRY = 0xc4452a, GREEN = 0x3c9a4a, PLUM = 0x7a4fb0;
@@ -73,4 +74,6 @@ export function prebakeMaze(scene: Phaser.Scene): void {
   bakeFmt(scene, 'levelScore', ['n'], MS.extra, NUMS);
   labelTexture(scene, t('newRecord'), MS.extra);
   labelTexture(scene, t('extraMarble'), MS.bonus);
+  // the Play scene's level names, GO! and callouts (callouts.ts)
+  prebakePlay(scene);
 }

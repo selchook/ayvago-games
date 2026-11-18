@@ -4,9 +4,11 @@
 // floor, the floor-clear card, until the hero's hearts run out.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, txt, t, upper, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, shake, flash, popup,
+  ArcadeScene, Controls, txt, t, upper, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, shake, flash,
   storage, playMusic, themeLabel, skinImage, skinTexture, SkinButton, FmtLine, GlyphText, Para,
+  labelAt, labelTexture, placeLabel, fitWidth,
 } from '@core';
+import { calloutStyle, SUB_STYLE, TIP_STYLE, FLOAT_PX, NUM_PLAIN, NUM_BIG, NUM_GEM, NUM_CHARS } from './callouts';
 import * as SCR from './screens';
 import { NIGHT, MOSSY, CRYPT } from './theme';
 import { World3D, THREE, playerCharacter3d } from '@core/three';
@@ -61,7 +63,10 @@ export class PlayScene extends ArcadeScene {
   private goldChip!: HudChip;
   private keyChip!: HudChip;
   private bars!: Phaser.GameObjects.Graphics;
-  private tip!: Phaser.GameObjects.Text;
+  private tip!: Phaser.GameObjects.Image;
+  private tipText = '';
+  /** Floating numbers (damage, gems): pooled glyph lines, one atlas per colour. */
+  private numPool: Array<{ g: GlyphText; color: string }> = [];
   private hintBox!: Phaser.GameObjects.Container;
   private hintText!: Phaser.GameObjects.Text;
   private hintQueue: string[] = [];
@@ -150,7 +155,9 @@ export class PlayScene extends ArcadeScene {
     this.minimap = new Minimap(this, width - HUD_MARGIN, HUD_ROW2_Y - 14);
     this.bossBar = new BossBar(this, 40, 236, 440);
     this.bars = this.add.graphics().setDepth(UI_DEPTH - 20);
-    this.tip = txt(this, 0, 0, '', { size: 22, color: '#ffffff', strokeThickness: 5 }).setDepth(UI_DEPTH + 5).setVisible(false);
+    this.tip = this.add.image(0, 0, '__DEFAULT').setDepth(UI_DEPTH + 5).setVisible(false);
+    this.tipText = '';
+    this.numPool = [];
     this.hintText = txt(this, 0, 0, '', { size: 25, color: '#ffffff', strokeThickness: 0, wrap: 600 });
     const hg = this.add.graphics();
     this.hintBox = this.add.container(width / 2, 960, [hg, this.hintText]).setDepth(UI_DEPTH + 20).setAlpha(0);
@@ -436,7 +443,7 @@ export class PlayScene extends ArcadeScene {
         case 'hit': {
           const e = ev.e;
           const p = this.screenOf(ev.x, this.view.headY(e.kind), ev.z);
-          if (!this.fast) popup(this, p.x + (Math.random() - 0.5) * 30, p.y, String(ev.dmg), ev.big ? '#8affe8' : '#ffffff', ev.big ? 30 : 24);
+          if (!this.fast) this.numPop(p.x + (Math.random() - 0.5) * 30, p.y, String(ev.dmg), ev.big ? NUM_BIG : NUM_PLAIN, ev.big ? 30 : 24);
           this.fx.burst(ev.x, 0.5, ev.z, 0xfff2c8, ev.big ? 8 : 5, 3.5, { up: 2, size: 0.07, life: 0.35, glow: true });
           this.sfxAt(ev.big ? 'hitBig' : 'hit', p.x, { volume: ev.kill ? 0.7 : 0.55 });
           this.hitStop = Math.max(this.hitStop, ENEMIES[e.kind].boss ? 0.05 : ev.kill ? 0.075 : ev.big ? 0.06 : 0.04);
@@ -484,7 +491,7 @@ export class PlayScene extends ArcadeScene {
           } else if (p.kind === 'gem') {
             this.sfx('gem', { volume: 0.7 });
             this.fx.glow(p.x, 0.4, p.z, 0x9ff3ff, 12, 2.5, 0.45, 0.5);
-            if (!this.fast) popup(this, sp.x, sp.y - 20, '+' + p.value, '#9ff3ff', 30);
+            if (!this.fast) this.numPop(sp.x, sp.y - 20, '+' + p.value, NUM_GEM, 30);
           } else if (p.kind === 'heart') {
             this.sfx('heal', { volume: 0.7 });
             this.fx.glow(h.x, 0.6, h.z, 0xff4a6a, 12, 2, 0.45, 0.6);
@@ -667,10 +674,21 @@ export class PlayScene extends ArcadeScene {
   private floatText(x: number, y: number, z: number, s: string, color: string, size = 28): void {
     if (this.fast) return;
     const p = this.screenOf(x, y, z);
-    const tx = txt(this, p.x, p.y, s, { size, color, strokeThickness: 6 }).setDepth(UI_DEPTH - 5);
-    tx.setScale(0.4);
-    this.tweens.add({ targets: tx, scale: 1, duration: 220, ease: 'Back.easeOut' });
+    const tx = fitWidth(labelAt(this, p.x, p.y, s, calloutStyle(color, FLOAT_PX)), this.scale.width - 40, size / FLOAT_PX).setDepth(UI_DEPTH - 5);
+    const k = tx.scale;
+    tx.setScale(k * 0.4);
+    this.tweens.add({ targets: tx, scale: k, duration: 220, ease: 'Back.easeOut' });
     this.tweens.add({ targets: tx, y: p.y - 60, alpha: 0, delay: 650, duration: 500, onComplete: () => tx.destroy() });
+  }
+
+  /** A number popping up and floating off (damage, gems): a pooled glyph line, nothing painted. */
+  private numPop(x: number, y: number, s: string, color: string, size: number): void {
+    const i = this.numPool.findIndex((n) => n.color === color);
+    const n = i >= 0 ? this.numPool.splice(i, 1)[0] : { g: new GlyphText(this, 0, 0, '', calloutStyle(color, FLOAT_PX), 0.5, NUM_CHARS).setDepth(UI_DEPTH - 4), color };
+    const k = size / FLOAT_PX;
+    n.g.setText(s).setPosition(x, y).setAlpha(1).setVisible(true).setScale(k * 0.5);
+    this.tweens.add({ targets: n.g, scale: k, duration: 160, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: n.g, y: y - 46, alpha: 0, delay: 380, duration: 420, onComplete: () => { n.g.setVisible(false); this.numPool.push(n); } });
   }
 
   /** A big title across the middle (floor numbers, guardians). */
@@ -678,9 +696,11 @@ export class PlayScene extends ArcadeScene {
     if (this.fast) return;
     const { width } = this.scale;
     const y = 420;
-    const a = txt(this, width / 2, y, title, { title: true, size: 64, color, strokeThickness: 10 }).setDepth(UI_DEPTH + 30).setScale(0.3).setAlpha(0);
-    const b = sub ? txt(this, width / 2, y + 62, sub, { size: 30, color: '#ffffff', strokeThickness: 6 }).setDepth(UI_DEPTH + 30).setAlpha(0) : null;
-    this.tweens.add({ targets: a, scale: 1, alpha: 1, duration: 380, ease: 'Back.easeOut' });
+    const a = fitWidth(labelAt(this, width / 2, y, title, calloutStyle(color)), width - 60, 1).setDepth(UI_DEPTH + 30);
+    const k = a.scale;
+    a.setScale(k * 0.3).setAlpha(0);
+    const b = sub ? fitWidth(labelAt(this, width / 2, y + 62, sub, SUB_STYLE), width - 80).setDepth(UI_DEPTH + 30).setAlpha(0) : null;
+    this.tweens.add({ targets: a, scale: k, alpha: 1, duration: 380, ease: 'Back.easeOut' });
     if (b) this.tweens.add({ targets: b, alpha: 1, delay: 200, duration: 300 });
     this.tweens.add({ targets: b ? [a, b] : [a], alpha: 0, y: '-=30', delay: 1900, duration: 450, onComplete: () => { a.destroy(); b?.destroy(); } });
   }
@@ -781,7 +801,11 @@ export class PlayScene extends ArcadeScene {
     if (s.floor.stairs.active && Math.hypot(s.floor.stairs.x - p.x, s.floor.stairs.z - p.z) < 0.8) { label = t('stairs'); at = { x: s.floor.stairs.x, z: s.floor.stairs.z, r: 0.95, color: 0x4ae0ff }; }
     this.view.hoverAt = at;
     this.input.setDefaultCursor(click ? 'pointer' : 'crosshair');
-    if (label) this.tip.setText(label).setPosition(this.mouse.sx, this.mouse.sy - 34).setVisible(true);
+    if (label) {
+      // the hover tag in the theme's face (painted once per word, cached)
+      if (label !== this.tipText) { this.tipText = label; placeLabel(this.tip, labelTexture(this, label, TIP_STYLE)); }
+      this.tip.setPosition(this.mouse.sx, this.mouse.sy - 34).setVisible(true);
+    }
   }
 
   // ------------------------------------------------------------------ cards

@@ -8,6 +8,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, shake,
   HUD_MARGIN, HUD_ROW_Y, HUD_ROW2_Y, HUD_GAP, hudRightEdge, themeCard, themeLabel, themeText, overlayHeadingStyle,
+  labelAt, labelTexture, fitWidth, GlyphText, type LabelStyle,
 } from '@core';
 import { SUMMARY_W, SUMMARY_H } from './menu';
 import { INK } from './chart';
@@ -22,7 +23,7 @@ import { shorePoint } from './island';
 import { Bot, SKILL } from './bot';
 import { loadMeta, saveMeta, bankRun, type Meta } from './meta';
 import { makeArt, GOLD, powerArt, seaPowerArt, DOUBLOON, SHIP } from './art';
-import { HpBar, PowerChips, BossBar, ProgressChip, SailLever, SailChip, banner, bossIntro, actionButton, drawButton, showButton, relabel, glass, Pill, type ActionButton } from './ui';
+import { HpBar, PowerChips, BossBar, ProgressChip, SailLever, SailChip, banner, bossIntro, calloutStyle, SUB_STYLE, FLOAT_PX, actionButton, drawButton, showButton, relabel, glass, Pill, type ActionButton } from './ui';
 import { ShopOverlay, DraftOverlay, RouteOverlay, type OverlayHost } from './shop';
 import type { ShopId, BoonId, ShipId } from './upgrades';
 
@@ -48,7 +49,40 @@ const SAIL_LEVER: [number, number] = [1192, 330];
 /** Banners: between the HUD rows and the hero (who stands a little above the screen's middle). */
 const BANNER_Y = 236;
 
-interface DmgText { t: Phaser.GameObjects.Text; life: number; x: number; y: number }
+interface DmgText { t: GlyphText; color: string; base: number; life: number; x: number; y: number }
+
+/** The damage numbers' colours (each its own glyph atlas): plain, critical, the hero's and the ship's hurt, burning. */
+const DMG_PLAIN = '#ffffff', DMG_CRIT = '#ffe04a';
+const DMG_COLORS = [DMG_PLAIN, DMG_CRIT, '#ff6a5a', '#ffb04a'];
+/** The training cards' headings: the theme's face, gilded (the sea card in sea blue). */
+const TUT_HEAD: LabelStyle = calloutStyle('#ffd23f', 30);
+const SEA_HEAD: LabelStyle = calloutStyle('#9fe8ff', 40);
+
+/**
+ * The fixed callouts in their colours and kinds (`say` banners at ui.ts TITLE_PX, `floatAt` at FLOAT_PX),
+ * painted ahead (Boot, under the intro; again in create after a language change) so a raid
+ * paints nothing new when they first show.
+ */
+const BANNER_WORDS: Array<[string, string]> = [
+  ['barrage', '#ffc23a'], ['islandClear', '#ffd23f'], ['krakenHead', '#ff9ad0'], ['captainLands', '#ffb04a'], ['captainRage', '#ff5a7a'],
+  ['secondWindOn', '#ffd27a'], ['landHo', '#ffe6a0'], ['sunk', '#ff8a6a'], ['isletFound', '#ffd23f'],
+  ['r_calm', '#9fe8ff'], ['r_storm', '#c8d4e8'],
+];
+const FLOAT_WORDS: Array<[string, string]> = [['lowHp', '#ff7a6a'], ['blocked', '#7fe8ff'], ['chestOpen', '#ffd23f'], ['rockHit', '#ffb08a'], ['current', '#9fe8ff']];
+
+/** Paints the Play scene's callouts ahead (main.ts under the intro, and each create: cached by text). */
+export function prebakePlay(scene: Phaser.Scene): void {
+  const has = (k: string) => t(k) !== k;
+  for (const [k, c] of BANNER_WORDS) if (has(k)) labelTexture(scene, t(k), calloutStyle(c));
+  for (const [k, c] of FLOAT_WORDS) if (has(k)) labelTexture(scene, t(k), calloutStyle(c, FLOAT_PX));
+  for (let n = 1; n <= 8; n++) {
+    labelTexture(scene, t('islandN', { n }), calloutStyle('#ffe6a0'));
+    labelTexture(scene, t('waveN', { n }), calloutStyle('#ffe6c0'));
+  }
+  for (let n = 1; n <= 4; n++) labelTexture(scene, t('tutTitle') + '  ' + t('tutStep', { n }), TUT_HEAD);
+  labelTexture(scene, t('seaTutTitle'), SEA_HEAD);
+  for (const c of DMG_COLORS) new GlyphText(scene, 0, 0, '', calloutStyle(c, FLOAT_PX), 0.5, '0123456789').destroy();
+}
 type TutStep = 'move' | 'combo' | 'dodge' | 'power' | 'done';
 
 export class PlayScene extends ArcadeScene {
@@ -97,7 +131,7 @@ export class PlayScene extends ArcadeScene {
   private bossHold = 0;
   private bot: Bot | null = null;
   private dmg: DmgText[] = [];
-  private dmgPool: Phaser.GameObjects.Text[] = [];
+  private dmgPool: DmgText[] = [];
   private shown = { gold: -1, wave: '', combo: -1, kegs: -1, special: -1, island: -1 };
   private sfxGap: Record<string, number> = {};
   private redT = 0;
@@ -152,6 +186,7 @@ export class PlayScene extends ArcadeScene {
     this.sailLever = null; this.sailStep = 0;
     this.specialChip = this.kegChip = null; this.specialPips = null;
     makeArt(this);
+    prebakePlay(this);
 
     this.view = new View(this, { hero: this.hero });
     this.world = this.view.world;
@@ -894,7 +929,7 @@ export class PlayScene extends ArcadeScene {
     ];
     const h = 470;
     c.add(glass(this, 640, h, { r: 26, color: 0x0e1a24, alpha: 0.92, rim: 0x7ad8ff }));
-    c.add(txt(this, 0, -h / 2 + 34, t('seaTutTitle'), { title: true, size: 30, color: '#9fe8ff', strokeThickness: 0, shadow: false }));
+    c.add(fitWidth(labelAt(this, 0, -h / 2 + 36, t('seaTutTitle'), SEA_HEAD), 580));
     lines.forEach(([icon, text], i) => {
       const y = -h / 2 + 116 + i * 104;
       c.add(this.add.image(-262, y, icon).setDisplaySize(62, 62));
@@ -958,7 +993,7 @@ export class PlayScene extends ArcadeScene {
     const h = Math.max(104, tx.height + 62);
     const c = this.add.container(this.midX, 676 - h / 2).setScrollFactor(0).setDepth(9420);
     c.add(glass(this, TUT_W, h, { r: 24, color: 0x0e1a24, alpha: 0.86, rim: step === 'done' ? 0x7affa0 : 0xffd23f }));
-    c.add(txt(this, 0, -h / 2 + 22, t('tutTitle') + '  ' + t('tutStep', { n }), { title: true, size: 18, color: '#ffd23f', strokeThickness: 0, shadow: false }));
+    c.add(fitWidth(labelAt(this, 0, -h / 2 + 24, t('tutTitle') + '  ' + t('tutStep', { n }), TUT_HEAD), TUT_W - 40));
     c.add(tx);
     c.setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 260, ease: 'Back.easeOut' });
@@ -1062,21 +1097,25 @@ export class PlayScene extends ArcadeScene {
     if (this.dmg.length > 16) return;
     const s = this.sx(x, z, 1.6);
     if (s.x < -20 || s.x > this.scale.width + 20 || s.y < 0 || s.y > this.scale.height) return;
-    const tx = this.dmgPool.pop() ?? txt(this, 0, 0, '', { title: true, size: 24, strokeThickness: 5 }).setScrollFactor(0).setDepth(6000);
-    tx.setText(String(Math.round(n))).setColor(color ?? (crit ? '#ffe04a' : '#ffffff')).setFontSize(crit ? 34 : 24).setVisible(true).setAlpha(1).setScale(crit ? 1.3 : 1);
+    // pooled glyph lines, one atlas per colour (painted ahead): a hit only swaps frames
+    const col = color ?? (crit ? DMG_CRIT : DMG_PLAIN);
+    const i = this.dmgPool.findIndex((d) => d.color === col);
+    const d = i >= 0 ? this.dmgPool.splice(i, 1)[0] : { t: new GlyphText(this, 0, 0, '', calloutStyle(col, FLOAT_PX), 0.5, '0123456789').setScrollFactor(0).setDepth(6000), color: col, base: 1, life: 0, x: 0, y: 0 };
+    const base = (crit ? 34 : 24) / FLOAT_PX;
     const ox = (Math.random() - 0.5) * 30;
-    tx.setPosition(s.x + ox, s.y);
-    this.dmg.push({ t: tx, life: crit ? 0.8 : 0.6, x: s.x + ox, y: s.y });
+    d.t.setText(String(Math.round(n))).setVisible(true).setAlpha(1).setScale(crit ? base * 1.3 : base).setPosition(s.x + ox, s.y);
+    Object.assign(d, { base, life: crit ? 0.8 : 0.6, x: s.x + ox, y: s.y });
+    this.dmg.push(d);
   }
 
   private updateDmg(dt: number): void {
     for (let i = this.dmg.length - 1; i >= 0; i--) {
       const d = this.dmg[i];
       d.life -= dt;
-      if (d.life <= 0) { d.t.setVisible(false); this.dmgPool.push(d.t); this.dmg.splice(i, 1); continue; }
+      if (d.life <= 0) { d.t.setVisible(false); this.dmgPool.push(d); this.dmg.splice(i, 1); continue; }
       d.y -= dt * 80;
       d.t.setPosition(d.x, d.y).setAlpha(Math.min(1, d.life * 4));
-      if (d.t.scale > 1) d.t.setScale(Math.max(1, d.t.scale - dt * 2));
+      if (d.t.scale > d.base) d.t.setScale(Math.max(d.base, d.t.scale - dt * 2 * d.base));
     }
   }
 
@@ -1103,9 +1142,9 @@ export class PlayScene extends ArcadeScene {
    */
   private floatAt(x: number, z: number, s: string, color: string, size = 26, sub = ''): void {
     const p = this.sx(x, z, 2);
-    const main = txt(this, 0, 0, s, { title: true, size, color, strokeThickness: 6 });
-    const small = sub ? txt(this, 0, size * 0.85, sub, { size: Math.round(size * 0.62), color: '#ffffff', strokeThickness: 4 }) : null;
-    const half = Math.max(main.width, small?.width ?? 0) / 2 + 10;
+    const main = fitWidth(labelAt(this, 0, 0, s, calloutStyle(color, FLOAT_PX)), 560, size / FLOAT_PX);
+    const small = sub ? fitWidth(labelAt(this, 0, size * 0.85, sub, SUB_STYLE), 520, (size * 0.62) / (SUB_STYLE.size ?? 26)) : null;
+    const half = Math.max(main.displayWidth, small?.displayWidth ?? 0) / 2 + 10;
     const { width: W, height: H } = this.scale;
     const right = this.touch ? BTN_B[0] - 70 : W - 12;
     const y = Phaser.Math.Clamp(p.y - 20, ROW3_Y + 112, H - 40 - (small ? size : 0));

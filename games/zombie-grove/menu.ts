@@ -9,6 +9,7 @@ import { RUBIK_WET_PAINT } from '@core/fonts/rubik-wet-paint';
 import { COIN } from './art';
 import { prebakeCamp, CAMP_PANEL } from './camp';
 import { prebakePanels, CHEST_CARDS, CHOICE_CARD } from './chestui';
+import { prebakePlay } from './labels';
 
 /** The run summary's card (PlayScene.showSummary): short and tall (endless or a new hero). */
 export const SUMMARY_W = 620;
@@ -551,7 +552,7 @@ export const GROVE_THEME: MenuTheme = {
   // dawn's choice
   cards: [...SUMMARY_H.map((h) => ({ w: SUMMARY_W, h })), CAMP_PANEL, ...CHEST_CARDS, CHOICE_CARD],
   // the camp's tabs, tiles, buttons and labels, the chest's and the dawn's (camp.ts, chestui.ts)
-  prebake: (scene) => { prebakeCamp(scene); prebakePanels(scene); },
+  prebake: (scene) => { prebakeCamp(scene); prebakePanels(scene); prebakePlay(scene); },
 };
 
 /**

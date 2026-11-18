@@ -4,7 +4,8 @@
 // chip and the badges that float over the shops and houses with a job (pinned to the screen edge
 // when they are off screen).
 import Phaser from 'phaser';
-import { txt, hudChip, HudChip, HUD_MARGIN, HUD_CHIP_H, t } from '@core';
+import { txt, hudChip, HudChip, HUD_MARGIN, HUD_CHIP_H, t, upper, labelAt, fitWidth, type LabelStyle } from '@core';
+import { INK } from './theme';
 import { SHOP_COLOR, SHOP_CSS, FRAGILE, VIP_COLOR, S, clamp, type Cargo } from './defs';
 import type { Sim, Order } from './sim';
 import type { View } from './view';
@@ -223,12 +224,47 @@ export class Pill extends Phaser.GameObjects.Container {
   }
 }
 
+// ------------------------------------------------------------------ the callouts' looks
+
+/** The size banners are painted at (scaled to each banner's size). */
+export const BANNER_PX = 56;
+/** The size floating words and the pay popups are painted at. */
+export const WORD_PX = 36;
+
+/** `c` mixed toward `to` by k (both #rrggbb). */
+function mix(c: string, to: string, k: number): string {
+  const a = parseInt(c.slice(1), 16), b = parseInt(to.slice(1), 16);
+  const ch = (sh: number) => Math.round(((a >> sh) & 255) * (1 - k) + ((b >> sh) & 255) * k);
+  return '#' + ((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0');
+}
+
+/**
+ * A callout in the theme's sign-painter face (Bungee): bright on top, the callout's colour, a
+ * warmer foot, outlined in the parcel-brown ink of the menu's and the map's labels.
+ */
+export function calloutStyle(color: string, size = BANNER_PX): LabelStyle {
+  return { size, fill: [mix(color, '#fff6d0', 0.6), color, mix(color, '#ff8a1a', 0.25)], stroke: INK, strokeWidth: Math.round(size * 0.18) };
+}
+/**
+ * Bungee draws capitals only, so a lower-case Turkish i would show as a dotless I: every callout
+ * goes through the language's own upper case first (i → İ, ı → I), as the menu's labels do.
+ */
+export const caps = (s: string): string => upper(s);
+
+/** A painted callout label (upper-cased for the caps-only face). */
+export function calloutAt(scene: Phaser.Scene, x: number, y: number, s: string, o: LabelStyle, ax: 0 | 0.5 | 1 = 0.5): Phaser.GameObjects.Image {
+  return labelAt(scene, x, y, caps(s), o, ax);
+}
+
+/** A banner's second line (in its own colour, flat). */
+export const subStyle = (color: string): LabelStyle => ({ size: 28, color, stroke: INK, strokeWidth: 6 });
+
 /** A big word that pops in and floats away. */
 export function banner(scene: Phaser.Scene, x: number, y: number, s: string, o: { color?: string; size?: number; hold?: number; sub?: string; subColor?: string } = {}): Phaser.GameObjects.Container {
   const c = scene.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 50);
-  const main = txt(scene, 0, 0, s, { title: true, size: o.size ?? 54, color: o.color ?? '#ffd23f', strokeThickness: 10, wrap: 660 });
-  c.add(main);
-  if (o.sub) c.add(txt(scene, 0, main.height / 2 + 8, o.sub, { title: true, size: 28, color: o.subColor ?? '#ffffff', strokeThickness: 7, wrap: 640 }).setOrigin(0.5, 0));
+  const size = o.size ?? 54;
+  c.add(fitWidth(calloutAt(scene, 0, 0, s, calloutStyle(o.color ?? '#ffd23f')), 660, size / BANNER_PX));
+  if (o.sub) c.add(fitWidth(calloutAt(scene, 0, size * 0.5 + 26, o.sub, subStyle(o.subColor ?? '#ffffff')), 640));
   c.setScale(0.3).setAlpha(0);
   scene.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 220, ease: 'Back.easeOut' });
   scene.tweens.add({ targets: c, y: y - 50, alpha: 0, delay: 220 + (o.hold ?? 0.8) * 1000, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });

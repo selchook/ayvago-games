@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import {
-  ArcadeScene, CarSteering, t, txt, shake, flash, popup, playMusic, touchScreen,
+  ArcadeScene, CarSteering, t, txt, shake, flash, playMusic, touchScreen,
   hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, HUD_CHIP_H, hudRightEdge, themeCard, themeLabel,
 } from '@core';
 import { World3D, THREE, model } from '@core/three';
@@ -12,7 +12,8 @@ import { Ambience } from './sounds';
 import { WAVES, FOES, tuning, waveBonus, TUNING, type FoeKind, type FoeStats, type WaveDef } from './waves';
 import { Minimap, viewQuad, type MapState } from './minimap';
 import { CannonSfx } from './cannon-sfx';
-import { WAVE_CARD_W, WAVE_CARD_H, WAVE_NO_STYLE, WAVE_TITLE_STYLE, WAVE_CLEAR_STYLE, INK } from './theme';
+import { WAVE_CARD_W, WAVE_CARD_H, WAVE_NO_STYLE, WAVE_TITLE_STYLE, WAVE_CLEAR_STYLE, INK, LABEL_STROKE } from './theme';
+import { pop } from './callouts';
 
 // ---------------------------------------------------------------- constants
 
@@ -33,6 +34,40 @@ const PLAYER_GUNS = 3;
 const COMBO_TIME = 5;
 const BALL_SCALE = 1.5;
 const ESCORT_HP = { normal: 10, easy: 14 };
+
+// 1.1: landscape (1280 × 720). The camera rides behind and above the ship with a narrower lens
+// than the portrait one (a 54° lens on a tall screen): about the same ship size on a phone held
+// sideways, twice the sea abeam (where the broadsides fly) and a lower look for more of the sea
+// ahead. It pulls back only when a fight lies far out on a beam.
+/** The play camera: vertical lens (degrees), distance behind and height over the ship, and how far ahead it looks. */
+export const CAM = { fov: 38, back: 50, up: 40, ahead: 14 };
+/** A target this far abeam (units, plus a margin) starts the camera pulling back, up to `max`. */
+const CAM_FRAME = { abeam: 34, max: 1.4 };
+/**
+ * Touch buttons on an arc round the right thumb (sized for 720 × 405 and 844 × 390 phones):
+ * STARBOARD in the corner, PORT left of it, each with its sail button above; the steering group
+ * is the core's, bottom left.
+ */
+const BTN = {
+  port: { x: 1010, y: 628 },
+  star: { x: 1170, y: 600 },
+  sailDown: { x: 1006, y: 480 },
+  sailUp: { x: 1188, y: 444 },
+};
+/** The fire buttons' reload rings (radius). */
+const RING_R = 72;
+/** Big lines over the sea (the wave card, WAVE CLEAR, warnings): above the ship, under the HUD rows. */
+const CARD_Y = 258;
+const CALLOUT_Y = 236;
+/**
+ * The hint lines: low between the thumbs (the steering arrows end at x 355, the PORT ring starts at
+ * 938), over the ship's wake, so they never meet the wave card or the callouts over the sea ahead.
+ * `HINT_Y` is the bottom of the last line (a longer hint grows upwards).
+ */
+const HINT_Y = 692, HINT_W = 548;
+/** On touch, the thumbs' corners that edge arrows keep out of: the steering arrows (left) and the gun and sail buttons (right). */
+const THUMB_L = { x: 372, top: 506 };
+const THUMB_R = { x: 930, top: 384 };
 
 type Phase = 'card' | 'play' | 'clear' | 'over';
 type LootKind = 'chest' | 'barrel' | 'bottle';
@@ -170,14 +205,17 @@ export class PlayScene extends ArcadeScene {
   private hintQueue: string[] = [];
   private hintT = 0;
   private card: Phaser.GameObjects.Container | null = null;
+  /** The last wave card while it fades out. */
+  private cardOut: Phaser.GameObjects.Container | null = null;
   private padIcons: Phaser.GameObjects.Graphics | null = null;
   private goalKey = '';
   minimap!: Minimap;
   private mapIslands: MapState['islands'] = [];
-  private hintBig: boolean | null = null;
 
   // tests
   private auto = false;
+  /** The camera's settings (tests and the store art may reframe it). */
+  readonly camCfg = CAM;
   /** Exposed for tests: the active Normal/Easy tuning. */
   tune = TUNING.normal;
   /** Rendered draw calls of the last frame (tests read it). */
@@ -210,7 +248,7 @@ export class PlayScene extends ArcadeScene {
     this.pending = [];
     this.hintQueue = [];
     this.hintT = 0;
-    this.card = null;
+    this.card = this.cardOut = null;
     this.auto = false;
     this.stormK = 0;
     this.lightningT = 0;
@@ -220,7 +258,7 @@ export class PlayScene extends ArcadeScene {
     // the world (its own geometries are freed when the scene shuts down)
     freeOwnGeometry(this, () => this.world?.scene);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.fx?.dispose());
-    this.world = new World3D(this, { fov: 54, near: 1, far: 320, background: PALETTES.day.sky, fog: { color: PALETTES.day.fog, near: 95, far: 230 } });
+    this.world = new World3D(this, { fov: CAM.fov, near: 1, far: 320, background: PALETTES.day.sky, fog: { color: PALETTES.day.fog, near: 95, far: 230 } });
     this.world.addLights({ ambient: 1.55, intensity: 2.3, extent: 36, dir: [-0.45, 1, -0.35] });
     const sun = this.world.sun!;
     sun.shadow.mapSize.set(2048, 2048);
@@ -264,14 +302,14 @@ export class PlayScene extends ArcadeScene {
     // input: arrows steer and set the sails, A/Z fire port, D/X fire starboard, Space either side
     const kb = this.input.keyboard!;
     this.keys = kb.addKeys('LEFT,RIGHT,UP,DOWN,A,Z,D,X,SPACE,ENTER,W,S,M') as Record<string, Phaser.Input.Keyboard.Key>;
-    const { width, height } = this.scale;
+    const { width } = this.scale;
     this.steering = new CarSteering(this, {
       touch: touchScreen(this),
       buttons: [
-        { id: 'port', shape: 'round', x: 482, y: height - 136, r: 62, color: 0xd9452b, label: t('port'), labelY: 0, labelSize: 21, hit: 14 },
-        { id: 'star', shape: 'round', x: width - 80, y: height - 136, r: 62, color: 0xd9452b, label: t('starboard'), labelY: 0, labelSize: 17, hit: 14 },
-        { id: 'sailDown', shape: 'round', x: 482, y: height - 300, r: 44, color: 0x2a6f9e, hit: 16 },
-        { id: 'sailUp', shape: 'round', x: width - 80, y: height - 300, r: 44, color: 0x2a6f9e, hit: 16 },
+        { id: 'port', shape: 'round', ...BTN.port, r: 62, color: 0xd9452b, label: t('port'), labelY: 0, labelSize: 21, hit: 14 },
+        { id: 'star', shape: 'round', ...BTN.star, r: 62, color: 0xd9452b, label: t('starboard'), labelY: 0, labelSize: 17, hit: 14 },
+        { id: 'sailDown', shape: 'round', ...BTN.sailDown, r: 44, color: 0x2a6f9e, hit: 16 },
+        { id: 'sailUp', shape: 'round', ...BTN.sailUp, r: 44, color: 0x2a6f9e, hit: 16 },
       ],
       ramp: 0.25,
       keyRamp: 0.2,
@@ -288,14 +326,20 @@ export class PlayScene extends ArcadeScene {
     this.makeHud();
     this.marks = this.add.graphics().setDepth(8500).setScrollFactor(0);
     this.rings = this.add.graphics().setDepth(9450).setScrollFactor(0);
-    this.hint = txt(this, width / 2, 238, '', { size: 25, color: '#ffffff', strokeThickness: 6, wrap: 620 }).setDepth(9000).setScrollFactor(0).setAlpha(0);
+    // hints: low between the thumbs, over the ship's wake
+    this.hint = txt(this, width / 2, HINT_Y, '', { size: 25, color: '#fff6dc', stroke: LABEL_STROKE, strokeThickness: 7, wrap: HINT_W }).setOrigin(0.5, 1).setDepth(9000).setScrollFactor(0).setAlpha(0);
 
     // the sea chart (top right, under the gun chip); it hides under the pause and result screens
     this.mapIslands = this.map.islands.filter((i) => i.root.children.length).map((i) => ({ x: i.x, z: i.z, r: i.r, home: i === this.map.home, rock: !!i.rock }));
     this.minimap = new Minimap(this, () => this.mapState());
-    this.hintBig = null;
-    const onPause = () => this.minimap.setHidden(true);
-    const onResume = () => this.minimap.setHidden(this.isOver);
+    // (the wave card and the hint too: in landscape they would peek out round the pause card)
+    const onPause = () => {
+      this.minimap.setHidden(true);
+      this.card?.setVisible(false);
+      this.cardOut?.setVisible(false);
+      this.hint.setVisible(false);
+    };
+    const onResume = () => { this.minimap.setHidden(this.isOver); this.card?.setVisible(true); this.hint.setVisible(true); };
     this.events.on(Phaser.Scenes.Events.PAUSE, onPause);
     this.events.on(Phaser.Scenes.Events.RESUME, onResume);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -327,7 +371,6 @@ export class PlayScene extends ArcadeScene {
 
   /** Sail icons on the touch sail buttons (a sail with an arrow), drawn over the pad. */
   private drawPadIcons(): void {
-    const { width, height } = this.scale;
     const g = this.add.graphics().setDepth(9401).setScrollFactor(0);
     const sail = (x: number, y: number, up: boolean) => {
       g.fillStyle(0xffffff, 0.95);
@@ -339,8 +382,8 @@ export class PlayScene extends ArcadeScene {
       if (up) g.fillTriangle(x - 12, ay + 6, x + 12, ay + 6, x, ay - 8);
       else g.fillTriangle(x - 12, ay - 6, x + 12, ay - 6, x, ay + 8);
     };
-    sail(482, height - 300 + 2, false);
-    sail(width - 80, height - 300 + 2, true);
+    sail(BTN.sailDown.x, BTN.sailDown.y + 2, false);
+    sail(BTN.sailUp.x, BTN.sailUp.y + 2, true);
     this.padIcons = g;
   }
 
@@ -395,9 +438,8 @@ export class PlayScene extends ArcadeScene {
     const title = themeLabel(this, 0, -14, t(this.def.title), WAVE_TITLE_STYLE);
     if (title.width > WAVE_CARD_W - 60) title.setScale((WAVE_CARD_W - 60) / title.width);
     const sub = txt(this, 0, 52, goal, { size: 24, color: INK, wrap: 540, strokeThickness: 0, shadow: false });
-    // below the large sea chart when it is open
-    const y = this.minimap?.big ? Math.max(430, this.minimap.bottom + 110) : 430;
-    this.card = this.add.container(width / 2, y, [bg, n, title, sub]).setDepth(9100).setScrollFactor(0).setScale(0.6).setAlpha(0);
+    // over the sea ahead of the ship, between the HUD rows and the ship (the chart is clear of it)
+    this.card = this.add.container(width / 2, CARD_Y, [bg, n, title, sub]).setDepth(9100).setScrollFactor(0).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.card, scale: 1, alpha: 1, duration: 360, ease: 'Back.easeOut' });
   }
 
@@ -405,7 +447,8 @@ export class PlayScene extends ArcadeScene {
     const c = this.card;
     if (!c) return;
     this.card = null;
-    this.tweens.add({ targets: c, alpha: 0, y: c.y - 60, duration: 300, onComplete: () => c.destroy() });
+    this.cardOut = c;
+    this.tweens.add({ targets: c, alpha: 0, y: c.y - 60, duration: 300, onComplete: () => { c.destroy(); if (this.cardOut === c) this.cardOut = null; } });
   }
 
   private beginPlay(): void {
@@ -432,10 +475,10 @@ export class PlayScene extends ArcadeScene {
     if (this.hull > before) this.hud.setLives(this.hull, this.tune.hull);
     const title = this.failed ? '' : t('waveClear');
     if (title) {
-      const big = themeLabel(this, width / 2, 420, title, WAVE_CLEAR_STYLE).setDepth(9100).setScrollFactor(0).setScale(0.4);
+      const big = themeLabel(this, width / 2, CARD_Y - 18, title, WAVE_CLEAR_STYLE).setDepth(9100).setScrollFactor(0).setScale(0.4);
       this.tweens.add({ targets: big, scale: 1, duration: 420, ease: 'Back.easeOut' });
       this.tweens.add({ targets: big, alpha: 0, delay: 1900, duration: 400, onComplete: () => big.destroy() });
-      popup(this, width / 2, 500, t('bonus', { n: bonus }), '#9fe7b8', 30);
+      pop(this, width / 2, CARD_Y + 52, t('bonus', { n: bonus }), '#9fe7b8', 30);
       this.sfx('fanfare', { exact: true, volume: 0.75 });
       this.fx.sparkle(this.player.point(0, 0, 6), 0xffd23f, 30);
     }
@@ -489,14 +532,24 @@ export class PlayScene extends ArcadeScene {
 
   // ---------------------------------------------------------------- spawning
 
-  /** A spot on open water roughly `d` away from (x, z), ahead of the heading where possible. */
-  private seaSpot(x: number, z: number, d: number, h: number, spread = 1.3): { x: number; z: number } {
-    for (let i = 0; i < 40; i++) {
-      const a = h + (Math.random() - 0.5) * 2 * spread * (1 + i / 20);
-      const r = d * (0.85 + Math.random() * 0.3);
+  /**
+   * A spot on open water roughly `d` away from (x, z), ahead of the heading where possible. With
+   * `hidden` (new ships), a spot out of sight is preferred: the wide landscape view sees the sides
+   * of the old spawn ring, so a try that lands on screen goes again a little wider and further
+   * (up to 1.35 × d) before it settles for one in sight.
+   */
+  private seaSpot(x: number, z: number, d: number, h: number, spread = 1.3, hidden = false): { x: number; z: number } {
+    const v = new THREE.Vector3();
+    for (let i = 0; i < (hidden ? 80 : 40); i++) {
+      // the first 40 tries of a hidden spot look out of sight, further out as they go; then any spot
+      const seek = hidden && i < 40;
+      const j = i % 40;
+      const a = h + (Math.random() - 0.5) * 2 * spread * (1 + j / 20);
+      const r = d * (0.85 + Math.random() * 0.3) * (seek ? 1 + 0.35 * Math.min(1, i / 30) : 1);
       const px = x + Math.sin(a) * r, pz = z + Math.cos(a) * r;
       if (Math.hypot(px, pz) > MAP_R - 12) continue;
       if (this.map.hitIsland(px, pz, 9)) continue;
+      if (seek && this.onScreen(v.set(px, 6, pz), 60)) continue;
       return { x: px, z: pz };
     }
     const a = Math.random() * Math.PI * 2;
@@ -507,7 +560,7 @@ export class PlayScene extends ArcadeScene {
     const stats = FOES[kind];
     const ship = new Ship(this.world.scene, 'pk:' + stats.model, stats.scale, { glow: kind === 'ghost' ? 0.35 : 0 });
     const near = this.def.mission === 'escort' && this.ally ? this.ally : this.player;
-    const spot = this.seaSpot(near.x, near.z, kind === 'ghost' ? 60 : 64, near.heading);
+    const spot = this.seaSpot(near.x, near.z, kind === 'ghost' ? 60 : 64, near.heading, 1.3, true);
     ship.x = spot.x;
     ship.z = spot.z;
     ship.heading = Math.atan2(near.x - ship.x, near.z - ship.z);
@@ -529,6 +582,13 @@ export class PlayScene extends ArcadeScene {
       shake(this, 0.006, 500);
     }
     return foe;
+  }
+
+  /** Whether a world point shows on the screen (with `pad` px to spare round the edges). */
+  private onScreen(p: THREE.Vector3, pad = 0): boolean {
+    const s = this.world.toScreen(p);
+    const { width, height } = this.scale;
+    return s.visible && s.x > -pad && s.x < width + pad && s.y > -pad && s.y < height + pad;
   }
 
   private scatterChests(n: number): void {
@@ -587,20 +647,20 @@ export class PlayScene extends ArcadeScene {
       this.sfx('chest', { volume: 0.8 });
       if (l.mission) {
         this.chestsGot++;
-        popup(this, p.x, p.y - 30, `${this.chestsGot}/${this.chestGoal}`, '#ffd23f', 30);
+        pop(this, p.x, p.y - 30, `${this.chestsGot}/${this.chestGoal}`, '#ffd23f', 30);
         if (this.chestsGot >= this.chestGoal) this.waveComplete();
       }
     } else if (l.kind === 'barrel') {
       if (this.hull < this.tune.hull) {
         this.hull++;
         this.hud.setLives(this.hull, this.tune.hull);
-        popup(this, p.x, p.y - 20, t('repaired'), '#7dff9a', 28);
+        pop(this, p.x, p.y - 20, t('repaired'), '#7dff9a', 28);
       } else this.giveGold(10, p.x, p.y);
       this.sfx('repair', { volume: 0.7 });
     } else {
       this.rapidT = 10;
       this.reloadL = this.reloadR = 0;
-      popup(this, p.x, p.y - 20, t('rapid'), '#7fd8ff', 30);
+      pop(this, p.x, p.y - 20, t('rapid'), '#7fd8ff', 30);
       this.sfx('rapid', { volume: 0.7 });
     }
     this.updateGoal();
@@ -679,7 +739,7 @@ export class PlayScene extends ArcadeScene {
     const cf = fwd(this.camYaw);
     const cx = this.player.x + cf.x * 45, cz = this.player.z + cf.z * 45;
     this.sea.update(dt, cx, cz);
-    this.clouds.update(dt, cx, cz, 2.2 + this.stormK * 6);
+    this.clouds.update(dt, cx, cz, 2.2 + this.stormK * 6, this.camPos);
     this.gulls.update(dt, this.player.x, this.player.z, time);
     this.rain.intensity = Math.max(0, this.stormK * 1.4 - 0.25);
     this.rain.update(dt, this.player.x + cf.x * 20, this.player.z + cf.z * 20);
@@ -732,6 +792,16 @@ export class PlayScene extends ArcadeScene {
 
   endGame(o: Parameters<ArcadeScene['endGame']>[0] = {}): void {
     this.minimap?.setHidden(true);
+    // the play loop stops here: the reload rings, sail icons and edge arrows of the last frame go too
+    this.rings?.clear();
+    this.marks?.clear();
+    this.padIcons?.setVisible(false);
+    if (this.hint) {
+      this.tweens.killTweensOf(this.hint);
+      this.hint.setAlpha(0);
+      this.hintT = 0;
+      this.hintQueue = [];
+    }
     super.endGame(o);
   }
 
@@ -778,7 +848,7 @@ export class PlayScene extends ArcadeScene {
       this.stormT -= dt;
       this.stormK = Phaser.Math.Clamp(1 - this.stormT / Math.max(30, this.stormTotal * 0.45), 0, 1) * 0.85;
       if (this.stormT < 20 && this.stormT + dt >= 20) {
-        popup(this, this.scale.width / 2, 300, t('stormSoon'), '#ffb36b', 30);
+        pop(this, this.scale.width / 2, CALLOUT_Y, t('stormSoon'), '#ffb36b', 30);
         this.sfx('thunder', { volume: 0.6 });
       }
       if (Math.random() < dt * this.stormK * 0.25) this.lightning(false);
@@ -788,7 +858,7 @@ export class PlayScene extends ArcadeScene {
         this.failed = true;
         this.stormK = 1;
         this.lightning(true);
-        popup(this, this.scale.width / 2, 340, t('stormHit'), '#ff8a6a', 34);
+        pop(this, this.scale.width / 2, CALLOUT_Y + 40, t('stormHit'), '#ff8a6a', 34);
         this.damagePlayer(true);
         this.waveComplete();
       }
@@ -857,7 +927,7 @@ export class PlayScene extends ArcadeScene {
       this.edgeT -= dt;
       if (this.edgeT <= 0) {
         this.edgeT = 4;
-        popup(this, this.scale.width / 2, 300, t('turnBack'), '#ffb36b', 26);
+        pop(this, this.scale.width / 2, CALLOUT_Y, t('turnBack'), '#ffb36b', 26);
       }
     }
     const f = fwd(p.heading);
@@ -897,7 +967,7 @@ export class PlayScene extends ArcadeScene {
         this.stats.repairs++;
         this.hud.setLives(this.hull, this.tune.hull);
         const s = this.world.toScreen(p.point(0, 0, 6));
-        popup(this, s.x, s.y, this.hull >= this.tune.hull ? t('repairFull') : t('repaired'), '#7dff9a', 28);
+        pop(this, s.x, s.y, this.hull >= this.tune.hull ? t('repairFull') : t('repaired'), '#7dff9a', 28);
         this.sfx('repair', { volume: 0.6 });
       }
     } else this.repairT = 0;
@@ -1153,19 +1223,19 @@ export class PlayScene extends ArcadeScene {
     this.bumpCombo();
     const pts = 10 * this.comboMult();
     this.addScore(pts);
-    popup(this, sp.x, sp.y, `+${pts}`, '#ffffff', 22);
+    pop(this, sp.x, sp.y, `+${pts}`, '#ffffff', 22);
     if (foe === this.boss) {
       this.updateGoal();
       if (!foe.summoned && sh.hp <= sh.maxHp / 2 && sh.hp > 0) {
         foe.summoned = true;
-        popup(this, this.scale.width / 2, 320, t('bossSummons'), '#3dffb0', 28);
+        pop(this, this.scale.width / 2, CALLOUT_Y + 20, t('bossSummons'), '#3dffb0', 28);
         this.pending.unshift({ kind: 'sloop', at: 0 }, { kind: 'sloop', at: 0 });
       }
       if (!foe.enraged && sh.hp <= sh.maxHp / 4 && sh.hp > 0) {
         foe.enraged = true;
         foe.reloadK *= 0.8;
         foe.speedK *= 1.15;
-        popup(this, this.scale.width / 2, 360, t('bossRage'), '#ff5a3c', 30);
+        pop(this, this.scale.width / 2, CALLOUT_Y + 60, t('bossRage'), '#ff5a3c', 30);
         this.sfx('bossHorn', { volume: 0.6, exact: true });
       }
     }
@@ -1186,8 +1256,8 @@ export class PlayScene extends ArcadeScene {
     const pts = foe.stats.points * mult;
     this.addScore(pts);
     const sp = this.world.toScreen(at.clone().setY(at.y + 6));
-    popup(this, sp.x, sp.y - 20, `${t('sunk')} +${pts}`, '#ffd23f', boss ? 40 : 32);
-    if (mult >= 2) popup(this, sp.x, sp.y + 26, t('combo', { n: mult }), '#ff9a3c', 26);
+    pop(this, sp.x, sp.y - 20, `${t('sunk')} +${pts}`, '#ffd23f', boss ? 40 : 32);
+    if (mult >= 2) pop(this, sp.x, sp.y + 26, t('combo', { n: mult }), '#ff9a3c', 26);
     if (this.def.mission === 'sink' || this.def.mission === 'escort' || this.def.mission === 'fort' || this.def.mission === 'treasure') this.sunk++;
     // loot floats up where it sank
     const drop = (kind: LootKind) => {
@@ -1227,7 +1297,7 @@ export class PlayScene extends ArcadeScene {
     flash(this, 0xff4d3a, 160, 0.3);
     this.combo = 0;
     this.updateCombo();
-    if (this.hull === 1) popup(this, this.scale.width / 2, 300, t('lowHull'), '#ff5a3c', 32);
+    if (this.hull === 1) pop(this, this.scale.width / 2, CALLOUT_Y, t('lowHull'), '#ff5a3c', 32);
     if (this.hull <= 0) {
       this.dead = true;
       this.phase = 'over';
@@ -1362,9 +1432,10 @@ export class PlayScene extends ArcadeScene {
     this.collideIslands(a, false);
     if (this.phase === 'play' && d < BERTH.r + 3 && !this.escortDone) {
       this.escortDone = true;
-      popup(this, this.scale.width / 2, 340, t('convoyHome'), '#7dff9a', 34);
+      // above the WAVE CLEAR banner that follows at once
+      pop(this, this.scale.width / 2, CALLOUT_Y - 40, t('convoyHome'), '#7dff9a', 34);
       this.addScore(400 + this.allyHp * 50);
-      this.giveGold(60, this.scale.width / 2, 400);
+      this.giveGold(60, this.scale.width / 2, CALLOUT_Y + 100);
       this.fx.sparkle(a.point(0, 0, 4), 0xffd23f, 40);
     }
   }
@@ -1381,7 +1452,7 @@ export class PlayScene extends ArcadeScene {
       a.startSinking();
       this.fx.wreck(new THREE.Vector3(a.x, a.waterY, a.z), a.halfL);
       this.guns.sinking(ax);
-      popup(this, this.scale.width / 2, 340, t('convoyLost'), '#ff8a6a', 32);
+      pop(this, this.scale.width / 2, CALLOUT_Y + 40, t('convoyLost'), '#ff8a6a', 32);
       this.failed = true;
     }
   }
@@ -1427,7 +1498,7 @@ export class PlayScene extends ArcadeScene {
     this.bumpCombo();
     const pts = 10 * this.comboMult();
     this.addScore(pts);
-    popup(this, sp.x, sp.y, `+${pts}`, '#ffffff', 22);
+    pop(this, sp.x, sp.y, `+${pts}`, '#ffffff', 22);
     // the tower shudders
     this.tweens.add({ targets: fort.tower.scale, x: 1.62, z: 1.62, duration: 60, yoyo: true });
     if (fort.hp <= 0) {
@@ -1435,7 +1506,7 @@ export class PlayScene extends ArcadeScene {
       this.fortsDown++;
       const pts2 = 300 * this.comboMult();
       this.addScore(pts2);
-      popup(this, sp.x, sp.y - 30, `${t('fortDown')} +${pts2}`, '#ffd23f', 32);
+      pop(this, sp.x, sp.y - 30, `${t('fortDown')} +${pts2}`, '#ffd23f', 32);
       this.guns.sinking(sp.x, true);
       this.camShake = 1.2;
       shake(this, 0.008, 400);
@@ -1481,9 +1552,9 @@ export class PlayScene extends ArcadeScene {
     };
     for (const foe of this.foes) if (foe.ship.sinking < 0) take(foe.ship.x, foe.ship.z, 40);
     for (const fo of this.map.forts) if (fo.falling < 0) take(fo.x, fo.z, 46);
-    const zoom = Phaser.Math.Clamp(frame / 21, 1, 1.5);
+    const zoom = Phaser.Math.Clamp(frame / CAM_FRAME.abeam, 1, CAM_FRAME.max);
     this.camZoom += (zoom - this.camZoom) * (snap ? 1 : Math.min(1, dt * 0.8));
-    const back = 44 * this.camZoom, up = 56 * this.camZoom;
+    const back = CAM.back * this.camZoom, up = CAM.up * this.camZoom;
     const want = new THREE.Vector3(p.x - f.x * back, up, p.z - f.z * back);
     if (snap) this.camPos.copy(want);
     else this.camPos.lerp(want, Math.min(1, dt * 4));
@@ -1496,7 +1567,8 @@ export class PlayScene extends ArcadeScene {
       cam.position.y += (Math.random() - 0.5) * s;
       cam.position.z += (Math.random() - 0.5) * s;
     }
-    cam.lookAt(p.x + f.x * 15, 0, p.z + f.z * 15);
+    if (cam.fov !== CAM.fov) { cam.fov = CAM.fov; cam.updateProjectionMatrix(); }
+    cam.lookAt(p.x + f.x * CAM.ahead, 0, p.z + f.z * CAM.ahead);
   }
 
   private drawUi(dt: number): void {
@@ -1531,29 +1603,30 @@ export class PlayScene extends ArcadeScene {
     const r = this.rings;
     r.clear();
     if (this.steering.pad?.visible) {
-      const { width, height } = this.scale;
       const ring = (x: number, y: number, reload: number) => {
         const k = 1 - reload / this.tune.reload;
-        r.lineStyle(9, 0x000000, 0.3).strokeCircle(x, y, 72);
+        r.lineStyle(9, 0x000000, 0.3).strokeCircle(x, y, RING_R);
         if (reload <= 0) {
           const pulse = 0.65 + Math.sin(this.elapsed * 6) * 0.25;
-          r.lineStyle(7, this.rapidT > 0 ? 0x7fd8ff : 0xffd23f, pulse).strokeCircle(x, y, 72);
+          r.lineStyle(7, this.rapidT > 0 ? 0x7fd8ff : 0xffd23f, pulse).strokeCircle(x, y, RING_R);
         } else {
           r.lineStyle(7, 0xffffff, 0.9);
           r.beginPath();
-          r.arc(x, y, 72, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k);
+          r.arc(x, y, RING_R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k);
           r.strokePath();
         }
       };
-      ring(482, height - 136, this.reloadL);
-      ring(width - 80, height - 136, this.reloadR);
+      ring(BTN.port.x, BTN.port.y, this.reloadL);
+      ring(BTN.star.x, BTN.star.y, this.reloadR);
     }
 
     // markers: health pips over ships, arrows at the edge for what is off screen
     const g = this.marks;
     g.clear();
     const { width, height } = this.scale;
-    const top = 150, bottom = this.steering.pad ? height - 360 : height - 70;
+    // the room for edge arrows: under the HUD rows down to the bottom edge (on touch they keep out
+    // of the thumbs' corners, below)
+    const top = 150, bottom = height - 40;
     const edge = (wx: number, wy: number, wz: number, color: number, size = 1) => {
       const s = this.world.toScreen(new THREE.Vector3(wx, wy, wz));
       // (what lies under the sea chart counts as off screen: it gets an arrow, not a bar under the chart)
@@ -1576,6 +1649,11 @@ export class PlayScene extends ArcadeScene {
       if (x > ml - z && y < mb + z) {
         if (x >= cx + hw - 1) y = mb + z;
         else x = ml - z;
+      }
+      // and on touch, above the steering arrows and the gun and sail buttons in the bottom corners
+      if (this.steering.pad) {
+        if (x < THUMB_L.x && y > THUMB_L.top) y = THUMB_L.top;
+        if (x > THUMB_R.x && y > THUMB_R.top) y = THUMB_R.top;
       }
       g.fillStyle(0x000000, 0.35).fillCircle(x, y, z * 0.95);
       g.fillStyle(color, 0.95);
@@ -1616,12 +1694,6 @@ export class PlayScene extends ArcadeScene {
       if (s) g.fillStyle(0x7dff9a, 0.9).fillTriangle(s.x - 14, s.y - 34, s.x + 14, s.y - 34, s.x, s.y - 12);
     }
 
-    // hints sit left of the chart (it grows when tapped)
-    if (this.hintBig !== this.minimap.big) {
-      this.hintBig = this.minimap.big;
-      const right = this.minimap.left - 14;
-      this.hint.setX((HUD_MARGIN + right) / 2).setWordWrapWidth(right - HUD_MARGIN - 6, true);
-    }
     // hints fade out after a while; queued ones follow
     if (this.hintT > 0) {
       this.hintT -= dt;

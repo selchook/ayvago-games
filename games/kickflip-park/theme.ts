@@ -7,6 +7,7 @@ import Phaser from 'phaser';
 import { t, loc, shadeColor, SkinButton, type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { SHRIKHAND } from '@core/fonts/shrikhand';
 import { prebakeSetup, SETUP_FLYER } from './setup';
+import { prebakePlay } from './labels';
 import { loadMeta } from './meta';
 import { usableBoard } from './boardmodel';
 
@@ -315,8 +316,8 @@ export const KICKFLIP_THEME: MenuTheme = {
   pieces: [{ kind: 'button', w: PICK_W, h: PICK_H }],
   // the session summary's flyer with one, two or three lines (PlayScene.finish), the setup's goals
   cards: [...[1, 2, 3].map((n) => ({ w: SUMMARY_W, h: summaryH(n) })), SETUP_FLYER],
-  // the setup's stickers, grip tape, buttons and labels (setup.ts)
-  prebake: (scene) => prebakeSetup(scene),
+  // the setup's stickers, grip tape, buttons and labels (setup.ts), the run's words (labels.ts)
+  prebake: (scene) => { prebakeSetup(scene); prebakePlay(scene); },
 };
 
 /**
