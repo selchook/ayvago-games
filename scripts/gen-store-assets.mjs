@@ -414,6 +414,18 @@ const CARD = {
       await sleep(300);
     }`,
   },
+  // Astro Crew's card (landscape, cover-fit) shows a heroic fight on the Dune Titan's orange planet:
+  // the autopilot plays until the boss is in, a ring of aliens closes round the crew member and it
+  // jumps into its mech (the arrival's shockwave, cannon shells, damage numbers and the boss's bar);
+  // the simulation then runs slowly so every candidate frame keeps the moment.
+  'astro-crew': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      window.__astro.stage('busy');
+      await sleep(300);
+    }`,
+  },
   // Pirate Cove's card (landscape since 1.1, cover-fit) shows a broadside fight on the bright first
   // wave: a brig alongside to starboard, a frigate and two sloops ahead, cannonballs in the air both
   // ways. The wave card and hints are skipped, the wave's own ships held back, nothing sinks the

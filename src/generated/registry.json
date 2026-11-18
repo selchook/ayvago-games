@@ -1,5 +1,5 @@
 {
-  "count": 100,
+  "count": 101,
   "games": [
     {
       "id": "air-hockey",
@@ -130,6 +130,40 @@
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
       "thumb": "thumbs/asteroid-storm.png"
+    },
+    {
+      "id": "astro-crew",
+      "title": {
+        "tr": "Uzay Tayfası",
+        "en": "Astro Crew"
+      },
+      "description": {
+        "tr": "Hayvan astronotlardan oluşan tayfanı minik uzaylı gezegenlerle dolu bir galakside yönet! 3B bir aksiyon macerası: sen koşar, takla atar ve özel yeteneğini kullanırken silahın kendi nişan alır; zıplayan balçıklar, tüküren uçanlar, yeri döven devler ve üç dev boss seni bekliyor. Her gezegen yeni bir görev: dalgaları temizle, kubbeyi koru, anahtar kart avla, mahsur kalan gezicileri kurtar. Seviye atla, güç kartı seç, dev mekanı doldurup birkaç saniyeliğine her şeyi ez ve görevler arasında kristallerle üssünü büyüt. Dört tayfa, on iki gezegen, Kolay ya da Normal.",
+        "en": "Lead a crew of animal astronauts across a galaxy of tiny alien planets! A 3D action adventure: your blaster aims by itself while you run, roll and fire your signature skill through bouncing blobs, spitting flyers, ground-slamming brutes and three huge bosses. Every planet is a new mission: clear the waves, defend the dome, hunt keycards, rescue stranded rovers. Level up and pick power cards, charge your giant mech for a few smashing seconds, and grow your base with crystals between missions. Four crew members, twelve planets, Easy or Normal."
+      },
+      "howTo": {
+        "tr": "Soldaki çubukla ya da WASD / ok tuşlarıyla yürü; silahın kendi nişan alıp ateş eder. TAKLA ya da Boşluk ile yuvarlan, YETENEK ya da Q ile özel gücünü kullan, sayaç dolunca MEKA ya da E ile mekana bin. P ya da Esc duraklatır.",
+        "en": "Move with the stick on the left or WASD / arrows; your blaster aims and fires by itself. Roll with DODGE or Space, fire your skill with SKILL or Q, and jump into your mech with MECH or E once the meter is full. P or Esc pauses."
+      },
+      "genres": [
+        "action",
+        "arcade"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Quaternius Ultimate Space Kit (CC0) — quaternius.com",
+        "Sounds: Juhani Junkala (CC0) — opengameart.org; Kenney Interface and Casino Audio (CC0) — kenney.nl",
+        "Logo font: Righteous by Astigmatic (SIL OFL 1.1)"
+      ],
+      "platform": {
+        "addedAt": "2026-11-18"
+      },
+      "thumb": "thumbs/astro-crew.png"
     },
     {
       "id": "axe-throw",
