@@ -1917,12 +1917,12 @@
         "action",
         "arcade"
       ],
-      "orientation": "portrait",
+      "orientation": "landscape",
       "controls": [
         "touch",
         "keyboard"
       ],
-      "version": "1.0.1",
+      "version": "1.1.0",
       "credits": [
         "3D models: Kenney Pirate Kit (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org; Kenney Impact and Interface Sounds (CC0) — kenney.nl"

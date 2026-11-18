@@ -159,6 +159,7 @@ export class Clouds {
   private m = new THREE.Matrix4();
   private q = new THREE.Quaternion();
   private v = new THREE.Vector3();
+  private s = new THREE.Vector3();
 
   constructor(scene: THREE.Scene, count = 7) {
     const geo = new THREE.IcosahedronGeometry(1, 1);
@@ -187,7 +188,12 @@ export class Clouds {
     (this.mesh.material as THREE.MeshLambertMaterial).color.setHex(color);
   }
 
-  update(dt: number, cx: number, cz: number, wind: number): void {
+  /**
+   * Drifts the clouds and recycles them round (cx, cz). With `eye` (the camera), a cloud that
+   * comes near it shrinks away, so the low landscape camera never flies through a puff that
+   * fills the screen.
+   */
+  update(dt: number, cx: number, cz: number, wind: number, eye?: { x: number; z: number }): void {
     for (const c of this.centres) {
       c.x += dt * wind;
       c.z += dt * wind * 0.4;
@@ -197,8 +203,9 @@ export class Clouds {
       if (c.z - cz > 110) c.z -= 220;
       if (c.z - cz < -110) c.z += 220;
     }
+    const near = this.centres.map((c) => (eye ? THREE.MathUtils.smoothstep(Math.hypot(c.x - eye.x, c.z - eye.z), 18, 44) : 1));
     this.puffs.forEach((p, i) => {
-      this.m.compose(this.v.copy(this.centres[p.cloud]).add(p.off), this.q, p.s);
+      this.m.compose(this.v.copy(this.centres[p.cloud]).add(p.off), this.q, this.s.copy(p.s).multiplyScalar(near[p.cloud]));
       this.mesh.setMatrixAt(i, this.m);
     });
     this.mesh.instanceMatrix.needsUpdate = true;
