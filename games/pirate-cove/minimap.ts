@@ -1,4 +1,5 @@
-// The sea chart: a round radar in a glass HUD chip under the gun chip (top right). Heading-up
+// The sea chart: a round radar in a glass HUD chip under the gun chip (top right, clear of the
+// touch buttons in the bottom corners). Heading-up
 // (it turns with the camera, so left on the chart is left on the screen), centred a little below
 // the player's ship so more of the sea ahead shows. A tap on it (or M) swaps between the close
 // chart and a larger one that shows the whole archipelago.
@@ -35,10 +36,13 @@ export interface MapState {
   view: MapPoint[] | null;
 }
 
-/** Chart radius in px (small and large), and the sea radius in world units each shows. */
+/**
+ * Chart radius in px (small and large), and the sea radius in world units each shows. 1.1
+ * (landscape): the large chart is a little smaller, so it ends above the touch sail button.
+ */
 const SIZES = [
   { r: 80, range: 88 },
-  { r: 132, range: 178 },
+  { r: 118, range: 178 },
 ];
 /** The player sits this share of the radius below the centre (more sea ahead). */
 const AHEAD = 0.2;

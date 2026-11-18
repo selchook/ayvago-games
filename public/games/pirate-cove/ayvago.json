@@ -20,7 +20,7 @@
     "retro"
   ],
   "entry": "https://ayvago-games-nine.vercel.app/games/pirate-cove/",
-  "orientation": "portrait",
+  "orientation": "landscape",
   "input": [
     "touch",
     "keyboard",
@@ -65,5 +65,5 @@
       "tr": "/games/pirate-cove/ayvago/logo-tr.png"
     }
   },
-  "version": "1.0.1"
+  "version": "1.1.0"
 }
