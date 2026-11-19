@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Which games a change touches, so CI builds and smoke-tests only those.
 // Usage: node scripts/changed-games.mjs <base-ref> [--why]
+//        node scripts/changed-games.mjs --canary   (just the canary set, e.g. for npm run test:gamepad)
 // Prints the slugs separated by spaces, `all` when a dependency upgrade could break any game, or
 // nothing when no game is affected (docs, scripts, tools, CI). --why explains the choice on stderr.
 //
@@ -24,10 +25,8 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const base = process.argv[2];
 const why = process.argv.includes('--why');
-if (!base) { console.error('usage: changed-games.mjs <base-ref> [--why]'); process.exit(2); }
-
-const files = execFileSync('git', ['diff', '--name-only', `${base}...HEAD`], { cwd: root, encoding: 'utf8' })
-  .split('\n').filter(Boolean);
+const canaryOnly = process.argv.includes('--canary');
+if (!base) { console.error('usage: changed-games.mjs <base-ref> [--why] | --canary'); process.exit(2); }
 
 const slugsAll = readdirSync(join(root, 'games')).filter((s) => existsSync(join(root, 'games', s, 'index.html'))).sort();
 const source = (dir) => readdirSync(dir).filter((f) => /\.(ts|json)$/.test(f)).map((f) => readFileSync(join(dir, f), 'utf8')).join('\n');
@@ -55,6 +54,13 @@ function canary() {
   }
   return [...pick.values()];
 }
+
+if (canaryOnly) {
+  console.log(canary().sort().join(' '));
+  process.exit(0);
+}
+const files = execFileSync('git', ['diff', '--name-only', `${base}...HEAD`], { cwd: root, encoding: 'utf8' })
+  .split('\n').filter(Boolean);
 
 const out = new Set();
 let all = false;

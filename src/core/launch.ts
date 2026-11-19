@@ -17,6 +17,7 @@ import { installKeyboardOnce } from './keyboard-once';
 import { adoptPlatformBest } from './storage';
 import { bindAds } from './ads';
 import { renderLogo } from './menu-theme';
+import { attachGamepad, padDebug, startGamepad } from './gamepad';
 
 declare global {
   interface Window {
@@ -24,6 +25,8 @@ declare global {
       game: Phaser.Game; def: GameDefinition; silenced: () => boolean;
       /** The themed logo of the title in `lang` as a PNG data URL (store art); absent without a menu theme. */
       menuLogo?: (lang: 'tr' | 'en', maxWidth?: number, size?: number) => string;
+      /** The gamepad layer's state (src/core/gamepad.ts), for the test harnesses. */
+      pad?: typeof padDebug;
     };
   }
 }
@@ -121,6 +124,8 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   sdk.emit('loaded');
   document.body.style.background = def.background ?? '#0e0d12';
 
+  // The pad works from the first frame: a press skips the intro like a key does.
+  startGamepad();
   const params = new URLSearchParams(location.search);
   const intro = params.has('nointro') ? Promise.resolve() : playAyvagoIntro();
   setIntroPromise(intro);
@@ -165,8 +170,9 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
 
   bindPlatform(game, adapter);
   bindAds(game);
+  attachGamepad(game, def.gamepad);
 
-  window.__ayvago = { game, def, silenced: isSilenced };
+  window.__ayvago = { game, def, silenced: isSilenced, pad: padDebug };
   const theme = def.menuTheme;
   if (theme) window.__ayvago.menuLogo = (lang, maxWidth = 900, size = 180) => renderLogo(theme, def.meta.title[lang], maxWidth, size).canvas.toDataURL('image/png');
   return game;
