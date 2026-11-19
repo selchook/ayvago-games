@@ -1,15 +1,19 @@
 // Validates every public/games/*/ayvago.json (and the generated platform catalog) against the
 // platform's own zod schema (vendored from selchook/ayvago) and checks the art exists with the
-// right dimensions (the logos: transparent PNGs within their size).
+// right dimensions (the logos: transparent PNGs within their size), then the game guides
+// (platform/arcade-guides.json) against the platform's guide schema and the studio's writing rules.
 // Run: npx tsx scripts/validate-manifests.ts
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseGameManifest } from './vendor/manifest';
+import { gameGuideSchema, guideFileSchema, GUIDE_INPUTS, type GameGuide } from './vendor/guide';
 
 const root = join(import.meta.dirname, '..');
 const dir = join(root, 'public', 'games');
 let failed = 0;
 const ids = new Set<string>();
+/** The inputs each shipped game's manifest declares, by slug (the guide's controls must match). */
+const inputs = new Map<string, string[]>();
 
 function pngSize(file: string): [number, number] {
   const b = readFileSync(file);
@@ -69,6 +73,7 @@ for (const slug of readdirSync(dir).sort()) {
     const m = result.manifest;
     if (ids.has(m.id)) problems.push(`duplicate id ${m.id}`);
     ids.add(m.id);
+    inputs.set(slug, m.input);
     if (!m.title.tr || !m.description.tr) problems.push('Turkish text missing');
     const icon = join(root, 'public', m.assets.icon);
     const cover = join(root, 'public', m.assets.cover);
@@ -103,4 +108,101 @@ for (const slug of readdirSync(dir).sort()) {
   console.log(`${problems.length ? 'FAIL' : 'ok  '}  ${slug}${problems.length ? '  ' + problems.join('; ') : ''}`);
 }
 console.log(`\n${ids.size} manifests valid against the platform schema, ${failed} failing`);
-process.exit(failed ? 1 : 0);
+
+// ---------------------------------------------------------------- game guides
+// The schema (vendored from the platform) checks the shape and the limits; the studio adds its
+// writing rules (new-game skill, "Game guide"): both languages everywhere, 2–3 paragraphs about the
+// game, roughly 300–600 words per language, real Turkish, no untranslated text and controls only
+// for the inputs the game declares.
+type Text = { en: string; tr?: string };
+const GUIDE_FILE = join(root, 'platform', 'arcade-guides.json');
+const TURKISH = /[çğıİöşüÇĞÖŞÜ]/;
+const words = (s: string) => s.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+/** Every text of a guide with where it sits, in reading order. */
+function guideTexts(g: GameGuide): Array<[string, Text]> {
+  const out: Array<[string, Text]> = [['about', g.about]];
+  g.howToPlay.forEach((x, i) => out.push([`howToPlay[${i}]`, x]));
+  for (const k of GUIDE_INPUTS) if (g.controls[k]) out.push([`controls.${k}`, g.controls[k]!]);
+  g.tips.forEach((x, i) => out.push([`tips[${i}]`, x]));
+  g.features?.forEach((x, i) => out.push([`features[${i}]`, x]));
+  g.faq?.forEach((x, i) => out.push([`faq[${i}].q`, x.q], [`faq[${i}].a`, x.a]));
+  return out;
+}
+/** The studio's ranges (a warning outside them; the schema's own limits are wider). */
+const RANGES: Array<[string, (g: GameGuide) => number, number, number]> = [
+  ['about words (en)', (g) => words(g.about.en), 120, 200],
+  ['howToPlay steps', (g) => g.howToPlay.length, 3, 6],
+  ['tips', (g) => g.tips.length, 3, 6],
+  ['features', (g) => g.features?.length ?? 0, 3, 6],
+  ['faq', (g) => g.faq?.length ?? 0, 3, 4],
+];
+
+let guidesFailed = 0;
+let guideCount = 0;
+if (!existsSync(GUIDE_FILE)) {
+  console.log('\nFAIL  platform/arcade-guides.json missing: run node scripts/gen-platform.mjs');
+  guidesFailed++;
+} else {
+  const raw = JSON.parse(readFileSync(GUIDE_FILE, 'utf8'));
+  console.log('');
+  // the whole file against the platform's schema (what the platform's sync parses) ...
+  const parsed = guideFileSchema.safeParse(raw);
+  if (!parsed.success) {
+    guidesFailed++;
+    for (const i of parsed.error.issues) console.log(`FAIL  guides  ${i.path.join('.')}: ${i.message}`);
+  }
+  // ... and every guide on its own, so one broken guide does not hide the others' problems
+  const entries: Array<[string, unknown]> = raw && typeof raw.guides === 'object' && raw.guides ? Object.entries(raw.guides) : [];
+  for (const [slug, one] of entries) {
+    guideCount++;
+    const problems: string[] = [];
+    const warnings: string[] = [];
+    if (!inputs.has(slug)) problems.push('not a shipped game (no public/games/<slug>/ayvago.json)');
+    const res = gameGuideSchema.safeParse(one);
+    if (!res.success) {
+      guidesFailed++;
+      console.log(`FAIL  guide ${slug}  ${[...problems, ...res.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)].join('; ')}`);
+      continue;
+    }
+    const g = res.data;
+    const all = guideTexts(g);
+    for (const [where, x] of all) {
+      if (!x.tr) problems.push(`${where}: Turkish missing`);
+      else if (x.tr.trim() === x.en.trim()) problems.push(`${where}: Turkish is the same as English`);
+      if (/TODO/.test(x.en + (x.tr ?? ''))) problems.push(`${where}: TODO left`);
+    }
+    const paras = (s?: string) => (s ?? '').split(/\n\s*\n/).filter((p) => p.trim()).length;
+    for (const lang of ['en', 'tr'] as const) {
+      const n = paras(g.about[lang]);
+      if (n < 2 || n > 3) problems.push(`about (${lang}) has ${n} paragraphs, not 2–3`);
+    }
+    const trAll = all.map(([, x]) => x.tr ?? '').join(' ');
+    if (!TURKISH.test(trAll)) problems.push('the Turkish text has no Turkish letters (ç ğ ı İ ö ş ü)');
+    const declared = inputs.get(slug);
+    if (declared) for (const k of GUIDE_INPUTS) {
+      if (g.controls[k] && !declared.includes(k)) problems.push(`controls.${k}: the game's manifest input is [${declared.join(', ')}]`);
+    }
+    const count = { en: 0, tr: 0 };
+    for (const [, x] of all) { count.en += words(x.en); count.tr += words(x.tr ?? ''); }
+    for (const lang of ['en', 'tr'] as const) {
+      if (count[lang] < 200) problems.push(`${count[lang]} words (${lang}), under 200`);
+      else if (count[lang] < 300 || count[lang] > 600) warnings.push(`${count[lang]} words (${lang}), outside 300–600`);
+    }
+    for (const [what, get, lo, hi] of RANGES) {
+      const n = get(g);
+      if (n < lo || n > hi) warnings.push(`${what}: ${n}, outside ${lo}–${hi}`);
+    }
+    if (problems.length) guidesFailed++;
+    const note = [...problems, ...warnings.map((w) => `warn: ${w}`)];
+    console.log(`${problems.length ? 'FAIL' : 'ok  '}  guide ${slug}  en ${count.en} · tr ${count.tr} words${note.length ? '  ' + note.join('; ') : ''}`);
+  }
+  const missing = [...inputs.keys()].filter((s) => !entries.some(([k]) => k === s)).length;
+  // the scaffold's stub (or a guide still being written): gen-platform leaves it out until no TODO is left
+  const drafts = [...inputs.keys()].filter((s) => {
+    const f = join(root, 'games', s, 'guide.json');
+    return existsSync(f) && readFileSync(f, 'utf8').includes('TODO');
+  });
+  console.log(`\n${guideCount} guides checked, ${guidesFailed} failing; ${missing} shipped games have no guide yet` +
+    (drafts.length ? ` (drafts with a TODO left: ${drafts.join(', ')})` : ''));
+}
+process.exit(failed || guidesFailed ? 1 : 0);

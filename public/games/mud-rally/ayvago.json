@@ -25,6 +25,7 @@
   "input": [
     "touch",
     "keyboard",
+    "gamepad",
     "mouse"
   ],
   "players": {

@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Mud Rally is a monster-truck championship on dirt arenas that fit on a single screen. You drive the blue truck against red, yellow and green rivals over four laps, through mud pits, slippery puddles, humps and ramps that send the trucks flying. Watch from above or switch to the in-car view with its speedometer and rev counter. Every lap has checkpoints, and a lap that skips one does not count.\n\nBetween races you stop at the garage. Prize money ($10,000 for a win, $6,000 for second, $3,000 for third, 15% more each race) and the coins you grab on track buy engine, tire, shock and nitro upgrades, five levels each. Six tracks take turns, from Dust Bowl to Zigzag Valley, and the rivals get faster every race.\n\nFinishing last costs a life. You have three, or four on Easy, and the championship ends when they run out. Your score is all the money you earned; spending it in the garage never takes anything off.",
+    "tr": "Çamur Rallisi, tek ekrana sığan toprak pistlerde geçen bir canavar kamyon şampiyonası. Mavi kamyonla kırmızı, sarı ve yeşil rakiplere karşı dört tur atarsın; yolda çamur çukurları, kaygan su birikintileri, tümsekler ve kamyonları havaya uçuran rampalar var. Yarışı yukarıdan izleyebilir ya da hız ve devir göstergeli araç içi görünüme geçebilirsin. Her turda kontrol noktaları bulunur; birini atlarsan o tur sayılmaz.\n\nYarış aralarında garaja uğrarsın. Ödül parası (birinciye $10.000, ikinciye $6.000, üçüncüye $3.000; her yarışta %15 artar) ve pistte topladığın paralar MOTOR, LASTİK, AMORTİSÖR ve NİTRO geliştirmelerine gider, her birinin beş seviyesi var. Toz Çanağı'ndan Zikzak Vadisi'ne altı pist sırayla gelir ve rakipler her yarışta biraz daha hızlanır.\n\nSonuncu olursan bir can gider. Üç canın var, Kolay'da dört; canlar bitince şampiyona sona erer. Skorun, kazandığın paranın tamamıdır; garajda harcadıkların skordan düşülmez."
+  },
+  "howToPlay": [
+    {
+      "en": "On a touch screen, choose ARROWS, WHEEL or TILT steering on the menu, pick Easy or Normal and press PLAY.",
+      "tr": "Dokunmatik ekranda menüden OKLAR, DİREKSİYON ya da EĞİM kontrolünü ve Kolay ya da Normal'i seçip OYNA'ya bas."
+    },
+    {
+      "en": "After the 3-2-1 countdown, accelerate and steer. Brake before tight bends; holding the brake at a standstill reverses.",
+      "tr": "3-2-1 geri sayımından sonra gaza bas ve yönlendir. Keskin virajlardan önce fren yap; dururken frene basılı tutmak geri vitese takar."
+    },
+    {
+      "en": "Grab gold coins for cash and red barrels for an extra nitro, and fire nitro for a short burst of speed.",
+      "tr": "Altın paralar para, kırmızı variller ek nitro verir; nitroyu ateşleyince kısa bir süre fırlarsın."
+    },
+    {
+      "en": "After four laps the top three win prize money and fourth place loses a life. Spend your bank in the garage, then press NEXT RACE.",
+      "tr": "Dört turun sonunda ilk üç ödül alır, dördüncü bir can kaybeder. Kasandaki parayı garajda harca, sonra SONRAKİ YARIŞ'a bas."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D steer, ↑ or W accelerates, ↓ or S brakes and reverses, Space, Z or Enter fires nitro and C changes the camera. In the garage, arrows choose and Enter or Space buys.",
+      "tr": "← → ya da A / D yönlendirir, ↑ ya da W gaz, ↓ ya da S fren ve geri vites; Boşluk, Z ya da Enter nitro, C kamerayı değiştirir. Garajda oklarla seçer, Enter ya da Boşluk ile alırsın."
+    },
+    "touch": {
+      "en": "The left thumb steers with arrow buttons, an on-screen wheel or by tilting (tap the wheel to centre it). GAS, BRAKE and NITRO are on the right; the camera button sits under pause.",
+      "tr": "Sol başparmak ok düğmeleriyle, ekrandaki direksiyonla ya da cihazı eğerek yönlendirir (ortalamak için direksiyona dokun). GAZ, FREN ve NİTRO sağda; kamera düğmesi duraklatmanın altında."
+    },
+    "gamepad": {
+      "en": "D-pad or left stick: ← → steer, ↑ accelerates, ↓ brakes. A or RT fires nitro, clicking the left stick changes the camera, Start pauses; in the garage the D-pad chooses and A buys.",
+      "tr": "Yön tuşları ya da sol çubuk: ← → yönlendirir, ↑ gaz, ↓ fren. A ya da RT nitroyu ateşler, sol çubuğa basmak kamerayı değiştirir, Start duraklatır; garajda yön tuşlarıyla seçer, A ile alırsın."
+    }
+  },
+  "tips": [
+    {
+      "en": "Fire nitro on a straight or out of a bend; lit mid-corner, the extra speed mostly carries you wide.",
+      "tr": "Nitroyu düzlükte ya da viraj çıkışında ateşle; viraj ortasında yakarsan fazladan hız seni dışarı savurur."
+    },
+    {
+      "en": "Mud nearly halves your top speed and steals most of your grip, so go around a pit whenever the track allows. Puddles are slippery too: straighten up before you cross one.",
+      "tr": "Çamur son hızını neredeyse yarıya indirir ve yol tutuşunun çoğunu alır; pist izin verdikçe çukurun yanından dolaş. Su birikintileri de kaygandır, girmeden direksiyonu düzelt."
+    },
+    {
+      "en": "Every tire level also makes the truck turn more sharply. Pair tires with engine levels so the extra speed stays on the road.",
+      "tr": "Her lastik seviyesi kamyonu daha keskin de döndürür. Lastiği motorla birlikte geliştir ki artan hız yolda kalsın."
+    },
+    {
+      "en": "Rivals who fall behind push harder, so no lead is safe. In a bad race, fight for third: it still pays and keeps your lives.",
+      "tr": "Geride kalan rakipler daha çok yüklenir, öndeyken bile rahatlama. Kötü giden yarışta üçüncülük için savaş: hem para getirir hem canını korur."
+    }
+  ],
+  "features": [
+    {
+      "en": "Four-lap races against three rival trucks on six tracks",
+      "tr": "Altı pistte üç rakip kamyona karşı dört turluk yarışlar"
+    },
+    {
+      "en": "Engine, tire, shock and nitro upgrades, five levels each",
+      "tr": "Beşer seviyeli motor, lastik, amortisör ve nitro geliştirmeleri"
+    },
+    {
+      "en": "Overhead and in-car camera views",
+      "tr": "Yukarıdan ve araç içinden kamera görünümü"
+    },
+    {
+      "en": "Arrow, wheel or tilt steering on touch screens",
+      "tr": "Dokunmatik ekranda ok, direksiyon ya da eğimle sürüş"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives you four lives, slower rivals that improve less and use less nitro, and mud that holds your truck back less. Easy runs are practice and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da dört canın olur; rakipler daha yavaştır, daha az gelişir ve daha az nitro kullanır, çamur da kamyonunu daha az tutar. Kolay oyunlar antrenman sayılır, sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I race against a friend?",
+        "tr": "Bir arkadaşıma karşı yarışabilir miyim?"
+      },
+      "a": {
+        "en": "No, Mud Rally is single-player and the three rivals are driven by the computer. You can still compare championship scores on the leaderboard.",
+        "tr": "Hayır, Çamur Rallisi tek kişilik; üç rakibi bilgisayar sürer. Yine de şampiyona skorlarınızı sıralamada karşılaştırabilirsiniz."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held sideways. Tilt steering uses the motion sensor; on phones that ask for permission the game shows a TURN TILT ON button first.",
+        "tr": "Evet, telefonu yan tutarak. Eğimle sürüş hareket sensörünü kullanır; izin isteyen telefonlarda oyun önce EĞİMİ AÇ düğmesini gösterir."
+      }
+    }
+  ]
+}

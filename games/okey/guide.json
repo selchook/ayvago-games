@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Okey is the tile game played in coffee houses and around family tables across Turkey, and this version keeps to its classic rules. Four players share 106 tiles: 1 to 13 in red, yellow, blue and black, two of each, plus two false jokers. A face-up indicator decides the okey, the next number in the same colour (after a 13 comes the 1). Both okeys are wild; a false joker plays as the okey's own colour and number.\n\nEveryone gets 14 tiles and the dealer 15. On your turn you draw from the middle pile or take the tile the player before you just threw, then throw one onto your corner. You win the hand by throwing your last tile while the other 14 form sets (three or four of a number in different colours) and runs (three or more in a row in one colour; 12-13-1 counts), or seven pairs.\n\nPlay a five-hand match against three bots, Ayşe, Mehmet and Zeynep, or sit at an online table on ayvago.com with up to three other people.",
+    "tr": "Okey, Türkiye'nin dört bir yanında kahvehanelerde ve aile masalarında oynanan taş oyunu; bu sürüm klasik kurallara bağlı kalır. Dört oyuncu 106 taşı paylaşır: kırmızı, sarı, mavi ve siyah renkte 1'den 13'e sayılar, her birinden iki tane, bir de iki sahte okey. Açık duran gösterge okeyi belirler: okey, aynı renkte bir sonraki sayıdır (13'ten sonra 1 gelir). İki okey de istediğin taşın yerine geçer; sahte okey ise okeyin kendi rengi ve sayısı olarak oynar.\n\nHerkese 14, dağıtana 15 taş gelir. Sıra sendeyken ortadan çeker ya da senden önceki oyuncunun az önce attığı taşı alırsın, sonra köşene bir taş atarsın. Son taşını attığında kalan 14 taş perlerden (aynı sayının farklı renkte üç ya da dört taşı) ve serilerden (aynı renkte art arda en az üç sayı; 12-13-1 de olur) ya da yedi çiftten oluşuyorsa eli kazanırsın.\n\nAyşe, Mehmet ve Zeynep adlı üç bota karşı beş ellik bir maç oynayabilir ya da ayvago.com'da en fazla üç kişiyle çevrimiçi bir masaya oturabilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "Check the indicator beside the middle pile. Your okeys glow gold on the rack.",
+      "tr": "Orta destenin yanındaki göstergeye bak. Istakandaki okeyler altın rengi parlar."
+    },
+    {
+      "en": "On your turn, tap the middle pile or the tile on your left to draw, or drag it straight onto your rack.",
+      "tr": "Sıra sana gelince çekmek için ortadaki desteye ya da solundaki taşa dokun veya taşı doğrudan ıstakana sürükle."
+    },
+    {
+      "en": "Arrange runs and sets by dragging tiles, or use Sort runs and Sort pairs. Then pick a tile and press THROW.",
+      "tr": "Taşları sürükleyerek seri ve perlere diz ya da Seri diz ve Çift diz'i kullan. Sonra bir taş seçip AT'a bas."
+    },
+    {
+      "en": "When the 14 tiles you keep are complete, press FINISH. If the middle pile runs out first, the hand has no winner.",
+      "tr": "Elinde kalacak 14 taş hazırsa BİTİR'e bas. Ortada taş biterse el kazanansız kapanır."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → select a tile and Shift + ← → move it. 1 or Q draws from the middle, 2 or W takes the left tile, Space or Enter draws and then throws, F finishes, S and D sort, Tab or I opens your player card.",
+      "tr": "← → taş seçer, Shift + ← → seçili taşı kaydırır. 1 ya da Q ortadan çeker, 2 ya da W soldaki taşı alır, Boşluk ya da Enter önce çeker sonra atar, F bitirir, S ve D dizer, Tab ya da I oyuncu kartını açar."
+    },
+    "touch": {
+      "en": "Tap to draw and to select, then THROW. Drag tiles to rearrange the rack, onto your corner to throw, or into the middle of the table to finish.",
+      "tr": "Çekmek ve seçmek için dokun, sonra AT'a bas. Taşları sürükleyerek ıstakanı düzenle, köşene bırakıp at ya da masanın ortasına bırakıp bitir."
+    },
+    "mouse": {
+      "en": "Click and drag exactly as you would with a finger.",
+      "tr": "Parmakla yaptığın her şeyi fareyle tıklayıp sürükleyerek yapabilirsin."
+    }
+  },
+  "tips": [
+    {
+      "en": "Hold on to the okey. Finishing by throwing a spare okey doubles the hand, and once your hand is complete with an okey to spare, the finishing throw always uses it.",
+      "tr": "Okeyi elinde tut. Boşta kalan okeyi atarak bitirmek eli ikiye katlar; elin okey artacak şekilde tamamlandığında bitiriş atışı her zaman okeyle yapılır."
+    },
+    {
+      "en": "Press Sort pairs now and then. With four or five pairs already in hand, seven pairs is often the quicker finish, and it scores 4 instead of 2.",
+      "tr": "Arada bir Çift diz'e bas. Elinde dört beş çift varsa çifte gitmek çoğu zaman daha hızlı bitirir ve 2 yerine 4 puan getirir."
+    },
+    {
+      "en": "Take the left tile only when it completes a group. Everyone sees what you pick up there; a draw from the middle gives nothing away.",
+      "tr": "Soldaki taşı yalnızca bir grubu tamamlıyorsa al. Yandan aldığını herkes görür, ortadan çektiğin taş ise hiçbir şey belli etmez."
+    },
+    {
+      "en": "Your throws are the next player's options, so avoid throwing a tile that fits what they have been picking up.",
+      "tr": "Attığın taş senden sonraki oyuncunun seçeneğidir; onun yandan topladıklarına uyan taşı atma."
+    }
+  ],
+  "features": [
+    {
+      "en": "Classic 106-tile okey with indicator, okeys and false jokers",
+      "tr": "Gösterge, okey ve sahte okeyli klasik 106 taşlık okey"
+    },
+    {
+      "en": "Finish with runs and sets or with seven pairs",
+      "tr": "Seri ve perlerle ya da yedi çiftle bitiş"
+    },
+    {
+      "en": "Solo matches against three bots on Easy or Normal",
+      "tr": "Kolay ya da Normal seviyede üç bota karşı tek kişilik maç"
+    },
+    {
+      "en": "Online tables for up to four players, with quick chat",
+      "tr": "Hızlı sohbetli, dört kişiye kadar çevrimiçi masalar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Can I play with friends?",
+        "tr": "Arkadaşlarımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Okey has online tables on ayvago.com for up to four people, with bots in the empty seats. The table's settings decide the number of hands and the time per turn.",
+        "tr": "Evet. Okey'in ayvago.com'da dört kişiye kadar çevrimiçi masaları var, boş koltuklara bot oturur. El sayısını ve hamle süresini masanın ayarları belirler."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes, against the bots: on Easy they make more mistakes, sometimes pass up a tile they want and rarely finish with the okey. Easy matches stay off the leaderboard, and online tables always play Normal.",
+        "tr": "Evet, botlara karşı: Kolay'da botlar daha çok hata yapar, işlerine yarayan taşı bazen almaz ve okeyle bitirmeyi pek denemez. Kolay maçlar sıralamaya girmez; çevrimiçi masalar hep Normal oynanır."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A won hand is worth 2 points, or 4 with seven pairs, doubled when it ends with a thrown okey. The highest total after the last hand wins the match, and your leaderboard score is your match points × 100.",
+        "tr": "Kazanılan el 2 puan, yedi çiftle 4 puan eder; el okey atılarak bitirildiyse puan ikiye katlanır. Son elden sonra en yüksek toplam maçı kazanır; sıralamadaki skorun maç puanının 100 katıdır."
+      }
+    }
+  ]
+}

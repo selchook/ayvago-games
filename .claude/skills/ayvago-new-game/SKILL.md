@@ -178,6 +178,7 @@ Other helpers from `@core`:
 9. **HUD in chips.** Score, lives and level use `Hud`; every other always-visible readout sits in a `hudChip` (glass in modern, plain box in retro). The screenshot shows no bare HUD text and nothing under the pause button.
 10. **Characters move with their own limbs.** In a game with a player character, every move uses one of its poses (no extra limbs drawn on top). Screenshots with two characters show the ball, rope or tool meeting the real foot or hand.
 11. **Store art.** `node scripts/gen-store-assets.mjs <slug>` passes, the catalog cards (`card-640x360.webp`, Turkish `card-tr-640x360.webp`: the same frame) show real play with the logo clear of the action and the Turkish logo fits, and the logos (`logo-en.png`, `logo-tr.png`) read right in both languages (§8).
+12. **Game guide.** `games/<slug>/guide.json` is written from the game's real code in English and Turkish, has no TODO left and `npm run validate:platform` passes it (§7i).
 
 ## 7. Verify
 
@@ -723,13 +724,70 @@ playable on a pad: give every action a key from the table below where it fits.
 - Do not list `gamepad` in `game.json` `controls` until the game passes that test and plays well
   with the pad.
 
+## 7i. Game guide (required)
+
+Every game page on ayvago.com shows a written guide beside the game frame: what the game is, how
+to play, the controls, tips, features and an FAQ. The frame is a cross-origin iframe that search
+engines and ad reviewers do not count as content, so the guide is the page's own text; it is also
+what a player reads before pressing Play. It is part of the Definition of Done for every new game.
+
+- **Source:** `games/<slug>/guide.json`, a `GameGuide` (`scripts/vendor/guide.ts`, vendored
+  verbatim from the platform's `packages/shared/src/guide.ts`: the contract, never edited here).
+  Every text is a `{ "en": "...", "tr": "..." }` map; always write both.
+
+  ```json
+  {
+    "about": { "en": "Paragraph.\n\nParagraph.", "tr": "Paragraf.\n\nParagraf." },
+    "howToPlay": [{ "en": "Step.", "tr": "Adım." }],
+    "controls": { "keyboard": { "en": "...", "tr": "..." }, "touch": {}, "mouse": {}, "gamepad": {} },
+    "tips": [{ "en": "...", "tr": "..." }],
+    "features": [{ "en": "...", "tr": "..." }],
+    "faq": [{ "q": { "en": "...?", "tr": "...?" }, "a": { "en": "...", "tr": "..." } }]
+  }
+  ```
+
+  `controls` lists only the inputs the game has (at least one); `features` and `faq` are optional
+  in the schema but expected from the studio.
+- **Scaffold:** `npm run new-game` copies a stub full of `TODO`s. A guide with a TODO left is a
+  draft: `npm run platform` leaves it out of the catalog and `validate:platform` lists it.
+- **Generated:** `npm run platform` writes every finished guide into `platform/arcade-guides.json`
+  (`{ "version": 1, "guides": { "<slug>": … } }`, sorted, schema key order). The platform's catalog
+  sync pulls it from `main` with `arcade-catalog.ts` and renders it server-side; CI fails when it
+  is stale, like the catalog.
+- **Checked:** `npm run validate:platform` parses the file with the schema and fails on: a slug
+  that is not a shipped game; a text without its Turkish or with the Turkish identical to the
+  English; `about` not in 2–3 paragraphs; under 200 words in a language; Turkish without a single
+  ç ğ ı İ ö ş ü; a `controls` input the game's manifest `input` does not declare (game.json
+  `controls`, plus mouse). It warns outside the ranges below and prints the word counts.
+
+**Writing rules**
+
+- **Accurate.** Read the game's code (`*.ts`, `game.json`, its strings) and write only what the
+  game really does: its modes, Easy/Normal where offered, real keys and gestures, scoring,
+  power-ups, characters, online play and rules. Every number (lives, laps, board size, prizes)
+  matches the code. Never invent a feature.
+- **Original and useful.** Written for someone about to play: what the game is and what makes it
+  different, how a round flows, concrete tips a good player would give, and the questions people
+  really ask ("Can I play with a friend?", "Is there an easy mode?", "Does it work on phones?",
+  "How are points scored?"). No filler, no keyword stuffing, no superlatives, no mention of search
+  engines or ads, and no template sentence reused from another game's guide.
+- **Natural Turkish.** Written as Turkish, not translated word by word, with correct ç ğ ı İ ö ş ü,
+  the game's Turkish title and its in-game Turkish terms (button labels, item and mode names);
+  traditional games use their real Turkish names (okey: gösterge, seri, per, çift, sahte okey).
+- **Controls.** Keyboard, touch and mouse as the code supports them. Add `gamepad` only when the
+  pad really plays the whole game with the core mapping (§7h) and the game lists `gamepad` in
+  `game.json` `controls` (after `npm run test:gamepad` passes); then say which buttons do what.
+- **Lengths.** `about` 120–200 words in 2–3 paragraphs (blank line between them); `howToPlay`
+  3–6 steps; `tips` 3–6; `features` 3–6 short items; `faq` 3–4; about 300–600 words per language
+  in all.
+
 ## 8. Ship
 
 - Run `npm run registry` (validates `game.json`).
 - Run `npm run build`.
-- Run `npm run platform` (writes `public/games/<slug>/ayvago.json` and the platform catalog).
+- Write `games/<slug>/guide.json` (§7i), then run `npm run platform` (writes `public/games/<slug>/ayvago.json`, the platform catalog and `platform/arcade-guides.json`).
 - Run `node scripts/gen-store-assets.mjs <slug>` (platform cover, icon, screenshot, catalog card in two sizes and two languages, the logos and portal thumbnail), then `npm run validate:platform`.
 - Look at the logos `public/games/<slug>/ayvago/logo-en.png` and `logo-tr.png` (manifest `assets.logo`): the title art on a transparent background, which ayvago.com draws over a screenshot on the game page. A game with a menu theme gets its themed logo (emblem included), any other the card's plain title logo; the Turkish letters must be right. `--logo-only` redoes just them.
 - Look at the catalog cards `public/games/<slug>/ayvago/card-640x360.webp` and `card-tr-640x360.webp` (the same frame, the Turkish logo shrunk to fit at most two lines): they are what players see first in the ayvago.com catalog. They must show real play (not the menu, a round-start banner or an empty or black frame) and the logo must not hide the action. If it misses, add the game to the `CARD` table in `scripts/gen-store-assets.mjs` (`pick` another candidate frame, `wait` before the scripted play, or `accent` for the logo colour); `CARD_FRAMES=<dir>` keeps the candidate frames for a look and `--card-only --from-frames` re-composes from them without replaying.
 - Run `node scripts/platform-harness.mjs <slug>` (GHA_* protocol check, embedded like ayvago.com).
-- Commit `games/<slug>`, `public/games/<slug>/`, `public/thumbs/<slug>.png` and `platform/arcade-catalog.ts`. The platform pulls the catalog from `main` by itself (its "Sync arcade catalog" workflow opens the PR); never copy it by hand.
+- Commit `games/<slug>`, `public/games/<slug>/`, `public/thumbs/<slug>.png`, `platform/arcade-catalog.ts` and `platform/arcade-guides.json`. The platform pulls the catalog from `main` by itself (its "Sync arcade catalog" workflow opens the PR); never copy it by hand.

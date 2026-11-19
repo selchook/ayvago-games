@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Letter Loop is a word puzzle against the clock. A wheel of letters sits at the bottom of the screen and an empty crossword waits above it. Swipe from letter to letter to spell a word; if it belongs in the crossword, its letters fly into their squares. Fill every word before the time bar runs out and the next level begins.\n\nEach puzzle grows from a base word that uses every letter on the wheel. Level 1 has four letters, levels 2 and 3 have five, levels 4 to 10 have six, and from level 11 the wheel holds seven letters and the crossword up to nine words. The time you get depends on the puzzle and shrinks a little each level.\n\nReal words that are not in the crossword count as bonus words, and every five of them add a hint to the three you start with. Play in Turkish for Turkish puzzles, in English for English ones.",
+    "tr": "Harf Çemberi, süreye karşı oynanan bir kelime bulmacası. Ekranın altında harflerden bir çember, üstünde boş bir bulmaca durur. Harften harfe kaydırarak kelime yazarsın; kelime bulmacada varsa harfleri uçup karelerine yerleşir. Süre çubuğu bitmeden bütün kelimeleri doldurursan sıradaki bölüme geçersin.\n\nHer bulmaca, çemberdeki bütün harfleri kullanan bir ana kelimeden doğar. 1. bölümde dört harf, 2. ve 3. bölümde beş, 4. ile 10. bölüm arasında altı harf vardır; 11. bölümden sonra çember yedi harfe, bulmaca dokuz kelimeye kadar çıkar. Verilen süre bulmacaya göre belirlenir ve her bölümde biraz kısalır.\n\nBulmacada olmayan ama gerçek olan kelimeler bonus kelime sayılır; her beş bonus kelime, başlangıçtaki üç ipucuna bir yenisini ekler. Türkçe oynarsan Türkçe, İngilizce oynarsan İngilizce bulmacalar gelir."
+  },
+  "howToPlay": [
+    {
+      "en": "Check the empty squares: each row or column of squares is a word of that length.",
+      "tr": "Boş karelere bak: her satır ya da sütundaki kare dizisi, o uzunlukta bir kelimedir."
+    },
+    {
+      "en": "Touch a letter, slide over the others to spell a word and lift to send it. Slide back one letter to take it off.",
+      "tr": "Bir harfe dokun, diğerlerinin üzerinden kaydırarak kelimeyi yaz ve parmağını kaldırıp gönder. Son harfi silmek için bir önceki harfe geri kaydır."
+    },
+    {
+      "en": "Words need at least three letters. A wrong one shakes and breaks your streak; a repeat shows Already found.",
+      "tr": "Kelime en az üç harfli olmalı. Yanlış kelime sallanır ve serini bozar; tekrar ettiğin kelimede Zaten bulundu yazar."
+    },
+    {
+      "en": "Complete the crossword for LEVEL CLEAR and a time bonus. If the time bar empties first, the missing words turn red and the game ends.",
+      "tr": "Bulmacayı tamamlayınca BÖLÜM TAMAM olur ve süre bonusu gelir. Süre çubuğu önce biterse eksik kelimeler kırmızıyla görünür ve oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Type the letters and press Enter; Backspace removes a letter, Space shuffles and 1 or ? uses a hint. In Turkish puzzles C, G, I, O, S and U also pick Ç, Ğ, İ, Ö, Ş and Ü.",
+      "tr": "Harfleri yaz ve Enter'a bas; Backspace harf siler, Boşluk karıştırır, 1 ya da ? ipucu kullanır. Klavyende Türkçe harf yoksa C, G, I, O, S ve U tuşları Ç, Ğ, İ, Ö, Ş ve Ü'yü de seçer."
+    },
+    "touch": {
+      "en": "Swipe across the wheel and lift to send. The round button on the left shuffles, the one on the right gives a hint.",
+      "tr": "Çemberin üzerinde parmağını gezdir, kaldırınca kelime gönderilir. Soldaki yuvarlak düğme karıştırır, sağdaki ipucu verir."
+    },
+    "mouse": {
+      "en": "Hold the button, drag across the letters and release to send; click the buttons under the wheel to shuffle or take a hint.",
+      "tr": "Fare tuşunu basılı tutup harflerin üzerinden sürükle, bırakınca gönderilir; karıştırmak ya da ipucu için çemberin altındaki düğmelere tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Hunt for the base word early: a FULL WORD that uses every letter scores double and usually crosses several others.",
+      "tr": "Ana kelimeyi erkenden ara: bütün harfleri kullanan TAM KELİME iki kat puan getirir ve çoğunlukla birkaç kelimeyle kesişir."
+    },
+    {
+      "en": "Each word found right after another adds 5 more points, up to 25. A wrong guess costs no time, only the streak.",
+      "tr": "Art arda bulduğun her kelime 5 puan fazladan getirir, en çok 25'e kadar. Yanlış tahmin süreden yemez, yalnızca seriyi bozar."
+    },
+    {
+      "en": "Stuck? Shuffle. The same letters in a new order often show the word you were missing.",
+      "tr": "Takıldın mı? Karıştır. Aynı harfleri başka bir sırada görmek, kaçırdığın kelimeyi çoğu zaman ortaya çıkarır."
+    },
+    {
+      "en": "A hint opens a letter of the word closest to done. Words filled in that way score half, so save hints for when the clock is short.",
+      "tr": "İpucu, bitmeye en yakın kelimenin bir harfini açar. Böyle tamamlanan kelimeler yarı puan getirir; ipuçlarını süre daraldığında kullan."
+    }
+  ],
+  "features": [
+    {
+      "en": "A fresh crossword for every level",
+      "tr": "Her bölümde yeni bir bulmaca"
+    },
+    {
+      "en": "Turkish and English word lists",
+      "tr": "Türkçe ve İngilizce kelime listeleri"
+    },
+    {
+      "en": "A wheel that grows from four letters to seven",
+      "tr": "Dört harften yedi harfe büyüyen çember"
+    },
+    {
+      "en": "Bonus words that earn extra hints",
+      "tr": "Ek ipucu kazandıran bonus kelimeler"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl veriliyor?"
+      },
+      "a": {
+        "en": "Crossword words earn 10 points per letter, doubled for a FULL WORD, plus the streak bonus. Bonus words and words completed by hints earn 5 per letter. A cleared level adds 3 points per second left and 20 per level.",
+        "tr": "Bulmacadaki kelimeler harf başına 10 puan eder, TAM KELİME'de iki katı, üstüne seri bonusu. Bonus kelimeler ve ipucuyla tamamlanan kelimeler harf başına 5 puan getirir. Biten bölüm, kalan her saniye için 3, bölüm başına da 20 puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Does leftover time carry over?",
+        "tr": "Artan süre sonraki bölüme geçiyor mu?"
+      },
+      "a": {
+        "en": "No. Each level starts with a fresh clock, and the seconds you had left become bonus points instead.",
+        "tr": "Hayır. Her bölüm yeni bir süreyle başlar; kalan saniyeler puana dönüşür."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "There is no separate mode. Level 1 has only four letters and three or four words, and the time allowance tightens slowly, by about 2% a level.",
+        "tr": "Ayrı bir mod yok. 1. bölümde yalnızca dört harf ve üç dört kelime vardır; verilen süre de yavaş daralır, her bölümde yaklaşık %2."
+      }
+    }
+  ]
+}

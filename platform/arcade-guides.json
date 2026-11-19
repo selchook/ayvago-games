@@ -1,0 +1,539 @@
+{
+  "version": 1,
+  "guides": {
+    "block-drop": {
+      "about": {
+        "en": "Block Drop is a falling-block puzzle in a classic well ten columns wide and twenty rows deep. Seven kinds of pieces come down one at a time; you slide and rotate each one into place, and every row filled from wall to wall disappears. The game ends when the stack leaves no room for the next piece.\n\nIt plays by the modern rules that reward planning. Pieces come from a shuffled bag of all seven, so the one you need is never far away. A ghost outline shows where the piece will land, the NEXT panel shows three pieces ahead, and HOLD keeps one aside for later. Pieces kick off the walls when rotated, and a piece resting on the stack still gives you half a second to slide it.\n\nEvery 10 lines the level rises and the well changes colour. At level 1 a piece falls one row per second; by level 11 it crosses the whole well in under a second.",
+        "tr": "Blok Düşür, on sütun genişliğinde ve yirmi satır derinliğinde klasik bir kuyuda oynanan düşen blok bulmacası. Yedi çeşit parça tek tek iner; her birini kaydırıp döndürerek yerine oturtursun, duvardan duvara dolan her satır silinir. Yığın sıradaki parçaya yer bırakmadığında oyun biter.\n\nOyun, plan yapanı ödüllendiren modern kurallarla oynanır. Parçalar yedisini de içeren karışık bir torbadan gelir, aradığın parça hiçbir zaman uzakta kalmaz. Silik bir gölge parçanın ineceği yeri, SIRADAKİ paneli sonraki üç parçayı gösterir; SAKLA ile bir parçayı sonraya ayırırsın. Parçalar duvara dayalıyken de itilerek döner ve yığına değen parçayı kilitlenmeden önce yarım saniye daha kaydırabilirsin.\n\nHer 10 satırda seviye atlarsın, kuyunun rengi değişir. 1. seviyede parça saniyede bir satır iner; 11. seviyede kuyuyu baştan sona bir saniyeden kısa sürede geçer."
+      },
+      "howToPlay": [
+        {
+          "en": "Move and rotate the falling piece until its ghost sits where you want it, then let it fall, soft-drop it or hard-drop it to land at once.",
+          "tr": "Düşen parçayı gölgesi istediğin yere oturana kadar kaydır ve döndür; sonra kendi düşmesini bekle, yavaşça indir ya da tek hamlede bırak."
+        },
+        {
+          "en": "Fill a row to clear it. One piece clearing one to four rows makes a SINGLE, DOUBLE, TRIPLE or QUAD.",
+          "tr": "Dolan satır silinir. Tek parçayla bir ile dört satır silmenin adı TEK, ÇİFT, ÜÇLÜ ya da DÖRTLÜ."
+        },
+        {
+          "en": "Use HOLD to swap the falling piece with the one you stored, once per piece.",
+          "tr": "SAKLA ile düşen parçayı sakladığın parçayla değiştir; her parçada bir kez."
+        },
+        {
+          "en": "Every 10 lines speed things up. The game is over when the stack reaches the top.",
+          "tr": "Her 10 satır oyunu hızlandırır. Yığın tepeye ulaştığında oyun biter."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "← → or A / D move, ↓ or S soft-drops, ↑, W or X rotate clockwise, Z or Q the other way, Space hard-drops, C or Shift holds. Esc or P pauses.",
+          "tr": "← → ya da A / D kaydırır, ↓ ya da S yavaşça indirir, ↑, W ya da X saat yönünde, Z ya da Q ters yönde döndürür, Boşluk bırakır, C ya da Shift saklar. Esc ya da P duraklatır."
+        },
+        "touch": {
+          "en": "Six buttons under the well, or gestures on the board: drag sideways to move, drag down to soft-drop, tap to rotate, flick down to hard-drop, flick up to hold.",
+          "tr": "Kuyunun altındaki altı düğmeyi ya da tahtadaki hareketleri kullan: yana sürükle kaydır, aşağı sürükle indir, dokun döndür, aşağı hızlıca kaydır bırak, yukarı kaydır sakla."
+        },
+        "mouse": {
+          "en": "Click the buttons, or drag and click on the board as you would with a finger.",
+          "tr": "Düğmelere tıkla ya da tahtada parmakla oynar gibi sürükle ve tıkla."
+        },
+        "gamepad": {
+          "en": "D-pad or left stick moves (↑ rotates, ↓ soft-drops). A hard-drops, B rotates clockwise, LB or RT the other way, clicking the left stick holds, Start pauses.",
+          "tr": "Yön tuşları ya da sol çubuk kaydırır (↑ döndürür, ↓ indirir). A bırakır, B saat yönünde, LB ya da RT ters yönde döndürür; sol çubuğa basmak saklar, Start duraklatır."
+        }
+      },
+      "tips": [
+        {
+          "en": "Keep the stack flat with one column open against a wall, then drop an I piece in for a QUAD: 800 points at level 1, against 100 for a single row.",
+          "tr": "Yığını düz tut, duvar dibinde tek sütunu boş bırak ve oraya bir I parçası indirip DÖRTLÜ yap: 1. seviyede tek satırın 100 puanına karşı 800 puan."
+        },
+        {
+          "en": "Two QUADs in a row are BACK TO BACK and the second one scores half as much again.",
+          "tr": "Arka arkaya iki DÖRTLÜ, ART ARDA sayılır ve ikincisi yarısı kadar fazla puan getirir."
+        },
+        {
+          "en": "Clearing lines with piece after piece builds a COMBO worth 50 × combo × level extra points.",
+          "tr": "Parça parça üst üste satır silmek, 50 × kombo × seviye ek puan değerinde KOMBO kurar."
+        },
+        {
+          "en": "When an alarm sounds and the top of the well glows red, stop building and clear rows until the glow fades.",
+          "tr": "Alarm çalıp kuyunun üstü kırmızı parlamaya başladığında yığmayı bırak, parıltı sönene kadar satır sil."
+        }
+      ],
+      "features": [
+        {
+          "en": "Seven-piece bag, ghost piece, three-piece preview and HOLD",
+          "tr": "Yedili torba, gölge parça, üç parçalık önizleme ve SAKLA"
+        },
+        {
+          "en": "Wall kicks and a short lock delay for last-moment slides",
+          "tr": "Duvardan itilerek dönme ve son anda kaydırmaya izin veren kısa kilit süresi"
+        },
+        {
+          "en": "A faster level and a new well colour every 10 lines",
+          "tr": "Her 10 satırda daha hızlı bir seviye ve yeni bir kuyu rengi"
+        },
+        {
+          "en": "Big on-screen buttons and swipe gestures for phones",
+          "tr": "Telefon için büyük ekran düğmeleri ve kaydırma hareketleri"
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "How are points scored?",
+            "tr": "Puan nasıl hesaplanıyor?"
+          },
+          "a": {
+            "en": "One to four rows score 100, 300, 500 or 800 points times the level. BACK TO BACK adds 50%, combos add 50 × combo × level, and every row a piece falls by soft or hard drop adds 1 or 2 points.",
+            "tr": "Bir ile dört satır, seviyeyle çarpılarak 100, 300, 500 ya da 800 puan getirir. ART ARDA %50 ekler, kombo 50 × kombo × seviye ekler; yavaş indirmede parçanın geçtiği her satır 1, bırakmada 2 puandır."
+          }
+        },
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay modu var mı?"
+          },
+          "a": {
+            "en": "No. Every game starts slow at level 1 and only speeds up as you clear lines, so the first levels are your warm-up.",
+            "tr": "Hayır. Her oyun 1. seviyede yavaş başlar ve ancak satır sildikçe hızlanır; ilk seviyeler ısınma turun olur."
+          }
+        },
+        {
+          "q": {
+            "en": "Can I play with a friend?",
+            "tr": "Arkadaşımla oynayabilir miyim?"
+          },
+          "a": {
+            "en": "Block Drop is single-player, but your best run goes on the game's leaderboard on ayvago.com, so you can race each other's scores.",
+            "tr": "Blok Düşür tek kişilik, ama en iyi oyunun ayvago.com'daki sıralamaya girer; skorlarınızla yarışabilirsiniz."
+          }
+        }
+      ]
+    },
+    "hex-realm": {
+      "about": {
+        "en": "Hex Realm is a 3D action RPG in two layers. On the hex map you walk your hero from tile to tile as the fog lifts, meeting camps, ambushes and random encounters. Fights drop you into a real-time arena where you move freely, chain combos, roll out of danger and use your skills.\n\nYou play one of six classes: Warrior, Rogue, Ranger, Monk, Cleric or Wizard, each with three combos and two skills, and you can switch class at the inn. The village of Meadowbrook is home: an inn to rest and save, a market for potions, a smithy that upgrades gear up to +5, a notice board with quests, and the Shrine of Powers, where Sigils and gold strengthen your skills and finishers.\n\nSix quests lead from Bandit Chief Rask to Grukk the Mine Troll, Morvane the Dark and finally Lord Varek in the Dark Castle; after him come the Endless Rift and New Game+.",
+        "tr": "Altıgen Diyar, iki katmanlı bir 3B aksiyon RPG. Altıgen haritada kahramanını kareden kareye yürütürsün; ilerledikçe sis açılır, vahşi topraklarda kamplar, pusular ve rastgele karşılaşmalar bekler. Savaş başladığında oyun gerçek zamanlı bir arenaya geçer: orada serbestçe dolaşır, kombo zincirler, tehlikeden yuvarlanarak kaçar ve yeteneklerini kullanırsın.\n\nAltı sınıftan birini oynarsın: Savaşçı, Suikastçı, Korucu, Keşiş, Rahip ya da Büyücü. Her birinin üç kombosu ve iki yeteneği vardır; sınıfını handa değiştirebilirsin. Üssün Çayırköy: dinlenip kaydettiğin han, iksir aldığın pazar, eşyaları +5'e kadar güçlendiren demirci, görevlerin asıldığı ilan tahtası ve Mühür ile altın karşılığında yeteneklerini ve bitirişlerini güçlendiren Güçler Tapınağı burada.\n\nAltı görev seni Haydut Reisi Rask'tan Maden Trolü Grukk'a, Kara Morvane'ye ve sonunda Kara Kale'deki Lord Varek'e götürür; ondan sonra Sonsuz Yarık ve YENİ OYUN+ seni bekler."
+      },
+      "howToPlay": [
+        {
+          "en": "Pick a class, then tap a hex or use the arrows to travel. The gold marker shows your quest; enter a place and fight through its rooms to the boss.",
+          "tr": "Bir sınıf seç, sonra yolculuk için bir altıgene dokun ya da okları kullan. Altın işaret görevini gösterir; bir yere gir, odalarını geçerek bossa ulaş."
+        },
+        {
+          "en": "In battle, keep tapping ATTACK for the quick chain, tap twice and then hold for the heavy finisher, or attack right after a ROLL for the dash strike.",
+          "tr": "Savaşta hızlı zincir için SALDIR'a art arda dokun, ağır bitiriş için iki kez dokunup basılı tut, atılma vuruşu için KAÇIŞ'ın hemen ardından saldır."
+        },
+        {
+          "en": "Red on the ground marks a blow about to land: roll out of it, or through it at the last moment for a perfect dodge.",
+          "tr": "Yerdeki kırmızı alan inmek üzere olan bir darbedir: yuvarlanarak çık ya da kusursuz kaçış için son anda içinden geç."
+        },
+        {
+          "en": "A journey ends when you fall, beat the troll, the mage or the lord, or choose END THE DAY at the inn; your renown is then sent as your score.",
+          "tr": "Yolculuk; düştüğünde, trolü, büyücüyü ya da lordu yendiğinde veya handa GÜNÜ BİTİR'i seçtiğinde biter ve şöhretin skor olarak gönderilir."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "Map: arrows or WASD walk, Enter goes in, + / - zoom, M map, I hero. Battle: WASD or arrows move, J or Space attacks (hold J for the heavy finisher), K or Shift rolls, L and U use skills, E or Q drinks a potion.",
+          "tr": "Harita: oklar ya da WASD yürütür, Enter içeri girer, + / - yakınlaştırır, M harita, I kahraman. Savaş: WASD ya da oklar hareket ettirir, J ya da Boşluk saldırır (ağır bitiriş için J'yi basılı tut), K ya da Shift yuvarlar, L ve U yetenek, E ya da Q iksir."
+        },
+        "touch": {
+          "en": "Map: tap a hex to walk, drag to look around, pinch to zoom. Battle: drag on the left to move; ATTACK, ROLL, two skills and POTION are on the right.",
+          "tr": "Harita: yürümek için altıgene dokun, bakınmak için sürükle, yakınlaştırmak için iki parmağını aç. Savaş: solda sürükleyerek yürü; SALDIR, KAÇIŞ, iki yetenek ve İKSİR sağda."
+        },
+        "mouse": {
+          "en": "The mouse walks, drags and zooms the map and handles the village and hero screens; fights are played on the keyboard.",
+          "tr": "Fareyle haritada yürür, sürükler, tekerlekle yakınlaştırır, köy ve kahraman ekranlarını kullanırsın; savaşlar klavyeyle oynanır."
+        }
+      },
+      "tips": [
+        {
+          "en": "Don't roll the moment the red appears. A perfect dodge slows time and makes your next hit critical, the best opening you will get.",
+          "tr": "Kırmızıyı görür görmez yuvarlanma. Kusursuz kaçış zamanı yavaşlatır ve sıradaki vuruşunu kritik yapar; yakalayacağın en iyi fırsat budur."
+        },
+        {
+          "en": "Shields stop quick blows. Break a guard with the heavy finisher, and hit Lord Varek from the side while his shield is up.",
+          "tr": "Kalkanlar hızlı vuruşları durdurur. Korumayı ağır bitirişle kır; Lord Varek kalkanını kaldırınca ona yandan vur."
+        },
+        {
+          "en": "Rest at the inn before a boss. Falling costs a fifth of your gold on Normal, so spend it before a risky fight.",
+          "tr": "Bir bossa gitmeden önce handa dinlen. Normal'de düşmek altınının beşte birine mal olur; riskli bir savaştan önce altınını harca."
+        },
+        {
+          "en": "Skull-flag camps are tough, but each gives an item, a Sigil and a richer pick of power cards, which last for the current journey.",
+          "tr": "Kuru kafa bayraklı kamplar zorludur ama her biri bir eşya, bir Mühür ve o yolculuk boyunca geçerli güç kartlarından daha zengin bir seçim verir."
+        }
+      ],
+      "features": [
+        {
+          "en": "Six classes, each with three combos and two skills",
+          "tr": "Her biri üç kombolu ve iki yetenekli altı sınıf"
+        },
+        {
+          "en": "A fog-covered hex map with camps, ambushes and six quests",
+          "tr": "Kamplı, pusulu, altı görevli, sisle örtülü bir altıgen harita"
+        },
+        {
+          "en": "Loot from Common to Legendary, talents, power cards and Sigils",
+          "tr": "Sıradan'dan Efsanevi'ye ganimet, yetenek puanları, güç kartları ve Mühürler"
+        },
+        {
+          "en": "The Endless Rift and New Game+ after the final boss",
+          "tr": "Son bosstan sonra Sonsuz Yarık ve YENİ OYUN+"
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "Is my progress saved?",
+            "tr": "İlerlemem kaydediliyor mu?"
+          },
+          "a": {
+            "en": "Yes, in this browser, after every fight and whenever you rest at the inn. Easy and Normal keep separate realms, and New Campaign at the inn starts over.",
+            "tr": "Evet, bu tarayıcıda; her savaştan sonra ve handa her dinlendiğinde. Kolay ve Normal ayrı diyarlar tutar, handaki Yeni Sefer her şeyi baştan başlatır."
+          }
+        },
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay modu var mı?"
+          },
+          "a": {
+            "en": "Yes. On Easy, foes have a quarter less health, hit 40% softer and warn you for longer, and you earn more gold and XP and carry an extra potion. Easy runs stay off the leaderboard.",
+            "tr": "Evet. Kolay'da düşmanların canı dörtte bir azdır, %40 daha hafif vurur ve daha uzun uyarırlar; sen de daha çok altın ve deneyim kazanır, bir fazla iksir taşırsın. Kolay oyunlar sıralamaya girmez."
+          }
+        },
+        {
+          "q": {
+            "en": "How is the score counted?",
+            "tr": "Skor nasıl hesaplanıyor?"
+          },
+          "a": {
+            "en": "Your score is your realm's renown, earned from won battles, quests, camps, rift floors and bosses. It keeps growing from one journey to the next.",
+            "tr": "Skorun, diyarındaki şöhretindir; kazanılan savaşlar, görevler, kamplar, yarık katları ve bosslarla artar. Şöhret yolculuktan yolculuğa birikir."
+          }
+        }
+      ]
+    },
+    "letter-loop": {
+      "about": {
+        "en": "Letter Loop is a word puzzle against the clock. A wheel of letters sits at the bottom of the screen and an empty crossword waits above it. Swipe from letter to letter to spell a word; if it belongs in the crossword, its letters fly into their squares. Fill every word before the time bar runs out and the next level begins.\n\nEach puzzle grows from a base word that uses every letter on the wheel. Level 1 has four letters, levels 2 and 3 have five, levels 4 to 10 have six, and from level 11 the wheel holds seven letters and the crossword up to nine words. The time you get depends on the puzzle and shrinks a little each level.\n\nReal words that are not in the crossword count as bonus words, and every five of them add a hint to the three you start with. Play in Turkish for Turkish puzzles, in English for English ones.",
+        "tr": "Harf Çemberi, süreye karşı oynanan bir kelime bulmacası. Ekranın altında harflerden bir çember, üstünde boş bir bulmaca durur. Harften harfe kaydırarak kelime yazarsın; kelime bulmacada varsa harfleri uçup karelerine yerleşir. Süre çubuğu bitmeden bütün kelimeleri doldurursan sıradaki bölüme geçersin.\n\nHer bulmaca, çemberdeki bütün harfleri kullanan bir ana kelimeden doğar. 1. bölümde dört harf, 2. ve 3. bölümde beş, 4. ile 10. bölüm arasında altı harf vardır; 11. bölümden sonra çember yedi harfe, bulmaca dokuz kelimeye kadar çıkar. Verilen süre bulmacaya göre belirlenir ve her bölümde biraz kısalır.\n\nBulmacada olmayan ama gerçek olan kelimeler bonus kelime sayılır; her beş bonus kelime, başlangıçtaki üç ipucuna bir yenisini ekler. Türkçe oynarsan Türkçe, İngilizce oynarsan İngilizce bulmacalar gelir."
+      },
+      "howToPlay": [
+        {
+          "en": "Check the empty squares: each row or column of squares is a word of that length.",
+          "tr": "Boş karelere bak: her satır ya da sütundaki kare dizisi, o uzunlukta bir kelimedir."
+        },
+        {
+          "en": "Touch a letter, slide over the others to spell a word and lift to send it. Slide back one letter to take it off.",
+          "tr": "Bir harfe dokun, diğerlerinin üzerinden kaydırarak kelimeyi yaz ve parmağını kaldırıp gönder. Son harfi silmek için bir önceki harfe geri kaydır."
+        },
+        {
+          "en": "Words need at least three letters. A wrong one shakes and breaks your streak; a repeat shows Already found.",
+          "tr": "Kelime en az üç harfli olmalı. Yanlış kelime sallanır ve serini bozar; tekrar ettiğin kelimede Zaten bulundu yazar."
+        },
+        {
+          "en": "Complete the crossword for LEVEL CLEAR and a time bonus. If the time bar empties first, the missing words turn red and the game ends.",
+          "tr": "Bulmacayı tamamlayınca BÖLÜM TAMAM olur ve süre bonusu gelir. Süre çubuğu önce biterse eksik kelimeler kırmızıyla görünür ve oyun biter."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "Type the letters and press Enter; Backspace removes a letter, Space shuffles and 1 or ? uses a hint. In Turkish puzzles C, G, I, O, S and U also pick Ç, Ğ, İ, Ö, Ş and Ü.",
+          "tr": "Harfleri yaz ve Enter'a bas; Backspace harf siler, Boşluk karıştırır, 1 ya da ? ipucu kullanır. Klavyende Türkçe harf yoksa C, G, I, O, S ve U tuşları Ç, Ğ, İ, Ö, Ş ve Ü'yü de seçer."
+        },
+        "touch": {
+          "en": "Swipe across the wheel and lift to send. The round button on the left shuffles, the one on the right gives a hint.",
+          "tr": "Çemberin üzerinde parmağını gezdir, kaldırınca kelime gönderilir. Soldaki yuvarlak düğme karıştırır, sağdaki ipucu verir."
+        },
+        "mouse": {
+          "en": "Hold the button, drag across the letters and release to send; click the buttons under the wheel to shuffle or take a hint.",
+          "tr": "Fare tuşunu basılı tutup harflerin üzerinden sürükle, bırakınca gönderilir; karıştırmak ya da ipucu için çemberin altındaki düğmelere tıkla."
+        }
+      },
+      "tips": [
+        {
+          "en": "Hunt for the base word early: a FULL WORD that uses every letter scores double and usually crosses several others.",
+          "tr": "Ana kelimeyi erkenden ara: bütün harfleri kullanan TAM KELİME iki kat puan getirir ve çoğunlukla birkaç kelimeyle kesişir."
+        },
+        {
+          "en": "Each word found right after another adds 5 more points, up to 25. A wrong guess costs no time, only the streak.",
+          "tr": "Art arda bulduğun her kelime 5 puan fazladan getirir, en çok 25'e kadar. Yanlış tahmin süreden yemez, yalnızca seriyi bozar."
+        },
+        {
+          "en": "Stuck? Shuffle. The same letters in a new order often show the word you were missing.",
+          "tr": "Takıldın mı? Karıştır. Aynı harfleri başka bir sırada görmek, kaçırdığın kelimeyi çoğu zaman ortaya çıkarır."
+        },
+        {
+          "en": "A hint opens a letter of the word closest to done. Words filled in that way score half, so save hints for when the clock is short.",
+          "tr": "İpucu, bitmeye en yakın kelimenin bir harfini açar. Böyle tamamlanan kelimeler yarı puan getirir; ipuçlarını süre daraldığında kullan."
+        }
+      ],
+      "features": [
+        {
+          "en": "A fresh crossword for every level",
+          "tr": "Her bölümde yeni bir bulmaca"
+        },
+        {
+          "en": "Turkish and English word lists",
+          "tr": "Türkçe ve İngilizce kelime listeleri"
+        },
+        {
+          "en": "A wheel that grows from four letters to seven",
+          "tr": "Dört harften yedi harfe büyüyen çember"
+        },
+        {
+          "en": "Bonus words that earn extra hints",
+          "tr": "Ek ipucu kazandıran bonus kelimeler"
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "How are points scored?",
+            "tr": "Puanlar nasıl veriliyor?"
+          },
+          "a": {
+            "en": "Crossword words earn 10 points per letter, doubled for a FULL WORD, plus the streak bonus. Bonus words and words completed by hints earn 5 per letter. A cleared level adds 3 points per second left and 20 per level.",
+            "tr": "Bulmacadaki kelimeler harf başına 10 puan eder, TAM KELİME'de iki katı, üstüne seri bonusu. Bonus kelimeler ve ipucuyla tamamlanan kelimeler harf başına 5 puan getirir. Biten bölüm, kalan her saniye için 3, bölüm başına da 20 puan ekler."
+          }
+        },
+        {
+          "q": {
+            "en": "Does leftover time carry over?",
+            "tr": "Artan süre sonraki bölüme geçiyor mu?"
+          },
+          "a": {
+            "en": "No. Each level starts with a fresh clock, and the seconds you had left become bonus points instead.",
+            "tr": "Hayır. Her bölüm yeni bir süreyle başlar; kalan saniyeler puana dönüşür."
+          }
+        },
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay modu var mı?"
+          },
+          "a": {
+            "en": "There is no separate mode. Level 1 has only four letters and three or four words, and the time allowance tightens slowly, by about 2% a level.",
+            "tr": "Ayrı bir mod yok. 1. bölümde yalnızca dört harf ve üç dört kelime vardır; verilen süre de yavaş daralır, her bölümde yaklaşık %2."
+          }
+        }
+      ]
+    },
+    "mud-rally": {
+      "about": {
+        "en": "Mud Rally is a monster-truck championship on dirt arenas that fit on a single screen. You drive the blue truck against red, yellow and green rivals over four laps, through mud pits, slippery puddles, humps and ramps that send the trucks flying. Watch from above or switch to the in-car view with its speedometer and rev counter. Every lap has checkpoints, and a lap that skips one does not count.\n\nBetween races you stop at the garage. Prize money ($10,000 for a win, $6,000 for second, $3,000 for third, 15% more each race) and the coins you grab on track buy engine, tire, shock and nitro upgrades, five levels each. Six tracks take turns, from Dust Bowl to Zigzag Valley, and the rivals get faster every race.\n\nFinishing last costs a life. You have three, or four on Easy, and the championship ends when they run out. Your score is all the money you earned; spending it in the garage never takes anything off.",
+        "tr": "Çamur Rallisi, tek ekrana sığan toprak pistlerde geçen bir canavar kamyon şampiyonası. Mavi kamyonla kırmızı, sarı ve yeşil rakiplere karşı dört tur atarsın; yolda çamur çukurları, kaygan su birikintileri, tümsekler ve kamyonları havaya uçuran rampalar var. Yarışı yukarıdan izleyebilir ya da hız ve devir göstergeli araç içi görünüme geçebilirsin. Her turda kontrol noktaları bulunur; birini atlarsan o tur sayılmaz.\n\nYarış aralarında garaja uğrarsın. Ödül parası (birinciye $10.000, ikinciye $6.000, üçüncüye $3.000; her yarışta %15 artar) ve pistte topladığın paralar MOTOR, LASTİK, AMORTİSÖR ve NİTRO geliştirmelerine gider, her birinin beş seviyesi var. Toz Çanağı'ndan Zikzak Vadisi'ne altı pist sırayla gelir ve rakipler her yarışta biraz daha hızlanır.\n\nSonuncu olursan bir can gider. Üç canın var, Kolay'da dört; canlar bitince şampiyona sona erer. Skorun, kazandığın paranın tamamıdır; garajda harcadıkların skordan düşülmez."
+      },
+      "howToPlay": [
+        {
+          "en": "On a touch screen, choose ARROWS, WHEEL or TILT steering on the menu, pick Easy or Normal and press PLAY.",
+          "tr": "Dokunmatik ekranda menüden OKLAR, DİREKSİYON ya da EĞİM kontrolünü ve Kolay ya da Normal'i seçip OYNA'ya bas."
+        },
+        {
+          "en": "After the 3-2-1 countdown, accelerate and steer. Brake before tight bends; holding the brake at a standstill reverses.",
+          "tr": "3-2-1 geri sayımından sonra gaza bas ve yönlendir. Keskin virajlardan önce fren yap; dururken frene basılı tutmak geri vitese takar."
+        },
+        {
+          "en": "Grab gold coins for cash and red barrels for an extra nitro, and fire nitro for a short burst of speed.",
+          "tr": "Altın paralar para, kırmızı variller ek nitro verir; nitroyu ateşleyince kısa bir süre fırlarsın."
+        },
+        {
+          "en": "After four laps the top three win prize money and fourth place loses a life. Spend your bank in the garage, then press NEXT RACE.",
+          "tr": "Dört turun sonunda ilk üç ödül alır, dördüncü bir can kaybeder. Kasandaki parayı garajda harca, sonra SONRAKİ YARIŞ'a bas."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "← → or A / D steer, ↑ or W accelerates, ↓ or S brakes and reverses, Space, Z or Enter fires nitro and C changes the camera. In the garage, arrows choose and Enter or Space buys.",
+          "tr": "← → ya da A / D yönlendirir, ↑ ya da W gaz, ↓ ya da S fren ve geri vites; Boşluk, Z ya da Enter nitro, C kamerayı değiştirir. Garajda oklarla seçer, Enter ya da Boşluk ile alırsın."
+        },
+        "touch": {
+          "en": "The left thumb steers with arrow buttons, an on-screen wheel or by tilting (tap the wheel to centre it). GAS, BRAKE and NITRO are on the right; the camera button sits under pause.",
+          "tr": "Sol başparmak ok düğmeleriyle, ekrandaki direksiyonla ya da cihazı eğerek yönlendirir (ortalamak için direksiyona dokun). GAZ, FREN ve NİTRO sağda; kamera düğmesi duraklatmanın altında."
+        },
+        "gamepad": {
+          "en": "D-pad or left stick: ← → steer, ↑ accelerates, ↓ brakes. A or RT fires nitro, clicking the left stick changes the camera, Start pauses; in the garage the D-pad chooses and A buys.",
+          "tr": "Yön tuşları ya da sol çubuk: ← → yönlendirir, ↑ gaz, ↓ fren. A ya da RT nitroyu ateşler, sol çubuğa basmak kamerayı değiştirir, Start duraklatır; garajda yön tuşlarıyla seçer, A ile alırsın."
+        }
+      },
+      "tips": [
+        {
+          "en": "Fire nitro on a straight or out of a bend; lit mid-corner, the extra speed mostly carries you wide.",
+          "tr": "Nitroyu düzlükte ya da viraj çıkışında ateşle; viraj ortasında yakarsan fazladan hız seni dışarı savurur."
+        },
+        {
+          "en": "Mud nearly halves your top speed and steals most of your grip, so go around a pit whenever the track allows. Puddles are slippery too: straighten up before you cross one.",
+          "tr": "Çamur son hızını neredeyse yarıya indirir ve yol tutuşunun çoğunu alır; pist izin verdikçe çukurun yanından dolaş. Su birikintileri de kaygandır, girmeden direksiyonu düzelt."
+        },
+        {
+          "en": "Every tire level also makes the truck turn more sharply. Pair tires with engine levels so the extra speed stays on the road.",
+          "tr": "Her lastik seviyesi kamyonu daha keskin de döndürür. Lastiği motorla birlikte geliştir ki artan hız yolda kalsın."
+        },
+        {
+          "en": "Rivals who fall behind push harder, so no lead is safe. In a bad race, fight for third: it still pays and keeps your lives.",
+          "tr": "Geride kalan rakipler daha çok yüklenir, öndeyken bile rahatlama. Kötü giden yarışta üçüncülük için savaş: hem para getirir hem canını korur."
+        }
+      ],
+      "features": [
+        {
+          "en": "Four-lap races against three rival trucks on six tracks",
+          "tr": "Altı pistte üç rakip kamyona karşı dört turluk yarışlar"
+        },
+        {
+          "en": "Engine, tire, shock and nitro upgrades, five levels each",
+          "tr": "Beşer seviyeli motor, lastik, amortisör ve nitro geliştirmeleri"
+        },
+        {
+          "en": "Overhead and in-car camera views",
+          "tr": "Yukarıdan ve araç içinden kamera görünümü"
+        },
+        {
+          "en": "Arrow, wheel or tilt steering on touch screens",
+          "tr": "Dokunmatik ekranda ok, direksiyon ya da eğimle sürüş"
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay modu var mı?"
+          },
+          "a": {
+            "en": "Yes. Easy gives you four lives, slower rivals that improve less and use less nitro, and mud that holds your truck back less. Easy runs are practice and stay off the leaderboard.",
+            "tr": "Evet. Kolay'da dört canın olur; rakipler daha yavaştır, daha az gelişir ve daha az nitro kullanır, çamur da kamyonunu daha az tutar. Kolay oyunlar antrenman sayılır, sıralamaya girmez."
+          }
+        },
+        {
+          "q": {
+            "en": "Can I race against a friend?",
+            "tr": "Bir arkadaşıma karşı yarışabilir miyim?"
+          },
+          "a": {
+            "en": "No, Mud Rally is single-player and the three rivals are driven by the computer. You can still compare championship scores on the leaderboard.",
+            "tr": "Hayır, Çamur Rallisi tek kişilik; üç rakibi bilgisayar sürer. Yine de şampiyona skorlarınızı sıralamada karşılaştırabilirsiniz."
+          }
+        },
+        {
+          "q": {
+            "en": "Can I play it on a phone?",
+            "tr": "Telefonda oynanır mı?"
+          },
+          "a": {
+            "en": "Yes, held sideways. Tilt steering uses the motion sensor; on phones that ask for permission the game shows a TURN TILT ON button first.",
+            "tr": "Evet, telefonu yan tutarak. Eğimle sürüş hareket sensörünü kullanır; izin isteyen telefonlarda oyun önce EĞİMİ AÇ düğmesini gösterir."
+          }
+        }
+      ]
+    },
+    "okey": {
+      "about": {
+        "en": "Okey is the tile game played in coffee houses and around family tables across Turkey, and this version keeps to its classic rules. Four players share 106 tiles: 1 to 13 in red, yellow, blue and black, two of each, plus two false jokers. A face-up indicator decides the okey, the next number in the same colour (after a 13 comes the 1). Both okeys are wild; a false joker plays as the okey's own colour and number.\n\nEveryone gets 14 tiles and the dealer 15. On your turn you draw from the middle pile or take the tile the player before you just threw, then throw one onto your corner. You win the hand by throwing your last tile while the other 14 form sets (three or four of a number in different colours) and runs (three or more in a row in one colour; 12-13-1 counts), or seven pairs.\n\nPlay a five-hand match against three bots, Ayşe, Mehmet and Zeynep, or sit at an online table on ayvago.com with up to three other people.",
+        "tr": "Okey, Türkiye'nin dört bir yanında kahvehanelerde ve aile masalarında oynanan taş oyunu; bu sürüm klasik kurallara bağlı kalır. Dört oyuncu 106 taşı paylaşır: kırmızı, sarı, mavi ve siyah renkte 1'den 13'e sayılar, her birinden iki tane, bir de iki sahte okey. Açık duran gösterge okeyi belirler: okey, aynı renkte bir sonraki sayıdır (13'ten sonra 1 gelir). İki okey de istediğin taşın yerine geçer; sahte okey ise okeyin kendi rengi ve sayısı olarak oynar.\n\nHerkese 14, dağıtana 15 taş gelir. Sıra sendeyken ortadan çeker ya da senden önceki oyuncunun az önce attığı taşı alırsın, sonra köşene bir taş atarsın. Son taşını attığında kalan 14 taş perlerden (aynı sayının farklı renkte üç ya da dört taşı) ve serilerden (aynı renkte art arda en az üç sayı; 12-13-1 de olur) ya da yedi çiftten oluşuyorsa eli kazanırsın.\n\nAyşe, Mehmet ve Zeynep adlı üç bota karşı beş ellik bir maç oynayabilir ya da ayvago.com'da en fazla üç kişiyle çevrimiçi bir masaya oturabilirsin."
+      },
+      "howToPlay": [
+        {
+          "en": "Check the indicator beside the middle pile. Your okeys glow gold on the rack.",
+          "tr": "Orta destenin yanındaki göstergeye bak. Istakandaki okeyler altın rengi parlar."
+        },
+        {
+          "en": "On your turn, tap the middle pile or the tile on your left to draw, or drag it straight onto your rack.",
+          "tr": "Sıra sana gelince çekmek için ortadaki desteye ya da solundaki taşa dokun veya taşı doğrudan ıstakana sürükle."
+        },
+        {
+          "en": "Arrange runs and sets by dragging tiles, or use Sort runs and Sort pairs. Then pick a tile and press THROW.",
+          "tr": "Taşları sürükleyerek seri ve perlere diz ya da Seri diz ve Çift diz'i kullan. Sonra bir taş seçip AT'a bas."
+        },
+        {
+          "en": "When the 14 tiles you keep are complete, press FINISH. If the middle pile runs out first, the hand has no winner.",
+          "tr": "Elinde kalacak 14 taş hazırsa BİTİR'e bas. Ortada taş biterse el kazanansız kapanır."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "← → select a tile and Shift + ← → move it. 1 or Q draws from the middle, 2 or W takes the left tile, Space or Enter draws and then throws, F finishes, S and D sort, Tab or I opens your player card.",
+          "tr": "← → taş seçer, Shift + ← → seçili taşı kaydırır. 1 ya da Q ortadan çeker, 2 ya da W soldaki taşı alır, Boşluk ya da Enter önce çeker sonra atar, F bitirir, S ve D dizer, Tab ya da I oyuncu kartını açar."
+        },
+        "touch": {
+          "en": "Tap to draw and to select, then THROW. Drag tiles to rearrange the rack, onto your corner to throw, or into the middle of the table to finish.",
+          "tr": "Çekmek ve seçmek için dokun, sonra AT'a bas. Taşları sürükleyerek ıstakanı düzenle, köşene bırakıp at ya da masanın ortasına bırakıp bitir."
+        },
+        "mouse": {
+          "en": "Click and drag exactly as you would with a finger.",
+          "tr": "Parmakla yaptığın her şeyi fareyle tıklayıp sürükleyerek yapabilirsin."
+        }
+      },
+      "tips": [
+        {
+          "en": "Hold on to the okey. Finishing by throwing a spare okey doubles the hand, and once your hand is complete with an okey to spare, the finishing throw always uses it.",
+          "tr": "Okeyi elinde tut. Boşta kalan okeyi atarak bitirmek eli ikiye katlar; elin okey artacak şekilde tamamlandığında bitiriş atışı her zaman okeyle yapılır."
+        },
+        {
+          "en": "Press Sort pairs now and then. With four or five pairs already in hand, seven pairs is often the quicker finish, and it scores 4 instead of 2.",
+          "tr": "Arada bir Çift diz'e bas. Elinde dört beş çift varsa çifte gitmek çoğu zaman daha hızlı bitirir ve 2 yerine 4 puan getirir."
+        },
+        {
+          "en": "Take the left tile only when it completes a group. Everyone sees what you pick up there; a draw from the middle gives nothing away.",
+          "tr": "Soldaki taşı yalnızca bir grubu tamamlıyorsa al. Yandan aldığını herkes görür, ortadan çektiğin taş ise hiçbir şey belli etmez."
+        },
+        {
+          "en": "Your throws are the next player's options, so avoid throwing a tile that fits what they have been picking up.",
+          "tr": "Attığın taş senden sonraki oyuncunun seçeneğidir; onun yandan topladıklarına uyan taşı atma."
+        }
+      ],
+      "features": [
+        {
+          "en": "Classic 106-tile okey with indicator, okeys and false jokers",
+          "tr": "Gösterge, okey ve sahte okeyli klasik 106 taşlık okey"
+        },
+        {
+          "en": "Finish with runs and sets or with seven pairs",
+          "tr": "Seri ve perlerle ya da yedi çiftle bitiş"
+        },
+        {
+          "en": "Solo matches against three bots on Easy or Normal",
+          "tr": "Kolay ya da Normal seviyede üç bota karşı tek kişilik maç"
+        },
+        {
+          "en": "Online tables for up to four players, with quick chat",
+          "tr": "Hızlı sohbetli, dört kişiye kadar çevrimiçi masalar"
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "Can I play with friends?",
+            "tr": "Arkadaşlarımla oynayabilir miyim?"
+          },
+          "a": {
+            "en": "Yes. Okey has online tables on ayvago.com for up to four people, with bots in the empty seats. The table's settings decide the number of hands and the time per turn.",
+            "tr": "Evet. Okey'in ayvago.com'da dört kişiye kadar çevrimiçi masaları var, boş koltuklara bot oturur. El sayısını ve hamle süresini masanın ayarları belirler."
+          }
+        },
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay modu var mı?"
+          },
+          "a": {
+            "en": "Yes, against the bots: on Easy they make more mistakes, sometimes pass up a tile they want and rarely finish with the okey. Easy matches stay off the leaderboard, and online tables always play Normal.",
+            "tr": "Evet, botlara karşı: Kolay'da botlar daha çok hata yapar, işlerine yarayan taşı bazen almaz ve okeyle bitirmeyi pek denemez. Kolay maçlar sıralamaya girmez; çevrimiçi masalar hep Normal oynanır."
+          }
+        },
+        {
+          "q": {
+            "en": "How are points scored?",
+            "tr": "Puanlar nasıl hesaplanıyor?"
+          },
+          "a": {
+            "en": "A won hand is worth 2 points, or 4 with seven pairs, doubled when it ends with a thrown okey. The highest total after the last hand wins the match, and your leaderboard score is your match points × 100.",
+            "tr": "Kazanılan el 2 puan, yedi çiftle 4 puan eder; el okey atılarak bitirildiyse puan ikiye katlanır. Son elden sonra en yüksek toplam maçı kazanır; sıralamadaki skorun maç puanının 100 katıdır."
+          }
+        }
+      ]
+    }
+  }
+}

@@ -28,12 +28,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Platform manifests and catalog are up to date
+      - name: Platform manifests, catalog and guides are up to date
         run: |
           node scripts/gen-platform.mjs --live
           if ! git diff --quiet -- platform public/games; then
             git diff --stat -- platform public/games
-            echo "::error::platform/arcade-catalog.ts or public/games/*/ayvago.json is stale. Run 'node scripts/gen-platform.mjs --live' and commit the result."
+            echo "::error::platform/arcade-catalog.ts, platform/arcade-guides.json or public/games/*/ayvago.json is stale. Run 'node scripts/gen-platform.mjs --live' and commit the result."
             exit 1
           fi
       - name: Vendored adapter matches the platform
