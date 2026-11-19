@@ -1,0 +1,98 @@
+{
+  "about": {
+    "en": "Light Cycles is a duel on a neon grid 34 cells wide and 50 cells tall. Your blue cycle and your rival's never stop, and each leaves a solid wall of light behind it. Hit the outer wall, an obstacle or any trail, your own included, and you lose the round. The rider who stays alive longer takes the point; if both crash on the same tick, nobody scores.\n\nThe first to win three rounds takes the match. In the solo game you face five rivals in a row: Rookie, Drifter, Hunter, Cutter and Ghost. Each rides faster and thinks further ahead than the last: the Rookie now and then turns the wrong way, while the Ghost fights for territory and, once you are walled apart, fills its own space without wasting a cell. From the second rival on, pink blocks appear on the grid from round two. Beat all five and you are CHAMPION; lose a single match and the run is over.\n\nYou can also ride against a friend in an online match.",
+    "tr": "Işık Motorları, 34 hücre genişliğinde ve 50 hücre yüksekliğinde neon bir ızgarada geçen bir düello. Senin mavi motorun da rakibininki de hiç durmaz ve ikisi de arkasında katı bir ışık duvarı bırakır. Dış duvara, bir engele ya da kendi izin dahil herhangi bir ize çarparsan turu kaybedersin. Daha uzun ayakta kalan sayıyı alır; ikiniz aynı anda çarparsanız kimse sayı alamaz.\n\nÜç turu ilk kazanan maçı alır. Tek kişilik oyunda sırayla beş rakiple karşılaşırsın: Çaylak, Gezgin, Avcı, Kesici ve Hayalet. Her biri bir öncekinden daha hızlı sürer ve daha ileriyi düşünür. Çaylak arada bir yanlış yöne döner; Hayalet ise alan kapmak için savaşır ve aranız duvarla ayrıldığında kendi bölgesini tek hücre boşa harcamadan doldurur. İkinci rakipten başlayarak her maçın ikinci turundan itibaren ızgarada pembe bloklar belirir. Beşini de yenersen ŞAMPİYON olursun; tek bir maç kaybetmek oyunu bitirir.\n\nÇevrimiçi maçta bir arkadaşınla da yarışabilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose Easy or Normal and press PLAY. Each round opens with a 3-2-1 countdown; you can set up your first turn during it.",
+      "tr": "Kolay ya da Normal'i seç ve OYNA'ya bas. Her tur 3-2-1 geri sayımıyla açılır; ilk dönüşünü bu sırada ayarlayabilirsin."
+    },
+    {
+      "en": "Turn at right angles. You cannot reverse into your own trail, and turns pressed early wait in line, up to three in a row.",
+      "tr": "Dik açılarla dön. Geri dönüp kendi izine giremezsin; erken bastığın dönüşler sıraya girer, art arda en fazla üç tane."
+    },
+    {
+      "en": "Cut across the rival's path so it runs out of room before you. The first crash ends the round and the survivor fills a pip on the score bar.",
+      "tr": "Rakibin önünü kes ki yeri senden önce bitsin. İlk çarpışma turu bitirir, ayakta kalanın skor şeridindeki bir yuvarlağı dolar."
+    },
+    {
+      "en": "Win three rounds to take the match and meet the next rival. Each round of a match is faster than the one before.",
+      "tr": "Üç tur kazan, maçı al ve sıradaki rakibe geç. Bir maçın her turu bir öncekinden hızlıdır."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD point the cycle up, down, left or right on the screen; Z or Q turns left and X or E turns right from the rider's point of view, which is easier when heading down the screen. Esc or P pauses a solo game.",
+      "tr": "Ok tuşları ya da WASD motoru ekranda yukarı, aşağı, sola ya da sağa çevirir; Z ya da Q sürücünün gözünden sola, X ya da E sağa döndürür, bu da ekranda aşağı giderken işini kolaylaştırır. Esc ya da P tek kişilik oyunu duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag: a stick appears under your thumb, and every new direction you push becomes the next turn.",
+      "tr": "Ekranda herhangi bir yere bas ve sürükle: başparmağının altında bir kumanda kolu çıkar, ittiğin her yeni yön bir sonraki dönüş olur."
+    }
+  },
+  "tips": [
+    {
+      "en": "Rounds are won on space more than speed. When the rival drifts toward a wall or a corner, ride a line parallel to it and close the opening; it crashes when its pocket fills up.",
+      "tr": "Turlar hızdan çok alanla kazanılır. Rakip bir duvara ya da köşeye yaklaştığında ona paralel bir çizgi çek ve çıkışı kapat; cebi dolunca çarpar."
+    },
+    {
+      "en": "Once you are sealed off from each other, stop chasing. Fill your own area in tight back-and-forth lines along the walls; a long straight run through the middle wastes cells you will need later.",
+      "tr": "Aranız tamamen kapandığında kovalamayı bırak. Kendi alanını duvar boyunca sık, gidip gelen çizgilerle doldur; ortadan geçen uzun bir düz çizgi sonra lazım olacak hücreleri harcar."
+    },
+    {
+      "en": "Never ride head-on into the rival's next cell. If you both enter the same cell, both cycles crash and the round gives no point to anyone.",
+      "tr": "Rakibin gideceği hücreye kafa kafaya dalma. İkiniz aynı hücreye girerseniz iki motor da çarpar ve o tur kimseye sayı vermez."
+    }
+  ],
+  "features": [
+    {
+      "en": "Five rivals with their own riding styles, from Rookie to Ghost",
+      "tr": "Çaylak'tan Hayalet'e, her biri kendi tarzında süren beş rakip"
+    },
+    {
+      "en": "First-to-three matches that speed up round by round",
+      "tr": "Tur tur hızlanan, üç turu ilk alanın kazandığı maçlar"
+    },
+    {
+      "en": "Mirrored obstacle blocks, so neither side starts with an advantage",
+      "tr": "Simetrik yerleşen engel blokları; hiçbir taraf avantajlı başlamaz"
+    },
+    {
+      "en": "Online duels where each player starts at the bottom of their screen",
+      "tr": "Her oyuncunun kendi ekranının altından başladığı çevrimiçi düellolar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Can I play against a friend?",
+        "tr": "Bir arkadaşıma karşı oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes, in an online match on ayvago.com: the same first-to-three duel, with blocks from round two, but no computer rival, no pause and no Easy setting.",
+        "tr": "Evet, ayvago.com'daki çevrimiçi maçta: ikinci turdan itibaren bloklarla aynı üç turluk düello oynanır, ama bilgisayar rakip, duraklatma ve Kolay ayarı yoktur."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "Points grow with the rival's number (1 to 5): every 50 cells you ride add 5 × that number, a round win adds 100 × it plus the cells you rode that round, and a match win adds 500 × it.",
+        "tr": "Puanlar rakibin sırasıyla (1'den 5'e) büyür: sürdüğün her 50 hücre 5 × bu sayı, kazandığın tur 100 × bu sayı artı o turda sürdüğün hücre sayısı, kazandığın maç da 500 × bu sayı kadar puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the cycles ride 8 to 14 cells a second instead of 9 to 18, the rivals think like simpler riders (the Ghost plays like the Normal Hunter) and sometimes react late. Easy runs are practice and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da motorlar saniyede 9 ila 18 yerine 8 ila 14 hücre gider, rakipler daha basit sürücüler gibi düşünür (Hayalet, Normal'deki Avcı gibi oynar) ve bazen geç tepki verir. Kolay oyunlar antrenman sayılır, sıralamaya girmez."
+      }
+    }
+  ]
+}

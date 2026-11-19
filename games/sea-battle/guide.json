@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Sea Battle is the pencil-and-paper game known in Turkey as Amiral Battı, played on two 10 × 10 seas. Each side hides the same five ships: a Carrier of 5 squares, a Battleship of 4, a Cruiser and a Submarine of 3 each and a Destroyer of 2. Ships lie straight, across or down, and may not overlap. Then the two sides take turns firing at squares of the other's sea, and the first to sink the whole enemy fleet wins.\n\nThe rule that shapes every game here: a hit lets you fire again. A miss passes the turn. When a ship goes down, its full outline appears on the enemy sea, so you always know which ships are still out there.\n\nSolo, you play battle after battle against rival admirals with 2 lives. Every victory promotes the rival, from Cadet to Sailor, Captain, Commodore and Admiral, and each rank aims better than the last. You fire first in odd battles. Online, you play a friend on ayvago.com, each deploying a fleet against a 75-second clock.",
+    "tr": "Amiral Battı, iki adet 10 × 10 denizde oynanan, kâğıt kalemle bilinen o eski oyun. İki taraf da aynı beş gemiyi gizler: 5 karelik Uçak Gemisi, 4 karelik Zırhlı, 3'er karelik Kruvazör ve Denizaltı, 2 karelik Muhrip. Gemiler yatay ya da dikey düz durur, üst üste binemez. Sonra iki taraf sırayla karşı denizin karelerine ateş eder; düşman filosunu ilk batıran kazanır.\n\nBuradaki her oyunu belirleyen kural şu: isabet ettiren bir daha atar. Iskalayınca sıra karşıya geçer. Bir gemi batınca bütün silueti düşman denizinde belirir; hangi gemilerin hâlâ suda olduğunu hep bilirsin.\n\nTek başına oynarken 2 canla rakip amirallere karşı art arda savaşırsın. Her zafer rakibi bir rütbe yükseltir: Acemi Er, Tayfa, Kaptan, Komodor ve Amiral; her rütbe öncekinden iyi nişan alır. Tek sayılı savaşlarda ilk atışı sen yaparsın. Çevrimiçi modda ayvago.com'da bir arkadaşınla oynarsın; ikiniz de filonuzu 75 saniyede dizersiniz."
+  },
+  "howToPlay": [
+    {
+      "en": "DEPLOY YOUR FLEET: the ships start in a random layout. Drag them where you want, rotate them, or press AUTO for a new layout.",
+      "tr": "FİLONU YERLEŞTİR: gemiler rastgele dizilmiş gelir. İstediğin yere sürükle, çevir ya da yeni bir dizilim için OTOMATİK'e bas."
+    },
+    {
+      "en": "Press READY. The enemy sea fills the screen and your own fleet shrinks to a small map below it.",
+      "tr": "HAZIR'a bas. Düşman denizi ekranı kaplar, kendi filon altta küçük bir haritaya iner."
+    },
+    {
+      "en": "On FIRE!, pick a square of the enemy sea. A splash is a miss; an explosion is a hit and gives you another shot.",
+      "tr": "ATEŞ ET! yazınca düşman denizinden bir kare seç. Su sıçrarsa ıska, patlarsa isabettir ve bir atış daha kazanırsın."
+    },
+    {
+      "en": "Sink all five enemy ships for VICTORY. If the rival sinks yours first, you lose a life.",
+      "tr": "Beş düşman gemisini de batırınca ZAFER kazanırsın. Rakip senin filonu önce batırırsa bir can kaybedersin."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Deploying: arrows move the selected ship, R or Z rotates it, Shift or Tab picks the next ship, X places them all at random and Space or Enter is READY. In battle, arrows aim and Space or Enter fires.",
+      "tr": "Yerleştirirken oklar seçili gemiyi taşır, R ya da Z çevirir, Shift ya da Tab sıradaki gemiyi seçer, X hepsini rastgele dizer, Boşluk ya da Enter HAZIR'dır. Savaşta oklar nişan alır, Boşluk ya da Enter ateş eder."
+    },
+    "touch": {
+      "en": "Drag a ship to move it and tap it to turn it, then press READY. In battle, tap a square of the enemy sea to fire.",
+      "tr": "Gemiyi taşımak için sürükle, çevirmek için üstüne dokun, sonra HAZIR'a bas. Savaşta ateş etmek için düşman denizinde bir kareye dokun."
+    },
+    "mouse": {
+      "en": "Drag and click ships the same way, use the ROTATE, AUTO and READY buttons, and click a square to fire.",
+      "tr": "Gemileri aynı şekilde sürükleyip tıkla; ÇEVİR, OTOMATİK ve HAZIR düğmelerini kullan, ateş etmek için bir kareye tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "After a hit, try the four squares around it; after a second hit, keep going along that line until the ship sinks.",
+      "tr": "İsabetten sonra çevresindeki dört kareyi dene; ikinci isabetten sonra gemi batana kadar o çizgide devam et."
+    },
+    {
+      "en": "While searching, fire on a checkerboard pattern. Every ship covers at least two squares, so half the sea is enough to find each one.",
+      "tr": "Gemi ararken dama tahtası düzeninde ateş et. Her gemi en az iki kare kapladığı için denizin yarısını taramak her birini bulmaya yeter."
+    },
+    {
+      "en": "Once the Destroyer is gone, the smallest ship left is 3 long, so you can spread your search shots even wider.",
+      "tr": "Muhrip battıktan sonra en küçük gemi 3 karelik kalır; arama atışlarını daha da seyrek yapabilirsin."
+    },
+    {
+      "en": "Hits in a row pay more: 10 for the first, then 20, 30 and up to 50. Sinking a ship adds 40 per square, and a victory rewards your accuracy.",
+      "tr": "Art arda isabet daha çok kazandırır: ilki 10, sonra 20, 30 ve en çok 50 puan. Batan gemi kare başına 40 puan ekler, zafer de isabet oranını ödüllendirir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Classic five-ship fleet on a 10 × 10 sea",
+      "tr": "10 × 10 denizde klasik beş gemilik filo"
+    },
+    {
+      "en": "A hit earns another shot",
+      "tr": "İsabet bir atış daha kazandırır"
+    },
+    {
+      "en": "Five rival ranks, from Cadet to Admiral",
+      "tr": "Acemi Er'den Amiral'e beş rakip rütbesi"
+    },
+    {
+      "en": "Online battles against a friend",
+      "tr": "Arkadaşına karşı çevrimiçi savaşlar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How is a victory scored?",
+        "tr": "Zafer nasıl puanlanıyor?"
+      },
+      "a": {
+        "en": "A won battle adds 300 times the rival's rank level, 5 points per percent of accuracy and 50 for each win in your streak, on top of the points from hits and sinkings.",
+        "tr": "Kazanılan savaş, isabet ve batırma puanlarının üstüne rakibin rütbe seviyesinin 300 katı, isabet oranının her yüzdesi için 5 ve serindeki her zafer için 50 puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the rival never rises above Sailor and fires some shots at random. Easy runs are not ranked on the leaderboard.",
+        "tr": "Evet. Kolay'da rakip Tayfa rütbesinin üstüne çıkmaz ve bazı atışlarını rastgele yapar. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Open a room on ayvago.com and share the invite. Both of you deploy at the same time; if the 75-second clock runs out, your fleet is locked in as it stands.",
+        "tr": "Evet. ayvago.com'da bir oda açıp daveti paylaş. İkiniz aynı anda filonuzu dizersiniz; 75 saniyelik süre biterse filon o anki hâliyle onaylanır."
+      }
+    }
+  ]
+}

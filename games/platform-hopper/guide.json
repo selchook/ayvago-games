@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Platform Hopper is a platformer of ten handmade levels, each one a single screen, played by the character you picked on ayvago.com. Every level scatters gems over its ledges and platforms. The flag at the end stays down until you have collected all of them; touch it once it rises and the level is clear.\n\nThe levels bring in one idea at a time: spike pits, a climb up platforms you can jump through from below, a spring that launches you high, lava, a saw blade, bees that rise and fall, a moving platform over a long lava pit, a level guarded by snails, and a final gauntlet that mixes everything. Slimes, snails, flies and bees can be stomped from above; saws can't, and touching any enemy from the side or below costs a life.\n\nYou have three lives for the whole game. Losing one restarts the current level from the beginning, gems included. Clear all ten levels to win, with 1,000 bonus points for every life you still have.",
+    "tr": "Platform Zıpzıp, her biri tek ekranlık on el yapımı bölümden oluşan bir platform oyunu; kahraman, ayvago.com'da seçtiğin karakter. Her bölümde çıkıntılara ve platformlara mücevherler dağılmıştır. Sondaki bayrak, hepsini toplayana kadar inik kalır; kalktıktan sonra ona dokunursan bölüm biter.\n\nBölümler her seferinde yeni bir fikir getirir: diken çukurları, alttan içinden zıplayarak geçebildiğin platformlarla bir tırmanış, seni yükseğe fırlatan bir yay, lav, bir testere, inip çıkan arılar, uzun bir lav çukurunun üstünde hareket eden bir platform, salyangozların koruduğu bir bölüm ve hepsini bir araya getiren son bir sınav. Balçıkları, salyangozları, sinekleri ve arıları üstlerine zıplayarak ezebilirsin; testereler ezilmez, herhangi bir düşmana yandan ya da alttan değmek bir can götürür.\n\nBütün oyun için üç canın var. Can kaybedersen bulunduğun bölüm, mücevherleriyle birlikte baştan başlar. On bölümün hepsini bitirirsen kazanırsın; kalan her can için 1.000 bonus puan alırsın."
+  },
+  "howToPlay": [
+    {
+      "en": "Run and jump between ledges. Thin platforms can be jumped through from below and stood on from above.",
+      "tr": "Çıkıntılar arasında koş ve zıpla. İnce platformların içinden alttan zıplayarak geçebilir, üstlerinde durabilirsin."
+    },
+    {
+      "en": "Collect every gem; the counter at the top right shows how many you have, for example GEMS 2/4.",
+      "tr": "Bütün mücevherleri topla; sağ üstteki sayaç kaç tane aldığını gösterir, örneğin MÜCEVHER 2/4."
+    },
+    {
+      "en": "When the last gem is taken the flag goes up with FLAG IS UP! Touch it to finish the level.",
+      "tr": "Son mücevheri alınca bayrak BAYRAK AÇIK! yazısıyla kalkar. Bölümü bitirmek için ona dokun."
+    },
+    {
+      "en": "Avoid spikes, lava, saws and the bottom of the screen. Each costs a life and restarts the level.",
+      "tr": "Dikenlerden, lavdan, testerelerden ve ekranın altına düşmekten kaçın. Her biri bir can götürür ve bölümü baştan başlatır."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D run. Space, Z, Enter, ↑ or W jumps; hold it for a higher jump. Esc or P pauses.",
+      "tr": "← → ya da A / D koşturur. Boşluk, Z, Enter, ↑ ya da W zıplatır; daha yüksek zıplamak için basılı tut. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Drag on the left half of the screen to move: a small push walks, a full push runs. The A button on the right jumps; hold it for height.",
+      "tr": "Hareket etmek için ekranın sol yarısında sürükle: hafif itiş yürütür, sonuna kadar itiş koşturur. Sağdaki A düğmesi zıplatır; yükseklik için basılı tut."
+    }
+  },
+  "tips": [
+    {
+      "en": "Speed pays. The clear bonus is 300 points plus 10 for every second under a minute, so a level finished in 20 seconds is worth 700.",
+      "tr": "Hızlı olmak kazandırır. Bölüm bonusu 300 puan artı bir dakikanın altında kalan her saniye için 10 puandır; 20 saniyede biten bölüm 700 puan getirir."
+    },
+    {
+      "en": "Stomps chain: each enemy you land on before touching the ground gives 100 more than the last. Hold jump as you land on one to bounce higher toward the next.",
+      "tr": "Ezmeler zincirlenir: yere değmeden üstüne indiğin her düşman bir öncekinden 100 fazla puan verir. Bir sonrakine ulaşmak için düşmanın üstüne inerken zıplamayı basılı tut, daha yükseğe sekersin."
+    },
+    {
+      "en": "A spring throws you far higher than a jump, and letting go of the button won't cut that flight short. Step on one only when you know where you want to land.",
+      "tr": "Yay seni bir zıplamadan çok daha yükseğe fırlatır ve düğmeyi bırakmak bu uçuşu kısaltmaz. Nereye ineceğini bilmiyorsan yaya basma."
+    },
+    {
+      "en": "Slimes, snails and saws patrol their ground and turn back at walls and ledge edges, so they never fall off. Watch one go back and forth once, then time your move.",
+      "tr": "Balçıklar, salyangozlar ve testereler kendi zeminlerinde devriye gezer, duvarlarda ve çıkıntı kenarlarında geri döner; hiç düşmezler. Birini bir kez gidip gelirken izle, sonra hamleni zamanla."
+    }
+  ],
+  "features": [
+    {
+      "en": "Ten single-screen levels, each built around a new hazard",
+      "tr": "Her biri yeni bir tehlike üzerine kurulu, tek ekranlık on bölüm"
+    },
+    {
+      "en": "Gems to collect before the flag opens",
+      "tr": "Bayrak açılmadan önce toplanacak mücevherler"
+    },
+    {
+      "en": "Stompable slimes, snails, flies and bees; deadly saws, spikes and lava",
+      "tr": "Ezilebilen balçıklar, salyangozlar, sinekler ve arılar; ölümcül testereler, dikenler ve lav"
+    },
+    {
+      "en": "Springs, jump-through platforms and a moving platform",
+      "tr": "Yaylar, içinden geçilebilen platformlar ve hareketli bir platform"
+    },
+    {
+      "en": "A time bonus on every level and a life bonus at the end",
+      "tr": "Her bölümde süre bonusu, sonda da can bonusu"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "What happens when I lose a life?",
+        "tr": "Can kaybedince ne oluyor?"
+      },
+      "a": {
+        "en": "The level starts over with its gems back in place. Lives carry over from level to level, and the game ends when the third one is lost.",
+        "tr": "Bölüm, mücevherleri yerine konmuş halde baştan başlar. Canlar bölümden bölüme taşınır; üçüncü can da gidince oyun biter."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "100 per gem, 100 × the chain for each stomp, 300 plus the time bonus for each level, and 1,000 per remaining life when you finish level 10.",
+        "tr": "Her mücevher 100, her ezme 100 × zincir puan; her bölüm 300 puan artı süre bonusu getirir, 10. bölümü bitirince de kalan her can için 1.000 puan eklenir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No, but the game starts gently: level 1 has no enemies at all, and the later levels add their dangers one at a time.",
+        "tr": "Hayır, ama oyun yumuşak başlar: 1. bölümde hiç düşman yoktur, sonraki bölümler tehlikeleri teker teker ekler."
+      }
+    }
+  ]
+}

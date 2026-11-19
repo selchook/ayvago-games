@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Pipe Flow is a plumbing puzzle against the clock. A water tank sits above the grid and a drain below it, and the pipes in between are turned the wrong way. Rotate pieces until a line of pipes joins the tank to the drain. Then the water starts to flow, one pipe at a time, and if it reaches the drain the level is cleared.\n\nA countdown, WATER IN, runs before the water opens on its own, and you can open it sooner with FLOW NOW for a bonus. Pipes linked to the tank turn green as you work, so you always see how far your route reaches, and CONNECTED! tells you when it touches the drain. Even while the water runs you can keep turning any pipe it hasn't filled yet; only full pipes are locked.\n\nThe grid grows from 5×5 at level 1 to 7×9 from level 6, the water moves faster every level and the countdown gets a little shorter. If the water stops moving, it's WATER BLOCKED! and you lose one of three lives.",
+    "tr": "Boru Akışı, saate karşı oynanan bir tesisat bulmacası. Izgaranın üstünde bir su deposu, altında bir gider var; aradaki borular ise yanlış yöne dönük. Depoyu gidere bağlayan bir boru hattı kurulana kadar parçaları döndür. Sonra su akmaya başlar, boru boru ilerler; gidere ulaşırsa bölüm tamamdır.\n\nSu kendiliğinden açılmadan önce SU GELİYOR geri sayımı işler; SUYU AÇ ile suyu daha erken açıp bonus kazanabilirsin. Depoya bağlanan borular sen çalışırken yeşile döner, böylece hattın nereye kadar uzandığını hep görürsün; gidere değdiğinde BAĞLANDI! yazar. Su akarken bile henüz dolmamış her boruyu çevirebilirsin; yalnızca dolan borular kilitlenir.\n\nIzgara 1. bölümdeki 5×5'ten 6. bölümden itibaren 7×9'a büyür, su her bölümde hızlanır ve geri sayım biraz kısalır. Su ilerleyemez hâle gelirse SU TIKANDI! olur ve 3 candan birini kaybedersin."
+  },
+  "howToPlay": [
+    {
+      "en": "Tap a pipe to turn it a quarter turn clockwise. Build a path from the tank at the top to the drain at the bottom; pipes linked to the tank turn green.",
+      "tr": "Bir boruya dokununca saat yönünde çeyrek tur döner. Üstteki depodan alttaki gidere bir yol kur; depoya bağlanan borular yeşile döner."
+    },
+    {
+      "en": "Press FLOW NOW when you are ready, or let the WATER IN countdown run out.",
+      "tr": "Hazır olunca SUYU AÇ'a bas ya da SU GELİYOR geri sayımının bitmesini bekle."
+    },
+    {
+      "en": "While the water runs, keep turning the pipes ahead of it. Filled pipes are locked.",
+      "tr": "Su akarken önündeki boruları çevirmeye devam et. Dolan borular kilitlenir."
+    },
+    {
+      "en": "Water in the drain clears the level. If it stalls, the level fails and costs a life, and a new grid of the same level follows. Losing all three lives ends the game.",
+      "tr": "Su gidere ulaşınca bölüm biter. Su durursa bölüm başarısız olur, bir can gider ve aynı bölümün yeni bir ızgarası gelir. Üç canın da bitince oyun sona erer."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the cursor, Space or Z turns the pipe clockwise, X anticlockwise, F or Enter opens the water. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD imleci gezdirir, Boşluk ya da Z boruyu saat yönünde, X ters yönde çevirir, F ya da Enter suyu açar. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a pipe to rotate it clockwise. The FLOW NOW button is under the grid.",
+      "tr": "Saat yönünde döndürmek için boruya dokun. SUYU AÇ düğmesi ızgaranın altında."
+    },
+    "mouse": {
+      "en": "Left-click turns a pipe clockwise, right-click anticlockwise.",
+      "tr": "Sol tık boruyu saat yönünde, sağ tık ters yönde çevirir."
+    }
+  },
+  "tips": [
+    {
+      "en": "Open the water early. Every second left on the countdown when you press FLOW NOW is worth 10 × the level as an EARLY BONUS.",
+      "tr": "Suyu erken aç. SUYU AÇ'a bastığında geri sayımda kalan her saniye, ERKEN BONUSU olarak 10 × bölüm puan eder."
+    },
+    {
+      "en": "You don't need the whole route before opening the water. Set the first pipes from the tank, open early and finish the far end while the water travels; the water is faster on later levels, so leave less to do.",
+      "tr": "Suyu açmadan önce bütün hattın hazır olması gerekmez. Depodan çıkan ilk boruları ayarla, suyu erken aç ve su yoldayken uzak ucu bitir; ileri bölümlerde su daha hızlıdır, daha az iş bırak."
+    },
+    {
+      "en": "The water does not give up at the first dead end: the level fails only after it has gone three flow steps without filling a new pipe. That is enough time to turn one more piece.",
+      "tr": "Su ilk çıkmazda pes etmez: bölüm ancak üç akış adımı boyunca yeni bir boru dolmazsa başarısız olur. Bir parçayı daha çevirmeye yetecek kadar zaman vardır."
+    },
+    {
+      "en": "Every pipe the water fills earns 10 × the level, side branches through tees and crosses included. A branch that ends at an open edge only leaks; it does not stop the main flow.",
+      "tr": "Suyun doldurduğu her boru, T ve artılardan ayrılan yan kollar dahil, 10 × bölüm puan getirir. Açık bir kenarda biten kol sadece sızdırır; ana akışı durdurmaz."
+    }
+  ],
+  "features": [
+    {
+      "en": "Grids from 5×5 up to 7×9",
+      "tr": "5×5'ten 7×9'a kadar ızgaralar"
+    },
+    {
+      "en": "Green highlight for every pipe linked to the tank",
+      "tr": "Depoya bağlanan her borunun yeşil yanması"
+    },
+    {
+      "en": "Early-flow bonus, and pipes you can still turn while water runs",
+      "tr": "Erken açma bonusu ve su akarken de çevrilebilen borular"
+    },
+    {
+      "en": "Three lives and faster water every level",
+      "tr": "Üç can ve her bölümde hızlanan su"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "10 × the level for each pipe the water fills, 250 × the level for reaching the drain, and the early bonus of 10 × the level for each second left on the countdown.",
+        "tr": "Suyun doldurduğu her boru için 10 × bölüm, gidere ulaşınca 250 × bölüm, bir de geri sayımda kalan her saniye için 10 × bölüm erken bonusu."
+      }
+    },
+    {
+      "q": {
+        "en": "Is every level solvable?",
+        "tr": "Her bölüm çözülebilir mi?"
+      },
+      "a": {
+        "en": "Yes. Each grid is built around a real route from the tank to the drain whose pipes are then turned out of place. The spare pieces around it sometimes offer a second way through.",
+        "tr": "Evet. Her ızgara, depodan gidere giden gerçek bir hattın etrafında kurulur ve o hattın boruları sonradan yanlış yöne çevrilir. Çevresindeki yedek parçalar bazen ikinci bir yol da sunar."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens when I lose a life?",
+        "tr": "Can kaybedince ne oluyor?"
+      },
+      "a": {
+        "en": "You keep your level and score and get a fresh grid of the same level to try again. After the third failed level the game ends.",
+        "tr": "Bölümün ve skorun korunur, yeniden denemek için aynı bölümün yeni bir ızgarası gelir. Üçüncü başarısız bölümden sonra oyun biter."
+      }
+    }
+  ]
+}

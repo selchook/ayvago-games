@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Sky Road is a 3D endless drive along a road of floating blocks high above the clouds. The road is three lanes wide and has no railings: blocks drop out of the lanes, whole rows give way to gaps, and crates and spike traps stand in the way. Your car never slows down, so the only choices are where to steer and when to jump.\n\nThe track is laid out in stretches as you drive: a straight with a line of coins, a section where one or two lanes fall away, a run of obstacles, or a gap across the whole road with coins hanging along the jump's arc. The further you get, the wider the gaps, the more lanes disappear and the more often obstacles come two to a row.\n\nYou start with three hearts. Hitting a crate or spikes costs one, and so does driving off the edge; after a fall the car drops back onto the next solid stretch. Every 250 metres a SPEED UP! sign marks a new level, and the car keeps gaining speed for roughly the first 800 metres.",
+    "tr": "Gök Yolu, bulutların çok üstünde, havada asılı bloklardan yapılmış bir yolda geçen 3B sonsuz bir sürüş oyunu. Yol üç şerit genişliğinde ve korkuluğu yok: şeritlerden bloklar eksilir, bazı sıralar tamamen boşluğa dönüşür, önüne kasalar ve diken tuzakları çıkar. Araban hiç yavaşlamaz; sana kalan tek iş, nereye döneceğine ve ne zaman zıplayacağına karar vermek.\n\nPist sen sürdükçe parça parça döşenir: altın dizili bir düzlük, bir ya da iki şeridin düşüp gittiği bir bölüm, engellerle dolu bir kısım ya da yolu baştan sona kesen bir boşluk; boşluğun üstünde altınlar zıplamanın yayını çizer. İlerledikçe boşluklar genişler, daha çok şerit kaybolur ve engeller daha sık ikişer ikişer gelir.\n\nÜç kalple başlarsın. Kasaya ya da dikene çarpmak bir kalp götürür, yoldan düşmek de öyle; düştükten sonra araba bir sonraki sağlam bölüme yeniden iner. Her 250 metrede HIZ ARTIYOR! yazısı yeni bir seviyeyi duyurur; araba yaklaşık ilk 800 metre boyunca hızlanmaya devam eder."
+  },
+  "howToPlay": [
+    {
+      "en": "On a touch screen, choose ARROWS, WHEEL or TILT under PLAY on the menu, then press PLAY.",
+      "tr": "Dokunmatik ekranda menüde OYNA'nın altından OKLAR, DİREKSİYON ya da EĞİM'i seç, sonra OYNA'ya bas."
+    },
+    {
+      "en": "Steer across the three lanes. The car is not locked to a lane, so you can slide as far as you need, up to the road's edge.",
+      "tr": "Üç şerit arasında direksiyonu kır. Araba bir şeride kilitli değil; yolun kenarına kadar istediğin kadar kayabilirsin."
+    },
+    {
+      "en": "Jump over gaps, or over a crate or spikes when you can't steer around them. The car has to come down on a block: landing over empty air is a fall.",
+      "tr": "Boşlukların, etrafından dolaşamadığın kasaların ve dikenlerin üstünden zıpla. Araba bir bloğa inmeli; boşluğa inersen düşersin."
+    },
+    {
+      "en": "Collect coins for 10 points each. The run ends when your last heart is gone.",
+      "tr": "Her biri 10 puan olan altınları topla. Son kalbin de gidince oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D steer. Space, ↑, W, Z or Enter jumps. Esc or P pauses.",
+      "tr": "← → ya da A / D yönlendirir. Boşluk, ↑, W, Z ya da Enter zıplatır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "The left thumb steers with arrow buttons, an on-screen wheel or by tilting the phone, whichever you picked on the menu. The big red JUMP button sits under the right thumb.",
+      "tr": "Sol başparmak, menüde ne seçtiysen onunla yönlendirir: ok düğmeleri, ekrandaki direksiyon ya da telefonu eğmek. Büyük kırmızı ZIPLA düğmesi sağ başparmağın altında."
+    }
+  },
+  "tips": [
+    {
+      "en": "In a stretch of crates and spikes, every obstacle row leaves at least one lane free, and a coin marks it. Follow the coins and you rarely need to jump an obstacle at all.",
+      "tr": "Kasa ve diken dolu bölümlerde her engel sırası en az bir şeridi boş bırakır ve o şeritte bir altın durur. Altınların peşinden gidersen engel üstünden atlaman nadiren gerekir."
+    },
+    {
+      "en": "Jump close to the edge of a gap. A gap is never longer than a jump at your current speed with room to spare, and the coins over it trace the arc your car will follow.",
+      "tr": "Boşluğun kenarına yakın zıpla. Boşluklar o anki hızınla yapılan bir zıplamadan her zaman biraz kısadır ve üstlerindeki altınlar arabanın izleyeceği yayı gösterir."
+    },
+    {
+      "en": "The car only falls once no corner of it is over a block, so you can hang partly over an edge while changing lanes and still drive on.",
+      "tr": "Araba ancak hiçbir köşesi bloğun üstünde kalmayınca düşer; şerit değiştirirken kenardan biraz taşsan bile yoluna devam edersin."
+    },
+    {
+      "en": "Hearts only appear while you are missing one, at the end of a coin line. When you are a heart down, coin lines are worth chasing.",
+      "tr": "Kalpler yalnızca eksik kalbin varken, bir altın dizisinin sonunda çıkar. Bir kalbin eksikse altın dizilerinin peşine düşmeye değer."
+    }
+  ],
+  "features": [
+    {
+      "en": "A 3D road of floating blocks, laid out fresh on every run",
+      "tr": "Her oyunda yeniden döşenen, havada asılı bloklardan 3B bir yol"
+    },
+    {
+      "en": "Gaps to jump, lanes that drop away, crates and spike traps",
+      "tr": "Atlanacak boşluklar, düşen şeritler, kasalar ve diken tuzakları"
+    },
+    {
+      "en": "Speed that climbs with distance and a new level every 250 m",
+      "tr": "Mesafeyle artan hız ve her 250 metrede yeni bir seviye"
+    },
+    {
+      "en": "Arrow, wheel or tilt steering on touch screens",
+      "tr": "Dokunmatik ekranda ok, direksiyon ya da eğimle sürüş"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "You get one point for every row of blocks the car passes and 10 for every coin. Hearts give no points, only a life back.",
+        "tr": "Arabanın geçtiği her blok sırası 1, her altın 10 puan getirir. Kalpler puan vermez, yalnızca bir can geri verir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Every run starts at the lowest speed with short gaps and a full road, and only gets harder as you go, so the first few hundred metres are your warm-up.",
+        "tr": "Hayır. Her oyun en düşük hızda, kısa boşluklarla ve eksiksiz bir yolla başlar, ancak ilerledikçe zorlaşır; ilk birkaç yüz metre ısınma turun olur."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held upright. Tilt steering uses the motion sensor; on phones that ask for permission, the game shows a TURN TILT ON button first.",
+        "tr": "Evet, telefonu dik tutarak. Eğimle sürüş hareket sensörünü kullanır; izin isteyen telefonlarda oyun önce EĞİMİ AÇ düğmesini gösterir."
+      }
+    }
+  ]
+}

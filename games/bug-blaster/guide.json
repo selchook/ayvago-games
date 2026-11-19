@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Bug Blaster is a shooter set in a mushroom patch. A centipede enters at the top and snakes downward: it crawls sideways until it bumps into a mushroom or a wall, then drops a row and turns around. You sit in a strip at the bottom of the screen with a bug wand that fires on its own, one bolt at a time.\n\nShooting the centipede does not simply remove it. The segment you hit turns into a mushroom, and the body behind it becomes a second centipede with its own head. A well-aimed stream can cut a long body into many short ones. Wave 1 sends ten segments; later waves send longer bodies, extra single heads from wave 3, and a new colour scheme for the field.\n\nThe centipede is not alone. A spider zigzags through your strip and eats mushrooms, and from wave 2 fleas drop straight down whenever your strip is nearly bare, planting new mushrooms as they fall. Any of them touching you costs a life.",
+    "tr": "Böcek Avcısı, bir mantar tarlasında geçen nişancı oyunu. Tepeden bir kırkayak girer ve kıvrılarak aşağı iner: bir mantara ya da duvara çarpana kadar yana ilerler, sonra bir sıra iner ve yön değiştirir. Sen ekranın altındaki şeritte, kendi kendine ateş eden bir böcek asası tutarsın; asa her seferinde tek mermi atar.\n\nKırkayağı vurmak onu yok etmekle bitmez. Vurduğun parça mantara dönüşür, arkasındaki gövde de kendi başı olan ikinci bir kırkayak olur. İyi nişan alınmış bir atış dizisi uzun bir gövdeyi birçok kısa parçaya bölebilir. 1. dalga on parçayla gelir; sonraki dalgalarda gövde uzar, 3. dalgadan itibaren tek başlı ek kırkayaklar katılır ve tarlanın rengi değişir.\n\nKırkayak yalnız değildir. Bir örümcek senin şeridinde zikzak çizerek dolaşır ve mantar yer; 2. dalgadan sonra şeridin neredeyse boşaldığında pireler dümdüz aşağı düşer ve yol boyunca yeni mantarlar diker. Hangisi sana değerse bir can gider."
+  },
+  "howToPlay": [
+    {
+      "en": "Move around your strip at the bottom; firing is automatic, so you only aim by moving.",
+      "tr": "Alttaki şeridinde dolaş; ateş otomatik olduğu için yalnızca hareket ederek nişan alırsın."
+    },
+    {
+      "en": "Shoot every segment of every centipede to clear the wave. The next one starts right away.",
+      "tr": "Dalgayı bitirmek için bütün kırkayakların bütün parçalarını vur. Sıradaki dalga hemen başlar."
+    },
+    {
+      "en": "Mushrooms block both your bolts and your movement and take four hits to clear.",
+      "tr": "Mantarlar hem mermilerini hem de hareketini engeller ve dört vuruşta yok olur."
+    },
+    {
+      "en": "When you lose a life the bugs are cleared, damaged mushrooms are repaired and the wave starts again with a whole centipede.",
+      "tr": "Can kaybettiğinde böcekler temizlenir, hasarlı mantarlar onarılır ve dalga bütün bir kırkayakla yeniden başlar."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or W A S D move the wand; it fires on its own. Esc or P pauses.",
+      "tr": "Ok tuşları ya da W A S D asayı hareket ettirir; asa kendi kendine ateş eder. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag: a stick appears under your thumb and moves the wand in that direction.",
+      "tr": "Herhangi bir yere dokun ve sürükle: başparmağının altında bir çubuk belirir ve asayı o yöne götürür."
+    }
+  },
+  "tips": [
+    {
+      "en": "Heads are worth 100 points and body segments only 10. Every cut creates a new head, so splitting a centipede and then picking off the heads pays better than shaving it from the tail.",
+      "tr": "Baş 100, gövde parçası ise yalnızca 10 puan eder. Her kesik yeni bir baş yaratır; kırkayağı bölüp sonra başları avlamak, kuyruktan kırpmaktan daha çok kazandırır."
+    },
+    {
+      "en": "Shoot the spider from close range: it is worth 900 points near you, 600 at middle distance and 300 far away.",
+      "tr": "Örümceği yakından vur: sana yakınken 900, orta mesafede 600, uzaktayken 300 puan eder."
+    },
+    {
+      "en": "Don't let a centipede settle in your strip. The longer one stays there, the more extra heads crawl in from the sides.",
+      "tr": "Bir kırkayağın şeridine yerleşmesine izin verme. Orada ne kadar uzun kalırsa yanlardan o kadar çok ek baş sürünerek gelir."
+    },
+    {
+      "en": "Keep a few mushrooms in your strip. A bare strip calls down fleas, which take two hits each.",
+      "tr": "Şeridinde birkaç mantar bırak. Boş bir şerit pireleri çağırır ve her pire iki vuruşta ölür."
+    }
+  ],
+  "features": [
+    {
+      "en": "Centipedes that split into new ones wherever you hit them",
+      "tr": "Vurduğun yerden yeni kırkayaklara bölünen kırkayaklar"
+    },
+    {
+      "en": "Spiders, fleas and a mushroom field that keeps changing",
+      "tr": "Örümcekler, pireler ve sürekli değişen bir mantar tarlası"
+    },
+    {
+      "en": "Automatic fire, so one thumb plays the whole game",
+      "tr": "Otomatik ateş sayesinde tek başparmakla oynanır"
+    },
+    {
+      "en": "Easy mode with five lives and slower bugs",
+      "tr": "Beş canlı ve daha yavaş böcekli Kolay mod"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A head is 100, a body segment 10, a flea 200 and the spider 300 to 900 depending on how close it is. A destroyed mushroom is 1 point and a cleared wave 50 × its number. You earn an extra life every 6,000 points.",
+        "tr": "Baş 100, gövde parçası 10, pire 200, örümcek ise ne kadar yakın olduğuna göre 300 ile 900 arası puan eder. Yok edilen mantar 1, bitirilen dalga 50 × dalga numarası puan getirir. Her 6.000 puanda bir ek can kazanırsın."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives five lives instead of three, an extra life every 4,000 points, a centipede that crawls 30% slower, slower spiders and fleas, and waves that grow harder at half the pace. Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da üç yerine beş canın olur; her 4.000 puanda bir can kazanırsın, kırkayak %30 daha yavaş ilerler, örümcek ve pireler yavaşlar, dalgalar yarı hızda zorlaşır. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Why can't I move up the screen?",
+        "tr": "Neden ekranın yukarısına çıkamıyorum?"
+      },
+      "a": {
+        "en": "Your wand is limited to the lit strip of six rows at the bottom. Everything above it is the centipede's field, which you can only reach with your bolts.",
+        "tr": "Asan alttaki altı sıralık aydınlık şeritle sınırlıdır. Onun üstü kırkayağın alanıdır; oraya yalnızca mermilerinle ulaşabilirsin."
+      }
+    }
+  ]
+}

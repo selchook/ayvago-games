@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Pixel Runner is a side-on auto-runner in chunky pixel art. The runner is the character you picked on ayvago.com, and once the run starts it never stops: your only control is the jump. Grassy ledges at three heights stretch ahead with pits between them, and slimes, bees and spikes wait along the way.\n\nThe jump does more than it seems. A quick tap is a hop and holding on carries you higher; you can jump once more in mid-air, and a press made just before landing or a moment after running off a ledge still counts. Coming down on a slime or a bee stomps it and bounces you back up.\n\nThe run speeds up over time, and over the first 2,500 metres the course gets harder: wider pits, shorter ledges, more enemies and floating platforms over long gaps. A checkpoint flag stands every 250 metres. You have three hearts; touching an enemy or spikes, running into the side of a higher ledge and falling into a pit each cost one, and after a fall you drop back in on the next stretch of ground.",
+    "tr": "Piksel Koşucu, iri piksellerle çizilmiş, yandan görünen bir otomatik koşu oyunu. Koşucu, ayvago.com'da seçtiğin karakter; koşu bir kez başladı mı hiç durmaz, senin tek kontrolün zıplamak. Önünde üç farklı yükseklikte çimenli çıkıntılar ve aralarında çukurlar uzanır; yol boyunca balçıklar, arılar ve dikenler bekler.\n\nZıplama göründüğünden fazlasını yapar. Kısa bir dokunuş küçük bir sıçrayış, basılı tutmak daha yüksek bir zıplama demek; havada bir kez daha zıplayabilirsin. Yere inmeden hemen önce ya da çıkıntıdan çıktıktan bir an sonra yaptığın basış da sayılır. Bir balçığın ya da arının üstüne inersen onu ezer ve yeniden havaya sıçrarsın.\n\nKoşu zamanla hızlanır, ilk 2.500 metrede parkur da zorlaşır: çukurlar genişler, çıkıntılar kısalır, düşmanlar çoğalır ve uzun boşlukların üstünde havada duran platformlar belirir. Her 250 metrede bir kontrol bayrağı durur. Üç kalbin var; bir düşmana ya da dikene değmek, daha yüksek bir çıkıntının yanına çarpmak ve çukura düşmek birer kalp götürür. Düştükten sonra bir sonraki zemine yeniden inersin."
+  },
+  "howToPlay": [
+    {
+      "en": "Press PLAY. After GO! the runner sets off by itself.",
+      "tr": "OYNA'ya bas. BAŞLA! yazısından sonra koşucu kendiliğinden yola çıkar."
+    },
+    {
+      "en": "Jump over pits and spikes. Hold the jump longer for more height and press again in mid-air for a double jump.",
+      "tr": "Çukurların ve dikenlerin üstünden zıpla. Daha yükseğe çıkmak için uzun bas, çift zıplama için havada bir kez daha bas."
+    },
+    {
+      "en": "Land on slimes and bees from above to stomp them. Spikes can't be stomped.",
+      "tr": "Balçıkları ve arıları üstlerine inerek ez. Dikenler ezilmez."
+    },
+    {
+      "en": "Collect coins and gems. The run ends when your last heart is gone.",
+      "tr": "Altınları ve mücevherleri topla. Son kalbin de gidince koşu biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Space, ↑, W or Z jumps: hold for height, press again in the air for the double jump. ↓ or S drops you fast in mid-air. Esc or P pauses.",
+      "tr": "Boşluk, ↑, W ya da Z zıplatır: yükseklik için basılı tut, çift zıplama için havada yeniden bas. ↓ ya da S havadayken hızla aşağı indirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap anywhere to jump. Keep your finger down for a higher jump and tap again in the air to jump twice.",
+      "tr": "Zıplamak için herhangi bir yere dokun. Daha yüksek zıplamak için parmağını basılı tut, iki kez zıplamak için havada yeniden dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Stomps chain: each enemy you land on before touching the ground is worth 50 more than the last (50, 100, 150 …). Hold jump as you land for a higher bounce toward the next one.",
+      "tr": "Ezmeler zincirlenir: yere değmeden üstüne indiğin her düşman bir öncekinden 50 fazla puan verir (50, 100, 150 …). Bir sonrakine ulaşmak için inerken zıplamayı basılı tut; daha yükseğe sıçrarsın."
+    },
+    {
+      "en": "A stomp gives your double jump back, so bouncing off a bee over a pit can rescue a jump you misjudged.",
+      "tr": "Ezme, çift zıplama hakkını geri verir; çukurun üstünde bir arıdan sekmek yanlış hesapladığın bir zıplamayı kurtarabilir."
+    },
+    {
+      "en": "Neighbouring ledges never differ by more than one step in height, and a pit between two ledges is always sized for a single jump at your speed. Keep the double jump for corrections.",
+      "tr": "Komşu çıkıntılar arasında hiçbir zaman bir basamaktan fazla yükseklik farkı olmaz; iki çıkıntı arasındaki çukur da o anki hızınla tek zıplamada geçilecek genişliktedir. Çift zıplamayı düzeltmeler için sakla."
+    },
+    {
+      "en": "Gems sit at the top of some coin arcs over pits and are worth 50 points, as much as five coins. Follow the arc instead of jumping flat to catch them.",
+      "tr": "Mücevherler, çukurların üstündeki bazı altın yaylarının tepesinde durur ve beş altına bedel 50 puan eder. Yakalamak için alçak zıplamak yerine yayı izle."
+    },
+    {
+      "en": "On a keyboard, tap ↓ or S to cut a jump short when you are about to sail past a ledge or float into a bee.",
+      "tr": "Klavyede bir çıkıntının üstünden uçup gidecekken ya da bir arıya doğru süzülürken ↓ ya da S'ye basarak zıplamayı kısa kes."
+    }
+  ],
+  "features": [
+    {
+      "en": "Your own ayvago.com character as the runner",
+      "tr": "Koşucu olarak kendi ayvago.com karakterin"
+    },
+    {
+      "en": "Variable-height jumps, a double jump and stomp chains",
+      "tr": "Ayarlanabilir yükseklikte zıplama, çift zıplama ve ezme zincirleri"
+    },
+    {
+      "en": "Slimes, bees, spikes and floating platforms",
+      "tr": "Balçıklar, arılar, dikenler ve havada duran platformlar"
+    },
+    {
+      "en": "A checkpoint flag and a 100-point bonus every 250 m",
+      "tr": "Her 250 metrede bir kontrol bayrağı ve 100 puanlık bonus"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "One point per metre, 10 per coin, 50 per gem, 100 for every 250 m, and 50 × the chain for each stomp.",
+        "tr": "Her metre 1, her altın 10, her mücevher 50 puandır; her 250 metre 100 puan, her ezme de 50 × zincir puanı getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I change the runner?",
+        "tr": "Koşucuyu değiştirebilir miyim?"
+      },
+      "a": {
+        "en": "The runner is the character you chose on ayvago.com. Pick a different one there and the game uses it the next time it starts.",
+        "tr": "Koşucu, ayvago.com'da seçtiğin karakterdir. Orada başka birini seçersen oyun bir sonraki açılışta onu kullanır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Every run starts slowly on a long flat runway, and the course only gets harder with distance.",
+        "tr": "Hayır. Her koşu uzun, düz bir pistte yavaşça başlar; parkur ancak mesafe arttıkça zorlaşır."
+      }
+    }
+  ]
+}

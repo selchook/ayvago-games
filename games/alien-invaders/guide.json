@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Alien Invaders is a take on the classic fixed-shooter: forty aliens in five rows of eight march side to side above you, drop one row each time they reach a wall, and rain bombs on your ship. Four green bunkers stand between you and them. Every hit, theirs or yours, chips pieces off, and aliens that march low enough chew through them.\n\nThe fleet speeds up as it thins out, so the last few aliens rush across the screen. Every 15 to 25 seconds a pink mystery UFO crosses the top for a bonus. Clear the whole fleet and a new one appears with fresh bunkers, starting a little lower and dropping bombs faster, and from the fourth level on every alien is worth double.\n\nYou lose a life to each bomb that hits you. The run ends when your lives are gone, or at once if any alien reaches your ship's line.",
+    "tr": "Uzaylı İstilası, klasik sabit ekran nişancı oyununun bir yorumu: sekizerli beş sıra hâlinde kırk uzaylı tepende sağa sola yürür, duvara her değişinde bir sıra aşağı iner ve gemine bomba yağdırır. Seninle onların arasında dört yeşil sığınak var. Senin de onların da her atışı sığınaklardan parça koparır; yeterince alçalan uzaylılar sığınakları kemirerek geçer.\n\nFilo azaldıkça hızlanır, son kalan birkaç uzaylı ekranı koşarak geçer. 15 ila 25 saniyede bir, pembe gizemli bir UFO tepeden geçer ve vurana bonus verir. Filonun tamamını temizlediğinde yeni sığınaklarla yeni bir filo gelir; her seferinde biraz daha aşağıdan başlar, daha sık bomba atar ve 4. seviyeden itibaren her uzaylı iki kat puan getirir.\n\nSana isabet eden her bomba bir can götürür. Canların bittiğinde ya da herhangi bir uzaylı geminin hizasına indiğinde oyun hemen biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Slide your ship along the bottom and fire. Only one of your lasers can be on screen at a time, so every miss costs you a moment.",
+      "tr": "Gemini aşağıda sağa sola kaydır ve ateş et. Ekranda aynı anda yalnızca bir lazerin olabilir; her ıska sana zaman kaybettirir."
+    },
+    {
+      "en": "Shoot the aliens before the fleet marches down to you. Hide under a bunker when bombs fall, but remember your own shots wear it down too.",
+      "tr": "Filo sana inmeden uzaylıları vur. Bomba yağarken sığınağın altına saklan, ama kendi atışlarının da sığınağı aşındırdığını unutma."
+    },
+    {
+      "en": "Shoot the mystery UFO when it crosses the top of the screen for 50 to 300 bonus points.",
+      "tr": "Gizemli UFO ekranın tepesinden geçerken onu vur, 50 ile 300 arası bonus puan kazan."
+    },
+    {
+      "en": "Clear the fleet to reach the next level. After a hit you respawn in the centre, blinking and safe for a moment.",
+      "tr": "Filoyu temizleyip sonraki seviyeye geç. Vurulursan ortada yeniden doğarsın; yanıp sönerken kısa bir süre dokunulmazsın."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D move the ship, Space, Z or Enter fires. Esc or P pauses.",
+      "tr": "← → ya da A / D gemiyi kaydırır; Boşluk, Z ya da Enter ateş eder. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Put a thumb anywhere on the left half for a floating stick (the further you push, the faster the ship moves) and hold the A button on the right to fire.",
+      "tr": "Sol yarıda herhangi bir yere dokununca yüzen bir çubuk çıkar; ne kadar itersen gemi o kadar hızlı gider. Ateş etmek için sağdaki A düğmesini basılı tut."
+    }
+  },
+  "tips": [
+    {
+      "en": "Thin out the outer columns first. The fleet only turns when its outermost alien reaches a wall, so a narrower block travels further on each sweep before it drops a row.",
+      "tr": "Önce kenardaki sütunları erit. Filo ancak en dıştaki uzaylısı duvara değince döner; daralan blok her geçişte daha uzun yol alır ve daha geç alçalır."
+    },
+    {
+      "en": "Bombs can be shot down for 5 points each. When one is coming straight at you and you have a shot ready, firing up into it is often safer than dodging.",
+      "tr": "Bombaları vurup her birinden 5 puan alabilirsin. Biri tam üstüne geliyorsa ve atışın hazırsa, kaçmak yerine ona ateş etmek çoğu zaman daha güvenlidir."
+    },
+    {
+      "en": "The UFO only shows up while six or more aliens are alive. Leave a few standing late in a level if you want another chance at it, but not so low that they invade.",
+      "tr": "UFO yalnızca en az altı uzaylı hayattayken gelir. Bir şans daha istiyorsan seviyenin sonunda birkaç uzaylıyı bırak, ama istila edecek kadar alçalmalarına izin verme."
+    },
+    {
+      "en": "On later levels the aliens aim more of their bombs at the column above you, so keep moving between shots instead of parking under the fleet.",
+      "tr": "İleri seviyelerde uzaylılar bombalarını daha çok tam üstündeki sütundan atar; filonun altında durma, atışların arasında sürekli yer değiştir."
+    }
+  ],
+  "features": [
+    {
+      "en": "A forty-alien fleet that speeds up as it thins out",
+      "tr": "Azaldıkça hızlanan kırk uzaylılık filo"
+    },
+    {
+      "en": "Four bunkers that crumble cell by cell",
+      "tr": "Parça parça dağılan dört sığınak"
+    },
+    {
+      "en": "A mystery UFO with a random bonus",
+      "tr": "Rastgele bonuslu gizemli UFO"
+    },
+    {
+      "en": "Easy mode with five lives and a slower fleet",
+      "tr": "Beş canlı ve daha yavaş filolu Kolay mod"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Aliens in the top row are worth 30, the two middle rows 20 and the two bottom rows 10. That doubles from level 4 and triples from level 7. Clearing a level adds 250 × the level, a downed bomb 5 and the UFO 50, 100, 150 or 300.",
+        "tr": "En üst sıradaki uzaylılar 30, ortadaki iki sıra 20, alttaki iki sıra 10 puan değerindedir. Bu değer 4. seviyeden itibaren iki, 7. seviyeden itibaren üç katına çıkar. Seviyeyi bitirmek 250 × seviye, vurulan bomba 5, UFO ise 50, 100, 150 ya da 300 puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy starts with five lives instead of three, the fleet marches slower, bombs are rarer and slower, levels get harder at half the pace, and every second level cleared gives an extra life (up to six). Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da üç yerine beş canla başlarsın; filo daha yavaş yürür, bombalar daha seyrek ve yavaş düşer, seviyeler yarı hızda zorlaşır ve her iki seviyede bir ek can kazanırsın (en fazla altı). Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held upright. Steer with your left thumb and fire with your right; the stick appears wherever you touch the left half.",
+        "tr": "Evet, telefonu dik tutarak. Sol başparmağınla yönlendirir, sağınla ateş edersin; çubuk sol yarıda nereye dokunursan orada belirir."
+      }
+    }
+  ]
+}

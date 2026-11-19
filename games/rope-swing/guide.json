@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Rope Swing is an endless runner through a cave between a rocky ceiling and broken ground, played sideways. Your hero, the character you picked on ayvago.com, runs forward on their own. Your one control is the rope: hold to fire it forward and up at the ceiling, swing on it, and let go to fly over the next pit.\n\nThe rope always leaves at the same steep angle and only reaches so far. If no ceiling is in reach it falls back with a MISSED!, and the game tries again as long as you keep holding. Fired from the ground, the hook yanks the hero into the air at once. Pits drop you out of the world, spikes on the ground and on the ceiling are deadly, and running into the side of a higher ledge knocks you back.\n\nThe cave gets meaner the further you go. Over the first 1,600 metres the hero runs faster, pits widen, ledges shorten and spikes turn up more often, and a banner marks every 250 metres. Your score is the distance in metres plus 10 for every coin.",
+    "tr": "İp Salıncağı, kayalık bir tavanla parçalı bir zemin arasındaki mağarada geçen, yatay ekranda oynanan sonsuz bir koşu oyunu. Kahramanın, yani ayvago.com'da seçtiğin karakter, kendi kendine ileri koşar. Elindeki tek kontrol ip: basılı tutunca ip ileri ve yukarı, tavana fırlar; ona tutunup sallanırsın, bırakınca bir sonraki çukurun üstünden uçarsın.\n\nİp her zaman aynı dik açıyla çıkar ve belli bir uzaklığa kadar yetişir. Menzilde tavan yoksa TUTMADI! yazar ve ip geri düşer; basılı tutmaya devam ettikçe oyun yeniden dener. Yerdeyken atılan kanca kahramanı hemen havaya çeker. Çukurlar seni oyundan düşürür, yerdeki ve tavandaki dikenler öldürür, daha yüksek bir çıkıntının yan duvarına çarpmak da seni geri savurur.\n\nİlerledikçe mağara zorlaşır. İlk 1.600 metre boyunca kahraman hızlanır, çukurlar genişler, çıkıntılar kısalır, dikenler sıklaşır; her 250 metrede bir pankart bunu duyurur. Skorun, metre cinsinden mesafe artı her altın için 10 puandır."
+  },
+  "howToPlay": [
+    {
+      "en": "After GO!, the hero starts running. On safe ground you can simply let them run.",
+      "tr": "BAŞLA! yazısından sonra kahraman koşmaya başlar. Güvenli zeminde bırak koşsun."
+    },
+    {
+      "en": "Before a pit or a row of spikes, hold to hook the ceiling and swing.",
+      "tr": "Bir çukurdan ya da diken sırasından önce basılı tut, tavana kancayı tak ve sallan."
+    },
+    {
+      "en": "Let go as the swing carries you forward and up; letting go while moving forward adds a little speed.",
+      "tr": "Salınım seni ileri ve yukarı taşırken bırak; ileri giderken bırakmak biraz hız da kazandırır."
+    },
+    {
+      "en": "Land on the next ledge, or press again in mid-air to hook the ceiling and keep swinging.",
+      "tr": "Sonraki çıkıntıya kon ya da havadayken yeniden basıp tavana takılarak sallanmaya devam et."
+    },
+    {
+      "en": "The run ends with YOU FELL! in a pit or SPIKED! on a spike.",
+      "tr": "Çukura düşersen DÜŞTÜN!, dikene değersen DİKENE TAKILDIN! ile oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Hold Space, ↑, W, Z or Enter to fire the rope and swing; release to let go. Esc or P pauses.",
+      "tr": "İpi atıp sallanmak için Boşluk, ↑, W, Z ya da Enter'ı basılı tut; bırakınca ipten kurtulursun. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Hold a finger anywhere on the screen to swing and lift it to let go.",
+      "tr": "Sallanmak için parmağını ekranda herhangi bir yere basılı tut, bırakmak için kaldır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Timing the release is everything. Let go on the rising, forward part of the swing and the hero sails far; let go at the bottom and they drop short.",
+      "tr": "Her şey bırakma anında. Salınımın ileri ve yukarı çıkan kısmında bırakırsan kahraman uzağa süzülür; en altta bırakırsan kısa düşer."
+    },
+    {
+      "en": "Swings can be chained without touching the ground. Over a wide pit, release high and press again at once to hook further ahead.",
+      "tr": "Yere değmeden salınımları art arda bağlayabilirsin. Geniş bir çukurun üstünde yüksekten bırak ve hemen yeniden basıp daha ileriye takıl."
+    },
+    {
+      "en": "Watch the ceiling as well as the floor. Spikes hang from it too, and a swing that lifts your head into them ends the run.",
+      "tr": "Yalnızca zemine değil tavana da bak. Tavanda da dikenler sarkar; başını onlara kaldıran bir salınım oyunu bitirir."
+    },
+    {
+      "en": "Coins over pits follow the arc of a good swing, and the coins above spikes hang high: collecting them usually means you cleared the danger too.",
+      "tr": "Çukurların üstündeki altınlar iyi bir salınımın yayını izler, dikenlerin üstündekiler de yüksekte asılıdır: onları toplamak genelde tehlikeyi de aştığın anlamına gelir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Your own Ayvago character, hanging from the rope in its own pose",
+      "tr": "İpte kendi pozuyla asılan kendi Ayvago karakterin"
+    },
+    {
+      "en": "An endless cave of pits, ledges and spikes above and below",
+      "tr": "Çukurlar, çıkıntılar ve altta üstte dikenlerle dolu sonsuz bir mağara"
+    },
+    {
+      "en": "Speed that rises with distance, announced every 250 metres",
+      "tr": "Mesafeyle artan ve her 250 metrede duyurulan hız"
+    },
+    {
+      "en": "One-button controls on keyboard and touch",
+      "tr": "Klavyede de dokunmatikte de tek tuşla kontrol"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Why does my rope miss?",
+        "tr": "İpim neden tutmuyor?"
+      },
+      "a": {
+        "en": "It fires at a fixed angle and only reaches so far, so it misses under an open patch of ceiling or when the rock is too high. Keep holding and it retries every 0.3 seconds. Open patches only appear where the ground below is safe to run on.",
+        "tr": "İp sabit bir açıyla çıkar ve belli bir uzaklığa kadar yetişir; tavandaki açıklıkların altında ya da kaya çok yüksekteyse tutmaz. Basılı tutarsan 0,3 saniyede bir yeniden dener. Tavan açıklıkları yalnızca altındaki zeminde güvenle koşulabilen yerlerde çıkar."
+      }
+    },
+    {
+      "q": {
+        "en": "Which character do I play?",
+        "tr": "Hangi karakterle oynuyorum?"
+      },
+      "a": {
+        "en": "The one you chose on ayvago.com. The game uses that character's own poses: walking while running, the jump and fall poses in the air, and the one-handed hang on the rope.",
+        "tr": "ayvago.com'da seçtiğin karakterle. Oyun o karakterin kendi pozlarını kullanır: koşarken yürüme, havada zıplama ve düşme pozları, ipteyken de tek elle asılma."
+      }
+    },
+    {
+      "q": {
+        "en": "Does it work on a phone?",
+        "tr": "Telefonda çalışıyor mu?"
+      },
+      "a": {
+        "en": "Yes. Hold the phone sideways; the whole game is played with one finger anywhere on the screen.",
+        "tr": "Evet. Telefonu yan tut; oyunun tamamı ekranın herhangi bir yerinde tek parmakla oynanır."
+      }
+    }
+  ]
+}

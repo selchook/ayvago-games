@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Coin Catcher is a catch-'em-all game with a twist of greed. Your character, the one you picked on ayvago.com, runs along a meadow with a basket balanced on their head while the sky rains bronze, silver and gold coins, gems and the odd bomb. Run under what is worth catching and step away from what isn't.\n\nCatching is not the risky part, missing is. A coin that hits the grass costs you nothing except your COMBO: every five catches in a row raise the score multiplier by one, up to x5, and a single dropped coin or gem sets it back to x1. Bombs are the opposite: let them fall and they burst harmlessly on the ground, but one in your basket costs a life.\n\nEvery 15 catches the level goes up: things fall faster and more often, and more of them are bombs. From level 3 a BOMB RAIN sends a row of six bombs with a single gold coin in the safe gap, and from level 4 some bombs sway as they fall. You have three lives.",
+    "tr": "Altın Avcısı, biraz da açgözlülük üzerine kurulu bir yakalama oyunu. ayvago.com'da seçtiğin karakter, başında bir sepetle çayırda koşar; gökten bronz, gümüş ve altın paralar, mücevherler ve arada bir bomba yağar. Değerli olanın altına koş, değersizden uzak dur.\n\nRiskli olan yakalamak değil, kaçırmaktır. Çimene düşen para sana bir şey kaybettirmez, yalnızca KOMBO'nu bozar: art arda her beş yakalama puan çarpanını bir artırır, en çok x5'e kadar; tek bir para ya da mücevher düşürmek çarpanı x1'e indirir. Bombalarda durum tersidir: yere düşerlerse zararsızca patlarlar, ama sepetine giren bomba bir can götürür.\n\nHer 15 yakalamada seviye atlarsın: eşyalar daha hızlı ve daha sık düşer, aralarında bomba artar. 3. seviyeden itibaren BOMBA YAĞMURU, güvenli boşluğunda tek bir altın para bulunan altı bombalık bir sıra gönderir; 4. seviyeden sonra bazı bombalar düşerken sallanır. Üç canın var."
+  },
+  "howToPlay": [
+    {
+      "en": "Run left and right to put your basket under coins and gems as they fall.",
+      "tr": "Düşen paraların ve mücevherlerin altına sepetini yetiştirmek için sağa sola koş."
+    },
+    {
+      "en": "Keep bombs out of the basket. Step aside and let them hit the ground.",
+      "tr": "Bombaları sepete sokma. Kenara çekil, yere düşmelerine izin ver."
+    },
+    {
+      "en": "Catch the star for a seven-second MAGNET that pulls coins and gems (but not bombs) toward your basket, and the heart to win back a lost life.",
+      "tr": "Yıldızı yakalarsan yedi saniyelik MIKNATIS paraları ve mücevherleri (bombaları değil) sepetine çeker; kalp ise kaybettiğin bir canı geri verir."
+    },
+    {
+      "en": "Every 15 catches you reach a new level. The run ends when the third bomb lands in your basket.",
+      "tr": "Her 15 yakalamada yeni bir seviyeye geçersin. Üçüncü bomba sepetine düştüğünde oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D run. Esc or P pauses.",
+      "tr": "← → ya da A / D ile koşarsın. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag sideways: a stick appears under your thumb. A half push already runs fast, a full push sprints.",
+      "tr": "Herhangi bir yere dokun ve yana sürükle: başparmağının altında bir çubuk belirir. Yarım itmek bile hızlı koşturur, sonuna kadar itmek depara kaldırır."
+    }
+  },
+  "tips": [
+    {
+      "en": "At x5 a gem is worth 250 points. Once your multiplier is up, protect the streak: a far-off bronze coin can be worth chasing just to keep it alive.",
+      "tr": "x5'te bir mücevher 250 puan eder. Çarpan yükseldiğinde seriyi koru: uzaktaki bir bronz para bile yalnızca kombo bozulmasın diye kovalamaya değebilir."
+    },
+    {
+      "en": "In a BOMB RAIN, look for the gold coin in the row and get under it early. It falls in the only safe gap.",
+      "tr": "BOMBA YAĞMURU'nda sıradaki altın parayı bul ve erkenden altına geç. O, tek güvenli boşlukta düşer."
+    },
+    {
+      "en": "Gems and stars drift sideways as they fall. Wait for them to settle rather than lunging at their first position.",
+      "tr": "Mücevherler ve yıldızlar düşerken yana kayar. İlk gördüğün yere atılmak yerine yörüngelerinin netleşmesini bekle."
+    },
+    {
+      "en": "Hearts only appear while you are missing a life, and they fall slowly. Make room for one even if it means dropping a coin.",
+      "tr": "Kalpler yalnızca bir canın eksikken gelir ve yavaş düşer. Bir para kaçırmak pahasına da olsa onu almaya bak."
+    }
+  ],
+  "features": [
+    {
+      "en": "Your own ayvago.com character as the catcher",
+      "tr": "Yakalayıcı olarak kendi ayvago.com karakterin"
+    },
+    {
+      "en": "A combo multiplier up to x5",
+      "tr": "x5'e kadar çıkan kombo çarpanı"
+    },
+    {
+      "en": "Magnet stars, extra-life hearts and bomb rains",
+      "tr": "Mıknatıs yıldızları, can kalpleri ve bomba yağmurları"
+    },
+    {
+      "en": "A new level every 15 catches",
+      "tr": "Her 15 yakalamada yeni bir seviye"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Bronze coins are 5, silver 10, gold 20, gems 50 and the star 25, all multiplied by your combo. The multiplier rises by one every five catches in a row, to x5, and drops back to x1 when you miss a coin or gem or catch a bomb.",
+        "tr": "Bronz para 5, gümüş 10, altın 20, mücevher 50, yıldız 25 puandır; hepsi kombo çarpanınla çarpılır. Çarpan art arda her beş yakalamada bir artar, en çok x5 olur; bir para ya da mücevher kaçırınca veya bomba yakalayınca x1'e döner."
+      }
+    },
+    {
+      "q": {
+        "en": "Do I lose a life when I miss a coin?",
+        "tr": "Para kaçırınca can kaybeder miyim?"
+      },
+      "a": {
+        "en": "No. Only bombs caught in the basket cost lives. A missed coin only resets your combo.",
+        "tr": "Hayır. Yalnızca sepete giren bombalar can götürür. Kaçan para sadece kombonu sıfırlar."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Level 1 is slow and has few bombs, and the bomb rains only start at level 3, so the first minutes ease you in.",
+        "tr": "Hayır. 1. seviye yavaştır ve az bomba içerir, bomba yağmurları da ancak 3. seviyede başlar; ilk dakikalar seni yavaş yavaş ısıtır."
+      }
+    }
+  ]
+}

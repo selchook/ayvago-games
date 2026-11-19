@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Tank Arena is a top-down tank battle on a single-screen battlefield. You drive the blue tank, and enemy tanks roll in from the edges in waves. Your turret locks onto the nearest enemy by itself, so most of the work is driving: finding cover, getting a clear line of fire and staying out of theirs.\n\nFour kinds of enemy tank take the field. Green ones are slow and fall to one hit; beige ones are fast; red ones take two hits and fire more often; black heavies take four. The first wave is three tanks and every wave brings more, with tougher kinds joining as you go: beige from wave 2, red from wave 3, black from wave 5. Enemies also drive faster, swing their guns quicker and shoot more often each wave.\n\nThe arena is dotted with sandbag walls and trees that stop every shell, and with wooden crates and red barrels you can shoot. A crate breaks after two hits. A barrel explodes and sets off everything around it, crates, barrels and tanks alike, including you if you are too close. Fresh crates are dropped in at the start of every wave.",
+    "tr": "Tank Arenası, tek ekranlık bir savaş alanında yukarıdan görünen bir tank savaşı. Mavi tankı sen sürersin, düşman tankları dalga dalga kenarlardan girer. Namlun en yakın düşmana kendiliğinden kilitlenir; işin çoğu sürmek: siper bulmak, temiz bir atış hattı yakalamak ve onların hattından uzak durmak.\n\nSahaya dört tür düşman tankı çıkar. Yeşiller yavaştır ve tek atışta gider; bejler hızlıdır; kırmızılar iki atış ister ve daha sık ateş eder; siyah ağır tanklar dört atış ister. İlk dalga üç tanktır ve her dalga daha fazlasını getirir; daha güçlü türler de zamanla katılır: bejler 2. dalgada, kırmızılar 3. dalgada, siyahlar 5. dalgada. Düşmanlar her dalgada daha hızlı sürer, namlularını daha çabuk çevirir ve daha sık ateş eder.\n\nArenada her mermiyi durduran kum torbası duvarları ve ağaçlar, bir de vurulabilen tahta sandıklar ve kırmızı variller var. Sandık iki atışta kırılır. Varil patlar ve çevresindeki her şeyi, sandıkları, varilleri ve tankları, fazla yakındaysan seni de patlatır. Her dalganın başında arenaya yeni sandıklar gelir."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose Easy or Normal and press PLAY. The first wave arrives after a moment.",
+      "tr": "Kolay ya da Normal'i seçip OYNA'ya bas. İlk dalga kısa bir süre sonra gelir."
+    },
+    {
+      "en": "Drive around the arena while the turret tracks the nearest enemy.",
+      "tr": "Namlu en yakın düşmanı izlerken arenada dolaş."
+    },
+    {
+      "en": "Fire at the locked target, or tap or click a spot to aim and fire there instead.",
+      "tr": "Kilitlenilen hedefe ateş et ya da bir noktaya dokunup tıklayarak oraya nişan alıp ateş et."
+    },
+    {
+      "en": "Destroy every tank in the wave for a bonus, then get ready for the next. The game ends when your last life is gone: three to start, five on Easy.",
+      "tr": "Bonus için dalgadaki bütün tankları yok et, sonra sıradakine hazırlan. Son canın gidince oyun biter: başlangıçta üç canın var, Kolay'da beş."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD drive; hold Space, Z or Enter to fire at the target the turret has locked onto. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD tankı sürer; namlunun kilitlendiği hedefe ateş etmek için Boşluk, Z ya da Enter'ı basılı tut. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Drag on the left half for a floating joystick. Hold the A button to fire, or tap anywhere on the right half to aim at that spot and fire.",
+      "tr": "Sol yarıda sürükleyince beliren joystick ile sür. Ateş için A düğmesini basılı tut ya da sağ yarıda bir noktaya dokunarak oraya nişan alıp ateş et."
+    },
+    "mouse": {
+      "en": "Click to aim at a spot and fire. Hold the button and the turret follows the pointer, firing as fast as it can.",
+      "tr": "Bir noktaya tıklayınca oraya nişan alıp ateş edersin. Düğmeyi basılı tutarsan namlu imleci izler ve yapabildiği en hızlı şekilde ateş eder."
+    }
+  },
+  "tips": [
+    {
+      "en": "Clear a wave without taking a hit for PERFECT!: 500 points on top of the normal bonus of 200 × the wave number.",
+      "tr": "Bir dalgayı hiç hasar almadan bitirirsen KUSURSUZ! olur: dalga numarasının 200 katı olan normal bonusa ek 500 puan."
+    },
+    {
+      "en": "Shoot a red barrel when tanks are near it. The blast deals two hits to every tank close by, enough to finish green, beige and red ones, and sets off nearby crates for extra points.",
+      "tr": "Yakınında tank varken kırmızı bir varili vur. Patlama yakındaki her tanka iki darbe vurur; bu, yeşil, bej ve kırmızı tankları bitirmeye yeter, çevredeki sandıkları da patlatıp ek puan getirir."
+    },
+    {
+      "en": "Power-ups from crates and wrecks vanish after a few seconds. RAPID FIRE and TRIPLE SHOT last 8 seconds, SHIELD stops one hit within 8 seconds, and REPAIR gives back a life, up to five.",
+      "tr": "Sandıklardan ve enkazlardan düşen güçlendirmeler birkaç saniye sonra kaybolur. HIZLI ATIŞ ve ÜÇLÜ ATIŞ 8 saniye sürer, KALKAN 8 saniye içinde gelen bir darbeyi durdurur, TAMİR ise beşe kadar bir can geri verir."
+    },
+    {
+      "en": "Enemies only fire once their gun points at you, and they swing it slowly. Keep circling a black heavy and it struggles to line up a shot.",
+      "tr": "Düşmanlar ancak namluları sana dönünce ateş eder ve namlularını yavaş çevirirler. Siyah ağır tankın çevresinde dönmeye devam edersen sana nişan almakta zorlanır."
+    }
+  ],
+  "features": [
+    {
+      "en": "Endless waves of four enemy tank types",
+      "tr": "Dört tür düşman tankından oluşan sonsuz dalgalar"
+    },
+    {
+      "en": "A self-aiming turret, with tap or click to aim yourself",
+      "tr": "Kendiliğinden nişan alan namlu; istersen dokunarak ya da tıklayarak kendin nişan al"
+    },
+    {
+      "en": "Breakable crates and chain-reacting barrels",
+      "tr": "Kırılabilen sandıklar ve zincirleme patlayan variller"
+    },
+    {
+      "en": "Rapid fire, triple shot, shield and repair power-ups",
+      "tr": "Hızlı atış, üçlü atış, kalkan ve tamir güçlendirmeleri"
+    },
+    {
+      "en": "Easy and Normal difficulty",
+      "tr": "Kolay ve Normal zorluk"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "Green, beige, red and black tanks give 100, 150, 200 and 350. A crate is worth 25, a barrel 40 and a power-up 30, and each cleared wave adds 200 × the wave number, plus 500 if it was perfect.",
+        "tr": "Yeşil, bej, kırmızı ve siyah tanklar 100, 150, 200 ve 350 puan verir. Sandık 25, varil 40, güçlendirme 30 puandır; biten her dalga da dalga numarasının 200 katını, kusursuzsa ek 500 puanı getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives five lives (up to six with repairs) and slower enemy tanks that turn their guns more slowly, fire less often and miss more. Difficulty climbs half as fast and more power-ups drop. Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da beş canın olur (tamirle altıya kadar); düşman tankları daha yavaştır, namlularını daha yavaş çevirir, daha seyrek ateş eder ve daha çok ıskalar. Zorluk yarı hızla artar, daha çok güçlendirme düşer. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held sideways: the left thumb drives, the right one fires.",
+        "tr": "Evet, telefonu yan tutarak: sol başparmak sürer, sağ başparmak ateş eder."
+      }
+    }
+  ]
+}

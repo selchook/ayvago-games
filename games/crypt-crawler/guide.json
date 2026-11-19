@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Crypt Crawler is a 3D action dungeon crawler that takes you one floor deeper into a cursed crypt at a time. Each floor is a new layout of connected rooms, five at first and up to nine further down. Step into a fighting room and the doors slam shut until every enemy is dead: slimes and skeletons first, then spearmen, ghosts, zombies, orcs and vampires.\n\nEvery floor has a shrine offering three of ten blessings, such as Keen Blade, Orbiting Blade, Vampire Blade or Iron Guard, each with several levels. From floor 2 there is a trap room of spikes and saws, and often a vault behind a golden door whose key waits in a chest on the same floor. Every third floor ends with a guardian: the Bone King, the Orc Warlord, the Vampire Lord, then stronger versions again.\n\nYou start with five hearts and every hit costs one. Your score is 200 per floor cleared plus the gold you collect, and the gold also goes to the bank for lasting camp upgrades.",
+    "tr": "Mahzen Avcısı, seni lanetli bir mahzenin her seferinde bir kat daha derinine indiren 3D bir aksiyon zindan oyunu. Her kat birbirine bağlı odalardan oluşan yeni bir plandır; başta beş oda vardır, derinlerde dokuza çıkar. Savaş odasına girince kapılar kapanır ve tüm düşmanlar ölmeden açılmaz: önce balçıklar ve iskeletler, sonra mızraklılar, hayaletler, zombiler, orklar ve vampirler.\n\nHer katta on güçten üçünü sunan bir sunak bulunur: Keskin Kılıç, Dönen Bıçak, Vampir Kılıcı, Demir Kalkan gibi; her birinin birkaç seviyesi vardır. 2. kattan itibaren dikenli ve testereli bir tuzak odası çıkar; çoğu zaman altın bir kapının ardında bir hazine odası da olur, anahtarı aynı kattaki bir sandıktadır. Her üç katta bir muhafız bekler: Kemik Kral, Ork Savaş Beyi, Vampir Lordu, sonra hepsinin daha güçlü hâlleri.\n\nBeş canla başlarsın, her darbe bir can götürür. Puanın, geçtiğin her kat için 200 artı topladığın altındır; altın kasaya da girer ve kampta kalıcı güçlere harcanır."
+  },
+  "howToPlay": [
+    {
+      "en": "Walk into a room to start the fight. The doors lock until every enemy is down.",
+      "tr": "Savaşı başlatmak için odaya gir. Tüm düşmanlar düşene kadar kapılar kilitli kalır."
+    },
+    {
+      "en": "Swing your sword, hold the attack to charge a spinning slash, and dash through danger. You cannot be hurt during a dash.",
+      "tr": "Kılıcını savur, dönüş darbesi için saldırıyı basılı tutup doldur, tehlikenin içinden atıl; atılırken hasar almazsın."
+    },
+    {
+      "en": "Watch for the red marks: they show where an attack is about to land, so get out before they fill.",
+      "tr": "Kırmızı işaretlere dikkat et: gelecek saldırının nereye ineceğini gösterirler, dolmadan oradan çekil."
+    },
+    {
+      "en": "Smash pots and barrels, open chests, step on the shrine's glowing ring to pick a blessing, and take the stairs once the exit room is clear.",
+      "tr": "Küpleri ve fıçıları kır, sandıkları aç, güç seçmek için sunaktaki parlayan halkaya bas; çıkış odası temizlenince merdivenden aşağı in."
+    },
+    {
+      "en": "When your hearts run out, your gold goes to the bank. Spend it at the camp before the next run.",
+      "tr": "Canların bitince altının kasaya geçer. Bir sonraki seferden önce onu kampta harca."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "WASD or the arrows walk. Space, Z, Enter or J attacks, or click to swing at the mouse cursor; hold to charge the spin. Shift, X, K or right click dashes. At a shrine, 1–3 pick a blessing.",
+      "tr": "WASD ya da oklarla yürürsün. Boşluk, Z, Enter ya da J saldırır; fareyle tıklarsan kılıç imlecin yönüne savrulur, basılı tutunca dönüş darbesi dolar. Shift, X, K ya da sağ tık atılır. Sunakta 1–3 ile güç seçilir."
+    },
+    "touch": {
+      "en": "Touch and drag on the left half of the screen to walk. The ATTACK button swings at the nearest enemy; hold it for the spin. DASH is beside it.",
+      "tr": "Yürümek için ekranın sol yarısına basıp sürükle. SALDIR düğmesi kılıcı en yakın düşmana savurur, basılı tutarsan dönüş darbesi gelir. ATIL düğmesi hemen yanındadır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Your sword knocks enemy shots out of the air when they are inside its swing, so you can swing at an incoming arrow instead of running from it.",
+      "tr": "Kılıcın savuruş alanına giren düşman atışlarını havada düşürür; gelen oktan kaçmak yerine ona kılıç savurabilirsin."
+    },
+    {
+      "en": "A charging orc or guardian is stunned when it hits a wall, and stunned enemies take 50% more damage. Keep a wall behind you and dash aside late.",
+      "tr": "Hücum eden ork ya da muhafız duvara çarpınca sersemler; sersemlemiş düşman %50 fazla hasar alır. Arkana duvar al ve son anda yana atıl."
+    },
+    {
+      "en": "Guardians become enraged below half health. Save your dash for that phase rather than spending it early.",
+      "tr": "Muhafızlar canları yarının altına inince öfkelenir. Atılmanı erken harcama, o an için sakla."
+    },
+    {
+      "en": "Iron Guard blocks one hit in every room, and Vampire Blade heals a heart every 12 kills at its first level (every 6 at its third). Both keep a long run going.",
+      "tr": "Demir Kalkan her odada bir darbeyi engeller; Vampir Kılıcı ilk seviyede her 12 düşmanda bir, üçüncü seviyede her 6 düşmanda bir can verir. İkisi de uzun seferleri ayakta tutar."
+    }
+  ],
+  "features": [
+    {
+      "en": "A new floor layout every time, with fighting, shrine, trap and vault rooms",
+      "tr": "Her seferinde yeni kat planı; savaş, sunak, tuzak ve hazine odaları"
+    },
+    {
+      "en": "Ten shrine blessings that stack within a run",
+      "tr": "Sefer içinde üst üste binen on sunak gücü"
+    },
+    {
+      "en": "Three guardian bosses, one on every third floor",
+      "tr": "Her üç katta bir çıkan üç muhafız"
+    },
+    {
+      "en": "Five lasting camp upgrades bought with banked gold",
+      "tr": "Kasadaki altınla alınan beş kalıcı kamp gücü"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "What carries over between runs?",
+        "tr": "Seferler arasında ne kalıcı?"
+      },
+      "a": {
+        "en": "Gold and what it buys at the camp: Vigor (+1 starting heart), Master Smith (+10% damage), Treasure Hunter (+15% gold), Light Boots (faster dash) and Blessing (a random blessing at the start). Shrine blessings last one run.",
+        "tr": "Altın ve kampta onunla aldıkların: Dayanıklılık (+1 başlangıç canı), Usta Demirci (+%10 hasar), Hazine Avcısı (+%15 altın), Hafif Çizmeler (daha sık atılma) ve Kutsama (başlangıçta rastgele bir güç). Sunak güçleri tek sefer sürer."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives seven hearts and a heart back on every floor. Enemies are weaker, slower and warn longer, drop more hearts, and floors toughen more slowly. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da yedi canın olur, her katta bir can geri gelir. Düşmanlar daha zayıf ve yavaştır, daha uzun uyarır, daha çok can bırakır; katlar daha yavaş zorlaşır. Kolay seferler sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held upright. On a touch screen the attack aims itself at the nearest enemy, so you only have to steer and time your dashes.",
+        "tr": "Evet, telefon dik tutularak. Dokunmatik ekranda saldırı kendiliğinden en yakın düşmana yönelir; sana yalnızca yürümek ve atılmayı zamanlamak kalır."
+      }
+    }
+  ]
+}

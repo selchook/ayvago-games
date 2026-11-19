@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Simon Says is the electronic memory game of four coloured pads, played on a round board. The pads light up one after another, each with its own tone, and you play the same tune back in the same order. Get it right and the tune returns one note longer: every round keeps the old sequence and adds one random pad at the end.\n\nThe board speeds up as the rounds go by. Each note of the playback is a little shorter than in the round before, until from round 15 the pads flash at full speed. Your answer is timed too: a ring in the centre empties while you think, refills with every correct press and gives you a little less time per note each round.\n\nYou have three mistakes for the whole game. A wrong pad or an empty ring costs one, and the same sequence plays again so you can try it once more. The third mistake ends the game. No music plays during a round, so the tones stay clear.",
+    "tr": "Simon Der Ki, dört renkli düğmeli o bilinen elektronik hafıza oyununun yuvarlak bir tahtadaki hâli. Düğmeler her biri kendi sesiyle tek tek yanar, sen de aynı ezgiyi aynı sırayla çalarsın. Doğru çalarsan ezgi bir nota uzamış olarak geri gelir: her tur önceki diziyi korur ve sonuna rastgele bir düğme ekler.\n\nTurlar ilerledikçe tahta hızlanır. Gösterimdeki her nota bir önceki turdakinden biraz kısadır; 15. turdan itibaren düğmeler en yüksek hızda yanıp söner. Senin cevabın da süreyle sınırlı: ortadaki halka sen düşünürken boşalır, her doğru basışta yeniden dolar ve her turda nota başına biraz daha az süre tanır.\n\nBütün oyun için 3 hata hakkın var. Yanlış düğme ya da boşalan halka bir hak götürür, aynı dizi yeniden çalınır ve bir kez daha denersin. Üçüncü hata oyunu bitirir. Tur sırasında müzik çalmaz, böylece sesler net duyulur."
+  },
+  "howToPlay": [
+    {
+      "en": "While WATCH is shown, the pads play the sequence. Just listen and look; presses during the playback are ignored.",
+      "tr": "Üstte İZLE yazarken düğmeler diziyi çalar. Sadece izle ve dinle; gösterim sırasında yapılan basışlar sayılmaz."
+    },
+    {
+      "en": "At YOUR TURN, repeat the sequence from the first note. The chip under the board counts your progress, for example 3 / 7.",
+      "tr": "SIRA SENDE yazınca diziyi ilk notadan başlayarak tekrarla. Tahtanın altındaki gösterge ilerlemeni sayar, örneğin 3 / 7."
+    },
+    {
+      "en": "Press each next note before the centre ring runs out. When time gets short the ring turns red and an alarm sounds.",
+      "tr": "Her sonraki notaya ortadaki halka bitmeden bas. Süre daraldığında halka kırmızıya döner ve alarm çalar."
+    },
+    {
+      "en": "Finish the sequence to start the next, longer round. After a mistake the same sequence plays again; the third mistake ends the game.",
+      "tr": "Diziyi bitirince bir nota daha uzun yeni tur başlar. Hatadan sonra aynı dizi tekrar çalınır; üçüncü hata oyunu bitirir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "↑, W or 1 is the green pad (top), →, D or 2 red (right), ↓, S or 3 blue (bottom), ←, A or 4 yellow (left). Esc or P pauses.",
+      "tr": "↑, W ya da 1 yeşil düğme (üst), →, D ya da 2 kırmızı (sağ), ↓, S ya da 3 mavi (alt), ←, A ya da 4 sarı (sol). Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap the coloured pads on the ring. The pause button is in the top-right corner.",
+      "tr": "Halkadaki renkli düğmelere dokun. Duraklatma düğmesi sağ üst köşede."
+    },
+    "mouse": {
+      "en": "Click the pads.",
+      "tr": "Düğmelere tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Learn the tune rather than the colours. Each pad always plays the same note, so after a few rounds the sequence sounds like a short melody you can hum back.",
+      "tr": "Renkleri değil ezgiyi ezberle. Her düğme hep aynı notayı çalar; birkaç tur sonra dizi, mırıldanabileceğin kısa bir melodiye dönüşür."
+    },
+    {
+      "en": "Split long sequences into chunks of three or four while you watch: \"green-red-red, blue-yellow\" sticks better than nine separate flashes.",
+      "tr": "Uzun dizileri izlerken üçlü dörtlü gruplara böl: \"yeşil-kırmızı-kırmızı, mavi-sarı\" dokuz ayrı yanıp sönmeden çok daha kolay akılda kalır."
+    },
+    {
+      "en": "The ring refills after every correct press, so you only race the clock to the next note, never for the whole sequence. Take a breath between notes if you need it.",
+      "tr": "Halka her doğru basışta yeniden dolar; yani süreye karşı yalnızca bir sonraki nota için yarışırsın, bütün dizi için değil. Gerekirse notalar arasında bir nefes al."
+    },
+    {
+      "en": "A round without a mistake pays an extra 10 × the round number, announced as PERFECT! from round 3. A clean round 10 is worth 800 points in all.",
+      "tr": "Hatasız geçen tur, tur numarasının 10 katı kadar ek puan getirir; 3. turdan itibaren MÜKEMMEL! yazısı çıkar. Hatasız bir 10. tur toplam 800 puan eder."
+    }
+  ],
+  "features": [
+    {
+      "en": "Four pads, each with its own live-synthesised tone",
+      "tr": "Her biri kendi canlı sentez sesiyle çalan dört düğme"
+    },
+    {
+      "en": "A sequence that grows by one note every round",
+      "tr": "Her turda bir nota uzayan dizi"
+    },
+    {
+      "en": "Faster playback and shorter answer time as you climb",
+      "tr": "İlerledikçe hızlanan gösterim ve kısalan cevap süresi"
+    },
+    {
+      "en": "Three mistakes per game, with a replay after each",
+      "tr": "Oyun başına üç hata hakkı, her hatadan sonra tekrar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each correct press is worth 5 × the round number and finishing the round adds 20 × the round. A round with no mistake adds another 10 × the round, so in round 10 that is 500 + 200 + 100 points.",
+        "tr": "Her doğru basış 5 × tur numarası kadar puandır, turu bitirmek 20 × tur ekler. Hatasız turda bunun üstüne 10 × tur daha gelir; 10. turda bu 500 + 200 + 100 puan demektir."
+      }
+    },
+    {
+      "q": {
+        "en": "What counts as a mistake?",
+        "tr": "Hangi durumlar hata sayılıyor?"
+      },
+      "a": {
+        "en": "Pressing the wrong pad (WRONG!) or letting the centre ring run out before the next note (TOO SLOW!). Either one costs one of your three chances, and the same sequence plays again.",
+        "tr": "Yanlış düğmeye basmak (YANLIŞ!) ya da sonraki notadan önce ortadaki halkanın bitmesi (GEÇ KALDIN!). İkisi de üç hakkından birini götürür ve aynı dizi yeniden çalınır."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with the sound off?",
+        "tr": "Sesi kapalı oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Every note is also a bright flash of its pad, so the sequence can be followed by eye alone. The tones simply make long sequences easier to remember.",
+        "tr": "Evet. Her nota aynı zamanda düğmenin parlak bir yanıp sönmesidir, diziyi yalnızca gözle de takip edebilirsin. Sesler sadece uzun dizileri hatırlamayı kolaylaştırır."
+      }
+    }
+  ]
+}

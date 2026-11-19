@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Snow Express is a 3D rail-switching puzzle in a snowy mountain village. Trains roll out of tunnels carrying presents of one colour, and every colour has its own cabin. You never drive: you flip the switches, and on some boards the signals, so each train runs into the cabin of its colour. Every colour also has an icon (heart, snowflake, tree, star, bell, moon) on wagons and cabins, so it plays without colour vision.\n\nThe Journey has 24 handmade levels in three chapters: the Snowy Village, the Frozen Lake (14 stars) and the Mountain Pass (32 stars). New ideas arrive one at a time: more tunnels, crossings, signals that hold trains at red, passing loops, express trains, six cabins, overpasses, snow drifts that only the snowplow clears, and long trains.\n\nHoliday Rush is endless. It opens with three cabins and adds more as you go, while the trains speed up and come closer together.",
+    "tr": "Kar Ekspresi, karlı bir dağ köyünde geçen 3D bir demiryolu makas bulmacası. Trenler tek renk hediyelerle tünelden çıkar ve her rengin kendi kulübesi vardır. Trenleri sen sürmezsin: makasları, bazı haritalarda da sinyalleri çevirirsin ki her tren kendi rengindeki kulübeye girsin. Her rengin vagonlarda ve kulübelerde bir simgesi de vardır (kalp, kar tanesi, ağaç, yıldız, çan, ay); renkleri ayırt edemeyenler de rahatça oynar.\n\nYolculuk, üç bölümde elle hazırlanmış 24 seviyedir: Karlı Köy, Donmuş Göl (14 yıldız) ve Dağ Geçidi (32 yıldız). Yenilikler birer birer gelir: daha çok tünel, kesişen raylar, kırmızıda treni durduran sinyaller, bekleme döngüleri, ekspres trenler, altı kulübe, üst geçitler, yalnızca kar küreme treninin açabildiği kar yığınları ve uzun trenler.\n\nYılbaşı Telaşı sonsuz moddur. Üç kulübeyle başlar, ilerledikçe yenileri açılır; trenler hızlanır ve sıklaşır."
+  },
+  "howToPlay": [
+    {
+      "en": "Watch the tunnel lamps and the list of upcoming trains. A lamp blinks just before a train comes out of that tunnel.",
+      "tr": "Tünel lambalarını ve sıradaki trenlerin listesini izle. Lamba, o tünelden tren çıkmadan hemen önce yanıp söner."
+    },
+    {
+      "en": "Tap a switch to flip it; the arrow on the track shows where the next train will go. A switch with a train on it will not move.",
+      "tr": "Makası çevirmek için dokun; raydaki ok sıradaki trenin gideceği yolu gösterir. Üstünde tren olan makas dönmez."
+    },
+    {
+      "en": "Send every train into the cabin of its colour. A wrong cabin, a train that runs back into a tunnel or one that hits a drift costs a heart.",
+      "tr": "Her treni kendi rengindeki kulübeye gönder. Yanlış kulübe, yeniden tünele giren tren ya da kar yığınına saplanan tren bir can götürür."
+    },
+    {
+      "en": "Keep trains apart at crossings. On Normal a collision ends the level at once.",
+      "tr": "Kesişen raylarda trenleri birbirinden uzak tut. Normal'de bir çarpışma seviyeyi hemen bitirir."
+    },
+    {
+      "en": "A level is cleared when every train is delivered. Three stars need no lost hearts, no crash and a time within par.",
+      "tr": "Bütün trenler teslim edilince seviye biter. Üç yıldız için hiç can kaybetmemek, çarpışmamak ve hedef süreyi aşmamak gerekir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "1–9 flip the switch or signal with that number, or choose one with the arrows and flip it with Space or Enter. Z drinks Hot Cocoa, X shakes the Snow Globe, M opens the Journey map from the menu.",
+      "tr": "1–9 o numaralı makası ya da sinyali çevirir; istersen oklarla seçip Boşluk ya da Enter ile çevirirsin. Z Sıcak Kakao'yu, X Kar Küresi'ni kullanır, M menüden yolculuk haritasını açar."
+    },
+    "touch": {
+      "en": "Tap a switch or a signal to flip it, and tap the COCOA and GLOBE buttons to use a power.",
+      "tr": "Çevirmek için makasa ya da sinyale dokun; güç kullanmak için KAKAO ve KÜRE düğmelerine dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Five correct deliveries in a row earn a power, alternately Hot Cocoa (under half speed for 5 seconds) and the Snow Globe (trains stop for 3 seconds). You can hold three of each.",
+      "tr": "Art arda beş doğru teslimat bir güç kazandırır; sırayla Sıcak Kakao (5 saniye yarı hızın altında) ve Kar Küresi (trenler 3 saniye durur) gelir. Her birinden üç tane tutabilirsin."
+    },
+    {
+      "en": "Set the switches for the next train as soon as the one ahead of it has passed, not when the next one arrives. A train sitting on a switch locks it.",
+      "tr": "Makasları sıradaki tren gelince değil, öndeki tren geçer geçmez ayarla. Üstünde tren duran makas kilitlenir."
+    },
+    {
+      "en": "Save the Snow Globe for a crossing where two trains are about to meet. It freezes both, and gives you time to flip a switch or a signal.",
+      "tr": "Kar Küresi'ni iki trenin buluşmak üzere olduğu bir kesişme için sakla. İkisini de dondurur ve sana bir makası ya da sinyali çevirecek zaman kazandırır."
+    },
+    {
+      "en": "In Holiday Rush every three correct deliveries in a row raise the multiplier, up to ×8; one mistake drops it to ×1.",
+      "tr": "Yılbaşı Telaşı'nda art arda her üç doğru teslimat çarpanı artırır, ×8'e kadar çıkar; tek hata onu ×1'e indirir."
+    }
+  ],
+  "features": [
+    {
+      "en": "24 Journey levels in the Snowy Village, Frozen Lake and Mountain Pass",
+      "tr": "Karlı Köy, Donmuş Göl ve Dağ Geçidi'nde 24 Yolculuk seviyesi"
+    },
+    {
+      "en": "Endless Holiday Rush with a combo multiplier up to ×8",
+      "tr": "×8'e kadar kombo çarpanlı sonsuz Yılbaşı Telaşı"
+    },
+    {
+      "en": "Signals, passing loops, overpasses, express trains and a snowplow",
+      "tr": "Sinyaller, bekleme döngüleri, üst geçitler, ekspres trenler ve kar küreme treni"
+    },
+    {
+      "en": "A matching icon for every colour",
+      "tr": "Her renk için eşleşen bir simge"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "In the Journey a cleared level scores 1,000 per star, 100 per correct delivery and up to 500 for finishing under par. In Holiday Rush a train is worth 100, an express 150 and the snowplow 50, multiplied by your combo.",
+        "tr": "Yolculuk'ta biten seviye yıldız başına 1.000, her doğru teslimat için 100 ve hedef süreden önce bitirirsen 500'e kadar puan getirir. Yılbaşı Telaşı'nda tren 100, ekspres 150, kar küreme treni 50 puandır ve kombonla çarpılır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives five hearts, slower and more widely spaced trains and longer tunnel warnings, and a collision only costs a heart. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da beş canın olur; trenler daha yavaş ve seyrek gelir, tünel uyarıları uzun sürer, çarpışma yalnızca bir can götürür. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Why won't the next level open?",
+        "tr": "Sonraki seviye neden açılmıyor?"
+      },
+      "a": {
+        "en": "Each level opens once the one before it has a star. A new chapter also needs enough stars in total: 14 for the Frozen Lake, 32 for the Mountain Pass.",
+        "tr": "Her seviye, bir öncekinden yıldız alınca açılır. Yeni bölüm için toplam yıldız da gerekir: Donmuş Göl için 14, Dağ Geçidi için 32."
+      }
+    }
+  ]
+}

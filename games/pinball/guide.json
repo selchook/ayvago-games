@@ -1,0 +1,98 @@
+{
+  "about": {
+    "en": "Pinball is a tall, scrolling pinball machine with five tables to work through: Neon Nights, Deep Blue, Jungle Temple, Fire Forge and Star Gate. Each has its own layout of ramps, orbit lanes, bumpers, drop-target banks and upper flippers, plus a trick of its own: a whirlpool that pulls the ball in and flings it out, temple idols, a cannon that fires the ball straight up, a wormhole and a black hole.\n\nYou start with three balls. Every table has a target score shown in the panel at the bottom; reach it and the ball is lifted off to the next table, you get an extra ball and the new table stays open for later runs, so you can start from any table you have reached. After Star Gate the tour starts over with higher targets, and every table you clear makes the ball fall a little heavier and the ball save shorter.\n\nAlongside the target, each table lists two or three missions, such as three ramps and two orbits on Neon Nights. Finish all of them for a JACKPOT worth a quarter of the table's target; then they start again, a little longer each time.",
+    "tr": "Tilt, yukarı aşağı kayan uzun bir langırt makinesi ve sırayla açılan beş masası var: NEON GECE, DERİN MAVİ, ORMAN TAPINAĞI, ATEŞ FIRINI ve YILDIZ GEÇİDİ. Her masanın kendi rampaları, yörünge yolları, tamponları, düşen hedef setleri ve üst paletleri, bir de kendine özgü bir numarası var: topu içine çekip fırlatan girdap, tapınak putları, topu dümdüz yukarı ateşleyen top atar, solucan deliği ve kara delik.\n\nOyuna üç topla başlarsın. Her masanın alttaki panelde görünen bir hedef puanı vardır; ona ulaşınca top bir sonraki masaya taşınır, bir ekstra top kazanırsın ve yeni masa sonraki oyunlar için de açık kalır, yani ulaştığın herhangi bir masadan başlayabilirsin. YILDIZ GEÇİDİ'nden sonra tur daha yüksek hedeflerle yeniden başlar; geçtiğin her masada top biraz daha ağır düşer, top koruma süresi de kısalır.\n\nHer masada hedefin yanında iki ya da üç görev yazar; örneğin NEON GECE'de üç RAMPA ve iki YÖRÜNGE. Hepsini bitirince masanın hedefinin dörtte biri kadar JACKPOT kazanırsın; ardından görevler her seferinde biraz daha uzun olarak yeniden başlar."
+  },
+  "howToPlay": [
+    {
+      "en": "Once you have opened more than one table, pick where to start. Then hold LAUNCH and release it: the longer you hold, the harder the plunger fires the ball.",
+      "tr": "Birden fazla masa açtıysan nereden başlayacağını seç. Sonra FIRLAT'ı basılı tutup bırak: ne kadar uzun tutarsan yay topu o kadar sert fırlatır."
+    },
+    {
+      "en": "Keep the ball alive with the flippers. Each side's control also works the upper flippers on that side.",
+      "tr": "Topu paletlerle oyunda tut. Her tarafın tuşu o taraftaki üst paletleri de çalıştırır."
+    },
+    {
+      "en": "Follow the blinking arrows: they point at the shots your open missions need. Roll through all four A-Y-V-A lanes at the top to raise the multiplier.",
+      "tr": "Yanıp sönen okları takip et: açık görevlerin gerektirdiği atışları gösterirler. Üstteki A-Y-V-A yollarının dördünden de geçerek çarpanı yükselt."
+    },
+    {
+      "en": "A ball that drains ends with a ball bonus. When your last ball is gone, the game is over.",
+      "tr": "Kaçan her top bir top bonusuyla kapanır. Son topun da kaçınca oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "←, Z or A work the left flippers; →, / or D the right ones. Hold Space, ↓ or S to pull the plunger and let go to launch. ↑, X or N nudges. On the table picker, ↑ ↓ choose and Enter starts. Esc or P pauses.",
+      "tr": "Sol paletler ←, Z ya da A; sağ paletler →, / ya da D ile çalışır. Yayı çekmek için Boşluk'u, ↓'yi ya da S'yi basılı tut, fırlatmak için bırak. ↑, X ya da N masayı sallar. Masa seçiminde ↑ ↓ ile seç, Enter ile başla. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch the left or right half of the table for that side's flippers; two thumbs work both at once. Hold and release the LAUNCH button to fire the ball, and tap NUDGE to shake the table.",
+      "tr": "Paletler için masanın sol ya da sağ yarısına dokun; iki başparmakla ikisini aynı anda kullanabilirsin. Topu atmak için FIRLAT düğmesini basılı tutup bırak, masayı sarsmak için SALLA'ya dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Light AYVA as early as you can. The multiplier stays for the rest of the game, climbs to x5 and applies to almost everything, the ball bonus included.",
+      "tr": "AYVA'yı olabildiğince erken yak. Çarpan oyunun sonuna kadar kalır, x5'e kadar çıkar ve top bonusu dahil neredeyse her şeye uygulanır."
+    },
+    {
+      "en": "Ramps, orbits and holes build the ball bonus fastest: 2,000 per ramp, 1,500 per orbit and 1,000 per hole, times the multiplier, paid when the ball drains.",
+      "tr": "Top bonusunu en hızlı rampalar, yörüngeler ve delikler büyütür: rampa başına 2.000, yörünge başına 1.500, delik başına 1.000; çarpanla çarpılır ve top kaçınca ödenir."
+    },
+    {
+      "en": "Nudge sparingly. The meter on the NUDGE button drains slowly; at the second quick nudge DANGER! appears and the third tilts the machine, killing the flippers and the ball bonus.",
+      "tr": "Masayı idareli salla. SALLA düğmesindeki gösterge yavaş boşalır; arka arkaya ikinci sarsıntıda DİKKAT! yazar, üçüncüsü makineyi TILT'e sokar, paletler kilitlenir ve top bonusu yanar."
+    },
+    {
+      "en": "Every ball starts with a short BALL SAVE. Use those seconds to go for risky shots; a ball lost while it is lit comes straight back.",
+      "tr": "Her top kısa bir TOP KORUMA ile başlar. Bu saniyeleri riskli atışlar için kullan; korumanın yandığı sırada kaçan top hemen geri gelir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Five tables with their own ramps, holes and tricks",
+      "tr": "Kendi rampaları, delikleri ve sırları olan beş masa"
+    },
+    {
+      "en": "Missions and a jackpot on every table",
+      "tr": "Her masada görevler ve jackpot"
+    },
+    {
+      "en": "Unlocked tables stay open, so you can start from any of them",
+      "tr": "Açılan masalar açık kalır, istediğinden başlayabilirsin"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How do I unlock the other tables?",
+        "tr": "Diğer masaları nasıl açarım?"
+      },
+      "a": {
+        "en": "Reach a table's target score in a game. The next table opens at once, the ball moves on to it, and from then on it is on the table picker too.",
+        "tr": "Bir oyunda masanın hedef puanına ulaş. Sıradaki masa hemen açılır, top oraya geçer ve o andan sonra masa seçiminde de yer alır."
+      }
+    },
+    {
+      "q": {
+        "en": "How do I get more balls?",
+        "tr": "Daha fazla topu nasıl kazanırım?"
+      },
+      "a": {
+        "en": "Clearing a table gives you an extra ball. A ball lost during BALL SAVE does not count either.",
+        "tr": "Bir masayı geçmek sana ekstra top kazandırır. TOP KORUMA sırasında kaçan top da sayılmaz."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes. It is built for a portrait screen, with the two halves of the screen as flipper buttons.",
+        "tr": "Evet. Dikey ekran için tasarlandı; ekranın iki yarısı palet düğmesi olarak çalışır."
+      }
+    }
+  ]
+}

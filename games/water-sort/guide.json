@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Water Sort is a pouring puzzle. Glass tubes hold up to four layers of coloured water, mixed up at the start, and two extra tubes stand empty. Pour from tube to tube until every tube holds four layers of a single colour; a finished tube gets a cork and is out of play.\n\nTwo rules decide every pour: water only goes onto its own colour or into an empty tube, and it carries the whole run of that colour from the top, as much as fits. Every colour also has its own white symbol, so you can sort by shape as well as colour. Level 1 has three colours, and one more joins every second level, up to ten colours in twelve tubes. Every level is solvable.\n\nEach level runs against a clock and shows a PAR, a move count to aim for. You get three undos and one extra empty tube (+ TUBE) per level, and finishing without either raises your score multiplier. The game ends when the time runs out, or when no pour is left and both helps are spent.",
+    "tr": "Su Sıralama bir dökme bulmacası. Cam tüplerin her biri en fazla dört kat renkli su alır; başlangıçta renkler karışıktır ve iki tüp boş bekler. Her tüpte tek renkten dört kat kalana kadar suyu tüpten tüpe dök; tamamlanan tüpün ağzına tıpa takılır ve o tüp oyundan çıkar.\n\nHer dökümü iki kural belirler: su yalnızca kendi renginin üstüne ya da boş bir tüpe dökülür ve üstteki o renkten ne kadar varsa, sığdığı kadarı birden akar. Her rengin kendine ait beyaz bir sembolü de vardır, yani renge olduğu kadar şekle göre de sıralayabilirsin. 1. bölümde üç renk vardır, her iki bölümde bir renk eklenir ve on iki tüpte on renge kadar çıkar. Her bölüm çözülebilir.\n\nHer bölüm süreye karşı oynanır ve hedeflenecek bir hamle sayısı, yani HEDEF gösterir. Bölüm başına üç geri alma ve bir ek boş tüp (+ TÜP) hakkın vardır; ikisini de kullanmadan bitirirsen puan çarpanın artar. Süre bittiğinde ya da hiç döküm kalmayıp iki yardım da tükendiğinde oyun biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Tap a tube to lift it, then tap the tube to pour into. Tap the lifted tube again, or an empty spot, to put it back.",
+      "tr": "Bir tüpe dokunup kaldır, sonra dökeceğin tüpe dokun. Geri koymak için kaldırdığın tüpe ya da boş bir yere dokun."
+    },
+    {
+      "en": "Water pours only onto the same colour or into an empty tube. A full or corked tube takes nothing more.",
+      "tr": "Su yalnızca aynı rengin üstüne ya da boş tüpe dökülür. Dolu ya da tıpalı tüpe bir şey eklenmez."
+    },
+    {
+      "en": "Fill every tube with four layers of one colour before the bar at the top runs out to clear the level.",
+      "tr": "Üstteki süre çubuğu bitmeden her tüpü tek renkten dört katla doldurursan bölüm biter."
+    },
+    {
+      "en": "If no pour is possible, the game tells you to undo or add a tube. With no helps left it says STUCK! and the game is over.",
+      "tr": "Hiç döküm kalmazsa oyun geri almanı ya da tüp eklemeni söyler. Yardım hakkın kalmamışsa SIKIŞTIN! yazar ve oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the yellow frame between tubes; Space or Enter lifts and pours. Z, U or Backspace undoes, X or T adds the extra tube. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD sarı çerçeveyi tüpler arasında gezdirir; Boşluk ya da Enter kaldırır ve döker. Z, U ya da Backspace geri alır, X ya da T ek tüpü ekler. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap tubes to lift and pour. UNDO and + TUBE are the two buttons at the bottom.",
+      "tr": "Kaldırmak ve dökmek için tüplere dokun. GERİ AL ve + TÜP alttaki iki düğmedir."
+    },
+    "mouse": {
+      "en": "Click tubes and buttons the same way.",
+      "tr": "Tüplere ve düğmelere aynı şekilde tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Keep an empty tube empty as long as you can. It is the only place any colour can go, so fill it only when that pour completes a tube or frees one.",
+      "tr": "Boş tüpü olabildiğince boş tut. Her rengin gidebileceği tek yer orası; ancak bir tüpü tamamlayacak ya da boşaltacak bir döküm için kullan."
+    },
+    {
+      "en": "Pour onto matching tops before anything else. Those moves cost no space and often uncover the next colour you need.",
+      "tr": "Önce aynı renkli üstlere dök. Bu hamleler yer harcamaz ve çoğu zaman ihtiyacın olan sonraki rengi açığa çıkarır."
+    },
+    {
+      "en": "A clean clear, with no undo and no extra tube, raises the MULTIPLIER by one up to ×5; using either help sends it back to ×1. Because it multiplies the whole level score, a clean streak is worth more than any single bonus.",
+      "tr": "Geri alma ve ek tüp kullanmadan bitirilen TEMİZ bölüm ÇARPAN'ı bir artırır, en çok ×5'e kadar; iki yardımdan birini kullanmak onu ×1'e indirir. Çarpan bütün bölüm puanını katladığı için temiz bir seri her tek bonustan değerlidir."
+    },
+    {
+      "en": "Helps refill every level: three undos and one extra tube. If a level is going badly anyway, spend them rather than run out of time.",
+      "tr": "Yardımlar her bölümde yenilenir: üç geri alma ve bir ek tüp. Bölüm zaten kötü gidiyorsa süreyi kaçırmaktansa onları kullan."
+    }
+  ],
+  "features": [
+    {
+      "en": "Ten liquids, each with its own symbol",
+      "tr": "Her biri kendi sembolünü taşıyan on sıvı"
+    },
+    {
+      "en": "Levels from three to ten colours, all solvable",
+      "tr": "Üç ile on renk arasında, hepsi çözülebilir bölümler"
+    },
+    {
+      "en": "PAR, time bonus and a ×5 multiplier for clean clears",
+      "tr": "HEDEF, süre bonusu ve temiz bitişlere ×5'e kadar çarpan"
+    },
+    {
+      "en": "Three undos and one extra tube on every level",
+      "tr": "Her bölümde üç geri alma ve bir ek tüp"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A cleared level is worth 100 + 50 × the level, plus 5 for every second left and 30 for every move under PAR, and the total is multiplied by your MULTIPLIER.",
+        "tr": "Biten bölüm 100 + 50 × bölüm puan eder; buna kalan her saniye için 5, HEDEF'in altındaki her hamle için 30 puan eklenir ve toplam ÇARPAN ile çarpılır."
+      }
+    },
+    {
+      "q": {
+        "en": "How much time does a level give?",
+        "tr": "Bir bölümde ne kadar sürem var?"
+      },
+      "a": {
+        "en": "It is set from the number of colours: 53 seconds on level 1, more on bigger levels. Under 10 seconds the clock ticks and HURRY UP! appears; at zero it is TIME'S UP!.",
+        "tr": "Süre renk sayısına göre belirlenir: 1. bölümde 53 saniye, büyük bölümlerde daha fazla. 10 saniyenin altında saat tıkırdar ve ACELE ET! yazar; sıfırda SÜRE BİTTİ! olur."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play if I find some colours hard to tell apart?",
+        "tr": "Bazı renkleri ayırt etmekte zorlanıyorsam oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Every layer carries its colour's white symbol, so two similar shades never look the same. You can solve every level by the symbols alone.",
+        "tr": "Evet. Her katta o rengin beyaz sembolü durur, bu yüzden birbirine yakın iki ton asla aynı görünmez. Her bölümü yalnızca sembollere bakarak çözebilirsin."
+      }
+    }
+  ]
+}

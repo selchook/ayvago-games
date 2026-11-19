@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Block Burst is a block-fitting puzzle on an 8×8 board. Three pieces wait in the tray below it: straight bars one to five blocks long, 2×2 and 3×3 squares, 2×3 slabs, small and large corners, and short S, T and L shapes. You drag each one onto the board, and any row or column that fills from end to end bursts and frees its squares. Nothing falls and there is no clock; the only pressure is space.\n\nPieces cannot be rotated, so every shape has to go in exactly as it arrives. A new set of three is dealt only after all three are placed, and the game ends as soon as none of the pieces left in the tray fits anywhere. When it deals a set, the game tries to include at least one piece that fits.\n\nEvery 1,500 points raises the level. With each level the big pieces turn up more often: five-block bars, 3×3 squares and wide corners keep getting more common until level 7.",
+    "tr": "Blok Patlaması, 8×8'lik bir tahtada oynanan bir yerleştirme bulmacası. Tahtanın altındaki tepside üç parça bekler: birden beşe kadar bloklu düz çubuklar, 2×2 ve 3×3 kareler, 2×3'lük dikdörtgenler, küçük ve büyük köşeler, kısa S, T ve L biçimleri. Her parçayı sürükleyip tahtaya bırakırsın; baştan sona dolan her satır ya da sütun patlar ve kareleri boşalır. Yukarıdan parça düşmez, süre de yoktur; tek baskı yerin daralmasıdır.\n\nParçalar döndürülemez, her biri nasıl geldiyse öyle yerleşmek zorundadır. Üçü de tahtaya inmeden yeni parça gelmez ve tepside kalan parçaların hiçbiri sığmadığı anda oyun biter. Oyun yeni üçlüyü dağıtırken içine en az bir sığan parça koymaya çalışır.\n\nHer 1.500 puanda seviye atlarsın. Seviye yükseldikçe büyük parçalar sıklaşır: beş bloklu çubuklar, 3×3 kareler ve geniş köşeler 7. seviyeye kadar giderek daha sık gelir."
+  },
+  "howToPlay": [
+    {
+      "en": "Drag a piece out of the tray. It floats a little above your finger, a faint copy shows where it will land, and every row or column it would complete lights up.",
+      "tr": "Tepsiden bir parça sürükle. Parça parmağının biraz üstünde durur, silik bir kopyası ineceği yeri gösterir ve tamamlayacağı her satır ya da sütun parlar."
+    },
+    {
+      "en": "Let go over free squares to place it. If it does not fit there, it slides back to the tray.",
+      "tr": "Boş karelerin üstünde bırakınca parça yerleşir. Oraya sığmıyorsa tepsiye geri kayar."
+    },
+    {
+      "en": "Fill a row or column to burst it. One, two or three lines at once are cheered with NICE!, GREAT! or AMAZING!",
+      "tr": "Bir satırı ya da sütunu doldurunca patlar. Aynı anda bir, iki ya da üç satır patlatmak GÜZEL!, HARİKA! ya da MUHTEŞEM! yazısıyla kutlanır."
+    },
+    {
+      "en": "Place all three pieces to get a new set. Pieces that fit nowhere are dimmed in the tray; when every remaining piece is dimmed, NO ROOM LEFT! ends the game.",
+      "tr": "Üç parçayı da yerleştirince yeni üçlü gelir. Hiçbir yere sığmayan parçalar tepside soluklaşır; kalan parçaların hepsi soluklaşınca YER KALMADI! yazar ve oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "X, Shift or Tab selects the next piece in the tray, the arrows or WASD move it over the board, and Space, Enter or Z places it. Esc or P pauses.",
+      "tr": "X, Shift ya da Tab tepsideki sıradaki parçayı seçer, oklar ya da WASD onu tahtada gezdirir, Boşluk, Enter ya da Z yerleştirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Press a piece in the tray, drag it over the board and lift your finger to drop it.",
+      "tr": "Tepsideki bir parçaya bas, tahtanın üstüne sürükle ve parmağını kaldırarak bırak."
+    }
+  },
+  "tips": [
+    {
+      "en": "Aim for several lines with one piece. One line scores 100, two at once 300, three 600 and four 1,000, so a double is worth more than two singles.",
+      "tr": "Tek parçayla birden fazla satır patlatmaya çalış. Bir satır 100, aynı anda iki satır 300, üç satır 600, dört satır 1.000 puan eder; yani bir ikili, iki ayrı tekliden değerlidir."
+    },
+    {
+      "en": "Every burst raises the COMBO, and the combo multiplies the line points. It survives two placements without a burst and resets on the third, so keep a nearly full line ready to finish.",
+      "tr": "Her patlama KOMBO'yu artırır ve kombo satır puanını katlar. Patlamasız iki yerleştirmeye dayanır, üçüncüsünde sıfırlanır; bu yüzden bitirmeye hazır, neredeyse dolu bir satırı hep elinde tut."
+    },
+    {
+      "en": "Keep an open 3×3 area and a free full-length lane for as long as you can. The big square and the five-block bar are the pieces that usually end a game.",
+      "tr": "Olabildiğince uzun süre boş bir 3×3 alan ve uçtan uca boş bir şerit bırak. Oyunu çoğunlukla bitiren parçalar büyük kare ile beş bloklu çubuktur."
+    },
+    {
+      "en": "Avoid single holes. A lone empty square can only take the one-block piece, and that piece gets rarer as the level climbs.",
+      "tr": "Tek kare boşluk bırakma. Yalnız kalmış bir kareye ancak tek bloklu parça girer ve o parça seviye yükseldikçe seyrekleşir."
+    },
+    {
+      "en": "Think about the order: place first the piece that bursts a line, so the other two have more room.",
+      "tr": "Sırayı düşün: önce satır patlatan parçayı koy, böylece diğer ikisine daha çok yer kalır."
+    }
+  ],
+  "features": [
+    {
+      "en": "An 8×8 board with a tray of three pieces",
+      "tr": "8×8'lik tahta ve üç parçalık tepsi"
+    },
+    {
+      "en": "A landing preview that lights up the lines a piece will burst",
+      "tr": "Parçanın patlatacağı satırları önceden yakan iniş önizlemesi"
+    },
+    {
+      "en": "Combo multiplier and a 1,000-point bonus for emptying the board",
+      "tr": "Kombo çarpanı ve tahtayı tamamen boşaltmaya 1.000 puan bonus"
+    },
+    {
+      "en": "A new level every 1,500 points, with bigger pieces",
+      "tr": "Her 1.500 puanda yeni seviye ve daha büyük parçalar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each placed piece scores 1 point per block. Lines score 100, 300, 600 or 1,000 for one to four at once, times the combo. Emptying the whole board adds 1,000.",
+        "tr": "Yerleştirilen her parça blok başına 1 puan getirir. Aynı anda bir ile dört satır 100, 300, 600 ya da 1.000 puan eder ve komboyla çarpılır. Tahtayı tamamen boşaltmak 1.000 puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I rotate a piece?",
+        "tr": "Parçayı döndürebilir miyim?"
+      },
+      "a": {
+        "en": "No. Pieces are placed exactly as they appear in the tray, which is why leaving room for awkward shapes matters.",
+        "tr": "Hayır. Parçalar tepside göründükleri gibi yerleşir; zor biçimlere yer bırakmak bu yüzden önemlidir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there a time limit?",
+        "tr": "Süre sınırı var mı?"
+      },
+      "a": {
+        "en": "No. You can think as long as you like about every piece. A game ends only when none of the pieces in the tray fits on the board.",
+        "tr": "Hayır. Her parça için istediğin kadar düşünebilirsin. Oyun yalnızca tepsideki parçaların hiçbiri tahtaya sığmadığında biter."
+      }
+    }
+  ]
+}

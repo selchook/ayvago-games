@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Traffic Racer puts you on a four-lane highway in heavy traffic, going the same way as everyone else but a lot faster. Cars and motorbikes keep appearing ahead, and you weave between them for as long as your car, and your fuel, hold out.\n\nTwo things end a run. Hitting another vehicle costs one of your three lives (four on Easy) and knocks your speed down. And the tank is always draining: drive over red fuel cans for +45 fuel before the gauge runs dry, or it's OUT OF FUEL! The BOOST pedal makes you about a third faster and doubles every point you earn, but burns fuel 1.7 times as fast. BRAKE drops you to around half speed when a gap closes up.\n\nEvery 900 metres a new level begins and your cruising speed rises. Traffic gets denser; from level 2 some cars flash their indicators and change lanes, from level 3 cones and barrels block the road, and from level 4 oil slicks send you skidding. Passing a car closely is a NEAR MISS, and near misses in a row build a COMBO.",
+    "tr": "Trafik Yarışçısı seni dört şeritli, trafiği yoğun bir otoyola çıkarır; herkesle aynı yöne gidiyorsun ama çok daha hızlı. Önünde durmadan arabalar ve motosikletler belirir, araban ve benzinin dayandığı sürece aralarından sıyrılırsın.\n\nOyunu iki şey bitirir. Başka bir araca çarpmak üç canından birini (Kolay'da dört) götürür ve hızını düşürür. Depo da sürekli boşalır: gösterge sıfıra inmeden kırmızı benzin bidonlarının üstünden geçip +45 benzin al, yoksa BENZİN BİTTİ! TURBO pedalı seni üçte bir kadar hızlandırır ve kazandığın her puanı ikiye katlar, ama benzini 1,7 kat hızlı yakar. Önün kapandığında FREN hızını yaklaşık yarıya düşürür.\n\nHer 900 metrede yeni bir seviye başlar ve seyir hızın artar. Trafik sıklaşır; 2. seviyeden itibaren bazı arabalar sinyal verip şerit değiştirir, 3. seviyede yola dubalar ve variller çıkar, 4. seviyede yağ birikintileri arabayı kaydırır. Bir arabanın yanından sıyırarak geçmek KIL PAYI sayılır; art arda kıl payı geçişler KOMBO yapar."
+  },
+  "howToPlay": [
+    {
+      "en": "Pick Easy or Normal on the menu, plus ARROWS, WHEEL or TILT on a touch screen, and press PLAY. You set off after 3-2-1 GO!",
+      "tr": "Menüde Kolay ya da Normal'i, dokunmatik ekrandaysan OKLAR, DİREKSİYON ya da EĞİM'i seçip OYNA'ya bas. 3-2-1 GAZLA! ile yola çıkarsın."
+    },
+    {
+      "en": "Steer around slower traffic. A car with flashing orange indicators is about to move into the next lane.",
+      "tr": "Yavaş giden araçların etrafından dolaş. Turuncu sinyalleri yanıp sönen araba yan şeride geçmek üzeredir."
+    },
+    {
+      "en": "Hold BOOST for speed and double points, and BRAKE when the way ahead is blocked.",
+      "tr": "Hız ve çift puan için TURBO'yu basılı tut, önün kapanınca FREN'e bas."
+    },
+    {
+      "en": "Drive over coins and fuel cans. The fuel gauge sits at the top left; below a quarter the screen edges pulse red and LOW FUEL! appears.",
+      "tr": "Altınların ve benzin bidonlarının üstünden geç. Benzin göstergesi sol üstte; dörtte birin altına inince ekranın kenarları kırmızı yanıp söner ve BENZİN AZ! uyarısı çıkar."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D steer. ↑, W, Space, Z or Enter boosts; ↓ or S brakes. Esc or P pauses.",
+      "tr": "← → ya da A / D yönlendirir. ↑, W, Boşluk, Z ya da Enter turbo yapar; ↓ ya da S fren yapar. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "The left thumb steers with arrow buttons, an on-screen wheel or by tilting the phone. The orange BOOST pedal and the red BRAKE pedal are under the right thumb.",
+      "tr": "Sol başparmak ok düğmeleriyle, ekrandaki direksiyonla ya da telefonu eğerek yönlendirir. Turuncu TURBO ve kırmızı FREN pedalları sağ başparmağın altında."
+    }
+  },
+  "tips": [
+    {
+      "en": "A near miss pays 50 points times your combo, up to ×5, and twice that while boosting: 500 for a boosted fifth in a row. The combo fades three seconds after your last near miss, so keep threading cars to hold it.",
+      "tr": "Kıl payı geçiş, 50 puanın kombo ile çarpımını getirir; kombo en fazla ×5'tir ve turbo açıkken puan ikiye katlanır: turboyla art arda beşinci geçiş 500 puan. Kombo son kıl payı geçişten üç saniye sonra söner; korumak için arabaların arasından geçmeye devam et."
+    },
+    {
+      "en": "Boost when the tank is well filled and the road ahead is open. Below half a tank, cruise until the next fuel can shows up.",
+      "tr": "Turboyu depo doluyken ve önün açıkken kullan. Depo yarının altına inince bir sonraki benzin bidonu görünene kadar normal hızda git."
+    },
+    {
+      "en": "Cones and barrels don't cost a life, but each one takes 8 fuel and a quarter of your speed. Oil throws the car toward the middle of the road for over half a second, so never cross it right beside traffic.",
+      "tr": "Dubalar ve variller can götürmez ama her biri 8 benzin ve hızının dörtte birini alır. Yağ, arabayı yarım saniyeden uzun bir süre yolun ortasına doğru kaydırır; hemen yanında araç varken asla üstünden geçme."
+    },
+    {
+      "en": "After a crash the car blinks for about two seconds and near misses don't count, so use that time to find a clear lane.",
+      "tr": "Kazadan sonra araba yaklaşık iki saniye yanıp söner ve bu sırada kıl payı geçişler sayılmaz; o süreyi boş bir şerit bulmak için kullan."
+    }
+  ],
+  "features": [
+    {
+      "en": "A four-lane highway of cars and motorbikes moving at different speeds",
+      "tr": "Farklı hızlarda giden arabalar ve motosikletlerle dört şeritli bir otoyol"
+    },
+    {
+      "en": "BOOST, BRAKE and a fuel gauge to manage",
+      "tr": "Yönetilecek TURBO, FREN ve benzin göstergesi"
+    },
+    {
+      "en": "Lane-changing cars, cones, barrels and oil as the levels rise",
+      "tr": "Seviyeler arttıkça şerit değiştiren arabalar, dubalar, variller ve yağ"
+    },
+    {
+      "en": "Arrow, wheel or tilt steering on touch screens",
+      "tr": "Dokunmatik ekranda ok, direksiyon ya da eğimle sürüş"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "One point for every 10 metres driven, 25 per coin, 20 per fuel can and 50 × combo for each near miss. Boosting doubles both the distance points and the near-miss points.",
+        "tr": "Gidilen her 10 metre 1 puan, her altın 25, her benzin bidonu 20, her kıl payı geçiş de 50 × kombo puandır. Turbo hem mesafe puanını hem kıl payı puanını ikiye katlar."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives four lives, a tank that drains more slowly, more frequent fuel cans, a smaller speed rise per level and lighter traffic. Lane changers, obstacles and oil arrive later, at levels 3, 4 and 6. Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da dört canın olur; depo daha yavaş boşalır, benzin bidonları daha sık gelir, her seviyede hız daha az artar ve trafik daha seyrektir. Şerit değiştiren arabalar, engeller ve yağ daha geç, 3., 4. ve 6. seviyede gelir. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held upright. Tilt steering uses the motion sensor; on phones that ask for permission, the game shows a TURN TILT ON button first.",
+        "tr": "Evet, telefonu dik tutarak. Eğimle sürüş hareket sensörünü kullanır; izin isteyen telefonlarda oyun önce EĞİMİ AÇ düğmesini gösterir."
+      }
+    }
+  ]
+}

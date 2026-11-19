@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Shooting Gallery brings a fairground stall to the screen: a wooden counter, red curtains and three rows of tin targets sliding past on sticks. Round targets run along the back, ducks through the middle and more ducks bob along on the water at the front, each row faster than the one behind it.\n\nEvery round lasts 30 seconds and sets a goal: 180 points in round 1 and 110 more in each round after. Reaching the goal does not end the round, so you can keep adding points until the clock stops; if the goal is still out of reach at zero, it is TIME UP and the game is over. The rifle holds six shots, and a reload takes just under a second.\n\nThe stall changes as you go. All rows slide 14% faster each round. From round 2, small bullseyes worth 60 points race along the back row, and from round 3 the back-row targets drop behind the grass now and then. Hits in a row raise a multiplier, and an accuracy bonus rewards clean shooting at the end of every cleared round.",
+    "tr": "Atış Poligonu bir panayır tezgâhını ekrana taşıyor: ahşap tezgâh, kırmızı perdeler ve çubuklar üstünde kayan üç sıra teneke hedef. Arkada yuvarlak hedefler, ortada ördekler, önde de suyun üstünde sallanan ördekler geçer; her sıra arkasındakinden hızlıdır.\n\nHer tur 30 saniye sürer ve bir hedef koyar: 1. turda 180 puan, sonraki her turda 110 puan daha. Hedefe ulaşmak turu bitirmez; süre dolana kadar puan eklemeye devam edebilirsin. Süre sıfırlandığında hedefe hâlâ ulaşamadıysan SÜRE BİTTİ yazar ve oyun biter. Tüfek altı mermi alır, şarjör doldurmak bir saniyeden biraz kısa sürer.\n\nİlerledikçe tezgâh değişir. Her turda bütün sıralar %14 hızlanır. 2. turdan itibaren arka sırada 60 puanlık küçük, hızlı hedefler koşar; 3. turdan itibaren arka sıradaki hedefler arada bir çimenin arkasına saklanır. Art arda isabetler çarpanı yükseltir, geçilen her turun sonunda da isabet bonusu temiz atışı ödüllendirir."
+  },
+  "howToPlay": [
+    {
+      "en": "Read the goal on the ROUND screen and wait for GO!.",
+      "tr": "TUR ekranındaki hedef puanı oku ve BAŞLA!'yı bekle."
+    },
+    {
+      "en": "Shoot the ducks and targets as they slide past. A hit flips the target over and drops it out of sight.",
+      "tr": "Kayıp giden ördekleri ve hedefleri vur. Vurulan hedef ters döner ve gözden kaybolur."
+    },
+    {
+      "en": "Watch the bullets on the counter and reload before they run out; an empty rifle reloads by itself.",
+      "tr": "Tezgâhtaki mermileri takip et ve bitmeden doldur; boşalan tüfek kendiliğinden dolar."
+    },
+    {
+      "en": "Hit a gold duck to add 3 seconds to the clock.",
+      "tr": "Saate 3 saniye eklemek için altın ördeği vur."
+    },
+    {
+      "en": "Pass the goal before time runs out. When the clock stops, the next round starts with a higher goal and a full rifle.",
+      "tr": "Süre bitmeden hedefi geç. Saat durduğunda sonraki tur daha yüksek bir hedef ve dolu bir tüfekle başlar."
+    }
+  ],
+  "controls": {
+    "mouse": {
+      "en": "Move the crosshair with the mouse and click to shoot. Click the wooden counter to reload.",
+      "tr": "Nişangâhı fareyle oynat, ateş etmek için tıkla. Doldurmak için ahşap tezgâha tıkla."
+    },
+    "keyboard": {
+      "en": "Arrow keys or WASD move the crosshair, Space, Z or Enter fire, and R, X or Shift reload. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD nişangâhı oynatır; Boşluk, Z ya da Enter ateş eder; R, X ya da Shift şarjörü doldurur. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a target to shoot at that spot, and tap the wooden counter at the bottom to reload.",
+      "tr": "Ateş etmek için hedefe dokun, doldurmak için alttaki ahşap tezgâha dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "The multiplier is ×2 from the fourth hit in a row, ×3 from the eighth and ×4 from the twelfth. One miss drops it back to ×1, so skip shots you are unsure of.",
+      "tr": "Çarpan art arda dördüncü isabetten itibaren ×2, sekizinciden itibaren ×3, on ikinciden itibaren ×4 olur. Tek bir ıska onu ×1'e düşürür; emin olmadığın atışları yapma."
+    },
+    {
+      "en": "Reload in quiet moments rather than waiting for EMPTY!. A forced reload while targets line up costs you hits.",
+      "tr": "BOŞ! yazısını bekleme, sakin anlarda doldur. Hedefler sıralanmışken zorunlu doldurma isabet kaybettirir."
+    },
+    {
+      "en": "Where targets overlap, the shot always hits the one in the nearest row. Back-row targets hidden behind the grass cannot be hit at all.",
+      "tr": "Hedefler üst üste geldiğinde atış her zaman en öndeki sıradakini vurur. Çimenin arkasına saklanmış arka sıra hedefleri hiç vurulamaz."
+    },
+    {
+      "en": "A bullseye at ×4 is worth 240, the biggest single hit in the game. From round 2, save a streak for the back row.",
+      "tr": "×4 çarpanla vurulan küçük hedef 240 puan eder; oyundaki en büyük tek isabet budur. 2. turdan itibaren serini arka sıra için sakla."
+    }
+  ],
+  "features": [
+    {
+      "en": "Three rows of ducks and targets at different speeds",
+      "tr": "Farklı hızlarda kayan üç sıra ördek ve hedef"
+    },
+    {
+      "en": "A hit-streak multiplier up to ×4",
+      "tr": "×4'e kadar çıkan isabet serisi çarpanı"
+    },
+    {
+      "en": "Gold ducks that add three seconds",
+      "tr": "Üç saniye kazandıran altın ördekler"
+    },
+    {
+      "en": "Higher goals and faster rows every round",
+      "tr": "Her turda daha yüksek hedef ve daha hızlı sıralar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Ducks are 10, 15 or 20, ducks with a target painted on are 30, the gold duck 25, red targets 20 to 30 and the bullseye 60, all times the streak multiplier. A cleared round adds your hit percentage times the round number.",
+        "tr": "Ördekler 10, 15 ya da 20, üstünde hedef çizili ördekler 30, altın ördek 25, kırmızı hedefler 20 ile 30, küçük hedef 60 puandır; hepsi seri çarpanıyla çarpılır. Geçilen tur, isabet yüzdeni tur numarasıyla çarpıp ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens after I reach the goal?",
+        "tr": "Hedefe ulaşınca ne oluyor?"
+      },
+      "a": {
+        "en": "ROUND CLEAR! flashes, but the clock keeps running and every hit still counts. When it reaches zero you get the accuracy bonus and the next round starts with 30 new seconds.",
+        "tr": "TUR TAMAM! yazar ama süre işlemeye devam eder ve her isabet yine sayılır. Süre sıfırlanınca isabet bonusunu alırsın, sonraki tur 30 yeni saniyeyle başlar."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held sideways. You tap straight on the target you want to hit, so there is no crosshair to steer.",
+        "tr": "Evet, telefonu yan tutarak. Vurmak istediğin hedefe doğrudan dokunursun; yönetmen gereken bir nişangâh yok."
+      }
+    }
+  ]
+}

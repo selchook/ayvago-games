@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Penalty Kick is a shoot-out cup played from behind the penalty spot. Your Ayvago character takes your kicks, and when it is the rival's turn you are the one in goal. Each match is five kicks a side, taken in turn, and it stops as soon as one side can no longer be caught. Level after five each, it goes to sudden death: one kick each until one scores and the other does not.\n\nThe cup has three knockout rounds, a quarter-final, a semi-final and a final, each against a different rival character. Every round the rival's keeper reacts sooner, guesses better and covers the goal faster, while their kickers aim for the corners more often, miss less and bend the ball more. Lose a match and you are knocked out; win all three and you are the champion.\n\nThe game can also be played online against a friend: a single shoot-out where both of you choose at the same time, the shooter the spot and the keeper the dive.",
+    "tr": "Penaltı Atışı, penaltı noktasının arkasından izlenen bir seri penaltı kupası. Senin şutlarını Ayvago karakterin çeker, sıra rakibe geçince kaleye sen geçersin. Her maçta iki taraf sırayla beşer penaltı atar; bir taraf artık yakalanamayacak duruma gelince maç hemen biter. Beşer atıştan sonra eşitlik varsa ANİ ÖLÜM başlar: biri atıp diğeri kaçırana kadar birer penaltı.\n\nKupa üç eleme turundan oluşur: ÇEYREK FİNAL, YARI FİNAL ve FİNAL, her birinde başka bir rakip karakter. Her turda rakip kaleci daha erken tepki verir, daha iyi tahmin eder ve kaleyi daha hızlı kapatır; rakibin şutörleri de köşelere daha sık nişan alır, daha az kaçırır ve topa daha çok falso verir. Bir maç kaybedersen ELENDİN; üçünü de kazanırsan ŞAMPİYON olursun.\n\nOyun bir arkadaşa karşı çevrimiçi de oynanır: tek bir seri penaltı, iki taraf aynı anda seçer; şutör köşesini, kaleci atlayacağı yeri."
+  },
+  "howToPlay": [
+    {
+      "en": "TAKE YOUR SHOT! Swipe toward the goal: the direction picks the side, the length picks the height, and a bent swipe curls the ball. You can also just tap a spot in the goal.",
+      "tr": "ŞUTUNU ÇEK! Kaleye doğru kaydır: yön tarafı, uzunluk yüksekliği seçer, eğri bir kaydırma topa falso verir. Kalede bir noktaya dokunarak da şut çekebilirsin."
+    },
+    {
+      "en": "SAVE IT! While the rival runs up, move your keeper toward where you expect the ball, then keep correcting as it flies.",
+      "tr": "KALEYİ KORU! Rakip topa koşarken kalecini topun gideceğini düşündüğün yere götür, top havadayken de düzeltmeye devam et."
+    },
+    {
+      "en": "The two chips under the score show each side's goals and its last five kicks. Win the shoot-out to go through to the next round.",
+      "tr": "Skorun altındaki iki kutu her iki tarafın gollerini ve son beş atışını gösterir. Seriyi kazanırsan bir sonraki tura geçersin."
+    },
+    {
+      "en": "Win the quarter-final, the semi-final and the final to lift the cup.",
+      "tr": "Kupayı kaldırmak için çeyrek finali, yarı finali ve finali kazan."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Shooting: arrows or WASD move the target, X switches curl between off, right and left, and Space or Z shoots. Keeping: arrows or WASD move the keeper (online, they pick a dive zone and Space or Enter confirms it). Esc or P pauses.",
+      "tr": "Şut: oklar ya da WASD hedefi kaydırır, X falsoyu kapalı, sağa ve sola çevirir, Boşluk ya da Z şutu çeker. Kalecilik: oklar ya da WASD kaleciyi hareket ettirir (çevrimiçinde atlama bölgesini seçer, Boşluk ya da Enter onaylar). Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Shoot by swiping from anywhere on the screen or tapping the goal. In goal, tap where to dive or swipe sideways and upward to steer the keeper; on the goal itself your finger maps straight onto the goal mouth.",
+      "tr": "Şutu ekranın herhangi bir yerinden kaydırarak ya da kaleye dokunarak çek. Kalede atlayacağın yere dokun ya da kaleciyi yana ve yukarı kaydırarak yönlendir; kalenin üzerinde parmağın doğrudan kale ağzındaki noktaya karşılık gelir."
+    }
+  },
+  "tips": [
+    {
+      "en": "A top-corner goal is worth 200 instead of 100. Aim just inside the post and under the bar, not on them: hitting the woodwork is a miss.",
+      "tr": "DOKSAN'a giden gol 100 yerine 200 puandır. Direğin ve üst direğin hemen içine nişan al, tam üstüne değil: direkten dönen top kaçmış sayılır."
+    },
+    {
+      "en": "A faster swipe sends the ball in quicker but scatters it more. A smooth, medium swipe is the safer choice for a shot near the post.",
+      "tr": "Hızlı kaydırma topu daha çabuk gönderir ama daha çok saptırır. Direğe yakın bir şut için orta hızda, düzgün bir kaydırma daha güvenlidir."
+    },
+    {
+      "en": "Curl makes the keeper's guess worse. On a tight round, a bent shot to the side the keeper is not leaning toward often beats a hard straight one.",
+      "tr": "Falso kalecinin tahminini bozar. Zor turlarda, kalecinin eğilmediği tarafa falsolu bir şut çoğu zaman sert ve düz bir şuttan daha etkilidir."
+    },
+    {
+      "en": "As keeper, commit early. Moving during the run-up gives you a head start that reacting to the ball in flight cannot make up, especially against the final's corner shots.",
+      "tr": "Kalecilikte erken karar ver. Rakip koşarken harekete geçmek, top havadayken tepki vermenin kazandıramayacağı bir avantaj sağlar; özellikle finaldeki köşe şutlarına karşı."
+    }
+  ],
+  "features": [
+    {
+      "en": "A three-round cup with sudden death after five kicks each",
+      "tr": "Beşer atıştan sonra ani ölümlü, üç turluk kupa"
+    },
+    {
+      "en": "Swipe shooting with curl and diving saves",
+      "tr": "Falsolu kaydırma şutları ve uçan kurtarışlar"
+    },
+    {
+      "en": "Your own character as kicker and keeper, a new rival every round",
+      "tr": "Şutör ve kaleci olarak kendi karakterin, her turda yeni bir rakip"
+    },
+    {
+      "en": "Online shoot-outs against a friend",
+      "tr": "Bir arkadaşa karşı çevrimiçi seri penaltılar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A goal is 100 points, or 200 in the top corner. A save as keeper is 150 and a rival kick that goes wide, over or off the post is 50. Winning a match adds 300 times the round number.",
+        "tr": "Gol 100 puan, doksana giderse 200 puandır. Kaleciyken yaptığın kurtarış 150, rakibin auta, üstten auta ya da direğe giden şutu 50 puan getirir. Maç kazanmak tur numarası çarpı 300 puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "How does the online match work?",
+        "tr": "Çevrimiçi maç nasıl oynanıyor?"
+      },
+      "a": {
+        "en": "You take turns, five kicks each, then sudden death. For every kick the shooter aims and the keeper picks one of six dive zones, both within 10 seconds, and the kick plays out once both have chosen.",
+        "tr": "Sırayla beşer penaltı atılır, sonra ani ölüm gelir. Her atışta şutör nişan alır, kaleci altı atlama bölgesinden birini seçer; ikisi de 10 saniye içinde. İki taraf da seçince atış oynanır."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes. It runs in portrait and both shooting and keeping are done with one finger.",
+        "tr": "Evet. Dikey ekranda oynanır; hem şut hem kalecilik tek parmakla yapılır."
+      }
+    }
+  ]
+}

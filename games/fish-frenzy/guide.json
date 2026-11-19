@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Fish Frenzy is an eat-or-be-eaten game played sideways across a coral reef. You start each level as a small fish among other fish of every size. Anything clearly smaller than you is food; anything clearly bigger than you glows red, and touching it costs a life. Fish close to your own size are left alone by both sides.\n\nEvery fish you eat makes you a little larger, which turns yesterday's threats into today's meals. The GROWTH bar at the top shows how close you are to the size that clears the level. Reach it and the reef empties, you shrink back to your starting size and the next level begins, with a slightly larger target and a sea that holds more fish, more of them big.\n\nFrom level 2 the reef changes. Small fish dart away when you approach, pufferfish swell up as you come near, and sharks start to charge across the screen after a red warning on the side they come from. From level 3 a shark also bends toward you as it passes. You have three lives for the whole game.",
+    "tr": "Balık Çılgınlığı, bir mercan resifinde yan görünümden oynanan bir ye ya da yem ol oyunu. Her bölüme her boydan balığın arasında küçük bir balık olarak başlarsın. Senden belirgin şekilde küçük olan her şey yemdir; senden belirgin şekilde büyük olan her şey kırmızı parlar ve ona değmek bir cana mal olur. Seninle aşağı yukarı aynı boydaki balıklar ise iki taraf için de dokunulmazdır.\n\nYediğin her balık seni biraz büyütür; dünün tehlikesi bugünün yemeği olur. Üstteki BÜYÜME çubuğu, bölümü bitirecek boya ne kadar yaklaştığını gösterir. O boya ulaşınca resif boşalır, başlangıç boyuna geri küçülürsün ve sıradaki bölüm başlar; hedef biraz daha büyük, deniz daha kalabalıktır ve büyük balıklar daha sık gelir.\n\n2. bölümden itibaren resif değişir. Küçük balıklar yaklaştığında kaçar, balon balıkları sen yaklaştıkça şişer ve köpekbalıkları, geldikleri tarafta kırmızı bir uyarı belirdikten sonra ekranı boydan boya geçer. 3. bölümden sonra köpekbalığı geçerken sana doğru da kıvrılır. Bütün oyun için üç canın var."
+  },
+  "howToPlay": [
+    {
+      "en": "Swim around the reef and eat fish smaller than you by touching them.",
+      "tr": "Resifte yüz ve senden küçük balıklara dokunarak onları ye."
+    },
+    {
+      "en": "Keep away from anything with a red glow. A hit knocks you back and leaves you blinking and safe for about two seconds.",
+      "tr": "Kırmızı parlayan her şeyden uzak dur. Bir isabet seni geriye savurur, yaklaşık iki saniye yanıp söner ve korunursun."
+    },
+    {
+      "en": "Fill the GROWTH bar to clear the level. You then start the next one small again.",
+      "tr": "Bölümü bitirmek için BÜYÜME çubuğunu doldur. Ardından sıradaki bölüme yine küçük başlarsın."
+    },
+    {
+      "en": "When a red ! and SHARK! appear at the edge, get out of that row before the shark arrives.",
+      "tr": "Kenarda kırmızı bir ! ve KÖPEKBALIĞI! yazısı belirdiğinde, köpekbalığı gelmeden o hizadan çekil."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or W A S D swim in eight directions. Esc or P pauses.",
+      "tr": "Ok tuşları ya da W A S D ile sekiz yöne yüzersin. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag: a stick appears under your thumb, and the further you push, the faster you swim.",
+      "tr": "Herhangi bir yere dokun ve sürükle: başparmağının altında bir çubuk belirir; ne kadar itersen o kadar hızlı yüzersin."
+    }
+  },
+  "tips": [
+    {
+      "en": "Bigger meals are worth more points and grow you faster, but they swim close to your own size. Eat the larger safe fish first and pick up the tiny ones on the way.",
+      "tr": "Büyük lokmalar hem daha çok puan getirir hem seni daha hızlı büyütür, ama boyları seninkine yakındır. Önce güvenli büyük balıkları ye, küçükleri yol üstünde topla."
+    },
+    {
+      "en": "A pufferfish swells to 1.7 times its size when you get close, so only the very smallest ones stay edible. Treat the rest as obstacles.",
+      "tr": "Balon balığı sen yaklaşınca 1,7 katına şişer; yalnızca en küçükleri yenebilir kalır. Diğerlerini engel gibi düşün."
+    },
+    {
+      "en": "You slow down as you grow. Near the end of a level, stay away from big fish because you can no longer outswim them.",
+      "tr": "Büyüdükçe yavaşlarsın. Bölümün sonuna doğru büyük balıklardan uzak dur, artık onlardan hızlı yüzemezsin."
+    },
+    {
+      "en": "Lives never come back, and the level bonus pays 50 points for each one you still have, so a careful level beats a fast, messy one.",
+      "tr": "Canlar geri gelmez ve bölüm bonusu kalan her can için 50 puan öder; dikkatli geçilen bir bölüm, hızlı ama dağınık bir bölümden iyidir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Grow by eating; a red glow marks every fish that can eat you",
+      "tr": "Yiyerek büyü; seni yiyebilecek her balık kırmızı parlar"
+    },
+    {
+      "en": "Pufferfish, fleeing fish and charging sharks from level 2",
+      "tr": "2. bölümden itibaren balon balıkları, kaçan balıklar ve saldıran köpekbalıkları"
+    },
+    {
+      "en": "A growth target that rises every level",
+      "tr": "Her bölümde büyüyen bir boy hedefi"
+    },
+    {
+      "en": "Landscape reef with analogue swimming",
+      "tr": "Yatay ekranda resif ve hassas yüzme kontrolü"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A fish is worth about a quarter of its length in points (at least 5), times the level number. Clearing a level adds 150 × the level plus 50 for each life left.",
+        "tr": "Bir balık, boyunun yaklaşık dörtte biri kadar puan eder (en az 5), bu da bölüm numarasıyla çarpılır. Bölümü bitirmek 150 × bölüm, artı kalan her can için 50 puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Why can't I eat a fish that looks smaller?",
+        "tr": "Daha küçük görünen bir balığı neden yiyemiyorum?"
+      },
+      "a": {
+        "en": "It has to be clearly smaller than you. Fish close to your size simply swim past you, and a pufferfish counts as bigger once it has puffed up.",
+        "tr": "Senden belirgin şekilde küçük olması gerekir. Boyu sana yakın balıklarla sadece yan yana geçersiniz; balon balığı da şiştiğinde daha büyük sayılır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Level 1 has no sharks or pufferfish and the small fish don't flee, so it works as a practice level.",
+        "tr": "Hayır. 1. bölümde köpekbalığı ve balon balığı yoktur, küçük balıklar da kaçmaz; bu yüzden alıştırma bölümü gibidir."
+      }
+    }
+  ]
+}

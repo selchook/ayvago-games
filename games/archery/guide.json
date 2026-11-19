@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Archery puts your Ayvago character on a grassy range with a bow, five arrows and a ten-ring target. Each ring is worth its number, from 1 on the outer edge to 10 in the gold, and an arrow in the very centre of the 10 is an X that adds 5 bonus points. Arrows fly in a real arc, so farther targets need a higher aim.\n\nA run is a series of rounds. Round 1 is calm, with the target 28 m away and 23 points needed from your five arrows. From round 2 a wind blows, shown in m/s on the chip and by the flag beneath it, and it pushes every arrow sideways along its flight. Each round the target moves back and shrinks, the score to beat rises to a cap of 40, and from round 4 the target slides up and down a rail.\n\nThere are no lives: fall short of a round's target and the run is over.",
+    "tr": "Okçuluk, Ayvago karakterini elinde yay, sadağında beş ok ve karşısında on halkalı bir hedefle çimenli bir atış alanına çıkarır. Her halka kendi sayısı kadar puan verir: en dıştaki 1, ortadaki altın halka 10. 10'un tam merkezine giren ok X sayılır ve 5 puan ek getirir. Oklar gerçek bir yay çizerek uçar; hedef uzaklaştıkça daha yukarı nişan alman gerekir.\n\nOyun turlardan oluşur. 1. tur rüzgârsızdır: hedef 28 m uzakta, beş okla 23 puan toplaman yeter. 2. turdan itibaren rüzgâr çıkar; gücünü göstergedeki m/s değeri ve altındaki bayrak gösterir, uçan oku da yol boyunca yana iter. Her turda hedef geri çekilip küçülür, geçme puanı 40'a kadar yükselir; 4. turdan sonra hedef bir ray üzerinde aşağı yukarı kaymaya başlar.\n\nCan yoktur: turun hedef puanına ulaşamazsan oyun biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Read the banner at the start of the round: it shows how many points you need and whether the target moves.",
+      "tr": "Tur başındaki yazıya bak: kaç puan gerektiğini ve hedefin hareketli olup olmadığını gösterir."
+    },
+    {
+      "en": "Draw the bow. A dotted line shows the arrow's first stretch and a gauge under the archer fills from green to yellow to red with power.",
+      "tr": "Yayı ger. Noktalı çizgi okun ilk yolunu gösterir; okçunun altındaki gösterge güç arttıkça yeşilden sarıya, sonra kırmızıya döner."
+    },
+    {
+      "en": "Release to shoot. If the arrow leaves the top of the screen, a red marker tracks it.",
+      "tr": "Bırakıp atışı yap. Ok ekranın üstünden çıkarsa kırmızı bir işaret onu izler."
+    },
+    {
+      "en": "Reach the round's points within five arrows to clear it, then move on to a farther, smaller target.",
+      "tr": "Beş ok bitmeden turun puanına ulaş ve turu geç; sıradaki hedef daha uzak ve daha küçük olur."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "↑ or ← (W or A) raises the bow, ↓ or → (S or D) lowers it. Hold Space, Z or Enter to draw (full power takes about a second) and let go to shoot. Esc or P pauses.",
+      "tr": "↑ ya da ← (W ya da A) yayı kaldırır, ↓ ya da → (S ya da D) indirir. Germek için Boşluk, Z ya da Enter'ı basılı tut (tam güç yaklaşık bir saniye sürer), atmak için bırak. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Put a finger anywhere and drag back, away from the target: the direction sets the angle, the length of the pull the power. Lift to shoot; a very short pull cancels.",
+      "tr": "Parmağını herhangi bir yere koy ve hedefin tersine geri çek: yön açıyı, çekişin uzunluğu gücü belirler. Atmak için parmağını kaldır; çok kısa bir çekiş atışı iptal eder."
+    },
+    "mouse": {
+      "en": "Press, drag back and release, exactly as with a finger.",
+      "tr": "Tıkla, geri sürükle ve bırak; parmakla oynar gibi."
+    }
+  },
+  "tips": [
+    {
+      "en": "The dotted guide ignores the wind, which also shifts a little from arrow to arrow. When the flag streams toward the target, aim a touch lower; against the wind, aim higher.",
+      "tr": "Noktalı çizgi rüzgârı hesaba katmaz; rüzgâr da oktan oka biraz değişir. Bayrak hedefe doğru dalgalanıyorsa biraz alçak, rüzgâr karşıdan esiyorsa daha yukarı nişan al."
+    },
+    {
+      "en": "The guide gets shorter every round. Settle on one power level, such as a full draw, and learn the angle that lands it, then correct only the angle after each arrow.",
+      "tr": "Noktalı çizgi her turda kısalır. Tek bir güçte, örneğin yayı sonuna kadar gererek atmaya alış, isabet eden açıyı öğren ve her oktan sonra yalnızca açıyı düzelt."
+    },
+    {
+      "en": "A moving target swings like a pendulum: it races through the middle of its rail and slows at the top and bottom. Time the arrow to arrive at one of those turning points.",
+      "tr": "Hareketli hedef sarkaç gibi salınır: rayın ortasından hızla geçer, en üstte ve en altta yavaşlar. Okunu hedefin bu dönüş noktalarından birine vardığı ana denk getir."
+    },
+    {
+      "en": "Every point over the target is worth 5 more at the end of the round, on top of a 20 × round bonus, so keep aiming for the gold after you have passed.",
+      "tr": "Turu bitirdiğinde 20 × tur bonusunun yanında, hedefi aşan her puan 5 puan daha getirir; geçme puanına ulaştıktan sonra da altını hedeflemeye devam et."
+    }
+  ],
+  "features": [
+    {
+      "en": "Real arrow flight with gravity and changing wind",
+      "tr": "Yerçekimi ve değişen rüzgârla gerçekçi ok uçuşu"
+    },
+    {
+      "en": "Targets that move back, shrink and start sliding from round 4",
+      "tr": "Uzaklaşan, küçülen ve 4. turdan sonra kaymaya başlayan hedefler"
+    },
+    {
+      "en": "X bonus for arrows in the exact centre",
+      "tr": "Tam merkeze giren oklara X bonusu"
+    },
+    {
+      "en": "Your own Ayvago character draws the bow",
+      "tr": "Yayı kendi Ayvago karakterin gerer"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each arrow scores its ring, 1 to 10, plus 5 for an X. Clearing a round adds 20 × the round number and 5 for every point above the round's target. Missing the target or hitting the grass scores nothing.",
+        "tr": "Her ok vurduğu halkanın puanını, 1'den 10'a kadar, alır; X'e 5 puan eklenir. Turu geçmek 20 × tur numarası kadar ve hedef puanı aşan her puan için 5 puan kazandırır. Hedefi ıskalayan ya da çimene saplanan ok puan almaz."
+      }
+    },
+    {
+      "q": {
+        "en": "When does the game end?",
+        "tr": "Oyun ne zaman biter?"
+      },
+      "a": {
+        "en": "The first time you fail a round. That happens after your fifth arrow, or earlier as soon as even a 10 with every arrow left could not get you there.",
+        "tr": "Bir turu ilk geçemediğinde. Bu beşinci okundan sonra ya da kalan okların hepsi 10'a gitse bile hedefe yetmeyeceği anda olur."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes. The range is laid out sideways, and every shot is a drag and a lift of one finger.",
+        "tr": "Evet. Atış alanı yatay ekrana göre dizilmiştir; her atış tek parmakla bir çekiş ve bırakıştır."
+      }
+    }
+  ]
+}

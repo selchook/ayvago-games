@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Backgammon is played here the way tavla is played in Turkey: fifteen checkers each, the usual starting position, two dice and no doubling cube. Both sides race their checkers around the board in opposite directions, gather all fifteen in their home board and then bear them off. The first to bear off every checker wins the game.\n\nA match runs to 5 points. A game is worth 1 point, or 2 for a gammon (mars in Turkish), when the loser has not borne off a single checker. Before the first game each side throws one die and the higher number starts with a fresh roll; after that, the winner of each game opens the next.\n\nThe computer opponent climbs a ladder of five names, from Rookie through Amateur, Café Regular and Pro to Grandmaster, one step after every game you take from it. Online, you can play a friend from an ayvago.com room, with quick chat.",
+    "tr": "Tavla burada Türkiye'de oynandığı gibi: her oyuncuya on beş taş, alışılmış diziliş, iki zar ve katlama küpü yok. İki taraf taşlarını tahtanın etrafında ters yönlerde yürütür, on beşini de kendi evine toplar ve sonra dışarı çıkarır. Bütün taşlarını ilk çıkaran oyunu kazanır.\n\nMaç 5 puanlıktır. Kazanılan oyun 1 puan, rakip tek taş bile toplayamadan bitirilirse mars olur ve 2 puan eder. İlk oyundan önce iki taraf birer zar atar; büyük gelen yeni bir zar atarak başlar. Sonraki her oyunu bir önceki oyunun galibi açar.\n\nBilgisayar rakip beş basamaklı bir merdiveni çıkar: Acemi, Heveskâr, Kahveci, Usta ve Tavla Üstadı. Ondan aldığın her oyunda bir basamak yükselir. ayvago.com'da bir oda kurup arkadaşınla hızlı sohbetli çevrimiçi maç da yapabilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "Your dice roll on their own. Each die moves one checker that many points; doubles are played four times.",
+      "tr": "Zarların kendiliğinden atılır. Her zar bir taşı o kadar hane ilerletir; çift zar gelirse dört kez oynanır."
+    },
+    {
+      "en": "Tap a checker with a green ring, then a glowing point. A cyan target with a number uses both dice on the same checker.",
+      "tr": "Yeşil halkalı bir taşa, sonra parlayan haneye dokun. Üzerinde sayı olan turkuaz hedef, iki zarı aynı taşla oynar."
+    },
+    {
+      "en": "Landing on a lone enemy checker hits it to the bar. A checker on the bar must enter the opponent's home board before anything else moves.",
+      "tr": "Rakibin tek duran taşının üstüne gelirsen onu kırarsın, taş ortadaki bara gider. Kırık taşı olan oyuncu, başka bir taş oynamadan önce onu rakibin evinden içeri girmek zorundadır."
+    },
+    {
+      "en": "Once all fifteen are in your home board, bear them off. Press DONE to end the turn, or UNDO to take a step back first.",
+      "tr": "On beş taşın da evine girince toplamaya başla. Eli bitirmek için TAMAM'a, önce bir adım geri almak için GERİ AL'a bas."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D pick a checker or target, Space, Enter or ↑ picks up, puts down and confirms, ↓ drops the selection, X or Backspace undoes, C opens quick chat. Esc or P pauses a solo match.",
+      "tr": "← → ya da A / D taş veya hedef seçer; Boşluk, Enter ya da ↑ taşı alır, bırakır ve hamleyi onaylar; ↓ seçimi bırakır, X ya da Backspace geri alır, C hızlı sohbeti açar. Tek kişilik maçta Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap the checker, then where it goes; tapping the selected checker again sends it to its first target. UNDO and DONE sit on the right-hand panel.",
+      "tr": "Önce taşa, sonra gideceği yere dokun; seçili taşa yeniden dokunursan ilk hedefine gider. GERİ AL ve TAMAM sağdaki panelde."
+    },
+    "mouse": {
+      "en": "Click a checker and then its target, and use the panel buttons to undo or finish the turn.",
+      "tr": "Bir taşa, sonra hedefine tıkla; geri almak ya da eli bitirmek için paneldeki düğmeleri kullan."
+    }
+  },
+  "tips": [
+    {
+      "en": "Make points with two checkers rather than leaving blots. A single checker within six pips of an enemy is hit often, and every hit sends it back to the start.",
+      "tr": "Taşları tek bırakmak yerine iki taşla kapı yap. Rakibin altı hane önündeki açık taş sık kırılır ve her kırılan taş en başa döner."
+    },
+    {
+      "en": "Closed points in your home board make entering from the bar hard. Three or four in a row can keep a hit checker stuck there for several turns.",
+      "tr": "Evindeki kapalı kapılar kırık taşın girmesini zorlaştırır. Yan yana üç dört kapı, kırdığın taşı birkaç el boyunca dışarıda bekletebilir."
+    },
+    {
+      "en": "Watch the PIPS readout. Well ahead in the race, stop fighting and run home; far behind, hold a point in the opponent's board and wait for a shot.",
+      "tr": "PİP sayısına bak. Yarışta açık ara öndeysen kavgayı bırakıp eve koş; çok gerideysen rakibin evinde bir kapı tut ve kırma fırsatı bekle."
+    },
+    {
+      "en": "If your opponent has borne nothing off yet, bring your stragglers home quickly: one more game ended that way is a mars and counts double.",
+      "tr": "Rakibin henüz hiç taş toplamadıysa geride kalan taşlarını çabuk eve getir: o durumda biten oyun mars olur ve iki puan sayar."
+    }
+  ],
+  "features": [
+    {
+      "en": "Turkish tavla rules: match to 5, mars for 2 points, no doubling cube",
+      "tr": "Türk tavlası kuralları: 5 puanlık maç, 2 puanlık mars, katlama küpü yok"
+    },
+    {
+      "en": "Five computer opponents that get stronger as you win",
+      "tr": "Sen kazandıkça güçlenen beş bilgisayar rakip"
+    },
+    {
+      "en": "Legal moves highlighted, combined moves shown with their pip total",
+      "tr": "Oynanabilir hamleler parlar, birleşik hamlelerin toplam zarı görünür"
+    },
+    {
+      "en": "Online matches against a friend with quick chat",
+      "tr": "Arkadaşına karşı hızlı sohbetli çevrimiçi maç"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Do I have to use both dice?",
+        "tr": "İki zarı da oynamak zorunda mıyım?"
+      },
+      "a": {
+        "en": "Yes, whenever you can. The game only offers moves that use as many dice as possible, and if just one of two different dice can be played, it must be the larger one. With no legal move at all, NO MOVES appears and the turn passes.",
+        "tr": "Oynayabildiğin sürece evet. Oyun yalnızca en çok zarı kullanan hamleleri gösterir; farklı iki zardan yalnızca biri oynanabiliyorsa büyük olanı oynanmalıdır. Hiç hamle yoksa HAMLE YOK yazar ve sıra geçer."
+      }
+    },
+    {
+      "q": {
+        "en": "How is my score counted?",
+        "tr": "Skorum nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each hit is worth 10 and each checker borne off 2. A won game adds 100, a mars 250, and winning the match adds 300 plus 50 for every point of your winning margin.",
+        "tr": "Her kırma 10, toplanan her taş 2 puan. Kazanılan oyun 100, mars 250 puan ekler; maçı kazanınca 300 puan ve aradaki her maç puanı için 50 puan daha gelir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the computer never gets past Amateur and plays looser moves. Easy matches do not count for the leaderboard.",
+        "tr": "Evet. Kolay'da bilgisayar Heveskâr seviyesinin üstüne çıkmaz ve daha gevşek oynar. Kolay maçlar sıralamaya girmez."
+      }
+    }
+  ]
+}

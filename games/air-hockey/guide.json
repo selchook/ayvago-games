@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Air Hockey puts a glowing neon table under your thumb. You guard the bottom goal with your mallet, the CPU guards the top one, and the puck glides almost without friction, bouncing hard off the rails. Each mallet stays in its own half. The first to score 7 goals wins the match.\n\nThe CPU starts at level 1 and gets better as you pull ahead: every goal you score raises it one level, and every third goal it scores raises it too, up to level 7, where it reads shots off the rails, hesitates less and sends saves straight back at your goal.\n\nAfter the first goal, power-ups appear in the middle of the table from time to time. Hit one with the puck and it goes to whoever touched the puck last: BIG MALLET makes that mallet larger for a few seconds, FAST PUCK speeds up play, and MULTI-PUCK adds a second puck. Every goal is shown again in a slow-motion replay. You can also play a friend online, without power-ups, with each of you seeing your own goal at the bottom.",
+    "tr": "Hava Hokeyi, parlak neon bir masayı başparmağının altına getirir. Raketinle alttaki kaleyi, rakip de üstteki kaleyi korur; pak neredeyse sürtünmesiz kayar ve bantlardan sertçe seker. Her raket kendi yarı sahasında kalır. 7 golü ilk atan maçı kazanır.\n\nRakip 1. seviyeden başlar ve sen öne geçtikçe güçlenir: attığın her gol onu bir seviye yükseltir, onun attığı her üç gol de; en fazla 7. seviyeye kadar. Bu seviyede bantlardan gelen atışları okur, daha az duraksar ve kurtardığı pakları doğrudan senin kalene geri yollar.\n\nİlk golden sonra masanın ortasında arada bir güçlendirmeler belirir. Pakla vurduğunda güçlendirme, pağa son dokunan oyuncuya gider: DEV RAKET o raketi birkaç saniyeliğine büyütür, HIZLI PAK oyunu hızlandırır, ÇİFT PAK masaya ikinci bir pak ekler. Her gol ağır çekimde bir kez daha gösterilir. Bir arkadaşınla çevrimiçi de oynayabilirsin; çevrimiçinde güçlendirme yoktur ve ikiniz de kendi kalenizi altta görürsünüz."
+  },
+  "howToPlay": [
+    {
+      "en": "After the 3-2-1 countdown the puck is served into one half: yours at the start of the match, and after a goal, the half of whoever conceded.",
+      "tr": "3-2-1 geri sayımından sonra pak bir yarı sahaya konur: maçın başında seninkine, golden sonra ise golü yiyenin yarısına."
+    },
+    {
+      "en": "Move your mallet into the puck to hit it. The faster your mallet is moving at contact, the harder the shot.",
+      "tr": "Pağa vurmak için raketini ona doğru sür. Temas anında raketin ne kadar hızlıysa şut o kadar sert olur."
+    },
+    {
+      "en": "Score in the top goal and keep the puck out of yours. The board at the top shows the goals and the CPU's level.",
+      "tr": "Üstteki kaleye gol at, kendi kaleni koru. Üstteki skor tablosu golleri ve rakibin seviyesini gösterir."
+    },
+    {
+      "en": "The first to 7 goals wins. At 6 goals the board shows MATCH POINT.",
+      "tr": "7 golü ilk atan kazanır. 6 gole ulaşan olunca tabloda MAÇ SAYISI yazar."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the mallet around your half. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD raketi kendi yarı sahanda gezdirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Put a finger anywhere on the table and drag: the mallet follows it directly, stopping at the centre line.",
+      "tr": "Parmağını masada herhangi bir yere koyup sürükle: raket onu doğrudan izler, orta çizgide durur."
+    }
+  },
+  "tips": [
+    {
+      "en": "Bank shots pay. A goal that hits a rail after your last touch earns 60 extra and is much harder for the CPU to read than a straight drive.",
+      "tr": "Banttan atış kazandırır. Son dokunuşundan sonra banda çarpıp giren gol 60 puan fazla getirir ve rakibin okuması düz bir şuttan çok daha zordur."
+    },
+    {
+      "en": "Swing through the puck instead of pushing it. Speed over the threshold turns into a POWER SHOT bonus on top of the goal.",
+      "tr": "Pağı itmek yerine içinden geçercesine vur. Belli bir hızın üstündeki her şut, golün yanında SERT ŞUT bonusu da getirir."
+    },
+    {
+      "en": "When you have no shot, sit in front of your goal rather than chasing. Stopping a fast puck close to your goal counts as a SAVE worth 15.",
+      "tr": "Atış fırsatın yoksa pağın peşinden koşma, kalenin önünde bekle. Kalene yakın bir yerde hızlı bir pağı durdurmak 15 puanlık KURTARIŞ sayılır."
+    },
+    {
+      "en": "Since a power-up goes to the player who touched the puck last, aim a soft shot at it when it appears. A BIG MALLET on your side is the easiest goal you will get.",
+      "tr": "Güçlendirme pağa son dokunan oyuncuya gittiği için belirdiğinde ona yumuşak bir atış yap. Senin tarafındaki DEV RAKET alabileceğin en kolay goldür."
+    }
+  ],
+  "features": [
+    {
+      "en": "A CPU opponent that climbs seven levels as you score",
+      "tr": "Sen gol attıkça yedi seviye yükselen bir rakip"
+    },
+    {
+      "en": "Big mallet, fast puck and multi-puck power-ups",
+      "tr": "Dev raket, hızlı pak ve çift pak güçlendirmeleri"
+    },
+    {
+      "en": "Slow-motion goal replays",
+      "tr": "Ağır çekim gol tekrarları"
+    },
+    {
+      "en": "Online matches against a friend, and Easy and Normal against the CPU",
+      "tr": "Bir arkadaşa karşı çevrimiçi maçlar; bilgisayara karşı Kolay ve Normal"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each goal you score is worth 100 plus 25 per CPU level above 1, plus a power bonus for a hard shot and 60 for a bank shot. Saves add 15. Winning the match adds 1,000 and another 150 for each goal the CPU fell short of 7.",
+        "tr": "Attığın her gol 100 puan ve rakibin 1'in üzerindeki her seviyesi için 25 puan eder; sert şuta güç bonusu, banttan gole 60 puan eklenir. Kurtarışlar 15 puandır. Maçı kazanmak 1.000 puan ve rakibin 7'ye ulaşamadığı her gol için 150 puan daha getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the CPU never gets past roughly level 3 skill, reacts later, aims less precisely and moves more slowly. Easy matches are practice and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da rakip yaklaşık 3. seviye becerisinin ötesine geçmez, daha geç tepki verir, daha az isabetli nişan alır ve daha yavaş hareket eder. Kolay maçlar antrenman sayılır, sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes, online. Create a room on ayvago.com and send the link. It is first to 7, with no pause, and each of you defends the bottom goal on your own screen.",
+        "tr": "Evet, çevrimiçi. ayvago.com'da bir oda kur ve bağlantıyı gönder. İlk 7 golü atan kazanır, duraklatma yoktur; ikiniz de kendi ekranınızda alttaki kaleyi korursunuz."
+      }
+    }
+  ]
+}

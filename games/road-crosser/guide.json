@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Road Crosser is a frog-crossing arcade game. Your frog starts on the grass at the bottom and must reach the hedge at the top: first across five lanes of trucks, cars and fast motorbikes, then over a strip of grass, then across a river where the only footholds are floating logs and swimming hippos. Five homes are set into the hedge, and filling all five clears the level.\n\nThe road and the river work in opposite ways. On the road, any vehicle that touches the frog flattens it. On the river you have to stay on something: a log or a hippo carries you along, while the water, or a ride off the edge of the screen, is fatal. Jumping into the hedge or into a home that is already full costs a life as well, and every frog has a time bar to beat.\n\nEach level makes the traffic and the river faster, narrows the gaps between cars and takes two seconds off the timer, from 40 down to 24. Logs get shorter every three levels, and from level 2 some hippos dive under for a moment. You have three lives.",
+    "tr": "Yol Geçidi, kurbağayı karşıya geçirdiğin bir salon oyunu. Kurbağan alttaki çimenlikte başlar ve en üstteki çite ulaşmalıdır: önce kamyon, araba ve hızlı motosikletlerin aktığı beş şeritten, sonra bir çimen şeridinden, ardından basabileceğin tek yerin yüzen kütükler ve suaygırları olduğu bir nehirden geçer. Çitin içinde beş yuva vardır; beşini de doldurunca bölüm biter.\n\nYol ile nehir tam ters işler. Yolda kurbağaya değen her araç onu ezer. Nehirde ise hep bir şeyin üstünde durmalısın: kütük ya da suaygırı seni taşır, ama suya düşmek ya da ekranın kenarından dışarı taşınmak ölümcüldür. Çitin üstüne ya da dolu bir yuvaya zıplamak da can götürür; her kurbağanın yetişmesi gereken bir süre çubuğu vardır.\n\nHer seviyede trafik ve nehir hızlanır, arabalar arasındaki boşluklar daralır ve süre iki saniye kısalarak 40'tan 24'e iner. Kütükler her üç seviyede bir kısalır, 2. seviyeden itibaren de bazı suaygırları bir anlığına suya dalar. Üç canın var."
+  },
+  "howToPlay": [
+    {
+      "en": "Hop up one row at a time. The first time the frog reaches a row, it scores 10 points.",
+      "tr": "Her seferinde bir sıra yukarı zıpla. Kurbağa bir sıraya ilk kez ulaştığında 10 puan alırsın."
+    },
+    {
+      "en": "Cross the road between vehicles and catch your breath on the grass strip in the middle.",
+      "tr": "Araçların arasından yolu geç, ortadaki çimen şeridinde soluklan."
+    },
+    {
+      "en": "Jump onto a log or a hippo and ride it until the next foothold lines up.",
+      "tr": "Bir kütüğe ya da suaygırına atla ve sıradaki basamak hizaya gelene kadar üstünde kal."
+    },
+    {
+      "en": "Hop into an empty home. HOME! shows, and the next frog starts at the bottom with a full time bar.",
+      "tr": "Boş bir yuvaya zıpla. YUVA! yazar ve sıradaki kurbağa dolu bir süre çubuğuyla aşağıdan başlar."
+    },
+    {
+      "en": "Fill all five homes to clear the level; the traffic then speeds up.",
+      "tr": "Bölümü geçmek için beş yuvayı da doldur; ardından trafik hızlanır."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD hop one cell; Space also hops forward. A key pressed in mid-hop is kept for the next hop. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD bir kare zıplatır; Boşluk da ileri zıplatır. Zıplarken bastığın tuş bir sonraki zıplayış için saklanır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag for a stick: a push hops one cell, and holding it keeps the frog hopping at a steady pace.",
+      "tr": "Ekranda herhangi bir yere bas ve sürükle: çıkan kumanda kolunu bir kez itmek bir kare zıplatır, basılı tutmak kurbağayı düzenli aralıklarla zıplatmaya devam eder."
+    }
+  },
+  "tips": [
+    {
+      "en": "Speed pays: a home is worth 50 points plus 10 for every second left on the bar, so a crossing with 30 seconds to spare brings 350.",
+      "tr": "Hız kazandırır: yuva 50 puan artı çubukta kalan her saniye için 10 puan eder; 30 saniye kala varmak 350 puan getirir."
+    },
+    {
+      "en": "Keep an eye on the hedge. Now and then a chick sits in an empty home for a few seconds; bring the frog home there for CHICK RESCUED! and 200 extra points.",
+      "tr": "Çiti gözünden kaçırma. Arada bir boş yuvalardan birine birkaç saniyeliğine bir civciv konar; kurbağayı oraya getirirsen CİVCİV KURTARILDI! ve 200 puan ek kazanırsın."
+    },
+    {
+      "en": "A diving hippo fades and sinks for about a second. If the one under you starts to fade, hop to the next row at once.",
+      "tr": "Dalan suaygırı solar ve yaklaşık bir saniye suyun altında kalır. Üstünde durduğun solmaya başlarsa hemen sonraki sıraya zıpla."
+    },
+    {
+      "en": "Logs drift toward the screen edge, and riding off it counts as falling in. Line up with your home while you ride, and hop off before the edge comes close.",
+      "tr": "Kütükler ekranın kenarına doğru sürüklenir ve kenardan taşınmak suya düşmek sayılır. Taşınırken yuvanla hizalan, kenar yaklaşmadan in."
+    }
+  ],
+  "features": [
+    {
+      "en": "Five road lanes of trucks, cars and motorbikes",
+      "tr": "Kamyon, araba ve motosikletlerle dolu beş şeritli yol"
+    },
+    {
+      "en": "A river of logs and hippos, some of which dive",
+      "tr": "Kütükler ve bazıları suya dalan suaygırlarıyla dolu bir nehir"
+    },
+    {
+      "en": "A bonus chick that visits the empty homes",
+      "tr": "Boş yuvalara uğrayan bonus civciv"
+    },
+    {
+      "en": "Faster traffic and a shorter timer every level",
+      "tr": "Her seviyede daha hızlı trafik ve daha kısa süre"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "10 for each new row on the way up, 50 plus 10 per second left for each home, 200 for a rescued chick, and 500 plus 250 times the level for filling all five homes.",
+        "tr": "Yukarı çıkarken her yeni sıra 10, her yuva 50 artı kalan saniye başına 10, kurtarılan civciv 200, beş yuvanın hepsini doldurmak da 500 artı seviyenin 250 katı puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "What costs a life?",
+        "tr": "Hangi durumlar can götürür?"
+      },
+      "a": {
+        "en": "A vehicle, the water, being carried off the side of the screen, landing on the hedge or a filled home, and TIME'S UP! when the bar runs out. After the third life the game is over.",
+        "tr": "Bir araç, su, ekranın kenarından dışarı taşınmak, çitin ya da dolu bir yuvanın üstüne inmek ve çubuk bitince gelen SÜRE BİTTİ!. Üçüncü candan sonra oyun biter."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held upright. The stick appears wherever you put your thumb, so the frog can be steered with one hand.",
+        "tr": "Evet, telefonu dik tutarak. Kumanda kolu başparmağını nereye koyarsan orada çıkar; kurbağayı tek elle yönetebilirsin."
+      }
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Lunar Lander puts you at the controls of a small module dropping toward a jagged moon surface. Gravity pulls all the time and the engine pushes the way the module points, so every landing is a balance of rotating, burning fuel and waiting.\n\nEach level draws new terrain with green pads marked x2, x3 and x5 (x2, x4 and x6 from level 3): the narrower the pad, the bigger the multiplier. A landing counts only with both feet on a pad, the module within 12 degrees of upright and moving slowly. The H-SPEED and V-SPEED readouts at the top turn green when your speed is safe. Touch down anywhere else, too fast or tilted, and you crash.\n\nEvery level is a little harder: gravity grows, the ground gets rougher and the pads shrink. From level 3 a wind pushes you sideways, and from level 6 the x6 pad is gone. You have three lives and one tank of 1000 fuel units that carries over from landing to landing.",
+    "tr": "Ay İnişi'nde, sivri kayalıklı bir Ay yüzeyine doğru alçalan küçük bir modülün başındasın. Yerçekimi seni sürekli aşağı çeker, motor ise modül nereye bakıyorsa oraya iter; her iniş, dönmek, yakıt yakmak ve beklemek arasında bir dengedir.\n\nHer seviyede yeni bir arazi çizilir; üzerinde x2, x3 ve x5 yazan yeşil pistler vardır (3. seviyeden itibaren x2, x4 ve x6). Pist ne kadar darsa çarpan o kadar büyüktür. İnişin sayılması için iki ayağın da pistte olmalı, modül dikeyden en fazla 12 derece eğik ve yavaş olmalı. Üstteki YATAY ve DİKEY göstergeleri hızın güvenliyse yeşile döner. Başka bir yere, çok hızlı ya da eğik inersen KAZA!\n\nHer seviye biraz daha zordur: yerçekimi artar, arazi sertleşir, pistler daralır. 3. seviyeden itibaren rüzgâr seni yana iter, 6. seviyeden sonra x6 pisti kalkar. Üç canın ve inişten inişe aktarılan 1000 birimlik tek bir yakıt deposu var."
+  },
+  "howToPlay": [
+    {
+      "en": "The module appears near the top with a little sideways drift. Rotate so the engine points against that drift.",
+      "tr": "Modül üst tarafta, hafifçe yana kayarak belirir. Motoru bu kaymanın tersine bakacak şekilde döndür."
+    },
+    {
+      "en": "Fire the engine in short bursts to slow the fall; holding it all the way down empties the tank.",
+      "tr": "Düşüşü yavaşlatmak için motoru kısa kısa ateşle; sonuna kadar basılı tutarsan depo boşalır."
+    },
+    {
+      "en": "Pick a pad, hover over it and come down upright with both speed readouts green.",
+      "tr": "Bir pist seç, üzerine gel ve iki hız göstergesi de yeşilken dik bir şekilde in."
+    },
+    {
+      "en": "A safe landing scores, refuels the tank and starts the next level. A crash costs a life; after the third, the game is over.",
+      "tr": "Başarılı iniş puan getirir, depoyu doldurur ve sonraki seviyeyi başlatır. Kaza bir can götürür; üçüncüsünden sonra oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D rotate the module. ↑, W, Space, Z or Enter fire the engine. Esc or P pauses.",
+      "tr": "← → ya da A / D modülü döndürür. ↑, W, Boşluk, Z ya da Enter motoru ateşler. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Drag on the left half of the screen for a stick that rotates the module (a small push turns it slowly), and hold the A button on the right to fire the engine. Pushing the stick up never burns fuel.",
+      "tr": "Ekranın sol yarısında sürükle: çıkan kumanda kolu modülü döndürür (hafif itiş yavaş döndürür). Motoru ateşlemek için sağdaki A düğmesini basılı tut. Kolu yukarı itmek yakıt harcamaz."
+    }
+  },
+  "tips": [
+    {
+      "en": "Kill the sideways drift high up. Tilt against it, burn briefly, then straighten; fixing speed and angle in the last second usually ends in TILTED or TOO FAST.",
+      "tr": "Yana kaymayı yüksekteyken sıfırla. Kaymanın tersine eğil, kısa bir ateşle, sonra düzel; hızı ve açıyı son saniyede düzeltmeye çalışmak genelde EĞİK ya da ÇOK HIZLI ile biter."
+    },
+    {
+      "en": "A PERFECT landing (vertical speed about 12 or less, horizontal 6 or less, almost exactly upright) doubles the pad points and refuels 450 instead of 300. A calm x3 landing can beat a rushed x5.",
+      "tr": "MÜKEMMEL iniş (dikey hız yaklaşık 12 ya da altı, yatay 6 ya da altı, neredeyse tam dik) pist puanını ikiye katlar ve depoya 300 yerine 450 yakıt koyar. Sakin bir x3 inişi aceleyle yapılmış bir x5'i geçebilir."
+    },
+    {
+      "en": "From level 3, check the WIND chip at the bottom before you descend. It pushes all the time, so keep a slight tilt into it.",
+      "tr": "3. seviyeden itibaren alçalmadan önce alttaki RÜZGAR göstergesine bak. Rüzgâr sürekli iter; modülü hafifçe ona doğru eğik tut."
+    },
+    {
+      "en": "When LOW FUEL! starts flashing (under 150 units), stop exploring and land on the nearest pad, whatever its multiplier.",
+      "tr": "YAKIT AZ! yanıp sönmeye başladığında (150 birimin altı) gezinmeyi bırak ve çarpanına bakmadan en yakın piste in."
+    }
+  ],
+  "features": [
+    {
+      "en": "New terrain and pad layout every level",
+      "tr": "Her seviyede yeni arazi ve pist dizilişi"
+    },
+    {
+      "en": "Pads from x2 to x6, narrower ones worth more",
+      "tr": "x2'den x6'ya pistler; dar olan daha değerli"
+    },
+    {
+      "en": "Wind from level 3 and stronger gravity as you go",
+      "tr": "3. seviyeden itibaren rüzgâr ve giderek artan yerçekimi"
+    },
+    {
+      "en": "Speed readouts that turn green when it is safe to land",
+      "tr": "İnmek güvenli olduğunda yeşile dönen hız göstergeleri"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A landing is worth 50 points times the pad's multiplier, doubled for a PERFECT landing, plus 25 points per level. A PERFECT on an x6 pad at level 5 makes 725.",
+        "tr": "Bir iniş, pist çarpanıyla çarpılan 50 puan artı seviye başına 25 puan getirir; MÜKEMMEL inişte pist puanı ikiye katlanır. 5. seviyede x6 pistine MÜKEMMEL iniş 725 puandır."
+      }
+    },
+    {
+      "q": {
+        "en": "Why did I crash on a pad?",
+        "tr": "Pistin üstünde neden kaza yaptım?"
+      },
+      "a": {
+        "en": "The game shows the reason: TOO FAST when either speed was over the limit, TILTED when the module leaned 12 degrees or more, NOT A PAD when a foot was off the pad. The body hitting a slope also counts as a crash.",
+        "tr": "Oyun nedenini yazar: hızlardan biri sınırı aştıysa ÇOK HIZLI, modül 12 derece ya da daha fazla eğikse EĞİK, bir ayak pistin dışındaysa PİST DEĞİL. Gövdenin bir yamaca çarpması da kaza sayılır."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens when the fuel runs out?",
+        "tr": "Yakıt bitince ne oluyor?"
+      },
+      "a": {
+        "en": "OUT OF FUEL appears and the engine stops; you can still rotate but not slow down. After a crash the tank is topped up to at least 400 units for the next try.",
+        "tr": "YAKIT BİTTİ yazar ve motor susar; modülü hâlâ döndürebilirsin ama yavaşlayamazsın. Kazadan sonra depo, yeni deneme için en az 400 birime tamamlanır."
+      }
+    }
+  ]
+}

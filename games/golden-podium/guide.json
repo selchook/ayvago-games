@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Golden Podium is a 3D multi-sport cup. Your Ayvago character, in its own 3D model, lines up against three rivals at the Ayvago Cup and competes in five events in a row: the 100 m sprint, the 100 m hurdles, the long jump, the 50 m freestyle and archery. Each event has its own control trick, explained in a one-line hint before you press READY.\n\nEvery result turns into points, like a combined-events table. Your time, distance or arrow total is worth points on a fixed curve, the top three in each event add a medal bonus of 200, 120 or 60, and beating the cup record (9.85 s in the sprint, 8.60 m in the long jump and so on) adds 150. After each event a results board shows the marks, the medal table and the running standings.\n\nAfter the fifth event the top three step onto the podium in a medal ceremony. Your score is your cup total, and finishing first makes you CHAMPION.",
+    "tr": "Altın Kürsü, üç boyutlu bir çok branşlı kupa. Ayvago karakterin kendi 3D modeliyle Ayvago Kupası'nda üç rakiple yan yana dizilir ve art arda beş yarışa girer: 100 m koşu, 100 m engelli, uzun atlama, 50 m serbest yüzme ve okçuluk. Her yarışın kendine özgü bir kontrol inceliği var; HAZIR'a basmadan önce tek satırlık bir ipucu bunu anlatır.\n\nHer sonuç, çok branşlı yarışmalardaki gibi puana çevrilir. Derecen, mesafen ya da ok toplamın sabit bir tabloya göre puan getirir; her yarışın ilk üçü 200, 120 ya da 60 madalya bonusu alır, kupa rekorunu kırmak (koşuda 9,85 sn, uzun atlamada 8,60 m gibi) 150 puan daha ekler. Her yarıştan sonra sonuç tablosu dereceleri, madalya tablosunu ve genel sıralamayı gösterir.\n\nBeşinci yarıştan sonra ilk üç, ödül töreninde kürsüye çıkar. Skorun kupa toplamındır; birinci bitirirsen ŞAMPİYON olursun."
+  },
+  "howToPlay": [
+    {
+      "en": "Sprint: wait for the gun, then alternate LEFT and RIGHT in a steady rhythm. The same side twice makes you stumble.",
+      "tr": "Koşu: silahı bekle, sonra SOL ve SAĞ'a düzenli bir ritimle sırayla bas. Aynı tarafa iki kez basarsan tökezlersin."
+    },
+    {
+      "en": "Hurdles: tap RUN in rhythm and press JUMP just before each of the ten hurdles. Too early or too late knocks the hurdle down and costs speed.",
+      "tr": "Engelli: KOŞ'a ritimle bas, on engelin her birinin hemen önünde ATLA'ya bas. Erken ya da geç kalırsan engel düşer, hız kaybedersin."
+    },
+    {
+      "en": "Long jump: tap RUN down the runway, hold JUMP at the board (past the line is a foul) and let go near 45°. You get three jumps and the best counts.",
+      "tr": "Uzun atlama: pistte KOŞ'a bas, tahtada ATLA'yı basılı tut (çizgiyi geçmek faul) ve 45° civarında bırak. Üç atlayış hakkın var, en iyisi sayılır."
+    },
+    {
+      "en": "Freestyle: STROKE each time the closing ring meets the target, and BREATHE when the AIR bar runs low.",
+      "tr": "Serbest: daralan halka hedefe oturduğu her an KULAÇ at, HAVA çubuğu azalınca NEFES al."
+    },
+    {
+      "en": "Archery: six arrows at a target 50 m away. Aim against the wind while the sight sways, then SHOOT before the clock runs out.",
+      "tr": "Okçuluk: 50 m uzaktaki hedefe altı ok. Nişangâh sallanırken rüzgârı hesaba katarak nişan al ve süre bitmeden AT."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← / → (A / D) run, Space jumps, strokes and shoots, ↑ breathes. In archery the arrow keys or WASD aim. Space starts an event and Esc or P pauses.",
+      "tr": "← / → (A / D) koşturur; Boşluk atlar, kulaç attırır ve oku bırakır; ↑ nefes aldırır. Okçulukta ok tuşları ya da WASD nişan alır. Boşluk yarışı başlatır, Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Two big round buttons in the bottom corners change with the event: LEFT and RIGHT, RUN and JUMP, BREATHE and STROKE. In archery, drag on the screen to aim and press SHOOT.",
+      "tr": "Alt köşelerdeki iki büyük yuvarlak düğme yarışa göre değişir: SOL ve SAĞ, KOŞ ve ATLA, NEFES ve KULAÇ. Okçulukta ekranda sürükleyerek nişan al ve AT'a bas."
+    }
+  },
+  "tips": [
+    {
+      "en": "Don't mash. Running speed follows the rate of your taps only up to a useful limit, and an even rhythm earns a little extra, so steady tapping beats frantic tapping.",
+      "tr": "Tuşlara rastgele yüklenme. Koşu hızı dokunuş temposunu ancak belli bir sınıra kadar izler, düzenli ritim de biraz fazladan hız kazandırır; sakin ve düzenli basmak telaşla basmaktan iyidir."
+    },
+    {
+      "en": "Never guess the gun. One false start brings a warning; on Normal a second one disqualifies you and the event scores nothing.",
+      "tr": "Silahı tahmin etmeye çalışma. İlk hatalı çıkış uyarıyla geçer; Normal'de ikincisi diskalifiye eder ve o yarıştan puan alamazsın."
+    },
+    {
+      "en": "In the pool, a stroke off the beat or a doubled one slows the swimmer. Breathe before the air bar is empty: breathing skips one stroke, running out of air slows you far more.",
+      "tr": "Havuzda ritmi kaçıran ya da çift basılan kulaç yüzücüyü yavaşlatır. Hava çubuğu bitmeden nefes al: nefes bir kulaç kaybettirir, havasız kalmak ise çok daha fazla yavaşlatır."
+    },
+    {
+      "en": "In archery each wind point pushes the arrow about one ring sideways, so aim that many rings into the wind.",
+      "tr": "Okçulukta her rüzgâr puanı oku yaklaşık bir halka yana iter; nişanını rüzgârın geldiği tarafa o kadar halka kaydır."
+    }
+  ],
+  "features": [
+    {
+      "en": "Five events in 3D stadiums, a pool and an archery range",
+      "tr": "3D stadyum, havuz ve atış alanında beş branş"
+    },
+    {
+      "en": "Your own Ayvago character as the athlete",
+      "tr": "Sporcu olarak kendi Ayvago karakterin"
+    },
+    {
+      "en": "Medal table, cup records and a podium ceremony",
+      "tr": "Madalya tablosu, kupa rekorları ve ödül töreni"
+    },
+    {
+      "en": "Easy and Normal difficulty",
+      "tr": "Kolay ve Normal zorluk"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the rivals are slower, the timing windows are wider, a second false start is not a disqualification and in archery a marker shows where the wind will carry the arrow. Easy runs are practice and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da rakipler daha yavaştır, zamanlama aralıkları daha geniştir, ikinci hatalı çıkış diskalifiye etmez ve okçulukta bir işaret rüzgârın oku nereye taşıyacağını gösterir. Kolay oyunlar antrenman sayılır, sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Do I have to win every event?",
+        "tr": "Her yarışı kazanmam gerekiyor mu?"
+      },
+      "a": {
+        "en": "No. The champion is whoever has the most points after five events, so a strong mark in fourth place still counts. A disqualification or three foul jumps, though, scores zero.",
+        "tr": "Hayır. Beş yarıştan sonra en çok puanı toplayan şampiyon olur; dördüncü bitirdiğin iyi bir derece de puan getirir. Ama diskalifiye olmak ya da üç faullü atlayış sıfır puan demektir."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held sideways. Every event uses at most two big thumb buttons, plus dragging to aim in archery.",
+        "tr": "Evet, telefonu yan tutarak. Her yarışta en fazla iki büyük başparmak düğmesi kullanılır, okçulukta bir de nişan için sürükleme."
+      }
+    }
+  ]
+}

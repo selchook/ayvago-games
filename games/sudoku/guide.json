@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "This Sudoku builds a new puzzle every time you play. Each grid is generated on the spot and checked to have exactly one solution. The goal is the usual one: fill the 9×9 grid so that every row, every column and every 3×3 box holds the digits 1 to 9 exactly once.\n\nYou choose where to start. EASY gives 38 starting digits, MEDIUM 32, HARD 27 and EXPERT 24. From there the run climbs: each solved puzzle moves you up one difficulty, and solving EXPERT ends the run with ALL SOLVED!. Start on EASY for a run of four puzzles, or go straight to EXPERT for one hard grid.\n\nEvery digit is checked against the solution as you enter it. A wrong digit is not placed: it flashes red and counts as a mistake, and three mistakes in one puzzle end the run. Each puzzle also gives you three hints and a notes mode for pencil marks. A clock runs for every puzzle, and your best time for each difficulty is shown on the CHOOSE DIFFICULTY screen.",
+    "tr": "Bu Sudoku her oyunda yeni bir bulmaca kurar. Her ızgara o anda üretilir ve tek bir çözümü olduğu kontrol edilir. Amaç bildiğin gibi: 9×9 ızgarayı, her satırda, her sütunda ve her 3×3 kutuda 1'den 9'a kadar rakamlar birer kez bulunacak şekilde doldur.\n\nNereden başlayacağını sen seçersin. KOLAY 38 hazır rakamla, ORTA 32, ZOR 27, UZMAN 24 hazır rakamla gelir. Oradan sonra oyun tırmanır: çözdüğün her bulmaca seni bir üst zorluğa taşır, UZMAN'ı çözmek de oyunu HEPSİ ÇÖZÜLDÜ! ile bitirir. KOLAY'dan başlarsan dört bulmacalık bir oyun, doğrudan UZMAN'dan başlarsan tek ve zor bir ızgara oynarsın.\n\nGirdiğin her rakam anında çözümle karşılaştırılır. Yanlış rakam yerleşmez: kırmızı yanıp söner ve hata sayılır; bir bulmacada üç hata oyunu bitirir. Her bulmacada üç ipucu ve kalemle not almak için NOT modu da vardır. Her bulmaca için saat işler; her zorluktaki en iyi süren ZORLUK SEÇ ekranında görünür."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose EASY, MEDIUM, HARD or EXPERT. Under each button you see its number of starting digits and your best time.",
+      "tr": "KOLAY, ORTA, ZOR ya da UZMAN'ı seç. Her düğmenin altında hazır rakam sayısı ve en iyi süren yazar."
+    },
+    {
+      "en": "Select a cell, then a digit on the pad. The cell's row, column and box are shaded, and every copy of the digit in it lights up.",
+      "tr": "Bir hücre seç, sonra tuş takımından bir rakam. Hücrenin satırı, sütunu ve kutusu gölgelenir, içindeki rakamın bütün kopyaları da parlar."
+    },
+    {
+      "en": "Turn NOTES on to pencil in small candidates; ERASE clears a cell's notes. A placed digit is removed from the notes in its row, column and box.",
+      "tr": "Küçük aday rakamlar yazmak için NOT'u aç; SİL bir hücrenin notlarını temizler. Yerleşen rakam, satırındaki, sütunundaki ve kutusundaki notlardan kendiliğinden silinir."
+    },
+    {
+      "en": "Fill the grid for SOLVED! and move up to the next difficulty. Three mistakes in one puzzle end the game.",
+      "tr": "Izgarayı doldurunca ÇÖZÜLDÜ! yazar ve bir üst zorluğa geçersin. Bir bulmacada üç hata oyunu bitirir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move around the grid, 1–9 enter a digit, N or Space toggles notes, H takes a hint, Backspace, Delete, 0 or X erases notes. On the difficulty screen use ↑/↓ and Enter, or 1–4. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD ızgarada gezdirir, 1–9 rakam girer, N ya da Boşluk notu açıp kapatır, H ipucu alır; Backspace, Delete, 0 ya da X notları siler. Zorluk ekranında ↑/↓ ve Enter ya da 1–4 kullan. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a cell, then a digit on the pad under the grid. The NOTES, ERASE and HINT keys sit above the digits.",
+      "tr": "Bir hücreye, ardından ızgaranın altındaki tuş takımından bir rakama dokun. NOT, SİL ve İPUCU tuşları rakamların üstünde."
+    },
+    "mouse": {
+      "en": "Click cells and pad keys.",
+      "tr": "Hücrelere ve tuşlara tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "The small number on each pad key shows how many of that digit are still missing; a digit with one or two left is often the quickest to finish.",
+      "tr": "Her rakam tuşundaki küçük sayı o rakamdan kaç tane eksik olduğunu gösterir; bir iki tanesi kalan rakam çoğu zaman en hızlı tamamlanandır."
+    },
+    {
+      "en": "A hint fills the selected empty cell; if the selected cell is already filled, it fills the empty cell with the fewest candidates instead. Hinted digits turn gold and earn no points.",
+      "tr": "İpucu seçili boş hücreyi doldurur; seçili hücre doluysa en az adayı olan boş hücreyi doldurur. İpucuyla gelen rakamlar altın rengindedir ve puan getirmez."
+    },
+    {
+      "en": "Every hint takes 15% of the puzzle's base points and every mistake 10%, so when you are torn between two digits, write both as notes instead of guessing.",
+      "tr": "Her ipucu bulmacanın taban puanından %15, her hata %10 götürür; iki rakam arasında kaldığında tahmin etmek yerine ikisini de not olarak yaz."
+    },
+    {
+      "en": "Each puzzle has a par time of 6, 9, 13 or 17 minutes by difficulty. Every second you finish under it adds a time bonus.",
+      "tr": "Her bulmacanın zorluğa göre 6, 9, 13 ya da 17 dakikalık bir hedef süresi vardır. Bunun altında kalan her saniye süre bonusu getirir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Freshly generated grids with a unique solution",
+      "tr": "Her seferinde üretilen, tek çözümlü ızgaralar"
+    },
+    {
+      "en": "Four difficulties, from 38 down to 24 starting digits",
+      "tr": "38'den 24 hazır rakama inen dört zorluk"
+    },
+    {
+      "en": "Notes mode, three hints per puzzle and digit counters",
+      "tr": "Not modu, bulmaca başına üç ipucu ve rakam sayaçları"
+    },
+    {
+      "en": "Best time saved for each difficulty",
+      "tr": "Her zorluk için saklanan en iyi süre"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each correct digit earns 5 × the difficulty multiplier (×1 on EASY up to ×4 on EXPERT), and each completed row, column or box 25 × the multiplier. A solved puzzle adds its base of 300, 600, 1000 or 1600 points, plus the multiplier for every second under par, minus the hint and mistake cuts, never less than 50.",
+        "tr": "Her doğru rakam 5 × zorluk çarpanı kadar puan getirir (KOLAY'da ×1, UZMAN'da ×4), tamamlanan her satır, sütun ya da kutu 25 × çarpan. Çözülen bulmaca 300, 600, 1000 ya da 1600 taban puanını, hedef sürenin altındaki her saniye için çarpan kadar puanı ekler; ipucu ve hata kesintileri düşülür, en az 50 puan verilir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes, EASY, with 38 digits already in place. You can start at any difficulty; the run moves up from there.",
+        "tr": "Evet, 38 rakamı hazır gelen KOLAY. İstediğin zorlukla başlayabilirsin; oyun oradan yukarı ilerler."
+      }
+    },
+    {
+      "q": {
+        "en": "Do mistakes and hints carry over between puzzles?",
+        "tr": "Hatalar ve ipuçları sonraki bulmacaya geçiyor mu?"
+      },
+      "a": {
+        "en": "No. Every new puzzle starts at 0 of 3 mistakes with three fresh hints.",
+        "tr": "Hayır. Her yeni bulmaca 3 hatadan 0 ile ve üç yeni ipucuyla başlar."
+      }
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Snack Shack is a 3D cooking rush in a tiny diner. Customers sit at the bar and order one to four items; when the stools are full they queue by the door. Each has a patience meter, and you cook and serve with one tap per station. A patty goes on the grill and, once done, onto a plate in a bun. Drinks and ice cream are filled, fries come out of the fryer in batches, and veggies turn a plain burger into a deluxe one.\n\nThe kitchen grows day by day: burgers and sodas on day 1, fries on day 2, deluxe burgers on day 3, hot dogs on day 4 and ice cream on day 5. Each day runs longer, customers come more often, order more and wait less.\n\nEvery customer who storms off costs a heart. You start with four, and the shack closes when they run out. A day where most customers leave happy earns stars, bonus tips and sometimes a heart back.",
+    "tr": "Lezzet Durağı, minik bir lokantada geçen 3D bir yemek telaşı. Müşteriler bara oturup bir ile dört arası ürün ister; tabureler doluysa kapının yanında sıraya girerler. Her birinin bir sabır çubuğu vardır; sen de istasyon başına tek dokunuşla pişirip servis edersin. Köfte ızgaraya konur, pişince ekmeğiyle tabağa geçer. İçecek ve dondurma doldurulur, patates fritözden porsiyon porsiyon çıkar, salata da sade burgeri süper burgere çevirir.\n\nMutfak her gün büyür: 1. gün burger ve gazoz, 2. gün patates, 3. gün süper burger, 4. gün sosisli, 5. gün dondurma gelir. Her gün biraz daha uzun sürer; müşteriler daha sık gelir, daha çok ister ve daha az bekler.\n\nKızıp giden her müşteri bir can götürür. Dört canla başlarsın, canlar bitince lokanta kapanır. Müşterilerin çoğunu mutlu gönderdiğin gün yıldız, bonus bahşiş ve bazen geri gelen bir can kazandırır."
+  },
+  "howToPlay": [
+    {
+      "en": "Tap the grill to put on a patty, and tap again when it is done to move it onto a plate as a burger. Left too long, it burns; a tap bins it.",
+      "tr": "Köfte koymak için ızgaraya dokun, pişince yine dokun; burger olarak tabağa geçer. Fazla kalırsa yanar, bir dokunuş onu çöpe atar."
+    },
+    {
+      "en": "Tap the plates to serve the most impatient customer who wants what is on them. If the plates are full and nobody wants them, a tap clears the oldest.",
+      "tr": "Tabaklara dokununca üstündekini isteyen en sabırsız müşteriye gider. Tabaklar dolu ve kimse istemiyorsa bir dokunuş en eskisini boşaltır."
+    },
+    {
+      "en": "Tap the drink machine to fill a cup and again when it is full. Fries and ice cream work the same way; hot dogs cook like patties.",
+      "tr": "Bardak doldurmak için içecek makinesine, dolunca yine dokun. Patates ve dondurma da böyledir; sosisli köfte gibi pişer."
+    },
+    {
+      "en": "Tap a customer to hand them everything already prepared for their order. They pay once the whole order has been served.",
+      "tr": "Bir müşteriye dokunursan siparişinden hazır olan her şey ona gider. Siparişin tamamı verilince ödeme yapar."
+    },
+    {
+      "en": "After closing time, check the result card and spend tips on upgrades.",
+      "tr": "Kapanıştan sonra sonuç kartına bak ve bahşişlerini geliştirmelere harca."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "1–7 use the stations (1 grill, 2 plates, 3 drinks, 4 fryer, 5 veggies, 6 hot dogs, 7 ice cream). The arrows move a highlight and Enter or Space uses it, in the kitchen and the upgrade shop. Esc or P pauses.",
+      "tr": "1–7 istasyonları kullanır (1 ızgara, 2 tabaklar, 3 içecek, 4 fritöz, 5 salata, 6 sosis, 7 dondurma). Oklar seçimi gezdirir, Enter ya da Boşluk kullanır; mutfakta da geliştirme dükkânında da. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a station to cook or to serve what is ready there, and tap a customer to give them everything ready for them.",
+      "tr": "Pişirmek ya da hazır olanı servis etmek için istasyona, hazır olan her şeyi vermek için müşteriye dokun."
+    },
+    "mouse": {
+      "en": "Click stations and customers as you would tap them.",
+      "tr": "İstasyonlara ve müşterilere dokunur gibi tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Orders finished within eight seconds of each other build a combo worth +15% tip per step, up to +75%. An angry customer resets it.",
+      "tr": "Birbirinden en fazla sekiz saniye arayla biten siparişler kombo yapar; her adım bahşişe %15 ekler, en fazla +%75. Kızgın müşteri komboyu sıfırlar."
+    },
+    {
+      "en": "A tip is 6% to 42% of the order's price, depending on patience left, so put patties on early instead of rushing at the last second.",
+      "tr": "Bahşiş, kalan sabra göre sipariş fiyatının %6'sı ile %42'si arasındadır; son saniyede koşturmak yerine köfteleri erkenden koy."
+    },
+    {
+      "en": "Customers queuing by the door give up after about 14 seconds. Finish nearly complete orders first to free stools.",
+      "tr": "Kapıda sıra bekleyen müşteri yaklaşık 14 saniyede vazgeçer. Taburelerin boşalması için önce bitmek üzere olan siparişleri tamamla."
+    },
+    {
+      "en": "Upgrades last only for the current run, so buy for today's problem: Kitchen Timer for burning patties, Comfy Stools for leaving customers, Extra Stool or Bigger Pass for a crowded bar.",
+      "tr": "Geliştirmeler yalnızca o oyun boyunca geçerlidir; bugünkü soruna göre al: köfte yanıyorsa Mutfak Saati, müşteri kaçıyorsa Rahat Tabureler, kalabalık için Yeni Tabure ya da Geniş Tezgâh."
+    }
+  ],
+  "features": [
+    {
+      "en": "Six menu items and seven stations opening over five days",
+      "tr": "Beş günde açılan altı ürün ve yedi istasyon"
+    },
+    {
+      "en": "Combo tips for orders finished back to back",
+      "tr": "Art arda biten siparişler için kombo bahşişi"
+    },
+    {
+      "en": "Seven upgrades bought with tips between days",
+      "tr": "Günler arasında bahşişle alınan yedi geliştirme"
+    },
+    {
+      "en": "Up to three stars a day, with bonus tips and a heart back",
+      "tr": "Günde üç yıldıza kadar, bonus bahşiş ve geri gelen can"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How do stars and points work?",
+        "tr": "Yıldızlar ve puan nasıl işliyor?"
+      },
+      "a": {
+        "en": "Your score is every price and tip plus the star bonuses. A day earns three stars if everyone left happy, two at 80% and one at half; two or more stars also return a heart.",
+        "tr": "Puanın bütün ücretler, bahşişler ve yıldız bonuslarıdır. Herkes mutlu ayrıldıysa gün üç yıldız, %80'de iki, yarıda bir yıldız alır; iki ve üzeri yıldız bir can da geri verir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy starts you with six hearts, gives customers more patience and spaces them out, cooks faster, burns later and ramps up more slowly. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da altı canla başlarsın; müşteriler daha sabırlı ve seyrek gelir, yemekler hızlı pişer, geç yanar, günler yavaş zorlaşır. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held upright. The whole diner fits on one screen and every action is one tap.",
+        "tr": "Evet, telefon dik tutularak. Bütün lokanta tek ekrana sığar, her hareket tek dokunuştur."
+      }
+    }
+  ]
+}

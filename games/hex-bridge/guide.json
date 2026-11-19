@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Hex is a connection game on a diamond-shaped board of 11 × 11 hexagons. Red owns the top and bottom edges and moves first; blue owns the left and right edges. Players take turns filling one empty hexagon with a stone, and the first to link their own two edges with an unbroken chain wins. A full board always contains such a chain for one side, so a game of Hex can never end in a draw.\n\nMoving first is a real advantage, so the swap rule evens it out. After red's opening stone, blue may press SWAP instead of playing: the red stone is mirrored across the board's long diagonal and becomes blue, and red moves again. A strong opening is therefore one red would hate to see taken.\n\nSolo, you play a run of rounds against a computer rival with 3 lives, alternating red and blue. The rival climbs from Rookie through Apprentice, Adept, Tough and Expert to Grandmaster each time you beat it. Online, you play a friend on ayvago.com.",
+    "tr": "Hex Köprüsü, 11 × 11 altıgenden oluşan baklava biçimli bir tahtada oynanan bir bağlantı oyunu. Kırmızının kenarları üst ve alttır, ilk hamleyi kırmızı yapar; mavinin kenarları sol ve sağdır. Oyuncular sırayla boş bir altıgene taş koyar; kendi iki kenarını kesintisiz bir zincirle ilk birleştiren kazanır. Dolmuş bir tahtada mutlaka bir tarafın zinciri vardır, bu yüzden Hex'te beraberlik olmaz.\n\nİlk hamle büyük bir avantaj olduğu için değiştirme kuralı dengeyi kurar. Kırmızının ilk taşından sonra mavi taş koymak yerine DEĞİŞTİR'e basabilir: kırmızı taş tahtanın uzun köşegenine göre yansıyıp maviye döner ve sıra yeniden kırmızıya geçer. Yani iyi bir açılış, kırmızının rakibe kaptırmak istemeyeceği bir taştır.\n\nTek başına oynarken 3 canla bilgisayara karşı art arda eller oynarsın, kırmızı ve mavi sırayla değişir. Onu her yendiğinde rakip Acemi'den Çırak, Usta, Zorlu ve Uzman'a, sonunda Büyükusta'ya yükselir. Çevrimiçi modda ayvago.com'da bir arkadaşınla oynarsın."
+  },
+  "howToPlay": [
+    {
+      "en": "Check your colour and goal under the board: red joins top to bottom, blue left to right.",
+      "tr": "Tahtanın altında rengine ve hedefine bak: kırmızı üstten alta, mavi soldan sağa bağlanır."
+    },
+    {
+      "en": "On your turn, aim at an empty hexagon and place a stone there. Stones never move once placed.",
+      "tr": "Sıra sendeyken boş bir altıgene nişan alıp taşını koy. Konan taş bir daha yerinden oynamaz."
+    },
+    {
+      "en": "If you are blue and PLAY OR SWAP appears after red's first stone, decide whether to take that stone over with SWAP.",
+      "tr": "Maviysen ve kırmızının ilk taşından sonra OYNA YA DA DEĞİŞTİR yazıyorsa, DEĞİŞTİR ile o taşı alıp almayacağına karar ver."
+    },
+    {
+      "en": "Complete a chain between your two edges to win the round. Lose a round and you lose one of your 3 lives.",
+      "tr": "İki kenarın arasında zinciri tamamlayınca eli kazanırsın. Kaybettiğin her el 3 canından birini götürür."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the cursor, Space, Enter or Z places a stone and X swaps when the swap is offered. Esc or P pauses a solo game.",
+      "tr": "Ok tuşları ya da WASD imleci gezdirir; Boşluk, Enter ya da Z taş koyar, değiştirme hakkın varken X değiştirir. Tek kişilik oyunda Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "The hexagons are small on a phone, so the first tap only aims. Tap the same hexagon again to place the stone, or tap the SWAP button.",
+      "tr": "Telefonda altıgenler küçük olduğu için ilk dokunuş yalnızca nişan alır. Taşı koymak için aynı altıgene yeniden dokun ya da DEĞİŞTİR düğmesine bas."
+    },
+    "mouse": {
+      "en": "Hover to aim and click once to place; click SWAP to take red's opening stone.",
+      "tr": "Fareyle nişan al, taşı koymak için bir kez tıkla; kırmızının açılış taşını almak için DEĞİŞTİR'e tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Learn the bridge: two of your stones with two empty hexagons between them cannot be cut, because if the opponent takes one you take the other.",
+      "tr": "Köprüyü öğren: aralarında iki boş altıgen bulunan iki taşın kesilemez; rakip birini alırsa sen diğerini alırsın."
+    },
+    {
+      "en": "Do not crawl along a row. A chain of bridges reaches your edge much faster than stones laid side by side.",
+      "tr": "Taşları yan yana dizerek ilerleme. Köprülerden oluşan bir zincir kenarına çok daha hızlı ulaşır."
+    },
+    {
+      "en": "Blocking from right next to a stone rarely works in Hex. Block a few hexagons ahead of the opponent's chain, where your stone also helps your own connection.",
+      "tr": "Hex'te rakibin taşının hemen dibinden kesmek nadiren işe yarar. Zincirinin birkaç altıgen önünden kes; orada koyduğun taş kendi bağlantına da yarar."
+    },
+    {
+      "en": "Swap when red opens near the middle. Win a round in which you swapped as blue for 25 bonus points on top of the usual reward.",
+      "tr": "Kırmızı ortaya yakın açarsa değiştir. Mavi olarak değiştirdiğin bir eli kazanırsan normal ödülün üstüne 25 puan daha alırsın."
+    }
+  ],
+  "features": [
+    {
+      "en": "Full-size 11 × 11 Hex board",
+      "tr": "Tam boy 11 × 11 Hex tahtası"
+    },
+    {
+      "en": "The swap rule after the first stone",
+      "tr": "İlk taştan sonra değiştirme kuralı"
+    },
+    {
+      "en": "Six computer rivals, from Rookie to Grandmaster",
+      "tr": "Acemi'den Büyükusta'ya altı bilgisayar rakip"
+    },
+    {
+      "en": "Online games against a friend",
+      "tr": "Arkadaşına karşı çevrimiçi oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A won round gives 100 times the rival's level, 4 points for each of your stones under 60, 25 for every win in your current streak and 25 more if you won after swapping.",
+        "tr": "Kazanılan el rakibin seviyesinin 100 katı puan getirir; 60'ın altında kalan her taşın için 4, serindeki her galibiyet için 25 ve değiştirip kazandıysan 25 puan daha eklenir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the rival looks only one move ahead, often picks a weaker move and stops after three levels. Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da rakip yalnızca bir hamle ilerisini düşünür, sık sık daha zayıf bir hamle seçer ve üç seviyede kalır. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Open a room on ayvago.com and share the invite. The starting player is red, the other is blue and may swap after the first stone.",
+        "tr": "Evet. ayvago.com'da bir oda açıp daveti paylaş. Başlayan oyuncu kırmızı olur, diğeri mavidir ve ilk taştan sonra değiştirebilir."
+      }
+    }
+  ]
+}

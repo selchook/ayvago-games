@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Tower Defense puts you in charge of a single winding road that runs across a grass field to your base gate. Fifteen waves of attackers come down it: foot soldiers, fast runners, heavy infantry, tanks, heavy tanks and, from wave 5, planes that ignore the road and fly straight across. Wave 15 ends with a giant tank. You build towers on the grass beside the road to stop them before they reach the gate.\n\nEvery enemy that gets through costs lives: one for infantry and planes, two for a tank, three for a heavy tank and ten for the giant. You start with 20 lives and 170 gold, and you earn more gold for every kill and every cleared wave. Between waves a countdown runs; start the next wave early and the seconds left are paid to you in gold.\n\nThree towers do the work, and each can be upgraded twice. Enemies get tougher every wave, so a defence that holds wave 5 will not hold wave 12 without upgrades.",
+    "tr": "Kule Savunması'nda çimenlik bir alanı boydan boya geçip üssünün kapısına varan kıvrımlı tek bir yoldan sorumlusun. Bu yoldan on beş dalga saldırgan gelir: piyadeler, hızlı koşucular, ağır piyadeler, tanklar, ağır tanklar ve 5. dalgadan itibaren yolu umursamadan dümdüz uçan uçaklar. 15. dalga dev bir tankla biter. Onları kapıya varmadan durdurmak için yolun kenarındaki çimenlere kule kurarsın.\n\nKapıdan geçen her düşman can götürür: piyade ve uçak bir, tank iki, ağır tank üç, dev tank on can. 20 can ve 170 altınla başlarsın; her öldürdüğün düşman ve temizlediğin her dalga altın kazandırır. Dalgalar arasında geri sayım işler; sıradaki dalgayı erken başlatırsan kalan saniyeler sana altın olarak ödenir.\n\nİşi üç kule görür, her biri iki kez geliştirilebilir. Düşmanlar her dalgada güçlenir; 5. dalgayı tutan bir savunma, geliştirme yapmadan 12. dalgayı tutamaz."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose a tower in the sidebar on the right: Turret (50 gold), Cannon (80) or Missile (125).",
+      "tr": "Sağdaki panelden bir kule seç: Taret (50 altın), Top (80) ya da Füze (125)."
+    },
+    {
+      "en": "Build it on an empty grass tile. A see-through preview and its range show where it will go; the road, bushes and rocks cannot be built on.",
+      "tr": "Kuleyi boş bir çimen karesine kur. Yarı saydam önizleme ve menzil halkası nereye kurulacağını gösterir; yola, çalılara ve kayalara kule kurulmaz."
+    },
+    {
+      "en": "Select a built tower to see UPGRADE and SELL. Upgrades raise damage, range and fire rate, up to level 3.",
+      "tr": "Kurduğun kuleyi seçince GELİŞTİR ve SAT çıkar. Geliştirme hasarı, menzili ve atış hızını artırır, en çok 3. seviyeye kadar."
+    },
+    {
+      "en": "Press the WAVE button to call the next wave early, or let the countdown run out. Clear all 15 waves to save the base.",
+      "tr": "Sıradaki dalgayı erken çağırmak için DALGA düğmesine bas ya da geri sayımın bitmesini bekle. 15 dalgayı da temizleyince üs kurtulur."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrows or WASD move the cursor, Space, Enter or Z builds or selects (press again on a selected tower to upgrade), 1 to 3 pick a tower and X or Shift cycles them, U upgrades, Backspace or Delete sells, N starts the next wave. Esc or P pauses.",
+      "tr": "Oklar ya da WASD imleci gezdirir; Boşluk, Enter ya da Z kule kurar ya da seçer (seçili kulede bir daha basmak geliştirir). 1-3 kule seçer, X ya da Shift sıradakine geçer, U geliştirir, Backspace ya da Delete satar, N sıradaki dalgayı başlatır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a tower card in the sidebar, then tap the grass to build. Tap a tower to select it and use the UPGRADE and SELL buttons.",
+      "tr": "Paneldeki bir kule kartına, sonra çimene dokunarak kur. Bir kuleye dokunarak seç, GELİŞTİR ve SAT düğmelerini kullan."
+    },
+    "mouse": {
+      "en": "Hover over the field to preview a tower and its range, and click to build or select.",
+      "tr": "Kulenin nereye geleceğini ve menzilini görmek için fareyi alanda gezdir, kurmak ya da seçmek için tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "The Cannon cannot hit planes. Have Turrets or Missile towers in place before wave 5, when the first planes arrive.",
+      "tr": "Top uçakları vuramaz. İlk uçakların geldiği 5. dalgadan önce Taret ya da Füze kulelerini hazır et."
+    },
+    {
+      "en": "Build where the road turns back on itself. A tower between two straight stretches covers both, and Cannon shells hit every enemy in the blast.",
+      "tr": "Kuleleri yolun geri döndüğü yerlere kur. İki düz yolun arasındaki kule ikisine de yetişir; Top mermisi patlamadaki bütün düşmanlara işler."
+    },
+    {
+      "en": "Upgrading is usually better value than another level 1 tower: level 2 costs 80% of the tower's price and adds 60% damage on top of the extra range and speed.",
+      "tr": "Geliştirmek genellikle yeni bir 1. seviye kuleden daha kârlıdır: 2. seviye, kule fiyatının yüzde 80'ine mal olur; menzil ve hızın yanında yüzde 60 hasar ekler."
+    },
+    {
+      "en": "Selling returns 70% of everything spent on a tower, so moving one costs gold. When your defence is comfortable, call waves early for the bonus gold.",
+      "tr": "Satış, kuleye harcadığın her şeyin yüzde 70'ini geri verir; kule taşımak altına mal olur. Savunman rahatsa ek altın için dalgaları erken çağır."
+    }
+  ],
+  "features": [
+    {
+      "en": "15 waves ending with a giant tank",
+      "tr": "Dev tankla biten 15 dalga"
+    },
+    {
+      "en": "Three towers with three levels each",
+      "tr": "Her biri üç seviyeli üç kule"
+    },
+    {
+      "en": "Ground troops, tanks and planes that cut across the field",
+      "tr": "Kara birlikleri, tanklar ve alanı dümdüz kesen uçaklar"
+    },
+    {
+      "en": "A preview of the next wave and early-start gold",
+      "tr": "Sıradaki dalganın önizlemesi ve erken başlatma altını"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each kill scores ten times its gold value, each cleared wave adds 100 times its number, and saving the base adds 250 for every life you still have.",
+        "tr": "Her düşman, verdiği altının on katı puan getirir; temizlenen her dalga, numarasının 100 katı puan ekler; üssü kurtarınca kalan her can için 250 puan daha gelir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy starts with 260 gold and 30 lives, and the enemies have 20% less health, move 15% slower and toughen more slowly. The waves are the same, and Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da 260 altın ve 30 canla başlarsın; düşmanların canı yüzde 20 az, hızı yüzde 15 düşüktür ve daha yavaş güçlenirler. Dalgalar aynıdır, Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Does it work on a phone?",
+        "tr": "Telefonda çalışıyor mu?"
+      },
+      "a": {
+        "en": "Yes, played in landscape: everything is done by tapping the field and the sidebar buttons.",
+        "tr": "Evet, yatay tutularak oynanır: her şey alana ve paneldeki düğmelere dokunarak yapılır."
+      }
+    }
+  ]
+}

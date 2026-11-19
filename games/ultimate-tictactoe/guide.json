@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Ultimate Tic-Tac-Toe is nine small games of tic-tac-toe arranged in a three-by-three grid, with one twist that changes everything: you do not choose where to play. The square you pick inside a small board decides which small board your opponent must play in next. Take the top-right square of any board, and the other player is sent to the top-right board.\n\nThree in a row inside a small board wins that board for you. A small board that fills up without a line is closed and belongs to nobody. Win three small boards in a line across the big grid to take the round. If the opponent is sent to a board that is already won or full, PLAY ANYWHERE appears and they may pick any open board. When every board is closed without a line of three, the round is a draw.\n\nSolo, you play X in odd rounds, moving first, and O in even rounds, against a rival that thinks longer each time you beat it, from Rookie to Grandmaster. You have 3 lives. Online, you play a friend on ayvago.com.",
+    "tr": "Süper XOX, üçe üç dizilmiş dokuz küçük XOX oyunundan oluşur ve her şeyi değiştiren bir kuralı vardır: nereye oynayacağını sen seçmezsin. Küçük bir tahtada seçtiğin kare, rakibinin sıradaki hamlesini hangi küçük tahtada yapacağını belirler. Herhangi bir tahtanın sağ üst karesine oynarsan rakip sağ üstteki tahtaya gönderilir.\n\nKüçük bir tahtada üçü yan yana dizen o tahtayı kazanır. Kimse dizemeden dolan küçük tahta kapanır ve kimseye ait olmaz. Büyük tahtada üç küçük tahtayı bir hizada kazanan eli alır. Rakip zaten kazanılmış ya da dolmuş bir tahtaya gönderilirse İSTEDİĞİN YERE yazar ve açık tahtalardan istediğini seçebilir. Bütün tahtalar üçlü kurulmadan kapanırsa el berabere biter.\n\nTek başına oynarken tek sayılı ellerde ilk oynayan X, çift sayılı ellerde O olursun; rakibin, onu her yendiğinde daha uzun düşünür ve Acemi'den Büyükusta'ya yükselir. 3 canın olur. Çevrimiçi modda ayvago.com'da bir arkadaşınla oynarsın."
+  },
+  "howToPlay": [
+    {
+      "en": "Find the glowing board: that is where you must play this turn.",
+      "tr": "Parlayan tahtayı bul: bu hamlede oraya oynamak zorundasın."
+    },
+    {
+      "en": "Put your mark on an empty square there. Its position sends your opponent to the matching small board.",
+      "tr": "Oradaki boş bir kareye işaretini koy. Karenin konumu, rakibini aynı konumdaki küçük tahtaya gönderir."
+    },
+    {
+      "en": "Three in a row on a small board claims it. The counters under the big board show how many boards each side holds.",
+      "tr": "Küçük tahtada üçlü dizen o tahtayı alır. Büyük tahtanın altındaki sayaçlar iki tarafın kaç tahtası olduğunu gösterir."
+    },
+    {
+      "en": "Line up three won boards to win the round. Lose a round and one of your 3 lives goes.",
+      "tr": "Kazandığın üç tahtayı bir hizaya getirince eli kazanırsın. Kaybettiğin her el 3 canından birini götürür."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the cursor, Space, Enter or Z plays the square. Esc or P pauses a solo game.",
+      "tr": "Ok tuşları ya da WASD imleci gezdirir; Boşluk, Enter ya da Z kareye oynar. Tek kişilik oyunda Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap an empty square on the glowing board to play it.",
+      "tr": "Oynamak için parlayan tahtadaki boş bir kareye dokun."
+    },
+    "mouse": {
+      "en": "Hover to see your mark and click to place it.",
+      "tr": "İşaretinin nereye geleceğini görmek için fareyi gezdir, koymak için tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Before each move, look at the board you are sending your opponent to. A square that wins you a small board is no bargain if it sends them to a board where they can win one too.",
+      "tr": "Her hamleden önce rakibini hangi tahtaya gönderdiğine bak. Sana küçük bir tahta kazandıran kare, rakibi de bir tahta kazanabileceği yere gönderiyorsa kârlı değildir."
+    },
+    {
+      "en": "Avoid sending the opponent to a board that is won or full. PLAY ANYWHERE gives them a free choice of the whole grid.",
+      "tr": "Rakibi kazanılmış ya da dolmuş bir tahtaya gönderme. İSTEDİĞİN YERE, ona bütün tahta üzerinde serbest seçim verir."
+    },
+    {
+      "en": "The centre board joins four lines on the big grid, the corners three. Those boards are worth more than the edge boards.",
+      "tr": "Ortadaki tahta büyük tahtada dört hizaya, köşe tahtaları üçer hizaya katılır. Bu tahtalar kenardakilerden daha değerlidir."
+    },
+    {
+      "en": "Every small board you win scores 10 times the rival's level, and a round won in fewer than 40 of your moves gets 5 extra points for each move saved.",
+      "tr": "Kazandığın her küçük tahta rakibin seviyesinin 10 katı puan getirir; 40 hamleden önce kazanılan elde, artan her hamle için 5 puan daha eklenir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Nine linked tic-tac-toe boards with the send-to rule",
+      "tr": "Gönderme kuralıyla birbirine bağlı dokuz XOX tahtası"
+    },
+    {
+      "en": "Six computer rivals, from Rookie to Grandmaster",
+      "tr": "Acemi'den Büyükusta'ya altı bilgisayar rakip"
+    },
+    {
+      "en": "X and O swap every round",
+      "tr": "X ve O her elde yer değiştirir"
+    },
+    {
+      "en": "Online games against a friend",
+      "tr": "Arkadaşına karşı çevrimiçi oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "What happens to a small board that fills up with no winner?",
+        "tr": "Kazananı olmadan dolan küçük tahtaya ne olur?"
+      },
+      "a": {
+        "en": "It is closed for the rest of the round and counts for neither side, so it can block a line of three on the big grid.",
+        "tr": "El sonuna kadar kapanır ve hiçbir tarafa sayılmaz; bu yüzden büyük tahtadaki bir üçlüyü kesebilir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the rival thinks only briefly, makes careless moves often and climbs three levels at most. Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da rakip çok kısa düşünür, sık sık dikkatsiz hamle yapar ve en fazla üç seviye çıkar. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Create a room on ayvago.com and share the invite. The starting player is X and moves first, and the host can call a rematch afterwards.",
+        "tr": "Evet. ayvago.com'da bir oda kurup daveti paylaş. Başlayan oyuncu X olur ve ilk hamleyi yapar; sonunda oda sahibi rövanş isteyebilir."
+      }
+    }
+  ]
+}

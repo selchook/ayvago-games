@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Rooftop Courier is a 3D parkour runner with a deadline. You carry parcels across the roofs of an old brick city at dusk, and each one must reach its glowing roof hatch before its clock runs out. The route is yours to read: jump the alleys, vault low walls, slide under beams, climb fire escapes, ride zip-lines and bounce off awnings onto higher roofs.\n\nMoves chain into a flow. Every move done without stalling on flat ground raises the multiplier, and a full flow meter starts a Rush: for a few seconds points are doubled, you run faster and you smash through obstacles. Stamps on the roofs are your shop money.\n\nEvery six deliveries you cross into the next district: Brick Row, Market Rooftops, Construction Site and Old Factory, then around again, with wider gaps and more clutter each time. On Normal one fall into the alley or one late parcel ends the shift.",
+    "tr": "Çatı Kuryesi, teslim saati olan bir 3B parkur koşusu. Gün batarken eski bir tuğla şehrin çatılarında koli taşırsın; her koli, saati bitmeden ışıklı çatı kapağına ulaşmalı. Yolu okumak sana kalmış: ara sokakların üstünden atla, alçak duvarları aş, kirişlerin altından kay, yangın merdivenlerine tırman, tellerde kay, tentelerden sekip yüksek çatılara çık.\n\nHareketler bir akış oluşturur. Düz zeminde oyalanmadan yaptığın her hareket çarpanı büyütür; akış çubuğu dolunca HIZ modu başlar: birkaç saniye boyunca puanlar iki katına çıkar, daha hızlı koşarsın ve engelleri yarıp geçersin. Çatılardaki pullar mağaza paran.\n\nHer altı teslimatta bir sonraki bölgeye geçersin: Tuğla Sokak, Pazar Çatıları, Şantiye ve Eski Fabrika; sonra baştan, her turda daha geniş boşluklar ve daha çok engelle. Normal'de sokağa bir kez düşmek ya da bir koliyi geç getirmek mesaiyi bitirir."
+  },
+  "howToPlay": [
+    {
+      "en": "Press PLAY: the courier runs on their own and you steer. The first run shows four short tips.",
+      "tr": "OYNA'ya bas: kurye kendiliğinden koşar, sen yön verirsin. İlk koşuda dört kısa ipucu çıkar."
+    },
+    {
+      "en": "Head for the beam of light over the parcel's hatch and run onto it. The parcel chip shows the time and distance left; run past the hatch and the parcel is rerouted while its clock keeps ticking.",
+      "tr": "Kolinin çatı kapağının üstündeki ışık sütununa koş ve kapağın üstüne bas. Koli göstergesi kalan süreyi ve mesafeyi gösterir; kapağı geçip gidersen koli yeni adrese yönlenir, saati ise işlemeye devam eder."
+    },
+    {
+      "en": "Jump right before a low wall to vault it, slide under beams and jump beside a pole to catch its cable. At a tall wall, look for the ladder.",
+      "tr": "Alçak duvarın hemen önünde zıplayıp üstünden aş, kirişlerin altından kay, direğin yanında zıplayıp teli yakala. Yüksek duvarda merdiveni ara."
+    },
+    {
+      "en": "Grab stamps, time bottles (+5 s), springs (three super jumps) and power-ups by running through them.",
+      "tr": "Pulları, zaman şişelerini (+5 sn), yayları (üç süper zıplama) ve güçleri üstlerinden koşarak topla."
+    },
+    {
+      "en": "After the shift, finished missions pay stamps. Spend them in the shop on upgrades, bags and caps.",
+      "tr": "Mesaiden sonra tamamlanan görevler pul öder. Pulları mağazada geliştirmelere, çantalara ve şapkalara harca."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D steer. Space, ↑, W or Z jumps (hold for a longer jump). ↓, S, X or Shift slides on the ground and rolls when pressed as you land.",
+      "tr": "← → ya da A / D yön verir. Boşluk, ↑, W ya da Z zıplatır (uzun zıplama için basılı tut). ↓, S, X ya da Shift yerde kaydırır, inerken basılırsa yuvarlar."
+    },
+    "touch": {
+      "en": "Drag your left thumb to steer. Tap JUMP or swipe up on the right (hold for a longer jump); tap SLIDE or swipe down to slide, or to roll as you land.",
+      "tr": "Yön vermek için sol başparmağını sürükle. ZIPLA'ya dokun ya da sağda yukarı kaydır (uzun zıplama için basılı tut); kaymak ya da inerken yuvarlanmak için KAY'a dokun veya aşağı kaydır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Roll every big drop. A hard landing without a roll staggers you and breaks the flow; a roll timed at touchdown adds points and speed.",
+      "tr": "Her yüksek düşüşte yuvarlan. Yuvarlanmadan sert inmek seni sendeletir ve akışı koparır; tam yere değerken yuvarlanmak puan ve hız kazandırır."
+    },
+    {
+      "en": "Delivering with at least 40% of the clock left is a perfect delivery worth 450 instead of 300, and a streak of on-time deliveries raises the multiplier up to ×3.",
+      "tr": "Saatin en az %40'ı dururken yaptığın teslimat kusursuz sayılır ve 300 yerine 450 puan eder; zamanında teslimatlardan oluşan seri çarpanı ×3'e kadar çıkarır."
+    },
+    {
+      "en": "Tripping over an obstacle costs speed, the flow and two seconds of the parcel clock. In a Rush or with a Shield Bubble you go straight through.",
+      "tr": "Bir engele takılmak hız, akış ve kolinin saatinden iki saniye kaybettirir. HIZ modunda ya da Kalkan Balonu varken engeli yarıp geçersin."
+    },
+    {
+      "en": "Check your three missions before a shift. Each pays 20 stamps or more, and a run spent zip-lining or bouncing off awnings can pay better than pure sprinting.",
+      "tr": "Mesaiden önce üç görevine bak. Her biri 20 ya da daha çok pul öder; tellerde kaydığın, tentelerden sektiğin bir koşu, sadece koştuğun bir koşudan çok kazandırabilir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Vaults, slides, rolls, ladders, zip-lines and awning bounces",
+      "tr": "Duvar aşma, kayma, yuvarlanma, merdiven, tel ve tente sekmesi"
+    },
+    {
+      "en": "Six power-ups, from a glider to a slow-mo watch",
+      "tr": "Planörden ağır çekim saatine altı güç"
+    },
+    {
+      "en": "Four districts that repeat, harder each time round",
+      "tr": "Her turda zorlaşarak tekrar eden dört bölge"
+    },
+    {
+      "en": "A shop with ten upgrades plus bags and caps",
+      "tr": "On geliştirme, çanta ve şapka satan bir mağaza"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy you get three hearts, so a fall or a late parcel costs a heart instead of the run. The courier is slower, parcel clocks longer, gaps narrower, obstacles fewer, and short jumps are pulled onto the roof. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da üç canın olur; düşmek ya da koliyi geç getirmek koşuyu değil bir canı götürür. Kurye daha yavaş, koli saatleri daha uzun, boşluklar daha dar, engeller daha azdır ve kısa kalan zıplamalar çatıya çekilir. Kolay koşular sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "Distance gives a point per metre, moves are multiplied by the flow, and deliveries pay the most. Stamps, power-ups and the rare golden pigeon add more, and a Rush doubles distance, move and delivery points.",
+        "tr": "Mesafe her metre için bir puan getirir, hareketler akış çarpanıyla çarpılır, en çok puanı teslimatlar verir. Pullar, güçler ve nadir altın güvercin de puan ekler; HIZ modu mesafe, hareket ve teslimat puanlarını ikiye katlar."
+      }
+    },
+    {
+      "q": {
+        "en": "Do my upgrades stay after a run?",
+        "tr": "Geliştirmeler koşudan sonra kalıyor mu?"
+      },
+      "a": {
+        "en": "Yes, stamps and purchases are saved in your browser. Most upgrades have three levels; Starting shield has one, and the extra hearts only apply on Easy.",
+        "tr": "Evet, pulların ve aldıkların tarayıcında saklanır. Çoğu geliştirmenin üç seviyesi var, Hazır kalkan ise tek seviyeli; ek canlar yalnızca Kolay'da işe yarar."
+      }
+    }
+  ]
+}

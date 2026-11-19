@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Hex Merge is a number-merging puzzle on a honeycomb of 37 hexes. You are given one numbered piece at a time and drop it on any empty hex. When three or more equal numbers touch, they merge into a single tile one number higher, on the hex where you dropped the piece. If that new tile now touches two of its own number, it merges again, and each link of such a chain multiplies the points.\n\nNumbers run from 1 to 7. A merge of 7s does not make an 8: it sets off a SUPERNOVA that wipes out the group and every hex around it for at least 1,000 points. The game is over when every hex is taken (BOARD FULL!) and you have no bomb to open space.\n\nEvery 12 pieces raise the level, and the tray deals bigger numbers: 1 to 3 at first, up to 4 from level 3 and up to 5 from level 5. From level 2 a BOMB sometimes appears in the tray, and from level 3 each level-up drops a grey stone onto a random empty hex. Stones stay put until a merge next to them or a bomb breaks them.",
+    "tr": "Altıgen Birleştir, 37 altıgenden oluşan bir petek üzerinde oynanan sayı birleştirme bulmacası. Sana her seferinde numaralı tek bir parça verilir, sen de onu boş bir altıgene bırakırsın. Aynı sayıdan üç ya da daha fazlası yan yana gelince birleşip bir üst sayıya dönüşür; yeni taş, parçayı bıraktığın altıgende belirir. Bu yeni taş kendi sayısından iki taşa daha değiyorsa yeniden birleşir ve zincirin her halkası puanı katlar.\n\nSayılar 1'den 7'ye kadar gider. 7'ler birleşince 8 olmaz: grubu ve çevresindeki bütün altıgenleri silen bir SÜPERNOVA patlar ve en az 1.000 puan getirir. Bütün altıgenler dolduğunda (TAHTA DOLU!) ve yer açacak bir bomban yoksa oyun biter.\n\nHer 12 parçada seviye atlarsın ve tepsi daha büyük sayılar getirir: başta 1 ile 3 arası, 3. seviyeden itibaren 4'e, 5. seviyeden itibaren 5'e kadar. 2. seviyeden sonra tepsiye ara sıra BOMBA gelir; 3. seviyeden itibaren de her seviye atlayışta rastgele boş bir altıgene gri bir taş düşer. Taşlar, yanlarında bir birleşme olana ya da bir bomba onları kırana kadar yerinden kalkmaz."
+  },
+  "howToPlay": [
+    {
+      "en": "Tap an empty hex to drop the piece from the tray. The smaller piece beside it, under NEXT, comes after it.",
+      "tr": "Tepsideki parçayı bırakmak için boş bir altıgene dokun. Yanındaki, SIRADAKİ yazan küçük parça ondan sonra gelir."
+    },
+    {
+      "en": "Put three or more equal numbers side by side: they merge into the next number on the hex you just filled, and a chain may follow (CHAIN x2, x3 …).",
+      "tr": "Aynı sayıdan üç ya da daha fazlasını yan yana getir: az önce doldurduğun altıgende bir üst sayıya birleşirler, ardından zincir gelebilir (ZİNCİR x2, x3 …)."
+    },
+    {
+      "en": "Once per turn you may SWAP the piece in hand with the next one.",
+      "tr": "Her turda bir kez, DEĞİŞTİR ile elindeki parçayı sıradakiyle takas edebilirsin."
+    },
+    {
+      "en": "A bomb can go on any hex, even a full one. It clears that hex and its six neighbours, stones included.",
+      "tr": "Bomba dolu olsa bile herhangi bir altıgene bırakılabilir. O altıgeni ve çevresindeki altı komşusunu, taşlar dahil temizler."
+    },
+    {
+      "en": "Keep space free. When the last hex fills and no bomb is at hand, the game ends.",
+      "tr": "Boş yer bırak. Son altıgen dolduğunda elinde bomba yoksa oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "The arrows or WASD move the highlight from hex to hex, Space, Enter or Z drops the piece there, and X or Shift swaps it with the next one. Esc or P pauses.",
+      "tr": "Oklar ya da WASD vurguyu altıgenden altıgene taşır, Boşluk, Enter ya da Z parçayı oraya bırakır, X ya da Shift onu sıradakiyle değiştirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap an empty hex to drop the piece. Tap either piece in the tray to swap them.",
+      "tr": "Parçayı bırakmak için boş bir altıgene dokun. Değiştirmek için tepsideki iki parçadan birine dokun."
+    },
+    "mouse": {
+      "en": "Click a hex to drop the piece and click the tray to swap.",
+      "tr": "Parçayı bırakmak için bir altıgene, değiştirmek için tepsiye tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "The merged tile lands where you dropped the last piece, so choose that hex with the next merge in mind: next to two tiles of the number it will become.",
+      "tr": "Birleşen taş, son parçayı bıraktığın yerde belirir; o altıgeni bir sonraki birleşmeyi düşünerek seç: oluşacak sayıdan iki taşın yanına."
+    },
+    {
+      "en": "Bigger groups pay more. Two separate pairs joined by one piece merge as a group of five, and the points grow with the group size.",
+      "tr": "Büyük gruplar daha çok kazandırır. Ayrı duran iki çifti tek bir parçayla birleştirirsen beşli grup olarak birleşirler; puan da grubun büyüklüğüyle artar."
+    },
+    {
+      "en": "You can hold a bomb back: swap it to the NEXT slot and keep swapping each turn. While it waits there, a full board does not end the game.",
+      "tr": "Bombayı bekletebilirsin: onu SIRADAKİ yerine gönder ve her turda yeniden değiştir. Orada beklediği sürece tahta dolsa da oyun bitmez."
+    },
+    {
+      "en": "Merge next to stones to break them. A stone sitting in the middle of the board steals your best chain spot, so clear those first.",
+      "tr": "Taşları kırmak için yanlarında birleştirme yap. Tahtanın ortasındaki bir taş en iyi zincir yerini kapar; önce onları temizle."
+    }
+  ],
+  "features": [
+    {
+      "en": "A 37-hex board and numbers from 1 to 7",
+      "tr": "37 altıgenlik tahta ve 1'den 7'ye sayılar"
+    },
+    {
+      "en": "Chain merges and a Supernova for three 7s",
+      "tr": "Zincirleme birleşmeler ve üç 7'ye Süpernova"
+    },
+    {
+      "en": "Bombs and falling stones in later levels",
+      "tr": "İleri seviyelerde bombalar ve düşen taşlar"
+    },
+    {
+      "en": "A free swap with the next piece on every turn",
+      "tr": "Her turda sıradaki parçayla bedava değiştirme"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Dropping a piece scores its number. A merge scores the new number × 10 × the tiles in the group × the chain step, so three 2s make a 3 worth 90. Bombs and Supernovas pay for what they clear.",
+        "tr": "Bırakılan parça kendi sayısı kadar puan getirir. Birleşme; yeni sayı × 10 × gruptaki taş sayısı × zincir basamağı kadar puandır, yani üç 2'den oluşan 3, 90 puan eder. Bomba ve Süpernova da temizledikleri kadar puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "What does the MAX chip show?",
+        "tr": "EN BÜYÜK göstergesi neyi gösteriyor?"
+      },
+      "a": {
+        "en": "The highest number you have built in this game, in that number's colour.",
+        "tr": "Bu oyunda kurduğun en büyük sayıyı, o sayının rengiyle gösterir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Level 1 deals only 1s, 2s and 3s and no bombs, and stones only start falling at level 3, so the start is gentle.",
+        "tr": "Hayır. 1. seviyede yalnızca 1, 2 ve 3 gelir, bomba gelmez; taşlar da ancak 3. seviyede düşmeye başlar. Başlangıç bu yüzden yumuşaktır."
+      }
+    }
+  ]
+}

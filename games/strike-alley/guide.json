@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Strike Alley is 3D ten-pin bowling: one full game of ten frames on lane 7 of a neon alley, scored by the real rules up to the perfect 300. There is no power bar. You aim like a bowler: the lane is 39 boards wide, numbered from the right gutter, and you choose the board where the ball touches down at the foul line and a target board at the seven arrows 15 feet down the lane. The ball's line runs through both.\n\nThe ball skids through the oil on the first 12 metres, then grips the dry back end and hooks. Speed runs from about 19 to 35 km/h, and spin goes from a big left hook to a backup ball. The pins knock into each other with real physics, so the same hit can leave different pins.\n\nThe oil wears shorter every frame, so the ball hooks a little earlier as the game goes on; the game warns you in frames 4 and 7.",
+    "tr": "Strike Salonu, üç boyutlu bowling: neon ışıklı bir salonun 7. pistinde on frame'lik tam bir oyun, gerçek kurallarla 300'lük kusursuz oyuna kadar puanlanır. Güç çubuğu yoktur. Bowlingci gibi nişan alırsın: pist sağ kanaldan başlayarak numaralanan 39 tahta genişliğindedir; topun faul çizgisinde yere değeceği tahtayı ve 15 fit ilerideki yedi okun hizasında bir hedef tahtayı seçersin. Topun çizgisi ikisinden de geçer.\n\nTop ilk 12 metredeki yağda kayar, sonra kuru bölüme tutunup döner. Hız yaklaşık 19 ile 35 km/sa arasındadır; falso sola sert dönüşten ters falsoya kadar ayarlanır. Lobutlar gerçek fizikle birbirine çarpar, aynı vuruş farklı lobutlar bırakabilir.\n\nYağ her frame'de biraz kısalır; oyun ilerledikçe top daha erken döner, oyun da seni 4. ve 7. frame'de uyarır."
+  },
+  "howToPlay": [
+    {
+      "en": "Pick your stand board at the foul line and your target board at the arrows; the chip at the top shows both.",
+      "tr": "Faul çizgisindeki duruş tahtanı ve oklardaki hedef tahtanı seç; üstteki gösterge ikisini de yazar."
+    },
+    {
+      "en": "Set the spin: more hook to the left, straight, or a backup ball that curves the other way.",
+      "tr": "Falsoyu ayarla: sola daha çok dönüş, düz ya da öbür yöne kıvrılan ters falso."
+    },
+    {
+      "en": "Bowl. On a touch screen, flick up: a faster flick throws harder, a curved one adds hook. On a keyboard, hold Space while the speed meter swings and let go.",
+      "tr": "At. Dokunmatik ekranda yukarı fırlat: hızlı fırlatma sert atar, kavisli fırlatma dönüş ekler. Klavyede hız göstergesi gidip gelirken Boşluğu basılı tut ve bırak."
+    },
+    {
+      "en": "After each ball a tip chip says how far you missed the pocket, or which pin to aim at for the spare. Tap it, or press H, to move your line.",
+      "tr": "Her atıştan sonra ipucu göstergesi cebi ne kadar kaçırdığını ya da spare için hangi lobuta nişan alacağını söyler. Çizgini kaydırmak için ona dokun ya da H'ye bas."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → move the stand board (↑ switches to the target, ↓ back), Shift moves half a board. Hold and release Space or Enter to bowl. Z and X turn the spin, V switches the lane view, H takes the tip.",
+      "tr": "← → duruş tahtasını kaydırır (↑ hedefe, ↓ geri geçer), Shift yarım tahta kaydırır. Atmak için Boşluk ya da Enter'ı basılı tutup bırak. Z ve X falsoyu çevirir, V pist görünümünü değiştirir, H ipucunu uygular."
+    },
+    "touch": {
+      "en": "Drag along the dots to choose the stand board and along the arrows to choose the target, then flick up to bowl. Curve the flick, or tap ◀ ▶ on the spin control, for spin. The LANE button switches the view.",
+      "tr": "Duruş tahtası için noktalar boyunca, hedef için oklar boyunca sürükle, sonra atmak için yukarı fırlat. Falso için fırlatmayı kavisli yap ya da falso göstergesindeki ◀ ▶'ye dokun. PİST düğmesi görünümü değiştirir."
+    }
+  },
+  "tips": [
+    {
+      "en": "Change one thing at a time. If the ball misses the pocket, move the stand or target board but keep speed and spin, so you can see what the change does.",
+      "tr": "Her seferinde tek bir şeyi değiştir. Top cebi kaçırıyorsa duruş ya da hedef tahtasını kaydır ama hızı ve falsoyu koru; değişikliğin etkisini görürsün."
+    },
+    {
+      "en": "Move freely for a spare. When a new rack is set, the aim jumps back to the line of your last first ball, so a spare adjustment never spoils your strike line.",
+      "tr": "Spare için çizgini rahatça değiştir. Yeni lobut dizildiğinde nişan, son ilk atışının çizgisine geri döner; spare ayarı strike çizgini bozmaz."
+    },
+    {
+      "en": "For a spare, the tip aims at the front pin still standing. Hit a single pin full in the face, and a group of pins on its pocket side.",
+      "tr": "Spare'de ipucu ayakta kalan en öndeki lobutu hedef alır. Tek lobutu tam ortadan, lobut grubunu cep tarafından vur."
+    },
+    {
+      "en": "After the frame 4 and 7 oil warnings, expect earlier hook and let the tip chip tell you how far to move.",
+      "tr": "4. ve 7. frame'deki yağ uyarılarından sonra topun daha erken döneceğini bil; ne kadar kayacağını ipucu göstergesi söyler."
+    }
+  ],
+  "features": [
+    {
+      "en": "Real ten-pin scoring, up to the perfect 300",
+      "tr": "300'lük kusursuz oyuna kadar gerçek bowling puanlaması"
+    },
+    {
+      "en": "Board-and-arrow aiming, spin and a 39-board lane",
+      "tr": "Tahta ve okla nişan, falso ve 39 tahtalık pist"
+    },
+    {
+      "en": "Oil that wears shorter as the game goes on",
+      "tr": "Oyun ilerledikçe kısalan yağ"
+    },
+    {
+      "en": "Pin physics, strike replays and a scorecard",
+      "tr": "Lobut fiziği, strike tekrarları ve skor kartı"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How does bowling scoring work?",
+        "tr": "Bowling puanı nasıl hesaplanır?"
+      },
+      "a": {
+        "en": "A strike counts 10 plus the next two balls, a spare 10 plus the next ball, any other frame the pins knocked down. A strike or spare in the tenth frame earns bonus balls, so twelve strikes make 300.",
+        "tr": "Strike, 10 artı sonraki iki atışı; spare, 10 artı sonraki atışı sayar; diğer frame'ler devrilen lobut kadardır. Onuncu frame'de strike ya da spare bonus atış getirir; on iki strike 300 eder."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy shows the ball's whole path before you bowl, steers a ball heading close to the pocket into it, softens the hook and wears the oil more slowly. Easy games stay off the leaderboard.",
+        "tr": "Evet. Kolay'da atmadan önce topun bütün yolu görünür, cebe yakın giden top cebe yönlendirilir, falso yumuşar ve yağ daha yavaş kısalır. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes. It is made for a phone held upright; you bowl by flicking your thumb up the screen.",
+        "tr": "Evet. Dik tutulan telefon için yapılmıştır; topu başparmağını yukarı fırlatarak atarsın."
+      }
+    }
+  ]
+}

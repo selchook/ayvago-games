@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Brick Breaker is a paddle-and-ball game with a finish line: ten hand-made levels, from Rainbow and Pyramid to Fortress and The Core. Clear the last one and you win the game. Each level is a wall of bricks in ten columns, and the ball has to break every brick except the steel ones.\n\nNot every brick breaks at once. Plain bricks take one hit, outlined ones two, dark armour three, and grey steel never breaks; it only bounces the ball back, often at awkward angles. Each level starts the ball a little faster, and every eighth paddle hit speeds it up again.\n\nRoughly one broken brick in seven drops a capsule: W widens the paddle for 12 seconds, M splits the ball into three, S slows the ball for 10 seconds, and a rare red + gives a life. You start with three lives and can hold up to six. A ball that falls past the paddle is gone, and losing the last ball costs a life.",
+    "tr": "Tuğla Kırıcı, sonu olan bir raket ve top oyunu: Gökkuşağı ve Piramit'ten Kale ve Çekirdek'e uzanan, elle tasarlanmış on bölüm. Sonuncuyu bitirirsen oyunu kazanırsın. Her bölüm on sütunluk bir tuğla duvarıdır ve top çelik olanlar dışında bütün tuğlaları kırmalıdır.\n\nHer tuğla tek vuruşta kırılmaz. Düz tuğlalar bir, çerçeveli olanlar iki, koyu zırhlılar üç vuruş ister; gri çelik ise hiç kırılmaz, topu çoğu zaman beklenmedik açılarla geri sektirir. Her bölümde top biraz daha hızlı başlar ve rakete her sekiz vuruşta bir yeniden hızlanır.\n\nKırılan yaklaşık her yedi tuğladan biri bir kapsül düşürür: W raketi 12 saniye genişletir, M topu üçe böler, S topu 10 saniye yavaşlatır, nadir gelen kırmızı + ise bir can verir. Üç canla başlarsın, en fazla altı canın olabilir. Raketin altından kaçan top kaybolur; son top da düşünce bir can gider."
+  },
+  "howToPlay": [
+    {
+      "en": "Move the paddle along the bottom and launch the ball. If you wait, it launches by itself after four seconds.",
+      "tr": "Raketi aşağıda kaydır ve topu fırlat. Beklersen top dört saniye sonra kendiliğinden fırlar."
+    },
+    {
+      "en": "Steer with the paddle: a ball that lands on the centre goes straight up, one near an edge flies off at a steep angle to that side.",
+      "tr": "Raketle yön ver: ortasına düşen top dümdüz yukarı çıkar, kenarına yakın düşen top o tarafa dik bir açıyla gider."
+    },
+    {
+      "en": "Catch the falling capsules with the paddle. Wide and slow show a draining bar at the bottom right while they last.",
+      "tr": "Düşen kapsülleri raketle yakala. Geniş raket ve yavaş top sürdükçe sağ altta azalan bir çubuk görünür."
+    },
+    {
+      "en": "Break every brick except steel to clear the level. After level 10 the game ends as a win.",
+      "tr": "Bölümü bitirmek için çelik olanlar dışındaki bütün tuğlaları kır. 10. bölümden sonra oyun zaferle biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D move the paddle. Space, ↑, W, Enter or Z launches the ball. Esc or P pauses.",
+      "tr": "← → ya da A / D raketi kaydırır. Boşluk, ↑, W, Enter ya da Z topu fırlatır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Slide a finger anywhere below the top bar and the paddle follows it; lift the finger to launch.",
+      "tr": "Parmağını üst çubuğun altında herhangi bir yerde kaydır, raket onu izler; topu fırlatmak için parmağını kaldır."
+    },
+    "mouse": {
+      "en": "The paddle follows the pointer; click to launch.",
+      "tr": "Raket fare imlecini izler; fırlatmak için tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Bricks broken one after another without the ball touching the paddle build a COMBO up to x8, and each one scores ten times the combo. Aim for gaps that send the ball above the wall, where it can bounce around for a long run.",
+      "tr": "Top rakete değmeden art arda kırılan tuğlalar x8'e kadar KOMBO kurar ve her biri komboyla çarpılmış 10 puan getirir. Topu duvarın üstüne gönderecek boşluklara nişan al; orada uzun süre sekip durabilir."
+    },
+    {
+      "en": "Losing a life also cancels a wide paddle or slow ball, so play safe while one is running instead of chasing capsules.",
+      "tr": "Can kaybetmek geniş raketi ya da yavaş topu da iptal eder; biri etkinken kapsül kovalamak yerine güvenli oyna."
+    },
+    {
+      "en": "Multiball is safest when caught early in a level: with three balls bouncing, losing one costs nothing as long as another stays up.",
+      "tr": "Çoklu top en çok bölümün başında işe yarar: üç top sekerken, biri havada kaldığı sürece düşen top sana bir şey kaybettirmez."
+    },
+    {
+      "en": "The level-clear bonus grows with every life you still hold, so a careful run through the early levels pays off later.",
+      "tr": "Bölüm sonu bonusu elindeki her canla büyür; ilk bölümleri dikkatle geçmek ileride karşılığını verir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Ten designed levels and a real ending",
+      "tr": "Tasarlanmış on bölüm ve gerçek bir son"
+    },
+    {
+      "en": "Bricks that take one, two or three hits, plus unbreakable steel",
+      "tr": "Bir, iki ya da üç vuruşta kırılan tuğlalar ve kırılmaz çelik"
+    },
+    {
+      "en": "Wide paddle, multiball, slow ball and extra-life capsules",
+      "tr": "Geniş raket, çoklu top, yavaş top ve ek can kapsülleri"
+    },
+    {
+      "en": "Combo scoring up to x8",
+      "tr": "x8'e kadar kombo puanı"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A hit that only cracks a brick is 5 points. A broken brick is 10 × the combo (up to x8) plus 2 for every level already cleared, a capsule 25, and finishing a level 250, plus 100 per level already cleared and 50 per life left.",
+        "tr": "Tuğlayı yalnızca çatlatan vuruş 5 puandır. Kırılan tuğla 10 × kombo (en çok x8) artı geçilen her bölüm için 2, kapsül 25 puan eder. Bölümü bitirmek 250 puan, artı geçilen her bölüm için 100 ve kalan her can için 50 getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Does the game have an ending?",
+        "tr": "Oyunun sonu var mı?"
+      },
+      "a": {
+        "en": "Yes. Clearing level 10, The Core, ends the run as a win. Running out of lives before that ends it as a loss, with your score so far.",
+        "tr": "Evet. 10. bölüm Çekirdek'i bitirince oyun zaferle sona erer. Daha önce canların biterse o ana kadarki skorunla kaybetmiş olursun."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Level 1 is a plain five-row wall with a slower ball, and the extra-life capsules let you build a cushion of up to six lives.",
+        "tr": "Hayır. 1. bölüm daha yavaş topla oynanan beş sıralık düz bir duvardır; ek can kapsülleriyle altı cana kadar yedek biriktirebilirsin."
+      }
+    }
+  ]
+}

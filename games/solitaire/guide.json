@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Solitaire here is Klondike, the patience game most people mean by the word. A shuffled deck is dealt into seven columns of one to seven cards, with only the bottom card of each face up, and the remaining 24 cards form the stock. The goal is to move all 52 cards to the four foundations at the top, one per suit, building each from Ace up to King.\n\nIn the columns, cards go down in rank and alternate red and black: a red 9 on a black 10, a black 8 on that. You may move a whole face-up run at once, and only a King, or a run starting with one, can fill an empty column. Each move that uncovers a face-down card turns it over.\n\nThe stock is drawn one card at a time, and you get three passes through it; turning the waste back over costs 50 points. Tap a card and it jumps to the best legal spot, so most of the game is choosing which card to play rather than dragging it there.",
+    "tr": "Buradaki Solitaire, bu adı duyunca çoğu kişinin aklına gelen Klondike kâğıt falı. Karıştırılan deste, birden yediye kadar kart içeren yedi sütuna dağıtılır; her sütunun yalnızca en alttaki kartı açıktır, kalan 24 kart desteyi oluşturur. Amaç 52 kartın hepsini, her türe bir tane olmak üzere üstteki dört yığına As'tan Papaz'a doğru dizmektir.\n\nSütunlarda kartlar büyükten küçüğe iner ve kırmızıyla siyah sırayla gelir: siyah 10'un üstüne kırmızı 9, onun üstüne siyah 8. Açık bir diziyi tek seferde taşıyabilirsin; boş sütuna yalnızca Papaz ya da Papaz'la başlayan bir dizi konabilir. Altındaki kapalı kartı açığa çıkaran her hamle o kartı çevirir.\n\nDesteden kartlar birer birer çekilir ve desteyi üç tur dolaşabilirsin; açık kartları yeniden desteye çevirmek 50 puana mal olur. Bir karta dokunduğunda kart gidebileceği en iyi yere atlar; oyunun büyük kısmı kartı sürüklemek değil, hangi kartı oynayacağını seçmektir."
+  },
+  "howToPlay": [
+    {
+      "en": "Tap the stock to turn a card onto the waste. When it is empty, tap again to start the next pass; the chip beside it shows Pass 1/3.",
+      "tr": "Desteye dokunarak bir kartı açık yığına çevir. Deste bitince yeni tura geçmek için yeniden dokun; yanındaki gösterge Tur 1/3 şeklinde turu gösterir."
+    },
+    {
+      "en": "Tap or drag cards to build the columns down in alternating colours and the foundations up by suit.",
+      "tr": "Kartlara dokunarak ya da sürükleyerek sütunları renkleri değişerek aşağı, yığınları türüne göre yukarı diz."
+    },
+    {
+      "en": "Stuck? HINT shows a useful move and UNDO takes back the last one. Once every card is face up, AUTO FINISH plays the rest.",
+      "tr": "Takıldın mı? İPUCU yararlı bir hamle gösterir, GERİ AL son hamleyi geri alır. Bütün kartlar açılınca OTOMATİK BİTİR gerisini oynar."
+    },
+    {
+      "en": "The deal ends when all four foundations are full, when NO MOVES LEFT appears, or when you press GIVE UP twice.",
+      "tr": "El, dört yığın da dolunca, HAMLE KALMADI yazınca ya da PES ET'e iki kez basınca biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → choose the waste or a column, ↑ ↓ choose how many cards of a column to take, Enter or Z plays them and 1 to 7 send them to that column. Space draws, X or Backspace undoes, H hints, A auto-finishes, N gives up. Esc or P pauses.",
+      "tr": "← → açık yığını ya da bir sütunu seçer, ↑ ↓ sütundan kaç kart alınacağını belirler, Enter ya da Z oynar, 1-7 kartları o sütuna gönderir. Boşluk kart çeker, X ya da Backspace geri alır, H ipucu verir, A otomatik bitirir, N pes eder. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a card to send it to its best spot, or drag it where you want. Tap the stock to draw.",
+      "tr": "Karta dokunursan en uygun yerine gider; istersen istediğin yere sürükle. Kart çekmek için desteye dokun."
+    },
+    "mouse": {
+      "en": "Click a card to play it automatically, or drag and drop it; click the stock to draw.",
+      "tr": "Kartı kendiliğinden oynatmak için tıkla ya da sürükleyip bırak; kart çekmek için desteye tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Turning over face-down cards matters most. When you have a choice, play from the column with the most hidden cards.",
+      "tr": "En önemli iş kapalı kartları açmaktır. Seçeneğin varsa en çok kapalı kartı olan sütundan oyna."
+    },
+    {
+      "en": "Do not empty a column unless a King is ready to go there. An empty column that only a King can use is wasted space until then.",
+      "tr": "Oraya gidecek bir Papaz hazır değilse sütun boşaltma. Yalnızca Papaz'ın girebildiği boş sütun o zamana kadar boşa durur."
+    },
+    {
+      "en": "Low cards are safe to send up, but keep 5s and 6s on the table while you still need them to hold other cards.",
+      "tr": "Küçük kartları yığına göndermek güvenlidir; ama başka kartları taşımak için hâlâ gerekiyorsa 5 ve 6'ları masada tut."
+    },
+    {
+      "en": "With only three passes, look at what each new waste card allows before drawing again.",
+      "tr": "Yalnızca üç turun olduğu için yeni kart çekmeden önce açılan kartın neye yaradığına bak."
+    }
+  ],
+  "features": [
+    {
+      "en": "Klondike with one-card draw and three passes",
+      "tr": "Tek kart çekmeli, üç turlu Klondike"
+    },
+    {
+      "en": "Tap-to-play, drag and drop, and full keyboard play",
+      "tr": "Dokun-oyna, sürükle-bırak ve tam klavye desteği"
+    },
+    {
+      "en": "Undo up to 300 moves back, hints and auto finish",
+      "tr": "300 hamleye kadar geri alma, ipucu ve otomatik bitirme"
+    },
+    {
+      "en": "A time bonus for fast solves",
+      "tr": "Hızlı çözüme süre bonusu"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How is the score worked out?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A card to a foundation scores 10, from the waste to a column 5 and every card turned face up 5. Taking a card back from a foundation costs 15 and each new pass 50. A solved deal adds 500 plus a time bonus that starts at 1,500 and drops by 2 every second.",
+        "tr": "Yığına giden kart 10, açık yığından sütuna giden kart 5, açılan her kapalı kart 5 puan getirir. Yığından kart geri almak 15, her yeni tur 50 puan götürür. Çözülen el 500 puan ve 1.500'den başlayıp her saniye 2 azalan bir süre bonusu ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Can every deal be solved?",
+        "tr": "Her el çözülebilir mi?"
+      },
+      "a": {
+        "en": "No. Deals are random shuffles, and some cannot be won. When no useful move or draw remains, the game says NO MOVES LEFT and the deal ends with the points you have.",
+        "tr": "Hayır. Eller rastgele karıştırılır ve bazıları kazanılamaz. Yararlı hamle ya da çekilecek kart kalmayınca oyun HAMLE KALMADI der ve el o ana kadarki puanla biter."
+      }
+    },
+    {
+      "q": {
+        "en": "Does undo cost points?",
+        "tr": "Geri almak puan götürür mü?"
+      },
+      "a": {
+        "en": "No. Undo restores the score along with the cards, so the points from the move you took back are simply removed.",
+        "tr": "Hayır. Geri alma kartlarla birlikte puanı da eski hâline getirir; geri aldığın hamlenin puanı yalnızca silinir."
+      }
+    }
+  ]
+}

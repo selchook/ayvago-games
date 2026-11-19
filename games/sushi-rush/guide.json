@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Sushi Rush puts you behind the counter of a small 3D sushi bar whose customers are rabbits. They take a stool and order, and your chef walks between seven stations (fish fridge, rice, nori, cutting board, rolling mat, noodle pot and steamer) to build each dish on the plate. Rice with cut tuna is a tuna nigiri; rice, nori and cut cucumber rolled on the mat make a cucumber roll. Ramen, udon, gyoza, buns and dango cook on their own once started.\n\nA run is a series of days, each with a timer and a coin goal. The menu grows from two dishes on day 1 to thirteen by day 7, and customers get less patient. From day 3 a food critic may drop in, and from day 5 some guests order two dishes.\n\nEach morning you pick a power card for the rest of the run, and between days you buy kitchen upgrades that stay for good. The run ends when you miss a day's goal or run out of hearts; your score is everything you earned.",
+    "tr": "Suşi Telaşı seni müşterileri tavşan olan küçük bir 3D suşi barının tezgâhına geçirir. Müşteriler tabureye oturup sipariş verir; şefin yedi istasyon (balık dolabı, pirinç, nori, kesme tahtası, sarma hasırı, erişte tenceresi ve buharlık) arasında gidip gelerek her yemeği tabakta kurar. Pirinçle doğranmış ton balığı Ton Nigiri olur; pirinç, nori ve doğranmış salatalık hasırda sarılınca Salatalık Rulo çıkar. Ramen, udon, gyoza, çörek ve dango bir kez başlatınca kendi pişer.\n\nBir oyun günlerden oluşur; her günün bir süresi ve altın hedefi vardır. Menü 1. gündeki iki yemekten 7. güne kadar on üçe çıkar, müşterilerin sabrı da kısalır. 3. günden itibaren ünlü eleştirmen gelebilir, 5. günden itibaren bazı müşteriler iki yemek ister.\n\nHer sabah oyunun sonuna kadar geçerli bir güç kartı seçersin, günler arasında da kalıcı mutfak geliştirmeleri alırsın. Bir günün hedefini tutturamazsan ya da canların biterse oyun biter; puanın kazandığın paranın tamamıdır."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose your chef, read the day's goal and menu, and pick a power card.",
+      "tr": "Şefini seç, günün hedefine ve menüsüne bak, bir güç kartı seç."
+    },
+    {
+      "en": "Read an order and tap the stations in recipe order; the chef walks over and does each job, with up to four taps queued. At the fridge, pot and steamer you choose what to take or cook.",
+      "tr": "Siparişi oku ve istasyonlara tarif sırasıyla dokun; şef yürüyüp her işi yapar, sırada en fazla dört dokunuş bekler. Dolapta, tencerede ve buharlıkta ne alacağını ya da pişireceğini seçersin."
+    },
+    {
+      "en": "When the plate becomes a dish, tap the customer who ordered it. A wrong dish costs 3 coins and some patience; BIN empties a spoiled plate.",
+      "tr": "Tabak yemeğe dönüşünce onu isteyen müşteriye dokun. Yanlış yemek 3 altına ve biraz sabra mal olur; bozulan tabağı AT boşaltır."
+    },
+    {
+      "en": "A guest whose patience runs out leaves angry and takes a heart. You have three hearts each day.",
+      "tr": "Sabrı tükenen müşteri kızıp gider ve bir can götürür. Her gün üç canın olur."
+    },
+    {
+      "en": "Reach the coin goal before closing time. Then check the day's summary, buy upgrades and open the next day.",
+      "tr": "Kapanıştan önce altın hedefine ulaş. Ardından günün özetine bak, geliştirmeleri al ve sonraki günü aç."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "1–7 send the chef to a station (1 fish to 7 steam); in a picker the numbers choose. ← → pick a seat, Enter or Space serves, Backspace bins, B rings the bell, P pauses. On the card screen, 1–3 pick and R rerolls.",
+      "tr": "1–7 şefi istasyona gönderir (1 balık … 7 buhar); seçim penceresinde rakamlar seçer. ← → koltuk seçer, Enter ya da Boşluk servis eder, Backspace atar, B zili çalar, P duraklatır. Kart ekranında 1–3 seçer, R yeniden çeker."
+    },
+    "touch": {
+      "en": "Tap a station to send the chef, tap a customer to serve, and use the BIN button to empty the plate. The BELL button appears at the second rank of the Service Bell.",
+      "tr": "Şefi göndermek için istasyona, servis için müşteriye dokun; tabağı boşaltmak için AT düğmesini kullan. ZİL düğmesi, Servis Zili'nin ikinci seviyesinde görünür."
+    }
+  },
+  "tips": [
+    {
+      "en": "Start ramen or udon as soon as it is ordered and build sushi while it cooks, but collect it within seven seconds or it overcooks. Steamed dishes never spoil.",
+      "tr": "Ramen ya da udonu istenir istenmez başlat ve o pişerken suşi hazırla, ama yedi saniye içinde al, yoksa fazla pişer. Buharlık yemekleri bozulmaz."
+    },
+    {
+      "en": "Tips are up to 60% of a dish's price and shrink with the guest's patience, so serve the guest with the shortest patience bar first.",
+      "tr": "Bahşiş yemeğin fiyatının %60'ına kadar çıkar ve müşterinin sabrıyla küçülür; önce sabır çubuğu en kısa olan müşteriye servis et."
+    },
+    {
+      "en": "Put the critic first: they pay 1.5 times the price and over twice the tip, but have about 60% of the usual patience.",
+      "tr": "Eleştirmeni öne al: fiyatın bir buçuk katını ve iki katından fazla bahşiş öder, ama sabrı normalin yaklaşık %60'ıdır."
+    },
+    {
+      "en": "Sharp Knife and Rice Cooker are good early buys: chopping is the slowest job, and from rank II the Rice Cooker starts every plate with rice.",
+      "tr": "Keskin Bıçak ve Pilav Makinesi iyi ilk alımlardır: doğramak en yavaş iştir, Pilav Makinesi de ikinci seviyeden itibaren her tabağı pirinçle başlatır."
+    }
+  ],
+  "features": [
+    {
+      "en": "Thirteen dishes, from onigiri to sea urchin rolls, ramen and dango",
+      "tr": "Onigiriden kestane ruloya, ramenden dangoya on üç yemek"
+    },
+    {
+      "en": "24 power cards in four rarities, with one reroll a day",
+      "tr": "Dört nadirlikte 24 güç kartı, günde bir yeniden çekme hakkı"
+    },
+    {
+      "en": "Nine kitchen upgrades with three ranks each, kept between runs",
+      "tr": "Oyunlar arasında kalan, üçer seviyeli dokuz mutfak geliştirmesi"
+    },
+    {
+      "en": "Five chefs to choose from",
+      "tr": "Seçilebilen beş şef"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How does a run end?",
+        "tr": "Oyun nasıl biter?"
+      },
+      "a": {
+        "en": "A day ends at closing time. Reach its coin goal and the next day starts; miss it, or lose every heart first, and the run is over. Earned coins stay in your purse.",
+        "tr": "Gün kapanış saatinde biter. Hedefe ulaşırsan sonraki gün başlar; ulaşamazsan ya da önce bütün canların giderse oyun biter. Kazandığın altın kesende kalır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives four hearts a day, 30% more patience, fewer customers, days six seconds longer and slightly lower goals. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da günde dört canın olur; müşteriler %30 daha sabırlıdır, daha az gelir, günler altı saniye uzun sürer, hedefler biraz düşüktür. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes. Hold the phone sideways, because the bar is laid out in landscape. Everything works with taps.",
+        "tr": "Evet. Bar yatay olduğu için telefonu yan tut; her şey dokunarak oynanır."
+      }
+    }
+  ]
+}

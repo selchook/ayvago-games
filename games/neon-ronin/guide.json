@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Neon Ronin is a side-on 3D action platformer on the rooftops of a rain-soaked cyber city. You run, double jump and roll through enemy bolts while robots, drones, turrets and armoured brutes try to stop you. Your katana does most of the work: tap three times for the Neon Cut, sprint in for the Cyclone Edge, roll and slash for the Ronin Lunge, or cut a bolt just as it arrives to send it back. The blaster hits from range but overheats if you hold it too long.\n\nThe city has four districts, Neon Docks, Circuit Market, Smog Stacks and Zenith Spire, with three levels and a mech boss each, sixteen levels in all. Every level hides three data chips and has three stars to earn: clear it, find the chips (or take no hits on a boss), and beat the par time.\n\nBetween levels, the Ripperdoc sells cyberware for the gears you collect. Implant chips, earned at each level's first checkpoint, last for the current district run and can change how you fight.",
+    "tr": "Neon Samuray, yağmurlu bir siber şehrin çatılarında geçen, yandan görünümlü 3B bir aksiyon platform oyunu. Robotlar, dronlar, taretler ve zırhlı devler seni durdurmaya çalışırken koşar, çift zıplar, mermilerin içinden yuvarlanırsın. İşin çoğunu katanan görür: üç kez basınca Neon Kesik, koşarak dalınca Siklon Kılıcı, yuvarlanıp kesince Ronin Atılışı; tam gelirken kestiğin mermi de geri döner. Blaster uzaktan vurur ama fazla basılı tutarsan aşırı ısınır.\n\nŞehir dört bölgeden oluşur: Neon Rıhtım, Devre Çarşısı, Duman Bacaları ve Zirve Kulesi. Her birinde üç bölüm ve bir meka boss var, toplam on altı bölüm. Her bölümde üç veri çipi gizlidir ve üç yıldız kazanılır: bölümü bitir, çipleri bul (boss bölümünde hiç hasar alma) ve hedef süreyi geç.\n\nBölümler arasında Siber Cerrah, topladığın dişliler karşılığında siber donanım satar. Her bölümün ilk kontrol noktasında kazanılan implant çipleri o bölge koşusu boyunca geçerlidir ve dövüş tarzını değiştirebilir."
+  },
+  "howToPlay": [
+    {
+      "en": "Pick an unlocked level on the NIGHT CITY map. A run goes on level after level up to the district boss and beyond, as long as you have lives.",
+      "tr": "GECE ŞEHRİ haritasında açık bir bölüm seç. Koşu, canın olduğu sürece bölüm bölüm bölge bossuna ve ötesine kadar sürer."
+    },
+    {
+      "en": "Reach the beacon at the end of the level. Checkpoints bring you back after a fall; the first one in each level also earns an implant.",
+      "tr": "Bölümün sonundaki işarete ulaş. Kontrol noktaları düştüğünde seni geri getirir; her bölümdeki ilki bir de implant kazandırır."
+    },
+    {
+      "en": "Watch the hazards: orange ledges fall, live cables and laser gates switch on and off, steam vents hiss before they blow. Hit levers to open doors and bridges.",
+      "tr": "Tehlikelere dikkat et: turuncu çıkıntılar düşer, canlı kablolar ve lazer kapıları açılıp kapanır, buhar vanaları patlamadan önce tıslar. Kapı ve köprüleri açmak için kollara vur."
+    },
+    {
+      "en": "On the results screen pick your implant, then spend gears at the Ripperdoc. After a boss you get a new implant for the next district and a life back.",
+      "tr": "Sonuç ekranında implantını seç, sonra dişlilerini Siber Cerrah'ta harca. Bossu yenince sonraki bölge için yeni bir implant ve bir can kazanırsın."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "A/D or ←/→ run, W, ↑ or Space jump (hold for higher), S or ↓ drop and dive, J or Z slash, K or X shoot, L, C or Shift roll, P or Esc pause.",
+      "tr": "A/D ya da ←/→ koşar, W, ↑ ya da Boşluk zıplar (uzun basınca daha yükseğe), S ya da ↓ aşağı iner ve dalar, J ya da Z keser, K ya da X ateş eder, L, C ya da Shift yuvarlar, P ya da Esc duraklatır."
+    },
+    "touch": {
+      "en": "Drag on the left half to run; the stick's direction also shapes your blows (up launches, down slams). JUMP, SLASH, SHOOT and ROLL are on the right.",
+      "tr": "Koşmak için sol yarıda sürükle; çubuğun yönü vuruşlarını da belirler (yukarı fırlatır, aşağı yere çakar). ZIPLA, KES, ATEŞ ve YUVARLAN sağda."
+    }
+  },
+  "tips": [
+    {
+      "en": "Roll, then attack straight away. The roll makes you immune to bolts and the Ronin Lunge carries you through the gunner on the other side.",
+      "tr": "Yuvarlan ve hemen saldır. Yuvarlanırken mermiler sana işlemez, Ronin Atılışı da seni öbür taraftaki nişancının içinden geçirir."
+    },
+    {
+      "en": "Brutes shrug off quick hits. Break their armour with the Overdrive Cleave: slash, slash, then hold.",
+      "tr": "Devler hızlı vuruşlara aldırmaz. Zırhlarını Aşırı Yük Yarması'yla kır: kes, kes, sonra basılı tut."
+    },
+    {
+      "en": "Keep the combo alive. Every five hits within 2.5 seconds of each other raise the score multiplier, up to ×2.",
+      "tr": "Komboyu canlı tut. Aralarında 2,5 saniyeden az olan her beş isabet puan çarpanını büyütür, en fazla ×2'ye kadar."
+    },
+    {
+      "en": "Shoot in short bursts. An overheated blaster locks for a moment, right when a drone swarm arrives.",
+      "tr": "Kısa seriler halinde ateş et. Aşırı ısınan blaster bir süre kilitlenir, hem de tam dron sürüsü gelirken."
+    }
+  ],
+  "features": [
+    {
+      "en": "Sixteen levels in four districts, each ending in a mech boss",
+      "tr": "Dört bölgede, her biri bir meka bossla biten on altı bölüm"
+    },
+    {
+      "en": "Eleven blade moves, several unlocked as you progress",
+      "tr": "Bir kısmı ilerledikçe açılan on bir kılıç hareketi"
+    },
+    {
+      "en": "Six cyberware lines with three ranks each",
+      "tr": "Her biri üç seviyeli altı siber donanım"
+    },
+    {
+      "en": "48 stars to collect, plus best times and scores per level",
+      "tr": "Toplanacak 48 yıldız, bölüm başına en iyi süre ve puan"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How does a run end?",
+        "tr": "Bir koşu nasıl biter?"
+      },
+      "a": {
+        "en": "You start with 3 lives and 4 health on Normal. A run ends when the last life is gone, when you choose MAP on a results screen to bank it, or when the Overlord in Zenith Spire falls.",
+        "tr": "Normal'de 3 can ve 4 sağlıkla başlarsın. Koşu son can gittiğinde, bir sonuç ekranında HARİTA'yı seçip kaydettiğinde ya da Zirve Kulesi'ndeki Hükümdar düştüğünde biter."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Wrecked robots score with the combo multiplier, gears are 10 and data chips 500 each, and a boss is 5000. Clearing a level adds 1000, another 1000 with no hits, and 25 per second under par.",
+        "tr": "Yok edilen robotlar kombo çarpanıyla puan verir; dişli 10, veri çipi 500, boss 5000 puandır. Bölümü bitirmek 1000, hiç hasar almadan bitirmek 1000 daha, hedef sürenin altındaki her saniye 25 puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives you 5 lives and 6 health, enemies are weaker, shoot slower bolts and warn you for longer, and par times are 15 seconds longer. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da 5 can ve 6 sağlıkla başlarsın; düşmanlar daha zayıftır, daha yavaş mermi atar ve daha uzun uyarır, hedef süreler de 15 saniye uzar. Kolay oyunlar sıralamaya girmez."
+      }
+    }
+  ]
+}

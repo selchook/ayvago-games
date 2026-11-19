@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Sumo Push is a top-down shoving match on a round clay ring. You are the wrestler in the red belt, your rival wears blue, and the first to slide out past the rope loses the bout. There are no grabs or throws, only momentum: walk to build up speed and DASH to throw your whole weight forward. A dashing wrestler counts as more than twice as heavy as one who is just walking, so the timing of each dash decides most bouts.\n\nThe ring does not wait. Five seconds after GO the rope starts closing in, and a bout that drags on ends in a cramped circle half its first size.\n\nA match is best of five: three bout wins take it. In single play every match you win brings a smarter rival, from Rookie and Novice through Wrestler, Master and Champion up to Yokozuna, and a single lost match ends the run. You can also wrestle a friend online on ayvago.com.",
+    "tr": "Sumo Güreşi, yuvarlak bir kil halkada yukarıdan izlenen bir itişme oyunu. Sen kırmızı kuşaklı güreşçisin, rakibin mavi kuşak bağlamış; ipin dışına ilk kayan turu kaybeder. Tutuş ya da fırlatma yok, yalnızca hız ve ağırlık var: yürüyerek hızlan, HÜCUM ile bütün ağırlığını öne at. Hücum eden güreşçi, yürüyen birinin iki katından da ağır sayılır; çoğu turu hücumların zamanlaması belirler.\n\nHalka beklemez. BAŞLA'dan beş saniye sonra ip içeri doğru daralmaya başlar; uzayan bir tur ilk boyutunun yarısına inmiş dar bir çemberde biter.\n\nMaç beş tur üzerinden oynanır, üç turu alan kazanır. Tek başına oynarken kazandığın her maçtan sonra daha kurnaz bir rakip gelir: Çaylak ve Acemi Pehlivan'dan Pehlivan, Usta ve Şampiyon'a, oradan Yokozuna'ya. Tek bir maç kaybı oyunu bitirir. ayvago.com'da bir arkadaşınla çevrimiçi de güreşebilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "Wait for the 3-2-1 countdown. At GO, one wrestler's dash is ready at once and the other's needs a second to charge: you get the head start in the first bout, and after that it goes to whoever lost the last bout.",
+      "tr": "3-2-1 geri sayımını bekle. BAŞLA dendiğinde bir güreşçinin hücumu hemen hazırdır, diğerininki bir saniyede dolar: ilk turda öncelik sendedir, sonrasında bir önceki turu kaybedene geçer."
+    },
+    {
+      "en": "Walk into your rival to lean on them, and DASH when you are lined up to send them flying. A dash lasts a fraction of a second and then needs 1.5 seconds to recharge.",
+      "tr": "Rakibine doğru yürüyüp ona yaslan, aynı hizaya gelince HÜCUM ile onu savur. Hücum saniyenin bir kesri kadar sürer, sonra yeniden dolması 1,5 saniye alır."
+    },
+    {
+      "en": "Push your rival out of the ring to take the bout. The pips beside each name count bout wins; three wins take the match.",
+      "tr": "Rakibini halkanın dışına iterek turu al. İsimlerin yanındaki noktalar kazanılan turları gösterir; üç tur alan maçı kazanır."
+    },
+    {
+      "en": "Win the match and a NEW RIVAL steps in. Lose it and the run is over.",
+      "tr": "Maçı kazanırsan YENİ RAKİP gelir. Kaybedersen oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move. Space, Z or Enter dashes in the direction you are holding, or straight ahead if you hold nothing. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD ile yürü. Boşluk, Z ya da Enter, bastığın yöne, hiçbir yöne basmıyorsan baktığın yöne hücum eder. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch and drag anywhere on the left half of the screen for a joystick that appears under your thumb. The round HÜCUM / DASH button on the right dashes.",
+      "tr": "Ekranın sol yarısında bir yere dokunup sürükle; başparmağının altında bir kumanda çubuğu belirir. Sağdaki yuvarlak HÜCUM düğmesi atılmanı sağlar."
+    }
+  },
+  "tips": [
+    {
+      "en": "Dash on a straight line through the rival toward the rope. A dash at an angle only spins them and leaves you off balance.",
+      "tr": "Rakibin üzerinden ipe doğru düz bir çizgide hücum et. Yandan yapılan hücum onu yalnızca döndürür, seni de dengesiz bırakır."
+    },
+    {
+      "en": "A dash ends the moment you make contact, so the rival can dash right back. Use yours just after theirs is spent and you have 1.5 seconds in which they cannot answer.",
+      "tr": "Hücum temas anında biter, rakip de hemen karşılık verebilir. Kendi hücumunu onunki harcandıktan hemen sonra kullan; 1,5 saniye boyunca sana cevap veremez."
+    },
+    {
+      "en": "Keep the centre of the ring behind you. With your back to the rope, even a small shove can be the end, and the shrinking rope makes that worse each second.",
+      "tr": "Halkanın merkezini arkanda tut. Sırtın ipe dönükse küçük bir itiş bile sonun olabilir; daralan ip bunu her saniye daha tehlikeli yapar."
+    },
+    {
+      "en": "If you are cornered, a dash sideways along the rope gets you out from in front of the rival far better than pushing straight back.",
+      "tr": "Köşeye sıkıştıysan dümdüz geri itmek yerine ip boyunca yana hücum et; rakibin önünden çok daha kolay kurtulursun."
+    }
+  ],
+  "features": [
+    {
+      "en": "Best-of-five matches on a ring that shrinks during every bout",
+      "tr": "Her turun içinde daralan halkada beş tur üzerinden maçlar"
+    },
+    {
+      "en": "Six rival ranks, each smarter at pushing and at staying in",
+      "tr": "İtmede ve halkada kalmada giderek ustalaşan altı rakip unvanı"
+    },
+    {
+      "en": "Online matches against a friend",
+      "tr": "Bir arkadaşa karşı çevrimiçi maçlar"
+    },
+    {
+      "en": "Easy and Normal difficulty",
+      "tr": "Kolay ve Normal zorluk"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each bout you win is worth 100 times the rival's number (100 for the first, 200 for the second and so on), plus 5 for every second under 20 the bout took. Winning a match adds 300 times the rival's number.",
+        "tr": "Kazandığın her tur, rakibin sırası çarpı 100 puan getirir (ilk rakipte 100, ikincide 200 ve böyle devam eder); tur 20 saniyeden kısa sürdüyse artan her saniye için 5 puan eklenir. Maç kazanmak rakibin sırası çarpı 300 puan daha getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the rivals start clumsier, improve half as fast, react more slowly and push with less force. Easy runs are practice and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da rakipler daha beceriksiz başlar, yarı hızda gelişir, daha geç tepki verir ve daha az güçle iter. Kolay oyunlar antrenman sayılır, sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I wrestle a friend?",
+        "tr": "Bir arkadaşımla güreşebilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Create a room on ayvago.com and send the invite link. Online you play one best-of-five match with no pause, and the first to three bouts wins.",
+        "tr": "Evet. ayvago.com'da bir oda kur ve davet bağlantısını gönder. Çevrimiçinde duraklatma olmadan tek bir beş turluk maç oynanır; üç turu ilk alan kazanır."
+      }
+    }
+  ]
+}

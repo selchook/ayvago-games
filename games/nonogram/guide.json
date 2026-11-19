@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Pixel Logic is a picture-logic puzzle, the kind also known as a nonogram. Every row and column of the grid comes with a clue: the lengths of its runs of filled squares, in order. A clue of 3 1 means a run of three, at least one empty square, then a single square. Working out from the clues alone which squares are filled draws a hidden pixel picture, which bursts into its real colours the moment the last square goes in.\n\nThere are twelve puzzles, always in the same order: four 5×5 grids starting with a heart, four 8×8 and four 10×10, ending with a ship. Every one can be solved by logic, line by line, without guessing.\n\nOne clock runs through the whole game. You start with a minute, and each puzzle adds time: 90 seconds for a 5×5, 150 for an 8×8 and 240 for a 10×10. Seconds you save carry over. A wrong square is crossed in red and costs 10 seconds; if the clock reaches zero, the answer is shown and the run ends. Solve all twelve to win.",
+    "tr": "Piksel Mantık, nonogram diye de bilinen bir resimli mantık bulmacası. Izgaranın her satırı ve sütunu bir ipucuyla gelir: o çizgideki dolu kare gruplarının uzunlukları, sırasıyla. 3 1 ipucu, üç karelik bir grup, en az bir boş kare ve ardından tek bir kare demektir. Yalnızca ipuçlarından hangi karelerin dolu olduğunu çıkardıkça gizli bir piksel resim belirir; son kare de boyanınca resim kendi renklerine bürünür.\n\nOyunda her zaman aynı sırayla gelen on iki bulmaca var: kalple başlayan dört 5×5, dört 8×8 ve gemiyle biten dört 10×10. Hepsi tahmin gerekmeden, satır satır mantıkla çözülebilir.\n\nBütün oyun boyunca tek bir saat işler. Bir dakikayla başlarsın, her bulmaca süre ekler: 5×5 için 90, 8×8 için 150, 10×10 için 240 saniye. Artan saniyeler sonraki bulmacaya geçer. Yanlış kare kırmızı çarpıyla işaretlenir ve 10 saniye götürür; süre sıfırlanırsa cevap gösterilir ve oyun biter. On ikisini de çözersen kazanırsın."
+  },
+  "howToPlay": [
+    {
+      "en": "Read the clues to the left of each row and above each column. A 0 means the line is empty; such lines are crossed out from the start.",
+      "tr": "Her satırın solundaki ve her sütunun üstündeki ipuçlarını oku. 0, çizginin boş olduğu anlamına gelir; böyle çizgiler baştan çarpıyla kapatılır."
+    },
+    {
+      "en": "In FILL mode, tap a square or drag along a row or column to paint squares. A drag stays on the line where it started.",
+      "tr": "BOYA modunda bir kareye dokun ya da bir satır veya sütun boyunca sürükleyerek kareleri boya. Sürükleme başladığı çizgide kalır."
+    },
+    {
+      "en": "Switch to MARK to put an X on squares you know are empty; tap a mark again to remove it.",
+      "tr": "Boş olduğunu bildiğin karelere X koymak için İŞARET moduna geç; işareti kaldırmak için yeniden dokun."
+    },
+    {
+      "en": "When a row or column is complete, its clue greys out and its remaining squares are crossed for you.",
+      "tr": "Bir satır ya da sütun tamamlanınca ipucu grileşir ve kalan karelerine kendiliğinden çarpı konur."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "The arrows or WASD move the cursor. Space, Enter or Z fills (or marks, in MARK mode); hold it while moving to paint a line. X marks or unmarks, and M or Tab switches between FILL and MARK. Esc or P pauses.",
+      "tr": "Oklar ya da WASD imleci gezdirir. Boşluk, Enter ya da Z boyar (İŞARET modunda işaretler); basılı tutup ilerlersen çizgi boyunca boyarsın. X işaret koyar ya da kaldırır, M ya da Tab BOYA ile İŞARET arasında geçiş yapar. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap or drag on the grid. The FILL and MARK buttons under it switch modes.",
+      "tr": "Izgaraya dokun ya da üzerinde sürükle. Altındaki BOYA ve İŞARET düğmeleri modu değiştirir."
+    },
+    "mouse": {
+      "en": "Click or drag across the squares, and click FILL or MARK to change mode.",
+      "tr": "Karelere tıkla ya da üzerlerinde sürükle; modu değiştirmek için BOYA ya da İŞARET'e tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Start with the biggest clues. In a 10-square line, a run of 7 must cover the middle four squares wherever it sits, because its leftmost and rightmost positions overlap there.",
+      "tr": "En büyük ipuçlarından başla. 10 karelik bir çizgide 7'lik grup nereye konursa konsun ortadaki dört kareyi kaplar, çünkü en sol ve en sağ konumları orada çakışır."
+    },
+    {
+      "en": "Add up the clue plus one gap between each run. If the total equals the line length, as with 3 1 on a 5×5, the whole line is decided.",
+      "tr": "İpucundaki sayıları topla ve gruplar arasındaki birer boşluğu ekle. Toplam çizginin uzunluğuna eşitse, 5×5'te 3 1 gibi, çizginin tamamı belli olur."
+    },
+    {
+      "en": "Mark empty squares as you find them. Marks are not just notes: in FILL mode a marked square cannot be painted by a slip of the finger.",
+      "tr": "Boş kareleri buldukça işaretle. İşaret yalnızca not değildir: BOYA modunda işaretli bir kare yanlışlıkla boyanamaz."
+    },
+    {
+      "en": "Never guess. A wrong square costs 10 seconds and the 300-point PERFECT! bonus for that puzzle.",
+      "tr": "Asla tahmin etme. Yanlış kare 10 saniyeye ve o bulmacanın 300 puanlık HATASIZ! bonusuna mal olur."
+    },
+    {
+      "en": "Move quickly through the 5×5 grids. Every second you save there is banked for the 10×10 puzzles at the end.",
+      "tr": "5×5 bulmacalarda hızlı ol. Orada kazandığın her saniye, sondaki 10×10 bulmacalar için birikir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Twelve pixel pictures from 5×5 to 10×10",
+      "tr": "5×5'ten 10×10'a on iki piksel resim"
+    },
+    {
+      "en": "FILL and MARK modes, with drag painting",
+      "tr": "Sürükleyerek boyamalı BOYA ve İŞARET modları"
+    },
+    {
+      "en": "Finished lines cross themselves out",
+      "tr": "Biten çizgiler kendiliğinden kapanır"
+    },
+    {
+      "en": "One shared clock, with time added for every puzzle",
+      "tr": "Her bulmacada süre eklenen tek ortak saat"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Do I ever have to guess?",
+        "tr": "Hiç tahmin etmem gerekir mi?"
+      },
+      "a": {
+        "en": "No. Every puzzle can be solved by reading one row or column at a time, so there is always a square you can be sure of.",
+        "tr": "Hayır. Her bulmaca bir seferde tek bir satır ya da sütun okunarak çözülebilir; emin olabileceğin bir kare her zaman vardır."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each correct square scores 5 and each finished row or column 20. A solved puzzle adds 100 per row of its size, so 500, 800 or 1,000, plus 300 with no mistakes. Solving all twelve adds 5 points for every second left.",
+        "tr": "Doğru boyanan her kare 5, biten her satır ya da sütun 20 puan getirir. Çözülen bulmaca boyuna göre 500, 800 ya da 1.000 puan, hatasızsa 300 puan daha ekler. On ikisini de çözersen kalan her saniye 5 puan eder."
+      }
+    },
+    {
+      "q": {
+        "en": "Are the puzzles the same every time?",
+        "tr": "Bulmacalar her seferinde aynı mı?"
+      },
+      "a": {
+        "en": "Yes. The twelve pictures always come in the same order, so speed and accuracy decide your score.",
+        "tr": "Evet. On iki resim hep aynı sırayla gelir; skorunu hızın ve dikkatin belirler."
+      }
+    }
+  ]
+}

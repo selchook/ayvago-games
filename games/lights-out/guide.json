@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Lights Out is a switch puzzle. Every square on the board is a lamp, and pressing one flips it together with the lamps directly above, below, left and right of it: lit lamps go dark and dark ones light up. Your goal is to switch every lamp off before you run out of moves.\n\nEach board is made by pressing a handful of lamps on a dark board, so every puzzle has a solution. The PAR chip shows how many presses that solution takes, and the MOVES chip counts down from twice the par plus two. When you are stuck, the HINT button rings one lamp that belongs to the solution, for 25 points.\n\nThe boards grow as you go: 3×3 on levels 1 and 2, 4×4 on levels 3 and 4, 5×5 on levels 5 to 8 and 6×6 from level 9. Each level also scrambles a few more lamps. You have three lives. Running out of moves costs one and deals a fresh board of the same level; losing the third ends the game.",
+    "tr": "Işıkları Söndür bir anahtar bulmacası. Tahtadaki her kare bir lamba; birine basınca o lamba ve hemen üstündeki, altındaki, solundaki ve sağındaki lambalar değişir: yanan söner, sönük olan yanar. Amacın, hamlelerin bitmeden bütün lambaları söndürmek.\n\nHer tahta, karanlık bir tahtada birkaç lambaya basılarak hazırlanır; bu yüzden her bulmacanın bir çözümü vardır. HEDEF göstergesi bu çözümün kaç basış sürdüğünü gösterir, HAMLE göstergesi de hedefin iki katının iki fazlasından geriye sayar. Takılırsan İPUCU düğmesi çözüme ait bir lambayı halkayla işaretler; bedeli 25 puandır.\n\nTahtalar ilerledikçe büyür: 1. ve 2. bölümde 3×3, 3. ve 4. bölümde 4×4, 5. ile 8. bölüm arasında 5×5, 9. bölümden sonra 6×6. Her bölümde karıştırılan lamba sayısı da biraz artar. Üç canın var. Hamlelerin biterse bir can gider ve aynı bölümden yeni bir tahta gelir; üçüncü can da gidince oyun biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Press a lamp. It switches together with its neighbours: three lamps in all for a corner, four on an edge, five in the middle.",
+      "tr": "Bir lambaya bas. Komşularıyla birlikte değişir: köşede toplam üç, kenarda dört, ortada beş lamba."
+    },
+    {
+      "en": "Make the whole board dark for LIGHTS OUT! and points, and the next level begins.",
+      "tr": "Bütün tahtayı karartınca KARANLIK! yazar, puanı alırsın ve sonraki bölüm başlar."
+    },
+    {
+      "en": "Keep an eye on MOVES. It turns red with two left, and if it reaches zero while a lamp is still lit, OUT OF MOVES! takes a life.",
+      "tr": "HAMLE göstergesine dikkat et. İki hamle kalınca kırmızıya döner; sıfıra indiğinde hâlâ yanan lamba varsa HAMLE BİTTİ! yazar ve bir can gider."
+    },
+    {
+      "en": "Need help? Press HINT and a green ring marks a lamp to press.",
+      "tr": "Yardım mı lazım? İPUCU'na bas, yeşil bir halka basman gereken lambayı gösterir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "The arrows or WASD move the cursor, which wraps around the edges. Space, Enter or Z presses the lamp, X or H shows a hint, and Esc or P pauses.",
+      "tr": "Oklar ya da WASD imleci gezdirir; imleç kenardan çıkınca karşı taraftan girer. Boşluk, Enter ya da Z lambaya basar, X ya da H ipucu gösterir, Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a lamp to press it, and tap the HINT button under the board for help.",
+      "tr": "Basmak için lambaya dokun; yardım için tahtanın altındaki İPUCU düğmesine dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Order does not matter and two presses on the same lamp cancel out, so a solution is simply a set of lamps, each pressed once. A wrong press is undone by pressing it again, at the price of two moves.",
+      "tr": "Basış sırası önemli değildir ve aynı lambaya iki kez basmak birbirini götürür; yani çözüm, her birine bir kez basılan bir lamba kümesidir. Yanlış bastığın lambaya yeniden basarak geri alırsın, bedeli iki hamledir."
+    },
+    {
+      "en": "Look for the shapes a single press leaves: a plus of five lit lamps, a T of four on an edge or an L of three in a corner. Pressing its centre clears it in one move.",
+      "tr": "Tek basışın bıraktığı biçimleri ara: ortada beş lambalı bir artı, kenarda dört lambalı bir T ya da köşede üç lambalı bir L. Ortasındaki lambaya basmak onu tek hamlede söndürür."
+    },
+    {
+      "en": "Where two of those shapes overlap, the shared lamps are dark again. A gap in an otherwise perfect plus usually means a neighbouring press.",
+      "tr": "Bu biçimlerden ikisi üst üste geldiğinde ortak lambalar yeniden söner. Eksiksiz görünen bir artıdaki boşluk çoğunlukla komşu bir basışa işaret eder."
+    },
+    {
+      "en": "Matching PAR earns a 250-point bonus and every move you have left is worth 20, so think before you tap. A hint costs only 25, far less than a lost life.",
+      "tr": "HEDEF sayısında bitirmek 250 puan bonus getirir, kalan her hamle de 20 puan eder; basmadan önce düşün. İpucu yalnızca 25 puandır, kaybedilen bir candan çok daha ucuzdur."
+    }
+  ],
+  "features": [
+    {
+      "en": "Boards that grow from 3×3 to 6×6",
+      "tr": "3×3'ten 6×6'ya büyüyen tahtalar"
+    },
+    {
+      "en": "Every board solvable, with a par to beat",
+      "tr": "Her tahta çözülebilir ve yakalanacak bir hedefi var"
+    },
+    {
+      "en": "A hint button that points at a lamp from the solution",
+      "tr": "Çözümdeki bir lambayı gösteren ipucu düğmesi"
+    },
+    {
+      "en": "Three lives and a move limit on every board",
+      "tr": "Üç can ve her tahtada hamle sınırı"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Can every board be solved?",
+        "tr": "Her tahta çözülebiliyor mu?"
+      },
+      "a": {
+        "en": "Yes. Boards are built by pressing lamps on a dark board, so pressing those same lamps again always switches everything off.",
+        "tr": "Evet. Tahtalar karanlık bir tahtada lambalara basılarak kurulur; aynı lambalara yeniden basmak her zaman hepsini söndürür."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A solved board scores 100 times the level, plus 20 for each move left and 250 more if you solved it in par or fewer. Each hint takes away 25. PERFECT! appears when you match par without a hint.",
+        "tr": "Çözülen tahta bölüm çarpı 100 puan, kalan her hamle için 20 puan, hedef sayısında ya da daha azında çözersen 250 puan daha getirir. Her ipucu 25 puan götürür. İpucu almadan hedefi tutturursan KUSURSUZ! yazar."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens when I run out of moves?",
+        "tr": "Hamlelerim biterse ne olur?"
+      },
+      "a": {
+        "en": "You lose one of your three lives and get a new board of the same size and level. After the third, the game is over.",
+        "tr": "Üç canından biri gider ve aynı boyda, aynı bölümden yeni bir tahta gelir. Üçüncü can da gidince oyun biter."
+      }
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Color Road is a rolling-ball runner seen from behind the ball. Rows of coloured blocks rush toward you down a neon road, and the ball smashes straight through any block of its own colour. Rolling into a block of any other colour ends the run on the spot, so every row is a quick choice of lane.\n\nYou never get a row without an exit: each one holds at least one block in your colour, sometimes beside an empty lane or a floating gem. Every few rows the ball rolls under a colour gate that repaints it, and from level 4 some gates are split down the middle, giving one colour on the left and another on the right, so you choose your next colour by which side you take.\n\nEvery 12 rows the level goes up and the road speeds up. The rows widen from three lanes to four at level 3 and five at level 6, and the colours grow from three to four at level 4 and five at level 7.",
+    "tr": "Renk Yolu, topun arkasından izlenen bir yuvarlanan top koşusu. Renkli blok sıraları neon bir yol boyunca sana doğru gelir ve top kendi rengindeki blokları dümdüz parçalayıp geçer. Başka renkte bir bloğa çarparsan oyun anında biter; yani her sıra hızlı bir şerit seçimidir.\n\nÇıkışı olmayan sıra gelmez: her sırada senin renginde en az bir blok vardır, bazen yanında boş bir şerit ya da havada süzülen bir elmas olur. Birkaç sırada bir top, onu yeniden boyayan bir renk kapısının altından geçer. 4. seviyeden itibaren bazı kapılar ortadan ikiye bölünür: solda bir renk, sağda başka bir renk; hangi taraftan geçtiğinle bir sonraki rengini seçersin.\n\nHer 12 sırada seviye atlarsın ve yol hızlanır. Sıralar 3. seviyede üç şeritten dörde, 6. seviyede beşe genişler; renkler de 4. seviyede üçten dörde, 7. seviyede beşe çıkar."
+  },
+  "howToPlay": [
+    {
+      "en": "Steer the ball left and right across the road. It rolls forward by itself.",
+      "tr": "Topu yolun üzerinde sağa sola yönlendir. İleri doğru kendi kendine yuvarlanır."
+    },
+    {
+      "en": "Line up with a block of your colour in each row and roll through it. The symbol on the block matches the one on your ball.",
+      "tr": "Her sırada kendi rengindeki bir bloğun hizasına geç ve içinden geç. Bloğun üzerindeki sembol topundakiyle aynıdır."
+    },
+    {
+      "en": "Roll under colour gates to change colour. On a split gate, pick the side whose colour you want.",
+      "tr": "Rengini değiştirmek için renk kapılarının altından geç. Bölünmüş kapıda istediğin rengin olduğu tarafı seç."
+    },
+    {
+      "en": "Grab gems in empty lanes for extra points, and keep going until a wrong colour stops you.",
+      "tr": "Boş şeritlerdeki elmasları toplayıp ek puan kazan ve yanlış bir renk seni durdurana kadar devam et."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D steer the ball. Esc or P pauses.",
+      "tr": "← → ya da A / D topu yönlendirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag sideways: a stick appears under your thumb, and the further you push, the faster the ball moves across.",
+      "tr": "Herhangi bir yere dokun ve yana sürükle: başparmağının altında bir çubuk belirir; ne kadar itersen top o kadar hızlı kayar."
+    }
+  },
+  "tips": [
+    {
+      "en": "Every eight blocks of your colour in a row raise the multiplier by one, up to x5. Skipping your block, even for a gem, breaks the COMBO, so only take a gem when you are happy to start the streak again.",
+      "tr": "Art arda kendi rengindeki her sekiz blok çarpanı bir artırır, en çok x5'e kadar. Bloğunu atlamak, bir elmas için bile olsa, KOMBO'yu bozar; elması ancak seriyi baştan kurmayı göze alıyorsan al."
+    },
+    {
+      "en": "Read the gate before the row behind it. Once you know your next colour, look for its block early instead of reacting at the last moment.",
+      "tr": "Arkasındaki sırayı değil, önce kapıyı oku. Bir sonraki rengini bildiğinde onun bloğunu son ana bırakmadan erkenden ara."
+    },
+    {
+      "en": "On a split gate, pick the colour whose blocks are easier to reach in the next rows, not just the side you are on.",
+      "tr": "Bölünmüş kapıda yalnızca bulunduğun tarafı değil, sonraki sıralarda blokları daha kolay ulaşılan rengi seç."
+    },
+    {
+      "en": "With five lanes the blocks are narrow. Move in short, firm pushes and stop centred in a lane rather than drifting across a border.",
+      "tr": "Beş şeritte bloklar daralır. Kısa ve kararlı hareketlerle ilerle; şerit sınırında kaymak yerine şeridin ortasında dur."
+    }
+  ],
+  "features": [
+    {
+      "en": "A pseudo-3D neon road with blocks you smash through",
+      "tr": "İçinden geçip parçaladığın bloklarla dolu, sözde 3B bir neon yol"
+    },
+    {
+      "en": "Colour gates, including split gates with a choice",
+      "tr": "Seçim sunan bölünmüş kapılar dahil renk kapıları"
+    },
+    {
+      "en": "A combo multiplier up to x5",
+      "tr": "x5'e kadar çıkan kombo çarpanı"
+    },
+    {
+      "en": "Symbols on every colour for colour-blind players",
+      "tr": "Renk körü oyuncular için her renkte bir sembol"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A block of your colour is 10 points and a gem 25, both times the multiplier. Each colour gate adds 5, and each new level adds 50 × the level.",
+        "tr": "Kendi rengindeki bir blok 10, elmas 25 puandır; ikisi de çarpanla çarpılır. Her renk kapısı 5, her yeni seviye de 50 × seviye puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Do I have extra lives?",
+        "tr": "Fazladan canım var mı?"
+      },
+      "a": {
+        "en": "No. One block of the wrong colour ends the run, which is why every row is built to leave you at least one way through.",
+        "tr": "Hayır. Yanlış renkte tek bir blok oyunu bitirir; bu yüzden her sıra sana en az bir geçiş yolu bırakacak şekilde kurulur."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. The first levels use three wide lanes, three colours and a slow road, and the road only gets faster as you level up.",
+        "tr": "Hayır. İlk seviyelerde üç geniş şerit, üç renk ve yavaş bir yol vardır; yol ancak seviye atladıkça hızlanır."
+      }
+    }
+  ]
+}

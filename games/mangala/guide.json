@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Mangala is the Turkish member of the mancala family, a sowing game played with stones in a row of pits. Each player has six pits, called kuyu, on their side and a store, the hazine, on their right. The game starts with 4 stones in every pit, 48 in all, and the player with more stones in their store at the end wins; 24 each is a draw.\n\nThis version plays the Turkish rules. You lift every stone from one of your pits and sow them one by one counter-clockwise, and the first stone goes back into the pit you emptied; a pit holding a single stone just passes it on. Your own store gets a stone on the way, the opponent's store is skipped. Where the last stone lands decides what happens next: another turn, a capture or nothing.\n\nSolo, you play round after round against a computer that grows from Rookie to Mangala Grandmaster, with 2 lives. Online, two people play one game on ayvago.com.",
+    "tr": "Mangala, mankala ailesinin Türk kolu: bir sıra kuyuda taşlarla oynanan bir dağıtma oyunu. Her oyuncunun kendi tarafında altı kuyusu, sağında da bir hazinesi vardır. Oyun her kuyuda 4 taşla, toplam 48 taşla başlar; sonunda hazinesinde daha çok taş olan kazanır, 24'e 24 berabere biter.\n\nBu sürüm Türk kurallarıyla oynanır. Kuyularından birindeki bütün taşları alıp saat yönünün tersine birer birer dağıtırsın; ilk taş boşalttığın kuyuya geri konur. Tek taşlı kuyudaki taş ise doğrudan yandaki kuyuya geçer. Dağıtırken kendi hazinene taş düşer, rakibin hazinesi atlanır. Son taşın düştüğü yer neler olacağını belirler: yeni bir hamle, taş alma ya da hiçbir şey.\n\nTek başına oynarken 2 canla, Çaylak'tan Mangala Ustası'na kadar güçlenen bir bilgisayara karşı art arda eller oynarsın. Çevrimiçi modda ayvago.com'da iki kişi tek bir oyun oynar."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose one of your six pits at the bottom that has stones in it. All of them are sown to the right, one per pit.",
+      "tr": "Alttaki altı kuyundan taş olan birini seç. Taşların hepsi sağa doğru, her kuyuya bir tane dağılır."
+    },
+    {
+      "en": "Last stone in your store: GO AGAIN, you play another pit.",
+      "tr": "Son taş hazinene düşerse BİR DAHA yazar ve bir kuyu daha oynarsın."
+    },
+    {
+      "en": "Last stone in an opponent's pit that now holds an even number: EVEN, all of that pit's stones go to your store.",
+      "tr": "Son taş rakibin bir kuyusuna düşer ve oradaki taş sayısını çift yaparsa ÇİFT olur; o kuyudaki bütün taşlar hazinene geçer."
+    },
+    {
+      "en": "Last stone in one of your empty pits while the pit opposite has stones: EMPTY PIT, you take that stone and everything opposite.",
+      "tr": "Son taş kendi boş kuyuna düşer ve karşısındaki kuyuda taş varsa BOŞ KUYU olur; o taşı ve karşıdaki bütün taşları alırsın."
+    },
+    {
+      "en": "When one side's pits run empty, the game ends and that player also takes every stone left on the other side.",
+      "tr": "Bir tarafın kuyularındaki taşlar bitince oyun sona erer; taşları biten oyuncu karşı taraftaki bütün taşları da alır."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D move between your pits that have stones, Space, Enter or ↑ sows the selected one. Esc or P pauses a solo game.",
+      "tr": "← → ya da A / D taşlı kuyuların arasında gezer; Boşluk, Enter ya da ↑ seçili kuyuyu dağıtır. Tek kişilik oyunda Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap one of your pits on the bottom row to sow it.",
+      "tr": "Dağıtmak için alt sıradaki kuyularından birine dokun."
+    },
+    "mouse": {
+      "en": "Click one of your pits to sow it.",
+      "tr": "Dağıtmak için kuyularından birine tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Count before you sow. Because the first stone stays home, the pit next to your store finishes there with 1 or 2 stones, the second pit with 3, the third with 4, and so on. Play those free turns first, the one nearest the store first, so one does not spoil the next.",
+      "tr": "Dağıtmadan önce say. İlk taş yerinde kaldığı için hazinenin yanındaki kuyu 1 ya da 2 taşla, ikinci kuyu 3 taşla, üçüncüsü 4 taşla tam hazinede biter. Bu bedava hamleleri önce, hazineye en yakın olandan başlayarak oyna ki biri diğerini bozmasın."
+    },
+    {
+      "en": "Look at the opponent's pits with an odd number of stones. Landing your last stone there makes them even and wins the whole pit.",
+      "tr": "Rakibin tek sayıda taş olan kuyularına bak. Son taşını oraya düşürürsen sayı çifte döner ve kuyunun tamamı senin olur."
+    },
+    {
+      "en": "Before sowing a big pit, check which of your pits it leaves odd for the opponent, and avoid handing them an easy even capture.",
+      "tr": "Büyük bir kuyuyu dağıtmadan önce hangi kuyularını rakibe tek sayıda bıraktığına bak; ona kolay bir çift fırsatı verme."
+    },
+    {
+      "en": "Near the end, emptying your side first is worth thinking about: you collect every stone still on the opponent's side.",
+      "tr": "Oyunun sonunda kendi tarafını önce boşaltmayı düşün: rakibin tarafında kalan bütün taşları sen toplarsın."
+    }
+  ],
+  "features": [
+    {
+      "en": "Turkish mangala rules with even and empty-pit captures",
+      "tr": "Çift ve boş kuyu almalı Türk mangala kuralları"
+    },
+    {
+      "en": "Six computer rivals, from Rookie to Mangala Grandmaster",
+      "tr": "Çaylak'tan Mangala Ustası'na altı bilgisayar rakip"
+    },
+    {
+      "en": "Every stone shown and sown one by one",
+      "tr": "Her taş görünür ve tek tek dağılır"
+    },
+    {
+      "en": "Online games against a friend",
+      "tr": "Arkadaşına karşı çevrimiçi oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How do I score points?",
+        "tr": "Nasıl puan kazanırım?"
+      },
+      "a": {
+        "en": "Every stone that reaches your store is worth 5. A won game adds 100 times the rival's level, 10 for each stone of your margin and 25 for each win in your streak; a draw gives 50. Two lost games end the run.",
+        "tr": "Hazinene giren her taş 5 puan. Kazanılan oyun rakibin seviyesinin 100 katı, farktaki her taş için 10 ve serindeki her galibiyet için 25 puan ekler; beraberlik 50 puan verir. İki oyun kaybedince oyun biter."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the computer climbs only three levels, barely looks ahead and often sows a random pit. Easy games are not ranked.",
+        "tr": "Evet. Kolay'da bilgisayar yalnızca üç seviye çıkar, ileriyi pek hesaplamaz ve sık sık rastgele bir kuyu dağıtır. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Create a room on ayvago.com and share the invite. Each of you sees your own pits at the bottom of the board.",
+        "tr": "Evet. ayvago.com'da bir oda kurup daveti paylaş. İkiniz de kendi kuyularınızı tahtanın altında görürsünüz."
+      }
+    }
+  ]
+}

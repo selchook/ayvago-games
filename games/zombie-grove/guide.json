@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Zombie Grove is a 3D survival game set in a forest camp after dark. Zombies shamble out of the trees from every side, and you have to stay alive until dawn: ten minutes on Normal, seven on Easy. You steer your hero and hold ATTACK; your weapons swing and shoot at the nearest zombie ahead, while the circling Ward Shields and the Sprocket robot fight on their own.\n\nFallen zombies leave gems. Gems fill your XP, and every level offers three cards: a new weapon, a level for one you have, or one of eight trinkets such as Trail Boots or the Lodestone. Each of the eight weapons evolves at level 5 if its paired trinket is in your bag, so the Camp Blade becomes Moonsplitter and the Ashwood Spear Thunder Pike.\n\nCoins you collect go back to the CAMP, where fifteen lasting upgrades, five locked weapons and seven more heroes are waiting. At dawn you can take your coins home or keep going into the endless night under a blood moon.",
+    "tr": "Zombi Korusu, karanlık çöktükten sonra ormandaki bir kampta geçen 3B bir hayatta kalma oyunu. Zombiler ağaçların arasından her yönden çıkıp gelir ve sen şafağa kadar dayanmak zorundasın: Normal'de on, Kolay'da yedi dakika. Kahramanını yönlendirir, SALDIR'ı basılı tutarsın; silahların önündeki en yakın zombiye savrulur ve ateş eder. Etrafında dönen Muhafız Kalkanları ile Robot Dişli ise kendi başına savaşır.\n\nDüşen zombiler kristal bırakır. Kristaller tecrübeni doldurur ve her seviyede üç kart çıkar: yeni bir silah, elindeki bir silaha seviye ya da Patika Botları, Mıknatıs Taşı gibi sekiz eşyadan biri. Sekiz silahın her biri, eşi olan eşya çantandaysa 5. seviyede evrimleşir; Kamp Kılıcı Ay Yaran'a, Dişbudak Mızrak Yıldırım Kargı'ya dönüşür.\n\nTopladığın altınlar KAMP'a gider; orada on beş kalıcı geliştirme, beş kilitli silah ve yedi kahraman daha seni bekler. Şafakta altınlarını alıp dönebilir ya da kanlı ayın altında sonsuz geceye devam edebilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "Pick your hero at the CAMP, where each starts with a different weapon, then press PLAY.",
+      "tr": "Kahramanını KAMP'ta seç (her biri farklı bir silahla başlar), sonra OYNA'ya bas."
+    },
+    {
+      "en": "Move and hold ATTACK. The aim marker shows which zombie your weapons will go for; a single tap gives one blow from each weapon.",
+      "tr": "Hareket et ve SALDIR'ı basılı tut. Nişan işareti silahlarının hangi zombiye gideceğini gösterir; tek dokunuş her silahtan bir vuruş çıkarır."
+    },
+    {
+      "en": "Walk over gems to level up. Open the card bar when it suits you (the fight goes on in slow motion) and pick one of three cards.",
+      "tr": "Seviye atlamak için kristallerin üstünden geç. Kart çubuğunu uygun anda aç (savaş ağır çekimde sürer) ve üç karttan birini seç."
+    },
+    {
+      "en": "Grab the power-ups the horde drops and the gold chests the mini-bosses leave, each holding one to three free upgrades.",
+      "tr": "Sürünün düşürdüğü güçlendirmeleri ve mini bossların bıraktığı, içinde bir ile üç arası bedava geliştirme olan altın sandıkları kap."
+    },
+    {
+      "en": "Last until dawn to win the night, or fall and take what you earned back to the camp.",
+      "tr": "Geceyi kazanmak için şafağa kadar dayan; düşersen kazandığın altınlarla kampa dönersin."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "WASD or arrows move, hold J, Space or Enter to attack. E opens the cards, 1–3 picks, R rerolls, B banishes. C opens the camp from the menu.",
+      "tr": "WASD ya da oklar hareket ettirir, saldırmak için J, Boşluk ya da Enter'ı basılı tut. E kartları açar, 1–3 seçer, R yeniler, B sürgün eder. Menüde C kampı açar."
+    },
+    "touch": {
+      "en": "Drag anywhere to move and hold the ATTACK button on the right. Tap the card button to see your choices; hold a card for its details.",
+      "tr": "Hareket etmek için ekranın herhangi bir yerinde sürükle, sağdaki SALDIR düğmesini basılı tut. Seçenekleri görmek için kart düğmesine dokun; ayrıntı için karta basılı tut."
+    }
+  },
+  "tips": [
+    {
+      "en": "Plan evolutions early. The card shows which trinket a weapon needs; the Blade wants the Ember Charm, the Bow the Four-Leaf Clover, the Blaster the Trail Boots.",
+      "tr": "Evrimi erkenden planla. Kart, silahın hangi eşyayı istediğini gösterir: Kılıç Kor Tılsımı'nı, Yay Dört Yapraklı Yonca'yı, Tabanca Patika Botları'nı ister."
+    },
+    {
+      "en": "Keep moving in wide circles. Zombies spawn just outside the view all around you, and Spitters and Bloaters punish standing still.",
+      "tr": "Geniş daireler çizerek hareket et. Zombiler etrafında, görüş alanının hemen dışında doğar; Tükürükçüler ve Patlayanlar olduğun yerde durmanın bedelini ödetir."
+    },
+    {
+      "en": "Save the Freeze Bell and Nuke Flare for a horde rush or a boss; a frozen crowd is the moment to walk out of a ring.",
+      "tr": "Buz Çanı'nı ve İşaret Fişeği'ni sürü saldırısı ya da boss için kolla; donmuş kalabalık, çemberin dışına yürümek için en iyi andır."
+    },
+    {
+      "en": "At the camp, Second Wind and Drill pay off fast. Easy pays half the coins, so the purse grows quicker on Normal.",
+      "tr": "Kampta İkinci Nefes ve Talim çabuk karşılığını verir. Kolay altınların yarısını öder, kese Normal'de daha hızlı dolar."
+    }
+  ],
+  "features": [
+    {
+      "en": "Eight weapons, eight trinkets and an evolution for every weapon",
+      "tr": "Sekiz silah, sekiz eşya ve her silah için bir evrim"
+    },
+    {
+      "en": "Six power-ups, three mini-bosses and the Rot King",
+      "tr": "Altı güçlendirme, üç mini boss ve Çürük Kral"
+    },
+    {
+      "en": "Eight 3D heroes, three of them also earned by milestones",
+      "tr": "Üçü kilometre taşlarıyla da açılan sekiz 3B kahraman"
+    },
+    {
+      "en": "An optional Blood Moon Curse and an endless night after dawn",
+      "tr": "İsteğe bağlı Kanlı Ay Laneti ve şafaktan sonra sonsuz gece"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How is the score counted?",
+        "tr": "Skor nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "You earn 2 points per second survived plus points for each zombie, from 4 for a Swarmer up to 3000 for the Rot King. Reaching dawn adds 2500 and up to 1000 more for the health you have left; in the endless night kills are worth 50% more.",
+        "tr": "Dayandığın her saniye 2 puan, her zombi de türüne göre puan getirir: Sürü 4, Çürük Kral 3000. Şafağa ulaşmak 2500 puan, kalan canına göre de 1000'e kadar ek puan verir; sonsuz gecede öldürmeler %50 daha değerlidir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy is a seven-minute night with fewer, slower and softer zombies, more health and weaker bosses, but it pays half the coins. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay yedi dakikalık bir gecedir: zombiler daha az, daha yavaş ve daha zayıftır, canın daha fazla, bosslar daha güçsüzdür, ama altınların yarısı gelir. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "How do I unlock the other heroes?",
+        "tr": "Diğer kahramanları nasıl açarım?"
+      },
+      "a": {
+        "en": "Buy them with coins at the camp. The Medic is also free for reaching level 20 in one night, the Scout for lasting five minutes and the Mech for seeing the dawn once.",
+        "tr": "Kampta altınla alırsın. Sağlıkçı bir gecede 20. seviyeye ulaşınca, İzci beş dakika dayanınca, Robot da bir kez şafağı görünce bedavaya açılır."
+      }
+    }
+  ]
+}

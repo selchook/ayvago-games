@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Fruit Slash is a swipe game on a wooden chopping board. Melons, oranges, apples, lemons, kiwis and plums are tossed up from below, hang for a moment and fall back. Swipe through them with a glowing blade and they split in two with a splash of juice. The blade only cuts while it is moving fast, so slow dragging does nothing.\n\nThe tosses come in waves that grow quicker and fuller. From wave 3 bombs with lit fuses fly up among the fruit, and one touch of the blade on a bomb ends the game on the spot. Some waves arrive as a stream, one fruit after another across the board, and every sixth wave is a FRUIT FRENZY: a big volley of fruit with no bombs at all.\n\nTwo special fruits appear later: a golden star fruit from wave 4, worth five times a normal fruit, and an ice fruit from wave 5 that slows time for a few seconds. Letting three ordinary fruits fall uncut also ends the run; the X marks at the top right count your misses.",
+    "tr": "Meyve Kes, tahta bir kesme tahtasında oynanan bir kaydırma oyunu. Karpuz, portakal, elma, limon, kivi ve erikler aşağıdan havaya fırlar, bir an asılı kalır ve geri düşer. Parlak bıçağınla içlerinden geçince meyve suyu saçarak ikiye ayrılırlar. Bıçak yalnızca hızlı hareket ederken keser; yavaşça sürüklemek bir şey yapmaz.\n\nAtışlar giderek hızlanan ve kalabalıklaşan dalgalar hâlinde gelir. 3. dalgadan itibaren fitili yanan bombalar meyvelerin arasında havalanır ve bıçağın bir bombaya tek dokunuşu oyunu anında bitirir. Bazı dalgalar tahtanın bir ucundan ötekine art arda dizilen meyvelerle gelir; her altıncı dalga ise hiç bomba içermeyen büyük bir MEYVE YAĞMURU'dur.\n\nİleride iki özel meyve çıkar: 4. dalgadan itibaren normal meyvenin beş katı değerindeki altın yıldız meyvesi ve 5. dalgadan sonra zamanı birkaç saniye yavaşlatan buz meyvesi. Üç sıradan meyveyi kesmeden düşürmek de oyunu bitirir; sağ üstteki X işaretleri kaçırdıklarını sayar."
+  },
+  "howToPlay": [
+    {
+      "en": "Swipe quickly across the fruit to slice it. One swipe can cut several at once.",
+      "tr": "Meyveyi kesmek için üzerinden hızla kaydır. Tek kaydırma birden çok meyveyi kesebilir."
+    },
+    {
+      "en": "Never let the blade touch a bomb. Lift your finger and wait if a bomb is in the way.",
+      "tr": "Bıçağın bir bombaya değmesine asla izin verme. Yolda bomba varsa parmağını kaldır ve bekle."
+    },
+    {
+      "en": "Don't let ordinary fruit drop off the bottom: the third miss ends the game. Star and ice fruits never count as misses.",
+      "tr": "Sıradan meyveleri aşağıdan kaçırma: üçüncü kaçırış oyunu bitirir. Yıldız ve buz meyveleri hiçbir zaman kaçırış sayılmaz."
+    },
+    {
+      "en": "Slice the ice fruit to slow everything down for about four and a half seconds, and use that time to clear the board.",
+      "tr": "Her şeyi yaklaşık dört buçuk saniye yavaşlatmak için buz meyvesini kes ve bu süreyi tahtayı temizlemekte kullan."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or W A S D move the blade; hold Space, Z or Enter to slash. A slash lasts under a second, then press again. Esc or P pauses.",
+      "tr": "Ok tuşları ya da W A S D bıçağı taşır; kesmek için Boşluk, Z ya da Enter'a basılı tut. Bir kesiş bir saniyeden kısa sürer, sonra yeniden bas. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Swipe a finger across the screen. The blade follows it while your finger is down.",
+      "tr": "Parmağını ekranda kaydır. Parmağın ekrandayken bıçak onu izler."
+    },
+    "mouse": {
+      "en": "Hold the button and sweep the mouse through the fruit.",
+      "tr": "Düğmeyi basılı tut ve fareyi meyvelerin üzerinden süpür."
+    }
+  },
+  "tips": [
+    {
+      "en": "Three or more fruits in one swipe make a COMBO worth 10 × n × (n − 2) extra: 30 for three, 80 for four, 150 for five. Wait for fruit to bunch together at the top of their arc and take them in one line.",
+      "tr": "Tek kaydırmada üç ya da daha fazla meyve, 10 × n × (n − 2) ek puanlık KOMBO yapar: üç meyveye 30, dörde 80, beşe 150. Meyvelerin yayın tepesinde toplanmasını bekle ve hepsini tek çizgide al."
+    },
+    {
+      "en": "Short, separate swipes are safer than one long sweep when bombs are up. A long sweep has more chances to clip a fuse.",
+      "tr": "Havada bomba varken tek uzun süpürme yerine kısa ve ayrı kaydırmalar daha güvenlidir. Uzun süpürmenin bir fitile değme ihtimali daha yüksektir."
+    },
+    {
+      "en": "A FRUIT FRENZY has no bombs at all, so swipe freely back and forth through it.",
+      "tr": "MEYVE YAĞMURU'nda hiç bomba yoktur; içinden gönlünce ileri geri kaydır."
+    },
+    {
+      "en": "Fruit is slowest at the top of its flight. When in doubt, cut it there rather than chasing it as it falls.",
+      "tr": "Meyve uçuşunun tepesinde en yavaş hâlindedir. Emin değilsen düşerken kovalamak yerine onu orada kes."
+    }
+  ],
+  "features": [
+    {
+      "en": "Six fruits that split in two with a juice splash",
+      "tr": "Meyve suyu saçarak ikiye ayrılan altı meyve"
+    },
+    {
+      "en": "Multi-fruit combos and random critical cuts",
+      "tr": "Çoklu meyve kombosu ve rastgele kritik kesimler"
+    },
+    {
+      "en": "Star fruit, slow-motion ice fruit and bomb-free frenzies",
+      "tr": "Yıldız meyvesi, zamanı yavaşlatan buz meyvesi ve bombasız meyve yağmurları"
+    },
+    {
+      "en": "Swipe, mouse or keyboard blade",
+      "tr": "Kaydırma, fare ya da klavyeyle kullanılan bıçak"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each fruit is 10 points, the ice fruit 20 and the star fruit 50. About one cut in ten is a CRITICAL worth 40 extra, and combos of three or more fruit in one swipe add a bonus on top.",
+        "tr": "Her meyve 10, buz meyvesi 20, yıldız meyvesi 50 puandır. Yaklaşık her on kesimden biri 40 ek puanlık KRİTİK olur; tek kaydırmada üç ya da daha fazla meyve de üstüne kombo bonusu ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "How does a game end?",
+        "tr": "Oyun nasıl biter?"
+      },
+      "a": {
+        "en": "Either the blade touches a bomb, which ends it at once, or you let three ordinary fruits fall without cutting them.",
+        "tr": "Ya bıçak bir bombaya değer ve oyun anında biter, ya da üç sıradan meyveyi kesmeden düşürürsün."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. The first two waves have no bombs and only a few fruits, which gives you time to get the feel of the blade.",
+        "tr": "Hayır. İlk iki dalgada bomba yoktur ve yalnızca birkaç meyve gelir; bu da bıçağa alışman için zaman tanır."
+      }
+    }
+  ]
+}

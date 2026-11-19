@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Crystal Keep is a 3D tower defence game. Zombies march down a winding path and UFOs fly over it, all heading for the crystal keep. You build on the grass beside the path: the Ballista fires fast arrows at ground and air, the Cannon's blast shells punch through armour, the Catapult lobs boulders over a wide area, and the Turret's rapid fire hits flying enemies hardest. Every tower has three levels and targets the first, strongest or closest enemy.\n\nAfter every third wave and after each boss you pick one of three power cards, such as Critical Strikes or Chain Reaction, which last until the map ends. The keep strikes back too, with powers such as the Meteor.\n\nThe campaign has three maps: Green Valley with 12 waves, River Crossing with 14 and Snowy Pass with 15, each closing on a boss wave. Cleared maps earn Crystal Shards for the Talent board, where new powers are unlocked.",
+    "tr": "Kristal Kale, 3B bir kule savunma oyunu. Zombiler dolambaçlı yoldan yürür, UFO'lar yolun üstünden uçar; hepsi kristal kaleye gider. Sen yolun kenarındaki çimenlere kule kurarsın: Balista yere ve havaya hızlı ok atar, Top'un patlayan güllesi zırhı deler, Mancınık geniş bir alana kaya fırlatır, Taret'in seri atışı ise en çok uçan düşmanlara işler. Her kulenin üç seviyesi vardır ve İLK, EN GÜÇLÜ ya da EN YAKIN düşmanı hedefler.\n\nHer üç dalgada bir ve her boss'tan sonra üç güç kartından birini seçersin; Kritik Vuruş ya da Zincirleme Patlama gibi kartlar harita bitene kadar sürer. Kale de Göktaşı gibi güçlerle karşılık verir.\n\nSefer üç haritadan oluşur: 12 dalgalı Yeşil Vadi, 14 dalgalı Nehir Geçidi ve 15 dalgalı Karlı Geçit; her biri bir boss dalgasıyla kapanır. Bitirdiğin haritalar, yeni güçlerin açıldığı Yetenek panosu için Kristal Parçası kazandırır."
+  },
+  "howToPlay": [
+    {
+      "en": "Pick a map and the powers to take, then place towers before the first wave. Normal starts you with 230 gold.",
+      "tr": "Bir harita ve yanına alacağın güçleri seç, sonra ilk dalgadan önce kulelerini yerleştir. Normal'de 230 altınla başlarsın."
+    },
+    {
+      "en": "Start the wave when ready. Kills and cleared waves pay gold; calling a wave early pays 2 gold per second left on its countdown.",
+      "tr": "Hazır olunca dalgayı başlat. Yok edilen düşmanlar ve biten dalgalar altın getirir; dalgayı erken çağırmak, geri sayımda kalan her saniye için 2 altın öder."
+    },
+    {
+      "en": "Tap a tower to upgrade it, sell it or change its target, and use the keep's powers when a wave breaks through.",
+      "tr": "Bir kuleye dokunarak onu geliştir, sat ya da hedefini değiştir; bir dalga hattını aşınca kalenin güçlerini kullan."
+    },
+    {
+      "en": "Enemies that reach the keep cost lives, a boss ten. Survive the last wave to clear the map with up to three stars, then go on or finish the run.",
+      "tr": "Kaleye ulaşan düşmanlar can götürür, boss'lar on. Son dalgayı atlatınca harita biter ve üç yıldıza kadar kazanırsın; sonra devam et ya da koşuyu bitir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrows move the cursor, 1–4 pick a tower and the same key or Enter builds. U upgrades, S sells, T changes the target, Q W E R use powers, Space starts the wave, F toggles double speed and C lists your cards.",
+      "tr": "Oklar imleci taşır, 1–4 kule seçer, aynı tuş ya da Enter kurar. U geliştirir, S satar, T hedefi değiştirir, Q W E R güç kullanır, Boşluk dalgayı başlatır, F iki kat hızı açıp kapatır, C kartlarını listeler."
+    },
+    "touch": {
+      "en": "Tap a tower card, then tap a grass tile twice to build. Drag to move the map and pinch to zoom. For an aimed power, tap it, then tap the target twice.",
+      "tr": "Bir kule kartına dokun, sonra kurmak için çim kareye iki kez dokun. Haritayı sürükleyerek kaydır, iki parmakla yakınlaştır. Nişanlı bir güç için önce ona, sonra hedefe iki kez dokun."
+    },
+    "mouse": {
+      "en": "Pick a tower card and click a grass tile to build; right-click cancels. Click a tower for its panel, or the map to drop an aimed power.",
+      "tr": "Bir kule kartı seç ve kurmak için çim kareye tıkla; sağ tık iptal eder. Paneli için kuleye, nişanlı bir gücü bırakmak için haritaya tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Cannons and catapults never hit the air, so have a Ballista or Turret on the path before the first UFOs arrive (wave 5 in Green Valley).",
+      "tr": "Top ve Mancınık havayı asla vuramaz; ilk UFO'lar gelmeden (Yeşil Vadi'de 5. dalga) yolu bir Balista ya da Taret korusun."
+    },
+    {
+      "en": "Brutes shrug off over half of every arrow and bullet, but blast shells ignore armour. Meet them with Cannons, or take Weakening Curse or Armour Piercer.",
+      "tr": "Zırhlılar her ok ve merminin yarısından fazlasını savuşturur ama patlayan mermiler zırhı yok sayar. Onları Top'larla karşıla ya da Zayıflatma Laneti veya Zırh Delici kartını al."
+    },
+    {
+      "en": "Stars depend on the lives you keep: 85% or more is three stars, half or more is two. More stars mean a bigger clear bonus and more Crystal Shards.",
+      "tr": "Yıldızlar elde tuttuğun canlara bağlıdır: %85 ve üstü üç yıldız, yarısı ve üstü iki yıldız. Daha çok yıldız, daha büyük bitiş bonusu ve daha çok Kristal Parçası demek."
+    },
+    {
+      "en": "Save the Meteor for bosses and tight clumps; its damage grows with the waves.",
+      "tr": "Göktaşı'nı boss'lara ve sık kümelere sakla; hasarı dalgalarla birlikte artar."
+    }
+  ],
+  "features": [
+    {
+      "en": "Four towers with three levels and three targeting modes",
+      "tr": "Üç seviyeli ve üç hedef ayarlı dört kule"
+    },
+    {
+      "en": "23 power cards in common, rare and epic grades",
+      "tr": "Yaygın, nadir ve destansı 23 güç kartı"
+    },
+    {
+      "en": "Three maps with 12, 14 and 15 waves and boss fights",
+      "tr": "12, 14 ve 15 dalgalı, boss savaşlı üç harita"
+    },
+    {
+      "en": "A Talent board with 12 talents and four keep powers",
+      "tr": "12 yetenekli bir Yetenek panosu ve dört kale gücü"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy starts you with 300 gold and 30 lives, enemies are weaker and slower, kills pay 20% more and selling returns 80% instead of 70%. It earns about half the shards and stays off the leaderboard.",
+        "tr": "Evet. Kolay'da 300 altın ve 30 canla başlarsın; düşmanlar daha zayıf ve yavaştır, yok edişler %20 fazla altın getirir, satışta %70 yerine %80 geri alırsın. Kolay, Kristal Parçalarının yaklaşık yarısını kazandırır ve sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "How is the score counted?",
+        "tr": "Skor nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Every kill scores, bosses the most, and each cleared wave adds a bonus. Clearing a map adds 20 points per life left and 250 per star, and the next maps keep adding to the same run.",
+        "tr": "Her yok edilen düşman puan getirir, en çoğunu boss'lar verir; biten her dalga da bonus ekler. Haritayı bitirmek kalan her can için 20, her yıldız için 250 puan ekler; sonraki haritalar aynı koşuya eklenmeye devam eder."
+      }
+    },
+    {
+      "q": {
+        "en": "Do the power cards carry over?",
+        "tr": "Güç kartları sonraki haritaya geçiyor mu?"
+      },
+      "a": {
+        "en": "No, cards last only for their map. Talents bought with Crystal Shards are permanent, and resetting the board refunds the shards.",
+        "tr": "Hayır, kartlar yalnızca kendi haritalarında geçerlidir. Kristal Parçalarıyla alınan yetenekler kalıcıdır; panoyu sıfırlamak parçaları geri verir."
+      }
+    }
+  ]
+}

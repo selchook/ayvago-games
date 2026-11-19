@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Five in a Row is gomoku on a 15 × 15 board of wooden lines. Black and white take turns putting one stone on an empty intersection, black first, and the first player with five stones in an unbroken line, across, down or diagonally, wins. Stones never move and nothing is captured, so every placement stays on the board for good. This version plays the free rules: a line of six or more also counts, and black has no forbidden moves.\n\nAlone, you face a computer rival over a run of rounds with 3 lives. Each round you win promotes it one step, from Rookie to Apprentice, Adept, Tough, Expert and finally Grandmaster, which hunts for sequences of forcing fours. Each loss costs a life. You take black in the odd rounds and white in the even ones, so you practise both attack and defence.\n\nWith a friend on ayvago.com you play one online game, and the player who starts holds black.",
+    "tr": "Beşli Taş, 15 × 15 çizgili ahşap bir tahtada oynanan gomoku. Siyah ve beyaz sırayla boş bir kesişime birer taş koyar, siyah başlar; beş taşı yatay, dikey ya da çapraz kesintisiz bir sıraya ilk dizen kazanır. Taşlar yerinden oynamaz, hiçbir taş alınmaz; konan taş oyun boyunca orada kalır. Bu sürüm serbest kurallarla oynanır: altı ve daha uzun sıralar da sayılır, siyaha yasak hamle yoktur.\n\nTek başına oynarken bilgisayar rakibe karşı 3 canla art arda eller oynarsın. Kazandığın her elde rakip bir basamak yükselir: Acemi, Çırak, Usta, Zorlu, Uzman ve sonunda zorlayıcı dörtlü zincirlerini arayan Büyükusta. Kaybettiğin her el bir can götürür. Tek sayılı ellerde siyahı, çift sayılı ellerde beyazı alırsın; böylece hem saldırıya hem savunmaya alışırsın.\n\nayvago.com'da bir arkadaşınla tek bir çevrimiçi oyun oynarsın; başlayan oyuncu siyahla oynar."
+  },
+  "howToPlay": [
+    {
+      "en": "When YOUR TURN shows, pick an empty intersection. A ghost stone marks your aim.",
+      "tr": "SIRA SENDE yazınca boş bir kesişim seç. Hayalet bir taş nereye nişan aldığını gösterir."
+    },
+    {
+      "en": "Place the stone. A red dot always marks the last stone played, so you can see the opponent's reply at a glance.",
+      "tr": "Taşı koy. Kırmızı nokta hep son konan taşı gösterir; rakibin cevabını bir bakışta görürsün."
+    },
+    {
+      "en": "Make five in a line before your opponent does. If the whole board fills up first, the round is a draw.",
+      "tr": "Rakibinden önce beş taşı bir sıraya diz. Tahta önce dolarsa el berabere biter."
+    },
+    {
+      "en": "Win to climb the rival ladder; lose a round and one of your 3 lives is gone.",
+      "tr": "Kazandıkça rakip merdiveni çıkarsın; kaybettiğin her el 3 canından birini götürür."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the cursor around the board, Space, Enter or Z places the stone. Esc or P pauses a solo game.",
+      "tr": "Ok tuşları ya da WASD imleci tahtada gezdirir; Boşluk, Enter ya da Z taşı koyar. Tek kişilik oyunda Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap an intersection to aim, then tap the same spot again to place. Tapping elsewhere just moves the aim, so a slip of the finger costs nothing.",
+      "tr": "Nişan almak için bir kesişime dokun, taşı koymak için aynı yere yeniden dokun. Başka bir yere dokunmak yalnızca nişanı taşır; parmağın kaysa da bir şey kaybetmezsin."
+    },
+    "mouse": {
+      "en": "Hover to aim and click once to place the stone.",
+      "tr": "Fareyle nişan al, taşı koymak için bir kez tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "An open three, with both ends free, must be answered at once. Leave one alone and it becomes an open four that cannot be stopped.",
+      "tr": "İki ucu boş bir üçlüye hemen cevap verilmeli. Boş bırakılan üçlü, durdurulamayan açık dörtlüye dönüşür."
+    },
+    {
+      "en": "The winning move usually makes two threats at once, such as a four and an open three crossing on the same stone.",
+      "tr": "Kazandıran hamle genellikle aynı anda iki tehdit kurar; örneğin aynı taşta kesişen bir dörtlü ve bir açık üçlü."
+    },
+    {
+      "en": "As white, block on the side of a line that also builds your own shape, so every defensive stone does double duty.",
+      "tr": "Beyazla oynarken bir sırayı, kendi dizilimini de güçlendiren ucundan kapat; savunmadaki her taş iki iş görsün."
+    },
+    {
+      "en": "Speed counts. A won round scores 100 times the rival's level, plus 5 for every one of your moves under 40 and 25 for each win in your streak.",
+      "tr": "Hız puan getirir. Kazanılan el rakibin seviyesinin 100 katı eder; 40'ın altında kalan her hamlen için 5, serindeki her galibiyet için 25 puan eklenir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Free-style gomoku on a 15 × 15 board",
+      "tr": "15 × 15 tahtada serbest kurallı gomoku"
+    },
+    {
+      "en": "Six computer rivals, from Rookie to Grandmaster",
+      "tr": "Acemi'den Büyükusta'ya altı bilgisayar rakip"
+    },
+    {
+      "en": "Black and white swap every round",
+      "tr": "Siyah ve beyaz her elde yer değiştirir"
+    },
+    {
+      "en": "Online games against a friend",
+      "tr": "Arkadaşına karşı çevrimiçi oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Does a line of six count?",
+        "tr": "Altılı sıra da sayılır mı?"
+      },
+      "a": {
+        "en": "Yes. Any unbroken line of five or more stones wins, for black and white alike. There are no renju restrictions.",
+        "tr": "Evet. Beş ya da daha uzun her kesintisiz sıra kazandırır; siyah için de beyaz için de. Renju yasakları yoktur."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the rival only climbs three levels, overlooks your threats more often and never searches for forced wins. Easy runs do not go on the leaderboard.",
+        "tr": "Evet. Kolay'da rakip yalnızca üç seviye çıkar, tehditlerini daha sık gözden kaçırır ve zorlayıcı kazanç aramaz. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play a friend?",
+        "tr": "Bir arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Open a room on ayvago.com and share the link. You play a single game; the starting player takes black, and the host can offer a rematch at the end.",
+        "tr": "Evet. ayvago.com'da bir oda açıp bağlantıyı paylaş. Tek bir oyun oynanır; başlayan oyuncu siyahı alır, sonunda oda sahibi rövanş önerebilir."
+      }
+    }
+  ]
+}

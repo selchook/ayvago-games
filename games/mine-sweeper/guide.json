@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Mine Sweeper is the classic logic game of clearing a minefield square by square, played against a countdown. Every safe square you open shows how many of its eight neighbours hide a mine, and a square with no mines around it opens its whole empty area at once. Open every safe square to clear the field, and the next field begins.\n\nBefore the first field you choose EASY (8×10, 10 mines, 3:00), MEDIUM (8×12, 16 mines, 4:00) or HARD (8×12, 22 mines, 5:00). Every field after that hides one more mine on Easy and two more on the others, and gives 10 seconds less, down to 55% of the starting time. The mines are laid only after your first tap, never on or next to that square, so the first tap always opens an area, and the clock starts with it.\n\nHitting a mine does not end the run here. It costs 15 seconds and some points, and you play on. The run ends only when the clock reaches zero.",
+    "tr": "Mayın Tarlası, mayınlı bir araziyi kare kare temizlediğin klasik mantık oyununun geri sayımla oynanan hâli. Açtığın her güvenli kare, çevresindeki sekiz kareden kaçında mayın olduğunu gösterir; çevresinde hiç mayın olmayan kare de bütün boş alanı bir anda açar. Bütün güvenli kareleri açınca tarla temizlenir ve sıradaki tarla başlar.\n\nİlk tarladan önce KOLAY (8×10, 10 mayın, 3:00), ORTA (8×12, 16 mayın, 4:00) ya da ZOR (8×12, 22 mayın, 5:00) seçersin. Sonraki her tarlada Kolay'da bir, diğerlerinde iki mayın daha saklanır ve süre 10 saniye kısalır; en fazla başlangıç süresinin %55'ine kadar. Mayınlar ancak ilk dokunuşundan sonra, o karenin üstüne ya da yanına gelmeyecek şekilde yerleştirilir; bu yüzden ilk dokunuş her zaman bir alan açar ve süre de onunla başlar.\n\nBurada mayına basmak oyunu bitirmez. 15 saniye ve biraz puan götürür, oyun devam eder. Oyun ancak süre sıfırlandığında biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Open covered squares and read the numbers: each one counts the mines among the eight squares around it.",
+      "tr": "Kapalı kareleri aç ve sayıları oku: her sayı, çevresindeki sekiz karede kaç mayın olduğunu söyler."
+    },
+    {
+      "en": "Plant a flag on every square you know is a mine. The mine chip at the top right shows the number of mines minus your flags.",
+      "tr": "Mayın olduğunu bildiğin her kareye bayrak dik. Sağ üstteki mayın göstergesi, mayın sayısından diktiğin bayrakları düşerek gösterir."
+    },
+    {
+      "en": "Open a number whose flags already match it, and all its other neighbours open at once. If one of those flags is wrong, the hidden mine goes off.",
+      "tr": "Çevresindeki bayraklar sayısına eşit olan bir sayıyı açarsan, öteki bütün komşuları bir anda açılır. Bayraklardan biri yanlışsa saklı mayın patlar."
+    },
+    {
+      "en": "Clear the field before the clock runs out for FIELD CLEAR! and a bonus. When the clock reaches zero, TIME'S UP! ends the game.",
+      "tr": "Süre bitmeden tarlayı temizlersen TARLA TEMİZ! yazar ve bonus gelir. Süre sıfıra inince SÜRE BİTTİ! yazar ve oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "On the difficulty screen press 1, 2 or 3, or choose with ↑ ↓ and Space. In the field, the arrows or WASD move the cursor, Space, Enter or Z opens, X or F flags, and M or Tab switches between DIG and FLAG mode. Esc or P pauses.",
+      "tr": "Zorluk ekranında 1, 2 ya da 3'e bas veya ↑ ↓ ve Boşluk ile seç. Tarlada oklar ya da WASD imleci gezdirir, Boşluk, Enter ya da Z açar, X ya da F bayrak diker, M ya da Tab AÇ ile BAYRAK modu arasında geçiş yapar. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap to open a square and hold it a moment to plant or lift a flag. The button under the field switches to MODE: FLAG, where taps place flags.",
+      "tr": "Kareyi açmak için dokun, bayrak dikmek ya da kaldırmak için bir an basılı tut. Tarlanın altındaki düğme MOD: BAYRAK'a geçer; bu modda dokunuşlar bayrak diker."
+    },
+    "mouse": {
+      "en": "Left-click opens a square and right-click flags it. The mode button works with the mouse too.",
+      "tr": "Sol tık kareyi açar, sağ tık bayrak diker. Mod düğmesi fareyle de çalışır."
+    }
+  },
+  "tips": [
+    {
+      "en": "A 1 that touches only one covered square has found its mine. Flag it, and every other neighbour of any number already satisfied by that flag is safe.",
+      "tr": "Tek bir kapalı kareye değen 1, mayınını bulmuş demektir. Oraya bayrak dik; o bayrakla tamamlanan her sayının öteki komşuları güvenlidir."
+    },
+    {
+      "en": "Opening a satisfied number clears all its neighbours in one move. It is the fastest way across the field, as long as your flags are right.",
+      "tr": "Tamamlanmış bir sayıyı açmak bütün komşularını tek hamlede temizler. Bayrakların doğruysa tarlayı geçmenin en hızlı yolu budur."
+    },
+    {
+      "en": "Speed pays: a cleared field adds 2 points per second left, times the difficulty multiplier.",
+      "tr": "Hız kazandırır: temizlenen tarla, kalan her saniye için zorluk çarpanı kadar 2 puan ekler."
+    },
+    {
+      "en": "When the logic really runs out, guessing is not fatal: a wrong guess costs 15 seconds, which may be less than you would spend staring.",
+      "tr": "Mantık gerçekten tükendiğinde tahmin etmek ölümcül değildir: yanlış tahmin 15 saniye götürür, bu da düşünerek harcayacağın süreden az olabilir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Easy, Medium and Hard, each with its own best time",
+      "tr": "Her birinin kendi en iyi süresi olan Kolay, Orta ve Zor"
+    },
+    {
+      "en": "Endless fields with more mines and less time",
+      "tr": "Her seferinde daha çok mayın ve daha az süreyle gelen sonsuz tarlalar"
+    },
+    {
+      "en": "A safe first tap that always opens an area",
+      "tr": "Her zaman bir alan açan güvenli ilk dokunuş"
+    },
+    {
+      "en": "Flag by long press, right-click or the FLAG mode button",
+      "tr": "Basılı tutarak, sağ tıkla ya da BAYRAK modu düğmesiyle bayrak dikme"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "What happens when I hit a mine?",
+        "tr": "Mayına basarsam ne olur?"
+      },
+      "a": {
+        "en": "It explodes and stays marked, the clock loses 15 seconds and you lose 25 points times the difficulty multiplier. After a short pause you keep playing.",
+        "tr": "Mayın patlar ve işaretli kalır, süreden 15 saniye düşer ve zorluk çarpanı kadar 25 puan kaybedersin. Kısa bir duraklamadan sonra oynamaya devam edersin."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Every square you open scores 5 times the multiplier: 1 on Easy, 2 on Medium, 3 on Hard. A cleared field adds 250 × multiplier × field number, plus 2 × multiplier for each second left.",
+        "tr": "Açtığın her kare çarpan kadar 5 puan getirir: Kolay'da 1, Orta'da 2, Zor'da 3. Temizlenen tarla 250 × çarpan × tarla numarası kadar puan, üstüne kalan her saniye için 2 × çarpan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Which difficulty should I pick?",
+        "tr": "Hangi zorluğu seçmeliyim?"
+      },
+      "a": {
+        "en": "Easy is the place to learn. Hard hides more than twice as many mines, but every square and bonus is worth three times as much.",
+        "tr": "Öğrenmek için Kolay doğru yer. Zor'da iki katından fazla mayın saklıdır, ama her kare ve bonus üç kat değerlidir."
+      }
+    }
+  ]
+}

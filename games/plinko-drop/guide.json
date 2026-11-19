@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Plinko Drop is a peg-board game where you choose only one thing: where each ball starts. You slide the dropper along the top, let go, and the ball rattles down through pegs into one of nine pockets at the bottom, worth 5 to 100 points. Each board gives you ten balls and a goal; reach it before your last ball lands and a new board appears.\n\nThe boards rotate through seven layouts: Classic, Diamonds, Bumpers, Sliders, Spinners, Waves and Funnels, then come round again with extra hazards and higher goals. From board 2 a pink multiplier gate glides from pocket to pocket, doubling (later tripling) whatever lands inside it. From board 3, zero pockets appear, the first ones right beside the 100.\n\nSpecial balls join the queue one by one: the GOLDEN BALL doubles its pocket, the GHOST BALL passes through the top rows, the SPLIT BALL breaks into three on its first hit and the HEAVY BALL smashes through its first three pegs. Gold pegs, bumpers and spinners add points along the way.",
+    "tr": "Plinko'da tek bir şeye karar verirsin: her topun nereden düşeceğine. Bırakıcıyı üstte sağa sola kaydırıp bırakırsın; top çivilere çarpa çarpa aşağı iner ve alttaki dokuz cepten birine düşer, cepler 5 ile 100 puan arasındadır. Her tahtada on topun ve bir hedefin var; son topun düşmeden hedefe ulaşırsan yeni tahta gelir.\n\nTahtalar yedi düzen arasında döner: KLASİK, ELMASLAR, TAMPONLAR, KAYAN ÇUBUKLAR, PERVANELER, DALGALAR ve HUNİLER; sonra yeni engeller ve daha yüksek hedeflerle yeniden başlar. 2. tahtadan itibaren pembe bir çarpan kapısı cepten cebe kayar ve içine düşen puanı ikiye, ileride üçe katlar. 3. tahtadan sonra sıfır cepler çıkar; ilkleri hep 100'lük cebin hemen yanındadır.\n\nÖzel toplar sıraya birer birer katılır: ALTIN TOP düştüğü cebin puanını ikiye katlar, HAYALET TOP üst sıraların içinden geçer, BÖLÜNEN TOP ilk çarpışmada üçe ayrılır, AĞIR TOP ilk üç çiviyi kırıp geçer. Yol boyunca altın çiviler, tamponlar ve pervaneler de puan getirir."
+  },
+  "howToPlay": [
+    {
+      "en": "Read the board card: its name, the goal and the number of balls, plus any new ball type it introduces.",
+      "tr": "Tahta kartını oku: tahtanın adı, hedef puan, top sayısı ve varsa ilk kez gelen top türü."
+    },
+    {
+      "en": "Move the dropper to where you want the ball to start and release it. The NEXT chip shows which balls are coming.",
+      "tr": "Bırakıcıyı topun başlamasını istediğin yere götür ve bırak. SIRADAKİ kutusu hangi topların geleceğini gösterir."
+    },
+    {
+      "en": "Watch the GOAL bar on the right fill. Passing the goal lights the first star; 140% and 180% of it light the second and third.",
+      "tr": "Sağdaki HEDEF çubuğunun dolmasını izle. Hedefi geçmek ilk yıldızı yakar; hedefin %140'ı ikinci, %180'i üçüncü yıldızı getirir."
+    },
+    {
+      "en": "When the last ball lands, a cleared board pays a star bonus and the next board begins. Below the goal, the game is over.",
+      "tr": "Son top düştüğünde hedefe ulaştıysan yıldız bonusu alır ve sonraki tahtaya geçersin. Hedefin altında kalırsan oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D slide the dropper. Space, Z, Enter, ↓ or S drops the ball. Esc or P pauses.",
+      "tr": "← → ya da A / D bırakıcıyı kaydırır. Boşluk, Z, Enter, ↓ ya da S topu bırakır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch the screen to place the dropper, slide your finger to fine-tune it and lift to drop.",
+      "tr": "Bırakıcıyı yerleştirmek için ekrana dokun, ince ayar için parmağını kaydır, bırakmak için kaldır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Landing in a 50 or 100 pocket, or in the gate, starts a combo: the second hot landing in a row is worth ×1.5, rising to ×3 from the fifth. One ball in a low or zero pocket resets it.",
+      "tr": "50'lik ya da 100'lük cebe veya kapıya düşmek kombo başlatır: üst üste ikinci iyi düşüş ×1,5 eder, beşinciden sonra ×3'e çıkar. Düşük ya da sıfır cebe giren tek bir top komboyu sıfırlar."
+    },
+    {
+      "en": "When the golden ball is next in the queue, wait for the gate to slide over the 100 pocket before you drop it: gold, gate and combo multiply together.",
+      "tr": "Sırada altın top varsa onu bırakmadan önce kapının 100'lük cebin üstüne kaymasını bekle: altın, kapı ve kombo çarpanları birbiriyle çarpılır."
+    },
+    {
+      "en": "Hit the green +1 pocket early. It adds a ball to the queue once and then turns into a plain 10.",
+      "tr": "Yeşil +1 cebini erkenden vur. Sıraya bir kez top ekler, sonra sıradan bir 10'luk cebe dönüşür."
+    },
+    {
+      "en": "Collecting every gold peg on a board pays 100 plus 20 per board number, so aim a few balls at the pegs you have not touched yet.",
+      "tr": "Bir tahtadaki bütün altın çivileri toplamak 100 artı tahta numarası başına 20 puan getirir; birkaç topu henüz dokunmadığın çivilere yönelt."
+    },
+    {
+      "en": "Three stars on a board give you an extra ball on the next one, which matters more once the goals climb on the second pass.",
+      "tr": "Bir tahtada üç yıldız almak sonraki tahtaya fazladan bir top kazandırır; ikinci turda hedefler yükseldiğinde bu çok işe yarar."
+    }
+  ],
+  "features": [
+    {
+      "en": "Seven board layouts with bumpers, sliding bars, spinners and funnels",
+      "tr": "Tamponlu, kayan çubuklu, pervaneli ve hunili yedi tahta düzeni"
+    },
+    {
+      "en": "Golden, ghost, split and heavy balls",
+      "tr": "Altın, hayalet, bölünen ve ağır toplar"
+    },
+    {
+      "en": "A moving multiplier gate and combo chains",
+      "tr": "Hareketli çarpan kapısı ve kombo zincirleri"
+    },
+    {
+      "en": "Three stars per board and goals that keep rising",
+      "tr": "Her tahtada üç yıldız ve sürekli yükselen hedefler"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is it just luck?",
+        "tr": "Sadece şans mı?"
+      },
+      "a": {
+        "en": "The bounces are random, but where you drop each ball and when you drop it against the moving gate are your choices, and over ten balls they decide most boards.",
+        "tr": "Sekmeler rastgeledir, ama her topu nereden bırakacağın ve kayan kapıya göre ne zaman bırakacağın senin kararın; on top boyunca çoğu tahtayı bunlar belirler."
+      }
+    },
+    {
+      "q": {
+        "en": "How does a run end?",
+        "tr": "Oyun nasıl biter?"
+      },
+      "a": {
+        "en": "There are no lives. The run ends on the first board where your last ball lands and the score is still under the goal.",
+        "tr": "Can yoktur. Son topun düştüğünde puanının hedefin altında kaldığı ilk tahtada oyun biter."
+      }
+    },
+    {
+      "q": {
+        "en": "Does it work on phones?",
+        "tr": "Telefonda çalışır mı?"
+      },
+      "a": {
+        "en": "Yes. The board is built for a portrait screen and the whole game is played with one finger.",
+        "tr": "Evet. Tahta dikey ekrana göre tasarlanmıştır ve oyunun tamamı tek parmakla oynanır."
+      }
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Retro Snake is the snake game as it has always been played, on a checkerboard field 17 cells wide and 26 tall. Your snake starts four segments long and never stops moving. Eat the fruit to grow, keep your head away from your own body, and see how long you last.\n\nBefore each game you pick a mode on the CHOOSE MODE screen. In CLASSIC the edges wrap around: leave on one side and you come back on the other. In WALLS the red border kills, but every point is doubled. The game remembers the mode you played last.\n\nEvery sixth fruit raises the level and the speed: one step takes 0.16 seconds at level 1 and gets quicker each level down to 0.06 seconds at level 10. From level 3, rocks drop onto the field at each level-up, two at a time and three from level 6, and they stay for the rest of the game. Every fifth fruit also brings a golden crown that vanishes after seven seconds. There is a single life.",
+    "tr": "Retro Yılan, yılan oyununu her zaman oynandığı gibi, 17 hücre genişliğinde ve 26 hücre yüksekliğinde damalı bir alanda sunuyor. Yılanın dört parça uzunlukta başlar ve hiç durmaz. Meyve yiyerek uza, başını kendi gövdenden uzak tut ve ne kadar dayanabildiğini gör.\n\nHer oyundan önce MOD SEÇ ekranında bir mod seçersin. KLASİK modda kenarlardan karşıya geçersin: bir yandan çıkınca öbür yandan girersin. DUVARLI modda kırmızı kenar öldürür, ama her puan iki katına çıkar. Oyun en son oynadığın modu hatırlar.\n\nHer altıncı meyve seviyeyi ve hızı artırır: 1. seviyede bir adım 0,16 saniye sürer, her seviyede kısalarak 10. seviyede 0,06 saniyeye iner. 3. seviyeden itibaren her seviye atlayışında alana kayalar düşer; ikişer tane, 6. seviyeden sonra üçer tane. Kayalar oyunun sonuna kadar yerinde kalır. Her beşinci meyve ayrıca yedi saniye sonra kaybolan altın bir taç getirir. Tek bir canın var."
+  },
+  "howToPlay": [
+    {
+      "en": "Tap CLASSIC or WALLS, or switch between them with ↑ / ↓ and start with Space or Enter.",
+      "tr": "KLASİK ya da DUVARLI'ya dokun; ya da ↑ / ↓ ile aralarında geçiş yapıp Boşluk veya Enter ile başla."
+    },
+    {
+      "en": "Steer toward the fruit. Each one adds two segments to the snake.",
+      "tr": "Yılanı meyveye doğru çevir. Her meyve yılana iki parça ekler."
+    },
+    {
+      "en": "When the golden crown appears, grab it before the timer bar in the top corner runs out. It adds three segments.",
+      "tr": "Altın taç çıktığında üst köşedeki süre çubuğu bitmeden onu kap. Taç yılana üç parça ekler."
+    },
+    {
+      "en": "Keep going as the speed rises. The run ends when the head hits the body, a rock or, in WALLS, the border.",
+      "tr": "Hız arttıkça devam et. Baş gövdeye, bir kayaya ya da DUVARLI modda kenara çarptığında oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD turn the snake. Up to three turns can be pressed ahead and are taken in order; a turn straight back is ignored. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD yılanı çevirir. Önceden en fazla üç dönüşe basabilirsin, sırayla uygulanır; tam geri dönüş yok sayılır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag: a stick appears, and every new direction you push queues the next turn.",
+      "tr": "Ekranda herhangi bir yere bas ve sürükle: bir kumanda kolu çıkar, ittiğin her yeni yön sıradaki dönüş olur."
+    }
+  },
+  "tips": [
+    {
+      "en": "Fold the snake in long parallel lines rather than spirals. Once the body is long, a spiral can close its own only way out.",
+      "tr": "Yılanı sarmal yerine uzun paralel çizgiler halinde katla. Gövde uzadığında sarmal, kendi tek çıkışını kapatabilir."
+    },
+    {
+      "en": "Use the turn queue for tight U-turns: two quick presses (for example ↑ then ←) slide the snake into the next lane even at top speed.",
+      "tr": "Dar U dönüşleri için dönüş sırasını kullan: art arda iki hızlı basış (örneğin ↑ sonra ←) yılanı en yüksek hızda bile yan şeride geçirir."
+    },
+    {
+      "en": "Take the crown early. It pays (40 + 15 × seconds left) × level, so grabbing it with six seconds to spare is worth more than twice a last-second bite.",
+      "tr": "Tacı erken al. (40 + 15 × kalan saniye) × seviye kadar puan getirir; altı saniye kala almak, son saniyede almanın iki katından fazlasıdır."
+    },
+    {
+      "en": "In WALLS mode, stay off the outer ring unless the fruit is there. A sudden turn there leaves no room to correct.",
+      "tr": "DUVARLI modda meyve orada değilse en dıştaki sıradan uzak dur. Oradaki ani bir dönüş düzeltme payı bırakmaz."
+    }
+  ],
+  "features": [
+    {
+      "en": "CLASSIC wrap-around mode and WALLS mode with double points",
+      "tr": "Kenarlardan geçilen KLASİK mod ve çift puanlı DUVARLI mod"
+    },
+    {
+      "en": "A timed golden crown with its own countdown bar",
+      "tr": "Kendi geri sayım çubuğu olan süreli altın taç"
+    },
+    {
+      "en": "Speed that climbs for ten levels and rocks that pile up from level 3",
+      "tr": "On seviye boyunca artan hız ve 3. seviyeden itibaren birikip duran kayalar"
+    },
+    {
+      "en": "A buffer of up to three turns for quick manoeuvres",
+      "tr": "Hızlı manevralar için üç dönüşe kadar ön bellek"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A fruit is worth 10 × level and the crown (40 + 15 for each second left) × level. WALLS doubles both, so fruit is worth more the further you get.",
+        "tr": "Meyve 10 × seviye, taç (40 + kalan her saniye için 15) × seviye puan eder. DUVARLI mod ikisini de iki katına çıkarır; yani ilerledikçe meyve daha değerli olur."
+      }
+    },
+    {
+      "q": {
+        "en": "Can a rock land right in front of me?",
+        "tr": "Bir kaya tam önüme düşebilir mi?"
+      },
+      "a": {
+        "en": "No. Rocks never fall on the six cells straight ahead of the head or on the outermost row of cells, so a level-up never ends the run by itself.",
+        "tr": "Hayır. Kayalar başın tam önündeki altı hücreye ve en dış hücre sırasına hiç düşmez; seviye atlamak tek başına oyunu bitirmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "There is no separate difficulty setting. CLASSIC is the gentler choice, because the edges wrap instead of killing.",
+        "tr": "Ayrı bir zorluk ayarı yok. Kenarlar öldürmek yerine karşıya geçirdiği için KLASİK mod daha rahat seçenektir."
+      }
+    }
+  ]
+}

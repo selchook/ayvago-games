@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Box Pusher is classic Sokoban in 20 handmade levels. You are a warehouse worker in a walled room full of crates and marked target spots. Walk around and push the crates until every one of them stands on a target. You can only push, never pull, and only one crate at a time, so a crate shoved into a corner stays there for good.\n\nThe levels start with a single crate in a corridor and build up to rooms with three, four and, in one level, seven crates and tight passages. Every level was checked by a solver, and its PAR is the fewest moves that solve it. Each step counts as a move, not only the pushes. Finish at par for three stars. The walls and floors change look every five levels.\n\nThere is no clock and there are no lives. Undo takes back one step at a time with no limit, and restart puts the level back the way it began. Clear level 20 and the run ends with a win.",
+    "tr": "Kutu İtici, 20 el yapımı bölümle klasik Sokoban. Sandıklarla ve işaretli hedef noktalarla dolu, duvarlarla çevrili bir depoda çalışan bir işçisin. Etrafta dolaşıp sandıkları itersin, ta ki hepsi birer hedefin üstünde durana kadar. Sandığı yalnızca itebilirsin, asla çekemezsin ve bir seferde yalnızca bir sandık itebilirsin; köşeye sıkışan sandık orada kalır.\n\nBölümler koridordaki tek bir sandıkla başlar, dar geçitli ve üç, dört, bir bölümde de yedi sandıklı odalara kadar büyür. Her bölüm bir çözücüyle denenmiştir ve HEDEF, onu çözen en az hamle sayısıdır. Yalnızca itişler değil, atılan her adım bir hamle sayılır. HEDEF'te bitirirsen üç yıldız alırsın. Duvarların ve zeminin görünümü her beş bölümde değişir.\n\nSüre de can da yoktur. Geri alma adımları sınırsız biçimde tek tek geri alır, yeniden başlatma da bölümü ilk hâline döndürür. 20. bölümü bitirdiğinde oyun zaferle sona erer."
+  },
+  "howToPlay": [
+    {
+      "en": "Walk with the arrow keys or the on-screen stick. Walking into a crate pushes it one square, as long as the square behind it is free.",
+      "tr": "Ok tuşlarıyla ya da ekrandaki kumanda koluyla yürü. Bir sandığa doğru yürümek, arkasındaki kare boşsa onu bir kare iter."
+    },
+    {
+      "en": "Push every crate onto a target. A crate that lands on one changes colour with a little burst.",
+      "tr": "Bütün sandıkları hedeflere it. Hedefe oturan sandık küçük bir parıltıyla renk değiştirir."
+    },
+    {
+      "en": "Keep an eye on MOVES and PAR in the chip at the top; the count turns orange once you are over par.",
+      "tr": "Üstteki göstergede HAMLE ve HEDEF'i takip et; HEDEF'i geçince sayı turuncuya döner."
+    },
+    {
+      "en": "When the last crate is in place you get one to three stars and the next level starts. Clear all 20 to win.",
+      "tr": "Son sandık yerine oturunca bir ile üç arası yıldız alırsın ve sıradaki bölüm başlar. 20 bölümü de bitirirsen kazanırsın."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD walk and push. Z, U or Backspace undoes a step, R restarts the level. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD ile yürü ve it. Z, U ya da Backspace bir adımı geri alır, R bölümü baştan başlatır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag to bring up a stick: a push takes one step, and holding it keeps you walking. The two buttons at the bottom right are undo and restart.",
+      "tr": "Ekranda herhangi bir yere bas ve sürükle, bir kumanda kolu çıkar: itince bir adım atarsın, basılı tutarsan yürümeye devam edersin. Sağ alttaki iki düğme geri alma ve yeniden başlatmadır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Before every push, ask where the crate can go next. A crate against a wall can only slide along that wall, and a crate in a corner can never move again unless that corner is a target.",
+      "tr": "Her itişten önce sandığın sonra nereye gidebileceğini düşün. Duvara dayanan sandık yalnızca o duvar boyunca kayar; köşedeki sandık, köşe bir hedef değilse bir daha kıpırdamaz."
+    },
+    {
+      "en": "Undo is free. It takes the step off the move counter too, so try an idea and step back as often as you like.",
+      "tr": "Geri almanın bedeli yok. Adımı hamle sayacından da düşer; bir fikri dene ve istediğin kadar geri dön."
+    },
+    {
+      "en": "Fill the targets deepest in the room first. Crates parked on the near targets early tend to block the path to the far ones.",
+      "tr": "Önce odanın en derinindeki hedefleri doldur. Yakın hedeflere erkenden yerleştirilen sandıklar uzaktakilere giden yolu kapatabilir."
+    },
+    {
+      "en": "Stars count only your final moves: three at par, two up to one and a half times par, one otherwise. Points follow the same idea: 100 + 10 × the level number, plus up to 400 that shrink the further you go over par.",
+      "tr": "Yıldızlar yalnızca son hamle sayına bakar: HEDEF'te üç, HEDEF'in bir buçuk katına kadar iki, üstünde bir. Puan da aynı mantıkla: 100 + 10 × bölüm numarası, buna HEDEF'i aştıkça azalan en fazla 400 puan eklenir."
+    }
+  ],
+  "features": [
+    {
+      "en": "20 handmade, solver-checked levels",
+      "tr": "Çözücüyle denenmiş 20 el yapımı bölüm"
+    },
+    {
+      "en": "A par from each level's best solution and a three-star rating",
+      "tr": "Her bölümün en iyi çözümünden gelen HEDEF ve üç yıldızlı değerlendirme"
+    },
+    {
+      "en": "Unlimited undo and one-key restart",
+      "tr": "Sınırsız geri alma ve tek tuşla yeniden başlatma"
+    },
+    {
+      "en": "Four wall and floor themes, one for every five levels",
+      "tr": "Her beş bölümde bir değişen dört duvar ve zemin teması"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Can I get stuck?",
+        "tr": "Bir bölümde sıkışıp kalabilir miyim?"
+      },
+      "a": {
+        "en": "Yes, by pushing a crate where it can't be brought back, such as a corner. The game doesn't end; undo the push or restart the level and try another way.",
+        "tr": "Evet, sandığı geri getirilemeyecek bir yere, örneğin bir köşeye itersen. Oyun bitmez; o itişi geri al ya da bölümü baştan başlatıp başka bir yol dene."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there a time limit?",
+        "tr": "Süre sınırı var mı?"
+      },
+      "a": {
+        "en": "No. There is no clock and no lives; only your move count affects stars and points, so think as long as you need.",
+        "tr": "Hayır. Ne süre ne can var; yıldızları ve puanı yalnızca hamle sayın etkiler, istediğin kadar düşünebilirsin."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I choose a level?",
+        "tr": "Bölüm seçebilir miyim?"
+      },
+      "a": {
+        "en": "No. Every game starts at level 1 and goes through the 20 levels in order, so the score of a full run is the sum of all twenty.",
+        "tr": "Hayır. Her oyun 1. bölümden başlar ve 20 bölümü sırayla oynatır; tam bir oyunun skoru yirmi bölümün toplamıdır."
+      }
+    }
+  ]
+}

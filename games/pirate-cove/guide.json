@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Pirate Cove puts you at the helm of a black-sailed ship on a bright 3D sea dotted with islands. Your cannons are on the sides, so every fight is about seamanship: bring the enemy onto your left or right, fire a broadside, then turn away. Red rings on the water show where their cannonballs will land.\n\nA voyage is ten waves, each with its own job. You sink navy sloops, brigs and frigates, grab chests before a storm breaks, pound shore forts until they fall, guard a treasure ship on its way to the cove and twice face the Ghost Galleon, which fires from both sides at once. Your hull has five hearts. The cove with the green marker patches it up while you sit in it, and sunk ships leave chests of gold, repair barrels and bottles that speed up reloading.\n\nThe run ends when your ship goes down or when the galleon and its guards sink in the tenth wave.",
+    "tr": "Korsan Koyu seni adalarla dolu, masmavi bir 3B denizde kara yelkenli bir geminin dümenine geçirir. Topların yanlarda; bu yüzden her çarpışma denizcilik işidir: düşmanı soluna ya da sağına al, bordayı ateşle, sonra dönüp uzaklaş. Sudaki kırmızı halkalar düşman güllelerinin düşeceği yerleri gösterir.\n\nBir sefer on dalgadır ve her dalganın kendi görevi vardır. Donanmanın şalupa, brik ve fırkateynlerini batırırsın, fırtına kopmadan sandık toplarsın, kıyı kalelerini yıkılana dek topa tutarsın, hazine gemisini koya kadar korursun ve iki kez de iki yanından aynı anda ateş eden Hayalet Kalyon'la karşılaşırsın. Gövden beş candır. Yeşil işaretli koyda beklerken gemin onarılır; batan gemiler de altın sandıkları, tamir fıçıları ve topları hızlı dolduran şişeler bırakır.\n\nSefer, gemin battığında ya da onuncu dalgada kalyon muhafızlarıyla birlikte battığında biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Read the wave card for the mission; its goal stays at the top of the screen with a counter.",
+      "tr": "Dalga kartını oku; görevin hedefi bir sayaçla ekranın üstünde kalır."
+    },
+    {
+      "en": "Set your speed with the sails (reefed, half or full) and steer toward the target. Edge arrows and the chart in the top right show where the enemies, forts and chests are.",
+      "tr": "Hızını yelkenle ayarla (az, yarım ya da tam yelken) ve hedefe dümen kır. Kenardaki oklar ve sağ üstteki harita düşmanların, kalelerin ve sandıkların yerini gösterir."
+    },
+    {
+      "en": "Bring the enemy alongside and fire the side it is on: PORT for the left, STARBOARD for the right. The guns aim ahead of the target.",
+      "tr": "Düşmanı yanına al ve onun olduğu taraftan ateş et: sol için İSKELE, sağ için SANCAK. Toplar hedefin önüne nişan alır."
+    },
+    {
+      "en": "Sail through the loot: chests give gold, barrels repair one heart and bottles give ten seconds of rapid reload. When the hull is low, sit in the green-marked cove to repair.",
+      "tr": "Ganimetin üstünden geç: sandık altın verir, fıçı bir can onarır, şişe on saniye hızlı dolum sağlar. Gövde zayıflayınca yeşil işaretli koya girip onarılmayı bekle."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → steer, ↑ ↓ (or W / S) raise or lower the sails, A or Z fires port, D or X fires starboard, Space fires the side that has a target, M enlarges the chart.",
+      "tr": "← → dümen, ↑ ↓ (ya da W / S) yelkeni açar ya da toplar, A ya da Z iskele, D ya da X sancak toplarını ateşler, Boşluk hedefi olan tarafı ateşler, M haritayı büyütür."
+    },
+    "touch": {
+      "en": "Choose the helm under PLAY: arrows, a wheel or tilting the phone. PORT and STARBOARD are on the right with the sail buttons above them; tap the chart to enlarge it.",
+      "tr": "Dümeni OYNA'nın altından seç: oklar, dümen çarkı ya da telefonu eğmek. Sağda İSKELE ve SANCAK, üstlerinde yelken tuşları var; haritayı büyütmek için ona dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Each side reloads on its own. Fire one broadside, turn through the target's stern and fire the other while the first is still loading.",
+      "tr": "Her taraf ayrı dolar. Bir bordayı ateşle, hedefin kıçından dolaşıp birincisi dolarken öbür bordayla vur."
+    },
+    {
+      "en": "Every three hits within five seconds raise the combo, up to ×5, and the multiplier counts for sinkings and fallen forts too. One hit on you resets it, so keep moving.",
+      "tr": "Beş saniye içinde gelen her üç isabet komboyu büyütür, en fazla ×5'e kadar; çarpan batan gemilere ve düşen kalelere de işler. Sana gelen tek isabet onu sıfırlar, o yüzden durma."
+    },
+    {
+      "en": "Stay off the Ghost Galleon's beam. It calls two sloops at half health and speeds up at a quarter, so top up your hull before then.",
+      "tr": "Hayalet Kalyon'un bordasının karşısında durma. Canı yarıya inince iki şalupa çağırır, dörtte bire inince hızlanır; ondan önce gövdeni doldur."
+    },
+    {
+      "en": "Forts outrange you. Close in on full sail, fire as you pass and pull away while the guns reload.",
+      "tr": "Kaleler senden uzağa atar. Tam yelkenle sokul, geçerken ateş et, toplar dolarken uzaklaş."
+    }
+  ],
+  "features": [
+    {
+      "en": "Ten waves with six kinds of mission",
+      "tr": "Altı görev türüyle on dalga"
+    },
+    {
+      "en": "Broadside combat with auto-leading guns and visible landing rings",
+      "tr": "Önüne nişan alan toplar ve görünür düşüş halkalarıyla borda savaşı"
+    },
+    {
+      "en": "A storm, dusk fog and the Ghost Galleon boss",
+      "tr": "Fırtına, akşam sisi ve Hayalet Kalyon"
+    },
+    {
+      "en": "Easy and Normal, with the shared helm options on phones",
+      "tr": "Kolay ve Normal; telefonlarda ortak dümen seçenekleri"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each hit is 10 points and a sunk ship 100 to 350 (the galleon 2000), all multiplied by the combo. Gold counts as points, a cleared wave adds 150 × its number, and winning the voyage adds 250 per heart left.",
+        "tr": "Her isabet 10, batan gemi 100 ile 350 arası (kalyon 2000) puan eder ve hepsi komboyla çarpılır. Altın da puana eklenir, tamamlanan dalga numarasının 150 katını verir, seferi kazanırsan kalan her can 250 puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens if I miss the storm or lose the treasure ship?",
+        "tr": "Fırtınaya yetişemez ya da hazine gemisini kaybedersem ne olur?"
+      },
+      "a": {
+        "en": "The voyage goes on. When the storm breaks, lightning costs you a heart and the wave ends without its bonus; a lost treasure ship also ends the wave with no bonus.",
+        "tr": "Sefer devam eder. Fırtına koptuğunda yıldırım bir canını götürür ve dalga bonussuz biter; hazine gemisi batarsa da dalga bonussuz kapanır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy your guns reload faster and aim in a wider cone, enemies are slower and weaker, storms come 25 seconds later and the galleon has 20 hull instead of 30. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da topların daha hızlı dolar ve daha geniş bir koniye nişan alır, düşmanlar daha yavaş ve zayıftır, fırtına 25 saniye geç gelir, kalyonun gövdesi de 30 yerine 20'dir. Kolay oyunlar sıralamaya girmez."
+      }
+    }
+  ]
+}

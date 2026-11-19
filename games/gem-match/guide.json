@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Gem Match is a swap-and-match puzzle on an 8×8 board of gems. Swap two neighbouring gems to line up three or more of a kind in a row or column. The line bursts, the gems above fall, new ones drop in from the top, and any lines they form burst in a cascade. Each level sets a target score and a number of moves; miss the target and the run ends.\n\nThere are ten levels. The first asks for 600 points in 18 moves with five kinds of gem; a sixth kind joins on level 4, and level 10 wants 3,000 points in 25 moves. Beat all ten to win.\n\nTwo rules set it apart. A swap that matches nothing slides back on its own, but a second swap made right away counts with it as one DOUBLE MOVE, so you can set up lines of four and five. And while a match is still clearing, you get one free COMBO MOVE to push the chain further.",
+    "tr": "Mücevher Eşle, 8×8'lik bir mücevher tahtasında oynanan bir yer değiştirip eşleme bulmacası. Yan yana iki taşın yerini değiştirerek bir satırda ya da sütunda aynı türden en az üç taşı dizersin. Dizi patlar, üstteki taşlar düşer, yukarıdan yenileri gelir; onların kurduğu diziler de zincirleme patlar. Her bölümün bir hedef puanı ve belli sayıda hamlesi vardır; hedefi tutturamazsan oyun biter.\n\nOyunda on bölüm var. İlki beş tür taşla 18 hamlede 600 puan ister; 4. bölümde altıncı tür taş eklenir, 10. bölüm de 25 hamlede 3.000 puan bekler. Onunu da geçersen kazanırsın.\n\nİki kural onu farklı kılar. Eşleşme yapmayan kaydırma kendiliğinden geri döner; ama hemen ardından ikinci bir kaydırma yaparsan ikisi birlikte tek bir ÇİFT HAMLE sayılır ve 4'lü, 5'li dizileri böyle kurabilirsin. Bir de eşleşme patlarken bir bedava KOMBO HAMLESİ hakkın olur; zinciri onunla uzatırsın."
+  },
+  "howToPlay": [
+    {
+      "en": "Swipe a gem onto a neighbour, or tap two neighbouring gems one after the other. Every move must end in a match, on its own or as a double move.",
+      "tr": "Bir taşı komşusunun üstüne kaydır ya da yan yana iki taşa sırayla dokun. Her hamle tek başına ya da çift hamleyle bir eşleşmeyle bitmelidir."
+    },
+    {
+      "en": "Four in a line makes a line gem that clears its row or column when it bursts. An L or T shape makes a bomb that clears the 3×3 square around it. Five in a line makes a rainbow gem.",
+      "tr": "Dörtlü dizi, patlayınca satırını ya da sütununu silen çizgi taşı yapar. L ya da T biçimi, çevresindeki 3×3 alanı silen bir bomba yapar. Beşli dizi gökkuşağı taşı verir."
+    },
+    {
+      "en": "Swap a rainbow gem with any gem to clear every gem of that colour. Swap two rainbows together to clear the whole board.",
+      "tr": "Gökkuşağı taşını herhangi bir taşla yer değiştir, o renkteki bütün taşlar silinsin. İki gökkuşağını birbiriyle değiştirirsen bütün tahta temizlenir."
+    },
+    {
+      "en": "Hit the TARGET score for LEVEL CLEAR! If MOVES reaches zero first, OUT OF MOVES ends the run.",
+      "tr": "HEDEF puana ulaşınca BÖLÜM TAMAM! yazar. HAMLE sayısı önce sıfıra inerse HAMLE BİTTİ yazısıyla oyun sona erer."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "The arrows or WASD move the cursor, Space, Enter or Z picks a gem, and an arrow then swaps it. X or Backspace takes back a waiting swap. Esc or P pauses.",
+      "tr": "Oklar ya da WASD imleci gezdirir, Boşluk, Enter ya da Z taşı seçer, ardından bir ok onu o yöne kaydırır. X ya da Backspace bekleyen kaydırmayı geri alır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Swipe a gem towards a neighbour, or tap one gem and then the one next to it. Tap a gem of a waiting swap to put it back.",
+      "tr": "Bir taşı komşusuna doğru kaydır ya da önce bir taşa, sonra yanındakine dokun. Bekleyen bir kaydırmayı geri almak için o taşlardan birine dokun."
+    },
+    "mouse": {
+      "en": "Drag a gem onto its neighbour, or click two neighbouring gems in turn.",
+      "tr": "Bir taşı sürükleyip komşusunun üstüne bırak ya da yan yana iki taşa sırayla tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Use the double move to build specials: slide one gem into place, then make the swap that completes a four or five. The pair costs one move and earns 50 extra points.",
+      "tr": "Özel taş kurmak için çift hamleyi kullan: önce bir taşı yerine kaydır, sonra dörtlüyü ya da beşliyi tamamlayan kaydırmayı yap. İkisi tek hamle sayılır ve 50 puan fazladan getirir."
+    },
+    {
+      "en": "When the line under the board says Combo move: swap one more!, swap while the gems are still falling. It costs no move and adds 100 points, but it must make a match or it bounces back.",
+      "tr": "Tahtanın altındaki yazı Kombo hamlesi: bir taş daha kaydır! dediğinde taşlar düşerken bir kaydırma daha yap. Hamle harcamaz ve 100 puan ekler; ama eşleşme yapmazsa geri seker."
+    },
+    {
+      "en": "Cascades pay: a gem scores 10 points in the first burst, 20 in the second and 30 in the third.",
+      "tr": "Zincir kazandırır: taş ilk patlamada 10, ikincide 20, üçüncüde 30 puan eder."
+    },
+    {
+      "en": "Special gems still on the board when you reach the target carry over to the same squares of the next level. Near the target, keep them rather than firing them.",
+      "tr": "Hedefe ulaştığında tahtada kalan özel taşlar sonraki bölümde aynı karelere geçer. Hedefe yaklaşınca onları patlatmak yerine sakla."
+    }
+  ],
+  "features": [
+    {
+      "en": "Ten levels with rising targets",
+      "tr": "Hedefi giderek yükselen on bölüm"
+    },
+    {
+      "en": "Line, bomb and rainbow gems",
+      "tr": "Çizgi, bomba ve gökkuşağı taşları"
+    },
+    {
+      "en": "Double moves and free combo moves",
+      "tr": "Çift hamle ve bedava kombo hamlesi"
+    },
+    {
+      "en": "Special gems that carry over to the next level",
+      "tr": "Sonraki bölüme geçen özel taşlar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Every burst gem scores 10 times its cascade step, and every special gem created adds 50. A double move adds 50, a combo move 100, and each unused move at the end of a level 60.",
+        "tr": "Patlayan her taş, zincirdeki basamak çarpı 10 puan getirir; oluşan her özel taş 50 ekler. Çift hamle 50, kombo hamlesi 100, bölüm sonunda kullanılmayan her hamle 60 puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "What if there is no possible move?",
+        "tr": "Hiç hamle kalmazsa ne olur?"
+      },
+      "a": {
+        "en": "The board reshuffles its colours by itself (SHUFFLE) and you play on. If you sit still for six seconds, two gems pulse to show a possible swap.",
+        "tr": "Tahta renkleri kendiliğinden karıştırır (KARIŞTIRILIYOR) ve oyun sürer. Altı saniye hiçbir şey yapmazsan iki taş yanıp sönerek olası bir kaydırmayı gösterir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. The first three levels use only five kinds of gem and low targets, so they work as the warm-up.",
+        "tr": "Hayır. İlk üç bölümde yalnızca beş tür taş ve düşük hedefler vardır; ısınma turu işini onlar görür."
+      }
+    }
+  ]
+}
