@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, storage, labelTexture, bakePara, bakeFmt, glyphAtlas, isEasy, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, storage, isEasy, type GameMeta } from '@core';
 import meta from './game.json';
-import { PlayScene, TUT_KEYS, T_TITLE, T_BODY, S_SUM, S_SUM_SMALL, S_PLACE } from './PlayScene';
+import { PlayScene } from './PlayScene';
 import { STRINGS } from './strings';
 import { loadKit } from './kit';
 import { makeSounds, MAP_MUSIC } from './audio';
@@ -10,10 +10,9 @@ import { Battle, NO_INPUT } from './battle';
 import { BattleBot, SKILL } from './bot';
 import { Campaign, store } from './campaign';
 import { HexMap } from './hexmap';
-import { CLASS_IDS, PLACE_IDS, QUEST_IDS, type ArenaKind, type Room } from './defs';
+import { CLASS_IDS, type ArenaKind, type Room } from './defs';
 import { REALM_THEME } from './menu';
-import { TUT_W, SUMMARY_W } from './sizes';
-import { t } from '@core';
+import { loadScenery, sceneryReady } from './scenery';
 
 // the campaign saves through the core storage
 store.get = <T>(k: string, fallback: T) => storage.get<T>(k, fallback);
@@ -106,25 +105,14 @@ launch({
     loadAudio(l, 'charge', J + 'general-sounds/positive-sounds/sfx-sounds-powerup13');
     loadAudio(l, 'charged', J + 'general-sounds/positive-sounds/sfx-sounds-powerup18');
     loadAudio(l, 'sigil', J + 'general-sounds/coins/sfx-coin-double3');
-    // the summary's, the training's and the place names' words, painted under the Ayvago intro
-    l.once(Phaser.Loader.Events.COMPLETE, () => {
-      const t0 = performance.now();
-      for (const k of TUT_KEYS) { labelTexture(scene, t(k), T_TITLE); bakePara(scene, t(k), T_BODY, TUT_W - 90); }
-      for (const k of ['fallenTitle', 'chapterTitle', 'restTitle', 'victoryTitle', 'riftTitle']) labelTexture(scene, t(k), S_SUM);
-      bakeFmt(scene, 'sumRenown', ['n'], S_SUM);
-      for (const k of ['sumLevel', 'sumKills', 'sumGold', 'lostGold']) bakeFmt(scene, k, ['n'], S_SUM_SMALL);
-      bakeFmt(scene, 'lostGold', ['n'], { ...S_SUM_SMALL, color: '#8a1c24' });
-      bakePara(scene, t('restore'), S_SUM_SMALL, SUMMARY_W - 90);
-      bakePara(scene, t('sumDone'), S_SUM_SMALL, SUMMARY_W - 90);
-      for (const q of QUEST_IDS) bakePara(scene, t('sumNext', { name: t('q_' + q) }), S_SUM_SMALL, SUMMARY_W - 90);
-      for (const p of [...PLACE_IDS.map((x) => 'p_' + x), 'p_camp']) labelTexture(scene, t(p), S_PLACE);
-      for (const k of ['enter', 'onward', 'tutSkip']) { labelTexture(scene, t(k), { size: 22 }); labelTexture(scene, t(k), { size: 24 }); labelTexture(scene, t(k), { size: 28 }); }
-      glyphAtlas(scene, S_SUM); glyphAtlas(scene, S_SUM_SMALL);
-      scene.registry.set('innerPaintMs', Math.round(performance.now() - t0));
-    });
+    // 1.3: the summary's, the training's and the place names' words are painted by the Play scene
+    // (a slice per frame, PlayScene.playBake), not under the intro
   },
   menuDecor(scene) {
     makeSounds(scene.game);
+    // 1.3: the battles' scenery kits load now, behind the menu, not under the intro; the live fight
+    // shows once they are in
+    scene.time.delayedCall(250, () => void loadScenery());
     // a live fight behind the menu: the autopilot plays the hero of the save on a showcase arena.
     // Building the world here also compiles every shader the Play scene uses (the map included).
     const camp = Campaign.load(isEasy() ? 'easy' : 'normal');
@@ -160,6 +148,7 @@ launch({
       }
       if (n >= 4) acc = 0;
       view.syncBattle(battle, dt);
+      view.battle.root.visible = sceneryReady();
     };
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => view.dispose());
   },

@@ -9,11 +9,10 @@
 // campaign starts at the inn).
 import { type MenuTheme, type SkinPainter, type BorderStyle } from '@core';
 import { MEDIEVALSHARP } from '@core/fonts/medievalsharp';
-import { prebakeScreens, SCREEN_CARDS } from './screens';
+
 import { paintVellum } from './vellum';
 
 export { paintVellum };
-import { SUMMARY_W, SUMMARY_H } from './sizes';
 
 export const INK = '#1a1420';
 export const GOLD = 0xe0b24a;
@@ -357,6 +356,6 @@ export const REALM_THEME: MenuTheme = {
   skin: stonePainter,
   frame: { border: CASTLE_BORDER, notes: paintVellum, vignette: 0.5, dim: 0.16 },
   overlays: { lose: '#8a1c24', win: '#2c4a9a', adColor: MOSS, titles: ['fallenTitle', 'chapterTitle', 'restTitle', 'victoryTitle', 'riftTitle'] },
-  cards: [{ w: SUMMARY_W, h: SUMMARY_H }, ...SCREEN_CARDS],
-  prebake: (scene) => prebakeScreens(scene),
+  // 1.3: the inner screens' cards and labels are not painted in Boot (under the intro) any more:
+  // the Play scene paints them a slice per frame (screens.ts, ScreenBaker)
 };
