@@ -371,12 +371,12 @@ const CARD = {
       await sleep(1500);
     }`,
   },
-  // Hex Realm's card (landscape since 1.2, cover-fit) shows the troll fight in the Old Mine's
-  // cavern: the hero (a warrior, the default) with an epic weapon and a golden shield mid-combo
-  // against Grukk the Mine Troll and his skeleton miners, with the red warning rings of a quake on
-  // the stone floor. The class choice and the training are skipped, nothing hurts the hero, the
-  // boss banners are cleared and the fight is slowed right down, so every candidate frame catches
-  // a swing.
+  // Hex Realm's card (landscape since 1.2, cover-fit; 1.3: the new scenery) shows the bandit chief's
+  // fight in Willow Farms' yard: the farmhouse and the barn (Medieval Village MegaKit) with the wagon
+  // behind the fence, crates round the yard, the hero (a warrior, the default) with an epic weapon
+  // and a golden shield mid-combo against Bandit Chief Rask, his bandits and an archer. The class
+  // choice and the training are skipped, nothing hurts the hero, the boss banners and the fade are
+  // cleared and the fight is slowed right down, so every candidate frame catches a swing.
   'hex-realm': {
     stage: `async () => {
       const p = window.__ayvago.game.scene.getScene('Play');
@@ -387,16 +387,18 @@ const CARD = {
       p.camp.s.level = 9;
       p.camp.s.gear.weapon = p.camp.makeItem('weapon', 9, 'epic');
       p.camp.s.gear.armor = p.camp.makeItem('armor', 9, 'legendary');
-      p.testRoom('mine', 2);
+      p.testRoom('farm', 1);
       p.testAuto(true);
       p.testStep(3.2);
       const b = p.battle, h = b.hero, boss = b.bossUp;
-      h.x = -0.6; h.z = 3.4; boss.x = 0.4; boss.z = 0.6; boss.face = Math.PI; h.face = 0.2;
+      h.x = -0.6; h.z = -4.2; boss.x = 0.4; boss.z = -6.4; boss.face = Math.PI; h.face = 0.2;
       b.zones.length = 0;
-      b.spawn('skeleton', -3.2, 1.2, 0); b.spawn('ghoul', 3.0, 2.4, 0);
+      b.spawn('bandit', -3.2, -6.4, 0); b.spawn('archer', 3.0, -5.2, 0);
       p.view.battle.camPos.set(0, 0, 0);
       p.testStep(1.0);
       p.children.list.filter((o) => o.depth === 9400).forEach((o) => o.destroy());
+      p.hintCard?.destroy(); p.hintCard = null; p.hintQueue = [];
+      p.tweens.killTweensOf(p.fade); p.fade.setAlpha(0);
       p.testSpeed = 0.2;
       await sleep(1500);
     }`,
