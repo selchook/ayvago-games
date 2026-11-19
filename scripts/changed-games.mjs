@@ -5,7 +5,8 @@
 // Prints the slugs separated by spaces, `all` when a dependency upgrade could break any game, or
 // nothing when no game is affected (docs, scripts, tools, CI). --why explains the choice on stderr.
 //
-//   games/<slug>/, public/games/<slug>/       -> that game
+//   games/<slug>/, public/games/<slug>/       -> that game (not its guide.json: the guide is page
+//                                               text on the platform, not part of the game)
 //   public/assets/kenney/<pack>/...           -> the games that load that pack
 //   public/assets/oga/<pack>/<dir>/...        -> the games that load sounds from that folder
 //   public/assets/characters/, characters.ts  -> the games with player characters
@@ -69,7 +70,9 @@ const add = (f, list, what) => { list.forEach((s) => out.add(s)); say(f, `${what
 
 for (const f of files) {
   let m;
-  if ((m = f.match(/^games\/([^/]+)\//) || f.match(/^public\/games\/([^/]+)\//))) {
+  if (/^games\/[^/]+\/guide\.json$/.test(f)) {
+    say(f, 'no game (guide text)');
+  } else if ((m = f.match(/^games\/([^/]+)\//) || f.match(/^public\/games\/([^/]+)\//))) {
     if (slugsAll.includes(m[1])) add(f, [m[1]], m[1]);
   } else if (/^package(-lock)?\.json$/.test(f)) {
     all = true; say(f, 'all');

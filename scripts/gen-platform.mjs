@@ -4,6 +4,9 @@
 //                                     public/games/<slug>/ayvago/ comes from gen-store-assets.mjs)
 //   platform/arcade-catalog.ts        SeedGame entries; the platform's "Sync arcade catalog" workflow
 //                                     pulls it from main into packages/shared/src/arcade-catalog.ts
+//   platform/arcade-guides.json       the game guides (games/<slug>/guide.json of every game above
+//                                     that has one; schema: scripts/vendor/guide.ts), synced the same
+//                                     way and rendered on the platform's game pages
 // Usage: node scripts/gen-platform.mjs [--origin https://games.example.com] [--live] [--require-smoke]
 //   --live            catalog status 'live' (only once the origin is deployed); default 'coming_soon'
 //   --require-smoke   only include games that PASS in reports/smoke.json (full run)
@@ -185,3 +188,49 @@ ${entries.map((e) => `  arcadeGame(${JSON.stringify(e)}),`).join('\n')}
 const formatted = await format(catalogTs, { parser: 'typescript', printWidth: 100, singleQuote: true, trailingComma: 'all' });
 writeFileSync(join(root, 'platform', 'arcade-catalog.ts'), formatted);
 console.log(`platform: ${games.length} manifests → public/games/*/ayvago.json, platform/arcade-catalog.ts (origin ${ORIGIN})`);
+
+// ---------------------------------------------------------------- game guides
+// One file for every guide: { version: 1, guides: { <slug>: GameGuide } }, slugs sorted, every
+// object in the schema's key order (unknown keys kept at the end, so the strict schema in
+// `npm run validate:platform` still reports them). A guide with a TODO left in it is a draft (the
+// new-game scaffold's stub) and is not shipped yet; games without a guide are simply absent.
+const TEXT_KEYS = ['en', 'tr'];
+const GUIDE_KEYS = ['about', 'howToPlay', 'controls', 'tips', 'features', 'faq'];
+const CONTROL_KEYS = ['keyboard', 'touch', 'mouse', 'gamepad'];
+const FAQ_KEYS = ['q', 'a'];
+const ordered = (obj, keys, each = (v) => v) => {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+  const out = {};
+  for (const k of keys) if (k in obj) out[k] = each(obj[k], k);
+  for (const k of Object.keys(obj)) if (!(k in out)) out[k] = obj[k];
+  return out;
+};
+const text = (v) => ordered(v, TEXT_KEYS);
+const texts = (v) => (Array.isArray(v) ? v.map(text) : v);
+function orderGuide(g) {
+  return ordered(g, GUIDE_KEYS, (v, k) => {
+    if (k === 'about') return text(v);
+    if (k === 'controls') return ordered(v, CONTROL_KEYS, text);
+    if (k === 'faq') return Array.isArray(v) ? v.map((qa) => ordered(qa, FAQ_KEYS, text)) : v;
+    return texts(v);
+  });
+}
+const guides = {};
+const drafts = [];
+for (const { slug } of games) {
+  const file = join(root, 'games', slug, 'guide.json');
+  if (!existsSync(file)) continue;
+  const raw = readFileSync(file, 'utf8');
+  let guide;
+  try {
+    guide = JSON.parse(raw);
+  } catch (e) {
+    console.error(`games/${slug}/guide.json is not valid JSON: ${e.message}`);
+    process.exit(1);
+  }
+  if (raw.includes('TODO')) { drafts.push(slug); continue; }
+  guides[slug] = orderGuide(guide);
+}
+writeFileSync(join(root, 'platform', 'arcade-guides.json'), JSON.stringify({ version: 1, guides }, null, 2) + '\n');
+console.log(`platform: ${Object.keys(guides).length} guides → platform/arcade-guides.json` +
+  (drafts.length ? ` (drafts with a TODO left, not shipped: ${drafts.join(', ')})` : ''));
