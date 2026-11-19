@@ -16,22 +16,24 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, t, isEasy, hudChip, HudChip, shake, flash, playMusic, storage,
   HUD_MARGIN, HUD_ROW_Y, HUD_ROW2_Y, HUD_GAP, themeCard, overlayHeadingStyle, labelAt, fitWidth, Para, FmtLine, GlyphText, KitButton,
-  type LabelStyle,
+  labelTexture, bakePara, bakeFmt, glyphAtlas, type LabelStyle,
 } from '@core';
 import type { World3D, THREE } from '@core/three';
 import { Battle, NO_INPUT, type Input, type BattleEvent } from './battle';
 import { Campaign, type Fight, type Spoils } from './campaign';
 import { View } from './view';
+import { loadScenery } from './scenery';
+import type { ArenaLook } from './arena';
 import { BattleBot, MapBot, SKILL } from './bot';
 import {
   DT, CLASS, FOE, POWER_IDS, POWER_COLOR, BOSS_KINDS, MINIBOSS_KINDS, xpToNext, CYCLE_LEVELS, CHARGE_T,
-  PLACE_IDS, RARITY_COLOR, type ClassId, type PowerId, type FoeKind, type PlaceId, type Mode, type ComboId, type BlowFx, type Item,
+  PLACE_IDS, QUEST_IDS, RARITY_COLOR, type ClassId, type PowerId, type FoeKind, type PlaceId, type Mode, type ComboId, type BlowFx, type Item,
 } from './defs';
 import { neighbours, CAMPS, BRIDGE, PLACE_HEX, type Hex } from './hexmap';
 import { groundY } from './mapview';
 import { icon, makeArt } from './art';
 import { HpBar, PowerChips, BossBar, actionButton, drawButton, showButton, banner, bossIntro, bannerBand, floatStyle, S_DMG, type ActionButton } from './ui';
-import { VillageScreen, HeroScreen, ClassScreen, MapScreen, LootScreen, DraftScreen, pauseCards, OVERLAY_DEPTH, S_MAP_TAG, S_POP, S_PERFECT, type Panel, type ScreenHost } from './screens';
+import { VillageScreen, HeroScreen, ClassScreen, MapScreen, LootScreen, DraftScreen, pauseCards, screenBake, ScreenBaker, OVERLAY_DEPTH, S_MAP_TAG, S_POP, S_PERFECT, type Panel, type ScreenHost } from './screens';
 import { WEAPON_FEEL, weaponOf, SHIELD_BY_RARITY, type WeaponModel } from './weapons';
 import { SHIELD_GRIP } from './weaponview';
 import { SUMMARY_W, SUMMARY_H, TUT_W, TUT_H, HINT_H } from './sizes';
@@ -80,7 +82,7 @@ const S_PLACE: LabelStyle = { size: 30, color: '#fff2cc', stroke: INK, strokeWid
 
 interface DmgText { t: GlyphText; life: number; x: number; y: number; z: number }
 
-/** The themed lines of the tutorial cards and hints, painted in Boot (main.ts). */
+/** The themed lines of the tutorial cards and hints (painted by playBake). */
 export const TUT_KEYS = [
   'tut_move_t', 'tut_move_k', 'tut_move_d', 'tut_farm_d', 'tut_fight_t', 'tut_fight_d_touch', 'tut_fight_d_keys', 'tut_dodge_t', 'tut_dodge_d_touch',
   'tut_dodge_d_keys', 'tut_skill_t', 'tut_skill_d_touch', 'tut_skill_d_keys', 'hint_market', 'hint_points', 'hint_bag', 'hint_shrine', 'hint_potion', 'hint_camp', 'hint_bridge',
@@ -89,6 +91,30 @@ export const TUT_KEYS = [
   'hint_zoom_touch', 'hint_zoom_keys',
 ];
 export { T_TITLE, T_BODY, S_SUM, S_SUM_SMALL, S_PLACE };
+
+/**
+ * 1.3: the Play scene's own words (the training's cards, the summary, the place names), then the
+ * inner screens (screens.ts): painted a slice per frame once a round starts, no more in Boot under
+ * the Ayvago intro. One painter per page: a restart goes on where it was.
+ */
+function* playBake(scene: Phaser.Scene): Generator<void, void, void> {
+  for (const k of TUT_KEYS) { labelTexture(scene, t(k), T_TITLE); bakePara(scene, t(k), T_BODY, TUT_W - 90); yield; }
+  for (const k of ['fallenTitle', 'chapterTitle', 'restTitle', 'victoryTitle', 'riftTitle']) labelTexture(scene, t(k), S_SUM);
+  bakeFmt(scene, 'sumRenown', ['n'], S_SUM);
+  for (const k of ['sumLevel', 'sumKills', 'sumGold', 'lostGold']) bakeFmt(scene, k, ['n'], S_SUM_SMALL);
+  bakeFmt(scene, 'lostGold', ['n'], { ...S_SUM_SMALL, color: '#8a1c24' });
+  yield;
+  bakePara(scene, t('restore'), S_SUM_SMALL, SUMMARY_W - 90);
+  bakePara(scene, t('sumDone'), S_SUM_SMALL, SUMMARY_W - 90);
+  for (const q of QUEST_IDS) bakePara(scene, t('sumNext', { name: t('q_' + q) }), S_SUM_SMALL, SUMMARY_W - 90);
+  yield;
+  for (const p of [...PLACE_IDS.map((x) => 'p_' + x), 'p_camp']) labelTexture(scene, t(p), S_PLACE);
+  for (const k of ['enter', 'onward', 'tutSkip']) { labelTexture(scene, t(k), { size: 22 }); labelTexture(scene, t(k), { size: 24 }); labelTexture(scene, t(k), { size: 28 }); }
+  glyphAtlas(scene, S_SUM); glyphAtlas(scene, S_SUM_SMALL);
+  yield;
+  yield* screenBake(scene);
+}
+let baker: ScreenBaker | null = null;
 
 export class PlayScene extends ArcadeScene {
   view!: View;
@@ -176,6 +202,11 @@ export class PlayScene extends ArcadeScene {
     this.firstFrames = []; this.frameStart = 0;
     this.skillChips = []; this.btn = {};
     makeArt(this);
+    // 1.3: the battles' scenery kits (started behind the menu; a no-op once they are in), and the
+    // screens' textures, painted a few milliseconds per frame from now on
+    void loadScenery();
+    baker ??= new ScreenBaker(playBake(this));
+    this.look = 'south';
 
     this.view = new View(this, this.camp.map, this.camp.s.cls);
     this.world = this.view.world;
@@ -693,6 +724,7 @@ export class PlayScene extends ArcadeScene {
     if (this.firstFrames.length < 8 && this.frameStart) this.firstFrames.push(now - this.frameStart);
     this.frameStart = now;
     const dt = delta / 1000;
+    if (!baker?.done) baker?.step(this.perf.frames < 3 ? 0 : this.phase === 'battle' ? 3 : 8);
     this.perf.frames++;
     for (const key of Object.keys(this.sfxGap)) this.sfxGap[key] -= dt;
     if (this.phase === 'battle' && this.battle) this.stepBattle(dt);
@@ -976,11 +1008,14 @@ export class PlayScene extends ArcadeScene {
   }
 
   private selectT = 0;
+  /** The region the fight is in (arena looks). */
+  private look: ArenaLook = 'south';
 
   /** The class choice's stage: the hero shows off its combo and skills on the court. */
   private stepSelect(dt: number): void {
     this.selectT += dt;
     const v = this.view, b = v.battle;
+    b.settle();
     const fig = b.hero;
     fig.root.visible = true;
     fig.root.position.set(0, 0, 0);
@@ -1017,7 +1052,9 @@ export class PlayScene extends ArcadeScene {
     this.view.battle.clear();
     this.view.world.camera.clearViewOffset();
     this.view.setMode('battle', b.roomDef.arena);
-    this.view.battle.showArena(b.roomDef.arena, b.layoutSeed);
+    // the overworld region dresses the meadows and forests (the north's pines and snow)
+    this.look = this.camp.s.pos[1] <= 3 ? 'north' : 'south';
+    this.view.battle.showArena(b.roomDef.arena, b.layoutSeed, this.look);
     this.view.battle.camPos.set(0, 0, 0);
     this.switchHud();
     for (const ev of b.events) this.onEvent(ev);
@@ -1205,7 +1242,7 @@ export class PlayScene extends ArcadeScene {
           this.fade.setAlpha(1);
           this.tweens.add({ targets: this.fade, alpha: 0, duration: 420 });
           this.view.setMode('battle', ev.arena as never);
-          this.view.battle.showArena(ev.arena as never, b.layoutSeed);
+          this.view.battle.showArena(ev.arena as never, b.layoutSeed, this.look);
           this.view.battle.camPos.set(0, 0, 0);
           banner(this, BANNER_Y, t('room', { n: ev.n + 1, of: ev.of }), '', { color: '#ffd86a', size: 48, hold: 1 });
           this.s('door', 0.5, 0.3);

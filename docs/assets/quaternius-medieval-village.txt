@@ -1,0 +1,46 @@
+quaternius/medieval-village/village.glb 404KB (43 models as root nodes, 10967 tris in all, no normals: flat-shaded, quantized)
+  textures (256 px base colours, embedded): WoodTrim 256x256 image/jpeg 8KB, Plaster 256x256 image/jpeg 3KB, Brick 256x256 image/jpeg 8KB, UnevenBrick 256x256 image/jpeg 9KB, RockTrim 256x256 image/jpeg 8KB, RoundTiles 256x256 image/jpeg 7KB, RedBrick 256x256 image/jpeg 10KB, Metal 256x256 image/jpeg 12KB, Vine 256x256 image/png 18KB
+  model size (x × y × z, kit units), triangles, height range, materials:
+  Wall_Plaster_Straight 2.00x3.12x0.41 86 tris, y -0.00..3.12, WoodTrim+Plaster
+  Wall_Plaster_Window_Wide_Round 2.00x3.12x0.41 124 tris, y 0.00..3.12, WoodTrim+Plaster+Brick
+  Wall_Plaster_Window_Thin_Round 2.00x3.12x0.41 166 tris, y 0.00..3.12, Plaster+Brick+WoodTrim
+  Wall_Plaster_Door_Round 2.00x3.12x0.41 137 tris, y 0.00..3.12, WoodTrim+Plaster+RockTrim
+  Wall_Plaster_WoodGrid 2.00x3.12x0.41 248 tris, y 0.00..3.12, WoodTrim+Plaster
+  Wall_UnevenBrick_Straight 2.00x3.12x0.41 56 tris, y 0.00..3.12, WoodTrim+Plaster+UnevenBrick
+  Wall_UnevenBrick_Window_Thin_Round 2.00x3.12x0.41 158 tris, y 0.00..3.12, WoodTrim+Plaster+UnevenBrick
+  Wall_UnevenBrick_Window_Wide_Round 2.00x3.12x0.41 116 tris, y 0.00..3.12, WoodTrim+Plaster+UnevenBrick
+  Wall_UnevenBrick_Door_Round 2.00x3.12x0.41 136 tris, y 0.00..3.12, WoodTrim+Plaster+UnevenBrick
+  Corner_Exterior_Wood 0.21x3.00x0.24 12 tris, y -0.00..3.00, WoodTrim
+  Floor_Brick 2.00x0.02x2.00 4 tris, y -0.01..0.01, Brick
+  Floor_RedBrick 2.00x0.02x2.00 4 tris, y -0.01..0.01, RedBrick
+  Floor_UnevenBrick 2.00x0.02x2.00 4 tris, y -0.01..0.01, UnevenBrick
+  Floor_WoodDark 2.00x0.02x2.00 32 tris, y -0.01..0.01, WoodTrim
+  Floor_WoodLight 2.00x0.02x2.00 32 tris, y -0.01..0.01, WoodTrim
+  Door_4_Round 1.11x2.32x0.13 516 tris, y 0.03..2.36, WoodTrim+Metal
+  Window_Thin_Round1 0.89x1.60x0.34 264 tris, y 1.02..2.62, WoodTrim+Glass
+  Window_Wide_Round1 1.36x1.73x0.53 272 tris, y 1.02..2.74, WoodTrim+Glass
+  WindowShutters_Thin_Round_Open 1.61x1.52x0.38 112 tris, y 1.09..2.61, WoodTrim
+  Roof_RoundTiles_4x4 5.51x4.25x5.56 1086 tris, y -0.52..3.73, WoodTrim+RoundTiles
+  Roof_RoundTiles_4x6 5.51x4.23x7.57 1348 tris, y -0.52..3.72, WoodTrim+RoundTiles
+  Roof_Tower_RoundTiles 5.65x7.36x5.43 1416 tris, y -0.57..6.79, WoodTrim+RockTrim+RoundTiles+Metal
+  Roof_Front_Brick4 4.40x3.07x1.13 252 tris, y -0.13..2.94, WoodTrim+Plaster
+  Roof_Log 1.15x1.39x10.70 164 tris, y 3.85..5.24, WoodTrim
+  Prop_Crate 1.08x1.06x1.08 230 tris, y 0.00..1.06, WoodTrim
+  Prop_Wagon 1.85x1.53x4.02 768 tris, y 0.00..1.53, WoodTrim
+  Prop_WoodenFence_Single 2.06x0.84x0.12 40 tris, y -0.03..0.81, WoodTrim
+  Prop_WoodenFence_Extension1 2.05x0.84x0.11 32 tris, y -0.03..0.81, WoodTrim
+  Prop_Support 0.20x1.71x2.04 16 tris, y 1.21..2.92, WoodTrim
+  Prop_Chimney 0.95x3.18x1.00 374 tris, y 0.00..3.18, RockTrim+Brick
+  Prop_Chimney2 0.95x3.00x0.99 130 tris, y 0.00..3.00, UnevenBrick
+  Prop_Brick1 0.35x0.21x0.25 108 tris, y -0.11..0.10, RockTrim
+  Prop_Brick2 0.40x0.24x0.22 94 tris, y -0.11..0.13, RockTrim
+  Prop_Brick3 0.38x0.25x0.22 126 tris, y -0.11..0.13, RockTrim
+  Prop_Vine1 1.54x2.60x0.22 82 tris, y -2.12..0.48, Vine
+  Prop_Vine2 1.39x2.60x0.21 45 tris, y -2.12..0.48, Vine
+  Prop_Vine5 2.30x2.99x1.13 117 tris, y -1.95..1.03, Vine
+  Prop_MetalFence_Simple 1.95x2.87x0.16 822 tris, y -0.00..2.87, Metal
+  Prop_MetalFence_Ornament 1.95x2.85x0.16 996 tris, y -0.00..2.85, Metal
+  Prop_ExteriorBorder_Straight1 2.00x0.13x0.70 16 tris, y -0.00..0.13, RockTrim
+  Stairs_Exterior_Straight 2.00x1.20x2.08 62 tris, y -0.20..1.00, RockTrim+Brick
+  Stairs_Exterior_Platform 2.00x1.00x2.00 32 tris, y -0.00..1.00, RockTrim+Brick
+  Balcony_Cross_Straight 2.00x1.23x0.21 132 tris, y -0.11..1.12, WoodTrim

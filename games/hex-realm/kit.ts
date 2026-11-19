@@ -3,10 +3,10 @@
 //     recoloured, by the bandits, archers, brutes, acolytes, knights, cultists and the bosses;
 //     the Quaternius pirate skeletons for the undead;
 //   - the Kenney Hexagon Kit: every overworld tile, road, river and building merges into one mesh
-//     on its one colour map; a per-vertex hex number lets the fog of war darken unexplored hexes;
-//   - the Kenney Retro Fantasy Kit: its ten 64 px pixel textures go into one atlas at run time and
-//     every arena merges into one mesh with one material (each vertex carries its texture's cell,
-//     the shader repeats inside the cell);
+//     on its one colour map; a per-vertex hex number lets the fog of war darken unexplored hexes
+//     (the overworld only: no battle uses it);
+//   - 1.3: the battles' scenery (Quaternius Medieval Village MegaKit and Ultimate Nature Pack) is not
+//     loaded here, under the intro, but once the menu is up (scenery.ts);
 //   - keepPrograms() compiles a copy of every material kind behind the menu, so the first Play
 //     frame finds its shader programs ready.
 import { WEAPON_MODELS, weaponIcon } from './weapons';
@@ -16,23 +16,14 @@ import { THREE, model, loadModel, kenney3d } from '@core/three';
 import { asset } from '@core';
 import { CLASS_IDS } from './defs';
 
-import { heroKey, pirateKey, retroKey, hexKey, type Placed } from './keys';
+import { heroKey, pirateKey, hexKey, type Placed } from './keys';
 
-export { heroKey, pirateKey, retroKey, hexKey, type Placed };
+export { heroKey, pirateKey, hexKey, type Placed };
 
 /** Model keys of the foes' looks (FOE[].model). */
 export function modelKey(m: string): string {
   return m === 'skeleton' || m === 'headless' ? pirateKey(m) : heroKey(m);
 }
-
-export const RETRO_MODELS = [
-  'floor', 'floor-flat', 'floor-steps', 'wall', 'wall-half', 'wall-low', 'wall-detail', 'wall-door', 'wall-window', 'wall-gate',
-  'wall-fortified', 'wall-fortified-gate', 'wall-fortified-window', 'wall-fortified-paint', 'wall-fortified-paint-gate',
-  'wall-paint', 'wall-paint-window', 'column', 'column-damaged', 'column-wood', 'column-paint', 'tower', 'tower-base', 'tower-top',
-  'tower-edge', 'tower-paint-base', 'battlement', 'battlement-corner-outer', 'bricks', 'barrels', 'detail-barrel', 'detail-crate',
-  'detail-crate-small', 'detail-crate-ropes', 'fence-wood', 'tree-large', 'tree-shrub', 'wood-floor', 'wood-floor-railing',
-  'dock-side', 'dock-corner', 'structure', 'structure-poles', 'pulley-crate', 'ladder', 'stairs-stone', 'overhang-round-railing',
-] as const;
 
 export const HEX_MODELS = [
   'grass', 'grass-forest', 'grass-hill', 'stone', 'stone-hill', 'stone-mountain', 'stone-rocks', 'sand', 'sand-rocks',
@@ -48,7 +39,6 @@ export const HEX_MODELS = [
 export function loadKit(load: Phaser.Loader.LoaderPlugin): void {
   for (const c of CLASS_IDS) loadModel(load, heroKey(c), asset(`quaternius/rpg-characters/${c}.glb`));
   for (const m of ['skeleton', 'headless']) loadModel(load, pirateKey(m), asset(`quaternius/pirate-kit/${m}.glb`));
-  for (const m of RETRO_MODELS) loadModel(load, retroKey(m), kenney3d('retro-fantasy-kit', m));
   for (const m of HEX_MODELS) loadModel(load, hexKey(m), kenney3d('hexagon-kit', m));
   // 1.2: the Medieval Weapons (one GLB) and their icons
   loadModel(load, WEAPONS_KEY, asset('quaternius/medieval-weapons/weapons.glb'));
@@ -92,11 +82,10 @@ const tmpN = new THREE.Vector3();
 const tmpNM = new THREE.Matrix3();
 
 /**
- * Merges placed models into one plain geometry: position, normal, uv, and per vertex `aCell` (the
- * texture's cell in the retro atlas, `cells`) or `aHex` (the hex it belongs to). Reads every
- * attribute through getX…, so quantized files come out right.
+ * Merges placed models into one plain geometry: position, normal, uv, and per vertex `aHex` (the
+ * hex it belongs to). Reads every attribute through getX…, so quantized files come out right.
  */
-export function mergeModels(list: Placed[], o: { cells?: Map<string, number>; hex?: boolean } = {}): THREE.BufferGeometry {
+export function mergeModels(list: Placed[], o: { hex?: boolean } = {}): THREE.BufferGeometry {
   const jobs: { part: Part; m: THREE.Matrix4; hex: number }[] = [];
   let verts = 0;
   for (const p of list) {
@@ -111,7 +100,7 @@ export function mergeModels(list: Placed[], o: { cells?: Map<string, number>; he
     }
   }
   const P = new Float32Array(verts * 3), N = new Float32Array(verts * 3), U = new Float32Array(verts * 2);
-  const X = o.cells || o.hex ? new Float32Array(verts) : null;
+  const X = o.hex ? new Float32Array(verts) : null;
   let k = 0;
   for (const { part, m, hex } of jobs) {
     const geo = part.geo;
@@ -120,7 +109,6 @@ export function mergeModels(list: Placed[], o: { cells?: Map<string, number>; he
     const flip = m.determinant() < 0;
     const idx = geo.index;
     const n = idx ? idx.count : pos.count;
-    const cell = o.cells ? o.cells.get(part.map?.name ?? '') ?? 0 : hex;
     for (let i = 0; i < n; i++, k++) {
       // a mirrored placement turns the winding: swap two corners of each triangle
       const ii = flip ? i - (i % 3) + [0, 2, 1][i % 3] : i;
@@ -129,111 +117,16 @@ export function mergeModels(list: Placed[], o: { cells?: Map<string, number>; he
       P[k * 3] = tmpV.x; P[k * 3 + 1] = tmpV.y; P[k * 3 + 2] = tmpV.z;
       if (nor) { tmpN.set(nor.getX(v), nor.getY(v), nor.getZ(v)).applyMatrix3(tmpNM).normalize(); N[k * 3] = tmpN.x; N[k * 3 + 1] = tmpN.y; N[k * 3 + 2] = tmpN.z; }
       if (uv) { U[k * 2] = uv.getX(v); U[k * 2 + 1] = uv.getY(v); }
-      if (X) X[k] = cell;
+      if (X) X[k] = hex;
     }
   }
   const out = new THREE.BufferGeometry();
   out.setAttribute('position', new THREE.BufferAttribute(P, 3));
   out.setAttribute('normal', new THREE.BufferAttribute(N, 3));
   out.setAttribute('uv', new THREE.BufferAttribute(U, 2));
-  if (X) out.setAttribute(o.cells ? 'aCell' : 'aHex', new THREE.BufferAttribute(X, 1));
+  if (X) out.setAttribute('aHex', new THREE.BufferAttribute(X, 1));
   out.computeBoundingSphere();
   return out;
-}
-
-/** One model as a single geometry centred on x/z and standing on y = 0 (for instancing). */
-const soloCache = new Map<string, THREE.BufferGeometry>();
-export function soloGeometry(key: string, o: { cells?: Map<string, number> } = {}): THREE.BufferGeometry {
-  let g = soloCache.get(key);
-  if (g) return g;
-  g = mergeModels([{ key, x: 0, y: 0, z: 0, rot: 0, s: 1 }], o);
-  g.computeBoundingBox();
-  const b = g.boundingBox!;
-  g.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
-  g.computeBoundingSphere();
-  soloCache.set(key, g);
-  return g;
-}
-
-// ------------------------------------------------------------------ the retro atlas
-
-export const RETRO_TEXTURES = ['barrel', 'cobblestone', 'cobblestoneAlternative', 'cobblestonePainted', 'details', 'fence', 'planks', 'roof', 'tree', 'water'];
-const ATLAS_COLS = 4, ATLAS_ROWS = 3, CELL = 64;
-
-let atlasCanvas: HTMLCanvasElement | null = null;
-export const RETRO_CELLS = new Map<string, number>(RETRO_TEXTURES.map((n, i) => [n, i]));
-
-/** The retro kit's textures side by side (painted once per page from the loaded models). */
-function retroAtlasCanvas(): HTMLCanvasElement {
-  if (atlasCanvas) return atlasCanvas;
-  const cv = document.createElement('canvas');
-  cv.width = ATLAS_COLS * CELL; cv.height = ATLAS_ROWS * CELL;
-  const g = cv.getContext('2d')!;
-  const found = new Map<string, CanvasImageSource>();
-  for (const m of RETRO_MODELS) {
-    for (const p of modelParts(retroKey(m))) {
-      const img = p.map?.image as CanvasImageSource | undefined;
-      if (p.map && img && !found.has(p.map.name)) found.set(p.map.name, img);
-    }
-  }
-  RETRO_TEXTURES.forEach((n, i) => {
-    const img = found.get(n);
-    const x = (i % ATLAS_COLS) * CELL, y = Math.floor(i / ATLAS_COLS) * CELL;
-    if (img) g.drawImage(img, x, y, CELL, CELL);
-    else { g.fillStyle = '#8a8478'; g.fillRect(x, y, CELL, CELL); }
-  });
-  atlasCanvas = cv;
-  return cv;
-}
-
-/** The atlas as a texture (each world wraps the canvas in its own texture, freed with it). */
-export function retroAtlas(): THREE.CanvasTexture {
-  const t = new THREE.CanvasTexture(retroAtlasCanvas());
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.magFilter = THREE.NearestFilter;
-  t.minFilter = THREE.NearestFilter;
-  t.generateMipmaps = false;
-  t.flipY = false;
-  return t;
-}
-
-/**
- * The arenas' material: Lambert on the retro atlas, each vertex's texture repeated inside its
- * cell. `see` (the hero and the camera) dithers away walls between the camera and the hero.
- */
-export function retroMaterial(map: THREE.Texture, hero: THREE.Vector3, cam: THREE.Vector3): THREE.MeshLambertMaterial {
-  const mat = new THREE.MeshLambertMaterial({ map, alphaTest: 0.5, side: THREE.DoubleSide });
-  mat.onBeforeCompile = (sh) => {
-    sh.uniforms.uHero = { value: hero };
-    sh.uniforms.uCam = { value: cam };
-    sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aCell;\nvarying vec2 vCell;\nvarying vec2 vRep;\nvarying vec3 vGp;')
-      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvCell = vec2(mod(aCell, 4.0), floor(aCell / 4.0));\nvRep = uv;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec2 vCell;\nvarying vec2 vRep;\nvarying vec3 vGp;\nuniform vec3 uHero;\nuniform vec3 uCam;')
-      .replace('#include <map_fragment>', [
-        'vec2 cuv = (vCell + (0.5 + fract(vRep) * 63.0) / 64.0) / vec2(4.0, 3.0);',
-        'vec4 sampledDiffuseColor = texture2D(map, cuv);',
-        'diffuseColor *= sampledDiffuseColor;',
-      ].join('\n'))
-      .replace('#include <clipping_planes_fragment>', [
-        '#include <clipping_planes_fragment>',
-        'vec2 cell = mod(floor(gl_FragCoord.xy), 4.0);',
-        'float th = fract((cell.x * 4.0 + cell.y + mod(cell.x + cell.y, 2.0) * 7.0) / 16.0);',
-        'vec3 sl = uHero - uCam;',
-        'float sll = length(sl);',
-        'vec3 sd = sl / max(sll, 0.001);',
-        'float along = dot(vGp - uCam, sd);',
-        'if (uHero.y > -50.0 && along < sll - 0.8 && vGp.y > 0.5) {',
-        '  float side = length(vGp - uCam - sd * along);',
-        '  float k = smoothstep(2.4, 1.2, side) * smoothstep(sll - 0.8, sll - 2.6, along);',
-        '  if (th < k * 0.85) discard;',
-        '}',
-      ].join('\n'));
-  };
-  mat.customProgramCacheKey = () => 'hr-retro';
-  return mat;
 }
 
 /** The Hexagon Kit's shared colour map. */

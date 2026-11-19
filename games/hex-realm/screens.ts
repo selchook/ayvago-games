@@ -11,8 +11,9 @@
 //   - Class select (the live 3D hero shows above the board), the world map, the battle's spoils,
 //     the power-card draft (three cards, one reroll) and the strip of cards under the pause.
 // Touch: tap a tile, a tab or a button. Keyboard: arrows move the focus, Enter presses, Tab and
-// Q/E switch tabs, Esc closes. Everything they show is painted under the Ayvago intro
-// (`prebakeScreens`, from the menu theme's prebake): opening a screen only places images.
+// Q/E switch tabs, Esc closes. Everything they show is painted ahead (1.3: by the Play scene, a
+// slice per frame, `ScreenBaker`; 1.2 painted it all in Boot, under the Ayvago intro): opening a
+// screen only places images.
 // 1.2 (landscape, 1280 × 720): the village and the hero screen have a left column (title, line,
 // tabs stacked like bookmarks, the purse, LEAVE) and a wide content column; the class choice puts
 // its board on the right of the live 3D hero; the map is drawn on the left of its legend and the
@@ -146,55 +147,16 @@ function statLines(it: Item): [Stat, number][] {
 /** A soft spark for the screens' bursts (painted in the prebake). */
 const SPARK = 'hr-spark';
 
-/** Paints, in the current language, everything the inner screens show (Boot, under the intro). */
-export function prebakeScreens(scene: Phaser.Scene): void {
-  makeArt(scene);
-  bake(scene, SPARK, 20, 20, (c) => { const g = c.createRadialGradient(10, 10, 0, 10, 10, 10); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, 20, 20); });
-  for (const [w, h] of [[BOARD_W, BOARD_H], [CLASS_BOARD_W, BOARD_H], [LOOT_W, LOOT_H], [DRAFT_W, DRAFT_H]]) skinTexture(scene, 'board', w, h);
-  for (const c of SCREEN_CARDS) themeCard(scene, 0, 0, c.w, c.h).destroy();
-  for (const k of ['v_inn', 'v_market', 'v_smith', 'v_shrine', 'v_quests', 'tabGear', 'tabTalents', 'tabCombos', 'tabCards']) labelTexture(scene, t(k), S_TAB);
-  for (const k of ['innTitle', 'marketTitle', 'smithTitle', 'questsTitle', 'shrineTitle', 'heroTitle', 'chooseTitle', 'mapTitle', 'victory', 'draftTitle']) labelTexture(scene, t(k), S_TITLE);
-  for (const k of ['innSub', 'marketSub', 'smithSub', 'questsSub', 'shrineSub', 'heroSub']) bakePara(scene, t(k), S_SUB, SIDE_PARA);
-  for (const k of ['draftSub', 'lootNone']) bakePara(scene, t(k), S_SUB, 620);
-  bakePara(scene, t('noCards'), S_SUB, CW - 80);
-  bakeButton(scene, 'button', TAB_W, TAB_H, STONE, false, true);
-  bakeButton(scene, 'button', TAB_W, TAB_H, BLUE, false, true);
-  bakeButton(scene, 'button', 300, 70, CRIMSON);
-  bakeButton(scene, 'button', 300, 70, BLUE);
-  for (const col of [BLUE, MOSS, CRIMSON, GOLDC]) bakeButton(scene, 'button', 132, 54, col, true);
-  for (const col of [BLUE, CRIMSON, MOSS, STONE]) bakeButton(scene, 'button', 200, 64, col, true);
-  bakeButton(scene, 'button', 152, 54, GOLDC, true);
-  bakeButton(scene, 'button', 200, 50, STONE, true);
-  bakeButton(scene, 'button', 240, 70, STONE, true);
-  bakeButton(scene, 'round', 64, 64, BLUE, true);
-  bakeButton(scene, 'plate', SLOT_W, SLOT_H, STONE);
-  bakeButton(scene, 'plate', CLASS_W, CLASS_H, BLUE, false, true);
-  bakeButton(scene, 'plate', CLASS_W, CLASS_H, STONE, false, true);
-  bakeButton(scene, 'plate', CARD_W, CARD_H, STONE);
-  for (const k of ['leave', 'close', 'buy', 'sell', 'equip', 'upgrade', 'rest', 'endDay', 'ngPlus', 'choose', 'onward', 'tapContinue', 'full', 'maxed', 'classBtn', 'empower', 'reroll', 'newGame', 'sure', 'equipped', 'sellWeaker']) { labelTexture(scene, t(k), S_BTN); labelTexture(scene, t(k), S_BTN_S); }
-  for (const k of ['restSub', 'endDaySub', 'ngPlusSub', 'potionSub', 'beltSub', 'newCampSub']) labelTexture(scene, t(k), V_DESC);
-  for (const k of ['potion', 'belt']) labelTexture(scene, t(k), V_NAME);
-  for (const k of ['maxed', 'full', 'better', 'worse', 'learnt']) { labelTexture(scene, t(k), V_TAG); labelTexture(scene, t(k), V_WORSE); }
-  for (const k of ['poor', 'bagFull', 'bought', 'equipped', 'upgraded', 'rested', 'cantRest', 'maxed', 'noPoints', 'full', 'noSigils', 'empowered', 'nothingWeaker']) labelTexture(scene, t(k), S_TOAST);
-  bakeFmt(scene, 'soldFor', ['n'], S_TOAST);
-  for (const o of [S_PURSE, V_PRICE, V_POOR, S_INFO, V_NAME, V_BIG, S_GOLD_LINE, S_XP_LINE, V_STAT, V_UP, V_KEY, V_DUP, V_DDOWN]) glyphAtlas(scene, o);
-  for (const k of ['heroLevel', 'pointsN', 'bagN']) bakeFmt(scene, k, k === 'bagN' ? ['n', 'of'] : ['n'], S_INFO);
-  // the item names, rarities, weapon kinds and stat lines
-  for (const tier of TIERS) for (const n of ITEM_NOUNS) labelTexture(scene, t('t_' + tier) + ' ' + t(n), V_NAME);
-  for (const r of RARITIES) labelTexture(scene, t('r_' + r), V_RARITY(r));
-  for (const w of WEAPON_TYPES) labelTexture(scene, t('wt_' + w), V_KIND);
-  for (const s of STATS) { bakeFmt(scene, 'st_' + s, ['n'], V_STAT); bakeFmt(scene, 'st_' + s, ['n'], V_UP); }
-  for (const s of SLOTS) { labelTexture(scene, t('slot_' + s), V_DESC); labelTexture(scene, t('slot_' + s), V_NAME); }
-  labelTexture(scene, '+', { size: 34 });
-  labelTexture(scene, t('mapTitle'), { ...S_TITLE, size: 46 });
-  labelTexture(scene, t('empty'), V_DESC);
-  labelTexture(scene, t('vsWorn'), V_KEY);
-  bakePara(scene, t('pickItem'), V_DESC2, CW - 80);
-  for (const k of ['statHp', 'statAtk', 'statDef', 'statCrit', 'statCdr', 'statSpeed']) labelTexture(scene, t(k), V_DESC);
-  // talents
-  for (const id of TALENT_IDS) if (id !== 'skill1' && id !== 'skill2') { labelTexture(scene, t('tl_' + id), V_NAME); labelTexture(scene, t('tld_' + id), V_DESC); }
-  labelTexture(scene, t('tld_skill'), V_DESC);
-  // classes and skills
+/**
+ * Paints, in the current language, everything the inner screens show. 1.3: not in Boot any more:
+ * the Play scene runs it a slice per frame (`ScreenBaker`), the pause's and the class choice's
+ * pieces first; a screen opened before its turn paints what it still misses itself.
+ */
+export function* screenBake(scene: Phaser.Scene): Generator<void, void, void> {
+  // the pause's cards first (the platform may pause at any moment), then the class choice
+  yield* bakePauseCards(scene);
+  for (const c of SCREEN_CARDS) { themeCard(scene, 0, 0, c.w, c.h).destroy(); yield; }
+  for (const [w, h] of [[BOARD_W, BOARD_H], [CLASS_BOARD_W, BOARD_H], [LOOT_W, LOOT_H], [DRAFT_W, DRAFT_H]]) { skinTexture(scene, 'board', w, h); yield; }
   for (const c of CLASS_IDS) {
     labelTexture(scene, t('c_' + c), S_CLASS);
     labelTexture(scene, t('c_' + c), S_CLASS_BIG);
@@ -202,28 +164,118 @@ export function prebakeScreens(scene: Phaser.Scene): void {
     labelTexture(scene, t('cd_' + c), V_DESC);
     bakePara(scene, t('cd_' + c), S_SUB, CLASS_BOARD_W - 70);
     for (const sk of CLASS[c].skills) { labelTexture(scene, t('sk_' + sk.id), V_NAME); labelTexture(scene, t('sk_' + sk.id), S_INFO); }
+    yield;
   }
+  bakeButton(scene, 'plate', CLASS_W, CLASS_H, BLUE, false, true);
+  bakeButton(scene, 'plate', CLASS_W, CLASS_H, STONE, false, true);
+  yield;
+  makeArt(scene);
+  bake(scene, SPARK, 20, 20, (c) => { const g = c.createRadialGradient(10, 10, 0, 10, 10, 10); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, 20, 20); });
+  yield;
+  for (const k of ['v_inn', 'v_market', 'v_smith', 'v_shrine', 'v_quests', 'tabGear', 'tabTalents', 'tabCombos', 'tabCards']) labelTexture(scene, t(k), S_TAB);
+  yield;
+  for (const k of ['innTitle', 'marketTitle', 'smithTitle', 'questsTitle', 'shrineTitle', 'heroTitle', 'chooseTitle', 'mapTitle', 'victory', 'draftTitle']) labelTexture(scene, t(k), S_TITLE);
+  yield;
+  for (const k of ['innSub', 'marketSub', 'smithSub', 'questsSub', 'shrineSub', 'heroSub']) { bakePara(scene, t(k), S_SUB, SIDE_PARA); yield; }
+  for (const k of ['draftSub', 'lootNone']) bakePara(scene, t(k), S_SUB, 620);
+  bakePara(scene, t('noCards'), S_SUB, CW - 80);
+  yield;
+  bakeButton(scene, 'button', TAB_W, TAB_H, STONE, false, true);
+  bakeButton(scene, 'button', TAB_W, TAB_H, BLUE, false, true);
+  bakeButton(scene, 'button', 300, 70, CRIMSON);
+  bakeButton(scene, 'button', 300, 70, BLUE);
+  yield;
+  for (const col of [BLUE, MOSS, CRIMSON, GOLDC]) bakeButton(scene, 'button', 132, 54, col, true);
+  for (const col of [BLUE, CRIMSON, MOSS, STONE]) bakeButton(scene, 'button', 200, 64, col, true);
+  yield;
+  bakeButton(scene, 'button', 152, 54, GOLDC, true);
+  bakeButton(scene, 'button', 200, 50, STONE, true);
+  bakeButton(scene, 'button', 240, 70, STONE, true);
+  bakeButton(scene, 'round', 64, 64, BLUE, true);
+  bakeButton(scene, 'plate', SLOT_W, SLOT_H, STONE);
+  bakeButton(scene, 'plate', CARD_W, CARD_H, STONE);
+  yield;
+  for (const k of ['leave', 'close', 'buy', 'sell', 'equip', 'upgrade', 'rest', 'endDay', 'ngPlus', 'choose', 'onward', 'tapContinue', 'full', 'maxed', 'classBtn', 'empower', 'reroll', 'newGame', 'sure', 'equipped', 'sellWeaker']) { labelTexture(scene, t(k), S_BTN); labelTexture(scene, t(k), S_BTN_S); }
+  yield;
+  for (const k of ['restSub', 'endDaySub', 'ngPlusSub', 'potionSub', 'beltSub', 'newCampSub']) labelTexture(scene, t(k), V_DESC);
+  for (const k of ['potion', 'belt']) labelTexture(scene, t(k), V_NAME);
+  for (const k of ['maxed', 'full', 'better', 'worse', 'learnt']) { labelTexture(scene, t(k), V_TAG); labelTexture(scene, t(k), V_WORSE); }
+  yield;
+  for (const k of ['poor', 'bagFull', 'bought', 'equipped', 'upgraded', 'rested', 'cantRest', 'maxed', 'noPoints', 'full', 'noSigils', 'empowered', 'nothingWeaker']) labelTexture(scene, t(k), S_TOAST);
+  bakeFmt(scene, 'soldFor', ['n'], S_TOAST);
+  yield;
+  for (const o of [S_PURSE, V_PRICE, V_POOR, S_INFO, V_NAME, V_BIG, S_GOLD_LINE, S_XP_LINE, V_STAT, V_UP, V_KEY, V_DUP, V_DDOWN]) { glyphAtlas(scene, o); yield; }
+  for (const k of ['heroLevel', 'pointsN', 'bagN']) bakeFmt(scene, k, k === 'bagN' ? ['n', 'of'] : ['n'], S_INFO);
+  yield;
+  // the item names, rarities, weapon kinds and stat lines
+  for (const tier of TIERS) { for (const n of ITEM_NOUNS) labelTexture(scene, t('t_' + tier) + ' ' + t(n), V_NAME); yield; }
+  for (const r of RARITIES) labelTexture(scene, t('r_' + r), V_RARITY(r));
+  for (const w of WEAPON_TYPES) labelTexture(scene, t('wt_' + w), V_KIND);
+  yield;
+  for (const s of STATS) { bakeFmt(scene, 'st_' + s, ['n'], V_STAT); bakeFmt(scene, 'st_' + s, ['n'], V_UP); }
+  for (const s of SLOTS) { labelTexture(scene, t('slot_' + s), V_DESC); labelTexture(scene, t('slot_' + s), V_NAME); }
+  yield;
+  labelTexture(scene, '+', { size: 34 });
+  labelTexture(scene, t('mapTitle'), { ...S_TITLE, size: 46 });
+  labelTexture(scene, t('empty'), V_DESC);
+  labelTexture(scene, t('vsWorn'), V_KEY);
+  bakePara(scene, t('pickItem'), V_DESC2, CW - 80);
+  for (const k of ['statHp', 'statAtk', 'statDef', 'statCrit', 'statCdr', 'statSpeed']) labelTexture(scene, t(k), V_DESC);
+  yield;
+  // talents
+  for (const id of TALENT_IDS) if (id !== 'skill1' && id !== 'skill2') { labelTexture(scene, t('tl_' + id), V_NAME); labelTexture(scene, t('tld_' + id), V_DESC); yield; }
+  labelTexture(scene, t('tld_skill'), V_DESC);
   // quests
-  for (const q of QUEST_IDS) { labelTexture(scene, t('q_' + q), V_NAME); bakePara(scene, t('qd_' + q), V_DESC, QUEST_PARA); }
+  for (const q of QUEST_IDS) { labelTexture(scene, t('q_' + q), V_NAME); bakePara(scene, t('qd_' + q), V_DESC, QUEST_PARA); yield; }
   for (const s of ['open', 'done', 'locked']) labelTexture(scene, t('quest' + s[0].toUpperCase() + s.slice(1)), V_STATE[s]);
   bakeFmt(scene, 'questReward', ['n'], V_STAT);
+  yield;
   // the map and its legend
   for (const p of PLACE_IDS) { labelTexture(scene, t('p_' + p), S_MAP_PLACE); labelTexture(scene, t('p_' + p), S_MAP_TAG); }
   for (const k of ['p_camp', 'p_bridge']) labelTexture(scene, t(k), S_MAP_PLACE);
   labelTexture(scene, t('tracked'), V_KEY);
-  for (const q of QUEST_IDS) { labelTexture(scene, t('q_' + q), V_BIG); bakePara(scene, t('qd_' + q), V_LEG, MAP_PARA); }
+  yield;
+  for (const q of QUEST_IDS) { labelTexture(scene, t('q_' + q), V_BIG); bakePara(scene, t('qd_' + q), V_LEG, MAP_PARA); yield; }
   bakePara(scene, t('sumDone'), V_LEG, MAP_PARA);
   for (const k of LEGEND) labelTexture(scene, t(k), V_LEG);
+  yield;
   // the spoils
   for (const k of ['goldN', 'xpN']) bakeFmt(scene, k, ['n'], k === 'goldN' ? S_GOLD_LINE : S_XP_LINE);
   bakeFmt(scene, 'levelUpSub', ['n'], S_GREEN_LINE);
+  yield;
   for (const q of QUEST_IDS) bakePara(scene, t('questDoneN', { name: t('q_' + q) }), S_GREEN_LINE, LOOT_SIDE);
   for (const k of ['staffFound', 'beltUp']) bakePara(scene, t(k), S_GREEN_LINE, LOOT_SIDE);
   bakeFmt(scene, 'soldN', ['n'], S_SUB);
   labelTexture(scene, t('screenKeys'), S_KEYS);
   bakePara(scene, t('screenKeys'), S_KEYS, SIDE_PARA);
-  prebakePowers(scene);
+  yield;
+  yield* bakePowers(scene);
   void POWER_IDS;
+}
+
+/** Everything at once (a language switch's repaint, tests). */
+export function prebakeScreens(scene: Phaser.Scene): void {
+  for (const _ of screenBake(scene)) { /* each step paints */ }
+}
+
+/**
+ * Runs `screenBake` a slice per frame inside a time budget, so the screens are painted while the
+ * player looks at the class choice or walks the map, never all in one stall.
+ */
+export class ScreenBaker {
+  private it: Generator<void, void, void> | null;
+  done = false;
+  constructor(it: Generator<void, void, void>) { this.it = it; }
+  /** Paints for up to `ms` milliseconds; true once everything is painted. */
+  step(ms: number): boolean {
+    if (!this.it) return true;
+    const t0 = performance.now();
+    while (performance.now() - t0 < ms) {
+      if (this.it.next().done) { this.it = null; this.done = true; break; }
+    }
+    return this.done;
+  }
+  finish(): void { while (!this.step(1000)) { /* the rest at once */ } }
 }
 
 /** A power card's face: vellum, a rarity gem frame and a jewel at the top, a glow for the rare ones. */
@@ -252,16 +304,30 @@ function paintCard(c: CanvasRenderingContext2D, w: number, h: number, r: CardRar
   c.restore();
 }
 
-/** Paints the Shrine's, the combos', the cards' and the pause's pieces. */
-export function prebakePowers(scene: Phaser.Scene): void {
+/** The cards under the pause (and their quest and controls cards). */
+function* bakePauseCards(scene: Phaser.Scene): Generator<void, void, void> {
+  themeCard(scene, 0, 0, PCARDS_W, PCARDS_H).destroy();
   for (const r of ['common', 'rare', 'epic', 'legendary'] as CardRarity[]) bake(scene, CARD_KEY(r), CARD_W + 24, CARD_H + 24, (c) => paintCard(c, CARD_W, CARD_H, r));
+  yield;
+  for (const k of ['yourCards', 'pQuest', 'pControls']) labelTexture(scene, t(k), P_HEAD);
+  bakePara(scene, t('noCards'), P_BODY, PCARDS_W - 50);
+  for (const q of QUEST_IDS) { labelTexture(scene, t('q_' + q), P_NAME); bakePara(scene, t('qd_' + q), P_BODY, PCARDS_W - 50); }
+  yield;
+  bakePara(scene, t('sumDone'), P_BODY, PCARDS_W - 50);
+  for (const k of ['ctlTouch', 'ctlKeys']) bakePara(scene, t(k), P_BODY, PCARDS_W - 50);
+  yield;
+}
+
+/** Paints the Shrine's, the combos' and the cards' pieces, the battle banners. */
+function* bakePowers(scene: Phaser.Scene): Generator<void, void, void> {
   bake(scene, CARD_GLOW, CARD_W + 44, CARD_H + 44, (c) => { c.shadowColor = 'rgba(255,220,120,1)'; c.shadowBlur = 18; c.strokeStyle = 'rgba(255,236,170,1)'; c.lineWidth = 6; c.beginPath(); c.roundRect(22, 22, CARD_W, CARD_H, 12); c.stroke(); });
   for (const k of ['newCampT', 'rest', 'endDay', 'ngPlus']) labelTexture(scene, t(k), V_BIG);
   labelTexture(scene, t('nextRank') + ':', V_KEY);
   labelTexture(scene, t('maxRank'), V_UP);
   for (const k of ['touchL', 'keysL']) labelTexture(scene, t(k) + ':', V_KEY);
   bakePara(scene, t('combatOnly'), S_SUB, CW - 40);
-  for (const c of COMBO_IDS) { labelTexture(scene, t('cb_' + c), V_DESC); for (const k of ['t', 'k']) bakePara(scene, t('in_' + c + '_' + k), V_DESC2, COMBO_W - 34); }
+  yield;
+  for (const c of COMBO_IDS) { labelTexture(scene, t('cb_' + c), V_DESC); for (const k of ['t', 'k']) bakePara(scene, t('in_' + c + '_' + k), V_DESC2, COMBO_W - 34); yield; }
   bakeFmt(scene, 'cardsN', ['n', 'of'], S_INFO);
   for (const cls of CLASS_IDS) {
     labelTexture(scene, t('combosOf', { name: t('c_' + cls) }), S_INFO);
@@ -270,28 +336,27 @@ export function prebakePowers(scene: Phaser.Scene): void {
       labelTexture(scene, trackName(cls, k), V_BIG);
       for (let r = 1; r <= MAX_RANK; r++) labelTexture(scene, t(rankKey(cls, k, r)), V_UP);
     }
+    yield;
     for (const c of COMBO_IDS) {
       labelTexture(scene, t(`fn_${cls}_${c}`), V_FIN);
       labelTexture(scene, t(`fn_${cls}_${c}`) + '!', S_POP);
       bakePara(scene, t(`fd_${cls}_${c}`), V_DESC2, COMBO_W - 34);
       for (let r = 1; r <= MAX_RANK; r++) bakePara(scene, t(rankKey(cls, c, r)), V_UP, COMBO_W - 34);
+      yield;
     }
   }
   labelTexture(scene, t('perfect'), S_PERFECT);
   prebakeBanners(scene);
+  yield;
   for (const card of CARDS) {
     labelTexture(scene, t('k_' + card.id), V_CARD);
     labelTexture(scene, t('k_' + card.id), V_NAME);
     labelTexture(scene, t('k_' + card.id), P_NAME);
     bakePara(scene, t('kd_' + card.id), V_CARD_D, CARD_W - 54);
     bakePara(scene, t('kd_' + card.id), V_DESC, TILE3_W - 34);
+    yield;
   }
-  for (const k of ['yourCards', 'pQuest', 'pControls']) labelTexture(scene, t(k), P_HEAD);
   labelTexture(scene, t('draftKeys'), S_KEYS);
-  bakePara(scene, t('noCards'), P_BODY, PCARDS_W - 50);
-  for (const q of QUEST_IDS) { labelTexture(scene, t('q_' + q), P_NAME); bakePara(scene, t('qd_' + q), P_BODY, PCARDS_W - 50); }
-  bakePara(scene, t('sumDone'), P_BODY, PCARDS_W - 50);
-  for (const k of ['ctlTouch', 'ctlKeys']) bakePara(scene, t(k), P_BODY, PCARDS_W - 50);
 }
 
 // ------------------------------------------------------------------ the panel frame
