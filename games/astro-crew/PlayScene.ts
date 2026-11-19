@@ -1,29 +1,32 @@
-// Astro Crew: the Play scene. A run is a string of missions:
+// Astro Crew: the Play scene. A run is a string of missions, each on a whole planet to explore:
 //   the crew choice → the star map → the brief → the mission (power-card drafts at level-ups) →
 //   the summary → the base (modules) → the star map … until the hero falls or a dome is lost
 //   (the result screen; a rewarded ad may continue that mission once), or the Magma King falls
 //   (the galaxy is saved: a won run).
 // The mission is the pure simulation (sim.ts), stepped at 60 Hz and drawn in 3D (view.ts); the star
 // map and the base are 3D too (mapview.ts). On top: the HUD chips (score, the objective, health,
-// level, crystals, cards, the boss's health), the three action buttons (DODGE, SKILL, MECH) with
-// their cooldown rings, an arrow to an off-screen objective, damage numbers, banners and toasts,
-// all painted in the theme's face ahead of time.
+// level, the hive alert, crystals, cards, the boss's health), a round minimap of the planet in its
+// own chip, the three action buttons (DODGE, SKILL, MECH) with their cooldown rings, arrows at the
+// screen's edge (with the distance) to the objectives off screen, the castaway and a hunting wave,
+// damage numbers, banners and toasts, all painted in the theme's face ahead of time.
 // Touch: the stick (anywhere left of the buttons) moves; the buttons roll, fire the skill and call
 // the mech. Keys: WASD / arrows move, Space rolls, Q or J the skill, E or K the mech, P / Esc pause.
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, t, isEasy, hudChip, HUD_ROW2_Y, HUD_MARGIN, HUD_GAP, hudRightEdge, labelAt, labelTexture, fitWidth,
-  bakeFmt, glyphAtlas, FmtLine, GlyphText, isModalOpen, type HudChip, type LabelStyle,
+  bakeFmt, glyphAtlas, FmtLine, GlyphText, isModalOpen, NUMERIC_GLYPHS, type HudChip, type LabelStyle,
 } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
 import { MapView, BaseView } from './mapview';
 import { Mission, newRun, mulberry, NO_INPUT, type RunState, type SimEvent, type Input } from './sim';
 import { Bot, SKILL } from './bot';
-import { DT, HERO, MISSIONS, OBJ, crystalsFor, type HeroId, type MissionDef } from './defs';
+import { DT, HERO, MISSIONS, OBJ, WORLD_R, xpNeed, crystalsFor, type HeroId, type MissionDef } from './defs';
+import { THEME } from './arena';
+import type { Spot } from './world';
 import { rollCards, CARD, type CardId } from './powers';
 import { loadMeta, saveMeta, crewOpen, type Meta } from './meta';
-import { makeArt, iconImg, setIcon, ARROW, BTN_FACE } from './art';
+import { makeArt, iconImg, setIcon, ARROW, ARROW_RED, ARROW_CYAN, BTN_FACE } from './art';
 import {
   CrewScreen, MapScreen, BriefScreen, DraftScreen, SummaryScreen, BaseScreen, pauseSides, type Panel, type ScreenHost,
 } from './screens';
@@ -42,9 +45,13 @@ const S_DMG: LabelStyle = { size: 26, color: '#ffffff', stroke: INK, strokeWidth
 const S_CRIT: LabelStyle = { size: 34, color: '#ffd84a', stroke: INK, strokeWidth: 6 };
 const S_HURT: LabelStyle = { size: 30, color: '#ff6a5a', stroke: INK, strokeWidth: 6 };
 const S_BOSS: LabelStyle = { size: 20, color: '#ffd0c0', stroke: INK, strokeWidth: 4 };
+/** The distance beside an edge arrow ("42m"). */
+const S_DIST: LabelStyle = { size: 20, color: '#ffffff', stroke: INK, strokeWidth: 4 };
+const DIST_GLYPHS = NUMERIC_GLYPHS + 'm';
 const TOASTS = ['rage', 'mechReady', 'beacon', 'fixed', 'domeHit', 'angel', 'hullRevive', 'shield', 'overdrive', 'thunder', 'healed', 'keycard', 'lowHp', 'fixing', 'powerShot',
-  'hintMove', 'hintKeys', 'hintSkill', 'hintTouch', 'hintRescue', 'hintKeysObj', 'hintDefend', 'crit'];
-const BANNERS = ['bossIn', 'mechGo', 'complete', 'levelUp', 'beacon'];
+  'hintMove', 'hintKeys', 'hintSkill', 'hintTouch', 'hintRescue', 'hintKeysObj', 'hintDefend', 'hintClear', 'hintBoss', 'hintMap', 'hintAlert', 'crit',
+  'alertDome', 'alertHunt', 'alertEnd', 'nestWake', 'nestDown', 'shielded', 'castaway', 'castHelp', 'burn', 'holdBeacon'];
+const BANNERS = ['bossIn', 'mechGo', 'complete', 'levelUp', 'beacon', 'hiveAlert', 'shieldDown'];
 const SKILL_ICON: Record<HeroId, string> = { frog: 'p-blast', bee: 'p-storm', flamingo: 'p-pierce', panda: 'p-flame' };
 
 /** Paints the Play scene's words ahead (Boot, under the intro). */
@@ -52,8 +59,9 @@ export function prebakePlay(scene: Phaser.Scene): void {
   makeArt(scene);
   for (const k of BANNERS) labelTexture(scene, t(k), k === 'mechGo' || k === 'complete' ? S_BIG : S_BANNER);
   for (const k of TOASTS) labelTexture(scene, t(k), S_TOAST);
-  bakeFmt(scene, 'waveN', ['n', 'm'], S_BANNER);
-  bakeFmt(scene, 'waveOpen', ['n'], S_BANNER);
+  bakeFmt(scene, 'alertN', ['n', 'm'], S_BANNER);
+  bakeFmt(scene, 'nestsLeft', ['n'], S_TOAST);
+  glyphAtlas(scene, S_DIST, DIST_GLYPHS);
   bakeFmt(scene, 'keyN', ['n', 'm'], S_TOAST);
   bakeFmt(scene, 'crystalsN', ['n'], S_TOAST);
   for (const m of MISSIONS) labelTexture(scene, t('m_' + m.n), S_BANNER);
@@ -149,8 +157,15 @@ export class PlayScene extends ArcadeScene {
   private btnDodge!: ActionButton;
   private btnSkill!: ActionButton;
   private btnMech!: ActionButton;
-  private arrow!: Phaser.GameObjects.Image;
+  private threatChip!: HudChip;
+  private threatBar!: Phaser.GameObjects.Graphics;
+  private mapChip!: HudChip;
+  private mapG!: Phaser.GameObjects.Graphics;
+  /** Edge arrows (objectives, the castaway, a hunting wave) and their distances. */
+  private arrows: { img: Phaser.GameObjects.Image; dist: GlyphText }[] = [];
   private fixRing!: Phaser.GameObjects.Graphics;
+  private burnT = 0;
+  private wakeToasts = 0;
   private keys = { dodge: false, skill: false, mech: false };
   private dmgPool: GlyphText[] = [];
   private toastImg: Phaser.GameObjects.Image | null = null;
@@ -185,6 +200,8 @@ export class PlayScene extends ArcadeScene {
     this.dmgPool = [];
     this.toastImg = null;
     this.lowT = 0;
+    this.burnT = 0;
+    this.wakeToasts = 0;
     this.hpShown = -1;
     this.lastEvents = new Set();
     this.touch = this.sys.game.device.input.touch;
@@ -234,8 +251,21 @@ export class PlayScene extends ArcadeScene {
     this.bossBar.setData('chipWidth', 300);
     this.bossChip = hudChip(this, this.scale.width / 2, y + 58, { align: 'center', icon: 'ac-p-skull', iconSize: 34, items: [this.bossBar] });
     this.bossChip.setVisible(false);
-    this.hud.centerChip.setIcon('ac-p-wave', undefined, 30);
-    this.arrow = this.add.image(0, 0, ARROW).setDepth(9000).setScrollFactor(0).setVisible(false).setDisplaySize(48, 48);
+    this.hud.centerChip.setIcon('ac-p-nest', undefined, 30);
+    // the hive alert: a bar filling up (or the countdown to the next attack on the dome)
+    this.threatBar = this.add.graphics();
+    this.threatBar.setData('chipWidth', 120);
+    this.threatChip = hudChip(this, this.scale.width / 2, y, { align: 'center', icon: 'ac-p-alert', iconSize: 30, text: '', items: [this.threatBar] });
+    // the minimap: the planet in a round glass chip, north up
+    this.mapG = this.add.graphics();
+    this.mapG.setData('chipWidth', 156);
+    this.mapChip = hudChip(this, HUD_MARGIN, y + 22 + 12 + 86, { height: 172, minWidth: 172, text: '', items: [this.mapG] });
+    this.arrows = [ARROW, ARROW, ARROW_CYAN, ARROW_RED].map((key) => {
+      const img = this.add.image(0, 0, key).setDepth(9000).setScrollFactor(0).setVisible(false).setDisplaySize(48, 48);
+      const dist = new GlyphText(this, 0, 0, '0m', S_DIST, 0.5, DIST_GLYPHS).setDepth(9001).setScrollFactor(0).setVisible(false);
+      this.add.existing(dist);
+      return { img, dist };
+    });
     this.fixRing = this.add.graphics().setDepth(8900);
   }
 
@@ -249,11 +279,11 @@ export class PlayScene extends ArcadeScene {
   }
 
   private showPlayUi(on: boolean): void {
-    for (const c of [this.hud.scoreChip, this.hud.centerChip, this.hpChip, this.xpChip, this.crystalChip, this.cardChip]) c.setVisible(on);
+    for (const c of [this.hud.scoreChip, this.hud.centerChip, this.hpChip, this.xpChip, this.crystalChip, this.cardChip, this.threatChip, this.mapChip]) c.setVisible(on);
     this.hud.rightChip.setVisible(false);
     if (!on) this.bossChip.setVisible(false);
     for (const b of [this.btnDodge, this.btnSkill, this.btnMech]) b.setVisible(on);
-    if (!on) { this.arrow.setVisible(false); this.fixRing.clear(); }
+    if (!on) { for (const a of this.arrows) { a.img.setVisible(false); a.dist.setVisible(false); } this.fixRing.clear(); }
   }
 
   private refreshHud(dt: number): void {
@@ -277,7 +307,7 @@ export class PlayScene extends ArcadeScene {
       this.hpChip.setText(String(n));
     }
     // level
-    const need = 10 + 8 * (this.run.level - 1);
+    const need = xpNeed(this.run.level);
     this.xpChip.setText(`${t('lvl')} ${this.run.level}`);
     const xg = this.xpBar.clear();
     xg.fillStyle(0x060414, 0.75).fillRoundedRect(-45, -8, 90, 16, 7);
@@ -287,14 +317,34 @@ export class PlayScene extends ArcadeScene {
     // the objective
     const [done, of] = s.progress();
     const d = s.def;
-    if (d.kind === 'keys') { this.hud.setCenter(s.keys.hold > 0 ? `${Math.ceil(s.keys.hold)}s` : `${done}/${of}`); this.hud.centerChip.setIcon(s.keys.hold > 0 ? 'ac-p-clock' : 'ac-p-key', undefined, 30); }
-    else if (d.kind === 'rescue') { this.hud.setCenter(`${done}/${of}`); this.hud.centerChip.setIcon('ac-p-rover', undefined, 32); }
-    else if (d.kind === 'defend') { this.hud.setCenter(`${done}/${of}  ·  ${Math.ceil((100 * s.dome.hp) / s.dome.max)}%`); this.hud.centerChip.setIcon('ac-p-dome', undefined, 30); this.hud.centerChip.setTextColor(s.dome.hp < s.dome.max * 0.35 ? '#ff8a7a' : '#ffffff'); }
-    else if (d.kind === 'boss' && s.bossId >= 0) { this.hud.setCenter(t('b_' + d.boss)); this.hud.centerChip.setIcon('ac-p-skull', undefined, 30); }
-    else { this.hud.setCenter(`${Math.min(done, of)}/${of}`); this.hud.centerChip.setIcon('ac-p-wave', undefined, 30); }
+    const ctr = this.hud.centerChip;
+    ctr.setTextColor('#ffffff');
+    if (d.kind === 'keys') {
+      if (s.keys.hold >= 0) { this.hud.setCenter(String(Math.max(0, Math.ceil(s.keys.hold)))); ctr.setIcon('ac-p-clock', undefined, 30); ctr.setTextColor(s.keys.near ? '#9affc0' : '#ffd84a'); }
+      else { this.hud.setCenter(`${done}/${of}`); ctr.setIcon('ac-p-key', undefined, 30); }
+    }
+    else if (d.kind === 'rescue') { this.hud.setCenter(`${done}/${of}`); ctr.setIcon('ac-p-rover', undefined, 32); }
+    else if (d.kind === 'defend') { this.hud.setCenter(`${done}/${of}  ·  ${Math.ceil((100 * s.dome.hp) / s.dome.max)}%`); ctr.setIcon('ac-p-dome', undefined, 30); ctr.setTextColor(s.dome.hp < s.dome.max * 0.35 ? '#ff8a7a' : '#ffffff'); }
+    else if (d.kind === 'boss' && !s.shielded) { this.hud.setCenter(t('b_' + d.boss)); ctr.setIcon('ac-p-skull', undefined, 30); }
+    else { this.hud.setCenter(`${Math.min(done, of)}/${of}`); ctr.setIcon('ac-p-nest', undefined, 32); }
+    // the hive alert (or the countdown to the next attack on the dome)
+    const tg = this.threatBar.clear();
+    const TW = 120;
+    tg.fillStyle(0x060414, 0.75).fillRoundedRect(-TW / 2, -8, TW, 16, 7);
+    let tk = s.threat, tcol = s.threat > 0.75 ? 0xff5a3a : s.threat > 0.45 ? 0xffb03a : 0xff8ad0;
+    let ttext = '';
+    if (s.alerts.active) { tk = 1; tcol = Math.floor(this.time.now / 180) % 2 ? 0xff3b3b : 0xff8a5a; }
+    else if (d.kind === 'defend') {
+      tk = s.alerts.n >= s.alerts.of ? 0 : 1 - s.alerts.next / (s.alerts.n ? OBJ.alertGap : OBJ.firstAlert);
+      ttext = s.alerts.n >= s.alerts.of ? '' : String(Math.max(0, Math.ceil(s.alerts.next)));
+    } else if (d.kind === 'keys' && s.keys.hold >= 0) { tk = 1; tcol = 0xff8a5a; }
+    if (tk > 0) tg.fillStyle(tcol, 1).fillRoundedRect(-TW / 2, -8, Math.max(12, TW * Math.min(1, tk)), 16, 7);
+    tg.fillStyle(0xffffff, 0.22).fillRoundedRect(-TW / 2 + 3, -6, Math.max(6, TW * Math.min(1, tk) - 6), 4, 2);
+    this.threatChip.setText(ttext);
+    this.drawMap(s);
     // the boss
     const b = s.boss;
-    if (b && b.state !== 'dead' && b.state !== 'spawn') {
+    if (b && b.state !== 'dead' && s.bossAwake && b.engaged) {
       if (!this.bossChip.visible) {
         this.bossChip.setVisible(true);
         this.bossChip.setScale(0.6);
@@ -315,36 +365,100 @@ export class PlayScene extends ArcadeScene {
     this.btnMech.draw(h.mech > 0 ? h.mech / s.m.mechTime : h.charge, h.charge >= 1 && h.mech <= 0, time, dt);
   }
 
-  /** An arrow at the screen's edge towards the nearest keycard or unfixed rover; a ring round a rover being fixed. */
+  /** The planet, north up: the rim, pools, the base, nests, objectives, caches, aliens near, the hero. */
+  private drawMap(s: Mission): void {
+    const g = this.mapG.clear();
+    const R = 78, k = R / (WORLD_R + 3);
+    const P = s.plan, h = s.hero, L = THEME[s.def.theme];
+    const at = (p: Spot): [number, number] => [p.x * k, p.z * k];
+    const alert = s.alerts.active > 0;
+    g.fillStyle(0x0a0620, 0.5).fillCircle(0, 0, R);
+    g.lineStyle(3, alert ? (Math.floor(this.time.now / 200) % 2 ? 0xff4a3a : 0x8a2a2a) : 0x8a84b0, 0.9).strokeCircle(0, 0, R);
+    for (const p of P.pools) { const [x, y] = at(p); g.fillStyle(P.lava ? 0xff6a1a : L.pool, P.lava ? 0.85 : 0.45).fillCircle(x, y, Math.max(2, p.r * k)); }
+    for (const l of P.landmarks) {
+      const [x, y] = at(l);
+      if (l.kind === 'rocks') g.fillStyle(0x8a84b0, 0.55).fillCircle(x, y, Math.max(2, l.r * k * 0.8));
+      else if (l.kind === 'ship' || l.kind === 'wreck') g.fillStyle(0xc8c4d8, 0.7).fillRect(x - 2.5, y - 2.5, 5, 5);
+    }
+    // the landing site
+    { const [x, y] = at(P.base); g.fillStyle(0x5ae8ff, 1).fillRect(x - 4, y - 4, 8, 8); g.lineStyle(1.5, 0x0a0620, 1).strokeRect(x - 4, y - 4, 8, 8); }
+    // caches still full, the castaway
+    for (const p of s.picks) if (p.kind === 'jar' && p.t >= 1 && !p.pull) { const [x, y] = at(p); g.fillStyle(0x7ad8ff, 0.9).fillCircle(x, y, 1.6); }
+    if (s.castaway && !s.castaway.saved) { const [x, y] = at(s.castaway); g.fillStyle(0x9af0ff, 1).fillCircle(x, y, 3.5); g.lineStyle(1.5, 0x0a0620, 1).strokeCircle(x, y, 3.5); }
+    // nests: triangles (the objective's big and outlined), fallen ones a dark cross
+    for (const n of s.nests) {
+      const [x, y] = at(n);
+      if (!n.alive) { g.lineStyle(2, 0x4a3a5a, 0.9).lineBetween(x - 3, y - 3, x + 3, y + 3).lineBetween(x - 3, y + 3, x + 3, y - 3); continue; }
+      const big = n.target || n.guard, r = big ? 6 : 4.5;
+      g.fillStyle(n.awake ? 0xff3a5a : 0xd84a8a, 1).fillTriangle(x, y - r, x - r, y + r * 0.8, x + r, y + r * 0.8);
+      if (big) g.lineStyle(1.5, 0xffffff, 0.9).strokeTriangle(x, y - r, x - r, y + r * 0.8, x + r, y + r * 0.8);
+    }
+    // the objective's own marks
+    for (const r of s.rovers) { const [x, y] = at(r); g.fillStyle(r.fixed ? 0x3a6a4a : 0x6affa0, 1).fillRect(x - 3.5, y - 3.5, 7, 7); }
+    for (const p of s.picks) if (p.kind === 'key') { const [x, y] = at(p); g.fillStyle(0xffe04a, 1).fillTriangle(x, y - 5, x + 4, y, x, y + 5).fillTriangle(x, y - 5, x - 4, y, x, y + 5); }
+    if (s.def.kind === 'keys' && s.keys.hold >= 0) { const [x, y] = at(P.base); g.lineStyle(2, 0x8af0ff, 0.6 + Math.sin(this.time.now / 150) * 0.4).strokeCircle(x, y, OBJ.beaconR * k + 2); }
+    if (s.def.kind === 'defend') { const [x, y] = at(s.dome); g.lineStyle(2, 0x8af0ff, 1).strokeCircle(x, y, 6); }
+    const b = s.boss;
+    if (b && b.state !== 'dead') { const [x, y] = at(b); g.fillStyle(0xff6a3a, 1).fillCircle(x, y, 5.5); g.lineStyle(2, 0xffffff, 1).strokeCircle(x, y, 5.5); }
+    // aliens close by (fighting or hunting)
+    for (const f of s.foes) {
+      if (f.state === 'dead' || f.sleep || f.kind === 'nest' || f.kind === 'boss' || !f.engaged) continue;
+      if (Math.abs(f.x - h.x) > 34 || Math.abs(f.z - h.z) > 34) continue;
+      const [x, y] = at(f);
+      g.fillStyle(f.wave ? 0xff3b3b : 0xff9a7a, 1).fillCircle(x, y, f.kind === 'brute' ? 2.2 : 1.5);
+    }
+    // the hero: an arrowhead the way it faces
+    const [hx, hy] = at(h);
+    const a = h.face, c = Math.cos(a), sn = Math.sin(a);
+    const pt = (f: number, sd: number): [number, number] => [hx + sn * f + c * sd, hy + c * f - sn * sd];
+    const [ax, ay] = pt(7, 0), [bx, by] = pt(-4, 4.5), [cx, cy] = pt(-4, -4.5);
+    g.fillStyle(0xffffff, 1).fillTriangle(ax, ay, bx, by, cx, cy);
+    g.lineStyle(1.5, 0x0a0620, 1).strokeTriangle(ax, ay, bx, by, cx, cy);
+  }
+
+  /** Arrows at the screen's edge (with the distance) to the objectives, the castaway and a hunting wave off screen; rings round what is being fixed. */
   private syncMarkers(): void {
     const s = this.sim!;
+    const h = s.hero;
     this.fixRing.clear();
-    let target: { x: number; z: number } | null = null;
-    if (s.def.kind === 'keys') target = s.picks.find((p) => p.kind === 'key') ?? null;
-    if (s.def.kind === 'rescue') {
-      let bd = Infinity;
-      for (const r of s.rovers) {
-        if (r.fixed) continue;
-        const d = Math.hypot(r.x - s.hero.x, r.z - s.hero.z);
-        if (d < bd) { bd = d; target = r; }
-        if (r.prog > 0) {
-          const p = this.view.screen(r.x, 2.6, r.z);
-          this.fixRing.lineStyle(9, 0x0a0620, 0.6).strokeCircle(p.x, p.y, 30);
-          this.fixRing.lineStyle(7, 0x5affa0, 1).beginPath().arc(p.x, p.y, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * r.prog).strokePath();
-        }
-      }
+    const ring = (x: number, z: number, k: number, col: number) => {
+      const p = this.view.screen(x, 2.6, z);
+      this.fixRing.lineStyle(9, 0x0a0620, 0.6).strokeCircle(p.x, p.y, 30);
+      this.fixRing.lineStyle(7, col, 1).beginPath().arc(p.x, p.y, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k).strokePath();
+    };
+    for (const r of s.rovers) if (!r.fixed && r.prog > 0) ring(r.x, r.z, r.prog, 0x5affa0);
+    if (s.castaway && !s.castaway.saved && s.castaway.prog > 0) ring(s.castaway.x, s.castaway.z, s.castaway.prog, 0x9af0ff);
+    const want: (Spot | null)[] = [null, null, null, null];
+    if (this.phase === 'play') {
+      const objs = s.objectives();
+      want[0] = objs[0] ?? null;
+      want[1] = objs[1] ?? null;
+      if (s.castaway && !s.castaway.saved && Math.hypot(s.castaway.x - h.x, s.castaway.z - h.z) < 50) want[2] = s.castaway;
+      // a hunting wave on its way: the middle of it
+      let wx = 0, wz = 0, wn = 0;
+      for (const f of s.foes) if (f.wave && f.state !== 'dead' && f.mode === 'hunt') { wx += f.x; wz += f.z; wn++; }
+      if (wn) want[3] = { x: wx / wn, z: wz / wn };
     }
-    if (!target || this.phase !== 'play') { this.arrow.setVisible(false); return; }
-    const p = this.view.screen(target.x, 1, target.z);
     const { width, height } = this.scale;
-    const m = 70;
-    const inside = p.x > m && p.x < width - m && p.y > 150 && p.y < height - m;
-    if (inside) { this.arrow.setVisible(false); return; }
-    const cx = width / 2, cy = height / 2;
-    const a = Math.atan2(p.y - cy, p.x - cx);
-    const k = Math.min((width / 2 - m) / Math.max(1, Math.abs(Math.cos(a))), (height / 2 - m) / Math.max(1, Math.abs(Math.sin(a))));
-    this.arrow.setVisible(true).setPosition(cx + Math.cos(a) * k, cy + Math.sin(a) * k).setRotation(a);
-    this.arrow.setScale((48 / 64) * (1 + Math.sin(this.time.now / 120) * 0.08));
+    const cx = width / 2, cy = height / 2 + 30;
+    want.forEach((p, i) => {
+      const a = this.arrows[i];
+      if (!p) { a.img.setVisible(false); a.dist.setVisible(false); return; }
+      const sp = this.view.screen(p.x, 1.2, p.z);
+      const inside = sp.x > 60 && sp.x < width - 60 && sp.y > 140 && sp.y < height - 60;
+      if (inside) { a.img.setVisible(false); a.dist.setVisible(false); return; }
+      // aim from the screen's middle along the ground direction (the screen point of far things can flip)
+      const dx = p.x - h.x, dz = p.z - h.z;
+      const ang = Math.atan2(dz * 0.8, dx);
+      const mx = 54, top = 150, bottom = 60;
+      const kx = (Math.cos(ang) > 0 ? width - mx - cx : cx - mx) / Math.max(1e-3, Math.abs(Math.cos(ang)));
+      const ky = (Math.sin(ang) > 0 ? height - bottom - cy : cy - top) / Math.max(1e-3, Math.abs(Math.sin(ang)));
+      const kk = Math.min(kx, ky);
+      const x = cx + Math.cos(ang) * kk, y = cy + Math.sin(ang) * kk;
+      const pulse = 1 + Math.sin(this.time.now / 120 + i) * 0.08;
+      a.img.setVisible(true).setPosition(x, y).setRotation(ang).setScale((48 / 64) * pulse * (i === 1 ? 0.8 : 1)).setAlpha(i === 1 ? 0.75 : 1);
+      a.dist.setVisible(true).setText(`${Math.round(Math.hypot(dx, dz))}m`).setPosition(x - Math.cos(ang) * 40, y - Math.sin(ang) * 34);
+    });
   }
 
   // ---------------------------------------------------------------- keys
@@ -431,18 +545,23 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'play';
     this.revived = false;
     this.hpShown = -1;
+    this.toastImg?.destroy();
+    this.toastImg = null;
     this.showPlayUi(true);
     this.sfx('land', { volume: 0.5 });
     this.banner(t('m_' + s.def.n));
-    // the first missions teach the buttons
+    // the first missions teach the buttons and the way round a planet
+    const later = (ms: number, key: string) => this.time.delayedCall(ms, () => { if (this.phase === 'play') this.toast(t(key), 5); });
+    const kindHint = { rescue: 'hintRescue', keys: 'hintKeysObj', defend: 'hintDefend', clear: 'hintClear', boss: 'hintBoss' }[s.def.kind];
     if (!this.meta.coached || s.def.n <= 2) {
-      this.time.delayedCall(2200, () => { if (this.phase === 'play') this.toast(t(this.touch ? 'hintMove' : 'hintKeys'), 5); });
-      this.time.delayedCall(6200, () => { if (this.phase === 'play') this.toast(t(this.touch ? 'hintTouch' : 'hintSkill'), 5); });
+      later(2200, this.touch ? 'hintMove' : 'hintKeys');
+      later(7600, kindHint);
+      later(13000, 'hintMap');
+      later(18400, this.touch ? 'hintTouch' : 'hintSkill');
+      if (s.def.n === 1) later(30000, 'hintAlert');
       this.meta.coached = true;
       saveMeta(this.meta);
-    }
-    const hint = s.def.kind === 'rescue' ? 'hintRescue' : s.def.kind === 'keys' ? 'hintKeysObj' : s.def.kind === 'defend' ? 'hintDefend' : '';
-    if (hint) this.time.delayedCall(10200, () => { if (this.phase === 'play') this.toast(t(hint), 5); });
+    } else later(2600, kindHint);
   }
 
   /** A level-up: a draft over the paused mission (one at a time). */
@@ -557,6 +676,7 @@ export class PlayScene extends ArcadeScene {
     if (this.view.mode === 'map') { this.mapView.update(dt); this.view.glow.update(dt); }
     if (this.view.mode === 'base') { this.baseView.update(dt); this.view.glow.update(dt); }
     // low health
+    this.burnT -= dt;
     if (s && this.phase === 'play' && s.hero.alive) {
       this.lowT -= dt;
       if (s.hero.hp < s.hero.max * 0.3 && this.lowT <= 0) { this.lowT = 4; this.sfx('lowhp', { volume: 0.35 }); this.toast(t('lowHp'), 1.6); }
@@ -620,21 +740,44 @@ export class PlayScene extends ArcadeScene {
         break;
       }
       case 'level': this.sfx('levelup', { volume: 0.4 }); break;
-      case 'wave': {
-        const open = ev.of === 0;
-        this.fmtBanner(open ? 'waveOpen' : 'waveN', open ? { n: ev.n } : { n: ev.n, m: ev.of });
-        this.sfx('alarm', { volume: 0.35 });
+      case 'alert': {
+        this.fmtBanner('alertN', { n: ev.n, m: ev.of }, ev.of ? undefined : t('hiveAlert'));
+        this.sfx('alarm', { volume: 0.45 });
+        this.time.delayedCall(900, () => { if (this.phase === 'play') this.toast(t(ev.dome ? 'alertDome' : 'alertHunt'), 2.2); });
+        this.cameras.main.shake(260, 0.004);
         break;
       }
+      case 'alertEnd': this.sfx('fixed', { volume: 0.4 }); this.toast(t('alertEnd'), 1.6); break;
+      case 'nestWake': {
+        this.sfxAt('rage', v.screen(ev.x, 1, ev.z).x, { volume: 0.3 });
+        if (this.wakeToasts++ < 2) this.toastAt(t('nestWake'), ev.x, ev.z);
+        break;
+      }
+      case 'nestDown': {
+        this.sfxAt('bigBoom', v.screen(ev.x, 1, ev.z).x, { volume: 0.65 });
+        this.sfx('scream', { volume: 0.35 });
+        this.cameras.main.shake(260, 0.009);
+        this.toastAt(t('nestDown'), ev.x, ev.z);
+        if (s.def.kind === 'clear' && ev.left > 0) this.time.delayedCall(900, () => { if (this.phase === 'play') this.fmtToastAt('nestsLeft', { n: ev.left }, s.hero.x, s.hero.z); });
+        break;
+      }
+      case 'shieldDown': this.sfx('power', { volume: 0.6 }); this.banner(t('shieldDown')); break;
+      case 'castaway': this.sfx('revive', { volume: 0.6 }); this.toastAt(t('castaway'), ev.x, ev.z); this.tweens.add({ targets: this.hpChip, scale: 1.15, duration: 120, yoyo: true }); break;
+      case 'fixing': this.sfx('tele', { volume: 0.4 }); this.toast(t('fixing'), 1.6); break;
+      case 'burn': if (this.burnT <= 0) { this.burnT = 3; this.toast(t('burn'), 1.2); } break;
       case 'portal': if (once('portal')) this.sfxAt('portal', v.screen(ev.x, 1, ev.z).x, { volume: 0.2 }); break;
       case 'spit': if (once('spit')) this.sfxAt('spit', v.screen(ev.x, 1, ev.z).x, { volume: 0.35 }); break;
       case 'tele': if (once('tele')) this.sfx('tele', { volume: 0.3 }); break;
       case 'crate': this.sfx('crate', { volume: 0.5 }); break;
       case 'key': this.sfx('key', { volume: 0.6 }); this.fmtToastAt('keyN', { n: ev.got, m: ev.of }, s.hero.x, s.hero.z); break;
-      case 'beacon': this.sfx('beacon', { volume: 0.6 }); this.banner(t('beacon')); break;
+      case 'beacon': this.sfx('beacon', { volume: 0.6 }); this.banner(t('beacon')); this.cameras.main.shake(200, 0.004); break;
       case 'fixed': this.sfx('fixed', { volume: 0.6 }); this.toastAt(t('fixed'), s.rovers[ev.i].x, s.rovers[ev.i].z); break;
       case 'domeHit': if (once('dome') && Math.random() < 0.15) this.sfx('domeHit', { volume: 0.4 }); if (ev.hp < ev.max * 0.5 && this.lowT <= 0) { this.lowT = 5; this.toast(t('domeHit'), 2); } break;
-      case 'boss': this.sfx('bossIn', { volume: 0.6 }); this.banner(t('bossIn')); this.cameras.main.shake(400, 0.008); break;
+      case 'boss': {
+        this.sfx('bossIn', { volume: 0.6 }); this.banner(t('bossIn')); this.cameras.main.shake(400, 0.008);
+        if (s.shielded) this.time.delayedCall(1500, () => { if (this.phase === 'play') this.toast(t('shielded'), 2.4); });
+        break;
+      }
       case 'rage': this.sfx('rage', { volume: 0.6 }); this.toast(t('rage'), 2); break;
       case 'chain': this.sfx('zap', { volume: 0.4 }); break;
       case 'win': this.missionWon(); break;
@@ -660,8 +803,10 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: img, alpha: 0, y: 206, delay: 1150, duration: 380, onComplete: () => img.destroy() });
   }
 
-  private fmtBanner(key: string, vals: Record<string, number>): void {
+  /** A banner with values ("Attack 2/5"); with `head`, that word instead (the open hive alert). */
+  private fmtBanner(key: string, vals: Record<string, number>, head?: string): void {
     if (this.quiet) return;
+    if (head) { this.banner(head); return; }
     const line = new FmtLine(this, this.scale.width / 2, 238, S_BANNER).set(key, vals).setDepth(9100).setScrollFactor(0);
     line.setScale(0.3).setAlpha(0);
     this.add.existing(line);
@@ -740,6 +885,8 @@ export class PlayScene extends ArcadeScene {
       /** The store-art stage: a heroic fight. */
       stage: (name = 'busy') => this.stage(name),
       key: (code: string) => this.panel?.key(code),
+      /** A close-up camera relative to the hero for screenshots (no arguments: the game's camera). */
+      cam: (pos?: number[], look?: number[]) => { this.view.shotCam = pos && look ? [pos, look] : null; },
       meta: (m: Partial<Meta>) => { Object.assign(this.meta, m); saveMeta(this.meta); },
       play: this,
     };
@@ -797,27 +944,31 @@ export class PlayScene extends ArcadeScene {
   }
 
   /**
-   * The store art's heroic fight: the Dune Titan's planet with the swarm thick round the crew
-   * member, who has just called the mech; the simulation then runs slowly so every frame is busy.
+   * The store art's heroic fight: the Dune Titan's lair, its hives just broken, the swarm thick
+   * round the crew member, who has just called the mech; the simulation then runs slowly so every
+   * frame is busy.
    */
   private stage(name: string): void {
     if (name !== 'busy') return;
     this.quiet = true;
     this.skipTo({ mission: 4, level: 9, cards: ['twin', 'blades', 'buddy', 'rapid'] });
-    this.bot = new Bot(this.sim!, SKILL.good, mulberry(4));
     const s = this.sim!;
-    for (let i = 0; i < 60 * 150 && s.phase === 'play' && !(s.boss && s.boss.state !== 'spawn'); i++) this.fastForward(DT);
+    this.bot = new Bot(s, SKILL.good, mulberry(4));
+    // the lair's hives fall, the Titan wakes and comes at the crew member
+    for (const n of s.nests) if (n.guard) { const f = s.foes.find((o) => o.id === n.id); if (f) s.damage(f, 1e6, false, 0, 0, 0, false, false); }
+    const b = s.boss!;
+    s.hero.x = b.x + 1.5; s.hero.z = b.z + 9;
     s.hero.hp = s.hero.max;
     s.hero.charge = 1;
-    // the boss closes in, the swarm rings the hero
-    const b = s.boss;
-    if (b) { b.x = s.hero.x + 2.5; b.z = s.hero.z - 4.5; b.cd = 3; }
+    this.fastForward(0.4);
+    b.x = s.hero.x + 2.5; b.z = s.hero.z - 4.5; b.cd = 3;
     s.rush(16);
     this.fastForward(0.25);
     s.step(DT, { mx: 0, mz: 0, dodge: false, skill: false, mech: true });
     for (const ev of s.events) this.view.handle(ev, s);
     s.events.length = 0;
     this.fastForward(0.5);
+    this.view.follow(s, 1, true);
     this.time.removeAllEvents();
     this.testSpeed = 0.35;
   }

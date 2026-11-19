@@ -17,7 +17,7 @@ export function playMission(run: RunState, n: number, skill: Skill, seed: number
   const sim = new Mission(MISSIONS[n - 1], run, seed);
   const bot = new Bot(sim, skill, rnd);
   let steps = 0;
-  while (sim.phase === 'play' && steps < 60 * 600) {
+  while (sim.phase === 'play' && steps < 60 * 720) {
     sim.step(DT, bot.input(DT));
     sim.events.length = 0;
     while (sim.pendingLevels > 0) {

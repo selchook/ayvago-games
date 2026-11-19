@@ -1,11 +1,15 @@
 // Astro Crew: the game's data. The four crew animals (each a class with its own weapon and
-// signature skill), the aliens, the twelve missions of the campaign and the Easy / Normal tuning,
-// side by side (§7c). Pure data: the simulation, the bot, the views and the screens read it.
+// signature skill), the aliens and their nests, the twelve open-world missions of the campaign and
+// the Easy / Normal tuning, side by side (§7c). Pure data: the simulation, the world plan, the bot,
+// the views and the screens read it.
 
 export const DT = 1 / 60;
-/** The arena: the hero stays inside PLAY_R, aliens come in from SPAWN_R. */
-export const PLAY_R = 14.5;
-export const SPAWN_R = 15.5;
+/** The planet: the hero roams a disc of WORLD_R metres; the crater's rim rises beyond it. */
+export const WORLD_R = 62;
+/** Guards and patrols farther than this from the hero sleep (not stepped, not drawn). */
+export const SLEEP_R = 44;
+/** Aliens are drawn within this distance of the camera's focus. */
+export const VIEW_R = 38;
 
 export type HeroId = 'frog' | 'bee' | 'flamingo' | 'panda';
 export const HERO_IDS: HeroId[] = ['frog', 'bee', 'flamingo', 'panda'];
@@ -57,11 +61,12 @@ export const MOVE = {
 
 // ------------------------------------------------------------------ aliens
 
-export type FoeKind = 'xs' | 's' | 'fly' | 'brute' | 'boss';
+export type FoeKind = 'xs' | 's' | 'fly' | 'brute' | 'boss' | 'nest';
+export type MobKind = Exclude<FoeKind, 'boss' | 'nest'>;
 export type BossId = 'titan' | 'queen' | 'king';
 
 export interface FoeDef { hp: number; speed: number; dmg: number; r: number; xp: number; score: number; cost: number; mech: number; scale: number }
-export const FOE: Record<Exclude<FoeKind, 'boss'>, FoeDef> = {
+export const FOE: Record<MobKind, FoeDef> = {
   // the zippy little blob: swarms and headbutts
   xs: { hp: 13, speed: 5.3, dmg: 9, r: 0.5, xp: 1, score: 10, cost: 1, mech: 0.007, scale: 0.55 },
   // the bigger blob: punches after a short wind-up
@@ -79,6 +84,25 @@ export const BOSS: Record<BossId, BossDef> = {
   king: { kind: 'brute', hp: 12500, speed: 2.7, dmg: 28, r: 2.0, scale: 1.45, tint: 0xff6a4a, score: 8000, xp: 60 },
 };
 
+/**
+ * Nests (small, `hive: false`) and hives: alien structures spread over a planet. They wake when the
+ * hero comes near and send out guards, then a trickle of reinforcements while the hero stays; every
+ * moment near one raises the hive alert. Destroying one lowers the alert and drops loot.
+ */
+export const NEST = {
+  nest: { hp: 1300, r: 1.7, xp: 14, score: 400 },
+  hive: { hp: 2000, r: 2.2, xp: 24, score: 700 },
+  /** How much tougher per mission (aliens grow 30% a mission; nests less, they are big already). */
+  grow: 0.1,
+  /** The boss takes this share of the damage while its lair's hives stand. */
+  shield: 0.1,
+  /** Wakes within, keeps sending reinforcements within (m); seconds between reinforcements; cap of guards near it. */
+  wake: 21, stay: 27, every: 5, cap: 10,
+};
+
+/** The hive alert: how fast it rises (per second, on its own and while a nest is awake), what a destroyed nest takes off. */
+export const THREAT = { base: 1 / 110, nest: 1 / 45, destroy: 0.3 };
+
 // ------------------------------------------------------------------ missions
 
 export type Theme = 'desert' | 'purple' | 'ice' | 'lava';
@@ -90,32 +114,42 @@ export interface MissionDef {
   theme: Theme;
   kind: MissionKind;
   planet: string;
-  /** Waves (clear, defend, the boss's lead-in), keycards or rovers. */
+  /**
+   * Clear: the nests and hives to destroy. Defend: the hive alerts to beat back from the dome.
+   * Keys: the keycards spread over the planet. Rescue: the stranded rovers. Boss: guard nests round the lair.
+   */
   count: number;
   boss?: BossId;
   /** Seconds for the third star. */
   par: number;
   /** Which aliens may come. */
-  foes: Exclude<FoeKind, 'boss'>[];
+  foes: MobKind[];
 }
 
 export const MISSIONS: MissionDef[] = [
-  { n: 1, theme: 'desert', kind: 'clear', planet: 'planet-6', count: 5, par: 150, foes: ['xs', 's'] },
-  { n: 2, theme: 'desert', kind: 'rescue', planet: 'planet-2', count: 3, par: 150, foes: ['xs', 's', 'fly'] },
-  { n: 3, theme: 'desert', kind: 'defend', planet: 'planet-7', count: 5, par: 160, foes: ['xs', 's', 'fly', 'brute'] },
-  { n: 4, theme: 'desert', kind: 'boss', planet: 'planet-1', count: 2, boss: 'titan', par: 150, foes: ['xs', 's'] },
-  { n: 5, theme: 'purple', kind: 'keys', planet: 'planet-8', count: 5, par: 160, foes: ['xs', 's', 'fly', 'brute'] },
-  { n: 6, theme: 'purple', kind: 'clear', planet: 'planet-3', count: 6, par: 180, foes: ['xs', 's', 'fly', 'brute'] },
-  { n: 7, theme: 'purple', kind: 'defend', planet: 'planet-10', count: 6, par: 190, foes: ['xs', 's', 'fly', 'brute'] },
-  { n: 8, theme: 'purple', kind: 'boss', planet: 'planet-5', count: 2, boss: 'queen', par: 170, foes: ['xs', 'fly'] },
-  { n: 9, theme: 'ice', kind: 'rescue', planet: 'planet-9', count: 3, par: 190, foes: ['xs', 's', 'fly', 'brute'] },
-  { n: 10, theme: 'ice', kind: 'keys', planet: 'planet-4', count: 6, par: 190, foes: ['xs', 's', 'fly', 'brute'] },
-  { n: 11, theme: 'lava', kind: 'clear', planet: 'planet-11', count: 7, par: 210, foes: ['xs', 's', 'fly', 'brute'] },
-  { n: 12, theme: 'lava', kind: 'boss', planet: 'planet-11', count: 3, boss: 'king', par: 200, foes: ['xs', 's', 'brute'] },
+  { n: 1, theme: 'desert', kind: 'clear', planet: 'planet-6', count: 4, par: 210, foes: ['xs', 's'] },
+  { n: 2, theme: 'desert', kind: 'rescue', planet: 'planet-2', count: 4, par: 220, foes: ['xs', 's', 'fly'] },
+  { n: 3, theme: 'desert', kind: 'defend', planet: 'planet-7', count: 4, par: 230, foes: ['xs', 's', 'fly', 'brute'] },
+  { n: 4, theme: 'desert', kind: 'boss', planet: 'planet-1', count: 2, boss: 'titan', par: 230, foes: ['xs', 's'] },
+  { n: 5, theme: 'purple', kind: 'keys', planet: 'planet-8', count: 6, par: 250, foes: ['xs', 's', 'fly', 'brute'] },
+  { n: 6, theme: 'purple', kind: 'clear', planet: 'planet-3', count: 4, par: 260, foes: ['xs', 's', 'fly', 'brute'] },
+  { n: 7, theme: 'purple', kind: 'defend', planet: 'planet-10', count: 5, par: 280, foes: ['xs', 's', 'fly', 'brute'] },
+  { n: 8, theme: 'purple', kind: 'boss', planet: 'planet-5', count: 2, boss: 'queen', par: 260, foes: ['xs', 'fly'] },
+  { n: 9, theme: 'ice', kind: 'rescue', planet: 'planet-9', count: 4, par: 280, foes: ['xs', 's', 'fly', 'brute'] },
+  { n: 10, theme: 'ice', kind: 'keys', planet: 'planet-4', count: 6, par: 290, foes: ['xs', 's', 'fly', 'brute'] },
+  { n: 11, theme: 'lava', kind: 'clear', planet: 'planet-11', count: 5, par: 300, foes: ['xs', 's', 'fly', 'brute'] },
+  { n: 12, theme: 'lava', kind: 'boss', planet: 'planet-11', count: 2, boss: 'king', par: 300, foes: ['xs', 's', 'brute'] },
 ];
 
-/** Rescue: seconds of standing by a rover to fix it, and the radius. Keys: the beacon's hold. */
-export const OBJ = { fixTime: 13, fixR: 2.8, fixDecay: 0.5, beaconHold: 28, domeHp: 560, keyR: 1.3 };
+/**
+ * Objectives. Rescue: seconds of standing by a rover to fix it, the radius, how fast it undoes.
+ * Keys: the beacon's hold and its radius. Defend: the dome, the first alert and the gap after each.
+ * The castaway: seconds beside them to beam them up. Lava: damage per tick (0.5 s).
+ */
+export const OBJ = {
+  fixTime: 22, fixR: 3.0, fixDecay: 0.35, beaconHold: 45, beaconR: 7, domeHp: 560, keyR: 1.3,
+  firstAlert: 28, alertGap: 28, castTime: 2.4, castR: 2.8, lava: 7,
+};
 
 // ------------------------------------------------------------------ tuning (Easy beside Normal)
 
@@ -131,14 +165,16 @@ export interface Tune {
   /** Health drop chance per kill. */
   healDrop: number;
   domeHp: number;
+  /** How fast the hive alert rises. */
+  threat: number;
 }
 export const TUNING: Record<Mode, Tune> = {
-  normal: { heroHp: 1, foeHp: 1, foeDmg: 1, foeSpeed: 1, budget: 1, depth: 0.13, healDrop: 0.03, domeHp: 1 },
-  easy: { heroHp: 1.4, foeHp: 0.78, foeDmg: 0.62, foeSpeed: 0.88, budget: 0.8, depth: 0.07, healDrop: 0.05, domeHp: 1.4 },
+  normal: { heroHp: 1, foeHp: 1, foeDmg: 1, foeSpeed: 1, budget: 1, depth: 0.13, healDrop: 0.03, domeHp: 1, threat: 1 },
+  easy: { heroHp: 1.4, foeHp: 0.78, foeDmg: 0.62, foeSpeed: 0.88, budget: 0.8, depth: 0.07, healDrop: 0.05, domeHp: 1.4, threat: 0.75 },
 };
 
 /** Crystals for a cleared mission (before jars), by tier and stars. */
 export const crystalsFor = (n: number, stars: number): number => 25 + 12 * n + 10 * stars;
 
 /** XP to the next level. */
-export const xpNeed = (level: number): number => 10 + 8 * (level - 1);
+export const xpNeed = (level: number): number => 12 + 11 * (level - 1);
