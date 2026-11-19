@@ -1,5 +1,5 @@
-// Hex Realm: a battle in 3D. The arena (arena.ts) merges into one mesh per kit (the Retro Fantasy
-// pieces on their runtime atlas, the Hexagon Kit tiles on their colour map); the hero and the foes
+// Hex Realm: a battle in 3D. The arena (arena.ts) merges into one mesh (1.3: the Medieval Village
+// and Nature pieces and the arena's painted ground, on the scenery's array texture); the hero and the foes
 // are rigged Quaternius models from pools (recoloured per foe kind, animation LOD with distance);
 // warnings, health bars, shots, drops, sparks, embers and slashes are instanced billboards. It reads
 // the simulation (battle.ts) every frame and turns its events into effects: each combo move has its
@@ -11,10 +11,12 @@
 // head), the perfect dodge, and the foes' states shown on them (burning embers, stun stars, roots).
 import { THREE } from '@core/three';
 import { FOE, CLASS, POWER_COLOR, CHARGE_T, type FoeKind, type ArenaKind, type ClassId, type ComboId } from './defs';
-import { buildArena, type ArenaLayout } from './arena';
+import { buildArena, type ArenaLayout, type ArenaLook } from './arena';
 import type { Battle, BattleEvent, Foe } from './battle';
 import { Figure, FigurePool } from './figure';
-import { heroKey, modelKey, mergeModels, retroAtlas, retroMaterial, hexMap, hexMaterial, RETRO_CELLS, soloGeometry, retroKey } from './kit';
+import { heroKey, modelKey } from './kit';
+import { villageKey, type Placed } from './keys';
+import { mergeScenery, sceneryMaterial, sceneryTexture, sceneryReady, groundExtra, type Extra } from './scenery';
 import { Billboards, Particles, Telegraphs, HealthBars, TEX, SHAPE, stepBar, type BarState } from './fx3d';
 import { WeaponRack } from './weaponview';
 import { FOE_GEAR, type WeaponModel } from './weapons';
@@ -23,24 +25,74 @@ import { FOE_GEAR, type WeaponModel } from './weapons';
 export const HERO_SCALE = 0.4;
 export const modelScale = (model: string): number => (model === 'skeleton' || model === 'headless' ? 0.78 : HERO_SCALE);
 
-/** Each arena's sky, fog and light. */
-export const ARENA_LOOK: Record<ArenaKind, { sky: number; fog: number; ground: number; sun: number; amb: number; hemi: [number, number]; floor?: number }> = {
-  field: { sky: 0x8ec8e8, fog: 0x9ccbe0, ground: 0x4f8a3a, sun: 2.3, amb: 1.5, hemi: [0xe4f4ff, 0x6a5a40] },
-  forest: { sky: 0x7ab0a8, fog: 0x86b8a8, ground: 0x3f7a34, sun: 2.0, amb: 1.4, hemi: [0xdff0e0, 0x4a5a30] },
-  farm: { sky: 0xf0c890, fog: 0xe8c898, ground: 0x6a8a3a, sun: 2.4, amb: 1.5, hemi: [0xfff0d8, 0x7a6040] },
-  mine: { sky: 0x14100c, fog: 0x1a140e, ground: 0x2a241c, sun: 1.5, amb: 1.6, hemi: [0xffe0b8, 0x5a4a38], floor: 0x8a8290 },
-  cavern: { sky: 0x120e10, fog: 0x18121a, ground: 0x2a2428, sun: 1.6, amb: 1.7, hemi: [0xffd8b0, 0x50465a], floor: 0x8e8694 },
-  fort: { sky: 0xb8c8d8, fog: 0xb0c0cc, ground: 0x5a7a40, sun: 2.2, amb: 1.4, hemi: [0xe8f0ff, 0x5a5040] },
-  tower: { sky: 0x2a1a3a, fog: 0x2a1c3a, ground: 0x3a2e48, sun: 1.3, amb: 1.4, hemi: [0xe0d0ff, 0x302040], floor: 0xffffff },
-  spire: { sky: 0x3a1e5a, fog: 0x4a2a6a, ground: 0x2a1a3a, sun: 1.6, amb: 1.4, hemi: [0xe8d8ff, 0x382050], floor: 0x9a8aa8 },
-  docks: { sky: 0x9ad0f0, fog: 0xa8d4ec, ground: 0x2a6a8a, sun: 2.3, amb: 1.5, hemi: [0xeaf6ff, 0x405a6a] },
-  court: { sky: 0x4a3a4a, fog: 0x4a3c48, ground: 0x3a3438, sun: 1.6, amb: 1.35, hemi: [0xf0d8d8, 0x3a3030], floor: 0x9c949c },
-  hall: { sky: 0x1a1218, fog: 0x1e141a, ground: 0x2a2024, sun: 1.2, amb: 1.35, hemi: [0xffd8c8, 0x302020], floor: 0x8a7f88 },
-  throne: { sky: 0x200a10, fog: 0x2a0c14, ground: 0x2a1418, sun: 1.3, amb: 1.35, hemi: [0xffc8c8, 0x401818], floor: 0x847278 },
-  rift: { sky: 0x160a24, fog: 0x24103a, ground: 0x1a1028, sun: 1.3, amb: 1.4, hemi: [0xd8c8ff, 0x281838], floor: 0x76688a },
+/**
+ * Each arena's sky, fog and light, and its ground (1.3: painted per vertex, sRGB: `ground` the base,
+ * `patch` the darker or greener spots, `worn` the trodden middle; `y` its height).
+ */
+export const ARENA_LOOK: Record<ArenaKind, { sky: number; fog: number; ground: number; patch: number; worn?: number; y?: number; sun: number; amb: number; hemi: [number, number] }> = {
+  field: { sky: 0x8ec8e8, fog: 0x9ccbe0, ground: 0x6a9a44, patch: 0x4f8636, worn: 0x9a8a5a, sun: 2.3, amb: 1.5, hemi: [0xe4f4ff, 0x6a5a40] },
+  forest: { sky: 0x7ab0a8, fog: 0x86b8a8, ground: 0x4f7f36, patch: 0x3a6a2c, worn: 0x7a6a44, sun: 2.0, amb: 1.4, hemi: [0xdff0e0, 0x4a5a30] },
+  farm: { sky: 0xf0c890, fog: 0xe8c898, ground: 0x7a9a44, patch: 0x5f8a38, worn: 0xa8875a, sun: 2.4, amb: 1.5, hemi: [0xfff0d8, 0x7a6040] },
+  mine: { sky: 0x14100c, fog: 0x1a140e, ground: 0x6a5a48, patch: 0x4a4038, worn: 0x7a6852, sun: 1.5, amb: 1.6, hemi: [0xffe0b8, 0x5a4a38] },
+  cavern: { sky: 0x120e10, fog: 0x18121a, ground: 0x5a5058, patch: 0x3e3640, worn: 0x6a5e5a, sun: 1.6, amb: 1.7, hemi: [0xffd8b0, 0x50465a] },
+  fort: { sky: 0xb8c8d8, fog: 0xb0c0cc, ground: 0x6a8a48, patch: 0x56703c, worn: 0x8a7e60, sun: 2.2, amb: 1.4, hemi: [0xe8f0ff, 0x5a5040] },
+  tower: { sky: 0x2a1a3a, fog: 0x2a1c3a, ground: 0x3a2e48, patch: 0x302640, sun: 1.3, amb: 1.4, hemi: [0xe0d0ff, 0x302040] },
+  spire: { sky: 0x3a1e5a, fog: 0x4a2a6a, ground: 0x2a1a3a, patch: 0x22162e, y: -3, sun: 1.6, amb: 1.4, hemi: [0xe8d8ff, 0x382050] },
+  docks: { sky: 0x9ad0f0, fog: 0xa8d4ec, ground: 0x2a5a6a, patch: 0x3a6a5a, y: -0.9, sun: 2.3, amb: 1.5, hemi: [0xeaf6ff, 0x405a6a] },
+  court: { sky: 0x4a3a4a, fog: 0x4a3c48, ground: 0x4a4440, patch: 0x3a3634, sun: 1.6, amb: 1.35, hemi: [0xf0d8d8, 0x3a3030] },
+  hall: { sky: 0x1a1218, fog: 0x1e141a, ground: 0x2a2024, patch: 0x221a1e, sun: 1.2, amb: 1.35, hemi: [0xffd8c8, 0x302020] },
+  throne: { sky: 0x200a10, fog: 0x2a0c14, ground: 0x2a1418, patch: 0x221014, sun: 1.3, amb: 1.35, hemi: [0xffc8c8, 0x401818] },
+  rift: { sky: 0x160a24, fog: 0x24103a, ground: 0x1a1028, patch: 0x241438, y: -9, sun: 1.3, amb: 1.4, hemi: [0xd8c8ff, 0x281838] },
 };
 
-interface ArenaBuilt { group: THREE.Group; layout: ArenaLayout; water: THREE.Mesh | null; shrine: THREE.Mesh; crates: THREE.Mesh | null; mask: string }
+/** A smooth value noise in 0…1 (the ground's patches). */
+function noise(x: number, z: number, seed: number): number {
+  const h = (i: number, j: number) => { const t = Math.sin(i * 127.1 + j * 311.7 + seed * 74.7) * 43758.5453; return t - Math.floor(t); };
+  const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j;
+  const u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+  return (h(i, j) * (1 - u) + h(i + 1, j) * u) * (1 - v) + (h(i, j + 1) * (1 - u) + h(i + 1, j + 1) * u) * v;
+}
+
+/** The north's meadows are stonier, its forests under patches of snow. */
+const NORTH_GROUND: Partial<Record<ArenaKind, { ground: number; patch: number; worn: number }>> = {
+  field: { ground: 0x6c8a52, patch: 0x8c9088, worn: 0x8a8068 },
+  forest: { ground: 0x5a7a46, patch: 0xe4eaf2, worn: 0x8a8678 },
+};
+
+/** The arena's ground: its look's colours in soft patches, the middle worn where the fights go. */
+function arenaGround(kind: ArenaKind, layout: ArenaLayout, seed: number, look: ArenaLook): Extra {
+  const L = { ...ARENA_LOOK[kind], ...(look === 'north' ? NORTH_GROUND[kind] : undefined) };
+  const lin = (hex: number) => { const c = new THREE.Color().setHex(hex); return [c.r, c.g, c.b]; };
+  const base = lin(L.ground), patch = lin(L.patch), worn = L.worn !== undefined ? lin(L.worn) : null;
+  return groundExtra(96, 96, 1.6, L.y ?? -0.02, (x, z) => {
+    const n = noise(x * 0.18, z * 0.18, seed) * 0.65 + noise(x * 0.6, z * 0.6, seed + 3) * 0.35;
+    const k = Math.min(1, Math.max(0, (n - 0.42) * 3.2));
+    const c = [0, 1, 2].map((i) => base[i] + (patch[i] - base[i]) * k);
+    if (worn) {
+      const e = Math.hypot(x / (layout.hx * 0.75), z / (layout.hz * 0.8));
+      const w = Math.max(0, Math.min(1, (1.15 - e) * 2.2)) * (0.45 + noise(x * 0.5, z * 0.5, seed + 9) * 0.55);
+      for (let i = 0; i < 3; i++) c[i] += (worn[i] - c[i]) * w * 0.75;
+    }
+    return c as [number, number, number];
+  });
+}
+
+interface ArenaBuilt {
+  group: THREE.Group; layout: ArenaLayout; water: THREE.Mesh | null; shrine: THREE.Mesh; crates: THREE.Mesh | null; mask: string; seed: number; look: ArenaLook;
+  /** Built with the scenery kits in (else the ground alone, completed when they arrive). */
+  full: boolean;
+  /** The pieces round the floor (they cast shadows), the backdrop beyond (they do not), the ground. */
+  near: THREE.Mesh; far: THREE.Mesh; ground: THREE.Mesh;
+}
+
+/** The scenery split for the shadow pass: what stands near the floor casts shadows, the backdrop does not. */
+function splitScenery(layout: ArenaLayout): [Placed[], Placed[]] {
+  const near: Placed[] = [], far: Placed[] = [];
+  for (const p of layout.deco) (Math.abs(p.x) < layout.hx + 3.5 && p.z > -layout.hz - 3.5 && p.z < layout.hz + 3.5 ? near : far).push(p);
+  return [near, far];
+}
+
+const SHRINE: Placed = { key: villageKey('Prop_Chimney2'), x: 0, y: 0, z: 0, rot: 0.4, s: 0.62, sy: 0.42 };
 
 export interface FoeView { fig: Figure; pool: FigurePool; bar: BarState; animN: number; spawnT: number }
 
@@ -53,9 +105,9 @@ export class BattleView {
   private arena: ArenaBuilt | null = null;
   readonly heroPos = new THREE.Vector3(0, 0, 0);
   readonly camPos = new THREE.Vector3();
-  private atlas: THREE.Texture;
-  private retroMat: THREE.MeshLambertMaterial;
-  private hexMat: THREE.MeshLambertMaterial;
+  /** 1.3: the scenery's array texture and material (scenery.ts). */
+  private layers: ReturnType<typeof sceneryTexture>;
+  private sceneryMat: THREE.MeshLambertMaterial;
   private waterMat: THREE.MeshLambertMaterial;
   hero: Figure;
   heroCls: ClassId;
@@ -88,9 +140,8 @@ export class BattleView {
   lookAhead = 0;
 
   constructor(cls: ClassId, private menu = false) {
-    this.atlas = retroAtlas();
-    this.retroMat = retroMaterial(this.atlas, this.heroPos, this.camPos);
-    this.hexMat = hexMaterial(hexMap(), null, 0);
+    this.layers = sceneryTexture();
+    this.sceneryMat = sceneryMaterial(this.layers, this.heroPos, this.camPos);
     this.waterMat = new THREE.MeshLambertMaterial({ color: 0x3a8ab8, transparent: true, opacity: 0.88, emissive: 0x0a2a3a });
     this.heroCls = cls;
     this.hero = this.heroFig(cls);
@@ -140,30 +191,25 @@ export class BattleView {
 
   // ------------------------------------------------------------------ the arena
 
-  /** Shows the arena of a room (built once, kept for the round). */
-  showArena(kind: ArenaKind, seed: number): ArenaLayout {
-    const key = kind + ':' + seed;
+  /**
+   * Shows the arena of a room (built once, kept for the round). `look` is the overworld region's
+   * (the north's pines and snow). Before the scenery kits arrive it shows the ground alone and is
+   * built again when they do (sync).
+   */
+  showArena(kind: ArenaKind, seed: number, look: ArenaLook = 'south'): ArenaLayout {
+    const key = kind + ':' + seed + ':' + look;
     let a = this.arenas.get(key);
     if (!a) {
-      const layout = buildArena(kind, seed);
+      const layout = buildArena(kind, seed, look);
       const group = new THREE.Group();
-      if (layout.retro.length) {
-        const m = new THREE.Mesh(mergeModels(layout.retro, { cells: RETRO_CELLS }), this.retroMat);
-        m.receiveShadow = true; m.castShadow = true;
-        group.add(m);
-      }
-      if (layout.hex.length) {
-        const m = new THREE.Mesh(mergeModels(layout.hex, { hex: true }), this.hexMat);
-        m.receiveShadow = true;
-        m.castShadow = true;
-        group.add(m);
-      }
-      const look = ARENA_LOOK[kind];
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.MeshLambertMaterial({ color: look.ground }));
-      ground.rotation.x = -Math.PI / 2;
-      ground.position.y = layout.water ? -0.9 : -0.45;
+      const [nearList, farList] = splitScenery(layout);
+      const near = new THREE.Mesh(mergeScenery(nearList), this.sceneryMat);
+      near.receiveShadow = true; near.castShadow = true;
+      const far = new THREE.Mesh(mergeScenery(farList), this.sceneryMat);
+      far.receiveShadow = true;
+      const ground = new THREE.Mesh(mergeScenery([], [arenaGround(kind, layout, seed, look)]), this.sceneryMat);
       ground.receiveShadow = true;
-      group.add(ground);
+      group.add(ground, near, far);
       let water: THREE.Mesh | null = null;
       if (layout.water) {
         water = new THREE.Mesh(new THREE.PlaneGeometry(90, 90, 1, 1), this.waterMat);
@@ -174,26 +220,37 @@ export class BattleView {
       // the loose crates: one mesh of the ones still standing
       let crates: THREE.Mesh | null = null;
       if (layout.breakables.length) {
-        crates = new THREE.Mesh(this.crateGeometry(layout, ''), this.retroMat);
+        crates = new THREE.Mesh(this.crateGeometry(layout, ''), this.sceneryMat);
         crates.castShadow = true; crates.receiveShadow = true;
         group.add(crates);
       }
-      const shrine = new THREE.Mesh(soloGeometry(retroKey('column-paint'), { cells: RETRO_CELLS }), this.retroMat);
-      shrine.scale.set(1.5, 0.75, 1.5);
+      // the shrine: a squat stone stack
+      const shrine = new THREE.Mesh(mergeScenery([SHRINE]), this.sceneryMat);
       shrine.castShadow = true;
       shrine.visible = false;
       group.add(shrine);
       group.visible = false;
       this.root.add(group);
-      a = { group, layout, water, shrine, crates, mask: '' };
+      a = { group, layout, water, shrine, crates, mask: '', seed, look, full: sceneryReady(), near, far, ground };
       this.arenas.set(key, a);
     }
     if (this.arena && this.arena !== a) this.arena.group.visible = false;
     this.arena = a;
-    this.current = { kind, seed };
-    this.hexMat.color.setHex(ARENA_LOOK[kind].floor ?? 0xffffff);
+    this.current = { kind, seed, look };
     a.group.visible = true;
     return a.layout;
+  }
+
+  /** The scenery arrived after the arena was shown: build its pieces now (the crates as they stand). */
+  private completeArena(a: ArenaBuilt): void {
+    a.full = true;
+    const old = [a.near.geometry, a.far.geometry, a.shrine.geometry, a.crates?.geometry];
+    const [nearList, farList] = splitScenery(a.layout);
+    a.near.geometry = mergeScenery(nearList);
+    a.far.geometry = mergeScenery(farList);
+    a.shrine.geometry = mergeScenery([SHRINE]);
+    if (a.crates) a.crates.geometry = this.crateGeometry(a.layout, a.mask);
+    for (const g of old) g?.dispose();
   }
 
   get layout(): ArenaLayout | null { return this.arena?.layout ?? null; }
@@ -201,7 +258,7 @@ export class BattleView {
   /** The merged geometry of the crates not broken (`mask`: '1' per broken one). */
   private crateGeometry(layout: ArenaLayout, mask: string): THREE.BufferGeometry {
     const list = layout.breakables.filter((_, i) => mask[i] !== '1').map((c) => ({ key: c.key, x: c.x, y: 0, z: c.z, rot: c.rot, s: c.s }));
-    return list.length ? mergeModels(list, { cells: RETRO_CELLS }) : new THREE.BufferGeometry();
+    return mergeScenery(list);
   }
 
   /** Follows the battle's broken crates (rebuilds the mesh when one breaks). */
@@ -218,7 +275,7 @@ export class BattleView {
   }
 
   /** The arena shown now (to come back to after building another ahead). */
-  current: { kind: ArenaKind; seed: number } | null = null;
+  current: { kind: ArenaKind; seed: number; look: ArenaLook } | null = null;
 
   /** Drops what the last battle used (foes back to their pools, effects cleared). */
   clear(): void {
@@ -265,6 +322,13 @@ export class BattleView {
     this.loot = this.loot.filter((l) => l.t > -50);
   }
 
+  /** Once the scenery kits are in: the texture's layers uploaded, the arena on show completed. */
+  settle(): void {
+    if (!sceneryReady()) return;
+    this.layers.refresh();
+    if (this.arena && !this.arena.full) this.completeArena(this.arena);
+  }
+
   /** Frees the arenas built so far (they are rebuilt when needed). */
   dropArenas(): void {
     for (const a of this.arenas.values()) {
@@ -273,9 +337,8 @@ export class BattleView {
       a.group.traverse((o) => {
         const m = o as THREE.Mesh;
         if (!m.isMesh) return;
-        // the shrine's geometry is the shared solo geometry; the materials are this view's
-        if (m !== a.shrine) m.geometry.dispose();
-        if (m.material !== this.retroMat && m.material !== this.hexMat && m.material !== this.waterMat) (m.material as THREE.Material).dispose();
+        m.geometry.dispose();
+        if (m.material !== this.sceneryMat && m.material !== this.waterMat) (m.material as THREE.Material).dispose();
       });
     }
     for (const [k, a] of [...this.arenas]) if (a !== this.arena) this.arenas.delete(k);
@@ -451,6 +514,7 @@ export class BattleView {
 
   sync(b: Battle, dt: number, cam: THREE.PerspectiveCamera, camQ: THREE.Quaternion): void {
     this.time += dt;
+    this.settle();
     this.rack.begin();
     const h = b.hero;
     // the hero
@@ -628,6 +692,14 @@ export class BattleView {
         this.flats.add(b.shrine.x, 0.05, b.shrine.z, 2.6 + Math.sin(this.time * 3) * 0.2, 2.6 + Math.sin(this.time * 3) * 0.2, this.time * 0.5, col, 0.7);
         if (Math.random() < dt * 8) this.sparks.emit(b.shrine.x + (Math.random() - 0.5) * 0.8, 1.6, b.shrine.z + (Math.random() - 0.5) * 0.8, 0, 1.2, 0, 1, 0.2, 0.05, col, 1);
       }
+    }
+    // torches and braziers: flickering flames, now and then an ember
+    const lit = this.arena?.layout.lights;
+    if (lit) for (const [x, y, z] of lit) {
+      const f = 0.86 + Math.sin(this.time * 17 + x * 3) * 0.08 + Math.sin(this.time * 29 + z * 2) * 0.06;
+      this.glows.add(x, y + 0.1, z, 0.95 * f, 1.15 * f, 0, 0xff8a2a, 0.85);
+      this.glows.add(x, y + 0.06, z, 0.36 * f, 0.48 * f, 0, 0xffe6a8, 1);
+      if (Math.random() < dt * 3) this.sparks.emit(x, y + 0.25, z, (Math.random() - 0.5) * 0.3, 1.1, (Math.random() - 0.5) * 0.3, 0.7, 0.1, 0.03, 0xffb04a, 0);
     }
     // shots
     for (const s of b.shots) {

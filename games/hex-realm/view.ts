@@ -107,7 +107,7 @@ export class View {
     // the docks bring the water's material; build them hidden, then show the arena again
     const cur = this.battle.current;
     this.battle.showArena('docks', 1);
-    if (cur) this.battle.showArena(cur.kind, cur.seed);
+    if (cur) this.battle.showArena(cur.kind, cur.seed, cur.look);
     const vis = [this.mapView.root.visible, this.battle.root.visible];
     this.mapView.root.visible = this.battle.root.visible = true;
     // the weapon batch is warmed as a batch (the core's keepPrograms would warm a plain mesh of it)
@@ -117,6 +117,8 @@ export class View {
     parent?.add(rack);
     keepRackProgram(this.world.renderer, s, this.world.camera, this.battle.rack);
     [this.mapView.root.visible, this.battle.root.visible] = vis;
+    // the docks were only built for their water's shader
+    if (cur) this.battle.dropArenas();
   }
 
   setMode(m: ViewMode, arena?: ArenaKind): void {
