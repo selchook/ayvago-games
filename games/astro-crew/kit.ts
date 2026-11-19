@@ -44,10 +44,32 @@ export const litMaterial = (): THREE.MeshLambertMaterial => new THREE.MeshLamber
 interface Part { geo: THREE.BufferGeometry; mat: THREE.Matrix4 }
 const partCache = new Map<string, Part[]>();
 
+/** Shapes the kit lacks, made here: a crystal shard (tinted per planet). */
+const PROC: Record<string, () => THREE.BufferGeometry> = {
+  // a nest's spine: a faceted horn, curving a little
+  spike: () => {
+    const g = new THREE.ConeGeometry(0.32, 2.6, 5, 3).toNonIndexed();
+    g.translate(0, 1.3, 0);
+    const p = g.getAttribute('position');
+    for (let i = 0; i < p.count; i++) { const y = p.getY(i); p.setZ(i, p.getZ(i) + (y / 2.6) ** 2 * 0.5); }
+    g.computeVertexNormals();
+    return g;
+  },
+  crystal: () => {
+    const g = new THREE.OctahedronGeometry(0.5, 0).toNonIndexed();
+    g.scale(0.55, 2.1, 0.55);
+    g.translate(0, 0.95, 0);
+    g.computeVertexNormals();
+    return g;
+  },
+};
+
 /** A static model's meshes and their matrices inside the file. */
 export function modelParts(key: string): Part[] {
   let parts = partCache.get(key);
   if (parts) return parts;
+  const proc = PROC[key.slice(3)];
+  if (proc) { parts = [{ geo: proc(), mat: new THREE.Matrix4() }]; partCache.set(key, parts); return parts; }
   const root = model(key, { shadows: false });
   root.updateMatrixWorld(true);
   parts = [];
@@ -66,8 +88,8 @@ const tmpN = new THREE.Vector3();
 const tmpNM = new THREE.Matrix3();
 const tmpC = new THREE.Color();
 
-/** Merges placed models into one plain geometry (position, normal, colour). */
-export function mergeModels(list: Placed[]): THREE.BufferGeometry {
+/** Merges placed models into one plain geometry (position, normal, colour), with extra flat triangles (a ground) first. */
+export function mergeModels(list: Placed[], extra?: { pos: number[]; col: number[] }): THREE.BufferGeometry {
   const jobs: { geo: THREE.BufferGeometry; m: THREE.Matrix4; tint?: number }[] = [];
   for (const p of list) {
     const place = new THREE.Matrix4().compose(
@@ -76,6 +98,16 @@ export function mergeModels(list: Placed[]): THREE.BufferGeometry {
       new THREE.Vector3(p.s, p.s, p.s),
     );
     for (const part of modelParts(sk(p.key))) jobs.push({ geo: part.geo, m: place.clone().multiply(part.mat), tint: p.tint });
+  }
+  if (extra) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(extra.pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(extra.col, 3));
+    g.computeVertexNormals();
+    jobs.unshift({ geo: g, m: new THREE.Matrix4() });
+    const out = build(jobs);
+    g.dispose();
+    return out;
   }
   return build(jobs);
 }

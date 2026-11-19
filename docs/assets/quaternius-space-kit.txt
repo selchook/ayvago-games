@@ -24,10 +24,10 @@ quaternius/space-kit/house-single.glb 20KB 3.99x4.00x3.80
 quaternius/space-kit/house-support.glb 17KB 3.58x0.87x3.58
 quaternius/space-kit/jar.glb 9KB 0.69x1.02x0.69
 quaternius/space-kit/keycard.glb 8KB 1.04x0.67x0.09
-quaternius/space-kit/mech-bee.glb 200KB 2.91x3.00x2.05 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Yes:1.40
-quaternius/space-kit/mech-flamingo.glb 189KB 2.70x3.55x2.06 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Yes:1.40
-quaternius/space-kit/mech-frog.glb 216KB 3.38x3.06x1.99 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Yes:1.40
-quaternius/space-kit/mech-panda.glb 183KB 2.70x3.09x1.92 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Yes:1.40
+quaternius/space-kit/mech-bee.glb 205KB 2.91x3.00x2.05 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Shoot_Small:0.23 Yes:1.40
+quaternius/space-kit/mech-flamingo.glb 194KB 2.70x3.55x2.06 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Shoot_Small:0.23 Yes:1.40
+quaternius/space-kit/mech-frog.glb 221KB 3.38x3.06x1.99 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Shoot_Small:0.23 Yes:1.40
+quaternius/space-kit/mech-panda.glb 188KB 2.70x3.09x1.92 clips: Death:0.57 Hello:1.50 HitRecieve_1:0.53 Idle:3.33 Kick:0.83 Run:0.83 Shoot_Big:0.40 Shoot_Small:0.23 Yes:1.40
 quaternius/space-kit/metal-support.glb 24KB 0.14x1.20x5.95
 quaternius/space-kit/planet-1.glb 30KB 3.78x3.93x3.80
 quaternius/space-kit/planet-10.glb 29KB 5.74x4.68x5.74
