@@ -20,10 +20,12 @@
 //   - writes docs/assets/quaternius-space-kit.txt (every file with its size, box and clips).
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { mkdirSync, statSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, statSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 
-const [src, nm] = process.argv.slice(2);
-if (!src || !nm) throw new Error('usage: node import-kit.mjs <kit dir> <node_modules dir>');
+const [src, nm, ...onlyArgs] = process.argv.slice(2);
+if (!src || !nm) throw new Error('usage: node import-kit.mjs <kit dir> <node_modules dir> [only these outputs, e.g. mech-frog]');
+/** Re-imports only the named outputs (all when none is given); the asset list keeps the other lines. */
+const only = (name) => !onlyArgs.length || onlyArgs.includes(name);
 const req = createRequire(join(nm, 'x.js'));
 const { NodeIO, getBounds } = req('@gltf-transform/core');
 const { KHRMeshQuantization } = req('@gltf-transform/extensions');
@@ -37,7 +39,7 @@ mkdirSync(OUT, { recursive: true });
 
 /** The clips each rig keeps. */
 const HERO_CLIPS = ['Idle', 'Idle_Gun', 'Run_Gun', 'Run_Gun_Shoot', 'Duck', 'Punch', 'HitReact', 'Death', 'Wave', 'Yes', 'Jump', 'No'];
-const MECH_CLIPS = ['Idle', 'Run', 'Shoot_Big', 'Kick', 'HitRecieve_1', 'Death', 'Hello', 'Yes'];
+const MECH_CLIPS = ['Idle', 'Run', 'Shoot_Big', 'Shoot_Small', 'Kick', 'HitRecieve_1', 'Death', 'Hello', 'Yes'];
 const BLOB_CLIPS = ['Flying_Idle', 'Fast_Flying', 'Headbutt', 'Punch', 'HitReact', 'Death', 'Yes'];
 const BRUTE_CLIPS = ['Idle', 'Walk', 'Run', 'Punch', 'Weapon', 'HitReact', 'Death', 'Jump', 'Jump_Land', 'Yes'];
 const ANIMALS = { bee: 'BarbaraTheBee', flamingo: 'FernandoTheFlamingo', frog: 'FinnTheFrog', panda: 'RaeTheRedPanda' };
@@ -249,14 +251,15 @@ async function soloRig(file, clips, out, ratio) {
 }
 
 // ---------------------------------------------------------------- the crew, the mechs, the aliens
-await shareRig(Object.values(ANIMALS).map((a) => 'characters/Astronaut_' + a), Object.keys(ANIMALS).map((k) => 'a-' + k), HERO_CLIPS, 'astronauts', 0.6, ['Pistol']);
-for (const [k, a] of Object.entries(ANIMALS)) await soloRig('characters/Mech_' + a, MECH_CLIPS, 'mech-' + k, 0.6);
-await shareRig(['characters/Enemy_ExtraSmall', 'characters/Enemy_Small'], ['e-xs', 'e-s'], BLOB_CLIPS, 'blobs', 0.7);
-await soloRig('characters/Enemy_Flying', BLOB_CLIPS, 'flyer', 0.6);
-await soloRig('characters/Enemy_Large', BRUTE_CLIPS, 'brute', 0.6);
+if (only('astronauts')) await shareRig(Object.values(ANIMALS).map((a) => 'characters/Astronaut_' + a), Object.keys(ANIMALS).map((k) => 'a-' + k), HERO_CLIPS, 'astronauts', 0.6, ['Pistol']);
+for (const [k, a] of Object.entries(ANIMALS)) if (only('mech-' + k)) await soloRig('characters/Mech_' + a, MECH_CLIPS, 'mech-' + k, 0.6);
+if (only('blobs')) await shareRig(['characters/Enemy_ExtraSmall', 'characters/Enemy_Small'], ['e-xs', 'e-s'], BLOB_CLIPS, 'blobs', 0.7);
+if (only('flyer')) await soloRig('characters/Enemy_Flying', BLOB_CLIPS, 'flyer', 0.6);
+if (only('brute')) await soloRig('characters/Enemy_Large', BRUTE_CLIPS, 'brute', 0.6);
 
 // ---------------------------------------------------------------- the static models
 for (const [name, [file, ratio]] of Object.entries(STATIC)) {
+  if (!only(name)) continue;
   const doc = await io.read(join(src, file + '.gltf'));
   await bakeColours(doc);
   for (const a of doc.getRoot().listAnimations()) dropClip(a);
@@ -271,7 +274,16 @@ const source = [];
 for (const dir of ['characters', 'vehicles', 'items', 'environment']) {
   for (const f of readdirSync(join(src, dir)).sort()) source.push(`${dir}/${f} ${Math.round(statSync(join(src, dir, f)).size / 1024)}KB`);
 }
-writeFileSync(join(ROOT, 'docs/assets/quaternius-space-kit.txt'), [
+// a partial re-import keeps the other models' lines
+const LIST = join(ROOT, 'docs/assets/quaternius-space-kit.txt');
+if (onlyArgs.length) {
+  const fresh = new Map(docs.map((d) => [d.split(' ')[0], d]));
+  const old = readFileSync(LIST, 'utf8').split('\n').filter((l) => l.startsWith('quaternius/space-kit/'));
+  docs.length = 0;
+  for (const l of old) docs.push(fresh.get(l.split(' ')[0]) ?? l);
+  for (const [k, d] of fresh) if (!old.some((l) => l.startsWith(k + ' '))) docs.push(d);
+}
+writeFileSync(LIST, [
   '# Quaternius Ultimate Space Kit (March 2023, CC0 1.0): what public/assets/quaternius/space-kit holds',
   '# (games/astro-crew/import-kit.mjs). Each line: file, size, bounding box in model units (x × y × z),',
   '# the skinned meshes of a shared rig and the clips with their length in seconds. Characters face +z.',
