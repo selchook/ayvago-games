@@ -45,18 +45,61 @@ export const MOVE = {
   slamSpeed: 26,
 };
 
-/** The melee chain (combo A), the charged cleave (B) and the roll lunge (C). */
-export interface AttackDef { clip: string; dur: number; on: number; off: number; reach: number; up: number; dmg: number; knock: number; stop: number; lunge: number }
-export const ATTACKS: Record<'punch' | 'kick' | 'slash' | 'single' | 'air' | 'cleave' | 'lunge' | 'slam', AttackDef> = {
+/**
+ * Every blade move. The chain (A: punch, kick, slash), the charged cleave (B), the roll lunge (C), the
+ * ground slam, and since 1.1: the cyclone (attack while sprinting), the rising dragon (launcher), the
+ * sky rend air string (air1, air2, air3), the falcon dive, the iaido flash (roll, then hold), the
+ * blade & bolt finisher (tap, tap, SHOOT). `stop` is the hit-stop, `knock` the push, `lift` the
+ * upward throw of a light foe (a juggle), `back` the reach behind the hero (spins hit all round).
+ */
+export interface AttackDef { clip: string; dur: number; on: number; off: number; reach: number; up: number; dmg: number; knock: number; stop: number; lunge: number; lift?: number; back?: number; low?: number }
+export type AttackKind = 'punch' | 'kick' | 'slash' | 'single' | 'air' | 'air2' | 'air3' | 'cleave' | 'lunge' | 'slam' | 'spin' | 'rise' | 'dive' | 'iaido' | 'burst';
+export const ATTACKS: Record<AttackKind, AttackDef> = {
   punch: { clip: 'Punch_Right', dur: 0.27, on: 0.06, off: 0.16, reach: 1.35, up: 0.9, dmg: 1, knock: 2.5, stop: 0.03, lunge: 1.2 },
   kick: { clip: 'Kick_Left', dur: 0.31, on: 0.08, off: 0.19, reach: 1.55, up: 0.6, dmg: 1, knock: 3.5, stop: 0.04, lunge: 1.6 },
   slash: { clip: 'Sword_Slash', dur: 0.44, on: 0.1, off: 0.24, reach: 2.25, up: 1.4, dmg: 2.5, knock: 9, stop: 0.085, lunge: 2.2 },
   single: { clip: 'Sword_Slash', dur: 0.36, on: 0.08, off: 0.2, reach: 2.0, up: 1.2, dmg: 1.5, knock: 5, stop: 0.04, lunge: 1.0 },
-  air: { clip: 'Sword_Slash', dur: 0.3, on: 0.05, off: 0.2, reach: 1.9, up: 1.5, dmg: 1.5, knock: 5, stop: 0.04, lunge: 0 },
+  // the air string: two quick cuts that keep a juggled foe up, then the finisher that spikes it down
+  air: { clip: 'Sword_Slash', dur: 0.26, on: 0.04, off: 0.16, reach: 1.9, up: 1.5, dmg: 1.3, knock: 2, stop: 0.04, lunge: 0, lift: 3.5, low: 0.9 },
+  air2: { clip: 'Kick_Left', dur: 0.26, on: 0.05, off: 0.16, reach: 1.65, up: 1.3, dmg: 1.3, knock: 2, stop: 0.045, lunge: 0, lift: 3.5, low: 0.9 },
+  air3: { clip: 'Sword_Slash', dur: 0.4, on: 0.08, off: 0.24, reach: 2.3, up: 1.7, dmg: 2.8, knock: 7, stop: 0.1, lunge: 0, lift: -15, low: 1.2 },
   cleave: { clip: 'Sword_Slash', dur: 0.52, on: 0.12, off: 0.3, reach: 2.6, up: 1.6, dmg: 4, knock: 12, stop: 0.13, lunge: 1.4 },
   lunge: { clip: 'Sword_Slash', dur: 0.36, on: 0.0, off: 0.26, reach: 1.3, up: 1.0, dmg: 2, knock: 7, stop: 0.06, lunge: 0 },
   slam: { clip: 'Kick_Right', dur: 0.3, on: 0, off: 0.12, reach: 2.6, up: 1.2, dmg: 2, knock: 8, stop: 0.08, lunge: 0 },
+  // a full turn of the blade while sprinting: hits in front and behind, twice
+  spin: { clip: 'Sword_Slash', dur: 0.44, on: 0.05, off: 0.34, reach: 1.9, up: 1.3, dmg: 1.4, knock: 5.5, stop: 0.05, lunge: 0, back: 1.9 },
+  // the launcher: an upward cut that throws a light foe into the air, the hero hopping after it
+  rise: { clip: 'Kick_Right', dur: 0.38, on: 0.05, off: 0.22, reach: 1.75, up: 2.2, dmg: 1.5, knock: 1.5, stop: 0.07, lunge: 0, lift: 13 },
+  // the dive: a plunging cut down and forward until the ground
+  dive: { clip: 'Sword_Slash', dur: 2.0, on: 0.04, off: 2.0, reach: 1.35, up: 0.9, dmg: 2.2, knock: 6, stop: 0.05, lunge: 0, low: 0.6 },
+  // the iaido flash: a dash through the line, the cuts land a beat later
+  iaido: { clip: 'Sword_Slash', dur: 0.46, on: 0.0, off: 0.14, reach: 1.0, up: 1.2, dmg: 4.5, knock: 9, stop: 0.14, lunge: 0, back: 0.6 },
+  // blade & bolt: a point-blank plasma blast that ends the chain
+  burst: { clip: 'Gun_Shoot', dur: 0.4, on: 0.07, off: 0.16, reach: 3.2, up: 1.2, dmg: 2.6, knock: 11, stop: 0.1, lunge: 0 },
 };
+/** The air string's first hit hangs the hero this long under light gravity (once per jump). */
+export const AIR_HANG = 0.1;
+export const AIR_HANG_GRAVITY = 0.3;
+/** Air control while swinging in the air (a share of the normal air acceleration). */
+export const AIR_ATTACK_CONTROL = 0.55;
+/** Most blows in one jump (the air string's three). */
+export const AIR_MAX = 3;
+/** The launcher: the hero's hop, and how long after a jump ATTACK + up still launches. */
+export const RISE_HOP = 12.5;
+export const RISE_WINDOW = 0.16;
+/** A juggled foe falls under this share of gravity. */
+export const JUGGLE_GRAVITY = 0.6;
+/** The dive's speed (forward, down). */
+export const DIVE_V = { x: 10.5, y: -19 };
+/** Sprinting this long (seconds) turns ATTACK into the cyclone. */
+export const SPIN_RUN = 0.3;
+/** The iaido: hold ATTACK this long after the lunge to draw; the dash's length; the cut's delay. */
+export const IAIDO_HOLD = 0.32;
+export const IAIDO_DIST = 6.5;
+export const IAIDO_DELAY = 0.3;
+/** Mirror Cut: a sword blow that meets a bolt this early in its swing sends it back. */
+export const MIRROR_WINDOW = 0.11;
+export const MIRROR_DMG = 3;
 /** Holding ATTACK this long after the second blow charges the cleave. */
 export const CHARGE_TIME = 0.35;
 /** ATTACK this soon after a roll is the lunge. */

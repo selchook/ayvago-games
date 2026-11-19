@@ -10,6 +10,8 @@ export interface PlayOpts { fade?: number; speed?: number; once?: boolean; resta
 
 export class Figure {
   readonly root = new THREE.Group();
+  /** Between the root (position, facing) and the body: turns of a whole move (a spin, a flip). */
+  readonly tilt = new THREE.Group();
   readonly body: THREE.Object3D;
   readonly mixer: THREE.AnimationMixer;
   private flashMat: THREE.MeshStandardMaterial;
@@ -26,7 +28,8 @@ export class Figure {
     this.body = r.root;
     this.flashMat = r.flash;
     this.body.scale.setScalar(scale);
-    this.root.add(this.body);
+    this.root.add(this.tilt);
+    this.tilt.add(this.body);
     this.body.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) this.parts.set(o.uuid, o);
       if ((o as THREE.Bone).isBone) this.bones.set(o.name, o);
@@ -91,6 +94,17 @@ export class Figure {
     };
     m.customProgramCacheKey = () => 'nr-rim';
     m.needsUpdate = true;
+  }
+
+  /**
+   * Turns the whole figure for a move: `spin` round its upright axis, `flip` head over heels in the
+   * screen plane about a point `pivot` up the body, `lean` a tilt forward. Zero for all: upright.
+   */
+  turn(spin: number, flip: number, pivot: number, lean = 0): void {
+    const t = this.tilt;
+    t.rotation.set(flip, spin, lean, 'YXZ');
+    // keep the pivot (the hips) where it was while flipping
+    t.position.set(0, pivot - pivot * Math.cos(flip), -pivot * Math.sin(flip));
   }
 
   flash(t = 0.1, k = 0.32): void { this.flashT = t; this.flashK = k; }

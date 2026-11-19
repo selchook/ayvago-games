@@ -826,14 +826,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'neon-ronin',
     title: { en: 'Neon Ronin', tr: 'Neon Samuray' },
     description: {
-      en: 'A 3D action platformer across the floating neon rooftops of a rain-soaked cyber city. Run, double jump, wall-jump and roll through bolts; chain katana combos and fire your blaster before it overheats. Cut through robots, turrets and giant mech bosses in four districts, hunt data chips, upgrade your cyberware and draft implant chips.',
-      tr: "Yağmurlu bir siber şehirde, neon tabelalı yüzen çatıların üstünde 3B aksiyon platform oyunu. Koş, çift zıpla, duvardan sek, mermilerin içinden yuvarlan; katanayla kombolar zincirle, blaster'ı ısıtmadan ateş et. Dört bölgede robotları, taretleri ve dev mekanik bossları alt et, veri çiplerini bul, siber donanımını yükselt ve implant çipleri seç.",
+      en: 'A 3D action platformer across the floating neon rooftops of a rain-soaked cyber city. Run, double jump, wall-jump and roll through bolts; chain eleven katana combos (launchers, air strings, an iaido dash, bullet-reflecting cuts) and fire your blaster before it overheats. Cut through robots, turrets and giant mech bosses in four districts, hunt data chips, upgrade your cyberware and draft implant chips.',
+      tr: "Yağmurlu bir siber şehirde, neon tabelalı yüzen çatıların üstünde 3B aksiyon platform oyunu. Koş, çift zıpla, duvardan sek, mermilerin içinden yuvarlan; katanayla on bir kombo zincirle: fırlatıcılar, havada takla, iaido atılması, mermi yansıtan kesikler; blaster'ı ısıtmadan ateş et. Dört bölgede robotları, taretleri ve dev mekanik bossları alt et, veri çiplerini bul, siber donanımını yükselt ve implant çipleri seç.",
     },
     category: 'action',
     categories: ['action', 'arcade'],
     tags: ['neon', 'ronin', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.1.0',
     addedAt: '2026-11-18',
   }),
   arcadeGame({

@@ -1671,12 +1671,12 @@
         "en": "Neon Ronin"
       },
       "description": {
-        "tr": "Yağmurlu bir siber şehirde, neon tabelalı yüzen çatıların üstünde 3B aksiyon platform oyunu. Koş, çift zıpla, duvardan sek, mermilerin içinden yuvarlan; katanayla kombolar zincirle, blaster'ı ısıtmadan ateş et. Dört bölgede robotları, taretleri ve dev mekanik bossları alt et, veri çiplerini bul, siber donanımını yükselt ve implant çipleri seç.",
-        "en": "A 3D action platformer across the floating neon rooftops of a rain-soaked cyber city. Run, double jump, wall-jump and roll through bolts; chain katana combos and fire your blaster before it overheats. Cut through robots, turrets and giant mech bosses in four districts, hunt data chips, upgrade your cyberware and draft implant chips."
+        "tr": "Yağmurlu bir siber şehirde, neon tabelalı yüzen çatıların üstünde 3B aksiyon platform oyunu. Koş, çift zıpla, duvardan sek, mermilerin içinden yuvarlan; katanayla on bir kombo zincirle: fırlatıcılar, havada takla, iaido atılması, mermi yansıtan kesikler; blaster'ı ısıtmadan ateş et. Dört bölgede robotları, taretleri ve dev mekanik bossları alt et, veri çiplerini bul, siber donanımını yükselt ve implant çipleri seç.",
+        "en": "A 3D action platformer across the floating neon rooftops of a rain-soaked cyber city. Run, double jump, wall-jump and roll through bolts; chain eleven katana combos (launchers, air strings, an iaido dash, bullet-reflecting cuts) and fire your blaster before it overheats. Cut through robots, turrets and giant mech bosses in four districts, hunt data chips, upgrade your cyberware and draft implant chips."
       },
       "howTo": {
-        "tr": "Dokunmatik: sol başparmakla koş; sağda ZIPLA, KES, ATEŞ ve YUVARLAN. Klavye: A/D ya da ←/→ koş, W/Boşluk/↑ zıpla, J ya da Z kes, K ya da X ateş, L, C ya da Shift yuvarlan, P ya da Esc duraklat.",
-        "en": "Touch: run with your left thumb; JUMP, SLASH, SHOOT and ROLL on the right. Keys: A/D or ←/→ run, W/Space/↑ jump, J or Z slash, K or X shoot, L, C or Shift roll, P or Esc pause."
+        "tr": "Dokunmatik: sol başparmakla koş; sağda ZIPLA, KES, ATEŞ ve YUVARLAN. Klavye: A/D ya da ←/→ koş, W/Boşluk/↑ zıpla, J ya da Z kes, K ya da X ateş, L, C ya da Shift yuvarlan, P ya da Esc duraklat. Tüm kombolar HAREKETLER'de.",
+        "en": "Touch: run with your left thumb; JUMP, SLASH, SHOOT and ROLL on the right. Keys: A/D or ←/→ run, W/Space/↑ jump, J or Z slash, K or X shoot, L, C or Shift roll, P or Esc pause. Every combo is listed under MOVES."
       },
       "genres": [
         "action",
@@ -1687,7 +1687,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "3D models: Quaternius Cyberpunk Game Kit (CC0) — quaternius.com",
         "Sound effects: Juhani Junkala and Kenney (CC0) — kenney.nl",
