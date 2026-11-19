@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Block Drop is a falling-block puzzle in a classic well ten columns wide and twenty rows deep. Seven kinds of pieces come down one at a time; you slide and rotate each one into place, and every row filled from wall to wall disappears. The game ends when the stack leaves no room for the next piece.\n\nIt plays by the modern rules that reward planning. Pieces come from a shuffled bag of all seven, so the one you need is never far away. A ghost outline shows where the piece will land, the NEXT panel shows three pieces ahead, and HOLD keeps one aside for later. Pieces kick off the walls when rotated, and a piece resting on the stack still gives you half a second to slide it.\n\nEvery 10 lines the level rises and the well changes colour. At level 1 a piece falls one row per second; by level 11 it crosses the whole well in under a second.",
+    "tr": "Blok Düşür, on sütun genişliğinde ve yirmi satır derinliğinde klasik bir kuyuda oynanan düşen blok bulmacası. Yedi çeşit parça tek tek iner; her birini kaydırıp döndürerek yerine oturtursun, duvardan duvara dolan her satır silinir. Yığın sıradaki parçaya yer bırakmadığında oyun biter.\n\nOyun, plan yapanı ödüllendiren modern kurallarla oynanır. Parçalar yedisini de içeren karışık bir torbadan gelir, aradığın parça hiçbir zaman uzakta kalmaz. Silik bir gölge parçanın ineceği yeri, SIRADAKİ paneli sonraki üç parçayı gösterir; SAKLA ile bir parçayı sonraya ayırırsın. Parçalar duvara dayalıyken de itilerek döner ve yığına değen parçayı kilitlenmeden önce yarım saniye daha kaydırabilirsin.\n\nHer 10 satırda seviye atlarsın, kuyunun rengi değişir. 1. seviyede parça saniyede bir satır iner; 11. seviyede kuyuyu baştan sona bir saniyeden kısa sürede geçer."
+  },
+  "howToPlay": [
+    {
+      "en": "Move and rotate the falling piece until its ghost sits where you want it, then let it fall, soft-drop it or hard-drop it to land at once.",
+      "tr": "Düşen parçayı gölgesi istediğin yere oturana kadar kaydır ve döndür; sonra kendi düşmesini bekle, yavaşça indir ya da tek hamlede bırak."
+    },
+    {
+      "en": "Fill a row to clear it. One piece clearing one to four rows makes a SINGLE, DOUBLE, TRIPLE or QUAD.",
+      "tr": "Dolan satır silinir. Tek parçayla bir ile dört satır silmenin adı TEK, ÇİFT, ÜÇLÜ ya da DÖRTLÜ."
+    },
+    {
+      "en": "Use HOLD to swap the falling piece with the one you stored, once per piece.",
+      "tr": "SAKLA ile düşen parçayı sakladığın parçayla değiştir; her parçada bir kez."
+    },
+    {
+      "en": "Every 10 lines speed things up. The game is over when the stack reaches the top.",
+      "tr": "Her 10 satır oyunu hızlandırır. Yığın tepeye ulaştığında oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D move, ↓ or S soft-drops, ↑, W or X rotate clockwise, Z or Q the other way, Space hard-drops, C or Shift holds. Esc or P pauses.",
+      "tr": "← → ya da A / D kaydırır, ↓ ya da S yavaşça indirir, ↑, W ya da X saat yönünde, Z ya da Q ters yönde döndürür, Boşluk bırakır, C ya da Shift saklar. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Six buttons under the well, or gestures on the board: drag sideways to move, drag down to soft-drop, tap to rotate, flick down to hard-drop, flick up to hold.",
+      "tr": "Kuyunun altındaki altı düğmeyi ya da tahtadaki hareketleri kullan: yana sürükle kaydır, aşağı sürükle indir, dokun döndür, aşağı hızlıca kaydır bırak, yukarı kaydır sakla."
+    },
+    "mouse": {
+      "en": "Click the buttons, or drag and click on the board as you would with a finger.",
+      "tr": "Düğmelere tıkla ya da tahtada parmakla oynar gibi sürükle ve tıkla."
+    },
+    "gamepad": {
+      "en": "D-pad or left stick moves (↑ rotates, ↓ soft-drops). A hard-drops, B rotates clockwise, LB or RT the other way, clicking the left stick holds, Start pauses.",
+      "tr": "Yön tuşları ya da sol çubuk kaydırır (↑ döndürür, ↓ indirir). A bırakır, B saat yönünde, LB ya da RT ters yönde döndürür; sol çubuğa basmak saklar, Start duraklatır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Keep the stack flat with one column open against a wall, then drop an I piece in for a QUAD: 800 points at level 1, against 100 for a single row.",
+      "tr": "Yığını düz tut, duvar dibinde tek sütunu boş bırak ve oraya bir I parçası indirip DÖRTLÜ yap: 1. seviyede tek satırın 100 puanına karşı 800 puan."
+    },
+    {
+      "en": "Two QUADs in a row are BACK TO BACK and the second one scores half as much again.",
+      "tr": "Arka arkaya iki DÖRTLÜ, ART ARDA sayılır ve ikincisi yarısı kadar fazla puan getirir."
+    },
+    {
+      "en": "Clearing lines with piece after piece builds a COMBO worth 50 × combo × level extra points.",
+      "tr": "Parça parça üst üste satır silmek, 50 × kombo × seviye ek puan değerinde KOMBO kurar."
+    },
+    {
+      "en": "When an alarm sounds and the top of the well glows red, stop building and clear rows until the glow fades.",
+      "tr": "Alarm çalıp kuyunun üstü kırmızı parlamaya başladığında yığmayı bırak, parıltı sönene kadar satır sil."
+    }
+  ],
+  "features": [
+    {
+      "en": "Seven-piece bag, ghost piece, three-piece preview and HOLD",
+      "tr": "Yedili torba, gölge parça, üç parçalık önizleme ve SAKLA"
+    },
+    {
+      "en": "Wall kicks and a short lock delay for last-moment slides",
+      "tr": "Duvardan itilerek dönme ve son anda kaydırmaya izin veren kısa kilit süresi"
+    },
+    {
+      "en": "A faster level and a new well colour every 10 lines",
+      "tr": "Her 10 satırda daha hızlı bir seviye ve yeni bir kuyu rengi"
+    },
+    {
+      "en": "Big on-screen buttons and swipe gestures for phones",
+      "tr": "Telefon için büyük ekran düğmeleri ve kaydırma hareketleri"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "One to four rows score 100, 300, 500 or 800 points times the level. BACK TO BACK adds 50%, combos add 50 × combo × level, and every row a piece falls by soft or hard drop adds 1 or 2 points.",
+        "tr": "Bir ile dört satır, seviyeyle çarpılarak 100, 300, 500 ya da 800 puan getirir. ART ARDA %50 ekler, kombo 50 × kombo × seviye ekler; yavaş indirmede parçanın geçtiği her satır 1, bırakmada 2 puandır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Every game starts slow at level 1 and only speeds up as you clear lines, so the first levels are your warm-up.",
+        "tr": "Hayır. Her oyun 1. seviyede yavaş başlar ve ancak satır sildikçe hızlanır; ilk seviyeler ısınma turun olur."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Block Drop is single-player, but your best run goes on the game's leaderboard on ayvago.com, so you can race each other's scores.",
+        "tr": "Blok Düşür tek kişilik, ama en iyi oyunun ayvago.com'daki sıralamaya girer; skorlarınızla yarışabilirsiniz."
+      }
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Hex Realm is a 3D action RPG in two layers. On the hex map you walk your hero from tile to tile as the fog lifts, meeting camps, ambushes and random encounters. Fights drop you into a real-time arena where you move freely, chain combos, roll out of danger and use your skills.\n\nYou play one of six classes: Warrior, Rogue, Ranger, Monk, Cleric or Wizard, each with three combos and two skills, and you can switch class at the inn. The village of Meadowbrook is home: an inn to rest and save, a market for potions, a smithy that upgrades gear up to +5, a notice board with quests, and the Shrine of Powers, where Sigils and gold strengthen your skills and finishers.\n\nSix quests lead from Bandit Chief Rask to Grukk the Mine Troll, Morvane the Dark and finally Lord Varek in the Dark Castle; after him come the Endless Rift and New Game+.",
+    "tr": "Altıgen Diyar, iki katmanlı bir 3B aksiyon RPG. Altıgen haritada kahramanını kareden kareye yürütürsün; ilerledikçe sis açılır, vahşi topraklarda kamplar, pusular ve rastgele karşılaşmalar bekler. Savaş başladığında oyun gerçek zamanlı bir arenaya geçer: orada serbestçe dolaşır, kombo zincirler, tehlikeden yuvarlanarak kaçar ve yeteneklerini kullanırsın.\n\nAltı sınıftan birini oynarsın: Savaşçı, Suikastçı, Korucu, Keşiş, Rahip ya da Büyücü. Her birinin üç kombosu ve iki yeteneği vardır; sınıfını handa değiştirebilirsin. Üssün Çayırköy: dinlenip kaydettiğin han, iksir aldığın pazar, eşyaları +5'e kadar güçlendiren demirci, görevlerin asıldığı ilan tahtası ve Mühür ile altın karşılığında yeteneklerini ve bitirişlerini güçlendiren Güçler Tapınağı burada.\n\nAltı görev seni Haydut Reisi Rask'tan Maden Trolü Grukk'a, Kara Morvane'ye ve sonunda Kara Kale'deki Lord Varek'e götürür; ondan sonra Sonsuz Yarık ve YENİ OYUN+ seni bekler."
+  },
+  "howToPlay": [
+    {
+      "en": "Pick a class, then tap a hex or use the arrows to travel. The gold marker shows your quest; enter a place and fight through its rooms to the boss.",
+      "tr": "Bir sınıf seç, sonra yolculuk için bir altıgene dokun ya da okları kullan. Altın işaret görevini gösterir; bir yere gir, odalarını geçerek bossa ulaş."
+    },
+    {
+      "en": "In battle, keep tapping ATTACK for the quick chain, tap twice and then hold for the heavy finisher, or attack right after a ROLL for the dash strike.",
+      "tr": "Savaşta hızlı zincir için SALDIR'a art arda dokun, ağır bitiriş için iki kez dokunup basılı tut, atılma vuruşu için KAÇIŞ'ın hemen ardından saldır."
+    },
+    {
+      "en": "Red on the ground marks a blow about to land: roll out of it, or through it at the last moment for a perfect dodge.",
+      "tr": "Yerdeki kırmızı alan inmek üzere olan bir darbedir: yuvarlanarak çık ya da kusursuz kaçış için son anda içinden geç."
+    },
+    {
+      "en": "A journey ends when you fall, beat the troll, the mage or the lord, or choose END THE DAY at the inn; your renown is then sent as your score.",
+      "tr": "Yolculuk; düştüğünde, trolü, büyücüyü ya da lordu yendiğinde veya handa GÜNÜ BİTİR'i seçtiğinde biter ve şöhretin skor olarak gönderilir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Map: arrows or WASD walk, Enter goes in, + / - zoom, M map, I hero. Battle: WASD or arrows move, J or Space attacks (hold J for the heavy finisher), K or Shift rolls, L and U use skills, E or Q drinks a potion.",
+      "tr": "Harita: oklar ya da WASD yürütür, Enter içeri girer, + / - yakınlaştırır, M harita, I kahraman. Savaş: WASD ya da oklar hareket ettirir, J ya da Boşluk saldırır (ağır bitiriş için J'yi basılı tut), K ya da Shift yuvarlar, L ve U yetenek, E ya da Q iksir."
+    },
+    "touch": {
+      "en": "Map: tap a hex to walk, drag to look around, pinch to zoom. Battle: drag on the left to move; ATTACK, ROLL, two skills and POTION are on the right.",
+      "tr": "Harita: yürümek için altıgene dokun, bakınmak için sürükle, yakınlaştırmak için iki parmağını aç. Savaş: solda sürükleyerek yürü; SALDIR, KAÇIŞ, iki yetenek ve İKSİR sağda."
+    },
+    "mouse": {
+      "en": "The mouse walks, drags and zooms the map and handles the village and hero screens; fights are played on the keyboard.",
+      "tr": "Fareyle haritada yürür, sürükler, tekerlekle yakınlaştırır, köy ve kahraman ekranlarını kullanırsın; savaşlar klavyeyle oynanır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Don't roll the moment the red appears. A perfect dodge slows time and makes your next hit critical, the best opening you will get.",
+      "tr": "Kırmızıyı görür görmez yuvarlanma. Kusursuz kaçış zamanı yavaşlatır ve sıradaki vuruşunu kritik yapar; yakalayacağın en iyi fırsat budur."
+    },
+    {
+      "en": "Shields stop quick blows. Break a guard with the heavy finisher, and hit Lord Varek from the side while his shield is up.",
+      "tr": "Kalkanlar hızlı vuruşları durdurur. Korumayı ağır bitirişle kır; Lord Varek kalkanını kaldırınca ona yandan vur."
+    },
+    {
+      "en": "Rest at the inn before a boss. Falling costs a fifth of your gold on Normal, so spend it before a risky fight.",
+      "tr": "Bir bossa gitmeden önce handa dinlen. Normal'de düşmek altınının beşte birine mal olur; riskli bir savaştan önce altınını harca."
+    },
+    {
+      "en": "Skull-flag camps are tough, but each gives an item, a Sigil and a richer pick of power cards, which last for the current journey.",
+      "tr": "Kuru kafa bayraklı kamplar zorludur ama her biri bir eşya, bir Mühür ve o yolculuk boyunca geçerli güç kartlarından daha zengin bir seçim verir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Six classes, each with three combos and two skills",
+      "tr": "Her biri üç kombolu ve iki yetenekli altı sınıf"
+    },
+    {
+      "en": "A fog-covered hex map with camps, ambushes and six quests",
+      "tr": "Kamplı, pusulu, altı görevli, sisle örtülü bir altıgen harita"
+    },
+    {
+      "en": "Loot from Common to Legendary, talents, power cards and Sigils",
+      "tr": "Sıradan'dan Efsanevi'ye ganimet, yetenek puanları, güç kartları ve Mühürler"
+    },
+    {
+      "en": "The Endless Rift and New Game+ after the final boss",
+      "tr": "Son bosstan sonra Sonsuz Yarık ve YENİ OYUN+"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is my progress saved?",
+        "tr": "İlerlemem kaydediliyor mu?"
+      },
+      "a": {
+        "en": "Yes, in this browser, after every fight and whenever you rest at the inn. Easy and Normal keep separate realms, and New Campaign at the inn starts over.",
+        "tr": "Evet, bu tarayıcıda; her savaştan sonra ve handa her dinlendiğinde. Kolay ve Normal ayrı diyarlar tutar, handaki Yeni Sefer her şeyi baştan başlatır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy, foes have a quarter less health, hit 40% softer and warn you for longer, and you earn more gold and XP and carry an extra potion. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da düşmanların canı dörtte bir azdır, %40 daha hafif vurur ve daha uzun uyarırlar; sen de daha çok altın ve deneyim kazanır, bir fazla iksir taşırsın. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "How is the score counted?",
+        "tr": "Skor nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Your score is your realm's renown, earned from won battles, quests, camps, rift floors and bosses. It keeps growing from one journey to the next.",
+        "tr": "Skorun, diyarındaki şöhretindir; kazanılan savaşlar, görevler, kamplar, yarık katları ve bosslarla artar. Şöhret yolculuktan yolculuğa birikir."
+      }
+    }
+  ]
+}
