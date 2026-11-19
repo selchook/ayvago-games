@@ -5,7 +5,7 @@
   "howTo": { "tr": "Kamyonu gerçek bir araba gibi sür. Dokunmatik: direksiyonu menüden seç (oklar, direksiyon simidi ya da eğim); sağda GAZ, FREN ve NİTRO. Klavye: ←\u00a0→\u00a0direksiyon, ↑\u00a0gaz, ↓\u00a0fren\u00a0/\u00a0geri, Boşluk, Z ya da Enter nitro.", "en": "Drive it like a real truck. Touch: pick the steering on the menu (arrows, a wheel or tilt); GAS, BRAKE and NITRO are on the right. Keys: ←\u00a0→\u00a0steer, ↑\u00a0gas, ↓\u00a0brake\u00a0/\u00a0reverse, Space, Z or Enter nitro." },
   "genres": ["sports", "arcade", "action"],
   "orientation": "landscape",
-  "controls": ["touch", "keyboard"],
+  "controls": ["touch", "keyboard", "gamepad"],
   "version": "1.5.2",
   "credits": ["3D models: Kenney Toy Car Kit, Racing Kit, Nature Kit, Platformer Kit and Mini Characters (CC0) — kenney.nl", "Sound effects: Juhani Junkala (CC0) — opengameart.org"],
   "platform": { "addedAt": "2026-11-07" }

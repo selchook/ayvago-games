@@ -5,7 +5,7 @@
   "howTo": { "tr": "Alttaki tuşlarla ya da tahtada sürükleyerek oyna: dokun = döndür, aşağı hızlı kaydır = bırak, yukarı = sakla. Klavye: oklar, Boşluk, C.", "en": "Use the buttons or drag on the board: tap = rotate, flick down = drop, flick up = hold. Keyboard: arrows, Space, C." },
   "genres": ["puzzle", "retro", "arcade"],
   "orientation": "portrait",
-  "controls": ["touch", "keyboard"],
+  "controls": ["touch", "keyboard", "gamepad"],
   "version": "1.1.0",
   "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
   "platform": { "addedAt": "2026-10-28" }
