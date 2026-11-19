@@ -10,12 +10,13 @@ import { MapView, BaseView } from './mapview';
 import { Mission, newRun, mulberry, NO_INPUT } from './sim';
 import { Bot, SKILL } from './bot';
 import { DT, type MissionDef } from './defs';
+import { planWorld } from './world';
 import { loadMeta } from './meta';
 import { ASTRO_THEME } from './menu';
 import { makeArt } from './art';
 
-/** The menu's backdrop: a busy fight on the dune planet. */
-const BACKDROP: MissionDef = { n: 5, theme: 'desert', kind: 'clear', planet: 'planet-6', count: 99, par: 999, foes: ['xs', 's', 'fly', 'brute'] };
+/** The menu's backdrop: a busy fight at a nest on the dune planet. */
+const BACKDROP: MissionDef = { n: 5, theme: 'desert', kind: 'clear', planet: 'planet-6', count: 3, par: 999, foes: ['xs', 's', 'fly', 'brute'] };
 
 launch({
   meta: meta as GameMeta,
@@ -115,10 +116,16 @@ launch({
       const run = newRun('normal', hero, { hull: 2, armory: 2, lab: 1, thrusters: 1, solar: 1, radar: 1, drone: 1 });
       run.cards = ['blades', 'twin', 'flame'];
       run.depth = 2;
-      const sim = new Mission(BACKDROP, run, seed++);
+      const sim = new Mission(BACKDROP, run, seed++, plan);
+      // the crew member lands right by a nest and the fight starts at once
+      const n = sim.nests[seed % sim.nests.length];
+      sim.hero.x = n.x + 3; sim.hero.z = n.z + 12;
       view.buildMission(BACKDROP, sim);
-      return { sim, bot: new Bot(sim, SKILL.good, mulberry(seed)) };
+      const bot = new Bot(sim, SKILL.good, mulberry(seed));
+      bot.stay = { x: n.x, z: n.z + 7 };
+      return { sim, bot };
     };
+    const plan = planWorld(BACKDROP);
     let cur = fresh();
     for (let i = 0; i < 60 * 6; i++) { cur.sim.step(DT, cur.bot.input(DT)); cur.sim.events.length = 0; cur.sim.pendingLevels = 0; }
     let acc = 0;
@@ -135,7 +142,7 @@ launch({
         else s.step(DT, s.phase === 'play' ? cur.bot.input(DT) : NO_INPUT);
         for (const e of s.events) view.handle(e, s);
         s.events.length = 0;
-        if (s.phase !== 'play' || s.time > 240) cur = fresh();
+        if (s.phase !== 'play' || s.time > 150 || s.stats.nests > 0) cur = fresh();
       }
       if (n >= 4) acc = 0;
       view.sync(cur.sim, dt);

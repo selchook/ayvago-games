@@ -9,6 +9,9 @@ import { ICON_SHEET, ICON_KEYS, iconFrame, type IconKey } from './icons';
 const P = 'ac-p-';
 export const SPARK = 'ac-spark';
 export const ARROW = 'ac-arrow';
+/** The edge arrow towards a hunting wave (red) and the castaway (cyan). */
+export const ARROW_RED = 'ac-arrow-red';
+export const ARROW_CYAN = 'ac-arrow-cyan';
 export const STAR_ON = 'ac-star-on';
 export const STAR_OFF = 'ac-star-off';
 export const BTN_FACE = 'ac-btn-';
@@ -202,6 +205,28 @@ const PAINT: Record<string, Paint> = {
     c.strokeStyle = '#ffd24a'; c.lineWidth = 6; c.beginPath(); c.ellipse(48, 22, 18, 6, 0, 0, Math.PI * 2); c.stroke();
     c.fillStyle = '#ffd24a'; outline(c, 3); c.beginPath(); c.arc(48, 56, 10, 0, Math.PI * 2); c.fill(); c.stroke();
   },
+  nest: (c) => {
+    // an alien nest: a glowing egg in a crown of spines
+    outline(c);
+    c.fillStyle = grad(c, 20, 90, '#ff8ab0', '#a01a4a');
+    for (const [x, a] of [[22, -0.5], [38, -0.2], [58, 0.2], [74, 0.5]] as [number, number][]) {
+      c.beginPath(); c.moveTo(x - 7, 86); c.lineTo(x + Math.sin(a) * 26, 26 + Math.abs(a) * 22); c.lineTo(x + 7, 86); c.closePath(); c.fill(); c.stroke();
+    }
+    c.fillStyle = grad(c, 36, 88, '#e8ffb0', '#6ad83a');
+    c.beginPath(); c.ellipse(48, 64, 20, 24, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    shine(c, 41, 52, 6, 4);
+  },
+  alert: (c) => {
+    // a siren with its light flaring
+    c.fillStyle = 'rgba(255,90,70,0.35)'; c.beginPath(); c.arc(48, 46, 40, Math.PI, 0); c.fill();
+    outline(c);
+    c.fillStyle = grad(c, 20, 74, '#ffb0a0', '#e8281a');
+    c.beginPath(); c.moveTo(24, 74); c.lineTo(24, 46); c.quadraticCurveTo(24, 20, 48, 20); c.quadraticCurveTo(72, 20, 72, 46); c.lineTo(72, 74); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#8a84b0'; c.fillRect(14, 74, 68, 12); c.strokeRect(14, 74, 68, 12);
+    shine(c, 38, 36, 6, 9);
+    c.strokeStyle = '#fff2a0'; c.lineWidth = 4;
+    for (const [x1, y1, x2, y2] of [[8, 30, 16, 36], [88, 30, 80, 36], [48, 4, 48, 12]] as [number, number, number, number][]) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); }
+  },
   // ---- the action buttons' glyphs
   dodge: (c) => {
     c.lineWidth = 9; c.strokeStyle = '#ffffff'; c.lineCap = 'round';
@@ -221,10 +246,12 @@ export function makeArt(scene: Phaser.Scene): void {
   });
   bake(scene, STAR_ON, 64, 64, (c) => { c.fillStyle = grad(c, 4, 60, '#fff6c0', '#ffb82a'); outline(c, 3.5); star5(c, 32, 34, 28, 12); c.fill(); c.stroke(); shine(c, 26, 22, 5, 3); });
   bake(scene, STAR_OFF, 64, 64, (c) => { c.fillStyle = 'rgba(40,30,90,0.85)'; c.lineWidth = 3; c.strokeStyle = 'rgba(160,150,220,0.8)'; star5(c, 32, 34, 28, 12); c.fill(); c.stroke(); });
-  bake(scene, ARROW, 64, 64, (c) => {
-    c.fillStyle = '#ffd84a'; outline(c, 4);
-    c.beginPath(); c.moveTo(58, 32); c.lineTo(14, 8); c.lineTo(24, 32); c.lineTo(14, 56); c.closePath(); c.fill(); c.stroke();
-  });
+  for (const [key, col] of [[ARROW, '#ffd84a'], [ARROW_RED, '#ff5a4a'], [ARROW_CYAN, '#8af0ff']] as [string, string][]) {
+    bake(scene, key, 64, 64, (c) => {
+      c.fillStyle = col; outline(c, 4);
+      c.beginPath(); c.moveTo(58, 32); c.lineTo(14, 8); c.lineTo(24, 32); c.lineTo(14, 56); c.closePath(); c.fill(); c.stroke();
+    });
+  }
   bake(scene, RING, 128, 128, (c) => { c.strokeStyle = '#ffffff'; c.lineWidth = 10; c.beginPath(); c.arc(64, 64, 56, 0, Math.PI * 2); c.stroke(); });
   // the round action buttons: a glass disc in the button's colour
   for (const [k, col] of [['dodge', '#5ae8ff'], ['skill', '#ff8a2a'], ['mech', '#ffd84a'], ['off', '#6a648a']] as [string, string][]) {

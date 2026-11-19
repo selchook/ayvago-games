@@ -2,10 +2,13 @@
 // runs for the exit, jumps walls and pits (double jump when the landing is not there), waits out
 // live cables, steam and lasers, rolls through bolts and charges, jumps shockwaves and low beams,
 // rolls under high ones, hits levers, opens lootboxes, picks up chips near its path, and fights
-// with all three combos: taps the quick chain, holds ATTACK for the cleave against armour and the
-// boss, rolls in for the lunge, and shoots from range while the blaster is cool. Between levels it
-// buys cyberware and picks implant chips. Used by the menu's live backdrop, the store-art stage
-// and the headless balance check (balance.ts).
+// with the blade moves: taps the quick chain, holds ATTACK for the cleave against armour and the
+// boss, rolls in for the lunge (and holds on into the iaido where the roof runs on), sprints in
+// with the cyclone, launches light foes and juggles them with the air string, ends a chain with
+// blade & bolt, slashes bolts back (Mirror Cut) instead of rolling now and then, and shoots from
+// range while the blaster is cool. Between levels it buys cyberware and takes its banked implant
+// picks. Used by the menu's live backdrop, the store-art stage and the headless balance check
+// (balance.ts).
 import { FOE, MOVE, HAZARD, DT as DT_BOT } from './defs';
 import { NO_INPUT, hazardBox, type Input, type Sim, type Foe } from './sim';
 import { CARD, UPGRADE_IDS, MAX_RANK, UPGRADE, RARITIES, type CardId, type Ranks } from './powers';
@@ -17,15 +20,17 @@ export interface Skill {
   miss: number;
   /** Uses the cleave and the lunge. */
   combos: boolean;
+  /** Share of chances it takes for the flashier moves (cyclone, launcher juggles, blade & bolt, mirror, iaido). */
+  flair: number;
   /** Fires the blaster. */
   gun: boolean;
   /** Chance that a jump is mistimed (held too long or too short, like a hurried thumb). */
   slip: number;
 }
 export const SKILL: Record<'casual' | 'decent' | 'good', Skill> = {
-  casual: { react: 0.34, miss: 0.4, combos: false, gun: true, slip: 0.1 },
-  decent: { react: 0.22, miss: 0.22, combos: true, gun: true, slip: 0.05 },
-  good: { react: 0.12, miss: 0.08, combos: true, gun: true, slip: 0.015 },
+  casual: { react: 0.34, miss: 0.4, combos: false, gun: true, slip: 0.1, flair: 0 },
+  decent: { react: 0.22, miss: 0.22, combos: true, gun: true, slip: 0.05, flair: 0.35 },
+  good: { react: 0.12, miss: 0.08, combos: true, gun: true, slip: 0.015, flair: 0.7 },
 };
 
 export class Bot {
@@ -42,10 +47,14 @@ export class Bot {
   private backDir: 1 | -1 = 1;
   private backT = 0;
   private lungeT = 0;
+  private juggleT = 0;
+  private iaido = false;
+  private mirror = new Map<number, boolean>();
+  private flairCd = 0;
 
   constructor(private sim: Sim, private skill: Skill, private rnd: () => number) {}
 
-  setSim(s: Sim): void { this.sim = s; this.seen.clear(); this.ignored.clear(); this.stuck = 0; }
+  setSim(s: Sim): void { this.sim = s; this.seen.clear(); this.ignored.clear(); this.mirror.clear(); this.stuck = 0; }
 
   input(dt: number): Input {
     const s = this.sim, p = s.p;
@@ -55,6 +64,8 @@ export class Bot {
     this.wait -= dt;
     this.backT -= dt;
     this.lungeT -= dt;
+    this.juggleT -= dt;
+    this.flairCd -= dt;
     this.sloppy -= dt;
     // ---- where to go: the exit; in a boss fight, a good distance from the boss
     let goal = s.W - 4;
@@ -87,23 +98,42 @@ export class Bot {
     if (this.backT > 0) mx = -this.backDir;
     // ---- threats
     const danger = this.threat();
-    if (danger === 'roll') inp.roll = true;
+    if (danger === 'slash') inp.attack = true;
+    else if (danger === 'roll') inp.roll = true;
     else if (danger === 'jump') this.jumpHeld = 0.3;
     else if (danger === 'back') mx = p.x < (boss?.x ?? p.x + 1) ? -1 : 1;
     // ---- hazards ahead: wait for them to switch off
     if (mx !== 0 && this.hazardAhead(mx)) mx = 0;
     // ---- fights
     const target = this.nearestFoe();
-    if (target) {
+    const flair = (): boolean => this.flairCd <= 0 && this.rnd() < this.skill.flair && ((this.flairCd = 0.8), true);
+    const light = (f: Foe): boolean => f.kind === 'walker' || f.kind === 'gunner' || f.kind === 'drone' || f.kind === 'gdrone';
+    if (target && this.juggleT > 0 && target.juggle > 0) {
+      // a launched foe: jump after it and cut it in the air
+      const dx = target.x - p.x, dy = target.y - p.y;
+      mx = Math.abs(dx) > 1.1 ? Math.sign(dx) : 0;
+      if (!p.ground && dy > 0.6 && p.airJumps > 0 && p.vy < 3 && this.tapCd <= 0) { this.jumpNow = true; this.jumpHeld = 0.3; this.tapCd = 0.15; }
+      else if (!p.ground && Math.abs(dx) < 2.2 && dy > -1.8 && dy < 2.4 && this.tapCd <= 0) { inp.attack = true; this.tapCd = 0.2; }
+    } else if (target) {
       const dx = target.x - p.x, adx = Math.abs(dx), dy = target.y - p.y;
       const reach = adx < 1.5 + target.w / 2 && dy > -1.5 && dy < 1.6;
       const armoured = target.maxArmour > 0 && target.armour > 0;
-      if (reach) {
+      const open = (id: 'rise' | 'iaido'): boolean => s.hasAbility(id);
+      if (this.skill.combos && p.state === 'run' && p.runT >= 0.32 && adx < 2.9 && adx > 1.2 && Math.abs(dy) < 1 && Math.sign(dx) === p.face && this.tapCd <= 0 && !armoured && target.kind !== 'boss' && flair()) {
+        // sprinting in: the cyclone
+        inp.attack = true; this.tapCd = 0.3;
+      } else if (reach && this.skill.combos && p.ground && open('rise') && light(target) && !FOE[target.kind].flies && target.juggle <= 0 && Math.abs(dy) < 0.8 && this.tapCd <= 0 && flair()) {
+        // the launcher, then the juggle
+        if (Math.sign(dx) !== p.face) mx = Math.sign(dx);
+        else { inp.up = true; inp.attack = true; this.tapCd = 0.25; this.juggleT = 1.4; mx = 0; }
+      } else if (reach) {
         if (!boss || adx < 3) mx = 0;
         if (Math.sign(dx) !== p.face) mx = Math.sign(dx);
         // the heavy chain against armour and the boss: hold
         if (this.skill.combos && (armoured || target.kind === 'boss') && s.hasAbility('cleave')) { this.attackHeld = Math.max(this.attackHeld, 0.9); if (this.tapCd <= 0) { inp.attack = true; this.tapCd = 0.3; } }
         else if (this.tapCd <= 0) { inp.attack = true; this.tapCd = 0.14; }
+        // blade & bolt ends the chain on a light foe
+        if (this.skill.combos && s.run.ranks.gun >= 1 && p.state === 'attack' && p.atk?.kind === 'kick' && !armoured && target.kind !== 'boss' && this.rnd() < this.skill.flair * 0.12) inp.shoot = true;
       } else if (this.skill.combos && adx < 4.5 && adx > 2.4 && Math.abs(dy) < 1 && p.ground && p.rollCd <= 0 && this.lungeT <= 0 && target.state !== 'tell' && !FOE[target.kind].fixed && Math.sign(dx) === p.face) {
         // roll in for the lunge
         inp.roll = true;
@@ -116,8 +146,14 @@ export class Bot {
       // keep pushing in on turrets and the teleporter
       if (FOE[target.kind].fixed && adx > 1.3 && !p.hot && p.heat > 70) mx = Math.sign(dx);
     }
-    // the lunge: attack as the roll ends
-    if (p.state === 'roll' && this.lungeT > 0 && p.t > MOVE.roll * 0.5) inp.attack = true;
+    // the lunge: attack as the roll ends (and hold on into the iaido where the roof runs on)
+    if (p.state === 'roll' && this.lungeT > 0 && p.t > MOVE.roll * 0.5) {
+      inp.attack = true;
+      this.iaido = s.hasAbility('iaido') && !boss && this.roofAhead(8) && this.rnd() < this.skill.flair;
+      if (this.iaido) this.attackHeld = Math.max(this.attackHeld, 0.75);
+    }
+    // a hold meant for the cleave must not draw the iaido out of a lunge
+    if (p.state === 'attack' && p.atk?.kind === 'lunge' && !this.iaido) this.attackHeld = 0;
     // ---- levers and lootboxes
     for (const pr of s.props) {
       if ((pr.kind === 'lever' || pr.kind === 'lootbox') && !pr.on && Math.abs(pr.x - p.x) < 1.6 && Math.abs(pr.y - p.y) < 1 && this.tapCd <= 0) {
@@ -143,6 +179,17 @@ export class Bot {
       for (const k of s.picks) if (k.kind === 'chip' && Math.abs(k.x - p.x) < 6) this.ignored.add(k.id);
     }
     return inp;
+  }
+
+  /** Solid ground for `n` metres ahead (the iaido's dash will not end over a pit). */
+  private roofAhead(n: number): boolean {
+    const s = this.sim, p = s.p;
+    const y = Math.floor(p.y - 0.05);
+    for (let i = 1; i <= n; i++) {
+      const x = Math.floor(p.x + p.face * i);
+      if (!s.standable(x, y) || s.solid(x, y + 1)) return false;
+    }
+    return true;
   }
 
   private jumpNow = false;
@@ -263,7 +310,7 @@ export class Bot {
   }
 
   /** What to do about the closest danger, after a reaction delay. */
-  private threat(): 'roll' | 'jump' | 'back' | null {
+  private threat(): 'roll' | 'jump' | 'back' | 'slash' | null {
     const s = this.sim, p = s.p;
     const react = (id: number): boolean => {
       const first = this.seen.get(id);
@@ -277,7 +324,14 @@ export class Bot {
       if (Math.sign(dx) !== Math.sign(sh.vx) && Math.abs(sh.vx) > 0.5) continue;
       const tt = Math.abs(dx) / Math.max(1, Math.abs(sh.vx));
       const yAt = sh.y + sh.vy * tt;
-      if (tt < 0.32 && yAt > p.y - 0.2 && yAt < p.y + p.h + 0.2 && react(sh.id)) return p.ground && p.rollCd <= 0 ? 'roll' : 'jump';
+      if (tt < 0.32 && yAt > p.y - 0.2 && yAt < p.y + p.h + 0.2 && react(sh.id)) {
+        // Mirror Cut: a slash met head on sends it back (a well-timed one, now and then)
+        const can = s.run.ranks.sword >= 1 && Math.sign(sh.x - p.x) === p.face && (p.state === 'idle' || p.state === 'run') && p.ground;
+        let plan = this.mirror.get(sh.id);
+        if (plan === undefined) { plan = can && this.rnd() < this.skill.flair * 0.5; this.mirror.set(sh.id, plan); }
+        if (plan && can) return tt < 0.1 ? 'slash' : null;
+        return p.ground && p.rollCd <= 0 ? 'roll' : 'jump';
+      }
     }
     // shockwaves along the ground
     for (const w of s.waves) {

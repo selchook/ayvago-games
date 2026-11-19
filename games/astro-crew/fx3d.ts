@@ -1,11 +1,67 @@
-// Astro Crew: 3D effects, all pooled so a mission never grows the scene: soft point sprites
-// (sparks, smoke, embers, stars), flat rings on the ground (shock waves, portals, pickups),
-// telegraphs (a red disc filling up, a lane for a charge), beams (the Sun Lance, chain lightning).
+// Astro Crew: the ground's shape and 3D effects, all pooled so a mission never grows the scene:
+// soft point sprites (sparks, smoke, embers, muzzle flashes), flat rings on the ground (shock
+// waves, portals, pickups), telegraphs (a red disc filling up, a lane for a charge), beams (the Sun
+// Lance, chain lightning).
+//
+// The planet is a big crater with gentle hills (`baseY`), and it curves away round the camera's
+// focus like a tiny planet: `groundY` is the height drawn at a point (the bend follows the camera),
+// and the static world bends the same way in its vertex shader (`bentMaterial`), tilting tall
+// things away towards the horizon.
 import { THREE } from '@core/three';
+import { WORLD_R } from './defs';
 
-/** The ground height under a point (the arena is a small planet: the edge curves away). */
-export const PLANET_R = 46;
-export const groundY = (x: number, z: number): number => -(x * x + z * z) / (2 * PLANET_R);
+/** The bend's radius (smaller curves faster) and its centre (the camera's focus, moved every frame). */
+export const PLANET_R = 130;
+export const BEND = { x: 0, z: 0, on: 1 };
+const BK = 1 / (2 * PLANET_R);
+
+/** The crater's floor: gentle hills, rising into the rim beyond WORLD_R. */
+export function baseY(x: number, z: number): number {
+  const hills = 0.42 * Math.sin(x * 0.11 + 1.3) * Math.sin(z * 0.09 + 0.4) + 0.22 * Math.sin((x + z) * 0.21 + 2) + 0.12 * Math.sin(x * 0.37 - z * 0.29);
+  const r = Math.hypot(x, z);
+  // the rim rises into cliffs, but stays a low bank on the side the camera looks from (south)
+  const low = z > 0 ? Math.max(0.22, 1 - z / 38) : 1;
+  const rim = r > WORLD_R + 1 ? Math.pow((r - WORLD_R - 1) * 0.5, 1.45) * low : 0;
+  return hills + rim;
+}
+
+/** How far a point drops below its height for the bend. */
+export const bendDrop = (x: number, z: number): number => ((x - BEND.x) ** 2 + (z - BEND.z) ** 2) * BK * BEND.on;
+/** The ground's drawn height under a point (the hills, bent away round the camera's focus). */
+export const groundY = (x: number, z: number): number => baseY(x, z) - bendDrop(x, z);
+/** The bend's tilt at a point: rotations about x and z for a thing standing there. */
+export function bendTilt(x: number, z: number): { tx: number; tz: number } {
+  const k = 2 * BK * BEND.on;
+  return { tx: (z - BEND.z) * k, tz: -(x - BEND.x) * k };
+}
+
+const bendUniform = { value: new THREE.Vector3(0, 0, BK) };
+/** Moves the bend's centre (the shader's and groundY's). */
+export function setBend(x: number, z: number, on = 1): void {
+  BEND.x = x; BEND.z = z; BEND.on = on;
+  bendUniform.value.set(x, z, BK * on);
+}
+
+/** The static world's flat-colour Lambert, bent round the camera's focus in its vertex shader. */
+export function bentMaterial(): THREE.MeshLambertMaterial {
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uBend = bendUniform;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform vec3 uBend;')
+      .replace('#include <begin_vertex>', [
+        '#include <begin_vertex>',
+        '{',
+        '  vec2 bd = transformed.xz - uBend.xy;',
+        '  float bh = transformed.y;',
+        '  transformed.y -= dot(bd, bd) * uBend.z;',
+        '  transformed.xz += bd * (bh * 2.0 * uBend.z);',
+        '}',
+      ].join('\n'));
+  };
+  m.customProgramCacheKey = () => 'astro-bent';
+  return m;
+}
 
 export function softDot(): THREE.Texture {
   const c = document.createElement('canvas');
@@ -249,9 +305,10 @@ export class Beams {
   private bolts: { line: THREE.Line; mat: THREE.LineBasicMaterial; t: number; geo: THREE.BufferGeometry }[] = [];
 
   constructor() {
-    const box = new THREE.BoxGeometry(1, 1, 1).translate(0, 0, 0.5);
+    // a beam that leaves the gun's tip thin and widens as it burns on
+    const box = new THREE.CylinderGeometry(1, 0.1, 1, 12, 1, true).rotateX(Math.PI / 2).translate(0, 0, 0.5);
     for (let i = 0; i < 3; i++) {
-      const mat = new THREE.MeshBasicMaterial({ color: 0xff8ae0, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+      const mat = new THREE.MeshBasicMaterial({ color: 0xff8ae0, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
       const mesh = new THREE.Mesh(box, mat);
       mesh.visible = false;
       mesh.frustumCulled = false;
@@ -270,13 +327,14 @@ export class Beams {
     }
   }
 
-  addLance(x: number, z: number, ang: number, len: number, w: number): void {
+  /** The Sun Lance from (x, y above the ground, z): it starts at the gun's tip. */
+  addLance(x: number, z: number, ang: number, len: number, w: number, y = 1): void {
     const l = this.lance.find((o) => !o.mesh.visible) ?? this.lance[0];
     l.t = 0.45;
     l.mesh.visible = true;
-    l.mesh.position.set(x, groundY(x, z) + 1.0, z);
+    l.mesh.position.set(x, groundY(x, z) + y, z);
     l.mesh.rotation.y = ang;
-    l.mesh.scale.set(w * 1.6, 0.9, len);
+    l.mesh.scale.set(w * 0.9, 0.55, len);
   }
 
   addChain(pts: number[]): void {
@@ -305,7 +363,7 @@ export class Beams {
       l.t -= dt;
       if (l.t <= 0) { l.mesh.visible = false; continue; }
       l.mat.opacity = Math.min(1, l.t / 0.25);
-      l.mesh.scale.y = 0.9 * (0.4 + l.t * 1.4);
+      l.mesh.scale.y = 0.55 * (0.4 + l.t * 1.4);
     }
     for (const b of this.bolts) {
       if (!b.line.visible) continue;

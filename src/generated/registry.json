@@ -138,8 +138,8 @@
         "en": "Astro Crew"
       },
       "description": {
-        "tr": "Hayvan astronotlardan oluşan tayfanı minik uzaylı gezegenlerle dolu bir galakside yönet! 3B bir aksiyon macerası: sen koşar, takla atar ve özel yeteneğini kullanırken silahın kendi nişan alır; zıplayan balçıklar, tüküren uçanlar, yeri döven devler ve üç dev boss seni bekliyor. Her gezegen yeni bir görev: dalgaları temizle, kubbeyi koru, anahtar kart avla, mahsur kalan gezicileri kurtar. Seviye atla, güç kartı seç, dev mekanı doldurup birkaç saniyeliğine her şeyi ez ve görevler arasında kristallerle üssünü büyüt. Dört tayfa, on iki gezegen, Kolay ya da Normal.",
-        "en": "Lead a crew of animal astronauts across a galaxy of tiny alien planets! A 3D action adventure: your blaster aims by itself while you run, roll and fire your signature skill through bouncing blobs, spitting flyers, ground-slamming brutes and three huge bosses. Every planet is a new mission: clear the waves, defend the dome, hunt keycards, rescue stranded rovers. Level up and pick power cards, charge your giant mech for a few smashing seconds, and grow your base with crystals between missions. Four crew members, twelve planets, Easy or Normal."
+        "tr": "Hayvan astronotlardan oluşan tayfanı uzaylılarla dolu gezegenlerde yönet! 3B bir aksiyon macerası: her gezegen baştan sona dolaşabileceğin açık bir dünya. Sen koşar, takla atar ve özel yeteneğini kullanırken silahın kendi kalkar ve nişan alır; uzaylı yuvaları yaklaşınca uyanır, devriyeler dolaşır, kovan alarmı dolunca bir sürü seni avlamaya gelir. Yuvaları yık, kubbeyi koru, anahtar kartları topla, mahsur gezicileri kurtar ve üç dev boss'u ininde yen; harita ve kenardaki oklar yolu gösterir. Seviye atla, güç kartı seç, dev mekanı doldur ve görevler arasında kristallerle üssünü büyüt. Dört tayfa, on iki gezegen, Kolay ya da Normal.",
+        "en": "Lead a crew of animal astronauts across a galaxy of alien planets! A 3D action adventure where every planet is an open world to roam from rim to rim. Your blaster comes up and aims by itself while you run, roll and fire your signature skill; alien nests wake as you come near, patrols roam, and when the hive alert fills, a swarm comes hunting for you. Destroy the nests, defend the dome, collect keycards, rescue stranded rovers and beat three huge bosses in their lairs; the minimap and the arrows at the edge show the way. Level up and pick power cards, charge your giant mech, and grow your base with crystals between missions. Four crew members, twelve planets, Easy or Normal."
       },
       "howTo": {
         "tr": "Soldaki çubukla ya da WASD / ok tuşlarıyla yürü; silahın kendi nişan alıp ateş eder. TAKLA ya da Boşluk ile yuvarlan, YETENEK ya da Q ile özel gücünü kullan, sayaç dolunca MEKA ya da E ile mekana bin. P ya da Esc duraklatır.",
@@ -154,7 +154,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "3D models: Quaternius Ultimate Space Kit (CC0) — quaternius.com",
         "Sounds: Juhani Junkala (CC0) — opengameart.org; Kenney Interface and Casino Audio (CC0) — kenney.nl",
@@ -1672,12 +1672,12 @@
         "en": "Neon Ronin"
       },
       "description": {
-        "tr": "Yağmurlu bir siber şehirde, neon tabelalı yüzen çatıların üstünde 3B aksiyon platform oyunu. Koş, çift zıpla, duvardan sek, mermilerin içinden yuvarlan; katanayla kombolar zincirle, blaster'ı ısıtmadan ateş et. Dört bölgede robotları, taretleri ve dev mekanik bossları alt et, veri çiplerini bul, siber donanımını yükselt ve implant çipleri seç.",
-        "en": "A 3D action platformer across the floating neon rooftops of a rain-soaked cyber city. Run, double jump, wall-jump and roll through bolts; chain katana combos and fire your blaster before it overheats. Cut through robots, turrets and giant mech bosses in four districts, hunt data chips, upgrade your cyberware and draft implant chips."
+        "tr": "Yağmurlu bir siber şehirde, neon tabelalı yüzen çatıların üstünde 3B aksiyon platform oyunu. Koş, çift zıpla, duvardan sek, mermilerin içinden yuvarlan; katanayla on bir kombo zincirle: fırlatıcılar, havada takla, iaido atılması, mermi yansıtan kesikler; blaster'ı ısıtmadan ateş et. Dört bölgede robotları, taretleri ve dev mekanik bossları alt et, veri çiplerini bul, siber donanımını yükselt ve implant çipleri seç.",
+        "en": "A 3D action platformer across the floating neon rooftops of a rain-soaked cyber city. Run, double jump, wall-jump and roll through bolts; chain eleven katana combos (launchers, air strings, an iaido dash, bullet-reflecting cuts) and fire your blaster before it overheats. Cut through robots, turrets and giant mech bosses in four districts, hunt data chips, upgrade your cyberware and draft implant chips."
       },
       "howTo": {
-        "tr": "Dokunmatik: sol başparmakla koş; sağda ZIPLA, KES, ATEŞ ve YUVARLAN. Klavye: A/D ya da ←/→ koş, W/Boşluk/↑ zıpla, J ya da Z kes, K ya da X ateş, L, C ya da Shift yuvarlan, P ya da Esc duraklat.",
-        "en": "Touch: run with your left thumb; JUMP, SLASH, SHOOT and ROLL on the right. Keys: A/D or ←/→ run, W/Space/↑ jump, J or Z slash, K or X shoot, L, C or Shift roll, P or Esc pause."
+        "tr": "Dokunmatik: sol başparmakla koş; sağda ZIPLA, KES, ATEŞ ve YUVARLAN. Klavye: A/D ya da ←/→ koş, W/Boşluk/↑ zıpla, J ya da Z kes, K ya da X ateş, L, C ya da Shift yuvarlan, P ya da Esc duraklat. Tüm kombolar HAREKETLER'de.",
+        "en": "Touch: run with your left thumb; JUMP, SLASH, SHOOT and ROLL on the right. Keys: A/D or ←/→ run, W/Space/↑ jump, J or Z slash, K or X shoot, L, C or Shift roll, P or Esc pause. Every combo is listed under MOVES."
       },
       "genres": [
         "action",
@@ -1688,7 +1688,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.1.0",
       "credits": [
         "3D models: Quaternius Cyberpunk Game Kit (CC0) — quaternius.com",
         "Sound effects: Juhani Junkala and Kenney (CC0) — kenney.nl",

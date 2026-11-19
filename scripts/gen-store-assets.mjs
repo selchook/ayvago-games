@@ -428,10 +428,11 @@ const CARD = {
       await sleep(400);
     }`,
   },
-  // Astro Crew's card (landscape, cover-fit) shows a heroic fight on the Dune Titan's orange planet:
-  // the autopilot plays until the boss is in, a ring of aliens closes round the crew member and it
-  // jumps into its mech (the arrival's shockwave, cannon shells, damage numbers and the boss's bar);
-  // the simulation then runs slowly so every candidate frame keeps the moment.
+  // Astro Crew's card (landscape, cover-fit) shows a heroic fight in the Dune Titan's lair on the
+  // orange planet (1.1: planets are open worlds): the hives round the lair just broken, the Titan
+  // awake and close, a ring of aliens round the crew member as it jumps into its mech (the
+  // arrival's shockwave, cannon shells from its two cannons, damage numbers and the boss's bar); the
+  // simulation then runs slowly so every candidate frame keeps the moment.
   'astro-crew': {
     pick: 0,
     stage: `async () => {

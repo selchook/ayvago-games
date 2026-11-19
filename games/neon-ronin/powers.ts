@@ -3,8 +3,12 @@
 //     three ranks each; ranks change behaviour, not only numbers (Katana II dashes the finisher,
 //     Katana III throws a neon wave, Blaster II twin bolts, Blaster III piercing, Boots II the
 //     air-dash, Armour III a shield ...).
-//   - Implant chips (power cards): drafted 1 of 3 at a level's first checkpoint and after a boss,
-//     common to legendary, one reroll per draft; they last for the district run.
+//   - Implant chips (power cards): a level's first checkpoint earns one, banked without stopping
+//     play; it is picked (1 of 3, common to legendary, one reroll) on the results screen or, at the
+//     player's choice, from the pause. A boss gives one more on the district card. They last for
+//     the district run.
+//   - The blade moves (MOVES): some from the start, others unlocked by level clears, bosses and the
+//     Katana / Blaster ranks.
 // Pure data and rules: no Phaser.
 
 export type UpgradeId = 'sword' | 'gun' | 'boots' | 'armor' | 'magnet' | 'heat';
@@ -86,7 +90,34 @@ export function rollCards(have: CardId[], rnd: () => number): CardId[] {
 }
 
 /** Abilities unlocked by the campaign (shown on the results card the first time). */
-export type AbilityId = 'wall' | 'cleave' | 'slam';
-export const ABILITY_IDS: AbilityId[] = ['wall', 'cleave', 'slam'];
+export type AbilityId = 'wall' | 'rise' | 'cleave' | 'iaido' | 'slam';
+export const ABILITY_IDS: AbilityId[] = ['wall', 'rise', 'cleave', 'iaido', 'slam'];
 /** The level (index into LEVELS) whose clear unlocks each ability. */
-export const ABILITY_AT: Record<AbilityId, number> = { wall: 1, cleave: 3, slam: 7 };
+export const ABILITY_AT: Record<AbilityId, number> = { wall: 1, rise: 2, cleave: 3, iaido: 5, slam: 7 };
+
+/** The blade moves, in the order the Moves screen lists them. */
+export type MoveId = 'neonCut' | 'cyclone' | 'lunge' | 'sky' | 'dive' | 'rise' | 'cleave' | 'iaido' | 'slam' | 'mirror' | 'burst';
+export type MoveUnlock = { kind: 'start' } | { kind: 'ability'; id: AbilityId } | { kind: 'rank'; track: 'sword' | 'gun'; rank: number };
+export interface MoveDef { id: MoveId; icon: string; name: string; unlock: MoveUnlock }
+export const MOVES: MoveDef[] = [
+  { id: 'neonCut', icon: 'slash', name: 'fNeonCut', unlock: { kind: 'start' } },
+  { id: 'cyclone', icon: 'spin', name: 'fCyclone', unlock: { kind: 'start' } },
+  { id: 'lunge', icon: 'roll', name: 'fLunge', unlock: { kind: 'start' } },
+  { id: 'sky', icon: 'sky', name: 'fSky', unlock: { kind: 'start' } },
+  { id: 'dive', icon: 'dive', name: 'fDive', unlock: { kind: 'start' } },
+  { id: 'rise', icon: 'rise', name: 'fRise', unlock: { kind: 'ability', id: 'rise' } },
+  { id: 'cleave', icon: 'cleave', name: 'fCleave', unlock: { kind: 'ability', id: 'cleave' } },
+  { id: 'iaido', icon: 'iaido', name: 'fIaido', unlock: { kind: 'ability', id: 'iaido' } },
+  { id: 'slam', icon: 'slam', name: 'fSlam', unlock: { kind: 'ability', id: 'slam' } },
+  { id: 'mirror', icon: 'mirror', name: 'fMirror', unlock: { kind: 'rank', track: 'sword', rank: 1 } },
+  { id: 'burst', icon: 'burst', name: 'fBurst', unlock: { kind: 'rank', track: 'gun', rank: 1 } },
+];
+export const MOVE_IDS = MOVES.map((m) => m.id);
+
+/** Is a move open with these abilities and cyberware ranks? */
+export function moveOpen(id: MoveId, abilities: AbilityId[], ranks: Ranks): boolean {
+  const u = MOVES.find((m) => m.id === id)!.unlock;
+  if (u.kind === 'start') return true;
+  if (u.kind === 'ability') return abilities.includes(u.id);
+  return ranks[u.track] >= u.rank;
+}
