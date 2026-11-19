@@ -679,6 +679,50 @@ Cards, draft), `bot.ts` / `balance.ts`.
   rolls in for the dash strike), buys ranks and picks cards; rerun the headless balance and retune
   foe health / damage curves so the pacing targets still hold with the new power.
 
+## 7h. Gamepad (automatic)
+
+Every game plays with a standard gamepad (Xbox, PlayStation, Switch Pro in the browser's
+"standard" mapping) with no code of its own. `launch()` starts `src/core/gamepad.ts`, which polls
+the pad once per frame (only while one is connected) and dispatches real `keydown` / `keyup`
+events with `key`, `code`, `keyCode` and `which` set, on the focused element, so they reach
+Phaser (`addKey`, `createCursorKeys`, `keydown-X`, `JustDown`, `Controls`) and DOM listeners on
+`window` and `document` like real keys. So a game that is fully playable on the keyboard is
+playable on a pad: give every action a key from the table below where it fits.
+
+| Pad (standard index) | In play | On screens (menu, result, a game's `pushModal` overlay) | Pause |
+|---|---|---|---|
+| D-pad (12–15), left stick | arrows | arrows | arrows (pick a button) |
+| A / Cross (0) | Space | Enter | Enter (presses the focused button, RESUME first) |
+| B / Circle (1) | X (second action, core `Controls` B) | Escape (back; MENU on the result screen) | Escape (resume) |
+| X / Square (2) | J | J | J |
+| Y / Triangle (3) | K | K | K |
+| LB (4) / RB (5) | Q / E | Q / E | Q / E |
+| LT (6) / RT (7) | L / Z | L / Z | L / Z |
+| Back / Select (8) | M | M | M |
+| Start (9) | Escape (pauses) | Enter | Escape (resumes) |
+| L3 (10) / R3 (11) | C / B | C / B | C / B |
+
+- The stick presses an arrow beyond 0.35 and lets go under 0.25, in eight sectors (a diagonal
+  presses two arrows); a held direction repeats like a keyboard key (after 500 ms, every 100 ms).
+- Start sends Escape, not P, so the typing games (`pauseOnP = false`) still pause.
+- The pad's keys are its own: a key held on the keyboard and the pad goes up when both let go.
+  Everything is released when the pad disconnects, the page is hidden, the window loses focus or
+  an ad plays; a control still held then waits until it comes up.
+- **Own mapping.** `gamepad: { b: 'Escape', rt: 'ArrowUp', back: null }` in the game definition
+  maps a control to another key (`KeyboardEvent.code`) or turns it off (null), during play only;
+  screens keep the core mapping.
+- **Analog.** `padAxes()` gives `{ lx, ly, rx, ry, lt, rt }` (radial deadzone, -1..1 and 0..1),
+  `padConnected()` whether a pad is there, `padRumble(ms, strength)` a rumble where the browser
+  has one, `inputMode()` / `onInputMode(cb)` 'gamepad' | 'keyboard' | 'touch' (for pad glyphs
+  later). The core pause screen shows a focus ring on its buttons while the input mode is 'gamepad' (after the first arrow on a keyboard).
+- **Test.** `npm run test:gamepad` (`scripts/gamepad-unit.ts`, then `scripts/gamepad-test.mjs`
+  against `dist/`; `--dev`, `--canary`, `--serial`, `--shots <dir>`, slugs) plays each game with a
+  fake pad only: A through the intro, menu and pre-run screens, 2 s of stick and D-pad, every
+  button, Start to pause and resume, B from the result screen to the menu, and no key stuck after
+  unplugging.
+- Do not list `gamepad` in `game.json` `controls` until the game passes that test and plays well
+  with the pad.
+
 ## 8. Ship
 
 - Run `npm run registry` (validates `game.json`).

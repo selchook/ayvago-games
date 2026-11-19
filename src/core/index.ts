@@ -25,6 +25,10 @@ export type { AdPlacement, AdFormat } from './ads';
 export { difficulty, isEasy, setDifficulty, offersDifficulty } from './difficulty';
 export type { Difficulty } from './difficulty';
 export { net } from './net';
+export { padAxes, padConnected, padRumble, inputMode, onInputMode } from './gamepad';
+export type { InputMode } from './gamepad';
+export { PAD_PLAY, PAD_MENU, PAD_PAUSE } from './gamepad-map';
+export type { PadButton, PadKey, PadOverrides, PadAxes } from './gamepad-map';
 export {
   CHARACTER_IDS, CHARACTER_POSES, CHARACTER_PARTS, CHARACTER_FRAME, DEFAULT_CHARACTER,
   isCharacterId, playerCharacter, peerCharacter, otherCharacters, characterUrl, characterRig, loadCharacter,

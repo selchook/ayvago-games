@@ -297,7 +297,7 @@ export interface PauseActions {
  * The themed pause: everything placed from painted textures and interactive from the first frame;
  * the card drops in and the buttons pop within ~150 ms.
  */
-export function themedPause(scene: Phaser.Scene, theme: MenuTheme, a: PauseActions): void {
+export function themedPause(scene: Phaser.Scene, theme: MenuTheme, a: PauseActions): SkinButton[] {
   const { width, height } = scene.scale;
   const land = currentGame().meta.orientation === 'landscape';
   const L = layout(land).pause;
@@ -324,6 +324,7 @@ export function themedPause(scene: Phaser.Scene, theme: MenuTheme, a: PauseActio
   for (const b of [...buttons, snd]) (b as Phaser.GameObjects.Container).setDepth(4);
   buttons.forEach((b, i) => pop(scene, [b], i * 20, 110, 0.88, 'Back.easeOut', true));
   pop(scene, [snd], 60, 110, 0.88, 'Back.easeOut', true);
+  return buttons;
 }
 
 export interface ResultView {

@@ -7,6 +7,7 @@ import { isMuted, isSilenced, setMuted, onMuteChange, playSfx } from './audio';
 import { duckMusic, menuTrack, MUSIC_VOLUME, playMusic, restoreMusic } from './music';
 import { addCrt, burst } from './fx';
 import { sdk } from './sdk';
+import { keyNav } from './keynav';
 import { net } from './net';
 import { currentGame } from './registry';
 import { asset, kenney, loadSfx } from './assets';
@@ -426,66 +427,51 @@ export class PauseScene extends Phaser.Scene {
   }
 
   create(): void {
-    const theme = overlayTheme();
-    if (theme) {
-      this.themed(theme);
-      return;
-    }
-    const { width, height } = this.scale;
-    const land = currentGame().meta.orientation === 'landscape';
-    const top = height * (land ? 0.36 : 0.45), gap = land ? 118 : 140;
-    backdrop(this, 0.75);
-    if (land) overlayCard(this, 0.05, 0.8, 560);
-    else overlayCard(this, 0.21, 0.82);
-    txt(this, width / 2, height * (land ? 0.14 : 0.28), t('paused'), { title: true, size: 44, color: '#ffd23f' });
     duckMusic();
+    let resumed = false;
     const resume = () => {
+      if (resumed) return;
+      resumed = true;
       restoreMusic();
       this.scene.stop();
       this.scene.resume('Play');
       sdk.emit('resume');
     };
-    new Button(this, width / 2, top, t('resume'), resume, { color: COLORS.red });
-    new Button(this, width / 2, top + gap, t('retry'), () => {
+    const retry = () => {
       sdk.gameplayStop();
       this.scene.stop();
       this.scene.get('Play').scene.restart();
-    }, { color: COLORS.purple });
-    new Button(this, width / 2, top + gap * 2, t('menu'), () => {
+    };
+    const menu = () => {
       sdk.gameplayStop();
       this.scene.stop('Play');
       this.scene.start('Menu');
-    }, { color: 0x333344 });
-    soundButton(this, land ? width - 70 : width / 2, land ? height - 70 : top + gap * 2 + 130);
-    this.input.keyboard?.once('keydown-ESC', resume);
-    this.input.keyboard?.once('keydown-P', resume);
-  }
-
-  /** The pause in the game's menu theme (src/core/overlay-theme.ts): same buttons, keys and flow. */
-  private themed(theme: MenuTheme): void {
-    duckMusic();
-    const resume = () => {
-      restoreMusic();
-      this.scene.stop();
-      this.scene.resume('Play');
-      sdk.emit('resume');
     };
-    themedPause(this, theme, {
-      resume,
-      retry: () => {
-        sdk.gameplayStop();
-        this.scene.stop();
-        this.scene.get('Play').scene.restart();
-      },
-      menu: () => {
-        sdk.gameplayStop();
-        this.scene.stop('Play');
-        this.scene.start('Menu');
-      },
-      sound: (x, y) => soundButton(this, x, y, true),
-    });
+    const theme = overlayTheme();
+    let buttons: Phaser.GameObjects.Container[];
+    if (theme) {
+      // the pause in the game's menu theme (src/core/overlay-theme.ts): same buttons, keys and flow
+      buttons = themedPause(this, theme, { resume, retry, menu, sound: (x, y) => soundButton(this, x, y, true) });
+    } else {
+      const { width, height } = this.scale;
+      const land = currentGame().meta.orientation === 'landscape';
+      const top = height * (land ? 0.36 : 0.45), gap = land ? 118 : 140;
+      backdrop(this, 0.75);
+      if (land) overlayCard(this, 0.05, 0.8, 560);
+      else overlayCard(this, 0.21, 0.82);
+      txt(this, width / 2, height * (land ? 0.14 : 0.28), t('paused'), { title: true, size: 44, color: '#ffd23f' });
+      buttons = [
+        new Button(this, width / 2, top, t('resume'), resume, { color: COLORS.red }),
+        new Button(this, width / 2, top + gap, t('retry'), retry, { color: COLORS.purple }),
+        new Button(this, width / 2, top + gap * 2, t('menu'), menu, { color: 0x333344 }),
+      ];
+      soundButton(this, land ? width - 70 : width / 2, land ? height - 70 : top + gap * 2 + 130);
+    }
     this.input.keyboard?.once('keydown-ESC', resume);
     this.input.keyboard?.once('keydown-P', resume);
+    // arrows (the gamepad's D-pad) pick a button and Enter (the pad's A) presses it, RESUME first
+    const actions = [resume, retry, menu];
+    keyNav(this, buttons.map((obj, i) => ({ obj, press: () => { playSfx(this, 'ui-click'); actions[i](); } })));
   }
 }
 
@@ -620,7 +606,11 @@ export class GameOverScene extends Phaser.Scene {
         play.continueRun?.();
       });
     }
-    this.time.delayedCall(400, () => this.input.keyboard?.once('keydown-ENTER', retry));
+    this.time.delayedCall(400, () => {
+      this.input.keyboard?.once('keydown-ENTER', retry);
+      // Esc (the gamepad's B) goes back to the menu
+      this.input.keyboard?.once('keydown-ESC', toMenu);
+    });
   }
 
   /** The result in the game's menu theme (src/core/overlay-theme.ts): same buttons, keys, ad flow and hit points. */
@@ -681,7 +671,11 @@ export class GameOverScene extends Phaser.Scene {
       },
       playJingle: (key) => playSfx(this, key, { exact: true }),
     });
-    this.time.delayedCall(400, () => this.input.keyboard?.once('keydown-ENTER', retry));
+    this.time.delayedCall(400, () => {
+      this.input.keyboard?.once('keydown-ENTER', retry);
+      // Esc (the gamepad's B) goes back to the menu
+      this.input.keyboard?.once('keydown-ESC', toMenu);
+    });
   }
 
   /**

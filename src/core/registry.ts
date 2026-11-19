@@ -2,6 +2,7 @@ import type { MusicChoice } from './music';
 import type Phaser from 'phaser';
 import type { Localized, Strings } from './i18n';
 import type { MenuTheme } from './menu-theme';
+import type { PadOverrides } from './gamepad-map';
 
 export type Genre = 'arcade' | 'action' | 'casual' | 'puzzle' | 'retro' | 'sports' | 'strategy' | 'card' | 'word';
 
@@ -80,6 +81,12 @@ export interface GameDefinition {
    * on, never online. Always the player's choice; never during play.
    */
   ads?: AdsOptions;
+  /**
+   * The game's own gamepad keys during play (src/core/gamepad.ts): a control mapped to another
+   * key (`KeyboardEvent.code`), or null to turn it off. Menus, the pause and the game's own
+   * overlays (pushModal) keep the core mapping. Without it the defaults in gamepad-map.ts apply.
+   */
+  gamepad?: PadOverrides;
 }
 
 /** The result of a finished run, as the result screen shows it. */
