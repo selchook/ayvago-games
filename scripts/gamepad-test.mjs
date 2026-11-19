@@ -198,19 +198,29 @@ async function testGame(slug) {
     if ((await pad())?.context !== 'play') await startRound();
     step.buttons = true;
 
-    // Start pauses, Start resumes; Start pauses, A resumes (RESUME has the focus)
+    // Start pauses, Start resumes; Start pauses, A resumes (RESUME has the focus). A round that
+    // ends on its own just before Start (a collision) starts again and the pause is tried again.
+    const pauseByStart = async () => {
+      for (let attempt = 0; ; attempt++) {
+        if (await roundOver()) await startRound();
+        await tap('start');
+        try {
+          await waitFor(() => window.__ayvago.game.scene.isActive('Pause'), null, 4000);
+          return;
+        } catch (e) {
+          if (attempt > 0 || !(await roundOver())) throw e;
+        }
+      }
+    };
     await page.waitForTimeout(250);
-    await tap('start');
-    await waitFor(() => window.__ayvago.game.scene.isActive('Pause'), null, 4000);
+    await pauseByStart();
     step.pause = true;
     await page.waitForTimeout(300);
     await tap('start');
     await waitFor(() => !window.__ayvago.game.scene.isActive('Pause') && window.__ayvago.game.scene.isActive('Play'), null, 4000);
     step.resumeStart = true;
     await page.waitForTimeout(300);
-    if (await roundOver()) await startRound();
-    await tap('start');
-    await waitFor(() => window.__ayvago.game.scene.isActive('Pause'), null, 4000);
+    await pauseByStart();
     await page.waitForTimeout(300);
     await tap('a');
     await waitFor(() => !window.__ayvago.game.scene.isActive('Pause') && window.__ayvago.game.scene.isActive('Play'), null, 4000);
