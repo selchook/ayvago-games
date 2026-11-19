@@ -7,7 +7,8 @@
 // Usage: npm run build && node scripts/gamepad-test.mjs [--canary] [--serial] [--shots <dir>] [slug ...]
 //        node scripts/gamepad-test.mjs --dev [...]   (no build needed; uses the Vite dev server)
 //   no slugs: every game; --canary: the canary set (scripts/changed-games.mjs --canary);
-//   --port <n>: server port (default 5371); --shots <dir>: one gameplay screenshot per game.
+//   --port <n>: server port (default 5371); --shots <dir>: one gameplay screenshot per game (and one
+//   on a failure); --verbose: logs (and with --shots captures) every A press on the way to play.
 import { createRequire } from 'node:module';
 import { spawn, execFileSync } from 'node:child_process';
 import { readdirSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -23,6 +24,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const dev = args.includes('--dev');
+const verbose = args.includes('--verbose');
 const shots = opt('--shots') ? resolve(opt('--shots')) : null;
 const PORT = Number(opt('--port') ?? 5371);
 const valued = new Set([opt('--shots'), opt('--port')].filter(Boolean));
@@ -106,12 +108,14 @@ async function testGame(slug) {
     const sc = window.__ayvago.game.scene;
     return sc.isActive('GameOver') || !!sc.getScene('Play')?.isOver;
   });
-  /** Presses A (and B every fourth time, to back out of a wrong screen) until the pad maps for play. */
-  const startRound = async (ms = 20000) => {
+  /** Presses A until the pad maps for play (3D games can run at a frame a second in software GL). */
+  const startRound = async (ms = 60000) => {
     const until = Date.now() + ms;
     for (let i = 0; Date.now() < until; i++) {
       const p = await pad();
       if (p?.context === 'play' && !(await roundOver())) return true;
+      if (verbose) console.log(`  ${slug} start: A #${i} (${p?.context}, ${(await scenes()).join('+')})`);
+      if (shots && verbose) await page.locator('canvas').first().screenshot({ path: join(shots, `${slug}-start${i}.png`) });
       await tap('a');
       await page.waitForTimeout(450);
     }
@@ -242,6 +246,7 @@ async function testGame(slug) {
     if (stuck.pad.length || stuck.phaser.length || stuck.connected) errors.push('stuck: ' + JSON.stringify(stuck));
     else step.noStuckKeys = true;
   } catch (e) {
+    if (shots) await page.locator('canvas').first().screenshot({ path: join(shots, `${slug}-fail.png`) }).catch(() => {});
     errors.push('flow: ' + String(e.message).split('\n')[0] + ' | active=' + (await scenes().catch(() => '?')) + ' pad=' + JSON.stringify(await pad().catch(() => null)));
   }
   await ctx.close();
