@@ -3,10 +3,17 @@
 //   - The hero: run, jump (coyote time, jump buffering, variable height), double jump, wall slide and
 //     wall jump (unlocked), the roll (i-frames) and the air-dash (Boots II).
 //   - Combat (the sim owns the combo, new-game skill §7g): in combat ATTACK chains punch, kick and
-//     the slash finisher (A); tap, tap, hold charges the overdrive cleave (B, unlocked after the
-//     first boss: breaks armour, a shockwave lane); ATTACK right after a roll is the lunge (C, a
-//     dash through foes that launches the light ones). Out of combat one clean swing. Air slash,
-//     the ground slam (unlocked). The blaster heats up; overheat locks it.
+//     the slash finisher (A, Neon Cut); tap, tap, hold charges the overdrive cleave (B, unlocked
+//     after the first boss: breaks armour, a shockwave lane); ATTACK right after a roll is the lunge
+//     (C, a dash through foes that launches the light ones), and holding ATTACK on through the lunge
+//     draws the iaido flash (a long dash, the cuts land a beat later). Sprinting + ATTACK is the
+//     cyclone (a full turn that hits all round, twice); up + ATTACK the rising dragon (a launcher:
+//     light foes fly up, the hero hops after them); in the air three blows make the sky rend string
+//     (the third spikes a juggled foe into the ground), down + ATTACK the falcon dive (or, unlocked,
+//     the ground slam straight down); tap, tap, SHOOT the blade & bolt finisher. A sword blow that
+//     meets a bolt early in its swing reflects it (Mirror Cut, Katana I). Air blows keep gravity and
+//     momentum: only the first hit of a jump hangs the hero for a moment. Out of combat ATTACK is one
+//     clean swing. The blaster heats up; overheat locks it.
 //   - Foes with telegraphs: walkers charge, gunners and turrets aim a laser first, drones dive,
 //     gun drones keep their distance, brutes wear armour that breaks into a stun, cannons mark the
 //     ground, teleporters warp foes in; the district boss is a mech with three phases.
@@ -15,11 +22,13 @@
 // Everything that happens is pushed to `events` for the view and the scene.
 import {
   TUNING, MOVE, ATTACKS, CHARGE_TIME, LUNGE_WINDOW, LUNGE_DIST, COMBAT_RANGE, COMBAT_MEMORY, GUN, FOE, BOSS_HP,
+  AIR_HANG, AIR_HANG_GRAVITY, AIR_ATTACK_CONTROL, AIR_MAX, RISE_HOP, RISE_WINDOW, JUGGLE_GRAVITY, DIVE_V, SPIN_RUN,
+  IAIDO_HOLD, IAIDO_DIST, IAIDO_DELAY, MIRROR_WINDOW, MIRROR_DMG,
   SCORE, COMBO_TIME, comboMult, HAZARD, FALL_SHAKE, FALL_RESPAWN, DISTRICT_SCALE,
   type Mode, type FoeKind, type AttackDef,
 } from './defs';
 import { LEVELS, ROWS, type LevelDef } from './levels';
-import { noRanks, type CardId, type Ranks, type AbilityId } from './powers';
+import { noRanks, type CardId, type Ranks, type AbilityId, type MoveId } from './powers';
 
 export function mulberry(seed: number): () => number {
   let a = seed >>> 0;
@@ -37,13 +46,15 @@ export interface Input {
   down: boolean;
   jump: boolean;
   jumpHeld: boolean;
+  /** Up held (W/↑ or the stick pushed up): up + ATTACK is the launcher. */
+  up: boolean;
   attack: boolean;
   attackHeld: boolean;
   shoot: boolean;
   shootHeld: boolean;
   roll: boolean;
 }
-export const NO_INPUT: Input = { mx: 0, down: false, jump: false, jumpHeld: false, attack: false, attackHeld: false, shoot: false, shootHeld: false, roll: false };
+export const NO_INPUT: Input = { mx: 0, down: false, up: false, jump: false, jumpHeld: false, attack: false, attackHeld: false, shoot: false, shootHeld: false, roll: false };
 
 /** What carries over from level to level in a district run. */
 export interface RunState {
@@ -56,9 +67,11 @@ export interface RunState {
   score: number;
   /** Max-HP hearts picked up this run. */
   hearts: number;
+  /** Implant picks earned and not taken yet (offered on the results screen or from the pause). */
+  picks: number;
 }
 export const newRun = (mode: Mode, ranks: Ranks = noRanks(), abilities: AbilityId[] = []): RunState =>
-  ({ mode, lives: TUNING[mode].lives, cards: [], ranks, abilities, score: 0, hearts: 0 });
+  ({ mode, lives: TUNING[mode].lives, cards: [], ranks, abilities, score: 0, hearts: 0, picks: 0 });
 
 export type HeroState = 'idle' | 'run' | 'air' | 'wall' | 'roll' | 'dash' | 'attack' | 'charge' | 'slam' | 'hurt' | 'dead' | 'win';
 export type AtkKind = keyof typeof ATTACKS;
@@ -80,7 +93,19 @@ export interface Hero {
   rollCd: number;
   rollEnd: number;
   dashes: number;
-  atk: { kind: AtkKind; step: number; t: number; hit: Set<number>; def: AttackDef; dx: number } | null;
+  atk: { kind: AtkKind; step: number; t: number; hit: Set<number>; def: AttackDef; dx: number; second?: boolean; landed?: number } | null;
+  /** Blows dealt in this jump (the air string), the hang of its first hit, the time of the last ground jump. */
+  airAtk: number;
+  hangT: number;
+  hangUsed: boolean;
+  jumpAt: number;
+  /** Seconds of sprinting (the cyclone needs a run-up). */
+  runT: number;
+  /** What the held charge becomes: the cleave or the iaido. */
+  chargeKind: 'cleave' | 'iaido';
+  /** A press buffered during a blow, with the stick's direction at the press. */
+  bufDown: boolean;
+  bufUp: boolean;
   chain: number;
   chainT: number;
   atkBuf: number;
@@ -123,9 +148,11 @@ export interface Foe {
   /** Teleporter: the foes it warped in that live. */
   kids: number;
   bob: number;
+  /** Thrown into the air (a launcher, a juggle): no AI, light gravity, until this runs out. */
+  juggle: number;
 }
 
-export type ShotKind = 'bolt' | 'heavy' | 'foeBolt' | 'shell' | 'wave' | 'crescent';
+export type ShotKind = 'bolt' | 'heavy' | 'foeBolt' | 'shell' | 'wave' | 'crescent' | 'mirror';
 export interface Shot {
   id: number; kind: ShotKind; hero: boolean;
   x: number; y: number; vx: number; vy: number;
@@ -151,7 +178,14 @@ export type SimEvent =
   | { type: 'land'; hard: boolean }
   | { type: 'roll' } | { type: 'dash' }
   | { type: 'swing'; kind: AtkKind; step: number }
-  | { type: 'charge' } | { type: 'chargeReady' }
+  | { type: 'charge'; kind: 'cleave' | 'iaido' } | { type: 'chargeReady' }
+  | { type: 'reflect'; x: number; y: number }
+  | { type: 'launch'; foe: Foe }
+  | { type: 'cut'; foe: Foe; x: number; y: number }
+  | { type: 'diveLand'; x: number; y: number }
+  | { type: 'crash'; x: number; y: number }
+  | { type: 'implant'; x: number; y: number }
+  | { type: 'move'; id: MoveId }
   | { type: 'shoot'; x: number; y: number; dir: number; heavy: boolean }
   | { type: 'overheat' } | { type: 'cooled' } | { type: 'coolant' }
   | { type: 'hit'; foe: Foe; dmg: number; x: number; y: number; big: boolean; name: string | null }
@@ -186,7 +220,17 @@ export type SimEvent =
 const T_EMPTY = 0, T_SOLID = 1, T_ONEWAY = 2, T_FALL = 3, T_BRIDGE = 4, T_DOOR = 5;
 
 /** Names of the finishers, popped at the impact. */
-const FINISHER: Partial<Record<AtkKind, string>> = { slash: 'fNeonCut', cleave: 'fCleave', lunge: 'fLunge', slam: 'fSlam' };
+const FINISHER: Partial<Record<AtkKind, string>> = {
+  slash: 'fNeonCut', cleave: 'fCleave', lunge: 'fLunge', slam: 'fSlam', spin: 'fCyclone', rise: 'fRise', air3: 'fSky', dive: 'fDive', iaido: 'fIaido', burst: 'fBurst',
+};
+/** The move each blow belongs to (the Moves screen, the first-use hints). */
+const MOVE_OF: Partial<Record<AtkKind, MoveId>> = {
+  slash: 'neonCut', cleave: 'cleave', lunge: 'lunge', slam: 'slam', spin: 'cyclone', rise: 'rise', air3: 'sky', dive: 'dive', iaido: 'iaido', burst: 'burst',
+};
+/** Blows that happen in the air: landing ends them. */
+const AIRBORNE: AtkKind[] = ['air', 'air2', 'air3', 'rise', 'dive'];
+/** The light foes a launcher throws and a juggle keeps up. */
+const LIGHT: FoeKind[] = ['walker', 'gunner', 'drone', 'gdrone'];
 
 export class Sim {
   readonly L: LevelDef;
@@ -210,6 +254,8 @@ export class Sim {
   gates: Gate[] = [];
   waves: Wave[] = [];
   marks: Mark[] = [];
+  /** The iaido's cuts, landing a beat after the dash. */
+  cuts: Array<{ f: Foe; t: number; dmg: number; dir: number }> = [];
   fallerAt = new Map<number, Faller>();
   gateAt = new Map<number, Gate>();
   check: { x: number; y: number };
@@ -293,7 +339,8 @@ export class Sim {
     this.p = {
       x: start.x, y: start.y, vx: 0, vy: 0, w: MOVE.w, h: MOVE.h, face: 1, state: 'idle', t: 0, ground: true, coyote: 0, buffer: 0,
       airJumps: this.airJumpsMax(), wall: 0, hp: maxHp, maxHp, iframes: 0, shield: run.ranks.armor >= 3, rollCd: 0, rollEnd: -9, dashes: 0,
-      atk: null, chain: 0, chainT: 0, atkBuf: 0, held: 0, charge: 0, heat: 0, hot: false, coolant: 0, sinceShot: 9, fireCd: 0, shootT: 0, shots: 0,
+      atk: null, airAtk: 0, hangT: 0, hangUsed: false, jumpAt: -9, runT: 0, chargeKind: 'cleave', bufDown: false, bufUp: false,
+      chain: 0, chainT: 0, atkBuf: 0, held: 0, charge: 0, heat: 0, hot: false, coolant: 0, sinceShot: 9, fireCd: 0, shootT: 0, shots: 0,
       deadT: 0, lastSafe: { ...start }, dropT: 0, secondHeart: this.has('secondHeart'),
     };
   }
@@ -341,7 +388,7 @@ export class Sim {
     const f: Foe = {
       id: this.nextId++, kind, x, y: d.flies ? y + 0.4 : y, vx: 0, vy: 0, w: d.w, h: d.h, hp, maxHp: hp,
       armour: d.armour ?? 0, maxArmour: d.armour ?? 0, face: -1, state: spawned ? 'spawn' : 'patrol', t: spawned ? 0.6 : this.rnd() * 2,
-      move: '', homeX: x, homeY: d.flies ? y + 0.4 : y, flash: 0, flinch: 0, ground: false, aim: null, shots: 0, spawned, dead: 0, kids: 0, bob: this.rnd() * 6,
+      move: '', homeX: x, homeY: d.flies ? y + 0.4 : y, flash: 0, flinch: 0, ground: false, aim: null, shots: 0, spawned, dead: 0, kids: 0, bob: this.rnd() * 6, juggle: 0,
     };
     this.foes.push(f);
     return f;
@@ -446,6 +493,7 @@ export class Sim {
     if (this.hitStop > 0) { this.hitStop -= dt; return; }
     this.time += dt;
     this.hero(dt, inp);
+    this.updateCuts(dt);
     this.updateFoes(dt);
     this.updateShots(dt);
     this.updateWaves(dt);
@@ -469,6 +517,8 @@ export class Sim {
     if (p.shootT > 0) p.shootT -= dt;
     if (p.fireCd > 0) p.fireCd -= dt;
     if (p.dropT > 0) p.dropT -= dt;
+    if (p.hangT > 0) p.hangT -= dt;
+    p.runT = p.state === 'run' && p.ground ? p.runT + dt : 0;
     p.held = inp.attackHeld ? p.held + dt : 0;
     this.heat(dt, inp);
 
@@ -483,7 +533,7 @@ export class Sim {
 
     // the buffered jump
     if (inp.jump) p.buffer = MOVE.buffer; else if (p.buffer > 0) p.buffer -= dt;
-    if (p.ground) { p.coyote = MOVE.coyote; p.airJumps = this.airJumpsMax(); p.dashes = this.run.ranks.boots >= 3 ? 2 : 1; } else if (p.coyote > 0) p.coyote -= dt;
+    if (p.ground) { p.coyote = MOVE.coyote; p.airJumps = this.airJumpsMax(); p.dashes = this.run.ranks.boots >= 3 ? 2 : 1; p.airAtk = 0; p.hangUsed = false; } else if (p.coyote > 0) p.coyote -= dt;
 
     const busy = p.state === 'roll' || p.state === 'dash' || p.state === 'attack' || p.state === 'charge' || p.state === 'slam' || p.state === 'hurt';
 
@@ -493,7 +543,8 @@ export class Sim {
     // ---- actions
     if (inp.roll) this.tryRoll(inp);
     if (inp.attack) this.pressAttack(inp);
-    if ((inp.shoot || inp.shootHeld) && p.state !== 'roll' && p.state !== 'dash' && p.state !== 'hurt' && p.state !== 'slam' && p.state !== 'charge') this.tryShoot();
+    if (inp.shoot && this.burstReady()) this.startAttack('burst', 3);
+    else if ((inp.shoot || inp.shootHeld) && p.state !== 'roll' && p.state !== 'dash' && p.state !== 'hurt' && p.state !== 'slam' && p.state !== 'charge') this.tryShoot();
 
     // ---- states
     switch (p.state) {
@@ -511,9 +562,10 @@ export class Sim {
       case 'attack': this.attackStep(dt, inp); break;
       case 'charge': {
         p.vx *= 0.8;
-        p.charge = Math.min(1, p.charge + dt / 0.25);
-        if (p.charge >= 1 && p.t - dt < 0.25 && p.t >= 0.25) this.emit({ type: 'chargeReady' });
-        if (!inp.attackHeld || p.t > 1.0) this.startAttack('cleave', 3);
+        const full = p.chargeKind === 'iaido' ? 0.3 : 0.25;
+        p.charge = Math.min(1, p.charge + dt / full);
+        if (p.charge >= 1 && p.t - dt < full && p.t >= full) this.emit({ type: 'chargeReady' });
+        if (!inp.attackHeld || p.t > 1.0) this.startAttack(p.chargeKind === 'iaido' ? 'iaido' : 'cleave', 3);
         break;
       }
       case 'slam': {
@@ -533,7 +585,12 @@ export class Sim {
     this.physics(dt, p.state !== 'dash');
     if (p.ground && !wasGround) {
       if (p.state === 'slam') this.slamLand();
-      else this.emit({ type: 'land', hard: vyBefore < -16 });
+      else if (p.state === 'attack' && p.atk?.kind === 'dive') this.diveLand();
+      else {
+        this.emit({ type: 'land', hard: vyBefore < -16 });
+        // an air blow ends cleanly on landing (no skid on a frozen swing)
+        if (p.state === 'attack' && p.atk && AIRBORNE.includes(p.atk.kind)) { p.atk = null; p.state = 'idle'; p.chainT = 0; p.chain = 0; }
+      }
       if (p.state === 'air' || p.state === 'wall') p.state = 'idle';
     }
     if (!p.ground && (p.state === 'idle' || p.state === 'run')) p.state = 'air';
@@ -574,6 +631,7 @@ export class Sim {
         p.coyote = 0;
         p.buffer = 0;
         p.state = 'air';
+        p.jumpAt = this.time;
         this.emit({ type: 'jump', air: false });
       } else if (p.state === 'wall' || (this.hasAbility('wall') && (this.touchesWall(1) || this.touchesWall(-1)))) {
         const away = p.wall ? -p.wall : this.touchesWall(1) ? -1 : 1;
@@ -583,6 +641,8 @@ export class Sim {
         p.buffer = 0;
         p.state = 'air';
         p.airJumps = this.airJumpsMax();
+        p.airAtk = 0;
+        p.hangUsed = false;
         this.emit({ type: 'jump', air: false, wall: true });
       } else if (p.airJumps > 0) {
         p.vy = MOVE.airJump * (this.has('springCoils') ? 1.06 : 1);
@@ -659,15 +719,47 @@ export class Sim {
     if (p.state === 'roll' && p.t > MOVE.roll * 0.4) { this.endRollForLunge(); this.startAttack('lunge', 1); return; }
     if (p.state !== 'roll' && this.time - p.rollEnd < LUNGE_WINDOW && p.ground) { this.startAttack('lunge', 1); return; }
     if (p.state === 'roll' || p.state === 'dash') return;
-    if (p.state === 'attack') { p.atkBuf = 0.28; return; }
-    if (!p.ground) {
-      if (inp.down && this.hasAbility('slam')) { p.state = 'slam'; p.t = 0; p.atk = null; p.iframes = Math.max(p.iframes, 0.2); this.emit({ type: 'swing', kind: 'slam', step: 1 }); return; }
-      this.startAttack('air', 1);
-      return;
-    }
+    if (p.state === 'attack') { p.atkBuf = 0.28; p.bufDown = inp.down; p.bufUp = inp.up; return; }
+    // the rising dragon: up + ATTACK on the ground, or just after a jump (on the keyboard up is jump)
+    if (inp.up && this.hasAbility('rise') && (p.ground || (p.vy > 0 && this.time - p.jumpAt < RISE_WINDOW))) { this.startAttack('rise', 1); return; }
+    if (!p.ground) { this.airAttack(inp.down, inp.mx); return; }
     if (!this.inCombat()) { this.startAttack('single', 1); return; }
+    // a bolt about to arrive: the blade comes out first, so a timed press can send it back (Katana I)
+    if (this.run.ranks.sword >= 1 && p.chainT <= 0 && this.boltAhead()) { this.startAttack('single', 1); return; }
+    // the cyclone: ATTACK while sprinting into a fight
+    if (p.state === 'run' && p.runT >= SPIN_RUN && Math.abs(inp.mx) > 0.5 && Math.sign(inp.mx) === p.face && p.chainT <= 0) { this.startAttack('spin', 1); return; }
     const step = p.chainT > 0 ? p.chain + 1 : 1;
     this.chainStep(step > 3 ? 1 : step);
+  }
+
+  /** A foe bolt flying at the hero from in front, close. */
+  private boltAhead(): boolean {
+    const p = this.p;
+    for (const s of this.shots) {
+      if (s.hero || s.life <= 0 || s.kind === 'shell') continue;
+      const d = (s.x - p.x) * p.face;
+      if (d > -0.3 && d < 3 && Math.sign(s.vx) === -p.face && s.y > p.y - 0.3 && s.y < p.y + p.h + 0.6) return true;
+    }
+    return false;
+  }
+
+  /** In the air: down + ATTACK dives (or slams straight down, unlocked); else the next blow of the air string. */
+  private airAttack(down: boolean, mx: number): void {
+    const p = this.p;
+    if (down) {
+      if (this.hasAbility('slam') && Math.abs(mx) < 0.3) {
+        p.state = 'slam'; p.t = 0; p.atk = null; p.iframes = Math.max(p.iframes, 0.2);
+        this.emit({ type: 'swing', kind: 'slam', step: 1 });
+        this.emit({ type: 'move', id: 'slam' });
+        return;
+      }
+      if (Math.abs(mx) > 0.3) p.face = mx > 0 ? 1 : -1;
+      this.startAttack('dive', 1);
+      return;
+    }
+    if (p.airAtk >= AIR_MAX) return;
+    const step = p.airAtk + 1;
+    this.startAttack(step === 1 ? 'air' : step === 2 ? 'air2' : 'air3', step);
   }
 
   private endRollForLunge(): void {
@@ -681,11 +773,20 @@ export class Sim {
     this.startAttack(kind, step);
   }
 
+  /** Blade & bolt: SHOOT on the chain's second blow (Blaster I, in a fight, on the ground). */
+  private burstReady(): boolean {
+    const p = this.p;
+    if (this.run.ranks.gun < 1 || !p.ground) return false;
+    const onKick = p.state === 'attack' && p.atk?.kind === 'kick' && p.atk.t >= p.atk.def.on;
+    const after = (p.state === 'idle' || p.state === 'run') && p.chainT > 0 && p.chain === 2;
+    return (onKick || after) && this.inCombat();
+  }
+
   private startAttack(kind: AtkKind, step: number): void {
     const p = this.p;
-    this.softAim();
+    if (kind !== 'dive' && kind !== 'iaido') this.softAim();
     const def = ATTACKS[kind];
-    const fast = this.has('momentum') && step > 1 ? 0.85 : 1;
+    const fast = this.has('momentum') && step > 1 && kind !== 'iaido' && kind !== 'cleave' ? 0.85 : 1;
     p.state = 'attack';
     p.t = 0;
     p.atk = { kind, step, t: 0, hit: new Set(), def: fast !== 1 ? { ...def, dur: def.dur * fast, on: def.on * fast, off: def.off * fast } : def, dx: 0 };
@@ -695,10 +796,32 @@ export class Sim {
     if (kind === 'lunge') {
       p.atk.dx = LUNGE_DIST[this.run.ranks.sword];
       p.iframes = Math.max(p.iframes, 0.3);
+    } else if (kind === 'iaido') {
+      p.atk.dx = IAIDO_DIST;
+      p.iframes = Math.max(p.iframes, 0.55);
     } else if (kind === 'slash' && this.run.ranks.sword >= 2) p.atk.dx = 2.6;
+    else if (AIRBORNE.includes(kind) || kind === 'spin') { /* the hero keeps its momentum */ }
     else p.vx = p.face * def.lunge * 3;
-    if (kind === 'air') p.vy = Math.max(p.vy, 2.5);
+    if (kind === 'rise') {
+      // the hero hops after the foe it throws (the keyboard's up already jumped: keep the higher)
+      p.vy = Math.max(p.vy, RISE_HOP);
+      p.ground = false;
+      p.coyote = 0;
+      p.airAtk = 0;
+      p.hangUsed = false;
+    }
+    if (kind === 'air' || kind === 'air2' || kind === 'air3') p.airAtk = step;
+    if (kind === 'dive') { p.airAtk = AIR_MAX; p.iframes = Math.max(p.iframes, 0.12); }
+    if (kind === 'burst') {
+      // a point-blank plasma round that pierces the line (no heat: the chain paid for it)
+      const dmg = 2 * this.gunMult();
+      this.shots.push({ id: this.nextId++, kind: 'heavy', hero: true, x: p.x + p.face * 0.8, y: p.y + 0.95, vx: p.face * GUN.speed * 1.1, vy: 0, dmg, life: 0.55, pierce: 4, hit: new Set(), r: 0.5, bounce: 0 });
+      p.shootT = 0.4;
+      this.emit({ type: 'shoot', x: p.x + p.face * 0.8, y: p.y + 0.95, dir: p.face, heavy: true });
+    }
     this.emit({ type: 'swing', kind, step });
+    const mv = MOVE_OF[kind];
+    if (mv) this.emit({ type: 'move', id: mv });
   }
 
   /** A soft target assist: turns to the best foe close behind when nothing is ahead. */
@@ -722,53 +845,109 @@ export class Sim {
     if (a.dx > 0 && a.t < def.off + 0.02) {
       const sp = a.dx / Math.max(0.12, def.off);
       p.vx = p.face * sp;
-      if (a.kind === 'lunge') p.vy = Math.max(p.vy, 0);
+      if (a.kind === 'lunge' || a.kind === 'iaido') p.vy = Math.max(p.vy, 0);
+    } else if (a.kind === 'iaido' && !a.second) {
+      // the flash stops dead where it ends (no slide on from its speed)
+      a.second = true;
+      p.vx = p.face * 3;
+    } else if (a.kind === 'dive') {
+      p.vx = p.face * DIVE_V.x;
+      p.vy = DIVE_V.y;
+    } else if (a.kind === 'spin') {
+      // the cyclone carries the sprint through the turn
+      p.vx = p.face * this.runSpeed() * (a.t < def.off ? 0.8 : 0.35);
     } else if (p.ground) p.vx *= Math.pow(0.0005, dt);
+    else if (Math.abs(inp.mx) > 0.2) {
+      // in the air the hero keeps its momentum; the stick still steers a little
+      const acc = MOVE.airAccel * AIR_ATTACK_CONTROL;
+      p.vx += Phaser_clamp(inp.mx * this.runSpeed() - p.vx, -acc * dt, acc * dt);
+    }
+    // the cyclone's second turn hits again
+    if (a.kind === 'spin' && !a.second && a.t >= (def.on + def.off) / 2) {
+      a.second = true;
+      for (const f of this.foes) a.hit.delete(f.id);
+    }
+    if (a.t <= def.off && a.kind !== 'burst') this.cutBolts(a);
     if (a.t >= def.on && a.t <= def.off) this.meleeHits(a);
     // the heavy chain: holding ATTACK after the second blow charges the cleave
     if (a.kind === 'kick' && inp.attackHeld && p.held >= CHARGE_TIME && this.hasAbility('cleave') && a.t >= def.off) {
-      p.state = 'charge'; p.t = 0; p.charge = 0; p.atk = null; p.chainT = 0;
-      this.emit({ type: 'charge' });
+      this.startCharge('cleave');
+      return;
+    }
+    // holding ATTACK on through the lunge draws the iaido
+    if (a.kind === 'lunge' && inp.attackHeld && p.held >= IAIDO_HOLD && this.hasAbility('iaido') && a.t >= def.off && p.ground) {
+      this.startCharge('iaido');
       return;
     }
     if (a.t >= def.dur) {
-      const chainable = a.kind === 'punch' || a.kind === 'kick';
-      const more = chainable && (p.atkBuf > 0 || inp.attackHeld) && this.inCombat();
-      if (more) { this.chainStep(a.step + 1); return; }
+      const chainable = a.kind === 'punch' || a.kind === 'kick' || a.kind === 'spin';
+      const pressed = p.atkBuf > 0 || inp.attackHeld;
+      // the air string goes on in the air (a buffered down + ATTACK dives instead)
+      if ((a.kind === 'air' || a.kind === 'air2' || a.kind === 'rise') && pressed && !p.ground) {
+        const down = p.atkBuf > 0 ? p.bufDown : inp.down;
+        if (down || p.airAtk < AIR_MAX) { p.atk = null; p.state = 'air'; this.airAttack(down, inp.mx); return; }
+      }
+      const more = chainable && pressed && this.inCombat() && p.ground;
+      if (more) { this.chainStep(a.kind === 'spin' ? 2 : a.step + 1); return; }
       p.atk = null;
       p.state = p.ground ? 'idle' : 'air';
       p.chainT = chainable ? 0.4 : 0;
+      if (a.kind === 'spin') p.chain = 1;
       if (!chainable) p.chain = 0;
       if (a.kind === 'slash' && this.run.ranks.sword >= 3) this.crescent();
     }
   }
 
-  private heroBox(a: { reach: number; up: number }, kind: AtkKind): [number, number, number, number] {
+  private startCharge(kind: 'cleave' | 'iaido'): void {
     const p = this.p;
-    const back = kind === 'cleave' || kind === 'slam' ? 0.9 : 0.3;
+    p.state = 'charge'; p.t = 0; p.charge = 0; p.atk = null; p.chainT = 0; p.chargeKind = kind;
+    this.emit({ type: 'charge', kind });
+  }
+
+  /** The dive meets the ground: a burst of sparks, a short crouch. */
+  private diveLand(): void {
+    const p = this.p, a = p.atk!;
+    a.landed = a.t;
+    a.def = { ...a.def, off: a.t, dur: a.t + 0.16 };
+    p.vx = p.face * 2;
+    this.emit({ type: 'diveLand', x: p.x, y: p.y });
+    // the landing's edge hits what is right in front
+    for (const f of this.foes) {
+      if (f.state === 'dead' || f.state === 'spawn' || a.hit.has(f.id)) continue;
+      if (Math.abs(f.x - (p.x + p.face * 0.8)) < 1.3 + f.w / 2 && Math.abs(f.y - p.y) < 1) { a.hit.add(f.id); this.damage(f, 1.2 * this.meleeMult(f), 'melee', 'dive', p.face * 6); }
+    }
+  }
+
+  private heroBox(a: AttackDef, kind: AtkKind): [number, number, number, number] {
+    const p = this.p;
+    const back = a.back ?? (kind === 'cleave' || kind === 'slam' ? 0.9 : 0.3);
     const x0 = p.face > 0 ? p.x - back : p.x - a.reach;
     const x1 = p.face > 0 ? p.x + a.reach : p.x + back;
-    const y0 = kind === 'air' || kind === 'slam' ? p.y - 0.9 : p.y - 0.15;
+    const y0 = p.y - (a.low ?? (kind === 'slam' ? 0.9 : 0.15));
     return [x0, y0, x1, p.y + MOVE.h - 0.6 + a.up];
   }
 
   private meleeHits(a: NonNullable<Hero['atk']>): void {
+    const p = this.p;
     const [x0, y0, x1, y1] = this.heroBox(a.def, a.kind);
     let landed = false;
     for (const f of this.foes) {
       if (f.state === 'dead' || f.state === 'spawn' || a.hit.has(f.id)) continue;
       if (!overlap(x0, y0, x1, y1, f.x - f.w / 2, f.y, f.x + f.w / 2, f.y + f.h)) continue;
       a.hit.add(f.id);
-      landed = true;
       let dmg = a.def.dmg * this.meleeMult(f);
       if (a.kind === 'slash' && this.has('chainEdge')) dmg *= 2;
-      this.damage(f, dmg, 'melee', a.kind, this.p.face * a.def.knock);
+      const dir = Math.sign(f.x - p.x) || p.face;
+      if (a.kind === 'iaido') {
+        // the cut lands a beat after the dash
+        // (no hit-stop now: the dash runs through clean, the stop comes with the cut)
+        this.cuts.push({ f, t: IAIDO_DELAY + Math.max(0, a.def.off - a.t), dmg, dir });
+        continue;
+      }
+      landed = true;
+      this.damage(f, dmg, 'melee', a.kind, dir * a.def.knock);
       if (a.kind === 'slash' && this.has('voltBlade')) this.volt(f);
-    }
-    // the blade cuts foe bolts out of the air
-    for (const s of this.shots) {
-      if (s.hero || s.life <= 0 || s.kind === 'shell') continue;
-      if (overlap(x0, y0, x1, y1, s.x - 0.2, s.y - 0.2, s.x + 0.2, s.y + 0.2)) { s.life = 0; this.emit({ type: 'parry', x: s.x, y: s.y }); }
+      this.lift(f, a.kind, a.def.lift ?? 0);
     }
     // levers, lootboxes, tanks
     for (const pr of this.props) {
@@ -779,8 +958,68 @@ export class Sim {
     }
     if (landed) {
       this.hitStop = Math.max(this.hitStop, a.def.stop);
-      if (a.kind === 'cleave') this.wave(this.p.x + this.p.face * 1.2, this.p.y, this.p.face, 3);
+      if (a.kind === 'cleave') this.wave(p.x + p.face * 1.2, p.y, p.face, 3);
+      // the first air hit of a jump hangs the hero for a moment, once; then it falls as usual
+      if (!p.ground && (a.kind === 'air' || a.kind === 'air2' || a.kind === 'air3') && !p.hangUsed) {
+        p.hangUsed = true;
+        p.hangT = AIR_HANG;
+        p.vy = Math.max(p.vy, -1);
+      }
     }
+  }
+
+  /**
+   * The blade cuts foe bolts out of the air from the moment it starts to move; met early in a
+   * sword's swing (Katana I) a bolt flies back at the line it came from (Mirror Cut).
+   */
+  private cutBolts(a: NonNullable<Hero['atk']>): void {
+    const p = this.p;
+    const [x0, y0, x1, y1] = this.heroBox(a.def, a.kind);
+    const mirror = this.run.ranks.sword >= 1 && a.def.clip === 'Sword_Slash' && a.t - a.def.on <= MIRROR_WINDOW;
+    for (const s of this.shots) {
+      if (s.hero || s.life <= 0 || s.kind === 'shell') continue;
+      if (!overlap(x0, y0, x1, y1, s.x - 0.2, s.y - 0.2, s.x + 0.2, s.y + 0.2)) continue;
+      s.life = 0;
+      if (mirror) {
+        const sp = Math.max(18, Math.hypot(s.vx, s.vy) * 1.6);
+        const d = Math.hypot(s.vx, s.vy) || 1;
+        this.shots.push({ id: this.nextId++, kind: 'mirror', hero: true, x: s.x, y: s.y, vx: -s.vx / d * sp, vy: -s.vy / d * sp, dmg: MIRROR_DMG * this.meleeMult(), life: 1.4, pierce: 1, hit: new Set(), r: 0.32, bounce: 0 });
+        this.hitStop = Math.max(this.hitStop, 0.07);
+        this.lastFight = this.time;
+        this.emit({ type: 'reflect', x: s.x, y: s.y });
+        this.emit({ type: 'move', id: 'mirror' });
+      } else this.emit({ type: 'parry', x: s.x, y: s.y });
+    }
+  }
+
+  /** Throws a light foe up (the launcher), keeps a juggled one up (air blows) or spikes it down (the finisher). */
+  private lift(f: Foe, kind: AtkKind, lift: number): void {
+    if (!lift || f.state === 'dead' || !LIGHT.includes(f.kind)) return;
+    if (kind === 'rise') {
+      f.juggle = 1.3;
+      f.vy = FOE[f.kind].flies ? lift * 0.75 : lift;
+      f.vx = this.p.face * 1.2;
+      f.state = 'recover'; f.t = 9; f.aim = null; f.flinch = 0;
+      this.emit({ type: 'launch', foe: f });
+    } else if (f.juggle > 0 || FOE[f.kind].flies) {
+      if (lift > 0) { f.vy = Math.max(f.vy, lift); f.juggle = Math.max(f.juggle, 0.6); f.vx *= 0.3; }
+      else { f.vy = lift; f.juggle = Math.max(f.juggle, 0.8); f.vx = this.p.face * 3; }
+      f.state = 'recover'; f.t = 9; f.aim = null;
+    }
+  }
+
+  private updateCuts(dt: number): void {
+    if (!this.cuts.length) return;
+    for (const c of this.cuts) {
+      c.t -= dt;
+      if (c.t > 0) continue;
+      if (c.f.state !== 'dead') {
+        this.damage(c.f, c.dmg, 'melee', 'iaido', c.dir * ATTACKS.iaido.knock);
+        this.emit({ type: 'cut', foe: c.f, x: c.f.x, y: c.f.y + c.f.h * 0.6 });
+        this.hitStop = Math.max(this.hitStop, ATTACKS.iaido.stop);
+      }
+    }
+    this.cuts = this.cuts.filter((c) => c.t > 0);
   }
 
   private volt(from: Foe): void {
@@ -886,7 +1125,7 @@ export class Sim {
       // only a charging walker, a diving drone and the boss hurt by touch
       if (!(f.kind === 'boss' && f.state !== 'vent') && !(f.state === 'act' && (f.kind === 'walker' || f.kind === 'drone'))) continue;
       if (overlap(x0, y0, x1, y1, f.x - f.w / 2 + 0.1, f.y + 0.05, f.x + f.w / 2 - 0.1, f.y + f.h - 0.05)) {
-        if (p.state === 'attack' && p.atk?.kind === 'lunge') continue;
+        if (p.state === 'attack' && (p.atk?.kind === 'lunge' || p.atk?.kind === 'iaido')) continue;
         this.hurt(f.kind === 'boss' ? 1 : FOE[f.kind].touch, f.x < p.x ? 1 : -1);
       }
     }
@@ -927,6 +1166,8 @@ export class Sim {
         this.check = { x: pr.x, y: pr.y };
         p.shield = this.run.ranks.armor >= 3;
         this.emit({ type: 'checkpoint', x: pr.x, y: pr.y, first: this.checkFirst });
+        // the level's first checkpoint banks an implant pick; play goes on
+        if (this.checkFirst && !this.demo) { this.run.picks++; this.emit({ type: 'implant', x: pr.x, y: pr.y }); }
         this.checkFirst = false;
       } else if (pr.kind === 'exit' && this.exitOpen && !this.cleared) {
         this.cleared = true;
@@ -1035,7 +1276,8 @@ export class Sim {
   /** Puts the hero at a checkpoint, full health, foes' shots cleared (respawn, rewarded continue). */
   placeHero(x: number, y: number): void {
     const p = this.p;
-    Object.assign(p, { x, y, vx: 0, vy: 0, state: 'idle', t: 0, h: MOVE.h, atk: null, hp: this.maxHp(), maxHp: this.maxHp(), iframes: 2, heat: 0, hot: false, ground: true, deadT: 0 });
+    Object.assign(p, { x, y, vx: 0, vy: 0, state: 'idle', t: 0, h: MOVE.h, atk: null, hp: this.maxHp(), maxHp: this.maxHp(), iframes: 2, heat: 0, hot: false, ground: true, deadT: 0, hangT: 0, airAtk: 0, chain: 0, chainT: 0 });
+    this.cuts.length = 0;
     p.lastSafe = { x, y };
     p.shield = this.run.ranks.armor >= 3;
     for (const s of this.shots) if (!s.hero) s.life = 0;
@@ -1071,7 +1313,7 @@ export class Sim {
 
   private physics(dt: number, gravity: boolean): void {
     const p = this.p;
-    if (gravity) p.vy = Math.max(-MOVE.maxFall, p.vy - MOVE.gravity * dt * (p.state === 'attack' && p.atk?.kind === 'air' ? 0.35 : 1));
+    if (gravity) p.vy = Math.max(-MOVE.maxFall, p.vy - MOVE.gravity * dt * (p.hangT > 0 ? AIR_HANG_GRAVITY : 1));
     const r = this.moveBody(p, p.vx * dt, p.vy * dt, p.dropT > 0);
     if (r.hitX) p.vx = 0;
     p.ground = r.ground;
@@ -1132,7 +1374,7 @@ export class Sim {
     let broken = false;
     if (f.maxArmour > 0 && f.armour > 0) {
       // armour: the cleave breaks it at once, finishers twice as fast, the rest chips it
-      const chip = kind === 'cleave' ? 99 : kind === 'slash' || kind === 'lunge' || kind === 'slam' ? dmg * 2 : dmg;
+      const chip = kind === 'cleave' ? 99 : kind === 'slash' || kind === 'lunge' || kind === 'slam' || kind === 'iaido' || kind === 'air3' || kind === 'dive' || kind === 'burst' ? dmg * 2 : dmg;
       f.armour = Math.max(0, f.armour - chip);
       d = dmg * 0.25;
       if (f.armour <= 0) {
@@ -1150,14 +1392,14 @@ export class Sim {
     this.comboT = COMBO_TIME * (this.has('neonStreak') ? 1.6 : 1);
     this.bestCombo = Math.max(this.bestCombo, this.combo);
     if (this.combo >= 2) this.emit({ type: 'combo', n: this.combo });
-    const big = kind === 'slash' || kind === 'cleave' || kind === 'lunge' || kind === 'slam' || broken;
+    const big = (!!kind && !!FINISHER[kind]) || broken;
     this.emit({ type: 'hit', foe: f, dmg: d, x: f.x, y: f.y + f.h * 0.7, big, name: kind ? FINISHER[kind] ?? null : null });
     // knockback and flinch (not the fixed ones, the boss or an armoured brute)
     const def = FOE[f.kind];
     if (!def.fixed && f.kind !== 'boss' && !(f.maxArmour > 0 && f.armour > 0)) {
       f.vx = knock * (f.kind === 'brute' ? 0.4 : 1);
-      if (kind === 'lunge' && (f.kind === 'walker' || f.kind === 'drone' || f.kind === 'gunner' || f.kind === 'gdrone')) f.vy = 9;
-      if (f.state !== 'stun') { f.flinch = 0.3; if (f.state === 'tell' && how !== 'shot') { f.state = 'recover'; f.t = 0.5; } }
+      if (kind === 'lunge' && LIGHT.includes(f.kind)) f.vy = 9;
+      if (f.state !== 'stun' && f.juggle <= 0) { f.flinch = 0.3; if (f.state === 'tell' && how !== 'shot') { f.state = 'recover'; f.t = 0.5; } }
     }
     if (f.hp <= 0) this.kill(f);
   }
@@ -1238,11 +1480,23 @@ export class Sim {
     }
     for (const f of this.foes) {
       if (f.flash > 0) f.flash -= dt;
-      if (f.state === 'dead') { f.dead += dt; continue; }
+      if (f.state === 'dead') {
+        f.dead += dt;
+        // a wreck thrown into the air falls (a launched or spiked foe, a shot-down drone)
+        if (!FOE[f.kind].fixed && f.kind !== 'boss' && !f.ground && f.dead < 2) {
+          f.vy = Math.max(-MOVE.maxFall, f.vy - MOVE.gravity * dt);
+          f.vx *= Math.pow(0.3, dt);
+          const r = this.moveBody(f, f.vx * dt, f.vy * dt);
+          f.ground = r.ground;
+          if (r.ground) { f.vy = 0; f.vx = 0; }
+        }
+        continue;
+      }
       // sleep far from the hero (not the boss)
       if (f.kind !== 'boss' && Math.abs(f.x - p.x) > 22) continue;
       if (f.state === 'spawn') { f.t -= dt; if (f.t <= 0) { f.state = 'patrol'; f.t = 0.5; } continue; }
       if (f.flinch > 0) f.flinch -= dt;
+      if (f.juggle > 0) { this.juggled(f, dt); continue; }
       switch (f.kind) {
         case 'walker': this.aiWalker(f, dt); break;
         case 'gunner': this.aiGunner(f, dt); break;
@@ -1267,6 +1521,33 @@ export class Sim {
       }
     }
     this.foes = this.foes.filter((f) => f.state !== 'dead' || f.dead < 3);
+  }
+
+  /** A thrown foe: light gravity, no AI; a spiked one crashes into the ground. */
+  private juggled(f: Foe, dt: number): void {
+    f.juggle -= dt;
+    f.vx *= Math.pow(0.25, dt);
+    f.vy = Math.max(-MOVE.maxFall, f.vy - MOVE.gravity * JUGGLE_GRAVITY * dt);
+    const vy = f.vy;
+    const r = this.moveBody(f, f.vx * dt, f.vy * dt);
+    if (r.hitX) f.vx = 0;
+    f.ground = r.ground;
+    if (r.ground) {
+      f.vy = 0;
+      if (vy < -9) {
+        // spiked into the roof
+        this.emit({ type: 'crash', x: f.x, y: f.y });
+        this.damage(f, 1.5 * this.meleeMult(f), 'wave', null, 0);
+        f.juggle = Math.min(f.juggle, 0.35);
+      } else f.juggle = Math.min(f.juggle, 0.12);
+    } else if (r.hitY) f.vy = Math.min(0, f.vy);
+    if (f.y < -6 && f.state !== 'dead') { f.hp = 0; this.kill(f); return; }
+    if (f.juggle <= 0 && f.state !== 'dead') {
+      f.juggle = 0;
+      f.state = 'recover';
+      f.t = 0.45;
+      if (FOE[f.kind].flies) { f.vx = 0; f.vy = 0; }
+    }
   }
 
   private faceHero(f: Foe): void { f.face = (this.p.x > f.x ? 1 : -1) as 1 | -1; }
@@ -1714,7 +1995,7 @@ export class Sim {
           if (f.state === 'dead' || f.state === 'spawn' || s.hit.has(f.id)) continue;
           if (!overlap(s.x - s.r, s.y - s.r, s.x + s.r, s.y + s.r, f.x - f.w / 2, f.y, f.x + f.w / 2, f.y + f.h)) continue;
           s.hit.add(f.id);
-          this.damage(f, s.dmg, 'shot', s.kind === 'crescent' ? 'slash' : null, Math.sign(s.vx) * 2.5);
+          this.damage(f, s.dmg, 'shot', s.kind === 'crescent' ? 'slash' : null, Math.sign(s.vx) * (s.kind === 'mirror' ? 6 : 2.5));
           if (s.bounce > 0 && s.kind !== 'crescent') {
             // ricochet to the nearest other foe
             s.bounce--;

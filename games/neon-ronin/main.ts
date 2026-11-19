@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, SkinButton, t, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, prebakePlay, entry } from './PlayScene';
 import { STRINGS } from './strings';
@@ -11,7 +11,8 @@ import { Sim, newRun, mulberry, NO_INPUT } from './sim';
 import { Bot, SKILL } from './bot';
 import { DT } from './defs';
 import { noRanks } from './powers';
-import { NEON_THEME } from './menu';
+import { NEON_THEME, MOVES_BTN } from './menu';
+import { OverlayScene, openOverlay } from './overlay';
 
 launch({
   meta: meta as GameMeta,
@@ -78,6 +79,17 @@ launch({
     loadAudio(l, 'tick', J + 'general-sounds/simple-bleeps/sfx-sounds-blip3');
     loadSfx(l, 'card', 'sfx-casino/audio/cardslide3');
     loadSfx(l, 'deal', 'sfx-casino/audio/cardfan1');
+    // 1.1: a sound for every blade move
+    loadSfx(l, 'mvSpin', 'sfx-foley/audio/woosh/woosh2');
+    loadAudio(l, 'mvRise', J + 'movement/jumping-and-landing/sfx-movement-jump9');
+    loadAudio(l, 'mvSky', J + 'general-sounds/impacts/sfx-sounds-impact6');
+    loadAudio(l, 'mvDive', J + 'movement/falling-sounds/sfx-sounds-falling3');
+    loadAudio(l, 'mvDiveLand', J + 'explosions/shortest/sfx-exp-shortest-hard3');
+    loadAudio(l, 'mvDraw', J + 'weapons/melee/sfx-wpn-dagger');
+    loadAudio(l, 'mvIaido', J + 'general-sounds/weird-sounds/sfx-sound-bling');
+    loadAudio(l, 'mvBurst', J + 'weapons/shotgun/sfx-weapon-shotgun2');
+    loadAudio(l, 'mvMirror', J + 'weapons/lasers/sfx-wpn-laser-10');
+    loadAudio(l, 'mvCrash', J + 'general-sounds/impacts/sfx-sounds-impact12');
     l.once(Phaser.Loader.Events.COMPLETE, () => {
       const t0 = performance.now();
       makeArt(scene);
@@ -126,10 +138,19 @@ launch({
     }).setDepth(-60);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => view.dispose());
   },
+  // the game's own menu row: MOVES (every blade move and how it unlocks; M on the keyboard)
+  menuOption: {
+    build(scene, x, y) {
+      const open = () => openOverlay(scene, { kind: 'moves' });
+      new SkinButton(scene, x, y, t('moves'), open, { width: MOVES_BTN.w, height: MOVES_BTN.h, size: 30, baked: true });
+      scene.input.keyboard?.on('keydown-M', open);
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.input.keyboard?.off('keydown-M', open));
+    },
+  },
   // neon glitch panels, HUD brackets, a synthwave sun behind the logo (menu.ts)
   menuTheme: NEON_THEME,
   // a lost run may go on once from its last checkpoint, after a rewarded ad
   ads: { continue: (play) => (play as PlayScene).revive() },
-  scenes: [PlayScene],
+  scenes: [PlayScene, OverlayScene],
   strings: STRINGS,
 });

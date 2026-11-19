@@ -9,7 +9,7 @@ import { THREE } from '@core/three';
 import { MISSIONS, type HeroId } from './defs';
 import { soloGeometry, litMaterial, mergeModels, modelBox, type Placed } from './kit';
 import { Figure } from './figure';
-import { groundMesh, THEME } from './arena';
+import { discMesh, THEME } from './arena';
 import type { Ranks } from './powers';
 import type { View } from './view';
 
@@ -161,7 +161,7 @@ export class BaseView {
   constructor(private view: View, hero: HeroId) {
     this.group = view.baseGroup;
     this.heroId = hero;
-    const g = groundMesh('desert', 16);
+    const g = discMesh('desert', 16);
     g.translate(0, 0.0, 0);
     this.ground = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
     this.ground.receiveShadow = true;

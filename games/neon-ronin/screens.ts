@@ -5,11 +5,14 @@
 //   - The level brief: the level's name, its three star goals (earned ones lit), the best time,
 //     START, CYBERWARE, MAP.
 //   - The ripperdoc: six cyberware tracks, three ranks each, bought with gears.
-//   - The implant draft: three cards, one reroll (at a level's first checkpoint, after a boss).
+//   - The implant draft: three cards, one reroll, LATER (on the results screen, from the pause, after
+//     a boss); never opened by play itself.
 //   - The level results: stars, time against par, wrecked foes, gears, chips, best combo, the
-//     score counted up, a new record, a new ability; NEXT, RETRY, MAP.
-//   - The district-clear and campaign cards; beside the pause: the run's implants, the combos and
-//     the level's goals.
+//     score counted up, a new record, a new ability, the implant earned (PICK); NEXT, RETRY, MAP.
+//   - The Moves screen: every blade move with its input (keys or touch), what it does and how it
+//     unlocks (from the menu row and the pause).
+//   - The district-clear and campaign cards; beside the pause: the run's implants (PICK when one is
+//     banked), the moves and the level's goals.
 // Touch: tap a tile or a button. Keys: arrows move the focus, Enter presses, number keys pick, Esc
 // goes back. Everything is painted under the Ayvago intro (`prebakeScreens`): opening a screen only
 // places images (and a few live numbers as glyphs).
@@ -20,8 +23,8 @@ import {
 } from '@core';
 import { LEVELS, DISTRICT_LEVELS } from './levels';
 import {
-  CARDS, CARD, UPGRADE, UPGRADE_IDS, MAX_RANK, RARITY_COLOR, RARITIES, ABILITY_IDS,
-  type CardId, type UpgradeId, type Rarity, type AbilityId,
+  CARDS, CARD, UPGRADE, UPGRADE_IDS, MAX_RANK, RARITY_COLOR, RARITIES, ABILITY_IDS, MOVES, moveOpen,
+  type CardId, type UpgradeId, type Rarity, type AbilityId, type Ranks, type MoveDef,
 } from './powers';
 import { makeArt, icon } from './art';
 import { nextPrice, buy, starCount, totalStars, type Meta } from './meta';
@@ -43,6 +46,7 @@ const BRIEF_W = 720, BRIEF_H = 480;
 const RES_W = 780, RES_H = 600;
 const END_W = 700, END_H = 420;
 export const PSIDE_W = 300, PSIDE_H = 560;
+const MOVES_W = 1220, MOVES_H = 660, MROW_W = 584, MROW_H = 80;
 const SIDE_X = 190, SIDE_PARA = 300;
 
 export const SCREEN_CARDS = [{ w: BRIEF_W, h: BRIEF_H }, { w: RES_W, h: RES_H }, { w: END_W, h: END_H }, { w: PSIDE_W, h: PSIDE_H }, { w: UP_W, h: UP_H }];
@@ -73,6 +77,12 @@ const S_CARD: LabelStyle = { size: 24, color: '#ffffff', stroke: INK, strokeWidt
 const S_RAR = (r: Rarity): LabelStyle => ({ size: 16, color: RARITY_COLOR[r].css, stroke: INK, strokeWidth: 3 });
 const P_HEAD: LabelStyle = { size: 24, color: '#3ff0ff', stroke: INK, strokeWidth: 4 };
 const P_NAME: LabelStyle = { size: 17, color: '#ffffff', stroke: null, shadow: false, body: true };
+const M_NAME: LabelStyle = { size: 24, color: '#ffffff', stroke: INK, strokeWidth: 4 };
+const M_IN: LabelStyle = { size: 18, color: '#5ff4ff', stroke: null, shadow: false, body: true };
+const M_DESC: LabelStyle = { size: 16, color: '#cfc8ff', stroke: null, shadow: false, body: true };
+const M_LOCK: LabelStyle = { size: 16, color: '#ffb04a', stroke: null, shadow: false, body: true };
+const M_OPEN: LabelStyle = { size: 15, color: '#7cff6a', stroke: null, shadow: false, body: true };
+const S_LATER: LabelStyle = { size: 22 };
 const CARD_KEY = (r: Rarity): string => 'nr-card-' + r;
 const CARD_GLOW = 'nr-card-glow';
 
@@ -85,15 +95,15 @@ const levelName = (i: number): string => upper(t('lv_' + LEVELS[i].id));
 /** Paints, in the current language, everything the inner screens show (Boot, under the intro). */
 export function prebakeScreens(scene: Phaser.Scene): void {
   makeArt(scene);
-  for (const [w, h] of [[BOARD_W, BOARD_H], [SHOP_W, SHOP_H], [1000, 640]]) skinTexture(scene, 'board', w, h);
+  for (const [w, h] of [[BOARD_W, BOARD_H], [SHOP_W, SHOP_H], [1000, 640], [MOVES_W, MOVES_H]]) skinTexture(scene, 'board', w, h);
   for (const c of SCREEN_CARDS) themeCard(scene, 0, 0, c.w, c.h).destroy();
   for (const k of ['mapTitle', 'shopTitle', 'draftTitle', 'resTitle', 'resBoss', 'districtTitle', 'campaignTitle']) { labelTexture(scene, t(k), S_TITLE); labelTexture(scene, t(k), S_TITLE_C); }
   for (const k of ['mapSub', 'shopSub', 'draftSub', 'bossDraft', 'districtSub', 'campaignSub']) { bakePara(scene, t(k), S_SUB, 620); bakePara(scene, t(k), S_SUB, SIDE_PARA); bakePara(scene, t(k), S_SUB, END_W - 100); }
   // buttons: faces and labels
-  for (const [w, h, col, off] of [[260, 72, MAGENTA, true], [250, 64, CYAN, false], [180, 64, CYAN, false], [240, 70, CYAN, true], [230, 64, MAGENTA, false], [150, 52, LIME, true], [200, 64, CYAN, false], [240, 64, MAGENTA, false]] as [number, number, number, boolean][]) bakeButton(scene, 'button', w, h, col, off);
+  for (const [w, h, col, off] of [[260, 72, MAGENTA, true], [250, 64, CYAN, false], [180, 64, CYAN, false], [240, 70, CYAN, true], [230, 64, MAGENTA, false], [150, 52, LIME, true], [200, 64, CYAN, false], [240, 64, MAGENTA, false], [180, 70, STEEL, false], [200, 60, CYAN, false], [260, 54, MAGENTA, false], [240, 52, CYAN, false], [280, 72, MAGENTA, false]] as [number, number, number, boolean][]) bakeButton(scene, 'button', w, h, col, off);
   for (const d of DISTRICT_HEX) { bakeButton(scene, 'plate', NODE_W, NODE_H, d, true, true); bakeButton(scene, 'plate', NODE_W + 20, NODE_H, d, true, true); }
   bakeButton(scene, 'plate', CARD_W, CARD_H, CYAN);
-  for (const k of ['play', 'cyberware', 'start', 'map', 'done', 'reroll', 'next', 'retry', 'toMap', 'maxed', 'back']) { labelTexture(scene, t(k), S_BTN); labelTexture(scene, t(k), S_BTN_S); }
+  for (const k of ['play', 'cyberware', 'start', 'map', 'done', 'reroll', 'next', 'retry', 'toMap', 'maxed', 'back', 'moves', 'pickImplant', 'later']) { labelTexture(scene, t(k), S_BTN); labelTexture(scene, t(k), S_BTN_S); labelTexture(scene, t(k), S_LATER); }
   for (const k of ['poor', 'bought', 'maxed', 'locked']) labelTexture(scene, t(k), S_TOAST);
   for (const o of [S_NUM, S_PRICE, S_STAT, S_SCORE, S_NODE]) glyphAtlas(scene, o);
   labelTexture(scene, t('draftKeys'), S_KEYS);
@@ -123,8 +133,24 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   labelTexture(scene, t('newRecord'), S_TAG);
   labelTexture(scene, t('newAbility'), P_HEAD);
   for (const a of ABILITY_IDS) { labelTexture(scene, t('ab_' + a), S_NAME); bakePara(scene, t('abd_' + a), S_DESC, 250); }
+  // the implant on the results card
+  labelTexture(scene, t('implantNote'), S_NAME);
+  labelTexture(scene, t('implantNote'), P_NAME);
+  // the Moves screen
+  labelTexture(scene, t('moves'), S_TITLE);
+  bakePara(scene, t('movesSub'), S_SUB, 900);
+  labelTexture(scene, t('movesKeys'), S_KEYS);
+  labelTexture(scene, t('mvOpen'), M_OPEN);
+  for (const m of MOVES) {
+    labelTexture(scene, t(m.name), M_NAME);
+    labelTexture(scene, t(m.name), P_NAME);
+    labelTexture(scene, t(`mv_${m.id}_k`), M_IN);
+    labelTexture(scene, t(`mv_${m.id}_t`), M_IN);
+    labelTexture(scene, t('md_' + m.id), M_DESC);
+    if (m.unlock.kind !== 'start') labelTexture(scene, t('lock_' + m.id), M_LOCK);
+  }
   // beside the pause
-  for (const k of ['yourChips', 'combos']) labelTexture(scene, t(k), P_HEAD);
+  for (const k of ['yourChips', 'combos', 'moves']) labelTexture(scene, t(k), P_HEAD);
   bakePara(scene, t('noChips'), P_NAME, PSIDE_W - 50);
   for (const k of ['comboA', 'comboB', 'comboC', 'comboD']) bakePara(scene, t(k), P_NAME, PSIDE_W - 90);
   bakePara(scene, t('comboNote'), S_SMALL, PSIDE_W - 50);
@@ -545,7 +571,10 @@ export function cardFace(s: Phaser.Scene, x: number, y: number, id: CardId): Pha
   return c;
 }
 
-/** Three cards side by side, one reroll; a tap (Enter on the focused card, or 1–3) takes one. */
+/**
+ * Three cards side by side, one reroll; a tap (Enter on the focused card, or 1–3) takes one. With
+ * `onLater` the pick may wait (LATER, Esc): it stays banked for the pause or the next results.
+ */
 export class DraftScreen extends Panel {
   private faces: { c: Phaser.GameObjects.Container; id: CardId; hit: KitButton }[] = [];
   private glow: Phaser.GameObjects.Image;
@@ -554,7 +583,9 @@ export class DraftScreen extends Panel {
   private reroll!: KitButton;
   private y = 372;
 
-  constructor(scene: Phaser.Scene, host: ScreenHost, private offer: CardId[], private dealAgain: () => CardId[], private onPick: (id: CardId) => void, boss = false) {
+  private laterBtn: KitButton | null = null;
+
+  constructor(scene: Phaser.Scene, host: ScreenHost, private offer: CardId[], private dealAgain: () => CardId[], private onPick: (id: CardId) => void, boss = false, private onLater?: () => void) {
     super(scene, host, { board: [1000, 640, 640, 372], title: t('draftTitle'), titleY: 92, sub: t(boss ? 'bossDraft' : 'draftSub'), dim: 0.55 });
     this.glow = scene.add.image(0, 0, CARD_GLOW).setVisible(false);
     this.root.add(this.glow);
@@ -580,8 +611,9 @@ export class DraftScreen extends Panel {
       s.tweens.add({ targets: c, scaleX: 1, alpha: 1, duration: 220, delay: 60 + i * 100, ease: 'Back.easeOut' });
       if (CARD[id].rarity === 'legendary') s.time.delayedCall(260 + i * 100, () => { if (!this.closed) this.host.sfx('fanfare', 0.35); });
     });
+    const rx = this.onLater ? x0 - 130 : x0;
     if (!this.reroll) {
-      this.reroll = new KitButton(s, x0, y + CARD_H / 2 + 44, { w: 240, h: 70, color: CYAN, label: t('reroll'), style: S_BTN_S, tapWhenOff: true, sfx: null }, () => {
+      this.reroll = new KitButton(s, rx, y + CARD_H / 2 + 44, { w: 240, h: 70, color: CYAN, label: t('reroll'), style: S_BTN_S, tapWhenOff: true, sfx: null }, () => {
         if (this.rerolled || this.picked) { this.deny(this.reroll, 'maxed'); return; }
         this.rerolled = true;
         this.offer = this.dealAgain();
@@ -590,9 +622,14 @@ export class DraftScreen extends Panel {
         this.deal(true);
       });
       this.root.add(this.reroll);
-      if (!this.host.touch) this.root.add(labelAt(s, x0 + 330, y + CARD_H / 2 + 44, t('draftKeys'), S_KEYS));
+      if (this.onLater) {
+        this.laterBtn = new KitButton(s, x0 + 110, y + CARD_H / 2 + 44, { w: 180, h: 70, color: STEEL, label: t('later'), style: S_LATER, sfx: null }, () => this.later());
+        this.root.add(this.laterBtn);
+      }
+      if (!this.host.touch) this.root.add(fitWidth(labelAt(s, x0 + 400, y + CARD_H / 2 + 44, t('draftKeys'), S_KEYS), 200));
     }
-    this.addFocus(this.reroll, x0, y + CARD_H / 2 + 44);
+    this.addFocus(this.reroll, rx, y + CARD_H / 2 + 44);
+    if (this.laterBtn) this.addFocus(this.laterBtn, x0 + 110, y + CARD_H / 2 + 44);
     this.fi = this.host.touch ? -1 : 1;
     this.showGlow();
     this.host.sfx(again ? 'card' : 'deal', 0.45);
@@ -607,7 +644,16 @@ export class DraftScreen extends Panel {
   }
 
   protected showFocus(): void { super.showFocus(); this.showGlow(); }
-  protected escape(): void { /* a card must be picked */ }
+  /** Esc: later, when the pick may wait. */
+  protected escape(): void { this.later(); }
+
+  private later(): void {
+    if (!this.onLater || this.picked || this.closed) return;
+    this.picked = true;
+    this.host.sfx('pick', 0.4);
+    this.close();
+    this.onLater();
+  }
 
   key(code: string): boolean {
     if (code === 'Digit1' || code === 'Digit2' || code === 'Digit3') { this.take(Number(code.slice(5)) - 1); return true; }
@@ -635,10 +681,15 @@ export class DraftScreen extends Panel {
 export interface LevelResult {
   level: number; time: number; par: number; kills: number; gears: number; chips: number; combo: number;
   score: number; stars: [boolean, boolean, boolean]; newStars: number; record: boolean; ability: AbilityId | null; boss: boolean; last: boolean;
+  /** Implant picks banked (earned at the first checkpoint, or waiting from earlier). */
+  picks: number;
 }
 
 export class ResultScreen extends Panel {
-  constructor(scene: Phaser.Scene, host: ScreenHost, r: LevelResult, private onNext: () => void, private onRetry: () => void, private onMap: () => void) {
+  private pickBtn: KitButton | null = null;
+  private pickSpot = { x: 0, y: 0 };
+
+  constructor(scene: Phaser.Scene, host: ScreenHost, r: LevelResult, private onNext: () => void, private onRetry: () => void, private onMap: () => void, private onPick?: () => void) {
     super(scene, host, { dim: 0.45 });
     const s = scene, cx = 640, cy = 384, top = cy - RES_H / 2;
     const card = themeCard(s, cx, cy, RES_W, RES_H);
@@ -663,7 +714,8 @@ export class ResultScreen extends Panel {
       [r.boss ? 'resCombo' : 'resChips', r.boss ? '×' + r.combo : `${r.chips}/3`],
     ];
     if (!r.boss) rows.push(['resCombo', '×' + r.combo]);
-    const left = r.ability ? cx - 330 : cx - 220, right = r.ability ? cx + 20 : cx + 220;
+    const two = !!r.ability || r.picks > 0;
+    const left = two ? cx - 330 : cx - 220, right = two ? cx + 20 : cx + 220;
     rows.forEach(([k, v], i) => {
       const y = top + 228 + i * 40;
       this.root.add(labelAt(s, left, y, t(k), S_STAT_L, 0));
@@ -677,8 +729,9 @@ export class ResultScreen extends Panel {
     const n = { v: 0 };
     s.tweens.add({ targets: n, v: r.score, duration: 900, delay: 400, ease: 'Cubic.easeOut', onUpdate: () => score.setText(String(Math.round(n.v))), onComplete: () => { score.setText(String(r.score)); if (r.record) { const tag = this.tag(left + 130, sy, 'newRecord', 0xffe040); this.root.add(tag); } } });
     // a new ability
+    const ax = cx + 205;
     if (r.ability) {
-      const ax = cx + 205, ay = top + 300;
+      const ay = top + (r.picks > 0 ? 284 : 300);
       const g = s.add.graphics();
       g.fillStyle(0x1a0a30, 0.9).fillRoundedRect(ax - 140, ay - 104, 280, 228, 10).lineStyle(2, MAGENTA, 1).strokeRoundedRect(ax - 140, ay - 104, 280, 228, 10);
       this.root.add(g);
@@ -689,6 +742,26 @@ export class ResultScreen extends Panel {
       this.root.add(fitWidth(labelAt(s, ax, ay + 24, t('ab_' + r.ability), S_NAME), 250));
       this.root.add(new Para(s, ax, ay + 44, t('abd_' + r.ability), S_DESC, 250, 0.5, 19));
     }
+    // the implant earned in the level: picked here, never mid-level
+    if (r.picks > 0 && this.onPick) {
+      let by0 = top + 470;
+      if (!r.ability) {
+        const g = s.add.graphics();
+        g.fillStyle(0x1a0a30, 0.9).fillRoundedRect(ax - 140, top + 196, 280, 228, 10).lineStyle(2, VIOLET, 1).strokeRoundedRect(ax - 140, top + 196, 280, 228, 10);
+        this.root.add(g);
+        const ic = iconImg(s, ax, top + 280, 'chip', 84);
+        this.root.add(ic);
+        s.tweens.add({ targets: ic, scale: ic.scale * 1.12, duration: 560, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        this.root.add(fitWidth(labelAt(s, ax, top + 222, t('implantNote'), S_NAME), 250));
+        by0 = top + 378;
+      } else this.root.add(fitWidth(labelAt(s, ax, top + 428, t('implantNote'), P_NAME), 250));
+      this.pickSpot = { x: ax, y: by0 };
+      const pick = new KitButton(s, ax, by0, { w: 260, h: 54, color: MAGENTA, label: t('pickImplant'), style: S_LATER, sfx: null }, () => { if (this.closed || !this.pickBtn) return; this.host.sfx('pick', 0.4); this.onPick?.(); });
+      this.pickBtn = pick;
+      this.root.add(pick);
+      this.addFocus(pick, ax, by0);
+      s.tweens.add({ targets: pick, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
     const by = top + RES_H - 52;
     const retry = new KitButton(s, cx - 260, by, { w: 200, h: 64, color: CYAN, label: t('retry'), style: S_BTN_S, sfx: null }, () => { this.host.sfx('pick', 0.4); this.close(); this.onRetry(); });
     const map = new KitButton(s, cx - 40, by, { w: 200, h: 64, color: CYAN, label: t('toMap'), style: S_BTN_S, sfx: null }, () => { this.host.sfx('pick', 0.4); this.close(); this.onMap(); });
@@ -697,10 +770,37 @@ export class ResultScreen extends Panel {
     this.addFocus(retry, cx - 260, by);
     this.addFocus(map, cx - 40, by);
     this.addFocus(next, cx + 220, by);
-    this.fi = 2;
+    this.fi = this.focus.findIndex((f) => f.btn === next);
     this.showFocus();
     card.setScale(0.9);
     s.tweens.add({ targets: card, scale: 1, duration: 260, ease: 'Back.easeOut' });
+  }
+
+  /** The implant was picked (or the offer emptied): the button gives way to the card's name. */
+  picked(id: CardId | null, left: number): void {
+    const b = this.pickBtn;
+    if (!b) return;
+    if (left > 0) return;
+    this.pickBtn = null;
+    this.focus = this.focus.filter((f) => f.btn !== b);
+    this.fi = this.focus.length - 1;
+    b.destroy();
+    if (!id) return;
+    const s = this.scene, { x, y } = this.pickSpot, def = CARD[id];
+    const c = s.add.container(x, y);
+    const g = s.add.graphics();
+    g.fillStyle(RARITY_COLOR[def.rarity].glow, 0.5).fillCircle(-104, 0, 20).lineStyle(2, RARITY_COLOR[def.rarity].frame, 1).strokeCircle(-104, 0, 20);
+    c.add([g, iconImg(s, -104, 0, def.icon, 30), fitWidth(labelAt(s, -76, 0, t('k_' + id), S_CARD, 0), 200)]);
+    this.root.add(c);
+    c.setScale(0.4);
+    s.tweens.add({ targets: c, scale: 1, duration: 260, ease: 'Back.easeOut' });
+    this.sparkle(x, y, [RARITY_COLOR[def.rarity].frame, 0xffffff], 26);
+    this.showFocus();
+  }
+
+  key(code: string): boolean {
+    if (code === 'KeyI' && this.pickBtn) { this.pickBtn.emit('pointerup', { wasTouch: false }); return true; }
+    return super.key(code);
   }
 
   private tag(x: number, y: number, key: string, color: number): Phaser.GameObjects.Container {
@@ -744,18 +844,101 @@ export class EndCard extends Panel {
   protected escape(): void { if (this.closed) return; this.close(); this.onGo(); }
 }
 
+// ------------------------------------------------------------------ the moves
+
+/**
+ * Every blade move in two columns: its icon, name, input (the keys, or the touch buttons on a touch
+ * screen), what it does and, while locked, how it opens. Painted ahead: opening it only places images.
+ */
+export class MovesScreen extends Panel {
+  constructor(scene: Phaser.Scene, host: ScreenHost, abilities: AbilityId[], ranks: Ranks, private onDone: () => void) {
+    super(scene, host, { board: [MOVES_W, MOVES_H, 640, 366], title: t('moves'), titleY: 64, titleW: 520, dim: 0.72 });
+    const s = scene;
+    const sub = new Para(s, 640, 98, t('movesSub'), S_SUB, 900, 0.5, 23);
+    this.root.add(sub);
+    const g = s.add.graphics();
+    this.root.add(g);
+    const per = Math.ceil(MOVES.length / 2);
+    MOVES.forEach((m, i) => {
+      const col = i < per ? 0 : 1, row = col ? i - per : i;
+      const x = 340 + col * 600, y = 172 + row * (MROW_H + 8);
+      this.row(g, m, x, y, moveOpen(m.id, abilities, ranks));
+    });
+    const back = new KitButton(s, 1110, 64, { w: 200, h: 60, color: CYAN, label: t('back'), style: S_BTN_S, sfx: null }, () => this.done());
+    this.root.add(back);
+    this.addFocus(back, 1110, 64);
+    this.fi = host.touch ? -1 : 0;
+    this.showFocus();
+    if (!host.touch) this.root.add(labelAt(s, 1222, 666, t('movesKeys'), S_KEYS, 1));
+  }
+
+  private row(g: Phaser.GameObjects.Graphics, m: MoveDef, x: number, y: number, open: boolean): void {
+    const s = this.scene, L = x - MROW_W / 2;
+    g.fillStyle(open ? 0x140a2a : 0x0c0818, 0.92).fillRect(L, y - MROW_H / 2, MROW_W, MROW_H);
+    g.lineStyle(1.5, open ? CYAN : STEEL, open ? 0.7 : 0.35).strokeRect(L, y - MROW_H / 2, MROW_W, MROW_H);
+    g.fillStyle(open ? MAGENTA : STEEL, open ? 1 : 0.5).fillRect(L, y - MROW_H / 2, 4, MROW_H);
+    const ic = iconImg(s, L + 42, y, m.icon, 50);
+    if (!open) ic.setAlpha(0.35);
+    this.root.add(ic);
+    const name = fitWidth(labelAt(s, L + 80, y - 22, t(m.name), M_NAME, 0), 270);
+    this.root.add(name);
+    const input = fitWidth(labelAt(s, L + 80, y + 4, t(`mv_${m.id}_${this.host.touch ? 't' : 'k'}`), M_IN, 0), MROW_W - 96);
+    this.root.add(input);
+    this.root.add(fitWidth(labelAt(s, L + 80, y + 26, t('md_' + m.id), M_DESC, 0), MROW_W - 96));
+    if (open) {
+      if (m.unlock.kind === 'start') this.root.add(fitWidth(labelAt(s, L + MROW_W - 12, y - 22, t('mvOpen'), M_OPEN, 1), 200));
+    } else {
+      name.setAlpha(0.55); input.setAlpha(0.6);
+      this.root.add(iconImg(s, L + MROW_W - 22, y - 22, 'lock', 24));
+      this.root.add(fitWidth(labelAt(s, L + MROW_W - 40, y - 22, t('lock_' + m.id), M_LOCK, 1), 220));
+    }
+  }
+
+  key(code: string): boolean {
+    if (code === 'Enter' || code === 'Space' || code === 'KeyM' || code === 'NumpadEnter' || code === 'Backspace') { this.done(); return true; }
+    return super.key(code);
+  }
+  protected escape(): void { this.done(); }
+  private done(): void {
+    if (this.closed) return;
+    this.host.sfx('pick', 0.4);
+    this.close();
+    this.onDone();
+  }
+}
+
 // ------------------------------------------------------------------ beside the pause
 
-/** Added to the Pause scene as it opens: the run's implants on the left; combos and goals on the right. */
-export function pauseSides(scene: Phaser.Scene, cards: CardId[], abilities: AbilityId[], chips: number, time: number): void {
+/** A key handler that goes with the scene. */
+function keyOn(scene: Phaser.Scene, ev: string, fn: () => void): void {
+  const kb = scene.input.keyboard;
+  if (!kb) return;
+  kb.on(ev, fn);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => kb.off(ev, fn));
+}
+
+export interface PauseInfo {
+  cards: CardId[]; abilities: AbilityId[]; ranks: Ranks; chips: number; time: number; picks: number;
+  /** Opens the Moves screen; picks the banked implant (both over the pause). */
+  moves: () => void; pick: () => void;
+}
+
+/**
+ * Added to the Pause scene as it opens: the run's implants on the left (PICK IMPLANT while one is
+ * banked); the moves and the level's goals on the right (MOVES opens the full list). Keys: M moves,
+ * I pick.
+ */
+export function pauseSides(scene: Phaser.Scene, o: PauseInfo): Phaser.GameObjects.Container {
   const y = 400;
   const root = scene.add.container(0, 0).setDepth(5);
   const lx = 180, rx = 1100, top = y - PSIDE_H / 2;
   root.add(themeCard(scene, lx, y, PSIDE_W, PSIDE_H));
   root.add(labelAt(scene, lx, top + 34, t('yourChips'), P_HEAD));
+  const cards = o.cards;
   if (!cards.length) root.add(new Para(scene, lx, top + 64, t('noChips'), P_NAME, PSIDE_W - 50, 0.5, 21));
-  const rowH = cards.length > 10 ? 40 : 46;
-  cards.slice(0, 11).forEach((id, i) => {
+  const room = o.picks > 0 ? 9 : 11;
+  const rowH = cards.length > 9 ? 40 : 46;
+  cards.slice(0, room).forEach((id, i) => {
     const x = lx - PSIDE_W / 2 + 44, yy = top + 82 + i * rowH;
     const def = CARD[id];
     const g = scene.add.graphics();
@@ -764,30 +947,33 @@ export function pauseSides(scene: Phaser.Scene, cards: CardId[], abilities: Abil
     root.add(iconImg(scene, x, yy, def.icon, 28));
     root.add(fitWidth(labelAt(scene, x + 28, yy, t('k_' + id), P_NAME, 0), PSIDE_W - 96));
   });
-  root.add(themeCard(scene, rx, y, PSIDE_W, PSIDE_H));
-  root.add(labelAt(scene, rx, top + 34, t('combos'), P_HEAD));
-  const combos: Array<[string, string, AbilityId | null]> = [['comboA', 'slash', null], ['comboB', 'cleave', 'cleave'], ['comboC', 'roll', null], ['comboD', 'slam', 'slam']];
-  let yy = top + 74;
-  for (const [k, ic, ab] of combos) {
-    const on = !ab || abilities.includes(ab);
-    root.add(iconImg(scene, rx - PSIDE_W / 2 + 36, yy + 14, on ? ic : 'lock', 34).setAlpha(on ? 1 : 0.6));
-    const p = new Para(scene, rx - PSIDE_W / 2 + 64, yy, t(k), P_NAME, PSIDE_W - 90, 0, 20);
-    p.setAlpha(on ? 1 : 0.5);
-    root.add(p);
-    yy += Math.max(48, p.textHeight + 14);
+  if (o.picks > 0) {
+    const by = top + PSIDE_H - 46;
+    const pick = new KitButton(scene, lx, by, { w: 260, h: 54, color: MAGENTA, label: t('pickImplant'), style: S_LATER, sfx: null }, () => o.pick());
+    root.add(pick);
+    scene.tweens.add({ targets: pick, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    keyOn(scene, 'keydown-I', o.pick);
   }
-  const note = new Para(scene, rx, yy + 4, t('comboNote'), S_SMALL, PSIDE_W - 50, 0.5, 18);
-  root.add(note);
-  yy += note.textHeight + 24;
-  const g = scene.add.graphics();
-  g.lineStyle(1, CYAN, 0.4).lineBetween(rx - PSIDE_W / 2 + 24, yy, rx + PSIDE_W / 2 - 24, yy);
-  root.add(g);
-  root.add(iconImg(scene, rx - 100, yy + 32, 'chip', 30));
-  root.add(new FmtLine(scene, rx - 80, yy + 32, P_NAME, 0).set('objChips', { n: chips }));
-  root.add(iconImg(scene, rx - 100, yy + 70, 'clock', 30));
-  root.add(new FmtLine(scene, rx - 80, yy + 70, P_NAME, 0).set('objTime', { t: clock(time) }));
+  root.add(themeCard(scene, rx, y, PSIDE_W, PSIDE_H));
+  root.add(labelAt(scene, rx, top + 34, t('moves'), P_HEAD));
+  let yy = top + 70;
+  for (const m of MOVES) {
+    const on = moveOpen(m.id, o.abilities, o.ranks);
+    root.add(iconImg(scene, rx - PSIDE_W / 2 + 36, yy, on ? m.icon : 'lock', 26).setAlpha(on ? 1 : 0.55));
+    root.add(fitWidth(labelAt(scene, rx - PSIDE_W / 2 + 60, yy, t(m.name), P_NAME, 0), PSIDE_W - 84).setAlpha(on ? 1 : 0.45));
+    yy += 30;
+  }
+  const mb = new KitButton(scene, rx, yy + 26, { w: 240, h: 52, color: CYAN, label: t('moves'), style: S_LATER, sfx: null }, () => o.moves());
+  root.add(mb);
+  keyOn(scene, 'keydown-M', o.moves);
+  yy += 74;
+  root.add(iconImg(scene, rx - 120, yy, 'chip', 28));
+  root.add(new FmtLine(scene, rx - 102, yy, P_NAME, 0).set('objChips', { n: o.chips }));
+  root.add(iconImg(scene, rx + 18, yy, 'clock', 28));
+  root.add(new FmtLine(scene, rx + 36, yy, P_NAME, 0).set('objTime', { t: clock(o.time) }));
   root.setAlpha(0);
   scene.tweens.add({ targets: root, alpha: 1, duration: 160 });
+  return root;
 }
 
 export { STEEL, YELLOW };
