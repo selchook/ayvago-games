@@ -19,7 +19,7 @@ import { makeMats, prop, propBox, Merger, SIGN_UV, type Mats, type Group } from 
 import { Figure } from './figure';
 import { Sparks, glowCloud, glowQuad, beam, canvasTex, type Quad } from './fx3d';
 import { glowCanvas, slashCanvas, ringCanvas, shadowCanvas, puffCanvas, windowsCanvas, skyCanvas } from './art';
-import { ATTACKS, FOE_SCALE, MOVE, type FoeKind } from './defs';
+import { ATTACKS, FOE_SCALE, MOVE, IAIDO_DIST, type FoeKind, type AttackKind } from './defs';
 import { hazardBox, mulberry, type Sim, type SimEvent, type Foe, type Shot, type Pickup, type Prop, type Hazard, type Faller, type Gate } from './sim';
 
 const CHUNK = 24;
@@ -29,6 +29,23 @@ const HERO_SCALE = 1.18;
 /** Big foes stand a little behind the play line (the hero always in front of them). */
 const FOE_Z: Partial<Record<FoeKind, number>> = { boss: -1.7, brute: -0.8, turret: -0.3, cannon: -0.3, double: -0.3 };
 const FOV = 36;
+/** The hero's hips above its feet (the pivot of a flip). */
+const HIP = 0.85;
+/**
+ * How each blow is shown with the hero's own clips: another clip than the move's, a start point in
+ * it, a speed factor, and a whole-body turn over the blow (`spin` turns about the upright axis,
+ * `flip` head over heels, `lean` a held forward tilt), so the same few clips read as distinct moves.
+ */
+const STYLE: Partial<Record<AttackKind, { clip?: string; at?: number; speed?: number; spin?: number; flip?: number; lean?: number; hold?: number }>> = {
+  spin: { speed: 1.25, spin: Math.PI * 4 },
+  rise: { speed: 1.1, lean: -0.32 },
+  air: { speed: 1.1, lean: 0.15 },
+  air2: { speed: 1.15, lean: 0.1 },
+  air3: { speed: 1.0, flip: Math.PI * 2 },
+  dive: { hold: 0.55, lean: 0.62 },
+  iaido: { hold: 0.78, lean: 0.28 },
+  burst: { speed: 1.4 },
+};
 export function dimHex(c: number, k: number): number { return (Math.round(((c >> 16) & 255) * k) << 16) | (Math.round(((c >> 8) & 255) * k) << 8) | Math.round((c & 255) * k); }
 export const NEON = { cyan: 0x3ff0ff, magenta: 0xff3fa8, yellow: 0xffe040, red: 0xff3344, orange: 0xff9a3c, lime: 0x7cff6a, violet: 0xa98bff, white: 0xffffff };
 
@@ -63,6 +80,8 @@ export class View {
   private moon: Quad;
   private cars: Array<{ m: THREE.Mesh; v: number; y: number; z: number }> = [];
   private bossLaser: Quad;
+  /** The iaido's streak along its dash. */
+  private streak: Quad;
   private camX = 0;
   private camY = 4;
   private shakeT = 0;
@@ -128,6 +147,9 @@ export class View {
     this.bossLaser = beam(NEON.red, 0.9);
     this.bossLaser.visible = false;
     w.scene.add(this.bossLaser);
+    this.streak = beam(0xffffff, 0);
+    this.streak.visible = false;
+    w.scene.add(this.streak);
     for (let i = 0; i < 6; i++) {
       const s = glowQuad(this.tex.slash, NEON.cyan, 3, 3);
       s.visible = false;
@@ -577,8 +599,9 @@ export class View {
     f.root.position.set(p.x, p.y, 0.35);
     const want = p.face > 0 ? Math.PI / 2 : -Math.PI / 2;
     f.root.rotation.y += (want - f.root.rotation.y) * Math.min(1, rdt * 22);
-    const shooting = p.shootT > 0 && p.state !== 'attack' && p.state !== 'roll' && p.state !== 'dead';
+    const shooting = (p.shootT > 0 && p.state !== 'attack' && p.state !== 'roll' && p.state !== 'dead') || (p.state === 'attack' && p.atk?.kind === 'burst');
     f.setPart('sword', !shooting);
+    let spin = 0, flip = 0;
     this.flipT -= dt;
     const run = MOVE.run;
     switch (p.state) {
@@ -589,14 +612,26 @@ export class View {
       case 'dash': f.play('Roll', { once: true, speed: 5, fade: 0.04 }); break;
       case 'attack': {
         const a = p.atk!;
-        if (a !== this.lastAtk) {
-          this.lastAtk = a;
-          const def = ATTACKS[a.kind];
-          f.play(def.clip, { once: true, restart: true, speed: f.clipLength(def.clip) * 0.8 / def.dur, fade: 0.05 });
-        }
+        const def = ATTACKS[a.kind];
+        const st = STYLE[a.kind] ?? {};
+        const clip = st.clip ?? def.clip;
+        if (st.hold !== undefined) f.pose(clip, st.hold, 0.05);
+        else if (a !== this.lastAtk) f.play(clip, { once: true, restart: true, speed: f.clipLength(clip) * 0.8 / def.dur * (st.speed ?? 1), fade: 0.05, at: st.at });
+        this.lastAtk = a;
+        // the whole body's turn over the active part of the blow
+        const k = Phaser.Math.Clamp((a.t - def.on * 0.5) / Math.max(0.05, Math.min(def.dur, def.off + 0.08) - def.on * 0.5), 0, 1);
+        const ease = 1 - Math.pow(1 - k, 2);
+        if (st.spin) spin = st.spin * ease;
+        if (st.flip) flip = st.flip * ease;
+        if (st.lean) flip += st.lean * (a.landed !== undefined ? Math.max(0, 1 - (a.t - a.landed) * 8) : 1);
+        if (a.kind === 'dive' && Math.random() < 0.9) this.sparks.emit(p.x - p.face * 0.2, p.y + 0.8, 0.3, -p.face * 2, 3, 0, 0.3, 0.55, NEON.cyan, 0);
+        if (a.kind === 'spin' && Math.random() < 0.8) { const ang = this.time * 30; this.sparks.emit(p.x + Math.cos(ang) * 1.5, p.y + 0.9, 0.3 + Math.sin(ang) * 0.5, Math.cos(ang) * 3, 0.5, 0, 0.25, 0.4, NEON.cyan, 0); }
         break;
       }
-      case 'charge': f.pose('Sword_Slash', 0.1); break;
+      case 'charge':
+        if (p.chargeKind === 'iaido') { f.pose('Sword_Slash', 0.02); flip = 0.22; }
+        else f.pose('Sword_Slash', 0.1);
+        break;
       case 'slam': f.pose('Kick_Right', 0.35); break;
       default:
         if (shooting) {
@@ -609,10 +644,12 @@ export class View {
         else f.play('Idle_Sword', { fade: 0.15 });
     }
     if (p.state !== 'attack') this.lastAtk = null;
+    f.turn(spin * p.face, flip, HIP);
     // blink while invulnerable after a hit; a rim glow while charging
     f.root.visible = !(p.iframes > 0 && p.state !== 'roll' && p.state !== 'dash' && p.state !== 'attack' && Math.floor(this.time * 18) % 2 === 0 && sim.p.state !== 'dead');
     f.setGlow(p.state === 'charge' ? (p.charge >= 1 ? 0x802060 : 0x401030) : p.coolant > 0 ? 0x062a30 : 0);
-    if (p.state === 'charge' && Math.random() < 0.6) this.sparks.emit(p.x + p.face * 0.5 + (Math.random() - 0.5), p.y + 0.4 + Math.random() * 1.2, 0.3, 0, 2 + Math.random() * 2, 0, 0.4, 0.25, p.charge >= 1 ? NEON.magenta : NEON.cyan, -2);
+    const chargeCol = p.chargeKind === 'iaido' ? (p.charge >= 1 ? 0xffffff : NEON.yellow) : p.charge >= 1 ? NEON.magenta : NEON.cyan;
+    if (p.state === 'charge' && Math.random() < 0.6) this.sparks.emit(p.x + p.face * 0.5 + (Math.random() - 0.5), p.y + 0.4 + Math.random() * 1.2, 0.3, 0, 2 + Math.random() * 2, 0, 0.4, 0.25, chargeCol, -2);
     if (p.state === 'dash' && Math.random() < 0.9) this.sparks.emit(p.x, p.y + 0.7, 0, -p.face * 2, 0, 0, 0.3, 0.6, NEON.cyan, 0);
     if (p.state === 'run' && Math.random() < 0.08) this.puffs.emit(p.x - p.face * 0.3, p.y + 0.1, 0.2, -p.face * 0.5, 0.6, 0, 0.5, 0.5, 0x8a80c0, 0);
     f.update(dt);
@@ -627,7 +664,7 @@ export class View {
     if (charging) {
       this.chargeRing.position.set(p.x, gy + 0.05, 0.1);
       this.chargeRing.scale.setScalar(0.4 + p.charge * 0.8 + (p.charge >= 1 ? Math.sin(this.time * 30) * 0.06 : 0));
-      this.chargeRing.material.color.setHex(p.charge >= 1 ? NEON.magenta : NEON.cyan);
+      this.chargeRing.material.color.setHex(chargeCol);
     }
   }
 
@@ -762,7 +799,7 @@ export class View {
       m.position.set(s.x, s.y, 0.1);
       if (s.kind !== 'shell') m.rotation.z = Math.atan2(s.vy, s.vx);
       else m.rotation.z += 0.3;
-      if (Math.random() < 0.7) this.sparks.emit(s.x, s.y, 0.1, -s.vx * 0.05, -s.vy * 0.05, 0, 0.18, s.kind === 'crescent' || s.kind === 'heavy' ? 0.9 : 0.4, s.hero ? (s.kind === 'heavy' ? NEON.magenta : NEON.cyan) : s.kind === 'shell' ? NEON.yellow : NEON.orange, 0);
+      if (Math.random() < 0.7) this.sparks.emit(s.x, s.y, 0.1, -s.vx * 0.05, -s.vy * 0.05, 0, 0.18, s.kind === 'crescent' || s.kind === 'heavy' || s.kind === 'mirror' ? 0.9 : 0.4, s.kind === 'mirror' ? NEON.yellow : s.hero ? (s.kind === 'heavy' ? NEON.magenta : NEON.cyan) : s.kind === 'shell' ? NEON.yellow : NEON.orange, 0);
     }
     for (const [id, m] of this.shots) if (!seen.has(id)) { this.world.scene.remove(m); this.shots.delete(id); }
   }
@@ -779,14 +816,14 @@ export class View {
     }
     const k = this.shotKit;
     // a glowing streak along the flight with a white-hot core (the cleave's crescent: an arc)
-    const col = s.hero ? (s.kind === 'heavy' ? NEON.magenta : NEON.cyan) : s.kind === 'shell' ? NEON.yellow : NEON.red;
+    const col = s.kind === 'mirror' ? NEON.yellow : s.hero ? (s.kind === 'heavy' ? NEON.magenta : NEON.cyan) : s.kind === 'shell' ? NEON.yellow : NEON.red;
     let m: THREE.Mesh;
     if (s.kind === 'crescent') {
       m = new THREE.Mesh(k.quad, k.crescent);
       m.scale.set(2.4, 2.4, 1);
     } else {
       m = new THREE.Mesh(k.quad, k.glow[col]);
-      const [len, th] = s.kind === 'heavy' ? [2.0, 0.9] : s.kind === 'shell' ? [0.8, 0.8] : s.kind === 'foeBolt' ? [1.0, 0.55] : [1.5, 0.42];
+      const [len, th] = s.kind === 'heavy' ? [2.0, 0.9] : s.kind === 'mirror' ? [2.2, 0.75] : s.kind === 'shell' ? [0.8, 0.8] : s.kind === 'foeBolt' ? [1.0, 0.55] : [1.5, 0.42];
       m.scale.set(len, th, 1);
       const core = new THREE.Mesh(k.quad, k.glow[0xffffff]);
       core.scale.set(0.55, 0.3, 1);
@@ -923,6 +960,8 @@ export class View {
       if (Math.random() < 0.9) this.sparks.emit(w.x, w.y + 0.1, 0.3, -w.dir * 1.5, 3 + Math.random() * 3, 0, 0.35, 0.4, w.hero ? NEON.cyan : NEON.orange, 10);
     }
     for (const [id, m] of this.waves) if (!wseen.has(id)) { this.world.scene.remove(m); m.geometry.dispose(); (m.material as THREE.Material).dispose(); this.waves.delete(id); }
+    // the iaido's streak fades
+    if (this.streak.visible) { this.streak.material.opacity -= dt * 2.6; this.streak.scale.y *= 1 - dt * 3; if (this.streak.material.opacity <= 0) this.streak.visible = false; }
     // slash arcs fade
     for (const s of this.slashes) if (s.visible) { s.material.opacity -= dt * 6; s.scale.multiplyScalar(1 + dt * 1.5); if (s.material.opacity <= 0) s.visible = false; }
     // blinking signs and the city
@@ -951,7 +990,8 @@ export class View {
     // vertical: follow the ground the hero stands on, and big jumps or falls
     let ty = this.camY;
     if (p.ground || p.state === 'wall') ty = p.y;
-    else if (p.y > this.camY + 3) ty = p.y - 3;
+    // up in the air (a launcher, a juggle, a double jump): follow sooner, so the hero stays in frame
+    else if (p.y > this.camY + 1.8) ty = p.y - 1.8;
     else if (p.y < this.camY - 1.5) ty = p.y + 1.5;
     if (sim.L.boss) ty = Math.max(ty, 5.4);
     this.camY += (Math.max(2.5, ty) - this.camY) * Math.min(1, dt * 3);
@@ -1003,18 +1043,98 @@ export class View {
       case 'swing': {
         if (e.kind === 'slam') break;
         const def = ATTACKS[e.kind];
-        const s = this.slashes.find((q) => !q.visible) ?? this.slashes[0];
-        const big = e.kind === 'slash' || e.kind === 'cleave' || e.kind === 'lunge';
-        const color = e.kind === 'cleave' ? NEON.magenta : e.kind === 'punch' || e.kind === 'kick' ? NEON.violet : NEON.cyan;
-        s.material.color.setHex(color);
-        s.material.opacity = big ? 1 : 0.7;
-        s.visible = true;
+        const big = e.kind === 'slash' || e.kind === 'cleave' || e.kind === 'lunge' || e.kind === 'air3' || e.kind === 'spin' || e.kind === 'rise';
+        const color = e.kind === 'cleave' || e.kind === 'air3' ? NEON.magenta : e.kind === 'rise' ? NEON.yellow : e.kind === 'punch' || e.kind === 'kick' || e.kind === 'air2' ? NEON.violet : e.kind === 'iaido' ? 0xffffff : NEON.cyan;
         const r = (big ? 1.4 : 0.9) * (def.reach / 2);
-        s.scale.set(p.face * r * 1.6, r * 1.6, 1);
-        s.position.set(p.x + p.face * def.reach * 0.45, p.y + 0.9, 0.4);
-        s.rotation.z = e.kind === 'kick' ? -0.6 * p.face : e.kind === 'punch' ? 0.2 * p.face : 0;
+        const arc = (x: number, y: number, sx: number, sy: number, rot: number, col = color, op = big ? 1 : 0.7): void => {
+          const s = this.slashes.find((q) => !q.visible) ?? this.slashes[0];
+          s.material.color.setHex(col);
+          s.material.opacity = op;
+          s.visible = true;
+          s.scale.set(sx, sy, 1);
+          s.position.set(x, y, 0.4);
+          s.rotation.z = rot;
+        };
+        switch (e.kind) {
+          case 'spin':
+            // a ring of blade light all round the hero
+            arc(p.x + p.face * 0.7, p.y + 0.9, p.face * 1.3, 1.1, 0);
+            arc(p.x - p.face * 0.7, p.y + 0.9, -p.face * 1.3, 1.1, Math.PI, NEON.violet);
+            sp.burst(p.x, p.y + 0.9, 0.3, NEON.cyan, 18, 7, 0.35, 0.35, 0);
+            break;
+          case 'rise':
+            // an upward crescent and a column of sparks
+            arc(p.x + p.face * 0.7, p.y + 1.4, p.face * 1.15, 1.35, p.face * 0.85);
+            for (let i = 0; i < 14; i++) sp.emit(p.x + p.face * (0.6 + Math.random() * 0.8), p.y + Math.random() * 0.6, 0.3, (Math.random() - 0.5) * 2, 8 + Math.random() * 6, 0, 0.45, 0.4, i % 2 ? NEON.yellow : 0xffffff, 6);
+            break;
+          case 'air3':
+            arc(p.x + p.face * 0.9, p.y + 0.8, p.face * 1.5, 1.5, -p.face * 0.5, NEON.magenta, 1);
+            sp.burst(p.x + p.face * 0.8, p.y + 0.8, 0.3, NEON.magenta, 20, 7, 0.4, 0.35, -6);
+            break;
+          case 'dive':
+            arc(p.x + p.face * 0.7, p.y + 0.4, p.face * 1.2, 1.0, -p.face * 0.8, NEON.cyan, 0.9);
+            break;
+          case 'iaido': {
+            // a white streak along the whole dash, a flash at the start
+            const x0 = p.x, x1 = p.x + p.face * IAIDO_DIST;
+            this.streak.visible = true;
+            this.streak.material.color.setHex(0xffffff);
+            this.streak.material.opacity = 1;
+            this.streak.position.set((x0 + x1) / 2, p.y + 1.0, 0.5);
+            this.streak.rotation.z = 0;
+            this.streak.scale.set(IAIDO_DIST + 1, 0.16, 1);
+            sp.burst(p.x, p.y + 1, 0.4, 0xffffff, 26, 9, 0.35, 0.3, 0);
+            this.shake(0.15, 0.1);
+            break;
+          }
+          case 'burst':
+            for (let i = 0; i < 26; i++) { const a = (Math.random() - 0.5) * 0.8; sp.emit(p.x + p.face * 1, p.y + 0.95, 0.3, Math.cos(a) * p.face * (8 + Math.random() * 10), Math.sin(a) * 9, 0, 0.3, 0.45, i % 3 ? NEON.magenta : 0xffffff, 0); }
+            this.shake(0.2, 0.15);
+            break;
+          default:
+            arc(p.x + p.face * def.reach * 0.45, p.y + 0.9, p.face * r * 1.6, r * 1.6, e.kind === 'kick' || e.kind === 'air2' ? -0.6 * p.face : e.kind === 'punch' ? 0.2 * p.face : 0);
+        }
         break;
       }
+      case 'charge': if (e.kind === 'iaido') sp.burst(p.x, p.y + 0.9, 0.3, NEON.yellow, 14, 3, 0.3, 0.4, 0); break;
+      case 'reflect': {
+        sp.burst(e.x, e.y, 0.5, NEON.yellow, 30, 9, 0.45, 0.4, 0);
+        sp.burst(e.x, e.y, 0.5, 0xffffff, 12, 5, 0.6, 0.2, 0);
+        const s = this.slashes.find((q) => !q.visible) ?? this.slashes[0];
+        s.material.color.setHex(NEON.yellow); s.material.opacity = 1; s.visible = true;
+        s.scale.set(0.75, 0.75, 1); s.position.set(e.x, e.y, 0.5); s.rotation.z = Math.random() * 6;
+        this.shake(0.18, 0.12);
+        break;
+      }
+      case 'launch': {
+        const f = e.foe;
+        for (let i = 0; i < 18; i++) sp.emit(f.x + (Math.random() - 0.5) * f.w, f.y + Math.random() * 0.4, 0.3, (Math.random() - 0.5) * 2, 6 + Math.random() * 8, 0, 0.5, 0.45, i % 2 ? NEON.yellow : NEON.cyan, 8);
+        this.puffs.burst(f.x, f.y + 0.1, 0.2, 0x9a90d0, 6, 2, 0.6, 0.5, 0);
+        break;
+      }
+      case 'cut': {
+        // the delayed iaido cut: a white X on the foe, a burst, a hard shake
+        for (const rot of [0.7, -0.7]) {
+          const s = this.slashes.find((q) => !q.visible) ?? this.slashes[0];
+          s.material.color.setHex(0xffffff); s.material.opacity = 1; s.visible = true;
+          s.scale.set(1.0, 1.0, 1); s.position.set(e.x, e.y, 0.6); s.rotation.z = rot;
+        }
+        sp.burst(e.x, e.y, 0.5, 0xffffff, 30, 10, 0.4, 0.45, 2);
+        sp.burst(e.x, e.y, 0.5, NEON.yellow, 16, 7, 0.35, 0.5, 6);
+        this.shake(0.4, 0.22);
+        break;
+      }
+      case 'diveLand':
+        sp.burst(e.x + p.face * 0.6, e.y + 0.1, 0.4, NEON.cyan, 26, 8, 0.4, 0.35, 8);
+        this.puffs.burst(e.x, e.y + 0.1, 0.2, 0x9a90d0, 10, 3, 0.8, 0.5, 0);
+        this.shake(0.3, 0.18);
+        break;
+      case 'crash':
+        sp.burst(e.x, e.y + 0.2, 0.4, NEON.magenta, 28, 8, 0.4, 0.4, 8);
+        this.puffs.burst(e.x, e.y + 0.1, 0.2, 0x9a90d0, 10, 3, 0.9, 0.6, 0);
+        this.shake(0.35, 0.2);
+        break;
+      case 'implant': sp.burst(e.x, e.y + 1.4, 0.3, NEON.violet, 36, 6, 0.45, 0.8, -2); break;
       case 'chargeReady': sp.burst(p.x, p.y + 0.9, 0.3, NEON.magenta, 22, 6, 0.4, 0.4, 0); break;
       case 'shoot': {
         sp.burst(e.x, e.y, 0.2, e.heavy ? NEON.magenta : NEON.cyan, e.heavy ? 14 : 6, e.heavy ? 6 : 3.5, 0.35, 0.18, 0);

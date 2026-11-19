@@ -215,6 +215,9 @@ export function neonEmblem(c: CanvasRenderingContext2D, size: number): void {
 
 // ------------------------------------------------------------------ the theme
 
+/** The menu row's MOVES button. */
+export const MOVES_BTN = { w: 300, h: 76 };
+
 export const NEON_THEME: MenuTheme = {
   font: SAIRA_STENCIL_ONE,
   palette: {
@@ -235,5 +238,6 @@ export const NEON_THEME: MenuTheme = {
   frame: { border: NEON_BORDER, notes: paintGlass, vignette: 0.6, dim: 0.3 },
   overlays: { lose: '#ff3fa8', win: '#3ff0ff', adColor: LIME, titles: ['flatlined', 'runBanked', 'districtDone', 'cityFree'] },
   cards: SCREEN_CARDS,
+  pieces: [{ kind: 'button', w: MOVES_BTN.w, h: MOVES_BTN.h }],
   prebake: (scene) => prebakeScreens(scene),
 };

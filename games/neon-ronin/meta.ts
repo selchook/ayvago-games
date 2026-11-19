@@ -1,9 +1,10 @@
 // Neon Ronin: what lasts between sessions, in the core storage: the gears (the currency), the
 // cyberware ranks, the levels unlocked, each level's stars, best time and best score, the abilities
-// the campaign unlocked and whether the first level's tutorial was seen.
+// the campaign unlocked, whether the first level's tutorial was seen and which blade moves the player
+// has used (a move not used yet gets a first-time hint).
 import { storage } from '@core';
 import { LEVELS } from './levels';
-import { UPGRADE, UPGRADE_IDS, MAX_RANK, ABILITY_IDS, noRanks, type Ranks, type UpgradeId, type AbilityId } from './powers';
+import { UPGRADE, UPGRADE_IDS, MAX_RANK, ABILITY_IDS, MOVE_IDS, noRanks, type Ranks, type UpgradeId, type AbilityId, type MoveId } from './powers';
 
 const KEY = 'neon-ronin:meta';
 
@@ -20,6 +21,8 @@ export interface Meta {
   abilities: AbilityId[];
   tutorial: boolean;
   runs: number;
+  /** Blade moves the player has pulled off at least once. */
+  used: MoveId[];
 }
 
 export function cleanMeta(m: Partial<Meta>): Meta {
@@ -37,6 +40,7 @@ export function cleanMeta(m: Partial<Meta>): Meta {
     abilities: ABILITY_IDS.filter((a) => (m.abilities ?? []).includes(a)),
     tutorial: !!m.tutorial,
     runs: Math.max(0, Number(m.runs) || 0),
+    used: MOVE_IDS.filter((id) => (m.used ?? []).includes(id)),
   };
 }
 

@@ -2,9 +2,11 @@
 // Run: npx tsx games/neon-ronin/balance.ts [campaigns] [skill]
 //   For each difficulty and skill: a fresh save plays from 1-1 the way a player would (a run goes
 //   level after level; out of lives, the next run starts at the level that was lost; gears are
-//   banked and spent on cyberware between levels; implant chips drafted at the first checkpoint
-//   and after each boss). Reports, per level: the share of attempts that cleared it, deaths per
-//   attempt, the clear time against par, chips found, and where the failed attempts ended.
+//   banked and spent on cyberware between levels; the implant pick a level's first checkpoint
+//   banks is taken on its results screen, as 1.1 offers it (a run lost before the clear loses
+//   it), plus the boss's chip). Reports, per level: the share of attempts that cleared it, deaths
+//   per attempt, the clear time against par, chips found, and where the failed attempts ended;
+//   then one summary line per difficulty and skill.
 import { Sim, newRun, mulberry, type RunState } from './sim';
 import { Bot, SKILL, botPick, botShop, type Skill } from './bot';
 import { DT, type Mode } from './defs';
@@ -16,21 +18,21 @@ interface LevelStat { tries: number; clears: number; deaths: number; hits: numbe
 export function playLevel(run: RunState, li: number, skill: Skill, seed: number, rnd: () => number, limit = 360): { sim: Sim; cleared: boolean } {
   const sim = new Sim(li, run, seed);
   const bot = new Bot(sim, skill, mulberry(seed * 3 + 1));
-  let drafted = false;
   let tClear = -1;
   while (sim.time < limit) {
     sim.step(DT, bot.input(DT));
-    for (const e of sim.events) {
-      if (e.type === 'checkpoint' && e.first && !drafted) {
-        drafted = true;
-        const offer = rollCards(run.cards, rnd);
-        if (offer.length) run.cards.push(offer[botPick(offer)]);
-      }
-      if (e.type === 'clear') tClear = sim.time;
-    }
+    for (const e of sim.events) if (e.type === 'clear') tClear = sim.time;
     sim.events.length = 0;
     if (sim.over) break;
     if (tClear >= 0 && sim.time > tClear + 0.1) break;
+  }
+  // the results screen: the banked pick (a boss's card starts the next district's set instead)
+  if (sim.cleared && !LEVELS[li].boss) {
+    while (run.picks > 0) {
+      const offer = rollCards(run.cards, rnd);
+      if (offer.length) run.cards.push(offer[botPick(offer)]);
+      run.picks--;
+    }
   }
   return { sim, cleared: sim.cleared };
 }
@@ -96,6 +98,10 @@ if (proc?.argv[1]?.endsWith('balance.ts')) {
         const avgT = st.time.length ? st.time.reduce((a, b) => a + b, 0) / st.time.length : 0;
         console.log(`  ${L.id.padEnd(4)} clear ${st.clears}/${st.tries} (${st.tries ? Math.round(st.clears / st.tries * 100) : 0}%)  deaths/try ${(st.deaths / Math.max(1, st.tries)).toFixed(1)}  hits/try ${(st.hits / Math.max(1, st.tries)).toFixed(1)}  time ${avgT.toFixed(0)}s/par ${L.par}  chips ${(st.chips / Math.max(1, st.clears)).toFixed(1)}  stars ${(st.stars / Math.max(1, st.clears)).toFixed(1)}  fails@x ${st.fails.slice(0, 6).join(',')}`);
       });
+      const sum = (f: (s: LevelStat) => number) => stats.reduce((a, s) => a + f(s), 0);
+      const tries = sum((s) => s.tries), clears = sum((s) => s.clears);
+      const tpar = sum((s) => s.time.reduce((a, b) => a + b, 0)) / Math.max(1, stats.reduce((a, s, i) => a + s.time.length * LEVELS[i].par, 0));
+      console.log(`  SUMMARY ${mode}/${name}: campaigns ${finished}/${campaigns}, level clears ${clears}/${tries} (${Math.round(clears / Math.max(1, tries) * 100)}%), deaths/attempt ${(sum((s) => s.deaths) / Math.max(1, tries)).toFixed(2)}, hits/attempt ${(sum((s) => s.hits) / Math.max(1, tries)).toFixed(1)}, time/par ${tpar.toFixed(2)}`);
     }
   }
 }
