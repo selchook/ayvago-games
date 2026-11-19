@@ -414,6 +414,18 @@ const CARD = {
       await sleep(300);
     }`,
   },
+  // Neon Ronin's card (landscape, cover-fit) shows a fight on the neon rooftops of 2-3 (Night
+  // Bazaar): the hero (upgraded katana and blaster, three implants) mid-combo among walkers, a gunner
+  // and drones, the signs and the rain behind. The map is skipped; the autopilot plays the level
+  // ahead headless until three foes are close and a swing is out, then keeps fighting (it cannot be
+  // hurt) while the frames are taken, the camera a little closer than in play.
+  'neon-ronin': {
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      window.__neon.stage('busy');
+      await sleep(400);
+    }`,
+  },
   // Astro Crew's card (landscape, cover-fit) shows a heroic fight on the Dune Titan's orange planet:
   // the autopilot plays until the boss is in, a ring of aliens closes round the crew member and it
   // jumps into its mech (the arrival's shockwave, cannon shells, damage numbers and the boss's bar);
