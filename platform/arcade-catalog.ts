@@ -1170,6 +1170,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['simon', 'says', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
   }),
   arcadeGame({
     slug: 'skull-isle',

@@ -7613,8 +7613,8 @@
             "tr": "Puan nasıl hesaplanıyor?"
           },
           "a": {
-            "en": "Each correct press is worth 5 × the round number and finishing the round adds 20 × the round. A round with no mistake adds another 10 × the round, so in round 10 that is 500 + 200 + 100 points.",
-            "tr": "Her doğru basış 5 × tur numarası kadar puandır, turu bitirmek 20 × tur ekler. Hatasız turda bunun üstüne 10 × tur daha gelir; 10. turda bu 500 + 200 + 100 puan demektir."
+            "en": "Each correct press is worth 5 × the round number (a note already scored before a mistake pays nothing on the replay) and finishing the round adds 20 × the round. A round with no mistake adds another 10 × the round, so in round 10 that is 500 + 200 + 100 points.",
+            "tr": "Her doğru basış 5 × tur numarası kadar puandır (hatadan önce puan getirmiş notalar tekrarda yeniden puan getirmez), turu bitirmek 20 × tur ekler. Hatasız turda bunun üstüne 10 × tur daha gelir; 10. turda bu 500 + 200 + 100 puan demektir."
           }
         },
         {
