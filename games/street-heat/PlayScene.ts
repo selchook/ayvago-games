@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, CarSteering, isEasy, t, padAxes, padConnected, padRumble, flash, burst, registerStrings,
-  labelAt, fitWidth, themeCard, overlayHeadingStyle, themeLabel, GlyphText, iconButton, hudChip, HudChip, HUD_MARGIN, labelTexture, type LabelStyle,
+  labelAt, fitWidth, themeCard, overlayHeadingStyle, themeLabel, GlyphText, iconButton, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, HUD_CHIP_H, labelTexture, type LabelStyle,
 } from '@core';
 import { model, type World3D } from '@core/three';
 import { View, type CamMode } from './view';
@@ -505,10 +505,11 @@ export class PlayScene extends ArcadeScene {
   private tip(s: string, secs: number): void {
     this.tipBox?.destroy();
     const W = this.scale.width;
-    const c = this.add.container(W / 2, 168).setScrollFactor(0).setDepth(UI_DEPTH + 60);
     const txtObj = this.add.text(0, 0, s, { fontFamily: '"Nunito", sans-serif', fontStyle: '800', fontSize: '22px', color: '#fff4e2', align: 'center', wordWrap: { width: 640 } }).setOrigin(0.5);
     const g = this.add.graphics();
     const w = Math.min(700, txtObj.width + 50), h = txtObj.height + 26;
+    // its top under the clock chip (second HUD row), however many lines it has
+    const c = this.add.container(W / 2, HUD_ROW2_Y + HUD_CHIP_H / 2 + 14 + h / 2).setScrollFactor(0).setDepth(UI_DEPTH + 60);
     g.fillStyle(0x0a0614, 0.86).fillRoundedRect(-w / 2, -h / 2, w, h, 14).lineStyle(2, 0x3ef2ff, 0.9).strokeRoundedRect(-w / 2, -h / 2, w, h, 14);
     c.add([g, txtObj]);
     c.setAlpha(0);

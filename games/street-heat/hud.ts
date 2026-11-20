@@ -258,7 +258,8 @@ export class DriveHud {
     this.visible = v;
     for (const o of [this.heat, this.speed, this.damage, this.nitro, this.minimap.box]) o.setVisible(v);
     if (!v) { for (const s of this.streaks) s.setAlpha(0); this.clock.setVisible(false); this.meter.setVisible(false); this.diamond.setVisible(false); this.dist.setVisible(false); this.edge.setVisible(false); this.bustRing.clear(); }
-    this.last.clock = -1; this.last.meter = -1; this.last.meterKind = '';
+    // the next sync redraws the clock and the meter (shown or hidden) from the job in hand
+    this.last.clock = -2; this.last.meter = -1; this.last.meterKind = '-';
   }
 
   sync(sim: Sim, job: Job, route: number[], nav: { x: number; z: number } | null, toScreen: (x: number, y: number, z: number) => { x: number; y: number; visible: boolean }, dt: number): void {
