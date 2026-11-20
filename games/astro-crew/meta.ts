@@ -17,6 +17,8 @@ export interface Meta {
   stars: number[];
   runs: number;
   coached: boolean;
+  /** The 1.2 hints (FIRE is held now) were shown. */
+  fireCoached: boolean;
   /** Missions cleared in total (for the summary's joins). */
   cleared: number;
 }
@@ -33,6 +35,7 @@ export function cleanMeta(m: Partial<Meta>): Meta {
     stars,
     runs: Math.max(0, Number(m.runs) || 0),
     coached: !!m.coached,
+    fireCoached: !!m.fireCoached,
     cleared: Math.max(0, Number(m.cleared) || 0),
   };
 }

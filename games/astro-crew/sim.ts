@@ -2,11 +2,15 @@
 // Play scene, the menu's live backdrop and the headless balance check (balance.ts) all run the same
 // rules. The view (view.ts) draws its state; the scene reacts to its events (sounds, banners).
 //
-// The hero runs twin-stick style over a whole planet (world.ts): the stick (or WASD) moves, the gun
-// is raised and aimed at the nearest alien in reach (else a nest, else a crate) and fires from its
-// tip; a foe in arm's reach gets a punch. DODGE rolls (invulnerable; the next shot after a roll is
-// a power shot), SKILL fires the class's signature move, MECH turns the hero into its mech for a few
-// seconds once the meter is full (kills and the Thunder pickup charge it).
+// The hero runs over a whole planet (world.ts): the stick (or WASD) moves, and attacking is the
+// player's: while FIRE is held the gun comes up and fires from its tip at the weapon's rate, and a
+// foe in arm's reach gets a punch instead (the mech: a kick). A light aim assist picks the shot's
+// target: the nearest alien (else a nest, else a crate) inside a cone of ±35° round the hero's
+// facing or within 4.5 m all round, held while FIRE stays down (the hero keeps facing it while it
+// runs); standing still it takes the nearest one all round, as the 1.1 gun did; with nothing there
+// the shots go straight ahead. DODGE rolls (invulnerable; the next shot after a roll is a power shot), SKILL fires the
+// class's signature move, MECH turns the hero into its mech for a few seconds once the meter is
+// full (kills and the Thunder pickup charge it).
 //
 // Encounters instead of fixed waves: nests and hives wake when the hero comes near, send out guards
 // and then reinforcements; patrols walk their routes; camps guard the keycards and crystal caches;
@@ -24,8 +28,13 @@ import { planWorld, pushOut, mulberry, type WorldPlan, type Spot, type Camp } fr
 
 export { mulberry };
 
-export interface Input { mx: number; mz: number; dodge: boolean; skill: boolean; mech: boolean }
-export const NO_INPUT: Input = { mx: 0, mz: 0, dodge: false, skill: false, mech: false };
+/** `fire` is held (the gun fires while it stays down); the other buttons are presses. */
+export interface Input { mx: number; mz: number; fire: boolean; dodge: boolean; skill: boolean; mech: boolean }
+export const NO_INPUT: Input = { mx: 0, mz: 0, fire: false, dodge: false, skill: false, mech: false };
+
+/** The aim assist: half the cone round the hero's facing (rad), and how close counts all round. */
+export const AIM_CONE = 35 * Math.PI / 180;
+const AIM_CLOSE = 4.5;
 
 /** What lasts for the whole run (several missions). */
 export interface RunState {
@@ -69,8 +78,12 @@ export interface Hero {
   alive: boolean; reviveUsed: boolean;
   /** Seconds since the last shot (the view plays the firing clips). */
   firedT: number;
-  /** The aim: a unit direction, the point aimed at, whether something is in sight. */
+  /** The aim: a unit direction, the point aimed at, whether FIRE is held (the gun is out). */
   aimX: number; aimZ: number; tx: number; tz: number; aiming: boolean;
+  /** The alien or nest the aim assist holds (-1: none, shooting straight ahead). */
+  lock: number;
+  /** Seconds since FIRE was last held (the scene's reminder). */
+  idleFire: number;
   /** 0..1: the gun raised and pointed (it rises while there is a target, the shots wait for it). */
   gunUp: number;
   /** Seconds the gun stays up after the last target. */
@@ -239,7 +252,7 @@ export class Mission {
       skillCd: 0, charges: this.m.skillCharges,
       mech: 0, charge: this.m.mechStart, kickCd: 0, kickT: 0, mechFire: 0, mechReady: false, mechShots: 0,
       shots: 0, hurtT: 9, bubble: 0, overdrive: 0, leap: null, alive: true, reviveUsed: false,
-      firedT: 9, aimX: 0, aimZ: -1, tx: st.x, tz: st.z - 5, aiming: false, gunUp: 0, gunHold: 0,
+      firedT: 9, aimX: 0, aimZ: -1, tx: st.x, tz: st.z - 5, aiming: false, lock: -1, idleFire: 0, gunUp: 0, gunHold: 0,
       muzzle: { ...MUZZLE }, mechMuzzle: [{ ...MECH_MUZZLE[0] }, { ...MECH_MUZZLE[1] }], mx: st.x, mz: st.z, my: 1,
       skillT: 0, novaT: 7, hits: 0, lavaT: 0,
     };
@@ -555,33 +568,37 @@ export class Mission {
     } else h.lavaT = 0;
     // the skill
     if (inp.skill && !mech && h.charges > 0) this.useSkill();
-    // aim: the nearest alien in reach, else a nest, else a crate; the gun comes up and turns to it
+    // aim (only while FIRE is held): the assist's target, else straight ahead; the gun comes up
     const range = (mech ? 11 : H.range * m.range);
-    const tgt = this.nearestFoe(h.x, h.z, range * 1.05) ?? this.nearestNest(h.x, h.z, range * 1.05);
-    let ax = 0, az = 0, aim = false;
-    if (tgt) { ax = tgt.x - h.x; az = tgt.z - h.z; aim = true; h.tx = tgt.x; h.tz = tgt.z; }
-    else {
-      const c = this.nearestCrate(h.x, h.z, range * 0.8);
-      if (c) { ax = c.x - h.x; az = c.z - h.z; aim = true; h.tx = c.x; h.tz = c.z; }
-    }
-    h.aiming = aim;
-    if (aim) {
-      const l = Math.hypot(ax, az) || 1;
-      h.aimX = ax / l; h.aimZ = az / l;
-      h.face = turn(h.face, Math.atan2(h.aimX, h.aimZ), 14 * dt);
-      h.gunHold = 0.7;
-      h.gunUp = Math.min(1, h.gunUp + dt / 0.12);
+    const firing = inp.fire && h.roll <= 0;
+    const moving = Math.hypot(h.vx, h.vz) > 0.5 && h.roll <= 0;
+    h.idleFire = inp.fire ? 0 : h.idleFire + dt;
+    h.aiming = firing;
+    const tgt = firing ? this.aimTarget(range, moving) : null;
+    h.lock = tgt && 'kind' in tgt ? tgt.id : -1;
+    if (firing) {
+      if (tgt) {
+        const ax = tgt.x - h.x, az = tgt.z - h.z, l = Math.hypot(ax, az) || 1;
+        h.aimX = ax / l; h.aimZ = az / l; h.tx = tgt.x; h.tz = tgt.z;
+        h.face = turn(h.face, Math.atan2(h.aimX, h.aimZ), 14 * dt);
+      } else {
+        if (moving) h.face = turn(h.face, Math.atan2(h.vx, h.vz), 12 * dt);
+        h.aimX = Math.sin(h.face); h.aimZ = Math.cos(h.face);
+        h.tx = h.x + h.aimX * range; h.tz = h.z + h.aimZ * range;
+      }
+      h.gunHold = 0.5;
+      h.gunUp = Math.min(1, h.gunUp + dt / 0.1);
     } else {
       h.gunHold = Math.max(0, h.gunHold - dt);
       if (h.gunHold <= 0) h.gunUp = Math.max(0, h.gunUp - dt / 0.3);
-      if (Math.hypot(h.vx, h.vz) > 0.5 && h.roll <= 0) {
+      if (moving) {
         h.face = turn(h.face, Math.atan2(h.vx, h.vz), 12 * dt);
         h.aimX = Math.sin(h.face); h.aimZ = Math.cos(h.face);
       }
     }
     if (h.roll > 0 || h.punchT > 0.15) h.gunUp = Math.min(h.gunUp, 0.3);
-    // the punch (or the mech's kick): an alien in arm's reach
-    if (h.roll <= 0) {
+    // the same button punches (or the mech kicks) an alien in arm's reach
+    if (firing) {
       const near = this.nearestFoe(h.x, h.z, mech ? MOVE.kickR : MOVE.punchR);
       if (near && mech && h.kickCd <= 0) {
         h.kickCd = MOVE.kickCd;
@@ -601,18 +618,18 @@ export class Mission {
         }
       }
     }
-    // the weapon: only once the gun is up and pointing at the target
+    // the weapon: while FIRE is held, once the gun is up and pointing
     const facing = Math.abs(angDiff(h.face, Math.atan2(h.aimX, h.aimZ))) < 0.3;
     h.fireT -= dt * (h.overdrive > 0 ? 1.8 : 1);
     if (mech) {
       h.mechFire -= dt;
-      if (aim && facing && h.mechFire <= 0) {
+      if (firing && facing && h.mechFire <= 0) {
         h.mechFire = MOVE.mechEvery;
         h.mechShots++;
         const big = h.mechShots % 4 === 0;
         this.fire('cannon', MOVE.mechDmg * m.dmg * (big ? 1.8 : 1), 1, 0.08, 20, 0, big ? 5 : 4, MOVE.mechSplash * (big ? 1.3 : 1), 0.6, big, h.mechShots % 2);
       }
-    } else if (aim && facing && h.gunUp >= 0.85 && h.fireT <= 0 && h.punchT <= 0.2) {
+    } else if (firing && facing && h.gunUp >= 0.85 && h.fireT <= 0 && h.punchT <= 0.2) {
       h.fireT = H.every / m.rate;
       h.shots++;
       const power = h.rollShot > 0;
@@ -772,6 +789,48 @@ export class Mission {
     if (this.shots.length > 260) return;
     const h = this.hero, own = !hostile && kind !== 'drone';
     this.shots.push({ id: this.nextId++, kind, x, z, y, gx: own ? h.x : x, gz: own ? h.z : z, vx, vz, dmg, life, r, pierce, hostile, splash, knock, hit: [], crit: big, frost, burn, bounce, home, big, fresh: true });
+  }
+
+  /**
+   * The aim assist: the nearest alien inside the cone round the hero's facing (aliens within
+   * AIM_CLOSE count all round); standing still, else the nearest alien all round. Only with no
+   * alien there: a nest (in the cone, standing: all round), then a crate (else null: the shots go
+   * straight ahead).
+   */
+  aimTarget(range: number, moving: boolean): Foe | Crate | null {
+    const h = this.hero;
+    // the cone holds a body, not just its centre: a big alien counts once its edge is inside
+    const inCone = (x: number, z: number, d: number, r = 0) => d < AIM_CLOSE || Math.abs(angDiff(h.face, Math.atan2(x - h.x, z - h.z))) <= AIM_CONE + Math.atan2(r, Math.max(1, d));
+    let best: Foe | null = null, bd = range * 1.05;
+    for (const f of this.foes) {
+      if (f.state === 'dead' || f.state === 'spawn' || f.kind === 'nest' || f.sleep) continue;
+      const dx = f.x - h.x, dz = f.z - h.z;
+      if (Math.abs(dx) > bd + f.r || Math.abs(dz) > bd + f.r) continue;
+      const d = Math.hypot(dx, dz) - f.r * 0.5;
+      if (d < bd && inCone(f.x, f.z, d, f.r)) { bd = d; best = f; }
+    }
+    if (best) return best;
+    if (!moving && (best = this.nearestFoe(h.x, h.z, range * 1.05))) return best;
+    bd = range * 1.05;
+    for (const n of this.nests) {
+      if (!n.alive) continue;
+      const f = this.foes.find((g) => g.id === n.id);
+      if (!f) continue;
+      const d = Math.hypot(f.x - h.x, f.z - h.z) - f.r * 0.8;
+      if (d < bd && (!moving || inCone(f.x, f.z, d, f.r))) { bd = d; best = f; }
+    }
+    if (best) return best;
+    let crate: Crate | null = null;
+    bd = range * 0.8;
+    for (const c of this.crates) { const d = Math.hypot(c.x - h.x, c.z - h.z); if (d < bd && (!moving || inCone(c.x, c.z, d))) { bd = d; crate = c; } }
+    return crate;
+  }
+
+  /** What holding FIRE right now would aim at (the bot's trigger finger). */
+  fireTarget(): Foe | Crate | null {
+    const h = this.hero;
+    if (!h.alive || this.phase !== 'play' || h.leap) return null;
+    return this.aimTarget(h.mech > 0 ? 11 : HERO[this.run.hero].range * this.m.range, Math.hypot(h.vx, h.vz) > 0.5);
   }
 
   /** The nearest living alien (not a nest) within `range`. */

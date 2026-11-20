@@ -1,6 +1,8 @@
-// Astro Crew: the autopilot. It plays a mission the way a player does with a stick and three
-// buttons: it crosses the planet to the objective (the next nest, keycard, rover, the dome or the
-// boss's lair, then the beacon), steering round rocks, wrecks and lava; it picks up crystal caches,
+// Astro Crew: the autopilot. It plays a mission the way a player does with a stick and four
+// buttons: it holds FIRE while the aim assist has something in its cone (and stops for a moment to
+// turn to an alien outside it, as a player lets go of the stick to aim all round); it crosses the
+// planet to the objective (the next nest, keycard, rover, the dome or the boss's lair, then the
+// beacon), steering round rocks, wrecks and lava; it picks up crystal caches,
 // the castaway and health on the way; in a fight it kites the aliens at its weapon's reach, steps out
 // of telegraphed slams, charges and dives, rolls through spit and fire rings, fires its skill into
 // crowds and calls the mech when the swarm is thick. Between missions it buys base modules and
@@ -34,6 +36,8 @@ export class Bot {
   private dodge = false;
   private skill = false;
   private mech = false;
+  /** Standing still this decision to let the aim turn all round. */
+  private turnT = 0;
   /** Stays home (the menu's backdrop keeps its fight on screen). */
   stay: Spot | null = null;
 
@@ -44,7 +48,11 @@ export class Bot {
   input(dt: number): Input {
     this.t -= dt;
     if (this.t <= 0) { this.t = this.skillLv.think * (0.7 + this.rnd() * 0.6); this.decide(); }
-    const out: Input = { mx: this.mx, mz: this.mz, dodge: this.dodge, skill: this.skill, mech: this.mech };
+    this.turnT = Math.max(0, this.turnT - dt);
+    const stand = this.turnT > 0;
+    // the trigger finger: held while the assist has a target (a player sees it in front of the hero)
+    const fire = stand || !!this.sim.fireTarget();
+    const out: Input = { mx: stand ? 0 : this.mx, mz: stand ? 0 : this.mz, fire, dodge: this.dodge, skill: this.skill, mech: this.mech };
     this.dodge = this.skill = this.mech = false;
     return out;
   }
@@ -140,6 +148,11 @@ export class Bot {
     vz += (this.rnd() - 0.5) * S.noise * 2;
     const l = Math.hypot(vx, vz);
     if (l > 0.15) { this.mx = vx / Math.max(1, l); this.mz = vz / Math.max(1, l); } else { this.mx = this.mz = 0; }
+    // an alien in reach but outside the cone (behind, beside): stop a moment so the aim turns to it
+    if (!danger && tgt && tgt.engaged && h.lock < 0 && nearest > 2.4) {
+      const d = Math.hypot(tgt.x - h.x, tgt.z - h.z);
+      if (d < range && this.rnd() < 0.85) this.turnT = 0.1 + 0.12 * this.rnd();
+    }
     if (danger && h.rollCd <= 0) this.dodge = true;
     else if (h.rollCd <= 0 && nearest < 1.6 && this.rnd() < 0.2) this.dodge = true;
     const boss = s.boss && s.bossAwake && s.boss.state !== 'dead' && Math.hypot(s.boss.x - h.x, s.boss.z - h.z) < 10;
