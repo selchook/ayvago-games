@@ -3,7 +3,7 @@
 // strike, spare and split are used as they are.
 export const STRINGS = {
   tr: {
-    frameN: '{n}. ÇERÇEVE',
+    frameN: '{n}. FRAME',
     frameShort: 'Frame {n}/10',
     ballN: '{n}. atış',
     bonusBall: 'BONUS ATIŞ',

@@ -282,7 +282,8 @@ export class PlayScene extends ArcadeScene {
       const pts = 10 * Math.max(1, jumped) + (perfect ? 5 : 0);
       this.addScore(pts, p.x, p.y - p.orbit - 40);
       if (perfect) popup(this, p.x, p.y - p.orbit - 90, t('perfect'), '#5dff7a', 20);
-      if (jumped > 1) popup(this, p.x, p.y + p.orbit + 30, t('skip'), '#ff4fa3', 20);
+      // the label names the hop: 2 planets on DOUBLE, 3 TRIPLE, more MEGA with the count
+      if (jumped > 1) popup(this, p.x, p.y + p.orbit + 30, jumped === 2 ? t('skip') : jumped === 3 ? t('skip3') : t('skipN', { n: jumped }), '#ff4fa3', 20);
       this.sfxAt('catch', p.x, { volume: 0.55, exact: true, rate: 1 + Math.min(8, this.reached % 9) * 0.04 });
       const lvl = 1 + Math.floor(this.reached / 6);
       if (lvl > this.level) {
