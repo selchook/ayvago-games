@@ -682,7 +682,7 @@ export class PlayScene extends ArcadeScene {
     rows.forEach(([k, v], i) => {
       const yy = y + i * 40;
       c.add(fitWidth(labelAt(this, -230, yy, k, CARD_ROW, 0), 260));
-      c.add(new GlyphText(this, 230, yy + 2, v, CARD_VAL, 1, '0123456789/.,:%+-−×$ km/hs'));
+      c.add(new GlyphText(this, 230, yy + 2, v, CARD_VAL, 1, '0123456789/.,:%+-−×$ km/hsa'));
     });
     if (this.newCar) c.add(fitWidth(labelAt(this, 0, PANEL.cardH / 2 - 50, t('newCar', { car: t('car_' + this.newCar) }), { size: 26, color: '#1a7a3a', stroke: null, shadow: false }), PANEL.cardW - 80));
     else if (job.mode === 'story' && reason === 'done' && job.def?.id === MISSIONS.length) c.add(fitWidth(labelAt(this, 0, PANEL.cardH / 2 - 50, t('theEnd'), { size: 22, color: '#2a1d14', stroke: null, shadow: false, body: true }), PANEL.cardW - 60));
