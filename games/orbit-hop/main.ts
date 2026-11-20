@@ -48,11 +48,11 @@ launch({
   scenes: [PlayScene],
   strings: {
     tr: {
-      hint: 'Fırlamak için dokun ya da Boşluk tuşuna bas', planets: 'GEZEGEN', perfect: 'KUSURSUZ!', skip: 'ÇİFT ATLAYIŞ!',
+      hint: 'Fırlamak için dokun ya da Boşluk tuşuna bas', planets: 'GEZEGEN', perfect: 'KUSURSUZ!', skip: 'ÇİFT ATLAYIŞ!', skip3: 'ÜÇLÜ ATLAYIŞ!', skipN: 'MEGA ATLAYIŞ! ×{n}',
       lost: 'UZAYDA KAYBOLDUN!', crashed: 'ÇARPTIN!', burned: 'YÖRÜNGE ÇÖKTÜ!', comet: 'KUYRUKLU YILDIZ!',
     },
     en: {
-      hint: 'Tap or press Space to launch', planets: 'PLANETS', perfect: 'PERFECT!', skip: 'DOUBLE HOP!',
+      hint: 'Tap or press Space to launch', planets: 'PLANETS', perfect: 'PERFECT!', skip: 'DOUBLE HOP!', skip3: 'TRIPLE HOP!', skipN: 'MEGA HOP! ×{n}',
       lost: 'LOST IN SPACE!', crashed: 'CRASHED!', burned: 'ORBIT COLLAPSED!', comet: 'COMET HIT!',
     },
   },
