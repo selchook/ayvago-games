@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Zombie Survivor is a top-down shooter in which the zombies come in from every edge of the screen and there is nowhere to go but around. Your survivor fires on their own at the nearest zombie in range, so the fight is mostly about moving: leading the horde in circles and using crates and rocks to break it up.\n\nThe first wave has twelve zombies and every wave adds four more. Ordinary walkers take two shots; reddish runners join from wave 2 and close in fast; big brutes join from wave 3 and soak up nine hits; and every fifth wave a GIANT ZOMBIE arrives with 60 hit points and a bite that takes two health instead of one. All zombies get tougher and quicker as the waves go on.\n\nAfter each wave the action stops and you CHOOSE AN UPGRADE from three cards drawn from six: FIRE RATE, DAMAGE, MULTI-SHOT, PIERCING, RUN SPEED and MAX HP +1. Over a long run they turn a single pistol into a fan of piercing bullets. You start with five health, eight on Easy, and the medkits zombies sometimes drop heal one.",
+    "tr": "Zombi Hayatta Kalma, zombilerin ekranın her kenarından geldiği ve kaçacak yerin olmadığı, yukarıdan görünen bir nişancı oyunu; tek çare etrafta dönmek. Hayatta kalan karakterin menzildeki en yakın zombiye kendiliğinden ateş eder; savaşın büyük kısmı hareket etmek: sürüyü daireler çizerek peşinden sürüklemek, sandıklar ve kayalarla dağıtmak.\n\nİlk dalgada on iki zombi var, her dalga dört tane daha ekler. Sıradan yürüyenler iki atışta düşer; kırmızımsı koşucular 2. dalgadan itibaren gelir ve hızla yaklaşır; iri kabadayılar 3. dalgada katılır ve dokuz atışa dayanır. Her beşinci dalgada 60 can puanıyla bir DEV ZOMBİ gelir; ısırığı bir yerine iki can götürür. Dalgalar ilerledikçe bütün zombiler güçlenir ve hızlanır.\n\nHer dalgadan sonra oyun durur ve altı güçlendirme arasından çekilen üç karttan BİR GÜÇLENDİRME SEÇ: ATIŞ HIZI, HASAR, ÇOKLU ATIŞ, DELİCİ MERMİ, KOŞU HIZI ve MAKS CAN +1. Uzun bir oyunda bunlar tek tabancayı delici mermiler saçan bir yelpazeye çevirir. Beş canla başlarsın, Kolay'da sekizle; zombilerin arada düşürdüğü ilk yardım çantaları bir can doldurur."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose Easy or Normal and press PLAY. Keep moving; the gun fires by itself at the nearest zombie in range.",
+      "tr": "Kolay ya da Normal'i seçip OYNA'ya bas. Hareket etmeyi bırakma; silah menzildeki en yakın zombiye kendiliğinden ateş eder."
+    },
+    {
+      "en": "Aim yourself whenever you like by dragging on the right side or holding the mouse button.",
+      "tr": "İstediğin an ekranın sağ tarafında sürükleyerek ya da fare düğmesini basılı tutarak kendin nişan al."
+    },
+    {
+      "en": "When the wave is cleared, pick one of the three upgrade cards.",
+      "tr": "Dalga temizlenince üç güçlendirme kartından birini seç."
+    },
+    {
+      "en": "Pick up medkits to heal. The game ends when your health reaches zero.",
+      "tr": "İyileşmek için ilk yardım çantalarını al. Canın sıfıra inince oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "WASD or the arrow keys move; Space, Z or Enter fires. X or Shift switches AUTO-AIM; with it off, you fire the way you walk. Pick an upgrade with 1, 2 or 3, or with ← → and Enter. Esc or P pauses.",
+      "tr": "WASD ya da ok tuşları hareket ettirir; Boşluk, Z ya da Enter ateş eder. X ya da Shift OTO-NİŞAN'ı açıp kapatır; kapalıyken yürüdüğün yöne ateş edersin. Güçlendirmeyi 1, 2 ya da 3 ile veya ← → ve Enter ile seç. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Drag on the left half to move. Touch the right half to fire toward that spot, then drag like a second stick to turn your aim. The B button switches AUTO-AIM.",
+      "tr": "Hareket için sol yarıda sürükle. Sağ yarıya dokununca o noktaya ateş edersin; sonra ikinci bir çubuk gibi sürükleyerek nişanı çevir. B düğmesi OTO-NİŞAN'ı açıp kapatır."
+    },
+    "mouse": {
+      "en": "Hold the left button to aim at the pointer and fire; let go to hand aiming back to AUTO-AIM.",
+      "tr": "İmlece nişan alıp ateş etmek için sol düğmeyi basılı tut; bırakınca nişan yeniden OTO-NİŞAN'a geçer."
+    }
+  },
+  "tips": [
+    {
+      "en": "Points per kill grow every four waves: ×2 from wave 4, ×3 from wave 8 and so on, so the late waves are where big scores come from.",
+      "tr": "Öldürme başına puan her dört dalgada artar: 4. dalgadan itibaren ×2, 8. dalgadan itibaren ×3 ve böyle devam eder; büyük skorlar geç dalgalarda yapılır."
+    },
+    {
+      "en": "MAX HP +1 also refills your health to the new maximum, so it is the card to take when you are low.",
+      "tr": "MAKS CAN +1 canını yeni üst sınıra kadar da doldurur; canın azaldığında alınacak kart budur."
+    },
+    {
+      "en": "PIERCING and MULTI-SHOT work together: each PIERCING level lets a bullet pass through one more zombie, and MULTI-SHOT adds a bullet to the fan, up to five. Against packed crowds the pair beats DAMAGE.",
+      "tr": "DELİCİ MERMİ ile ÇOKLU ATIŞ birbirini tamamlar: her DELİCİ MERMİ seviyesi mermiyi bir zombiden daha geçirir, ÇOKLU ATIŞ yelpazeye beşe kadar bir mermi ekler. Sıkışık kalabalıklara karşı bu ikili HASAR'dan etkilidir."
+    },
+    {
+      "en": "Never let yourself be cornered. Circle through the middle of the arena and put crates and rocks between you and the crowd; zombies can't pass through them, but neither can your bullets.",
+      "tr": "Asla köşeye sıkışma. Arenanın ortasında dön ve sürüyle arana sandıkları ve kayaları koy; zombiler içlerinden geçemez, ama senin mermilerin de geçemez."
+    }
+  ],
+  "features": [
+    {
+      "en": "Walkers, runners, brutes and a giant every fifth wave",
+      "tr": "Yürüyenler, koşucular, kabadayılar ve her beşinci dalgada bir dev"
+    },
+    {
+      "en": "Six upgrades to choose from after every wave",
+      "tr": "Her dalgadan sonra seçilebilecek altı güçlendirme"
+    },
+    {
+      "en": "Auto-aim you can switch off, plus manual aim by touch or mouse",
+      "tr": "Kapatılabilen oto-nişan; dokunarak ya da fareyle elle nişan"
+    },
+    {
+      "en": "Easy and Normal difficulty",
+      "tr": "Kolay ve Normal zorluk"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "Walkers give 10, runners 15, brutes 50 and the giant 500, multiplied by one more for every four waves survived. Each cleared wave adds 100 × the wave number.",
+        "tr": "Yürüyenler 10, koşucular 15, kabadayılar 50, dev 500 puan verir; bu puanlar atlattığın her dört dalgada bir kat daha artar. Temizlenen her dalga, dalga numarasının 100 katı puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives 8 health, zombies 25% slower, smaller and weaker waves that grow half as fast, more medkits and a longer safe moment after a bite. Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da 8 canın olur; zombiler %25 daha yavaştır, dalgalar daha küçük ve zayıftır ve yarı hızla büyür, daha çok ilk yardım çantası düşer, ısırıktan sonraki güvenli an da daha uzundur. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Do I have to aim?",
+        "tr": "Nişan almak zorunda mıyım?"
+      },
+      "a": {
+        "en": "No. AUTO-AIM is on from the start and fires at the nearest zombie in range. Aiming yourself helps when you need to open a path through a crowd.",
+        "tr": "Hayır. OTO-NİŞAN baştan açıktır ve menzildeki en yakın zombiye ateş eder. Kalabalığın içinden yol açman gerektiğinde kendin nişan almak işe yarar."
+      }
+    }
+  ]
+}

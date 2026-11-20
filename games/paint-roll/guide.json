@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Paint Roll is a sliding maze puzzle. A paint ball sits somewhere in a maze; send it in a direction and it rolls until it hits a wall, colouring every tile it crosses. It can't stop halfway, so the order of your rolls is the whole puzzle. Paint every floor tile to clear the level.\n\nThere are 60 levels, and the mazes grow as you go, up to nine tiles across and twelve tall. Each level is built backwards from a known solution, so it can always be painted, and its PAR is the fewest rolls a solver found. Finish at par for three stars. A level is the same maze every time you play it, and your stars and unlocked levels are saved; the level screen shows your total out of 180.\n\nA run is a SET of five cleared levels. Start it at any unlocked level; after each clear the next level follows, and the fifth ends the run with SET COMPLETE!. A bonus clock runs on every level, but it only shrinks the time bonus and never ends the game.",
+    "tr": "Boya Yuvarla, kayarak oynanan bir labirent bulmacası. Labirentin bir yerinde bir boya topu durur; onu bir yöne gönderirsen duvara çarpana kadar yuvarlanır ve geçtiği her kareyi boyar. Yarı yolda duramaz, bu yüzden bulmacanın bütün sırrı hamlelerin sırasıdır. Bölümü bitirmek için zemindeki her kareyi boya.\n\nToplam 60 bölüm var ve labirentler ilerledikçe büyür, en fazla dokuz kare genişliğe ve on iki kare yüksekliğe çıkar. Her bölüm bilinen bir çözümden geriye doğru kurulur, yani her zaman boyanabilir; HEDEF de bir çözücünün bulduğu en az hamle sayısıdır. HEDEF'te bitirirsen üç yıldız alırsın. Bir bölüm her oynayışta aynı labirenttir; yıldızların ve açtığın bölümler saklanır, bölüm ekranı 180 üzerinden toplamını gösterir.\n\nBir oyun, bitirilen beş bölümden oluşan bir SERİ'dir. Seriyi açık olan herhangi bir bölümden başlatabilirsin; her bölümden sonra sıradaki gelir, beşincisi oyunu SERİ TAMAM! ile bitirir. Her bölümde bir bonus saati işler, ama yalnızca süre bonusunu azaltır, oyunu asla bitirmez."
+  },
+  "howToPlay": [
+    {
+      "en": "Pick a level on the CHOOSE LEVEL screen. Clearing a level unlocks the next one.",
+      "tr": "BÖLÜM SEÇ ekranında bir bölüm seç. Bir bölümü bitirmek sıradakini açar."
+    },
+    {
+      "en": "Roll the ball up, down, left or right. It slides until a wall stops it and paints each tile it passes.",
+      "tr": "Topu yukarı, aşağı, sola ya da sağa yuvarla. Bir duvar durdurana kadar kayar ve geçtiği her kareyi boyar."
+    },
+    {
+      "en": "Paint every floor tile to clear the level. The MOVES · PAR chip turns orange once you go over par.",
+      "tr": "Bölümü bitirmek için zemindeki her kareyi boya. HAMLE · HEDEF göstergesi HEDEF'i geçince turuncuya döner."
+    },
+    {
+      "en": "Clear five levels to complete the SET; the pips in the top right fill one by one, and the set's total is your score.",
+      "tr": "SERİ'yi tamamlamak için beş bölüm bitir; sağ üstteki kutucuklar tek tek dolar ve serinin toplamı skorun olur."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD roll the ball. Z or Backspace undoes a roll, R or X restarts the level, L opens the level list. On the level screen move with the arrows and press Enter or Space. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD topu yuvarlar. Z ya da Backspace bir hamleyi geri alır, R ya da X bölümü baştan başlatır, L bölüm listesini açar. Bölüm ekranında oklarla gezin, Enter ya da Boşluk'a bas. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and flick the stick that appears; the ball rolls that way. UNDO, RESTART and LEVELS are the buttons at the bottom, and a tap on a level tile starts that level.",
+      "tr": "Ekranda herhangi bir yere bas ve çıkan kumanda kolunu bir yöne it; top o yöne yuvarlanır. GERİ AL, BAŞTAN ve BÖLÜMLER alttaki düğmelerdir; bir bölüm karesine dokunmak o bölümü başlatır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Look for dead ends and side pockets first. A roll always ends against a wall, so a tile that can only be reached one way usually decides the order of the whole route.",
+      "tr": "Önce çıkmazlara ve yan ceplere bak. Her yuvarlanış bir duvarda biter; tek bir yoldan ulaşılabilen bir kare çoğu zaman bütün rotanın sırasını belirler."
+    },
+    {
+      "en": "Undo has no limit and puts the move counter back too, so try a line and step back freely. RESTART sets the moves to zero, but the bonus clock keeps running.",
+      "tr": "Geri almanın sınırı yok ve hamle sayacını da geri alır; bir yolu dene ve rahatça geri dön. BAŞTAN hamleleri sıfırlar ama bonus saati işlemeye devam eder."
+    },
+    {
+      "en": "Higher levels pay more: each clear is worth 100 per star, 20 × the level number and 2 points per second left on the bonus clock. A set started at your highest unlocked level scores more than one on the first mazes.",
+      "tr": "İleri bölümler daha çok puan getirir: her bölüm yıldız başına 100, bölüm numarasının 20 katı ve bonus saatinde kalan her saniye için 2 puan eder. En ileri açık bölümden başlatılan bir seri, ilk labirentlerdeki bir seriden daha çok puan toplar."
+    },
+    {
+      "en": "Since a level is always the same maze, one you finished over par is worth replaying later for three stars; the best result is kept.",
+      "tr": "Bir bölüm hep aynı labirent olduğundan, HEDEF'i aşarak bitirdiğin bir bölümü sonra üç yıldız için yeniden oynamaya değer; en iyi sonuç saklanır."
+    }
+  ],
+  "features": [
+    {
+      "en": "60 levels with saved stars and progress",
+      "tr": "Yıldızları ve ilerlemesi saklanan 60 bölüm"
+    },
+    {
+      "en": "Mazes that grow up to 9×12 tiles",
+      "tr": "9×12 kareye kadar büyüyen labirentler"
+    },
+    {
+      "en": "Unlimited undo and instant restart",
+      "tr": "Sınırsız geri alma ve anında baştan başlama"
+    },
+    {
+      "en": "Six paint colours, each with its own symbol",
+      "tr": "Her biri kendi sembolünü taşıyan altı boya rengi"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How does a run end?",
+        "tr": "Bir oyun nasıl bitiyor?"
+      },
+      "a": {
+        "en": "After five cleared levels (SET COMPLETE!), or after level 60 (ALL PAINTED!). You can't lose: the bonus clock only lowers your bonus.",
+        "tr": "Beş bölüm bitirince (SERİ TAMAM!) ya da 60. bölümden sonra (HEPSİ BOYANDI!). Kaybetmek mümkün değil: bonus saati yalnızca bonusunu düşürür."
+      }
+    },
+    {
+      "q": {
+        "en": "How are stars given?",
+        "tr": "Yıldızlar nasıl veriliyor?"
+      },
+      "a": {
+        "en": "Three for finishing in par or fewer rolls, two for going over par by up to a quarter (at least one roll), and one for any other finish.",
+        "tr": "HEDEF ya da daha az hamleyle bitirirsen üç, HEDEF'i en fazla dörtte bir oranında (en az bir hamle) aşarsan iki, diğer her bitişte bir yıldız."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I switch levels in the middle of a set?",
+        "tr": "Serinin ortasında bölüm değiştirebilir miyim?"
+      },
+      "a": {
+        "en": "Yes. LEVELS (or L) takes you back to the level list, and the set and your score carry on with whichever level you pick next.",
+        "tr": "Evet. BÖLÜMLER (ya da L) seni bölüm listesine götürür; seri ve skorun, sonra seçtiğin bölümle devam eder."
+      }
+    }
+  ]
+}

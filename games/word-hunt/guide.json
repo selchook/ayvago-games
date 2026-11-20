@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Word Hunt is a timed word search in ten levels. Each level gives you a square grid of letters, a theme such as Animals, Space or Jobs, and the list of words on that theme hidden somewhere in the grid. Find every word on the list before the time bar runs out and you move on to the next level with a bonus. Let the clock reach zero and the run ends.\n\nThe search gets harder in three ways at once. The grid grows from 8 × 8 to 12 × 12, the list grows from 5 words to 12, and the words hide in more directions. On level 1 they only run left to right and top to bottom; diagonals join on levels 2 and 3, backwards words on level 4, and from level 5 on a word can lie in any of the eight directions.\n\nThe themes are drawn in a new random order every run from twelve sets, and the words come in the language you play in, Turkish or English. Clear level 10 and the game ends with ALL FOUND!",
+    "tr": "Kelime Avı, on bölümlük, süreye karşı oynanan bir kelime bulmaca. Her bölümde kare bir harf ızgarası, Hayvanlar, Uzay ya da Meslekler gibi bir tema ve ızgaranın bir yerine gizlenmiş o temaya ait kelimelerin listesi gelir. Süre çubuğu bitmeden listedeki bütün kelimeleri bulursan bonusla sonraki bölüme geçersin. Süre sıfıra inerse oyun biter.\n\nBulmaca üç yönden birden zorlaşır. Izgara 8 × 8'den 12 × 12'ye büyür, liste 5 kelimeden 12'ye çıkar ve kelimeler daha çok yöne saklanır. 1. bölümde kelimeler yalnızca soldan sağa ve yukarıdan aşağı dizilir; 2. ve 3. bölümde çaprazlar, 4. bölümde ters yazılmış kelimeler eklenir, 5. bölümden sonra bir kelime sekiz yönün herhangi birinde olabilir.\n\nTemalar on iki set arasından her oyunda yeni ve rastgele bir sırayla gelir; kelimeler oynadığın dilde, Türkçe ya da İngilizcedir. 10. bölümü de bitirirsen oyun HEPSİNİ BULDUN! ile sona erer."
+  },
+  "howToPlay": [
+    {
+      "en": "Read the theme and the word list under the grid.",
+      "tr": "Temayı ve ızgaranın altındaki kelime listesini oku."
+    },
+    {
+      "en": "Find a word and drag in a straight line from one end of it to the other. A correct word gets a coloured capsule and is struck off the list.",
+      "tr": "Bir kelimeyi bul ve bir ucundan öbür ucuna düz bir çizgide sürükle. Doğru kelimenin üstüne renkli bir kapsül çizilir ve listeden silinir."
+    },
+    {
+      "en": "A wrong line flashes red and costs nothing but your combo.",
+      "tr": "Yanlış çizgi kırmızı yanıp söner; yalnızca kombonu kaybettirir."
+    },
+    {
+      "en": "Stuck? HINT circles the first letter of a word you still need, but takes 10 seconds off the clock.",
+      "tr": "Takıldın mı? İPUCU, bulman gereken bir kelimenin ilk harfini halkayla gösterir ama süreden 10 saniye düşer."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the cursor. Press Space, Enter or Z on the first letter and again on the last; X or Backspace cancels. H uses a hint, Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD imleci gezdirir. İlk harfte Boşluk, Enter ya da Z'ye bas, son harfte yeniden bas; X ya da Backspace iptal eder. H ipucu kullanır, Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Put your finger on one end of the word and slide to the other, across, down or diagonally, then lift.",
+      "tr": "Parmağını kelimenin bir ucuna koy, yatay, dikey ya da çapraz olarak öbür ucuna kaydır ve kaldır."
+    },
+    "mouse": {
+      "en": "Press on the first letter, drag to the last and release.",
+      "tr": "İlk harfe basılı tut, son harfe sürükle ve bırak."
+    }
+  },
+  "tips": [
+    {
+      "en": "Scan for the rare letters of a word, such as a Z, J or Ğ, rather than its first letter. They stand out in a grid full of vowels.",
+      "tr": "Kelimenin ilk harfini değil, Z, J ya da Ğ gibi az bulunan harflerini ara. Sesli harflerle dolu bir ızgarada hemen göze çarparlar."
+    },
+    {
+      "en": "Keep a rhythm: each word found within 8 seconds of the last raises the combo, multiplying its points up to four times.",
+      "tr": "Ritmi koru: bir öncekinden sonraki 8 saniye içinde bulduğun her kelime komboyu artırır ve puanını dört katına kadar çıkarır."
+    },
+    {
+      "en": "Long words are worth more: a word scores 20 plus 10 per letter, and every level adds another 25% on top.",
+      "tr": "Uzun kelimeler daha değerlidir: kelime 20 puan ve harf başına 10 puan getirir, her bölüm bunun üstüne yüzde 25 daha ekler."
+    },
+    {
+      "en": "Time left is money: finishing a level pays 5 points per remaining second plus 150 for each level number. You start with 3 hints and get another every second level, so use them when they save more than 10 seconds.",
+      "tr": "Kalan süre puandır: bölümü bitirmek kalan her saniye için 5 puan ve bölüm numarası başına 150 puan getirir. 3 ipucuyla başlarsın, her iki bölümde bir yenisi gelir; 10 saniyeden fazlasını kazandıracaksa kullan."
+    }
+  ],
+  "features": [
+    {
+      "en": "Ten levels, from 8 × 8 to 12 × 12",
+      "tr": "8 × 8'den 12 × 12'ye on bölüm"
+    },
+    {
+      "en": "Twelve themes in Turkish and English",
+      "tr": "Türkçe ve İngilizce on iki tema"
+    },
+    {
+      "en": "Words in up to eight directions, backwards included",
+      "tr": "Tersten yazılanlar dahil sekiz yöne kadar saklanan kelimeler"
+    },
+    {
+      "en": "Combo multiplier and time bonus",
+      "tr": "Kombo çarpanı ve süre bonusu"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Does the time carry over between levels?",
+        "tr": "Kalan süre sonraki bölüme aktarılıyor mu?"
+      },
+      "a": {
+        "en": "No. Each level starts with its own clock, between 150 and 190 seconds, and the time you had left is turned into bonus points instead.",
+        "tr": "Hayır. Her bölüm 150 ile 190 saniye arasında kendi süresiyle başlar; kalan süren bunun yerine bonus puana çevrilir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No, but the first levels are gentle: on level 1 every word reads left to right or top to bottom on an 8 × 8 grid.",
+        "tr": "Hayır, ama ilk bölümler kolaydır: 1. bölümde 8 × 8 ızgaradaki her kelime soldan sağa ya da yukarıdan aşağı okunur."
+      }
+    },
+    {
+      "q": {
+        "en": "Does it work on a phone?",
+        "tr": "Telefonda çalışıyor mu?"
+      },
+      "a": {
+        "en": "Yes. The game is built for a portrait screen and the whole search is done by sliding a finger across the letters.",
+        "tr": "Evet. Oyun dik ekran için tasarlandı; bütün arama, parmağını harflerin üzerinde kaydırarak yapılır."
+      }
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Cave Copter is a one-button distance game. Your helicopter flies on its own through a winding tunnel; the only thing you decide is height. Holding down lifts the copter, letting go lets it sink, and both build up gradually, so you steer with short presses rather than sudden jerks.\n\nThe cave begins wide and slow. As you go further the tunnel narrows from about two-thirds of the screen to well under a third, it bends more sharply, the scroll speed more than doubles and rock spikes hang from the ceiling or rise from the floor more often. Every 400 metres you enter a new zone with its own look: brown rock, mossy green, ice, snow and glowing red, then around again.\n\nThe copter can take three bumps. After each one it blinks for about two seconds and the walls push it back instead of hurting it. The third bump brings it down.",
+    "tr": "Mağara Helikopteri, tek tuşla oynanan bir mesafe oyunu. Helikopterin kıvrımlı bir tünelde kendi kendine ilerler; senin tek kararın yükseklik. Basılı tutunca helikopter yükselir, bırakınca alçalır; ikisi de yavaş yavaş hız kazanır, yani ani hamlelerle değil kısa basışlarla yön verirsin.\n\nMağara geniş ve yavaş başlar. İlerledikçe tünel ekranın yaklaşık üçte ikisinden üçte birin epey altına kadar daralır, kıvrımlar sertleşir, kayma hızı iki katından fazla artar ve tavandan sarkan ya da yerden yükselen kaya sivrileri sıklaşır. Her 400 metrede kendi görünümü olan yeni bir BÖLGE'ye girersin: kahverengi kaya, yosunlu yeşil, buz, kar ve kızıl ışıltı, sonra yeniden başa.\n\nHelikopter üç çarpmaya dayanır. Her çarpmadan sonra yaklaşık iki saniye yanıp söner; bu sürede duvarlar ona zarar vermez, onu geri iter. Üçüncü çarpmada helikopter düşer."
+  },
+  "howToPlay": [
+    {
+      "en": "The copter hovers until your first press. Hold to climb and release to fall; a steady rhythm of taps keeps it level.",
+      "tr": "Helikopter ilk basışına kadar havada bekler. Yükselmek için basılı tut, düşmek için bırak; düzenli kısa dokunuşlar onu aynı yükseklikte tutar."
+    },
+    {
+      "en": "Follow the tunnel as it rises and falls, and slip past the rock spikes on the free side.",
+      "tr": "Tünel inip çıktıkça onu izle ve kaya sivrilerinin boş tarafından geç."
+    },
+    {
+      "en": "Fly through the gold stars for bonus points.",
+      "tr": "Ek puan için altın yıldızların içinden geç."
+    },
+    {
+      "en": "Go as far as you can. The run ends on your third bump.",
+      "tr": "Olabildiğince uzağa git. Üçüncü çarpmada oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Hold Space, ↑, W, Z or Enter to climb; release to drop. Esc or P pauses.",
+      "tr": "Yükselmek için Boşluk, ↑, W, Z ya da Enter'a basılı tut; alçalmak için bırak. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Hold a finger anywhere on the screen to climb and lift it to drop. Only the pause button corner is left out.",
+      "tr": "Yükselmek için parmağını ekranın herhangi bir yerinde tut, alçalmak için kaldır. Yalnızca duraklatma düğmesinin olduğu köşe hariç."
+    }
+  },
+  "tips": [
+    {
+      "en": "The copter carries its momentum. Let go a moment before you reach the height you want, or it will overshoot into the ceiling.",
+      "tr": "Helikopter hızını korur. İstediğin yüksekliğe varmadan bir an önce bırak, yoksa tavana kadar fırlar."
+    },
+    {
+      "en": "Fly near the middle of the tunnel. From there you have room to react whichever side the next spike comes from.",
+      "tr": "Tünelin ortasına yakın uç. Oradan bir sonraki sivri hangi taraftan gelirse gelsin tepki verecek alanın olur."
+    },
+    {
+      "en": "Use the blinking time after a bump to get your height right. The walls can't hurt you then, but the next spike after it can.",
+      "tr": "Çarpmadan sonraki yanıp sönme süresini yüksekliğini düzeltmek için kullan. O sırada duvarlar sana zarar veremez, ama ardından gelen sivri verebilir."
+    },
+    {
+      "en": "A star is worth 25 metres of flying. Take the ones in your path, but never swing toward a wall to reach one.",
+      "tr": "Bir yıldız 25 metrelik uçuşa bedeldir. Yolundakileri al, ama birine ulaşmak için asla duvara doğru savrulma."
+    }
+  ],
+  "features": [
+    {
+      "en": "A tunnel that narrows and speeds up the further you fly",
+      "tr": "Uçtukça daralan ve hızlanan bir tünel"
+    },
+    {
+      "en": "Five cave zones with their own colours",
+      "tr": "Kendi renkleri olan beş mağara bölgesi"
+    },
+    {
+      "en": "Three bumps per flight instead of instant game over",
+      "tr": "Tek çarpmada bitmek yerine uçuş başına üç çarpma hakkı"
+    },
+    {
+      "en": "One-button play on any screen",
+      "tr": "Her ekranda tek tuşla oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How is my score counted?",
+        "tr": "Skorum nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "One point per metre flown, shown in the top bar, plus 25 for every star and 100 for every new zone you reach.",
+        "tr": "Uçtuğun her metre bir puandır ve üst çubukta görünür; buna her yıldız için 25, ulaştığın her yeni bölge için 100 puan eklenir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Every flight starts in a wide, slow cave, and the narrow, fast stretches only come after you have flown a good distance.",
+        "tr": "Hayır. Her uçuş geniş ve yavaş bir mağarada başlar; dar ve hızlı bölümler ancak epey yol aldıktan sonra gelir."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play on a phone?",
+        "tr": "Telefonda oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes, held upright. The whole screen is the button, so you can play with one thumb.",
+        "tr": "Evet, telefonu dik tutarak. Bütün ekran düğme görevi görür; tek başparmakla oynayabilirsin."
+      }
+    }
+  ]
+}

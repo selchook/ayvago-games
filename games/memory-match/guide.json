@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Memory Match is the classic pairs game, played with round animal faces against a clock. A grid of face-down cards holds two of each animal. Flip two cards: if they match they stay up, if not they turn back over after a moment. Clear the board before the time bar empties and the next level deals a bigger one.\n\nEvery level opens with a short MEMORIZE! peek: all the cards turn face up for a second or two, then flip back and the clock starts. The board grows from 12 cards (3×4) at level 1 to 16, 20, 24 and 30, and from level 6 on it is a full 6×6 grid of 18 pairs drawn from 30 animals. The time per pair shrinks every level and the peek gets shorter. A cleared board earns up to three stars for using few moves; when the clock runs out, the missing pairs are shown and the game ends.\n\nOnline you can play a friend on the same 24-card board, taking turns with no clock. Whoever finds more pairs wins.",
+    "tr": "Hafıza Kartları, yuvarlak hayvan yüzleriyle ve saate karşı oynanan klasik eşleştirme oyunu. Kapalı kartlardan oluşan tahtada her hayvandan iki tane var. İki kart çevir: aynıysalar açık kalırlar, değilse bir an sonra yeniden kapanırlar. Süre çubuğu bitmeden tahtayı temizlersen sıradaki bölüm daha büyük bir tahtayla gelir.\n\nHer bölüm kısa bir EZBERLE! anıyla başlar: bütün kartlar bir iki saniyeliğine açılır, sonra kapanır ve süre işlemeye başlar. Tahta 1. bölümdeki 12 karttan (3×4) 16, 20, 24 ve 30 karta büyür; 6. bölümden sonra 30 hayvan arasından seçilen 18 çiftlik tam bir 6×6 ızgara olur. Çift başına süre her bölümde kısalır, ezber anı da azalır. Temizlenen tahta, az hamleyle bitirdiysen üç yıldıza kadar kazandırır; süre biterse bulunamayan çiftler gösterilir ve oyun biter.\n\nÇevrimiçi modda bir arkadaşınla aynı 24 kartlık tahtada, süre olmadan sırayla oynarsın. Daha çok çift bulan kazanır."
+  },
+  "howToPlay": [
+    {
+      "en": "Study the cards during the MEMORIZE! peek. The clock only starts once they have turned back over.",
+      "tr": "EZBERLE! anında kartları incele. Süre ancak kartlar yeniden kapandıktan sonra başlar."
+    },
+    {
+      "en": "Flip one card, then a second. A matching pair glows green and stays up; two different animals shake and turn back.",
+      "tr": "Bir kart çevir, sonra ikincisini. Eşleşen çift yeşil parlar ve açık kalır; farklı iki hayvan sallanıp yeniden kapanır."
+    },
+    {
+      "en": "Find every pair before the time bar empties. The chip under the board counts pairs and moves.",
+      "tr": "Süre çubuğu bitmeden bütün çiftleri bul. Tahtanın altındaki gösterge çiftleri ve hamleleri sayar."
+    },
+    {
+      "en": "A cleared board shows your stars and bonuses, then the next level deals more cards. The game ends when the clock reaches zero.",
+      "tr": "Temizlenen tahtada yıldızların ve bonusların görünür, ardından sıradaki bölüm daha çok kartla gelir. Süre sıfıra indiğinde oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the yellow frame (it wraps around the edges); Space, Enter or Z flips the card under it. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD sarı çerçeveyi gezdirir (kenarlardan öbür yana geçer); Boşluk, Enter ya da Z altındaki kartı çevirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a card to flip it.",
+      "tr": "Çevirmek için karta dokun."
+    },
+    "mouse": {
+      "en": "Click a card to flip it.",
+      "tr": "Çevirmek için karta tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Pairs found back to back build a combo: the first is worth 50, the next 100, then 150, until a wrong pair resets it. So when you know where several pairs are, collect them in one run.",
+      "tr": "Art arda bulunan çiftler kombo yapar: ilki 50, sonraki 100, sonra 150 puan eder; yanlış bir çift komboyu sıfırlar. Birkaç çiftin yerini biliyorsan hepsini tek seferde topla."
+    },
+    {
+      "en": "Turn an unknown card first, then decide. If you have seen its twin, take the pair; if not, use the second flip on another unknown card to learn two cards for one move.",
+      "tr": "Önce bilmediğin bir kartı aç, sonra karar ver. Eşini daha önce gördüysen çifti al; görmediysen ikinci çevirişi başka bir bilinmeyen karta harca, bir hamlede iki kart öğren."
+    },
+    {
+      "en": "You don't have to wait for a wrong pair to close. Tapping the next card flips them back at once, which saves time on a tight clock.",
+      "tr": "Yanlış çiftin kapanmasını beklemek zorunda değilsin. Sıradaki karta dokunmak onları hemen kapatır; süre darken bu zaman kazandırır."
+    },
+    {
+      "en": "Stars count moves, one move being two cards turned. Three stars need at most 1.5 moves per pair and two stars 2.2, which on the first 6-pair board means 9 and 14 moves.",
+      "tr": "Yıldızlar hamleye bakar; iki kart çevirmek bir hamledir. Üç yıldız için çift başına en çok 1,5, iki yıldız için 2,2 hamle gerekir; 6 çiftlik ilk tahtada bu 9 ve 14 hamle eder."
+    }
+  ],
+  "features": [
+    {
+      "en": "30 animal faces and a fresh deal every level",
+      "tr": "30 hayvan yüzü ve her bölümde yeni bir dağıtım"
+    },
+    {
+      "en": "Boards from 3×4 up to 6×6",
+      "tr": "3×4'ten 6×6'ya kadar büyüyen tahtalar"
+    },
+    {
+      "en": "A memorize peek before every level",
+      "tr": "Her bölümden önce kısa bir ezber anı"
+    },
+    {
+      "en": "Online turn-based duel for two players",
+      "tr": "İki kişilik, sırayla oynanan çevrimiçi düello"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes, online. Create a room on ayvago.com and send your friend the invite link. You both get the same 4×6 board of 12 pairs, with no clock and no peek. Finding a pair keeps your turn, a miss passes it, and whoever has more pairs at the end wins; 6 to 6 is a draw.",
+        "tr": "Evet, çevrimiçi. ayvago.com'da bir oda kur ve davet bağlantısını arkadaşına gönder. İkiniz de 12 çiftlik aynı 4×6 tahtayı görürsünüz; süre ve ezber anı yoktur. Çift bulan sırayı korur, ıskalayan sırayı devreder; sonunda daha çok çifti olan kazanır, 6'ya 6 berabere biter."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each pair is worth 50 × your current combo. A cleared level adds 10 points for every second left and 100 × the level for each star, so on later levels the stars matter more than speed.",
+        "tr": "Her çift, o anki kombonun 50 katı kadar puandır. Biten bölüm, kalan her saniye için 10 puan ve her yıldız için 100 × bölüm ekler; ileri bölümlerde yıldızlar hızdan daha değerlidir."
+      }
+    },
+    {
+      "q": {
+        "en": "How much time do I get?",
+        "tr": "Ne kadar sürem var?"
+      },
+      "a": {
+        "en": "It depends on the board: 15 seconds plus a few seconds per pair, which comes to 48 seconds for the first 6 pairs. The allowance per pair drops every level until level 10, so later boards are much tighter.",
+        "tr": "Tahtaya göre değişir: 15 saniye artı çift başına birkaç saniye; ilk 6 çift için bu 48 saniye eder. Çift başına verilen süre 10. bölüme kadar her bölümde azalır, sonraki tahtalar çok daha sıkışıktır."
+      }
+    }
+  ]
+}

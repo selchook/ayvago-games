@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Color Gate is a tap-to-hop climber. A glowing ball sits under a column of neon obstacles, and every tap kicks it upward before gravity pulls it back. Each obstacle is split into four colours, cyan, magenta, yellow and purple, and the ball may only pass through the part that matches its own colour. Touching any other colour counts as a crash.\n\nThe first gates are single rings turning slowly. Every five gates the level rises and the mix grows: bars of colour sliding sideways from level 2, double rings whose inner ring mirrors the outer one from level 3, smaller fast rings and pairs of bars moving in opposite directions from level 4, and from level 5 some rings speed up and slow down as they turn. Between gates a colour orb repaints the ball in a new colour, so you have to read every gate afresh.\n\nYou have three lives. A crash, or falling off the bottom of the screen, costs one and puts the ball back below the gate you were trying to clear.",
+    "tr": "Renk Kapısı, dokunarak zıplanan bir tırmanma oyunu. Parlayan bir top, neon engellerden oluşan bir sütunun altında durur; her dokunuş onu yukarı fırlatır, sonra yerçekimi geri çeker. Her engel dört renge bölünmüştür: camgöbeği, pembe, sarı ve mor. Top yalnızca kendi rengindeki bölümden geçebilir; başka bir renge değmek kaza sayılır.\n\nİlk kapılar yavaş dönen tek halkalardır. Her beş kapıda seviye atlarsın ve çeşitlilik artar: 2. seviyeden itibaren yana kayan renkli çubuklar, 3. seviyeden sonra iç halkası dış halkanın ayna görüntüsü olan çift halkalar, 4. seviyede küçük ve hızlı halkalar ile ters yönlere kayan çubuk çiftleri gelir; 5. seviyeden sonra bazı halkalar dönerken hızlanıp yavaşlar. Kapıların arasındaki renk küresi topu yeni bir renge boyar; her kapıyı baştan okuman gerekir.\n\nÜç canın var. Bir kaza ya da ekranın altından düşmek bir can götürür ve topu geçmeye çalıştığın kapının altına geri koyar."
+  },
+  "howToPlay": [
+    {
+      "en": "Tap to hop. Each tap gives the same push upward, so the height you reach depends on your rhythm.",
+      "tr": "Zıplamak için dokun. Her dokunuş aynı itişi verir; ne kadar yükseldiğin ritmine bağlıdır."
+    },
+    {
+      "en": "Wait under a gate until the section in your colour turns or slides into your path, then hop through it.",
+      "tr": "Kendi rengindeki bölüm dönerek ya da kayarak yoluna gelene kadar kapının altında bekle, sonra içinden zıpla."
+    },
+    {
+      "en": "Fly through the colour orb between gates. It always gives the ball a different colour than before.",
+      "tr": "Kapıların arasındaki renk küresinden geç. Küre topa her seferinde öncekinden farklı bir renk verir."
+    },
+    {
+      "en": "Collect the stars inside and below the gates. After a lost life the ball waits until your next tap, then blinks briefly and can pass through anything.",
+      "tr": "Kapıların içindeki ve altındaki yıldızları topla. Can kaybettikten sonra top bir sonraki dokunuşunu bekler, sonra kısa bir süre yanıp söner ve her şeyin içinden geçebilir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Space, ↑, W, Enter or Z hops; hold-down repeats do not count, so press once per hop. Esc or P pauses.",
+      "tr": "Boşluk, ↑, W, Enter ya da Z zıplatır; basılı tutmak tekrar saymaz, her zıplama için bir kez bas. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap anywhere on the screen to hop, except the pause button in the top-right corner.",
+      "tr": "Zıplamak için ekranın herhangi bir yerine dokun; yalnızca sağ üst köşedeki duraklatma düğmesi hariç."
+    }
+  },
+  "tips": [
+    {
+      "en": "Don't rush a ring. The ball has to cross both the bottom and the top of it, so check that the top section in your colour will also be there when you arrive.",
+      "tr": "Halkaya acele etme. Top hem alt hem üst kenarından geçmek zorunda; vardığında üst kenarda da senin renginin olacağından emin ol."
+    },
+    {
+      "en": "Small, quick taps hold the ball in place below a gate while you wait for your colour.",
+      "tr": "Küçük ve hızlı dokunuşlar, rengini beklerken topu kapının altında yerinde tutar."
+    },
+    {
+      "en": "In a double ring the inner ring turns opposite to the outer one, but the two always show the same colour at the top and at the bottom. Treat it as one thick ring and time it the same way.",
+      "tr": "Çift halkada iç halka dış halkanın tersine döner, ama ikisi üstte ve altta her zaman aynı rengi gösterir. Onu tek ve kalın bir halka gibi düşün, zamanlamasını da öyle yap."
+    },
+    {
+      "en": "Stars are worth 10 × the level, so their value grows as you climb. A star sitting just below a sliding bar is safe to take; the bar is what you have to time.",
+      "tr": "Yıldızlar 10 × seviye puan eder, yani tırmandıkça değerlenir. Kayan bir çubuğun hemen altındaki yıldızı almak güvenlidir; zamanlaman gereken şey çubuğun kendisidir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Spinning rings, double rings and sliding bars",
+      "tr": "Dönen halkalar, çift halkalar ve kayan çubuklar"
+    },
+    {
+      "en": "Colour orbs that change your ball between gates",
+      "tr": "Kapılar arasında topunun rengini değiştiren küreler"
+    },
+    {
+      "en": "Three lives with a restart right below the failed gate",
+      "tr": "Kaybedilen kapının hemen altından devam eden üç can"
+    },
+    {
+      "en": "A new level every five gates",
+      "tr": "Her beş kapıda yeni bir seviye"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Points come from stars, each worth 10 × the current level, and from levelling up: every five gates you pass add 25 × the new level. The STARS counter under the score shows how many you have.",
+        "tr": "Puan yıldızlardan ve seviye atlamaktan gelir: her yıldız 10 × o anki seviye puan eder, geçtiğin her beş kapı da 25 × yeni seviye ekler. Skorun altındaki yıldız sayacı kaç tane topladığını gösterir."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens when I hit the wrong colour?",
+        "tr": "Yanlış renge çarpınca ne oluyor?"
+      },
+      "a": {
+        "en": "You lose one of your three lives and the ball reappears under the gate you were trying to pass, keeping its colour. The run ends when all three are gone.",
+        "tr": "Üç canından biri gider ve top, rengini koruyarak geçmeye çalıştığın kapının altında yeniden belirir. Üç can da bitince oyun sona erer."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. The first five gates are all slow single rings, and new obstacle types are added one level at a time.",
+        "tr": "Hayır. İlk beş kapı yavaş dönen tek halkalardır; yeni engel türleri her seviyede birer birer eklenir."
+      }
+    }
+  ]
+}

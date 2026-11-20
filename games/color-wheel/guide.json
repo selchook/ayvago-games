@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Color Wheel is a defence game for one wheel. A ring of coloured segments sits in the middle of the screen and coloured dots fly at it from every direction. Each dot has to strike the segment of its own colour, so you keep turning the ring to put the right colour in its path. A single dot that lands on the wrong colour ends the game.\n\nPlay comes in waves. Wave 1 sends 11 dots at a four-colour ring; every wave adds three more dots and brings them in faster and closer together. The ring gains a fifth colour at wave 4 and a sixth at wave 7, and its colours are shuffled each time it grows. From wave 3 an occasional rainbow dot matches any colour, and from wave 5 some dots arrive in pairs from two sides at once.\n\nA faint line and a mark on the ring's edge show where each incoming dot will hit, and every colour carries its own symbol, so you can read the wheel by shape too.",
+    "tr": "Renk Çarkı, tek bir çarkı savunduğun bir oyun. Ekranın ortasında renkli dilimlerden oluşan bir halka durur ve renkli noktalar ona her yönden uçar. Her nokta kendi rengindeki dilime çarpmalıdır; bu yüzden halkayı sürekli çevirerek doğru rengi noktanın yoluna getirirsin. Yanlış renge düşen tek bir nokta oyunu bitirir.\n\nOyun dalgalar hâlinde ilerler. 1. dalga dört renkli halkaya 11 nokta gönderir; her dalga üç nokta daha ekler ve onları daha hızlı ve daha sık getirir. Halkaya 4. dalgada beşinci, 7. dalgada altıncı renk eklenir; her büyümede renklerin yeri karışır. 3. dalgadan itibaren arada bir gelen gökkuşağı noktası her renge uyar, 5. dalgadan sonra bazı noktalar iki yönden aynı anda çift gelir.\n\nSilik bir çizgi ve halkanın kenarındaki bir işaret, gelen her noktanın nereye çarpacağını gösterir. Her rengin kendi sembolü olduğu için çarkı şekillerden de okuyabilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "Watch the nearest dot and its mark on the ring, and turn the ring so the matching colour is waiting there.",
+      "tr": "En yakın noktayı ve halkadaki işaretini izle, halkayı uyan renk orada bekleyecek şekilde çevir."
+    },
+    {
+      "en": "Each tap turns the ring by exactly one segment; dragging spins it freely and it snaps into place when you let go.",
+      "tr": "Her dokunuş halkayı tam bir dilim çevirir; sürüklersen serbestçe döner ve bıraktığında yerine oturur."
+    },
+    {
+      "en": "Clear every dot in a wave for a bonus. The next wave starts after a short pause.",
+      "tr": "Bir dalgadaki bütün noktaları karşılayınca bonus alırsın. Sıradaki dalga kısa bir aradan sonra başlar."
+    },
+    {
+      "en": "When two dots come at once, find the one ring position that suits both.",
+      "tr": "İki nokta aynı anda geldiğinde ikisine birden uyan tek halka konumunu bul."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← or A turns the ring one step anticlockwise, → or D one step clockwise. Esc or P pauses.",
+      "tr": "← ya da A halkayı saat yönünün tersine, → ya da D saat yönünde bir dilim çevirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap the left half to turn anticlockwise and the right half to turn clockwise, or put a finger on the screen and drag around the wheel to spin it.",
+      "tr": "Saat yönünün tersine çevirmek için sol yarıya, saat yönünde çevirmek için sağ yarıya dokun; ya da parmağını ekrana koyup çarkın çevresinde sürükleyerek döndür."
+    }
+  },
+  "tips": [
+    {
+      "en": "Every five hits in a row raise the multiplier shown in the centre of the wheel, up to x8. It only resets when the game ends, so a long run snowballs.",
+      "tr": "Art arda her beş isabet, çarkın ortasında görünen çarpanı bir artırır, en çok x8'e kadar. Çarpan yalnızca oyun bitince sıfırlanır, yani uzun bir oyun çığ gibi büyür."
+    },
+    {
+      "en": "Count steps both ways before you tap. On a six-colour ring the colour three steps away is just as far in either direction, but anything else has a short way round.",
+      "tr": "Dokunmadan önce iki yöndeki adımları say. Altı renkli halkada üç adım ötedeki renk her iki yönde de aynı uzaklıktadır, diğerlerinin ise kısa bir yolu vardır."
+    },
+    {
+      "en": "Rainbow dots match any segment and are worth three times as much. When one is next, use the time to prepare for the dot after it.",
+      "tr": "Gökkuşağı noktaları her dilime uyar ve üç kat puan eder. Sırada biri varsa, o zamanı ondan sonraki noktaya hazırlanmak için kullan."
+    },
+    {
+      "en": "Taps are quicker and more exact than dragging. Keep the drag for big turns early in a gap between dots.",
+      "tr": "Dokunmak sürüklemekten daha hızlı ve kesindir. Sürüklemeyi, noktalar arasındaki boşluklarda yapılacak büyük dönüşlere sakla."
+    }
+  ],
+  "features": [
+    {
+      "en": "A ring that grows from four colours to six",
+      "tr": "Dört renkten altıya büyüyen bir halka"
+    },
+    {
+      "en": "Rainbow dots and paired dots in later waves",
+      "tr": "İleri dalgalarda gökkuşağı noktaları ve çift noktalar"
+    },
+    {
+      "en": "A streak multiplier up to x8",
+      "tr": "x8'e kadar çıkan seri çarpanı"
+    },
+    {
+      "en": "Tap, drag or keyboard steering, with symbols for every colour",
+      "tr": "Dokunma, sürükleme ya da klavyeyle kontrol ve her renk için bir sembol"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A matched dot is 10 points and a rainbow dot 30, both times the multiplier. Clearing a wave adds 50 × the wave number.",
+        "tr": "Doğru renge çarpan nokta 10, gökkuşağı noktası 30 puandır; ikisi de çarpanla çarpılır. Bir dalgayı bitirmek 50 × dalga numarası ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Can a wave be impossible?",
+        "tr": "Bir dalga imkânsız olabilir mi?"
+      },
+      "a": {
+        "en": "No. Dots are spaced so there is always time for the taps needed between them, and paired dots always fit one position of the ring.",
+        "tr": "Hayır. Noktalar aralarında gereken dokunuşlara her zaman zaman kalacak şekilde gönderilir; çift noktalar da her zaman halkanın tek bir konumuna uyar."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. The first waves use a four-colour ring and slow dots, and the speed and extra colours arrive wave by wave.",
+        "tr": "Hayır. İlk dalgalarda dört renkli halka ve yavaş noktalar vardır; hız ve yeni renkler dalga dalga gelir."
+      }
+    }
+  ]
+}

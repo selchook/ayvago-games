@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Bubble Pop is a bubble shooter set in a wooden frame. Coloured bubbles hang from the top of the board, and a cannon at the bottom fires one bubble at a time. When the bubble you shoot sticks next to two or more of its own colour, the whole group pops, and any bubbles that were hanging only from that group drop off the board. Empty the board to clear the level.\n\nA dotted guide traces your shot all the way, including bounces off the side walls, and a ring marks where the bubble will stick. The cannon only loads colours still on the board, and the next bubble waits beside it, ready to be swapped in.\n\nThe pressure comes from the SHOTS chip. Every shot that pops nothing uses up one bullet, and when the bullets run out a new row of bubbles appears at the top and pushes everything down. Level 1 starts with five rows, four colours and seven bullets; each level brings more rows, up to six colours and fewer bullets, down to three.",
+    "tr": "Balon Patlat, ahşap bir çerçevenin içinde oynanan bir balon atıcı. Renkli balonlar tahtanın tepesinden sarkar, alttaki top da balonları tek tek fırlatır. Attığın balon kendi renginden en az iki balonun yanına yapışınca bütün grup patlar; yalnızca o gruba tutunan balonlar da aşağı düşer. Tahtayı boşaltınca bölüm biter.\n\nNoktalı bir kılavuz, yan duvarlardan sekmeler dahil atışının bütün yolunu çizer; bir halka da balonun yapışacağı yeri gösterir. Top yalnızca tahtada kalan renkleri doldurur, sıradaki balon da yanında, değiştirilmeyi bekler.\n\nAsıl baskıyı ATIŞ göstergesi kurar. Hiçbir şey patlatmayan her atış bir mermi harcar; mermiler bitince tepede yeni bir balon sırası belirir ve her şeyi aşağı iter. 1. bölüm beş sıra, dört renk ve yedi mermiyle başlar; sonraki bölümlerde sıralar çoğalır, renkler altıya çıkar, mermiler üçe kadar azalır."
+  },
+  "howToPlay": [
+    {
+      "en": "Aim the cannon and fire. The bubble flies straight, bounces off the side walls and sticks to the first bubble or the top it touches.",
+      "tr": "Topu nişan alıp ateşle. Balon dümdüz uçar, yan duvarlardan seker ve ilk değdiği balona ya da tavana yapışır."
+    },
+    {
+      "en": "Make a group of three or more of one colour to pop it. Bubbles left with nothing holding them up fall.",
+      "tr": "Aynı renkten üç ya da daha fazla balonu bir araya getir, grup patlasın. Tutunacak yeri kalmayan balonlar düşer."
+    },
+    {
+      "en": "Shots that pop something are free. Shots that miss empty the SHOTS chip one bullet at a time, and when it is empty NEW ROW! drops a row from the top and the bullets refill.",
+      "tr": "Bir şey patlatan atışlar bedavadır. Boşa giden atışlar ATIŞ göstergesinden birer mermi götürür; göstergedeki mermiler bitince YENİ SIRA! yazar, tepeden bir sıra iner ve mermiler dolar."
+    },
+    {
+      "en": "Pop every bubble for BOARD CLEAR! and a bonus, then the next level begins with a new background.",
+      "tr": "Bütün balonları patlatınca TAHTA TEMİZ! yazar, bonus gelir ve sonraki bölüm yeni bir arka planla başlar."
+    },
+    {
+      "en": "The game ends when a bubble that pops nothing sticks at the red dashed line, or a new row pushes bubbles past it.",
+      "tr": "Hiçbir şey patlatmayan bir balon kırmızı kesikli çizgiye yapışırsa ya da yeni sıra balonları çizginin ötesine iterse oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D turn the cannon, Space, Enter, Z or ↑ fires, and X or Shift swaps the loaded bubble with the next one. Esc or P pauses.",
+      "tr": "← → ya da A / D topu çevirir, Boşluk, Enter, Z ya da ↑ ateşler, X ya da Shift yüklü balonla sıradakini değiştirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch the board above the cannon and drag to aim; lift your finger to fire. Tap the next bubble to the left of the cannon to swap.",
+      "tr": "Topun üstünde tahtaya dokun ve sürükleyerek nişan al; parmağını kaldırınca balon fırlar. Değiştirmek için topun solundaki sıradaki balona dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Go for drops. A popped bubble is worth 10 points times the level, but a bubble that falls is worth 25 times the level, so hit the small groups that hold up big clusters.",
+      "tr": "Düşürmeye oyna. Patlayan balon seviye çarpı 10 puan eder, düşen balon ise seviye çarpı 25; büyük kümeleri tutan küçük gruplara nişan al."
+    },
+    {
+      "en": "Use the walls. A bank shot reaches gaps behind the front bubbles, and the guide shows exactly where it will stick.",
+      "tr": "Duvarları kullan. Duvardan sektirilen atış, öndeki balonların arkasındaki boşluklara ulaşır; kılavuz da tam nereye yapışacağını gösterir."
+    },
+    {
+      "en": "Swapping costs nothing. If the loaded colour has no good spot, swap it and keep it for the next shot.",
+      "tr": "Değiştirmek bedavadır. Yüklü rengin iyi bir yeri yoksa değiştir ve onu bir sonraki atışa sakla."
+    },
+    {
+      "en": "Count the bullets. With one left, take any safe pop instead of a risky long shot, or the ceiling comes down.",
+      "tr": "Mermileri say. Tek mermi kaldıysa riskli uzun atış yerine kesin bir patlatmayı seç, yoksa tavan aşağı iner."
+    },
+    {
+      "en": "Wiping out a colour completely takes it out of the cannon, so later shots come in fewer colours.",
+      "tr": "Bir rengi tahtadan tamamen silersen top o rengi artık yüklemez; sonraki atışlar daha az renkle gelir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Aim guide with wall bounces and a landing ring",
+      "tr": "Duvar sekmelerini ve yapışma yerini gösteren nişan kılavuzu"
+    },
+    {
+      "en": "A swappable next bubble",
+      "tr": "Değiştirilebilen sıradaki balon"
+    },
+    {
+      "en": "A bullet counter that warns before each new row",
+      "tr": "Her yeni sıradan önce uyaran mermi göstergesi"
+    },
+    {
+      "en": "Endless levels with more rows, more colours and fewer free misses",
+      "tr": "Sonu gelmeyen bölümler: daha çok sıra, daha çok renk, daha az boş atış hakkı"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each popped bubble scores 10 times the level and each dropped bubble 25 times the level. Clearing the board adds 500 times the level.",
+        "tr": "Patlayan her balon seviye çarpı 10, düşen her balon seviye çarpı 25 puan getirir. Tahtayı temizlemek seviye çarpı 500 puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No, but level 1 is gentle: four colours, five rows and seven misses before a new row. The difficulty builds level by level.",
+        "tr": "Hayır, ama 1. bölüm yumuşaktır: dört renk, beş sıra ve yeni sıradan önce yedi boş atış hakkı. Zorluk bölüm bölüm artar."
+      }
+    },
+    {
+      "q": {
+        "en": "Does it work on phones?",
+        "tr": "Telefonda oynanıyor mu?"
+      },
+      "a": {
+        "en": "Yes. It is laid out for a phone held upright: drag above the cannon to aim and let go to shoot.",
+        "tr": "Evet. Dik tutulan telefona göre tasarlandı: topun üstünde sürükleyerek nişan alır, bırakınca atarsın."
+      }
+    }
+  ]
+}

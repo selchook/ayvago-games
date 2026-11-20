@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Nine Men's Morris, dokuz taş in Turkish, is one of the oldest board games still played. The board is three nested squares joined at the middle of each side, 24 points in all, and each player has nine stones. Three of your stones on one straight line form a mill, and every mill lets you remove one of the opponent's stones.\n\nA game has three phases. First the players take turns placing stones on empty points until all eighteen are down. Then stones slide along the lines to a free neighbouring point. A player reduced to three stones may fly: any of them can jump to any empty point. You lose when you have only two stones left or no legal move. After 50 moves in a row (both players counted) without a capture, the game is a draw.\n\nSolo, you face a computer rival with 3 lives, playing the light stones, which move first, in odd rounds and the dark ones in even rounds. Each win promotes the rival, from Rookie up to Grandmaster. Online, you play a friend on ayvago.com.",
+    "tr": "Dokuz Taş, bugün hâlâ oynanan en eski tahta oyunlarından biri. Tahta, kenarlarının ortasından birbirine bağlanan iç içe üç kareden oluşur; toplam 24 nokta vardır ve her oyuncunun dokuz taşı olur. Aynı düz çizgi üzerindeki üç taşın değirmen kurar; her değirmen rakibin bir taşını almanı sağlar.\n\nOyun üç evreden oluşur. Önce oyuncular sırayla boş noktalara taş koyar, on sekiz taşın hepsi yerleşene kadar. Sonra taşlar çizgiler boyunca komşu boş noktaya kaydırılır. Üç taşı kalan oyuncu uçabilir: taşlarından herhangi birini istediği boş noktaya atlatır. İki taşın kaldığında ya da hamlen kalmadığında kaybedersin. İki oyuncunun toplam 50 hamlesi boyunca taş alınmazsa oyun berabere biter.\n\nTek başına oynarken 3 canla bilgisayara karşı oynarsın; tek sayılı ellerde ilk oynayan açık renkli taşlar, çift sayılı ellerde koyu taşlar senindir. Her galibiyet rakibi Acemi'den Büyükusta'ya doğru bir basamak yükseltir. Çevrimiçi modda ayvago.com'da bir arkadaşınla oynarsın."
+  },
+  "howToPlay": [
+    {
+      "en": "Placing: put a stone on any empty point. The prompt under the board always says what to do next.",
+      "tr": "Yerleştirme: boş bir noktaya taş koy. Tahtanın altındaki yazı her zaman sıradaki işi söyler."
+    },
+    {
+      "en": "Moving: once both hands are empty, choose one of your stones and then a free point next to it along a line.",
+      "tr": "Oynatma: iki tarafın da elindeki taşlar bitince taşlarından birini, sonra çizgi üzerinde yanındaki boş noktayı seç."
+    },
+    {
+      "en": "Closing a mill brings up MILL!: take one rival stone. Stones in a mill are safe unless every rival stone is in one.",
+      "tr": "Değirmen kurunca DEĞİRMEN! yazar: rakibin bir taşını al. Değirmendeki taşlar alınamaz, rakibin bütün taşları değirmendeyse bu kural kalkar."
+    },
+    {
+      "en": "Down to three stones, TIME TO FLY! appears and your stones can jump to any empty point.",
+      "tr": "Üç taşın kaldığında UÇMA ZAMANI! yazar; taşların istediği boş noktaya atlayabilir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the cursor between points, Space, Enter or Z places, picks or moves a stone and X drops the selection. Esc or P pauses a solo game.",
+      "tr": "Ok tuşları ya da WASD imleci noktalar arasında gezdirir; Boşluk, Enter ya da Z taş koyar, seçer ya da oynatır, X seçimi bırakır. Tek kişilik oyunda Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a point to place. Later, tap your stone and then the point it should go to; after a mill, tap the rival stone to take.",
+      "tr": "Taş koymak için noktaya dokun. Sonra önce taşına, ardından gideceği noktaya dokun; değirmenden sonra alacağın rakip taşa dokun."
+    },
+    "mouse": {
+      "en": "Click points and stones the same way; the cursor follows the pointer.",
+      "tr": "Noktalara ve taşlara aynı şekilde tıkla; imleç fareyi takip eder."
+    }
+  },
+  "tips": [
+    {
+      "en": "During placement, take the side midpoints of the middle square. Each has four neighbouring points, more than any other point, so stones there are hard to box in.",
+      "tr": "Yerleştirirken ortadaki karenin kenar ortalarını tut. Bu noktaların her birinin dört komşusu var, başka hiçbir noktada bu kadar yok; oradaki taşları sıkıştırmak zordur."
+    },
+    {
+      "en": "Do not rush mills while placing. A player whose stones are all blocked once sliding starts loses outright, so keep room to move.",
+      "tr": "Yerleştirme evresinde değirmen kurmak için acele etme. Kaydırma başladığında bütün taşları sıkışan oyuncu doğrudan kaybeder; hareket alanını koru."
+    },
+    {
+      "en": "Build a running mill: a mill with a free point beside it can open and close again every two moves, taking a stone each time.",
+      "tr": "Açılıp kapanan bir değirmen kur: yanında boş nokta olan değirmen her iki hamlede bir açılıp kapanır ve her seferinde bir taş alır."
+    },
+    {
+      "en": "When you remove a stone, take one that is about to complete a mill, not just any free stone.",
+      "tr": "Taş alırken rastgele bir taş değil, değirmeni tamamlamak üzere olan taşı al."
+    }
+  ],
+  "features": [
+    {
+      "en": "Classic rules with placing, sliding and flying",
+      "tr": "Yerleştirme, kaydırma ve uçmalı klasik kurallar"
+    },
+    {
+      "en": "Six computer rivals, from Rookie to Grandmaster",
+      "tr": "Acemi'den Büyükusta'ya altı bilgisayar rakip"
+    },
+    {
+      "en": "Light and dark stones swap every round",
+      "tr": "Açık ve koyu taşlar her elde yer değiştirir"
+    },
+    {
+      "en": "Online games against a friend",
+      "tr": "Arkadaşına karşı çevrimiçi oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each stone you take is worth 10 times the rival's level. A won round adds 100 times the level, 15 for each stone you still have and 25 for each win in your streak; a draw gives 30.",
+        "tr": "Aldığın her taş, rakibin seviyesinin 10 katı puan eder. Kazanılan el seviyenin 100 katı, elinde kalan her taş için 15 ve serindeki her galibiyet için 25 puan ekler; beraberlik 30 puan verir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the rival looks at most two moves ahead, often settles for a weaker move and climbs only three levels. Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da rakip en fazla iki hamle ilerisini hesaplar, çoğu zaman daha zayıf bir hamleyle yetinir ve yalnızca üç seviye çıkar. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Open a room on ayvago.com and send the invite. The starting player gets the light stones and moves first.",
+        "tr": "Evet. ayvago.com'da bir oda açıp daveti gönder. Başlayan oyuncu açık renkli taşları alır ve ilk hamleyi yapar."
+      }
+    }
+  ]
+}

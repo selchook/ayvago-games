@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Dots and Boxes is the pencil-and-paper classic, played on a grid of 6×6 dots: 60 lines to draw and 25 boxes to win. Two players take turns joining two neighbouring dots. Whoever draws the fourth side of a box claims it and must move again, so one turn can sweep up a whole chain of boxes. When all 25 are taken, the player with more boxes wins the round.\n\nOn your own you climb a ladder of computer rivals, one step for every round you win: Rookie, Easy, Sly, Chainer and Master. Rookie sometimes leaves boxes on the table, Easy takes everything but can hand you a third side, and Sly never gives a box away while a safe line is left. Chainer and Master know the chain game: they give up the last two boxes of a chain to keep control, and they work out the final moves exactly. You have three lives; a lost round costs one, a draw costs nothing.\n\nYou can also play a friend online through an ayvago.com room.",
+    "tr": "Kutu Kapmaca, kâğıt kalemle oynanan klasik oyunun 6×6 noktalı hâli: çizilecek 60 çizgi, kapılacak 25 kutu. İki oyuncu sırayla yan yana iki noktayı birleştirir. Bir kutunun dördüncü kenarını çizen kutuyu alır ve bir daha oynar; böylece tek bir turda koca bir kutu zincirini toplamak mümkündür. 25 kutunun hepsi alınınca daha çok kutusu olan eli kazanır.\n\nTek başına oynarken her kazandığın elde bir basamak çıkarak bilgisayar rakiplerini aşarsın: Acemi, Kolay, Kurnaz, Zincirci ve Usta. Acemi bazen açıktaki kutuları almaz, Kolay hepsini alır ama sana üçüncü kenarı verebilir, Kurnaz ise güvenli çizgi kaldıkça hiç kutu vermez. Zincirci ve Usta zincir oyununu bilir: kontrolü elde tutmak için zincirin son iki kutusundan vazgeçer, son hamleleri de eksiksiz hesaplar. Üç canın var; kaybedilen el bir can götürür, beraberlik bir şey götürmez.\n\nayvago.com'da bir oda açıp bir arkadaşınla çevrimiçi de oynayabilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "On YOUR TURN, draw one line between two neighbouring dots.",
+      "tr": "SIRA SENDE yazınca yan yana iki nokta arasına bir çizgi çiz."
+    },
+    {
+      "en": "If the line closes a box, the box is yours and GO AGAIN! gives you another line. If not, the turn passes.",
+      "tr": "Çizgi bir kutuyu kapatırsa kutu senindir ve BİR DAHA! yazısıyla yeni bir çizgi çizersin. Kapatmazsa sıra rakibe geçer."
+    },
+    {
+      "en": "Rounds alternate who starts. When all 25 boxes are claimed, the bigger count wins.",
+      "tr": "Eli kimin başlatacağı her elde değişir. 25 kutunun hepsi alınınca kutusu çok olan kazanır."
+    },
+    {
+      "en": "Win to meet the next rival and grow your streak. Lose and a life goes; with no lives left the run is over.",
+      "tr": "Kazanırsan sıradaki rakibe geçer, serini uzatırsın. Kaybedersen bir can gider; can kalmayınca oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "The arrows or WASD move a highlighted line, X, Shift or Tab flips it between horizontal and vertical, and Space, Enter or Z draws it. Esc or P pauses a solo game.",
+      "tr": "Oklar ya da WASD vurgulu çizgiyi gezdirir, X, Shift ya da Tab onu yatay ile dikey arasında çevirir, Boşluk, Enter ya da Z çizer. Esc ya da P tek kişilik oyunu duraklatır."
+    },
+    "touch": {
+      "en": "Tap between two dots; the line nearest your finger is drawn.",
+      "tr": "İki noktanın arasına dokun; parmağına en yakın çizgi çizilir."
+    },
+    "mouse": {
+      "en": "Move the pointer to light up the nearest free line and click to draw it.",
+      "tr": "İmleci gezdirince en yakın boş çizgi parlar; tıklayınca çizilir."
+    }
+  },
+  "tips": [
+    {
+      "en": "Early on, never draw the third side of a box. Play lines that leave every box with two sides or fewer, and let your rival run out of safe moves first.",
+      "tr": "Oyunun başında hiçbir kutunun üçüncü kenarını çizme. Her kutuyu en fazla iki kenarlı bırakan çizgiler çek ve güvenli hamleleri önce rakibin tüketsin."
+    },
+    {
+      "en": "When only chains are left, someone has to open one. If it must be you, open the shortest chain.",
+      "tr": "Geriye yalnızca zincirler kaldığında birinin zincir açması gerekir. O kişi sen olacaksan en kısa zinciri aç."
+    },
+    {
+      "en": "When your rival opens a long chain, take all but the last two boxes, then draw the far side and leave those two. Your rival takes two boxes but has to open the next chain for you.",
+      "tr": "Rakip uzun bir zincir açınca son iki kutu hariç hepsini al, sonra en uçtaki kenarı çizip o ikisini bırak. Rakip iki kutu alır ama sonraki zinciri senin için açmak zorunda kalır."
+    },
+    {
+      "en": "Boxes taken in a row score more: 10 points for the first closing line, then 15, 20 and so on, so one long chain beats several single boxes.",
+      "tr": "Art arda alınan kutular daha çok puan getirir: ilk kapatan çizgi 10, sonrakiler 15, 20 diye artar; tek bir uzun zincir birkaç tekli kutudan değerlidir."
+    }
+  ],
+  "features": [
+    {
+      "en": "A 6×6 dot board with 25 boxes",
+      "tr": "25 kutulu, 6×6 noktalı tahta"
+    },
+    {
+      "en": "Five computer rivals, from Rookie to Master",
+      "tr": "Acemi'den Usta'ya beş bilgisayar rakibi"
+    },
+    {
+      "en": "Easy mode with gentler rivals for practice",
+      "tr": "Alıştırma için daha yumuşak rakipli Kolay mod"
+    },
+    {
+      "en": "Online matches against a friend",
+      "tr": "Bir arkadaşa karşı çevrimiçi maçlar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Create a room on ayvago.com and send the invite link. An online match is one round of 25 boxes, then the host can call a rematch. Online games cannot be paused.",
+        "tr": "Evet. ayvago.com'da bir oda kur ve davet bağlantısını gönder. Çevrimiçi maç 25 kutuluk tek bir eldir, sonra odayı kuran rövanş isteyebilir. Çevrimiçi oyun duraklatılamaz."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Pick EASY on the menu for a shorter ladder of rivals that often leave boxes on offer and hand out third sides. Easy runs do not count for the leaderboard.",
+        "tr": "Evet. Menüden KOLAY'ı seçersen, sık sık kutu bırakan ve üçüncü kenarı veren rakiplerden oluşan daha kısa bir merdiven gelir. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each of your boxes scores 10, plus 5 for every closing line before it in the same turn. A won round adds 100 times the rival's level, 10 per box of margin and 25 times your win streak.",
+        "tr": "Aldığın her kutu 10 puan, aynı turda ondan önce çizdiğin her kapatan çizgi için 5 puan daha getirir. Kazanılan el; rakibin seviyesi çarpı 100, kutu farkı başına 10 ve galibiyet serisi çarpı 25 puan ekler."
+      }
+    }
+  ]
+}

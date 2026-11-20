@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Bomb Maze is a maze-blasting duel against computer bombers. The arena is a 13 by 15 grid of stone pillars and wooden crates. You start in the top-left corner as the character you picked on ayvago.com, and the other characters play the bots that hunt you. Bombs burn for 2.3 seconds, then blast in a cross along the corridors, stopped by pillars and by the first crate they reach.\n\nA level ends when every bot is gone. Level 1 sends two of them; each new level adds one more, up to six, and makes them faster, longer-ranged, quicker to decide and keener to chase you. The bots dodge fire, open paths through crates and drop bombs when you stand in their line of fire.\n\nAbout a third of the crates hide a power-up. What you collect stays with you for the rest of the run, even after you lose a life. You have three lives, and your own bombs can take them too.",
+    "tr": "Bomba Labirenti, bilgisayarın yönettiği bombacılara karşı oynanan bir labirent düellosu. Alan, taş sütunlar ve tahta sandıklardan oluşan 13'e 15'lik bir ızgara. Sol üst köşeden, ayvago.com'da seçtiğin karakterle başlarsın; seni avlayan robotları ise diğer karakterler canlandırır. Bombalar 2,3 saniye yanar, sonra koridorlar boyunca artı şeklinde patlar; patlamayı sütunlar ve yoluna çıkan ilk sandık durdurur.\n\nBütün robotlar yok olduğunda bölüm biter. 1. bölümde iki robot gelir; her yeni bölüm bir robot daha ekler, en çok altı. Robotlar da her bölümde hızlanır, menzilleri uzar, daha çabuk karar verir ve seni daha istekli kovalar. Ateşten kaçar, sandıkları kırıp yol açar ve patlama hattına girdiğinde bomba bırakırlar.\n\nSandıkların yaklaşık üçte birinden bir güçlendirme çıkar. Topladıkların can kaybetsen bile oyunun sonuna kadar seninle kalır. Üç canın var ve kendi bombaların da onları alabilir."
+  },
+  "howToPlay": [
+    {
+      "en": "Walk the corridors and drop a bomb next to crates or in a bot's path, then step around a corner before it goes off.",
+      "tr": "Koridorlarda yürü, sandıkların yanına ya da bir robotun yoluna bomba bırak, sonra patlamadan önce bir köşeyi dön."
+    },
+    {
+      "en": "Pick up what the crates leave: BOMB+ lets you place one more bomb at a time, RANGE+ makes your blasts one cell longer and SPEED+ makes you walk faster.",
+      "tr": "Sandıklardan çıkanları topla: BOMBA+ aynı anda bir bomba daha koymanı, MENZİL+ patlamanın bir kare uzamasını, HIZ+ daha hızlı yürümeni sağlar."
+    },
+    {
+      "en": "Bombs block the way for everyone, and a blast that reaches another bomb sets it off at once. Use that to cut off a bot or to blow a whole row.",
+      "tr": "Bombalar herkesin yolunu kapatır ve başka bir bombaya ulaşan patlama onu hemen patlatır. Bunu bir robotun yolunu kesmek ya da bütün bir sırayı uçurmak için kullan."
+    },
+    {
+      "en": "Defeat every bot to clear the level. The ROBOT counter at the top right shows how many are left.",
+      "tr": "Bölümü bitirmek için bütün robotları yen. Sağ üstteki ROBOT sayacı kaç tane kaldığını gösterir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or W A S D walk, Space, Z or Enter drops a bomb. Esc or P pauses.",
+      "tr": "Ok tuşları ya da W A S D ile yürürsün; Boşluk, Z ya da Enter bomba bırakır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch the left half and drag to walk with the stick that appears there. The BOMB button on the right drops a bomb.",
+      "tr": "Sol yarıya bas ve sürükle; orada beliren çubukla yürürsün. Sağdaki BOMBA düğmesi bomba bırakır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Before you drop a bomb, know where you will hide. A dead-end corridor with a bomb at its mouth is the most common way to lose a life.",
+      "tr": "Bombayı bırakmadan önce nereye saklanacağını bil. Ağzına bomba koyduğun çıkmaz bir koridor, can kaybetmenin en yaygın yoludur."
+    },
+    {
+      "en": "Only bots caught in your own fire score, at 200 × the level each. Bots can blow themselves and each other up, but you get nothing for those.",
+      "tr": "Yalnızca senin ateşinde yakalanan robotlar puan getirir, her biri 200 × bölüm. Robotlar kendilerini ya da birbirlerini de patlatabilir, ama bundan sana puan çıkmaz."
+    },
+    {
+      "en": "A blast destroys any power-up lying in its path, so collect a fresh one before setting more bombs near it.",
+      "tr": "Patlama yolundaki güçlendirmeleri de yok eder; yeni çıkan bir güçlendirmenin yakınına bomba koymadan önce onu topla."
+    },
+    {
+      "en": "Since power-ups carry over, the early levels are the time to break as many crates as you can. Arriving at level 4 with extra bombs and range makes the bigger packs much easier.",
+      "tr": "Güçlendirmeler sonraki bölüme taşındığı için ilk bölümler mümkün olduğunca çok sandık kırmanın zamanıdır. 4. bölüme fazladan bomba ve menzille gelmek kalabalık robot gruplarını çok kolaylaştırır."
+    }
+  ],
+  "features": [
+    {
+      "en": "Bots that dodge blasts, clear crates and hunt you down",
+      "tr": "Patlamadan kaçan, sandık kıran ve seni avlayan robotlar"
+    },
+    {
+      "en": "Bomb, range and speed power-ups that last the whole run",
+      "tr": "Oyun boyunca kalan bomba, menzil ve hız güçlendirmeleri"
+    },
+    {
+      "en": "Chain reactions between bombs",
+      "tr": "Bombalar arasında zincirleme patlama"
+    },
+    {
+      "en": "Play as your own ayvago.com character",
+      "tr": "Kendi ayvago.com karakterinle oyna"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each crate your bombs break is 10 points and each power-up you pick up 25. A bot caught in your blast is 200 × the level, and clearing a level adds 500 × the level.",
+        "tr": "Bombalarının kırdığı her sandık 10, topladığın her güçlendirme 25 puandır. Patlamana yakalanan robot 200 × bölüm, bölümü bitirmek 500 × bölüm puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play against a friend?",
+        "tr": "Bir arkadaşıma karşı oynayabilir miyim?"
+      },
+      "a": {
+        "en": "No. Bomb Maze is single-player against computer bots; you can compare scores on the leaderboard.",
+        "tr": "Hayır. Bomba Labirenti, bilgisayar robotlarına karşı tek kişilik oynanır; skorlarınızı sıralamada karşılaştırabilirsiniz."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens when I lose a life?",
+        "tr": "Can kaybedince ne oluyor?"
+      },
+      "a": {
+        "en": "You reappear in a safe starting spot after a moment and blink for 2.5 seconds, during which fire cannot hurt you. The level carries on with the bots that are still standing.",
+        "tr": "Kısa bir süre sonra güvenli bir başlangıç noktasında yeniden belirirsin ve 2,5 saniye yanıp sönersin; bu sürede ateş sana işlemez. Bölüm, ayakta kalan robotlarla devam eder."
+      }
+    }
+  ]
+}

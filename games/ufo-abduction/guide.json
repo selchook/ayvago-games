@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "UFO Abduction puts you at the controls of a flying saucer over a farm at night. Animals wander back and forth across the moonlit field, and your tractor beam lifts them up into the ship. Each level sets a quota: seven animals on level 1 and two more on every level after that.\n\nThe beam has a price. While it is on, the saucer flies at about half speed and an energy bar drains; let it run dry and the beam is OVERHEATED until the bar refills to 30%. Heavier animals rise more slowly, and if the beam slips off an animal, or you are hit, it drops back to the ground and walks on.\n\nThe farmers fight back. Missiles launch from the ground after a red warning sign flashes, and turn toward you while they are still below the saucer. From level 2, planes cross the sky after a yellow arrow flashes at the screen edge. The saucer survives two hits; the third brings it down. Each completed level clears the missiles from the sky and, if you are damaged, repairs one hit.",
+    "tr": "UFO Kaçırma'da gece bir çiftliğin üstünde uçan daireyi sen yönetirsin. Ay ışığındaki tarlada hayvanlar bir o yana bir bu yana dolaşır, çekim ışının da onları gemiye çeker. Her seviyenin bir hedefi var: 1. seviyede yedi hayvan, sonraki her seviyede iki fazlası.\n\nIşının bir bedeli var. Işın açıkken daire yaklaşık yarı hızla uçar ve enerji çubuğu azalır; çubuk biterse ışın AŞIRI ISINIR ve çubuk %30'a dolana kadar kullanılamaz. Ağır hayvanlar daha yavaş yükselir; ışın hayvanın üstünden kayarsa ya da vurulursan hayvan yere düşer ve yürümeye devam eder.\n\nÇiftçiler de boş durmaz. Füzeler yerde kırmızı bir uyarı işareti yanıp söndükten sonra fırlar ve daireden aşağıda oldukları sürece sana doğru döner. 2. seviyeden itibaren ekranın kenarında sarı bir ok yanıp söner ve ardından gökyüzünü uçaklar keser. Daire iki darbeye dayanır, üçüncüsü onu düşürür. Tamamlanan her seviye gökyüzündeki füzeleri temizler ve hasarlıysan bir darbeyi onarır."
+  },
+  "howToPlay": [
+    {
+      "en": "Press PLAY. The banner shows the level and its goal, for example Goal: 7 animals.",
+      "tr": "OYNA'ya bas. Açılan yazı seviyeyi ve hedefini gösterir, örneğin Hedef: 7 hayvan."
+    },
+    {
+      "en": "Fly the saucer over an animal and hold the beam on it until it reaches the ship.",
+      "tr": "Daireyi bir hayvanın üstüne getir ve hayvan gemiye ulaşana kadar ışını üstünde tut."
+    },
+    {
+      "en": "Let go of the beam to recharge the ENERGY bar, and dodge missiles and planes.",
+      "tr": "ENERJİ çubuğunun dolması için ışını bırak; füzelerden ve uçaklardan kaç."
+    },
+    {
+      "en": "Reach the quota shown under CAUGHT to start the next level. The game ends on the saucer's third hit.",
+      "tr": "Bir sonraki seviyeye geçmek için KAÇIRILAN altında yazan hedefe ulaş. Daire üçüncü darbeyi alınca oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD fly the saucer; hold Space, Z or Enter to beam. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD daireyi uçurur; ışın için Boşluk, Z ya da Enter'ı basılı tut. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch the left half of the screen and drag to fly with a floating joystick; hold the A button on the right to beam.",
+      "tr": "Ekranın sol yarısına dokunup sürükleyerek beliren joystick ile uç; ışın için sağdaki A düğmesini basılı tut."
+    }
+  },
+  "tips": [
+    {
+      "en": "Catch animals in quick succession for a combo: every catch within 2.5 seconds of the last raises the multiplier, up to ×5. A cow at ×5 is worth 200.",
+      "tr": "Hayvanları peş peşe kaçırarak kombo yap: bir öncekinden sonraki 2,5 saniye içinde yapılan her kaçırma çarpanı artırır, en fazla ×5'e kadar. ×5'te bir inek 200 puan eder."
+    },
+    {
+      "en": "Golden animals appear from level 2. They are worth three times the points and refill the energy bar at once, so go for one when the bar runs low.",
+      "tr": "Altın renkli hayvanlar 2. seviyeden itibaren çıkar. Üç kat puan verir ve enerji çubuğunu bir anda doldururlar; çubuk azaldığında onlara yönel."
+    },
+    {
+      "en": "Release the beam before the bar empties. Overheating locks it until the bar is back at 30%, while letting go early lets it recharge from where it is.",
+      "tr": "Çubuk bitmeden ışını bırak. Aşırı ısınma ışını çubuk %30'a dönene kadar kilitler; erken bırakırsan çubuk kaldığı yerden dolmaya başlar."
+    },
+    {
+      "en": "Missiles only steer toward you while they are below the saucer. Once one passes your height it flies straight on, so a quick sideways dash as it climbs is usually enough.",
+      "tr": "Füzeler yalnızca dairenin altındayken sana doğru döner. Senin yüksekliğini geçen füze dümdüz gider; yükselirken yana doğru hızlı bir kaçış genellikle yeterli olur."
+    },
+    {
+      "en": "Elephants join on level 4 and give 90 points, but rise the slowest of all. Start lifting one only when no warning is flashing.",
+      "tr": "Filler 4. seviyede gelir ve 90 puan verir, ama hepsinden yavaş yükselir. Birini çekmeye ancak hiçbir uyarı yanıp sönmüyorken başla."
+    }
+  ],
+  "features": [
+    {
+      "en": "Nine farm animals from chicks to elephants, each with its own points and weight",
+      "tr": "Civcivden file dokuz hayvan; her birinin kendi puanı ve ağırlığı var"
+    },
+    {
+      "en": "A beam with limited energy that overheats",
+      "tr": "Enerjisi sınırlı ve aşırı ısınabilen bir çekim ışını"
+    },
+    {
+      "en": "Homing missiles and planes, each announced by a warning",
+      "tr": "Her biri bir uyarıyla haber verilen güdümlü füzeler ve uçaklar"
+    },
+    {
+      "en": "Combos up to ×5 and golden animals worth triple",
+      "tr": "×5'e kadar kombolar ve üç kat puanlı altın hayvanlar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "Each animal has a value: chick 10, chicken and duck 15, rabbit 20, pig 25, goat 30, cow 40, horse 45, elephant 90. Golden ones are worth three times that, the combo multiplies it, and finishing a level adds 100 × the level number.",
+        "tr": "Her hayvanın bir değeri var: civciv 10, tavuk ve ördek 15, tavşan 20, domuz 25, keçi 30, inek 40, at 45, fil 90. Altın renkliler üç katı eder, kombo bunu çarpar; bir seviyeyi bitirmek de seviye numarasının 100 katı puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Can the saucer be repaired?",
+        "tr": "Daire onarılabiliyor mu?"
+      },
+      "a": {
+        "en": "Yes. Every level you complete repairs one hit, shown as REPAIRED +1, as long as the saucer is damaged. It never holds more than three.",
+        "tr": "Evet. Daire hasarlıysa tamamladığın her seviye bir darbeyi onarır ve ekranda ONARILDI +1 yazar. Daire en fazla üç cana kadar dolar."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Level 1 has only missiles and four kinds of animal; planes join on level 2, goats and horses on level 3 and elephants on level 4, so the early levels ease you in.",
+        "tr": "Hayır. 1. seviyede yalnızca füzeler ve dört tür hayvan var; uçaklar 2. seviyede, keçiler ve atlar 3. seviyede, filler 4. seviyede gelir, yani ilk seviyeler seni yavaş yavaş alıştırır."
+      }
+    }
+  ]
+}

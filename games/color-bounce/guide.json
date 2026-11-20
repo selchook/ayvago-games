@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Color Bounce is a reaction game about a ball climbing a tower of coloured bars. The ball jumps from bar to bar by itself, always upward; your job is to change its colour while it is in the air so that it matches the spot where it will land. A white marker above the next bar shows exactly where that is. Land on your own colour and the ball bounces on; land on any other and the run ends at once.\n\nThe tower starts with three colours and plain one-colour bars. Higher up it adds a fourth colour at floor 18 and a fifth at floor 45, and new kinds of bar: split bars with two colours side by side whose border can swing, sliding strips of colour that move past the marker, and bars whose centre colour shrinks away to reveal another, sometimes before you land and sometimes after.\n\nEach colour also has its own symbol, a circle, square, triangle, diamond or plus, so you can play by shape as well as by colour.",
+    "tr": "Renkli Zıplama, renkli çubuklardan bir kuleye tırmanan bir topun reaksiyon oyunu. Top çubuktan çubuğa kendi kendine, hep yukarı doğru zıplar; senin işin, top havadayken rengini ineceği noktanın rengine uydurmak. Sıradaki çubuğun üstündeki beyaz işaret o noktayı tam olarak gösterir. Kendi rengine düşersen top zıplamaya devam eder; başka bir renge düşersen oyun anında biter.\n\nKule üç renk ve tek renkli düz çubuklarla başlar. Yukarı çıktıkça 18. katta dördüncü, 45. katta beşinci renk eklenir; yeni çubuk türleri de gelir: sınırı sallanabilen iki renkli bölünmüş çubuklar, işaretin önünden kayan renk şeritleri ve ortadaki rengi eriyip altından başka bir renk çıkan çubuklar; bu erime bazen sen inmeden, bazen indikten sonra biter.\n\nHer rengin kendine ait bir sembolü de var: daire, kare, üçgen, eşkenar dörtgen ya da artı. Böylece yalnızca renge değil şekle bakarak da oynayabilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "Press once to start the climb. From then on the ball jumps to the next bar on its own.",
+      "tr": "Tırmanışı başlatmak için bir kez bas. Sonrasında top sıradaki çubuğa kendi kendine zıplar."
+    },
+    {
+      "en": "While it flies, step the ball's colour forward or back until it matches the colour under the white marker.",
+      "tr": "Top uçarken rengini ileri ya da geri değiştirerek beyaz işaretin altındaki renge uydur."
+    },
+    {
+      "en": "The row of symbols at the bottom shows the colour order and which one the ball has now, so you can see which way is shorter.",
+      "tr": "Alttaki sembol sırası renklerin sırasını ve topun şu anki rengini gösterir; hangi yönün daha kısa olduğunu buradan görürsün."
+    },
+    {
+      "en": "Keep matching. One wrong landing ends the run, so there are no lives to spare.",
+      "tr": "Uydurmaya devam et. Tek bir yanlış iniş oyunu bitirir; harcayacak canın yok."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← , A, ↓ or S switches to the previous colour; → , D, ↑, W, Space or Z to the next. Esc or P pauses.",
+      "tr": "← , A, ↓ ya da S bir önceki renge; → , D, ↑, W, Boşluk ya da Z bir sonraki renge geçirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap the left half of the screen for the previous colour and the right half for the next one.",
+      "tr": "Bir önceki renk için ekranın sol yarısına, bir sonraki için sağ yarısına dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Count the steps, not the colours. With four colours, the one two steps away is the same distance either way, so pick a direction and tap twice.",
+      "tr": "Renkleri değil adımları say. Dört renkte iki adım ötedeki renk iki yönde de aynı uzaklıktadır; bir yön seç ve iki kez dokun."
+    },
+    {
+      "en": "On a sliding strip, change colour late. What matters is the segment under the marker at the moment you land, not when you take off.",
+      "tr": "Kayan şeritte rengi geç değiştir. Önemli olan kalkıştaki değil, indiğin anda işaretin altındaki parçadır."
+    },
+    {
+      "en": "Watch a shrinking centre carefully. If it is melting fast it will be gone before you land, so switch to the edge colour; if it is slow, stay with the centre.",
+      "tr": "Eriyen orta rengi dikkatle izle. Hızla eriyorsa sen inmeden kaybolur, kenar rengine geç; yavaşsa ortadaki renkte kal."
+    },
+    {
+      "en": "The jumps get quicker as you climb. Set the colour early on plain bars to leave time for the next one.",
+      "tr": "Tırmandıkça zıplamalar hızlanır. Düz çubuklarda rengi erkenden ayarla ki bir sonrakine vaktin kalsın."
+    }
+  ],
+  "features": [
+    {
+      "en": "Four kinds of bar, from plain to split, sliding and shrinking",
+      "tr": "Düzden bölünmüşe, kayandan eriyene dört çubuk türü"
+    },
+    {
+      "en": "Colours that join as the tower grows, up to five",
+      "tr": "Kule yükseldikçe eklenen, beşe kadar çıkan renkler"
+    },
+    {
+      "en": "A symbol for every colour, readable without colour vision",
+      "tr": "Renk ayırt etmeden de okunabilen, her renge ait bir sembol"
+    },
+    {
+      "en": "Two-button play: left and right",
+      "tr": "İki tuşla oyun: sol ve sağ"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Every bar you land on is a floor and 10 points, and every tenth floor adds 50 more. The FLOOR counter at the top shows how high you are.",
+        "tr": "İndiğin her çubuk bir kattır ve 10 puan getirir; her onuncu kat 50 puan daha ekler. Üstteki KAT sayacı ne kadar yükseldiğini gösterir."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play if I am colour-blind?",
+        "tr": "Renk körüysem oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. The ball, the bars and the colour row at the bottom all carry the colour's symbol, so matching shapes works just as well.",
+        "tr": "Evet. Top, çubuklar ve alttaki renk sırası rengin sembolünü taşır; şekilleri eşleştirmek de aynı işi görür."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. The first floors use only three colours on plain bars, and the trickier bars arrive gradually, so the opening floors are the warm-up.",
+        "tr": "Hayır. İlk katlarda düz çubuklar ve yalnızca üç renk vardır, zor çubuklar ise yavaş yavaş gelir; ilk katlar ısınma turudur."
+      }
+    }
+  ]
+}

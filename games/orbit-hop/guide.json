@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Orbit Hop is a one-button space game about timing. Your little ship circles a planet on its orbit. Launch it and it shoots off in a straight line, in the direction it was travelling at that instant. If the line crosses another planet's orbit, the ship is caught there and starts circling again, and the camera climbs to show the planets above.\n\nThere is one ship and no second try. Miss every orbit and the ship drifts off the screen, lost in space; fly into a planet's surface and it crashes. The PLANETS counter shows how many new worlds you have reached.\n\nEvery six new planets the level rises. The ship orbits and launches faster, orbits get smaller and the planets sit further apart. From the eighth planet some orbits are drawn in red: once you are on one it shrinks toward the planet and burns the ship up if you stay too long. A few planets later, some start sliding from side to side, and from level 2 comets streak across the screen after a warning sign flashes at its edge.",
+    "tr": "Yörünge Atlayışı, zamanlamaya dayanan tek tuşlu bir uzay oyunu. Küçük gemin bir gezegenin yörüngesinde döner. Fırlattığında, o anda gittiği yönde dümdüz uçar. Bu çizgi başka bir gezegenin yörüngesini keserse gemi oraya yakalanır ve yeniden dönmeye başlar; kamera da yukarıdaki gezegenleri göstermek için tırmanır.\n\nTek bir gemin var, ikinci şans yok. Hiçbir yörüngeye yakalanamazsan gemi ekrandan çıkar ve uzayda kaybolursun; bir gezegenin yüzeyine çarparsan kaza yaparsın. GEZEGEN sayacı kaç yeni dünyaya ulaştığını gösterir.\n\nHer altı yeni gezegende seviye yükselir. Gemi daha hızlı döner ve fırlar, yörüngeler küçülür, gezegenler birbirinden uzaklaşır. Sekizinci gezegenden itibaren bazı yörüngeler kırmızı çizilir: üstüne geçtiğinde gezegene doğru daralır ve fazla kalırsan gemiyi yakar. Birkaç gezegen sonra bazıları sağa sola kaymaya başlar; 2. seviyeden itibaren de ekranın kenarında bir uyarı işareti yanıp söndükten sonra kuyruklu yıldızlar ekranı boydan boya geçer."
+  },
+  "howToPlay": [
+    {
+      "en": "Watch the ship go round. It will always launch along the orbit, the way its nose points.",
+      "tr": "Geminin dönüşünü izle. Gemi her zaman yörüngeye teğet, burnunun gösterdiği yöne fırlar."
+    },
+    {
+      "en": "Launch when the nose lines up with the next planet's ring. The faint band just outside the dotted ring is where the ship gets caught.",
+      "tr": "Burnu bir sonraki gezegenin halkasıyla hizalandığında fırlat. Noktalı halkanın hemen dışındaki silik şerit, geminin yakalandığı bölgedir."
+    },
+    {
+      "en": "Pick up the stars floating between planets on the way.",
+      "tr": "Yolda gezegenlerin arasında süzülen yıldızları topla."
+    },
+    {
+      "en": "Leave red orbits quickly and keep clear of comets. The run ends on the first mistake.",
+      "tr": "Kırmızı yörüngelerden çabuk ayrıl, kuyruklu yıldızlardan uzak dur. İlk hatada oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Space, ↑, W or Z launches the ship; holding the key does not launch again. Esc or P pauses.",
+      "tr": "Boşluk, ↑, W ya da Z gemiyi fırlatır; tuşu basılı tutmak ikinci kez fırlatmaz. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap anywhere on the screen to launch.",
+      "tr": "Fırlatmak için ekranda herhangi bir yere dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Aim for the dotted line itself, not just the band around it: a catch within a few pixels of the orbit adds a PERFECT! bonus.",
+      "tr": "Yalnızca çevresindeki şeride değil, noktalı çizginin kendisine nişan al: yörüngeye birkaç piksel yakın bir yakalanış KUSURSUZ! bonusu getirir."
+    },
+    {
+      "en": "You can fly past a planet to the one beyond it. That DOUBLE HOP! scores 20 instead of 10, but the PLANETS counter still goes up by one.",
+      "tr": "Bir gezegenin üstünden geçip arkasındakine atlayabilirsin. Bu ÇİFT ATLAYIŞ! 10 yerine 20 puan getirir, ama GEZEGEN sayacı yine bir artar."
+    },
+    {
+      "en": "A red orbit closes in about three laps at the start and in under two later on, and the ship flashes red near the end. Take the first good line out rather than waiting for a perfect one.",
+      "tr": "Kırmızı yörünge başta yaklaşık üç turda, ilerleyen seviyelerde iki turdan kısa sürede kapanır; sona doğru gemi kırmızı yanıp söner. Kusursuz çizgiyi bekleme, ilk iyi fırsatta çık."
+    },
+    {
+      "en": "Comets never cross at the height of the planet you are circling, so the danger is in flight. When a warning sign flashes, wait a lap before launching across its line.",
+      "tr": "Kuyruklu yıldızlar etrafında döndüğün gezegenin hizasından hiç geçmez; tehlike uçuştayken başlar. Uyarı işareti yanıp sönünce onun hizasından geçecek bir atış için bir tur bekle."
+    }
+  ],
+  "features": [
+    {
+      "en": "One-button play with a tap or a key",
+      "tr": "Bir dokunuş ya da tek tuşla oynanış"
+    },
+    {
+      "en": "Shrinking red orbits and planets that slide sideways",
+      "tr": "Daralan kırmızı yörüngeler ve yana kayan gezegenler"
+    },
+    {
+      "en": "Comets announced by a warning sign at the screen edge",
+      "tr": "Ekranın kenarındaki uyarı işaretiyle gelen kuyruklu yıldızlar"
+    },
+    {
+      "en": "An endless climb with a new level every six planets",
+      "tr": "Her altı gezegende yeni bir seviyeyle sonsuz tırmanış"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "Each new planet is worth 10 points, 20 when you reach it with a DOUBLE HOP!. A PERFECT! catch adds 5 and every star 5. Landing back on a planet you already visited is safe but scores nothing.",
+        "tr": "Her yeni gezegen 10 puan, ÇİFT ATLAYIŞ! ile ulaştığında 20 puan eder. KUSURSUZ! yakalanış 5, her yıldız 5 puan ekler. Daha önce uğradığın bir gezegene geri dönmek güvenlidir ama puan getirmez."
+      }
+    },
+    {
+      "q": {
+        "en": "How does a run end?",
+        "tr": "Oyun nasıl biter?"
+      },
+      "a": {
+        "en": "In one of four ways: LOST IN SPACE! when the ship leaves the screen, CRASHED! when it hits a planet, ORBIT COLLAPSED! when a red orbit shrinks onto its planet, and COMET HIT!. There are no extra lives.",
+        "tr": "Dört yoldan biriyle: gemi ekrandan çıkarsa UZAYDA KAYBOLDUN!, bir gezegene çarparsa ÇARPTIN!, kırmızı yörünge gezegenin üstüne kapanırsa YÖRÜNGE ÇÖKTÜ!, kuyruklu yıldız çarparsa KUYRUKLU YILDIZ!. Ek can yoktur."
+      }
+    },
+    {
+      "q": {
+        "en": "Why does the ship sometimes circle the other way?",
+        "tr": "Gemi neden bazen ters yöne dönüyor?"
+      },
+      "a": {
+        "en": "The ship keeps the direction it was flying when it was caught, so it can go clockwise around one planet and anticlockwise around the next. Check the direction before you time the launch.",
+        "tr": "Gemi yakalandığı andaki uçuş yönünü korur; bu yüzden bir gezegenin çevresinde saat yönünde, sonrakinde ters yönde dönebilir. Fırlatma zamanını ayarlamadan önce yönü kontrol et."
+      }
+    }
+  ]
+}

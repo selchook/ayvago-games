@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Tile Triple is a match-three puzzle built in layers. Animal tiles are stacked like a small pyramid, each layer set half a tile in from the one below, and only a tile with nothing resting on it can be picked. Every tile you pick moves to a tray of seven slots at the bottom of the screen, where it slides in beside others of its kind. Three of the same animal in the tray vanish together.\n\nThe tray is your only working space, and that is the whole challenge. Seven tiles without a triple among them fill it, and the game ends with TRAY FULL!. So every pick is a commitment: look at what is free now, what is about to be uncovered and how many odd tiles the tray can still take. Covered tiles are drawn darker, which lets you see part of what lies underneath.\n\nThe boards grow level by level, from two layers and three animals at level 1 to five layers, a 7×7 base and twelve kinds of animal. There is no clock, and every board is generated so that it can be cleared.",
+    "tr": "Üçlü Taş, katman katman kurulmuş bir üçlü eşleştirme bulmacası. Hayvan taşları küçük bir piramit gibi üst üste dizilir; her katman alttakinin yarım taş içine oturur ve yalnızca üstünde başka taş olmayan bir taşı alabilirsin. Aldığın her taş ekranın altındaki yedi yuvalı tepsiye geçer ve kendi türünün yanına kayar. Tepside aynı hayvandan üç taş olunca üçü birden yok olur.\n\nTepsi tek çalışma alanın ve bütün mesele de bu. Aralarında üçlü olmayan yedi taş tepsiyi doldurur ve oyun TEPSİ DOLDU! ile biter. Bu yüzden her seçim, kolay kolay geri dönülmeyen bir karar: şu an hangi taşlar açık, hangileri birazdan açılacak, tepsi daha kaç tek taş kaldırır, hepsine bak. Üstü kapalı taşlar daha koyu çizilir, altta ne olduğunu kısmen görebilirsin.\n\nTahtalar bölüm bölüm büyür: 1. bölümde iki katman ve üç hayvan vardır, ileride beş katmana, 7×7 bir tabana ve on iki çeşit hayvana çıkar. Süre sınırı yoktur ve her tahta temizlenebilecek şekilde üretilir."
+  },
+  "howToPlay": [
+    {
+      "en": "Tap a bright tile. Only tiles with nothing on top can be picked; a covered one just shakes.",
+      "tr": "Parlak bir taşa dokun. Yalnızca üstü boş taşlar alınabilir; üstü kapalı taş sadece sallanır."
+    },
+    {
+      "en": "The tile goes to the 7-slot tray next to its twins. Three of a kind clear and score.",
+      "tr": "Taş, yedi yuvalı tepside eşlerinin yanına yerleşir. Aynı türden üç taş patlar ve puan getirir."
+    },
+    {
+      "en": "Empty the board to clear the level and earn a bonus; the next board is bigger. The bar at the top shows how many tiles are left.",
+      "tr": "Tahtayı boşaltınca bölüm biter ve bonus kazanırsın; sıradaki tahta daha büyüktür. Üstteki çubuk kalan taşları gösterir."
+    },
+    {
+      "en": "Watch the tray: it flashes red at five tiles and an alarm sounds at six. Seven means TRAY FULL! and the end of the game.",
+      "tr": "Tepsiye dikkat et: beş taşta kırmızı yanıp söner, altıda alarm çalar. Yedi taş TEPSİ DOLDU! demektir ve oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys move the cursor between free tiles; Space, Enter or Z picks. U, X or Backspace is UNDO, S or C is SHUFFLE. Esc or P pauses.",
+      "tr": "Ok tuşları imleci açık taşlar arasında gezdirir; Boşluk, Enter ya da Z taşı alır. U, X ya da Backspace GERİ AL, S ya da C KARIŞTIR'dır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a free tile to pick it. UNDO and SHUFFLE are the two buttons under the tray, each showing how many uses are left.",
+      "tr": "Almak için açık bir taşa dokun. GERİ AL ve KARIŞTIR, tepsinin altındaki iki düğmedir; üzerlerinde kalan hak sayısı yazar."
+    },
+    "mouse": {
+      "en": "Click tiles and buttons.",
+      "tr": "Taşlara ve düğmelere tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Don't pick a tile unless you can see where its two partners will come from. Two lonely tiles in the tray are fine; five is an emergency.",
+      "tr": "Diğer iki eşinin nereden geleceğini görmediğin bir taşı alma. Tepside yalnız duran iki taş sorun değil; beş taş acil durumdur."
+    },
+    {
+      "en": "Free the upper layers early. A top tile that covers several others opens more choices than a tile at the edge of the base.",
+      "tr": "Üst katmanları erkenden aç. Birkaç taşı örten üstteki bir taş, tabanın kenarındaki bir taştan çok daha fazla seçenek açar."
+    },
+    {
+      "en": "Triples cleared within 3.5 seconds of each other build a combo up to ×5. Gather pairs of several animals in the tray, then finish them one after another.",
+      "tr": "Birbirinden en fazla 3,5 saniye arayla patlayan üçlüler ×5'e kadar kombo yapar. Tepside birkaç hayvanın ikişer taşını biriktir, sonra hepsini peş peşe tamamla."
+    },
+    {
+      "en": "UNDO puts the most recent tile still in the tray back on the board. Use it right after a pick you regret, before more tiles pile up.",
+      "tr": "GERİ AL, tepside duran en son taşı tahtaya geri koyar. Pişman olduğun bir hamleden hemen sonra, tepsi daha fazla dolmadan kullan."
+    },
+    {
+      "en": "SHUFFLE mixes the animals among the tiles still on the board (not in the tray). Save it for when nothing free matches what the tray is waiting for.",
+      "tr": "KARIŞTIR, tahtada kalan taşların hayvanlarını kendi aralarında karıştırır (tepsidekiler değişmez). Açık taşların hiçbiri tepsidekilere uymadığında kullan."
+    }
+  ],
+  "features": [
+    {
+      "en": "Stacked layers from two to five deep",
+      "tr": "İki ile beş kat arası derinlikte katmanlar"
+    },
+    {
+      "en": "A seven-slot tray that sorts twins together",
+      "tr": "Eşleri yan yana dizen yedi yuvalı tepsi"
+    },
+    {
+      "en": "Undo and shuffle that refill as you clear levels",
+      "tr": "Bölüm geçtikçe yenilenen geri alma ve karıştırma hakları"
+    },
+    {
+      "en": "Boards that can always be cleared",
+      "tr": "Her zaman temizlenebilen tahtalar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "5 points for each tile you pick, (30 + 10 × level) for each triple multiplied by the combo, and 200 × level for emptying the board.",
+        "tr": "Aldığın her taş için 5 puan, her üçlü için komboyla çarpılan (30 + 10 × bölüm) puan, tahtayı boşaltınca da 200 × bölüm puan."
+      }
+    },
+    {
+      "q": {
+        "en": "How many undos and shuffles do I get?",
+        "tr": "Kaç geri alma ve karıştırma hakkım var?"
+      },
+      "a": {
+        "en": "The game starts with 3 undos and 2 shuffles. Every cleared level adds one of each, up to 5, and unused ones carry over to the next board.",
+        "tr": "Oyuna 3 geri alma ve 2 karıştırma hakkıyla başlarsın. Her biten bölüm ikisinden de birer hak ekler, en çok 5'e kadar; kullanmadıkların sonraki tahtaya geçer."
+      }
+    },
+    {
+      "q": {
+        "en": "Can every level be won?",
+        "tr": "Her bölüm kazanılabilir mi?"
+      },
+      "a": {
+        "en": "Yes. Each board is generated from an order of picks that never overflows the tray, so a solution always exists from the start. There is no time limit, so you can think every pick through.",
+        "tr": "Evet. Her tahta, tepsiyi asla taşırmayan bir alma sırasından üretilir; yani başlangıçta her zaman bir çözüm vardır. Süre sınırı da olmadığından her hamleyi rahatça düşünebilirsin."
+      }
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Secret Word takes the familiar six-guess word puzzle and turns it into a run. You type a guess, and each letter is coloured: green if it is in the right place, amber if the word contains it somewhere else, grey if it is not in the word at all. Repeated letters are marked fairly, so a letter that appears once in the answer lights up only once.\n\nThe words keep coming. The first three have four letters, words 4 to 9 have five, and from word 10 on they have six. Each word has its own clock: 120 seconds for the first, then 4 seconds less for every word in your current streak, down to 60. Solve a word to start the next one at once. Run out of guesses or time and the answer is shown, you lose one of your 3 lives and the streak resets.\n\nThe game is in both languages with its own word lists: Turkish puzzles use the full Turkish alphabet, English ones the English alphabet.",
+    "tr": "Gizli Kelime, altı tahminle oynanan o tanıdık kelime bulmacasını art arda gelen bir koşuya çevirir. Bir tahmin yazarsın ve her harf renklenir: doğru yerdeyse yeşil, kelimede var ama başka yerdeyse turuncu, kelimede hiç yoksa gri. Tekrarlanan harfler adil işaretlenir; cevapta bir kez geçen harf yalnızca bir kez renklenir.\n\nKelimeler durmadan gelir. İlk üçü dört harfli, 4. ile 9. arası beş harfli, 10. kelimeden sonrası altı harflidir. Her kelimenin kendi süresi vardır: ilk kelimede 120 saniye, sonra mevcut serindeki her kelime için 4 saniye eksik, en az 60 saniye. Kelimeyi bulunca sıradaki hemen başlar. Tahminlerin ya da süren biterse cevap gösterilir, 3 canından biri gider ve seri sıfırlanır.\n\nOyunun iki dili de kendi kelime listeleriyle gelir: Türkçe bulmacalar Türk alfabesinin bütün harflerini, İngilizce bulmacalar İngiliz alfabesini kullanır."
+  },
+  "howToPlay": [
+    {
+      "en": "Type a real word of the right length and press Enter. Words that are not in the list are refused without costing a guess.",
+      "tr": "Doğru uzunlukta gerçek bir kelime yaz ve Enter'a bas. Listede olmayan kelimeler reddedilir ama tahmin hakkından düşmez."
+    },
+    {
+      "en": "Read the colours, which also appear on the on-screen keyboard, and use them in the next guess.",
+      "tr": "Renklere bak; ekran klavyesinde de görünürler. Sonraki tahminde onları kullan."
+    },
+    {
+      "en": "Find the word within six guesses before the clock bar empties.",
+      "tr": "Süre çubuğu bitmeden kelimeyi altı tahminde bul."
+    },
+    {
+      "en": "When you are stuck, spend a joker: REVEAL fixes one correct letter in its place, DROP 5 greys out five letters that are not in the word.",
+      "tr": "Takılınca bir joker harca: HARF AÇ doğru bir harfi yerine sabitler, 5 HARF AT kelimede olmayan beş harfi griye çevirir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Type letters, Backspace deletes, Enter guesses, 1 uses REVEAL and 2 uses DROP 5. Esc pauses. In Turkish you can type C, G, I, O, S or U for Ç, Ğ, İ, Ö, Ş or Ü; the game picks the matching word.",
+      "tr": "Harfleri yaz; Backspace siler, Enter tahmin eder, 1 HARF AÇ'ı, 2 de 5 HARF AT'ı kullanır. Esc duraklatır. Klavyende Türkçe harf yoksa Ç, Ğ, İ, Ö, Ş ve Ü yerine C, G, I, O, S ve U yazabilirsin; oyun uyan kelimeyi bulur."
+    },
+    "touch": {
+      "en": "Use the on-screen keyboard, which has the full alphabet of your language, and tap the joker buttons above it.",
+      "tr": "Dilinin bütün harflerini içeren ekran klavyesini kullan, üstündeki joker düğmelerine dokun."
+    },
+    "mouse": {
+      "en": "Click the on-screen keys and jokers the same way.",
+      "tr": "Ekran klavyesine ve jokerlere aynı şekilde tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Open with a word full of different common letters. A good first guess often settles most of the vowels.",
+      "tr": "Farklı ve sık kullanılan harflerle dolu bir kelimeyle başla. İyi bir ilk tahmin çoğu zaman sesli harflerin büyük kısmını çözer."
+    },
+    {
+      "en": "Speed and spare guesses both pay: a solved word scores 100, plus 50 for every unused guess and 1 for every second left.",
+      "tr": "Hem hız hem kalan haklar puan getirir: bulunan kelime 100 puan, artan her tahmin için 50, kalan her saniye için 1 puan eder."
+    },
+    {
+      "en": "Guard the streak. Each word in a row raises the multiplier by 0.25, up to ×3, but one miss sends it back to the start.",
+      "tr": "Seriyi koru. Art arda bulduğun her kelime çarpanı 0,25 artırır, en çok ×3'e kadar; ama tek bir kaçırma onu başa döndürür."
+    },
+    {
+      "en": "You start with one joker and earn another every three solved words, holding three at most. Spending one to save a long streak is usually worth it.",
+      "tr": "Bir jokerle başlarsın, her üç kelimede bir joker daha kazanırsın; en fazla üç tane tutabilirsin. Uzun bir seriyi kurtarmak için joker harcamak çoğu zaman değer."
+    }
+  ],
+  "features": [
+    {
+      "en": "Endless run of 4-, 5- and 6-letter words",
+      "tr": "4, 5 ve 6 harfli kelimelerle bitmeyen koşu"
+    },
+    {
+      "en": "Separate Turkish and English word lists",
+      "tr": "Ayrı Türkçe ve İngilizce kelime listeleri"
+    },
+    {
+      "en": "Streak multiplier up to ×3 and a shrinking clock",
+      "tr": "×3'e kadar seri çarpanı ve kısalan süre"
+    },
+    {
+      "en": "Two kinds of joker",
+      "tr": "İki çeşit joker"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How does a run end?",
+        "tr": "Oyun nasıl biter?"
+      },
+      "a": {
+        "en": "You have 3 lives. Every word you fail to find, by using all six guesses or running out of time, costs one. When the last life is gone, the run is over.",
+        "tr": "3 canın var. Altı tahmini bitirerek ya da süreyi doldurarak bulamadığın her kelime bir cana mal olur. Son can da gidince oyun biter."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play in Turkish on an English keyboard?",
+        "tr": "Türkçe harfi olmayan bir klavyeyle Türkçe oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Type the plain letter and the game reads it as the Turkish one where that makes a valid word, so KOSE is accepted as KÖŞE. The on-screen keyboard also has every Turkish letter.",
+        "tr": "Evet. Noktasız ya da çengelsiz harfi yazman yeterli; geçerli bir kelime çıkıyorsa oyun onu Türkçe harf olarak okur, KOSE yazarsan KÖŞE kabul edilir. Ekran klavyesinde de bütün Türkçe harfler var."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No, but the start is gentle: three four-letter words and two full minutes for the first one.",
+        "tr": "Hayır, ama başlangıç yumuşaktır: ilk üç kelime dört harfli ve ilki için tam iki dakikan var."
+      }
+    }
+  ]
+}

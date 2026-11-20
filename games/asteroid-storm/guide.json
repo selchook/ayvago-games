@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Asteroid Storm puts you in a small ship floating in a field of drifting rocks. You turn, fire the engine and coast; the ship keeps its momentum and only slowly loses speed, and everything that leaves one edge of the screen comes back on the opposite side, your lasers included.\n\nEach wave starts with large rocks (four in wave 1, one more per wave up to eleven). A large rock breaks into two medium ones, a medium rock into two small ones, so one hit on a big rock fills the screen with faster debris. From wave 2 a red UFO cruises across and fires in random directions; from wave 3 a smaller yellow one can appear instead, and it aims at you.\n\nYou start with three lives and earn another every 10,000 points. Touching a rock, a UFO or an enemy shot costs a life; you reappear in the centre behind a short shield. The run ends when the last life is lost.",
+    "tr": "Göktaşı Fırtınası'nda sürüklenen kayalarla dolu bir alanda süzülen küçük bir gemiyi kullanırsın. Döner, motoru ateşler ve kayarak ilerlersin; gemi hızını korur, ancak yavaş yavaş yavaşlar. Ekranın bir kenarından çıkan her şey, lazerlerin de dahil, karşı kenardan geri girer.\n\nHer dalga büyük kayalarla başlar: 1. dalgada dört tane, sonra her dalgada bir fazlası, en çok on bir. Büyük kaya iki orta kayaya, orta kaya iki küçük kayaya bölünür; yani büyük bir kayaya tek atış ekranı daha hızlı parçalarla doldurur. 2. dalgadan itibaren kırmızı bir UFO geçer ve rastgele yönlere ateş eder; 3. dalgadan sonra yerine sana nişan alan küçük sarı bir UFO da gelebilir.\n\nÜç canla başlarsın ve her 10.000 puanda bir can daha kazanırsın. Kayaya, UFO'ya ya da düşman atışına değmek bir can götürür; kısa bir kalkanın ardında ortada yeniden belirirsin. Son can gidince oyun biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Turn the ship toward a rock and fire. Holding fire keeps shooting, with up to six lasers in the air at once.",
+      "tr": "Gemiyi bir kayaya çevir ve ateş et. Ateşi basılı tutarsan sürekli atar; havada aynı anda en fazla altı lazer olur."
+    },
+    {
+      "en": "Thrust to move. The ship drifts after you let go, so short bursts give the most control.",
+      "tr": "İlerlemek için itki ver. Bıraktıktan sonra gemi kaymaya devam eder; en iyi kontrolü kısa itkiler sağlar."
+    },
+    {
+      "en": "Break every rock down to dust. When the screen is empty and no UFO is left, the wave is clear and the next one begins.",
+      "tr": "Her kayayı toza çevirene kadar parçala. Ekranda kaya ve UFO kalmadığında dalga temizlenir ve sıradaki başlar."
+    },
+    {
+      "en": "In a tight spot, jump to HYPERSPACE: the ship vanishes and reappears at a random spot, with a three-second wait before the next jump.",
+      "tr": "Sıkıştığında HİPERUZAY'a atla: gemi kaybolur ve rastgele bir noktada belirir; bir sonraki atlayış için üç saniye beklemen gerekir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D turn, ↑ or W thrusts, Space, Z or Enter fires, X or Shift jumps to hyperspace. Esc or P pauses.",
+      "tr": "← → ya da A / D döndürür, ↑ ya da W itki verir; Boşluk, Z ya da Enter ateş eder, X ya da Shift hiperuzaya atlar. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "The stick on the left half points the ship where you push it; push it all the way out to thrust in that direction. A on the right fires, B jumps to hyperspace.",
+      "tr": "Sol yarıdaki çubuk gemiyi ittiğin yöne çevirir; sonuna kadar itersen o yöne itki verir. Sağdaki A ateş eder, B hiperuzaya atlar."
+    }
+  },
+  "tips": [
+    {
+      "en": "Small rocks are worth 100 points against 20 for a large one, but they are also the fastest. Finish the pieces of one rock before you break the next big one.",
+      "tr": "Küçük kayalar 100 puan eder, büyükler ise 20; ama en hızlı onlardır. Yeni bir büyük kayayı kırmadan önce elindekinin parçalarını bitir."
+    },
+    {
+      "en": "Your shots wrap around the edges too, so you can hit a rock on the far side by firing away from it.",
+      "tr": "Atışların da kenarlardan dolanır; uzaktaki bir kayayı ters yöne ateş ederek vurabilirsin."
+    },
+    {
+      "en": "The small yellow UFO is worth 1,000 points and aims at you. Shoot it early while it is still crossing, and keep moving so its shots miss.",
+      "tr": "Küçük sarı UFO 1.000 puan eder ve sana nişan alır. Ekrana girer girmez vurmaya çalış, atışları ıskalasın diye de hareket hâlinde kal."
+    },
+    {
+      "en": "Hyperspace is a gamble: you may land next to a rock. Use it to escape, not as a habit, and you get 0.6 seconds of cover when you arrive.",
+      "tr": "Hiperuzay bir kumardır, bir kayanın dibine de düşebilirsin. Alışkanlık değil kaçış yolu olarak kullan; vardığında 0,6 saniyelik bir koruman olur."
+    }
+  ],
+  "features": [
+    {
+      "en": "Rocks that split from large to medium to small",
+      "tr": "Büyükten ortaya, ortadan küçüğe bölünen kayalar"
+    },
+    {
+      "en": "Momentum-based flight with wrap-around edges",
+      "tr": "Ataletli uçuş ve kenarlardan dolanan ekran"
+    },
+    {
+      "en": "Two kinds of UFO, one of them a sharpshooter",
+      "tr": "Biri keskin nişancı iki tür UFO"
+    },
+    {
+      "en": "Hyperspace jumps and an extra life every 10,000 points",
+      "tr": "Hiperuzay atlayışı ve her 10.000 puanda ek can"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A large rock is 20, a medium one 50 and a small one 100. The red UFO is 200, the yellow one 1,000. Clearing a wave adds 100 × the wave number. A rock that you ram still scores, but costs you a life.",
+        "tr": "Büyük kaya 20, orta 50, küçük 100 puandır. Kırmızı UFO 200, sarı UFO 1.000 puan eder. Bir dalgayı temizlemek 100 × dalga numarası ekler. Çarptığın kaya da puan getirir ama sana bir cana mal olur."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives five lives, slower rocks, waves that grow harder at half the pace, an extra life every 5,000 points, UFOs only from wave 3 and firing less often, and a longer shield after each respawn. Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da beş canın olur; kayalar daha yavaştır, dalgalar yarı hızda zorlaşır, her 5.000 puanda bir can kazanırsın, UFO'lar ancak 3. dalgada gelir ve daha seyrek ateş eder, yeniden doğunca kalkanın daha uzun sürer. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Why doesn't the next wave start?",
+        "tr": "Sıradaki dalga neden başlamıyor?"
+      },
+      "a": {
+        "en": "A wave only ends when every rock is gone and no UFO is on screen. Shoot the UFO or wait until it flies off, and the next wave follows.",
+        "tr": "Dalga ancak bütün kayalar yok olduğunda ve ekranda UFO kalmadığında biter. UFO'yu vur ya da ekrandan çıkmasını bekle, sıradaki dalga hemen gelir."
+      }
+    }
+  ]
+}

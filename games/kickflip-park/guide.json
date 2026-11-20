@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Kickflip Park is a 3D skateboarding game played in short, free sessions. You get two minutes in a park with no set route: push for speed, ollie onto ledges, flip and grab in the air, spin, grind rails and link it all with manuals, riding as the character you picked on Ayvago.\n\nEvery trick joins a combo worth its tricks' points times the number of tricks, and it only pays once you ride away: bail and it is gone. A perfect landing adds 20%, a sketchy one takes 20% off. Banked combos fill the special meter, which opens four flashy moves such as the Comet Twist.\n\nThere are three parks: Maple Plaza with its benches and stairs, Timber Yard with a half-pipe, a bowl and a funbox, and Skyline Roofs, where you jump the gaps between buildings. Each has eight goals and five hidden mixtapes. Three goals open the next park, and your progress unlocks 14 board skins.",
+    "tr": "Kaykay Parkı, kısa ve serbest seanslarla oynanan bir 3B kaykay oyunu. Parkta belirli bir rota yok, iki dakikan var: itip hızlan, ollie ile banklara çık, havada flip ve tutuş yap, dön, raylarda grind yap ve hepsini manuelle birbirine bağla. Ayvago'da seçtiğin karakterle kayarsın.\n\nHer hareket bir komboya eklenir; kombonun değeri, hareket puanlarının toplamı çarpı hareket sayısıdır. Puan ancak yere inip yoluna devam edince yazılır: düşersen kombo tamamen gider. MÜKEMMEL iniş %20 ekler, SALLANTILI iniş %20 götürür. Yazılan kombolar ÖZEL çubuğunu doldurur; çubuk dolunca Kuyruklu Yıldız gibi dört gösterişli hareket açılır.\n\nÜç park var: banklı, merdivenli Akçaağaç Meydanı; U-rampası, havuzu ve funbox'ı olan Kereste Avlusu; binalar arasındaki boşlukları atladığın Gökdelen Çatıları. Her parkta sekiz hedef ve beş kayıp kaset bulunur. Üç hedef sonraki parkı açar; ilerlemen 14 kaykay tasarımının kilidini kaldırır."
+  },
+  "howToPlay": [
+    {
+      "en": "Pick a park and board under PARK & BOARD and press PLAY. Your first session opens with four short lessons.",
+      "tr": "PARK & KAYKAY'dan parkını ve kaykayını seç, OYNA'ya bas. İlk seansın dört kısa dersle açılır."
+    },
+    {
+      "en": "Push to build speed, hold the ollie button to crouch and let go to pop. A longer crouch jumps higher.",
+      "tr": "Hızlanmak için it; çömelmek için ZIPLA tuşunu basılı tut, bırakınca zıpla. Ne kadar uzun çömelirsen o kadar yükseğe sıçrarsın."
+    },
+    {
+      "en": "In the air, flip, grab or spin, then straighten the board before the wheels touch. Over a rail or ledge, hold the grind button to lock on.",
+      "tr": "Havada flip, tutuş ya da dönüş yap, tekerlekler yere değmeden kaykayı düzelt. Bir rayın ya da bankın üstündeyken grind tuşunu basılı tutarak kilitlen."
+    },
+    {
+      "en": "Right after a landing, start a manual to carry the combo on to the next trick, and keep it balanced on the meter.",
+      "tr": "İndikten hemen sonra manuele geç ki kombo bir sonraki harekete taşınsın; DENGE çubuğunda dengede kal."
+    },
+    {
+      "en": "At zero the trick in progress may still land, and finished goals stay done for good.",
+      "tr": "Süre sıfırlandığında o anki hareketin hâlâ inebilir; tamamladığın hedefler kalıcıdır."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrows or WASD steer, push and brake, and spin you in the air. Space: hold and let go to ollie. J flips, K grabs (an arrow picks which), L grinds or starts a manual, J and K together launch a special.",
+      "tr": "Oklar ya da WASD yön verir, iter, fren yapar, havada da döndürür. Boşluk: basılı tut, bırakınca zıpla. J flip, K tutuş (hangisi olacağını bir ok seçer), L grind ya da manuel, J ile K birlikte özel hareket."
+    },
+    "touch": {
+      "en": "A floating stick under the left thumb steers and pushes. Hold OLLIE and let go to jump, or keep holding near a rail to grind. Swipe on the right to flip, swipe and hold to grab. MANUAL and SPECIAL have their own buttons.",
+      "tr": "Sol başparmağın altındaki yüzen çubuk yön verir ve iter. ZIPLA'yı basılı tut, bırakınca zıpla; rayın yanında basmaya devam edersen grind yaparsın. Sağda kaydırınca flip, kaydırıp tutunca tutuş. MANUEL ve ÖZEL'in kendi tuşları var."
+    }
+  },
+  "tips": [
+    {
+      "en": "Length beats size: the sum is multiplied by the trick count, so five small tricks outscore two big ones. A manual between airs is the cheapest way to add tricks.",
+      "tr": "Uzunluk, büyüklükten iyidir: toplam hareket sayısıyla çarpıldığı için beş küçük hareket iki büyük hareketten çok getirir. İki hava arasında manuel yapmak, hareket eklemenin en ucuz yolu."
+    },
+    {
+      "en": "Don't repeat yourself: the same trick is worth 30% less each time in one combo. The exception is a flip done again at once, which becomes a Double or Triple.",
+      "tr": "Kendini tekrarlama: aynı kombo içinde aynı hareket her seferinde %30 daha az eder. İstisna, hemen tekrarlanan flip'tir; Çift ya da Üçlü olur."
+    },
+    {
+      "en": "A flip still turning at touchdown means a sketchy landing or a bail. Flip early in the jump and save spins and grabs for the way down.",
+      "tr": "Yere değerken hâlâ dönen flip, sallantılı iniş ya da düşme demektir. Flip'i sıçrayışın başında at, dönüşleri ve tutuşları inişe sakla."
+    },
+    {
+      "en": "A bail empties the special meter, and the meter also drains slowly between combos. Spend a full meter soon, ideally at the end of a long line.",
+      "tr": "Düşmek ÖZEL çubuğunu boşaltır, çubuk kombolar arasında da yavaşça azalır. Dolu çubuğu bekletme, tercihen uzun bir çizginin sonunda kullan."
+    }
+  ],
+  "features": [
+    {
+      "en": "Flips, grabs, spins, five grinds, two manuals and four specials",
+      "tr": "Flipler, tutuşlar, dönüşler, beş grind, iki manuel ve dört özel hareket"
+    },
+    {
+      "en": "Three parks with eight goals and five mixtapes each",
+      "tr": "Her birinde sekiz hedef ve beş kaset olan üç park"
+    },
+    {
+      "en": "Landing quality that grows or shrinks your combo",
+      "tr": "Komboyu büyüten ya da küçülten iniş kalitesi"
+    },
+    {
+      "en": "14 unlockable board skins",
+      "tr": "Kilidi açılan 14 kaykay tasarımı"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives you 2:30 instead of 2:00, forgives crooked and late landings, steadies grinds and manuals, fills the special meter faster and lowers score and combo goals by 30%. Easy sessions stay off the leaderboard, but their goals count.",
+        "tr": "Evet. Kolay'da 2:00 yerine 2:30 süren olur; eğri ve geç inişler affedilir, grind ve manueller daha dengeli kalır, ÖZEL çubuğu daha çabuk dolar, puan ve kombo hedefleri %30 düşer. Kolay seanslar sıralamaya girmez ama hedefleri sayılır."
+      }
+    },
+    {
+      "q": {
+        "en": "How do I unlock the other parks?",
+        "tr": "Diğer parkları nasıl açarım?"
+      },
+      "a": {
+        "en": "Finish three goals in Maple Plaza to open Timber Yard, then three there to open Skyline Roofs. Goals are saved between sessions.",
+        "tr": "Kereste Avlusu için Akçaağaç Meydanı'nda, Gökdelen Çatıları için de Kereste Avlusu'nda üç hedef tamamla. Hedefler seanstan seansa saklanır."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens if I fall off a roof?",
+        "tr": "Çatıdan düşersem ne olur?"
+      },
+      "a": {
+        "en": "You lose the combo in progress and the special meter, and you are put back on the last roof you rode safely. The clock keeps running.",
+        "tr": "O anki kombonu ve ÖZEL çubuğunu kaybedersin, sonra en son güvenle kaydığın çatıya geri konursun. Süre işlemeye devam eder."
+      }
+    }
+  ]
+}

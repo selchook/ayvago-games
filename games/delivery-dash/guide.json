@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Delivery Dash puts you behind the wheel of a small van in a 3D town. Orders appear at six kinds of shop: pizza, flowers, cakes, parcels, burgers and ice cream. Pull into the shop's glowing bay to load them, then into the marked house's bay to hand them over. Every order runs on its own clock; longer trips pay a higher fare, and quick, undamaged deliveries earn bigger tips.\n\nThe campaign has 18 shifts in Old Town, Riverside and Hilltop. Each shift adds one new thing: walkers at crosswalks, fragile cakes and flowers, several orders at once, rush-hour traffic, gold VIP orders, humped bridges, one-way streets, roadworks, rainy nights and Hilltop's ramps. Your earnings against the shift's targets give one to three stars.\n\nEndless Rush starts in Old Town with 90 seconds on the clock. Every delivery adds time while traffic thickens, evening falls and rain sets in. Everything you earn goes into your wallet for the garage.",
+    "tr": "Sipariş Var!, 3D bir kasabada küçük bir minibüsün direksiyonuna geçirir seni. Siparişler altı çeşit dükkânda belirir: pizza, çiçek, pasta, kargo paketi, burger ve dondurma. Yüklemek için dükkânın parlayan cebine, teslim etmek için işaretli evin cebine girersin. Her siparişin kendi süresi işler; uzak adresler daha çok öder, hızlı ve hasarsız teslimat daha büyük bahşiş getirir.\n\nKampanya Eski Şehir, Nehir Kıyısı ve Tepebaşı'nda 18 vardiyadan oluşur. Her vardiya yeni bir şey ekler: yaya geçitlerindeki yayalar, kırılacak pasta ve çiçekler, aynı anda birden çok sipariş, trafik saati, altın VIP siparişler, kemer köprüler, tek yön sokaklar, yol çalışmaları, yağmurlu geceler ve Tepebaşı'nın rampaları. Kazancın vardiyanın hedefleriyle karşılaştırılır, bir ile üç yıldız alırsın.\n\nSonsuz Telaş, Eski Şehir'de 90 saniyeyle başlar. Her teslimat süre kazandırır; bu arada trafik yoğunlaşır, akşam olur, yağmur başlar. Kazandığın her şey garaj için cüzdanına girer."
+  },
+  "howToPlay": [
+    {
+      "en": "Open the town map from the menu (or press M), pick a shift or Endless Rush, choose Easy or Normal and press PLAY.",
+      "tr": "Menüden şehir haritasını aç (ya da M'ye bas), bir vardiya ya da Sonsuz Telaş seç, Kolay ya da Normal'i belirleyip OYNA'ya bas."
+    },
+    {
+      "en": "Follow the arrow to a shop and stop in its glowing bay. Waiting orders load by themselves, as many as the van has room for (two in the starting van).",
+      "tr": "Oku izleyip dükkâna git ve parlayan cebinde dur. Bekleyen siparişler minibüste ne kadar yer varsa o kadar kendiliğinden yüklenir (ilk minibüs iki sipariş alır)."
+    },
+    {
+      "en": "Drive to the marked house and stop in its bay to deliver. The panel on the left shows each order and the time it has left.",
+      "tr": "İşaretli eve sür ve teslim etmek için cebinde dur. Soldaki panel her siparişi ve kalan süresini gösterir."
+    },
+    {
+      "en": "Drive through coffee cups on the street to store TURBO, up to three, and fire one for a short burst of speed.",
+      "tr": "Sokaktaki kahve bardaklarının üstünden geçerek en fazla üç TURBO biriktir ve kısa bir hız patlaması için birini ateşle."
+    },
+    {
+      "en": "When the clock runs out, your earnings turn into stars. A shift with no stars has to be played again before the next one opens.",
+      "tr": "Süre bitince kazancın yıldıza dönüşür. Hiç yıldız almadığın vardiyayı tekrar oynamadan sıradaki açılmaz."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "↑ or W accelerates, ↓ or S brakes and reverses, ← → or A / D steer, Space or Z fires turbo and H sounds the horn. Esc or P pauses.",
+      "tr": "↑ ya da W gaz, ↓ ya da S fren ve geri vites, ← → ya da A / D direksiyon; Boşluk ya da Z turbo, H korna. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Your left thumb steers with arrow buttons, an on-screen wheel or by tilting the phone. The GAS and BRAKE pedals and the TURBO and HORN buttons are on the right.",
+      "tr": "Sol başparmak ok düğmeleriyle, ekrandaki direksiyonla ya da telefonu eğerek yönlendirir. GAZ ve FREN pedalları ile TURBO ve KORNA düğmeleri sağdadır."
+    }
+  },
+  "tips": [
+    {
+      "en": "A loaded order never vanishes: once late it still pays 40% of the fare, without a tip. An order waiting at a shop is cancelled when its time is up.",
+      "tr": "Yüklediğin sipariş kaybolmaz: gecikse de ücretin %40'ını öder, yalnızca bahşiş vermez. Dükkânda bekleyen sipariş ise süresi bitince iptal olur."
+    },
+    {
+      "en": "Cakes and flowers lose condition on every bump and humped bridge, and one that is three-quarters ruined pays only half. Slow down before bridges and ramps.",
+      "tr": "Pasta ve çiçek her tümsekte ve kemer köprüde hasar alır; dörtte üçü bozulan sipariş ücretin yarısını öder. Köprü ve rampalardan önce yavaşla."
+    },
+    {
+      "en": "A crash takes three seconds off every order you carry and damages the cargo. Scaring a pedestrian at speed costs a $2 fine.",
+      "tr": "Bir kaza taşıdığın her siparişin süresinden üç saniye götürür ve kargoya zarar verir. Hızla geçip bir yayayı korkutmanın cezası ₺2'dir."
+    },
+    {
+      "en": "VIP orders pay 2.2 times the fare on a 30% shorter clock, and ice cream melts faster too. Drop those off first.",
+      "tr": "VIP siparişler ücretin 2,2 katını öder ama süreleri %30 kısadır; dondurmanın süresi de kısadır. Bunları önce bırak."
+    }
+  ],
+  "features": [
+    {
+      "en": "18 shifts across Old Town, Riverside (10 stars) and Hilltop (24 stars)",
+      "tr": "Eski Şehir, Nehir Kıyısı (10 yıldız) ve Tepebaşı'nda (24 yıldız) 18 vardiya"
+    },
+    {
+      "en": "Endless Rush, where every delivery adds time",
+      "tr": "Her teslimatın süre kazandırdığı Sonsuz Telaş"
+    },
+    {
+      "en": "Garage upgrades: Engine, Handling, Capacity and Padding",
+      "tr": "Garajda Motor, Yol tutuş, Kapasite ve Koruma geliştirmeleri"
+    },
+    {
+      "en": "Three vehicles, from the two-order Van to the four-order Truck, plus seven paints",
+      "tr": "İki siparişlik Minibüs'ten dört siparişlik Kamyon'a üç araç ve yedi boya"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy, order clocks are 40% longer, traffic is lighter and slower, fragile cargo takes less than half the damage and a crash costs 1.5 seconds. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da sipariş süreleri %40 uzun, trafik daha seyrek ve yavaş; kırılacak kargo yarıdan az hasar alır, kaza 1,5 saniye götürür. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "What should I buy in the garage first?",
+        "tr": "Garajda önce ne almalıyım?"
+      },
+      "a": {
+        "en": "Capacity (+1 order per level) or a bigger vehicle carries more per trip: the Flatbed ($450) takes three orders, the Truck ($1,100) four but handles more slowly. Padding cuts cargo damage by 20% per level.",
+        "tr": "Kapasite (her seviye +1 sipariş) ya da büyük araç her seferde daha çok taşır: Kasalı Kamyonet (₺450) üç, Kamyon (₺1.100) dört sipariş alır ama daha ağır yol alır. Koruma her seviyede hasarı %20 azaltır."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play it on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes. It is played upright, with the steering on the left and the pedals on the right. Tilt steering uses the phone's motion sensor.",
+        "tr": "Evet, telefon dik tutularak oynanır; direksiyon solda, pedallar sağdadır. Eğimle sürüş telefonun hareket sensörünü kullanır."
+      }
+    }
+  ]
+}

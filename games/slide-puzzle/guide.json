@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Slide Puzzle is the sliding-number puzzle in three sizes: 3×3 with tiles 1 to 8, 4×4 with 1 to 15 and 5×5 with 1 to 24. The tiles start scrambled around a single gap. Slide them into the gap until they read in order from 1 in the top-left corner, row by row, with the gap left in the bottom-right corner.\n\nEach tile is coloured by the row it belongs in, so a finished board runs like a rainbow from top to bottom, and a tile sitting in its own place shines brighter than the others. Every scramble is made by sliding tiles away from the solved board, so every puzzle can be solved.\n\nA run starts at the size you choose and moves up one size after each solve: from 3×3 you play three puzzles, from 5×5 just one. There is no time limit, but the move counter and the timer decide your score, and your fewest moves and best time are kept for each size.",
+    "tr": "Kaydırmalı Bulmaca, üç boyda oynanan sayı kaydırma bulmacası: 1'den 8'e karolarla 3×3, 1'den 15'e 4×4 ve 1'den 24'e 5×5. Karolar tek bir boşluğun etrafında karışık başlar. Onları boşluğa kaydırarak sol üst köşedeki 1'den başlayıp satır satır sıraya diz; boşluk sağ alt köşede kalsın.\n\nHer karo ait olduğu satırın rengini taşır; bitmiş bir tahta yukarıdan aşağı gökkuşağı gibi görünür ve kendi yerinde duran karo ötekilerden daha parlak olur. Her karışık tahta, çözülmüş hâlden karolar kaydırılarak hazırlanır; bu yüzden her bulmaca çözülebilir.\n\nOyun seçtiğin boyutta başlar ve her çözümden sonra bir üst boyuta geçer: 3×3'ten başlarsan üç, 5×5'ten başlarsan tek bir bulmaca oynarsın. Süre sınırı yok, ama skoru hamle sayacı ve süre belirler; her boyuttaki en az hamlen ve en iyi süren saklanır."
+  },
+  "howToPlay": [
+    {
+      "en": "On CHOOSE SIZE pick 3×3, 4×4 or 5×5. Your fewest moves and best time for that size are shown under its button.",
+      "tr": "BOYUT SEÇ ekranında 3×3, 4×4 ya da 5×5'i seç. O boyuttaki en az hamlen ve en iyi süren düğmenin altında yazar."
+    },
+    {
+      "en": "Tap a tile in the same row or column as the gap: it and every tile between it and the gap slide over. Or swipe on the board to push the tile beside the gap in that direction.",
+      "tr": "Boşlukla aynı satırda ya da sütunda bir karoya dokun: o karo ve boşlukla arasındaki bütün karolar kayar. Ya da tahtada kaydırarak boşluğun yanındaki karoyu o yöne it."
+    },
+    {
+      "en": "Put the tiles in order 1, 2, 3 … row by row. Tiles already in their place glow brighter.",
+      "tr": "Karoları satır satır 1, 2, 3 … diye sırala. Yerine oturmuş karolar daha parlak görünür."
+    },
+    {
+      "en": "When the order is complete, the last number drops into the corner and SOLVED! shows your moves and time. The next, bigger size follows until 5×5 is done.",
+      "tr": "Sıra tamamlanınca son sayı köşeye düşer ve ÇÖZÜLDÜ! hamleni ve süreni gösterir. Ardından bir büyük boyut gelir, 5×5 bitene kadar."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD push the tile next to the gap in that direction. On the size screen press 1, 2 or 3, or use ↑/↓ and Space or Enter. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD, boşluğun yanındaki karoyu o yöne iter. Boyut ekranında 1, 2 ya da 3'e bas, ya da ↑/↓ ile Boşluk veya Enter kullan. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap any tile in line with the gap to slide the whole line, or swipe on the board to push one tile.",
+      "tr": "Bütün sırayı kaydırmak için boşlukla aynı hizadaki herhangi bir karoya dokun, tek karo itmek için tahtada kaydır."
+    },
+    "mouse": {
+      "en": "Click a tile in line with the gap, or drag across the board like a swipe.",
+      "tr": "Boşlukla aynı hizadaki bir karoya tıkla ya da tahtada kaydırır gibi sürükle."
+    }
+  },
+  "tips": [
+    {
+      "en": "Solve the top row first, then the next one, and leave the last two rows for the end; solve those column by column from the left.",
+      "tr": "Önce en üst satırı, sonra bir alttakini çöz, son iki satırı sona bırak; onları da soldan başlayarak sütun sütun tamamla."
+    },
+    {
+      "en": "The last two tiles of a row go in together. Put the second-last tile in the row's corner spot and the last tile right below it, bring the gap to the second-last spot, then slide the first tile across and the second one up.",
+      "tr": "Bir satırın son iki karosu birlikte yerleşir. Sondan ikinci karoyu satırın köşesine, son karoyu da hemen altına koy; boşluğu sondan ikinci karonun yerine getir, sonra ilk karoyu yana, ikincisini yukarı kaydır."
+    },
+    {
+      "en": "Speed counts more on the big boards: every second under the par time is worth 5 points on 3×3, 10 on 4×4 and 15 on 5×5.",
+      "tr": "Büyük tahtalarda hız daha değerli: hedef sürenin altındaki her saniye 3×3'te 5, 4×4'te 10, 5×5'te 15 puan eder."
+    }
+  ],
+  "features": [
+    {
+      "en": "Three sizes: 3×3, 4×4 and 5×5",
+      "tr": "Üç boy: 3×3, 4×4 ve 5×5"
+    },
+    {
+      "en": "Every scramble solvable",
+      "tr": "Her karışık tahta çözülebilir"
+    },
+    {
+      "en": "Tap to slide a whole line, or swipe one tile",
+      "tr": "Dokunup bütün sırayı ya da kaydırıp tek karoyu oynat"
+    },
+    {
+      "en": "Fewest moves and best time saved for each size",
+      "tr": "Her boyut için saklanan en az hamle ve en iyi süre"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each size has a base of 500, 1500 or 3000 points, multiplied by a factor that is 1 at par (40, 120 or 260 moves), up to 1.5 for short solutions and down to 0.3 for long ones. Finishing under 1, 3 or 7 minutes adds a bonus per second left.",
+        "tr": "Her boyutun 500, 1500 ya da 3000 puanlık tabanı, hedef hamlede (40, 120 ya da 260) 1 olan, kısa çözümlerde 1,5'e çıkan, uzunlarda 0,3'e inen bir çarpanla çarpılır. 1, 3 ya da 7 dakikanın altında bitirirsen kalan her saniye bonus getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is every puzzle solvable?",
+        "tr": "Her bulmaca çözülebilir mi?"
+      },
+      "a": {
+        "en": "Yes. Half of all random arrangements of a sliding puzzle can't be solved, so the game never deals one: it scrambles by making 90 to 520 random slides from the solved board.",
+        "tr": "Evet. Kaydırmalı bulmacada rastgele dizilişlerin yarısı çözülemez, bu yüzden oyun hiçbir zaman öyle bir tahta vermez: çözülmüş tahtadan 90 ile 520 arası rastgele kaydırma yaparak karıştırır."
+      }
+    },
+    {
+      "q": {
+        "en": "Which size should I start with?",
+        "tr": "Hangi boyuttan başlamalıyım?"
+      },
+      "a": {
+        "en": "Starting at 3×3 gives the longest run, three puzzles, and the most points in total. Starting at 5×5 is a single long puzzle for when you only want the hardest board.",
+        "tr": "3×3'ten başlamak üç bulmacalık en uzun oyunu ve toplamda en çok puanı verir. 5×5'ten başlamak ise yalnızca en zor tahtayı istediğin zamanlar için tek ve uzun bir bulmacadır."
+      }
+    }
+  ]
+}

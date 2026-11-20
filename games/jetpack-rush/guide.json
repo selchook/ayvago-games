@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Jetpack Rush is a sideways endless runner through a laboratory corridor. Your character, the one you picked on ayvago.com, runs along the floor with a jetpack strapped on. Hold to fire the jet and climb, let go to drop back down. Gravity pulls hard and the jet pushes harder, so the skill is in feathering the thrust to float at exactly the height you need.\n\nThe corridor fills with electric zappers: two glowing orbs with lightning between them, standing upright, lying flat or slanted. Further in they appear in pairs with a single gap to thread (from 250 metres) and as bars that spin in place (from 450 metres). From 120 metres missiles join in. A flashing warning on the right edge follows your height, locks on, beeps faster, and then the missile streaks across along that line.\n\nOne touch of a zapper or a missile ends the run, unless you are carrying a shield bubble. The corridor speeds up the whole way, from a jog to more than twice that pace.",
+    "tr": "Jetpack Koşusu, bir laboratuvar koridorunda yandan izlenen sonsuz bir koşu oyunu. ayvago.com'da seçtiğin karakter sırtında bir jetpack'le zeminde koşar. Jeti ateşleyip yükselmek için basılı tut, geri inmek için bırak. Yerçekimi güçlü çeker, jet daha güçlü iter; asıl beceri, itkiyi ayarlayıp tam istediğin yükseklikte süzülmektir.\n\nKoridor elektrikli bariyerlerle dolar: aralarında şimşek çakan iki parlak küre; dik, yatay ya da çapraz durur. İlerledikçe tek bir boşluktan geçmen gereken çiftler (250 metreden itibaren) ve yerinde dönen bariyerler (450 metreden sonra) gelir. 120 metreden itibaren füzeler de katılır: sağ kenarda yanıp sönen bir uyarı yüksekliğini izler, kilitlenir, daha hızlı öter ve sonra füze o hat boyunca ekranı yarıp geçer.\n\nBir bariyere ya da füzeye tek dokunuş koşuyu bitirir; tabii yanında bir kalkan balonu yoksa. Koridor baştan sona hızlanır, hafif bir koşudan bunun iki katını aşan bir hıza çıkar."
+  },
+  "howToPlay": [
+    {
+      "en": "Hold to fly up and release to fall. On the floor your character runs along by itself.",
+      "tr": "Yükselmek için basılı tut, düşmek için bırak. Zemindeyken karakterin kendi kendine koşar."
+    },
+    {
+      "en": "Weave over, under and between the zappers. Only the lightning between the orbs and the orbs themselves are dangerous; the air around them is safe.",
+      "tr": "Bariyerlerin üstünden, altından ve arasından geç. Tehlikeli olan yalnızca kürelerle aralarındaki şimşektir; çevrelerindeki boşluk güvenlidir."
+    },
+    {
+      "en": "When a missile warning appears, it follows your height until it locks. Once it flashes fast, move off that line.",
+      "tr": "Füze uyarısı belirdiğinde kilitlenene kadar yüksekliğini izler. Hızla yanıp sönmeye başlayınca o hattan çekil."
+    },
+    {
+      "en": "Collect coins along the way, and grab the blue gem when you see one: it gives a shield that absorbs one hit.",
+      "tr": "Yol boyunca altınları topla ve gördüğünde mavi taşı kap: bir darbeyi karşılayan bir kalkan verir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Hold Space, ↑, W, Z or Enter to fly; release to fall. Esc or P pauses.",
+      "tr": "Uçmak için Boşluk, ↑, W, Z ya da Enter'a basılı tut; düşmek için bırak. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Hold a finger anywhere on the screen to fly and lift it to fall.",
+      "tr": "Uçmak için parmağını ekranın herhangi bir yerinde tut, düşmek için kaldır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Missiles aim where you are when the warning locks, not where you will be. Hover at one height while it tracks you, then make one clear move up or down as it starts beeping fast.",
+      "tr": "Füzeler, uyarı kilitlendiği anda bulunduğun yere nişan alır, gideceğin yere değil. Uyarı seni izlerken tek bir yükseklikte süzül, hızlı ötmeye başlayınca belirgin bir hamleyle yukarı ya da aşağı kaç."
+    },
+    {
+      "en": "Running along the floor is the steadiest position you have. When nothing low is coming, drop down and wait there instead of hovering.",
+      "tr": "Zeminde koşmak en sağlam konumundur. Alçaktan bir şey gelmiyorsa havada süzülmek yerine aşağı in ve orada bekle."
+    },
+    {
+      "en": "For a paired zapper, line up with the gap early. The coins in the middle of the opening mark the safe line.",
+      "tr": "Çift bariyerde boşluğun hizasına erkenden geç. Açıklığın ortasındaki altınlar güvenli hattı gösterir."
+    },
+    {
+      "en": "A coin is worth ten metres of running. Coin lines are a bonus, not a route; never cut close to a zapper to finish a row.",
+      "tr": "Bir altın on metrelik koşuya bedeldir. Altın dizileri rota değil bonustur; bir diziyi tamamlamak için asla bariyere yakın geçme."
+    }
+  ],
+  "features": [
+    {
+      "en": "Your own ayvago.com character on the jetpack",
+      "tr": "Jetpack'te kendi ayvago.com karakterin"
+    },
+    {
+      "en": "Fixed, paired and spinning zappers",
+      "tr": "Sabit, çift ve dönen elektrikli bariyerler"
+    },
+    {
+      "en": "Missiles with a tracking warning, up to three at once",
+      "tr": "İzleyen uyarıyla gelen, aynı anda üçe kadar füze"
+    },
+    {
+      "en": "Shield pickups and a corridor that keeps speeding up",
+      "tr": "Kalkan toplama ve sürekli hızlanan bir koridor"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How is my score counted?",
+        "tr": "Skorum nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "One point for every metre you cover and 10 points for every coin. The distance and the COINS count are shown at the top, and a banner marks every 500 metres.",
+        "tr": "Gittiğin her metre bir puan, her altın 10 puandır. Mesafe ve ALTIN sayısı üstte görünür; her 500 metrede bir bant belirir."
+      }
+    },
+    {
+      "q": {
+        "en": "How many hits can I take?",
+        "tr": "Kaç darbe alabilirim?"
+      },
+      "a": {
+        "en": "One. A zapper or missile ends the run, unless you have a shield. The shield breaks on that hit instead and leaves you safe for a moment.",
+        "tr": "Bir. Bariyer ya da füze koşuyu bitirir; kalkanın varsa darbeyi o karşılar, kırılır ve seni kısa bir süre korur."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. The first 60 metres hold only coins, missiles wait until 120 metres and the trickier zappers come later, so every run starts gently.",
+        "tr": "Hayır. İlk 60 metrede yalnızca altın vardır, füzeler 120 metreye kadar gelmez, zor bariyerler de daha sonra çıkar; her koşu yumuşak başlar."
+      }
+    }
+  ]
+}

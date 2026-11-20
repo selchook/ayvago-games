@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Letter Rain is a word game with a clock you can see: letters keep falling onto a board seven columns wide and nine rows tall, and the only way to make room is to spell them away. Link neighbouring letters, sideways, up, down or diagonally, into a word of three to eight letters and the tiles pop; everything above drops down. When a letter lands on a column that is already full, the board is full and the game ends.\n\nThe next letter waits above the board in the column it will fall into, with a ring that fills up as it gets ready, so you always know where the pressure is coming from. Every level needs a few more words than the last (five at level 1), and each level makes the rain faster. With fewer than 16 tiles left, letters fall twice as fast.\n\nSpecial tiles join as you climb: gold letters and the odd bomb from the start, bombs more often from level 2 and cracked letters from level 3. Play in Turkish for Turkish words or in English for English ones.",
+    "tr": "Harf Yağmuru, saati gözünün önünde olan bir kelime oyunu: yedi sütun genişliğinde, dokuz sıra yüksekliğinde bir tahtaya durmadan harf yağar ve yer açmanın tek yolu onları kelimeye çevirmektir. Yan yana duran harfleri yatay, dikey ya da çapraz birleştirip üç ile sekiz harfli bir kelime kurunca harfler patlar, üstte kalanlar aşağı iner. Bir harf zaten dolu bir sütuna düşerse tahta dolar ve oyun biter.\n\nSıradaki harf, düşeceği sütunun üstünde bekler; çevresindeki halka doldukça düşmeye yaklaşır. Böylece baskının nereden geleceğini hep bilirsin. Her seviye öncekinden biraz daha çok kelime ister (1. seviyede beş) ve yağmuru hızlandırır. Tahtada 16'dan az harf kalınca harfler iki kat hızlı yağar.\n\nSeviye atladıkça özel harfler gelir: altın harfler ve ara sıra bir bomba baştan, bombalar 2. seviyeden itibaren daha sık, çatlak harfler 3. seviyeden itibaren. Türkçe oynarsan Türkçe, İngilizce oynarsan İngilizce kelimeler geçerlidir."
+  },
+  "howToPlay": [
+    {
+      "en": "Drag across neighbouring letters and lift to send the word, or tap the letters one by one and press SEND.",
+      "tr": "Yan yana harflerin üzerinde sürükleyip parmağını kaldırarak kelimeyi gönder ya da harflere tek tek dokunup GÖNDER'e bas."
+    },
+    {
+      "en": "Each letter can be used once per word. Tap the last letter again to take it back, or tap beside the tiles to start over.",
+      "tr": "Her harf bir kelimede bir kez kullanılır. Son harfi geri almak için ona yeniden dokun, baştan başlamak için harflerin dışına dokun."
+    },
+    {
+      "en": "Fill the level bar with words to reach the next level. A red-glowing column is close to the top: clear it first.",
+      "tr": "Kelimelerle seviye çubuğunu doldurup sonraki seviyeye geç. Kırmızı parlayan sütun tepeye yaklaşmıştır: önce onu temizle."
+    },
+    {
+      "en": "Gold doubles the word. A bomb in a word clears every tile around it. A cracked letter must be used before its timer runs out, or it turns to stone, which only a word next to it can break.",
+      "tr": "Altın harf kelimenin puanını ikiye katlar. Kelimedeki bomba çevresindeki bütün harfleri temizler. Çatlak harfi süresi dolmadan kullan, yoksa taşa döner; taşı yalnızca yanında kurulan bir kelime kırar."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Type a word and the game finds a matching path on the board. Enter sends, Backspace removes a letter, Space shuffles, 1 or ? shows a hint, Esc pauses. In Turkish, C, G, I, O, S and U also match Ç, Ğ, İ, Ö, Ş and Ü.",
+      "tr": "Kelimeyi yazdığında oyun tahtada ona uyan yolu bulur. Enter gönderir, Backspace harf siler, Boşluk karıştırır, 1 ya da ? ipucu verir, Esc duraklatır. Türkçede C, G, I, O, S ve U tuşları Ç, Ğ, İ, Ö, Ş ve Ü'yü de seçer."
+    },
+    "touch": {
+      "en": "Swipe over the letters, or tap them in order and press SEND. The buttons under the board shuffle and give hints.",
+      "tr": "Harflerin üzerinde parmağını gezdir ya da sırayla dokunup GÖNDER'e bas. Tahtanın altındaki düğmeler karıştırır ve ipucu verir."
+    },
+    "mouse": {
+      "en": "Hold the button and drag across the letters, or click them in order and click SEND.",
+      "tr": "Fare tuşunu basılı tutup harflerin üzerinden sürükle ya da sırayla tıklayıp GÖNDER'e tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Length pays more than anything: a word's letter values are multiplied by 1.5 for four letters, 2 for five, 3 for six and 4 for seven or eight.",
+      "tr": "Uzunluk her şeyden çok kazandırır: harf değerlerinin toplamı dört harfte 1,5, beşte 2, altıda 3, yedi ve sekizde 4 ile çarpılır."
+    },
+    {
+      "en": "Keep words coming. A word within six seconds of the last builds a combo worth up to double points, and a rejected word breaks it.",
+      "tr": "Kelimeleri ardı ardına gönder. Bir öncekinden sonraki altı saniye içinde gelen kelime komboyu büyütür ve puanı ikiye kadar katlar; geçersiz kelime komboyu bozar."
+    },
+    {
+      "en": "Words of five letters or more also earn a hint, and every new level earns a shuffle, up to five of each. Save shuffles for a board with no words on it.",
+      "tr": "Beş ya da daha çok harfli kelimeler bir ipucu, her yeni seviye bir karıştırma kazandırır; ikisi de en çok beşe kadar birikir. Karıştırmayı kelime çıkmayan bir tahta için sakla."
+    },
+    {
+      "en": "When a column is high, run a word through a bomb or past stones: it clears far more than its own tiles.",
+      "tr": "Bir sütun yükseldiğinde kelimeyi bombadan ya da taşların yanından geçir: kelimenin kendisinden çok daha fazla harf temizler."
+    }
+  ],
+  "features": [
+    {
+      "en": "Turkish and English word lists",
+      "tr": "Türkçe ve İngilizce kelime listeleri"
+    },
+    {
+      "en": "Gold, bomb, cracked and stone tiles",
+      "tr": "Altın, bomba, çatlak ve taş harfler"
+    },
+    {
+      "en": "Faster rain on every level",
+      "tr": "Her seviyede hızlanan yağmur"
+    },
+    {
+      "en": "Swipe, tap or type to play",
+      "tr": "Kaydırarak, dokunarak ya da yazarak oyna"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are words scored?",
+        "tr": "Kelimeler nasıl puanlanıyor?"
+      },
+      "a": {
+        "en": "Each letter shows its value, from 1 for common letters to 8 for rare ones. The total is multiplied by the length bonus, doubled for each gold tile and times 10; tiles cleared by bombs and broken stones add more.",
+        "tr": "Her harfin üzerinde değeri yazar: yaygın harfler 1, nadir harfler 8'e kadar. Toplam, uzunluk çarpanıyla çarpılır, her altın harfte ikiye katlanır ve 10 ile çarpılır; bombanın temizlediği harfler ve kırılan taşlar ayrıca puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Which words are allowed?",
+        "tr": "Hangi kelimeler geçerli?"
+      },
+      "a": {
+        "en": "Words of three to eight letters from the game's own list for your language. Anything else shows Not a word.",
+        "tr": "Oyunun kendi listesindeki, seçtiğin dile ait üç ile sekiz harfli kelimeler. Başka bir şey yazarsan Sözlükte yok uyarısı çıkar."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. Level 1 is the gentle part: one letter about every three seconds, rare bombs and no cracked tiles yet.",
+        "tr": "Hayır. Yavaş kısım 1. seviyedir: yaklaşık üç saniyede bir harf düşer, bomba nadir gelir, çatlak harf henüz yoktur."
+      }
+    }
+  ]
+}

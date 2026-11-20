@@ -1,0 +1,112 @@
+{
+  "about": {
+    "en": "Tappy Plane is a one-touch flier. Your little red propeller plane is always sinking, and every tap gives it a short lift. Pairs of rocky spires rise from the ground and hang from the ceiling, and you thread the plane through the gap between each pair. There are no lives: touching a rock, the ground or the ceiling ends the flight.\n\nThe challenge builds as you go. Gaps start wide and narrow with every one you pass until about the 34th, the world scrolls faster until around the 40th, and from gap 18 some gaps start to drift up and down. Every 12 gaps the scenery changes, from grass to dirt, then snow and ice, and round again.\n\nEach gap is worth 10 points, and stars floating between the rocks add 25. Medals mark the milestones: bronze at 10 gaps, silver at 25 and gold at 50, each with bonus points on top.",
+    "tr": "Pıt Pıt Uçak, tek dokunuşla oynanan bir uçuş oyunu. Küçük kırmızı pervaneli uçağın durmadan alçalır, her dokunuş onu biraz yükseltir. Yerden yükselen ve tavandan sarkan kaya sivrileri çiftler halinde gelir; uçağı her çiftin arasındaki geçitten geçirirsin. Can yok: bir kayaya, yere ya da tavana değersen uçuş biter.\n\nZorluk sen ilerledikçe artar. Geçitler önce geniştir, aşağı yukarı 34. geçide kadar her geçişte biraz daralır; dünya da 40. geçide kadar hızlanır. 18. geçitten itibaren bazı geçitler aşağı yukarı kaymaya başlar. Her 12 geçitte manzara değişir: çimenden toprağa, sonra kara ve buza, ardından yeniden başa.\n\nHer geçit 10 puan, kayaların arasında süzülen yıldızlar 25 puan getirir. Madalyalar dönüm noktalarını gösterir: 10 geçitte bronz, 25'te gümüş, 50'de altın; her biri üstüne bonus puan da kazandırır."
+  },
+  "howToPlay": [
+    {
+      "en": "Press PLAY. The plane hovers with GET READY on screen until your first tap.",
+      "tr": "OYNA'ya bas. İlk dokunuşuna kadar uçak ekranda HAZIR OL yazısıyla havada bekler."
+    },
+    {
+      "en": "Tap, or press a flap key, to lift the plane; between taps it drops.",
+      "tr": "Uçağı yükseltmek için dokun ya da kanat çırpma tuşuna bas; dokunuşlar arasında uçak alçalır."
+    },
+    {
+      "en": "Fly through the gap between each pair of rocks. The GAPS counter goes up once you are past them.",
+      "tr": "Her kaya çiftinin arasındaki geçitten geç. Kayaları geride bırakınca GEÇİT sayacı artar."
+    },
+    {
+      "en": "Pick up stars on the way. Any contact with rock, ground or ceiling ends the run with CRASHED!",
+      "tr": "Yolda yıldızları topla. Kayaya, yere ya da tavana en ufak temas oyunu ÇAKILDIN! yazısıyla bitirir."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Space, ↑, W, Z or Enter flaps. Holding a key does nothing more: every flap is a fresh press. Esc or P pauses.",
+      "tr": "Boşluk, ↑, W, Z ya da Enter kanat çırptırır. Tuşu basılı tutmak işe yaramaz, her çırpış yeni bir basıştır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap anywhere on the screen to flap. Only the top-right corner is kept for the pause button.",
+      "tr": "Kanat çırpmak için ekranın herhangi bir yerine dokun. Yalnızca sağ üst köşe duraklatma düğmesine ayrılmıştır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Each flap sets the same upward speed rather than adding to it, so two quick taps don't climb twice as fast; they only stretch the climb. Steady, even taps keep the plane level.",
+      "tr": "Her çırpış yukarı hızı artırmaz, hep aynı değere ayarlar; arka arkaya iki hızlı dokunuş iki kat hızlı yükseltmez, yalnızca tırmanışı uzatır. Düzenli, eşit aralıklı dokunuşlar uçağı dengede tutar."
+    },
+    {
+      "en": "Stars sit halfway between two gaps, often off your line. Take one only if you can be back at the next gap's height in time: 25 points never make up for a crash.",
+      "tr": "Yıldızlar iki geçidin tam ortasında, çoğu zaman rotanın dışında durur. Sıradaki geçidin yüksekliğine zamanında dönebileceksen al; 25 puan bir çakılmayı asla telafi etmez."
+    },
+    {
+      "en": "From gap 18 on, watch the next gap for a moment before committing. A moving gap swings up and down, so aim for where it will be when you get there.",
+      "tr": "18. geçitten sonra karar vermeden önce sıradaki geçidi bir an izle. Hareketli geçit aşağı yukarı salınır; oraya vardığında olacağı yere nişan al."
+    },
+    {
+      "en": "The gold medal at 50 gaps adds 250 points, as much as 25 more gaps, so a long careful run beats risky star hunting.",
+      "tr": "50. geçitteki altın madalya 250 puan getirir, bu da 25 geçide bedel; uzun ve dikkatli bir uçuş riskli yıldız avından daha çok kazandırır."
+    }
+  ],
+  "features": [
+    {
+      "en": "One-touch flying with a tap or a single key",
+      "tr": "Tek dokunuş ya da tek tuşla uçuş"
+    },
+    {
+      "en": "Narrowing gaps, rising speed and moving gaps from gap 18",
+      "tr": "Daralan geçitler, artan hız ve 18. geçitten sonra hareketli geçitler"
+    },
+    {
+      "en": "Grass, dirt, snow and ice scenery, changing every 12 gaps",
+      "tr": "Her 12 geçitte değişen çimen, toprak, kar ve buz manzaraları"
+    },
+    {
+      "en": "Bronze, silver and gold medals at 10, 25 and 50 gaps",
+      "tr": "10, 25 ve 50 geçitte bronz, gümüş ve altın madalya"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "10 for each gap, 25 for each star, and a bonus of 50, 100 or 250 for the bronze, silver and gold medal.",
+        "tr": "Her geçit 10, her yıldız 25 puandır; bronz, gümüş ve altın madalya da sırasıyla 50, 100 ve 250 bonus puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "How many lives do I get?",
+        "tr": "Kaç canım var?"
+      },
+      "a": {
+        "en": "Just one. Any crash ends the flight, which is what makes every gap count.",
+        "tr": "Yalnızca bir. Her çakılma uçuşu bitirir; her geçidi değerli kılan da bu."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No, but every flight starts with the widest gaps and the slowest speed, so the first ten gaps are a gentle warm-up.",
+        "tr": "Hayır, ama her uçuş en geniş geçitler ve en düşük hızla başlar; ilk on geçit yumuşak bir ısınma olur."
+      }
+    },
+    {
+      "q": {
+        "en": "Does it work on phones?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes. It is played upright with one thumb: tap anywhere to flap.",
+        "tr": "Evet. Telefon dik tutulur ve tek başparmakla oynanır: kanat çırpmak için herhangi bir yere dokun."
+      }
+    }
+  ]
+}

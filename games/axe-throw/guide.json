@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Axe Throw is a one-button timing game. A round log spins at the top of the screen and you throw axes up into it from below, one at a time. Each axe stays where it lands and turns with the log, so the free wood shrinks with every throw. An axe that strikes the handle of another bounces off with a clang.\n\nA stage gives you a set number of axes, shown in the column on the left: five on stage 1, one more every second stage, up to eleven. Land them all and the log bursts apart. From stage 3 some grey axes are already stuck in the wood and the log stops spinning evenly: it speeds up and slows down, reverses, or lurches. Every fifth stage is a boss target, a painted disc that spins faster with more axes to place.\n\nYou have three lives for the whole run, not per stage. Each clash costs one, and the third ends the game.",
+    "tr": "Balta Atışı, tek tuşla oynanan bir zamanlama oyunu. Ekranın üstünde yuvarlak bir kütük döner, sen de aşağıdan tek tek balta fırlatırsın. Her balta saplandığı yerde kalır ve kütükle birlikte döner; böylece her atışta boş kalan tahta azalır. Başka bir baltanın sapına çarpan balta çınlayarak geri seker.\n\nHer aşamada belli sayıda baltan olur, soldaki sütunda görünür: 1. aşamada beş tane, her iki aşamada bir fazlası, en çok on bir. Hepsini saplayınca kütük paramparça olur. 3. aşamadan itibaren tahtada önceden saplanmış gri baltalar bulunur ve kütük artık düzgün dönmez: hızlanıp yavaşlar, yön değiştirir ya da sarsılarak döner. Her beşinci aşama, daha çok balta isteyen ve daha hızlı dönen boyalı bir DEV HEDEF'tir.\n\nAşama başına değil, bütün oyun için üç canın var. Her çarpışma bir can götürür, üçüncüsünde oyun biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Watch the log turn and throw when the gap facing you is clear. The axe hits the bottom of the log, the point closest to you.",
+      "tr": "Kütüğün dönüşünü izle ve sana bakan boşluk temizken at. Balta kütüğün sana en yakın noktasına, alt kenarına saplanır."
+    },
+    {
+      "en": "Keep throwing until the column of axes on the left is empty. The log then breaks and the next stage starts.",
+      "tr": "Soldaki balta sütunu boşalana kadar atmaya devam et. Sonra kütük kırılır ve sıradaki aşama başlar."
+    },
+    {
+      "en": "Hit the apples on the rim for bonus points. Throw while an apple is passing the bottom of the log.",
+      "tr": "Kenardaki elmaları vurup ek puan kazan. Elma kütüğün alt kısmından geçerken at."
+    },
+    {
+      "en": "An axe that clashes is lost and costs a life, but the stage goes on with the axes you have left.",
+      "tr": "Çarpışan balta kaybolur ve bir cana mal olur, ama aşama kalan baltalarınla devam eder."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Space, ↑ or Z throws an axe. Esc or P pauses.",
+      "tr": "Boşluk, ↑ ya da Z balta fırlatır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap anywhere on the screen to throw, except the pause button in the top-right corner.",
+      "tr": "Atmak için ekranın herhangi bir yerine dokun; yalnızca sağ üst köşedeki duraklatma düğmesi hariç."
+    }
+  },
+  "tips": [
+    {
+      "en": "Two axes need a little room between them. Aim for the middle of the widest gap rather than just past the last axe.",
+      "tr": "İki balta arasında biraz boşluk gerekir. Son baltanın hemen yanına değil, en geniş boşluğun ortasına nişan al."
+    },
+    {
+      "en": "On a log that reverses, the moment it stops to turn around is the easiest throw of the cycle.",
+      "tr": "Yön değiştiren kütükte, dönmek için durduğu an turun en kolay atışıdır."
+    },
+    {
+      "en": "There is no time limit. If the log is lurching, wait for the slow phase instead of throwing during the fast spin.",
+      "tr": "Süre sınırı yok. Kütük sarsılarak dönüyorsa hızlı dönüş sırasında değil, yavaş anını bekleyip at."
+    },
+    {
+      "en": "An apple is worth five stuck axes. Plan your early throws so the apples are still reachable, before the rim fills up around them.",
+      "tr": "Bir elma, beş saplanmış balta değerindedir. İlk atışlarını, kenar dolmadan elmalara hâlâ ulaşabileceğin şekilde planla."
+    }
+  ],
+  "features": [
+    {
+      "en": "Four spin patterns that come in as the stages climb",
+      "tr": "Aşamalar ilerledikçe gelen dört dönüş biçimi"
+    },
+    {
+      "en": "A boss target every fifth stage",
+      "tr": "Her beşinci aşamada bir dev hedef"
+    },
+    {
+      "en": "Apples to slice for bonus points",
+      "tr": "Ek puan için dilimlenecek elmalar"
+    },
+    {
+      "en": "One-tap play on phones and computers",
+      "tr": "Telefonda ve bilgisayarda tek dokunuşla oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Every axe that sticks is 10 points and every apple 50. Clearing a stage adds 20 × the stage number; beating a boss target adds 150 plus 20 × the stage.",
+        "tr": "Saplanan her balta 10, her elma 50 puandır. Bir aşamayı bitirmek 20 × aşama numarası ekler; dev hedefi yenmek 150 artı 20 × aşama getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No. The first two stages spin at an even pace with nothing in the log, which makes them a gentle start; the harder patterns only appear later.",
+        "tr": "Hayır. İlk iki aşamada kütük düzgün döner ve üzerinde balta yoktur, bu da yumuşak bir başlangıç sağlar; zor dönüşler sonradan gelir."
+      }
+    },
+    {
+      "q": {
+        "en": "Do I get my lives back after a stage?",
+        "tr": "Aşama bitince canlarım yenileniyor mu?"
+      },
+      "a": {
+        "en": "No. The three lives last the whole run, so a careless clash on stage 2 counts just as much as one on stage 20.",
+        "tr": "Hayır. Üç can bütün oyun boyunca geçerlidir; 2. aşamadaki dikkatsiz bir çarpışma da 20. aşamadaki kadar pahalıdır."
+      }
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Whack-a-Mole brings the fairground game to a sunny meadow: nine holes in a three-by-three grid, and animals that pop out of them for a moment before ducking back down. Bears, frogs, pandas, penguins, hippos and nine other critters all count the same; hit them while they're up and leave the bombs with sparking fuses alone.\n\nThe game is played in rounds of 30 seconds, each with a TARGET of hits: 10 in round 1 and four more in every round after. Reach it before the clock runs out and the round is clear, with a bonus; fall short and it's TIME'S UP. Each new round brings animals that stay up for less time, more holes open at once and a bigger share of bombs, and from round 4 two pop up together more often.\n\nHitting a bomb costs one of your three lives and 20 points, and lives don't come back between rounds. Now and then a golden animal appears: it is worth five times a normal one but ducks away faster.",
+    "tr": "Köstebek Avı, lunapark oyununu güneşli bir çayıra taşıyor: üçe üç dizilmiş dokuz delik ve bir anlığına dışarı fırlayıp yeniden saklanan hayvanlar. Ayılar, kurbağalar, pandalar, penguenler, su aygırları ve dokuz hayvan daha aynı puanı verir; yukarıdayken tokmağı indir, fitili kıvılcım saçan bombalara ise dokunma.\n\nOyun 30 saniyelik turlarla oynanır ve her turun bir HEDEF vuruş sayısı vardır: 1. turda 10, sonraki her turda dört fazlası. Süre bitmeden hedefe ulaşırsan tur tamamlanır ve bonus kazanırsın; ulaşamazsan SÜRE DOLDU! Her yeni turda hayvanlar daha kısa süre görünür, aynı anda daha çok delik açılır ve bombaların payı artar; 4. turdan itibaren iki hayvan daha sık birlikte fırlar.\n\nBombaya vurmak üç canından birini ve 20 puanı götürür; canlar turlar arasında geri gelmez. Arada bir altın renkli bir hayvan çıkar: normal bir hayvanın beş katı puan eder ama daha çabuk saklanır."
+  },
+  "howToPlay": [
+    {
+      "en": "Press PLAY. Each round opens with its number and TARGET, then GO!",
+      "tr": "OYNA'ya bas. Her tur numarası ve HEDEF'iyle açılır, ardından BAŞLA!"
+    },
+    {
+      "en": "Hit the animals while they are out of their holes, by tapping them or pressing the key for their hole.",
+      "tr": "Hayvanlar deliklerinin dışındayken onlara vur: dokunarak ya da deliklerinin tuşuna basarak."
+    },
+    {
+      "en": "Leave the bombs alone. They have a sparking fuse and stay up longer than the animals.",
+      "tr": "Bombalara dokunma. Fitilleri kıvılcım saçar ve hayvanlardan daha uzun süre yukarıda kalırlar."
+    },
+    {
+      "en": "Fill the bar at the top before the 30 seconds run out to clear the round and move on to the next.",
+      "tr": "Turu tamamlayıp sonrakine geçmek için 30 saniye bitmeden üstteki çubuğu doldur."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Each hole has a key in the same layout: Q W E for the top row, A S D for the middle, Z X C for the bottom. The numpad (7 8 9 / 4 5 6 / 1 2 3) and the number keys 1–9 work too, or move a yellow ring with the arrow keys and hit with Space or Enter. Esc or P pauses.",
+      "tr": "Her deliğin aynı düzende bir tuşu var: üst sıra Q W E, orta sıra A S D, alt sıra Z X C. Sayısal tuş takımı (7 8 9 / 4 5 6 / 1 2 3) ve 1–9 rakam tuşları da çalışır; istersen ok tuşlarıyla sarı halkayı gezdirip Boşluk ya da Enter ile vur. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap an animal or its hole; the mallet swings wherever you tap.",
+      "tr": "Hayvana ya da deliğine dokun; tokmak dokunduğun yere iner."
+    }
+  },
+  "tips": [
+    {
+      "en": "Every five hits in a row raise your multiplier, up to ×4 from the 15th hit. Tapping an empty hole or letting an animal duck away unhit breaks the streak, so don't tap at random.",
+      "tr": "Art arda her beş vuruş çarpanını bir artırır; 15. vuruştan sonra ×4'e ulaşır. Boş deliğe vurmak ya da bir hayvanı vurmadan kaçırmak seriyi bozar; rastgele dokunma."
+    },
+    {
+      "en": "The round runs for the full 30 seconds even after you reach the target, and every extra hit still scores. Only the bombs make greed costly.",
+      "tr": "Hedefe ulaştıktan sonra da tur 30 saniyenin sonuna kadar sürer ve her fazladan vuruş yine puan getirir. Açgözlülüğü pahalıya patlatan tek şey bombalar."
+    },
+    {
+      "en": "A golden animal gives 50 points before the multiplier but stays up for only about two thirds of the usual time. When one appears, hit it first.",
+      "tr": "Altın renkli hayvan, çarpandan önce 50 puan verir ama normalin aşağı yukarı üçte ikisi kadar görünür. Biri çıktığında ilk ona vur."
+    },
+    {
+      "en": "The clear bonus is 50 × the round number plus 20 for each life you still have, so dodging bombs pays again at the end of every round.",
+      "tr": "Tur bonusu, tur numarasının 50 katı artı kalan her can için 20 puandır; bombalardan kaçınmak her turun sonunda bir kez daha kazandırır."
+    },
+    {
+      "en": "On a keyboard, rest your fingers on Q W E / A S D / Z X C. Each key hits its hole directly, which is quicker than moving the ring with the arrows.",
+      "tr": "Klavyede parmaklarını Q W E / A S D / Z X C üstünde tut. Her tuş kendi deliğine doğrudan vurur; bu, halkayı oklarla gezdirmekten daha hızlıdır."
+    }
+  ],
+  "features": [
+    {
+      "en": "Nine holes, fourteen different animals, golden bonus animals and bombs",
+      "tr": "Dokuz delik, on dört farklı hayvan, altın bonus hayvanlar ve bombalar"
+    },
+    {
+      "en": "30-second rounds with a target that rises every round",
+      "tr": "Hedefi her turda artan 30 saniyelik turlar"
+    },
+    {
+      "en": "Hit streaks that multiply points up to ×4",
+      "tr": "Puanı ×4'e kadar katlayan vuruş serileri"
+    },
+    {
+      "en": "Three keyboard layouts: letters, numbers or arrows",
+      "tr": "Üç klavye düzeni: harfler, rakamlar ya da oklar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How does a game end?",
+        "tr": "Oyun nasıl biter?"
+      },
+      "a": {
+        "en": "Either time runs out before you reach a round's target, or you hit your third bomb. Lives are not restored between rounds.",
+        "tr": "Ya bir turun hedefine ulaşamadan süre dolar ya da üçüncü bombaya vurursun. Canlar turlar arasında yenilenmez."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "An animal gives 10 and a golden one 50, times your streak multiplier. A bomb takes 20 away, and every cleared round adds 50 × the round number plus 20 per remaining life.",
+        "tr": "Bir hayvan 10, altın renkli hayvan 50 puan verir ve bu puan seri çarpanınla çarpılır. Bomba 20 puan götürür; tamamlanan her tur, tur numarasının 50 katı artı kalan can başına 20 puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No, but round 1 asks for only 10 hits in 30 seconds, with slow animals, at most two holes open at a time and few bombs.",
+        "tr": "Hayır, ama 1. tur 30 saniyede yalnızca 10 vuruş ister; hayvanlar yavaştır, aynı anda en fazla iki delik açılır ve bomba azdır."
+      }
+    }
+  ]
+}

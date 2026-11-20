@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Space Blaster is a vertical shooter in the classic arcade style. Your red fighter holds the lower part of the screen while enemy fleets dive in from the top. The gun fires on its own, about five shots a second, so all your attention goes on flying: lining up under targets and slipping between incoming lasers.\n\nA banner announces each wave, and the next one starts once the screen is clear. Waves grow from six ships to as many as fourteen, and the formation changes every wave: columns, ships weaving from side to side, or a scattered swarm. Heavier ships that take two or three hits join in, enemies fly and fire faster as the waves climb, and from wave 2 brown meteors tumble through the fleet. Every enemy laser is aimed at the spot where your ship was when it fired.\n\nDestroyed enemies sometimes leave a power-up behind. The red bolt gives DOUBLE SHOT for 10 seconds, and the blue SHIELD stops one hit within 8 seconds. You have three lives, or five on Easy; each hit costs one and is followed by a short moment of invulnerability.",
+    "tr": "Uzay Avcısı, klasik salon oyunu tarzında dikey bir uzay nişancı oyunu. Kırmızı savaş geminle ekranın alt kısmını tutarsın, düşman filoları yukarıdan dalış yapar. Silah kendiliğinden, saniyede yaklaşık beş atış yapar; bu yüzden bütün dikkatin uçmakta: hedeflerin altına girmek ve gelen lazerlerin arasından sıyrılmak.\n\nHer dalgayı bir şerit duyurur, ekran temizlenince sıradaki başlar. Dalgalar altı gemiden on dört gemiye kadar büyür ve diziliş her dalgada değişir: sütunlar, bir o yana bir bu yana salınan gemiler ya da dağınık bir sürü. İki ya da üç atışta düşen ağır gemiler de katılır, dalgalar ilerledikçe düşmanlar daha hızlı uçar ve daha sık ateş eder, 2. dalgadan itibaren filonun arasından kahverengi göktaşları yuvarlanır. Her düşman lazeri, ateş edildiği anda geminin bulunduğu yere nişan alır.\n\nVurulan düşmanlar bazen bir güçlendirme bırakır. Kırmızı yıldırım 10 saniyelik ÇİFT ATIŞ verir, mavi KALKAN ise 8 saniye içinde gelen bir darbeyi durdurur. Üç canın var, Kolay'da beş; her darbe bir can götürür ve ardından kısa bir süre dokunulmaz olursun."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose Easy or Normal on the menu and press PLAY. Your ship starts firing straight up by itself.",
+      "tr": "Menüde Kolay ya da Normal'i seç ve OYNA'ya bas. Gemin kendiliğinden yukarı doğru ateş etmeye başlar."
+    },
+    {
+      "en": "Fly around the lower two thirds of the screen to put your shots under enemies and keep out of their fire.",
+      "tr": "Ekranın alttaki üçte ikilik kısmında dolaşarak atışlarını düşmanların altına getir, onların ateşinden uzak dur."
+    },
+    {
+      "en": "Shoot down every ship and meteor to clear the wave. Ramming an enemy costs a life just like being shot.",
+      "tr": "Dalgayı bitirmek için bütün gemileri ve göktaşlarını vur. Bir düşmana çarpmak da vurulmak gibi bir can götürür."
+    },
+    {
+      "en": "Fly into falling power-ups to collect them. The run ends when your last life is gone.",
+      "tr": "Düşen güçlendirmelerin üstünden geçerek onları al. Son canın da gidince oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD fly the ship; firing is automatic. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD gemiyi uçurur; ateş otomatiktir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Put a finger down anywhere and push: a joystick appears under it and the ship flies that way, faster the further you push.",
+      "tr": "Parmağını ekranın herhangi bir yerine koyup it: altında bir joystick belirir ve gemi o yöne uçar; ne kadar uzağa itersen o kadar hızlı gider."
+    }
+  },
+  "tips": [
+    {
+      "en": "Keep drifting sideways. Enemy lasers fly toward where you were when they were fired, so steady movement makes most of them miss.",
+      "tr": "Sürekli yana kay. Düşman lazerleri ateş edildiği anda bulunduğun yere gider; durmadan hareket edersen çoğu ıskalar."
+    },
+    {
+      "en": "Stay low. The ship can climb to about a third of the way from the top, but the lower you sit, the more time you have to read diving ships and shots.",
+      "tr": "Aşağıda kal. Gemi ekranın üstten üçte birine kadar çıkabilir, ama ne kadar aşağıdaysan dalan gemileri ve atışları görmek için o kadar vaktin olur."
+    },
+    {
+      "en": "In weaving waves the ships swing from side to side as they come down. Let one swing over your guns instead of chasing it across the screen.",
+      "tr": "Salınan dalgalarda gemiler inerken bir o yana bir bu yana gider. Ekranın bir ucundan öbürüne kovalamak yerine geminin namlunun üstüne gelmesini bekle."
+    },
+    {
+      "en": "DOUBLE SHOT fires two lasers side by side, so it widens your aim as well as doubling the damage.",
+      "tr": "ÇİFT ATIŞ yan yana iki lazer atar; hasarı ikiye katlamakla kalmaz, nişan alanını da genişletir."
+    },
+    {
+      "en": "The shield breaks on the first hit and leaves you just one second of safety, so use that second to get clear of the crowd.",
+      "tr": "Kalkan ilk darbede kırılır ve sana yalnızca bir saniyelik güvenlik bırakır; o saniyeyi kalabalıktan uzaklaşmak için kullan."
+    }
+  ],
+  "features": [
+    {
+      "en": "Endless waves in three changing formations",
+      "tr": "Üç farklı dizilişle gelen sonsuz dalgalar"
+    },
+    {
+      "en": "Enemy ships with one to three hit points and meteors from wave 2",
+      "tr": "Bir ile üç atışta düşen düşman gemileri ve 2. dalgadan itibaren göktaşları"
+    },
+    {
+      "en": "DOUBLE SHOT and SHIELD power-ups with timers on screen",
+      "tr": "Süresi ekranda görünen ÇİFT ATIŞ ve KALKAN güçlendirmeleri"
+    },
+    {
+      "en": "Easy and Normal difficulty",
+      "tr": "Kolay ve Normal zorluk"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "A ship that dies in one hit gives 50, a two-hit ship 100 and a three-hit ship 150. A medium meteor (two hits) gives 30 and a big one (four hits) 80. Enemies that crash into you give nothing.",
+        "tr": "Tek atışta düşen gemi 50, iki atışlık gemi 100, üç atışlık gemi 150 puan verir. Orta boy göktaşı (iki atış) 30, büyük göktaşı (dört atış) 80 puandır. Sana çarparak yok olan düşmanlar puan vermez."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives five lives, slower enemies and meteors, half as many enemy shots, a slower climb in difficulty and twice as many power-ups. Easy runs are practice and are not ranked.",
+        "tr": "Evet. Kolay'da beş canın olur; düşmanlar ve göktaşları daha yavaştır, düşmanlar yarı yarıya az ateş eder, zorluk daha yavaş artar ve iki kat fazla güçlendirme düşer. Kolay oyunlar antrenman sayılır, sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Does the game have an end?",
+        "tr": "Oyunun bir sonu var mı?"
+      },
+      "a": {
+        "en": "No. The waves keep coming, each a little harder than the last, until you lose your last life. Your score is what you shot down along the way.",
+        "tr": "Hayır. Dalgalar son canını kaybedene kadar, her biri bir öncekinden biraz daha zor olarak gelmeye devam eder. Skorun, o zamana kadar vurduklarının toplamıdır."
+      }
+    }
+  ]
+}

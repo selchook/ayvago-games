@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Stack Tower is a one-button timing game. A block slides back and forth above the top of your tower and you drop it with a tap. Only the part that lands on the block below stays; the overhang is sliced off and tumbles away, so every sloppy drop leaves you a narrower block for the next floor.\n\nPerfect drops are the way back. Land a block almost exactly on the one below and nothing is cut. From the third perfect drop in a row, each further perfect also widens the block a little, back up to its starting width. As the tower climbs, the sky turns from daylight blue through dusk to a starry night.\n\nThe slider speeds up with every floor, every 10 floors is a new level, and from level 3 the speed varies a little from block to block, so rhythm alone won't carry you. Miss the tower completely and you lose one of three lives. You then retry the same floor, and if the top block has become very thin it is widened again first.",
+    "tr": "Kule Diz, tek tuşla oynanan bir zamanlama oyunu. Kulenin tepesinde bir blok sağa sola kayar, sen de dokunarak bırakırsın. Bloğun yalnızca alttakinin üstüne gelen kısmı kalır; taşan kısım kesilip aşağı yuvarlanır. Yani her özensiz bırakış, bir sonraki katta daha dar bir blokla devam etmek demektir.\n\nToparlanmanın yolu kusursuz bırakışlar. Bloğu alttakinin neredeyse tam üstüne bırakırsan hiçbir şey kesilmez. Art arda üçüncü kusursuz bırakıştan itibaren her yeni kusursuz bırakış bloğu biraz da genişletir, ta ki ilk genişliğine dönene kadar. Kule yükseldikçe gökyüzü gündüz mavisinden alacakaranlığa, oradan yıldızlı bir geceye döner.\n\nKayan blok her katta biraz hızlanır, her 10 kat yeni bir seviyedir; 3. seviyeden itibaren hız bloktan bloğa biraz değişir, yani yalnızca ritme güvenemezsin. Bloğu kuleye hiç değdiremezsen 3 candan birini kaybedersin. Ardından aynı katı yeniden denersin; en üstteki blok çok incelmişse önce yeniden genişletilir."
+  },
+  "howToPlay": [
+    {
+      "en": "Watch the block slide over the tower and tap, or press Space, when it lines up with the block below.",
+      "tr": "Bloğun kulenin üstünden kaymasını izle; alttaki blokla hizalandığı anda dokun ya da Boşluk'a bas."
+    },
+    {
+      "en": "Whatever hangs over the edge is cut off. The part that stays is as wide as your next block will be.",
+      "tr": "Kenardan taşan kısım kesilir. Kalan parça ne genişlikteyse bir sonraki bloğun da o genişlikte gelir."
+    },
+    {
+      "en": "Drop within a hair of the edge for PERFECT! and keep the full width. From three in a row the block shows REGROW! and gets wider.",
+      "tr": "Kenarla neredeyse tam hizada bırakırsan KUSURSUZ! olur ve genişlik korunur. Art arda üçten sonra BÜYÜDÜ! yazar ve blok genişler."
+    },
+    {
+      "en": "Every 10th floor raises the level and pays a bonus. The third complete miss brings TOWER DOWN! and ends the game.",
+      "tr": "Her 10. kat seviyeyi yükseltir ve bonus getirir. Üçüncü tam ıskalamada KULE YIKILDI! yazar ve oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Space or Enter drops the block (holding the key down does not drop twice). Esc or P pauses.",
+      "tr": "Boşluk ya da Enter bloğu bırakır (tuşu basılı tutmak ikinci kez bırakmaz). Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap anywhere on the screen to drop. The pause button sits in the top-right corner.",
+      "tr": "Bırakmak için ekranın herhangi bir yerine dokun. Duraklatma düğmesi sağ üst köşede."
+    },
+    "mouse": {
+      "en": "Click anywhere to drop.",
+      "tr": "Bırakmak için herhangi bir yere tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Watch the leading edge, not the middle of the block. Tap as that edge reaches the edge of the block below.",
+      "tr": "Bloğun ortasına değil, önde gelen kenarına bak. O kenar alttaki bloğun kenarına geldiği anda dokun."
+    },
+    {
+      "en": "A new block always appears just off one side of the tower, alternating sides. If you are not ready on its first pass, let it bounce off the wall and catch it on the way back.",
+      "tr": "Yeni blok her seferinde kulenin hemen yanında, bir sağdan bir soldan belirir. İlk geçişinde hazır değilsen duvardan sekmesini bekle ve dönüşte yakala."
+    },
+    {
+      "en": "Streaks are where the points are. A normal floor is 10 points; a perfect drop adds 10 for every perfect in the current streak, up to 110 for a single floor.",
+      "tr": "Asıl puan serilerde. Normal bir kat 10 puandır; kusursuz bırakış, o anki serideki her kusursuz bırakış için 10 puan ekler ve tek katta 110 puana kadar çıkar."
+    },
+    {
+      "en": "A thin block is not the end. Three perfects in a row start widening it again, and a miss rebuilds a very narrow top block before your retry.",
+      "tr": "İncelmiş blok son demek değil. Art arda üç kusursuz bırakış onu yeniden genişletmeye başlar; ıskaladığında da çok dar kalmış en üst blok tekrar denemeden önce genişletilir."
+    }
+  ],
+  "features": [
+    {
+      "en": "One tap or one key, on any screen",
+      "tr": "Her ekranda tek dokunuş ya da tek tuş"
+    },
+    {
+      "en": "Perfect-drop streaks that regrow the block",
+      "tr": "Bloğu yeniden büyüten kusursuz bırakış serileri"
+    },
+    {
+      "en": "A sky that turns to night as the tower climbs",
+      "tr": "Kule yükseldikçe geceye dönen gökyüzü"
+    },
+    {
+      "en": "Speed that rises every floor, with random changes from level 3",
+      "tr": "Her katta artan, 3. seviyeden sonra rastgele değişen hız"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How does a game end?",
+        "tr": "Oyun nasıl bitiyor?"
+      },
+      "a": {
+        "en": "When you miss the tower entirely for the third time. A partial overlap never costs a life, however thin the result; only a block that lands completely off the tower does.",
+        "tr": "Kuleyi üçüncü kez tamamen ıskaladığında. Kısmen denk gelen bir bırakış, kalan parça ne kadar ince olursa olsun can götürmez; yalnızca kulenin tamamen dışına düşen blok götürür."
+      }
+    },
+    {
+      "q": {
+        "en": "What is the level bonus?",
+        "tr": "Seviye bonusu ne kadar?"
+      },
+      "a": {
+        "en": "Every 10th floor raises the level and adds 50 × the new level: 100 points at floor 10, 150 at floor 20, 200 at floor 30 and so on.",
+        "tr": "Her 10. kat seviyeyi bir artırır ve yeni seviyenin 50 katı kadar puan ekler: 10. katta 100, 20. katta 150, 30. katta 200 puan, böyle devam eder."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No, but the start is gentle. The block slides slowly on the first floors, and the random speed changes only begin at level 3, after floor 20.",
+        "tr": "Hayır, ama başlangıç yumuşak. İlk katlarda blok yavaş kayar; rastgele hız değişimleri ancak 20. kattan sonra, 3. seviyede başlar."
+      }
+    }
+  ]
+}

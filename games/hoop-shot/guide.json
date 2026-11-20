@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Hoop Shot is a three-point contest seen from the shooter's eyes. Five racks of five balls stand around the arc, at the left corner, left wing, top of the key, right wing and right corner, and the camera walks you from one to the next. A made basket counts one point toward the round's target, and the last ball of every rack, the MONEY BALL, counts two, so a round has 30 points on offer.\n\nEvery shot is a timing test. Hold to start the power meter, which swings up and down, and release while it sits in the green band; slide sideways to adjust the aim. The ball flies with real spin, so it can rattle around the rim, kiss off the backboard or drop clean through the net.\n\nRound 1 gives you 62 seconds to make 9 points. Each round after that the clock gets shorter, the target climbs toward 26, the meter swings faster, the green band narrows and your aim wavers more while you charge. Miss a target, or let the buzzer beat you, and you are knocked out.",
+    "tr": "Basket Atışı, şutörün gözünden izlenen bir üçlük yarışması. Üç sayı çizgisinin çevresinde beşer toplu beş raf durur: sol köşe, sol kanat, tepe, sağ kanat ve sağ köşe; kamera seni birinden ötekine taşır. Giren her top turun hedefine bir sayı yazar; her rafın son topu olan PARA TOPU ise iki sayıdır, yani bir turda toplam 30 sayı alınabilir.\n\nHer atış bir zamanlama sınavı. Basılı tutunca güç çubuğu aşağı yukarı gidip gelmeye başlar; yeşil bölgedeyken bırak, nişanı düzeltmek için de yana kaydır. Top gerçek bir dönüşle uçar: çemberde dans edebilir, tahtadan sekebilir ya da filelere dokunmadan geçebilir.\n\n1. turda 9 sayı için 62 saniyen var. Sonraki her turda süre kısalır, hedef 26'ya doğru yükselir, güç çubuğu hızlanır, yeşil bölge daralır ve topu doldururken nişanın daha çok titrer. Hedefi tutturamazsan ya da süre biterse ELENDİN."
+  },
+  "howToPlay": [
+    {
+      "en": "Wait for the ball to come up into your hands at the rack, then hold to charge.",
+      "tr": "Topun raftan ellerine gelmesini bekle, sonra basılı tutarak gücü doldur."
+    },
+    {
+      "en": "Release while the meter is in the green. Slide left or right while charging to aim.",
+      "tr": "Güç çubuğu yeşildeyken bırak. Doldururken nişan almak için sağa sola kaydır."
+    },
+    {
+      "en": "Shoot all five balls at a spot and the camera moves to the next one. The clock keeps running while you walk.",
+      "tr": "Bir noktadaki beş topu da attığında kamera bir sonraki noktaya geçer. Yürürken de süre işlemeye devam eder."
+    },
+    {
+      "en": "Reach the target shown on the right chip before the time runs out to go to the next round.",
+      "tr": "Bir sonraki tura geçmek için sağdaki kutuda yazan hedefe süre bitmeden ulaş."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Hold Space (or ↑, W or Z) to charge and let go to shoot. ← → or A / D aim. Esc or P pauses.",
+      "tr": "Gücü doldurmak için Boşluk'u (ya da ↑, W veya Z'yi) basılı tut, atmak için bırak. ← → ya da A / D nişan alır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Hold a finger anywhere on the screen to charge, slide it sideways to aim and lift it to shoot.",
+      "tr": "Gücü doldurmak için parmağını ekranın herhangi bir yerinde tut, nişan için yana kaydır, atmak için kaldır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Read the miss call. SHORT! and LONG! tell you which side of the green you released on, AIR BALL! means you missed rim and board, and RIM OUT! means the power was right and only the aim was off.",
+      "tr": "Kaçan atışın yazısını oku. KISA! ve UZUN! yeşilin hangi tarafında bıraktığını söyler; HAVA TOPU! ne çembere ne tahtaya değdiğini, ÇEMBERDEN DÖNDÜ! ise gücün doğru olup yalnızca nişanın kaydığını gösterir."
+    },
+    {
+      "en": "The meter goes up and comes back down. If you are late on the way up, wait and catch the green on the way down instead of throwing a long shot.",
+      "tr": "Güç çubuğu çıkar ve geri iner. Yukarı çıkarken geç kaldıysan uzun bir atış yapmak yerine bekle ve yeşili inişte yakala."
+    },
+    {
+      "en": "The aim sways while you charge, more every round. Short, decisive releases give the sway less time to drift.",
+      "tr": "Doldururken nişan sallanır, her turda daha çok. Kısa ve kararlı bırakışlar sallanmaya daha az zaman tanır."
+    },
+    {
+      "en": "Don't rush the money ball: it alone is worth two points toward the target and 200 to your score.",
+      "tr": "Para topunda acele etme: tek başına hedefe iki sayı ve skoruna 200 puan yazar."
+    },
+    {
+      "en": "Seconds left at the end of a round are worth 20 points each, so a steady rhythm pays twice.",
+      "tr": "Tur sonunda kalan her saniye 20 puan eder; düzenli bir tempo iki kez kazandırır."
+    }
+  ],
+  "features": [
+    {
+      "en": "Five shooting spots with a money ball in every rack",
+      "tr": "Her rafında para topu olan beş atış noktası"
+    },
+    {
+      "en": "Ball physics with spin, rim rattles and bank shots",
+      "tr": "Dönüşlü top fiziği, çemberde dans eden toplar ve tahtadan sayılar"
+    },
+    {
+      "en": "Streaks that set the ball on fire after three in a row",
+      "tr": "Üst üste üç sayıdan sonra topu alev alev yakan seriler"
+    },
+    {
+      "en": "Rounds with a shorter clock, a higher target and a harder meter",
+      "tr": "Süresi kısalan, hedefi yükselen, güç çubuğu zorlaşan turlar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A basket is 100 (200 for a money ball) and a swish adds 50. From the third make in a row a streak adds 25 more per basket, up to 150. Making all five in a rack is a PERFECT RACK worth 250, and each second left when you pass a round is worth 20.",
+        "tr": "Giren top 100 puan (para topu 200), filelere dokunmadan giren top 50 puan daha getirir. Üst üste üçüncü sayıdan itibaren seri her basketle 25 puan daha ekler, en fazla 150'ye kadar. Bir raftaki beş topun hepsini sokmak 250 puanlık KUSURSUZ RAF'tır; turu geçtiğinde kalan her saniye 20 puandır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there a guide for the shot?",
+        "tr": "Atış için yardımcı çizgi var mı?"
+      },
+      "a": {
+        "en": "Only at first. The early shots of round 1 show the whole arc, the rest of round 1 and the first spot of round 2 a short stub, and after that you shoot by feel.",
+        "tr": "Yalnızca başta. 1. turun ilk atışlarında topun bütün yolu, turun kalanında ve 2. turun ilk noktasında kısa bir parçası görünür; sonrasında tamamen hissiyatla atarsın."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Hoop Shot is single-player. Your best score goes on the game's leaderboard on ayvago.com, where you can compare it with others.",
+        "tr": "Basket Atışı tek kişilik. En iyi skorun ayvago.com'daki sıralamaya girer; orada başkalarınınkiyle karşılaştırabilirsin."
+      }
+    }
+  ]
+}

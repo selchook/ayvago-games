@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Connect Four is played on an upright board seven columns wide and six rows high. You drop red chips, the opponent drops yellow ones, and each chip falls to the lowest free hole of its column. Four of your colour in a line, across, up or on a diagonal, wins the round. A full board with no line is a draw.\n\nSolo, the game is a run against a computer that keeps learning. You have 3 lives. Every round you win moves the rival up one step, from Rookie through Easy, Medium, Tough, Hard and Expert to Legend, which searches nine moves ahead. Every round you lose costs a life, and the run ends when the last one is gone. You open the odd-numbered rounds and the computer opens the even ones.\n\nOnline, two people on ayvago.com play a single game: the host plays red, turns alternate, and the first line of four decides it.",
+    "tr": "Dört Bağla, yedi sütun genişliğinde ve altı sıra yüksekliğinde dik bir tahtada oynanır. Sen kırmızı pul, rakibin sarı pul bırakır; her pul sütunundaki en alttaki boş deliğe düşer. Kendi renginden dört pulu yatay, dikey ya da çapraz bir çizgiye dizen eli kazanır. Tahta dolar da kimse dört dizemezse el berabere biter.\n\nTek başına oynarken karşında giderek akıllanan bir bilgisayar var. 3 canın olur. Kazandığın her el rakibi bir basamak yükseltir: Acemi, Kolay, Orta, Zorlu, Zor, Uzman ve dokuz hamle ileriyi hesaplayan Efsane. Kaybettiğin her el bir cana mal olur, son can gidince oyun biter. Tek sayılı elleri sen, çift sayılı elleri bilgisayar açar.\n\nÇevrimiçi modda ayvago.com'da iki kişi tek bir oyun oynar: oda sahibi kırmızıyla oynar, sıra karşılıklı ilerler ve ilk dörtlüyü kuran kazanır."
+  },
+  "howToPlay": [
+    {
+      "en": "Wait for YOUR TURN, then choose a column. Your chip bobs above it while you decide.",
+      "tr": "SENİN SIRAN yazısını bekle, sonra bir sütun seç. Karar verirken pulun o sütunun üstünde süzülür."
+    },
+    {
+      "en": "Drop the chip. It lands on top of whatever is already in that column; a full column will not take another.",
+      "tr": "Pulu bırak. Sütunda ne varsa onun üstüne oturur; dolu sütun yeni pul almaz."
+    },
+    {
+      "en": "Line up four of your chips to win the round, and stop the yellow chips from doing the same.",
+      "tr": "Dört pulunu bir hizaya getirip eli kazan, sarı pulların aynısını yapmasını da engelle."
+    },
+    {
+      "en": "After each round the board empties and the next one begins, until you run out of lives.",
+      "tr": "Her elden sonra tahta boşalır ve yeni el başlar; canların bitene kadar böyle sürer."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D choose a column, Space, Enter or ↓ drops the chip, and the number keys 1 to 7 drop straight into that column. Esc or P pauses a solo game.",
+      "tr": "← → ya da A / D sütun seçer; Boşluk, Enter ya da ↓ pulu bırakır, 1'den 7'ye kadar rakam tuşları pulu doğrudan o sütuna atar. Tek kişilik oyunda Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap anywhere in a column to drop your chip there.",
+      "tr": "Pulu bırakmak için sütunun herhangi bir yerine dokun."
+    },
+    "mouse": {
+      "en": "Move the pointer over the board to aim and click to drop.",
+      "tr": "Nişan almak için fareyi tahtanın üstünde gezdir, bırakmak için tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Take the middle column early. A chip there belongs to more possible lines of four than a chip anywhere else.",
+      "tr": "Ortadaki sütunu erkenden tut. Oraya düşen pul, başka her yerdekinden daha çok dörtlü ihtimaline katılır."
+    },
+    {
+      "en": "Before every drop, look at the hole just above where your chip will land. Filling it may give the opponent the square they were waiting for.",
+      "tr": "Her hamleden önce pulunun ineceği yerin hemen üstündeki deliğe bak. Altını doldurmak, rakibin beklediği yeri ona açabilir."
+    },
+    {
+      "en": "Build two threats at once, for example three in a row with both ends open. The opponent can block only one per move.",
+      "tr": "Aynı anda iki tehdit kur, örneğin iki ucu açık bir üçlü. Rakip her hamlede yalnızca birini kapatabilir."
+    },
+    {
+      "en": "Quick wins pay. A won round is worth 100 times the rival's level, plus 10 points for every move under 22 you needed and 25 for each round in your current streak.",
+      "tr": "Çabuk kazanmak kazandırır. Kazanılan el rakibin seviyesinin 100 katı puan eder; 22'nin altında kalan her hamlen için 10, serindeki her el için 25 puan daha eklenir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Classic 7 × 6 board with falling chips",
+      "tr": "Pulların düştüğü klasik 7 × 6 tahta"
+    },
+    {
+      "en": "Seven computer rivals, from Rookie to Legend",
+      "tr": "Acemi'den Efsane'ye yedi bilgisayar rakip"
+    },
+    {
+      "en": "Three lives and a win streak that adds to your score",
+      "tr": "Üç can ve skoruna eklenen galibiyet serisi"
+    },
+    {
+      "en": "Online games against a friend",
+      "tr": "Arkadaşına karşı çevrimiçi oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the computer only climbs three short steps, never looks more than two moves ahead and often drops a chip at random. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da bilgisayar yalnızca üç kısa basamak çıkar, iki hamleden fazla ileriyi hesaplamaz ve sık sık rastgele pul atar. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens on a draw?",
+        "tr": "Berabere biterse ne olur?"
+      },
+      "a": {
+        "en": "In a solo run a draw gives 25 points, keeps your lives and the rival's level as they are, and the next round starts.",
+        "tr": "Tek kişilik oyunda beraberlik 25 puan getirir; canın ve rakibin seviyesi olduğu gibi kalır, sıradaki el başlar."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes, online. One of you opens a room on ayvago.com and shares the invite; the host plays red. After the game the host can call a rematch.",
+        "tr": "Evet, çevrimiçi. Biriniz ayvago.com'da oda açıp davet bağlantısını paylaşır; oda sahibi kırmızıyla oynar. Oyun bitince oda sahibi rövanş başlatabilir."
+      }
+    }
+  ]
+}

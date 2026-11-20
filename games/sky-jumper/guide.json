@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Sky Jumper sends your character, the one you chose on ayvago.com, bouncing up an endless column of floating platforms. Jumping is automatic: every platform you land on throws you up again, and all you do is steer left and right. Run off one side of the screen and you come back on the other.\n\nThe score is the height you reach in metres plus everything you pick up on the way. The scenery climbs with you, from grass platforms through sand, stone and snow to cake, while the sky fades from day blue to deep night and stars come out above 1,500 metres.\n\nThe climb hardens over the first 3,000 metres: platforms spread further apart, more of them slide sideways, and cracked ones that crumble under your feet turn up more often. Past 150 metres monsters appear: flying ones you can stomp from above and spiked balls you must steer around. Springs launch you extra high, and above 300 metres a jetpack may carry you up for a few seconds. Drop below the screen or touch a monster the wrong way and the run is over.",
+    "tr": "Gök Zıplayıcı, ayvago.com'da seçtiğin karakteri havada süzülen platformlardan oluşan sonsuz bir sütunda yukarı zıplatıyor. Zıplama kendiliğinden olur: kondüğün her platform seni yeniden yukarı fırlatır, sana yalnızca sağa sola yön vermek kalır. Ekranın bir yanından çıkarsan öbür yanından girersin.\n\nSkorun, metre cinsinden ulaştığın yükseklik artı yolda topladıklarındır. Manzara da seninle tırmanır: çimen platformlardan kuma, taşa, karla kaplı platformlara ve en sonunda pastaya. Gökyüzü gündüz mavisinden koyu geceye döner, 1.500 metrenin üstünde yıldızlar çıkar.\n\nTırmanış ilk 3.000 metre boyunca zorlaşır: platformlar birbirinden uzaklaşır, daha çoğu yana kayar, ayağının altında ufalanan çatlak platformlar sıklaşır. 150 metreden sonra yaratıklar belirir: tepesine basabileceğin uçan yaratıklar ve etrafından dolaşman gereken dikenli toplar. Yaylar seni çok daha yükseğe fırlatır, 300 metrenin üstünde bir jet sırt çantası seni birkaç saniye yukarı taşıyabilir. Ekranın altına düşersen ya da bir yaratığa yanlış yerden değersen oyun biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Steer the falling character over the next platform; the bounce happens by itself.",
+      "tr": "Düşen karakteri bir sonraki platformun üstüne yönlendir; zıplama kendiliğinden olur."
+    },
+    {
+      "en": "Land on a spring for a big leap. The character spins as it flies up.",
+      "tr": "Büyük bir sıçrayış için yaya kon. Karakter yükselirken takla atar."
+    },
+    {
+      "en": "Avoid the cracked platforms: they break under you and give no bounce.",
+      "tr": "Çatlak platformlardan uzak dur: altında kırılırlar ve seni zıplatmazlar."
+    },
+    {
+      "en": "Collect carrots, grab jetpacks, stomp flying monsters and steer around spiked balls.",
+      "tr": "Havuçları topla, jet çantalarını kap, uçan yaratıkların tepesine bas, dikenli toplardan kaç."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D steer. Esc or P pauses.",
+      "tr": "← → ya da A / D yön verir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag for a stick; the further you push it, the faster the character moves sideways.",
+      "tr": "Ekranda herhangi bir yere bas ve sürükle: bir kumanda kolu çıkar; ne kadar çok itersen karakter yana o kadar hızlı gider."
+    }
+  },
+  "tips": [
+    {
+      "en": "Use the wrap-around. When the next platform is far across, leaving through the nearer edge is often the shorter way.",
+      "tr": "Ekranın kenarından geçişi kullan. Sonraki platform karşı uçtaysa yakın kenardan çıkmak çoğu zaman daha kısa yoldur."
+    },
+    {
+      "en": "If a cracked platform is the only thing under you, don't wait for it to save you: steer toward a solid one or wrap to the other side.",
+      "tr": "Altında yalnızca çatlak bir platform varsa onun seni kurtarmasını bekleme: sağlam bir platforma yönel ya da ekranın öbür yanına geç."
+    },
+    {
+      "en": "A stomp needs you falling onto the monster from above; coming up from below or meeting it from the side means CAUGHT!. Spiked balls can never be stomped.",
+      "tr": "Bir yaratığı ezmek için tepesine düşmen gerekir; aşağıdan ya da yandan değersen YAKALANDIN! Dikenli toplar hiçbir zaman ezilmez."
+    },
+    {
+      "en": "The jetpack flies for 2.6 seconds and smashes any monster in its way. When it runs out you keep rising for a moment, so use that time to pick your landing.",
+      "tr": "Jet çantası 2,6 saniye uçurur ve yoluna çıkan her yaratığı devirir. Bitince bir an daha yükselmeye devam edersin; bu süreyi konacağın yeri seçmek için kullan."
+    }
+  ],
+  "features": [
+    {
+      "en": "Your own Ayvago character with its jump, fall and hit poses",
+      "tr": "Zıplama, düşme ve yakalanma pozlarıyla kendi Ayvago karakterin"
+    },
+    {
+      "en": "Springs, jetpacks, carrots and golden carrots",
+      "tr": "Yaylar, jet çantaları, havuçlar ve altın havuçlar"
+    },
+    {
+      "en": "Five scenery zones and a sky that darkens as you climb",
+      "tr": "Beş farklı manzara ve tırmandıkça kararan gökyüzü"
+    },
+    {
+      "en": "Moving and breaking platforms that grow more common with height",
+      "tr": "Yükseldikçe çoğalan kayan ve kırılan platformlar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "One point per metre climbed, 20 per carrot, 100 per golden carrot, 50 per monster defeated and 50 more at every 500-metre mark.",
+        "tr": "Tırmanılan her metre 1, her havuç 20, her altın havuç 100, alt edilen her yaratık 50 puan; her 500 metrede bir de 50 puan bonus gelir."
+      }
+    },
+    {
+      "q": {
+        "en": "How does a run end?",
+        "tr": "Oyun nasıl biter?"
+      },
+      "a": {
+        "en": "YOU FELL! when you drop below the bottom of the screen, CAUGHT! when a monster touches you any way but a stomp. There are no extra lives; the next run starts from the ground.",
+        "tr": "Ekranın altına düşersen DÜŞTÜN!, bir yaratık seni ezme dışında herhangi bir şekilde yakalarsa YAKALANDIN!. Ek can yoktur; yeni oyun yerden başlar."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "No, but the start is gentle: there are no monsters in the first 150 metres, and until you pass 60 metres the ground itself bounces you back up.",
+        "tr": "Hayır, ama başlangıç yumuşaktır: ilk 150 metrede yaratık yoktur ve 60 metreyi geçene kadar zemin de seni yeniden yukarı fırlatır."
+      }
+    }
+  ]
+}

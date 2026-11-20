@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Turkish draughts, simply dama in Turkey, is played on all 64 squares of an 8 × 8 board rather than on the dark squares alone. Each side has 16 men lined up on its second and third rows. Men move one square straight forward or sideways, never diagonally and never backwards. A man that reaches the far row is crowned a dama, which slides any distance along a row or column, like a rook in chess.\n\nCapturing is what makes the game. A man jumps an enemy piece directly in front of it or beside it and lands just behind; a dama can take from a distance and land on any free square beyond. Capturing is compulsory, a jump that lands where another capture is possible keeps going, and when several captures are open you must play the one that takes the most pieces. Taken pieces leave the board at once, and a dama may not turn back 180° between two jumps.\n\nYou lose when you have no legal move left, which includes losing every piece. Solo you play white with 2 lives against a rival that grows from Rookie to Dama Master; online you play a friend on ayvago.com.",
+    "tr": "Dama, 8 × 8 tahtanın yalnızca koyu karelerinde değil, 64 karesinin hepsinde oynanır. Her tarafın 16 taşı, kendi ikinci ve üçüncü sırasına dizilir. Taşlar bir kare düz ileri ya da yana gider; çapraz ve geri gitmez. Karşı son sıraya varan taş dama olur ve satrançtaki kale gibi bir sıra ya da sütun boyunca istediği kadar ilerler.\n\nOyunu taş almak belirler. Taş, hemen önündeki ya da yanındaki rakip taşın üstünden atlayıp arkasındaki kareye iner; dama uzaktan alıp arkadaki herhangi bir boş kareye inebilir. Taş almak zorunludur; indiğin yerden bir taş daha alınabiliyorsa hamle devam eder ve birden çok alma yolu varsa en çok taş alanı oynamak zorundasın. Alınan taş hemen tahtadan kalkar; dama iki alma arasında geldiği yöne geri dönemez.\n\nOynayacak hamlen kalmadığında, bütün taşlarını kaybetmen de buna dahil, oyunu kaybedersin. Tek başına beyazla, 2 canla, Acemi'den Dama Ustası'na yükselen bir rakibe karşı oynarsın; çevrimiçi modda ayvago.com'da bir arkadaşınla oynarsın."
+  },
+  "howToPlay": [
+    {
+      "en": "On YOUR TURN, the pieces that can move have green rings. Choose one, then one of its marked squares.",
+      "tr": "SIRA SENDE yazınca hamle yapabilen taşların yeşil halkası olur. Birini, sonra işaretli karelerinden birini seç."
+    },
+    {
+      "en": "When CAPTURE IS A MUST! shows, only the pieces that can make the longest capture are offered.",
+      "tr": "TAŞ ALMAK ZORUNLU! yazdığında yalnızca en uzun almayı yapabilen taşlar seçilebilir."
+    },
+    {
+      "en": "For a multi-jump, choose the final square, or, if routes split, the landing squares one by one.",
+      "tr": "Çoklu almada son kareyi seç; yollar ayrılıyorsa iniş karelerini tek tek seç."
+    },
+    {
+      "en": "Reach the far row to crown a DAMA. Leave your opponent without a move to win the round.",
+      "tr": "Karşı son sıraya ulaşıp DAMA çık. Rakibini hamlesiz bırakırsan eli kazanırsın."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the cursor, Space, Enter or Z selects a piece and plays the move, X or Backspace drops the selection. Esc or P pauses a solo game.",
+      "tr": "Ok tuşları ya da WASD imleci gezdirir; Boşluk, Enter ya da Z taşı seçer ve hamleyi oynar, X ya da Backspace seçimi bırakır. Tek kişilik oyunda Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a piece, then the square it should go to. If only one move ends on a square, tapping that square plays it straight away.",
+      "tr": "Önce taşa, sonra gideceği kareye dokun. Bir kareye tek bir hamle varıyorsa o kareye dokunmak hamleyi hemen oynar."
+    },
+    "mouse": {
+      "en": "Click a piece and then its target square.",
+      "tr": "Bir taşa, sonra gideceği kareye tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Because capturing is forced, you can offer a man on purpose to pull an enemy piece where you can take two or three back.",
+      "tr": "Taş almak zorunlu olduğu için bir taşını bilerek verip rakibin taşını, karşılığında iki üç taş alabileceğin bir yere çekebilirsin."
+    },
+    {
+      "en": "Keep your men side by side. A piece with a friend behind it cannot be jumped from the front, and a gap in your line is an invitation.",
+      "tr": "Taşlarını yan yana tut. Arkası dolu bir taş önden alınamaz; sırandaki bir boşluk ise rakibe davetiyedir."
+    },
+    {
+      "en": "A dama is worth several men, and an open file in front of one of your men is a quick path to the far row. Guard the files that lead to your own back row.",
+      "tr": "Bir dama birkaç taş değerindedir; taşının önündeki açık sütun son sıraya hızlı bir yoldur. Kendi arka sırana açılan sütunları kolla."
+    },
+    {
+      "en": "Big captures score more: a move taking n pieces is worth 10 × n × n, so a triple capture gives 90 against 10 for a single.",
+      "tr": "Büyük almalar daha çok puan getirir: n taş alan hamle 10 × n × n puan eder; tekli alma 10, üçlü alma 90 puandır."
+    }
+  ],
+  "features": [
+    {
+      "en": "Turkish rules: orthogonal moves, compulsory longest capture, flying dama",
+      "tr": "Türk daması kuralları: düz hamleler, zorunlu en uzun alma, uzağa giden dama"
+    },
+    {
+      "en": "Six computer rivals, from Rookie to Dama Master",
+      "tr": "Acemi'den Dama Ustası'na altı bilgisayar rakip"
+    },
+    {
+      "en": "Movable pieces and forced captures highlighted",
+      "tr": "Oynayabilen taşlar ve zorunlu almalar işaretli"
+    },
+    {
+      "en": "Online games against a friend",
+      "tr": "Arkadaşına karşı çevrimiçi oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "When is it a draw?",
+        "tr": "Oyun ne zaman berabere biter?"
+      },
+      "a": {
+        "en": "When 50 moves in a row are made by damas without any capture or man move, or when each side is down to a single dama.",
+        "tr": "Art arda 50 hamle boyunca yalnızca dama oynanıp hiç taş alınmazsa ya da iki tarafın da elinde tek bir dama kalırsa."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Captures score 10 × n × n, a new dama 50. A won round adds 200 times the rival's level, 15 per man and 30 per dama you still have, and 50 for each win in your streak; a draw gives 60.",
+        "tr": "Almalar 10 × n × n, yeni dama 50 puan getirir. Kazanılan el rakibin seviyesinin 200 katı, elinde kalan her taş için 15, her dama için 30 ve serindeki her galibiyet için 50 puan ekler; beraberlik 60 puan verir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode, and can I play a friend?",
+        "tr": "Kolay modu var mı, arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes to both. On Easy the rival barely looks ahead, often plays a random move and stops after three levels; those runs are not ranked. Online, open a room on ayvago.com: the starting player takes white and moves first.",
+        "tr": "İkisi de var. Kolay'da rakip ileriyi pek hesaplamaz, sık sık rastgele oynar ve üç seviyede kalır; bu oyunlar sıralamaya girmez. Çevrimiçi oynamak için ayvago.com'da bir oda aç: başlayan oyuncu beyazı alır ve ilk hamleyi yapar."
+      }
+    }
+  ]
+}

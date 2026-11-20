@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Reversi, the game also sold as Othello, is played on an 8 × 8 board that starts with four discs in the centre, two black and two white. You play black. A move puts one of your discs where it traps a straight line of the opponent's discs, across, down or diagonally, between the new disc and one already on the board. Every trapped disc flips to your colour, and one move can flip lines in several directions at once.\n\nA square only counts as a move if it flips something, so the dotted squares on the board are your options. With no legal move you must PASS; when neither side can move, the round ends and whoever has more discs wins.\n\nSolo, you play rounds against a computer that improves after each of your wins, from Rookie through Easy, Medium, Hard and Expert to Legend, and you have 2 lives. You move first in odd rounds, the computer in even ones. Online, you play one game against a friend on ayvago.com.",
+    "tr": "Othello adıyla da bilinen Reversi, ortasında ikisi siyah ikisi beyaz dört taşla başlayan 8 × 8 bir tahtada oynanır. Sen siyahla oynarsın. Hamle yaparken taşını öyle bir kareye koyarsın ki rakibin taşlarından oluşan düz bir sıra, yatay, dikey ya da çapraz olarak, yeni taşınla tahtadaki başka bir taşın arasında sıkışsın. Sıkışan her taş senin rengine döner; tek hamle birkaç yönde birden taş çevirebilir.\n\nBir kare ancak taş çeviriyorsa hamle sayılır; tahtadaki noktalı kareler senin seçeneklerindir. Oynayacak hamlen yoksa PAS geçersin; iki taraf da oynayamadığında el biter ve taşı çok olan kazanır.\n\nTek başına oynarken her galibiyetinden sonra güçlenen bir bilgisayara karşı oynarsın: Acemi, Kolay, Orta, Zor, Uzman ve Efsane. 2 canın olur. Tek sayılı ellerde sen, çift sayılı ellerde bilgisayar başlar. Çevrimiçi modda ayvago.com'da bir arkadaşınla tek oyun oynarsın."
+  },
+  "howToPlay": [
+    {
+      "en": "On YOUR TURN, look at the dotted squares: each one flips at least one of the opponent's discs.",
+      "tr": "SENİN SIRAN yazınca noktalı karelere bak: her biri rakibin en az bir taşını çevirir."
+    },
+    {
+      "en": "Choose one. Your disc lands and every trapped line turns to your colour.",
+      "tr": "Birini seç. Taşın yerine oturur ve sıkışan bütün sıralar senin rengine döner."
+    },
+    {
+      "en": "If a player has no legal square, PASS! appears and the other side plays again.",
+      "tr": "Bir oyuncunun oynayabileceği kare yoksa PAS! yazar ve sıra yeniden diğer tarafa geçer."
+    },
+    {
+      "en": "When nobody can move, the discs are counted. Lose a round and one of your 2 lives is gone.",
+      "tr": "Kimse oynayamayınca taşlar sayılır. Kaybettiğin her el 2 canından birini götürür."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD move the cursor, Space, Enter or Z plays the square under it. Esc or P pauses a solo game.",
+      "tr": "Ok tuşları ya da WASD imleci gezdirir; Boşluk, Enter ya da Z imlecin altındaki kareye oynar. Tek kişilik oyunda Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap a dotted square to play it. Online, tapping a square that flips nothing jumps the cursor to the nearest legal one, and a second tap plays it.",
+      "tr": "Oynamak için noktalı bir kareye dokun. Çevrimiçi oyunda hiçbir şey çevirmeyen bir kareye dokunursan imleç en yakın geçerli kareye atlar; ikinci dokunuş oraya oynar."
+    },
+    "mouse": {
+      "en": "Click a dotted square to place your disc.",
+      "tr": "Taşını koymak için noktalı bir kareye tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "Corners can never be flipped. Take them when you can, and avoid the square diagonally next to an empty corner, which often hands that corner to the opponent.",
+      "tr": "Köşedeki taş asla çevrilemez. Fırsat bulunca köşeleri al; boş bir köşenin çaprazındaki kareden ise uzak dur, çoğu zaman o köşeyi rakibe verir."
+    },
+    {
+      "en": "Flipping many discs early is not a lead. Fewer discs mid-game usually means more choices for you and fewer for the computer.",
+      "tr": "Oyunun başında çok taş çevirmek önde olmak demek değildir. Oyun ortasında az taşın olması çoğu zaman senin seçeneklerini artırır, bilgisayarınkini azaltır."
+    },
+    {
+      "en": "Try to leave the opponent with no dotted squares of their own. A forced pass gives you two moves in a row.",
+      "tr": "Rakibi oynayacak kare bırakmadan sıkıştırmaya çalış. Zorunlu pas sana art arda iki hamle kazandırır."
+    },
+    {
+      "en": "Big wins pay. Every disc you flip scores 2, and a won round adds 150 times the rival's level, 10 per disc of your margin and 50 for each win in your streak.",
+      "tr": "Farklı kazanmak puan getirir. Çevirdiğin her taş 2 puan; kazanılan el rakibin seviyesinin 150 katı, farktaki her taş için 10 ve serindeki her galibiyet için 50 puan ekler."
+    }
+  ],
+  "features": [
+    {
+      "en": "Standard 8 × 8 Reversi with legal moves marked",
+      "tr": "Geçerli hamleleri işaretli, standart 8 × 8 Reversi"
+    },
+    {
+      "en": "Six computer rivals, from Rookie to Legend",
+      "tr": "Acemi'den Efsane'ye altı bilgisayar rakip"
+    },
+    {
+      "en": "Win streak bonus and two lives per run",
+      "tr": "Galibiyet serisi bonusu ve her oyunda iki can"
+    },
+    {
+      "en": "Online games against a friend",
+      "tr": "Arkadaşına karşı çevrimiçi oyun"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "What happens on a draw?",
+        "tr": "Berabere biterse ne olur?"
+      },
+      "a": {
+        "en": "An equal disc count gives 50 points, costs no life and does not move the rival up. The next round starts right away.",
+        "tr": "Taş sayıları eşitse 50 puan alırsın, can kaybetmezsin ve rakip seviye atlamaz. Sıradaki el hemen başlar."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the computer looks at most two moves ahead, often plays a random square and climbs only three levels. Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da bilgisayar en fazla iki hamle ilerisini hesaplar, sık sık rastgele bir kareye oynar ve yalnızca üç seviye çıkar. Kolay oyunlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes. Open a room on ayvago.com and share the invite. The starting player takes black and moves first; your score is the number of discs you end with.",
+        "tr": "Evet. ayvago.com'da bir oda açıp daveti paylaş. Başlayan oyuncu siyahı alır ve ilk hamleyi yapar; skorun, oyun sonunda sende kalan taş sayısıdır."
+      }
+    }
+  ]
+}

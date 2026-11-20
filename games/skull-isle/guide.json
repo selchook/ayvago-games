@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Skull Isle is a 3D pirate brawler in two halves. On land you clear an island wave by wave in close combat: chain sword swings into a spinning finisher, roll out of the red warning circles, fire your pistol and lob powder kegs into the crowd. Between islands you take the helm, set the sails and trade broadsides with skeleton rowboats, enemy sloops and, on later stormy routes, a ghost ship.\n\nThe voyage runs through five islands: Sandy Cove, Skeleton Docks, Kraken Bay, Cursed Village and Bone Reef. The Kraken waits on the third and Captain Bonebeard on the fifth; after that the islands come round again on a tougher lap, as long as you last. Gulls circling offshore mark hidden islets you can swim out to for extra treasure, but sharks hunt swimmers.\n\nYou sail as Anne, Henry, Mako or Sharky, each with a different strength. Barbarossa, with 130 health and Ernest the parrot, joins when you beat the Kraken or buy him with doubloons.",
+    "tr": "Kurukafa Adası iki yarıdan oluşan 3B bir korsan dövüş oyunu. Karada bir adayı dalga dalga yakın dövüşle temizlersin: kılıç vuruşlarını dönen bir bitirişe bağlar, kırmızı uyarı dairelerinden yuvarlanarak çıkar, tabancanı ateşler ve kalabalığın ortasına barut fıçısı fırlatırsın. Adalar arasında dümene geçer, yelkenleri ayarlar ve iskelet sandallarıyla, düşman şalupalarıyla, sonraki fırtınalı rotalarda da bir hayalet gemiyle borda ateşi değişirsin.\n\nYolculuk beş adadan geçer: Kumsal Koyu, İskelet İskelesi, Kraken Körfezi, Lanetli Köy ve Kemik Resifi. Üçüncü adada Kraken, beşincide Kaptan Kemiksakal bekler; sonra adalar, dayanabildiğin sürece daha zorlu bir turla yeniden gelir. Açıkta dönen martılar, yüzerek gidip ek hazine alabileceğin gizli adacıkları gösterir; ama köpekbalıkları yüzücüleri avlar.\n\nAnne, Henry, Mako ya da Sharky olarak yelken açarsın; her birinin ayrı bir gücü vardır. 130 canlı Barbarossa ve papağanı Ernest, Kraken'ı yenince ya da dublonla satın alınca seninle gelir."
+  },
+  "howToPlay": [
+    {
+      "en": "On each island, beat the waves of skeletons. Every blow, from thrown skulls to cannon fire, is shown in red first.",
+      "tr": "Her adada iskelet dalgalarını yen. Atılan kafataslarından top ateşine kadar her saldırı önce kırmızıyla gösterilir."
+    },
+    {
+      "en": "Hits fill your special meter. One pip fires a pistol shot; from the third island on, two full pips call a cannon barrage.",
+      "tr": "Vuruşların özel göstergeyi doldurur. Bir dolu bölme tabanca atışı yapar; üçüncü adadan itibaren iki dolu bölme top yağmuru çağırır."
+    },
+    {
+      "en": "When the island is plundered, spend its gold at the Dock Shop on your crew or your ship. After a boss island you also pick one boon for the rest of the voyage.",
+      "tr": "Ada yağmalanınca altınını İskele Dükkânı'nda tayfana ya da gemine harca. Boss adasından sonra yolculuğun geri kalanı için bir lütuf da seçersin."
+    },
+    {
+      "en": "Choose Calm Waters (fewer foes, less loot) or the Stormy Passage (more of both, plus a treasure chest), then sail. Your hull carries over between legs; if the ship sinks you lose some gold and swim ashore.",
+      "tr": "Sakin Sular'ı (az düşman, az ganimet) ya da Fırtınalı Geçit'i (ikisinden de bol, üstüne hazine sandığı) seç ve yelken aç. Gövdenin durumu bir sonraki yolculuğa taşınır; gemi batarsa biraz altın kaybeder, kıyıya yüzersin."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "WASD or arrows move, J or Space attack, K or Shift dodge, L special, E throws a keg. At sea: A/D or ←/→ steer, W/S or ↑/↓ set the sails, J or Space fire, K evade.",
+      "tr": "WASD ya da oklar yürütür, J ya da Boşluk saldırır, K ya da Shift yuvarlar, L özel, E fıçı fırlatır. Denizde: A/D ya da ←/→ dümen, W/S ya da ↑/↓ yelken, J ya da Boşluk ateş, K kaç."
+    },
+    "touch": {
+      "en": "Drag on the left half to walk or steer. ATTACK, DODGE, SPECIAL and KEG sit round your right thumb; at sea they become FIRE and EVADE, with the SAIL lever beside them.",
+      "tr": "Yürümek ya da dümen kırmak için sol yarıda sürükle. SALDIR, YUVARLAN, ÖZEL ve FIÇI sağ başparmağının çevresinde; denizde ATEŞ ve KAÇ olur, yanlarında YELKEN kolu durur."
+    }
+  },
+  "tips": [
+    {
+      "en": "Keep the combo going. Every kill scores more as the hit count climbs, up to double at 60 hits, and getting hit resets it.",
+      "tr": "Komboyu sürdür. Vuruş sayısı arttıkça her öldürme daha çok puan getirir, 60 vuruşta iki katına çıkar; darbe alınca sıfırlanır."
+    },
+    {
+      "en": "Against the Kraken, beat the arms first; the head only comes up after. Hit tentacles right after they slam the ground.",
+      "tr": "Kraken'a karşı önce kolları yen; başı ancak ondan sonra çıkar. Dokunaçlara yere vurdukları anda saldır."
+    },
+    {
+      "en": "Stay off the waterline on shark islands, and hit a shark while it thrashes in the shallows.",
+      "tr": "Köpekbalıklı adalarda su kenarından uzak dur; köpekbalığına sığlıkta çırpınırken vur."
+    },
+    {
+      "en": "Spend doubloons on the Treasure Map between runs. Powder Monkey starts each voyage with two kegs and Cannon Drill opens the barrage from the first island.",
+      "tr": "Oyunlar arasında dublonlarını Hazine Haritası'na harca. Barut Çocuğu her yolculuğa 2 fıçıyla başlatır, Top Talimi top yağmurunu ilk adadan açar."
+    }
+  ],
+  "features": [
+    {
+      "en": "Land brawling and ship battles in one run",
+      "tr": "Tek oyunda kara dövüşü ve gemi savaşı"
+    },
+    {
+      "en": "Five islands, the Kraken, Captain Bonebeard and a ghost ship",
+      "tr": "Beş ada, Kraken, Kaptan Kemiksakal ve bir hayalet gemi"
+    },
+    {
+      "en": "Five pirates, crew and ship upgrades, and ten boons",
+      "tr": "Beş korsan, tayfa ve gemi geliştirmeleri, on lütuf"
+    },
+    {
+      "en": "A Treasure Map of lasting upgrades paid in doubloons",
+      "tr": "Dublonla alınan kalıcı geliştirmelerle dolu bir Hazine Haritası"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How does a run end?",
+        "tr": "Bir oyun nasıl biter?"
+      },
+      "a": {
+        "en": "When your health runs out on an island. There is no last island: after Bone Reef the five come round again, harder each lap. The Second Wind boon or Treasure Map node brings you back once with part of your health.",
+        "tr": "Bir adada canın bittiğinde. Son ada yoktur: Kemik Resifi'nden sonra beş ada her turda daha zor olarak yeniden gelir. İkinci Nefes lütfu ya da Hazine Haritası'ndaki aynı adlı geliştirme seni bir kez canının bir kısmıyla geri getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Defeated foes score with the combo, every gold coin is worth 5 points, and chests, hidden treasure and sunk ships add more. A plundered island gives 300 × its number, a boss 2500, and both grow on each new lap.",
+        "tr": "Yenilen düşmanlar komboyla puan verir, her altın 5 puan eder; sandıklar, gizli hazineler ve batırılan gemiler de puan ekler. Yağmalanan ada numarasının 300 katını, boss 2500 puan verir; ikisi de her yeni turda artar."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy you have more health and a sturdier hull, foes are fewer and slower and warn you for longer, and a sinking costs less. Doubloons are halved and Easy runs stay off the leaderboard.",
+        "tr": "Evet. Kolay'da canın daha fazla, gövden daha sağlamdır; düşmanlar daha az ve yavaştır, daha uzun uyarır, batmak da daha az kaybettirir. Dublonlar yarıya iner ve Kolay oyunlar sıralamaya girmez."
+      }
+    }
+  ]
+}

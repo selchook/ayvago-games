@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Marble Maze is a 3D tilting-board puzzle. You never touch the glass marble itself: you tilt the whole board and let gravity roll it toward the flag, past holes in the floor and edges with nothing beneath them. There are 24 handcrafted levels in four worlds of six, the Wood Workshop, Lily Garden, Ice Cave and Sky Ruins, and each world brings its own tricks: narrow plank bridges, bouncy bumpers, jump pads, moving rafts, colour-coded buttons that open doors, slippery ice, sand and snow that slow you down, and keys you must collect before the goal opens.\n\nEvery level is worth up to three stars: one for reaching the flag, one for picking up every gem and one for beating the par time. Finishing a level unlocks the next, and your stars stay saved between visits.\n\nA run starts with five marbles. Each fall costs one, and checkpoints on the longer levels bring the marble back part of the way. A three-star finish earns an extra marble, and the run ends when the last marble is lost or when you press FINISH on the level screen.",
+    "tr": "Bilye Labirenti, üç boyutlu bir eğimli tahta bulmacası. Cam bilyeye hiç dokunmazsın: bütün tahtayı eğersin ve yerçekimi bilyeyi zemindeki deliklerin ve altı boş kenarların yanından bayrağa doğru yuvarlar. Altışar bölümlük dört dünyada 24 el yapımı bölüm var: Ahşap Atölye, Nilüfer Bahçesi, Buz Mağarası ve Gök Harabeleri. Her dünya kendi numaralarını getirir: dar tahta köprüler, zıp zıp tamponlar, zıplama pedleri, hareketli sallar, kapıları açan renkli düğmeler, kaygan buz, yavaşlatan kum ve kar, hedefi açmak için toplanması gereken anahtarlar.\n\nHer bölüm en fazla üç yıldız getirir: biri bayrağa ulaşmaktan, biri bütün mücevherleri toplamaktan, biri de par süresini geçmekten. Bir bölümü bitirmek sonrakini açar, yıldızların da kaydedilir.\n\nOyuna beş bilyeyle başlarsın. Her düşüş bir bilye götürür; uzun bölümlerdeki kontrol noktaları bilyeyi yolun bir kısmından geri getirir. Üç yıldızlı bitiriş fazladan bir bilye kazandırır; son bilye düşünce ya da bölüm ekranında BİTİR'e basınca oyun biter."
+  },
+  "howToPlay": [
+    {
+      "en": "On a touch screen, choose STICK or TILT on the menu. Then pick a level on the SELECT LEVEL screen.",
+      "tr": "Dokunmatik ekranda menüden ÇUBUK ya da EĞİM'i seç. Sonra BÖLÜM SEÇ ekranından bir bölüm seç."
+    },
+    {
+      "en": "Tilt the board to roll the marble. It builds speed, so start tilting back before you reach a turn.",
+      "tr": "Bilyeyi yuvarlamak için tahtayı eğ. Bilye hızlanır; virajdan önce ters yöne eğmeye başla."
+    },
+    {
+      "en": "Collect the gems, press buttons to open gates and pick up every key if the level has them; the goal stays shut until you do.",
+      "tr": "Mücevherleri topla, kapıları açmak için düğmelere bas, bölümde anahtar varsa hepsini al; almadan hedef açılmaz."
+    },
+    {
+      "en": "Roll into the flag to clear the level, then choose NEXT, RETRY or LEVELS.",
+      "tr": "Bölümü bitirmek için bayrağa yuvarlan, sonra SONRAKİ, TEKRAR ya da BÖLÜMLER'i seç."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD tilt the board. On the level screen the arrows choose and Enter starts. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD tahtayı eğer. Bölüm ekranında oklarla seçer, Enter ile başlarsın. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "STICK: put a thumb anywhere and drag; how far you drag sets how steeply the board tips. TILT: tilt the phone itself, and tap CENTRE to make the way you are holding it the flat position.",
+      "tr": "ÇUBUK: başparmağını herhangi bir yere koyup sürükle; ne kadar uzağa sürüklersen tahta o kadar eğilir. EĞİM: telefonun kendisini eğ; tuttuğun açıyı düz kabul ettirmek için ORTALA'ya dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Small, early corrections beat big ones. A full tilt is fast but hard to stop, especially on ice, where the marble keeps sliding.",
+      "tr": "Küçük ve erken düzeltmeler büyüklerinden iyidir. Tam eğim hızlıdır ama durdurması zordur; özellikle bilyenin kaymaya devam ettiği buzda."
+    },
+    {
+      "en": "Clear a new level safely first and chase the par time on a retry. Within a run each level keeps only its best score, so replaying never lowers your total.",
+      "tr": "Yeni bir bölümü önce sağlam bitir, par süresini tekrar oynarken kovala. Bir oyunda her bölümün yalnızca en iyi puanı sayılır; tekrar oynamak toplamını asla düşürmez."
+    },
+    {
+      "en": "Every three-star finish adds a marble, even on a replay, so on a level you know well it is worth going for every gem and the par time.",
+      "tr": "Üç yıldızlı her bitiriş, tekrar oynasan bile bir bilye ekler; iyi bildiğin bir bölümde bütün mücevherleri ve par süresini kovalamaya değer."
+    },
+    {
+      "en": "Bumpers and jump pads throw the marble hard. Ease off the tilt before you touch one so you can steer the landing.",
+      "tr": "Tamponlar ve zıplama pedleri bilyeyi sertçe fırlatır. Birine değmeden önce eğimi azalt ki inişi yönlendirebilesin."
+    }
+  ],
+  "features": [
+    {
+      "en": "24 handcrafted levels across four themed worlds",
+      "tr": "Dört temalı dünyada 24 el yapımı bölüm"
+    },
+    {
+      "en": "Three stars per level for finishing, gems and time",
+      "tr": "Bitiriş, mücevher ve süre için bölüm başına üç yıldız"
+    },
+    {
+      "en": "Stick or real phone-tilt control",
+      "tr": "Çubukla ya da telefonu gerçekten eğerek kontrol"
+    },
+    {
+      "en": "Easy and Normal difficulty",
+      "tr": "Kolay ve Normal zorluk"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "A cleared level pays 100 per star, 25 per gem, 5 for every second you finish inside one and a half times the par time, and 10 times the level number. Your run score adds up the best result of each level you cleared.",
+        "tr": "Bitirilen bölüm yıldız başına 100, mücevher başına 25, par süresinin bir buçuk katından erken bitirdiğin her saniye için 5 ve bölüm numarasının 10 katı kadar puan verir. Oyun puanın, bitirdiğin her bölümün en iyi sonucunun toplamıdır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the marble rolls slower and is easier to stop, you start with eight marbles instead of five and the par times are longer. Easy runs are practice and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da bilye daha yavaş yuvarlanır ve daha kolay durur, beş yerine sekiz bilyeyle başlarsın, par süreleri de daha uzundur. Kolay oyunlar antrenman sayılır, sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Does tilt control work on every phone?",
+        "tr": "Eğimle kontrol her telefonda çalışır mı?"
+      },
+      "a": {
+        "en": "It needs the phone's motion sensor. Some phones ask for permission first, and the game shows a TURN TILT ON button for that; STICK works everywhere.",
+        "tr": "Telefonun hareket sensörü gerekir. Bazı telefonlar önce izin ister, oyun bunun için EĞİMİ AÇ düğmesini gösterir; ÇUBUK her cihazda çalışır."
+      }
+    }
+  ]
+}

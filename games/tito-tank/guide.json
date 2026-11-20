@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Tito's Tank is a turn-based artillery duel. Two tanks face each other across a wide valley of rolling hills, each with its commander standing in the hatch; yours is your Ayvago character. You take turns: set the barrel's angle, charge a shot and watch the shell arc over the hills. One shell landing on or right beside a tank destroys it and ends the round, so every round is a race to land the first clean hit.\n\nThe terrain fights back. Shells dig craters and the tanks sink into the new ground, and the wind changes before every single shot, pushing shells left or right. Each tank may only drive a short way from its starting pad, enough to find a better angle but not to escape.\n\nA match is first to three rounds. Each round the hills get higher, the tanks start farther apart and the sky turns from morning toward night. Play the computer, which aims more sharply every round and with every shot it fires, or challenge a friend online.",
+    "tr": "Tito'nun Tankı, sıra tabanlı bir topçu düellosu. İki tank tepelerle dolu geniş bir vadide karşı karşıya durur; her tankın kapağında komutanı durur, seninki Ayvago karakterindir. Sırayla oynarsınız: namlunun açısını ayarla, atışı doldur ve mermiyi tepelerin üzerinden süzülürken izle. Bir tankın üstüne ya da hemen yanına düşen tek mermi onu yok eder ve turu bitirir; her tur, temiz ilk isabeti bulma yarışıdır.\n\nArazi de karşı koyar. Mermiler krater açar, tanklar yeni zemine oturur; rüzgâr da her atıştan önce değişir ve mermileri sağa sola iter. Her tank başlangıç yerinden ancak biraz uzaklaşabilir: daha iyi bir açı bulmaya yeter, kaçmaya yetmez.\n\nMaçı üç turu ilk alan kazanır. Her turda tepeler yükselir, tanklar birbirinden daha uzakta başlar ve gökyüzü sabahtan geceye döner. Her turda ve attığı her mermiyle daha iyi nişan alan bilgisayara karşı oynayabilir ya da çevrimiçi bir arkadaşına meydan okuyabilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "At the start of a round the camera shows both tanks. Against the computer you fire first in round 1; after that, whoever lost the last round starts.",
+      "tr": "Tur başında kamera iki tankı da gösterir. Bilgisayara karşı 1. turda ilk atış senindir; sonrasında bir önceki turu kaybeden başlar."
+    },
+    {
+      "en": "On your turn, check the WIND chip, set the barrel's angle and, if you like, drive a little to either side.",
+      "tr": "Sıra sana geçince RÜZGÂR göstergesine bak, namlunun açısını ayarla, istersen tankı biraz sağa ya da sola sür."
+    },
+    {
+      "en": "Hold fire to charge the power from 10 to 100 and let go to shoot.",
+      "tr": "Gücü 10'dan 100'e doldurmak için ateş tuşunu basılı tut, atmak için bırak."
+    },
+    {
+      "en": "Destroy the other tank to win the round. Win three rounds to be CHAMPION.",
+      "tr": "Turu kazanmak için karşı tankı yok et. Üç tur kazanırsan ŞAMPİYON olursun."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "↑ ↓ or W / S raise and lower the barrel, ← → or A / D drive. Hold Space or Enter to charge and let go to fire. Esc or P pauses.",
+      "tr": "↑ ↓ ya da W / S namluyu kaldırır ve indirir, ← → ya da A / D tankı sürer. Doldurmak için Boşluk'u ya da Enter'ı basılı tut, ateşlemek için bırak. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Drag anywhere on the battlefield and the barrel points at your finger. Drag your own tank to drive it. Hold the round ATEŞ / FIRE button and release it to shoot; tap the minimap at the top to look at another part of the valley.",
+      "tr": "Savaş alanında herhangi bir yeri sürükle, namlu parmağına döner. Tankını sürüklersen ilerler. Atış için yuvarlak ATEŞ düğmesini basılı tutup bırak; vadinin başka bir yerine bakmak için üstteki küçük haritaya dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Your last shot stays on screen as a faint arc and a mark on the power meter. Change one thing at a time, angle or power, and compare it with that arc.",
+      "tr": "Son atışın ekranda soluk bir yay ve güç göstergesinde bir çizgi olarak kalır. Her seferinde tek bir şeyi, açıyı ya da gücü değiştir ve o yayla karşılaştır."
+    },
+    {
+      "en": "Wind changes before every shot, so a setting that just missed by a little may be wrong now. Look at the arrow's length and direction again each turn.",
+      "tr": "Rüzgâr her atıştan önce değişir; az önce kıl payı kaçan ayar şimdi yanlış olabilir. Her turda okun uzunluğuna ve yönüne yeniden bak."
+    },
+    {
+      "en": "Don't fire straight up into a headwind. A shell that comes back down on your own tank counts as a SELF-DESTRUCT and hands the round to your rival.",
+      "tr": "Karşıdan esen rüzgârda dümdüz yukarı ateş etme. Kendi tankının üstüne geri düşen mermi KENDİNİ VURDUN! sayılır ve turu rakibine verir."
+    },
+    {
+      "en": "The computer improves with every shot it takes in a round. Finishing early matters: a kill with your first shot of the round pays 300 extra.",
+      "tr": "Bilgisayar bir turda attığı her mermiyle daha isabetli olur. Erken bitirmek önemli: turdaki ilk atışınla gelen isabet 300 puan fazla getirir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Destructible hills that change with every crater",
+      "tr": "Her kraterle değişen, yıkılabilir tepeler"
+    },
+    {
+      "en": "Wind that shifts before every shot",
+      "tr": "Her atıştan önce değişen rüzgâr"
+    },
+    {
+      "en": "Five rounds of terrain, from gentle slopes to a long, rugged valley",
+      "tr": "Yumuşak yamaçlardan uzun ve engebeli bir vadiye beş farklı arazi"
+    },
+    {
+      "en": "Matches against the computer or a friend online, with Easy and Normal",
+      "tr": "Bilgisayara ya da çevrimiçi bir arkadaşa karşı maçlar; Kolay ve Normal zorluk"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Destroying the computer's tank is worth 400, plus 150 for each round after the first, and 300 more if it was your first shot of the round. A shell landing close to the target is worth 40, and winning the match adds 1,000.",
+        "tr": "Bilgisayarın tankını yok etmek 400 puan, ilk turdan sonraki her tur için 150 puan daha eder; bu turdaki ilk atışınsa 300 puan eklenir. Hedefin yakınına düşen mermi 40 puan, maçı kazanmak 1.000 puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the computer aims worse and improves more slowly, the wind blows at half strength and your aim guide is longer. Easy games are practice and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da bilgisayar daha kötü nişan alır ve daha yavaş gelişir, rüzgâr yarı güçte eser, nişan çizgin de daha uzundur. Kolay oyunlar antrenman sayılır, sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play against a friend?",
+        "tr": "Bir arkadaşıma karşı oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes, online through a room on ayvago.com. Both screens show the same valley and the same wind, and each turn has a 25-second clock; if it runs out, the tank fires on its own.",
+        "tr": "Evet, ayvago.com'da kurulan bir odadan çevrimiçi. İki ekranda da aynı vadi ve aynı rüzgâr görünür; her sıranın 25 saniyelik süresi vardır, süre biterse tank kendiliğinden ateş eder."
+      }
+    }
+  ]
+}

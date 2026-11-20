@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Merge 2048 is the sliding-number puzzle on a 4×4 grid. Each swipe pushes every tile as far as it will go in that direction. Two tiles with the same number that run into each other merge into one tile worth their sum, and after every move a new tile appears on a random empty square: a 2, or one time in ten a 4. Merge your way up through 8, 16, 32 and beyond to the 2048 tile.\n\nReaching 2048 is a win, but it does not have to be the end. A screen asks whether to CONTINUE for a higher score or FINISH there; either way the game counts as won. The game ends when the board is full and no swipe can move or merge anything.\n\nThis version gives you three undos per game. An undo takes back your last move, the points it scored included, and the button above the board shows how many are left. If the board locks up while you still have one, the game waits a moment and offers it before calling NO MOVES!",
+    "tr": "2048, 4×4'lük bir ızgarada oynanan sayı kaydırma bulmacası. Her kaydırma bütün kareleri o yönde gidebildikleri kadar iter. Aynı sayıdaki iki kare çarpışınca toplamları değerinde tek bir kareye dönüşür; her hamleden sonra boş bir yere yeni bir kare gelir: 2, ya da on seferde bir 4. 8, 16, 32 diye birleştirerek 2048 karesine kadar çıkarsın.\n\n2048'e ulaşmak oyunu kazandırır ama orada bitirmek zorunda değilsin. Bir ekran, daha yüksek skor için DEVAM mı diyeceğini yoksa BİTİR ile orada mı bırakacağını sorar; ikisinde de oyun kazanılmış sayılır. Tahta dolup hiçbir kaydırma kareleri oynatamadığında oyun biter.\n\nBu sürümde her oyunda üç geri alma hakkın var. Geri alma son hamleni, getirdiği puanla birlikte geri alır; tahtanın üstündeki düğme kaç hakkın kaldığını gösterir. Hakkın varken tahta kilitlenirse oyun HAMLE YOK! demeden önce biraz bekler ve geri almayı önerir."
+  },
+  "howToPlay": [
+    {
+      "en": "Swipe or press an arrow key. All tiles slide that way; a direction that moves nothing is ignored and brings no new tile.",
+      "tr": "Kaydır ya da bir ok tuşuna bas. Bütün kareler o yöne kayar; hiçbir şeyi oynatmayan yön sayılmaz ve yeni kare getirmez."
+    },
+    {
+      "en": "Equal tiles that meet merge. A tile merges only once per move, so a row of four 2s becomes two 4s, not an 8.",
+      "tr": "Karşılaşan eşit kareler birleşir. Bir kare bir hamlede yalnızca bir kez birleşir; dört 2'lik bir sıra 8 değil, iki 4 olur."
+    },
+    {
+      "en": "Every merge adds the new tile's value to your score. The MAX TILE chip at the top shows your biggest tile.",
+      "tr": "Her birleşme yeni karenin değerini skoruna ekler. Üstteki EN BÜYÜK göstergesi en büyük kareni gösterir."
+    },
+    {
+      "en": "Build a 2048 tile to win, then decide whether to keep going. When no move is left, the game ends unless you take the last move back in time.",
+      "tr": "2048 karesini yaparak kazan, sonra devam edip etmeyeceğine karar ver. Hamle kalmadığında, son hamleyi zamanında geri almazsan oyun biter."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD slide the tiles, and Z, U or Backspace undoes. On the 2048 screen, Enter continues. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD kareleri kaydırır, Z, U ya da Backspace geri alır. 2048 ekranında Enter devam ettirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Swipe up, down, left or right anywhere on the screen. Tap UNDO above the board to take back a move.",
+      "tr": "Ekranın herhangi bir yerinde yukarı, aşağı, sola ya da sağa kaydır. Bir hamleyi geri almak için tahtanın üstündeki GERİ düğmesine dokun."
+    }
+  },
+  "tips": [
+    {
+      "en": "Pick a corner for your biggest tile and keep it there. Play mostly two directions that push towards that corner, use a third when you must and avoid the fourth.",
+      "tr": "En büyük karen için bir köşe seç ve onu orada tut. Çoğunlukla o köşeye doğru iten iki yönde oyna, gerekirse üçüncüyü kullan, dördüncüden kaçın."
+    },
+    {
+      "en": "Keep the row along that corner full, so a swipe in your third direction cannot pull the big tile out.",
+      "tr": "O köşenin bulunduğu sırayı dolu tut; böylece üçüncü yöndeki bir kaydırma büyük kareyi yerinden çekemez."
+    },
+    {
+      "en": "Line tiles up in falling order from the corner, like 256, 128, 64, 32. Then one merge at the far end can roll all the way down into the corner.",
+      "tr": "Kareleri köşeden başlayarak azalan sırayla diz, örneğin 256, 128, 64, 32. Böylece uçtaki tek bir birleşme köşeye kadar zincirlenebilir."
+    },
+    {
+      "en": "Save your undos for real accidents, such as a move that knocks the big tile out of its corner. An undo only goes back one move, so you cannot use two in a row.",
+      "tr": "Geri alma haklarını gerçek kazalara sakla; örneğin büyük kareyi köşesinden düşüren bir hamleye. Geri alma yalnızca bir hamle geri gider, art arda iki kez kullanılamaz."
+    }
+  ],
+  "features": [
+    {
+      "en": "The classic 4×4 grid",
+      "tr": "Klasik 4×4 ızgara"
+    },
+    {
+      "en": "Three undos per game",
+      "tr": "Her oyunda üç geri alma"
+    },
+    {
+      "en": "Play on past 2048 for a higher score",
+      "tr": "Daha yüksek skor için 2048'den sonra da devam"
+    },
+    {
+      "en": "A MAX TILE chip that tracks your biggest tile",
+      "tr": "En büyük kareni izleyen EN BÜYÜK göstergesi"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Each merge scores the value of the tile it makes: two 8s give 16 points, two 1024s give 2,048. An undo also takes back the points of the move it undoes.",
+        "tr": "Her birleşme, oluşan karenin değeri kadar puan getirir: iki 8, 16 puan; iki 1024, 2.048 puan. Geri alma, geri aldığı hamlenin puanını da geri alır."
+      }
+    },
+    {
+      "q": {
+        "en": "What happens after I make 2048?",
+        "tr": "2048'i yapınca ne oluyor?"
+      },
+      "a": {
+        "en": "You choose. CONTINUE keeps the same board for bigger tiles and a higher score; FINISH ends the game right away. Both count as a win.",
+        "tr": "Sen seçersin. DEVAM aynı tahtada daha büyük kareler ve daha yüksek skor için oyunu sürdürür; BİTİR oyunu hemen sonlandırır. İkisi de kazanma sayılır."
+      }
+    },
+    {
+      "q": {
+        "en": "Does it work on phones?",
+        "tr": "Telefonda oynanıyor mu?"
+      },
+      "a": {
+        "en": "Yes. Swipes work anywhere on the screen, not just on the board, so your thumb never covers the tiles.",
+        "tr": "Evet. Kaydırma yalnızca tahtada değil, ekranın her yerinde çalışır; başparmağın kareleri kapatmaz."
+      }
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "City Defender is a missile-defence game. Enemy warheads streak down from the top of the night sky toward six small cities on the ground. You never shoot at a missile directly: you pick a point in the sky, an interceptor flies there and bursts into a fireball, and every warhead that drifts into the fireball is destroyed.\n\nThree launch bases stand between the cities, each with ten interceptors per wave. Whichever base is nearest to the point you choose takes the shot, and the centre base fires the fastest interceptors. Bases are targets too: a base that is hit is out until the next wave. From wave 3 some warheads split into three in mid-air, and every wave sends more missiles, faster and in bigger salvos.\n\nEach wave ends with a tally, and lost cities stay in ruins unless you earn a bonus city to rebuild one. When the last city falls, the game is over.",
+    "tr": "Şehir Savunması bir füze savunma oyunu. Düşman savaş başlıkları gece göğünün tepesinden yerdeki altı küçük şehre doğru iner. Füzeye doğrudan ateş etmezsin: gökyüzünde bir nokta seçersin, bir önleme füzesi oraya uçup ateş topuna dönüşür ve bu ateş topuna giren her savaş başlığı yok olur.\n\nŞehirlerin arasında, her dalgada onar önleme füzesi olan üç fırlatma üssü bulunur. Seçtiğin noktaya en yakın üs atışı yapar; ortadaki üssün füzeleri en hızlısıdır. Üsler de hedeftir: vurulan üs bir sonraki dalgaya kadar devre dışı kalır. 3. dalgadan itibaren bazı başlıklar havada üçe bölünür; her dalga daha çok, daha hızlı ve daha kalabalık gruplar hâlinde füze gönderir.\n\nHer dalga bir sayımla biter. Yıkılan şehirler, yeniden kurmak için bir BONUS ŞEHİR kazanmadıkça harabe kalır. Son şehir de düştüğünde oyun biter."
+  },
+  "howToPlay": [
+    {
+      "en": "Tap or click a point in the sky slightly ahead of a falling missile. The marker shows where your interceptor will explode.",
+      "tr": "Düşen bir füzenin biraz önünde gökyüzünde bir noktaya dokun ya da tıkla. İşaret, önleme füzenin nerede patlayacağını gösterir."
+    },
+    {
+      "en": "Watch the numbers under the bases. They turn to LOW at three shots and OUT when a base is empty or destroyed.",
+      "tr": "Üslerin altındaki sayılara dikkat et. Üç atış kalınca AZ, üs boşalınca ya da yıkılınca BİTTİ yazar."
+    },
+    {
+      "en": "Survive until every missile of the wave is gone. Leftover interceptors and standing cities are counted for points.",
+      "tr": "Dalganın bütün füzeleri yok olana kadar dayan. Kalan önleme füzeleri ve ayakta duran şehirler puana çevrilir."
+    },
+    {
+      "en": "Bases are rebuilt and reloaded for every new wave; cities are not.",
+      "tr": "Üsler her yeni dalgada yeniden kurulur ve dolar; şehirler kurulmaz."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or W A S D move the crosshair; Space, Z, Enter, X or Shift fires at it. Esc or P pauses.",
+      "tr": "Ok tuşları ya da W A S D nişangâhı taşır; Boşluk, Z, Enter, X ya da Shift oraya ateş eder. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Tap where you want an interceptor to explode. Taps below the city line aim just above it.",
+      "tr": "Önleme füzesinin patlamasını istediğin yere dokun. Şehirlerin altındaki dokunuşlar şehirlerin hemen üstüne nişan alır."
+    },
+    "mouse": {
+      "en": "The crosshair follows the pointer; click to fire.",
+      "tr": "Nişangâh fare imlecini izler; ateş etmek için tıkla."
+    }
+  },
+  "tips": [
+    {
+      "en": "A missile caught in another missile's explosion sets off a chain, and each link in the chain scores more than the last. Aim where several trails are about to cross.",
+      "tr": "Başka bir füzenin patlamasına yakalanan füze zincirleme patlama başlatır ve zincirin her halkası bir öncekinden fazla puan getirir. Birkaç izin kesişmek üzere olduğu yere nişan al."
+    },
+    {
+      "en": "Stop splitting missiles high up. Once a warhead splits, one shot is no longer enough.",
+      "tr": "Bölünen füzeleri yüksekte durdur. Başlık bir kez bölündükten sonra tek atış yetmez."
+    },
+    {
+      "en": "Fire from the centre base for missiles near the middle: its interceptors are much faster, which matters most against the quick late waves.",
+      "tr": "Ortaya yakın füzeler için orta üssü kullan: onun füzeleri çok daha hızlıdır ve bu, hızlı geç dalgalarda büyük fark yaratır."
+    },
+    {
+      "en": "Don't spray shots. Every unused interceptor is worth points at the end of the wave, and an empty base leaves its side of the city line open.",
+      "tr": "Rastgele ateş etme. Kullanılmayan her önleme füzesi dalga sonunda puan getirir; boşalan bir üs ise kendi tarafındaki şehirleri savunmasız bırakır."
+    }
+  ],
+  "features": [
+    {
+      "en": "Six cities, three bases and thirty interceptors per wave",
+      "tr": "Altı şehir, üç üs ve dalga başına otuz önleme füzesi"
+    },
+    {
+      "en": "Chain explosions and a score multiplier up to x6",
+      "tr": "Zincirleme patlamalar ve x6'ya kadar puan çarpanı"
+    },
+    {
+      "en": "Missiles that split in mid-air from wave 3",
+      "tr": "3. dalgadan itibaren havada bölünen füzeler"
+    },
+    {
+      "en": "Bonus cities that rebuild ruins",
+      "tr": "Harabeleri yeniden kuran bonus şehirler"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Everything is multiplied by the wave multiplier shown at the top right, which goes up by one every two waves, to x6. A missile is 25 points, more for each step of a chain; at the end of a wave every leftover interceptor is 5 and every standing city 100.",
+        "tr": "Her şey sağ üstte görünen dalga çarpanıyla çarpılır; çarpan her iki dalgada bir artar, en çok x6 olur. Bir füze 25 puandır, zincirin her adımında daha fazla; dalga sonunda kalan her önleme füzesi 5, ayakta duran her şehir 100 puan getirir."
+      }
+    },
+    {
+      "q": {
+        "en": "How do I get a city back?",
+        "tr": "Yıkılan şehri nasıl geri alırım?"
+      },
+      "a": {
+        "en": "You earn a bonus city every 10,000 points. At the end of a wave it rebuilds one ruin; if all six are standing, it is kept for later.",
+        "tr": "Her 10.000 puanda bir bonus şehir kazanırsın. Dalga sonunda bir harabeyi yeniden kurar; altısı da ayaktaysa sonrası için saklanır."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives 14 interceptors per base, bigger fireballs, missiles 30% slower, waves that grow harder at half the pace, a spare city from the start and a bonus city every 6,000 points. Easy runs are not ranked.",
+        "tr": "Evet. Kolay'da her üste 14 önleme füzesi, daha büyük ateş topları, %30 daha yavaş füzeler ve yarı hızda zorlaşan dalgalar vardır; baştan bir yedek şehrin olur ve her 6.000 puanda bir bonus şehir kazanırsın. Kolay oyunlar sıralamaya girmez."
+      }
+    }
+  ]
+}

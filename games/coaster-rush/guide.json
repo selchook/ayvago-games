@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "In Coaster Rush you drive a roller coaster through a village fair of timber houses, windmills and market stalls. You control only how hard it goes: power on the chain lifts and booster strips, brakes before corners and stations, and a choice of track at each junction. Gravity does the rest: drops, loops, airtime humps and rooftops close enough to scrape.\n\nThe score comes from thrills. Speed, airtime, loops and close calls past the houses all earn points, multiplied by the riders on board and by how happy they are. Scare them with a lean that goes too far, harsh braking at speed or a train that rolls back down a hill, and their happiness drops. If it reaches zero they all ask for a refund and the ride ends.\n\nA ride runs through six areas, each with its own track style, from a wooden classic and a wild mouse with hairpin bends to a hanging coaster over the river and a log flume. After Splash Falls the circuit starts again with taller lifts and more elements.",
+    "tr": "Hız Treni'nde ahşap evlerin, yel değirmenlerinin ve pazar tezgâhlarının arasındaki bir köy panayırında hız treni sürersin. Yalnızca ne kadar yükleneceğine karar verirsin: zincirli yokuşlarda ve hızlandırıcı şeritlerde gaz, virajlardan ve istasyonlardan önce fren, her makasta da hangi yoldan gideceğin. Gerisini yerçekimi halleder: inişler, taklalar, havada süzüldüğün tümsekler ve neredeyse sürtünerek geçtiğin çatılar.\n\nPuan heyecandan gelir. Hız, havada kalma, taklalar ve evlerin kıl payı yanından geçişler puan getirir; bu puan trendeki yolcu sayısıyla ve yolcuların ne kadar mutlu olduğuyla çarpılır. Fazla yatan bir virajla, hızlıyken sert frenle ya da tepeden geri kayan bir trenle onları korkutursan mutlulukları düşer. Sıfıra inerse hepsi paralarını geri ister ve tur biter.\n\nBir tur altı bölgeden geçer ve her bölgenin kendi ray türü vardır: ahşap klasikten keskin dönemeçli çılgın fareye, derenin üstünde asılı hız treninden kütük kanalına. Şelale Kanalı'ndan sonra döngü baştan başlar; yokuşlar yükselir, elemanlar çoğalır."
+  },
+  "howToPlay": [
+    {
+      "en": "Hold GO on a chain lift to climb, then let go and coast down the drop. Away from lifts and boosters GO is only a weak motor.",
+      "tr": "Zincirli yokuşta tırmanmak için GAZ'ı basılı tut, sonra bırak ve inişte kendini sal. Yokuşlar ve hızlandırıcılar dışında GAZ yalnızca zayıf bir motordur."
+    },
+    {
+      "en": "Watch the LEAN meter in corners. If it stays full too long the train derails and a spare train takes its place; Normal gives you three trains.",
+      "tr": "Virajlarda YATMA göstergesini izle. Gösterge fazla uzun süre dolu kalırsa tren raydan çıkar ve yerine yedek tren gelir; Normal'de üç trenin var."
+    },
+    {
+      "en": "At a junction, pick SAFE for gentle bends and coins, or THRILL for bigger moves, more points and a power-up.",
+      "tr": "Makasta yumuşak virajlar ve jetonlar için SAKİN yolu, daha büyük hareketler, daha çok puan ve bir güç için HEYECAN yolunu seç."
+    },
+    {
+      "en": "Brake to a stop inside each station's glowing bay. Riders get off, pay their fare in tokens and new ones board; overshoot and nobody gets on.",
+      "tr": "Her istasyonda parlayan alanın içinde frenle dur. Yolcular iner, ücretlerini jetonla öder ve yenileri biner; alanı geçersen kimse binemez."
+    },
+    {
+      "en": "Spend your tokens in the Train Workshop between rides on upgrades and paint.",
+      "tr": "Jetonlarını turlar arasında Tren Atölyesi'nde geliştirmelere ve boyaya harca."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Space or ↑ is GO, ↓ brakes, ← and → choose the route at a junction, and C switches between the chase camera and the front seat camera.",
+      "tr": "Boşluk ya da ↑ GAZ, ↓ fren; ← ve → makasta yolu seçer, C ise takip kamerasıyla ön koltuk kamerası arasında geçiş yapar."
+    },
+    "touch": {
+      "en": "Hold GO on the right and BRAKE on the left. At a junction, tap the arrow on the side you want. A small camera button switches to the front seat view.",
+      "tr": "Sağdaki GAZ'ı ve soldaki FREN'i basılı tut. Makasta gitmek istediğin taraftaki oka dokun. Küçük kamera düğmesi ön koltuk görünümüne geçirir."
+    }
+  },
+  "tips": [
+    {
+      "en": "A loop needs speed. Enter above the blue mark on the speed gauge, or the train stalls, rolls back and scares everyone aboard.",
+      "tr": "Takla hız ister. Hız göstergesindeki mavi çizgiyi geçen bir hızla gir; yoksa tren takılır, geri kayar ve içindeki herkesi korkutur."
+    },
+    {
+      "en": "Brake before a corner, not in it. Braking hard above about 70 km/h counts as harsh braking and scares the riders too.",
+      "tr": "Virajın içinde değil, öncesinde fren yap. Saatte yaklaşık 70 km'nin üstünde sert fren yapmak da yolcuları korkutur."
+    },
+    {
+      "en": "A perfect stop pays 300 points against 50 for a sloppy one, and happy riders pay bigger fares. Come in slowly and stop dead in the middle of the bay.",
+      "tr": "Kusursuz duruş 300 puan getirir, özensiz duruş 50. Mutlu yolcular da daha çok ücret öder. Yavaş yaklaş ve alanın tam ortasında dur."
+    },
+    {
+      "en": "Every thrill point is multiplied by the riders on board, so the Cars upgrade, two more seats per level, raises scoring for the whole ride.",
+      "tr": "Her heyecan puanı trendeki yolcu sayısıyla çarpılır; her seviyede iki koltuk ekleyen Vagonlar geliştirmesi tüm tur boyunca puanı artırır."
+    }
+  ],
+  "features": [
+    {
+      "en": "Six areas with six track styles, from wooden coaster to log flume",
+      "tr": "Ahşap trenden kütük kanalına altı ray türüyle altı bölge"
+    },
+    {
+      "en": "Physics-driven speed with loops, airtime, stalls and derails",
+      "tr": "Taklalar, havada süzülme, geri kayma ve raydan çıkmayla fiziğe dayalı hız"
+    },
+    {
+      "en": "Turbo, Token Magnet, Safety Bar, Slow-mo Brakes, Golden Ticket and Balloon Lift",
+      "tr": "Turbo, Jeton Mıknatısı, Emniyet Barı, Ağır Çekim Fren, Altın Bilet ve Uçan Balon"
+    },
+    {
+      "en": "A workshop with eight upgrades, train paints and speed trails",
+      "tr": "Sekiz geliştirme, tren boyaları ve hız izleri sunan bir atölye"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How does a ride end?",
+        "tr": "Tur nasıl biter?"
+      },
+      "a": {
+        "en": "Either the last train derails, or the riders' happiness, shown as a percentage on the HUD, drops to zero and they demand their money back. There is no finish line: the six areas loop for as long as you last.",
+        "tr": "Ya son trenin de raydan çıkar ya da ekranda yüzde olarak görünen yolcu mutluluğu sıfıra iner ve yolcular paralarını geri ister. Bitiş çizgisi yoktur: dayandığın sürece altı bölge dönmeye devam eder."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy gives you five trains instead of three, more grip and a slower lean meter, riders who start happier and scare less, a stronger motor and wider station bays. Easy rides stay off the leaderboard.",
+        "tr": "Evet. Kolay'da üç yerine beş trenin olur; tutuş artar, YATMA göstergesi daha yavaş dolar, yolcular daha mutlu başlar ve daha az korkar, motor güçlenir, istasyon alanları genişler. Kolay turlar sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play on a phone?",
+        "tr": "Telefonda oynanır mı?"
+      },
+      "a": {
+        "en": "Yes, held upright. Two thumbs are enough: GO and BRAKE, plus a tap on a side arrow at junctions.",
+        "tr": "Evet, telefonu dik tutarak. İki başparmak yeter: GAZ ve FREN, bir de makaslarda yandaki oka dokunmak."
+      }
+    }
+  ]
+}

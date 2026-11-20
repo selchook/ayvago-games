@@ -1,0 +1,106 @@
+{
+  "about": {
+    "en": "Neon Pong is the classic Pong stood on its end. Your blue paddle guards the bottom of a tall neon table, the opponent's pink paddle the top, and the ball bounces off the glowing side walls between you. Let it past your paddle and the other side scores; the first to 7 wins the match.\n\nThe solo game is a ladder of five rounds, each a full match against a CPU that sharpens every time: it moves faster, aims closer, reacts sooner and starts tracking the ball from further down the table. Win all five and you are CHAMPION; lose a match and the run ends. The ball gains a little speed with every return, and the top speed rises with the round.\n\nTwo things turn rallies into more than a reflex test. Where the ball meets your paddle sets its angle, up to 52 degrees off straight at the edges. And a paddle that is moving at the moment of the hit puts spin on the ball, which curves through the air behind a pink trail. Online, you can play a first-to-7 match against a friend.",
+    "tr": "Neon Pong, klasik Pong'u dikine çeviriyor. Mavi raketin uzun neon masanın altını, rakibin pembe raketi üstünü korur; top aradaki parlak yan duvarlardan seker. Top raketini geçerse karşı taraf sayı alır; 7 sayıya ilk ulaşan maçı kazanır.\n\nTek kişilik oyun beş turluk bir merdiven: her tur, her seferinde biraz daha keskinleşen bilgisayara karşı tam bir maç. Rakip daha hızlı hareket eder, daha isabetli nişan alır, daha çabuk tepki verir ve topu masanın daha aşağısından izlemeye başlar. Beşini de kazanırsan ŞAMPİYON olursun; bir maç kaybetmek oyunu bitirir. Top her vuruşta biraz hızlanır, ulaşabileceği en yüksek hız da tur ilerledikçe artar.\n\nİki şey ralliyi refleks yarışından fazlası yapar. Topun rakete değdiği yer açısını belirler; kenarlarda düz çizgiden 52 dereceye kadar sapar. Vuruş anında hareket eden raket de topa falso verir; top pembe bir iz bırakarak havada kavis çizer. Çevrimiçi maçta bir arkadaşına karşı 7 sayılık maç da oynayabilirsin."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose Easy or Normal and press PLAY. The ball appears in the centre and serves after a short pause.",
+      "tr": "Kolay ya da Normal'i seç ve OYNA'ya bas. Top ortada belirir ve kısa bir bekleyişten sonra servis atılır."
+    },
+    {
+      "en": "Slide your paddle under the ball. Hit it with the middle to send it back straight, with an edge for a sharp angle.",
+      "tr": "Raketini topun altına kaydır. Ortasıyla vurursan top düz döner, kenarıyla vurursan keskin bir açıyla gider."
+    },
+    {
+      "en": "Keep the paddle moving as you hit to add spin; SPIN! appears and the ball curves the way you swept.",
+      "tr": "Vururken raketi hareket ettirirsen topa falso verirsin; FALSO! yazar ve top raketi sürüklediğin yöne kıvrılır."
+    },
+    {
+      "en": "After each point the serve goes toward the side that lost it. First to 7 takes the match and opens the next round.",
+      "tr": "Her sayıdan sonra servis, sayıyı kaybeden tarafa atılır. 7 sayıya ilk ulaşan maçı alır ve sıradaki tur açılır."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← → or A / D slide the paddle. Esc or P pauses.",
+      "tr": "← → ya da A / D raketi kaydırır. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Put a finger anywhere on the table and slide it sideways; the paddle follows.",
+      "tr": "Parmağını masada herhangi bir yere koy ve yana kaydır; raket parmağını izler."
+    },
+    "mouse": {
+      "en": "Move the mouse left and right; the paddle follows the pointer without clicking.",
+      "tr": "Fareyi sağa sola oynat; raket tıklamadan imleci izler."
+    }
+  },
+  "tips": [
+    {
+      "en": "The CPU predicts the wall bounces but not the curve, so a spinning shot toward the far wall is the hardest ball for it to reach.",
+      "tr": "Bilgisayar duvardan sekmeleri hesaplar ama kavisi hesaba katmaz; uzak duvara giden falsolu bir top, yetişmesi en zor top olur."
+    },
+    {
+      "en": "Spin flips and halves when the ball hits a side wall, and it fades on its own within a second or so. Read where the curve will settle instead of chasing the ball.",
+      "tr": "Top yan duvara çarpınca falso ters döner ve yarıya iner, kendiliğinden de bir saniye kadar içinde söner. Topu kovalamak yerine kavisin nerede düzleşeceğini kestir."
+    },
+    {
+      "en": "Long rallies pay. Every return is worth 5 points plus the rally count, and a point you win adds 10 more for each hit in that rally.",
+      "tr": "Uzun ralliler kazandırır. Her karşılama 5 puan artı ralli sayısı kadar eder; kazandığın sayı da o rallideki her vuruş için 10 puan daha ekler."
+    },
+    {
+      "en": "Don't sit back once you lead. The match bonus grows with every point the CPU fails to win, so a 7-1 is worth 500 more than a 7-6.",
+      "tr": "Öne geçince rahatlama. Maç bonusu bilgisayarın alamadığı her sayıyla büyür; 7-1, 7-6'dan 500 puan daha değerlidir."
+    }
+  ],
+  "features": [
+    {
+      "en": "A five-round ladder against a CPU that sharpens every round",
+      "tr": "Her turda keskinleşen bilgisayara karşı beş turluk merdiven"
+    },
+    {
+      "en": "Angle control from the paddle edge and spin from a moving paddle",
+      "tr": "Raket kenarıyla açı, hareket eden raketle falso"
+    },
+    {
+      "en": "Ball speed that climbs during every rally",
+      "tr": "Her rallide tırmanan top hızı"
+    },
+    {
+      "en": "Online first-to-7 matches against a friend",
+      "tr": "Bir arkadaşına karşı çevrimiçi 7 sayılık maçlar"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Bir arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Yes, online on ayvago.com. An online game is a single first-to-7 match, and each of you sees your own paddle at the bottom. There is no pause and no Easy setting online.",
+        "tr": "Evet, ayvago.com'da çevrimiçi. Çevrimiçi oyun tek bir 7 sayılık maçtır ve ikiniz de kendi raketinizi ekranın altında görürsünüz. Çevrimiçinde duraklatma ve Kolay ayarı yoktur."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the CPU climbs its skill ladder at half the pace, moves at 75% speed, aims wider and reacts later, and the ball is 15% slower. Easy runs are practice and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da bilgisayar beceri merdivenini yarı hızda tırmanır, %75 hızla hareket eder, daha geniş nişan alır ve daha geç tepki verir; top da %15 daha yavaştır. Kolay oyunlar antrenman sayılır, sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puanlar nasıl hesaplanıyor?"
+      },
+      "a": {
+        "en": "Every return scores 5 plus the rally count. A point you win adds 100 times the round plus 10 per rally hit, and a match win 500 times the round plus 100 for each point the CPU fell short of 7: winning round 5 by 7-0 brings a 3,200-point bonus.",
+        "tr": "Her karşılama 5 artı ralli sayısı kadar puan getirir. Kazandığın sayı turun 100 katı artı ralli vuruşu başına 10, kazandığın maç turun 500 katı artı bilgisayarın 7'ye ulaşamadığı her sayı için 100 puan ekler: 5. turu 7-0 kazanmak 3.200 puanlık bonus getirir."
+      }
+    }
+  ]
+}

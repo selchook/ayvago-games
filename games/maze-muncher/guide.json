@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Maze Muncher is a maze chase in the spirit of the old arcade cabinets. You steer a yellow muncher through a 19 by 21 maze, eating 146 dots and four flashing power pellets while four ghosts hunt you. Clear the board and the same maze fills up again for the next level, with faster ghosts.\n\nThe ghosts don't think alike. Red heads straight for you. Pink aims four tiles ahead of the way you face, to cut you off. Cyan works out its target from red's position, so the two close in from different sides. Orange chases only while it is far away and turns back to its corner once it gets close. They switch between chasing and scattering to their corners, and every switch makes them turn around.\n\nA power pellet turns the ghosts blue: touch one then and it is eaten, its eyes racing back to the house. The blue spell lasts 6.3 seconds at level 1 and shrinks every level to 1.5 seconds. You start with three lives and earn one more at 10,000 points.",
+    "tr": "Labirent Yiyici, eski salon makinelerinin ruhunu taşıyan bir labirent kovalamacası. Sarı yiyiciyi 19'a 21'lik bir labirentte gezdirip 146 yemi ve yanıp sönen dört güç hapını yersin; bu sırada dört hayalet peşindedir. Tahtayı temizlediğinde aynı labirent yeniden dolar ve sonraki seviyede hayaletler daha hızlıdır.\n\nHayaletlerin her biri farklı düşünür. Kırmızı doğrudan üstüne gelir. Pembe, önünü kesmek için baktığın yönde dört kare ilerisini hedefler. Turkuaz hedefini kırmızının konumuna göre seçer, böylece ikisi seni iki yandan sıkıştırır. Turuncu yalnızca uzaktayken kovalar, yaklaşınca köşesine döner. Hayaletler kovalamakla köşelerine dağılmak arasında gidip gelir ve her geçişte geri dönerler.\n\nGüç hapı hayaletleri maviye boyar: o sırada birine dokunursan onu yersin, gözleri eve geri koşar. Mavi süre 1. seviyede 6,3 saniyedir ve her seviyede kısalarak 1,5 saniyeye iner. Üç canla başlarsın, 10.000 puanda bir can daha kazanırsın."
+  },
+  "howToPlay": [
+    {
+      "en": "After READY!, steer through the corridors. Press a direction before a junction and the muncher turns as soon as the way opens.",
+      "tr": "HAZIR! yazısından sonra koridorlarda ilerle. Kavşaktan önce yön tuşuna basarsan yiyici yol açılır açılmaz döner."
+    },
+    {
+      "en": "Eat every dot (10 points) and power pellet (50 points) to clear the level.",
+      "tr": "Seviyeyi bitirmek için bütün yemleri (10 puan) ve güç haplarını (50 puan) ye."
+    },
+    {
+      "en": "After a pellet, hunt the blue ghosts. When they start flashing white, the spell is about to end.",
+      "tr": "Güç hapından sonra mavi hayaletleri avla. Beyaz yanıp sönmeye başladıklarında süre bitmek üzeredir."
+    },
+    {
+      "en": "A ghost's touch costs a life. Everyone returns to the start, but the dots you ate stay eaten.",
+      "tr": "Hayaletin dokunuşu bir can götürür. Herkes başlangıca döner ama yediğin yemler geri gelmez."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "Arrow keys or WASD. The opposite direction turns the muncher around at once, even mid-corridor. Esc or P pauses.",
+      "tr": "Ok tuşları ya da WASD. Ters yöne basmak yiyiciyi koridorun ortasında bile anında geri çevirir. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Touch anywhere and drag: a stick appears under your finger, and the direction you hold waits as the next turn.",
+      "tr": "Ekranda herhangi bir yere bas ve sürükle: parmağının altında bir kumanda kolu çıkar, tuttuğun yön bir sonraki dönüş olarak bekler."
+    }
+  },
+  "tips": [
+    {
+      "en": "Eaten ghosts in one blue spell are worth 200, 400, 800 and 1,600. Save a corner pellet until two or more ghosts are close to it instead of eating it on the way past.",
+      "tr": "Aynı mavi süre içinde yenen hayaletler 200, 400, 800 ve 1.600 puan eder. Köşedeki hapı yolda geçerken yeme; iki ya da daha fazla hayalet yakınına gelene kadar sakla."
+    },
+    {
+      "en": "The tunnel in the middle row wraps to the other side, and ghosts crawl through it far slower than you. It is the best escape when you are being chased.",
+      "tr": "Ortadaki tünel seni öbür tarafa çıkarır ve hayaletler içinden senden çok daha yavaş geçer. Kovalanırken en iyi kaçış yolu budur."
+    },
+    {
+      "en": "When fewer than 20 dots remain, red stops going back to its corner and gets 10% faster. Plan a route for the last dots instead of wandering.",
+      "tr": "20'den az yem kaldığında kırmızı köşesine dönmeyi bırakır ve %10 hızlanır. Son yemler için gelişigüzel dolaşma, bir rota planla."
+    },
+    {
+      "en": "At level 1 you are a little faster than the chasing ghosts; their speed rises more each level, and by level 8 they have caught up.",
+      "tr": "1. seviyede kovalayan hayaletlerden biraz hızlısın; onların hızı her seviyede seninkinden fazla artar ve 8. seviyede sana yetişir."
+    }
+  ],
+  "features": [
+    {
+      "en": "Four ghosts with their own chase plans",
+      "tr": "Her biri kendi planıyla kovalayan dört hayalet"
+    },
+    {
+      "en": "Chase and scatter waves that shift with the level",
+      "tr": "Seviyeye göre değişen kovalama ve dağılma dalgaları"
+    },
+    {
+      "en": "Eight bonus fruits worth up to 5,000 points",
+      "tr": "5.000 puana kadar değerli sekiz bonus meyve"
+    },
+    {
+      "en": "A wrap-around tunnel and an extra life at 10,000",
+      "tr": "Öbür yana çıkan tünel ve 10.000 puanda ekstra can"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "How are points scored?",
+        "tr": "Puan nasıl kazanılıyor?"
+      },
+      "a": {
+        "en": "Dots are 10, power pellets 50 and ghosts 200 to 1,600. Clearing a level adds 250 times the level number.",
+        "tr": "Yem 10, güç hapı 50, hayaletler 200 ile 1.600 puan arasıdır. Bir seviyeyi bitirmek seviye numarasının 250 katı kadar puan ekler."
+      }
+    },
+    {
+      "q": {
+        "en": "When does the fruit appear?",
+        "tr": "Meyve ne zaman çıkıyor?"
+      },
+      "a": {
+        "en": "Twice per level, after you eat 50 and 120 dots, just below the ghost house, for nine seconds. It is worth 100 on level 1, then 300, 500, 700, 1,000, 2,000, 3,000 and 5,000 from level 8 on.",
+        "tr": "Her seviyede iki kez, 50 ve 120 yem yedikten sonra hayalet evinin hemen altında dokuz saniyeliğine çıkar. 1. seviyede 100 puan, sonra 300, 500, 700, 1.000, 2.000, 3.000, 8. seviyeden itibaren de 5.000 puan değerindedir."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode or a two-player game?",
+        "tr": "Kolay mod ya da iki kişilik oyun var mı?"
+      },
+      "a": {
+        "en": "No. Maze Muncher is single-player with one difficulty; the first levels, with the longest blue spell and the slowest ghosts, are the gentlest.",
+        "tr": "Hayır. Labirent Yiyici tek kişilik ve tek zorlukta oynanır; mavi sürenin en uzun, hayaletlerin en yavaş olduğu ilk seviyeler en kolay olanlarıdır."
+      }
+    }
+  ]
+}

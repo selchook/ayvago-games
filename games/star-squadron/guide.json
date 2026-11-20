@@ -1,0 +1,110 @@
+{
+  "about": {
+    "en": "Star Squadron is a vertical 3D space shooter with a deck-building layer. Your guns fire on their own, so your job is to fly: weave through bullet patterns, sweep up credits and line up on the ships worth killing first. Each sector is a few waves of fighters, gunships, bombers, carriers and tumbling rocks, then a boss whose hull stays armoured until you shoot off its turrets or pods.\n\nEvery cleared wave and every boss earns a card offer, and the fight does not pause for it. Offers stack up until you open one; then the action slows while you take one of three cards, such as Spread Shot, Homing Missiles or Wing Drone. Most cards stack, and certain pairs unlock a gold synergy card: Homing Missiles plus Chain Lightning gives Storm Missiles.\n\nThe four sectors run from the Ember Moon through the Crystal Belt and the Orbital Yard to the Nebula Rift. After the Void Titan the loop starts over with tougher enemies and denser fire, until your hull gives out.",
+    "tr": "Yıldız Filosu, deste kurma katmanı olan dikey bir 3B uzay nişancısı. Silahların kendiliğinden ateş eder; senin işin uçmak: mermi desenlerinin arasından süzül, kredileri topla ve önce vurulması gereken gemilerin karşısına geç. Her sektör avcılar, savaş gemileri, bombardıman gemileri, taşıyıcılar ve yuvarlanan kayalardan oluşan birkaç dalgadır; ardından gelen boss'un gövdesi, taretlerini ya da kapsüllerini düşürene kadar zırhlı kalır.\n\nTemizlenen her dalga ve her boss bir kart teklifi kazandırır, savaş ise bunun için durmaz. Teklifler sen açana kadar birikir; açınca savaş yavaşlar ve Yayılım Atışı, Güdümlü Füze ya da Kanat Dronu gibi üç karttan birini alırsın. Kartların çoğu üst üste biner, bazı ikililer de altın çerçeveli bir sinerji kartı açar: Güdümlü Füze ile Zincir Şimşek, Fırtına Füzeleri'ni getirir.\n\nDört sektör Kor Ay'dan Kristal Kuşağı'na, Yörünge Tersanesi'ne ve Bulutsu Yarığı'na uzanır. Boşluk Titanı'ndan sonra döngü baştan başlar; gövden dayanamayana kadar düşmanlar sertleşir, ateş yoğunlaşır."
+  },
+  "howToPlay": [
+    {
+      "en": "Fly clear of enemy bullets and ships. Your hull is your only life: 100 on Normal, topped up by repair and shield pickups.",
+      "tr": "Düşman mermilerinden ve gemilerinden uzak dur. Gövden tek canındır: Normal'de 100; onarım ve kalkan eşyaları onu doldurur."
+    },
+    {
+      "en": "When CARDS WAITING appears, open the card bar at a calm moment and take a card. Rerolls cost credits.",
+      "tr": "KARTLARIN BEKLİYOR! yazısı çıkınca sakin bir anda kart çubuğunu aç ve bir kart al. Yenilemek kredi ister."
+    },
+    {
+      "en": "When cornered, use a power: Bomb wipes enemy bullets and hits everything on screen, Shield gives a short bubble, Overdrive more than doubles your fire rate.",
+      "tr": "Sıkışınca bir güç kullan: Bomba düşman mermilerini siler ve ekrandaki her şeye vurur, Kalkan kısa süreli bir balon verir, Aşırı Güç atış hızını iki katın üstüne çıkarır."
+    },
+    {
+      "en": "Against a boss, destroy the turrets and pods first; until then the hull takes only a quarter of your damage.",
+      "tr": "Boss'a karşı önce taretleri ve kapsülleri yok et; o zamana kadar gövde hasarının yalnızca dörtte birini alır."
+    },
+    {
+      "en": "When the ship goes down, the run turns into Stardust for the Talent board on the menu.",
+      "tr": "Gemi düştüğünde koşu, menüdeki Yetenek panosu için Yıldız Tozu'na dönüşür."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "WASD or the arrows fly. J or Space drops a bomb, K raises the shield, L fires Overdrive. E opens the card bar, 1–3 take a card (1–4 with Wide Offer) and R rerolls.",
+      "tr": "WASD ya da oklar uçurur. J ya da Boşluk bomba atar, K kalkanı açar, L aşırı gücü ateşler. E kart çubuğunu açar, 1–3 kart alır (Geniş Seçim'le 1–4), R yeniler."
+    },
+    "touch": {
+      "en": "Drag anywhere to fly. Tap the power buttons at the bottom right, and the card button to open an offer; tap a card to take it, hold it for details.",
+      "tr": "Uçmak için ekranın herhangi bir yerinde sürükle. Sağ alttaki güç düğmelerine, teklifi açmak için kart düğmesine dokun; almak için karta dokun, ayrıntı için basılı tut."
+    },
+    "mouse": {
+      "en": "Hold the mouse button and the ship flies to the cursor. Click powers, the card button and cards; hover a card for details.",
+      "tr": "Fare tuşunu basılı tutunca gemi imlece uçar. Güçlere, kart düğmesine ve kartlara tıkla; ayrıntı için imleci kartın üstünde tut."
+    }
+  },
+  "tips": [
+    {
+      "en": "A wave cleared without a hit pays a FLAWLESS bonus on top of the clear bonus, and both grow with every sector. Dodging well beats killing fast.",
+      "tr": "Hiç hasar almadan temizlenen dalga, dalga bonusunun üstüne KUSURSUZ! bonusu öder; ikisi de her sektörde büyür. İyi kaçmak, hızlı vurmaktan iyidir."
+    },
+    {
+      "en": "Open banked offers before a boss: cards only help once taken, and offers still unopened when the ship goes down are lost.",
+      "tr": "Biriken teklifleri boss'tan önce aç: kartlar ancak alınınca işe yarar ve gemi düştüğünde açılmamış teklifler kaybolur."
+    },
+    {
+      "en": "Plan for synergies: Spread Shot plus Piercing Laser becomes Laser Fan, and Wing Drone or Ricochet plus Targeting AI turns those shots into sure crits.",
+      "tr": "Sinerjileri hesaba kat: Yayılım Atışı ile Delici Lazer birleşince Lazer Yelpazesi olur; Kanat Dronu ya da Seken Atış, Nişan Sistemi ile birleşince o atışlar hep kritik vurur."
+    },
+    {
+      "en": "Collect credits: they pay for rerolls, and every 80 add a Stardust at the end of the run.",
+      "tr": "Kredileri topla: yenilemeleri onlarla ödersin, her 80 kredi de koşu sonunda bir Yıldız Tozu ekler."
+    }
+  ],
+  "features": [
+    {
+      "en": "21 power cards plus 5 synergy cards",
+      "tr": "21 güç kartı ve 5 sinerji kartı"
+    },
+    {
+      "en": "Four sectors and four bosses with breakable weak points",
+      "tr": "Kırılabilir zayıf noktaları olan dört sektör ve dört boss"
+    },
+    {
+      "en": "Bomb, Shield and Overdrive on their own cooldowns",
+      "tr": "Kendi bekleme süreleri olan Bomba, Kalkan ve Aşırı Güç"
+    },
+    {
+      "en": "A 12-node Talent board paid in Stardust",
+      "tr": "Yıldız Tozu ile açılan 12 adımlı Yetenek panosu"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Do my cards carry over to the next run?",
+        "tr": "Kartlarım sonraki koşuya geçiyor mu?"
+      },
+      "a": {
+        "en": "No, cards last only for the run. What stays is Stardust: one for flying, one per cleared wave and three per boss, spent on lasting talents such as a starting wing drone or four-card offers.",
+        "tr": "Hayır, kartlar yalnızca o koşu boyunca geçerlidir. Kalıcı olan Yıldız Tozu'dur: uçtuğun için bir, temizlenen her dalga için bir, her boss için üç. Onu başlangıçta bir kanat dronu ya da dört kartlık teklifler gibi kalıcı yeteneklere harcarsın."
+      }
+    },
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. Easy starts you with 140 hull, and enemies are 30% weaker, shoot less with slower bullets, hit softer and drop more pickups. Easy runs earn half the Stardust and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da 140 gövdeyle başlarsın; düşmanlar %30 daha zayıftır, daha seyrek ve daha yavaş mermiyle ateş eder, daha hafif vurur ve daha çok eşya düşürür. Kolay koşular Yıldız Tozu'nun yarısını kazandırır ve sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Does the game ever end?",
+        "tr": "Oyunun bir sonu var mı?"
+      },
+      "a": {
+        "en": "Only when your hull reaches zero. After four sectors the loop repeats with stronger enemies and more bullets, and each sector makes kills worth more.",
+        "tr": "Yalnızca gövden sıfıra indiğinde. Dört sektörden sonra döngü daha güçlü düşmanlar ve daha çok mermiyle tekrarlanır; her sektör düşmanların puanını artırır."
+      }
+    }
+  ]
+}

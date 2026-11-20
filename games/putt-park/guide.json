@@ -1,0 +1,102 @@
+{
+  "about": {
+    "en": "Putt Park is 3D mini golf on two floating courses. The Meadow Course (holes 1–9) starts gently with bumps, ramps, an island green, a windmill and a gap jump; the Castle Course (holes 10–18) adds twin tunnels, a moat, sliding gates, a sweeping bar, ramparts and a final par 5 in the King's Court. Pick one course or play all 18 holes in a row.\n\nEach hole opens with a card showing its name, par, stroke limit and a short tip from the designer. You putt as many times as you need, but every hole has a limit of par plus four strokes; reach it without sinking the ball and the hole ends with no points. Rolling into the water or off the course costs a penalty stroke and puts the ball back where you last hit it.\n\nPoints follow golf's own names: 100 for par, 150 for a birdie, 200 for an eagle, 250 for an albatross and 300 for a hole in one, down to 60 for a bogey, 30 for a double bogey and 10 for anything worse. A scorecard after each hole keeps the running total.",
+    "tr": "Golf Parkı, havada süzülen iki parkurda oynanan üç boyutlu mini golf. Çayır Parkuru (1–9. delikler) tümsekler, rampalar, ada yeşili, yel değirmeni ve bir boşluk atlamasıyla yumuşak başlar; Kale Parkuru (10–18. delikler) ikiz tüneller, hendek, sürgülü kapılar, süpüren bir çubuk, surlar ve Kral Avlusu'ndaki par 5'lik finali ekler. Bir parkur seçebilir ya da 18 deliğin hepsini arka arkaya oynayabilirsin.\n\nHer delik adını, parını, vuruş sınırını ve tasarımcının kısa bir ipucunu gösteren bir kartla açılır. İstediğin kadar vurabilirsin, ama her deliğin par artı dört vuruşluk bir sınırı vardır; topu sokmadan sınıra ulaşırsan delik puansız biter. Suya düşmek ya da saha dışına çıkmak bir ceza vuruşu yazar ve top son vurduğun yere geri döner.\n\nPuanlar golfün kendi terimlerini izler: par 100, birdie 150, eagle 200, albatros 250, tek vuruşta delik 300 puan; bogey 60, çift bogey 30, daha kötüsü 10 puan. Her delikten sonra skor kartı toplamı gösterir."
+  },
+  "howToPlay": [
+    {
+      "en": "Choose the Meadow Course, the Castle Course or All 18 Holes.",
+      "tr": "Çayır Parkuru'nu, Kale Parkuru'nu ya da 18 Delik'i seç."
+    },
+    {
+      "en": "Read the hole card, then look the hole over: turn the camera and zoom out to see the cup before you putt.",
+      "tr": "Delik kartını oku, sonra deliği incele: vurmadan önce kamerayı çevir ve uzaklaşarak çukuru gör."
+    },
+    {
+      "en": "Pull back from the ball and release. The further you pull, the harder the putt; the ball goes the opposite way to your pull.",
+      "tr": "Topun arkasından geri çek ve bırak. Ne kadar çekersen vuruş o kadar sert olur; top çektiğin yönün tersine gider."
+    },
+    {
+      "en": "Sink the ball in as few strokes as you can, then move on with NEXT HOLE. After the last hole, FINISH ROUND shows your final scorecard.",
+      "tr": "Topu olabildiğince az vuruşla deliğe sok, sonra SONRAKİ DELİK ile devam et. Son delikten sonra TURU BİTİR seni skor kartına götürür."
+    }
+  ],
+  "controls": {
+    "keyboard": {
+      "en": "← / → (A / D) aim, ↑ / ↓ (W / S) set the power, Space putts; hold Shift for fine adjustments. Q / E turn the camera, Z / X zoom and V switches to an overview of the hole. Esc or P pauses.",
+      "tr": "← / → (A / D) nişan alır, ↑ / ↓ (W / S) gücü ayarlar, Boşluk vurur; ince ayar için Shift'i basılı tut. Q / E kamerayı çevirir, Z / X yakınlaştırır ve uzaklaştırır, V deliğin genel görünümüne geçer. Esc ya da P duraklatır."
+    },
+    "touch": {
+      "en": "Drag back from the ball and let go to putt. Drag on empty space to turn the camera and pinch with two fingers to zoom.",
+      "tr": "Vurmak için topun arkasından parmağını geri çekip bırak. Kamerayı çevirmek için boş bir yeri sürükle, yakınlaşmak için iki parmakla sıkıştır."
+    }
+  },
+  "tips": [
+    {
+      "en": "Power climbs slowly at the bottom of the pull, so short putts have a wide range of gentle strengths. Near the cup, a small pull is safer than a firm one that lips out.",
+      "tr": "Güç, çekişin başında yavaş artar; kısa vuruşlar için geniş bir yumuşak güç aralığın olur. Çukura yakınken kenardan dönen sert bir vuruştan küçük bir çekiş daha güvenlidir."
+    },
+    {
+      "en": "Moving obstacles keep a fixed rhythm. Watch the windmill's sails or the sliding gates through one full cycle before you putt, and start the ball just as the gap opens.",
+      "tr": "Hareketli engellerin sabit bir ritmi vardır. Vurmadan önce yel değirmeninin kanatlarını ya da sürgülü kapıları bir tam tur izle, topu aralık açılırken yola çıkar."
+    },
+    {
+      "en": "Ramps and gap jumps need commitment: a putt that is too soft rolls back or falls short into the water, costing a stroke on top of the putt.",
+      "tr": "Rampalar ve atlamalar kararlılık ister: fazla yumuşak vuruş geri yuvarlanır ya da suya düşer ve vuruşun üstüne bir ceza vuruşu daha yazar."
+    },
+    {
+      "en": "When a hole is going badly, play for bogey. A bogey still pays 60 points, while running out of strokes pays nothing.",
+      "tr": "Bir delik kötü gidiyorsa bogey için oyna. Bogey yine de 60 puan getirir; vuruş sınırını doldurmak ise hiçbir şey kazandırmaz."
+    }
+  ],
+  "features": [
+    {
+      "en": "18 handcrafted holes on two 3D courses",
+      "tr": "İki 3D parkurda 18 el yapımı delik"
+    },
+    {
+      "en": "Windmills, sliding gates, a sweeper, tunnels, ramps and jumps",
+      "tr": "Yel değirmenleri, sürgülü kapılar, süpürge, tüneller, rampalar ve atlamalar"
+    },
+    {
+      "en": "A free camera you can turn and zoom on every hole",
+      "tr": "Her delikte çevirip yakınlaştırabildiğin serbest kamera"
+    },
+    {
+      "en": "Easy and Normal difficulty",
+      "tr": "Kolay ve Normal zorluk"
+    }
+  ],
+  "faq": [
+    {
+      "q": {
+        "en": "Is there an easy mode?",
+        "tr": "Kolay modu var mı?"
+      },
+      "a": {
+        "en": "Yes. On Easy the cup is bigger and pulls in a slow ball that rolls close, the aim line traces the putt's real path up to its first bounce, and the stroke limit is par plus six. Easy rounds are practice and stay off the leaderboard.",
+        "tr": "Evet. Kolay'da çukur daha büyüktür ve yakından geçen yavaş topu içine çeker, nişan çizgisi vuruşun gerçek yolunu ilk sekmeye kadar gösterir, vuruş sınırı da par artı altıdır. Kolay turlar antrenman sayılır, sıralamaya girmez."
+      }
+    },
+    {
+      "q": {
+        "en": "Which course should I start with?",
+        "tr": "Hangi parkurla başlamalıyım?"
+      },
+      "a": {
+        "en": "The Meadow Course is the gentler nine. All 18 Holes plays both courses back to back and is the only way to reach the highest totals.",
+        "tr": "Çayır Parkuru daha yumuşak dokuz deliktir. 18 Delik iki parkuru arka arkaya oynatır ve en yüksek toplamlara ancak böyle ulaşılır."
+      }
+    },
+    {
+      "q": {
+        "en": "Can I play with a friend?",
+        "tr": "Arkadaşımla oynayabilir miyim?"
+      },
+      "a": {
+        "en": "Putt Park is single-player, but your best round goes on the leaderboard on ayvago.com, so you can compare scores.",
+        "tr": "Golf Parkı tek kişilik, ama en iyi turun ayvago.com'daki sıralamaya girer; skorlarınızı karşılaştırabilirsiniz."
+      }
+    }
+  ]
+}
