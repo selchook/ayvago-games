@@ -1,0 +1,12 @@
+quaternius/town-buildings/buildings.glb 712KB (9 models as root nodes, 48572 tris in all, no normals: flat-shaded, quantized)
+  materials: white (the MTL colours as vertex colours) and glass (window panes, lit at night by the game); the front faces +z at z = 0.
+  model size (x × y × z, metres), triangles, height range, materials:
+  Building1_Large 23.97x14.01x8.23 10570 tris, y -0.00..14.01, white+glass
+  Building1_Small 11.24x13.99x8.23 4666 tris, y 0.00..13.99, white+glass
+  Building2_Large 17.15x17.75x6.66 7248 tris, y 0.00..17.75, white+glass
+  Building2_Small 10.75x14.90x7.46 2526 tris, y 0.00..14.90, white+glass
+  Building3_Big 14.12x17.03x13.17 3264 tris, y 0.00..17.03, white+glass
+  Building3_Small 9.16x17.03x13.19 2382 tris, y 0.00..17.03, white+glass
+  Building4 13.93x16.46x11.49 4428 tris, y 0.00..16.46, white+glass
+  House1 7.67x9.54x11.61 7426 tris, y 0.00..9.54, white+glass
+  House2 10.93x8.78x9.25 6062 tris, y 0.00..8.78, white+glass
