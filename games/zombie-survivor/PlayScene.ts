@@ -119,7 +119,9 @@ export class PlayScene extends ArcadeScene {
   private updateHud(): void {
     this.hud.setLives(this.hp, this.maxHp);
     this.hud.setCenter(this.wave ? `${t('wave')} ${this.wave}` : '');
-    this.aimTxt.setText(`${t('autoAim')}: ${this.autoAim ? t('on') : t('off')}  [B]`).setColor(this.autoAim ? '#5dff7a' : '#ffd23f');
+    // the toggle: the on-screen B button on touch, X (or Shift) on the keyboard
+    const key = this.controls.touchUi ? 'B' : 'X';
+    this.aimTxt.setText(`${t('autoAim')}: ${this.autoAim ? t('on') : t('off')}  [${key}]`).setColor(this.autoAim ? '#5dff7a' : '#ffd23f');
   }
 
   private banner(s: string, color = '#ffd23f'): void {

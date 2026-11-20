@@ -185,7 +185,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'backgammon', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.4.0',
+    version: '1.4.1',
     addedAt: '2026-10-30',
     multiplayer: 2,
   }),
@@ -315,7 +315,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['coaster', 'rush', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.0.2',
+    version: '1.0.3',
     addedAt: '2026-11-15',
   }),
   arcadeGame({
@@ -461,7 +461,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'dots', 'and', 'boxes', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-10-29',
     multiplayer: true,
   }),
@@ -619,6 +619,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['jetpack', 'rush', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
     addedAt: '2026-10-29',
   }),
   arcadeGame({
@@ -705,6 +706,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['lunar', 'lander', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
   }),
   arcadeGame({
     slug: 'mangala',
@@ -866,6 +868,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['nonogram', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
     addedAt: '2026-10-28',
   }),
   arcadeGame({
@@ -897,6 +900,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['orbit', 'hop', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
     addedAt: '2026-11-04',
   }),
   arcadeGame({
@@ -1065,7 +1069,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'reversi', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     multiplayer: true,
   }),
   arcadeGame({
@@ -1167,6 +1171,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['simon', 'says', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
   }),
   arcadeGame({
     slug: 'skull-isle',
@@ -1347,7 +1352,7 @@ export const ARCADE_GAMES: SeedGame[] = [
       maxPerSecond: 1000,
       maxScore: 300,
     },
-    version: '1.0.1',
+    version: '1.0.2',
     addedAt: '2026-11-11',
   }),
   arcadeGame({
@@ -1492,7 +1497,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['multiplayer', 'turkish', 'draughts', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-10-29',
     multiplayer: true,
   }),
@@ -1595,6 +1600,6 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['zombie', 'survivor', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
   }),
 ];

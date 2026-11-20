@@ -44,7 +44,8 @@ export class PlayScene extends ArcadeScene {
   private mistakes = 0;
   private cursor: [number, number] = [0, 0];
   private kbActive = false;
-  private fillHeld = false;
+  /** What holding Space / Z / Enter does to the cells the cursor moves over (as a drag). */
+  private held: 'fill' | 'mark' | 'unmark' | null = null;
   private drag: { action: 'fill' | 'mark' | 'unmark'; r0: number; c0: number; axis: 'r' | 'c' | null } | null = null;
 
   private boardObjs: Phaser.GameObjects.GameObject[] = [];
@@ -68,7 +69,7 @@ export class PlayScene extends ArcadeScene {
     this.mode = 'fill';
     this.locked = true;
     this.kbActive = false;
-    this.fillHeld = false;
+    this.held = null;
     this.drag = null;
     this.boardObjs = [];
     this.rects = [];
@@ -94,7 +95,7 @@ export class PlayScene extends ArcadeScene {
     this.input.on('pointerup', () => { this.drag = null; });
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.onKey(e));
     this.input.keyboard?.on('keyup', (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.code === 'KeyZ' || e.code === 'Enter') this.fillHeld = false;
+      if (e.code === 'Space' || e.code === 'KeyZ' || e.code === 'Enter') this.held = null;
     });
 
     this.buildPuzzle();
@@ -292,14 +293,15 @@ export class PlayScene extends ArcadeScene {
     if (mv[k]) {
       if (this.kbActive) {
         this.cursor = [Phaser.Math.Clamp(this.cursor[0] + mv[k][0], 0, this.n - 1), Phaser.Math.Clamp(this.cursor[1] + mv[k][1], 0, this.n - 1)];
-        if (this.fillHeld && this.state[this.cursor[0]][this.cursor[1]] === EMPTY) this.apply(this.cursor[0], this.cursor[1], 'fill');
+        if (this.held && this.state[this.cursor[0]][this.cursor[1]] === (this.held === 'unmark' ? MARKED : EMPTY)) this.apply(this.cursor[0], this.cursor[1], this.held);
         else this.sfx('move', { volume: 0.3 });
       }
       this.kbActive = true;
     } else if (k === 'Space' || k === 'KeyZ' || k === 'Enter') {
       this.kbActive = true;
-      this.fillHeld = true;
       const [r, c] = this.cursor;
+      // held while moving, the key keeps doing what this press did: fill, or in MARK mode mark / unmark
+      this.held = this.mode === 'fill' ? 'fill' : this.state[r][c] === MARKED ? 'unmark' : 'mark';
       if (this.mode === 'mark') this.toggleMark(r, c);
       else if (this.state[r][c] === EMPTY) this.apply(r, c, 'fill');
     } else if (k === 'KeyX') {

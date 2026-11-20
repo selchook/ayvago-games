@@ -22,6 +22,8 @@ export class PlayScene extends ArcadeScene {
   private hurried = false;
   private timeMax = 3;
   private mistakesThisRound = 0;
+  /** Notes of this round's sequence already scored: the replay after a mistake does not pay them again. */
+  private paid = 0;
   private ring!: Phaser.GameObjects.Graphics;
   private centerTxt!: Phaser.GameObjects.Text;
   private status!: Phaser.GameObjects.Text;
@@ -29,7 +31,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     this.seq = []; this.pos = 0; this.round = 0; this.lives = 3; this.state = 'busy';
-    this.timeLeft = 0; this.timeMax = 3; this.mistakesThisRound = 0; this.lit = [];
+    this.timeLeft = 0; this.timeMax = 3; this.mistakesThisRound = 0; this.paid = 0; this.lit = [];
     this.cameras.main.setBackgroundColor('#141018');
 
     this.add.circle(CX, CY + 10, R_OUT + 26, 0x000000, 0.5);
@@ -118,6 +120,7 @@ export class PlayScene extends ArcadeScene {
     this.round++;
     this.seq.push(Phaser.Math.Between(0, 3));
     this.mistakesThisRound = 0;
+    this.paid = 0;
     if (this.round > 1 && this.round % 5 === 1) {
       popup(this, CX, 300, t('speedUp'), '#ff4fa3', 30);
       this.sfx('levelup', { volume: 0.55, exact: true });
@@ -155,7 +158,7 @@ export class PlayScene extends ArcadeScene {
     const px = CX + Math.cos(a) * (R_IN + R_OUT) / 2, py = CY + Math.sin(a) * (R_IN + R_OUT) / 2;
     if (pad !== this.seq[this.pos]) return this.mistake(t('wrong'));
     burst(this, px, py, [LIT[pad], 0xffffff], 12, 220);
-    this.addScore(5 * this.round, px, py);
+    if (this.pos >= this.paid) { this.addScore(5 * this.round, px, py); this.paid = this.pos + 1; }
     this.pos++;
     this.timeLeft = this.timeMax;
     this.hurried = false;

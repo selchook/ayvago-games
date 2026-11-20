@@ -222,7 +222,7 @@
         "mouse"
       ],
       "multiplayer": 2,
-      "version": "1.4.0",
+      "version": "1.4.1",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -514,7 +514,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.2",
+      "version": "1.0.3",
       "credits": [
         "3D models: Kenney Coaster Kit, Fantasy Town Kit and Mini Characters (CC0) — kenney.nl",
         "Sound effects: Kenney Impact Sounds and Foley Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org"
@@ -843,7 +843,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.1.0",
+      "version": "1.1.1",
       "credits": [
         "Art: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -1191,7 +1191,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.0.1",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl",
         "Audio: Juhani Junkala (CC0) — opengameart.org"
@@ -1393,7 +1393,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.0.1",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
@@ -1760,7 +1760,7 @@
         "keyboard",
         "mouse"
       ],
-      "version": "1.0.0",
+      "version": "1.0.1",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl"
       ],
@@ -1828,7 +1828,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.0.1",
       "credits": [
         "Art: Kenney (CC0) — kenney.nl",
         "Audio: Juhani Junkala (CC0) — opengameart.org"
@@ -2194,7 +2194,7 @@
         "keyboard"
       ],
       "multiplayer": true,
-      "version": "1.1.0",
+      "version": "1.1.1",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
@@ -2428,7 +2428,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.0",
+      "version": "1.0.1",
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl"
       ],
@@ -2820,7 +2820,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.0.1",
+      "version": "1.0.2",
       "credits": [
         "3D bowler and spectators: Kenney Mini Characters 2.0 (CC0) — kenney.nl",
         "Sound effects: Kenney Impact and Interface Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org",
@@ -3158,7 +3158,7 @@
         "mouse"
       ],
       "multiplayer": true,
-      "version": "1.1.0",
+      "version": "1.1.1",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
@@ -3380,8 +3380,8 @@
         "en": "Hold out against zombie waves from every side and upgrade your gun after each wave."
       },
       "howTo": {
-        "tr": "Sol joystick ya da WASD/oklar ile kaç; ateş otomatik. Sağ tarafa dokun, sürükle ya da fareyle nişan al. B/X: otomatik nişan aç-kapa.",
-        "en": "Run with the left joystick or WASD/arrows; firing is automatic. Touch/drag the right side or use the mouse to aim. B/X: toggle auto-aim."
+        "tr": "Sol joystick ya da WASD/oklar ile kaç; ateş otomatik. Sağ tarafa dokun, sürükle ya da fareyle nişan al. X/Shift ya da B düğmesi: otomatik nişan aç-kapa.",
+        "en": "Run with the left joystick or WASD/arrows; firing is automatic. Touch/drag the right side or use the mouse to aim. X/Shift or the B button: toggle auto-aim."
       },
       "genres": [
         "action",
@@ -3394,7 +3394,7 @@
         "keyboard",
         "mouse"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],

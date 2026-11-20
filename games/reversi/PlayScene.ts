@@ -33,10 +33,13 @@ export class PlayScene extends ArcadeScene {
   private lives = 2;
   private streak = 0;
   private round = 0;
-  // online two-player state (net.active): the round's starter (net.starter) plays black (1),
-  // which always moves first; the other player is white (2)
+  // black (1) always moves first. Online: the round's starter (net.starter) plays black, the
+  // other player white (2). Solo: the player takes black in odd rounds and white in even ones,
+  // so the CPU opens even rounds with black.
   private online = false;
   private mine = 1;
+  private nameB!: Phaser.GameObjects.Text;
+  private nameW!: Phaser.GameObjects.Text;
   private moveNo = 0;
   private inbox: MoveMsg[] = [];
 
@@ -84,13 +87,11 @@ export class PlayScene extends ArcadeScene {
     const py = BY + S + 100;
     this.add.rectangle(width / 2, py, S, 110, 0x000000, 0.35).setStrokeStyle(3, 0x2f6a46);
     this.add.image(BX + 60, py, 'disc-b').setDisplaySize(64, 64);
-    const peer = clip(net.peerName || t('opponent'), 10);
-    const blackName = !this.online || this.mine === 1 ? t('you') : peer;
-    const whiteName = !this.online ? t('cpu') : this.mine === 2 ? t('you') : peer;
-    txt(this, BX + 110, py - 20, blackName, { title: true, size: 16, color: '#aaaaaa' }).setOrigin(0, 0.5);
+    this.nameB = txt(this, BX + 110, py - 20, '', { title: true, size: 16, color: '#aaaaaa' }).setOrigin(0, 0.5);
     this.countB = txt(this, BX + 110, py + 18, '2', { title: true, size: 30 }).setOrigin(0, 0.5);
     this.add.image(BX + S - 60, py, 'disc-w').setDisplaySize(64, 64);
-    txt(this, BX + S - 110, py - 20, whiteName, { title: true, size: 16, color: '#aaaaaa' }).setOrigin(1, 0.5);
+    this.nameW = txt(this, BX + S - 110, py - 20, '', { title: true, size: 16, color: '#aaaaaa' }).setOrigin(1, 0.5);
+    this.setNames();
     this.countW = txt(this, BX + S - 110, py + 18, '2', { title: true, size: 30 }).setOrigin(1, 0.5);
     txt(this, width / 2, py + 105, t('keysHint'), { size: 24, color: '#7fae90' });
 
@@ -139,6 +140,13 @@ export class PlayScene extends ArcadeScene {
   private cx(i: number): number { return BX + (i % N) * CELL + CELL / 2; }
   private cy(i: number): number { return BY + Math.floor(i / N) * CELL + CELL / 2; }
 
+  /** The names over the disc counters: who plays black and who white this round. */
+  private setNames(): void {
+    const rival = this.online ? clip(net.peerName || t('opponent'), 10) : t('cpu');
+    this.nameB.setText(this.mine === 1 ? t('you') : rival);
+    this.nameW.setText(this.mine === 2 ? t('you') : rival);
+  }
+
   private placeCursor(): void {
     this.cursor.setPosition(this.cx(this.cur), this.cy(this.cur));
   }
@@ -174,9 +182,11 @@ export class PlayScene extends ArcadeScene {
     this.discs.forEach((d) => d?.destroy());
     this.board.fill(0); this.discs.fill(null);
     this.putDisc(27, 2, true); this.putDisc(28, 1, true); this.putDisc(35, 1, true); this.putDisc(36, 2, true);
+    // black always moves first. Online: black is the round's starter; solo: the player takes black
+    // and starts odd rounds, the CPU takes black and starts even ones
+    if (!this.online) { this.mine = this.round % 2 === 1 ? 1 : 2; this.setNames(); }
     this.updateHud();
-    // online: black (the round's starter) always moves first; solo: the player starts odd rounds
-    this.time.delayedCall(300, () => this.nextTurn(this.online ? 1 : this.round % 2 === 1 ? 1 : 2, false));
+    this.time.delayedCall(300, () => this.nextTurn(1, false));
   }
 
   private showHints(on: boolean): void {
@@ -254,9 +264,10 @@ export class PlayScene extends ArcadeScene {
   private aiMove(): void {
     if (this.isOver || this.state !== 'ai') return;
     const { depth, random } = this.ai();
-    const m = new Brain().choose(this.board, 2, depth, random, 80);
-    if (m < 0) return this.nextTurn(1, true);
-    this.play(m, 2, flips(this.board, m, 2));
+    const cpu = 3 - this.mine;
+    const m = new Brain().choose(this.board, cpu, depth, random, 80);
+    if (m < 0) return this.nextTurn(this.mine, true);
+    this.play(m, cpu, flips(this.board, m, cpu));
   }
 
   private play(i: number, p: number, f: number[]): void {
@@ -310,7 +321,8 @@ export class PlayScene extends ArcadeScene {
     this.cursor.setVisible(false);
     this.status.setText('');
     if (this.online) return this.finishOnline();
-    const b = count(this.board, 1), w = count(this.board, 2);
+    // b: my discs, w: the CPU's (my colour changes from round to round)
+    const b = count(this.board, this.mine), w = count(this.board, 3 - this.mine);
     const cx = this.scale.width / 2;
     if (b > w) {
       this.streak++;

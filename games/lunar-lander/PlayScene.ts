@@ -212,7 +212,8 @@ export class PlayScene extends ArcadeScene {
     this.vChip.setText(vs).setTextColor(col(okV));
     this.hChip.setText(hs).setTextColor(col(okH)).setAnchor(this.vChip.left - HUD_GAP, HUD_ROW2_Y);
     this.fuelChip.setText(Math.ceil(this.fuel)).setTextColor(f > 0.15 ? '#f3f2f2' : '#ff6a4f');
-    this.lander.setTint(this.flying && okH && okV && okA ? 0xffffff : this.flying ? 0xffe0d0 : 0xffffff);
+    // the module glows red while it is too fast or tilted to land (the only cue for the angle)
+    this.lander.setTint(this.flying && !(okH && okV && okA) ? 0xff7a66 : 0xffffff);
     if (this.wind) this.windChip.setText(`${this.wind > 0 ? '>>' : '<<'} ${Math.abs(Math.round(this.wind))}`);
     this.windChip.setVisible(!!this.wind);
   }

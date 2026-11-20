@@ -37,8 +37,8 @@
       "tr": "Yalnızca çevresindeki şeride değil, noktalı çizginin kendisine nişan al: yörüngeye birkaç piksel yakın bir yakalanış KUSURSUZ! bonusu getirir."
     },
     {
-      "en": "You can fly past a planet to the one beyond it. That DOUBLE HOP! scores 20 instead of 10, but the PLANETS counter still goes up by one.",
-      "tr": "Bir gezegenin üstünden geçip arkasındakine atlayabilirsin. Bu ÇİFT ATLAYIŞ! 10 yerine 20 puan getirir, ama GEZEGEN sayacı yine bir artar."
+      "en": "You can fly past a planet to the one beyond it. That DOUBLE HOP! scores 20 instead of 10, a TRIPLE HOP! over two planets 30 and a longer MEGA HOP! 10 for every planet it covers, but the PLANETS counter still goes up by one.",
+      "tr": "Bir gezegenin üstünden geçip arkasındakine atlayabilirsin. Bu ÇİFT ATLAYIŞ! 10 yerine 20 puan getirir; iki gezegeni aşan ÜÇLÜ ATLAYIŞ! 30, daha uzun bir MEGA ATLAYIŞ! de geçtiği her gezegen için 10 puan getirir. Ama GEZEGEN sayacı yine yalnızca bir artar."
     },
     {
       "en": "A red orbit closes in about three laps at the start and in under two later on, and the ship flashes red near the end. Take the first good line out rather than waiting for a perfect one.",
@@ -74,8 +74,8 @@
         "tr": "Puan nasıl kazanılıyor?"
       },
       "a": {
-        "en": "Each new planet is worth 10 points, 20 when you reach it with a DOUBLE HOP!. A PERFECT! catch adds 5 and every star 5. Landing back on a planet you already visited is safe but scores nothing.",
-        "tr": "Her yeni gezegen 10 puan, ÇİFT ATLAYIŞ! ile ulaştığında 20 puan eder. KUSURSUZ! yakalanış 5, her yıldız 5 puan ekler. Daha önce uğradığın bir gezegene geri dönmek güvenlidir ama puan getirmez."
+        "en": "Each new planet is worth 10 points, 20 when you reach it with a DOUBLE HOP!, 30 with a TRIPLE HOP! and 10 per planet covered with a MEGA HOP!. A PERFECT! catch adds 5 and every star 5. Landing back on a planet you already visited is safe but scores nothing.",
+        "tr": "Her yeni gezegen 10 puan, ÇİFT ATLAYIŞ! ile ulaştığında 20, ÜÇLÜ ATLAYIŞ! ile 30 puan eder; MEGA ATLAYIŞ! geçtiği her gezegen için 10 puan getirir. KUSURSUZ! yakalanış 5, her yıldız 5 puan ekler. Daha önce uğradığın bir gezegene geri dönmek güvenlidir ama puan getirmez."
       }
     },
     {

@@ -73,7 +73,7 @@ export class PlayScene extends ArcadeScene {
   private turn: Side = 0;
   private roll: [number, number] = [1, 1];
   private dice: number[] = [];
-  private history: Array<{ pos: Pos; dice: number[]; step: Step }> = [];
+  private history: Array<{ pos: Pos; dice: number[]; step: Step; pts: number }> = [];
   private legal: Step[] = [];
   private sel = -1;
   private targets = new Map<number, Step[]>();
@@ -665,11 +665,11 @@ export class PlayScene extends ArcadeScene {
         burst(this, p.x, p.y, side === 0 ? [0xffffff, 0xffd23f] : [0x333333, 0xff4f5e], 20, 280);
         shake(this, 0.008, 160);
         popup(this, p.x, p.y - 50, t('hit'), side === this.mine ? '#5dff7a' : '#ff7a4a', 26);
-        if (side === this.mine) this.addScore(10);
+        if (side === this.mine) this.addScore(stepPoints(m));
       } else if (m.to === OFF) {
         this.sfxAt('off', p.x, { volume: 0.6 });
         burst(this, p.x, p.y, [0xffd23f, 0xffffff], 8, 160);
-        if (side === this.mine) this.addScore(2);
+        if (side === this.mine) this.addScore(stepPoints(m));
       } else this.sfxAt(rng.chance(0.5) ? 'place' : 'place2', p.x, { volume: 0.6 });
     });
   }
@@ -890,7 +890,7 @@ export class PlayScene extends ArcadeScene {
     this.sel = -1;
     chain.forEach((m, i) => {
       this.time.delayedCall(i * 230, () => {
-        this.history.push({ pos: this.pos, dice: this.dice, step: m });
+        this.history.push({ pos: this.pos, dice: this.dice, step: m, pts: stepPoints(m) });
         this.pos = apply(this.pos, this.mine, m);
         this.dice = removeDie(this.dice, m.die);
         this.markDice(this.dice);
@@ -912,6 +912,8 @@ export class PlayScene extends ArcadeScene {
     this.pos = h.pos;
     this.dice = h.dice;
     if (h.step.hit) this.stats[this.mine].hits = Math.max(0, this.stats[this.mine].hits - 1);
+    // take back the points the step earned (a hit or a bear-off), so hit, undo, hit scores once
+    if (h.pts) this.addScore(-h.pts);
     this.sfx('undo', { volume: 0.5 });
     this.sync(220);
     this.cur = h.step.from;
@@ -1018,6 +1020,11 @@ export class PlayScene extends ArcadeScene {
       this.chat.botSay(other(this.mine), 'hurry', 0.6);
     }
   }
+}
+
+/** Points my own step earns: a hit +10, a bear-off +2 (undo takes them back). */
+function stepPoints(m: Step): number {
+  return m.hit ? 10 : m.to === OFF ? 2 : 0;
 }
 
 /** Shrinks a text to a width (labels in the pill). */

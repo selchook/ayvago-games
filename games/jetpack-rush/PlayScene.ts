@@ -85,7 +85,8 @@ export class PlayScene extends ArcadeScene {
     this.bubble = this.add.image(HERO_X, this.hy, 'bubble').setDepth(21).setScale(0.85).setVisible(false);
 
     this.controls = new Controls(this);
-    this.input.on('pointerdown', () => { this.pointerHeld = true; });
+    // a tap on the pause button (or any other button) is not thrust
+    this.input.on('pointerdown', (_p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => { if (!over.length) this.pointerHeld = true; });
     this.input.on('pointerup', () => { this.pointerHeld = false; });
     this.input.on('pointerupoutside', () => { this.pointerHeld = false; });
 
