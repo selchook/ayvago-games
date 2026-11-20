@@ -16,12 +16,12 @@ const tr: Record<string, string> = {
   addTime: '+{n} SN', go: 'BAS GAZA!', smokeWarn: 'MOTOR DUMAN ATIYOR!', fireWarn: 'ARABA YANIYOR!', crash: 'ÇARPIŞMA!',
   // goals
   g_pickup: 'Al: {place}', g_deliver: 'Teslim et: {place}', g_arrive: 'Git: {place}', g_passenger: 'Yolcuyu al: {place}', g_checks: 'Kontrol noktası: {n} kaldı',
-  g_lose: 'Polisi atlat!', g_tail: 'Arabayı izle, fazla yaklaşma', g_chase: 'Kamyonete çarp, durdur', g_escort: 'Cipi koru: {place}',
+  g_lose: 'Polisi atlat!', g_tail: 'Arabayı izle, fazla yaklaşma', g_chase: 'Hedefe çarp, durdur', g_escort: 'Cipi koru: {place}',
   g_roam: 'İş bul: telefon, müşteri, atlayış', g_side: 'Teslim et: {place}', g_fare: 'Müşteriyi götür: {place}', g_rush: 'Sıradaki işi al', g_getaway: 'Yakalanmadan dayan!',
   g_mark: 'yeşil işaret', g_find: 'Hedef arabayı bul',
   // endings
   f_busted: 'YAKALANDIN', f_wrecked: 'ARABA HURDA', f_time: 'SÜRE BİTTİ', f_cargo: 'KARGO KIRILDI', f_lost: 'HEDEFİ KAÇIRDIN', f_spotted: 'FARK EDİLDİN',
-  f_escaped: 'HEDEF KAÇTI', f_escort: 'CİP DÜŞTÜ', f_shift: 'VARDİYA BİTTİ',
+  f_escaped: 'HEDEF KAÇTI', f_escort: 'CİP HURDA OLDU', f_shift: 'VARDİYA BİTTİ',
   w_noHeat: 'Silinecek iz yok', w_seen: 'Girerken gördüler!', w_noRepair: 'Araba sağlam',
   c_stunt: 'GÖSTERİ PRİMİ', c_spray: 'BOYANDI, İZ SİLİNDİ', c_repair: 'TAMİR EDİLDİ',
   // places
@@ -61,7 +61,7 @@ const en: Record<string, string> = {
   jobDone: 'JOB DONE!', jobFailed: 'JOB FAILED', shiftOver: 'SHIFT OVER', timeLow: 'TIME IS RUNNING OUT!', careful: 'CAREFUL, FRAGILE!', newJob: 'NEW JOB!',
   addTime: '+{n} S', go: 'HIT IT!', smokeWarn: 'ENGINE SMOKING!', fireWarn: 'CAR ON FIRE!', crash: 'CRASH!',
   g_pickup: 'Pick up: {place}', g_deliver: 'Deliver: {place}', g_arrive: 'Drive to: {place}', g_passenger: 'Pick up the passenger: {place}', g_checks: 'Checkpoints left: {n}',
-  g_lose: 'Lose the cops!', g_tail: 'Tail the car, don’t get too close', g_chase: 'Ram the van until it stops', g_escort: 'Protect the SUV: {place}',
+  g_lose: 'Lose the cops!', g_tail: 'Tail the car, don’t get too close', g_chase: 'Ram the target until it stops', g_escort: 'Protect the SUV: {place}',
   g_roam: 'Find work: phones, fares, jumps', g_side: 'Deliver: {place}', g_fare: 'Fare to: {place}', g_rush: 'Take the next job', g_getaway: 'Hold out, don’t get busted!',
   g_mark: 'the green marker', g_find: 'Find the target car',
   f_busted: 'BUSTED', f_wrecked: 'CAR WRECKED', f_time: 'OUT OF TIME', f_cargo: 'CARGO BROKEN', f_lost: 'LOST THE TARGET', f_spotted: 'YOU WERE SPOTTED',
@@ -102,7 +102,7 @@ const STORY_TR: [string, string][] = [
   ['Konvoy', 'Çetenin cipi Rıhtım\'dan garaja gidecek, polis de peşinde. Önlerini kes, çarp, cipi sağ salim götür.'],
   ['Çekilmiş Araç', 'Bay İpek\'in gözdesi spor araba Karakol\'un otoparkında. Duru kapıyı açık bıraktı; inandırıcı olsun: arabayı al, polisi atlat, garaja bırak.'],
   ['Gece Turu', 'Park, gösteri sahası ve rıhtım boyunca on kontrol noktası. Rampadan atlamak çoğu zaman virajdan hızlıdır.'],
-  ['İhanet', 'Tuzaktı: polis Rıhtım\'da bekliyordu ve herkes senin kim olduğunu bilmiyor. Dört yıldızlık aranmayı atlat, Boyacı\'da saklan.'],
+  ['İhanet', 'Tuzaktı: polis Rıhtım\'da bekliyordu ve herkes senin kim olduğunu bilmiyor. Üç yıldızlık aranmayı atlat, Boyacı\'da saklan.'],
   ['Büyük Vurgun', 'Bu gece Bay İpek her şeyi taşıyor. Ekibi Banka\'dan al, polisi atlat, İpek\'in arabasını yakalayıp durdur, sonra delilleri Karakol\'a getir. Komiser Duru bekliyor.'],
 ];
 const STORY_EN: [string, string][] = [
@@ -117,7 +117,7 @@ const STORY_EN: [string, string][] = [
   ['Convoy', 'The crew’s SUV must get from the Docks to the garage with the police on its tail. Block them, ram them, keep the SUV in one piece.'],
   ['Impound', 'Mr. Silk’s favourite sports car sits in the Precinct’s lot. Duru left the gate open; make it look real: take the car, lose the heat, park it at the garage.'],
   ['Night Moves', 'Ten checkpoints through the park, the stunt yard and the docks. A ramp is often faster than a corner.'],
-  ['Double Cross', 'It was a set-up: the police were waiting at the Docks, and not everyone knows whose side you are on. Lose four stars of heat and hide at the Spray Shop.'],
+  ['Double Cross', 'It was a set-up: the police were waiting at the Docks, and not everyone knows whose side you are on. Lose three stars of heat and hide at the Spray Shop.'],
   ['The Big Score', 'Tonight Mr. Silk moves everything. Pick up the crew at the Bank, lose the police, catch Silk’s car and stop it, then bring the evidence to the Precinct. Inspector Duru is waiting.'],
 ];
 STORY_TR.forEach(([a, b], i) => { tr[`m${i + 1}t`] = a; tr[`m${i + 1}b`] = b; });
