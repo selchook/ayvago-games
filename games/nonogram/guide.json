@@ -23,8 +23,8 @@
   ],
   "controls": {
     "keyboard": {
-      "en": "The arrows or WASD move the cursor. Space, Enter or Z fills (or marks, in MARK mode); hold it while moving to paint a line. X marks or unmarks, and M or Tab switches between FILL and MARK. Esc or P pauses.",
-      "tr": "Oklar ya da WASD imleci gezdirir. Boşluk, Enter ya da Z boyar (İŞARET modunda işaretler); basılı tutup ilerlersen çizgi boyunca boyarsın. X işaret koyar ya da kaldırır, M ya da Tab BOYA ile İŞARET arasında geçiş yapar. Esc ya da P duraklatır."
+      "en": "The arrows or WASD move the cursor. Space, Enter or Z fills (or marks, in MARK mode); hold it while moving to do the same along a line. X marks or unmarks, and M or Tab switches between FILL and MARK. Esc or P pauses.",
+      "tr": "Oklar ya da WASD imleci gezdirir. Boşluk, Enter ya da Z boyar (İŞARET modunda işaretler); basılı tutup ilerlersen aynısını çizgi boyunca yaparsın. X işaret koyar ya da kaldırır, M ya da Tab BOYA ile İŞARET arasında geçiş yapar. Esc ya da P duraklatır."
     },
     "touch": {
       "en": "Tap or drag on the grid. The FILL and MARK buttons under it switch modes.",
