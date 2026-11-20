@@ -706,6 +706,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['lunar', 'lander', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
   }),
   arcadeGame({
     slug: 'mangala',
