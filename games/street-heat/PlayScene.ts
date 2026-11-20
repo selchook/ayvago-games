@@ -117,6 +117,17 @@ export class PlayScene extends ArcadeScene {
     this.banked = 0;
     this.card = null;
     this.replayLabel = null;
+    this.tipBox = null;
+    this.tipStep = 0;
+    this.ending = false;
+    this.routeT = 0;
+    this.snapT = 0;
+    this.replayT = 0;
+    this.cardAt = 0;
+    this.newCar = null;
+    this.hornKey = false;
+    this.nitroKey = false;
+    this.lastClockSec = -1;
     this.testInput = null;
     this.testSpeed = 1;
     this.bot = null;
@@ -704,13 +715,23 @@ export class PlayScene extends ArcadeScene {
 
   /** A run that ended busted or wrecked may go on after a rewarded ad. */
   canContinue(): boolean {
-    const r = this.job?.over;
-    return !!this.job && (r === 'busted' || r === 'wrecked');
+    // a run that ended some other way (from the board, the platform) may go on too
+    if (!this.job || !this.job.over) return true;
+    const r = this.job.over;
+    return r === 'busted' || r === 'wrecked';
   }
 
   revive(): void {
     const job = this.job;
-    if (!job) return;
+    if (!job || this.phase === 'hub' || this.phase === 'brief' || this.phase === 'garage') {
+      // ended before a job ran: back to the board
+      this.card?.destroy();
+      this.card = null;
+      if (this.garage) this.garage.close(); // its close opens the board
+      else { this.dispatch?.close(); this.openHub(); }
+      pendingRetry = false;
+      return;
+    }
     // the bank gives back what the card banked; the run goes on
     this.meta.cash -= this.banked;
     saveMeta(this.meta);

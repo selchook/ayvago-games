@@ -15,6 +15,28 @@ import { loadMeta } from './meta';
 import { makeIcons } from './hud';
 import { prebakeScreens } from './screens';
 
+/** The menu's backdrop: a live avenue downtown at night, the player's car parked under a lamp. */
+function streetBackdrop(scene: Phaser.Scene): void {
+  const m = loadMeta();
+  const c = city();
+  // a parking spot on the avenue by the plaza, the car facing north
+  const spot = { ...c.places.get('bank')!, x: 4 * 64 + 5.6, z: 150, h: Math.PI };
+  const sim = new Sim({ car: m.car, up: m.up, paint: m.paint, tune: { ...TUNING.normal, traffic: 18 }, seed: 7, start: spot, night: 1 });
+  sim.frozen = true;
+  const view = new View(scene, { menu: true, night: 1, radius: 150 });
+  scene.time.delayedCall(200, () => void loadCity());
+  let acc = 0;
+  view.world.onFrame = (dt) => {
+    acc += dt;
+    let n = 0;
+    while (acc > 1 / 30 && n < 3) { acc -= 1 / 30; n++; sim.step(1 / 30, { steer: 0, gas: 0, brake: 0, handbrake: false, nitro: false, horn: false, hold: true }); sim.events.length = 0; }
+    if (n >= 3) acc = 0;
+    for (const car of sim.cars) if (car.role === 'cop') car.siren = true;
+    view.buildStep(1);
+    view.sync(sim, null, dt);
+  };
+}
+
 launch({
   meta: meta as GameMeta,
   background: '#0b0d1f',
@@ -70,24 +92,8 @@ launch({
     // a live street corner downtown behind the menu: the player's car under a lamp, traffic and
     // a patrol going by; the buildings appear as the city arrives (loaded after the menu is up)
     adoptPack('cars', model('sh-cars', { shadows: false }));
-    const m = loadMeta();
-    const c = city();
-    // a parking spot on the avenue by the plaza, the car facing north
-    const spot = { ...c.places.get('bank')!, x: 4 * 64 + 5.6, z: 150, h: Math.PI };
-    const sim = new Sim({ car: m.car, up: m.up, paint: m.paint, tune: { ...TUNING.normal, traffic: 18 }, seed: 7, start: spot, night: 1 });
-    sim.frozen = true;
-    const view = new View(scene, { menu: true, night: 1, radius: 150 });
-    scene.time.delayedCall(200, () => void loadCity());
-    let acc = 0;
-    view.world.onFrame = (dt) => {
-      acc += dt;
-      let n = 0;
-      while (acc > 1 / 30 && n < 3) { acc -= 1 / 30; n++; sim.step(1 / 30, { steer: 0, gas: 0, brake: 0, handbrake: false, nitro: false, horn: false, hold: true }); sim.events.length = 0; }
-      if (n >= 3) acc = 0;
-      for (const car of sim.cars) if (car.role === 'cop') car.siren = true;
-      view.buildStep(1);
-      view.sync(sim, null, dt);
-    };
+    // the street is built a moment after the menu opens, so the menu itself is up at once
+    scene.time.delayedCall(60, () => { if (scene.scene.isActive()) streetBackdrop(scene); });
     void Phaser;
   },
   // neon tubes on smoked glass, case files, a chrome frame with police lights in the corners (theme.ts)

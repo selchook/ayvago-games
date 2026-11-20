@@ -780,10 +780,10 @@ export class View {
       look = new THREE.Vector3(p.x - Math.sin(p.h) * 1.5, 1.4, p.z - Math.cos(p.h) * 1.5);
       if (this.opt.menu) {
         // the menu: the car on the right, above the how-to card and clear of PLAY and the switches
-        want.y = 3.4;
+        want.y = 2.6;
         const dx = look.x - want.x, dz = look.z - want.z, n = Math.hypot(dx, dz) || 1;
-        look.x += (dz / n) * 4.6; look.z += (-dx / n) * 4.6;
-        look.y = 0.2;
+        look.x += (dz / n) * 6.5; look.z += (-dx / n) * 6.5;
+        look.y = 0.9;
       }
       if (this.menuT < 0.1) cam.position.copy(want); else cam.position.lerp(want, Math.min(1, dt * 2));
     } else if (this.cam === 'bumper') {
