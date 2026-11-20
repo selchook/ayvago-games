@@ -94,7 +94,9 @@ function makeMapTexture(scene: Phaser.Scene): void {
 
 export class MiniMap {
   readonly box: Phaser.GameObjects.Container;
-  private rt: Phaser.GameObjects.RenderTexture;
+  /** The heading-up map, drawn into one texture kept across rounds (a new framebuffer on every
+   *  round stalls the GPU queue while the city is uploading). */
+  private rt: Phaser.Textures.DynamicTexture;
   private img: Phaser.GameObjects.Image;
   private g: Phaser.GameObjects.Graphics;
   private frame: Phaser.GameObjects.Graphics;
@@ -112,10 +114,12 @@ export class MiniMap {
     this.frame.lineStyle(6, ORANGE, 0.25).strokeRoundedRect(-size / 2 + 2, -size / 2 + 2, size - 4, size - 4, r - 2);
     this.frame.lineStyle(2.5, ORANGE, 0.95).strokeRoundedRect(-size / 2 + 2, -size / 2 + 2, size - 4, size - 4, r - 2);
     this.frame.lineStyle(1, 0xffe0b0, 0.9).strokeRoundedRect(-size / 2 + 2, -size / 2 + 2, size - 4, size - 4, r - 2);
-    this.rt = scene.add.renderTexture(0, 0, inner, inner);
+    const key = `sh-minimap-${inner}`;
+    this.rt = scene.textures.exists(key) ? (scene.textures.get(key) as Phaser.Textures.DynamicTexture) : scene.textures.addDynamicTexture(key, inner, inner)!;
+    const view = scene.add.image(0, 0, key);
     this.img = scene.make.image({ key: 'sh-mapbase', add: false });
     this.g = scene.add.graphics();
-    this.box = scene.add.container(x, y, [this.frame, this.rt, this.g]).setScrollFactor(0, 0, true).setDepth(UI_DEPTH - 5);
+    this.box = scene.add.container(x, y, [this.frame, view, this.g]).setScrollFactor(0, 0, true).setDepth(UI_DEPTH - 5);
     if (onTap) {
       this.box.setSize(size, size).setInteractive({ useHandCursor: true });
       this.box.on('pointerup', onTap);

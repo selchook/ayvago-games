@@ -58,8 +58,21 @@ export function loadLayers(): Promise<void> {
 
 export const layersReady = (): boolean => !!layerData;
 
-/** The layers as an array texture (a flat grey until they arrive; `refresh()` swaps them in). */
-export function layerTexture(): THREE.DataArrayTexture & { painted: boolean; refresh(): void } {
+type LayerTexture = THREE.DataArrayTexture & { painted: boolean; refresh(): void };
+let layerTex: LayerTexture | null = null;
+
+/**
+ * The layers as an array texture (a flat grey until they arrive; `refresh()` swaps them in).
+ * One texture for the whole session, kept on the GPU across scenes like the loaded models: it is
+ * not a material property, so World3D does not free it, and the menu and every round reuse it
+ * instead of uploading 18 layers and building their mipmaps again.
+ */
+export function layerTexture(): LayerTexture {
+  if (!layerTex) layerTex = makeLayerTexture();
+  return layerTex;
+}
+
+function makeLayerTexture(): LayerTexture {
   const n = LAYERS.length;
   const grey = new Uint8Array(n * 4 * 4 * 4).fill(140);
   const t = new THREE.DataArrayTexture((layerData ?? grey) as unknown as BufferSource, layerData ? TEX : 4, layerData ? TEX : 4, n) as THREE.DataArrayTexture & { painted: boolean; refresh(): void };
@@ -206,7 +219,6 @@ vWp = (modelMatrix * shWp).xyz;
  */
 export function cityMaterial(tex: THREE.DataArrayTexture, lights: NightLights): THREE.MeshLambertMaterial {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.FrontSide });
-  (mat as unknown as { shLayers: THREE.Texture }).shLayers = tex;
   mat.onBeforeCompile = (sh) => {
     bindLights(sh, lights);
     sh.uniforms.uLayers = { value: tex };

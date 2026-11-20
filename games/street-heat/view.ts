@@ -77,6 +77,9 @@ const PROP_GEO: Record<string, () => THREE.BufferGeometry> = {
 export interface ViewOptions { menu?: boolean; night: number; fov?: number; /** Only build the chunks this close to the start (the menu). */ radius?: number }
 
 export class View {
+  /** Real time (ms) of the next shader warm-up: frames run slowly while a scene starts. */
+  private warmAt = performance.now() + 500;
+  private warmed = 0;
   readonly world: World3D;
   readonly lights = new NightLights();
   readonly city: City = city();
@@ -509,6 +512,10 @@ export class View {
   /** Draws the sim (and the job's markers): cars, people, props, lights, camera. */
   sync(sim: Sim, job: Job | null, dt: number, opts: { lights?: boolean; player?: boolean } = {}): void {
     this.time += dt;
+    // keep this world's shader programs alive for the next scene (keepPrograms below): soon after
+    // it starts, once the city is up, then now and then for effects that turn up later
+    const now = performance.now();
+    if (now > this.warmAt && this.builtCity) { keepPrograms(this.world); this.warmAt = now + (this.warmed++ < 2 ? 2500 : 12000); }
     this.lights.time.value = this.time;
     const p = sim.player;
     const nightOn = this.night > 0.5 ? 1 : 0;
@@ -876,3 +883,68 @@ export class View {
 }
 
 export { piece };
+
+// ------------------------------------------------------------------ shader warm-up
+
+/**
+ * Keeps every shader program a world uses alive in the shared renderer. World3D frees a scene's
+ * materials when the scene ends, and three.js deletes a program no material uses any more, so the
+ * next scene would compile them all again on its first frame (seconds on a slow GPU, between the
+ * menu and Play). Each new kind of material gets a kept copy, compiled once in a scratch scene
+ * with the world's lights and fog (as in Delivery Dash and Snow Express).
+ */
+const warmKeys = new WeakMap<THREE.WebGLRenderer, Set<string>>();
+const keptMaterials: THREE.Material[] = [];
+function keepPrograms(world: World3D): void {
+  const renderer = world.renderer;
+  let seen = warmKeys.get(renderer);
+  if (!seen) { seen = new Set(); warmKeys.set(renderer, seen); }
+  const s = new THREE.Scene();
+  s.fog = world.scene.fog;
+  const lights: THREE.Object3D[] = [];
+  const temp: THREE.InstancedMesh[] = [];
+  world.scene.traverse((o) => {
+    if ((o as THREE.Light).isLight) { lights.push(o); return; }
+    const m = o as THREE.Mesh;
+    const points = (o as THREE.Points).isPoints;
+    if (!m.isMesh && !points) return;
+    const inst = o as THREE.InstancedMesh;
+    const kind = points ? 'points' : inst.isInstancedMesh ? (inst.instanceColor ? 'instc' : 'inst') : 'mesh';
+    for (const mat of Array.isArray(m.material) ? m.material : [m.material]) {
+      const a = mat as THREE.MeshLambertMaterial & THREE.MeshBasicMaterial;
+      const key = kind + ':' + mat.type + ':' + mat.customProgramCacheKey() + ':' + JSON.stringify([!!a.map, !!a.vertexColors, mat.transparent, mat.blending, mat.side, a.fog, mat.depthTest, (mat as THREE.ShaderMaterial).defines ?? null, (mat as THREE.ShaderMaterial).vertexShader?.length ?? 0]);
+      if (seen!.has(key)) continue;
+      seen!.add(key);
+      const c = mat.clone();
+      c.onBeforeCompile = mat.onBeforeCompile;
+      c.customProgramCacheKey = mat.customProgramCacheKey;
+      // a shader material's clone copies its textures: share the world's (already on the GPU)
+      if ((mat as THREE.ShaderMaterial).isShaderMaterial) (c as THREE.ShaderMaterial).uniforms = (mat as THREE.ShaderMaterial).uniforms;
+      keptMaterials.push(c);
+      let k: THREE.Object3D;
+      if (points) k = new THREE.Points(m.geometry, c);
+      else if (kind === 'mesh') k = new THREE.Mesh(m.geometry, c);
+      else {
+        const ki = new THREE.InstancedMesh(m.geometry, c, 1);
+        ki.setMatrixAt(0, new THREE.Matrix4());
+        if (inst.instanceColor) ki.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(3).fill(1), 3);
+        k = ki;
+        temp.push(ki);
+      }
+      k.frustumCulled = false;
+      k.visible = true;
+      s.add(k);
+    }
+  });
+  if (!s.children.length) return;
+  for (const l of lights) {
+    const c = (l as THREE.Light).clone();
+    s.add(c);
+    if ((c as THREE.DirectionalLight).target) s.add((c as THREE.DirectionalLight).target);
+  }
+  renderer.compile(s, world.camera);
+  // one draw: the browser may link a program only when it is first used (the world draws over it)
+  renderer.render(s, world.camera);
+  for (const k of temp) k.dispose();
+  s.clear();
+}
