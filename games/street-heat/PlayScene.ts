@@ -173,7 +173,6 @@ export class PlayScene extends ArcadeScene {
     kb.on('keydown-M', () => { if (this.phase === 'drive') this.openMap(); });
     kb.on('keydown-ENTER', () => { if (this.phase === 'replay') this.replayT = 99; else if (this.phase === 'end') this.finishCard(); });
     this.input.on('pointerup', () => { if (this.phase === 'replay') this.replayT = 99; else if (this.phase === 'end' && this.cardAt > 0.6) this.finishCard(); });
-    this.events.on('map-closed', () => { /* the round goes on */ });
 
     this.engine = new Loop(this, 'engine');
     this.squeal = new Loop(this, 'sh-squeal');
