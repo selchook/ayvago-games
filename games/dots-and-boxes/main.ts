@@ -39,6 +39,8 @@ launch({
       rival: 'Rakip: {name}', lv: 'Seviye {n}', streak: 'Seri: {n}',
       keysHint: 'Oklar: çizgi seç · X: yön değiştir · Boşluk: çiz', touchHint: 'İki noktanın arasına dokun: çizgi çiz',
       d0: 'Acemi', d1: 'Kolay', d2: 'Kurnaz', d3: 'Zincirci', d4: 'Usta',
+      // the Easy ladder: its first rival is weaker than Acemi, the second plays like Acemi, the third sits below Kolay
+      e0: 'Çaylak', e1: 'Acemi', e2: 'Çırak',
     },
     en: {
       yourTurn: 'YOUR TURN', again: 'GO AGAIN!', aiTurn: 'AI THINKING', cpu: 'CPU',
@@ -46,6 +48,8 @@ launch({
       rival: 'Rival: {name}', lv: 'Level {n}', streak: 'Streak: {n}',
       keysHint: 'Arrows: pick line · X: flip · Space: draw', touchHint: 'Tap between two dots to draw a line',
       d0: 'Rookie', d1: 'Easy', d2: 'Sly', d3: 'Chainer', d4: 'Master',
+      // the Easy ladder: its first rival is weaker than Rookie, the second plays like Rookie, the third sits below Easy
+      e0: 'Novice', e1: 'Rookie', e2: 'Apprentice',
     },
   },
 });

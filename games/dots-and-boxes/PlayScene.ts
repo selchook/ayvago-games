@@ -200,7 +200,8 @@ export class PlayScene extends ArcadeScene {
     if (this.online) { this.rivalChip.setText(t('vs', { name: net.peerName || t('opponent') })); return; }
     this.hud.setLives(this.lives);
     this.hud.setLevel(this.level + 1);
-    this.rivalChip.setText(t('rival', { name: t('d' + this.level) }));
+    // the Easy ladder has its own names, matched to how strong its rivals really are
+    this.rivalChip.setText(t('rival', { name: t((this.levels === EASY_LEVELS ? 'e' : 'd') + this.level) }));
     this.streakChip.setText(t('streak', { n: this.streak }));
     const w = this.rivalChip.chipWidth + HUD_GAP + this.streakChip.chipWidth, x0 = this.scale.width / 2 - w / 2;
     this.rivalChip.setAnchor(x0, HUD_ROW2_Y, 'left');
