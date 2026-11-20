@@ -1350,7 +1350,7 @@ export const ARCADE_GAMES: SeedGame[] = [
       maxPerSecond: 1000,
       maxScore: 300,
     },
-    version: '1.0.1',
+    version: '1.0.2',
     addedAt: '2026-11-11',
   }),
   arcadeGame({
