@@ -707,8 +707,8 @@
             "tr": "Skorum nasıl hesaplanıyor?"
           },
           "a": {
-            "en": "Each hit is worth 10 and each checker borne off 2. A won game adds 100, a mars 250, and winning the match adds 300 plus 50 for every point of your winning margin.",
-            "tr": "Her kırma 10, toplanan her taş 2 puan. Kazanılan oyun 100, mars 250 puan ekler; maçı kazanınca 300 puan ve aradaki her maç puanı için 50 puan daha gelir."
+            "en": "Each hit is worth 10 and each checker borne off 2; UNDO takes those points back with the step. A won game adds 100, a mars 250, and winning the match adds 300 plus 50 for every point of your winning margin.",
+            "tr": "Her kırma 10, toplanan her taş 2 puan; GERİ AL bu puanları adımla birlikte geri alır. Kazanılan oyun 100, mars 250 puan ekler; maçı kazanınca 300 puan ve aradaki her maç puanı için 50 puan daha gelir."
           }
         },
         {
