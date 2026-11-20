@@ -185,7 +185,7 @@ export class Job {
       case 'escort': {
         this.clock = Infinity;
         const from = this.place(st.from), to = this.place(st.to);
-        this.actor = sim.addActor('escort', 'transport:Ambulance', 0xffffff, from, routeAi(to, 11, false), { top: 18, accel: 5 });
+        this.actor = sim.addActor('escort', 'cars:SUV', 0xf2f2f0, from, routeAi(to, 11, false), { top: 18, accel: 5 });
         this.actor.hp = this.actor.health = 220;
         this.actor.mass = 2.2;
         this.actor.waitFor = 30;
