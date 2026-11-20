@@ -605,7 +605,8 @@ export class PlayScene extends ArcadeScene {
     this.tipBox = null;
     const reason = job.over!;
     const won = reason === 'done' || reason === 'shift';
-    this.endWin = job.mode === 'story' ? reason === 'done' : reason === 'shift' || reason === 'done' || job.mode === 'getaway';
+    // a Getaway always ends busted or wrecked: a lost run, so the rewarded continue (revive) can take it on
+    this.endWin = job.mode === 'story' ? reason === 'done' : reason === 'shift' || reason === 'done';
     this.endTitle = reason === 'done' ? t('jobDone') : reason === 'shift' ? t('shiftOver') : reason === 'busted' ? t('busted') : reason === 'wrecked' ? t('wrecked') : t('f_' + reason);
     const W = this.scale.width;
     this.banner(W / 2, 240, this.endTitle, won ? '#5dff7a' : '#ff4060', 72);
@@ -784,7 +785,7 @@ export class PlayScene extends ArcadeScene {
     this.ending = true;
     this.sim.frozen = true;
     const r = this.job.over;
-    this.endWin = this.job.mode === 'story' ? r === 'done' : r === 'shift' || r === 'done' || this.job.mode === 'getaway';
+    this.endWin = this.job.mode === 'story' ? r === 'done' : r === 'shift' || r === 'done';
     this.endTitle = r === 'done' ? t('jobDone') : r === 'shift' ? t('shiftOver') : r === 'busted' ? t('busted') : r === 'wrecked' ? t('wrecked') : t('f_' + r);
     this.showCard();
   }
