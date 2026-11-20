@@ -61,7 +61,7 @@ export class MapScene extends Phaser.Scene {
     rows.forEach(([key, col], i) => {
       const y = ly + 10 + i * 46;
       this.add.graphics().fillStyle(0x000000, 0.5).fillCircle(lx + 20, y, 11).fillStyle(col, 1).fillCircle(lx + 20, y, 8);
-      this.add.existing(fitWidth(labelAt(this, lx + 42, y, t(key), LEGEND, 0), 160));
+      this.add.existing(fitWidth(labelAt(this, lx + 42, y, caps(t(key)), LEGEND, 0), 160));
     });
     const close = new KitButton(this, lx + 100, ly + 330, { w: 200, h: 64, label: t('close'), size: 28 }, () => this.close(data.from));
     this.add.existing(close);
