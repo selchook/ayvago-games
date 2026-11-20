@@ -216,10 +216,11 @@ export class PlayScene extends ArcadeScene {
     this.round++;
     this.board = initial();
     this.quiet = 0;
-    // white moves first; online the round's starter plays white, solo the player is white and
-    // the CPU opens every second round
+    // white moves first: online the round's starter plays white; solo the player takes white and
+    // opens odd rounds, the CPU takes white and opens even ones (the board turns so the player's
+    // pieces stay at the bottom)
     const first = this.online ? net.myTurnFirst : this.round % 2 === 1;
-    this.mine = this.online ? (first ? W : BL) : W;
+    this.mine = first ? W : BL;
     this.flip = this.mine === BL;
     (this.children.getByName('legend-me') as Phaser.GameObjects.Image).setTexture(this.mine === W ? 'pc-w' : 'pc-b');
     (this.children.getByName('legend-them') as Phaser.GameObjects.Image).setTexture(this.mine === W ? 'pc-b' : 'pc-w');
@@ -227,8 +228,7 @@ export class PlayScene extends ArcadeScene {
     this.resetPieces();
     this.cur = this.mine === W ? 52 : 11;
     this.updateHud();
-    const toMove = this.online ? W : first ? W : BL;
-    this.time.delayedCall(500, () => this.nextTurn(toMove));
+    this.time.delayedCall(500, () => this.nextTurn(W));
   }
 
   private nextTurn(side: number): void {
