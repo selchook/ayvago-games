@@ -2,6 +2,13 @@ import Phaser from 'phaser';
 import { COLORS, txt, FONT_TITLE } from './theme';
 import { playSfx } from './audio';
 import { isModern, MODERN_TITLE, MODERN_BODY } from './style';
+import { currentGame } from './registry';
+import type { HudSkin } from './menu-theme';
+
+/** The theme's HUD skin, if the game has one (MenuTheme.hud). */
+function hudSkin(): HudSkin | null {
+  try { return currentGame().menuTheme?.hud ?? null; } catch { return null; }
+}
 
 export interface ButtonOptions {
   width?: number;
@@ -106,7 +113,7 @@ export class Button extends Phaser.GameObjects.Container {
 export function iconButton(scene: Phaser.Scene, x: number, y: number, icon: string, onClick: () => void, size = 72): Phaser.GameObjects.Container {
   const c = scene.add.container(x, y);
   // modern: a round piece of the HUD glass
-  const bg = isModern()
+  const bg = isModern() || hudSkin()
     ? scene.add.image(0, 0, chipTexture(scene, size, size))
     : scene.add.rectangle(0, 0, size, size, 0x000000, 0.45).setStrokeStyle(4, 0xffffff, 0.8);
   const img = scene.add.image(0, 0, icon).setDisplaySize(size * 0.62, size * 0.62);
@@ -248,13 +255,14 @@ export interface HudChipOptions {
 }
 
 /** The HUD text style: no heavy outline; a soft shadow (modern) or a hard 2 px one (retro). */
-export function hudText(scene: Phaser.Scene, s: string, size?: number, color = '#ffffff'): Phaser.GameObjects.Text {
+export function hudText(scene: Phaser.Scene, s: string, size?: number, color?: string): Phaser.GameObjects.Text {
   const modern = isModern();
+  const skin = hudSkin();
   const t = scene.add.text(0, 0, s, {
-    fontFamily: modern ? `"${MODERN_TITLE}", sans-serif` : FONT_TITLE,
-    fontStyle: modern ? '700' : 'normal',
+    fontFamily: skin?.font ? `"${skin.font}", sans-serif` : modern ? `"${MODERN_TITLE}", sans-serif` : FONT_TITLE,
+    fontStyle: skin?.font ? skin.weight ?? 'normal' : modern ? '700' : 'normal',
     fontSize: `${size ?? (modern ? 26 : 18)}px`,
-    color,
+    color: color ?? skin?.text ?? '#ffffff',
   }).setOrigin(0.5);
   if (modern) t.setShadow(0, 1, 'rgba(0,0,0,0.5)', 4, false, true);
   else t.setShadow(2, 2, '#000000', 0, false, true);
@@ -267,7 +275,7 @@ function hudCaption(scene: Phaser.Scene, s: string): Phaser.GameObjects.Text {
     fontFamily: modern ? `"${MODERN_BODY}", sans-serif` : FONT_TITLE,
     fontStyle: modern ? '800' : 'normal',
     fontSize: modern ? '15px' : '12px',
-    color: modern ? '#ffffff' : '#ffd23f',
+    color: hudSkin()?.caption ?? (modern ? '#ffffff' : '#ffd23f'),
   }).setOrigin(0.5);
   if (modern) t.setAlpha(0.78).setLetterSpacing(1).setShadow(0, 1, 'rgba(0,0,0,0.4)', 3, false, true);
   else t.setShadow(2, 2, '#000000', 0, false, true);
@@ -330,13 +338,18 @@ function drawChip(c: CanvasRenderingContext2D, w: number, h: number, accent: num
 }
 
 /** Bakes a chip background of w x h (modern: plus the shadow pad) once and returns its texture key. */
+/** Room round a chip in its texture: the theme's, the modern glass's or none (retro). */
+const chipPad = (): number => hudSkin()?.pad ?? (isModern() ? GLASS_PAD : 0);
+
 function chipTexture(scene: Phaser.Scene, w: number, h: number, accent: number = COLORS.yellow): string {
-  const modern = isModern(), pad = modern ? GLASS_PAD : 0;
-  const key = `hud-chip-${modern ? 'm' : 'r'}-${h}-${accent.toString(16)}-${w}`;
+  const skin = hudSkin();
+  const modern = isModern(), pad = chipPad();
+  const key = skin ? `hud-chip-t-${h}-${w}` : `hud-chip-${modern ? 'm' : 'r'}-${h}-${accent.toString(16)}-${w}`;
   if (scene.textures.exists(key)) return key;
   const tex = scene.textures.createCanvas(key, w + pad * 2, h + pad * 2);
   if (!tex) return key;
-  drawChip(tex.getContext(), w, h, accent);
+  if (skin) skin.chip(tex.getContext(), w, h, pad);
+  else drawChip(tex.getContext(), w, h, accent);
   tex.refresh();
   tex.setFilter(modern ? Phaser.Textures.FilterMode.LINEAR : Phaser.Textures.FilterMode.NEAREST);
   return key;
@@ -350,8 +363,8 @@ class ChipBg {
   private w = -1;
 
   constructor(private scene: Phaser.Scene, private h: number, private accent: number) {
-    const modern = isModern();
-    this.pad = modern ? GLASS_PAD : 0;
+    const modern = isModern() || !!hudSkin();
+    this.pad = chipPad();
     this.cap = modern ? h / 2 + this.pad : 6;
     if (scene.sys.renderer.type === Phaser.WEBGL) {
       const tw = this.cap * 2 + 4, th = h + this.pad * 2;

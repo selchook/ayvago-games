@@ -159,11 +159,36 @@ export interface MenuTheme {
   /** Sizes of the cards (`themeCard`) the game's own panels use, painted ahead in Boot. */
   cards?: Array<{ w: number; h: number }>;
   /**
+   * The HUD in the theme's look (optional): every chip (`Hud`, `hudChip`, the pause button) is
+   * painted by `chip` instead of the core's glass, and the readouts use the theme's face. Games
+   * without it keep the core's chips.
+   */
+  hud?: HudSkin;
+  /**
    * The game's own textures for its themed inner screens (a shop, a talent board, a setup page):
    * painted in Boot under the Ayvago intro, after the core's pieces, cards and overlays, so opening
    * those screens only places images. Paint with `bake` / `skinTexture` / `labelTexture`.
    */
   prebake?: (scene: Phaser.Scene) => void;
+}
+
+/** A theme's HUD chips (MenuTheme.hud). */
+export interface HudSkin {
+  /**
+   * Paints one chip, w x h, its top-left at (pad, pad) of a (w + 2 pad) x (h + 2 pad) canvas.
+   * Chips are stretched sideways from their middle (a 3-slice), so keep detail in the end caps
+   * (h / 2 + pad wide each) and paint the middle as a plain run. A square chip (w = h) is the
+   * pause button.
+   */
+  chip: (c: CanvasRenderingContext2D, w: number, h: number, pad: number) => void;
+  /** Room round the chip for glows and shadows (default 12). */
+  pad?: number;
+  /** Readout face (a CSS family, default the style's title face) and weight. */
+  font?: string;
+  weight?: string;
+  /** Readout and caption colours (default white). */
+  text?: string;
+  caption?: string;
 }
 
 /** How the pause overlay and the result screen wear the theme. Every field is optional. */
