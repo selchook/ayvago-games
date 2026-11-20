@@ -252,7 +252,7 @@ export class Job {
     this.cargoHits();
     if (this.mode === 'story') this.storyStep(dt);
     else if (this.mode === 'getaway') this.getawayStep(dt);
-    else this.sideStep();
+    else this.sideStep(dt);
   }
 
   private end(reason: EndReason): void {
@@ -388,7 +388,7 @@ export class Job {
     if (this.mode === 'roam' && sim.opt.car === 'taxi') while (this.fares.length < 2) this.fares.push(sim.city.spotAway(p.x, p.z, 40, 220, sim.rnd, [...this.phones, ...this.fares]));
   }
 
-  private sideStep(): void {
+  private sideStep(dt: number): void {
     const sim = this.sim, p = sim.player;
     const places = sim.city.places;
     this.markers = [];
@@ -396,7 +396,7 @@ export class Job {
       const s = this.side;
       this.markers.push({ x: s.to.x, z: s.to.z, kind: 'drop' });
       this.nav = { x: s.to.x, z: s.to.z };
-      s.time -= 1 / 60;
+      s.time -= dt;
       this.goal = { key: s.kind === 'fare' ? 'g_fare' : 'g_side', vars: { place: s.to.name ? 'pl_' + s.to.name : '' } };
       if (sim.inMarker(s.to.x, s.to.z)) {
         const late = s.time < 0;
