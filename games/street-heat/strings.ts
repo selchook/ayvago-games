@@ -6,7 +6,7 @@ const tr: Record<string, string> = {
   // the pad
   gas: 'GAZ', brake: 'FREN', hbrake: 'EL FRENİ', horn: 'KORNA', cam: 'KAMERA',
   // HUD
-  score: 'KAZANÇ', kmh: 'km/s', heat: 'ARANMA', damage: 'HASAR', cargo: 'KARGO', calm: 'SAKİNLİK', suspicion: 'ŞÜPHE', escortHp: 'CİP',
+  score: 'KAZANÇ', kmh: 'km/sa', heat: 'ARANMA', damage: 'HASAR', cargo: 'KARGO', calm: 'SAKİNLİK', suspicion: 'ŞÜPHE', escortHp: 'CİP',
   searching: 'ARANIYORSUN', stage: 'AŞAMA', clock: 'SÜRE', bustIn: 'YAKALANIYORSUN',
   // callouts
   busted: 'YAKALANDIN!', wrecked: 'HURDA OLDU!', lost: 'İZİ KAYBETTİRDİN!', heatN: 'ARANMA SEVİYESİ {n}', pursuit: 'TAKİP!', searchOn: 'POLİS ARIYOR',
@@ -37,7 +37,7 @@ const tr: Record<string, string> = {
   // garage
   buy: 'SATIN AL', select: 'SEÇ', inUse: 'KULLANILIYOR', afterJob: '{n}. işten sonra', notEnough: 'Para yetmiyor', maxed: 'TAM', paint: 'BOYA', upgrades: 'GELİŞTİRMELER',
   car_sedan: 'Sedan', car_hatch: 'Hatchback', car_taxi: 'Taksi', car_suv: 'Cip', car_sports: 'Spor', car_super: 'Süper',
-  st_speed: 'HIZ', st_accel: 'İVME', st_grip: 'YOL TUTUŞ', st_armour: 'DAYANIK', st_nitro: 'NİTRO',
+  st_speed: 'HIZ', st_accel: 'İVME', st_grip: 'YOL TUTUŞ', st_armour: 'DAYANIKLILIK', st_nitro: 'NİTRO',
   up_engine: 'MOTOR', up_grip: 'LASTİK', up_armour: 'ZIRH', up_nitro: 'NİTRO',
   taxiNote: 'Taksiyle serbest sürüşte müşteri de taşırsın.',
   // results

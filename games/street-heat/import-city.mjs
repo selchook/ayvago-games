@@ -315,7 +315,7 @@ function assemble(list, ratio = 1) {
 }
 
 /** Layer groups → simplified primitives (tint as vertex colour). */
-function toPrims(groups, ratio, error) {
+function toPrims(groups, ratio, error, lock = true) {
   const prims = [];
   let before = 0, after = 0;
   for (const g of Object.values(groups)) {
@@ -323,7 +323,7 @@ function toPrims(groups, ratio, error) {
     // face's normal), so UV seams do not hold the simplifier back
     let m = weld(new Float32Array(g.pos), null, new Uint32Array(g.idx));
     before += m.idx.length / 3;
-    m = simplify(m, g.layer === 'glass' ? Math.min(1, ratio * 2) : ratio, error);
+    m = simplify(m, g.layer === 'glass' ? Math.min(1, ratio * 2) : ratio, error, lock);
     after += m.idx.length / 3;
     if (!m.idx.length) continue;
     const tc = lin(g.tint);
@@ -382,15 +382,15 @@ function composed({ w, d, floors, ground, upper, column, cornice, corner, seed, 
 const GROUND_TRIM = [{ name: 'Trim_FirstFloor_Window_001', w: 2 }, { name: 'Trim_FirstFloor_Window_001', w: 2 }, { name: 'DoorFrame_Trim', w: 2, front: true }, { name: 'Trim_FirstFloor_Wall', w: 2 }];
 const GROUND_METAL = [{ name: 'Metal_FirstFloor_Window', w: 2 }, { name: 'Metal_FirstFloor_Window', w: 2 }, { name: 'DoorFrame_Metal_Single', w: 2, front: true }, { name: 'Metal_FirstFloor_Wall', w: 2 }];
 const COMPOSED = {
-  Composed_BrickWalkup: { w: 12, d: 12, floors: 5, ground: GROUND_TRIM, upper: [{ name: 'Brick_Window_Trim', w: 2 }, { name: 'Brick_Window_Trim_Single', w: 2 }, { name: 'Brick_Window_Trim', w: 2 }], column: ['Brick_CornerColumn_Bottom', 'Brick_CornerColumn_Center', 'Brick_CornerColumn_Top'], cornice: 'Cornice_Brick_Center', corner: 'Cornice_Brick_90Angle_L', seed: 11, ratio: 0.15 },
-  Composed_RedWhite: { w: 16, d: 12, floors: 6, ground: GROUND_METAL, upper: [{ name: 'Brick_RedWhite_DoubleWindow', w: 4 }, { name: 'Brick_Inset_Window', w: 4 }], column: ['Brick_CornerColumn_Bottom', 'Brick_CornerColumn_Center', 'Brick_CornerColumn_Top'], cornice: 'Cornice_Metal_Center', corner: 'Cornice_Metal_90Angle_L', seed: 5, ratio: 0.15 },
-  Composed_Office: { w: 16, d: 16, floors: 8, ground: GROUND_METAL, upper: [{ name: 'Metal_Window', w: 4 }, { name: 'Metal_FullWindow', w: 2 }, { name: 'Metal_Window_Half', w: 2 }], column: ['Metal_Column_Bottom', 'Metal_Column_Center', 'Metal_Column_Top'], cornice: 'Cornice_Metal_Center', corner: 'Cornice_Metal_90Angle_L', seed: 7, ratio: 0.15 },
-  Composed_Arches: { w: 12, d: 12, floors: 4, ground: GROUND_TRIM, upper: [{ name: 'Brick_Window_CurvedDouble', w: 4 }, { name: 'Brick_Inset_Window_Curved', w: 4 }, { name: 'Brick_Inset_Window_Curved_Small', w: 4 }], column: ['Trim_Column_Bottom', 'Trim_Column_Center', 'Trim_Column_Top'], cornice: 'Cornice_Trim_Center', corner: 'Cornice_Trim_90Angle_L', seed: 3, ratio: 0.15 },
+  Composed_BrickWalkup: { w: 12, d: 12, floors: 5, ground: GROUND_TRIM, upper: [{ name: 'Brick_Window_Trim', w: 2 }, { name: 'Brick_Window_Trim_Single', w: 2 }, { name: 'Brick_Window_Trim', w: 2 }], column: ['Brick_CornerColumn_Bottom', 'Brick_CornerColumn_Center', 'Brick_CornerColumn_Top'], cornice: 'Cornice_Brick_Center', corner: 'Cornice_Brick_90Angle_L', seed: 11, ratio: 0.09 },
+  Composed_RedWhite: { w: 16, d: 12, floors: 6, ground: GROUND_METAL, upper: [{ name: 'Brick_RedWhite_DoubleWindow', w: 4 }, { name: 'Brick_Inset_Window', w: 4 }], column: ['Brick_CornerColumn_Bottom', 'Brick_CornerColumn_Center', 'Brick_CornerColumn_Top'], cornice: 'Cornice_Metal_Center', corner: 'Cornice_Metal_90Angle_L', seed: 5, ratio: 0.09 },
+  Composed_Office: { w: 16, d: 16, floors: 8, ground: GROUND_METAL, upper: [{ name: 'Metal_Window', w: 4 }, { name: 'Metal_FullWindow', w: 2 }, { name: 'Metal_Window_Half', w: 2 }], column: ['Metal_Column_Bottom', 'Metal_Column_Center', 'Metal_Column_Top'], cornice: 'Cornice_Metal_Center', corner: 'Cornice_Metal_90Angle_L', seed: 7, ratio: 0.08 },
+  Composed_Arches: { w: 12, d: 12, floors: 4, ground: GROUND_TRIM, upper: [{ name: 'Brick_Window_CurvedDouble', w: 4 }, { name: 'Brick_Inset_Window_Curved', w: 4 }, { name: 'Brick_Inset_Window_Curved_Small', w: 4 }], column: ['Trim_Column_Bottom', 'Trim_Column_Center', 'Trim_Column_Top'], cornice: 'Cornice_Trim_Center', corner: 'Cornice_Trim_90Angle_L', seed: 3, ratio: 0.09 },
 };
 
 /** Ready-made buildings and props: name → [simplify ratio, error]. */
 const READY = {
-  Building_Large_2: [0.06, 0.1], Building_Medium_2_001: [0.08, 0.1], Building_Small_1: [0.14, 0.06],
+  Building_Large_2: [0.08, 0.06, false], Building_Medium_2_001: [0.12, 0.06, false], Building_Small_1: [0.18, 0.05, false],
   Prop_Bollard: [0.25, 0.02], Prop_Planter_Single: [0.5, 0.02], Sidewalk_Planter: [0.2, 0.03], Prop_ACUnit: [1, 0.01],
   Prop_ManholeCover: [0.25, 0.02], Stairs_Entrance_Concrete: [0.6, 0.02], Entrance_Concrete_2x2: [1, 0.01],
 };
@@ -400,15 +400,16 @@ function downtown() {
   mkdirSync(out, { recursive: true });
   const glb = new Glb();
   const lines = [];
-  for (const [name, [ratio, error]] of Object.entries(READY)) {
-    const { prims, before, after } = toPrims(readPiece(name), ratio, error);
+  for (const [name, [ratio, error, lock = true]] of Object.entries(READY)) {
+    const { prims, before, after } = toPrims(readPiece(name), ratio, error, lock);
     const nm = name.replace('_001', '');
     glb.model(nm, prims);
     const b = bounds(concat(prims.map((p) => p.pos)));
     lines.push(`${nm} ${b.mx.map((v, k) => (v - b.mn[k]).toFixed(2)).join('x')} ${before}→${after} tris, y ${b.mn[1].toFixed(2)}..${b.mx[1].toFixed(2)}, z ${b.mn[2].toFixed(2)}..${b.mx[2].toFixed(2)}, ${[...new Set(prims.map((p) => p.material))].join('+')}`);
   }
   for (const [name, cfg] of Object.entries(COMPOSED)) {
-    const { prims, before, after } = toPrims(composed(cfg), 1, 0.03);
+    // the assembled modules weld where they meet, so the whole building simplifies once more
+    const { prims, before, after } = toPrims(composed(cfg), 0.5, 0.04, false);
     glb.model(name, prims);
     const b = bounds(concat(prims.map((p) => p.pos)));
     lines.push(`${name} ${b.mx.map((v, k) => (v - b.mn[k]).toFixed(2)).join('x')} ${before}→${after} tris, y ${b.mn[1].toFixed(2)}..${b.mx[1].toFixed(2)}, z ${b.mn[2].toFixed(2)}..${b.mx[2].toFixed(2)}, ${[...new Set(prims.map((p) => p.material))].join('+')}`);
@@ -518,7 +519,7 @@ function cars() {
     const kindOf = (m) => paint.includes(m) ? KIND.paint : m === 'Headlights' ? KIND.head : m === 'TailLights' ? KIND.tail : m === 'Windows' ? KIND.glass
       : m === 'BlueLights' ? KIND.blue : m === 'WhiteLights' ? KIND.red : KIND.body;
     const m = objModel(join(kitsDir, 'cars', name + '.obj'), {
-      ratio: 0.6, faceLights: ['Headlights'],
+      ratio: 0.42, faceLights: ['Headlights'],
       kind: kindOf,
       // paint: the brightness against the stock colour (the game multiplies its own paint in)
       color: (mt) => paint.includes(mt) ? (() => { const k = Math.min(1, lum(kd[mt]) / lum(stock)); return [k, k, k]; })() : kd[mt] ?? [0.5, 0.5, 0.5],
@@ -554,7 +555,7 @@ function transport() {
   const lines = [];
   for (const [name, cfg] of Object.entries(TRANSPORT)) {
     const m = objModel(join(kitsDir, 'transport', name + '.obj'), {
-      ...cfg, ratio: 0.8, faceLights: cfg.kinds?.Lights === KIND.head ? ['Lights'] : undefined,
+      ...cfg, ratio: cfg.height ? 0.4 : 0.6, faceLights: cfg.kinds?.Lights === KIND.head ? ['Lights'] : undefined,
       color: (mt) => lin(cfg.colors[mt] ?? 0x808080),
       kind: (mt) => cfg.kinds?.[mt] ?? KIND.body,
     });
@@ -578,7 +579,7 @@ function people() {
   for (const name of ['Male_Walking', 'Male_Running', 'Male_Standing', 'Male_Standing_Hips', 'Male_Standing_Waving', 'Female_Walking', 'Female_Running', 'Female_Standing', 'Female_Standing_Hips', 'Woman_Standing_Waving']) {
     const kd = parseMtl(readFileSync(join(kitsDir, 'people', name + '.mtl'), 'utf8'));
     const m = objModel(join(kitsDir, 'people', name + '.obj'), {
-      height: name.includes('Waving') ? 2.0 : 1.75, ratio: 0.5,
+      height: name.includes('Waving') ? 2.0 : 1.75, ratio: 0.4,
       color: (mt) => mt === 'Shirt' ? [1, 1, 1] : kd[mt] ?? [0.5, 0.5, 0.5],
       kind: (mt) => mt === 'Shirt' ? KIND.shirt : KIND.body,
     });
@@ -616,7 +617,7 @@ function town() {
     for (const p of parts) {
       let m = { pos: transform(p.pos, mat), uv: null, idx: p.idx };
       before += m.idx.length / 3;
-      m = simplify(m, name.startsWith('House') || name === 'Building1_Large' || name === 'Building1_Small' ? 0.22 : 0.45, 0.008);
+      m = simplify(m, name.startsWith('House') || name === 'Building1_Large' || name === 'Building1_Small' ? 0.13 : 0.32, 0.02);
       after += m.idx.length / 3;
       const g = byLayer[GLASS_MTL.has(p.material) ? 'glass' : 'white'];
       // Blender wrote Kd × 0.8; a little brighter for the street lights (as the nature pack)

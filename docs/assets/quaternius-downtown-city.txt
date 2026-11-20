@@ -1,9 +1,9 @@
-quaternius/downtown-city/city.glb 970KB (14 models as root nodes, 56366 tris in all, no normals: flat-shaded, quantized)
+quaternius/downtown-city/city.glb 484KB (14 models as root nodes, 26647 tris in all, no normals: flat-shaded, quantized)
   textures: layers.jpg (15 layers of 256 px stacked top to bottom: white, asphalt, pavement, metal, brick, palebrick, trim, slate, ornaments, dirt, grass, paint, decals, glass, concrete; 93KB) and decals-alpha.png (the decal layer's alpha, 256 px grey; 29KB). Materials are named after their layer; UVs are not stored (the game maps the layers in world space); vertex colours are tints.
   model size (x × y × z, metres), triangles, height range, materials:
-  Building_Large_2 20.53x28.00x16.53 8622 tris, y 0.00..28.00, trim+metal+glass+brick+asphalt
-  Building_Medium_2 14.59x25.01x12.64 6236 tris, y -0.01..25.00, trim+glass+brick+asphalt
-  Building_Small_1 12.46x17.03x14.33 3812 tris, y -0.01..17.01, palebrick+trim+metal+glass+concrete+asphalt
+  Building_Large_2 20.64x28.00x16.64 3486 tris, y 0.00..28.00, trim+metal+glass+brick+asphalt
+  Building_Medium_2 15.00x25.01x13.00 2955 tris, y -0.01..25.00, trim+glass+brick+asphalt
+  Building_Small_1 12.46x17.03x14.54 3202 tris, y -0.01..17.01, palebrick+trim+metal+glass+concrete+asphalt
   Prop_Bollard 0.22x0.88x0.23 46 tris, y 0.00..0.88, metal
   Prop_Planter_Single 2.00x0.60x2.00 62 tris, y 0.00..0.60, metal+dirt
   Sidewalk_Planter 1.97x0.50x1.77 422 tris, y 0.00..0.50, metal+dirt
@@ -11,7 +11,7 @@ quaternius/downtown-city/city.glb 970KB (14 models as root nodes, 56366 tris in 
   Prop_ManholeCover 0.93x0.03x0.93 46 tris, y -0.01..0.02, ornaments
   Stairs_Entrance_Concrete 2.00x1.01x1.99 104 tris, y -0.00..1.01, metal+concrete
   Entrance_Concrete_2x2 2.00x1.01x2.00 12 tris, y -0.00..1.01, metal
-  Composed_BrickWalkup 14.03x16.01x14.03 10059 tris, y -0.01..16.00, trim+glass+palebrick+brick+asphalt+ornaments
-  Composed_RedWhite 18.03x19.00x14.03 8146 tris, y 0.00..19.00, trim+metal+glass+palebrick+asphalt+ornaments
-  Composed_Office 18.00x25.00x18.00 12428 tris, y 0.00..25.00, trim+metal+glass+brick+asphalt+ornaments
-  Composed_Arches 14.00x13.01x14.00 6235 tris, y -0.01..13.00, trim+glass+palebrick+metal+asphalt+ornaments
+  Composed_BrickWalkup 14.03x16.01x14.03 4634 tris, y -0.01..16.00, trim+glass+palebrick+brick+asphalt+ornaments
+  Composed_RedWhite 18.03x19.00x14.03 3246 tris, y 0.00..19.00, trim+metal+glass+palebrick+asphalt+ornaments
+  Composed_Office 18.00x25.00x18.00 5713 tris, y 0.00..25.00, trim+metal+glass+brick+asphalt+ornaments
+  Composed_Arches 14.00x13.01x14.00 2583 tris, y -0.01..13.00, trim+glass+palebrick+metal+asphalt+ornaments

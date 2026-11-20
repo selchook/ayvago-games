@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { launch, asset, loadAudio, loadSfx, steeringOption, type GameMeta } from '@core';
 import { loadModel, model } from '@core/three';
 import meta from './game.json';
-import { PlayScene, clearRetry, lastBanked } from './PlayScene';
+import { PlayScene, clearRetry, lastBanked, prebakeCallouts } from './PlayScene';
 import { MapScene } from './mapui';
 import { STRINGS } from './strings';
 import { HEAT_THEME } from './theme';
@@ -23,9 +23,9 @@ launch({
   // the STEERING switch (ARROWS | WHEEL | TILT) on touch screens, beside PLAY under Easy/Normal
   menuOption: steeringOption,
   music: { play: 'stage2' },
-  // the pad: triggers are read as analogue gas and brake, A is the handbrake, X / RB nitro,
-  // B / LB the horn, Y the camera, Back the map
-  gamepad: { rt: null, lt: null, x: 'KeyN', rb: 'KeyN', b: 'KeyH', lb: 'KeyH', y: 'KeyC', back: 'KeyM' },
+  // the pad keeps the core's keys: the triggers are also read as analogue gas and brake
+  // (PlayScene.readInput), A (Space) is the handbrake, X (J) and RB (E) nitro, B (X) and LB (Q)
+  // the horn, Y (K) the camera, Back (M) the map
   preload(scene) {
     const l = scene.load;
     // the cars come under the Ayvago intro (the menu shows one); the city loads after the menu is up
@@ -91,7 +91,7 @@ launch({
     void Phaser;
   },
   // neon tubes on smoked glass, case files, a chrome frame with police lights in the corners (theme.ts)
-  menuTheme: { ...HEAT_THEME, prebake: prebakeScreens },
+  menuTheme: { ...HEAT_THEME, prebake: (scene) => { prebakeScreens(scene); prebakeCallouts(scene); } },
   // a busted or wrecked run may go on once after a rewarded ad; the run's cash may be doubled
   ads: {
     continue: (play) => (play as PlayScene).revive(),

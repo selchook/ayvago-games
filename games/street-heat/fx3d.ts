@@ -15,7 +15,7 @@ varying float vAlpha;
 varying vec3 vColor;
 void main() {
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  gl_PointSize = min(psize * uScale / -mv.z, 900.0);
+  gl_PointSize = min(psize * uScale / -mv.z, 280.0);
   gl_Position = projectionMatrix * mv;
   vAlpha = palpha * clamp((-mv.z - 0.6) / 1.2, 0.0, 1.0);
   vColor = pcolor;

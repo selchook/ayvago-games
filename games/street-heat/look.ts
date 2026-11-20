@@ -86,7 +86,7 @@ export function layerTexture(): THREE.DataArrayTexture & { painted: boolean; ref
 // ------------------------------------------------------------------ the lights (shared uniforms)
 
 /** How many street lamps light a frame (the nearest ones). */
-export const MAX_LAMPS = 14;
+export const MAX_LAMPS = 10;
 /** Police beacons and other coloured point lights. */
 export const MAX_POINTS = 6;
 
@@ -145,8 +145,11 @@ uniform vec4 uHeadPos;
 uniform vec3 uHeadDir;
 vec3 nightLight(vec3 wp, vec3 wn) {
   vec3 sum = vec3(0.0);
+  // far off the fog has the last word: no lights there
+  if (uNight < 0.01 || distance(wp, cameraPosition) > 150.0) return sum;
   for (int i = 0; i < ${MAX_LAMPS}; i++) {
     vec4 l = uLamps[i];
+    if (l.w < 0.5) continue;
     vec3 d = l.xyz - wp;
     float d2 = dot(d, d);
     float att = l.w * max(0.0, 1.0 - d2 / 260.0);
@@ -156,6 +159,7 @@ vec3 nightLight(vec3 wp, vec3 wn) {
   }
   for (int i = 0; i < ${MAX_POINTS}; i++) {
     vec4 p = uPoints[i];
+    if (p.w < 0.5) continue;
     vec3 d = p.xyz - wp;
     float d2 = dot(d, d);
     float att = max(0.0, 1.0 - d2 / (p.w * p.w + 0.001));

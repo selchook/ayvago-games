@@ -7,13 +7,13 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, CarSteering, isEasy, t, padAxes, padConnected, padRumble, flash, burst, registerStrings,
-  labelAt, fitWidth, themeCard, overlayHeadingStyle, themeLabel, GlyphText, iconButton, hudChip, HudChip, HUD_MARGIN, type LabelStyle,
+  labelAt, fitWidth, themeCard, overlayHeadingStyle, themeLabel, GlyphText, iconButton, hudChip, HudChip, HUD_MARGIN, labelTexture, type LabelStyle,
 } from '@core';
 import { model, type World3D } from '@core/three';
 import { View, type CamMode } from './view';
 import { Sim, NO_INPUT, type DriveInput, type SimEvent } from './sim';
 import { Job, MISSIONS, type Mode, type JobEvent } from './jobs';
-import { TUNING, clamp, fmtMoney, mmss, carSpec, CARS, KMH, type Tuning, type CarId } from './defs';
+import { TUNING, clamp, fmtMoney, mmss, carSpec, CARS, KMH, COP_MODEL, type Tuning, type CarId } from './defs';
 import { loadMeta, saveMeta, unlocked, type Meta } from './meta';
 import { adoptPack, loadCity, cityReady } from './kit';
 import { city, type Spot } from './city';
@@ -25,6 +25,22 @@ import type { MapData } from './mapui';
 import { Bot, SKILL } from './bot';
 
 type Phase = 'hub' | 'garage' | 'brief' | 'drive' | 'replay' | 'end';
+
+/** The callouts' fixed words and colours (painted under the Ayvago intro: prebakeCallouts). */
+const BANNERS: [string, string][] = [['busted', '#ff4060'], ['wrecked', '#ff4060'], ['lost', '#5dff7a'], ['roadblock', '#ff4060'], ['popped', '#ff8a1e'],
+  ['delivered', '#5dff7a'], ['pickedUp', '#3ef2ff'], ['passengerIn', '#3ef2ff'], ['jobDone', '#5dff7a'], ['shiftOver', '#5dff7a'], ['timeLow', '#ff6070']];
+const WORDS: [string, string][] = [['pursuit', '#ff4060'], ['searchOn', '#7ff6ff'], ['takedown', '#ffb03a'], ['spikes', '#ff8a1e'], ['redLight', '#ff4060'],
+  ['nitroGo', '#7ff6ff'], ['checkpoint', '#ffd23f'], ['careful', '#ffb03a'], ['newJob', '#ffd23f'], ['smokeWarn', '#c8c8d0'], ['fireWarn', '#ff6a1a']];
+
+/** Paints the fixed callouts ahead (menuTheme.prebake, under the Ayvago intro): light, a few dozen labels. */
+export function prebakeCallouts(scene: Phaser.Scene): void {
+  for (const [k, c] of BANNERS) labelTexture(scene, caps(t(k)), calloutStyle(c));
+  for (const [k, c] of WORDS) labelTexture(scene, caps(t(k)), calloutStyle(c, WORD_PX));
+  for (let n = 1; n <= 5; n++) labelTexture(scene, caps(t('heatN', { n })), calloutStyle('#ff4060'));
+  for (const m of ['story', 'roam', 'getaway', 'rush']) labelTexture(scene, caps(t('m_' + m)), calloutStyle(m === 'story' ? '#ffb03a' : '#3ef2ff'));
+  labelTexture(scene, caps(t('go')), subStyle('#fff4e2'));
+  labelTexture(scene, caps(t('replay')), calloutStyle('#ff4060', 40));
+}
 
 /** RETRY on the result screen comes back here: straight to the job's case file. */
 let pendingRetry = false;
@@ -68,6 +84,9 @@ export class PlayScene extends ArcadeScene {
   private banked = 0;
   private lastClockSec = -1;
   private tipT = 0;
+  private tipStep = 0;
+  /** The job just ended (the replay and the card follow once). */
+  private ending = false;
   private camBtn: Phaser.GameObjects.Container | null = null;
   private replayLabel: Phaser.GameObjects.Container | null = null;
   private card: Phaser.GameObjects.Container | null = null;
@@ -136,10 +155,10 @@ export class PlayScene extends ArcadeScene {
     const kb = this.input.keyboard!;
     const KC = Phaser.Input.Keyboard.KeyCodes;
     this.keys = { space: kb.addKey(KC.SPACE), shift: kb.addKey(KC.SHIFT), n: kb.addKey(KC.N) };
-    kb.on('keydown-H', () => { if (this.phase === 'drive') this.hornKey = true; });
-    kb.on('keydown-N', () => { if (this.phase === 'drive') this.nitroKey = true; });
-    kb.on('keydown-SHIFT', () => { if (this.phase === 'drive') this.nitroKey = true; });
-    kb.on('keydown-C', () => { if (this.phase === 'drive') this.cycleCam(); });
+    // keys and the pad's keys (gamepad.ts): horn H / X / Q, nitro Shift / N / J / E, camera C / K
+    for (const k of ['H', 'X', 'Q']) kb.on('keydown-' + k, () => { if (this.phase === 'drive') this.hornKey = true; });
+    for (const k of ['N', 'SHIFT', 'J', 'E']) kb.on('keydown-' + k, () => { if (this.phase === 'drive') this.nitroKey = true; });
+    for (const k of ['C', 'K']) kb.on('keydown-' + k, () => { if (this.phase === 'drive') this.cycleCam(); });
     kb.on('keydown-M', () => { if (this.phase === 'drive') this.openMap(); });
     kb.on('keydown-ENTER', () => { if (this.phase === 'replay') this.replayT = 99; else if (this.phase === 'end') this.finishCard(); });
     this.input.on('pointerup', () => { if (this.phase === 'replay') this.replayT = 99; else if (this.phase === 'end' && this.cardAt > 0.6) this.finishCard(); });
@@ -238,6 +257,7 @@ export class PlayScene extends ArcadeScene {
     this.view.reset();
     this.view.snap(this.sim);
     this.phase = 'drive';
+    this.ending = false;
     this.setHudVisible(true);
     this.steering.begin();
     this.steering.centre();
@@ -250,6 +270,7 @@ export class PlayScene extends ArcadeScene {
     this.sfx('go', { volume: 0.6 });
     // the first job teaches the controls
     this.tipT = 0;
+    this.tipStep = 0;
     if (!this.meta.seenIntro) this.time.delayedCall(2200, () => { if (this.phase === 'drive') this.tip(t(this.steering.pad ? 'tip_touch' : 'tip_keys'), 7); });
   }
 
@@ -325,6 +346,12 @@ export class PlayScene extends ArcadeScene {
       if (sec > 0 && sec <= 10) this.sfx('tick', { volume: 0.35 });
       if (sec === 10) this.banner(this.scale.width / 2, 300, t('timeLow'), '#ff6070', 40);
       this.lastClockSec = sec;
+    }
+    // the first job: point at the marker when it comes close
+    if (!this.meta.seenIntro && job.nav && this.tipStep < 2) {
+      const d = Math.hypot(job.nav.x - sim.player.x, job.nav.z - sim.player.z);
+      if (this.tipStep === 0 && sim.time > 12) { this.tipStep = 1; this.tip(t('tip_gps'), 5); }
+      if (d < 45 && job.markers.length && sim.time > 4) { this.tipStep = 2; this.tip(t('tip_marker'), 5); }
     }
     if (job.over) this.jobOver();
   }
@@ -559,7 +586,8 @@ export class PlayScene extends ArcadeScene {
 
   private jobOver(): void {
     const job = this.job!, sim = this.sim;
-    if (this.phase !== 'drive') return;
+    if (this.phase !== 'drive' || this.ending) return;
+    this.ending = true;
     sim.frozen = true;
     this.tipBox?.destroy();
     this.tipBox = null;
@@ -694,6 +722,7 @@ export class PlayScene extends ArcadeScene {
     this.card = null;
     this.view.replay = null;
     this.phase = 'drive';
+    this.ending = false;
     this.setHudVisible(true);
     this.steering.begin();
     this.steering.centre();
@@ -725,6 +754,42 @@ export class PlayScene extends ArcadeScene {
     this.view.snap(this.sim);
   }
   testBuildAll(): void { this.view.buildAll(); }
+  /** Skips the end's banner delay and replay: the job's card at once (screenshots). */
+  testEndNow(): void {
+    if (!this.job) return;
+    if (!this.job.over) this.job.update(0);
+    if (!this.job.over) return;
+    this.ending = true;
+    this.sim.frozen = true;
+    const r = this.job.over;
+    this.endWin = this.job.mode === 'story' ? r === 'done' : r === 'shift' || r === 'done' || this.job.mode === 'getaway';
+    this.endTitle = r === 'done' ? t('jobDone') : r === 'shift' ? t('shiftOver') : r === 'busted' ? t('busted') : r === 'wrecked' ? t('wrecked') : t('f_' + r);
+    this.showCard();
+  }
+  /** Police cars right behind and beside the player, in pursuit (screenshots, the store art). */
+  testPursuers(n: number): void {
+    const sim = this.sim, p = sim.player;
+    if (!sim.stars) sim.forceStars(3);
+    for (let i = 0; i < n; i++) {
+      const c = sim.addCar('cop', COP_MODEL, 0xffffff);
+      const back = 4 + i * 7, side = (i % 2 ? 1 : -1) * 3.6;
+      sim.place(c, p.x - Math.sin(p.h) * back + Math.cos(p.h) * side, p.z - Math.cos(p.h) * back - Math.sin(p.h) * side, p.h, p.speedAbs);
+      sim.toPursuit(c);
+    }
+  }
+  /** Steps with the autopilot until the job's stage reaches `stage` or it ends (at most `max` s). */
+  testUntilStage(stage: number, max = 120): void {
+    if (!this.bot && this.job) this.bot = new Bot(this.sim, this.job, SKILL.good);
+    for (let s = 0; s < max && this.job && !this.job.over && this.job.stage < stage; s += 1 / 30) {
+      this.sim.step(1 / 30, this.bot!.input(1 / 30));
+      this.job.update(1 / 30);
+      for (const ev of this.sim.events) this.view.handle(ev, this.sim);
+      for (const ev of this.job.events) this.onJob(ev);
+      this.sim.events.length = 0; this.job.events.length = 0;
+      this.record(1 / 30);
+    }
+    this.view.snap(this.sim);
+  }
   /** The autopilot drives the job (store art, screenshots); off with false. */
   testAuto(on = true): void { this.bot = on && this.job ? new Bot(this.sim, this.job, SKILL.good) : null; }
 }

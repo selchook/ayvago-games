@@ -111,6 +111,7 @@ export class Job {
   /** The escort's police attack starts when it drives off. */
   private escortStars = 0;
   private tailT = 0;
+  private armed = false;
 
   constructor(readonly sim: Sim, readonly mode: Mode, mission: number, readonly tune: Tuning) {
     this.def = mode === 'story' ? MISSIONS.find((m) => m.id === mission) ?? MISSIONS[0] : null;
@@ -426,8 +427,10 @@ export class Job {
       const spray = places.get('spray')!, garage = places.get('garage')!;
       this.markers.push({ x: spray.x, z: spray.z, kind: 'spray' }, { x: garage.x, z: garage.z, kind: 'garage' });
       sim.city.ramps.forEach((r, i) => { if (!this.jumpsDone.has(i)) this.markers.push({ x: r.x - Math.sin(r.rot) * (r.len / 2 + 8), z: r.z - Math.cos(r.rot) * (r.len / 2 + 8), kind: 'stunt' }); });
-      if (sim.inMarker(spray.x, spray.z, 6)) this.spray();
-      if (sim.inMarker(garage.x, garage.z, 6)) this.garage();
+      // the shops work once the car has driven off from where the shift began
+      if (!this.armed && Math.hypot(p.x - garage.x, p.z - garage.z) > 20 && Math.hypot(p.x - spray.x, p.z - spray.z) > 20) this.armed = true;
+      if (this.armed && sim.inMarker(spray.x, spray.z, 6)) this.spray();
+      if (this.armed && sim.inMarker(garage.x, garage.z, 6)) this.garage();
       for (const e of sim.events) if (e.type === 'jump' && e.dist > 12) {
         let near = -1, nd = Infinity;
         sim.city.ramps.forEach((r, i) => { const d = Math.hypot(r.x - p.x, r.z - p.z); if (d < nd) { nd = d; near = i; } });

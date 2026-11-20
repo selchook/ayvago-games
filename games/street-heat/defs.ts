@@ -103,8 +103,8 @@ export interface Tuning {
 }
 
 export const TUNING: Record<'easy' | 'normal', Tuning> = {
-  normal: { heatGain: 1, copTop: 1.0, copAccel: 1.0, bustTime: 2.6, damage: 0.85, search: 1, time: 1, units: [0, 1, 2, 3, 4, 5], roadblockAt: 3, spikesAt: 4, traffic: 34, suspicion: 1, ram: 1 },
-  easy: { heatGain: 0.6, copTop: 0.91, copAccel: 0.85, bustTime: 3.8, damage: 0.5, search: 0.6, time: 1.3, units: [0, 1, 1, 2, 3, 3], roadblockAt: 4, spikesAt: 5, traffic: 26, suspicion: 0.6, ram: 1.5 },
+  normal: { heatGain: 1, copTop: 1.0, copAccel: 1.0, bustTime: 2.6, damage: 0.85, search: 1, time: 1, units: [0, 1, 2, 3, 4, 5], roadblockAt: 3, spikesAt: 4, traffic: 44, suspicion: 1, ram: 1 },
+  easy: { heatGain: 0.6, copTop: 0.91, copAccel: 0.85, bustTime: 3.8, damage: 0.5, search: 0.6, time: 1.3, units: [0, 1, 1, 2, 3, 3], roadblockAt: 4, spikesAt: 5, traffic: 36, suspicion: 0.6, ram: 1.5 },
 };
 
 export const fmtMoney = (n: number): string => '$' + Math.round(n).toLocaleString('en-US');

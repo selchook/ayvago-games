@@ -1,10 +1,10 @@
-quaternius/city-cars/cars.glb 243KB (7 models as root nodes, 13418 tris in all, no normals: flat-shaded, quantized)
+quaternius/city-cars/cars.glb 194KB (7 models as root nodes, 9828 tris in all, no normals: flat-shaded, quantized)
   one primitive each: COLOR_0 (linear MTL colours; the paint as a brightness) and _KIND per vertex (0 body, 1 paint, 2 head lights, 3 tail lights, 4 glass, 5 red and 6 blue beacons); the stock paint in the node's extras; facing +z, wheels on y = 0.
   model size (x × y × z, metres), triangles, height range, materials:
-  NormalCar1 1.81x1.18x4.22 1790 tris, y -0.00..1.18, vehicle, stock paint 0.28,0.43,0.64
-  NormalCar2 1.64x1.15x3.31 1928 tris, y -0.00..1.15, vehicle, stock paint 0.46,0.55,0.64
-  SUV 2.11x1.53x4.20 1990 tris, y -0.00..1.53, vehicle, stock paint 0.56,0.56,0.56
-  SportsCar 1.80x1.16x3.97 1850 tris, y -0.00..1.16, vehicle, stock paint 0.64,0.27,0.09
-  SportsCar2 1.87x1.20x3.93 1908 tris, y -0.00..1.20, vehicle, stock paint 0.55,0.55,0.55
-  Taxi 1.81x1.31x4.22 1984 tris, y -0.00..1.31, vehicle, stock paint 0.64,0.47,0.05
-  Cop 1.78x1.24x3.73 1968 tris, y -0.00..1.24, vehicle
+  NormalCar1 1.81x1.18x4.21 1318 tris, y 0.00..1.18, vehicle, stock paint 0.28,0.43,0.64
+  NormalCar2 1.64x1.15x3.30 1484 tris, y 0.00..1.15, vehicle, stock paint 0.46,0.55,0.64
+  SUV 2.11x1.51x4.18 1402 tris, y 0.00..1.51, vehicle, stock paint 0.56,0.56,0.56
+  SportsCar 1.80x1.16x3.96 1344 tris, y 0.00..1.16, vehicle, stock paint 0.64,0.27,0.09
+  SportsCar2 1.87x1.20x3.93 1392 tris, y -0.00..1.20, vehicle, stock paint 0.55,0.55,0.55
+  Taxi 1.81x1.31x4.21 1460 tris, y 0.00..1.31, vehicle, stock paint 0.64,0.47,0.05
+  Cop 1.78x1.24x3.73 1428 tris, y -0.00..1.24, vehicle

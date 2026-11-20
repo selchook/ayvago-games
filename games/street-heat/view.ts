@@ -95,6 +95,7 @@ export class View {
   readonly skids: SkidMarks;
   readonly glows: Glows;
   readonly markers = new Markers();
+  private fountains: { x: number; z: number; t: number }[] = [];
   private sky: THREE.Mesh;
   cam: CamMode = 'chase';
   private camPos = new THREE.Vector3(0, 30, 0);
@@ -123,7 +124,9 @@ export class View {
     this.night = opt.night;
     const fogColor = this.night > 0.8 ? 0x0b0d1f : this.night > 0.6 ? 0x1c1630 : 0x5a4a6a;
     this.baseFov = opt.fov ?? 62;
-    this.world = new World3D(host, { fov: this.baseFov, near: 0.5, far: 420, background: fogColor, fog: { color: fogColor, near: 70, far: 300 }, shadows: false, quality: 0.85 });
+    // phones render at a lower scale (the HUD stays sharp: it is Phaser's)
+    const touch = typeof navigator !== 'undefined' && (navigator.maxTouchPoints ?? 0) > 0;
+    this.world = new World3D(host, { fov: this.baseFov, near: 0.5, far: 420, background: fogColor, fog: { color: fogColor, near: 70, far: 300 }, shadows: false, quality: touch ? 0.7 : 0.85 });
     const w = this.world;
     this.lights.night.value = this.night;
     this.hemi = new THREE.HemisphereLight(0x5a6ab8, 0x1a1424, 1.5);
@@ -167,6 +170,7 @@ export class View {
   /** Clears the effects (a new job). */
   reset(): void {
     this.smoke.clear(); this.sparks.clear();
+    this.fountains.length = 0;
     this.replay = null;
     this.shakeT = 0; this.fovKick = 0;
   }
@@ -514,7 +518,7 @@ export class View {
     for (const c of sim.cars) {
       if (c === p && opts.player === false) continue;
       const d = Math.hypot(c.x - camX, c.z - camZ);
-      if (d > 230 && c !== p) continue;
+      if (d > 160 && c !== p) continue;
       const it = this.inst(this.cars, c.model, c.model.startsWith('transport') ? 8 : c.model === COP_MODEL ? 16 : 30, () => kindGeometry(c.model));
       if (!it) continue;
       const fwd = c.fwd;
@@ -529,7 +533,7 @@ export class View {
     // people
     this.begin(this.peds);
     for (const ped of sim.peds) {
-      if (Math.hypot(ped.x - camX, ped.z - camZ) > 140) continue;
+      if (Math.hypot(ped.x - camX, ped.z - camZ) > 100) continue;
       const female = ped.model === 1;
       let pose: number;
       let tilt = 0;
@@ -549,7 +553,7 @@ export class View {
     // props
     this.begin(this.props);
     for (const pr of sim.props) {
-      if (pr.hidden || Math.hypot(pr.x - camX, pr.z - camZ) > 120) continue;
+      if (pr.hidden || Math.hypot(pr.x - camX, pr.z - camZ) > 100) continue;
       const key = pr.kind === 'cone' ? 'transport:TrafficCone' : pr.kind === 'sign' ? 'transport:TrafficSign' + (1 + (Math.round(pr.x0 + pr.z0) % 3)) : pr.kind;
       const it = this.inst(this.props, key, 140, () => key.includes(':') ? kindGeometry(key) : PROP_GEO[pr.kind]());
       if (!it) continue;
@@ -569,7 +573,10 @@ export class View {
     if (this.signals) {
       const it = this.signals;
       it.n = 0;
+      const lx = this.camLook.x, lz = this.camLook.z;
       for (const s of this.city.signals) {
+        // only the lights round the camera (the far ones are lost in the fog)
+        if (Math.abs(s.x - lx) > 120 || Math.abs(s.z - lz) > 120) continue;
         const st = this.city.lightState(s.node, sim.time);
         const v = s.ns ? st.ns : st.ew;
         this.put(it, s.x, CURB, s.z, s.rot, 0, 0, 0xffffff, v, 0, 0, 0);
@@ -594,7 +601,7 @@ export class View {
     for (const ch of this.chunks) {
       if (ch.built < 2) continue;
       const d = Math.min(this.chunkDist(ch, fx, fz), this.chunkDist(ch, cam.x, cam.z));
-      const near = d < 120;
+      const near = d < 95;
       if (ch.detail) ch.detail.visible = near;
       if (ch.lod) ch.lod.visible = !near && d < 330;
     }
@@ -667,13 +674,13 @@ export class View {
     g.end();
     // tyre smoke and marks from the player; damage smoke and fire from anyone
     const fwd = p.fwd;
-    if (p.skid > 0.5 && !p.airborne) {
+    if (p.skid > 0.5 && !p.airborne && p.speedAbs > 2.5) {
       const sh = Math.sin(p.h), ch = Math.cos(p.h);
       const k = clamp(p.skid / 6, 0, 1);
       for (const s of [-1, 1]) {
         const wx = p.x - sh * 1.3 - ch * 0.8 * s, wz = p.z - ch * 1.3 + sh * 0.8 * s;
         this.skids.mark(p.id * 4 + (s > 0 ? 1 : 0), wx, p.y, wz, 0.4 + k);
-        if (Math.random() < 0.6 * k + 0.1) this.smoke.emit({ x: wx, y: p.y + 0.3, z: wz, vx: (Math.random() - 0.5) * 1.5, vy: 0.8, vz: (Math.random() - 0.5) * 1.5, life: 1.4, size: 1.2, grow: 4.5, alpha: 0.35 * k + 0.1, color: 0xb8b8c4, drag: 1.5 });
+        if (Math.random() < 0.45 * k + 0.05) this.smoke.emit({ x: wx, y: p.y + 0.3, z: wz, vx: (Math.random() - 0.5) * 1.5, vy: 0.8, vz: (Math.random() - 0.5) * 1.5, life: 1.2, size: 1.0, grow: 3.2, alpha: 0.3 * k + 0.08, color: 0xb8b8c4, drag: 1.5 });
       }
     }
     if (p.spikesT > 0 && Math.abs(fwd) > 4 && Math.random() < 0.5) this.sparks.emit({ x: p.x, y: 0.2, z: p.z, vx: (Math.random() - 0.5) * 4, vy: 2, vz: (Math.random() - 0.5) * 4, life: 0.3, size: 0.25, color: 0xffc040, gravity: 9 });
@@ -688,6 +695,12 @@ export class View {
       const hx = c.x + Math.sin(c.h) * c.len * 0.35, hz = c.z + Math.cos(c.h) * c.len * 0.35;
       this.smoke.emit({ x: hx, y: c.y + 1.1, z: hz, vx: (Math.random() - 0.5), vy: 1.6 + c.smoke * 0.4, vz: (Math.random() - 0.5), life: 1.8, size: 0.8, grow: 3 + c.smoke, alpha: 0.3 + c.smoke * 0.12, color: c.smoke >= 2 ? 0x2a2a30 : 0x8a8a94, drag: 0.5 });
       if (c.smoke >= 3) this.sparks.emit({ x: hx, y: c.y + 1, z: hz, vy: 2.2, life: 0.5, size: 0.9, grow: 0.3, color: 0xff6a1a, drag: 1 });
+    }
+    for (let i = this.fountains.length - 1; i >= 0; i--) {
+      const f = this.fountains[i];
+      f.t -= dt;
+      if (f.t <= 0) { this.fountains.splice(i, 1); continue; }
+      for (let k = 0; k < 3; k++) this.smoke.emit({ x: f.x + (Math.random() - 0.5) * 0.3, y: 0.4, z: f.z + (Math.random() - 0.5) * 0.3, vx: (Math.random() - 0.5) * 1.6, vy: 7 + Math.random() * 3, vz: (Math.random() - 0.5) * 1.6, life: 1.4, size: 0.35, grow: 1.2, alpha: 0.55 * Math.min(1, f.t), color: 0xa8d8ff, gravity: 9.8, drag: 0.2 });
     }
     this.smoke.update(dt);
     this.sparks.update(dt);
@@ -707,6 +720,8 @@ export class View {
       }
       case 'prop':
         for (let i = 0; i < 6; i++) this.sparks.emit({ x: ev.x, y: 0.5, z: ev.z, vx: (Math.random() - 0.5) * 5, vy: 3, vz: (Math.random() - 0.5) * 5, life: 0.4, size: 0.15, color: 0xffffff, gravity: 12 });
+        // a knocked hydrant spouts water for a while
+        if (ev.kind === 'hydrant') this.fountains.push({ x: ev.x, z: ev.z, t: 7 });
         this.shake(0.12);
         break;
       case 'takedown':
@@ -763,6 +778,13 @@ export class View {
       const r = 8.5 + Math.sin(this.menuT * 0.07) * 1.2;
       want = new THREE.Vector3(p.x + Math.sin(a) * r, 2.2 + Math.sin(this.menuT * 0.2) * 0.5, p.z + Math.cos(a) * r);
       look = new THREE.Vector3(p.x - Math.sin(p.h) * 1.5, 1.4, p.z - Math.cos(p.h) * 1.5);
+      if (this.opt.menu) {
+        // the menu: the car on the right, above the how-to card and clear of PLAY and the switches
+        want.y = 3.4;
+        const dx = look.x - want.x, dz = look.z - want.z, n = Math.hypot(dx, dz) || 1;
+        look.x += (dz / n) * 4.6; look.z += (-dx / n) * 4.6;
+        look.y = 0.2;
+      }
       if (this.menuT < 0.1) cam.position.copy(want); else cam.position.lerp(want, Math.min(1, dt * 2));
     } else if (this.cam === 'bumper') {
       want = new THREE.Vector3(p.x + sh * 0.6, p.y + 1.25, p.z + ch * 0.6);

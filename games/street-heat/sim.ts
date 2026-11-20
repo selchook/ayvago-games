@@ -702,7 +702,7 @@ export class Sim {
     const want = this.tune.traffic;
     for (let k = 0; k < (first ? want : 3) && traffic + k < want; k++) {
       const model = this.rnd() < 0.07 ? pick(this.rnd, TRAFFIC_MODELS.slice(6)) : pick(this.rnd, TRAFFIC_MODELS.slice(0, 6));
-      this.spawnTraffic('traffic', model, first ? 15 : 110, 190);
+      this.spawnTraffic('traffic', model, first ? 15 : 90, 180);
     }
     if (this.police) {
       const patrols = this.cars.filter((c) => c.role === 'cop' && c.cop === 'patrol').length;
@@ -955,7 +955,7 @@ export class Sim {
     for (const c of this.cars) if (c.role === 'cop' && c.cop === 'patrol' && Math.hypot(c.x - this.copTarget.x, c.z - this.copTarget.z) < 160) this.toPursuit(c);
   }
 
-  private toPursuit(c: Car): void {
+  toPursuit(c: Car): void {
     if (c.mode === 'lane') this.knock(c);
     c.hazard = false;
     c.cop = 'pursue';
