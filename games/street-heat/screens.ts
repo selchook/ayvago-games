@@ -184,18 +184,29 @@ export class Dispatch {
       add(fitWidth(labelAt(sc, left, y - 20, caps(t('caseFile')) + ' #' + String(def.id).padStart(2, '0'), INK_HEAD, 0), room));
       add(fitWidth(labelAt(sc, left, y + 16, t(`m${def.id}t`), INK_TITLE, 0), room));
       y += 50;
-      const p = new Para(sc, left, y, t(`m${def.id}b`), INK_BODY, room, 0, 28);
+      // a long briefing (The Big Score in English) packs the file tighter so the last star line
+      // stays clear of the reward row
+      const rewardY = cy + PANEL.fileH / 2 - 120;
+      const goals = goalLines(def), stars = starLines(def, this.timeK);
+      let lineH = 28, gap = 14, row = 26, starRow = 25;
+      const need = (h: number) => h + gap + 26 + goals.length * row + 8 + 26 + (stars.length - 1) * starRow;
+      let p = new Para(sc, left, y, t(`m${def.id}b`), INK_BODY, room, 0, lineH);
+      if (y + need(p.textHeight) > rewardY - 32) {
+        p.destroy();
+        lineH = 24; gap = 8; row = 23; starRow = 23;
+        p = new Para(sc, left, y, t(`m${def.id}b`), INK_BODY, room, 0, lineH);
+      }
       add(p);
-      y += p.textHeight + 14;
+      y += p.textHeight + gap;
       add(labelAt(sc, left, y, caps(t('goals')), INK_HEAD, 0));
       y += 26;
-      for (const g of goalLines(def)) { add(fitWidth(labelAt(sc, left + 12, y, '› ' + g, INK_SMALL, 0), room - 12)); y += 26; }
+      for (const g of goals) { add(fitWidth(labelAt(sc, left + 12, y, '› ' + g, INK_SMALL, 0), room - 12)); y += row; }
       y += 8;
       add(labelAt(sc, left, y, caps(t('starsH')), INK_HEAD, 0));
       y += 26;
-      for (const s of starLines(def, this.timeK)) { add(fitWidth(labelAt(sc, left + 12, y, s, INK_SMALL, 0), room - 12)); y += 25; }
-      add(labelAt(sc, left, cy + PANEL.fileH / 2 - 120, caps(t('reward')), INK_HEAD, 0));
-      add(new GlyphText(sc, left + 120, cy + PANEL.fileH / 2 - 118, fmtMoney(def.pay), MONEY_INK, 0));
+      for (const s of stars) { add(fitWidth(labelAt(sc, left + 12, y, s, INK_SMALL, 0), room - 12)); y += starRow; }
+      add(labelAt(sc, left, rewardY, caps(t('reward')), INK_HEAD, 0));
+      add(new GlyphText(sc, left + 120, rewardY + 2, fmtMoney(def.pay), MONEY_INK, 0));
     } else {
       const key = 'm_' + this.mode;
       add(fitWidth(labelAt(sc, left, y + 10, t(key), INK_TITLE, 0), room));
