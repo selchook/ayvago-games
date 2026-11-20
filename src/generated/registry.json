@@ -138,12 +138,12 @@
         "en": "Astro Crew"
       },
       "description": {
-        "tr": "Hayvan astronotlardan oluşan tayfanı uzaylılarla dolu gezegenlerde yönet! 3B bir aksiyon macerası: her gezegen baştan sona dolaşabileceğin açık bir dünya. Sen koşar, takla atar ve özel yeteneğini kullanırken silahın kendi kalkar ve nişan alır; uzaylı yuvaları yaklaşınca uyanır, devriyeler dolaşır, kovan alarmı dolunca bir sürü seni avlamaya gelir. Yuvaları yık, kubbeyi koru, anahtar kartları topla, mahsur gezicileri kurtar ve üç dev boss'u ininde yen; harita ve kenardaki oklar yolu gösterir. Seviye atla, güç kartı seç, dev mekanı doldur ve görevler arasında kristallerle üssünü büyüt. Dört tayfa, on iki gezegen, Kolay ya da Normal.",
-        "en": "Lead a crew of animal astronauts across a galaxy of alien planets! A 3D action adventure where every planet is an open world to roam from rim to rim. Your blaster comes up and aims by itself while you run, roll and fire your signature skill; alien nests wake as you come near, patrols roam, and when the hive alert fills, a swarm comes hunting for you. Destroy the nests, defend the dome, collect keycards, rescue stranded rovers and beat three huge bosses in their lairs; the minimap and the arrows at the edge show the way. Level up and pick power cards, charge your giant mech, and grow your base with crystals between missions. Four crew members, twelve planets, Easy or Normal."
+        "tr": "Hayvan astronotlardan oluşan tayfanı uzaylılarla dolu gezegenlerde yönet! 3B bir aksiyon macerası: her gezegen baştan sona dolaşabileceğin açık bir dünya. ATEŞ'i basılı tuttukça silahın önündeki en yakın uzaylıya nişan alıp ateş eder; koş, takla at, özel yeteneğini kullan; uzaylı yuvaları yaklaşınca uyanır, devriyeler dolaşır, kovan alarmı dolunca bir sürü seni avlamaya gelir. Yuvaları yık, kubbeyi koru, anahtar kartları topla, mahsur gezicileri kurtar ve üç dev boss'u ininde yen; harita ve kenardaki oklar yolu gösterir. Seviye atla, güç kartı seç, dev mekanı doldur ve görevler arasında kristallerle üssünü büyüt. Dört tayfa, on iki gezegen, Kolay ya da Normal.",
+        "en": "Lead a crew of animal astronauts across a galaxy of alien planets! A 3D action adventure where every planet is an open world to roam from rim to rim. Hold FIRE and your blaster locks onto the nearest alien ahead while you run, roll and fire your signature skill; alien nests wake as you come near, patrols roam, and when the hive alert fills, a swarm comes hunting for you. Destroy the nests, defend the dome, collect keycards, rescue stranded rovers and beat three huge bosses in their lairs; the minimap and the arrows at the edge show the way. Level up and pick power cards, charge your giant mech, and grow your base with crystals between missions. Four crew members, twelve planets, Easy or Normal."
       },
       "howTo": {
-        "tr": "Soldaki çubukla ya da WASD / ok tuşlarıyla yürü; silahın kendi nişan alıp ateş eder. TAKLA ya da Boşluk ile yuvarlan, YETENEK ya da Q ile özel gücünü kullan, sayaç dolunca MEKA ya da E ile mekana bin. P ya da Esc duraklatır.",
-        "en": "Move with the stick on the left or WASD / arrows; your blaster aims and fires by itself. Roll with DODGE or Space, fire your skill with SKILL or Q, and jump into your mech with MECH or E once the meter is full. P or Esc pauses."
+        "tr": "Soldaki çubukla ya da WASD / ok tuşlarıyla yürü; ATEŞ'i ya da Boşluk'u basılı tutarak ateş et (yakındakine yumruk atarsın). TAKLA ya da Shift ile yuvarlan, YETENEK ya da Q ile özel gücünü kullan, sayaç dolunca MEKA ya da E ile mekana bin. P ya da Esc duraklatır.",
+        "en": "Move with the stick on the left or WASD / arrows; hold FIRE or Space to shoot (up close it punches). Roll with DODGE or Shift, fire your skill with SKILL or Q, and jump into your mech with MECH or E once the meter is full. P or Esc pauses."
       },
       "genres": [
         "action",
@@ -154,7 +154,7 @@
         "touch",
         "keyboard"
       ],
-      "version": "1.1.0",
+      "version": "1.2.0",
       "credits": [
         "3D models: Quaternius Ultimate Space Kit (CC0) — quaternius.com",
         "Sounds: Juhani Junkala (CC0) — opengameart.org; Kenney Interface and Casino Audio (CC0) — kenney.nl",

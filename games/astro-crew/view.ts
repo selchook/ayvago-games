@@ -70,6 +70,8 @@ export class View {
   private rovers: { obj: THREE.Object3D; wheels: THREE.Object3D[]; x: number; z: number }[] = [];
   private nests: NestProp[] = [];
   private shield: THREE.Mesh;
+  /** A ring under the alien the aim assist holds while FIRE is down. */
+  private lockRing: THREE.Mesh;
   private shots: THREE.InstancedMesh;
   private spits: THREE.InstancedMesh;
   private picks = new Map<PickKind, THREE.InstancedMesh>();
@@ -201,6 +203,9 @@ export class View {
     this.shield = new THREE.Mesh(shieldGeo, new THREE.MeshBasicMaterial({ color: 0xff8a5a, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false, wireframe: true }));
     this.shield.visible = false;
     this.arena.add(this.shield);
+    this.lockRing = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff6a5a, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide }));
+    this.lockRing.visible = false;
+    this.arena.add(this.lockRing);
     this.beam = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 40, 16, 1, true).translate(0, 20, 0), new THREE.MeshBasicMaterial({ color: 0x8af0ff, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
     this.beam.visible = false;
     this.arena.add(this.beam);
@@ -374,6 +379,7 @@ export class View {
     this.castFig.play('Wave');
     this.beam.visible = false;
     this.shield.visible = false;
+    this.lockRing.visible = false;
     this.sparks.clear(); this.glow.clear(); this.smoke.clear(); this.flash.clear(); this.rings.clear(); this.beams.clear();
     this.follow(sim, 1, true);
   }
@@ -762,6 +768,14 @@ export class View {
       if (f.slow > 0 && Math.random() < 0.15) this.glow.dot(f.x, gy + 1, f.z, 0, 0.6, 0, 0x9ae8ff, 0.4, 0.6);
     }
     for (const [id, ff] of this.live) if (!seen.has(id)) { this.release(ff.fig, ff.kind); this.live.delete(id); }
+    // the aim assist's target, ringed while FIRE is held
+    const hl = sim.hero.lock;
+    const lf = hl >= 0 && sim.hero.alive && sim.phase === 'play' ? sim.foes.find((f) => f.id === hl && f.state !== 'dead') : undefined;
+    this.lockRing.visible = !!lf;
+    if (lf) {
+      this.stand(this.lockRing, lf.x, lf.z, this.time * 2, 0.08);
+      this.lockRing.scale.setScalar(Math.max(0.9, lf.r * 1.45) * (1 + Math.sin(this.time * 12) * 0.05));
+    }
     // the boss's shield while its hives stand
     const b = sim.boss;
     this.shield.visible = !!b && b.state !== 'dead' && sim.shielded && this.live.has(b.id);

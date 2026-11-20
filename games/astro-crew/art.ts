@@ -228,6 +228,16 @@ const PAINT: Record<string, Paint> = {
     for (const [x1, y1, x2, y2] of [[8, 30, 16, 36], [88, 30, 80, 36], [48, 4, 48, 12]] as [number, number, number, number][]) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); }
   },
   // ---- the action buttons' glyphs
+  aim: (c) => {
+    // a crosshair: the FIRE button
+    c.fillStyle = 'rgba(255,90,90,0.25)'; c.beginPath(); c.arc(48, 48, 30, 0, Math.PI * 2); c.fill();
+    for (const [w, col] of [[11, '#170c3a'], [5, '#ffffff']] as [number, string][]) {
+      c.lineWidth = w; c.strokeStyle = col; c.lineCap = 'round';
+      c.beginPath(); c.arc(48, 48, 28, 0, Math.PI * 2); c.stroke();
+      c.beginPath(); for (const [x0, y0, x1, y1] of [[48, 6, 48, 30], [48, 66, 48, 90], [6, 48, 30, 48], [66, 48, 90, 48]]) { c.moveTo(x0, y0); c.lineTo(x1, y1); } c.stroke();
+    }
+    c.fillStyle = '#ff5a5a'; outline(c, 3); c.beginPath(); c.arc(48, 48, 8, 0, Math.PI * 2); c.fill(); c.stroke();
+  },
   dodge: (c) => {
     c.lineWidth = 9; c.strokeStyle = '#ffffff'; c.lineCap = 'round';
     c.beginPath(); c.arc(48, 48, 24, -0.6, Math.PI * 1.25); c.stroke();
@@ -254,7 +264,7 @@ export function makeArt(scene: Phaser.Scene): void {
   }
   bake(scene, RING, 128, 128, (c) => { c.strokeStyle = '#ffffff'; c.lineWidth = 10; c.beginPath(); c.arc(64, 64, 56, 0, Math.PI * 2); c.stroke(); });
   // the round action buttons: a glass disc in the button's colour
-  for (const [k, col] of [['dodge', '#5ae8ff'], ['skill', '#ff8a2a'], ['mech', '#ffd84a'], ['off', '#6a648a']] as [string, string][]) {
+  for (const [k, col] of [['fire', '#ff5a5a'], ['dodge', '#5ae8ff'], ['skill', '#ff8a2a'], ['mech', '#ffd84a'], ['off', '#6a648a']] as [string, string][]) {
     bake(scene, BTN_FACE + k, 176, 176, (c) => {
       c.save(); c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 10; c.shadowOffsetY = 5;
       c.fillStyle = 'rgba(10,6,32,0.55)'; c.beginPath(); c.arc(88, 88, 78, 0, Math.PI * 2); c.fill(); c.restore();

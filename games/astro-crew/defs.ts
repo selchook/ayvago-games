@@ -168,9 +168,11 @@ export interface Tune {
   /** How fast the hive alert rises. */
   threat: number;
 }
+// 1.2: the hero's health is 10% higher in both modes (Easy keeps its 40% over Normal), for the time
+// manual fire costs (turning to aim, letting go to move); the balance bot kept Normal in the 1.1 spread.
 export const TUNING: Record<Mode, Tune> = {
-  normal: { heroHp: 1, foeHp: 1, foeDmg: 1, foeSpeed: 1, budget: 1, depth: 0.13, healDrop: 0.03, domeHp: 1, threat: 1 },
-  easy: { heroHp: 1.4, foeHp: 0.78, foeDmg: 0.62, foeSpeed: 0.88, budget: 0.8, depth: 0.07, healDrop: 0.05, domeHp: 1.4, threat: 0.75 },
+  normal: { heroHp: 1.1, foeHp: 1, foeDmg: 1, foeSpeed: 1, budget: 1, depth: 0.13, healDrop: 0.03, domeHp: 1, threat: 1 },
+  easy: { heroHp: 1.54, foeHp: 0.78, foeDmg: 0.62, foeSpeed: 0.88, budget: 0.8, depth: 0.07, healDrop: 0.05, domeHp: 1.4, threat: 0.75 },
 };
 
 /** Crystals for a cleared mission (before jars), by tier and stars. */

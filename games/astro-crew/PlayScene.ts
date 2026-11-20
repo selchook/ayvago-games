@@ -6,11 +6,13 @@
 // The mission is the pure simulation (sim.ts), stepped at 60 Hz and drawn in 3D (view.ts); the star
 // map and the base are 3D too (mapview.ts). On top: the HUD chips (score, the objective, health,
 // level, the hive alert, crystals, cards, the boss's health), a round minimap of the planet in its
-// own chip, the three action buttons (DODGE, SKILL, MECH) with their cooldown rings, arrows at the
+// own chip, the four action buttons (FIRE, DODGE, SKILL, MECH) with their rings, arrows at the
 // screen's edge (with the distance) to the objectives off screen, the castaway and a hunting wave,
 // damage numbers, banners and toasts, all painted in the theme's face ahead of time.
-// Touch: the stick (anywhere left of the buttons) moves; the buttons roll, fire the skill and call
-// the mech. Keys: WASD / arrows move, Space rolls, Q or J the skill, E or K the mech, P / Esc pause.
+// Touch: the stick (anywhere off the buttons) moves; FIRE is held to shoot (or punch up close), the
+// buttons around it roll, fire the skill and call the mech. Keys: WASD / arrows move, Space / Z /
+// Enter held fire, Shift or X rolls, Q or J the skill, E or K the mech, P / Esc pause. The gamepad's
+// core mapping lands on the same keys (A fires, B rolls, X skill, Y mech, Start pauses).
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, t, isEasy, hudChip, HUD_ROW2_Y, HUD_MARGIN, HUD_GAP, hudRightEdge, labelAt, labelTexture, fitWidth,
@@ -49,7 +51,7 @@ const S_BOSS: LabelStyle = { size: 20, color: '#ffd0c0', stroke: INK, strokeWidt
 const S_DIST: LabelStyle = { size: 20, color: '#ffffff', stroke: INK, strokeWidth: 4 };
 const DIST_GLYPHS = NUMERIC_GLYPHS + 'm';
 const TOASTS = ['rage', 'mechReady', 'beacon', 'fixed', 'domeHit', 'angel', 'hullRevive', 'shield', 'overdrive', 'thunder', 'healed', 'keycard', 'lowHp', 'fixing', 'powerShot',
-  'hintMove', 'hintKeys', 'hintSkill', 'hintTouch', 'hintRescue', 'hintKeysObj', 'hintDefend', 'hintClear', 'hintBoss', 'hintMap', 'hintAlert', 'crit',
+  'hintMove', 'hintKeys', 'hintSkill', 'hintTouch', 'hintAim', 'hintFire', 'hintFireKey', 'hintRescue', 'hintKeysObj', 'hintDefend', 'hintClear', 'hintBoss', 'hintMap', 'hintAlert', 'crit',
   'alertDome', 'alertHunt', 'alertEnd', 'nestWake', 'nestDown', 'shielded', 'castaway', 'castHelp', 'burn', 'holdBeacon'];
 const BANNERS = ['bossIn', 'mechGo', 'complete', 'levelUp', 'beacon', 'hiveAlert', 'shieldDown'];
 const SKILL_ICON: Record<HeroId, string> = { frog: 'p-blast', bee: 'p-storm', flamingo: 'p-pierce', panda: 'p-flame' };
@@ -65,8 +67,8 @@ export function prebakePlay(scene: Phaser.Scene): void {
   bakeFmt(scene, 'keyN', ['n', 'm'], S_TOAST);
   bakeFmt(scene, 'crystalsN', ['n'], S_TOAST);
   for (const m of MISSIONS) labelTexture(scene, t('m_' + m.n), S_BANNER);
-  for (const k of ['dodge', 'skillBtn', 'mech']) labelTexture(scene, t(k), S_BTN);
-  for (const k of [t('keySpace'), 'Q', 'E']) labelTexture(scene, k, S_KEY);
+  for (const k of ['fireBtn', 'dodge', 'skillBtn', 'mech']) labelTexture(scene, t(k), S_BTN);
+  for (const k of [t('keySpace'), 'Shift', 'Q', 'E']) labelTexture(scene, k, S_KEY);
   for (const b of ['titan', 'queen', 'king']) labelTexture(scene, t('b_' + b), S_BOSS);
   for (const o of [S_DMG, S_CRIT, S_HURT]) glyphAtlas(scene, o);
 }
@@ -78,10 +80,12 @@ class ActionButton {
   private face: Phaser.GameObjects.Image;
   readonly icon: Phaser.GameObjects.Image;
   presses = 0;
+  /** The finger holding it down (-1: none); FIRE fires while it is held. */
+  private holdId = -1;
   private pop = 0;
   private lastReady = false;
 
-  constructor(private scene: Phaser.Scene, x: number, y: number, readonly r: number, private kind: 'dodge' | 'skill' | 'mech', icon: string, label: string, keyHint: string, private color: number) {
+  constructor(private scene: Phaser.Scene, x: number, y: number, readonly r: number, private kind: 'fire' | 'dodge' | 'skill' | 'mech', icon: string, label: string, keyHint: string, private color: number) {
     this.root = scene.add.container(x, y).setScrollFactor(0).setDepth(9050);
     this.face = scene.add.image(0, 0, BTN_FACE + kind).setDisplaySize(r * 2.2, r * 2.2);
     this.icon = iconImg(scene, 0, -r * 0.14, icon, r * 0.95);
@@ -96,17 +100,27 @@ class ActionButton {
     zone.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => {
       ev?.stopPropagation?.();
       this.presses++;
+      this.holdId = _p.id;
       this.kick();
     });
+    // held until that finger lifts, wherever it slid to
+    const up = (p: Phaser.Input.Pointer) => { if (p.id === this.holdId) this.holdId = -1; };
+    scene.input.on('pointerup', up);
+    scene.input.on('pointerupoutside', up);
     this.zoneObj = zone;
   }
+
+  /** A finger is on it (pressed on the button and not lifted yet). */
+  get held(): boolean { return this.holdId >= 0; }
 
   private zoneObj: Phaser.GameObjects.Zone;
 
   take(): boolean { const n = this.presses > 0; this.presses = 0; return n; }
+  /** Shown pressed (FIRE: held by any input). */
+  down = false;
   kick(): void { this.pop = 0.16; }
 
-  setVisible(on: boolean): void { this.root.setVisible(on); if (on) this.zoneObj.setInteractive(); else this.zoneObj.disableInteractive(); }
+  setVisible(on: boolean): void { this.root.setVisible(on); if (on) this.zoneObj.setInteractive(); else { this.zoneObj.disableInteractive(); this.holdId = -1; this.presses = 0; } }
 
   /** `k` 0..1 filled; ready lights it; a count badge for the skill's charges. */
   draw(k: number, ready: boolean, time: number, dt: number): void {
@@ -116,9 +130,11 @@ class ActionButton {
     g.lineStyle(7, 0x0a0620, 0.6).strokeCircle(0, 0, R);
     if (k > 0) g.lineStyle(7, ready ? this.color : 0x8a84b0, 1).beginPath().arc(0, 0, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, k)).strokePath();
     if (ready && this.kind === 'mech') g.lineStyle(4, 0xffffff, 0.4 + Math.sin(time * 8) * 0.3).strokeCircle(0, 0, R + 7);
+    // FIRE glows while it is held (by a finger, a key or the pad)
+    if (this.kind === 'fire' && this.down) g.fillStyle(this.color, 0.22).fillCircle(0, 0, R - 4).lineStyle(4, 0xffffff, 0.75).strokeCircle(0, 0, R + 6);
     this.face.setTexture(BTN_FACE + (ready ? this.kind : 'off'));
     this.icon.setAlpha(ready ? 1 : 0.5);
-    const s = 1 + this.pop * 0.6 + (ready && this.kind === 'mech' ? Math.sin(time * 8) * 0.03 : 0);
+    const s = (this.kind === 'fire' && this.down ? 0.94 : 1) + this.pop * 0.6 + (ready && this.kind === 'mech' ? Math.sin(time * 8) * 0.03 : 0);
     this.root.setScale(s);
     if (ready && !this.lastReady && this.kind !== 'dodge') this.scene.tweens.add({ targets: this.root, scale: 1.18, duration: 120, yoyo: true });
     this.lastReady = ready;
@@ -154,6 +170,9 @@ export class PlayScene extends ArcadeScene {
   private cardChip!: HudChip;
   private bossChip!: HudChip;
   private bossBar!: Phaser.GameObjects.Graphics;
+  private btnFire!: ActionButton;
+  /** The buttons' corner (the edge arrows keep out of it). */
+  private padBox = { left: 0, top: 0 };
   private btnDodge!: ActionButton;
   private btnSkill!: ActionButton;
   private btnMech!: ActionButton;
@@ -167,6 +186,10 @@ export class PlayScene extends ArcadeScene {
   private burnT = 0;
   private wakeToasts = 0;
   private keys = { dodge: false, skill: false, mech: false };
+  /** FIRE must come up once after a screen (Space / Enter that closed it is not a shot). */
+  private fireLatch = true;
+  /** The "hold FIRE" reminder: once per mission. */
+  private fireNagged = false;
   private dmgPool: GlyphText[] = [];
   private toastImg: Phaser.GameObjects.Image | null = null;
   private lowT = 0;
@@ -197,6 +220,8 @@ export class PlayScene extends ArcadeScene {
     this.revived = false;
     this.carry = 0;
     this.keys = { dodge: false, skill: false, mech: false };
+    this.fireLatch = true;
+    this.fireNagged = false;
     this.dmgPool = [];
     this.toastImg = null;
     this.lowT = 0;
@@ -230,6 +255,10 @@ export class PlayScene extends ArcadeScene {
         pauseSides(ps, this.run.cards, m, m ? this.meta.stars[m.n - 1] : 0);
       });
     });
+    // the key or button that closed the pause is not a shot
+    const latch = () => { this.fireLatch = true; };
+    this.events.on(Phaser.Scenes.Events.RESUME, latch);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.RESUME, latch));
     this.hooks();
     this.showPlayUi(false);
     this.openCrew();
@@ -269,20 +298,34 @@ export class PlayScene extends ArcadeScene {
     this.fixRing = this.add.graphics().setDepth(8900);
   }
 
+  /**
+   * The right-thumb cluster: FIRE, the big primary button, in the corner; DODGE to its left, SKILL
+   * up-left and MECH above, on an arc the thumb reaches from FIRE (touch); smaller with their keys
+   * under them on desktops.
+   */
   private setupButtons(): void {
     const { width, height } = this.scale;
-    const k = this.touch ? 1 : 0.78;
+    const touch = this.touch;
+    const k = touch ? 1 : 0.74;
     const hero = this.run.hero;
-    this.btnDodge = new ActionButton(this, width - 104 * k - 16, height - 108 * k - (this.touch ? 6 : 24), 66 * k, 'dodge', 'p-dodge', t('dodge'), this.touch ? '' : t('keySpace'), 0x5ae8ff);
-    this.btnSkill = new ActionButton(this, width - 262 * k - 16, height - 84 * k - (this.touch ? 6 : 24), 54 * k, 'skill', SKILL_ICON[hero], t('skillBtn'), this.touch ? '' : 'Q', 0xff8a2a);
-    this.btnMech = new ActionButton(this, width - 104 * k - 16, height - 270 * k - (this.touch ? 6 : 24), 54 * k, 'mech', 'mech-' + hero, t('mech'), this.touch ? '' : 'E', 0xffd84a);
+    const cx = width - 112 * k - 14, cy = height - 112 * k - (touch ? 8 : 26);
+    // desktops leave room for the key under each button
+    const sp = touch ? k : k * 1.14;
+    const at = (deg: number, d: number): [number, number] => [cx + Math.cos(deg * Math.PI / 180) * d * sp, cy - Math.sin(deg * Math.PI / 180) * d * sp];
+    const key = (s: string) => (touch ? '' : s);
+    this.btnFire = new ActionButton(this, cx, cy, 80 * k, 'fire', 'p-aim', t('fireBtn'), key(t('keySpace')), 0xff5a5a);
+    this.btnDodge = new ActionButton(this, ...at(178, 178), 58 * k, 'dodge', 'p-dodge', t('dodge'), key('Shift'), 0x5ae8ff);
+    this.btnSkill = new ActionButton(this, ...at(132, 192), 56 * k, 'skill', SKILL_ICON[hero], t('skillBtn'), key('Q'), 0xff8a2a);
+    this.btnMech = new ActionButton(this, ...at(88, 182), 56 * k, 'mech', 'mech-' + hero, t('mech'), key('E'), 0xffd84a);
+    const bs = [this.btnFire, this.btnDodge, this.btnSkill, this.btnMech];
+    this.padBox = { left: Math.min(...bs.map((b) => b.root.x - b.r * 1.15)), top: Math.min(...bs.map((b) => b.root.y - b.r * 1.15)) };
   }
 
   private showPlayUi(on: boolean): void {
     for (const c of [this.hud.scoreChip, this.hud.centerChip, this.hpChip, this.xpChip, this.crystalChip, this.cardChip, this.threatChip, this.mapChip]) c.setVisible(on);
     this.hud.rightChip.setVisible(false);
     if (!on) this.bossChip.setVisible(false);
-    for (const b of [this.btnDodge, this.btnSkill, this.btnMech]) b.setVisible(on);
+    for (const b of [this.btnFire, this.btnDodge, this.btnSkill, this.btnMech]) b.setVisible(on);
     if (!on) { for (const a of this.arrows) { a.img.setVisible(false); a.dist.setVisible(false); } this.fixRing.clear(); }
   }
 
@@ -361,6 +404,8 @@ export class PlayScene extends ArcadeScene {
     const time = this.time.now / 1000;
     const skillK = h.charges > 0 ? 1 : 1 - h.skillCd / (H2.skillCd * s.m.skillCd);
     this.btnSkill.draw(skillK, h.charges > 0 && h.mech <= 0, time, dt);
+    this.btnFire.down = h.aiming;
+    this.btnFire.draw(1, h.mech > 0 || h.roll <= 0, time, dt);
     this.btnDodge.draw(1 - h.rollCd / (1.6 * s.m.dodgeCd), h.rollCd <= 0 && h.mech <= 0, time, dt);
     this.btnMech.draw(h.mech > 0 ? h.mech / s.m.mechTime : h.charge, h.charge >= 1 && h.mech <= 0, time, dt);
   }
@@ -450,11 +495,15 @@ export class PlayScene extends ArcadeScene {
       // aim from the screen's middle along the ground direction (the screen point of far things can flip)
       const dx = p.x - h.x, dz = p.z - h.z;
       const ang = Math.atan2(dz * 0.8, dx);
-      const mx = 54, top = 150, bottom = 60;
+      // above the hint line while one shows
+      const mx = 54, top = 150, bottom = this.toastImg ? 112 : 60;
       const kx = (Math.cos(ang) > 0 ? width - mx - cx : cx - mx) / Math.max(1e-3, Math.abs(Math.cos(ang)));
       const ky = (Math.sin(ang) > 0 ? height - bottom - cy : cy - top) / Math.max(1e-3, Math.abs(Math.sin(ang)));
       const kk = Math.min(kx, ky);
-      const x = cx + Math.cos(ang) * kk, y = cy + Math.sin(ang) * kk;
+      let x = cx + Math.cos(ang) * kk, y = cy + Math.sin(ang) * kk;
+      // never under the right-thumb buttons: slide along the edge past them
+      const pb = this.padBox;
+      if (x > pb.left - 30 && y > pb.top - 30) { if (kx < ky) y = pb.top - 30; else x = pb.left - 30; }
       const pulse = 1 + Math.sin(this.time.now / 120 + i) * 0.08;
       a.img.setVisible(true).setPosition(x, y).setRotation(ang).setScale((48 / 64) * pulse * (i === 1 ? 0.8 : 1)).setAlpha(i === 1 ? 0.75 : 1);
       a.dist.setVisible(true).setText(`${Math.round(Math.hypot(dx, dz))}m`).setPosition(x - Math.cos(ang) * 40, y - Math.sin(ang) * 34);
@@ -470,7 +519,8 @@ export class PlayScene extends ArcadeScene {
       if (this.phase !== 'play' || isModalOpen(this)) return;
       if (e.repeat) return;
       switch (e.code) {
-        case 'Space': case 'ShiftLeft': case 'ShiftRight': this.keys.dodge = true; this.btnDodge.kick(); break;
+        case 'ShiftLeft': case 'ShiftRight': case 'KeyX': this.keys.dodge = true; this.btnDodge.kick(); break;
+        case 'Space': case 'KeyZ': case 'Enter': case 'NumpadEnter': if (!this.fireLatch) this.btnFire.kick(); break;
         case 'KeyQ': case 'KeyJ': this.keys.skill = true; this.btnSkill.kick(); break;
         case 'KeyE': case 'KeyK': this.keys.mech = true; this.btnMech.kick(); break;
       }
@@ -478,8 +528,13 @@ export class PlayScene extends ArcadeScene {
   }
 
   private readInput(): Input {
+    // FIRE is held: Space / Z / Enter (the pad's A and RT) or a finger on the button
+    const held = this.controls.a || this.btnFire.held;
+    if (!held) this.fireLatch = false;
+    this.btnFire.take();
     const inp: Input = {
       mx: this.controls.axisX, mz: this.controls.axisY,
+      fire: held && !this.fireLatch,
       dodge: this.keys.dodge || this.btnDodge.take(), skill: this.keys.skill || this.btnSkill.take(), mech: this.keys.mech || this.btnMech.take(),
     };
     this.keys = { dodge: false, skill: false, mech: false };
@@ -553,13 +608,16 @@ export class PlayScene extends ArcadeScene {
     // the first missions teach the buttons and the way round a planet
     const later = (ms: number, key: string) => this.time.delayedCall(ms, () => { if (this.phase === 'play') this.toast(t(key), 5); });
     const kindHint = { rescue: 'hintRescue', keys: 'hintKeysObj', defend: 'hintDefend', clear: 'hintClear', boss: 'hintBoss' }[s.def.kind];
-    if (!this.meta.coached || s.def.n <= 2) {
+    this.fireNagged = false;
+    if (!this.meta.coached || !this.meta.fireCoached || s.def.n <= 2) {
       later(2200, this.touch ? 'hintMove' : 'hintKeys');
-      later(7600, kindHint);
-      later(13000, 'hintMap');
-      later(18400, this.touch ? 'hintTouch' : 'hintSkill');
-      if (s.def.n === 1) later(30000, 'hintAlert');
+      later(7600, 'hintAim');
+      later(13000, kindHint);
+      later(18400, 'hintMap');
+      later(23800, this.touch ? 'hintTouch' : 'hintSkill');
+      if (s.def.n === 1) later(32000, 'hintAlert');
       this.meta.coached = true;
+      this.meta.fireCoached = true;
       saveMeta(this.meta);
     } else later(2600, kindHint);
   }
@@ -655,6 +713,7 @@ export class PlayScene extends ArcadeScene {
     // the core shows the HUD after createGame: only a mission shows it
     if (this.perf.frames === 1) this.showPlayUi(this.phase === 'play');
     const s = this.sim;
+    if (this.phase !== 'play') this.fireLatch = true;
     if (s && (this.phase === 'play' || this.phase === 'won' || this.phase === 'end')) {
       this.acc += dt * this.testSpeed;
       let n = 0;
@@ -678,6 +737,12 @@ export class PlayScene extends ArcadeScene {
     // low health
     this.burnT -= dt;
     if (s && this.phase === 'play' && s.hero.alive) {
+      // a player who waits for the gun to fire by itself: remind once per mission
+      const h = s.hero;
+      if (!this.fireNagged && !this.bot && h.idleFire > 4 && h.mech <= 0) {
+        const f = s.nearestFoe(h.x, h.z, HERO[this.run.hero].range * s.m.range);
+        if (f && f.engaged) { this.fireNagged = true; this.toast(t(this.touch ? 'hintFire' : 'hintFireKey'), 3); this.btnFire.kick(); }
+      }
       this.lowT -= dt;
       if (s.hero.hp < s.hero.max * 0.3 && this.lowT <= 0) { this.lowT = 4; this.sfx('lowhp', { volume: 0.35 }); this.toast(t('lowHp'), 1.6); }
     }
@@ -964,7 +1029,7 @@ export class PlayScene extends ArcadeScene {
     b.x = s.hero.x + 2.5; b.z = s.hero.z - 4.5; b.cd = 3;
     s.rush(16);
     this.fastForward(0.25);
-    s.step(DT, { mx: 0, mz: 0, dodge: false, skill: false, mech: true });
+    s.step(DT, { ...NO_INPUT, mech: true });
     for (const ev of s.events) this.view.handle(ev, s);
     s.events.length = 0;
     this.fastForward(0.5);

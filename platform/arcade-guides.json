@@ -415,67 +415,71 @@
     },
     "astro-crew": {
       "about": {
-        "en": "Astro Crew is a 3D action adventure starring a crew of animal astronauts. Each mission drops you onto a whole planet you can roam from rim to rim. You only steer: your blaster comes up by itself, aims at the nearest alien in reach and fires, and anything too close gets a punch. Your job is to move well and time your roll, skill and mech.\n\nThere are twelve missions over desert, purple, ice and lava planets, in five kinds: hunt down nests, fix stranded rovers, defend the dome through hive alerts, collect keycards and hold the beacon, or beat a boss in its lair. Nests wake as you come near, patrols wander, and the longer you stay, the more the hive alert fills until a swarm comes hunting for you. The Dune Titan, the Hive Queen and the Magma King wait at missions 4, 8 and 12.\n\nYou start with Finn the Frog or Barbara the Bee; Fernando the Flamingo joins after mission 4 and Rae the Red Panda after mission 8.",
-        "tr": "Uzay Tayfası, hayvan astronotlardan oluşan bir tayfanın başrolde olduğu 3B bir aksiyon macerası. Her görev seni baştan sona dolaşabileceğin koca bir gezegene indirir. Sen yalnızca yön verirsin: silahın kendiliğinden kalkar, menzildeki en yakın uzaylıya nişan alıp ateş eder, fazla yaklaşan da yumruğu yer. Senin işin iyi hareket etmek; taklayı, yeteneği ve mekayı doğru anda kullanmak.\n\nÇöl, mor, buz ve lav gezegenlerinde beş türde on iki görev var: yuvaları avla, mahsur gezicileri tamir et, kovan alarmlarına karşı kubbeyi koru, anahtar kartları toplayıp işaretçide dayan ya da bir bossu ininde yen. Yuvalar yaklaşınca uyanır, devriyeler dolaşır; ne kadar oyalanırsan kovan alarmı o kadar dolar ve sonunda bir sürü seni avlamaya gelir. Kum Devi, Kovan Kraliçesi ve Magma Kralı 4., 8. ve 12. görevlerde bekler.\n\nKurbağa Finn ya da Arı Barbara ile başlarsın; Flamingo Fernando 4. görevden, Kızıl Panda Rae 8. görevden sonra tayfaya katılır."
+        "en": "Astro Crew is a 3D action adventure starring a crew of animal astronauts. Every mission is a whole planet to roam. You attack yourself: hold FIRE and your blaster shoots at its own rate, a light aim assist picks the nearest alien in front of you, and one that gets too close takes a punch from the same button.\n\nTwelve missions on desert, purple, ice and lava planets come in five kinds: hunt down nests, fix stranded rovers, defend the dome through hive alerts, collect keycards and hold the beacon, or beat a boss in its lair. Nests wake as you come near, and the longer you stay, the fuller the hive alert gets until a swarm hunts you down. The Dune Titan, the Hive Queen and the Magma King wait at missions 4, 8 and 12.\n\nYou start with Finn the Frog or Barbara the Bee; Fernando the Flamingo joins after mission 4 and Rae the Red Panda after mission 8.",
+        "tr": "Uzay Tayfası, hayvan astronotlardan oluşan bir tayfanın başrolde olduğu 3B bir aksiyon macerası. Her görev dolaşabileceğin koca bir gezegendir. Saldırmak senin elinde: ATEŞ'i basılı tuttukça silahın kendi hızında ateş eder, hafif bir nişan yardımı önündeki en yakın uzaylıyı seçer, fazla yaklaşan da aynı düğmeyle yumruğu yer.\n\nÇöl, mor, buz ve lav gezegenlerindeki on iki görev beş türdür: yuvaları avla, mahsur gezicileri tamir et, kovan alarmlarına karşı kubbeyi koru, anahtar kartları toplayıp işaretçide dayan ya da bir bossu ininde yen. Yuvalar yaklaşınca uyanır; ne kadar oyalanırsan kovan alarmı o kadar dolar ve sonunda bir sürü seni avlamaya gelir. Kum Devi, Kovan Kraliçesi ve Magma Kralı 4., 8. ve 12. görevlerde bekler.\n\nKurbağa Finn ya da Arı Barbara ile başlarsın; Flamingo Fernando 4. görevden, Kızıl Panda Rae 8. görevden sonra tayfaya katılır."
       },
       "howToPlay": [
         {
-          "en": "Pick your crew member and LAUNCH, then choose a planet on the Star Map and read the brief: it gives the goal and the three stars.",
-          "tr": "Tayfandan birini seç ve KALKIŞ'a bas, sonra Yıldız Haritası'nda bir gezegen seçip brifingi oku: hedefi ve üç yıldızı orada görürsün."
+          "en": "Pick your crew member and LAUNCH, then a planet on the Star Map; the brief gives the goal and the three stars.",
+          "tr": "Tayfandan birini seç ve KALKIŞ'a bas, sonra Yıldız Haritası'nda bir gezegen seç; brifing hedefi ve üç yıldızı verir."
         },
         {
-          "en": "Follow the coloured beams and the arrows at the screen's edge: red for nests, green for rovers, yellow for keycards. The minimap in the top left shows the planet.",
-          "tr": "Renkli ışıkları ve ekran kenarındaki okları izle: kırmızı yuvalar, yeşil geziciler, sarı anahtar kartlar içindir. Sol üstteki küçük harita gezegeni gösterir."
+          "en": "Hold FIRE to shoot. Shots lock onto the nearest alien within about 35° of your facing or a few steps away, and you keep facing it as you run. Stand still and the gun turns to the nearest alien all round.",
+          "tr": "Ateş etmek için ATEŞ'i basılı tut. Atışlar baktığın yönün yaklaşık 35° içindeki ya da birkaç adım ötendeki en yakın uzaylıya kilitlenir, koşarken de ona dönük kalırsın. Durursan silah dört bir yandaki en yakın uzaylıya döner."
         },
         {
-          "en": "Collect the XP your kills drop. Each level-up offers three power cards; the one you pick stays with you for the whole run.",
-          "tr": "Öldürdüğün uzaylıların bıraktığı deneyimi topla. Her seviye atlayışta üç güç kartı çıkar; seçtiğin kart bütün yolculuk boyunca seninle kalır."
+          "en": "Follow the coloured beams and edge arrows: red to nests, green to rovers, yellow to keycards.",
+          "tr": "Renkli ışıkları ve kenardaki okları izle: kırmızı yuvalara, yeşil gezicilere, sarı anahtar kartlara götürür."
         },
         {
-          "en": "After each mission, spend crystals at the Base on modules that last for every run, then pick the next planet. The run ends when you fall, when a dome falls, or when the Magma King is beaten.",
-          "tr": "Her görevden sonra kristallerini Üs'te her yolculukta seninle kalan modüllere harca, sonra sıradaki gezegeni seç. Yolculuk, sen düştüğünde, bir kubbe düştüğünde ya da Magma Kralı yenildiğinde biter."
+          "en": "Collect the XP kills drop. Each level-up offers three power cards that last the whole run.",
+          "tr": "Öldürdüğün uzaylıların bıraktığı deneyimi topla. Her seviye atlayışta yolculuk boyunca kalan üç güç kartından birini seçersin."
+        },
+        {
+          "en": "Between missions, spend crystals on Base modules that last every run. The run ends when you fall, when a dome falls, or when the Magma King is beaten.",
+          "tr": "Görevler arasında kristallerini her yolculukta kalan Üs modüllerine harca. Yolculuk sen düştüğünde, bir kubbe düştüğünde ya da Magma Kralı yenildiğinde biter."
         }
       ],
       "controls": {
         "keyboard": {
-          "en": "WASD or arrows move, Space rolls, Q or J fires your skill, E or K calls the mech once its meter is full, P or Esc pauses. On the Star Map, B opens the Base.",
-          "tr": "WASD ya da oklar yürütür, Boşluk takla attırır, Q ya da J yeteneği kullanır, sayaç dolunca E ya da K mekayı çağırır, P ya da Esc duraklatır. Yıldız Haritası'nda B üssü açar."
+          "en": "WASD or arrows move; hold Space, Z or Enter to fire (a punch up close); Shift or X rolls; Q or J skill; E or K mech; P or Esc pauses. B opens the Base from the Star Map.",
+          "tr": "WASD ya da oklar yürütür; ateş (yakındakine yumruk) için Boşluk, Z ya da Enter'ı basılı tut; Shift ya da X takla, Q ya da J yetenek, E ya da K meka; P ya da Esc duraklatır. Yıldız Haritası'nda B üssü açar."
         },
         "touch": {
-          "en": "Drag anywhere left of the buttons to move. DODGE, SKILL and MECH are on the right, with rings that show when they are ready.",
-          "tr": "Yürümek için düğmelerin solunda herhangi bir yerde sürükle. TAKLA, YETENEK ve MEKA sağda; halkaları ne zaman hazır olduklarını gösterir."
+          "en": "Drag anywhere off the buttons to move. Hold the big FIRE button bottom right; DODGE, SKILL and MECH sit around it, their rings showing when they are ready.",
+          "tr": "Yürümek için düğmelerin dışında herhangi bir yerde sürükle. Sağ alttaki büyük ATEŞ düğmesini basılı tut; TAKLA, YETENEK ve MEKA onun çevresinde, halkaları hazır olduklarını gösterir."
         }
       },
       "tips": [
         {
-          "en": "Roll before a big target. The roll makes you invulnerable for a moment and your next shot after it is a power shot.",
-          "tr": "Büyük bir hedeften önce takla at. Takla bir anlığına seni dokunulmaz yapar, ardından gelen ilk atışın da güçlü atış olur."
+          "en": "Keep FIRE held while you back away: you stay facing the alien you locked onto, so you retreat and shoot at once.",
+          "tr": "Geri çekilirken ATEŞ'i bırakma: kilitlendiğin uzaylıya dönük kalırsın, böylece hem kaçar hem ateş edersin."
         },
         {
-          "en": "Don't linger by an awake nest. Destroying a nest knocks the hive alert down, so finish one before you wander to the next.",
-          "tr": "Uyanmış bir yuvanın yanında oyalanma. Bir yuvayı yıkmak kovan alarmını düşürür; bir sonrakine gitmeden önce elindekini bitir."
+          "en": "Roll before a big target: you are invulnerable for a moment, and a shot within a second after it is a power shot.",
+          "tr": "Büyük bir hedeften önce takla at: bir an dokunulmaz olursun, ardından bir saniye içindeki atışın da güçlü atış olur."
         },
         {
-          "en": "Against a boss, destroy the two hives round the lair first. While they stand, the boss takes only a tenth of your damage.",
-          "tr": "Bossa karşı önce inin etrafındaki iki kovanı yık. Onlar ayaktayken boss verdiğin hasarın yalnızca onda birini alır."
+          "en": "Don't linger by an awake nest. Destroying one knocks the hive alert down.",
+          "tr": "Uyanmış bir yuvanın yanında oyalanma. Bir yuvayı yıkmak kovan alarmını düşürür."
         },
         {
-          "en": "Keep the mech for a hunting wave or a boss. It lasts eight seconds, and the Solar Panels module can start you half charged.",
-          "tr": "Mekayı avcı sürüsü ya da boss için sakla. Sekiz saniye sürer; Güneş Panelleri modülü görevlere yarı dolu başlamanı sağlayabilir."
+          "en": "Against a boss, break the two hives round the lair first: until then it takes a tenth of your damage.",
+          "tr": "Bossa karşı önce inin etrafındaki iki kovanı yık: o zamana dek boss verdiğin hasarın onda birini alır."
         }
       ],
       "features": [
         {
-          "en": "Four animal heroes, each with its own weapon and signature skill",
-          "tr": "Her biri kendi silahı ve özel yeteneğiyle dört hayvan kahraman"
+          "en": "Four animal heroes with their own weapons and skills",
+          "tr": "Kendi silahı ve yeteneği olan dört hayvan kahraman"
         },
         {
           "en": "Twelve open-world planets and three huge bosses",
           "tr": "On iki açık dünya gezegeni ve üç dev boss"
         },
         {
-          "en": "Power cards from Common to Legendary in every run",
-          "tr": "Her yolculukta Sıradan'dan Efsanevi'ye güç kartları"
+          "en": "Power cards from Common to Legendary",
+          "tr": "Sıradan'dan Efsanevi'ye güç kartları"
         },
         {
           "en": "Seven base modules with three ranks each",
@@ -485,12 +489,22 @@
       "faq": [
         {
           "q": {
+            "en": "Does the blaster fire by itself?",
+            "tr": "Silah kendiliğinden ateş ediyor mu?"
+          },
+          "a": {
+            "en": "No. Since version 1.2 you fire by holding FIRE and stop by letting go; the aim assist only picks the target. Cards like Drone Buddy and Nova still act alone.",
+            "tr": "Hayır. 1.2 sürümünden beri ATEŞ'i basılı tutarak ateş eder, bırakınca durursun; nişan yardımı yalnızca hedefi seçer. Drone Dostu ve Nova gibi kartlar kendi başına çalışır."
+          }
+        },
+        {
+          "q": {
             "en": "How are points scored?",
             "tr": "Puanlar nasıl hesaplanıyor?"
           },
           "a": {
-            "en": "Aliens, nests and bosses score as they fall, a fixed rover 300 and a rescued castaway 500. A finished mission adds 400 × its number, 4 points per second under par and 250 per star.",
-            "tr": "Uzaylılar, yuvalar ve bosslar düştükçe puan verir; tamir edilen gezici 300, kurtarılan kazazede 500 puandır. Biten görev numarasının 400 katını, hedef sürenin altındaki her saniye için 4 puanı ve yıldız başına 250 puanı ekler."
+            "en": "Aliens, nests and bosses score as they fall, a fixed rover 300, a castaway 500. A finished mission adds 400 × its number, 4 per second under par and 250 per star.",
+            "tr": "Uzaylılar, yuvalar ve bosslar düştükçe puan verir; tamir edilen gezici 300, kazazede 500 puandır. Biten görev numarasının 400 katını, hedef sürenin altındaki her saniye için 4 puanı ve yıldız başına 250 puanı ekler."
           }
         },
         {
@@ -499,8 +513,8 @@
             "tr": "Her seferinde ilk gezegenden mi başlamam gerekiyor?"
           },
           "a": {
-            "en": "No. Every planet you have unlocked stays open on the Star Map. Within a run the aliens grow tougher with each mission you play, and your base modules carry over between runs.",
-            "tr": "Hayır. Açtığın her gezegen Yıldız Haritası'nda açık kalır. Bir yolculuk içinde oynadığın her görevle uzaylılar güçlenir; üs modüllerin ise yolculuktan yolculuğa seninle gelir."
+            "en": "No. Every unlocked planet stays open on the Star Map. Aliens grow tougher with each mission of a run, and base modules carry over between runs.",
+            "tr": "Hayır. Açtığın her gezegen Yıldız Haritası'nda açık kalır. Bir yolculukta her görevle uzaylılar güçlenir; üs modüllerin ise yolculuktan yolculuğa seninle gelir."
           }
         },
         {
@@ -509,8 +523,8 @@
             "tr": "Kolay modu var mı?"
           },
           "a": {
-            "en": "Yes. On Easy you have 40% more health and the dome is sturdier, while aliens are weaker, slower, hit softer and come in smaller packs, and the hive alert rises more slowly. Easy runs stay off the leaderboard.",
-            "tr": "Evet. Kolay'da canın %40 fazladır ve kubbe daha dayanıklıdır; uzaylılar ise daha zayıf ve yavaştır, daha hafif vurur, daha küçük gruplar halinde gelir, kovan alarmı da daha yavaş dolar. Kolay oyunlar sıralamaya girmez."
+            "en": "Yes. On Easy you have 40% more health and a sturdier dome, and aliens are weaker, slower and come in smaller packs. Easy runs stay off the leaderboard.",
+            "tr": "Evet. Kolay'da canın %40 fazla, kubbe daha dayanıklıdır; uzaylılar daha zayıf ve yavaştır, küçük gruplarla gelir. Kolay oyunlar sıralamaya girmez."
           }
         }
       ]
