@@ -4,12 +4,11 @@
 // dependency of three, already in node_modules).
 //
 //   node games/street-heat/import-city.mjs <kits dir> <layers dir>
-//     <kits dir>    holds the five Quaternius packs as shared by the owner (CC0 1.0 each):
+//     <kits dir>    holds the Quaternius packs as shared by the owner (CC0 1.0 each):
 //                     downtown/   Downtown City MegaKit [Standard] (Exports/glTF (Godot), License_Standard.txt)
 //                     buildings/  Buildings Pack (OBJ + MTL, License.txt)
 //                     cars/       Realistic Car Pack (OBJ + MTL, License.txt)
 //                     transport/  Public Transport Pack (OBJ + MTL, License.txt)
-//                     people/     Posed Background Characters (OBJ + MTL, License.txt)
 //     <layers dir>  the output of import-textures.py (layers.jpg, decals-alpha.png)
 //
 // Writes, each with the pack's licence as license.txt:
@@ -23,9 +22,8 @@
 //       vertex colours (`white` layer), their window panes as `glass`, scaled to metres;
 //   public/assets/quaternius/city-cars/cars.glb           the seven cars;
 //   public/assets/quaternius/public-transport/transport.glb  bus, school bus, ambulance, traffic
-//       light, cone and the three signs;
-//   public/assets/quaternius/posed-people/people.glb      the nine poses, about 1.75 m tall.
-// Vehicles and people: one primitive each, MTL colours (linear) as COLOR_0 and a `_KIND` byte per
+//       light, cone and the three signs.
+// Vehicles: one primitive each, MTL colours (linear) as COLOR_0 and a `_KIND` byte per
 // vertex (KIND below: paint, head and tail lights, glass, beacons, lamps) that the game's shader
 // reads; the paint vertices hold a brightness (the paint colour comes from the game) and the
 // node's extras its stock colour. Vehicles face +z with the wheels on y = 0, centred on x/z.
@@ -48,8 +46,8 @@ const DOWNTOWN = join(kitsDir, 'downtown', 'Exports', 'glTF (Godot)');
 const LAYERS = ['white', 'asphalt', 'pavement', 'metal', 'brick', 'palebrick', 'trim', 'slate', 'ornaments', 'dirt', 'grass',
   'paint', 'decals', 'glass', 'concrete'];
 
-/** Vertex kinds of vehicles and people (the game's shader: scenery.ts KIND). */
-const KIND = { body: 0, paint: 1, head: 2, tail: 3, glass: 4, red: 5, blue: 6, lampR: 7, lampY: 8, lampG: 9, shirt: 10 };
+/** Vertex kinds of vehicles (the game's shader: look.ts KIND). */
+const KIND = { body: 0, paint: 1, head: 2, tail: 3, glass: 4, red: 5, blue: 6, lampR: 7, lampY: 8, lampG: 9 };
 
 // ---------------------------------------------------------------- colours
 
@@ -569,30 +567,6 @@ function transport() {
   return lines;
 }
 
-// ---------------------------------------------------------------- people
-
-function people() {
-  const out = join(ROOT, 'posed-people');
-  mkdirSync(out, { recursive: true });
-  const glb = new Glb();
-  const lines = [];
-  for (const name of ['Male_Walking', 'Male_Running', 'Male_Standing', 'Male_Standing_Hips', 'Male_Standing_Waving', 'Female_Walking', 'Female_Running', 'Female_Standing', 'Female_Standing_Hips', 'Woman_Standing_Waving']) {
-    const kd = parseMtl(readFileSync(join(kitsDir, 'people', name + '.mtl'), 'utf8'));
-    const m = objModel(join(kitsDir, 'people', name + '.obj'), {
-      height: name.includes('Waving') ? 2.0 : 1.75, ratio: 0.4,
-      color: (mt) => mt === 'Shirt' ? [1, 1, 1] : kd[mt] ?? [0.5, 0.5, 0.5],
-      kind: (mt) => mt === 'Shirt' ? KIND.shirt : KIND.body,
-    });
-    glb.model(name, [{ ...m, material: 'person' }]);
-    lines.push(`${name} ${fmt(m)}`);
-  }
-  const size = glb.write(join(out, 'people.glb'));
-  copyFileSync(join(kitsDir, 'people', 'License.txt'), join(out, 'license.txt'));
-  console.log(lines.join('\n'));
-  console.log('people.glb', (size / 1024).toFixed(0), 'KB');
-  return lines;
-}
-
 // ---------------------------------------------------------------- town buildings
 
 /** The Buildings Pack: scaled to metres; the dark panes are window glass (lit at night). */
@@ -643,14 +617,13 @@ function town() {
   return lines;
 }
 
-const which = process.argv[4]?.split(',') ?? ['downtown', 'cars', 'transport', 'people', 'town'];
+const which = process.argv[4]?.split(',') ?? ['downtown', 'cars', 'transport', 'town'];
 const report = {};
 if (which.includes('downtown')) report.downtown = downtown();
 if (which.includes('cars')) report.cars = cars();
 if (which.includes('transport')) report.transport = transport();
-if (which.includes('people')) report.people = people();
 if (which.includes('town')) report.town = town();
 writeFileSync(join(layersDir, 'import-report.json'), JSON.stringify(report, null, 1));
-for (const f of ['downtown-city/city.glb', 'city-cars/cars.glb', 'public-transport/transport.glb', 'posed-people/people.glb', 'town-buildings/buildings.glb']) {
+for (const f of ['downtown-city/city.glb', 'city-cars/cars.glb', 'public-transport/transport.glb', 'town-buildings/buildings.glb']) {
   try { console.log(f, statSync(join(ROOT, f)).size); } catch { /* not written this run */ }
 }

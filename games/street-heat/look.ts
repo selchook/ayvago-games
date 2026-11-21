@@ -1,8 +1,8 @@
 // Street Heat: how the city is drawn. One array texture holds the Downtown kit's materials (15
 // layers of 256 px, import-textures.py); everything static in the city (buildings, roads, curbs,
 // props, trees) draws with one flat-shaded Lambert material that maps those layers in world space
-// (box mapping by the face's normal), so a chunk of the city is one draw call. Vehicles and people
-// draw with a second material that reads each vertex's kind (paint, lights, glass, beacons).
+// (box mapping by the face's normal), so a chunk of the city is one draw call. Vehicles draw with a
+// second material that reads each vertex's kind (paint, lights, glass, beacons).
 //
 // The night is faked in the same shaders: the nearest street lamps (sodium pools), the player's
 // headlights (a cone), the police beacons (red and blue points) and the job markers add light per
@@ -19,8 +19,8 @@ export const L: Record<Layer, number> = Object.fromEntries([...LAYERS.map((n, i)
 const SCALE = [1, 6, 3, 4, 3, 3, 4, 3, 3, 4, 6, 3, 1, 3, 4, 3, 1, 1];
 const TEX = 256;
 
-/** Vertex kinds of vehicles and people (import-city.mjs KIND). */
-export const KIND = { body: 0, paint: 1, head: 2, tail: 3, glass: 4, red: 5, blue: 6, lampR: 7, lampY: 8, lampG: 9, shirt: 10 } as const;
+/** Vertex kinds of vehicles (import-city.mjs KIND). */
+export const KIND = { body: 0, paint: 1, head: 2, tail: 3, glass: 4, red: 5, blue: 6, lampR: 7, lampY: 8, lampG: 9 } as const;
 
 // ------------------------------------------------------------------ the layers
 
@@ -280,11 +280,11 @@ if (lay == 13.0 || lay == 15.0) {
   return mat;
 }
 
-// ------------------------------------------------------------------ vehicles and people
+// ------------------------------------------------------------------ vehicles
 
 /**
- * Vehicles and people (instanced): vertex colours, `_kind` per vertex, per instance a paint
- * colour (instanceColor) and aState = (brake or lamp, beacon on, damage, lights on).
+ * Vehicles (instanced): vertex colours, `_kind` per vertex, per instance a paint colour
+ * (instanceColor) and aState = (brake or lamp, beacon on, damage, lights on).
  */
 export function vehicleMaterial(lights: NightLights): THREE.MeshLambertMaterial {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
@@ -293,8 +293,8 @@ export function vehicleMaterial(lights: NightLights): THREE.MeshLambertMaterial 
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float _kind;\nattribute vec4 aState;\nvarying float vKind;\nvarying vec4 vState;\nvarying vec3 vWp;')
       .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = vec3(0.0, 1.0, 0.0);')
-      // only the paint (and the shirts) take the instance colour
-      .replace('#include <color_vertex>', '#include <color_vertex>\nvKind = _kind;\nvState = aState;\n#ifdef USE_INSTANCING_COLOR\nif (abs(_kind - 1.0) > 0.5 && abs(_kind - 10.0) > 0.5) vColor.rgb = color.rgb;\n#endif')
+      // only the paint takes the instance colour
+      .replace('#include <color_vertex>', '#include <color_vertex>\nvKind = _kind;\nvState = aState;\n#ifdef USE_INSTANCING_COLOR\nif (abs(_kind - 1.0) > 0.5) vColor.rgb = color.rgb;\n#endif')
       .replace('#include <project_vertex>', '#include <project_vertex>\n' + WORLD_POS);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\nvarying float vKind;\nvarying vec4 vState;\nvarying vec3 vWp;\n${LIGHT_GLSL}`)

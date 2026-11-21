@@ -1,7 +1,7 @@
 // Street Heat: the 3D view of the simulation. The city is built per block ("chunk"): a detailed
 // mesh (buildings, lamps, markings, props, trees, neon) near the camera and a box mesh (lit window
 // grids) farther out, all on the one city material (look.ts), plus one mesh of streets and
-// sidewalks for the whole city. Cars, people, props and traffic lights are instanced per model; the
+// sidewalks for the whole city. Cars, props and traffic lights are instanced per model; the
 // night's light, the particles, tyre marks, glows and markers come from fx3d.ts. The camera follows
 // the car (chase, far or bumper view), shakes on hits and widens with nitro.
 import { THREE, World3D } from '@core/three';
@@ -18,8 +18,6 @@ export type CamMode = 'chase' | 'far' | 'bumper';
 const MARKER_COLOR: Record<MarkerKind, number> = { pickup: 0x3ef2ff, drop: 0x5dff7a, check: 0xffd23f, phone: 0xffb03a, fare: 0xffe36a, spray: 0xff4fa3, garage: 0x6aa8ff, stunt: 0xff7a1a, target: 0xff3f6a };
 export { MARKER_COLOR };
 
-const SHIRTS = [0xd8342a, 0x2a6fd8, 0xf2f2f0, 0x2fae5a, 0xf2b81a, 0x7a3ad8, 0xff8a1e, 0x3a3d44];
-const POSES = ['Male_Walking', 'Male_Running', 'Male_Standing', 'Male_Standing_Hips', 'Male_Standing_Waving', 'Female_Walking', 'Female_Running', 'Female_Standing', 'Female_Standing_Hips', 'Woman_Standing_Waving'];
 
 interface Inst { mesh: THREE.InstancedMesh; state: THREE.InstancedBufferAttribute; n: number }
 interface Chunk { cx: number; cz: number; detail: THREE.Mesh | null; lod: THREE.Mesh | null; built: number }
@@ -90,7 +88,6 @@ export class View {
   private base: THREE.Mesh | null = null;
   private border: THREE.Mesh | null = null;
   private cars = new Map<string, Inst>();
-  private peds = new Map<string, Inst>();
   private props = new Map<string, Inst>();
   private signals: Inst | null = null;
   readonly smoke: Particles;
@@ -509,7 +506,7 @@ export class View {
 
   // ---------------------------------------------------------------- every frame
 
-  /** Draws the sim (and the job's markers): cars, people, props, lights, camera. */
+  /** Draws the sim (and the job's markers): cars, props, lights, camera. */
   sync(sim: Sim, job: Job | null, dt: number, opts: { lights?: boolean; player?: boolean } = {}): void {
     this.time += dt;
     // keep this world's shader programs alive for the next scene (keepPrograms below): soon after
@@ -537,26 +534,7 @@ export class View {
       this.put(it, c.x, c.y, c.z, c.h, pitch, roll, c.paint, c.brakeLight || hazard ? 1 : 0, siren, dmg, nightOn);
     }
     this.end(this.cars);
-    // people
-    this.begin(this.peds);
-    for (const ped of sim.peds) {
-      if (Math.hypot(ped.x - camX, ped.z - camZ) > 100) continue;
-      const female = ped.model === 1;
-      let pose: number;
-      let tilt = 0;
-      const step = Math.floor(ped.frame * 3.2) % 2;
-      switch (ped.state) {
-        case 'walk': case 'cross': pose = step ? 0 : 2; break;
-        case 'run': pose = Math.floor(ped.frame * 5) % 2 ? 1 : 0; break;
-        case 'dive': pose = 1; tilt = 0.5; break;
-        default: pose = [2, 3, 4][ped.idle];
-      }
-      const name = POSES[(female ? 5 : 0) + pose];
-      const it = this.inst(this.peds, name, 70, () => kindGeometry('people:' + name));
-      if (!it) continue;
-      this.put(it, ped.x, this.city.offRoad(ped.x, ped.z) ? CURB : 0, ped.z, ped.h, tilt, 0, SHIRTS[ped.shirt], 0, 0, 0, 0);
-    }
-    this.end(this.peds);
+    // people: none on the sidewalks for now (Sim.spawnWalkers is where they will come from)
     // props
     this.begin(this.props);
     for (const pr of sim.props) {

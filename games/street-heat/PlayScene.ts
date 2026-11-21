@@ -405,7 +405,6 @@ export class PlayScene extends ArcadeScene {
         this.sfx(ev.kind === 'cone' || ev.kind === 'sign' ? 'clonk' : ev.kind === 'bin' ? 'bin' : 'thump', { volume: 0.5 });
         break;
       }
-      case 'dive': this.sfx('hey', { volume: 0.35 }); break;
       case 'honk': if (Math.hypot(ev.x - p.x, ev.z - p.z) < 30) this.sfx('sh-horn', { volume: 0.22, rate: 0.85 }); break;
       case 'horn': this.sfx('sh-horn', { volume: 0.55, exact: true }); break;
       case 'nitro': this.sfx('nitro', { volume: 0.6 }); this.word(W / 2, 420, t('nitroGo'), '#7ff6ff'); padRumble(300, 0.5); break;

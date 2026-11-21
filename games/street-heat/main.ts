@@ -73,7 +73,6 @@ launch({
     loadAudio(l, 'go', G + 'menu-sounds/sfx-menu-select2');
     loadAudio(l, 'tick', G + 'simple-bleeps/sfx-sounds-blip3');
     loadAudio(l, 'blip', G + 'simple-bleeps/sfx-sounds-blip2');
-    loadAudio(l, 'hey', G + 'negative-sounds/sfx-sounds-damage1');
     loadAudio(l, 'pop', J + 'explosions/shortest/sfx-exp-shortest-soft5');
     loadAudio(l, 'sh-buy', G + 'coins/sfx-coin-cluster5');
     loadAudio(l, 'sh-deny', G + 'negative-sounds/sfx-sounds-error1');
