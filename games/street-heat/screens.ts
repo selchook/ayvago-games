@@ -249,9 +249,15 @@ export class Garage {
   private release: () => void;
   private keys: [string, () => void][] = [];
   private cash!: GlyphText;
+  /** Keyboard / gamepad focus: the car list, or a row of the panel (0 buy, 1–4 upgrades, 5 paint). */
+  private zone: 'cars' | 'panel' = 'cars';
+  private row = 0;
+  private paintIdx = 0;
+  private rowBoxes: [number, number, number, number][] = [];
 
   constructor(private scene: Phaser.Scene, private meta: Meta, private onChange: () => void, private onClose: () => void) {
     this.sel = meta.car;
+    this.paintIdx = Math.max(0, PAINTS.indexOf(meta.paint));
     this.root = scene.add.container(0, 0).setDepth(UI_DEPTH + 100).setScrollFactor(0);
     this.release = pushModal(scene);
     this.root.add(fitWidth(labelAt(scene, 165, 70, caps(t('garage')), HEAD), 280));
@@ -271,14 +277,41 @@ export class Garage {
     const kb = scene.input.keyboard;
     if (kb) {
       const on = (key: string, fn: () => void) => { const h = () => { if (this.root.active) fn(); }; kb.on('keydown-' + key, h); this.keys.push(['keydown-' + key, h]); };
-      on('UP', () => this.stepCar(-1));
-      on('DOWN', () => this.stepCar(1));
-      on('ENTER', () => this.buyOrSelect());
-      on('SPACE', () => this.buyOrSelect());
+      on('UP', () => this.step(-1));
+      on('DOWN', () => this.step(1));
+      on('LEFT', () => this.side(-1));
+      on('RIGHT', () => this.side(1));
+      on('ENTER', () => this.activate());
+      on('SPACE', () => this.activate());
       on('BACKSPACE', () => this.close());
       on('ESC', () => this.close());
       on('G', () => this.close());
     }
+  }
+
+  private step(d: number): void {
+    if (this.zone === 'cars') { this.stepCar(d); return; }
+    this.row = Math.max(0, Math.min(5, this.row + d));
+    this.build();
+  }
+
+  private side(d: number): void {
+    if (this.zone === 'cars') {
+      if (d > 0) { this.zone = 'panel'; this.row = 0; this.build(); }
+      return;
+    }
+    if (this.row === 5 && !(d < 0 && this.paintIdx === 0)) {
+      this.paintIdx = Math.max(0, Math.min(PAINTS.length - 1, this.paintIdx + d));
+    } else if (d < 0) {
+      this.zone = 'cars';
+    }
+    this.build();
+  }
+
+  private activate(): void {
+    if (this.zone === 'cars' || this.row === 0) this.buyOrSelect();
+    else if (this.row <= UPGRADES.length) this.upgrade(UPGRADES[this.row - 1].id);
+    else this.paint(PAINTS[this.paintIdx]);
   }
 
   private stepCar(d: number): void {
@@ -288,6 +321,7 @@ export class Garage {
 
   private pick(id: CarId): void {
     this.sel = id;
+    this.zone = 'cars';
     this.cars.forEach((b, i) => b.setSelected(CARS[i].id === id));
     if (this.meta.cars.includes(id)) { this.meta.car = id; saveMeta(this.meta); this.onChange(); }
     this.build();
@@ -313,6 +347,7 @@ export class Garage {
     this.panel.removeAll(true);
     this.cash.setText(fmtMoney(m.cash));
     const cx = 960, cy = 365, w = PANEL.garageW, h = PANEL.garageH;
+    this.rowBoxes = [];
     this.panel.add(themeCard(sc, cx, cy, w, h));
     const spec = carSpec(this.sel);
     const hand = handling(spec, m.up);
@@ -341,6 +376,7 @@ export class Garage {
     const buy = new KitButton(sc, cx + w / 2 - 130, cy - h / 2 + 64, { w: 220, h: 60, label, size: 22, color: owned ? CYAN : ORANGE, on: inUse, tapWhenOff: true }, () => this.buyOrSelect());
     buy.setEnabled(owned || (open && m.cash >= spec.price));
     this.panel.add(buy);
+    this.rowBoxes.push([cx + w / 2 - 130, cy - h / 2 + 64, 232, 72]);
     if (spec.id === 'taxi') this.panel.add(fitWidth(labelAt(sc, cx, y + 4, t('taxiNote'), INK_SMALL), w - 60));
     y += 34;
     // upgrades (for every car)
@@ -358,6 +394,7 @@ export class Garage {
       const b = new KitButton(sc, cx + w / 2 - 110, y, { w: 170, h: 46, label: lvl >= 3 ? t('maxed') : fmtMoney(price), size: 22, color: lvl >= 3 ? 0x5a5470 : 0x2fae5a, tapWhenOff: true }, () => this.upgrade(u.id));
       b.setEnabled(lvl < 3 && m.cash >= price);
       this.panel.add(b);
+      this.rowBoxes.push([cx + w / 2 - 110, y, 182, 58]);
       y += 54;
     }
     // paint
@@ -373,7 +410,15 @@ export class Garage {
       g.setInteractive(new Phaser.Geom.Circle(x, y, 28), Phaser.Geom.Circle.Contains);
       g.on('pointerup', () => this.paint(c));
       this.panel.add(g);
+      if (i === this.paintIdx) this.rowBoxes.push([x, y, 62, 62]);
     });
+    // keyboard / gamepad focus ring
+    if (this.zone === 'panel') {
+      const [fx, fy, fw, fh] = this.rowBoxes[this.row];
+      const ring = sc.add.graphics();
+      ring.lineStyle(4, CYAN, 1).strokeRoundedRect(fx - fw / 2, fy - fh / 2, fw, fh, this.row === 5 ? 31 : 12);
+      this.panel.add(ring);
+    }
   }
 
   private upgrade(id: UpgradeId): void {
