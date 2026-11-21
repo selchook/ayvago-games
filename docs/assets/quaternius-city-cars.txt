@@ -1,10 +1,12 @@
-quaternius/city-cars/cars.glb 194KB (7 models as root nodes, 9828 tris in all, no normals: flat-shaded, quantized)
-  one primitive each: COLOR_0 (linear MTL colours; the paint as a brightness) and _KIND per vertex (0 body, 1 paint, 2 head lights, 3 tail lights, 4 glass, 5 red and 6 blue beacons); the stock paint in the node's extras; facing +z, wheels on y = 0.
-  model size (x × y × z, metres), triangles, height range, materials:
-  NormalCar1 1.81x1.18x4.21 1318 tris, y 0.00..1.18, vehicle, stock paint 0.28,0.43,0.64
-  NormalCar2 1.64x1.15x3.30 1484 tris, y 0.00..1.15, vehicle, stock paint 0.46,0.55,0.64
-  SUV 2.11x1.51x4.18 1402 tris, y 0.00..1.51, vehicle, stock paint 0.56,0.56,0.56
-  SportsCar 1.80x1.16x3.96 1344 tris, y 0.00..1.16, vehicle, stock paint 0.64,0.27,0.09
-  SportsCar2 1.87x1.20x3.93 1392 tris, y -0.00..1.20, vehicle, stock paint 0.55,0.55,0.55
-  Taxi 1.81x1.31x4.21 1460 tris, y 0.00..1.31, vehicle, stock paint 0.64,0.47,0.05
-  Cop 1.78x1.24x3.73 1428 tris, y -0.00..1.24, vehicle
+quaternius/city-cars/cars.glb 91KB (8 models as root nodes, 4612 tris in all, no normals: flat-shaded, quantized)
+  one primitive each: COLOR_0 (linear MTL colours; the paint as a brightness) and _KIND per vertex (0 body, 1 paint, 2 head lights, 3 tail lights, 4 glass, 5 red and 6 blue beacons, 10 rim, 11 tread); the stock paint in the node's extras; facing +z, wheels on y = 0.
+  the wheels are split off the bodies (import-city.mjs --wheels): each car's extras hold wheels { r, w, hubs: [[x, y, z] x 4, front first], rim: linear RGB } and the shared Wheel (radius 1, width 1, axle along x, hub at the origin, outer face at +x) draws all of them, scaled to r and w.
+  model size (x × y × z, metres), triangles, height range, stock paint, wheel radius and width (m):
+  NormalCar1 1.81x1.01x4.21 592 tris, y 0.16..1.18, stock paint 0.28,0.43,0.64, wheels r 0.262 w 0.167
+  NormalCar2 1.64x0.97x3.30 640 tris, y 0.17..1.15, stock paint 0.46,0.55,0.64, wheels r 0.248 w 0.18
+  SUV 2.11x1.26x4.18 622 tris, y 0.25..1.51, stock paint 0.56,0.56,0.56, wheels r 0.327 w 0.224
+  SportsCar 1.80x0.97x3.96 612 tris, y 0.18..1.16, stock paint 0.64,0.27,0.09, wheels r 0.26 w 0.166
+  SportsCar2 1.87x1.04x3.93 660 tris, y 0.17..1.20, stock paint 0.55,0.55,0.55, wheels r 0.28 w 0.153
+  Taxi 1.81x1.15x4.21 726 tris, y 0.16..1.31, stock paint 0.64,0.47,0.05, wheels r 0.262 w 0.167
+  Cop 1.78x1.13x3.73 600 tris, y 0.11..1.24, wheels r 0.275 w 0.175
+  Wheel 1.00x2.00x2.00 160 tris, y -1.00..1.00 (20 sides: tread, side walls, a recessed rim)
