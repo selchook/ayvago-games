@@ -1,8 +1,9 @@
 // Street Heat: how the city is drawn. One array texture holds the Downtown kit's materials (15
 // layers of 256 px, import-textures.py); everything static in the city (buildings, roads, curbs,
 // props, trees) draws with one flat-shaded Lambert material that maps those layers in world space
-// (box mapping by the face's normal), so a chunk of the city is one draw call. Vehicles and people
-// draw with a second material that reads each vertex's kind (paint, lights, glass, beacons).
+// (box mapping by the face's normal), so a chunk of the city is one draw call. Vehicles and their
+// wheels draw with a second material that reads each vertex's kind (paint, lights, glass, beacons,
+// the rims, whose spokes it paints).
 //
 // The night is faked in the same shaders: the nearest street lamps (sodium pools), the player's
 // headlights (a cone), the police beacons (red and blue points) and the job markers add light per
@@ -19,8 +20,8 @@ export const L: Record<Layer, number> = Object.fromEntries([...LAYERS.map((n, i)
 const SCALE = [1, 6, 3, 4, 3, 3, 4, 3, 3, 4, 6, 3, 1, 3, 4, 3, 1, 1];
 const TEX = 256;
 
-/** Vertex kinds of vehicles and people (import-city.mjs KIND). */
-export const KIND = { body: 0, paint: 1, head: 2, tail: 3, glass: 4, red: 5, blue: 6, lampR: 7, lampY: 8, lampG: 9, shirt: 10 } as const;
+/** Vertex kinds of vehicles (import-city.mjs KIND). */
+export const KIND = { body: 0, paint: 1, head: 2, tail: 3, glass: 4, red: 5, blue: 6, lampR: 7, lampY: 8, lampG: 9, rim: 10, tread: 11 } as const;
 
 // ------------------------------------------------------------------ the layers
 
@@ -280,27 +281,45 @@ if (lay == 13.0 || lay == 15.0) {
   return mat;
 }
 
-// ------------------------------------------------------------------ vehicles and people
+// ------------------------------------------------------------------ vehicles
 
 /**
- * Vehicles and people (instanced): vertex colours, `_kind` per vertex, per instance a paint
- * colour (instanceColor) and aState = (brake or lamp, beacon on, damage, lights on).
+ * Vehicles (instanced): vertex colours, `_kind` per vertex, per instance a paint colour
+ * (instanceColor) and aState = (brake or lamp, beacon on, damage, lights on).
+ *
+ * Wheels (`cars:Wheel`, instanced, radius 1 with the axle along x): the instance colour is the
+ * rim's, aState.x the blur (0 still … 1 fast). The rim (KIND.rim) gets five spokes and the tread
+ * (KIND.tread) eight grooves from the angle of the point round the axle in the wheel's own space,
+ * so they turn with it; at speed they fade towards a blurred disc, as on film, but never quite
+ * out (the grooves, which repeat sooner, further).
  */
 export function vehicleMaterial(lights: NightLights): THREE.MeshLambertMaterial {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   mat.onBeforeCompile = (sh) => {
     bindLights(sh, lights);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float _kind;\nattribute vec4 aState;\nvarying float vKind;\nvarying vec4 vState;\nvarying vec3 vWp;')
+      .replace('#include <common>', '#include <common>\nattribute float _kind;\nattribute vec4 aState;\nvarying float vKind;\nvarying vec4 vState;\nvarying vec3 vWp;\nvarying vec3 vLocal;')
       .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = vec3(0.0, 1.0, 0.0);')
-      // only the paint (and the shirts) take the instance colour
-      .replace('#include <color_vertex>', '#include <color_vertex>\nvKind = _kind;\nvState = aState;\n#ifdef USE_INSTANCING_COLOR\nif (abs(_kind - 1.0) > 0.5 && abs(_kind - 10.0) > 0.5) vColor.rgb = color.rgb;\n#endif')
+      // only the paint (and the rims) take the instance colour
+      .replace('#include <color_vertex>', '#include <color_vertex>\nvKind = _kind;\nvState = aState;\nvLocal = position;\n#ifdef USE_INSTANCING_COLOR\nif (abs(_kind - 1.0) > 0.5 && abs(_kind - 10.0) > 0.5) vColor.rgb = color.rgb;\n#endif')
       .replace('#include <project_vertex>', '#include <project_vertex>\n' + WORLD_POS);
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying float vKind;\nvarying vec4 vState;\nvarying vec3 vWp;\n${LIGHT_GLSL}`)
+      .replace('#include <common>', `#include <common>\nvarying float vKind;\nvarying vec4 vState;\nvarying vec3 vWp;\nvarying vec3 vLocal;\n${LIGHT_GLSL}`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 float k = floor(vKind + 0.5);
 vec3 shN = normalize(cross(dFdx(vWp), dFdy(vWp)));
+if (k == 10.0) {
+  // the rim (radius 0.64 of the wheel): a hub cap, five spokes and the outer lip
+  float rr = length(vLocal.yz) / 0.64;
+  float spoke = smoothstep(0.2, 0.5, cos(atan(vLocal.z, vLocal.y) * 5.0));
+  float metal = max(max(spoke, 1.0 - step(0.3, rr)), step(0.84, rr));
+  metal = mix(metal, 0.6, vState.x * 0.55);
+  diffuseColor.rgb *= mix(0.1, 1.0, metal);
+}
+if (k == 11.0) {
+  float g = smoothstep(0.15, 0.6, cos(atan(vLocal.z, vLocal.y) * 8.0));
+  diffuseColor.rgb *= mix(1.0, mix(0.35, 2.2, g), 1.0 - vState.x * 0.85);
+}
 // soot: damage darkens the body
 diffuseColor.rgb *= 1.0 - vState.z * 0.55 * step(k, 1.5);
 float on = max(vState.w, uNight);

@@ -3,13 +3,14 @@
 // run: the glTF, OBJ and MTL files are read as data and rewritten. Needs only `meshoptimizer` (a
 // dependency of three, already in node_modules).
 //
-//   node games/street-heat/import-city.mjs <kits dir> <layers dir>
-//     <kits dir>    holds the five Quaternius packs as shared by the owner (CC0 1.0 each):
+//   node games/street-heat/import-city.mjs <kits dir> <layers dir> [downtown,cars,transport,town]
+//   node games/street-heat/import-city.mjs --wheels     (only re-splits the wheels of the cars.glb
+//                                                        and transport.glb already in public/assets)
+//     <kits dir>    holds the Quaternius packs as shared by the owner (CC0 1.0 each):
 //                     downtown/   Downtown City MegaKit [Standard] (Exports/glTF (Godot), License_Standard.txt)
 //                     buildings/  Buildings Pack (OBJ + MTL, License.txt)
 //                     cars/       Realistic Car Pack (OBJ + MTL, License.txt)
 //                     transport/  Public Transport Pack (OBJ + MTL, License.txt)
-//                     people/     Posed Background Characters (OBJ + MTL, License.txt)
 //     <layers dir>  the output of import-textures.py (layers.jpg, decals-alpha.png)
 //
 // Writes, each with the pack's licence as license.txt:
@@ -21,14 +22,22 @@
 //   public/assets/quaternius/downtown-city/layers.jpg, decals-alpha.png   the array texture's layers;
 //   public/assets/quaternius/town-buildings/buildings.glb   the nine buildings, MTL colours as
 //       vertex colours (`white` layer), their window panes as `glass`, scaled to metres;
-//   public/assets/quaternius/city-cars/cars.glb           the seven cars;
+//   public/assets/quaternius/city-cars/cars.glb           the seven cars and the shared `Wheel`;
 //   public/assets/quaternius/public-transport/transport.glb  bus, school bus, ambulance, traffic
-//       light, cone and the three signs;
-//   public/assets/quaternius/posed-people/people.glb      the nine poses, about 1.75 m tall.
-// Vehicles and people: one primitive each, MTL colours (linear) as COLOR_0 and a `_KIND` byte per
-// vertex (KIND below: paint, head and tail lights, glass, beacons, lamps) that the game's shader
-// reads; the paint vertices hold a brightness (the paint colour comes from the game) and the
-// node's extras its stock colour. Vehicles face +z with the wheels on y = 0, centred on x/z.
+//       light, cone and the three signs.
+// Vehicles: one primitive each, MTL colours (linear) as COLOR_0 and a `_KIND` byte per vertex (KIND
+// below: paint, head and tail lights, glass, beacons, lamps, rims) that the game's shader reads; the
+// paint vertices hold a brightness (the paint colour comes from the game) and the node's extras its
+// stock colour. Vehicles face +z with the wheels on y = 0, centred on x/z.
+// Wheels: the kits' wheels are part of the body (and low-poly hexagons, the buses' squashed), so
+// they cannot turn. splitWheels() takes them out of every vehicle (the tyres are the dark parts
+// touching the ground at the four corners; everything inside a tyre's box goes with it) and puts
+// their places in the node's extras: `wheels: { r, w, hubs: [[x, y, z] × 4], rim: [r, g, b] }`
+// (radius and width in metres, the hubs in the model's space, front ones at +z). One round
+// `Wheel` (wheelModel(): radius 1, width 1, the axle along x, the hub at the origin, the outer
+// face at +x, the rim's vertices KIND.rim, the tread's KIND.tread) in cars.glb draws them all: the
+// game scales, steers and spins it per wheel, instanced, and paints the rim's spokes and the
+// tread's grooves in its shader.
 // No normals anywhere (drawn flat-shaded), so vertices weld; positions quantized to 16 bits
 // (KHR_mesh_quantization, the node's scale and translation undo it).
 import { createRequire } from 'node:module';
@@ -36,10 +45,11 @@ import { join } from 'node:path';
 import { mkdirSync, readFileSync, writeFileSync, copyFileSync, statSync } from 'node:fs';
 
 const [kitsDir, layersDir] = process.argv.slice(2);
-if (!kitsDir || !layersDir) throw new Error('usage: node import-city.mjs <kits dir> <layers dir>');
+if (kitsDir !== '--wheels' && (!kitsDir || !layersDir)) throw new Error('usage: node import-city.mjs <kits dir> <layers dir> | --wheels');
 const req = createRequire(join(import.meta.dirname, '../../node_modules/x.js'));
-const { MeshoptSimplifier } = req('meshoptimizer');
-await MeshoptSimplifier.ready;
+// the simplifier is needed for a full import only (not for --wheels)
+const { MeshoptSimplifier } = kitsDir === '--wheels' ? { MeshoptSimplifier: null } : req('meshoptimizer');
+await MeshoptSimplifier?.ready;
 
 const ROOT = join(import.meta.dirname, '../../public/assets/quaternius');
 const DOWNTOWN = join(kitsDir, 'downtown', 'Exports', 'glTF (Godot)');
@@ -48,8 +58,8 @@ const DOWNTOWN = join(kitsDir, 'downtown', 'Exports', 'glTF (Godot)');
 const LAYERS = ['white', 'asphalt', 'pavement', 'metal', 'brick', 'palebrick', 'trim', 'slate', 'ornaments', 'dirt', 'grass',
   'paint', 'decals', 'glass', 'concrete'];
 
-/** Vertex kinds of vehicles and people (the game's shader: scenery.ts KIND). */
-const KIND = { body: 0, paint: 1, head: 2, tail: 3, glass: 4, red: 5, blue: 6, lampR: 7, lampY: 8, lampG: 9, shirt: 10 };
+/** Vertex kinds of vehicles (the game's shader: look.ts KIND). */
+const KIND = { body: 0, paint: 1, head: 2, tail: 3, glass: 4, red: 5, blue: 6, lampR: 7, lampY: 8, lampG: 9, rim: 10, tread: 11 };
 
 // ---------------------------------------------------------------- colours
 
@@ -502,6 +512,102 @@ function objModel(file, o) {
 
 const fmt = (m) => `${m.size.map((v) => v.toFixed(2)).join('x')} ${m.before}→${m.after} tris`;
 
+// ---------------------------------------------------------------- wheels
+
+/**
+ * Takes the wheels out of a vehicle `{ pos, col, kind, idx }` (one primitive, model space). Tyres:
+ * dark connected parts that touch the ground (y < 3 cm), stand under 0.9 m, are at most 0.5 m wide
+ * and sit off the centre line; each part wholly inside a tyre's box (rim, slots, nuts) goes with
+ * it. Returns the body without them and the wheels' extras, or wheels null (no four tyres found).
+ */
+function splitWheels(m) {
+  const nv = m.pos.length / 3;
+  const par = new Int32Array(nv).map((_, i) => i);
+  const find = (a) => { while (par[a] !== a) { par[a] = par[par[a]]; a = par[a]; } return a; };
+  for (let i = 0; i < m.idx.length; i += 3) { const a = find(m.idx[i]); par[find(m.idx[i + 1])] = a; par[find(m.idx[i + 2])] = a; }
+  const parts = new Map();
+  for (let v = 0; v < nv; v++) {
+    const r = find(v);
+    let p = parts.get(r);
+    if (!p) { p = { mn: [Infinity, Infinity, Infinity], mx: [-Infinity, -Infinity, -Infinity], dark: 0, n: 0, col: [0, 0, 0] }; parts.set(r, p); }
+    p.n++;
+    for (let k = 0; k < 3; k++) { p.mn[k] = Math.min(p.mn[k], m.pos[v * 3 + k]); p.mx[k] = Math.max(p.mx[k], m.pos[v * 3 + k]); p.col[k] += m.col[v * 3 + k]; }
+    if (lum([m.col[v * 3], m.col[v * 3 + 1], m.col[v * 3 + 2]]) < 0.06 && m.kind[v] === KIND.body) p.dark++;
+  }
+  const all = bounds(m.pos);
+  const halfW = (all.mx[0] - all.mn[0]) / 2;
+  const tyres = [...parts.values()].filter((p) => p.mn[1] < 0.03 && p.mx[1] < 0.9 && p.mx[0] - p.mn[0] < 0.5 && p.dark > p.n * 0.8
+    && Math.abs((p.mn[0] + p.mx[0]) / 2) > halfW * 0.4);
+  if (tyres.length !== 4) return { body: m, wheels: null };
+  const inside = (p, t) => [0, 1, 2].every((k) => p.mn[k] >= t.mn[k] - 0.03 && p.mx[k] <= t.mx[k] + 0.03);
+  const drop = new Set();
+  let rim = null;
+  for (const [root, p] of parts) {
+    const t = tyres.find((ty) => inside(p, ty));
+    if (!t) continue;
+    drop.add(root);
+    // the rim: the biggest light part in a tyre
+    if (p !== t && p.n > 20 && (!rim || p.n > rim.n)) rim = p;
+  }
+  // the body: triangles of the parts kept, vertices compacted
+  const keep = [];
+  for (let i = 0; i < m.idx.length; i += 3) if (!drop.has(find(m.idx[i]))) keep.push(m.idx[i], m.idx[i + 1], m.idx[i + 2]);
+  const map = new Int32Array(nv).fill(-1), P = [], C = [], K = [];
+  const idx = new Uint32Array(keep.length);
+  keep.forEach((v, i) => {
+    if (map[v] < 0) { map[v] = P.length / 3; P.push(m.pos[v * 3], m.pos[v * 3 + 1], m.pos[v * 3 + 2]); C.push(m.col[v * 3], m.col[v * 3 + 1], m.col[v * 3 + 2]); K.push(m.kind[v]); }
+    idx[i] = map[v];
+  });
+  // one size for the four, round: the larger of the tyres' height and length (the cars' hexagons
+  // stand on a corner, the buses' tyres are squashed in y; the body hides the top)
+  const r = tyres.reduce((a, t) => a + Math.max(t.mx[1] - t.mn[1], t.mx[2] - t.mn[2]), 0) / 8;
+  const w = tyres.reduce((a, t) => a + (t.mx[0] - t.mn[0]), 0) / 4;
+  const hubs = tyres.map((t) => [(t.mn[0] + t.mx[0]) / 2, r, (t.mn[2] + t.mx[2]) / 2].map((v) => +v.toFixed(3)))
+    .sort((a, b) => b[2] - a[2] || b[0] - a[0]);
+  // the rim's colour (linear), lightened so the spokes read at night
+  const rc = rim ? rim.col.map((v) => v / rim.n) : [0.16, 0.16, 0.16];
+  const rimColor = rc.map((v) => +Math.min(0.75, Math.max(0.42, v * 3.2)).toFixed(3));
+  const body = { ...m, pos: new Float32Array(P), col: new Float32Array(C), kind: new Uint8Array(K), idx };
+  return { body, wheels: { r: +r.toFixed(3), w: +w.toFixed(3), hubs, rim: rimColor }, dropped: nv - P.length / 3 };
+}
+
+/**
+ * The shared wheel: radius 1, width 1, the axle along x with the hub at the origin, the outer face
+ * at +x. A round tyre of SEG sides (tread, both side walls, a lip down to the recessed rim) and the
+ * rim's disc (KIND.rim, white: the game's shader paints its spokes and colour; the tread is
+ * KIND.tread for its grooves).
+ */
+function wheelModel(SEG = 20) {
+  const P = [], C = [], K = [], I = [];
+  const TYRE = [0.03, 0.03, 0.033], WALL = [0.03, 0.03, 0.034], INNER = [0.01, 0.01, 0.012];
+  const RIM_R = 0.64, INSET = 0.38;
+  const ring = (x, r, col, kind) => {
+    const base = P.length / 3;
+    for (let i = 0; i < SEG; i++) { const a = (i / SEG) * Math.PI * 2; P.push(x, Math.cos(a) * r, Math.sin(a) * r); C.push(...col); K.push(kind); }
+    return base;
+  };
+  const centre = (x, col, kind) => { P.push(x, 0, 0); C.push(...col); K.push(kind); return P.length / 3 - 1; };
+  // quads between two rings (a, b), facing out of the side `flip` decides
+  const band = (a, b, flip) => {
+    for (let i = 0; i < SEG; i++) {
+      const j = (i + 1) % SEG;
+      if (flip) I.push(a + i, b + i, b + j, a + i, b + j, a + j); else I.push(a + i, a + j, b + j, a + i, b + j, b + i);
+    }
+  };
+  const fan = (c, a, flip) => { for (let i = 0; i < SEG; i++) { const j = (i + 1) % SEG; if (flip) I.push(c, a + j, a + i); else I.push(c, a + i, a + j); } };
+  const treadOut = ring(0.5, 1, TYRE, KIND.tread), treadIn = ring(-0.5, 1, TYRE, KIND.tread);
+  band(treadIn, treadOut, false);
+  const wallOut = ring(0.5, 1, WALL, KIND.body), lipOut = ring(0.5, RIM_R, WALL, KIND.body);
+  band(lipOut, wallOut, true);
+  const lipIn = ring(INSET, RIM_R, INNER, KIND.body);
+  band(lipIn, lipOut, true);
+  const rimRing = ring(INSET, RIM_R, [1, 1, 1], KIND.rim);
+  fan(centre(INSET, [1, 1, 1], KIND.rim), rimRing, false);
+  const backRing = ring(-0.5, 1, INNER, KIND.body);
+  fan(centre(-0.5, INNER, KIND.body), backRing, true);
+  return { pos: new Float32Array(P), col: new Float32Array(C), kind: new Uint8Array(K), idx: new Uint32Array(I) };
+}
+
 // ---------------------------------------------------------------- cars
 
 /** The body paint of each car (its stock colour stays in the node's extras). */
@@ -524,9 +630,11 @@ function cars() {
       // paint: the brightness against the stock colour (the game multiplies its own paint in)
       color: (mt) => paint.includes(mt) ? (() => { const k = Math.min(1, lum(kd[mt]) / lum(stock)); return [k, k, k]; })() : kd[mt] ?? [0.5, 0.5, 0.5],
     });
-    glb.model(name, [{ ...m, material: 'vehicle' }], stock ? { paint: stock } : undefined);
+    const { body, wheels } = splitWheels(m);
+    glb.model(name, [{ ...body, material: 'vehicle' }], { ...(stock ? { paint: stock } : {}), ...(wheels ? { wheels } : {}) });
     lines.push(`${name} ${fmt(m)}`);
   }
+  glb.model('Wheel', [{ ...wheelModel(), material: 'vehicle' }]);
   const size = glb.write(join(out, 'cars.glb'));
   copyFileSync(join(kitsDir, 'cars', 'License.txt'), join(out, 'license.txt'));
   console.log(lines.join('\n'));
@@ -559,37 +667,14 @@ function transport() {
       color: (mt) => lin(cfg.colors[mt] ?? 0x808080),
       kind: (mt) => cfg.kinds?.[mt] ?? KIND.body,
     });
-    glb.model(name, [{ ...m, material: 'vehicle' }]);
+    const { body, wheels } = splitWheels(m);
+    glb.model(name, [{ ...body, material: 'vehicle' }], wheels ? { wheels } : undefined);
     lines.push(`${name} ${fmt(m)}`);
   }
   const size = glb.write(join(out, 'transport.glb'));
   copyFileSync(join(kitsDir, 'transport', 'License.txt'), join(out, 'license.txt'));
   console.log(lines.join('\n'));
   console.log('transport.glb', (size / 1024).toFixed(0), 'KB');
-  return lines;
-}
-
-// ---------------------------------------------------------------- people
-
-function people() {
-  const out = join(ROOT, 'posed-people');
-  mkdirSync(out, { recursive: true });
-  const glb = new Glb();
-  const lines = [];
-  for (const name of ['Male_Walking', 'Male_Running', 'Male_Standing', 'Male_Standing_Hips', 'Male_Standing_Waving', 'Female_Walking', 'Female_Running', 'Female_Standing', 'Female_Standing_Hips', 'Woman_Standing_Waving']) {
-    const kd = parseMtl(readFileSync(join(kitsDir, 'people', name + '.mtl'), 'utf8'));
-    const m = objModel(join(kitsDir, 'people', name + '.obj'), {
-      height: name.includes('Waving') ? 2.0 : 1.75, ratio: 0.4,
-      color: (mt) => mt === 'Shirt' ? [1, 1, 1] : kd[mt] ?? [0.5, 0.5, 0.5],
-      kind: (mt) => mt === 'Shirt' ? KIND.shirt : KIND.body,
-    });
-    glb.model(name, [{ ...m, material: 'person' }]);
-    lines.push(`${name} ${fmt(m)}`);
-  }
-  const size = glb.write(join(out, 'people.glb'));
-  copyFileSync(join(kitsDir, 'people', 'License.txt'), join(out, 'license.txt'));
-  console.log(lines.join('\n'));
-  console.log('people.glb', (size / 1024).toFixed(0), 'KB');
   return lines;
 }
 
@@ -643,14 +728,68 @@ function town() {
   return lines;
 }
 
-const which = process.argv[4]?.split(',') ?? ['downtown', 'cars', 'transport', 'people', 'town'];
-const report = {};
-if (which.includes('downtown')) report.downtown = downtown();
-if (which.includes('cars')) report.cars = cars();
-if (which.includes('transport')) report.transport = transport();
-if (which.includes('people')) report.people = people();
-if (which.includes('town')) report.town = town();
-writeFileSync(join(layersDir, 'import-report.json'), JSON.stringify(report, null, 1));
-for (const f of ['downtown-city/city.glb', 'city-cars/cars.glb', 'public-transport/transport.glb', 'posed-people/people.glb', 'town-buildings/buildings.glb']) {
-  try { console.log(f, statSync(join(ROOT, f)).size); } catch { /* not written this run */ }
+// ---------------------------------------------------------------- re-splitting the wheels
+
+/** Reads a GLB this script wrote: per root node its name, extras and one primitive as plain arrays. */
+function readGlb(file) {
+  const b = readFileSync(file);
+  const jl = b.readUInt32LE(12);
+  const json = JSON.parse(b.subarray(20, 20 + jl).toString('utf8'));
+  const bin = b.subarray(20 + jl + 8);
+  const acc = (i) => {
+    const a = json.accessors[i], bv = json.bufferViews[a.bufferView];
+    const comps = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 }[a.type];
+    const size = { 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 }[a.componentType];
+    const stride = bv.byteStride ?? comps * size;
+    const out = new Float64Array(a.count * comps);
+    for (let k = 0; k < a.count; k++) for (let c = 0; c < comps; c++) {
+      const o = bv.byteOffset + (a.byteOffset ?? 0) + k * stride + c * size;
+      out[k * comps + c] = a.componentType === 5122 ? bin.readInt16LE(o) : a.componentType === 5121 ? bin[o] : a.componentType === 5123 ? bin.readUInt16LE(o) : a.componentType === 5125 ? bin.readUInt32LE(o) : bin.readFloatLE(o);
+    }
+    return out;
+  };
+  return json.scenes[0].nodes.map((ni) => {
+    const n = json.nodes[ni];
+    const prim = json.meshes[n.mesh].primitives[0];
+    const q = acc(prim.attributes.POSITION);
+    const pos = new Float32Array(q.length);
+    for (let i = 0; i < q.length; i++) pos[i] = q[i] * n.scale[i % 3] + n.translation[i % 3];
+    const col = Float32Array.from(acc(prim.attributes.COLOR_0), (v) => v / 255);
+    const kind = Uint8Array.from(acc(prim.attributes._KIND));
+    return { name: n.name, extras: n.extras, pos, col, kind, idx: Uint32Array.from(acc(prim.indices)) };
+  });
+}
+
+/** Splits the wheels of the vehicles already imported (the kits are not needed): rewrites both files. */
+function resplitWheels() {
+  for (const [file, withWheel] of [['city-cars/cars.glb', true], ['public-transport/transport.glb', false]]) {
+    const glb = new Glb();
+    const models = readGlb(join(ROOT, file));
+    // already split: the tyres are gone, so start again from the kits (a full import)
+    if (models.some((m) => m.name === 'Wheel' || m.extras?.wheels)) throw new Error(file + ': the wheels are split already');
+    for (const m of models) {
+      const { extras = {} } = m;
+      const { body, wheels, dropped } = splitWheels(m);
+      if (wheels) console.log(m.name, 'wheels', JSON.stringify(wheels), '−' + dropped, 'vertices');
+      const ex = { ...extras, ...(wheels ? { wheels } : {}) };
+      glb.model(m.name, [{ ...body, material: 'vehicle' }], Object.keys(ex).length ? ex : undefined);
+    }
+    if (withWheel) glb.model('Wheel', [{ ...wheelModel(), material: 'vehicle' }]);
+    const size = glb.write(join(ROOT, file));
+    console.log(file, (size / 1024).toFixed(1), 'KB');
+  }
+}
+
+if (kitsDir === '--wheels') resplitWheels();
+else {
+  const which = process.argv[4]?.split(',') ?? ['downtown', 'cars', 'transport', 'town'];
+  const report = {};
+  if (which.includes('downtown')) report.downtown = downtown();
+  if (which.includes('cars')) report.cars = cars();
+  if (which.includes('transport')) report.transport = transport();
+  if (which.includes('town')) report.town = town();
+  writeFileSync(join(layersDir, 'import-report.json'), JSON.stringify(report, null, 1));
+  for (const f of ['downtown-city/city.glb', 'city-cars/cars.glb', 'public-transport/transport.glb', 'town-buildings/buildings.glb']) {
+    try { console.log(f, statSync(join(ROOT, f)).size); } catch { /* not written this run */ }
+  }
 }

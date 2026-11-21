@@ -1,9 +1,10 @@
-quaternius/public-transport/transport.glb 70KB (8 models as root nodes, 3702 tris in all, no normals: flat-shaded, quantized)
+quaternius/public-transport/transport.glb 53KB (8 models as root nodes, 2436 tris in all, no normals: flat-shaded, quantized)
   as the cars (COLOR_0, _KIND; 7 to 9 the traffic light's red, yellow and green lamps); the pack's grey MTL colours replaced by the colours of its preview.
-  model size (x × y × z, metres), triangles, height range, materials:
-  Bus 2.69x3.36x10.50 958 tris, y 0.00..3.36, vehicle
-  SchoolBus 2.40x3.25x9.50 1088 tris, y 0.00..3.25, vehicle
-  Ambulance 2.40x2.91x6.20 1002 tris, y -0.00..2.91, vehicle
+  the vehicles' wheels are split off as the cars' (wheels in the node's extras, drawn with cars.glb's Wheel).
+  model size (x × y × z, metres), triangles, height range, materials, wheel radius and width (m):
+  Bus 2.69x3.12x10.50 536 tris, y 0.24..3.36, vehicle, wheels r 0.402 w 0.337
+  SchoolBus 2.40x3.08x9.50 666 tris, y 0.18..3.25, vehicle, wheels r 0.323 w 0.28
+  Ambulance 2.40x2.64x6.20 580 tris, y 0.26..2.91, vehicle, wheels r 0.291 w 0.317
   TrafficLight 0.51x4.60x0.36 346 tris, y 0.00..4.60, vehicle
   TrafficCone 0.59x0.75x0.59 124 tris, y 0.00..0.75, vehicle
   TrafficSign1 0.17x2.60x0.80 70 tris, y 0.00..2.60, vehicle
