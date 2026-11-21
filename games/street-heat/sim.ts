@@ -1,7 +1,6 @@
 // Street Heat: the simulation (no rendering). One fixed step of 1/60 s moves the player's car
 // (arcade handling with weight: grip, power slides on the handbrake, nitro, ramps and air, damage),
-// the traffic (lane following, lights, turns, honking, knocked about when hit), the people on the
-// sidewalks (walk, cross, dive out of the way: nobody is ever hit), the props (cones, bins,
+// the traffic (lane following, lights, turns, honking, knocked about when hit), the props (cones, bins,
 // hydrants, signs fly when hit) and the police (patrols that witness crimes, the heat and its stars,
 // pursuits that escalate with ramming, roadblocks and spike strips, the search when they lose
 // sight, busted when boxed in). The jobs (jobs.ts) drive the story and the modes on top of it.
@@ -53,7 +52,12 @@ export class Car {
   get fwd(): number { return this.vx * Math.sin(this.h) + this.vz * Math.cos(this.h); }
 }
 
-export interface Ped { id: number; block: number; s: number; dir: number; speed: number; x: number; z: number; h: number; model: number; shirt: number; state: 'walk' | 'stand' | 'cross' | 'dive' | 'run'; t: number; tx: number; tz: number; vx: number; vz: number; frame: number; idle: number; nextBlock: number; nextS: number }
+/**
+ * Someone on the sidewalks. The streets are empty for now (the posed figures were taken out);
+ * animated characters come later through `Sim.spawnWalkers`, walking the blocks' loops
+ * (`Sim.walkPoint`, `Block.walk`), drawn by `View` and kept clear of the cars.
+ */
+export interface Walker { id: number; block: number; s: number; dir: number; x: number; z: number; h: number }
 
 export interface PropState { kind: PropKind; x: number; z: number; y: number; rot: number; x0: number; z0: number; rot0: number; vx: number; vy: number; vz: number; spin: number; tilt: number; down: number; hidden: boolean }
 
@@ -63,7 +67,8 @@ export type SimEvent =
   | { type: 'crash'; x: number; z: number; impact: number; cop: boolean; car: boolean; wall: boolean }
   | { type: 'scrape'; x: number; z: number }
   | { type: 'prop'; kind: PropKind; x: number; z: number }
-  | { type: 'dive'; x: number; z: number }
+  /** The player's car mounted the pavement at speed (a nervous passenger feels it). */
+  | { type: 'kerb' }
   | { type: 'honk'; x: number; z: number }
   | { type: 'horn' }
   | { type: 'nitro' }
@@ -196,7 +201,8 @@ export class Sim {
   readonly city: City = city();
   readonly events: SimEvent[] = [];
   readonly cars: Car[] = [];
-  readonly peds: Ped[] = [];
+  /** The people on the sidewalks: none yet (see Walker). */
+  readonly walkers: Walker[] = [];
   readonly props: PropState[] = [];
   readonly spikes: Spike[] = [];
   player: Car;
@@ -219,7 +225,7 @@ export class Sim {
   wrecked = false;
   police: boolean;
   /** Cars driven off by the player (takedowns) and other stats. */
-  stats = { takedowns: 0, crashes: 0, props: 0, dives: 0, topSpeed: 0, maxStars: 0, jumps: 0, airTime: 0, distance: 0 };
+  stats = { takedowns: 0, crashes: 0, props: 0, topSpeed: 0, maxStars: 0, jumps: 0, airTime: 0, distance: 0 };
   /** Targets the police chase (the player, or an escorted car). */
   copTarget: Car;
   private nextId = 1;
@@ -228,6 +234,8 @@ export class Sim {
   private spikeT = 18;
   private spawnT = 0;
   private witnessT = 0;
+  private onKerb = false;
+  private kerbT = -99;
   private acc = 0;
   /** A job may freeze the player (briefing, cut scenes). */
   frozen = false;
@@ -299,8 +307,9 @@ export class Sim {
     // the player
     if (!this.busted && !this.wrecked && !this.frozen) {
       if (inp.nitro && p.nitroT <= 0 && this.nitro > 0 && !p.airborne) { this.nitro--; p.nitroT = 2.6; this.events.push({ type: 'nitro' }); }
-      if (inp.horn) { this.events.push({ type: 'horn' }); this.scarePeds(p.x, p.z, 16); }
+      if (inp.horn) this.events.push({ type: 'horn' });
       drive(this, p, inp, dt);
+      this.kerbCheck(p);
     } else {
       // stopped: roll out
       drive(this, p, { ...NO_INPUT, hold: true }, dt);
@@ -319,7 +328,6 @@ export class Sim {
       c.honkT = Math.max(0, c.honkT - dt);
     }
     this.collide(dt);
-    this.pedStep(dt);
     this.propStep(dt);
     this.policeStep(dt);
     this.spikeStep(dt);
@@ -378,25 +386,6 @@ export class Sim {
         const rr = (a.len + b.len) * 0.5 + 0.5;
         if (dx * dx + dz * dz > rr * rr || Math.abs(a.y - b.y) > 1.6) continue;
         this.carHit(a, b);
-      }
-    }
-    // people never get hit: they are pushed clear
-    const p = this.player;
-    for (const c of free) {
-      if (c.speedAbs < 0.5) continue;
-      for (const ped of this.peds) {
-        const dx = ped.x - c.x, dz = ped.z - c.z;
-        if (dx * dx + dz * dz > 16) continue;
-        const cc = circles(c);
-        for (let k = 0; k < 9; k += 3) {
-          const cx = cc[k], cz = cc[k + 1], r = cc[k + 2];
-          const ex = ped.x - cx, ez = ped.z - cz, d = Math.hypot(ex, ez), min = r + 0.45;
-          if (d < min) {
-            const nx = d > 0.01 ? ex / d : -Math.cos(c.h), nz = d > 0.01 ? ez / d : Math.sin(c.h);
-            ped.x = cx + nx * min; ped.z = cz + nz * min;
-            if (ped.state !== 'dive') this.dive(ped, c, c === p);
-          }
-        }
       }
     }
     void dt;
@@ -576,7 +565,7 @@ export class Sim {
       if (!city.green(c.to, e, this.time, left < 7)) vDes = Math.min(vDes, Math.sqrt(2 * decel * Math.max(0, left - 0.5)));
       else if (left < 16) vDes = Math.min(vDes, 8);
     } else vDes = Math.min(vDes, 7.5);
-    // whoever is ahead in the lane, and free cars and people in front
+    // whoever is ahead in the lane, and free cars in front
     const sh = Math.sin(c.h), ch = Math.cos(c.h);
     let block = Infinity;
     for (const o of this.cars) {
@@ -590,13 +579,6 @@ export class Sim {
       // a car crossing my path in an intersection counts only when close
       const gap = along - (c.len + o.len) / 2;
       if (gap < block) block = gap;
-    }
-    for (const ped of this.peds) {
-      const dx = ped.x - c.x, dz = ped.z - c.z;
-      const along = dx * sh + dz * ch;
-      if (along <= 0 || along > 12) continue;
-      if (Math.abs(dx * ch - dz * sh) > 2) continue;
-      block = Math.min(block, along - c.len / 2 - 1);
     }
     if (block < Infinity) {
       vDes = Math.min(vDes, Math.sqrt(2 * decel * Math.max(0, block - 2.5)));
@@ -688,7 +670,7 @@ export class Sim {
     return null;
   }
 
-  /** Keeps the traffic, the patrols and the people round the player; drops the far ones. */
+  /** Keeps the traffic and the patrols round the player; drops the far ones. */
   private populate(first: boolean): void {
     const p = this.player;
     for (const c of [...this.cars]) {
@@ -708,16 +690,19 @@ export class Sim {
       const patrols = this.cars.filter((c) => c.role === 'cop' && c.cop === 'patrol').length;
       if (patrols < 3) this.spawnTraffic('cop', COP_MODEL, first ? 60 : 120, 200);
     }
-    // people
-    for (let i = this.peds.length - 1; i >= 0; i--) {
-      const ped = this.peds[i];
-      if (Math.hypot(ped.x - p.x, ped.z - p.z) > 130) this.peds.splice(i, 1);
-    }
-    const wantPeds = 46;
-    for (let k = 0; k < (first ? wantPeds : 4) && this.peds.length < wantPeds; k++) this.spawnPed(first ? 8 : 80, 125);
+    this.spawnWalkers(first);
   }
 
-  // ---------------------------------------------------------------- people
+  // ---------------------------------------------------------------- people (none yet)
+
+  /**
+   * The seam for the people on the sidewalks: animated characters will be spawned here, on the
+   * blocks' walk loops (`walkPoint`) round the player, and dropped when far. Spawns nobody for now.
+   */
+  private spawnWalkers(first: boolean): void {
+    void first;
+    this.walkers.length = 0;
+  }
 
   /** A point on a block's walk loop: s in metres round it (clockwise from its north-west corner). */
   walkPoint(block: number, s: number): [number, number, number] {
@@ -730,135 +715,14 @@ export class Sim {
     return [w.x0, w.z1 - (s - 2 * W - D), Math.PI];
   }
 
-  private loopLen(block: number): number { const w = this.city.blocks[block].walk; return 2 * (w.x1 - w.x0 + w.z1 - w.z0); }
-
-  private spawnPed(min: number, max: number): void {
-    const p = this.player;
-    for (let tries = 0; tries < 10; tries++) {
-      const bi = Math.floor(this.rnd() * this.city.blocks.length);
-      const b = this.city.blocks[bi];
-      if (b.type === 'K' || b.type === 'S') continue;
-      const s = this.rnd() * this.loopLen(bi);
-      const [x, z, h] = this.walkPoint(bi, s);
-      const d = Math.hypot(x - p.x, z - p.z);
-      if (d < min || d > max) continue;
-      const stand = this.rnd() < 0.18;
-      const dir = this.rnd() < 0.5 ? 1 : -1;
-      this.peds.push({ id: this.nextId++, block: bi, s, dir, speed: 1.2 + this.rnd() * 0.6, x, z, h: dir > 0 ? h : h + Math.PI, model: Math.floor(this.rnd() * 2), shirt: Math.floor(this.rnd() * 8), state: stand ? 'stand' : 'walk', t: this.rnd() * 3, tx: 0, tz: 0, vx: 0, vz: 0, frame: 0, idle: Math.floor(this.rnd() * 3), nextBlock: -1, nextS: 0 });
-      return;
+  /** The player's car going up onto the pavement at speed: a `kerb` event (at most every 2 s). */
+  private kerbCheck(p: Car): void {
+    const off = !p.airborne && this.city.offRoad(p.x, p.z);
+    if (off && !this.onKerb && p.speedAbs > 6 && this.time - this.kerbT > 2) {
+      this.kerbT = this.time;
+      this.events.push({ type: 'kerb' });
     }
-  }
-
-  /** People near (x, z) run off (the horn, a crash). */
-  scarePeds(x: number, z: number, r: number): void {
-    for (const ped of this.peds) {
-      if (ped.state === 'dive' || ped.state === 'cross') continue;
-      const d = Math.hypot(ped.x - x, ped.z - z);
-      if (d < r) { ped.state = 'run'; ped.t = 2 + this.rnd() * 2; }
-    }
-  }
-
-  private dive(ped: Ped, c: Car, byPlayer: boolean): void {
-    // jump to the side away from the car's path
-    const sh = Math.sin(c.h), ch = Math.cos(c.h);
-    const side = (ped.x - c.x) * ch - (ped.z - c.z) * sh >= 0 ? 1 : -1;
-    ped.vx = ch * side * 6.5; ped.vz = -sh * side * 6.5;
-    ped.state = 'dive'; ped.t = 0.6;
-    ped.h = Math.atan2(ped.vx, ped.vz);
-    if (byPlayer) {
-      this.events.push({ type: 'dive', x: ped.x, z: ped.z });
-      this.stats.dives++;
-      this.crime(6);
-    }
-  }
-
-  private pedStep(dt: number): void {
-    const city = this.city;
-    for (const ped of this.peds) {
-      ped.t -= dt;
-      ped.frame += dt;
-      if (ped.state === 'dive') {
-        ped.x += ped.vx * dt; ped.z += ped.vz * dt;
-        ped.vx *= 1 - Math.min(1, 3 * dt); ped.vz *= 1 - Math.min(1, 3 * dt);
-        if (ped.t <= 0) { ped.state = 'run'; ped.t = 1.5; this.rejoin(ped); }
-        continue;
-      }
-      // a car heading at me: dive
-      {
-        let dived = false;
-        for (const c of this.cars) {
-          if (c.mode !== 'free' && c !== this.player) continue;
-          const sp = c.speedAbs;
-          if (sp < 5) continue;
-          const dx = ped.x - c.x, dz = ped.z - c.z;
-          if (dx * dx + dz * dz > 400) continue;
-          const vx = c.vx / sp, vz = c.vz / sp;
-          const along = dx * vx + dz * vz;
-          if (along < 0 || along > sp * 0.75 + 2) continue;
-          if (Math.abs(dx * vz - dz * vx) < c.wid * 0.5 + 1.1) { this.dive(ped, c, c === this.player); dived = true; break; }
-        }
-        if (dived) continue;
-      }
-      if (ped.state === 'cross') {
-        const dx = ped.tx - ped.x, dz = ped.tz - ped.z, d = Math.hypot(dx, dz);
-        const v = ped.speed * 1.3;
-        if (d < v * dt + 0.05) {
-          ped.block = ped.nextBlock; ped.s = ped.nextS; ped.state = 'walk';
-          const [x, z] = this.walkPoint(ped.block, ped.s);
-          ped.x = x; ped.z = z;
-        } else { ped.x += dx / d * v * dt; ped.z += dz / d * v * dt; ped.h = Math.atan2(dx, dz); }
-        continue;
-      }
-      if (ped.state === 'stand') {
-        if (ped.t < -6 - (ped.id % 5)) { ped.state = 'walk'; ped.t = 0; }
-        continue;
-      }
-      const run = ped.state === 'run';
-      if (run && ped.t <= 0) ped.state = 'walk';
-      const v = ped.speed * (run ? 2.6 : 1);
-      ped.s += ped.dir * v * dt;
-      const [x, z, h] = this.walkPoint(ped.block, ped.s);
-      ped.x = x; ped.z = z; ped.h = ped.dir > 0 ? h : h + Math.PI;
-      // at a corner, sometimes cross to the next block
-      if (!run && ped.t < -4) {
-        ped.t = 0;
-        const b = city.blocks[ped.block];
-        const corners: [number, number, number, number][] = [[b.walk.x0, b.walk.z0, -1, -1], [b.walk.x1, b.walk.z0, 1, -1], [b.walk.x1, b.walk.z1, 1, 1], [b.walk.x0, b.walk.z1, -1, 1]];
-        for (const [cx, cz, sx, sz] of corners) {
-          if (Math.hypot(cx - ped.x, cz - ped.z) > 1.2 || this.rnd() < 0.5) continue;
-          // across the street along x or z
-          const alongX = this.rnd() < 0.5;
-          const nbx = b.bx + (alongX ? sx : 0), nbz = b.bz + (alongX ? 0 : sz);
-          if (nbx < 0 || nbz < 0 || nbx >= 8 || nbz >= 8) break;
-          const nb = nbz * 8 + nbx, w2 = city.blocks[nb].walk;
-          const tx = alongX ? (sx > 0 ? w2.x0 : w2.x1) : cx, tz = alongX ? cz : (sz > 0 ? w2.z0 : w2.z1);
-          // wait for the cars: only when nobody is coming fast
-          if (this.cars.some((c) => c.speedAbs > 3 && segDist(cx, cz, tx, tz, c.x, c.z) < 12)) break;
-          ped.state = 'cross'; ped.tx = tx; ped.tz = tz; ped.nextBlock = nb;
-          // s of the target corner on the new loop
-          const W = w2.x1 - w2.x0, D = w2.z1 - w2.z0;
-          const tsx = tx === w2.x0 ? (tz === w2.z0 ? 0 : 2 * W + D) : (tz === w2.z0 ? W : W + D);
-          ped.nextS = tsx;
-          break;
-        }
-      }
-    }
-  }
-
-  /** After a dive: back onto the nearest walk loop point. */
-  private rejoin(ped: Ped): void {
-    const b = this.city.blockAt(ped.x, ped.z);
-    const bi = b ? this.city.blocks.indexOf(b) : ped.block;
-    const w = this.city.blocks[bi].walk;
-    const W = w.x1 - w.x0, D = w.z1 - w.z0;
-    const cx = clamp(ped.x, w.x0, w.x1), cz = clamp(ped.z, w.z0, w.z1);
-    const dN = Math.abs(cz - w.z0), dS = Math.abs(cz - w.z1), dW = Math.abs(cx - w.x0), dE = Math.abs(cx - w.x1);
-    const m = Math.min(dN, dS, dW, dE);
-    ped.block = bi;
-    ped.s = m === dN ? cx - w.x0 : m === dE ? W + (cz - w.z0) : m === dS ? W + D + (w.x1 - cx) : 2 * W + D + (w.z1 - cz);
-    const [x, z] = this.walkPoint(bi, ped.s);
-    // ease back over a few steps would be nicer; the dive ends close to the loop anyway
-    ped.x = x; ped.z = z;
+    this.onKerb = off;
   }
 
   // ---------------------------------------------------------------- props
@@ -1242,12 +1106,6 @@ export class Sim {
 }
 
 function pick<T>(rnd: () => number, list: T[]): T { return list[Math.floor(rnd() * list.length)]; }
-
-function segDist(ax: number, az: number, bx: number, bz: number, px: number, pz: number): number {
-  const dx = bx - ax, dz = bz - az, l = dx * dx + dz * dz;
-  const t = l ? clamp(((px - ax) * dx + (pz - az) * dz) / l, 0, 1) : 0;
-  return Math.hypot(ax + dx * t - px, az + dz * t - pz);
-}
 
 export function mulberry(seed: number): () => number {
   let a = seed >>> 0;

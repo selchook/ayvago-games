@@ -1,8 +1,8 @@
 // Street Heat: the imported Quaternius packs (import-city.mjs) as plain arrays. Each GLB's root
 // nodes become pieces (positions in metres, colours, a layer or a kind per vertex, indices) that the
-// city merges into chunk meshes and the vehicles turn into instanced geometry. The cars load under
-// the Ayvago intro (the menu shows them); the city, the buildings, the people, the transport pack
-// and the nature pack load after the menu is up (loadCity), like Hex Realm's scenery.
+// city merges into chunk meshes and the vehicles turn into instanced geometry. The cars (and the
+// shared `Wheel`) load under the Ayvago intro (the menu shows them); the city, the buildings, the
+// transport pack and the nature pack load after the menu is up (loadCity), like Hex Realm's scenery.
 import { THREE } from '@core/three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { asset } from '@core';
@@ -12,14 +12,19 @@ export interface Piece {
   pos: Float32Array;
   /** Linear colour, 3 bytes per vertex. */
   col: Uint8Array;
-  /** City pieces: the texture layer per vertex. Vehicles and people: the kind per vertex. */
+  /** City pieces: the texture layer per vertex. Vehicles: the kind per vertex. */
   tag: Uint8Array;
   idx: Uint32Array;
   min: THREE.Vector3;
   max: THREE.Vector3;
   /** The stock paint (vehicles), linear RGB. */
   paint?: [number, number, number];
+  /** A vehicle's wheels (split from the body by import-city.mjs; drawn with `cars:Wheel`). */
+  wheels?: Wheels;
 }
+
+/** Where a vehicle's wheels go: radius and width (m), the four hubs (front ones first, at +z), the rim colour (linear). */
+export interface Wheels { r: number; w: number; hubs: [number, number, number][]; rim: [number, number, number] }
 
 const pieces = new Map<string, Piece>();
 
@@ -27,7 +32,6 @@ const pieces = new Map<string, Piece>();
 const PACKS = {
   cars: ['quaternius/city-cars/cars.glb', 'kind'],
   transport: ['quaternius/public-transport/transport.glb', 'kind'],
-  people: ['quaternius/posed-people/people.glb', 'kind'],
   city: ['quaternius/downtown-city/city.glb', 'layer'],
   town: ['quaternius/town-buildings/buildings.glb', 'layer'],
   nature: ['quaternius/nature-pack/nature.glb', 'nature'],
@@ -69,12 +73,12 @@ export function loadPack(pack: Pack): Promise<void> {
 export const packReady = (pack: Pack): boolean => loaded.has(pack);
 
 let cityPromise: Promise<void> | null = null;
-/** Everything the streets need, after the menu is up: textures, buildings, people, transport, trees. */
+/** Everything the streets need, after the menu is up: textures, buildings, transport, trees. */
 export function loadCity(): Promise<void> {
-  if (!cityPromise) cityPromise = Promise.all([loadLayers(), loadPack('city'), loadPack('town'), loadPack('transport'), loadPack('people'), loadPack('nature'), loadPack('cars')]).then(() => undefined);
+  if (!cityPromise) cityPromise = Promise.all([loadLayers(), loadPack('city'), loadPack('town'), loadPack('transport'), loadPack('nature'), loadPack('cars')]).then(() => undefined);
   return cityPromise;
 }
-export const cityReady = (): boolean => (['city', 'town', 'transport', 'people', 'nature', 'cars'] as Pack[]).every(packReady);
+export const cityReady = (): boolean => (['city', 'town', 'transport', 'nature', 'cars'] as Pack[]).every(packReady);
 
 /** A pack loaded under the Ayvago intro by the core's model loader: its root (a model() copy) taken apart once. */
 export function adoptPack(pack: Pack, root: THREE.Object3D): void {
@@ -99,6 +103,8 @@ function extract(root: THREE.Object3D, mode: 'kind' | 'layer' | 'nature'): Piece
   const out: Piece = { pos: new Float32Array(nv * 3), col: new Uint8Array(nv * 3), tag: new Uint8Array(nv), idx: new Uint32Array(ni), min: new THREE.Vector3(Infinity, Infinity, Infinity), max: new THREE.Vector3(-Infinity, -Infinity, -Infinity) };
   const paint = root.userData?.paint as number[] | undefined;
   if (paint) out.paint = [paint[0], paint[1], paint[2]];
+  const wheels = root.userData?.wheels as Wheels | undefined;
+  if (wheels?.hubs?.length) out.wheels = wheels;
   const v = new THREE.Vector3();
   let vo = 0, io = 0;
   for (const m of meshes) {
@@ -122,7 +128,7 @@ function extract(root: THREE.Object3D, mode: 'kind' | 'layer' | 'nature'): Piece
   return out;
 }
 
-/** Geometry of a vehicle or a person for instancing: position, colour, _kind. */
+/** Geometry of a vehicle (or its wheel) for instancing: position, colour, _kind. */
 export function kindGeometry(key: string, scale = 1): THREE.BufferGeometry {
   const p = pieces.get(key);
   const g = new THREE.BufferGeometry();

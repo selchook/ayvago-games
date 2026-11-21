@@ -265,14 +265,15 @@ export class Job {
     }
   }
 
-  /** Crashes hurt fragile cargo and the passenger's nerves (red lights and dives too). */
+  /** Crashes hurt fragile cargo and the passenger's nerves (red lights and the pavement too). */
   private cargoHits(): void {
     if (this.cargo === null) return;
     for (const e of this.sim.events) {
       let hit = 0;
       if (e.type === 'crash') hit = e.impact * (this.cargoKind === 'fragile' ? 3.6 : 2.2);
       else if (e.type === 'land') hit = e.impact * 3;
-      else if (this.cargoKind === 'nervous' && (e.type === 'redLight' || e.type === 'dive')) hit = 8;
+      else if (this.cargoKind === 'nervous' && e.type === 'redLight') hit = 8;
+      else if (this.cargoKind === 'nervous' && e.type === 'kerb') hit = 6;
       else if (this.cargoKind === 'nervous' && e.type === 'scrape') hit = 1.5;
       if (hit > 0.5) {
         this.cargo = Math.max(0, this.cargo - hit);

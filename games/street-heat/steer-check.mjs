@@ -79,7 +79,6 @@ async function place(page, v = 8) {
     const p = window.__ayvago.game.scene.getScene('Play');
     const s = p.sim;
     s.cars.splice(0, s.cars.length, s.player);
-    s.peds.length = 0;
     // the avenue x = 256, heading south between two crossings
     s.place(s.player, 256 + 5.6, 300, 0, v);
     p.view.snap(s);

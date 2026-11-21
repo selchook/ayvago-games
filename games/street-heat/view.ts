@@ -1,12 +1,13 @@
 // Street Heat: the 3D view of the simulation. The city is built per block ("chunk"): a detailed
 // mesh (buildings, lamps, markings, props, trees, neon) near the camera and a box mesh (lit window
 // grids) farther out, all on the one city material (look.ts), plus one mesh of streets and
-// sidewalks for the whole city. Cars, people, props and traffic lights are instanced per model; the
-// night's light, the particles, tyre marks, glows and markers come from fx3d.ts. The camera follows
-// the car (chase, far or bumper view), shakes on hits and widens with nitro.
+// sidewalks for the whole city. Cars, props and traffic lights are instanced per model, and every
+// car's wheels are one instanced mesh of the shared `cars:Wheel` that roll with the distance driven
+// and steer at the front; the night's light, the particles, tyre marks, glows and markers come from
+// fx3d.ts. The camera follows the car (chase, far or bumper view), shakes on hits and widens with nitro.
 import { THREE, World3D } from '@core/three';
 import { city, City, PITCH, NB, SIZE, SIDEWALK, CURB, LANE, halfWidth, type Block, type Rect } from './city';
-import { Extra, mergeCity, kindGeometry, hasPiece, cityReady, piece, type Placed } from './kit';
+import { Extra, mergeCity, kindGeometry, hasPiece, cityReady, piece, type Placed, type Wheels } from './kit';
 import { cityMaterial, vehicleMaterial, layerTexture, NightLights, L, spotTexture, layersReady } from './look';
 import { Particles, SkidMarks, Glows, Markers } from './fx3d';
 import type { Sim, Car, SimEvent } from './sim';
@@ -18,8 +19,20 @@ export type CamMode = 'chase' | 'far' | 'bumper';
 const MARKER_COLOR: Record<MarkerKind, number> = { pickup: 0x3ef2ff, drop: 0x5dff7a, check: 0xffd23f, phone: 0xffb03a, fare: 0xffe36a, spray: 0xff4fa3, garage: 0x6aa8ff, stunt: 0xff7a1a, target: 0xff3f6a };
 export { MARKER_COLOR };
 
-const SHIRTS = [0xd8342a, 0x2a6fd8, 0xf2f2f0, 0x2fae5a, 0xf2b81a, 0x7a3ad8, 0xff8a1e, 0x3a3d44];
-const POSES = ['Male_Walking', 'Male_Running', 'Male_Standing', 'Male_Standing_Hips', 'Male_Standing_Waving', 'Female_Walking', 'Female_Running', 'Female_Standing', 'Female_Standing_Hips', 'Woman_Standing_Waving'];
+/** Front wheels' lock (radians) at full steering. */
+const WHEEL_LOCK = 0.5;
+/**
+ * The most a wheel turns on screen in one frame (radians). The tread's eight grooves repeat every
+ * 0.79 rad and the rim's five spokes every 1.26, so a real step near those would alias (the wheel
+ * would seem to stand or run backwards); capped well under half of them they always roll forwards,
+ * and fade into a blur as the speed rises.
+ */
+const SPIN_CAP = 0.3;
+/** Wheels drawn at most: four per car. */
+const WHEEL_CAP = 4 * 200;
+
+/** A car's wheels as the view last drew them. */
+interface WheelState { spin: number; yaw: number; x: number; z: number; h: number; /** The true spin (rad/s), uncapped. */ rate: number }
 
 interface Inst { mesh: THREE.InstancedMesh; state: THREE.InstancedBufferAttribute; n: number }
 interface Chunk { cx: number; cz: number; detail: THREE.Mesh | null; lod: THREE.Mesh | null; built: number }
@@ -31,6 +44,13 @@ const tmpP = new THREE.Vector3();
 const tmpS = new THREE.Vector3();
 const tmpC = new THREE.Color();
 const tmpV = new THREE.Vector3();
+const carM = new THREE.Matrix4();
+const wheelQ = new THREE.Quaternion();
+const spinQ = new THREE.Quaternion();
+const AXIS_X = new THREE.Vector3(1, 0, 0);
+const AXIS_Y = new THREE.Vector3(0, 1, 0);
+/** Half a turn round y: a right wheel becomes a left one. */
+const FLIP = new THREE.Quaternion().setFromAxisAngle(AXIS_Y, Math.PI);
 
 /** Simple prop geometry made in code (hydrant, bin, paper box, bench, barrier): vertex colours, no texture. */
 function boxGeo(parts: [number, number, number, number, number, number, number][]): THREE.BufferGeometry {
@@ -90,7 +110,8 @@ export class View {
   private base: THREE.Mesh | null = null;
   private border: THREE.Mesh | null = null;
   private cars = new Map<string, Inst>();
-  private peds = new Map<string, Inst>();
+  private wheels: Inst | null = null;
+  private wheelState = new WeakMap<Car, WheelState>();
   private props = new Map<string, Inst>();
   private signals: Inst | null = null;
   readonly smoke: Particles;
@@ -500,6 +521,80 @@ export class View {
     }
   }
 
+  /**
+   * Every car's four wheels (one instanced mesh): rolling by the distance the car moved along its
+   * heading since the last frame (angle += distance / radius, the step capped at SPIN_CAP), the
+   * front ones steered by the car's steering (its yaw rate for the lane traffic). Parked cars stand.
+   */
+  private drawWheels(sim: Sim, dt: number, camX: number, camZ: number, noPlayer: boolean): void {
+    if (!this.wheels) {
+      if (!hasPiece('cars:Wheel')) return;
+      this.wheels = this.inst(new Map(), 'wheels', WHEEL_CAP, () => kindGeometry('cars:Wheel'));
+      if (!this.wheels) return;
+    }
+    const it = this.wheels;
+    it.n = 0;
+    const p = sim.player;
+    for (const c of sim.cars) {
+      if (c === p && noPlayer) continue;
+      if (c !== p && Math.hypot(c.x - camX, c.z - camZ) > 160) continue;
+      const wh = piece(c.model)?.wheels;
+      if (!wh) continue;
+      if (it.n + 4 > WHEEL_CAP) break;
+      const st = this.wheelOf(c, wh, dt);
+      const roll = c.mode === 'free' ? clamp(-c.w * Math.abs(c.fwd) * 0.006, -0.08, 0.08) : 0;
+      const pitch = c.airborne ? clamp(-c.vy * 0.03, -0.3, 0.3) : (c.brakeLight ? 0.02 : 0);
+      tmpE.set(pitch, c.h, roll, 'YXZ');
+      carM.compose(tmpP.set(c.x, c.y, c.z), tmpQ.setFromEuler(tmpE), tmpS.set(1, 1, 1));
+      const blur = clamp((Math.abs(st.rate) - 9) / 30, 0, 1);
+      for (let k = 0; k < wh.hubs.length && k < 4; k++) {
+        const [hx, hy, hz] = wh.hubs[k];
+        // front wheels steer; the left ones are the wheel turned round (outer face to −x)
+        wheelQ.setFromAxisAngle(AXIS_Y, hz > 0 ? st.yaw : 0);
+        wheelQ.multiply(spinQ.setFromAxisAngle(AXIS_X, st.spin));
+        if (hx < 0) wheelQ.multiply(FLIP);
+        tmpM.compose(tmpP.set(hx, hy, hz), wheelQ, tmpS.set(wh.w, wh.r, wh.r));
+        tmpM.premultiply(carM);
+        it.mesh.setMatrixAt(it.n, tmpM);
+        it.mesh.setColorAt(it.n, tmpC.setRGB(wh.rim[0], wh.rim[1], wh.rim[2]));
+        it.state.setXYZW(it.n, blur, 0, 0, 0);
+        it.n++;
+      }
+    }
+    it.mesh.count = it.n;
+    it.mesh.instanceMatrix.needsUpdate = true;
+    if (it.mesh.instanceColor) it.mesh.instanceColor.needsUpdate = true;
+    it.state.needsUpdate = true;
+  }
+
+  /** Advances a car's wheel spin and steering for this frame. */
+  private wheelOf(c: Car, wh: Wheels, dt: number): WheelState {
+    let st = this.wheelState.get(c);
+    if (!st) { st = { spin: (c.id * 1.7) % (Math.PI * 2), yaw: 0, x: c.x, z: c.z, h: c.h, rate: 0 }; this.wheelState.set(c, st); }
+    const dx = c.x - st.x, dz = c.z - st.z;
+    let dh = c.h - st.h;
+    while (dh > Math.PI) dh -= Math.PI * 2;
+    while (dh < -Math.PI) dh += Math.PI * 2;
+    st.x = c.x; st.z = c.z; st.h = c.h;
+    // a jump (placed, a replay cut) is no roll
+    let d = dx * Math.sin(c.h) + dz * Math.cos(c.h);
+    if (Math.abs(d) > 6 || dt <= 0) { d = 0; dh = 0; }
+    if (c.mode === 'parked') d = 0;
+    const step = d / wh.r;
+    st.spin = (st.spin + clamp(step, -SPIN_CAP, SPIN_CAP)) % (Math.PI * 2);
+    // the steering: the driver's input, or what the turn asks for (lane traffic, the replay)
+    let want = 0;
+    if (c.mode === 'parked') want = 0;
+    else if (c.mode === 'lane' || this.replay) {
+      const base = Math.abs(wh.hubs[0][2] - wh.hubs[wh.hubs.length - 1][2]) || 2.5;
+      want = Math.abs(d) > 0.002 ? Math.atan(base * dh / d) : st.yaw;
+    } else want = -c.steer * WHEEL_LOCK;
+    want = clamp(want, -WHEEL_LOCK, WHEEL_LOCK);
+    st.yaw += (want - st.yaw) * Math.min(1, dt * 12);
+    st.rate = dt > 0 ? step / dt : 0;
+    return st;
+  }
+
   private makeSignals(): void {
     const list = this.city.signals;
     const it = this.inst(new Map(), 'signals', list.length, () => kindGeometry('transport:TrafficLight'));
@@ -509,7 +604,7 @@ export class View {
 
   // ---------------------------------------------------------------- every frame
 
-  /** Draws the sim (and the job's markers): cars, people, props, lights, camera. */
+  /** Draws the sim (and the job's markers): cars and their wheels, props, lights, camera. */
   sync(sim: Sim, job: Job | null, dt: number, opts: { lights?: boolean; player?: boolean } = {}): void {
     this.time += dt;
     // keep this world's shader programs alive for the next scene (keepPrograms below): soon after
@@ -537,26 +632,9 @@ export class View {
       this.put(it, c.x, c.y, c.z, c.h, pitch, roll, c.paint, c.brakeLight || hazard ? 1 : 0, siren, dmg, nightOn);
     }
     this.end(this.cars);
-    // people
-    this.begin(this.peds);
-    for (const ped of sim.peds) {
-      if (Math.hypot(ped.x - camX, ped.z - camZ) > 100) continue;
-      const female = ped.model === 1;
-      let pose: number;
-      let tilt = 0;
-      const step = Math.floor(ped.frame * 3.2) % 2;
-      switch (ped.state) {
-        case 'walk': case 'cross': pose = step ? 0 : 2; break;
-        case 'run': pose = Math.floor(ped.frame * 5) % 2 ? 1 : 0; break;
-        case 'dive': pose = 1; tilt = 0.5; break;
-        default: pose = [2, 3, 4][ped.idle];
-      }
-      const name = POSES[(female ? 5 : 0) + pose];
-      const it = this.inst(this.peds, name, 70, () => kindGeometry('people:' + name));
-      if (!it) continue;
-      this.put(it, ped.x, this.city.offRoad(ped.x, ped.z) ? CURB : 0, ped.z, ped.h, tilt, 0, SHIRTS[ped.shirt], 0, 0, 0, 0);
-    }
-    this.end(this.peds);
+    // the wheels of the cars just drawn
+    this.drawWheels(sim, dt, camX, camZ, opts.player === false);
+    // people: none on the sidewalks for now (Sim.spawnWalkers is where they will come from)
     // props
     this.begin(this.props);
     for (const pr of sim.props) {
