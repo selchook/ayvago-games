@@ -159,7 +159,8 @@ export class PlayScene extends ArcadeScene {
     });
     this.dhud = new DriveHud(this, () => this.openMap(), !!this.steering.pad);
     this.goal = hudChip(this, W / 2, 50, { align: 'center', text: '', size: 22, depth: UI_DEPTH - 5 });
-    this.camBtn = iconButton(this, HUD_MARGIN + 36, 160, 'sh-cam', () => this.cycleCam(), 64).setScrollFactor(0).setDepth(UI_DEPTH - 5);
+    // touch only: under the job meter chip (cargo, calm, suspicion, the SUV) on the second HUD row
+    this.camBtn = iconButton(this, HUD_MARGIN + 36, HUD_ROW2_Y + HUD_CHIP_H / 2 + 46, 'sh-cam', () => this.cycleCam(), 64).setScrollFactor(0).setDepth(UI_DEPTH - 5);
     this.camBtn.setVisible(false);
     this.setHudVisible(false);
 
