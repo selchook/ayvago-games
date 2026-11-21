@@ -421,6 +421,24 @@ const CARD = {
   // and drones, the signs and the rain behind. The map is skipped; the autopilot plays the level
   // ahead headless until three foes are close and a swing is out, then keeps fighting (it cannot be
   // hurt) while the frames are taken, the camera a little closer than in play.
+  // Street Heat's card (landscape, cover-fit) shows a night pursuit: PLAY opens the dispatch
+  // board, so the stage starts a Getaway at once, builds the whole city, lets the autopilot run
+  // from the docks for a while and raises the heat to three stars; the frames show the car with
+  // police cars, their beacons and the lit streets round it.
+  'street-heat': {
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const p = window.__ayvago.game.scene.getScene('Play');
+      p.testStart('getaway');
+      p.testBuildAll();
+      p.time.removeAllEvents();
+      p.testAuto(true);
+      p.testStep(9);
+      p.sim.forceStars(3);
+      p.testStep(6);
+      await sleep(2500);
+    }`,
+  },
   'neon-ronin': {
     stage: `async () => {
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -51,7 +51,7 @@ export {
 } from './menu-theme';
 export type {
   MenuTheme, MenuPalette, MenuFrame, BorderStyle, LogoStyle, EmblemPainter, SkinPainter, SkinKind, SkinState, SkinPaint, NotesPainter, SkinButtonOptions,
-  LabelStyle, OverlayStyle,
+  LabelStyle, OverlayStyle, HudSkin,
 } from './menu-theme';
 export { overlayTheme, overlayHeadingStyle, themeCard } from './overlay-theme';
 export {
