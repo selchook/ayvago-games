@@ -276,8 +276,8 @@ export class PlayScene extends ArcadeScene {
     this.snaps = [];
     this.setCash(0);
     const W = this.scale.width;
-    if (c.mode === 'story') this.banner(W / 2, 250, t(`m${c.mission}t`), '#ffb03a', 58, t('jobN', { n: c.mission }));
-    else this.banner(W / 2, 250, t('m_' + c.mode), '#3ef2ff', 58, t('go'));
+    this.startBanner = c.mode === 'story' ? this.banner(W / 2, 250, t(`m${c.mission}t`), '#ffb03a', 58, t('jobN', { n: c.mission }))
+      : this.banner(W / 2, 250, t('m_' + c.mode), '#3ef2ff', 58, t('go'));
     this.sfx('go', { volume: 0.6 });
     // the first job teaches the controls
     this.tipT = 0;
@@ -483,13 +483,16 @@ export class PlayScene extends ArcadeScene {
 
   // ---------------------------------------------------------------- floating words
 
-  private banner(x: number, y: number, s: string, color: string, size: number, sub?: string): void {
+  /** The mode's name over the street as a run starts (the autopilot clears it). */
+  private startBanner: Phaser.GameObjects.Container | null = null;
+  private banner(x: number, y: number, s: string, color: string, size: number, sub?: string): Phaser.GameObjects.Container {
     const c = this.add.container(x, y).setScrollFactor(0).setDepth(UI_DEPTH + 50);
     c.add(fitWidth(calloutAt(this, 0, 0, s, calloutStyle(color)), 900, size / BANNER_PX));
     if (sub) c.add(fitWidth(calloutAt(this, 0, size * 0.55 + 22, sub, subStyle('#fff4e2')), 800));
     c.setScale(0.3).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 220, ease: 'Back.easeOut' });
     this.tweens.add({ targets: c, y: y - 40, alpha: 0, delay: 1300, duration: 380, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
+    return c;
   }
 
   private word(x: number, y: number, s: string, color: string, size = 36): void {
@@ -503,6 +506,8 @@ export class PlayScene extends ArcadeScene {
   private tipBox: Phaser.GameObjects.Container | null = null;
   private tip(s: string, secs: number): void {
     this.tipBox?.destroy();
+    // the autopilot (store art, screenshots) needs no tutorial
+    if (this.bot) { this.tipBox = null; return; }
     const W = this.scale.width;
     const txtObj = this.add.text(0, 0, s, { fontFamily: '"Nunito", sans-serif', fontStyle: '800', fontSize: '22px', color: '#fff4e2', align: 'center', wordWrap: { width: 640 } }).setOrigin(0.5);
     const g = this.add.graphics();
@@ -813,7 +818,15 @@ export class PlayScene extends ArcadeScene {
     this.view.snap(this.sim);
   }
   /** The autopilot drives the job (store art, screenshots); off with false. */
-  testAuto(on = true): void { this.bot = on && this.job ? new Bot(this.sim, this.job, SKILL.good) : null; }
+  testAuto(on = true): void {
+    this.bot = on && this.job ? new Bot(this.sim, this.job, SKILL.good) : null;
+    // its frames (store art, screenshots) show the street, not the tutorial or the start callout
+    if (this.bot) {
+      this.tipBox?.destroy(); this.tipBox = null;
+      if (this.startBanner?.active) { this.tweens.killTweensOf(this.startBanner); this.startBanner.destroy(); }
+      this.startBanner = null;
+    }
+  }
 }
 
 export { INK, caps };
