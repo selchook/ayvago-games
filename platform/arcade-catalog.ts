@@ -1332,20 +1332,6 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-11-13',
   }),
   arcadeGame({
-    slug: 'street-heat',
-    title: { en: 'Street Heat', tr: 'Asfalt Ateşi' },
-    description: {
-      en: 'You are an undercover wheelman in the night streets of Neon Bay. To win the trust of the Velvet crew, work thirteen jobs: deliver parcels, carry fragile cargo without a bump, rush a nervous passenger to his train, tail a rival without being seen, ram a fleeing van to a stop and lose the police. If a cop sees you, your heat stars rise: roadblocks, spike strips and units that box you in; get out of sight and outlast the search or you are busted. In free roam take jobs at the phones, carry fares in a taxi and hit the stunt ramps; beat your record in Getaway and Delivery Rush. Spend your cash in the garage on new cars, engine, tyres, armour, nitro and paint.',
-      tr: "Neon Koyu'nun gece sokaklarında gizli görevdeki bir şoförsün. Kadife Çetesi'nin güvenini kazanmak için on üç işte paket taşı, kırılacak eşyayı sarsmadan götür, yolcu yetiştir, rakip arabayı gizlice izle, kaçan kamyoneti çarparak durdur ve polisten kaç. Polis görürse aranma yıldızların artar: barikatlar, çivi şeritleri ve seni sıkıştıran ekipler gelir; gözden kaybolup aramayı atlatmazsan yakalanırsın. Serbest sürüşte telefon işlerini al, taksiyle müşteri taşı, rampalardan atla; Kaçış ve Teslimat Telaşı modlarında rekorunu kır. Kazandığın parayla garajda yeni arabalar, motor, lastik, zırh ve nitro al, arabanı boyat.",
-    },
-    category: 'action',
-    categories: ['action', 'arcade', 'sports'],
-    tags: ['street', 'heat', 'retro'],
-    orientation: 'landscape',
-    input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    addedAt: '2026-11-20',
-  }),
-  arcadeGame({
     slug: 'strike-alley',
     title: { en: 'Strike Alley', tr: 'Strike Salonu' },
     description: {
