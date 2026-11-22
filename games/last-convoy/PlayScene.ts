@@ -90,7 +90,7 @@ export class PlayScene extends ArcadeScene {
   private markers: Phaser.GameObjects.Image[] = [];
   private btn: Record<'attack' | 'dodge' | 'ability' | 'swap' | 'dog' | 'use', ActionButton> = {} as never;
   private padBox = { left: 0, top: 0 };
-  private keys = { dodge: false, swap: false, reload: false, ability: false, dog: false, use: false, atkPress: false };
+  private keys = { dodge: false, swap: false, reload: false, ability: false, dog: false, use: false, atkPress: false, nitro: false };
   private keyHeld = { use: false };
   private mouse = { down: false, x: 0, y: 0, t: -9, aim: false };
   private atkWas = false;
@@ -125,7 +125,7 @@ export class PlayScene extends ArcadeScene {
     this.quiet = false;
     this.lostIn = null;
     this.revived = false;
-    this.keys = { dodge: false, swap: false, reload: false, ability: false, dog: false, use: false, atkPress: false };
+    this.keys = { dodge: false, swap: false, reload: false, ability: false, dog: false, use: false, atkPress: false, nitro: false };
     this.keyHeld = { use: false };
     this.mouse = { down: false, x: 0, y: 0, t: -9, aim: false };
     this.atkWas = false;
@@ -159,7 +159,7 @@ export class PlayScene extends ArcadeScene {
       buttons: [
         { id: 'gas', shape: 'pedal', x: 1180, y: 560, w: 150, h: 230, color: 0x2fae5a, label: t('gas'), hit: { right: Infinity, bottom: Infinity } },
         { id: 'brake', shape: 'pedal', x: 1012, y: 600, w: 130, h: 160, color: 0xc8382a, label: t('brake') },
-        { id: 'nitro', shape: 'round', x: 1050, y: 418, r: 62, color: 0x3aa8ff, icon: 'bolt', count: true, holds: 'gas', label: t('nitro'), labelY: 40, labelSize: 18 },
+        { id: 'nitro', shape: 'round', x: 1050, y: 418, r: 62, color: 0x3aa8ff, icon: 'bolt', count: true, holds: 'gas', label: t('nitro'), labelY: -84, labelSize: 18 },
       ],
       steer: { x: 200, y: 600 },
     });
@@ -254,6 +254,7 @@ export class PlayScene extends ArcadeScene {
     for (const c of [this.hud.centerChip, this.hordeChip, this.nightChip, this.mapChip]) c.setVisible(foot);
     this.hpChip.setVisible(foot); this.ammoChip.setVisible(foot);
     for (const c of [this.armorChip, this.nitroChip, this.roadChip]) c.setVisible(drive);
+    if (!foot) this.hud.setCenter('');
     this.hud.rightChip.setVisible(false);
     this.bossChip.setVisible(false);
     for (const b of Object.values(this.btn)) b.setVisible(foot && b.kind !== 'use');
@@ -287,11 +288,13 @@ export class PlayScene extends ArcadeScene {
     const H = HERO[h.id];
     if (h.weapon === 'gun') { this.ammoChip.setIcon(ICON_SHEET, iconFrame('w-' + H.gun), 40); this.ammoChip.setText(h.reloadT > 0 ? '…' : `${h.mag}/${h.reserve}`); this.ammoChip.setTextColor(h.mag === 0 ? '#ff7a5a' : '#fff4d8'); }
     else { this.ammoChip.setIcon(ICON_SHEET, iconFrame('w-' + H.melee), 40); this.ammoChip.setText('∞'); this.ammoChip.setTextColor('#fff4d8'); }
+    this.ammoChip.setAnchor(this.hpChip.right + HUD_GAP, HUD_ROW2_Y, 'left');
+    this.hordeChip.setAnchor(this.ammoChip.right + HUD_GAP, HUD_ROW2_Y, 'left');
     // the horde meter
     const hk = s.horde / 100;
     this.drawBar(this.hordeBar, 110, hk, hk > 0.75 ? (Math.floor(this.time.now / 180) % 2 ? 0xff3b3b : 0xff8a5a) : hk > 0.45 ? 0xffb03a : 0x9ad84a, 14);
     // the night clock (19:30 to 23:30)
-    if (s.run.kind === 'stand') { this.nightChip.setIcon(iconKey('skull'), undefined, 28); this.nightChip.setText(t('wave', { n: s.wave.n }).replace(/[^\d]/g, '') ? `${s.wave.n}` : ''); }
+    if (s.run.kind === 'stand') { this.nightChip.setIcon(iconKey('skull'), undefined, 28); this.nightChip.setText(String(s.stats.kills)); }
     else {
       const mins = 19 * 60 + 30 + Math.floor(s.night * 240);
       this.nightChip.setText(`${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`);
@@ -299,6 +302,9 @@ export class PlayScene extends ArcadeScene {
     }
     this.scrapChip.setText(String(this.meta.scrap + this.run.scrap));
     this.cardChip.setText('×' + this.run.cards.length);
+    // the right-hand chips grow leftwards with their numbers: keep them in a row
+    this.scrapChip.setAnchor(this.cardChip.left - HUD_GAP, HUD_ROW2_Y, 'right');
+    this.nightChip.setAnchor(this.scrapChip.left - HUD_GAP, HUD_ROW2_Y, 'right');
     // the objective
     const ctr = this.hud.centerChip;
     if (s.run.kind === 'stand') {
@@ -436,6 +442,7 @@ export class PlayScene extends ArcadeScene {
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
       if (this.isOver) return;
       if (this.panel && !this.panel.closed) { if (this.panel.key(e.code)) e.preventDefault(); return; }
+      if (this.phase === 'drive' && !e.repeat && (e.code === 'Space' || e.code === 'KeyZ' || e.code === 'Enter' || e.code === 'NumpadEnter')) { this.keys.nitro = true; return; }
       if (this.phase !== 'play' || isModalOpen(this)) return;
       if (this.tut && e.code === 'Tab') { this.endTutorial(); return; }
       if (e.repeat) return;
@@ -495,7 +502,7 @@ export class PlayScene extends ArcadeScene {
       useHeld: this.keyHeld.use || this.btn.use.held,
     };
     this.btn.swap.take();
-    this.keys = { dodge: false, swap: false, reload: false, ability: false, dog: false, use: false, atkPress: false };
+    this.keys = { dodge: false, swap: false, reload: false, ability: false, dog: false, use: false, atkPress: false, nitro: false };
     return inp;
   }
 
@@ -503,7 +510,8 @@ export class PlayScene extends ArcadeScene {
     const down = (ks: Phaser.Input.Keyboard.Key[]) => ks.some((k) => k.isDown);
     const keyAxis = (down(this.driveKeys.right) ? 1 : 0) - (down(this.driveKeys.left) ? 1 : 0);
     const steer = this.steering.steer(dt, keyAxis);
-    const nitro = this.steering.take('nitro') || this.driveKeys.nitro.some((k) => Phaser.Input.Keyboard.JustDown(k));
+    const nitro = this.steering.take('nitro') || this.keys.nitro;
+    this.keys.nitro = false;
     return { steer, gas: down(this.driveKeys.up) || this.steering.isDown('gas'), brake: down(this.driveKeys.down) || this.steering.isDown('brake'), nitro };
   }
 
@@ -535,6 +543,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private openSquad(): void {
+    this.leaveDrive();
     this.phase = 'squad';
     this.showPlayUi('none');
     this.squadSim();
@@ -562,6 +571,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private openMap(): void {
+    this.leaveDrive();
     this.phase = 'map';
     this.showPlayUi('none');
     this.view.shotCam = null;
@@ -596,6 +606,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private openBrief(i: number): void {
+    this.leaveDrive();
     this.phase = 'brief';
     const def = MISSIONS[i];
     this.mission = def;
@@ -613,6 +624,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private openStandBrief(): void {
+    this.leaveDrive();
     this.phase = 'brief';
     this.mission = null;
     const sim = new Mission(null, this.run, (this.rnd() * 1e9) | 0);
@@ -726,6 +738,15 @@ export class PlayScene extends ArcadeScene {
 
   private stopEngine(): void { if (this.engine?.isPlaying) this.engine.stop(); }
 
+  /** Back from the drive to the town: the pad and the engine off, the road hidden, the town's fog and lens. */
+  private leaveDrive(): void {
+    this.steering?.end();
+    this.stopEngine();
+    if (this.driveView?.root.visible) { this.driveView.root.visible = false; this.driveView.stop(); }
+    this.drive = null;
+    this.view?.setMode('foot');
+  }
+
   private driveHud(dt: number): void {
     const d = this.drive!;
     this.setScore(this.run.score + d.stats.pts);
@@ -737,6 +758,7 @@ export class PlayScene extends ArcadeScene {
     this.drawBar(this.roadBar, 200, d.progress, 0xf2b21a, 14);
     this.scrapChip.setText(String(this.meta.scrap + this.run.scrap + d.stats.scrap));
     this.cardChip.setText('×' + this.run.cards.length);
+    this.scrapChip.setAnchor(this.cardChip.left - HUD_GAP, HUD_ROW2_Y, 'right');
     this.vignette.setAlpha(k < 0.3 ? 0.3 + Math.sin(this.time.now / 160) * 0.12 : Math.max(0, this.vignette.alpha - dt * 2));
     if (this.engine && 'setRate' in this.engine) {
       const e = this.engine as Phaser.Sound.WebAudioSound;
@@ -1169,6 +1191,21 @@ export class PlayScene extends ArcadeScene {
 
   private closePanel(): void { this.panel?.close(); this.panel = null; }
 
+  /** The steering check: the car on a long straight north, at speed v, nothing in the way. */
+  testPlace(v = 8): void {
+    const d = this.drive;
+    if (!d) return;
+    let k = 3;
+    for (; k < d.cells.length - 4; k++) {
+      const ok = [0, 1, 2].every((q) => { const c = d.cells[k + q]; return c.in[1] === -1 && c.out[1] === -1; });
+      if (ok) break;
+    }
+    const c = d.cells[k];
+    d.x = c.x; d.z = c.z + 4; d.h = Math.PI; d.v = v; d.ci = k; d.count = 0; d.phase = 'play'; d.armor = d.maxArmor;
+    d.zombies = [];
+    d.obstacles = d.obstacles.filter((o) => Math.abs(o.cell - k) > 4);
+  }
+
   skipTo(o: { mission?: number; hero?: HeroId; cards?: CardId[] }): void {
     this.closePanel();
     if (o.hero) { this.meta.hero = o.hero; if (!this.meta.heroes.includes(o.hero)) this.meta.heroes.push(o.hero); this.view.setHero(o.hero); }
@@ -1238,7 +1275,7 @@ export class PlayScene extends ArcadeScene {
 class KitSkip {
   private b: Phaser.GameObjects.Container;
   constructor(scene: Phaser.Scene, onSkip: () => void) {
-    const btn = new (class extends Phaser.GameObjects.Container {})(scene, scene.scale.width / 2, 150);
+    const btn = new (class extends Phaser.GameObjects.Container {})(scene, scene.scale.width - 170, 178);
     const bg = scene.add.image(0, 0, iconKey('card')).setVisible(false);
     void bg;
     const g = scene.add.graphics();

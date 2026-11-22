@@ -49,7 +49,7 @@ export const RARITY_COLOR: Record<Rarity, { frame: number; glow: number; ink: st
 
 export type CardId =
   | 'hollow' | 'heavy' | 'quick' | 'mags' | 'jacket' | 'sprint' | 'scav' | 'nitro'
-  | 'silent' | 'hound' | 'fury' | 'charged' | 'roll' | 'adren' | 'cool' | 'ram' | 'lucky'
+  | 'choke' | 'silent' | 'hound' | 'fury' | 'charged' | 'roll' | 'adren' | 'cool' | 'ram' | 'lucky'
   | 'fire' | 'chain' | 'second' | 'expert' | 'flaregun' | 'medic' | 'encore'
   | 'laugh' | 'whisper' | 'golden';
 
@@ -66,6 +66,7 @@ export const CARDS: CardDef[] = [
   { id: 'scav', rarity: 'common', icon: 'i-scrap', max: 2 },
   { id: 'nitro', rarity: 'common', icon: 'i-nitro', max: 2 },
   // rare
+  { id: 'choke', rarity: 'rare', icon: 'i-ammo', max: 1 },
   { id: 'silent', rarity: 'rare', icon: 'i-quiet', max: 1 },
   { id: 'hound', rarity: 'rare', icon: 'i-dog', max: 1 },
   { id: 'fury', rarity: 'rare', icon: 'i-fury', max: 2 },
@@ -94,7 +95,7 @@ export const stacks = (cards: CardId[], id: CardId): number => cards.reduce((n, 
 
 /** What the ranks and the cards add up to, read by the simulations. */
 export interface Mods {
-  gunDmg: number; meleeDmg: number; reload: number; ammo: number; hp: number; speed: number;
+  gunDmg: number; meleeDmg: number; spread: number; ammoDrop: number; reload: number; ammo: number; hp: number; speed: number;
   scrap: number; nitro: number; noise: number; dogDmg: number; dogPin: number; finisher: number;
   charge: number; dashDmg: number; dashInvuln: number; killHeal: number; abilityCd: number;
   ramDmg: number; runOver: number; chests: number; burn: boolean; chain: number; second: boolean;
@@ -112,6 +113,8 @@ export function mods(hero: HeroId, ranks: Ranks, cards: CardId[]): Mods {
   const abilityCard = { matt: n('expert'), sam: n('flaregun'), shaun: n('medic'), lis: n('encore') }[hero] > 0;
   return {
     gunDmg: (1 + 0.15 * Math.min(1, r.guns)) * (1 + 0.2 * n('hollow')),
+    spread: n('choke'),
+    ammoDrop: r.pouch >= 3 ? 2 : 1,
     meleeDmg: (1 + 0.2 * Math.min(1, r.melee)) * (1 + 0.22 * n('heavy')),
     reload: (r.pouch >= 2 ? 0.7 : 1) * (1 - 0.3 * n('quick')),
     ammo: (1 + 0.35 * Math.min(1, r.pouch)) * (1 + 0.4 * n('mags')),

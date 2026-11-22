@@ -267,7 +267,14 @@ export class DriveView {
     for (const m of car.mats) if ((m as THREE.MeshLambertMaterial).emissive) (m as THREE.MeshLambertMaterial).emissive.setRGB(d.hitT * 2, d.hitT * 0.6, d.hitT * 0.4);
     // the convoy's second vehicle follows the lead's tracks a second behind
     const f = this.follower!;
-    const tr = d.trail[Math.max(0, d.trail.length - 70)] ?? { x: d.x, z: d.z + 8, h: d.h };
+    // 16 m back along the lead's own track (behind the camera on the straights, in view in the turns)
+    let left = 16, tr = { x: d.x, z: d.z, h: d.h };
+    for (let i = d.trail.length - 1; i > 0 && left > 0; i--) {
+      const a = d.trail[i], b = d.trail[i - 1];
+      left -= Math.hypot(a.x - b.x, a.z - b.z);
+      tr = b;
+    }
+    if (left > 0) tr = { x: tr.x - Math.sin(tr.h) * left, z: tr.z - Math.cos(tr.h) * left, h: tr.h };
     f.root.position.set(tr.x, 0, tr.z);
     f.root.rotation.y = tr.h;
     if (f.wheelsBack) f.wheelsBack.rotation.x = this.wheelSpin;

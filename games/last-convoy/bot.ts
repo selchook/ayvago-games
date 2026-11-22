@@ -45,7 +45,16 @@ export class Bot {
   private target(): Spot | null {
     const s = this.sim, h = s.hero;
     if (this.stay) return this.stay;
-    if (s.run.kind === 'stand') return s.truck ? { x: s.truck.x, z: s.truck.z + 4 } : null;
+    if (s.run.kind === 'stand' && s.truck) {
+      // defend the truck: go for the zombie nearest to it (staying close to the truck)
+      const tr = s.truck;
+      let best: Spot | null = null, bd = 18;
+      for (const z of s.zombies) { if (z.state === 'dead' || z.state === 'lurk') continue; const d = Math.hypot(z.x - tr.x, z.z - tr.z); if (d < bd) { bd = d; best = z; } }
+      if (!best) return { x: tr.x, z: tr.z + 4 };
+      const dx = best.x - tr.x, dz = best.z - tr.z, l = Math.hypot(dx, dz) || 1;
+      const r = Math.min(l, 6);
+      return { x: tr.x + (dx / l) * r, z: tr.z + (dz / l) * r };
+    }
     // chests close by on the way (the good bot detours for them)
     const st = s.stageDef;
     if (st && st.kind !== 'return' && st.kind !== 'hold' && st.kind !== 'boss') {
@@ -84,7 +93,9 @@ export class Bot {
     if (telling && this.dodgeCd <= 0 && telling.t > K.react && this.rnd() < K.dodge) {
       const ax = h.x - telling.x, az = h.z - telling.z, l = Math.hypot(ax, az) || 1;
       const side = this.rnd() < 0.5 ? 1 : -1;
-      inp.mx = (ax / l) * 0.5 + (-az / l) * side; inp.mz = (az / l) * 0.5 + (ax / l) * side;
+      // a slam: straight out of the ring; a charge or a blow: sideways out of its line
+      const away = telling.boss && telling.move === 'slam' ? 1 : 0.5, across = telling.boss && telling.move === 'slam' ? 0.25 : 1;
+      inp.mx = (ax / l) * away + (-az / l) * side * across; inp.mz = (az / l) * away + (ax / l) * side * across;
       inp.dodge = true;
       this.dodgeCd = 0.9;
       return inp;
@@ -94,7 +105,8 @@ export class Bot {
     const G = GUN[HERO[h.id].gun];
     if (h.weapon === 'gun' && h.mag === 0 && h.reserve === 0 && h.swapT <= 0) inp.swap = true;
     if (K.combos > 0.5 && h.swapT <= 0 && h.step === 'none') {
-      const wantMelee = (crowd <= 2 && nd < 3 && near && !near.boss && near.kind !== 'chubby' && s.horde > 55) || (h.weapon === 'gun' && h.reserve + h.mag === 0);
+      const bossNear = !!s.boss && s.boss.state !== 'dead' && Math.hypot(s.boss.x - h.x, s.boss.z - h.z) < 16;
+      const wantMelee = (!bossNear && crowd <= 2 && nd < 3 && near && !near.boss && near.kind !== 'chubby' && s.horde > 55) || (h.weapon === 'gun' && h.reserve + h.mag === 0);
       const wantGun = (h.mag + h.reserve > 0) && (nd > 4 || crowd > 3 || near?.boss || near?.kind === 'chubby');
       if (h.weapon === 'gun' && wantMelee) inp.swap = true;
       else if (h.weapon === 'melee' && wantGun) inp.swap = true;
@@ -117,7 +129,9 @@ export class Bot {
     if (tgt) {
       attack = true;
       // the combos: hold for the charged finisher against crowds and armour, tap otherwise
-      const heavy = crowd >= 3 || tgt.armor || tgt.kind === 'chubby';
+      // the heavy finisher roots you: only into a crowd, a bloater or the boss's armour, never beside a boss winding up
+      const bossClose = !!s.boss && s.boss.state !== 'dead' && Math.hypot(s.boss.x - h.x, s.boss.z - h.z) < 7;
+      const heavy = (crowd >= 3 || tgt.armor || tgt.kind === 'chubby') && (!bossClose || tgt.armor);
       if (this.rnd() < K.combos) {
         if (h.step === 'pre3') { this.held = heavy; }
         else if (h.step === 'none') { if (this.tapGap <= 0) { inp.atkPress = true; this.tapGap = 0.05; } this.held = true; }
@@ -128,6 +142,14 @@ export class Bot {
       if (h.sinceDodge < 0.3) { inp.atkPress = true; inp.atk = true; }
       inp.ax = tgt.x + (this.rnd() - 0.5) * K.aim * 6; inp.az = tgt.z + (this.rnd() - 0.5) * K.aim * 6;
     } else this.held = false;
+    // the gate: when it is the objective and in reach, hit it (melee breaks it faster)
+    const gate = s.stageDef?.kind === 'clear' ? s.walls.find((w) => w.kind === 'gate' && !w.down) : null;
+    if (gate && !attack && Math.hypot(gate.x - h.x, gate.z - h.z) < 5) {
+      inp.atk = true;
+      if (this.tapGap <= 0) { inp.atkPress = true; this.tapGap = 0.3; }
+      inp.ax = gate.x; inp.az = gate.z;
+      if (h.weapon === 'gun' && h.swapT <= 0 && h.step === 'none' && !near) inp.swap = true;
+    }
     // interact (hold)
     const c = s.context();
     if (c && (c.kind !== 'board' || s.boardable()) && (!tgt || nd > 4)) { inp.use = true; inp.useHeld = true; }
@@ -152,7 +174,7 @@ export class Bot {
     // keep shooting distance from what comes at you (guns), close in with melee
     if (near && nd < (h.weapon === 'gun' ? 3.2 : 1.2) && !near.boss) { const l = nd || 1; mx += ((h.x - near.x) / l) * 1.2; mz += ((h.z - near.z) / l) * 1.2; }
     if (near && h.weapon === 'melee' && nd > 1.6 && nd < 6 && !attack) { mx += (near.x - h.x) / nd; mz += (near.z - h.z) / nd; }
-    if (near?.boss && nd < 4.5) { const l = nd || 1; mx += ((h.x - near.x) / l) * 1.5; mz += ((h.z - near.z) / l) * 1.5; }
+    if (near?.boss && (nd < 4.5 || (h.weapon === 'melee' && nd < 9))) { const l = nd || 1; mx += ((h.x - near.x) / l) * 1.6; mz += ((h.z - near.z) / l) * 1.6; }
     // casual drift
     this.wanderT -= dt;
     if (this.wanderT <= 0) { this.wanderT = 1 + this.rnd() * 2; const a = this.rnd() * 6.28; this.wx = Math.cos(a); this.wz = Math.sin(a); }

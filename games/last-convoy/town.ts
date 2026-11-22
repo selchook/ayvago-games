@@ -81,6 +81,8 @@ export const BUILDINGS: { key: string; w: number; d: number; h: number }[] = [
   { key: 'House1', w: 7.67, d: 11.54, h: 9.49 },
   { key: 'House2', w: 10.87, d: 9.25, h: 8.72 },
 ];
+/** The lighter models (under 3000 triangles). */
+const LIGHT = BUILDINGS.filter((b) => ['Building2_Small', 'Building3_Small', 'Building3_Big', 'House2'].includes(b.key));
 const TINTS = [0xffffff, 0xf2e6d8, 0xe0e8f2, 0xf4dcc8, 0xdde8d8, 0xf0d8d8];
 
 export function mulberry(seed: number): () => number {
@@ -300,7 +302,8 @@ function outerRing(plan: TownPlan, rnd: () => number): void {
   for (const [sx, sz, rot] of sides) {
     if (plan.outside === 'harbour' && sz === -1) continue;
     for (let k = -HALF + 10; k < HALF; k += 20) {
-      const def = BUILDINGS[Math.floor(rnd() * BUILDINGS.length)];
+      // the outer ring is mostly in the fog: the lighter models
+      const def = LIGHT[Math.floor(rnd() * LIGHT.length)];
       const d = 12, off = HALF + 1 + d / 2;
       const x = sx ? sx * off : k, z = sz ? sz * off : k;
       // the front faces the ring road (inwards)

@@ -280,7 +280,7 @@ export class Mission {
         spots.forEach((s) => {
           const who = st.who === 'hero' ? this.rescueHero() : 'civ';
           const body = who === 'civ' ? (['matt', 'sam', 'shaun', 'lis'] as HeroId[])[Math.floor(this.rnd() * 4)] : who;
-          const max = Math.round((who === 'civ' ? 70 : 100) * this.tune.hp);
+          const max = Math.round((who === 'civ' ? 90 : 110) * this.tune.hp);
           this.survivors.push({ id: this.nextId++, who, body, x: s.x, z: s.z, face: 0, hp: max, max, state: 'trapped', fireT: 0, downT: 0, armed: who !== 'civ', hurtT: 0, tint: who === 'civ' ? [0xb0c8e0, 0xe0c8b0, 0xc8e0b0][Math.floor(this.rnd() * 3)] : 0xffffff });
           taken.push(s);
           this.spawnGroup(s.x, s.z, 3, 'idle');
@@ -363,6 +363,16 @@ export class Mission {
 
   spawn(kind: ZKind, x: number, z: number, state: ZState, boss: BossId | null = null): Zombie {
     const T = this.tune;
+    // over the hard cap: the farthest idle one wanders off for good (the town never floods)
+    if (kind !== 'boss' && this.alive >= T.cap + 10) {
+      let far: Zombie | null = null, fd = -1;
+      for (const o of this.zombies) {
+        if (o.state === 'dead' || o.boss) continue;
+        const d = Math.hypot(o.x - this.hero.x, o.z - this.hero.z) + (o.state === 'idle' || o.state === 'wander' || o.state === 'lurk' ? 100 : 0);
+        if (d > fd) { fd = d; far = o; }
+      }
+      if (far) { far.state = 'dead'; far.deadT = 99; }
+    }
     const ramp = 1 + this.run.depth * 0.05;
     let zz: Zombie;
     const base = {
@@ -371,7 +381,7 @@ export class Mission {
     };
     if (kind === 'boss' && boss) {
       const B = BOSS[boss];
-      const hp = Math.round(B.hp * T.zHp * (this.run.kind === 'stand' ? 0.6 + 0.1 * this.wave.n : 1));
+      const hp = Math.round(B.hp * T.zHp * (this.run.kind === 'stand' ? 0.45 + 0.07 * this.wave.n : 1));
       zz = { ...base, id: this.nextId++, kind, boss, x, z, hp, max: hp, r: 0.75 * B.scale * 0.8, walk: B.speed * 0.6, run: B.speed * T.zSpeed, dmg: B.dmg * T.zDmg, reach: 2.4, state, cd: 2.5, scale: B.scale };
     } else {
       const Z = ZOMBIE[kind as Exclude<ZKind, 'boss'>];
@@ -411,6 +421,11 @@ export class Mission {
     if (st.kind === 'hold') {
       const spot = st.hold === 'pump' ? this.plan.pump : st.hold === 'radio' ? this.plan.radio : null;
       if (spot) this.hold = { t: 0, on: false, x: spot.x, z: spot.z, r: 7 };
+    }
+    // a hold or a boss fight starts with a crate of ammo and a medkit close by
+    if (st.kind === 'hold' || st.kind === 'boss') {
+      const at = st.kind === 'hold' ? this.hold : this.hero;
+      this.drop('ammo', at.x + 2, at.z + 1.5, 1); this.drop('ammo', at.x - 2, at.z + 1.5, 1); this.drop('med', at.x, at.z + 2.5, 1);
     }
     if (st.kind === 'boss' && st.boss) {
       const a = this.plan.arena;
@@ -494,7 +509,7 @@ export class Mission {
   }
 
   private rebuildFlow(): void {
-    this.flow.setBlocked(this.extraSolids().slice(1));
+    this.flow.setBlocked(this.extraSolids());
     const t: Spot[] = [];
     if (this.hero.alive) t.push(this.hero);
     if (this.buddy && this.buddy.down <= 0) t.push(this.buddy);
@@ -719,7 +734,7 @@ export class Mission {
     const fin = step === 'fa' ? 'a' : step === 'fb' ? 'b' : step === 'fc' ? 'c' : '';
     const dir = lock ? Math.atan2(lock.x - h.x, lock.z - h.z) : Math.atan2(h.aimX, h.aimZ);
     h.face = dir;
-    let pellets = G.pellets, spread = G.spread, dmg = G.dmg * m.gunDmg * (h.buffT > 0 ? 1.3 : 1), pierce = G.pierce + m.pierce, knock = G.knock, range = G.range, ammo = 1, crit = false;
+    let pellets = G.pellets + m.spread * 2, spread = G.spread + m.spread * 14, dmg = G.dmg * m.gunDmg * (h.buffT > 0 ? 1.3 : 1), pierce = G.pierce + m.pierce, knock = G.knock, range = G.range, ammo = 1, crit = false;
     let name = '';
     if (fin) {
       const F = GUN_FIN[G.id];
@@ -927,8 +942,8 @@ export class Mission {
       this.stats.supplies += 2;
       this.run.supplies += 2;
     } else if (r < 0.3) this.drop('scrap', zb.x, zb.z, ZOMBIE[zb.kind as Exclude<ZKind, 'boss'>].scrap * 2);
-    else if (r < 0.42 * this.tune.ammo) this.drop('ammo', zb.x, zb.z, 1);
-    else if (r < 0.47) this.drop('med', zb.x, zb.z, 1);
+    else if (r < 0.3 + 0.17 * this.tune.ammo * this.m.ammoDrop) this.drop('ammo', zb.x, zb.z, 1);
+    else if (r < 0.52) this.drop('med', zb.x, zb.z, 1);
     // the brute bursts; the epic card makes others pop too
     if (zb.kind === 'chubby' || (this.m.chain && this.rnd() < this.m.chain)) this.burst(zb.x, zb.z, zb.kind === 'chubby' ? 3.2 : 2.4, zb.kind === 'chubby' ? 16 : 10);
     if (zb.boss) { this.boss = zb; this.stop = 0.2; }
@@ -1110,7 +1125,7 @@ export class Mission {
       this.hold.on = true;
       this.events.push({ type: 'holdStart' });
       // the noise of the work calls a crowd
-      this.makeNoise(this.hold.x, this.hold.z, 40, 0);
+      this.makeNoise(this.hold.x, this.hold.z, 26, 0);
     } else if (kind === 'board') {
       for (const s of this.survivors) if (s.state === 'follow') s.state = 'safe';
       this.phase = 'won';
@@ -1140,6 +1155,14 @@ export class Mission {
       this.phase = 'lost';
       this.events.push({ type: 'lose', why: 'hero' });
     }
+  }
+
+  hurtTruck(dmg: number): void {
+    const tr = this.truck;
+    if (!tr || this.phase !== 'play') return;
+    tr.hp -= dmg;
+    this.events.push({ type: 'hurt', dmg: Math.round(dmg), who: 'truck' });
+    if (tr.hp <= 0) { tr.hp = 0; this.phase = 'lost'; this.events.push({ type: 'lose', why: 'truck' }); }
   }
 
   private release(z: Zombie | null): void {
@@ -1325,7 +1348,7 @@ export class Mission {
     }
     if (!best) { this.events.push({ type: 'bark', x: g.x, z: g.z }); return; }
     const f = new Flow(this.plan);
-    f.setBlocked(this.extraSolids().slice(1));
+    f.setBlocked(this.extraSolids());
     f.build([best]);
     const trail: Spot[] = [];
     const p = { x: g.x, z: g.z };
@@ -1437,7 +1460,8 @@ export class Mission {
       const consider = (x: number, y: number, k: string, id: number, bias = 0) => { const d = Math.hypot(x - z.x, y - z.z) + bias; if (d < best) { best = d; tx = x; tz = y; tk = k; tid = id; } };
       if (this.buddy && this.buddy.down <= 0) consider(this.buddy.x, this.buddy.z, 'buddy', 0, 1);
       for (const s of this.survivors) if (s.state === 'follow') consider(s.x, s.z, 'surv', s.id, -0.5);
-      if (this.dog.state !== 'down' && this.dog.state !== 'follow') consider(this.dog.x, this.dog.z, 'dog', 0, 2);
+      // the dog only when it is biting this one or right beside it
+      if (this.dog.state !== 'down' && (this.dog.target === z.id || Math.hypot(this.dog.x - z.x, this.dog.z - z.z) < 3)) consider(this.dog.x, this.dog.z, 'dog', 0, 1);
       if (this.truck && this.truck.hp > 0) consider(this.truck.x, this.truck.z, 'truck', 0, -1.5);
       if (flare && Math.hypot(flare.x - z.x, flare.z - z.z) < 24) { tx = flare.x; tz = flare.z; tk = 'flare'; best = Math.hypot(flare.x - z.x, flare.z - z.z); }
       z.tk = tk; z.tid = tid;
@@ -1579,7 +1603,7 @@ export class Mission {
   private zombieStrike(z: Zombie, tx: number, tz: number, tk: string, tid: number): void {
     const d = Math.hypot(tx - z.x, tz - z.z);
     if (tk === 'truck' && this.truck) {
-      if (d < z.reach + 3.4) { this.truck.hp -= z.dmg; this.events.push({ type: 'hurt', dmg: Math.round(z.dmg), who: 'truck' }); if (this.truck.hp <= 0 && this.phase === 'play') { this.truck.hp = 0; this.phase = 'lost'; this.events.push({ type: 'lose', why: 'truck' }); } }
+      if (d < z.reach + 3.4) this.hurtTruck(z.dmg);
       return;
     }
     if (d > z.reach + 0.6) return;
@@ -1646,7 +1670,7 @@ export class Mission {
           this.events.push({ type: 'slam', x: z.x, z: z.z, r });
           if (Math.hypot(h.x - z.x, h.z - z.z) < r) { this.hurtHero(z.dmg); const l = Math.hypot(h.x - z.x, h.z - z.z) || 1; h.x += ((h.x - z.x) / l) * 2; h.z += ((h.z - z.z) / l) * 2; this.collide(h, 0.42); }
           if (this.buddy && Math.hypot(this.buddy.x - z.x, this.buddy.z - z.z) < r) this.hurtBuddy(z.dmg * 0.6);
-          if (this.truck && Math.hypot(this.truck.x - z.x, this.truck.z - z.z) < r + 2.5) { this.truck.hp -= z.dmg; this.events.push({ type: 'hurt', dmg: Math.round(z.dmg), who: 'truck' }); }
+          if (this.truck && Math.hypot(this.truck.x - z.x, this.truck.z - z.z) < r + 2.5) this.hurtTruck(z.dmg);
           for (const w of this.walls) if (!w.down && Math.hypot(w.x - z.x, w.z - z.z) < r + 1) this.hitWall(w, 80);
           z.state = 'strike'; z.t = 0; z.cd = 2.2 / rage;
         } else if (z.move === 'charge') { z.state = 'charge'; z.t = 0; }
@@ -1718,7 +1742,7 @@ export class Mission {
       if (d < 1.1 && p.t > 0.4) {
         p.t = -99;
         if (p.kind === 'scrap') { const v = Math.round(p.v * this.m.scrap); this.stats.scrap += v; this.run.scrap += v; this.events.push({ type: 'pickup', kind: 'scrap', v, x: p.x, z: p.z }); }
-        else if (p.kind === 'ammo') { const v = Math.round(this.gun.mag * 0.8 * this.tune.ammo * this.m.ammo); h.reserve += v; this.events.push({ type: 'pickup', kind: 'ammo', v, x: p.x, z: p.z }); }
+        else if (p.kind === 'ammo') { const v = Math.round(this.gun.mag * this.tune.ammo * this.m.ammo); h.reserve += v; this.events.push({ type: 'pickup', kind: 'ammo', v, x: p.x, z: p.z }); }
         else { const v = Math.round(30 * this.tune.hp); h.hp = Math.min(h.max, h.hp + v); this.events.push({ type: 'pickup', kind: 'med', v, x: p.x, z: p.z }); }
       }
     }
@@ -1750,7 +1774,7 @@ export class Mission {
       // a crowd comes at the noise every few seconds
       if (Math.floor((this.hold.t - dt) / 7) !== Math.floor(this.hold.t / 7) && this.alive < this.tune.cap) {
         const s = this.farSpawn(18, 45);
-        const n = Math.round((3 + (this.def?.n ?? 1) * 0.3) * this.tune.zCount);
+        const n = Math.round((2 + (this.def?.n ?? 1) * 0.2) * this.tune.zCount);
         for (let i = 0; i < n; i++) { const z = this.spawn(this.pickKind(), s.x + (this.rnd() - 0.5) * 5, s.z + (this.rnd() - 0.5) * 5, 'hunt'); z.wave = true; }
       }
       if (this.hold.t >= (st.secs ?? 30)) { this.hold.on = false; this.events.push({ type: 'holdDone' }); this.stageDone(); }

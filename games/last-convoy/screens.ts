@@ -135,7 +135,8 @@ export function prebakeScreens(scene: Phaser.Scene): void {
     bakePara(scene, t('ad_' + HERO[h].ability), S_DESC, 520);
     for (const s of HERO_IDS) if (s !== h) { bakePara(scene, t('lockedHero', { n: freedIn(s, h) }), S_LOCK, TILE_W - 14); labelTexture(scene, t('lockedHero', { n: freedIn(s, h) }), S_TOAST); }
   }
-  for (const w of [...Object.keys(GUN), ...Object.keys(MELEE)]) labelTexture(scene, t('w_' + w), S_NAME_S);
+  for (const w of [...Object.keys(GUN), ...Object.keys(MELEE)]) { labelTexture(scene, t('w_' + w), S_NAME_S); labelTexture(scene, t('w_' + w), S_NAME); }
+  labelTexture(scene, t('combosTitle'), S_HEAD);
   for (const k of ['gun', 'melee', 'ability', 'dog', 'statHp', 'statSpeed', 'statGuns', 'statMelee']) labelTexture(scene, t(k), S_DESC_L);
   // the map, the briefs, the summary
   bake(scene, 'lc-map', MAP_W - 20, MAP_H - 20, paintMap);
@@ -164,7 +165,7 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   // the garage
   for (const u of UPGRADE_IDS) {
     labelTexture(scene, t('u_' + u), S_NAME_S);
-    for (let r = 1; r <= MAX_RANK; r++) bakePara(scene, t(`u_${u}_${r}`), S_DESC, UP_W - 290);
+    for (let r = 1; r <= MAX_RANK; r++) bakePara(scene, t(`u_${u}_${r}`), S_DESC, 214);
     const h = UPGRADE[u].hero;
     if (h) labelTexture(scene, t('heroOnly', { name: t('h_' + h) }), S_LOCK);
   }
@@ -247,7 +248,7 @@ function prebakeCards(scene: Phaser.Scene): void {
     labelTexture(scene, t('c_' + card.id), P_NAME);
     labelTexture(scene, t('c_' + card.id), S_NAME_S);
     bakePara(scene, t('cd_' + card.id), V_CARD_D, CARD_W - 44);
-    bakePara(scene, t('cd_' + card.id), S_DESC_L, CL_W - 200);
+    bakePara(scene, t('cd_' + card.id), S_DESC_L, 520);
   }
   for (let n = 2; n <= 3; n++) labelTexture(scene, t('stackN', { n }), S_TAG);
 }
@@ -537,9 +538,10 @@ export class MapScreen extends Panel {
     this.button(360, ny, 190, 56, GREY, t('garage'), () => { this.close(); this.nav.garage(); }, { size: 'S' });
     this.button(570, ny, 190, 56, GREY, t('cards'), () => { this.close(); this.nav.cards(); }, { size: 'S' });
     this.button(780, ny, 190, 56, GREY, t('combos'), () => { this.close(); this.nav.combos(); }, { size: 'S' });
-    this.fi = sel;
-    this.showFocus();
     this.drawInfo();
+    // the focus starts on START (Enter / the pad's A plays the chosen mission)
+    this.fi = this.focus.length - 1;
+    this.showFocus();
   }
 
   private pick(i: number): void {
@@ -547,6 +549,8 @@ export class MapScreen extends Panel {
     this.pins.forEach((p, k) => p.setSelected(k === i));
     this.onSel(i);
     this.drawInfo();
+    this.fi = this.focus.length - 1;
+    this.showFocus();
     this.host.sfx('pick', 0.4);
   }
 
@@ -744,7 +748,7 @@ export class GarageScreen extends Panel {
     super(scene, host, { board: [GAR_W, GAR_H], title: t('garage'), titleY: 62, sub: t('garageSub'), subW: 760, dim: 0.55 });
     const s = scene, W = s.scale.width;
     // the purse
-    const px = W / 2 + GAR_W / 2 - 250, py = 62;
+    const px = W / 2 + GAR_W / 2 - 330, py = 62;
     this.content.add(iconImg(s, px, py, 'scrap', 40));
     this.content.add(iconImg(s, px + 130, py, 'supplies', 40));
     this.purse = { scrap: new GlyphText(s, px + 26, py, String(meta.scrap), S_PURSE, 0), sup: new GlyphText(s, px + 156, py, String(meta.supplies), S_PURSE, 0) };
@@ -758,7 +762,7 @@ export class GarageScreen extends Panel {
 
   private tile(u: UpgradeId, i: number): void {
     const s = this.scene, W = s.scale.width;
-    const x = W / 2 + (i % 2 ? 300 : -300), y = 150 + Math.floor(i / 2) * 102;
+    const x = W / 2 + (i % 2 ? 300 : -300), y = 160 + Math.floor(i / 2) * 100;
     this.tiles.get(u)?.destroy();
     const c = s.add.container(x, y);
     const r = this.meta.ranks[u], def = UPGRADE[u];
@@ -766,13 +770,13 @@ export class GarageScreen extends Panel {
     g.fillStyle(0x14120f, 0.6).fillRoundedRect(-UP_W / 2, -UP_H / 2, UP_W, UP_H, 8).lineStyle(2, YELLOW, 0.3).strokeRoundedRect(-UP_W / 2, -UP_H / 2, UP_W, UP_H, 8);
     c.add(g);
     c.add(iconImg(s, -UP_W / 2 + 40, 0, def.icon, 56));
-    c.add(labelAt(s, -UP_W / 2 + 78, -26, t('u_' + u), S_NAME_S, 0));
+    c.add(fitWidth(labelAt(s, -UP_W / 2 + 78, -26, t('u_' + u), S_NAME_S, 0), 140));
     if (def.hero) c.add(labelAt(s, -UP_W / 2 + 78, -8, t('heroOnly', { name: t('h_' + def.hero) }), S_LOCK, 0));
     const pg = s.add.graphics();
     for (let k = 0; k < MAX_RANK; k++) { pg.fillStyle(k < r ? YELLOW : 0x3a3630, 1).fillRect(-UP_W / 2 + 80 + k * 26, 14, 20, 12); pg.lineStyle(2, 0x14100c, 1).strokeRect(-UP_W / 2 + 80 + k * 26, 14, 20, 12); }
     c.add(pg);
     const showRank = Math.min(MAX_RANK, r + 1);
-    c.add(new Para(s, -UP_W / 2 + 180, -32, t(`u_${u}_${showRank}`), S_DESC, UP_W - 290, 0, 18).setAlpha(r >= MAX_RANK ? 0.6 : 1));
+    c.add(new Para(s, -UP_W / 2 + 228, -34, t(`u_${u}_${showRank}`), S_DESC, 214, 0, 18).setAlpha(r >= MAX_RANK ? 0.6 : 1));
     const price = nextPrice(this.meta, u);
     const bx = UP_W / 2 - 62;
     if (!price) c.add(labelAt(s, bx, 0, t('maxed'), S_TAG));
@@ -819,7 +823,7 @@ export class CardsScreen extends Panel {
       const n = stacks(have, card.id);
       const b = new KitButton(s, x, y, { w: CT_W, h: CT_H, kind: 'plate', color: GREY, sfx: null, on: n > 0 }, () => {
         this.desc?.destroy();
-        this.desc = new Para(s, W / 2 - (CL_W - 200) / 2, 610, t('cd_' + card.id), S_DESC_L, CL_W - 200, 0, 22);
+        this.desc = new Para(s, W / 2 - 170, 596, t('cd_' + card.id), S_DESC_L, 520, 0, 22);
         this.content.add(this.desc);
         this.host.sfx('move', 0.3);
       });

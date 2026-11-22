@@ -1,30 +1,120 @@
 {
   "about": {
-    "en": "TODO: what the game is and what makes it different (120–200 words in 2–3 paragraphs, separated by a blank line).\n\nTODO: second paragraph.",
-    "tr": "TODO: oyunun ne olduğu ve onu farklı kılan ne (2–3 paragrafta 120–200 kelime, aralarında boş satır).\n\nTODO: ikinci paragraf."
+    "en": "Last Convoy is a 3D rescue-and-escape action game set in Northdale, a small town overrun by zombies. You lead one of four survivors with a loyal dog at your side through twelve missions across four districts: Main Street, the docks, the gas station by the highway on-ramp and Water Tower Hill. Each mission mixes objectives such as collecting fuel cans, parts or batteries, freeing trapped people and escorting them back, breaking a barricade, holding out while the truck is repaired and beating a giant boss.\n\nEvery mission ends with the escape drive: you steer the lead vehicle of the convoy through zombie-filled streets and up the highway to the Northdale sign. Guns are loud and fill the horde meter, melee is quiet, and night falls on a clock, so every fight is a choice. Freed survivors join your squad, scrap and supplies buy lasting upgrades in the garage, and after each mission you pick one of three power cards for the rest of the escape.",
+    "tr": "Son Konvoy, zombilerin istila ettiği Northdale kasabasında geçen 3B bir kurtarma ve kaçış aksiyonudur. Yanında sadık köpeğinle dört hayatta kalandan birini yönetir, dört bölgedeki on iki görevi tamamlarsın: Ana Cadde, liman, otoyol rampasının yanındaki benzinlik ve Su Kulesi Tepesi. Görevlerde benzin bidonu, kamyon parçası ya da pil toplamak, mahsur kalanları kurtarıp geri getirmek, barikat yıkmak, kamyon tamir edilirken dayanmak ve dev bir boss'u yenmek gibi hedefler karışık gelir.\n\nHer görev kaçış sürüşüyle biter: konvoyun öndeki aracını zombi dolu sokaklardan geçirip otoyoldan Northdale tabelasına kadar sürersin. Silahlar gürültülüdür ve sürü sayacını doldurur, yakın dövüş sessizdir; gece de saat ilerledikçe çöker, yani her çatışma bir seçimdir. Kurtardığın kişiler ekibe katılır, hurda ve erzakla garajda kalıcı geliştirmeler alırsın, her görevden sonra da kaçışın geri kalanı için üç güç kartından birini seçersin."
   },
   "howToPlay": [
-    { "en": "TODO: how a round starts.", "tr": "TODO: bir tur nasıl başlar." },
-    { "en": "TODO: what you do during play.", "tr": "TODO: oynarken ne yaparsın." },
-    { "en": "TODO: how it ends and how it is scored.", "tr": "TODO: nasıl biter, puan nasıl gelir." }
+    {
+      "en": "After PLAY, choose your survivor and dog on the squad screen, then pick Campaign or Last Stand (Last Stand opens after mission 2).",
+      "tr": "OYNA'dan sonra ekip ekranında hayatta kalanını ve köpeğini seç, ardından Kampanya ya da Son Savunma'yı başlat (Son Savunma 2. görevden sonra açılır)."
+    },
+    {
+      "en": "On the Northdale map pick a mission and read the briefing: its objectives, the side goal for the second star and the zombies you will meet.",
+      "tr": "Northdale haritasında bir görev seç ve brifingi oku: hedefler, ikinci yıldızın yan görevi ve karşılaşacağın zombiler orada yazar."
+    },
+    {
+      "en": "Follow the yellow arrows and the minimap to the objectives. Walk over items to take them, and hold USE to open chests, free survivors or start a repair, the pump or the radio.",
+      "tr": "Sarı oklar ve küçük harita seni hedeflere götürür. Eşyaların üstünden geçince alırsın; sandık açmak, birini kurtarmak ya da tamiri, pompayı veya telsizi başlatmak için KULLAN'ı basılı tut."
+    },
+    {
+      "en": "When the last objective says so, bring everyone back to the convoy and board it. Then drive to the Northdale sign without wrecking the vehicle.",
+      "tr": "Son hedef söylediğinde herkesi konvoya getir ve bin. Sonra aracı hurdaya çevirmeden Northdale tabelasına kadar sür."
+    },
+    {
+      "en": "After the summary, pick a power card, visit the garage between missions and carry on until mission 12 is done or your survivor falls.",
+      "tr": "Özetten sonra bir güç kartı seç, görevler arasında garaja uğra ve 12. görev bitene ya da hayatta kalanın düşene dek devam et."
+    }
   ],
   "controls": {
-    "keyboard": { "en": "TODO: the real keys.", "tr": "TODO: gerçek tuşlar." },
-    "touch": { "en": "TODO: taps, drags and on-screen buttons.", "tr": "TODO: dokunuşlar, sürüklemeler ve ekran düğmeleri." }
+    "keyboard": {
+      "en": "WASD or the arrows move and the mouse aims. Attack with the left mouse button, Space, J or Z; dodge with Shift, K or X; Q swaps gun and melee; R reloads; E uses what is in reach (or fires the ability when nothing is); C fires the ability; F or L commands the dog; P or Esc pauses. On the drive, ←/→ or A/D steer, ↑/W is gas, ↓/S brakes and Space fires a nitro.",
+      "tr": "WASD ya da oklar yürütür, fare nişan alır. Sol tık, Boşluk, J ya da Z saldırır; Shift, K ya da X takla attırır; Q silah ile yakın dövüş arasında geçiş yapar; R şarjör değiştirir; E yakındakini kullanır (yoksa yeteneği ateşler); C yetenek, F ya da L köpek komutudur; P ya da Esc duraklatır. Sürüşte ←/→ ya da A/D direksiyon, ↑/W gaz, ↓/S fren, Boşluk nitrodur."
+    },
+    "touch": {
+      "en": "Drag anywhere on the left to move. ATTACK sits in the bottom right corner with DODGE, ABILITY, SWAP and DOG around it; USE pops up with what it would do. On the drive the left thumb steers with the arrows, the wheel or tilt chosen on the menu, and the right thumb has GAS, BRAKE and NITRO.",
+      "tr": "Yürümek için solda herhangi bir yeri sürükle. SALDIR sağ alt köşededir, TAKLA, YETENEK, DEĞİŞ ve KÖPEK etrafındadır; KULLAN ne yapacağını yazarak belirir. Sürüşte sol baş parmak menüde seçilen oklar, direksiyon ya da eğimle yön verir, sağ baş parmakta GAZ, FREN ve NİTRO vardır."
+    },
+    "mouse": {
+      "en": "Point at the ground to aim and hold the left button to attack; menus, cards and the garage are clicked.",
+      "tr": "Nişan almak için yeri göster, saldırmak için sol tuşu basılı tut; menüler, kartlar ve garaj tıklanarak kullanılır."
+    },
+    "gamepad": {
+      "en": "Left stick moves (and steers on the drive). A, X or RT attack; B or Y dodge; LB swaps weapons; RB uses or fires the ability; LT commands the dog; L3 is the ability, R3 reloads; Start pauses. On the drive, stick up is gas, stick down brakes and A fires a nitro.",
+      "tr": "Sol çubuk yürütür (sürüşte direksiyondur). A, X ya da RT saldırır; B ya da Y takla attırır; LB silah değiştirir; RB kullanır ya da yeteneği ateşler; LT köpeğe komut verir; L3 yetenek, R3 şarjördür; Start duraklatır. Sürüşte çubuğu yukarı itmek gaz, aşağı çekmek fren, A da nitrodur."
+    }
   },
   "tips": [
-    { "en": "TODO: a concrete tip.", "tr": "TODO: somut bir ipucu." },
-    { "en": "TODO: a concrete tip.", "tr": "TODO: somut bir ipucu." },
-    { "en": "TODO: a concrete tip.", "tr": "TODO: somut bir ipucu." }
+    {
+      "en": "Every weapon has three combos: tap three times for a finisher, tap twice and hold for a heavy finisher that also breaks a boss's armour, or attack right after a dodge for a dash strike.",
+      "tr": "Her silahın üç kombosu var: bitirici için üç kez dokun, boss zırhını da kıran ağır bitirici için iki kez dokunup basılı tut, hamle için de takladan hemen sonra saldır."
+    },
+    {
+      "en": "Switch to melee among a few shamblers to keep the horde meter low; save the gun for runners, bloaters and bosses.",
+      "tr": "Birkaç sendeleyen varken sürü sayacını düşük tutmak için yakın dövüşe geç; silahı koşuculara, şişkolara ve boss'lara sakla."
+    },
+    {
+      "en": "When the dog barks a red mark appears: a crawler hides there under a wreck and is about to rise.",
+      "tr": "Köpek havlayınca kırmızı bir işaret çıkar: orada bir arabanın altında sürünen saklanıyordur ve kalkmak üzeredir."
+    },
+    {
+      "en": "Bloaters burst when they fall, so finish them from a distance. A red ring on the ground is a boss's slam: roll out of it.",
+      "tr": "Şişkolar düşünce patlar, onları uzaktan bitir. Yerdeki kırmızı halka boss'un yere vuruşudur: takla atarak dışına çık."
+    },
+    {
+      "en": "On the drive, slow down before the turns and thread the gap in each barricade; ramming costs armour unless a nitro is burning.",
+      "tr": "Sürüşte virajlardan önce yavaşla ve her barikattaki boşluktan geç; nitro yanmıyorsa çarpmak zırh götürür."
+    }
   ],
   "features": [
-    { "en": "TODO: a short feature.", "tr": "TODO: kısa bir özellik." },
-    { "en": "TODO: a short feature.", "tr": "TODO: kısa bir özellik." },
-    { "en": "TODO: a short feature.", "tr": "TODO: kısa bir özellik." }
+    {
+      "en": "Four survivors with their own guns, melee weapons and abilities: barricade, flare, heal pulse and power chord.",
+      "tr": "Kendi silahı, yakın dövüş silahı ve yeteneği olan dört hayatta kalan: barikat, işaret fişeği, şifa dalgası ve güç akoru."
+    },
+    {
+      "en": "A dog that bites, barks at hidden zombies and sniffs out supply chests on command.",
+      "tr": "Isıran, saklanan zombilere havlayan ve komutla erzak sandığı koklayan bir köpek."
+    },
+    {
+      "en": "Twelve missions over four districts, each district ending with a giant boss, and an escape drive after every mission.",
+      "tr": "Dört bölgede on iki görev; her bölge dev bir boss'la biter, her görevden sonra bir kaçış sürüşü vardır."
+    },
+    {
+      "en": "Ten garage upgrades whose ranks change how things work, and 28 power cards drafted during an escape.",
+      "tr": "Seviyeleri işleyişi değiştiren on garaj geliştirmesi ve kaçış boyunca seçilen 28 güç kartı."
+    },
+    {
+      "en": "Last Stand: defend the broken-down truck in the town square against endless waves.",
+      "tr": "Son Savunma: meydanda bozulan kamyonu bitmeyen dalgalara karşı koru."
+    }
   ],
   "faq": [
-    { "q": { "en": "TODO: a question players ask?", "tr": "TODO: oyuncuların sorduğu bir soru?" }, "a": { "en": "TODO: an honest answer.", "tr": "TODO: dürüst bir yanıt." } },
-    { "q": { "en": "TODO: a question players ask?", "tr": "TODO: oyuncuların sorduğu bir soru?" }, "a": { "en": "TODO: an honest answer.", "tr": "TODO: dürüst bir yanıt." } },
-    { "q": { "en": "TODO: a question players ask?", "tr": "TODO: oyuncuların sorduğu bir soru?" }, "a": { "en": "TODO: an honest answer.", "tr": "TODO: dürüst bir yanıt." } }
+    {
+      "q": { "en": "How are points scored?", "tr": "Puan nasıl kazanılır?" },
+      "a": {
+        "en": "Zombies give 10 to 45 points and bosses 1500 to 4200; items, rescues, stages and the gate add more. The drive adds 15 points per zombie run over, an arrival bonus and a mission bonus for every star. In Last Stand each cleared wave adds 100 points per wave number.",
+        "tr": "Zombiler 10 ile 45, boss'lar 1500 ile 4200 puan verir; eşyalar, kurtarmalar, aşamalar ve kapı ek puan getirir. Sürüş, ezilen her zombi için 15 puan, varış bonusu ve her yıldız için görev bonusu ekler. Son Savunma'da temizlenen her dalga, dalga numarasının 100 katı puan verir."
+      }
+    },
+    {
+      "q": { "en": "Is there an easy mode?", "tr": "Kolay mod var mı?" },
+      "a": {
+        "en": "Yes. On Easy zombies are slower, weaker and fewer, you have more health and ammo and the convoy has more armour. Easy runs are practice and do not count for the leaderboard.",
+        "tr": "Evet. Kolay'da zombiler daha yavaş, daha zayıf ve daha azdır; daha çok canın ve mermin olur, konvoyun zırhı da artar. Kolay oyunlar alıştırma sayılır ve sıralamaya girmez."
+      }
+    },
+    {
+      "q": { "en": "How do I get the other survivors?", "tr": "Diğer hayatta kalanları nasıl alırım?" },
+      "a": {
+        "en": "You start with one survivor, matched to your Ayvago character. The others are trapped somewhere in town and are freed in missions 2, 8 and 11; from then on you can play them and the first one free follows you as a squadmate. The pug Mochi joins after mission 6.",
+        "tr": "Ayvago karakterine göre seçilen bir hayatta kalanla başlarsın. Diğerleri kasabada mahsurdur ve 2., 8. ve 11. görevlerde kurtarılır; o andan sonra onlarla oynayabilirsin ve ilk boştaki ekip arkadaşı olarak peşinden gelir. Pug Mochi 6. görevden sonra katılır."
+      }
+    },
+    {
+      "q": { "en": "Does it work on phones?", "tr": "Telefonda çalışır mı?" },
+      "a": {
+        "en": "Yes. It is played in landscape with an on-screen stick and buttons, and the drive offers arrows, a steering wheel or tilt.",
+        "tr": "Evet. Yatay tutulur, ekranda bir çubuk ve düğmeler vardır; sürüşte oklar, direksiyon ya da eğim seçilebilir."
+      }
+    }
   ]
 }

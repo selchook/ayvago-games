@@ -89,10 +89,10 @@ export interface MeleeDef {
 }
 
 export const GUN: Record<GunId, GunDef> = {
-  pistol: { id: 'pistol', kind: 'gun', dmg: 15, pellets: 1, rate: 0.26, spread: 3, range: 17, mag: 12, reserve: 48, reload: 0.95, knock: 0.35, pierce: 0, noise: 20, loud: 5 },
-  smg: { id: 'smg', kind: 'gun', dmg: 8, pellets: 1, rate: 0.095, spread: 9, range: 15, mag: 30, reserve: 120, reload: 1.35, knock: 0.15, pierce: 0, noise: 24, loud: 2.2 },
-  shotgun: { id: 'shotgun', kind: 'gun', dmg: 8, pellets: 6, rate: 0.62, spread: 26, range: 9.5, mag: 6, reserve: 30, reload: 1.6, knock: 1.6, pierce: 0, noise: 28, loud: 11 },
-  rifle: { id: 'rifle', kind: 'gun', dmg: 38, pellets: 1, rate: 0.5, spread: 1, range: 24, mag: 8, reserve: 40, reload: 1.5, knock: 0.6, pierce: 2, noise: 30, loud: 9 },
+  pistol: { id: 'pistol', kind: 'gun', dmg: 15, pellets: 1, rate: 0.26, spread: 3, range: 17, mag: 12, reserve: 60, reload: 0.95, knock: 0.35, pierce: 0, noise: 20, loud: 5 },
+  smg: { id: 'smg', kind: 'gun', dmg: 8, pellets: 1, rate: 0.095, spread: 9, range: 15, mag: 30, reserve: 150, reload: 1.35, knock: 0.15, pierce: 0, noise: 24, loud: 2.2 },
+  shotgun: { id: 'shotgun', kind: 'gun', dmg: 8, pellets: 6, rate: 0.62, spread: 26, range: 9.5, mag: 6, reserve: 42, reload: 1.6, knock: 1.6, pierce: 0, noise: 28, loud: 11 },
+  rifle: { id: 'rifle', kind: 'gun', dmg: 38, pellets: 1, rate: 0.5, spread: 1, range: 24, mag: 8, reserve: 50, reload: 1.5, knock: 0.6, pierce: 2, noise: 30, loud: 9 },
 };
 
 export const MELEE: Record<MeleeId, MeleeDef> = {
@@ -176,9 +176,9 @@ export interface BossDef { id: BossId; hp: number; scale: number; tint: number; 
 /** One per district: a huge recoloured brute with phases (a charge, a slam ring, a roar that calls the horde). */
 export const BOSS: Record<BossId, BossDef> = {
   butcher: { id: 'butcher', hp: 1300, scale: 2.3, tint: 0xd86a5a, speed: 1.7, dmg: 26, score: 1500 },
-  hulk: { id: 'hulk', hp: 1900, scale: 2.5, tint: 0x6a9ad8, speed: 1.8, dmg: 30, score: 2200 },
+  hulk: { id: 'hulk', hp: 1350, scale: 2.5, tint: 0x6a9ad8, speed: 1.8, dmg: 30, score: 2200 },
   grease: { id: 'grease', hp: 2500, scale: 2.6, tint: 0x8a8a4a, speed: 1.9, dmg: 32, score: 3000 },
-  titan: { id: 'titan', hp: 3300, scale: 2.8, tint: 0xa85ad8, speed: 2.0, dmg: 36, score: 4200 },
+  titan: { id: 'titan', hp: 2800, scale: 2.8, tint: 0xa85ad8, speed: 2.0, dmg: 36, score: 4200 },
 };
 
 // ------------------------------------------------------------------ the town
@@ -223,7 +223,7 @@ export const MISSIONS: MissionDef[] = [
   // The docks
   { n: 4, district: 'docks', vehicle: 'truck', stages: [S('collect', { item: 'part', n: 3 }), S('return')], start: 20, trickle: 5.5, mix: [8, 3, 1, 1, 1], side: 'chests', sideN: 3, drive: { cells: 74, zombies: 0.5, blocks: 3 }, night: 230 },
   { n: 5, district: 'docks', vehicle: 'truck', stages: [S('rescue', { who: 'civ', n: 2 }), S('clear'), S('return')], start: 22, trickle: 5, mix: [7, 3, 2, 2, 1], side: 'melee', sideN: 25, drive: { cells: 78, zombies: 0.55, blocks: 4 }, night: 220 },
-  { n: 6, district: 'docks', vehicle: 'truck', stages: [S('hold', { hold: 'repair', secs: 50 }), S('boss', { boss: 'hulk' }), S('return')], start: 18, trickle: 5, mix: [7, 3, 1, 2, 2], side: 'unhurt', sideN: 0, drive: { cells: 82, zombies: 0.6, blocks: 4 }, night: 220 },
+  { n: 6, district: 'docks', vehicle: 'truck', stages: [S('hold', { hold: 'repair', secs: 40 }), S('boss', { boss: 'hulk' }), S('return')], start: 16, trickle: 5.4, mix: [8, 3, 1, 2, 1], side: 'unhurt', sideN: 0, drive: { cells: 82, zombies: 0.6, blocks: 4 }, night: 220 },
   // The gas station and the on-ramp
   { n: 7, district: 'gas', vehicle: 'truck', stages: [S('collect', { item: 'fuel', n: 4 }), S('hold', { hold: 'pump', secs: 30 }), S('return')], start: 24, trickle: 4.6, mix: [7, 3, 2, 2, 2], side: 'quiet', sideN: 0, drive: { cells: 84, zombies: 0.6, blocks: 4 }, night: 210 },
   { n: 8, district: 'gas', vehicle: 'truck', stages: [S('rescue', { who: 'hero', n: 1 }), S('clear'), S('return')], start: 26, trickle: 4.4, mix: [6, 4, 2, 2, 2], side: 'chests', sideN: 3, drive: { cells: 88, zombies: 0.65, blocks: 5 }, night: 210 },
@@ -231,7 +231,7 @@ export const MISSIONS: MissionDef[] = [
   // Water tower hill
   { n: 10, district: 'hill', vehicle: 'truck', stages: [S('collect', { item: 'battery', n: 3 }), S('return')], start: 28, trickle: 4.2, mix: [6, 4, 2, 3, 2], side: 'fast', sideN: 150, drive: { cells: 94, zombies: 0.7, blocks: 5 }, night: 200 },
   { n: 11, district: 'hill', vehicle: 'truck', stages: [S('rescue', { who: 'hero', n: 1 }), S('rescue', { who: 'civ', n: 2 }), S('return')], start: 28, trickle: 4, mix: [6, 4, 3, 3, 2], side: 'unhurt', sideN: 0, drive: { cells: 98, zombies: 0.75, blocks: 6 }, night: 200 },
-  { n: 12, district: 'hill', vehicle: 'truck', stages: [S('hold', { hold: 'radio', secs: 45 }), S('boss', { boss: 'titan' }), S('return')], start: 26, trickle: 4, mix: [6, 4, 2, 3, 3], side: 'quiet', sideN: 0, drive: { cells: 110, zombies: 0.85, blocks: 6 }, night: 190 },
+  { n: 12, district: 'hill', vehicle: 'truck', stages: [S('hold', { hold: 'radio', secs: 40 }), S('boss', { boss: 'titan' }), S('return')], start: 26, trickle: 4, mix: [6, 4, 2, 3, 3], side: 'quiet', sideN: 0, drive: { cells: 110, zombies: 0.85, blocks: 6 }, night: 190 },
 ];
 
 export const DISTRICT_OF = (n: number): DistrictId => MISSIONS[n - 1].district;

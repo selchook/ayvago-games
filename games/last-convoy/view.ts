@@ -536,7 +536,7 @@ export class View {
     f.update(dt);
     // the scent trail: dust along the path the nose found
     if (g.state === 'sniff' && dt > 0) {
-      for (let i = g.ti; i < g.trail.length; i += 2) if (Math.random() < dt * 3) { const p = g.trail[i]; this.glow.dot(p.x + (Math.random() - 0.5) * 0.6, 0.25, p.z + (Math.random() - 0.5) * 0.6, 0, 0.4, 0, 0x8affc8, 1.4, 0.8); }
+      for (let i = Math.max(0, g.ti - 4); i < g.trail.length; i++) if (Math.random() < dt * 9) { const p = g.trail[i]; this.glow.dot(p.x + (Math.random() - 0.5) * 0.7, 0.3, p.z + (Math.random() - 0.5) * 0.7, 0, 0.5, 0, 0x8affc8, 1.8, 1); }
     }
     this.lastDog.x = g.x; this.lastDog.z = g.z;
   }
@@ -677,6 +677,7 @@ export class View {
       }
       const mat = m.material as THREE.MeshLambertMaterial;
       if (c.opened) { m.scale.y = Math.max(0.55, m.scale.y - dt * 3); mat.emissive.setHex(0); }
+      else if (s.dog.chest === c.id) { const k = (Math.sin(t * 6) + 1) / 2; mat.emissive.setRGB(0.05, 0.25 + 0.25 * k, 0.15); }
       else { const k = (Math.sin(t * 4 + c.id) + 1) / 2; mat.emissive.setRGB(0.12 * k + (c.special ? 0.1 : 0), 0.1 * k, c.special ? 0.12 * k : 0.02); }
     }
     // objective items in beams

@@ -53,7 +53,9 @@ export function partsOf(key: string, only?: string): Part[] {
     node.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
-      if (only && !(m.name === only || m.parent?.name === only)) return;
+      // the loader makes repeated node names unique (`body`, `body_1` …): match the stem
+      const is = (n: string | undefined) => !!n && !!only && (n === only || (n.startsWith(only + '_') && /^\d+$/.test(n.slice(only.length + 1).split('_')[0])));
+      if (only && !(is(m.name) || is(m.parent?.name))) return;
       const mats = Array.isArray(m.material) ? m.material : [m.material];
       ps!.push({ geo: m.geometry, mat: inv.clone().multiply(m.matrixWorld), material: mats[0].name });
     });
