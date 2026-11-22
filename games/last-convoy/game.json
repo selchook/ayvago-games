@@ -1,0 +1,33 @@
+{
+  "id": "last-convoy",
+  "title": {
+    "tr": "Son Konvoy",
+    "en": "Last Convoy"
+  },
+  "description": {
+    "tr": "Northdale düştü! 3B bir kurtarma ve kaçış aksiyonu: dört kişilik ekibinden birini ve sadık köpeğini seç, zombi dolu sokaklarda benzin bidonu, parça ve pil topla, mahsur kalanları kurtarıp konvoya getir, barikatları yık, tamir ve telsiz çağrısı bitene dek dayan, her bölgenin devini yen. Silahlar gürültülüdür ve sürüyü çağırır, yakın dövüş sessizdir; üç komboyla dövüş, takla at, yeteneğini kullan. Her görevin sonunda konvoyu zombilerin arasından Northdale tabelasına kadar sür. Garajda kalıcı geliştirmeler al, her görevden sonra güç kartı seç. On iki görev, dört bölge, Son Savunma modu, Kolay ya da Normal.",
+    "en": "Northdale has fallen! A 3D rescue-and-escape action game: pick one of your four survivors and your loyal dog, collect fuel cans, parts and batteries in zombie-filled streets, free the trapped and bring them back to the convoy, break barricades, hold out while the truck is repaired or the radio calls for help, and topple each district's giant. Guns are loud and call the horde, melee is quiet; fight with three combos, roll and use your ability. Every mission ends with the escape drive: steer the convoy through the zombies to the Northdale sign. Buy lasting upgrades in the garage and pick a power card after each mission. Twelve missions, four districts, a Last Stand mode, Easy or Normal."
+  },
+  "howTo": {
+    "tr": "Soldaki çubukla ya da WASD ile yürü; SALDIR, Boşluk ya da fareyle saldır (üç dokunuş, iki dokunup basılı tutmak ya da takladan sonra saldırmak kombodur). TAKLA / Shift, DEĞİŞ / Q, YETENEK / C, KÖPEK / F, KULLAN / E. Sürüşte ←/→ direksiyon, ↑ gaz, ↓ fren, Boşluk nitro; dokunmatikte direksiyonu menüden seç (oklar, direksiyon ya da eğim).",
+    "en": "Move with the stick on the left or WASD; ATTACK, Space or the mouse attacks (three taps, tap-tap-hold, or attack after a roll are combos). DODGE / Shift, SWAP / Q, ABILITY / C, DOG / F, USE / E. On the drive ←/→ steer, ↑ gas, ↓ brake, Space nitro; on touch, pick the steering on the menu (arrows, a wheel or tilt)."
+  },
+  "genres": [
+    "action",
+    "arcade"
+  ],
+  "orientation": "landscape",
+  "controls": [
+    "touch",
+    "keyboard"
+  ],
+  "version": "1.0.0",
+  "credits": [
+    "3D models: Quaternius Zombie Apocalypse Kit and Buildings Pack (CC0) — quaternius.com",
+    "Sounds: Juhani Junkala (CC0) — opengameart.org; Kenney Impact, Foley, Interface and Casino Audio (CC0) — kenney.nl",
+    "Logo font: Black Ops One by James Grieshaber (SIL OFL 1.1)"
+  ],
+  "platform": {
+    "addedAt": "2026-11-22"
+  }
+}

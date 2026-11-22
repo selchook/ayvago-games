@@ -1,0 +1,30 @@
+{
+  "about": {
+    "en": "TODO: what the game is and what makes it different (120–200 words in 2–3 paragraphs, separated by a blank line).\n\nTODO: second paragraph.",
+    "tr": "TODO: oyunun ne olduğu ve onu farklı kılan ne (2–3 paragrafta 120–200 kelime, aralarında boş satır).\n\nTODO: ikinci paragraf."
+  },
+  "howToPlay": [
+    { "en": "TODO: how a round starts.", "tr": "TODO: bir tur nasıl başlar." },
+    { "en": "TODO: what you do during play.", "tr": "TODO: oynarken ne yaparsın." },
+    { "en": "TODO: how it ends and how it is scored.", "tr": "TODO: nasıl biter, puan nasıl gelir." }
+  ],
+  "controls": {
+    "keyboard": { "en": "TODO: the real keys.", "tr": "TODO: gerçek tuşlar." },
+    "touch": { "en": "TODO: taps, drags and on-screen buttons.", "tr": "TODO: dokunuşlar, sürüklemeler ve ekran düğmeleri." }
+  },
+  "tips": [
+    { "en": "TODO: a concrete tip.", "tr": "TODO: somut bir ipucu." },
+    { "en": "TODO: a concrete tip.", "tr": "TODO: somut bir ipucu." },
+    { "en": "TODO: a concrete tip.", "tr": "TODO: somut bir ipucu." }
+  ],
+  "features": [
+    { "en": "TODO: a short feature.", "tr": "TODO: kısa bir özellik." },
+    { "en": "TODO: a short feature.", "tr": "TODO: kısa bir özellik." },
+    { "en": "TODO: a short feature.", "tr": "TODO: kısa bir özellik." }
+  ],
+  "faq": [
+    { "q": { "en": "TODO: a question players ask?", "tr": "TODO: oyuncuların sorduğu bir soru?" }, "a": { "en": "TODO: an honest answer.", "tr": "TODO: dürüst bir yanıt." } },
+    { "q": { "en": "TODO: a question players ask?", "tr": "TODO: oyuncuların sorduğu bir soru?" }, "a": { "en": "TODO: an honest answer.", "tr": "TODO: dürüst bir yanıt." } },
+    { "q": { "en": "TODO: a question players ask?", "tr": "TODO: oyuncuların sorduğu bir soru?" }, "a": { "en": "TODO: an honest answer.", "tr": "TODO: dürüst bir yanıt." } }
+  ]
+}

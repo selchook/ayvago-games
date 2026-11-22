@@ -1,0 +1,117 @@
+# Quaternius Zombie Apocalypse Kit (March 2024, CC0 1.0): what public/assets/quaternius/zombie-kit holds
+# (games/last-convoy/import-kit.mjs). Each entry: file, size, bounding box in metres (x × y × z), triangles,
+# the clips with their length in seconds and, for packed files, each root node with its box. Characters,
+# dogs and vehicles face +z.
+quaternius/zombie-kit/dog-pug.glb 190KB 0.44x0.76x1.06 2161 tris
+  clips: Attack:1.20 Death:1.07 Eating:2.67 HitReact_Left:0.67 Idle:3.33 Idle_2_HeadLow:4.00 Run:0.57 Run_Jump:0.67 Walk:1.07
+quaternius/zombie-kit/dog-shepherd.glb 240KB 0.49x0.94x1.52 2692 tris
+  clips: Attack:1.20 Death:1.07 Eating:2.67 HitReact_Left:0.67 Idle:3.33 Idle_2_HeadLow:4.00 Run:0.57 Run_Jump:0.67 Walk:1.07
+quaternius/zombie-kit/heroes.glb 1042KB 2.04x1.72x1.85 28689 tris (meshes: h-lis h-matt h-sam h-shaun, shoulder on Shoulder.L; axe guitar knife pistol rifle shotgun smg spear bat-barbed bat-saw on Middle1.L)
+  clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Idle_Gun:1.00 Jump:0.37 Jump_Idle:0.50 Jump_Land:0.37 No:1.67 Punch:0.77 Run:0.73 Run_Gun:0.73 Run_Slash:0.73 Run_Stab:0.73 Slash:0.87 Stab:0.87 Walk:1.00 Walk_Gun:1.00 Wave:1.67 Yes:1.67
+quaternius/zombie-kit/icons.png 101KB 1024x640 (40 frames of 128 px in ICON_KEYS order, rendered from the models: games/last-convoy/icons.ts, make-icons.mjs; palette PNG)
+quaternius/zombie-kit/props.glb 712KB 9.53x9.59x8.00 21835 tris (a root node per model)
+  barrel 0.70x1.14x0.70
+  blood-1 3.41x0.00x3.56
+  blood-2 1.71x0.00x1.32
+  blood-3 1.72x0.00x2.14
+  chest 0.64x0.41x0.48
+  chest-special 0.85x0.41x0.48
+  cinder-block 0.47x0.23x0.21
+  container-green 5.71x2.60x2.56
+  container-red 5.71x2.60x2.56
+  couch 3.01x1.24x1.21
+  hydrant 0.52x0.77x0.40
+  pallet 0.89x0.14x1.22
+  pallet-broken 0.92x0.16x1.22
+  pipes 0.75x0.67x3.36
+  plastic-barrier 1.04x0.60x0.33
+  street-light 0.36x6.64x2.93
+  street-4way 8.00x0.10x8.00
+  street-straight 8.00x0.12x8.00
+  street-crack-1 8.00x0.29x8.00
+  street-crack-2 8.00x0.58x8.00
+  street-t 8.00x0.10x8.00
+  street-turn 8.00x0.12x8.00
+  town-sign 5.98x5.35x1.74
+  traffic-barrier-1 1.56x1.11x0.88
+  traffic-barrier-2 1.56x0.80x0.78
+  cone-1 0.52x0.67x0.52
+  cone-2 0.60x0.74x0.60
+  traffic-light-1 1.51x4.66x1.51
+  traffic-light-2 5.34x4.66x1.92
+  trash-1 0.50x0.56x0.50
+  trash-2 0.91x0.53x0.52
+  water-tower 2.65x9.38x2.71
+  wheel 0.57x0.20x0.57
+  tyres 0.66x0.61x0.57
+quaternius/zombie-kit/vehicles.glb 930KB 2.98x2.91x6.00 27083 tris (a root node per vehicle: body, wheel-fl, wheel-fr, wheels-back; facing +z)
+  pickup 2.31x1.85x5.18
+  pickup-armored 2.65x2.00x5.51
+  truck 2.71x2.88x5.25
+  truck-armored 2.98x2.90x5.59
+  sports 2.67x1.86x5.66
+  sports-armored 2.95x1.86x5.66
+quaternius/zombie-kit/zombie-arm.glb 192KB 2.98x1.57x0.64 3402 tris
+  clips: Death:1.30 HitReact:0.60 Idle:1.67 Jump_Land:0.37 No:1.67 Punch:1.00 Run:0.80 Run_Attack:0.83 Walk:1.33
+quaternius/zombie-kit/zombie-basic.glb 262KB 1.89x1.36x0.68 4302 tris
+  clips: Crawl:1.67 Death:0.77 HitReact:0.60 Idle:1.00 Idle_Attack:1.67 Jump_Land:0.37 No:1.67 Punch:0.77 Run:0.67 Run_Attack:0.67 Walk:1.33
+quaternius/zombie-kit/zombie-chubby.glb 244KB 2.35x1.64x0.77 3394 tris
+  clips: Crawl:1.67 Death:0.77 HitReact:0.60 Idle:1.00 Idle_Attack:1.67 Jump_Land:0.37 No:1.67 Punch:0.77 Run:0.73 Run_Attack:0.67 Walk:1.33
+quaternius/zombie-kit/zombie-ribcage.glb 117KB 0.51x1.06x0.43 2864 tris
+  clips: Crawl:1.67 Death:0.73 HitReact:0.60 Idle:1.00 Jump_Land:0.37 Run:0.67 Walk:1.33
+
+# The kit as shared by the owner (glTF with embedded buffers and atlas; not in the repository):
+Characters/Characters_GermanShepherd.gltf 1345KB
+Characters/Characters_Lis.gltf 2833KB
+Characters/Characters_Lis_SingleWeapon.gltf 1841KB
+Characters/Characters_Matt.gltf 2759KB
+Characters/Characters_Matt_SingleWeapon.gltf 1747KB
+Characters/Characters_Pug.gltf 982KB
+Characters/Characters_Sam.gltf 2845KB
+Characters/Characters_Sam_SingleWeapon.gltf 1773KB
+Characters/Characters_Shaun.gltf 2952KB
+Characters/Characters_Shaun_SingleWeapon.gltf 1961KB
+Characters/Zombie_Arm.gltf 1283KB
+Characters/Zombie_Basic.gltf 1663KB
+Characters/Zombie_Chubby.gltf 1632KB
+Characters/Zombie_Ribcage.gltf 433KB
+Vehicles/Vehicle_Pickup.gltf 357KB
+Vehicles/Vehicle_Pickup_Armored.gltf 787KB
+Vehicles/Vehicle_Sports.gltf 330KB
+Vehicles/Vehicle_Sports_Armored.gltf 609KB
+Vehicles/Vehicle_Truck.gltf 427KB
+Vehicles/Vehicle_Truck_Armored.gltf 983KB
+Environment/Barrel.gltf 55KB
+Environment/Blood_1.gltf 13KB
+Environment/Blood_2.gltf 11KB
+Environment/Blood_3.gltf 11KB
+Environment/Chest.gltf 194KB
+Environment/Chest_Special.gltf 210KB
+Environment/CinderBlock.gltf 25KB
+Environment/Container_Green.gltf 126KB
+Environment/Container_Red.gltf 100KB
+Environment/Couch.gltf 157KB
+Environment/FireHydrant.gltf 56KB
+Environment/Pallet.gltf 29KB
+Environment/Pallet_Broken.gltf 27KB
+Environment/Pipes.gltf 74KB
+Environment/PlasticBarrier.gltf 57KB
+Environment/StreetLights.gltf 27KB
+Environment/Street_4Way.gltf 24KB
+Environment/Street_Straight.gltf 24KB
+Environment/Street_Straight_Crack1.gltf 40KB
+Environment/Street_Straight_Crack2.gltf 49KB
+Environment/Street_T.gltf 23KB
+Environment/Street_Turn.gltf 27KB
+Environment/TownSign.gltf 86KB
+Environment/TrafficBarrier_1.gltf 54KB
+Environment/TrafficBarrier_2.gltf 30KB
+Environment/TrafficCone_1.gltf 15KB
+Environment/TrafficCone_2.gltf 30KB
+Environment/TrafficLight_1.gltf 54KB
+Environment/TrafficLight_2.gltf 79KB
+Environment/TrashBag_1.gltf 53KB
+Environment/TrashBag_2.gltf 100KB
+Environment/WaterTower.gltf 79KB
+Environment/Wheel.gltf 31KB
+Environment/Wheels_Stack.gltf 87KB
