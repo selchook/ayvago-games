@@ -459,6 +459,17 @@ const CARD = {
       await sleep(300);
     }`,
   },
+  // Last Convoy's card (landscape, cover-fit) shows a horde fight in Main Street's square: Lis with
+  // her guitar in the middle of a ring of shamblers, runners and bloaters, the dog biting at her
+  // side, finishers landing; the simulation then runs slowly so every candidate frame stays busy.
+  'last-convoy': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      window.__lc.stage('busy');
+      await sleep(300);
+    }`,
+  },
   // Pirate Cove's card (landscape since 1.1, cover-fit) shows a broadside fight on the bright first
   // wave: a brig alongside to starboard, a frigate and two sloops ahead, cannonballs in the air both
   // ways. The wave card and hints are skipped, the wave's own ships held back, nothing sinks the

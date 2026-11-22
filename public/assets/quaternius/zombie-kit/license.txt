@@ -1,0 +1,9 @@
+Zombie Apocalypse Kit (March 2024) by Quaternius (quaternius.com), CC0 1.0 Universal (public domain).
+Obtained as the .gltf files of the Google Drive folder shared by the project owner
+(https://drive.google.com/drive/folders/1mWP6sCHun7OUMHQeDNZLrXTteXlzWg_t). The folder's own
+License.txt says "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"; its header names another
+Quaternius pack ("Ultimate Platformer Pack by @Quaternius"), a header Quaternius reuses across kits.
+The .glb files here are converted by games/last-convoy/import-kit.mjs (atlas baked into vertex
+colours, the four survivors on one skeleton with their weapons on the hand bone, unused clips and
+rest-pose tracks dropped, simplified, quantized).
+icons.png is rendered from the kit's own models (games/last-convoy/icons.ts, make-icons.mjs).

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "lastconvoy",
+  "title": {
+    "en": "Last Convoy",
+    "tr": "Son Konvoy"
+  },
+  "description": {
+    "en": "Northdale has fallen! A 3D rescue-and-escape action game: pick one of your four survivors and your loyal dog, collect fuel cans, parts and batteries in zombie-filled streets, free the trapped and bring them back to the convoy, break barricades, hold out while the truck is repaired or the radio calls for help, and topple each district's giant. Guns are loud and call the horde, melee is quiet; fight with three combos, roll and use your ability. Every mission ends with the escape drive: steer the convoy through the zombies to the Northdale sign. Buy lasting upgrades in the garage and pick a power card after each mission. Twelve missions, four districts, a Last Stand mode, Easy or Normal.",
+    "tr": "Northdale düştü! 3B bir kurtarma ve kaçış aksiyonu: dört kişilik ekibinden birini ve sadık köpeğini seç, zombi dolu sokaklarda benzin bidonu, parça ve pil topla, mahsur kalanları kurtarıp konvoya getir, barikatları yık, tamir ve telsiz çağrısı bitene dek dayan, her bölgenin devini yen. Silahlar gürültülüdür ve sürüyü çağırır, yakın dövüş sessizdir; üç komboyla dövüş, takla at, yeteneğini kullan. Her görevin sonunda konvoyu zombilerin arasından Northdale tabelasına kadar sür. Garajda kalıcı geliştirmeler al, her görevden sonra güç kartı seç. On iki görev, dört bölge, Son Savunma modu, Kolay ya da Normal."
+  },
+  "category": "action",
+  "categories": [
+    "action",
+    "arcade"
+  ],
+  "tags": [
+    "last",
+    "convoy",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/last-convoy/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "gamepad",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/last-convoy/ayvago/icon-512.png",
+    "cover": "/games/last-convoy/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/last-convoy/ayvago/screenshot.jpg",
+    "card": {
+      "en": "/games/last-convoy/ayvago/card-640x360.webp",
+      "tr": "/games/last-convoy/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/last-convoy/ayvago/card-1280x720.webp",
+      "tr": "/games/last-convoy/ayvago/card-tr-1280x720.webp"
+    },
+    "logo": {
+      "en": "/games/last-convoy/ayvago/logo-en.png",
+      "tr": "/games/last-convoy/ayvago/logo-tr.png"
+    }
+  },
+  "version": "1.0.0"
+}

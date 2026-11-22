@@ -3889,6 +3889,130 @@
         }
       ]
     },
+    "last-convoy": {
+      "about": {
+        "en": "Last Convoy is a 3D rescue-and-escape action game set in Northdale, a small town overrun by zombies. You lead one of four survivors, with a loyal dog at your side, through twelve missions in four districts: Main Street, the docks, the gas station and Water Tower Hill. Missions mix collecting fuel cans, parts or batteries, freeing trapped people and escorting them back, breaking a barricade, holding out during a repair and beating a giant boss.\n\nEvery mission ends with the escape drive: you steer the convoy through zombie-filled streets and up the highway to the Northdale sign. Guns are loud and fill the horde meter while melee is quiet, and night falls as the clock runs. Freed survivors join your squad, scrap and supplies buy lasting upgrades in the garage, and after each mission you pick a power card for the rest of the escape.",
+        "tr": "Son Konvoy, zombilerin istila ettiği Northdale kasabasında geçen 3B bir kurtarma ve kaçış aksiyonudur. Yanında sadık köpeğinle dört hayatta kalandan birini yönetir, dört bölgedeki on iki görevi tamamlarsın: Ana Cadde, liman, benzinlik ve Su Kulesi Tepesi. Görevlerde benzin bidonu, parça ya da pil toplamak, mahsur kalanları kurtarıp geri getirmek, barikat yıkmak, tamir sürerken dayanmak ve dev bir boss'u yenmek iç içe geçer.\n\nHer görev kaçış sürüşüyle biter: konvoyu zombi dolu sokaklardan geçirip otoyoldan Northdale tabelasına sürersin. Silahlar gürültülüdür ve sürü sayacını doldurur, yakın dövüş sessizdir; saat ilerledikçe gece çöker. Kurtardığın kişiler ekibe katılır, hurda ve erzakla garajda kalıcı geliştirmeler alırsın, her görevden sonra da kaçışın geri kalanı için bir güç kartı seçersin."
+      },
+      "howToPlay": [
+        {
+          "en": "After PLAY, choose your survivor and dog, then Campaign or Last Stand (open after mission 2).",
+          "tr": "OYNA'dan sonra hayatta kalanını ve köpeğini, ardından Kampanya ya da Son Savunma'yı seç (2. görevden sonra açılır)."
+        },
+        {
+          "en": "Pick a mission on the Northdale map and read its briefing.",
+          "tr": "Northdale haritasında bir görev seç ve brifingini oku."
+        },
+        {
+          "en": "Follow the yellow arrows and the minimap. Walk over items to take them; hold USE to open chests, free survivors or start a repair, the pump or the radio.",
+          "tr": "Sarı okları ve küçük haritayı izle. Eşyaların üstünden geçince alırsın; sandık açmak, birini kurtarmak ya da tamiri, pompayı veya telsizi başlatmak için KULLAN'ı basılı tut."
+        },
+        {
+          "en": "Bring everyone back to the convoy, board it and drive to the Northdale sign without wrecking it; then pick a power card and visit the garage.",
+          "tr": "Herkesi konvoya getir, bin ve aracı hurdaya çevirmeden Northdale tabelasına sür; sonra bir güç kartı seç ve garaja uğra."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "WASD or arrows move, the mouse aims. Attack: left click, Space, J or Z; dodge: Shift, K or X; Q swaps gun and melee; R reloads; E uses (or fires the ability); C ability; F dog; P or Esc pauses. Drive: ←/→ steer, ↑ gas, ↓ brake, Space nitro.",
+          "tr": "WASD ya da oklar yürütür, fare nişan alır. Saldırı: sol tık, Boşluk, J ya da Z; takla: Shift, K ya da X; Q silah ile yakın dövüşü değiştirir; R şarjör; E kullanır (yoksa yetenek); C yetenek; F köpek; P ya da Esc duraklatır. Sürüş: ←/→ direksiyon, ↑ gaz, ↓ fren, Boşluk nitro."
+        },
+        "touch": {
+          "en": "Drag on the left to move. ATTACK is bottom right with DODGE, ABILITY, SWAP and DOG around it; USE appears when something is in reach. The drive steers with arrows, a wheel or tilt, with GAS, BRAKE and NITRO.",
+          "tr": "Yürümek için solda sürükle. SALDIR sağ alttadır, TAKLA, YETENEK, DEĞİŞ ve KÖPEK etrafındadır; yakında bir şey olunca KULLAN belirir. Sürüşte oklar, direksiyon ya da eğimle yön verilir; GAZ, FREN ve NİTRO sağdadır."
+        },
+        "mouse": {
+          "en": "Point at the ground to aim, hold the left button to attack.",
+          "tr": "Nişan için yeri göster, saldırmak için sol tuşu basılı tut."
+        },
+        "gamepad": {
+          "en": "Left stick moves and steers. A, X or RT attack; B or Y dodge; LB swaps; RB uses; LT the dog; L3 ability; R3 reloads; Start pauses. Drive: stick up gas, down brake, A nitro.",
+          "tr": "Sol çubuk yürütür ve direksiyondur. A, X ya da RT saldırır; B ya da Y takla; LB değiştirir; RB kullanır; LT köpek; L3 yetenek; R3 şarjör; Start duraklatır. Sürüş: çubuk yukarı gaz, aşağı fren, A nitro."
+        }
+      },
+      "tips": [
+        {
+          "en": "Tap three times for a finisher, tap twice and hold for a heavy finisher that breaks a boss's armour, or attack right after a roll.",
+          "tr": "Bitirici için üç kez dokun, boss zırhını kıran ağır bitirici için iki dokunup basılı tut ya da takladan hemen sonra saldır."
+        },
+        {
+          "en": "Use melee among a few shamblers to keep the horde meter low; save bullets for runners, bloaters and bosses.",
+          "tr": "Sürü sayacını düşük tutmak için birkaç sendeleyene yakın dövüşle gir; mermiyi koşuculara, şişkolara ve boss'lara sakla."
+        },
+        {
+          "en": "Bloaters burst when they fall, so finish them from a distance; roll out of a boss's red ring.",
+          "tr": "Şişkolar düşünce patlar, onları uzaktan bitir; boss'un kırmızı halkasından takla atarak çık."
+        },
+        {
+          "en": "On the drive, slow down before turns and thread the gap in each barricade.",
+          "tr": "Sürüşte virajlardan önce yavaşla ve her barikattaki boşluktan geç."
+        }
+      ],
+      "features": [
+        {
+          "en": "Four survivors with their own guns, melee weapons and abilities.",
+          "tr": "Kendi silahı, yakın dövüş silahı ve yeteneği olan dört hayatta kalan."
+        },
+        {
+          "en": "A dog that bites, barks at hidden zombies and sniffs out chests.",
+          "tr": "Isıran, saklanan zombilere havlayan ve sandık koklayan bir köpek."
+        },
+        {
+          "en": "Twelve missions, four district bosses and an escape drive after each mission.",
+          "tr": "On iki görev, dört bölge boss'u ve her görevden sonra bir kaçış sürüşü."
+        },
+        {
+          "en": "Ten garage upgrades and 28 power cards.",
+          "tr": "On garaj geliştirmesi ve 28 güç kartı."
+        },
+        {
+          "en": "Last Stand: endless waves at the broken-down truck.",
+          "tr": "Son Savunma: bozulan kamyonun başında bitmeyen dalgalar."
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "How are points scored?",
+            "tr": "Puan nasıl kazanılır?"
+          },
+          "a": {
+            "en": "Zombies give 10 to 45 points and bosses 1500 to 4200; items, rescues and each drive add more. In Last Stand a cleared wave adds 100 points per wave number.",
+            "tr": "Zombiler 10 ile 45, boss'lar 1500 ile 4200 puan verir; eşyalar, kurtarmalar ve her sürüş ek puan getirir. Son Savunma'da temizlenen dalga, numarasının 100 katı puan verir."
+          }
+        },
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay mod var mı?"
+          },
+          "a": {
+            "en": "Yes. On Easy zombies are slower, weaker and fewer, and you get more health, ammo and convoy armour. Easy runs do not count for the leaderboard.",
+            "tr": "Evet. Kolay'da zombiler daha yavaş, zayıf ve azdır; daha çok can, mermi ve konvoy zırhın olur. Kolay oyunlar sıralamaya girmez."
+          }
+        },
+        {
+          "q": {
+            "en": "How do I get the other survivors?",
+            "tr": "Diğer hayatta kalanları nasıl alırım?"
+          },
+          "a": {
+            "en": "You start with one, matched to your Ayvago character; the others are freed in missions 2, 8 and 11. The pug Mochi joins after mission 6.",
+            "tr": "Ayvago karakterine göre seçilen biriyle başlarsın; diğerleri 2., 8. ve 11. görevlerde kurtarılır. Pug Mochi 6. görevden sonra katılır."
+          }
+        },
+        {
+          "q": {
+            "en": "Does it work on phones?",
+            "tr": "Telefonda çalışır mı?"
+          },
+          "a": {
+            "en": "Yes, in landscape with an on-screen stick and buttons.",
+            "tr": "Evet, yatay tutulur; ekranda çubuk ve düğmeler vardır."
+          }
+        }
+      ]
+    },
     "letter-loop": {
       "about": {
         "en": "Letter Loop is a word puzzle against the clock. A wheel of letters sits at the bottom of the screen and an empty crossword waits above it. Swipe from letter to letter to spell a word; if it belongs in the crossword, its letters fly into their squares. Fill every word before the time bar runs out and the next level begins.\n\nEach puzzle grows from a base word that uses every letter on the wheel. Level 1 has four letters, levels 2 and 3 have five, levels 4 to 10 have six, and from level 11 the wheel holds seven letters and the crossword up to nine words. The time you get depends on the puzzle and shrinks a little each level.\n\nReal words that are not in the crossword count as bonus words, and every five of them add a hint to the three you start with. Play in Turkish for Turkish puzzles, in English for English ones.",
