@@ -30,14 +30,17 @@ const ORANGE = YELLOW, GREY = STEEL;
 
 // ------------------------------------------------------------------ sizes
 
-const SQ_W = 640, SQ_H = 620, SQ_X = 920, SQ_Y = 372, TILE_W = 130, TILE_H = 150;
+// The boards stay clear of the core's pause button (the corner x > 1180 and y < 98): the squad and
+// the mission card end left of it, the garage and the cards list start below it.
+const SQ_W = 600, SQ_H = 620, SQ_X = 880, SQ_Y = 372, TILE_W = 130, TILE_H = 150;
 const MAP_W = 560, MAP_H = 560, MAP_X = 310, MAP_Y = 340;
-const INFO_W = 620, INFO_H = 560, INFO_X = 945, INFO_Y = 340;
+const INFO_W = 620, INFO_H = 540, INFO_X = 945, INFO_Y = 370;
 export const BRIEF_W = 820, BRIEF_H = 580;
 export const CARD_W = 250, CARD_H = 330;
 const DRAFT_W = 960, DRAFT_H = 620;
-const GAR_W = 1200, GAR_H = 640, UP_W = 570, UP_H = 96;
-const CL_W = 1200, CL_H = 640, CT_W = 370, CT_H = 50;
+const GAR_W = 1200, GAR_H = 600, GAR_Y = 400, UP_W = 570, UP_H = 86;
+const CL_W = 1200, CL_H = 600, CL_Y = 400, CT_W = 370, CT_H = 46;
+const SQ_DESC_W = 540, SQ_AB_W = 490;
 const CB_W = 1000, CB_H = 600;
 export const SUM_W = 620, SUM_H = 540;
 export const PSIDE_W = 300, PSIDE_H = 560;
@@ -111,13 +114,13 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   for (const [w, h] of [[SQ_W, SQ_H], [MAP_W + 20, MAP_H], [INFO_W, INFO_H], [DRAFT_W, DRAFT_H], [GAR_W, GAR_H], [CL_W, CL_H]]) skinTexture(scene, 'board', w, h);
   for (const c of SCREEN_CARDS) themeCard(scene, 0, 0, c.w, c.h).destroy();
   for (const k of ['squadTitle', 'mapTitle', 'draftTitle', 'garage', 'cardsTitle', 'combosTitle', 'standTitle']) labelTexture(scene, t(k), S_TITLE);
-  bakePara(scene, t('squadSub'), S_SUB, 560);
+  bakePara(scene, t('squadSub'), S_SUB, SQ_W - 60);
   bakePara(scene, t('draftSub'), S_SUB, 700);
   bakePara(scene, t('garageSub'), S_SUB, 760);
   bakePara(scene, t('cardsSub'), S_SUB, 760);
   bakePara(scene, t('combosSub'), S_SUB, 860);
   bakePara(scene, t('mapSub'), S_SUB, 560);
-  for (const [w, h, col, off] of [[300, 64, ORANGE, true], [240, 64, GREY, true], [190, 56, GREY, false], [150, 44, GREY, true], [110, 44, GREEN, true], [230, 56, ORANGE, false], [200, 56, ORANGE, true]] as [number, number, number, boolean][]) bakeButton(scene, 'button', w, h, col, off, true);
+  for (const [w, h, col, off] of [[300, 64, ORANGE, true], [240, 64, GREY, true], [190, 56, GREY, false], [150, 54, GREY, true], [116, 54, GREEN, true], [230, 56, ORANGE, false], [200, 56, ORANGE, true]] as [number, number, number, boolean][]) bakeButton(scene, 'button', w, h, col, off, true);
   bakeButton(scene, 'plate', TILE_W, TILE_H, GREY, true, true);
   bakeButton(scene, 'plate', CARD_W, CARD_H, GREY);
   bakeButton(scene, 'plate', CT_W, CT_H, GREY, false, true);
@@ -130,9 +133,9 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   for (const h of HERO_IDS) {
     labelTexture(scene, t('h_' + h), S_NAME); labelTexture(scene, t('h_' + h), S_NAME_S); labelTexture(scene, t('h_' + h), P_NAME);
     labelTexture(scene, upper(t('r_' + h)), S_TAG);
-    bakePara(scene, t('hd_' + h), S_DESC, 560);
+    bakePara(scene, t('hd_' + h), S_DESC, SQ_DESC_W);
     labelTexture(scene, t('a_' + HERO[h].ability), S_NAME_S);
-    bakePara(scene, t('ad_' + HERO[h].ability), S_DESC, 520);
+    bakePara(scene, t('ad_' + HERO[h].ability), S_DESC, SQ_AB_W);
     for (const s of HERO_IDS) if (s !== h) { bakePara(scene, t('lockedHero', { n: freedIn(s, h) }), S_LOCK, TILE_W - 14); labelTexture(scene, t('lockedHero', { n: freedIn(s, h) }), S_TOAST); }
   }
   for (const w of [...Object.keys(GUN), ...Object.keys(MELEE)]) { labelTexture(scene, t('w_' + w), S_NAME_S); labelTexture(scene, t('w_' + w), S_NAME); }
@@ -148,7 +151,7 @@ export function prebakeScreens(scene: Phaser.Scene): void {
     bakePara(scene, t('o_' + m.n), S_DESC_L, BRIEF_W - 90);
     bakePara(scene, t('o_' + m.n), P_NAME, PSIDE_W - 40);
     for (const st of m.stages) labelTexture(scene, stageLine(st), S_DESC_L);
-    for (const s of starLines(m)) { labelTexture(scene, s, S_DESC_L); labelTexture(scene, s, P_NAME); }
+    for (const s of starLines(m)) { labelTexture(scene, s, S_DESC_L); bakePara(scene, s, P_NAME, PSIDE_W - 76); }
     labelTexture(scene, upper(t('missionN', { n: m.n })) + ' · ' + upper(t('d_' + m.district)), S_KIND);
   }
   for (const k of ['briefStages', 'briefSide', 'briefStars', 'briefZombies']) labelTexture(scene, t(k), P_HEAD);
@@ -408,11 +411,11 @@ export class SquadScreen extends Panel {
   private dogBtns: KitButton[] = [];
 
   constructor(scene: Phaser.Scene, host: ScreenHost, private meta: Meta, private onHero: (h: HeroId) => void, private onDog: (d: DogKind) => void, private onCampaign: () => void, private onStand: () => void) {
-    super(scene, host, { board: [SQ_W, SQ_H, SQ_X, SQ_Y], title: t('squadTitle'), titleX: SQ_X, titleY: 100, titleW: SQ_W - 80, sub: t('squadSub'), subW: 560, dim: 0.05 });
+    super(scene, host, { board: [SQ_W, SQ_H, SQ_X, SQ_Y], title: t('squadTitle'), titleX: SQ_X, titleY: 100, titleW: SQ_W - 80, sub: t('squadSub'), subW: SQ_W - 60, dim: 0.05 });
     this.sel = meta.hero;
     const start = meta.heroes[0];
     HERO_IDS.forEach((h, i) => {
-      const x = SQ_X - 225 + i * 150, y = 228;
+      const x = SQ_X - 213 + i * 142, y = 228;
       const open = meta.heroes.includes(h);
       const b = new KitButton(scene, x, y, { w: TILE_W, h: TILE_H, kind: 'plate', color: GREY, sfx: null, on: h === this.sel, tapWhenOff: true }, () => {
         if (!open) { this.denyText(b, t('lockedHero', { n: freedIn(start, h) })); return; }
@@ -432,11 +435,11 @@ export class SquadScreen extends Panel {
     this.content.add(this.detail);
     // the dog
     const dy = 574;
-    this.content.add(labelAt(scene, SQ_X - 290, dy, t('dog'), S_DESC_L, 0));
+    this.content.add(labelAt(scene, SQ_X - 270, dy, t('dog'), S_DESC_L, 0));
     (['shepherd', 'pug'] as DogKind[]).forEach((d, i) => {
       const x = SQ_X - 120 + i * 170;
       const open = d === 'shepherd' || meta.pug;
-      const b = new KitButton(scene, x, dy, { w: 150, h: 44, color: GREY, label: t('dog_' + d), style: S_BTN_S, on: meta.dog === d, tapWhenOff: true }, () => {
+      const b = new KitButton(scene, x, dy, { w: 150, h: 54, color: GREY, label: t('dog_' + d), style: S_BTN_S, on: meta.dog === d, tapWhenOff: true }, () => {
         if (!open) { this.denyText(b, t('pugLocked')); return; }
         this.meta.dog = d;
         for (const [k, q] of this.dogBtns.entries()) q.setSelected(k === i);
@@ -450,7 +453,7 @@ export class SquadScreen extends Panel {
     });
     // the modes
     const by = 638;
-    this.button(SQ_X - 140, by, 300, 64, ORANGE, t('campaign'), () => { this.close(); this.onCampaign(); }, { sfx: 'start' });
+    this.button(SQ_X - 135, by, 300, 64, ORANGE, t('campaign'), () => { this.close(); this.onCampaign(); }, { sfx: 'start' });
     const stand = this.button(SQ_X + 160, by, 240, 64, GREY, t('lastStand'), () => {
       if (!standOpen(this.meta)) { this.denyText(stand, t('standLocked')); return; }
       this.close(); this.onStand();
@@ -472,10 +475,10 @@ export class SquadScreen extends Panel {
   private drawDetail(): void {
     const s = this.scene, h = this.sel, H = HERO[h], d = this.detail;
     d.removeAll(true);
-    const x0 = SQ_X - 290, y0 = 330;
+    const x0 = SQ_X - 270, y0 = 330;
     d.add(labelAt(s, x0, y0, t('h_' + h), S_NAME, 0));
     d.add(labelAt(s, x0 + 110, y0 + 2, upper(t('r_' + h)), S_TAG, 0));
-    d.add(new Para(s, x0, y0 + 22, t('hd_' + h), S_DESC, 560, 0, 20));
+    d.add(new Para(s, x0, y0 + 22, t('hd_' + h), S_DESC, SQ_DESC_W, 0, 20));
     // gun, melee, ability with the weapon models' icons
     const ry = y0 + 82;
     d.add(modelIcon(s, x0 + 24, ry, 'w-' + H.gun, 52));
@@ -484,12 +487,12 @@ export class SquadScreen extends Panel {
     d.add(labelAt(s, x0 + 54, ry + 48, t('w_' + H.melee), S_NAME_S, 0));
     d.add(iconImg(s, x0 + 24, ry + 98, 'a-' + H.ability, 40));
     d.add(labelAt(s, x0 + 54, ry + 92, t('a_' + H.ability), S_NAME_S, 0));
-    d.add(new Para(s, x0 + 54, ry + 102, t('ad_' + H.ability), S_DESC, 520, 0, 18));
+    d.add(new Para(s, x0 + 54, ry + 102, t('ad_' + H.ability), S_DESC, SQ_AB_W, 0, 18));
     // stat pips on the right
-    const sx = SQ_X + 120;
+    const sx = SQ_X + 70;
     ['statHp', 'statSpeed', 'statGuns', 'statMelee'].forEach((k, i) => {
       d.add(labelAt(s, sx, ry - 4 + i * 30, t(k), S_DESC_L, 0));
-      d.add(pips(s, sx + 84, ry - 4 + i * 30, H.pips[i], H.color));
+      d.add(pips(s, sx + 80, ry - 4 + i * 30, H.pips[i], H.color));
     });
   }
 }
@@ -745,10 +748,10 @@ export class GarageScreen extends Panel {
   private tiles = new Map<UpgradeId, Phaser.GameObjects.Container>();
 
   constructor(scene: Phaser.Scene, host: ScreenHost, private meta: Meta, private onBuy: (u: UpgradeId) => void, onBack: () => void) {
-    super(scene, host, { board: [GAR_W, GAR_H], title: t('garage'), titleY: 62, sub: t('garageSub'), subW: 760, dim: 0.55 });
+    super(scene, host, { board: [GAR_W, GAR_H, scene.scale.width / 2, GAR_Y], title: t('garage'), titleY: GAR_Y - GAR_H / 2 + 28, sub: t('garageSub'), subW: 760, dim: 0.55 });
     const s = scene, W = s.scale.width;
     // the purse
-    const px = W / 2 + GAR_W / 2 - 330, py = 62;
+    const px = W / 2 + GAR_W / 2 - 330, py = GAR_Y - GAR_H / 2 + 28;
     this.content.add(iconImg(s, px, py, 'scrap', 40));
     this.content.add(iconImg(s, px + 130, py, 'supplies', 40));
     this.purse = { scrap: new GlyphText(s, px + 26, py, String(meta.scrap), S_PURSE, 0), sup: new GlyphText(s, px + 156, py, String(meta.supplies), S_PURSE, 0) };
@@ -762,7 +765,7 @@ export class GarageScreen extends Panel {
 
   private tile(u: UpgradeId, i: number): void {
     const s = this.scene, W = s.scale.width;
-    const x = W / 2 + (i % 2 ? 300 : -300), y = 160 + Math.floor(i / 2) * 100;
+    const x = W / 2 + (i % 2 ? 300 : -300), y = 230 + Math.floor(i / 2) * 90;
     this.tiles.get(u)?.destroy();
     const c = s.add.container(x, y);
     const r = this.meta.ranks[u], def = UPGRADE[u];
@@ -784,7 +787,7 @@ export class GarageScreen extends Panel {
       c.add(iconImg(s, bx - 44, -30, 'scrap', 20));
       c.add(new GlyphText(s, bx - 32, -30, String(price[0]), S_PRICE, 0));
       if (price[1]) { c.add(iconImg(s, bx + 20, -30, 'supplies', 20)); c.add(new GlyphText(s, bx + 32, -30, String(price[1]), S_PRICE, 0)); }
-      const b = new KitButton(s, bx, 14, { w: 110, h: 44, color: GREEN, label: t('buy'), style: S_BTN_S, sfx: null, tapWhenOff: true }, () => {
+      const b = new KitButton(s, bx, 14, { w: 116, h: 54, color: GREEN, label: t('buy'), style: S_BTN_S, sfx: null, tapWhenOff: true }, () => {
         if (!buy(this.meta, u)) { this.denyText(b, t('poor')); return; }
         this.host.sfx('buy', 0.6);
         this.sparkle(x + bx, y, [0xf2c84a, 0xffffff], 26);
@@ -815,15 +818,15 @@ export class CardsScreen extends Panel {
   private desc: Para | null = null;
 
   constructor(scene: Phaser.Scene, host: ScreenHost, have: CardId[], onBack: () => void) {
-    super(scene, host, { board: [CL_W, CL_H], title: t('cardsTitle'), titleY: 62, sub: t('cardsSub'), subW: 760, dim: 0.55 });
+    super(scene, host, { board: [CL_W, CL_H, scene.scale.width / 2, CL_Y], title: t('cardsTitle'), titleY: CL_Y - CL_H / 2 + 28, sub: t('cardsSub'), subW: 760, dim: 0.55 });
     const s = scene, W = s.scale.width;
     CARDS.forEach((card, i) => {
       const col = i % 3, row = Math.floor(i / 3);
-      const x = W / 2 + (col - 1) * 385, y = 140 + row * 52;
+      const x = W / 2 + (col - 1) * 385, y = 206 + row * 51;
       const n = stacks(have, card.id);
       const b = new KitButton(s, x, y, { w: CT_W, h: CT_H, kind: 'plate', color: GREY, sfx: null, on: n > 0 }, () => {
         this.desc?.destroy();
-        this.desc = new Para(s, W / 2 - 170, 596, t('cd_' + card.id), S_DESC_L, 520, 0, 22);
+        this.desc = new Para(s, W / 2 - 170, 646, t('cd_' + card.id), S_DESC_L, 520, 0, 22);
         this.content.add(this.desc);
         this.host.sfx('move', 0.3);
       });
@@ -907,7 +910,10 @@ export function pauseSides(scene: Phaser.Scene, cards: CardId[], m: MissionDef |
     starLines(m).forEach((line, i) => {
       const yy = top + 410 + i * 40;
       root.add(scene.add.image(rx - PSIDE_W / 2 + 34, yy, STAR_KEY(i < stars)).setDisplaySize(26, 26));
-      root.add(fitWidth(labelAt(scene, rx - PSIDE_W / 2 + 54, yy, line, P_NAME, 0), PSIDE_W - 76));
+      // a long goal wraps onto two lines (centred on its star) instead of shrinking to a tiny size
+      const para = new Para(scene, rx - PSIDE_W / 2 + 54, yy, line, P_NAME, PSIDE_W - 76, 0, 18);
+      para.y = yy - para.textHeight / 2;
+      root.add(para);
     });
   } else {
     root.add(modelIcon(scene, rx, top + 130, 'v-truck', 130));

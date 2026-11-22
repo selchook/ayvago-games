@@ -13,6 +13,9 @@ import { Extra, type View } from './view';
 import { BIG, type Drive, type DriveEvent } from './drive';
 
 const CHUNK = 4;
+/** The convoy's second vehicle: how far back along the lead's track it drives, and never closer than this. */
+const FOLLOW_GAP = 10;
+const FOLLOW_MIN = 7.5;
 const DRIVE_BUILDINGS = ['Building2_Small', 'Building3_Small', 'Building3_Big', 'House2', 'Building4', 'House1'];
 const ZFILE: Record<string, string> = { basic: 'zombie-basic', runner: 'zombie-ribcage', chubby: 'zombie-chubby' };
 
@@ -142,6 +145,10 @@ export class DriveView {
       const along = c.out[1] !== 0 ? 0 : Math.PI / 2;
       // the road: four tiles (a crossing in a turn)
       for (const [ox, oz] of [[-4, -4], [4, -4], [-4, 4], [4, 4]]) jobs.push({ key: straight ? 'props:street-straight' : 'props:street-4way', m: at(c.x + ox, c.z + oz, along) });
+      // the lead-in behind the start (drive.ts closes it with cell 0's extra walls)
+      if (i === 0) for (const [ox, oz] of [[-4, BIG - 4], [4, BIG - 4], [-4, BIG + 4], [4, BIG + 4]]) jobs.push({ key: 'props:street-straight', m: at(c.x + ox, c.z + oz, along) });
+      // and the stretch past the sign (the last cell's extra walls)
+      if (i === d.cells.length - 1) for (const [ox, oz] of [[-4, -BIG - 4], [4, -BIG - 4], [-4, -BIG + 4], [4, -BIG + 4]]) jobs.push({ key: 'props:street-straight', m: at(c.x + ox, c.z + oz, along) });
       // ground beyond the walls (sidewalk in town, verge on the highway), buildings or barriers
       const H = BIG / 2;
       for (const [x0, z0, x1, z1] of c.walls) {
@@ -265,16 +272,20 @@ export class DriveView {
     }
     // hit: the body flashes
     for (const m of car.mats) if ((m as THREE.MeshLambertMaterial).emissive) (m as THREE.MeshLambertMaterial).emissive.setRGB(d.hitT * 2, d.hitT * 0.6, d.hitT * 0.4);
-    // the convoy's second vehicle follows the lead's tracks a second behind
+    // the convoy's second vehicle follows the lead's tracks close behind
     const f = this.follower!;
-    // 16 m back along the lead's own track (behind the camera on the straights, in view in the turns)
-    let left = 16, tr = { x: d.x, z: d.z, h: d.h };
+    // FOLLOW_GAP m back along the lead's own track: in the countdown's wide shot and in every turn
+    // (under the chase camera on the straights)
+    let left = FOLLOW_GAP, tr = { x: d.x, z: d.z, h: d.h };
     for (let i = d.trail.length - 1; i > 0 && left > 0; i--) {
       const a = d.trail[i], b = d.trail[i - 1];
       left -= Math.hypot(a.x - b.x, a.z - b.z);
       tr = b;
     }
     if (left > 0) tr = { x: tr.x - Math.sin(tr.h) * left, z: tr.z - Math.cos(tr.h) * left, h: tr.h };
+    // never on top of the lead: after a reverse, a spin or a bounce off a wall the track doubles
+    // back on itself, so the follower keeps its distance straight behind the lead instead
+    if (Math.hypot(tr.x - d.x, tr.z - d.z) < FOLLOW_MIN) tr = { x: d.x - Math.sin(d.h) * FOLLOW_MIN, z: d.z - Math.cos(d.h) * FOLLOW_MIN, h: d.h };
     f.root.position.set(tr.x, 0, tr.z);
     f.root.rotation.y = tr.h;
     if (f.wheelsBack) f.wheelsBack.rotation.x = this.wheelSpin;
@@ -355,7 +366,9 @@ export class DriveView {
   private follow(d: Drive, dt: number): void {
     const cam = this.view.world.camera;
     const fx = Math.sin(d.h), fz = Math.cos(d.h);
-    const back = 10.5 + Math.min(3, d.v * 0.08), up = 6.2;
+    // the countdown shows the whole convoy from higher up, then the camera swoops in behind the lead
+    const wide = d.phase === 'count' ? Math.min(1, d.count / 1.2) : 0;
+    const back = 10.5 + Math.min(3, d.v * 0.08) + wide * 9, up = 6.2 + wide * 5;
     const want = new THREE.Vector3(d.x - fx * back, up, d.z - fz * back);
     const look = new THREE.Vector3(d.x + fx * 7, 1, d.z + fz * 7);
     const k = dt > 0 ? 1 - Math.exp(-dt * 4.5) : 1;

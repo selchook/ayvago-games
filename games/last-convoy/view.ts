@@ -67,6 +67,10 @@ export class Extra {
   }
 }
 
+const SCENT_MAX = 160;
+const SCENT_M = new THREE.Matrix4();
+const SCENT_C = new THREE.Color();
+
 export interface BlockMesh { rect: { x0: number; z0: number; x1: number; z1: number }; meshes: THREE.Mesh[]; mats: THREE.Material[]; fade: number; h: number }
 
 export class View {
@@ -114,6 +118,9 @@ export class View {
   private muzzle: THREE.Sprite;
   private muzzleT = 0;
   private chargeRing: THREE.Mesh;
+  /** The dog's scent trail: glowing marks on the ground from where it started sniffing to the chest. */
+  private scent: THREE.InstancedMesh;
+  private scentK = 0;
   /** The camera's focus (smoothed) and a screenshot override. */
   private cam = new THREE.Vector3(0, 0, 0);
   shotCam: [number[], number[]] | null = null;
@@ -155,6 +162,13 @@ export class View {
     this.chargeRing.rotation.x = -Math.PI / 2;
     this.chargeRing.visible = false;
     this.dyn.add(this.chargeRing);
+    const scentGeo = new THREE.CircleGeometry(0.3, 14);
+    scentGeo.rotateX(-Math.PI / 2);
+    this.scent = new THREE.InstancedMesh(scentGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }), SCENT_MAX);
+    this.scent.frustumCulled = false;
+    this.scent.count = 0;
+    this.scent.renderOrder = 2;
+    this.dyn.add(this.scent);
     this.heroId = o.hero;
     this.hero = this.heroFigure(o.hero);
     this.dyn.add(this.hero.root);
@@ -538,7 +552,35 @@ export class View {
     if (g.state === 'sniff' && dt > 0) {
       for (let i = Math.max(0, g.ti - 4); i < g.trail.length; i++) if (Math.random() < dt * 9) { const p = g.trail[i]; this.glow.dot(p.x + (Math.random() - 0.5) * 0.7, 0.3, p.z + (Math.random() - 0.5) * 0.7, 0, 0.5, 0, 0x8affc8, 1.8, 1); }
     }
+    this.syncScent(g, dt);
     this.lastDog.x = g.x; this.lastDog.z = g.z;
+  }
+  /** Marks every 1.2 m along the whole trail (start to chest, above the sidewalks' 0.12-0.18 m) while the dog sniffs or waits there, a pulse running to the chest. */
+  private syncScent(g: Mission['dog'], dt: number): void {
+    const on = (g.state === 'sniff' || g.state === 'wait') && g.trail.length > 0;
+    this.scentK = on ? Math.min(1, this.scentK + dt * 4) : Math.max(0, this.scentK - dt * 1.5);
+    const m = this.scent;
+    if (this.scentK <= 0 || !g.trail.length) { m.count = 0; return; }
+    let n = 0;
+    const put = (x: number, z: number) => {
+      if (n >= SCENT_MAX) return;
+      const w = 0.5 + 0.5 * Math.sin(this.time * 7 - n * 0.55);
+      SCENT_M.makeScale(0.75 + w * 0.45, 1, 0.75 + w * 0.45).setPosition(x, 0.2, z);
+      m.setMatrixAt(n, SCENT_M);
+      m.setColorAt(n, SCENT_C.setHex(0x5affb0).multiplyScalar(0.3 + w * 0.55));
+      n++;
+    };
+    let px = g.trail[0].x, pz = g.trail[0].z;
+    put(px, pz);
+    for (let i = 1; i < g.trail.length; i++) {
+      const q = g.trail[i], l = Math.hypot(q.x - px, q.z - pz), k = Math.max(1, Math.round(l / 1.2));
+      for (let j = 1; j <= k; j++) put(px + ((q.x - px) * j) / k, pz + ((q.z - pz) * j) / k);
+      px = q.x; pz = q.z;
+    }
+    m.count = n;
+    m.instanceMatrix.needsUpdate = true;
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    (m.material as THREE.MeshBasicMaterial).opacity = 0.9 * this.scentK;
   }
   private lastDog = { x: 0, z: 0, v: 0 };
   private dogSpeed(g: { x: number; z: number }): number {

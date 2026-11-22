@@ -15,6 +15,8 @@ import type { Mods } from './powers';
 import { mulberry } from './town';
 
 export const BIG = 16;
+/** A wreck's body circles along its length (the kit's cars are about 5.3 m long). */
+const WRECK_ALONG = [-1.45, 0, 1.45];
 
 export interface DriveInput { steer: number; gas: boolean; brake: boolean; nitro: boolean }
 export const NO_DRIVE: DriveInput = { steer: 0, gas: false, brake: false, nitro: false };
@@ -105,6 +107,13 @@ export class Drive {
       if (!open(1, 0)) walls.push([x + H, z - H, x + H, z + H]);
       this.cells.push({ i: c.i, j: c.j, x, z, in: din, out: dout, zone: k < townEnd ? 'town' : k < rampEnd ? 'ramp' : 'highway', walls });
     });
+    // the lead-in: one more stretch of street behind the start, closed at its far end, where the
+    // rest of the convoy stands at the countdown (and nobody reverses off the map)
+    const c0 = this.cells[0], H = BIG / 2;
+    c0.walls.push([c0.x - H, c0.z + H, c0.x - H, c0.z + H + BIG], [c0.x + H, c0.z + H, c0.x + H, c0.z + H + BIG], [c0.x - H, c0.z + H + BIG, c0.x + H, c0.z + H + BIG]);
+    // and the highway goes on past the sign (the convoy rolls to a stop there after the win)
+    const cl = this.cells[this.cells.length - 1];
+    cl.walls.push([cl.x - H, cl.z - H - BIG, cl.x - H, cl.z - H], [cl.x + H, cl.z - H - BIG, cl.x + H, cl.z - H]);
   }
 
   /** Wrecks, barricades and pickups along the route (not in the first cells or in turns). */
@@ -134,7 +143,7 @@ export class Drive {
       if (straight && this.rnd() < 0.45) {
         const off = (this.rnd() < 0.5 ? -1 : 1) * (2.5 + this.rnd() * 3.5);
         const along = (this.rnd() - 0.5) * 8;
-        this.obstacles.push({ id: this.nextId++, kind: 'wreck', x: c.x + rx * off + ax * along, z: c.z + rz * off + az * along, rot: Math.atan2(ax, az) + (this.rnd() - 0.5) * 0.8, r: 1.35, hp: 1, down: false, t: 0, vx: 0, vz: 0, tint: [0x8a7a6a, 0x6a7a8a, 0x8a6a6a, 0x7a8a6a][Math.floor(this.rnd() * 4)], cell: k });
+        this.obstacles.push({ id: this.nextId++, kind: 'wreck', x: c.x + rx * off + ax * along, z: c.z + rz * off + az * along, rot: Math.atan2(ax, az) + (this.rnd() - 0.5) * 0.8, r: 1.3, hp: 1, down: false, t: 0, vx: 0, vz: 0, tint: [0x8a7a6a, 0x6a7a8a, 0x8a6a6a, 0x7a8a6a][Math.floor(this.rnd() * 4)], cell: k });
       }
       if (this.rnd() < 0.3) {
         const kind = this.rnd() < 0.45 ? 'nitro' : this.rnd() < 0.5 ? 'repair' : 'scrap';
@@ -175,8 +184,8 @@ export class Drive {
       return;
     }
     if (this.phase !== 'play') {
-      // the car rolls to a stop
-      this.v *= Math.exp(-dt * 1.5);
+      // the car rolls to a stop (past the sign it brakes, staying on the road drawn beyond it)
+      this.v *= Math.exp(-dt * (this.phase === 'won' ? 3 : 1.5));
       this.move(dt);
       this.updateZombies(dt);
       return;
@@ -263,8 +272,15 @@ export class Drive {
     const ram = this.nitroT > 0;
     for (const o of this.obstacles) {
       if (o.down || Math.abs(o.x - this.x) > 8 || Math.abs(o.z - this.z) > 8) continue;
+      // a wreck is a car-long capsule (three circles along its body), not one circle in its middle
+      const ofs = o.kind === 'wreck' ? WRECK_ALONG : [0];
       for (const [px, pz] of pts) {
-        const dx = px - o.x, dz = pz - o.z, d = Math.hypot(dx, dz), m = o.r + this.r * 0.85;
+        let ox = o.x, oz = o.z, best = 1e9;
+        for (const a of ofs) {
+          const cx = o.x + Math.sin(o.rot) * a, cz = o.z + Math.cos(o.rot) * a, dd = Math.hypot(px - cx, pz - cz);
+          if (dd < best) { best = dd; ox = cx; oz = cz; }
+        }
+        const dx = px - ox, dz = pz - oz, d = Math.hypot(dx, dz), m = o.r + this.r * 0.85;
         if (d >= m || d < 1e-5) continue;
         if (o.kind === 'barrier') {
           // smashed aside
@@ -286,7 +302,7 @@ export class Drive {
           this.hurt(dmg);
           this.v *= 0.5;
           this.stats.crashes++;
-          this.events.push({ type: 'crash', dmg, x: o.x, z: o.z, hard: into > 6 });
+          this.events.push({ type: 'crash', dmg, x: ox, z: oz, hard: into > 6 });
         }
         break;
       }

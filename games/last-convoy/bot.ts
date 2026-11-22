@@ -13,10 +13,11 @@ import { HERO, GUN, type HeroId } from './defs';
 import { BIG, angle, type Drive, type DriveInput } from './drive';
 import { rollCards, CARD, UPGRADE, type CardId, type Ranks } from './powers';
 
-export interface Skill { react: number; dodge: number; combos: number; ability: number; aim: number; chests: number; dog: number; drive: number }
+/** `boss`: reads the boss's telegraphs (runs out of the slam's ring, rolls as it lands, steps out of a charge's line). */
+export interface Skill { react: number; dodge: number; combos: number; ability: number; aim: number; chests: number; dog: number; drive: number; boss: boolean }
 export const SKILL: Record<'good' | 'casual', Skill> = {
-  good: { react: 0.12, dodge: 0.85, combos: 0.9, ability: 0.9, aim: 0.05, chests: 0.8, dog: 0.6, drive: 1 },
-  casual: { react: 0.38, dodge: 0.3, combos: 0.25, ability: 0.45, aim: 0.25, chests: 0.35, dog: 0.15, drive: 0.75 },
+  good: { react: 0.12, dodge: 0.85, combos: 0.9, ability: 0.9, aim: 0.05, chests: 0.8, dog: 0.6, drive: 1, boss: true },
+  casual: { react: 0.38, dodge: 0.3, combos: 0.25, ability: 0.45, aim: 0.25, chests: 0.35, dog: 0.15, drive: 0.75, boss: false },
 };
 
 export class Bot {
@@ -36,6 +37,8 @@ export class Bot {
   private useHold = 0;
   /** Stay near a point (the menu backdrop keeps the fight in view). */
   stay: Spot | null = null;
+  /** This frame: a boss blow is coming and the bot stands just clear of it (keeps fighting, never steps back in). */
+  private keepOut: { x: number; z: number; r: number } | null = null;
 
   constructor(private sim: Mission, readonly skill: Skill, private rnd: () => number) {}
 
@@ -74,6 +77,37 @@ export class Bot {
     return best;
   }
 
+  /** Moves (and rolls) out of the boss's coming blow; true when that is all this frame does. */
+  private evadeBoss(inp: Input): boolean {
+    const s = this.sim, h = s.hero, b = s.boss;
+    if (!b || b.state === 'dead') return false;
+    const rage = b.phase === 3 ? 1.3 : 1;
+    const bx = h.x - b.x, bz = h.z - b.z, bd = Math.hypot(bx, bz) || 0.01;
+    if (b.state === 'tell' && b.move === 'slam') {
+      const ring = b.phase === 3 ? 6 : 4.6;
+      if (bd > ring + 1.2) return false;
+      // already clear of the ring: keep shooting, only never step back into it
+      if (bd > ring + 0.5) { this.keepOut = { x: b.x, z: b.z, r: ring + 0.5 }; return false; }
+      const left = 0.95 / rage - b.t;
+      inp.mx = bx / bd; inp.mz = bz / bd;
+      // still inside as it lands: roll out, the roll's cover over the blow
+      if (left > 0 && left < 0.3 && bd < ring + 0.3 && this.dodgeCd <= 0 && h.dodgeCd <= 0) { inp.dodge = true; this.dodgeCd = 0.6; }
+      return true;
+    }
+    if ((b.state === 'tell' && b.move === 'charge') || b.state === 'charge') {
+      const along = bx * b.ax + bz * b.az;
+      let lx = bx - along * b.ax, lz = bz - along * b.az;
+      const lat = Math.hypot(lx, lz);
+      if (along < -1 || lat > b.r + 1.8) return false;
+      if (lat < 0.05) { lx = -b.az; lz = b.ax; } else { lx /= lat; lz /= lat; }
+      inp.mx = lx; inp.mz = lz;
+      // the charge is on its way and close: roll sideways
+      if (b.state === 'charge' && along < 6 && lat < b.r + 1 && this.dodgeCd <= 0 && h.dodgeCd <= 0) { inp.dodge = true; this.dodgeCd = 0.6; }
+      return true;
+    }
+    return false;
+  }
+
   input(dt: number): Input {
     const s = this.sim, h = s.hero, K = this.skill;
     const inp: Input = { ...NO_INPUT };
@@ -89,6 +123,10 @@ export class Bot {
       if (z.state === 'tell' && d < (z.boss ? 7 : z.reach + 1.2) && (!telling || d < Math.hypot(telling.x - h.x, telling.z - h.z))) telling = z;
       if (z.state === 'charge' && d < 7) telling = z;
     }
+    // the boss's telegraphs, read like a good player: out of the slam's ring, out of the charge's line
+    this.keepOut = null;
+    const ev = K.boss && h.grab < 0 ? this.evadeBoss(inp) : false;
+    if (ev) return inp;
     // roll out of a telegraphed blow
     if (telling && this.dodgeCd <= 0 && telling.t > K.react && this.rnd() < K.dodge) {
       const ax = h.x - telling.x, az = h.z - telling.z, l = Math.hypot(ax, az) || 1;
@@ -184,6 +222,12 @@ export class Bot {
     this.lx = h.x; this.lz = h.z;
     if (Math.hypot(mx, mz) > 0.3 && moved < dt * 0.5) this.stuckT += dt; else this.stuckT = Math.max(0, this.stuckT - dt);
     if (this.stuckT > 0.8) { const a = this.rnd() * 6.28; mx = Math.cos(a); mz = Math.sin(a); if (this.stuckT > 1.4) this.stuckT = 0; }
+    const ko = this.keepOut as Bot['keepOut'];
+    if (ko) {
+      const ox = h.x - ko.x, oz = h.z - ko.z, od = Math.hypot(ox, oz) || 1;
+      const inward = -(mx * ox + mz * oz) / od;
+      if (inward > 0) { mx += (ox / od) * inward; mz += (oz / od) * inward; }
+    }
     const l = Math.hypot(mx, mz);
     if (l > 1) { mx /= l; mz /= l; }
     inp.mx = mx; inp.mz = mz;

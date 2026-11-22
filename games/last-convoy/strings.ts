@@ -4,11 +4,11 @@ import type { Strings } from '@core';
 const tr: Record<string, string> = {
   // the squad
   h_matt: 'Matt', h_sam: 'Sam', h_shaun: 'Shaun', h_lis: 'Lis',
-  r_matt: 'Kabadayı', r_sam: 'İzci', r_shaun: 'Sıhhiyeci', r_lis: 'Rockçı',
+  r_matt: 'Kabadayı', r_sam: 'İzci', r_shaun: 'Sıhhiyeci', r_lis: 'Rockçu',
   hd_matt: 'İri yarı tamirci. Pompalı ve baltasıyla kalabalığı dağıtır, barikat kurar.',
   hd_sam: 'Çevik izci. Uzaktan tüfekle avlar, fişekle sürüyü başka yöne çeker.',
   hd_shaun: 'Kasabanın eski hemşiresi. Hafif makineli ve mızrakla dövüşür, ekibi iyileştirir.',
-  hd_lis: 'Gitarı tek silahı sayan rockçı. Yakın dövüşte rakipsiz, çığlığıyla sersemletir.',
+  hd_lis: 'Gitarını silahların en iyisi sayan bir rockçu. Yakın dövüşte rakipsiz, güç akoruyla sersemletir.',
   a_barricade: 'Barikat', a_flare: 'İşaret Fişeği', a_heal: 'Şifa Dalgası', a_warcry: 'Güç Akoru',
   ad_barricade: 'Önüne bariyer diker: zombiler yolunu keser, ona saldırır.',
   ad_flare: 'Fişek fırlatır: yakındaki zombiler sana değil ona koşar.',

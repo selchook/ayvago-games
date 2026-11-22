@@ -171,17 +171,19 @@ export class PlayScene extends ArcadeScene {
     this.setupButtons();
     this.setupKeys();
     // the run's cards and the mission beside the pause card
-    this.events.on(Phaser.Scenes.Events.PAUSE, () => {
+    // (scene events outlive a restart: both listeners go at shutdown, or every retry would add one more)
+    const onPause = () => {
       const ps = this.scene.get('Pause');
       ps?.events.once(Phaser.Scenes.Events.CREATE, () => {
         if (this.isOver) return;
         const m = this.phase === 'play' || this.phase === 'drive' || this.phase === 'brief' ? this.mission : null;
         pauseSides(ps, this.run.cards, m, m ? this.meta.stars[m.n - 1] : 0);
       });
-    });
+    };
+    this.events.on(Phaser.Scenes.Events.PAUSE, onPause);
     const latch = () => { this.atkLatch = true; };
     this.events.on(Phaser.Scenes.Events.RESUME, latch);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.RESUME, latch));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.events.off(Phaser.Scenes.Events.PAUSE, onPause); this.events.off(Phaser.Scenes.Events.RESUME, latch); });
     this.hooks();
     this.showPlayUi('none');
     this.openSquad();
@@ -250,11 +252,12 @@ export class PlayScene extends ArcadeScene {
   /** Which HUD shows: on foot, on the drive, or none (screens). */
   private showPlayUi(mode: 'foot' | 'drive' | 'none'): void {
     const foot = mode === 'foot', drive = mode === 'drive';
+    // first: the core HUD's layout (setCenter) shows the score chip again
+    if (!foot) this.hud.setCenter('');
     for (const c of [this.hud.scoreChip, this.hpChip, this.ammoChip, this.cardChip, this.scrapChip]) c.setVisible(foot || drive);
     for (const c of [this.hud.centerChip, this.hordeChip, this.nightChip, this.mapChip]) c.setVisible(foot);
     this.hpChip.setVisible(foot); this.ammoChip.setVisible(foot);
     for (const c of [this.armorChip, this.nitroChip, this.roadChip]) c.setVisible(drive);
-    if (!foot) this.hud.setCenter('');
     this.hud.rightChip.setVisible(false);
     this.bossChip.setVisible(false);
     for (const b of Object.values(this.btn)) b.setVisible(foot && b.kind !== 'use');
@@ -415,6 +418,7 @@ export class PlayScene extends ArcadeScene {
     if (this.hordeDir && this.hordeDir.t > 0) want[3] = this.hordeDir;
     const { width, height } = this.scale;
     const cx = width / 2, cy = height / 2 + 20;
+    const mb = this.mapChip.getBounds();
     want.forEach((p, i) => {
       const a = this.arrows[i];
       if (!p) { a.img.setVisible(false); a.dist.setVisible(false); return; }
@@ -423,13 +427,16 @@ export class PlayScene extends ArcadeScene {
       if (inside) { a.img.setVisible(false); a.dist.setVisible(false); return; }
       const dx = p.x - h.x, dz = p.z - h.z;
       const ang = Math.atan2(dz * 0.8, dx);
-      const mx = 54, top = 150, bottom = this.toastImg ? 110 : 60;
+      // (top: under the second HUD row)
+      const mx = 54, top = 174, bottom = this.toastImg ? 110 : 60;
       const kx = (Math.cos(ang) > 0 ? width - mx - cx : cx - mx) / Math.max(1e-3, Math.abs(Math.cos(ang)));
       const ky = (Math.sin(ang) > 0 ? height - bottom - cy : cy - top) / Math.max(1e-3, Math.abs(Math.sin(ang)));
       const kk = Math.min(kx, ky);
       let x = cx + Math.cos(ang) * kk, y = cy + Math.sin(ang) * kk;
       const pb = this.padBox;
       if (x > pb.left - 30 && y > pb.top - 30) { if (kx < ky) y = pb.top - 30; else x = pb.left - 30; }
+      // and clear of the minimap's chip (top left)
+      if (x < mb.right + 30 && y < mb.bottom + 30) { if (kx < ky) y = mb.bottom + 30; else x = mb.right + 30; }
       const pulse = 1 + Math.sin(this.time.now / 120 + i) * 0.08;
       a.img.setVisible(true).setPosition(x, y).setRotation(ang).setScale((46 / 64) * pulse * (i === 1 ? 0.8 : 1)).setAlpha(i === 1 ? 0.75 : 1);
       a.dist.setVisible(true).setText(`${Math.round(Math.hypot(dx, dz))}m`).setPosition(x - Math.cos(ang) * 38, y - Math.sin(ang) * 32);
@@ -1046,7 +1053,14 @@ export class PlayScene extends ArcadeScene {
       case 'revive': this.sfx('revive', { volume: 0.6 }); this.toast(t('revived'), 1.6); break;
       case 'groan': this.sfxAt('groan' + (1 + Math.floor(Math.random() * 3)), sx(ev.x, ev.z), { volume: 0.25 }); break;
       case 'tellZ': if (this.once('tellZ')) this.sfx('tellSmall', { volume: 0.25 }); break;
-      case 'win': this.sfx('board', { volume: 0.6 }); this.time.delayedCall(300, () => { if (this.phase === 'play') this.startDrive(); }); this.phase = 'summary'; this.showPlayUi('none'); break;
+      case 'win': {
+        // everyone aboard: a beat, then the escape drive (the phase is 'summary' meanwhile, so no input lands)
+        this.sfx('board', { volume: 0.6 });
+        this.time.delayedCall(300, () => { if (this.phase === 'summary' && this.sim === s && !this.drive && !this.isOver) this.startDrive(); });
+        this.phase = 'summary';
+        this.showPlayUi('none');
+        break;
+      }
       case 'lose': {
         this.phase = 'end';
         this.lostIn = 'foot';
@@ -1112,11 +1126,18 @@ export class PlayScene extends ArcadeScene {
   }
 
   /** A line over the bottom middle (hints, warnings). */
+  /** The bottom line's middle and width: left of the action buttons on foot, between the steering and the pedals on the drive. */
+  private toastSpot(): { x: number; w: number } {
+    const W = this.scale.width;
+    return this.phase === 'drive' && this.touch ? { x: 655, w: 520 } : { x: W / 2 - 110, w: W - 560 };
+  }
+
   private toast(s: string, hold = 1.2): void {
     if (this.quiet) return;
     this.toastImg?.destroy();
-    const img = labelAt(this, this.scale.width / 2 - 110, this.scale.height - 54, s, S_TOAST).setDepth(9050);
-    fitWidth(img, this.scale.width - 560);
+    const at = this.toastSpot();
+    const img = labelAt(this, at.x, this.scale.height - 54, s, S_TOAST).setDepth(9050);
+    fitWidth(img, at.w);
     this.toastImg = img;
     const sc = img.scale;
     img.setScale(sc * 0.6);
@@ -1126,7 +1147,7 @@ export class PlayScene extends ArcadeScene {
 
   private fmtToast(key: string, vals: Record<string, number | string>): void {
     if (this.quiet) return;
-    const line = new FmtLine(this, this.scale.width / 2 - 110, this.scale.height - 54, S_TOAST).set(key, vals).setDepth(9050);
+    const line = new FmtLine(this, this.toastSpot().x, this.scale.height - 54, S_TOAST).set(key, vals).setDepth(9050);
     this.add.existing(line);
     this.tweens.add({ targets: line, alpha: 0, delay: 1800, duration: 300, onComplete: () => line.destroy() });
   }
@@ -1280,7 +1301,8 @@ class KitSkip {
     void bg;
     const g = scene.add.graphics();
     g.fillStyle(0x1a1814, 0.85).fillRoundedRect(-62, -20, 124, 40, 8).lineStyle(2, 0xf2b21a, 0.9).strokeRoundedRect(-62, -20, 124, 40, 8);
-    btn.add([g, labelAt(scene, 0, 0, t('skip'), S_BTN), labelAt(scene, 0, 30, 'Tab', S_KEY)]);
+    btn.add([g, labelAt(scene, 0, 0, t('skip'), S_BTN)]);
+    if (!scene.sys.game.device.input.touch) btn.add(labelAt(scene, 0, 30, 'Tab', S_KEY));
     btn.setSize(124, 40).setInteractive({ useHandCursor: true }).setScrollFactor(0).setDepth(9070);
     btn.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { ev?.stopPropagation?.(); onSkip(); });
     scene.add.existing(btn);

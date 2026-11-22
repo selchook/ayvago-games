@@ -1,8 +1,8 @@
 // Last Convoy's menu theme (src/core/menu-theme.ts): a survival look. Buttons are bolted steel sign
 // plates with rust stains and scratches, the primary ones hazard yellow with a band of black-and-
 // yellow stripes; boards are dark riveted steel with a strip of hazard tape along the top; round
-// knobs are bolt heads. The screen sits in a frame of hazard tape with a green road sign in each
-// corner; the how-to, pause and result cards are a rusty clipboard sheet. The logo's emblem is a
+// knobs are bolt heads. The screen sits in a frame of hazard tape with a yellow crossroads warning
+// sign in each corner; the how-to, pause and result cards are a rusty clipboard sheet. The logo's emblem is a
 // green highway sign pointing out of town, the convoy's truck under it, claw marks across. HUD chips
 // are small steel plates with a yellow edge. Display face: Black Ops One (SIL OFL, stencil, covers
 // Turkish); body text stays Nunito. The menu itself is the core's: PLAY, Easy / Normal, the car
@@ -139,10 +139,24 @@ function roadSign(c: CanvasRenderingContext2D, x: number, y: number, w: number, 
   grime(c, w, h, Math.round(x * 7 + y), 0.4);
 }
 
+/**
+ * The frame's corner: a yellow crossroads warning sign bolted where the tapes meet. The core mirrors
+ * this piece into the other three corners, so it is symmetric (it reads the same flipped) and stays
+ * whole inside the screen, clear of the menu's corner buttons.
+ */
 function cornerSign(c: CanvasRenderingContext2D, s: number): void {
-  const k = s * 0.32;
-  c.fillStyle = '#8a8e94'; c.fillRect(k - 3, k + 8, 6, s * 0.5);
-  roadSign(c, k - 26, k - 22, 52, 40);
+  const cx = s * 0.25, r = s * 0.21;
+  const diamond = (q: number) => { c.beginPath(); c.moveTo(cx, cx - q); c.lineTo(cx + q, cx); c.lineTo(cx, cx + q); c.lineTo(cx - q, cx); c.closePath(); };
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.55)'; c.shadowBlur = 5;
+  c.fillStyle = css(YELLOW); diamond(r); c.fill();
+  c.restore();
+  c.lineJoin = 'round';
+  c.strokeStyle = INK; c.lineWidth = 2.5; diamond(r); c.stroke();
+  c.lineWidth = 1.5; diamond(r - 4.5); c.stroke();
+  // the crossroads
+  const a = r * 0.5, t = r * 0.15;
+  c.fillStyle = INK; c.fillRect(cx - t, cx - a, t * 2, a * 2); c.fillRect(cx - a, cx - t, a * 2, t * 2);
 }
 
 export const TAPE_BORDER: BorderStyle = { thick: 26, inset: 0, edge: tapeEdge, corner: { size: 92, draw: cornerSign, inset: 0 } };
