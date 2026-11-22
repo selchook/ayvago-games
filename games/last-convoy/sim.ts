@@ -295,7 +295,7 @@ export class Mission {
       }
     }
     // the rest of the town's population: scattered, some lurking under wrecks
-    const start = Math.round(def.start * this.tune.zCount * (1 + this.run.depth * 0.04));
+    const start = Math.round(def.start * this.tune.zCount * (1 + Math.min(8, this.run.depth) * 0.02));
     const spots = [...P.open, ...P.doors, ...P.spawns].filter((s) => Math.hypot(s.x - this.convoy.x, s.z - this.convoy.z) > 16);
     for (let i = 0; i < start; i++) {
       const s = spots[Math.floor(this.rnd() * spots.length)];
@@ -373,7 +373,7 @@ export class Mission {
       }
       if (far) { far.state = 'dead'; far.deadT = 99; }
     }
-    const ramp = 1 + this.run.depth * 0.05;
+    const ramp = 1 + Math.min(8, this.run.depth) * 0.025;
     let zz: Zombie;
     const base = {
       y: 0, vy: 0, face: this.rnd() * 6.28, kx: 0, kz: 0, t: 0, cd: 1 + this.rnd(), tk: 'hero', tid: 0, wx: x, wz: z, wt: 0,
@@ -381,7 +381,7 @@ export class Mission {
     };
     if (kind === 'boss' && boss) {
       const B = BOSS[boss];
-      const hp = Math.round(B.hp * T.zHp * (this.run.kind === 'stand' ? 0.45 + 0.07 * this.wave.n : 1));
+      const hp = Math.round(B.hp * T.zHp * (this.run.kind === 'stand' ? 0.3 + 0.06 * this.wave.n : 1));
       zz = { ...base, id: this.nextId++, kind, boss, x, z, hp, max: hp, r: 0.75 * B.scale * 0.8, walk: B.speed * 0.6, run: B.speed * T.zSpeed, dmg: B.dmg * T.zDmg, reach: 2.4, state, cd: 2.5, scale: B.scale };
     } else {
       const Z = ZOMBIE[kind as Exclude<ZKind, 'boss'>];
@@ -945,7 +945,7 @@ export class Mission {
     else if (r < 0.3 + 0.17 * this.tune.ammo * this.m.ammoDrop) this.drop('ammo', zb.x, zb.z, 1);
     else if (r < 0.52) this.drop('med', zb.x, zb.z, 1);
     // the brute bursts; the epic card makes others pop too
-    if (zb.kind === 'chubby' || (this.m.chain && this.rnd() < this.m.chain)) this.burst(zb.x, zb.z, zb.kind === 'chubby' ? 3.2 : 2.4, zb.kind === 'chubby' ? 16 : 10);
+    if (zb.kind === 'chubby' || (this.m.chain && this.rnd() < this.m.chain)) this.burst(zb.x, zb.z, zb.kind === 'chubby' ? 3.2 : 2.4, zb.kind === 'chubby' ? 12 : 10);
     if (zb.boss) { this.boss = zb; this.stop = 0.2; }
     if (this.wave.active && zb.wave) this.wave.left = Math.max(0, this.wave.left - 1);
   }
@@ -1459,7 +1459,7 @@ export class Mission {
       let best = h.alive ? Math.hypot(h.x - z.x, h.z - z.z) : 1e9;
       const consider = (x: number, y: number, k: string, id: number, bias = 0) => { const d = Math.hypot(x - z.x, y - z.z) + bias; if (d < best) { best = d; tx = x; tz = y; tk = k; tid = id; } };
       if (this.buddy && this.buddy.down <= 0) consider(this.buddy.x, this.buddy.z, 'buddy', 0, 1);
-      for (const s of this.survivors) if (s.state === 'follow') consider(s.x, s.z, 'surv', s.id, -0.5);
+      for (const s of this.survivors) if (s.state === 'follow') consider(s.x, s.z, 'surv', s.id, 1);
       // the dog only when it is biting this one or right beside it
       if (this.dog.state !== 'down' && (this.dog.target === z.id || Math.hypot(this.dog.x - z.x, this.dog.z - z.z) < 3)) consider(this.dog.x, this.dog.z, 'dog', 0, 1);
       if (this.truck && this.truck.hp > 0) consider(this.truck.x, this.truck.z, 'truck', 0, -1.5);
@@ -1534,7 +1534,7 @@ export class Mission {
           const hitWall = pushOut(this.plan, p, z.r, this.extraSolids()) > 0.01;
           z.x = p.x; z.z = p.z;
           if (h.alive && Math.hypot(h.x - z.x, h.z - z.z) < z.r + 0.6) {
-            this.hurtHero(z.dmg * 1.3);
+            this.hurtHero(z.dmg * 1.15);
             h.x += z.ax * 1.2; h.z += z.az * 1.2;
             this.collide(h, 0.42);
             z.state = 'hunt'; z.t = 0; z.cd = 3; z.move = null;

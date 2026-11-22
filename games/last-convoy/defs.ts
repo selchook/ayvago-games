@@ -169,7 +169,7 @@ export const ZOMBIE: Record<Exclude<ZKind, 'boss'>, ZDef> = {
   // the long arm: reaches far and pulls you in
   arm: { kind: 'arm', file: 'zombie-arm', scale: 1.15, hp: 70, walk: 0.9, run: 2.0, dmg: 11, r: 0.45, reach: 3.3, tell: 0.75, cd: 2.4, score: 22, scrap: 2, weight: 0.8 },
   // the brute: charges, and bursts when it falls
-  chubby: { kind: 'chubby', file: 'zombie-chubby', scale: 1.25, hp: 220, walk: 0.8, run: 1.55, dmg: 22, r: 0.75, reach: 1.6, tell: 0.7, cd: 2.2, score: 45, scrap: 5, weight: 0.3 },
+  chubby: { kind: 'chubby', file: 'zombie-chubby', scale: 1.25, hp: 220, walk: 0.8, run: 1.55, dmg: 18, r: 0.75, reach: 1.6, tell: 0.7, cd: 2.2, score: 45, scrap: 5, weight: 0.3 },
 };
 
 export interface BossDef { id: BossId; hp: number; scale: number; tint: number; speed: number; dmg: number; score: number }
@@ -177,7 +177,7 @@ export interface BossDef { id: BossId; hp: number; scale: number; tint: number; 
 export const BOSS: Record<BossId, BossDef> = {
   butcher: { id: 'butcher', hp: 1300, scale: 2.3, tint: 0xd86a5a, speed: 1.7, dmg: 26, score: 1500 },
   hulk: { id: 'hulk', hp: 1350, scale: 2.5, tint: 0x6a9ad8, speed: 1.8, dmg: 30, score: 2200 },
-  grease: { id: 'grease', hp: 2500, scale: 2.6, tint: 0x8a8a4a, speed: 1.9, dmg: 32, score: 3000 },
+  grease: { id: 'grease', hp: 2200, scale: 2.6, tint: 0x8a8a4a, speed: 1.9, dmg: 32, score: 3000 },
   titan: { id: 'titan', hp: 2800, scale: 2.8, tint: 0xa85ad8, speed: 2.0, dmg: 36, score: 4200 },
 };
 

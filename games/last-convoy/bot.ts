@@ -172,7 +172,7 @@ export class Bot {
       }
     }
     // keep shooting distance from what comes at you (guns), close in with melee
-    if (near && nd < (h.weapon === 'gun' ? 3.2 : 1.2) && !near.boss) { const l = nd || 1; mx += ((h.x - near.x) / l) * 1.2; mz += ((h.z - near.z) / l) * 1.2; }
+    if (near && nd < (h.weapon === 'gun' || near.kind === 'chubby' ? (near.kind === 'chubby' ? 4.2 : 3.2) : 1.2) && !near.boss) { const l = nd || 1; mx += ((h.x - near.x) / l) * 1.2; mz += ((h.z - near.z) / l) * 1.2; }
     if (near && h.weapon === 'melee' && nd > 1.6 && nd < 6 && !attack) { mx += (near.x - h.x) / nd; mz += (near.z - h.z) / nd; }
     if (near?.boss && (nd < 4.5 || (h.weapon === 'melee' && nd < 9))) { const l = nd || 1; mx += ((h.x - near.x) / l) * 1.6; mz += ((h.z - near.z) / l) * 1.6; }
     // casual drift

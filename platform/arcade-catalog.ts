@@ -638,6 +638,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-11-13',
   }),
   arcadeGame({
+    slug: 'last-convoy',
+    title: { en: 'Last Convoy', tr: 'Son Konvoy' },
+    description: {
+      en: "Northdale has fallen! A 3D rescue-and-escape action game: pick one of your four survivors and your loyal dog, collect fuel cans, parts and batteries in zombie-filled streets, free the trapped and bring them back to the convoy, break barricades, hold out while the truck is repaired or the radio calls for help, and topple each district's giant. Guns are loud and call the horde, melee is quiet; fight with three combos, roll and use your ability. Every mission ends with the escape drive: steer the convoy through the zombies to the Northdale sign. Buy lasting upgrades in the garage and pick a power card after each mission. Twelve missions, four districts, a Last Stand mode, Easy or Normal.",
+      tr: 'Northdale düştü! 3B bir kurtarma ve kaçış aksiyonu: dört kişilik ekibinden birini ve sadık köpeğini seç, zombi dolu sokaklarda benzin bidonu, parça ve pil topla, mahsur kalanları kurtarıp konvoya getir, barikatları yık, tamir ve telsiz çağrısı bitene dek dayan, her bölgenin devini yen. Silahlar gürültülüdür ve sürüyü çağırır, yakın dövüş sessizdir; üç komboyla dövüş, takla at, yeteneğini kullan. Her görevin sonunda konvoyu zombilerin arasından Northdale tabelasına kadar sür. Garajda kalıcı geliştirmeler al, her görevden sonra güç kartı seç. On iki görev, dört bölge, Son Savunma modu, Kolay ya da Normal.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['last', 'convoy', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'gamepad', 'mouse'],
+    addedAt: '2026-11-22',
+  }),
+  arcadeGame({
     slug: 'letter-loop',
     title: { en: 'Letter Loop', tr: 'Harf Çemberi' },
     description: {
