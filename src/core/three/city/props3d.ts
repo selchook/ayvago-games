@@ -30,7 +30,8 @@ export function propGeometry(kind: InstKind): GeoBuf {
   switch (kind) {
     case 'tree':
       buf.cylinder(0, 0, 0.2, 0.13, 0, 3, 6, lin(0x6b4a32), plain, false);
-      blob(buf, 0, 4.4, 0, 2.3, 0.85, lin(0x4f8a3a), leaves, 1);
+      blob(buf, 0, 4.4, 0, 2.3, 0.85, lin(0x4f8a3a), leaves, 0);
+      blob(buf, 0.2, 4.9, 0.3, 1.9, 0.8, lin(0x4b8538), leaves, 0);
       blob(buf, 0.7, 5.6, -0.4, 1.5, 0.9, lin(0x5a9640), leaves, 0);
       blob(buf, -0.8, 5.0, 0.6, 1.4, 0.9, lin(0x467f34), leaves, 0);
       break;
@@ -88,16 +89,13 @@ export function propGeometry(kind: InstKind): GeoBuf {
       break;
     }
     case 'car': {
+      // body, cabin, two axles, a light strip at each end (~60 triangles)
       const paint: K4 = [K.paint, 0, 0, 0];
-      const white = lin(0xffffff);
-      buf.boxH(0, 0.32, 0, 0.88, 0.33, 2.1, 0, white, paint, true);
+      buf.boxH(0, 0.32, 0, 0.88, 0.33, 2.1, 0, lin(0xffffff), paint);
       buf.boxH(0, 0.98, -0.15, 0.8, 0.3, 1.15, 0, lin(0x1d2630), [K.plain, 0, 0, 0]);
-      buf.boxH(0, 1.58, -0.15, 0.78, 0.02, 1.05, 0, white, paint);
-      for (const [x, z] of [[-0.82, 1.35], [0.82, 1.35], [-0.82, -1.35], [0.82, -1.35]]) buf.boxH(x, 0, z, 0.13, 0.33, 0.33, 0, lin(0x1a1a1a));
-      for (const x of [-0.6, 0.6]) {
-        buf.boxH(x, 0.7, 2.1, 0.16, 0.06, 0.02, 0, lin(0xfff6d8), [K.glow, 0.2, 2.2, 0]);
-        buf.boxH(x, 0.72, -2.1, 0.16, 0.06, 0.02, 0, lin(0xff2a1a), [K.glow, 0.15, 1.4, 0]);
-      }
+      for (const z of [1.35, -1.35]) buf.boxH(0, 0, z, 0.9, 0.33, 0.32, 0, lin(0x1a1a1a));
+      buf.boxH(0, 0.66, 2.1, 0.78, 0.07, 0.02, 0, lin(0xfff6d8), [K.glow, 0.2, 2.2, 0]);
+      buf.boxH(0, 0.68, -2.1, 0.78, 0.06, 0.02, 0, lin(0xff2a1a), [K.glow, 0.15, 1.4, 0]);
       break;
     }
     case 'container':

@@ -181,6 +181,8 @@ export function makeWalk(net: Network, blocks: Block[]): { pts: P[]; edges: [num
   const rings = new Map<number, number[]>();
   for (const b of blocks) {
     if (b.kind === 'outer' || b.kind === 'void') continue;
+    // leftover islands between tangled roads have no crossings: no ring
+    if (b.curbEdge.every((e) => e < 0)) continue;
     const ring = insetPoly(b.curb, b.walk / 2);
     if (!ring) continue;
     // decimate to ~6 m steps

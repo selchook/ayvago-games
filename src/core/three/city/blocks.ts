@@ -5,7 +5,7 @@
 // balconies and fire escapes, houses with gabled or hipped roofs and yards, warehouses with
 // loading doors, gas stations. Pure data.
 import {
-  type P, type OBB, p, add, sub, mul, dist, unit, nrm, lerp, centroid, pointInPoly, signedArea, insetPoly, insetPolySrc, obbInPoly, obbInPolyFast, polyIndex, obbOverlap,
+  type P, type OBB, p, add, sub, mul, dist, unit, nrm, lerp, centroid, pointInPoly, signedArea, insetPoly, insetPolySrc, firstCrossing, obbInPoly, obbInPolyFast, polyIndex, obbOverlap,
   obbPoint, obbCorners, headingOf, arcLengths, alongPolyline, clamp, cleanPoly,
 } from './geom';
 import { type Rng, hash01 } from './rng';
@@ -57,6 +57,20 @@ export function makeBlocks(net: Network, site: Site, rnd: Rng): Block[] {
       walk: f.outer ? 3 : wet ? 4 : WALK[district], ground: GROUND[district], area: Math.abs(signedArea(f.curb)), c, lots: [],
     };
   });
+  // a leftover tangle: its kerb outline split into simple loops, each a small paved plaza
+  for (const b of [...blocks]) {
+    if (b.kind !== 'void') continue;
+    const loops = splitLoops(b.curb);
+    b.curb = [];
+    for (const lp of loops) {
+      const area = signedArea(lp);
+      if (area < 60) continue;
+      const lawn = b.district === 'suburban' || b.district === 'residential' || b.district === 'park';
+      if (!b.curb.length) { b.curb = lp; b.area = area; b.kind = 'plaza'; b.ground = lawn ? 'grass' : 'paving'; b.c = interiorPoint(lp); b.curbEdge = lp.map(() => -1); continue; }
+      blocks.push({ ...b, id: blocks.length, curb: lp, curbEdge: lp.map(() => -1), area, c: interiorPoint(lp), lots: [] });
+    }
+    if (!b.curb.length) b.kind = 'void';
+  }
   // parks: a share of the land blocks, a big one near downtown
   const land = blocks.filter((b) => b.kind === 'block');
   const R = site.S * site.style.downtown;
@@ -78,7 +92,14 @@ export function makeBlocks(net: Network, site: Site, rnd: Rng): Block[] {
   if (heart) { heart.kind = 'plaza'; heart.ground = 'paving'; }
   for (const b of blocks) {
     if (b.kind === 'outer' || b.kind === 'void') continue;
-    const ins = insetPolySrc(b.curb, b.walk);
+    let ins = insetPolySrc(b.curb, b.walk);
+    // a river face keeps its water: a narrower quay, or none
+    for (const w of [2.5, 1.2]) {
+      if (ins || b.kind !== 'water') break;
+      b.walk = w;
+      ins = insetPolySrc(b.curb, w);
+    }
+    if (!ins && b.kind === 'water') { b.walk = 0; ins = { poly: b.curb, src: b.curb.map((_, i) => i) }; }
     if (!ins) { if (b.kind === 'block') { b.kind = 'plaza'; b.ground = 'paving'; } continue; }
     const inner = ins.poly;
     b.inner = inner;
@@ -92,6 +113,11 @@ export function makeBlocks(net: Network, site: Site, rnd: Rng): Block[] {
       return e;
     });
     const ia = signedArea(inner);
+    // big blocks of the shopping strips keep their lawns (no sea of asphalt)
+    if (b.kind === 'block' && b.district === 'commercial' && ia > 12000) b.ground = 'grass';
+    // big squares become parks, plazas in the suburbs lawns
+    if (b.kind === 'plaza' && ia > 6000) { b.kind = 'park'; b.ground = 'grass'; }
+    else if (b.kind === 'plaza' && (b.district === 'suburban' || b.district === 'residential')) b.ground = 'grass';
     if (b.kind === 'block' && ia < 1400) { b.kind = 'plaza'; b.ground = b.district === 'suburban' || b.district === 'residential' ? 'grass' : 'paving'; }
   }
   return blocks;
@@ -476,4 +502,18 @@ function chainlinkFront(o: OBB, fv: number): Wall[] {
     { kind: 'chainlink', a, b: lerp(a, b, 0.35), h: 2.2 },
     { kind: 'chainlink', a: lerp(a, b, 0.65), b, h: 2.2 },
   ];
+}
+
+/** Splits a self-crossing outline into simple loops (positive ones are kept by the caller). */
+function splitLoops(poly: P[]): P[][] {
+  const out: P[][] = [];
+  const stack = [poly];
+  while (stack.length && out.length < 16) {
+    const pl = stack.pop()!;
+    const x = firstCrossing(pl);
+    if (!x) { out.push(pl); continue; }
+    const [i, j, q] = x;
+    stack.push([q, ...pl.slice(i + 1, j + 1)], [...pl.slice(0, i + 1), q, ...pl.slice(j + 1)]);
+  }
+  return out.filter((l) => l.length >= 3);
 }

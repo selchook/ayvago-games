@@ -197,7 +197,7 @@ export interface Circle { x: number; z: number; r: number }
 export interface Water {
   /** River outline polygons and the sea outline (big polygons, beyond the city too). */
   polys: P[][];
-  /** Beaches: sand strips sloping into the sea. */
+  /** Beaches: sand strips sloping into the sea (first half of each outline along the land, then back along the water). */
   beaches: P[][];
   /** Water surface height. */
   level: number;

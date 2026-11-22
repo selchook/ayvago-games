@@ -4,6 +4,7 @@
 // window.__city exposes hooks for scripts/city-shots.mjs and scripts/city-memory.mjs.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {
   generateCity, planStats, cityQuery, drawMinimap, CityView, STYLES, STYLE_IDS, LOOKS, LOOK_IDS, DISTRICTS,
   type CityPlan, type StyleId, type LookId, type DistrictKind, type CityOptions,
@@ -20,6 +21,16 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// count every GL draw (renderer.info leaves the shadow pass out)
+const glCount = { calls: 0, triangles: 0 };
+{
+  const gl = renderer.getContext() as WebGL2RenderingContext & Record<string, (...a: number[]) => void>;
+  const wrap = (name: string, countArg: number, instArg = -1) => {
+    const f = gl[name].bind(gl);
+    gl[name] = (...a: number[]) => { glCount.calls++; glCount.triangles += (a[countArg] / 3) * (instArg >= 0 ? a[instArg] : 1); f(...a); };
+  };
+  wrap('drawArrays', 2); wrap('drawElements', 1); wrap('drawArraysInstanced', 2, 3); wrap('drawElementsInstanced', 1, 4);
+}
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.3, 9000);
 const controls = new OrbitControls(camera, canvas);
@@ -31,7 +42,17 @@ let view: CityView | null = null;
 let mode: Mode = 'orbit';
 let look: LookId = (params.get('look') as LookId) || 'day';
 const mix: Partial<Record<DistrictKind, number>> = {};
-const show = { props: true, lod: true, wireframe: false, lanes: false, colliders: false, walk: false, minimap: !params.has('nominimap'), shadows: true, ui: !params.has('noui') };
+const show = { props: true, lod: true, wireframe: false, lanes: false, colliders: false, walk: false, minimap: !params.has('nominimap'), shadows: true, hybrid: params.has('hybrid'), ui: !params.has('noui') };
+
+// hybrid mode: Kenney City Kit Commercial skyscrapers (CC0, in public/assets) on some tower lots
+let hybridModels: THREE.Object3D[] | null = null;
+async function loadHybrid(): Promise<void> {
+  if (hybridModels) return;
+  const loader = new GLTFLoader();
+  const base = '/assets/kenney/city-kit-commercial/models/gltf_format/';
+  hybridModels = await Promise.all(['building-skyscraper-a', 'building-skyscraper-b', 'building-skyscraper-c']
+    .map((n) => loader.loadAsync(base + n + '.glb').then((g) => g.scene)));
+}
 let yaw = 0, pitch = 0;
 const keys = new Set<string>();
 let frameMs = 16;
@@ -79,7 +100,11 @@ for (const k of Object.keys(show) as (keyof typeof show)[]) {
   const b = document.createElement('button');
   b.textContent = k;
   b.dataset.k = k;
-  b.onclick = () => { show[k] = !show[k]; applyShow(); };
+  b.onclick = () => {
+    show[k] = !show[k];
+    if (k === 'hybrid') { void (show.hybrid ? loadHybrid() : Promise.resolve()).then(() => regenerate()); return; }
+    applyShow();
+  };
   toggleBox.appendChild(b);
 }
 $('shots').onclick = () => void downloadShots();
@@ -108,7 +133,8 @@ function regenerate(opts: Partial<CityOptions> & { look?: LookId } = {}): Record
   const o: CityOptions = {
     seed: opts.seed ?? Number(seedIn.value),
     style: opts.style ?? (styleSel.value as StyleId),
-    size: opts.size ?? Number(sizeIn.value),
+    // a new style brings its own size unless one is given
+    size: opts.size ?? (opts.style && opts.style !== styleSel.value ? STYLES[opts.style].size : Number(sizeIn.value)),
     districts: opts.districts ?? { ...mix },
   };
   seedIn.value = String(o.seed); styleSel.value = o.style!; sizeIn.value = String(o.size);
@@ -117,7 +143,11 @@ function regenerate(opts: Partial<CityOptions> & { look?: LookId } = {}): Record
   view?.dispose();
   plan = generateCity(o);
   const t0 = performance.now();
-  view = new CityView(plan, scene, { look, near: Number(nearIn.value) });
+  const models = show.hybrid ? hybridModels : null;
+  view = new CityView(plan, scene, {
+    look, near: Number(nearIn.value),
+    replace: models ? (b) => (b.type === 'tower' && b.seed < 0.35 ? models[Math.floor(b.seed * 100) % models.length].clone(true) : null) : undefined,
+  });
   const viewMs = performance.now() - t0;
   drawMinimap(miniBase.getContext('2d')!, plan, 480 / plan.size);
   setMode(mode, true);
@@ -245,6 +275,7 @@ function adaptCamera(): void {
 }
 
 function renderOnce(dt: number): void {
+  glCount.calls = 0; glCount.triangles = 0;
   moveCamera(dt);
   adaptCamera();
   view?.update(focusPoint(), camera, dt);
@@ -269,7 +300,7 @@ function drawStats(): void {
   if (!view) return;
   const s = view.stats(), i = renderer.info;
   $('stats').textContent = `${plan.style} seed ${plan.seed} ${plan.size} m · plan ${plan.ms} ms · chunks ${s.chunks} (+${s.queued} queued, ${s.cached} cached) · build ${s.lastBuildMs} / avg ${s.avgBuildMs} ms`
-    + ` · draw calls ${i.render.calls} · tris ${(i.render.triangles / 1000).toFixed(0)}k · geo ${i.memory.geometries} tex ${i.memory.textures} · ${frameMs.toFixed(1)} ms/frame · ${mode} ${look}`;
+    + ` · draw calls ${glCount.calls} · tris ${(glCount.triangles / 1000).toFixed(0)}k · geo ${i.memory.geometries} tex ${i.memory.textures} · ${frameMs.toFixed(1)} ms/frame · ${mode} ${look}`;
 }
 
 function drawMini(): void {
@@ -300,12 +331,24 @@ function streetSpots(): { name: string; x: number; z: number; tx: number; tz: nu
   };
   const byDist = (a: { pts: { x: number; z: number }[] }, b: { pts: { x: number; z: number }[] }) =>
     Math.hypot(a.pts[0].x - plan.centre.x, a.pts[0].z - plan.centre.z) - Math.hypot(b.pts[0].x - plan.centre.x, b.pts[0].z - plan.centre.z);
-  const add = (name: string, l: (typeof lanes)[0] | undefined, at = 0.15) => {
+  const cars = plan.props.filter((q) => q.kind === 'car');
+  const add = (name: string, l: (typeof lanes)[0] | undefined, at0 = 0.15) => {
     if (!l) return;
+    // a spot without a parked car just ahead
+    let at = at0;
+    for (const f of [at0, at0 + 0.15, at0 + 0.3, at0 + 0.45, 0.05]) {
+      const k = Math.max(0, Math.floor((l.pts.length - 1) * Math.min(0.9, f)));
+      const a = l.pts[k], b = l.pts[Math.min(l.pts.length - 1, k + 1)];
+      const L = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+      const ahead = (q: { x: number; z: number }) => ((q.x - a.x) * (b.x - a.x) + (q.z - a.z) * (b.z - a.z)) / L;
+      if (!cars.some((c) => { const t = ahead(c); return t > -1 && t < 16 && Math.hypot(c.x - a.x, c.z - a.z) < 17; })) { at = Math.min(0.9, f); break; }
+    }
     const i = Math.max(0, Math.floor((l.pts.length - 1) * at));
     const a = l.pts[i], b = l.pts[Math.min(l.pts.length - 1, i + 1)];
     const L = Math.hypot(b.x - a.x, b.z - a.z) || 1;
-    out.push({ name, x: a.x, z: a.z, tx: a.x + ((b.x - a.x) / L) * 50, tz: a.z + ((b.z - a.z) / L) * 50 });
+    // a little towards the centre line, clear of parked cars
+    const sx = ((b.z - a.z) / L) * 0.9, sz = (-(b.x - a.x) / L) * 0.9;
+    out.push({ name, x: a.x + sx, z: a.z + sz, tx: a.x + sx + ((b.x - a.x) / L) * 50, tz: a.z + sz + ((b.z - a.z) / L) * 50 });
   };
   const sorted = [...lanes].sort(byDist);
   add('downtown', sorted.find((l) => district(l)?.district === 'downtown' && plan.edges[l.edge].cls !== 'alley'));
@@ -319,8 +362,40 @@ function streetSpots(): { name: string; x: number; z: number; tx: number; tz: nu
 
 const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
+/** Features worth a close look, found in the plan. */
+function detailSpots(): Record<string, { x: number; y: number; z: number; h: number; r: number }> {
+  const out: Record<string, { x: number; y: number; z: number; h: number; r: number }> = {};
+  const spawn = (k: string) => plan.spawns.find((s) => s.kind === k);
+  const ra = plan.nodes.find((n) => n.island > 0);
+  if (ra) out.roundabout = { x: ra.x, y: 0, z: ra.z, h: 0.7, r: 60 };
+  const br = spawn('bridge');
+  if (br) out.bridge = { x: br.x, y: 0, z: br.z, h: br.h + 1.2, r: 90 };
+  const gas = spawn('gas');
+  if (gas) out.gas = { x: gas.x, y: 2, z: gas.z, h: 2.4, r: 45 };
+  const park = plan.blocks.filter((b) => b.kind === 'park').sort((a, b) => b.area - a.area)[0];
+  if (park) out.park = { x: park.c.x, y: 0, z: park.c.z, h: 0.4, r: 110 };
+  const dock = spawn('dock');
+  if (dock) out.docks = { x: dock.x, y: 6, z: dock.z, h: dock.h + Math.PI * 0.75, r: 90 };
+  const cul = plan.nodes.find((n) => n.kind === 'end' && plan.edges[n.edges[0]].cls === 'street' && plan.blocks[plan.edges[n.edges[0]].faceN]?.district === 'suburban')
+    ?? plan.nodes.find((n) => n.kind === 'end');
+  if (cul) out.culdesac = { x: cul.x, y: 0, z: cul.z, h: 2.2, r: 55 };
+  const plaza = spawn('plaza');
+  if (plaza) out.plaza = { x: plaza.x, y: 0, z: plaza.z, h: 0.9, r: 70 };
+  const tower = spawn('landmark');
+  if (tower) out.tower = { x: tower.x, y: tower.y * 0.45, z: tower.z, h: 0.5, r: tower.y * 1.1 };
+  const beach = plan.water.beaches.sort((a, b) => b.length - a.length)[0];
+  if (beach) {
+    const m = beach[Math.floor(beach.length / 4)], n = beach[Math.floor(beach.length / 4) + 1] ?? m;
+    out.beach = { x: m.x, y: 0, z: m.z, h: Math.atan2(n.x - m.x, n.z - m.z) + 0.5, r: 70 };
+  }
+  const junction = plan.nodes.filter((n) => n.signal).sort((a, b) => Math.hypot(a.x - plan.centre.x, a.z - plan.centre.z) - Math.hypot(b.x - plan.centre.x, b.z - plan.centre.z))[0];
+  if (junction) out.junction = { x: junction.x, y: 0, z: junction.z, h: 2.9, r: 45 };
+  return out;
+}
+
 const api = {
   generate: (o: Partial<CityOptions> & { look?: LookId }) => regenerate(o),
+  hybrid: async (on: boolean) => { show.hybrid = on; if (on) await loadHybrid(); return regenerate(); },
   setLook: (l: LookId) => { look = l; lookSel.value = l; view?.setLook(l); applyShow(); },
   setMode: (m: Mode) => setMode(m, true),
   pose,
@@ -337,8 +412,19 @@ const api = {
     const s = streetSpots()[i];
     if (!s) return null;
     setMode('street', true);
-    pose(s.x, 1.7, s.z, s.tx, 3.2, s.tz);
+    pose(s.x, 2.1, s.z, s.tx, 3.6, s.tz);
     return s.name;
+  },
+  /** Names of the features detail() can frame. */
+  details: () => Object.keys(detailSpots()),
+  /** An oblique close view of a feature: roundabout, bridge, gas, park, docks, culdesac, plaza, tower. */
+  detail: (name: string) => {
+    const d = detailSpots()[name];
+    if (!d) return false;
+    setMode('fly', true);
+    const r = d.r;
+    pose(d.x - Math.sin(d.h) * r, r * 0.55, d.z - Math.cos(d.h) * r, d.x, d.y, d.z);
+    return true;
   },
   /** Streams everything round the camera, then renders a few frames. */
   settle: async (frames = 4) => {
@@ -346,13 +432,13 @@ const api = {
     view?.loadAll(focusPoint());
     for (let i = 0; i < frames; i++) { renderOnce(1 / 60); await frame(); }
   },
-  /** Renders `n` frames and returns the mean ms per frame and the renderer's counters. */
+  /** Renders `n` frames: mean ms per frame, GL draw calls and triangles of the last frame (shadow pass included), GPU memory. */
   measure: async (n = 10) => {
     const t0 = performance.now();
-    for (let i = 0; i < n; i++) { renderOnce(1 / 60); renderer.getContext().finish(); }
+    for (let i = 0; i < n; i++) { glCount.calls = 0; glCount.triangles = 0; renderOnce(1 / 60); renderer.getContext().finish(); }
     const ms = (performance.now() - t0) / n;
     const i = renderer.info;
-    return { ms, calls: i.render.calls, triangles: i.render.triangles, geometries: i.memory.geometries, textures: i.memory.textures, ...view!.stats() };
+    return { ms, calls: glCount.calls, triangles: Math.round(glCount.triangles), mainCalls: i.render.calls, mainTriangles: i.render.triangles, geometries: i.memory.geometries, textures: i.memory.textures, ...view!.stats() };
   },
   memory: () => ({ ...renderer.info.memory }),
   stats: () => view?.stats(),
@@ -406,6 +492,7 @@ async function downloadShots(): Promise<void> {
 // ------------------------------------------------------------------ go
 
 resize();
+if (show.hybrid) await loadHybrid();
 regenerate();
 if (params.get('mode')) setMode(params.get('mode') as Mode, true);
 loop();

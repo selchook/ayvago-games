@@ -28,7 +28,7 @@ export interface CityViewOptions {
   props?: boolean;
   /** A sun with shadows (default from the look). */
   shadows?: boolean;
-  /** Half size of the sun's shadow box (default 140 m). */
+  /** Half size of the sun's shadow box (default 110 m). */
   shadowExtent?: number;
   /** Add a sun and sky light to the scene (default true). */
   lights?: boolean;
@@ -81,12 +81,13 @@ export class CityView {
   private buildMs = 0;
   private lastBuildMs = 0;
   private focus = new THREE.Vector3();
+  private refillAt = new THREE.Vector3(1e9, 0, 1e9);
   private time = 0;
 
   constructor(readonly plan: CityPlan, readonly scene: THREE.Scene, options: CityViewOptions = {}) {
     this.opts = {
       chunk: options.chunk ?? 128, near: options.near ?? 320, lod: options.lod ?? true, props: options.props ?? true,
-      shadows: options.shadows, shadowExtent: options.shadowExtent ?? 140, lights: options.lights ?? true,
+      shadows: options.shadows, shadowExtent: options.shadowExtent ?? 110, lights: options.lights ?? true,
       sky: options.sky ?? true, fog: options.fog ?? true, budget: options.budget ?? 8, cache: options.cache ?? 96,
     };
     this.look = LOOKS[options.look ?? STYLES[plan.style].look];
@@ -191,7 +192,8 @@ export class CityView {
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
       m.count = 0;
-      m.castShadow = kind !== 'container' && kind !== 'signal';
+      // only trees throw instanced shadows (the rest is small and would double the shadow pass)
+      m.castShadow = kind === 'tree' || kind === 'palm' || kind === 'conifer';
       m.receiveShadow = true;
       m.frustumCulled = false;
       m.name = 'props:' + kind;
@@ -244,7 +246,8 @@ export class CityView {
     this.focus.copy(focus);
     this.uniforms.uFocus.value.copy(focus);
     this.stream();
-    if (this.instDirty) this.refillInstances();
+    // props have shorter radii than the chunks: refill as the focus moves on
+    if (this.instDirty || this.refillAt.distanceToSquared(focus) > 24 * 24) this.refillInstances();
     if (this.skyMesh) this.skyMesh.position.copy(camera.position);
     if (this.sun) {
       const d = this.uniforms.uSunDir.value;
@@ -285,6 +288,9 @@ export class CityView {
       this.load(this.queue.shift()!);
       n++;
     }
+    // only chunks inside the sun's shadow box cast shadows
+    const reach = this.opts.shadowExtent + c * 0.25;
+    for (const [key, l] of this.loaded) if (l.mesh) l.mesh.castShadow = this.chunkDist(key) < reach;
     // far boxes give way only where the near chunks are complete
     const missing = this.queue.length ? this.chunkDist(this.queue[0]) : near;
     this.uniforms.uNearR.value = this.opts.lod ? Math.max(0, Math.min(near, missing) - 10) : 1e6;
@@ -319,12 +325,14 @@ export class CityView {
 
   private refillInstances(): void {
     this.instDirty = false;
+    this.refillAt.copy(this.focus);
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), col = new THREE.Color();
     for (const [kind, mesh] of this.inst) {
       let n = 0;
-      if (this.opts.props) for (const l of this.loaded.values()) {
+      const far = PROP_RADIUS[kind] ?? 260;
+      if (this.opts.props) for (const [key, l] of this.loaded) {
         const rec = l.data.inst[kind];
-        if (!rec) continue;
+        if (!rec || this.chunkDist(key) > far) continue;
         for (let i = 0; i < rec.length; i += 8) {
           if (n >= mesh.instanceMatrix.count) break;
           p.set(rec[i], rec[i + 1], rec[i + 2]);
@@ -484,13 +492,14 @@ export class CityView {
   dispose(): void {
     for (const [key, l] of [...this.loaded]) this.unload(key, l);
     this.cache.clear();
+    // landmark models belong to the game (shared, loaded resources): take them out first
+    for (const l of this.landmarks) this.group.remove(l);
     this.group.traverse((o) => {
       const m = o as THREE.Mesh;
       if (m.geometry) m.geometry.dispose();
       if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose();
       if ((o as THREE.LineSegments).isLineSegments) ((o as THREE.LineSegments).material as THREE.Material).dispose();
     });
-    for (const l of this.landmarks) this.group.remove(l);
     for (const t of this.textures) t.dispose();
     for (const m of Object.values(this.materials)) m.dispose();
     if (this.sun) { this.sun.shadow.dispose(); this.sun.shadow.map = null; }
@@ -498,6 +507,9 @@ export class CityView {
     this.group.clear();
   }
 }
+
+/** How far from the focus each instanced prop is drawn (metres). */
+const PROP_RADIUS: Partial<Record<InstKind, number>> = { tree: 230, palm: 230, conifer: 230, lamp: 260, signal: 200, car: 170, container: 220 };
 
 const propCache = new Map<InstKind, GeoArrays>();
 import { propGeometry } from './props3d';

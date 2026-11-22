@@ -160,7 +160,8 @@ export function makeSite(S: number, style: StyleDef, rnd: Rng, seed: number, wei
     for (let i = 0; i <= N; i++) {
       const u = m + (S - 2 * m) * (i / N);
       const vp = Math.max(m, shoreV(u) + beachW + 10);
-      const a = toWorld(u, vp - roadDims('avenue', false, false).half - 3);
+      // the sand starts under the promenade's outer sidewalk (it slopes down from y = -0.1)
+      const a = toWorld(u, vp - 2);
       const b = toWorld(u, shoreV(u) - 8);
       const wet = river && Math.min(...river.pts.map((q) => dist(q, a))) < river.half + 30;
       if (wet || vp - shoreV(u) < beachW) { if (runs[runs.length - 1].length) runs.push([]); continue; }
@@ -168,8 +169,8 @@ export function makeSite(S: number, style: StyleDef, rnd: Rng, seed: number, wei
     }
     for (const r of runs) {
       if (r.length < 2) continue;
-      const poly = [...r.map((x) => x.a), ...r.map((x) => x.b).reverse()];
-      beaches.push(signedArea(poly) < 0 ? poly.reverse() : poly);
+      // first half along the promenade, second half back along the water (CityView slopes it)
+      beaches.push([...r.map((x) => x.a), ...r.map((x) => x.b).reverse()]);
     }
   }
   const site: Site = {

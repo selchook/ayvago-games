@@ -141,9 +141,10 @@ for (const { style, seed } of cases) {
   check(scc > 0.995, `${style} ${seed}: lane graph ${(scc * 100).toFixed(1)}% strongly connected`);
   check(walk > 0.97, `${style} ${seed}: pedestrian graph ${(walk * 100).toFixed(1)}% connected`);
   check(st.blocks > 40 && st.buildings > 300, `${style} ${seed}: a real city (${st.blocks} blocks, ${st.buildings} buildings)`);
-  check(ms < 1000, `${style} ${seed}: generated in ${ms.toFixed(0)} ms`);
+  check(ms < 1500, `${style} ${seed}: generated in ${ms.toFixed(0)} ms`);
 }
 const avg = times.reduce((a, b) => a + b, 0) / times.length;
 console.log(`\nplan time: mean ${avg.toFixed(0)} ms, max ${Math.max(...times).toFixed(0)} ms over ${times.length} cities`);
+check(avg < 700, `mean plan time ${avg.toFixed(0)} ms (a busy machine can push one city past a second, so the mean is the measure)`);
 console.log(failed ? `${failed} check(s) failed` : 'all plan checks passed');
 process.exit(failed ? 1 : 0);

@@ -172,7 +172,7 @@ export class CityBuilder {
       return;
     }
     const n = b.curb.length;
-    if (b.inner) tris(b.curb, [b.inner], Y, b.kind === 'water' ? 8 : 0);
+    if (b.inner && b.walk > 0) tris(b.curb, [b.inner], Y, b.kind === 'water' ? 8 : 0);
     else tris(b.curb, [], Y, b.kind === 'water' ? 8 : SURF_OF[b.ground] ?? 2);
     for (let i = 0; i < n; i++) wall(b.curb[(i + 1) % n], b.curb[i], 0, Y, 0);
     if (!b.inner) return;
@@ -462,13 +462,17 @@ export class CityBuilder {
         const dark = lin(0x26292d);
         for (let f = 0; f < floors; f++) {
           const y = q.y0 + f * b.floorH;
-          buf.obb(o, y - 0.08, y, dark, [K.metal, 0, 0, 0], null, undefined, true);
-          buf.obb(sub2(o, -o.hw, o.hw, -o.hd, -o.hd + 0.06), y, y + 0.95, dark);
+          // a slatted landing and an open railing round it
+          buf.obb(o, y - 0.06, y, dark, [K.metal, 0, 0, 0], null, undefined, true);
+          const c = obbCorners(o);
+          railing(buf, c[0], c[1], y, 0.9, dark, 1.2, 0.025, true);
+          railing(buf, c[3], c[0], y, 0.9, dark, 1.2, 0.025);
+          railing(buf, c[1], c[2], y, 0.9, dark, 1.2, 0.025);
           // the stair to the floor below: a slanted plank
           if (f > 0) {
             const lo = y - b.floorH;
             const a0 = obbPoint(o, -o.hw * 0.75 * (f % 2 ? 1 : -1), 0), a1 = obbPoint(o, o.hw * 0.75 * (f % 2 ? 1 : -1), 0);
-            const vx = -o.uz * 0.4, vz = o.ux * 0.4;
+            const vx = -o.uz * 0.3, vz = o.ux * 0.3;
             buf.quad([a0.x - vx, lo, a0.z - vz], [a0.x + vx, lo, a0.z + vz], [a1.x + vx, y, a1.z + vz], [a1.x - vx, y, a1.z - vz], dark);
             buf.quad([a1.x - vx, y, a1.z - vz], [a1.x + vx, y, a1.z + vz], [a0.x + vx, lo, a0.z + vz], [a0.x - vx, lo, a0.z - vz], dark);
           }
@@ -758,8 +762,11 @@ export class CityBuilder {
         const a = beach[i], b = beach[i + 1];
         const c = beach[beach.length - 1 - i], d = beach[beach.length - 2 - i];
         const sand = lin(COL.sand);
-        const ya = 0.05, yb = -1.6;
-        buf.quad([a.x, ya, a.z], [b.x, ya, b.z], [d.x, yb, d.z], [c.x, yb, c.z], sand, [K.sand, 0, 0, 0]);
+        const ya = -0.1, yb = -1.6;
+        // facing up whatever the outline's direction
+        const cr = (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x);
+        if (cr < 0) buf.quad([a.x, ya, a.z], [b.x, ya, b.z], [d.x, yb, d.z], [c.x, yb, c.z], sand, [K.sand, 0, 0, 0]);
+        else buf.quad([c.x, yb, c.z], [d.x, yb, d.z], [b.x, ya, b.z], [a.x, ya, a.z], sand, [K.sand, 0, 0, 0]);
       }
     }
     return buf.arrays();
@@ -780,7 +787,7 @@ export class CityBuilder {
       const x = cx + Math.cos(a) * r0, z = cz + Math.sin(a) * r0;
       if (sea && pointInPoly({ x, z }, sea)) return 0;
       const k = this.plan.seed * 0.001;
-      return Math.max(0, 40 + 90 * Math.sin(a * 3 + k) * Math.sin(a * 5.3 + 1 + k) + 60 * Math.sin(a * 11 + 2 * k)) + 20;
+      return Math.max(0, 110 + 130 * Math.sin(a * 3 + k) * Math.sin(a * 5.3 + 1 + k) + 70 * Math.sin(a * 11 + 2 * k) + 35 * Math.sin(a * 23 + k)) + 30;
     };
     const near = lin(tint(terrain, 0.75)), far = lin(tint(terrain, 0.6));
     for (let i = 0; i < n; i++) {
@@ -788,8 +795,8 @@ export class CityBuilder {
       const h0 = h(i), h1 = h(i + 1);
       if (h0 <= 0 && h1 <= 0) continue;
       const p0 = [cx + Math.cos(a0) * r0, -0.5, cz + Math.sin(a0) * r0], p1 = [cx + Math.cos(a1) * r0, -0.5, cz + Math.sin(a1) * r0];
-      const q0 = [cx + Math.cos(a0) * (r0 + (r1 - r0) * 0.45), h0, cz + Math.sin(a0) * (r0 + (r1 - r0) * 0.45)];
-      const q1 = [cx + Math.cos(a1) * (r0 + (r1 - r0) * 0.45), h1, cz + Math.sin(a1) * (r0 + (r1 - r0) * 0.45)];
+      const q0 = [cx + Math.cos(a0) * (r0 + (r1 - r0) * 0.22), h0, cz + Math.sin(a0) * (r0 + (r1 - r0) * 0.22)];
+      const q1 = [cx + Math.cos(a1) * (r0 + (r1 - r0) * 0.22), h1, cz + Math.sin(a1) * (r0 + (r1 - r0) * 0.22)];
       const e0 = [cx + Math.cos(a0) * r1, h0 * 0.6, cz + Math.sin(a0) * r1], e1 = [cx + Math.cos(a1) * r1, h1 * 0.6, cz + Math.sin(a1) * r1];
       // inner slope faces the city, the back slope faces out
       buf.quad(p0, p1, q1, q0, near, [K.grass, 0, 0, 0]);

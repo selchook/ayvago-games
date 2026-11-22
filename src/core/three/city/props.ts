@@ -3,7 +3,7 @@
 // leafy districts' sidewalks and in boulevard medians, benches, bins, hydrants and bus stops,
 // parking spots on streets with a parking strip and in lots (some taken by parked cars), yard
 // trees and pools, container stacks and dock cranes, park trees, ponds and fountains. Pure data.
-import { type P, p, add, sub, mul, dist, nrm, alongPolyline, obbPoint, obbInPoly, pointInPoly, insetPoly, signedArea, bounds, clamp, headingOf, unit, polyEdgeDist } from './geom';
+import { type P, p, add, sub, mul, dist, nrm, alongPolyline, obbPoint, obbInPoly, inObb, pointInPoly, insetPoly, signedArea, bounds, clamp, headingOf, unit, polyEdgeDist } from './geom';
 import { type Rng, hash01 } from './rng';
 import type { Network, Site } from './roads';
 import { LANE_W, PARK_W } from './roads';
@@ -181,6 +181,37 @@ export function makeProps(net: Network, blocks: Block[], lots: Lot[], buildings:
       }
     }
   }
+  // what is left inside a block between its lots: car parks (shops, industry) or trees and
+  // planters (downtown) on a grid in the block's own axes
+  for (const b of blocks) {
+    if (b.kind !== 'block' || !b.inner || !b.lots.length || b.ground === 'grass') continue;
+    const dk = b.district;
+    if (dk !== 'commercial' && dk !== 'downtown' && dk !== 'industrial' && dk !== 'docks') continue;
+    const o = lots[b.lots[0]].obb;
+    const ux = o.ux, uz = o.uz, vx = -o.uz, vz = o.ux;
+    const bb = bounds(b.inner);
+    const c = b.c;
+    const R = Math.hypot(bb.x1 - bb.x0, bb.z1 - bb.z0) / 2;
+    const cars = dk !== 'downtown';
+    const su = cars ? 2.8 : 9, sv = cars ? 6.4 : 9;
+    const mine = b.lots.map((i) => lots[i].obb);
+    for (let a = -R; a <= R; a += su) for (let d = -R; d <= R; d += sv) {
+      const q = p(c.x + ux * a + vx * d, c.z + uz * a + vz * d);
+      if (!pointInPoly(q, b.inner) || polyEdgeDist(q, b.inner) < (cars ? 3.2 : 4)) continue;
+      if (mine.some((m) => inObb(q, m, cars ? 2.2 : 3))) continue;
+      // car parks stay by the shops and sheds
+      if (cars && !mine.some((m) => inObb(q, m, 34))) continue;
+      const r = hash01(site.seed, Math.floor(q.x * 3), Math.floor(q.z * 3), 11);
+      if (cars) {
+        const h = headingOf(p(vx * (Math.floor(d / sv) % 2 ? 1 : -1), vz * (Math.floor(d / sv) % 2 ? 1 : -1)));
+        parking.push({ x: q.x, z: q.z, h, kind: 'lot', edge: -1, taken: r < 0.55 });
+        if (r < 0.55) add1('car', q.x, q.z, h, 1, CAR_COLOURS[Math.floor(r * 1000) % CAR_COLOURS.length]);
+      } else if (r < 0.7 && free(q, 5)) {
+        add1(r < 0.45 ? treeKind(r) : 'planter', q.x, q.z, r * 6.28, 0.9 + r * 0.3);
+        take(q);
+      }
+    }
+  }
   // parks and plazas
   for (const b of blocks) {
     if ((b.kind !== 'park' && b.kind !== 'plaza') || !b.inner) continue;
@@ -191,11 +222,13 @@ export function makeProps(net: Network, blocks: Block[], lots: Lot[], buildings:
     if (b.kind === 'plaza') {
       if (area > 500 && pointInPoly(c, poly) && polyEdgeDist(c, poly) > 6) add1(area > 2500 ? 'fountain' : 'statue', c.x, c.z, 0, area > 5000 ? 1.4 : 1);
       // trees in a loose grid
-      for (let x = bb.x0 + 6; x < bb.x1; x += 11) for (let z = bb.z0 + 6; z < bb.z1; z += 11) {
+      for (let x = bb.x0 + 5; x < bb.x1; x += 8) for (let z = bb.z0 + 5; z < bb.z1; z += 8) {
         const q = p(x, z);
         if (!pointInPoly(q, poly) || polyEdgeDist(q, poly) < 3 || dist(q, c) < 9) continue;
-        if (hash01(site.seed, Math.floor(x), Math.floor(z)) < 0.45) continue;
-        add1(b.district === 'suburban' || b.district === 'residential' ? treeKind(0.5) : 'planter', x, z, 0, 1);
+        const hh = hash01(site.seed, Math.floor(x), Math.floor(z));
+        if (hh < 0.25) continue;
+        if (hh < 0.35) { add1('bench', x, z, hh * 60, 1); continue; }
+        add1(hh < 0.75 ? treeKind(hh) : 'planter', x, z, hh * 40, 0.85 + hh * 0.3);
       }
       continue;
     }

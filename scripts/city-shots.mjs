@@ -1,6 +1,7 @@
 // City generator: renders sample cities to PNGs with the preview tool (tools/city-preview).
 //
 //   node scripts/city-shots.mjs [--out DIR] [--port 5433] [--url http://localhost:5173] [--only N]
+//                               [--pick a.png,b.png,…] [--sheet-only]   (re-pick the contact sheet without rendering)
 //
 // For every sample city: an aerial overview, street-level shots by day and by night, the plan
 // (minimap) image, plus the lane graph (plan crop and a low 3D view) of the first city; then
@@ -28,12 +29,12 @@ mkdirSync(OUT, { recursive: true });
 
 /** The sample cities: style, seed, the look of their aerial shot. */
 const CITIES = [
-  { style: 'metropolis', seed: 1, look: 'night' },
-  { style: 'coast', seed: 3, look: 'day' },
-  { style: 'industrial', seed: 2, look: 'golden' },
-  { style: 'suburbia', seed: 4, look: 'day' },
-  { style: 'harbor', seed: 5, look: 'golden' },
-  { style: 'metropolis', seed: 11, look: 'day' },
+  { style: 'metropolis', seed: 1, look: 'night', details: ['tower', 'junction'] },
+  { style: 'coast', seed: 3, look: 'day', details: ['beach', 'park'] },
+  { style: 'industrial', seed: 2, look: 'golden', details: ['docks', 'bridge'] },
+  { style: 'suburbia', seed: 4, look: 'day', details: ['culdesac', 'roundabout'] },
+  { style: 'harbor', seed: 5, look: 'golden', details: ['docks', 'gas'] },
+  { style: 'metropolis', seed: 11, look: 'day', details: ['plaza', 'bridge'], hybrid: true },
 ];
 
 let server = null;
@@ -67,7 +68,18 @@ const shot = async (name, setup) => {
   return { name, calls: r.m.calls, triangles: r.m.triangles, chunks: r.m.chunks, nearTris: r.m.nearTris };
 };
 
+const SHEET_ONLY = args.includes('--sheet-only');
 try {
+  if (SHEET_ONLY) Object.assign(metrics, JSON.parse(readFileSync(join(OUT, 'metrics.json'), 'utf8')));
+  else await render();
+  await sheet();
+  if (errors.length) { console.log('page errors:\n  ' + errors.slice(0, 10).join('\n  ')); process.exitCode = 1; }
+} finally {
+  await browser.close();
+  stop();
+}
+
+async function render() {
   await page.goto(`${BASE}/tools/city-preview/?noui&nominimap&dpr=1`);
   await page.waitForFunction(() => window.__city, null, { timeout: 120000 });
   await page.evaluate(() => window.__city.pause());
@@ -84,11 +96,20 @@ try {
       if (k >= spots.length) continue;
       shots.push(await shot(`${id}-street${k}-${spots[k]}-${look}.png`, `c.setNear(320); c.setLook('${look}'); c.street(${k});`));
     }
+    for (const d of city.details) {
+      const has = await page.evaluate((n) => window.__city.details().includes(n), d);
+      if (has) shots.push(await shot(`${id}-detail-${d}-${city.look}.png`, `c.setNear(320); c.setLook('${city.look}'); c.detail('${d}');`));
+    }
+    if (city.hybrid) {
+      // hybrid mode: CC0 Kenney skyscrapers on some of the tower lots
+      shots.push(await shot(`${id}-hybrid-${city.look}.png`, `await c.hybrid(true); c.setNear(500); c.setLook('${city.look}'); c.aerial(0.35);`));
+      await page.evaluate(() => window.__city.hybrid(false));
+    }
     save(`${id}-plan.png`, await page.evaluate(() => window.__city.minimap({ spawns: true }, 1600)));
     if (i === 0) {
       // the lane graph: a crop of the plan round the centre and a low 3D view with the overlay
       save(`${id}-lanes-plan.png`, await page.evaluate(() => { const p = window.__city.plan(); return window.__city.laneCrop(p.centre.x - 160, p.centre.z - 160, 320, 1400); }));
-      shots.push(await shot(`${id}-lanes-3d.png`, `c.setNear(320); c.setLook('day'); c.setShow('lanes', true); c.setMode('orbit'); const p = c.plan(); c.pose(p.centre.x - 90, 70, p.centre.z + 110, p.centre.x, 0, p.centre.z);`));
+      shots.push(await shot(`${id}-lanes-3d.png`, `c.setNear(320); c.setLook('day'); c.setShow('lanes', true); c.setMode('orbit'); const p = c.plan(); c.pose(p.centre.x - 70, 190, p.centre.z + 120, p.centre.x, 0, p.centre.z);`));
       await page.evaluate(() => window.__city.setShow('lanes', false));
     }
     const view = await page.evaluate(() => window.__city.stats());
@@ -97,10 +118,18 @@ try {
       + `, draw calls ${Math.min(...shots.map((s) => s.calls))}–${Math.max(...shots.map((s) => s.calls))}, tris ${Math.round(Math.min(...shots.map((s) => s.triangles)) / 1000)}k–${Math.round(Math.max(...shots.map((s) => s.triangles)) / 1000)}k`);
   }
   writeFileSync(join(OUT, 'metrics.json'), JSON.stringify(metrics, null, 1));
+}
+
+async function sheet() {
 
   // contact sheet: the picks (file names) in a 3-column grid with captions
   const picks = (arg('pick', '') || '').split(',').filter(Boolean);
-  const files = picks.length ? picks : metrics.cities.flatMap((c) => [c.shots[0]?.name, c.shots.find((s) => /street0.*night|street1/.test(s.name))?.name]).filter(Boolean).slice(0, 10);
+  // default: aerials, street level and close-ups across the styles and looks
+  const want = [
+    [0, /aerial-low-night/], [0, /street0-.*-night/], [5, /aerial-low-day/], [1, /aerial-day/], [1, /detail-beach/],
+    [1, /street3-.*-day/], [3, /detail-culdesac/], [4, /aerial-low-golden/], [2, /detail-docks/], [2, /street1-.*-golden/],
+  ];
+  const files = picks.length ? picks : want.map(([i, re]) => metrics.cities[i]?.shots.find((s) => re.test(s.name))?.name).filter(Boolean);
   const imgs = files.map((f) => ({ f, url: 'data:image/png;base64,' + readFileSync(join(OUT, f)).toString('base64') }));
   const sheet = await page.evaluate(async (list) => {
     const W = 640, H = 360, cols = 2, pad = 8, cap = 26;
@@ -123,8 +152,4 @@ try {
   }, imgs);
   save('contact-sheet.png', sheet);
   console.log(`contact sheet: ${files.length} shots → ${join(OUT, 'contact-sheet.png')}`);
-  if (errors.length) { console.log('page errors:\n  ' + errors.slice(0, 10).join('\n  ')); process.exitCode = 1; }
-} finally {
-  await browser.close();
-  stop();
 }
