@@ -859,7 +859,9 @@ export class PlayScene extends ArcadeScene {
     this.lostIn = null;
   }
 
-  canContinue(): boolean { return !this.revived && (this.lostIn === 'foot' || this.lostIn === 'drive'); }
+  /** Once per run. In play every loss sets `lostIn`; a loss ended from outside (the platform
+   *  harness, from the map) has nothing to revive, so `revive()` then just hands the run back. */
+  canContinue(): boolean { return !this.revived; }
 
   // ---------------------------------------------------------------- per frame
 
