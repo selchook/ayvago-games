@@ -15,5 +15,5 @@
     "baseUrl": ".",
     "paths": { "@core": ["src/core/index.ts"], "@core/*": ["src/core/*"] }
   },
-  "include": ["src", "games", "portal"]
+  "include": ["src", "games", "portal", "tools/city-preview"]
 }
