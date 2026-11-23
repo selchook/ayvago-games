@@ -25,6 +25,9 @@ import { playerCharacter, type CharacterId } from '../characters';
 
 export { THREE };
 
+/** The procedural city generator (opt-in; see docs/city-generator.md). */
+export * from './city';
+
 /** Depth of the 3D image in the Phaser scene: below game sprites, HUD and overlays. */
 export const WORLD_DEPTH = -100;
 

@@ -13,15 +13,17 @@ Decision record: ADR 0011 in the platform repo.
 ```
 src/core/          shared runtime (@core): intro, launch, flow scenes, ArcadeScene, controls, i18n, sdk, fx, ui, steering (car games)
 src/core/three/    3D runtime (@core/three): World3D, GLB models via the Phaser loader (3D games only)
+src/core/three/city/  procedural city generator (opt-in, via @core/three): plan data, terrain, kit buildings, open-world data, chunk-streamed CityView with a day–night cycle; docs/city-generator.md
 games/<slug>/      one game each: index.html, game.json, guide.json (the game page's written guide), main.ts, *.ts
 templates/game/    scaffold used by `npm run new-game`
-public/assets/     ayvago/ (boot intro PNGs, favicon, menu-logo.png: the menu's Ayvago Games logo) · kenney/<pack>/ (CC0 art + audio; car-kit, platformer-kit, nature-kit are GLB 3D kits) · thumbs/ (portal)
+public/assets/     ayvago/ (boot intro PNGs, favicon, menu-logo.png: the menu's Ayvago Games logo) · kenney/<pack>/ (CC0 art + audio; car-kit, platformer-kit, nature-kit are GLB 3D kits) · quaternius/<pack>/ (CC0 GLB kits; downtown-megakit is the city generator's building kit) · thumbs/ (portal)
 platform/          arcade-catalog.ts (generated SeedGame entries) + arcade-guides.json (generated game guides); the platform pulls both from main
 wip/               unfinished games (not built)
 docs/              GAMES.md (catalogue + backlog), assets/INDEX.md + assets/<pack>.txt (every file with px size)
 portal/ index.html game launcher page (reads src/generated/registry.json)
 scripts/           gen-registry, new-game, smoke-test (Playwright)
-tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio from OpenGameArt), index-3d.mjs (3D kit lists), build-menu-logo.py (menu logo from the intro PNGs)
+tools/city-preview/  dev page to look at generated cities (npm run dev → /tools/city-preview/; not built)
+tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio from OpenGameArt), import-megakit.mjs (the city's building kit), index-3d.mjs (3D kit lists), build-menu-logo.py (menu logo from the intro PNGs)
 .claude/           skills/ayvago-new-game (how to build a game), agents/ayvago-game-dev + ayvago-game-qa
 ```
 

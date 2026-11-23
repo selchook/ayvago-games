@@ -19,7 +19,9 @@
     "test:mp": "node scripts/mp-harness.mjs",
     "test:changed": "node scripts/test-changed.mjs",
     "test:three-memory": "node scripts/three-memory.mjs",
-    "test:gamepad": "tsx scripts/gamepad-unit.ts && node scripts/gamepad-test.mjs"
+    "test:gamepad": "tsx scripts/gamepad-unit.ts && node scripts/gamepad-test.mjs",
+    "test:city": "node scripts/city-test.mjs",
+    "city:shots": "node scripts/city-shots.mjs"
   },
   "devDependencies": {
     "prettier": "^3.9.10",

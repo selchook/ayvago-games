@@ -1,0 +1,50 @@
+# quaternius/downtown-megakit — Quaternius Downtown City MegaKit (Standard edition), CC0
+# Made by tools/import-megakit.mjs. Metres, y up; a wall piece is 2 m wide and 3 m tall, its pivot at the bottom middle of its
+# front face, the facade facing +z and the wall 0.2 m deep behind it. Materials are slots the city shader tints (see the tool).
+# textures: brick.jpg, trim.jpg, metal.jpg, slate.jpg, asphalt.jpg, concrete.jpg, ornament.jpg, dirt.jpg (512x512 JPEG, inside the GLB)
+
+kit.glb  443 KB  42 pieces, 4138 triangles (source 7188)
+license.txt  1 KB  the pack's License_Standard.txt
+
+brick-plain               2 tris (source Brick_Plain_3, 2)  box -1.00,0.00,0.00 .. 1.00,3.00,0.00  slots wall
+brick-plain-1             2 tris (source Brick_Plain_1, 2)  box -1.00,0.00,0.00 .. 1.00,1.00,0.00  slots wall
+brick-base               44 tris (source Brick_BottomTrim, 46)  box -1.00,0.00,-0.00 .. 1.00,3.00,0.03  slots wall trim
+brick-top                10 tris (source Brick_TopTrim, 10)  box -1.00,0.00,0.00 .. 1.00,3.00,0.00  slots wall-pale trim
+brick-band               18 tris (source Brick_HalfTrim, 18)  box -1.00,0.00,-0.00 .. 1.00,3.00,0.02  slots wall trim
+brick-window            144 tris (source Brick_Window_Square_Single, 174)  box -1.00,0.00,-0.24 .. 1.00,3.00,0.04  slots wall-pale trim glass interior
+brick-window-trim       246 tris (source Brick_Window_Trim_Single, 410)  box -1.00,0.00,-0.23 .. 1.00,3.00,0.04  slots wall trim glass interior
+brick-window-arch       220 tris (source Brick_Inset_Window_Curved_Small, 548)  box -2.00,0.00,-0.24 .. 2.00,3.00,0.10  slots wall-pale trim glass interior
+brick-window-double     297 tris (source Brick_Inset_Window, 468)  box -2.00,0.00,-0.25 .. 2.00,3.00,0.13  slots wall-pale trim glass interior
+brick-corner             32 tris (source Brick_CornerColumn_Center, 32)  box -0.97,0.00,-0.97 .. 0.17,3.00,0.17  slots wall-pale
+brick-corner-base        46 tris (source Brick_CornerColumn_Bottom, 80)  box -1.03,0.00,-1.03 .. 0.23,3.00,0.23  slots wall-pale trim
+brick-corner-top         47 tris (source Brick_CornerColumn_Top, 80)  box -1.03,0.00,-1.03 .. 0.23,3.00,0.23  slots wall-pale trim
+brick-corner-cap         36 tris (source Brick_CornerColumn_CapShort, 60)  box -1.03,2.80,-1.03 .. 0.23,3.04,0.23  slots trim
+trim-plain               28 tris (source Trim_Plain_3, 28)  box -1.00,0.00,0.00 .. 1.00,3.00,0.00  slots trim
+trim-window             374 tris (source Trim_Window, 558)  box -1.00,0.00,-0.24 .. 1.00,3.00,0.00  slots trim glass trim-dark interior
+trim-ground              44 tris (source Trim_FirstFloor_Wall, 44)  box -1.00,0.00,0.00 .. 1.00,3.00,0.05  slots trim
+trim-shop               101 tris (source Trim_FirstFloor_Window_001, 144)  box -1.00,-0.01,-0.22 .. 1.00,3.00,0.00  slots trim-green interior glass
+trim-band                30 tris (source Trim_Wall_Guard, 32)  box -1.00,0.00,0.00 .. 1.00,0.64,0.12  slots trim-green
+trim-column              40 tris (source Trim_Column_Center, 64)  box -0.34,0.00,-0.34 .. 0.34,3.00,0.34  slots trim
+trim-column-base         60 tris (source Trim_Column_Bottom, 216)  box -0.36,-0.00,-0.36 .. 0.36,3.00,0.36  slots trim
+metal-ground             30 tris (source Metal_FirstFloor_Wall, 30)  box -1.00,0.00,-0.03 .. 1.00,3.00,0.04  slots trim-dark metal
+metal-shop              108 tris (source Metal_FirstFloor_Window, 150)  box -1.00,0.00,-0.22 .. 1.00,3.00,0.04  slots trim-dark metal glass interior
+metal-window            113 tris (source Metal_FullWindow, 210)  box -1.00,0.00,-0.22 .. 1.00,3.00,0.02  slots metal glass interior
+metal-plain              12 tris (source Metal_Plain_3, 12)  box -1.00,-0.00,-0.00 .. 1.00,3.00,0.00  slots metal
+metal-column             16 tris (source Metal_Column_Center, 16)  box -0.25,0.00,-0.25 .. 0.25,3.00,0.25  slots metal
+door-metal              231 tris (source DoorFrame_Metal_Single + Door_2, 425)  box -1.00,0.00,-0.20 .. 1.00,3.00,0.10  slots metal glass
+door-wood               738 tris (source DoorFrame_Wooden + Door_1, 1114)  box -1.15,0.00,-0.26 .. 1.15,3.00,0.22  slots trim glass metal
+door-arch               425 tris (source DoorFrame_Trim + Door_3, 1094)  box -1.00,0.00,-0.23 .. 1.00,2.91,0.09  slots trim-green glass trim metal
+cornice-brick             6 tris (source Cornice_Brick_Center, 6)  box -1.00,0.00,-0.40 .. 1.00,1.00,0.00  slots wall
+cornice-brick-corner     29 tris (source Cornice_Brick_90Angle_L, 29)  box -1.00,0.00,-0.90 .. 1.00,1.00,0.00  slots wall
+cornice-trim             72 tris (source Cornice_Trim_Center, 112)  box -1.00,0.00,-0.10 .. 1.00,1.00,0.50  slots trim
+cornice-trim-corner     105 tris (source Cornice_Trim_90Angle_L, 160)  box -1.00,0.00,-0.60 .. 1.00,1.00,0.50  slots trim
+cornice-metal            26 tris (source Cornice_Metal_Center, 26)  box -1.00,0.00,-0.10 .. 1.00,1.00,0.10  slots metal
+cornice-metal-corner     78 tris (source Cornice_Metal_90Angle_L, 78)  box -1.00,0.00,-0.60 .. 1.00,1.00,0.10  slots metal
+roof                      8 tris (source Roof_4x4, 8)  box -2.00,-0.20,-2.00 .. 2.00,-0.20,2.00  slots roof
+roof-2                    2 tris (source Roof_2x2, 2)  box -1.00,-0.20,-1.00 .. 1.00,-0.20,1.00  slots roof
+steps                    60 tris (source Stairs_Entrance_Concrete, 128)  box -1.00,0.00,0.00 .. 1.00,1.01,1.99  slots metal concrete
+ac                       40 tris (source Prop_ACUnit, 136)  box -0.41,-0.00,-0.02 .. 0.48,0.60,0.33  slots ornament
+bollard                  46 tris (source Prop_Bollard, 190)  box -0.11,0.00,-0.10 .. 0.10,0.88,0.11  slots metal
+planter                 118 tris (source Prop_Planter_Single, 118)  box -1.00,0.00,-1.00 .. 1.00,0.60,1.00  slots metal dirt
+drain                    10 tris (source Prop_Drain, 10)  box -0.29,0.00,-0.29 .. 0.29,0.04,0.29  slots ornament
+manhole                  44 tris (source Prop_ManholeCover, 118)  box -0.45,-0.01,-0.46 .. 0.45,0.02,0.46  slots ornament
