@@ -1,0 +1,28 @@
+quaternius/medieval-village-pack/village-pack.glb 267KB (25 models as root nodes, 15098 tris in all, vertex colours, no normals: flat-shaded, quantized)
+quaternius/medieval-village-pack/license.txt (the pack's License.txt: CC0 1.0)
+  model size (x × y × z, pack units; centred on x/z, standing on y = 0, front towards +z), triangles, source triangles, kind, MTL colours:
+  House_1 2.14x3.32x2.66 1045 tris (source 5758), building, colours: Plaster Wood Wood_Side Windows Wood_Light Stone_Dark Stone RoofTiles Stone_Light
+  House_2 2.22x3.25x3.42 1449 tris (source 7162), building, colours: Beige Wood Stone_Dark Windows Wood_Light RoofTiles Stone_Light Wood_Side Stone
+  Inn 4.03x3.49x3.88 1524 tris (source 7756), building, colours: Wood Stone_Dark RoofTiles_Red Plaster Stone_Light Windows Wood_Light
+  Mill 3.40x4.80x2.73 1704 tris (source 8126), building, colours: RoofTiles Stone_Light Stone_Dark Wood Windows Wood_Light Plaster Wood_Side Green Stone
+  Sawmill 4.40x2.81x3.28 1301 tris (source 4335), building, colours: RoofTiles_Red Plaster Wood_Side DarkWood Metal Windows Wood Wood_Light Stone_Dark Stone_Light
+  Blacksmith 3.89x3.00x3.28 1782 tris (source 7659), building, colours: Plaster Wood_Light Wood_Side Stone_Light Stone_Dark Wood Windows RoofTiles_Red
+  Bell_Tower 1.94x4.76x2.23 1570 tris (source 11799), building, colours: Stone_Light Stone_Dark Wood Beige Wood_Side Windows Wood_Light Bell RoofTiles Stone
+  Stable 4.66x2.40x3.33 1322 tris (source 6246), building, colours: Beige Wood Wood_Side Stone_Dark RoofTiles Windows Wood_Light Stone_Light
+  MarketStand_1 0.95x1.04x1.19 464 tris (source 1548), prop, colours: Wood RoofTiles_Red Beige Wood_Side
+  MarketStand_2 0.52x1.04x1.15 339 tris (source 1132), prop, colours: Wood RoofTiles_Red Beige
+  Cart 0.46x0.80x0.57 396 tris (source 2660), prop, colours: Wood Red Beige DarkWood Stone_Dark
+  Well 0.66x0.96x0.81 292 tris (source 1870), prop, colours: Wood Bag RoofTiles_Red Stone_Dark Stone_Light
+  Gazebo 1.04x1.35x1.26 274 tris (source 698), prop, colours: Wood RoofTiles_Red
+  Fence 0.79x0.32x0.03 104 tris (source 208), prop, colours: Wood
+  Hay 0.12x0.18x0.12 190 tris (source 488), prop, colours: Hay
+  Barrel 0.15x0.21x0.15 186 tris (source 1312), prop, colours: Wood Stone DarkWood
+  Crate 0.16x0.16x0.16 340 tris (source 784), prop, colours: DarkWood Wood
+  Bags 0.27x0.11x0.24 136 tris (source 912), prop, colours: Bag
+  Package_1 0.27x0.12x0.17 84 tris (source 420), prop, colours: Bag Leather
+  Bench_1 0.66x0.31x0.24 130 tris (source 376), prop, colours: Wood
+  Bonfire 0.40x0.07x0.36 150 tris (source 602), prop, colours: Wood WoodSide Stone_Light Stone_Dark
+  Cauldron 0.35x0.25x0.28 148 tris (source 1238), prop, colours: Stone Soup DarkMetal Orange
+  Rock_1 0.26x0.17x0.21 28 tris (source 28), prop, colours: Stone_Dark
+  Rock_2 0.24x0.15x0.09 56 tris (source 56), prop, colours: Stone_Dark
+  Rock_3 0.30x0.08x0.26 84 tris (source 84), prop, colours: Stone_Dark

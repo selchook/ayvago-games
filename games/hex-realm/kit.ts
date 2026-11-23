@@ -2,9 +2,12 @@
 //   - the six Quaternius RPG heroes (one skinned mesh and one 512 x 768 atlas each), also worn,
 //     recoloured, by the bandits, archers, brutes, acolytes, knights, cultists and the bosses;
 //     the Quaternius pirate skeletons for the undead;
-//   - the Kenney Hexagon Kit: every overworld tile, road, river and building merges into one mesh
-//     on its one colour map; a per-vertex hex number lets the fog of war darken unexplored hexes
-//     (the overworld only: no battle uses it);
+//   - the Kenney Hexagon Kit: every overworld tile, road and river, and the castle, spire, ruined
+//     walls, mine, port and dock, merges into one mesh on its one colour map; a per-vertex hex number
+//     lets the fog of war darken unexplored hexes (the overworld only: no battle uses it);
+//   - 1.4: the Quaternius Medieval Village Pack (one GLB in vertex colours, import-village-pack.mjs):
+//     the village's houses, inn, market, mill, sawmill, smithy, stable and bell tower and their props,
+//     merged into the same mesh (a per-vertex colour that replaces the colour map's where it is set);
 //   - 1.3: the battles' scenery (Quaternius Medieval Village MegaKit and Ultimate Nature Pack) is not
 //     loaded here, under the intro, but once the menu is up (scenery.ts);
 //   - keepPrograms() compiles a copy of every material kind behind the menu, so the first Play
@@ -16,9 +19,9 @@ import { THREE, model, loadModel, kenney3d } from '@core/three';
 import { asset } from '@core';
 import { CLASS_IDS } from './defs';
 
-import { heroKey, pirateKey, hexKey, type Placed } from './keys';
+import { heroKey, pirateKey, hexKey, packKey, type Placed } from './keys';
 
-export { heroKey, pirateKey, hexKey, type Placed };
+export { heroKey, pirateKey, hexKey, packKey, type Placed };
 
 /** Model keys of the foes' looks (FOE[].model). */
 export function modelKey(m: string): string {
@@ -30,16 +33,20 @@ export const HEX_MODELS = [
   'water', 'water-rocks', 'water-island', 'dirt', 'dirt-lumber', 'river-straight', 'river-corner', 'river-corner-sharp',
   'river-end', 'bridge', 'path-straight', 'path-corner', 'path-corner-sharp', 'path-end', 'path-crossing',
   'path-intersectionA', 'path-intersectionB', 'path-intersectionC', 'path-intersectionD', 'path-intersectionE',
-  'path-intersectionF', 'path-intersectionG', 'path-intersectionH', 'building-castle', 'building-village', 'building-market',
-  'building-house', 'building-farm', 'building-sheep', 'building-mill', 'building-mine', 'building-wizard-tower',
-  'building-tower', 'building-port', 'building-dock', 'building-walls', 'building-wall', 'building-watermill',
-  'building-cabin', 'building-smelter', 'building-archery', 'unit-tree', 'unit-ship', 'unit-house', 'unit-wall-tower', 'unit-tower',
+  'path-intersectionF', 'path-intersectionG', 'path-intersectionH',
+  // 1.4: only the places the Medieval Village Pack has nothing for (mapview.ts draws the rest from it)
+  'building-castle', 'building-wizard-tower', 'building-walls', 'building-mine', 'building-port', 'building-dock',
 ] as const;
+
+/** 1.4: the Medieval Village Pack's file (its models are nodes in it, read by packKey). */
+const PACK = 'vp';
+const PACK_URL = 'quaternius/medieval-village-pack/village-pack.glb';
 
 export function loadKit(load: Phaser.Loader.LoaderPlugin): void {
   for (const c of CLASS_IDS) loadModel(load, heroKey(c), asset(`quaternius/rpg-characters/${c}.glb`));
   for (const m of ['skeleton', 'headless']) loadModel(load, pirateKey(m), asset(`quaternius/pirate-kit/${m}.glb`));
   for (const m of HEX_MODELS) loadModel(load, hexKey(m), kenney3d('hexagon-kit', m));
+  loadModel(load, PACK, asset(PACK_URL));
   // 1.2: the Medieval Weapons (one GLB) and their icons
   loadModel(load, WEAPONS_KEY, asset('quaternius/medieval-weapons/weapons.glb'));
   for (const m of WEAPON_MODELS) if (m !== 'Arrow') load.image(weaponIcon(m), asset(`quaternius/medieval-weapons/icons/${m}.png`));
@@ -49,12 +56,21 @@ export function loadKit(load: Phaser.Loader.LoaderPlugin): void {
 
 interface Part { geo: THREE.BufferGeometry; mat: THREE.Matrix4; map: THREE.Texture | null }
 const partCache = new Map<string, Part[]>();
+let packRoot: THREE.Object3D | null = null;
 
 /** A static model's meshes, their matrices inside the file and their textures (one per group). */
 export function modelParts(key: string): Part[] {
   let parts = partCache.get(key);
   if (parts) return parts;
-  const root = model(key, { shadows: false });
+  let root: THREE.Object3D;
+  if (key.startsWith(packKey(''))) {
+    // a Medieval Village Pack model: its node in the pack's one file (centred there by the importer;
+    // the node's own transform is the quantization's, kept)
+    if (!packRoot) packRoot = model(PACK, { shadows: false });
+    const node = packRoot.getObjectByName(key.slice(packKey('').length));
+    if (!node) throw new Error('[hex-realm] no pack model ' + key);
+    root = node.clone();
+  } else root = model(key, { shadows: false });
   root.updateMatrixWorld(true);
   parts = [];
   root.traverse((o) => {
@@ -82,8 +98,11 @@ const tmpN = new THREE.Vector3();
 const tmpNM = new THREE.Matrix3();
 
 /**
- * Merges placed models into one plain geometry: position, normal, uv, and per vertex `aHex` (the
- * hex it belongs to). Reads every attribute through getX…, so quantized files come out right.
+ * Merges placed models into one plain geometry: position, normal, uv, and with `hex` per vertex
+ * `aHex` (the hex it belongs to) and `aTint` (1.4: a vertex-coloured model's colour, alpha 1; the
+ * colour map's models alpha 0). Models without normals (the pack's) get each triangle's own, so
+ * they draw flat-shaded like the kit. Reads every attribute through getX…, so quantized files come
+ * out right.
  */
 export function mergeModels(list: Placed[], o: { hex?: boolean } = {}): THREE.BufferGeometry {
   const jobs: { part: Part; m: THREE.Matrix4; hex: number }[] = [];
@@ -101,14 +120,16 @@ export function mergeModels(list: Placed[], o: { hex?: boolean } = {}): THREE.Bu
   }
   const P = new Float32Array(verts * 3), N = new Float32Array(verts * 3), U = new Float32Array(verts * 2);
   const X = o.hex ? new Float32Array(verts) : null;
+  const T = o.hex ? new Uint8Array(verts * 4) : null;
   let k = 0;
   for (const { part, m, hex } of jobs) {
     const geo = part.geo;
-    const pos = geo.getAttribute('position'), nor = geo.getAttribute('normal'), uv = geo.getAttribute('uv');
+    const pos = geo.getAttribute('position'), nor = geo.getAttribute('normal'), uv = geo.getAttribute('uv'), col = geo.getAttribute('color');
     tmpNM.getNormalMatrix(m);
     const flip = m.determinant() < 0;
     const idx = geo.index;
     const n = idx ? idx.count : pos.count;
+    const k0 = k;
     for (let i = 0; i < n; i++, k++) {
       // a mirrored placement turns the winding: swap two corners of each triangle
       const ii = flip ? i - (i % 3) + [0, 2, 1][i % 3] : i;
@@ -118,15 +139,30 @@ export function mergeModels(list: Placed[], o: { hex?: boolean } = {}): THREE.Bu
       if (nor) { tmpN.set(nor.getX(v), nor.getY(v), nor.getZ(v)).applyMatrix3(tmpNM).normalize(); N[k * 3] = tmpN.x; N[k * 3 + 1] = tmpN.y; N[k * 3 + 2] = tmpN.z; }
       if (uv) { U[k * 2] = uv.getX(v); U[k * 2 + 1] = uv.getY(v); }
       if (X) X[k] = hex;
+      if (T && col) {
+        T[k * 4] = Math.round(col.getX(v) * 255); T[k * 4 + 1] = Math.round(col.getY(v) * 255); T[k * 4 + 2] = Math.round(col.getZ(v) * 255); T[k * 4 + 3] = 255;
+      }
     }
+    if (!nor) faceNormals(P, N, k0, k);
   }
   const out = new THREE.BufferGeometry();
   out.setAttribute('position', new THREE.BufferAttribute(P, 3));
   out.setAttribute('normal', new THREE.BufferAttribute(N, 3));
   out.setAttribute('uv', new THREE.BufferAttribute(U, 2));
   if (X) out.setAttribute('aHex', new THREE.BufferAttribute(X, 1));
+  if (T) out.setAttribute('aTint', new THREE.BufferAttribute(T, 4, true));
   out.computeBoundingSphere();
   return out;
+}
+
+const fa = new THREE.Vector3(), fb = new THREE.Vector3(), fc = new THREE.Vector3();
+/** Each triangle's own normal for vertices k0 … k1 (non-indexed, three per triangle). */
+function faceNormals(P: Float32Array, N: Float32Array, k0: number, k1: number): void {
+  for (let k = k0; k < k1; k += 3) {
+    fa.fromArray(P, k * 3); fb.fromArray(P, k * 3 + 3); fc.fromArray(P, k * 3 + 6);
+    fc.sub(fb); fa.sub(fb); fc.cross(fa).normalize();
+    for (let j = 0; j < 3; j++) fc.toArray(N, (k + j) * 3);
+  }
 }
 
 /** The Hexagon Kit's shared colour map. */
@@ -137,6 +173,7 @@ export function hexMap(): THREE.Texture | null {
 /**
  * The overworld's material: the hex colour map, with the fog of war. `fog` is a COLS*ROWS x 1
  * texture (red: 0 unknown … 1 seen); unknown hexes are drawn dark, blue and without colour.
+ * 1.4: `aTint` (mergeModels) puts the village pack's vertex colours in place of the map's.
  */
 export function hexMaterial(map: THREE.Texture | null, fog: THREE.DataTexture | null, count: number): THREE.MeshLambertMaterial {
   const mat = new THREE.MeshLambertMaterial({ map, side: THREE.FrontSide });
@@ -144,10 +181,11 @@ export function hexMaterial(map: THREE.Texture | null, fog: THREE.DataTexture | 
     sh.uniforms.uFog = { value: fog };
     sh.uniforms.uCount = { value: count };
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aHex;\nuniform sampler2D uFog;\nuniform float uCount;\nvarying float vSeen;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSeen = uCount > 0.0 ? texture2D(uFog, vec2((aHex + 0.5) / uCount, 0.5)).r : 1.0;');
+      .replace('#include <common>', '#include <common>\nattribute float aHex;\nattribute vec4 aTint;\nuniform sampler2D uFog;\nuniform float uCount;\nvarying float vSeen;\nvarying vec4 vTint;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSeen = uCount > 0.0 ? texture2D(uFog, vec2((aHex + 0.5) / uCount, 0.5)).r : 1.0;\nvTint = aTint;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vSeen;')
+      .replace('#include <common>', '#include <common>\nvarying float vSeen;\nvarying vec4 vTint;')
+      .replace('#include <map_fragment>', '#include <map_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, vTint.rgb, vTint.a);')
       .replace('#include <dithering_fragment>', [
         '#include <dithering_fragment>',
         'float grey = dot(gl_FragColor.rgb, vec3(0.3, 0.55, 0.15));',

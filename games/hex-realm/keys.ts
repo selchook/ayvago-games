@@ -2,6 +2,8 @@
 export const heroKey = (cls: string): string => 'hero:' + cls;
 export const pirateKey = (m: string): string => 'pk:' + m;
 export const hexKey = (m: string): string => 'hx:' + m;
+/** 1.4: the overworld's buildings and props: Quaternius Medieval Village Pack models (one GLB, mapview.ts). */
+export const packKey = (m: string): string => 'vp:' + m;
 /** 1.3: the battle scenery: Quaternius Medieval Village MegaKit pieces and Ultimate Nature Pack models (scenery.ts). */
 export const villageKey = (m: string): string => 'mv:' + m;
 export const natureKey = (m: string): string => 'nt:' + m;
