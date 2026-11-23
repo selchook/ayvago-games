@@ -1,5 +1,6 @@
-// Hex Realm: the overworld in 3D. Every Hexagon Kit tile, river, road and building of the map is
-// merged into one mesh on the kit's colour map; each vertex knows its hex, so the fog of war (a
+// Hex Realm: the overworld in 3D. Every Hexagon Kit tile, river, road and building of the map, and
+// (1.4) the Medieval Village Pack's buildings and props (hamlets.ts), are merged into one mesh on the
+// kit's colour map (the pack's models in their own vertex colours); each vertex knows its hex, so the fog of war (a
 // small data texture) darkens what has not been seen yet, and a sea of instanced clouds hides it
 // until the party comes near (the clouds shrink and drift apart as hexes are revealed). The party
 // is the hero's own rigged model walking hex to hex; the tracked quest, camps, the warded bridge
@@ -8,6 +9,7 @@ import { THREE } from '@core/three';
 import { COLS, ROWS, hexIndex, neighbours, type HexMap, type Hex } from './hexmap';
 import { hexKey, mergeModels, hexMap, hexMaterial, type Placed } from './kit';
 import { Billboards, TEX } from './fx3d';
+import { hamlet, countryside, isHamlet, beside } from './hamlets';
 import type { Campaign } from './campaign';
 
 /** Base tile of each terrain. */
@@ -86,6 +88,8 @@ export class MapView {
     const list: Placed[] = [];
     for (const h of map.hexes) {
       const i = h.i;
+      // 1.4: the village's buildings are Medieval Village Pack scenes on a plain tile (hamlets.ts)
+      if (isHamlet(h)) { list.push(...hamlet(h)); continue; }
       let base = h.building ?? TILE[h.terrain];
       let rot = ((h.c * 7 + h.r * 13) % 6) * (Math.PI / 3);
       if (h.terrain === 'river' || h.terrain === 'bridge') {
@@ -94,11 +98,13 @@ export class MapView {
       }
       if (h.building) rot = h.building === 'building-port' || h.building === 'building-dock' ? Math.PI / 3 * 2 : ((h.c + h.r) % 2) * Math.PI;
       list.push({ key: hexKey(base), x: h.x, y: 0, z: h.z, rot, s: 1, hex: i });
+      list.push(...beside(h));
       if (h.road && !h.building) {
         const f = fit(PATHS, h.roadEdges);
         if (f) list.push({ key: hexKey(f[0]), x: h.x, y: 0.2, z: h.z, rot: f[1] * (Math.PI / 3), s: 1, hex: i });
       }
     }
+    list.push(...countryside(map));
     // a land of mountains, forest and sea beyond the map's edge (wide: the landscape view sees past
     // the realm's sides)
     // 1.2.1: and a wider band of lighter tiles past it (its own mesh, casting no shadow), so the

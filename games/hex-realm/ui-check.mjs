@@ -185,14 +185,15 @@ const inside = (s) => s.play((p) => {
   check(await goal(s) === 0.8, 'desktop: - zooms out');
   // the pause button
   await s.tap(1228, 52);
-  await settle(s, 500);
-  check(await s.page.evaluate(() => window.__ayvago.game.scene.isActive('Pause')), 'desktop: the pause button pauses');
+  // (waits for the Pause scene: software WebGL under load can take a few hundred ms a frame)
+  check(await s.page.waitForFunction(() => window.__ayvago.game.scene.isActive('Pause'), null, { timeout: 5000 }).then(() => true, () => false), 'desktop: the pause button pauses');
   await s.page.keyboard.press('Escape');
   await settle(s, 500);
   // the zoom is kept for the next round
   await settle(s, 800);
   const kept = await goal(s);
-  await s.page.evaluate(() => window.__ayvago.game.scene.getScene('Play').scene.restart());
+  // (returns nothing: the restart's own return value is the scene plugin, far too big to send back)
+  await s.page.evaluate(() => { window.__ayvago.game.scene.getScene('Play').scene.restart(); });
   await s.page.waitForTimeout(2500);
   const after = await zoom(s);
   check(Math.abs(after - kept) < 0.01, `desktop: the zoom is kept for the next round (${kept} -> ${after})`);
