@@ -341,7 +341,18 @@ These were measured in the repo's headless Chromium (SwiftShader, so frame times
 and in Node on a shared 4-core machine. Draw calls and triangles are counted at the GL level,
 with the shadow pass included (`renderer.info` leaves the shadow pass out).
 
-BUDGET_TABLE
+| | |
+|---|---|
+| building kit on disk | `kit.glb` 443 KB: 42 pieces, 4 138 triangles (7 188 in the source pieces), eight 512 px JPEG base colours inside |
+| plan generation, Node (`scripts/city-unit.ts`) | mean 600–650 ms over 5 styles × 3 seeds on a loaded 4-core machine (load 6–8); the terrain is 35–90 ms of it, the road network most of the rest; the coast town 400–650 ms |
+| `new CityView` (maps, far LOD, kit layouts of every kit building, instanced meshes) | 700–1 200 ms for the coast town (754 kit buildings; their layouts take ~75 ms) |
+| chunk build (128 m, CPU) | 2–6 ms on average; a street view loads about 30 chunks |
+| **street level** (320 m chunks, kit on, 4 cities × 6–7 spots, at noon and at 22:00) | **44–73 GL draw calls, 153k–294k triangles**, the same by night as by day; the kit draws up to 9 buildings, ≤ 95k triangles and ≤ 22 piece types (+ up to 4 prop types) |
+| the coast town's main street | 63 draw calls, 282k triangles (kit 4 buildings, 88k); residential 57 / 238k; promenade 50 / 173k; pier 37 / 74k |
+| low aerial (320 m, camera ~250 m up) / other styles' aerials (420 m) | 80 draw calls, 294k triangles / 79–99 calls, 170–310k |
+| GPU textures | 4: ground map 1024² with mipmaps 5.6 MB, light map 1024² 4.2 MB, kit texture array 8 × 512² with mipmaps 11.2 MB, shadow map 2048² (colour + depth) 33.6 MB: **54.5 MB**; with `shadowMapSize: 1024` (phones) 8.4 MB for the shadow map, **29.4 MB** in all |
+| GPU vertex buffers at street level | ~17–20 MB (loaded chunks, far tiles, ground, instanced props and kit pieces) |
+| GPU memory while streaming (`scripts/city-memory.mjs`, the coast town with the kit, the clock running) | geometries 57 → 57 → 57 and textures 4 → 4 → 4 over three trips across the town and back (after a warm-up trip); 46 → 46 → 46 over three regenerations; 11 shader programs before and after a whole day, 47 draw calls at midnight and 48 at noon |
 
 ## What is still simple
 

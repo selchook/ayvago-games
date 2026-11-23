@@ -441,7 +441,7 @@ float spec = pow(max(dot(refl, uSunDir), 0.0), 420.0) * smoothstep(-0.03, 0.06, 
 float mspec = pow(max(dot(refl, normalize(uMoonDir)), 0.0), 220.0) * uMoon * 0.5;
 // the low sun's broad warm path on the sea
 float path = pow(max(dot(refl, uSunDir), 0.0), 12.0) * length(uGlowCol) * 0.35;
-vec3 waterEmit = uSunCol * (spec * 1.8 + path) + vec3(0.75, 0.8, 0.95) * mspec + sky * fres * 0.25;
+vec3 waterEmit = uSunCol * (min(spec, 1.0) * 0.3 + path) + vec3(0.75, 0.8, 0.95) * mspec + sky * fres * 0.25;
 // the city's lights shimmer on the water at night
 vec3 lm = texture2D(uLight, (vWp.xz + n.xz * 6.0 - uMapRect.xy) / uMapRect.z).rgb;
 waterEmit += lm * uLampOn * smoothstep(0.35, 0.9, cityNoise(p * vec2(0.6, 2.2) + vec2(0.0, t))) * 0.55;`)
