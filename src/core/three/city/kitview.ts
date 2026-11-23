@@ -184,7 +184,7 @@ diffuseColor.rgb = base;`)
       .replace('#include <opaque_fragment>', `if (uLampOn > 0.001) {
   vec4 lm = texture2D(uLight, (vKWp.xz - uMapRect.xy) / uMapRect.z);
   float hf = clamp(1.0 - (vKWp.y - lm.a * 64.0) / 11.0, 0.0, 1.0);
-  outgoingLight += diffuseColor.rgb * lm.rgb * hf * (0.45 + 0.55 * max(kN.y, 0.0)) * uLampOn * 2.6;
+  outgoingLight += diffuseColor.rgb * lm.rgb * hf * (0.45 + 0.55 * max(kN.y, 0.0)) * uLampOn * 2.0;
 }
 #include <opaque_fragment>`);
   };
@@ -203,6 +203,8 @@ export interface KitLayerOptions {
   radius: number;
   /** Triangles the kit may draw: buildings fill nearest first and the radius ends where this runs out. */
   budget: number;
+  /** Piece types (draw calls) the kit may use at once, the same way. */
+  types: number;
   /** Kit street props (bollards, drains …) within this distance (default 140 m). */
   propRadius: number;
 }
@@ -212,6 +214,8 @@ export class KitLayer {
   readonly material: THREE.MeshLambertMaterial;
   private recs: KitRec[] = [];
   private trisOf: number[] = [];
+  private kindsOf: Uint8Array[] = [];
+  private used = new Uint8Array(KIT_PIECES.length);
   private grid = new Map<number, number[]>();
   private at = new THREE.Vector3(1e9, 0, 1e9);
   private yaw = 1e9;
@@ -242,6 +246,7 @@ export class KitLayer {
       for (let j = 0; j < lay.n; j++) { c[lay.piece[j]]++; t += kit.pieces[lay.piece[j]]?.tris ?? 0; }
       counts.push(c);
       this.trisOf.push(t);
+      this.kindsOf.push(Uint8Array.from(c.flatMap((n, p) => (n ? [p] : []))));
     }
     // capacity per piece: the most any disc of the radius can hold (a little generous)
     const cap = new Array(KIT_PIECES.length).fill(0);
@@ -349,6 +354,8 @@ export class KitLayer {
     const d2 = (k: number) => { const b = this.recs[k].b; return (b.obb.x - focus.x) ** 2 + (b.obb.z - focus.z) ** 2; };
     list.sort((a, b) => d2(a) - d2(b));
     let reach = R;
+    this.used.fill(0);
+    let usedN = 0;
     for (const k of list) {
       const { b, lay } = this.recs[k];
       // only what can be in view: in front of the camera, or close by
@@ -356,7 +363,12 @@ export class KitLayer {
       const vx = b.obb.x - cx, vz = b.obb.z - cz;
       const along = vx * fx + vz * fz, across = Math.abs(vx * fz - vz * fx);
       if (look && Math.hypot(vx, vz) > rb + 12 && (along < -rb || across > along * 1.75 + rb)) continue;
-      if (tris + this.trisOf[k] > this.opts.budget) { reach = Math.sqrt(d2(k)) - 0.01; break; }
+      // the piece types this building adds (each one is a draw call)
+      const kinds = this.kindsOf[k];
+      let more = 0;
+      for (let j = 0; j < kinds.length; j++) if (!this.used[kinds[j]]) more++;
+      if (tris + this.trisOf[k] > this.opts.budget || usedN + more > this.opts.types) { reach = Math.sqrt(d2(k)) - 0.01; break; }
+      for (let j = 0; j < kinds.length; j++) if (!this.used[kinds[j]]) { this.used[kinds[j]] = 1; usedN++; }
       shown++;
       tris += this.fill(b, lay);
     }

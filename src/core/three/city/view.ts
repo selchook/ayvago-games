@@ -61,6 +61,8 @@ export interface CityViewOptions {
   shadows?: boolean;
   /** Half size of the sun's shadow box (default 110 m). */
   shadowExtent?: number;
+  /** Shadow map side in texels (default 2048; 1024 on phones saves 24 MB of GPU memory). */
+  shadowMapSize?: number;
   /** Add a sun and sky light to the scene (default true). */
   lights?: boolean;
   sky?: boolean;
@@ -73,8 +75,10 @@ export interface CityViewOptions {
   kit?: CityKit | null;
   /** Kit buildings within this distance of the focus are assembled from the kit (default 110). */
   kitRadius?: number;
-  /** Triangles the kit may draw (default 110 000): nearest buildings first, the radius shrinks to fit. */
+  /** Triangles the kit may draw (default 95 000): nearest buildings first, the radius shrinks to fit. */
   kitBudget?: number;
+  /** Kit piece types (one draw call each) drawn at once (default 22), the same way. */
+  kitTypes?: number;
   /** Called when a chunk is loaded or dropped (spawn and remove a game's own actors there). */
   onChunk?: (e: ChunkEvent) => void;
   /** Called when the phase of the day changes. */
@@ -94,6 +98,8 @@ export interface CityViewStats {
   /** Kit buildings drawn, kit instances and their triangles. */
   kitBuildings: number; kitInstances: number; kitTris: number;
   hours: number; phase: DayPhase;
+  /** GPU memory in MB (estimated from the buffers: textures with mipmaps, the shadow map with its depth). */
+  gpu: { textures: number; geometry: number };
 }
 
 type Opts = Required<Omit<CityViewOptions, 'replace' | 'look' | 'time' | 'kit' | 'onChunk' | 'onPhase'>>;
@@ -150,12 +156,13 @@ export class CityView {
   private fog: THREE.Fog | null = null;
   private fogScale = 1;
   private parkingByChunk = new Map<number, number[]>();
+  private detailNow = 220;
 
   constructor(readonly plan: CityPlan, readonly scene: THREE.Scene, options: CityViewOptions = {}) {
     this.opts = {
       chunk: options.chunk ?? 128, near: options.near ?? 320, detail: options.detail ?? 220, lod: options.lod ?? true, props: options.props ?? true,
-      cars: options.cars ?? true, shadows: options.shadows ?? true, shadowExtent: options.shadowExtent ?? 110, lights: options.lights ?? true,
-      sky: options.sky ?? true, fog: options.fog ?? true, budget: options.budget ?? 8, cache: options.cache ?? 96, kitRadius: options.kitRadius ?? 110, kitBudget: options.kitBudget ?? 110000,
+      cars: options.cars ?? true, shadows: options.shadows ?? true, shadowExtent: options.shadowExtent ?? 110, shadowMapSize: options.shadowMapSize ?? 2048, lights: options.lights ?? true,
+      sky: options.sky ?? true, fog: options.fog ?? true, budget: options.budget ?? 8, cache: options.cache ?? 96, kitRadius: options.kitRadius ?? 110, kitBudget: options.kitBudget ?? 95000, kitTypes: options.kitTypes ?? 22,
       timeScale: options.timeScale ?? 0,
     };
     this.timeScale = this.opts.timeScale;
@@ -196,7 +203,7 @@ export class CityView {
     }
     this.makeStatic();
     this.makeInstanced();
-    if (options.kit) this.kit = new KitLayer(options.kit, plan, this.group, u, (b) => this.builder.base(b), { radius: this.opts.kitRadius, budget: this.opts.kitBudget, propRadius: 140 });
+    if (options.kit) this.kit = new KitLayer(options.kit, plan, this.group, u, (b) => this.builder.base(b), { radius: this.opts.kitRadius, budget: this.opts.kitBudget, types: this.opts.kitTypes, propRadius: 140 });
     if (options.replace) this.makeLandmarks(options.replace);
     if (this.opts.fog) { this.fog = new THREE.Fog(0xffffff, 100, 1000); scene.fog = this.fog; }
     this.applyDaylight();
@@ -217,7 +224,7 @@ export class CityView {
     const S = this.plan.size;
     const h = this.builder.h;
     // far LOD tiles
-    for (const t of this.builder.far(512)) {
+    for (const t of this.builder.far(1024)) {
       const m = this.mesh(t.geo, this.materials.city, false);
       m.name = 'far:' + t.key;
       this.far.push(m);
@@ -278,7 +285,7 @@ export class CityView {
       this.sun = new THREE.DirectionalLight(0xffffff, 2);
       const e = this.opts.shadowExtent;
       Object.assign(this.sun.shadow.camera, { left: -e, right: e, top: e, bottom: -e, near: 1, far: 900 });
-      this.sun.shadow.mapSize.set(2048, 2048);
+      this.sun.shadow.mapSize.set(this.opts.shadowMapSize, this.opts.shadowMapSize);
       this.sun.shadow.bias = -0.0004;
       this.sun.shadow.normalBias = 0.04;
       // shadows stay on through the night (the moon casts them): switching would recompile shaders
@@ -365,6 +372,10 @@ export class CityView {
     if (this.lightDirty) this.applyDaylight();
     this.focus.copy(focus);
     this.uniforms.uFocus.value.copy(focus);
+    // high cameras (aerial views) see the small props as specks: full detail shrinks as the
+    // camera climbs (only the chunks right under it keep it)
+    const above = camera.position.y - this.builder.h(camera.position.x, camera.position.z);
+    this.detailNow = above < 60 ? this.opts.detail : Math.max(40, this.opts.detail * (1 - Math.min(1, (above - 60) / 160)));
     this.stream();
     // props have shorter radii than the chunks: refill as the focus moves on
     if (this.instDirty || this.refillAt.distanceToSquared(focus) > 24 * 24) this.refillInstances();
@@ -389,7 +400,7 @@ export class CityView {
 
   /** The detail level a chunk should have (with a margin, so a chunk on the edge does not flip). */
   private lodFor(key: number, current = -1): number {
-    const d = this.chunkDist(key), D = this.opts.detail;
+    const d = this.chunkDist(key), D = this.detailNow;
     if (current === 0 && d < D + 24) return 0;
     if (current === 1 && d > D - 24) return 1;
     return d <= D ? 0 : 1;
@@ -603,7 +614,7 @@ export class CityView {
 
   setNear(r: number): void { this.opts.near = r; }
   get near(): number { return this.opts.near; }
-  setDetail(r: number): void { this.opts.detail = r; }
+  setDetail(r: number): void { this.opts.detail = r; this.detailNow = r; }
 
   setLod(on: boolean): void {
     this.opts.lod = on;
@@ -717,7 +728,23 @@ export class CityView {
       nearTris, farTris: this.farTris, cacheMB: Math.round(bytes / 1e5) / 10,
       kitBuildings: this.kit?.shown ?? 0, kitInstances: this.kit?.instances ?? 0, kitTris: this.kit?.tris ?? 0,
       hours: Math.round(this.hours * 100) / 100, phase: this.phaseNow,
+      gpu: this.gpuMB(),
     };
+  }
+
+  /** GPU memory the view holds (MB): textures (maps, kit, shadow map) and vertex buffers. */
+  gpuMB(): { textures: number; geometry: number } {
+    let tex = 0;
+    for (const t of this.textures) { const im = t.image as { width: number; height: number }; tex += im.width * im.height * 4 * (t.generateMipmaps ? 4 / 3 : 1); }
+    if (this.kit) tex += this.kit.kit.textureBytes;
+    if (this.sun?.castShadow) tex += this.opts.shadowMapSize ** 2 * 8;
+    let geo = 0;
+    this.group.traverse((o) => {
+      const g = (o as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
+      if (g) for (const a of Object.values(g.attributes)) geo += (a as THREE.BufferAttribute).array.byteLength;
+      if ((o as THREE.InstancedMesh).isInstancedMesh) { const m = o as THREE.InstancedMesh; geo += m.instanceMatrix.array.byteLength + (m.instanceColor?.array.byteLength ?? 0); }
+    });
+    return { textures: Math.round(tex / 1e5) / 10, geometry: Math.round(geo / 1e5) / 10 };
   }
 
   /** Frees everything the view made (GPU and CPU) and takes it out of the scene. */

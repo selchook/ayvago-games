@@ -133,23 +133,17 @@ export function kitLayout(b: Building): KitLayout {
     }
     // a band over the ground floor on the street sides
     if (k.band && full && F > 1) for (let bay = 0; bay < s.bays; bay++) { const q = bayAt(s, bay); put('trim-band', q.x, KIT_FLOOR - 0.32, q.z, s.yaw); }
-    // the cornice round the top (corner pieces at the sides' right ends); the moulded stone
-    // cornice only where a street sees it
+    // the cornice round the top; the moulded stone cornice only where a street sees it (each
+    // piece type is a draw call, so the corners reuse the straight pieces)
     const ck: KitPiece = full || k.top !== 'trim' ? cornice : 'cornice-brick';
-    const top2 = full || k.top !== 'trim' ? k.top : 'brick';
     for (let bay = 0; bay < s.bays; bay++) {
       const q = bayAt(s, bay);
-      const corner = bay === s.bays - 1 && top2 !== 'trim';
-      put(corner ? (`cornice-${top2}-corner` as KitPiece) : ck, q.x, top, q.z, s.yaw);
+      put(ck, q.x, top, q.z, s.yaw);
     }
     // corner columns at the right end of each side
     if (k.corners) {
       const e = { x: s.a.x + s.d.x * s.bays * KIT_BAY, z: s.a.z + s.d.z * s.bays * KIT_BAY };
-      for (let f = 0; f < F; f++) {
-        if (wall === 'stone') put(f === 0 ? 'trim-column-base' : 'trim-column', e.x, f * KIT_FLOOR, e.z, s.yaw);
-        else if (wall === 'metal') put('metal-column', e.x, f * KIT_FLOOR, e.z, s.yaw);
-        else put(f === 0 ? 'brick-corner-base' : f === F - 1 ? 'brick-corner-top' : 'brick-corner', e.x, f * KIT_FLOOR, e.z, s.yaw);
-      }
+      for (let f = 0; f < F; f++) put(wall === 'stone' ? 'trim-column' : wall === 'metal' ? 'metal-column' : 'brick-corner', e.x, f * KIT_FLOOR, e.z, s.yaw);
     }
   });
   // roof tiles, stretched a little to cover the footprint exactly

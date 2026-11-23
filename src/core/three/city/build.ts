@@ -1144,7 +1144,7 @@ export class CityBuilder {
     };
     for (const q of this.plan.props) {
       // (small lamps over the water, on piers, jetties and bridges, make small pools)
-      if (q.kind === 'lamp') splat(q.x + Math.sin(q.h) * 1.7 * q.s, q.z + Math.cos(q.h) * 1.7 * q.s, q.s < 0.9 ? 4.5 : 11 * q.s, q.s < 0.9 ? 0.45 : 0.75, q.s < 0.9 ? 0.32 : 0.52, q.s < 0.9 ? 0.17 : 0.28);
+      if (q.kind === 'lamp') splat(q.x + Math.sin(q.h) * 1.7 * q.s, q.z + Math.cos(q.h) * 1.7 * q.s, q.s < 0.9 ? 4.5 : 9.5 * q.s, q.s < 0.9 ? 0.45 : 0.75, q.s < 0.9 ? 0.32 : 0.52, q.s < 0.9 ? 0.17 : 0.28);
       else if (q.kind === 'busstop' || q.kind === 'pump') splat(q.x, q.z, 5, 0.25, 0.28, 0.3);
     }
     for (const b of this.plan.buildings) {

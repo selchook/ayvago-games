@@ -65,15 +65,16 @@ export function makeTerrain(size: number, params: TerrainParams, water: P[][], s
   const data = new Float32Array(n * n);
   if (params.kind === 'flat' && params.hills === 0 && params.edge === 0) return wrap(x0, z0, cell, n, data);
   // water edges bucketed on a grid: the flattening along the water only looks 170 m out
-  const NEAR = 170, CELL = 48;
+  const NEAR = 170, CELL = 48, RAMP = 420;
   const buckets = new Map<number, [P, P][]>();
   const bkey = (i: number, j: number) => (i + 500) * 1000 + j + 500;
-  const seaSegs: [P, P][] = [];
+  const seaSegs: [P, P][] = [], waterSegs: [P, P][] = [];
   for (const poly of water) {
     for (let i = 0; i < poly.length; i++) {
       const a = poly[i], b = poly[(i + 1) % poly.length];
       if (Math.max(a.x, b.x) < x0 - NEAR || Math.min(a.x, b.x) > x0 + span + NEAR || Math.max(a.z, b.z) < z0 - NEAR || Math.min(a.z, b.z) > z0 + span + NEAR) continue;
       if (poly === sea) seaSegs.push([a, b]);
+      waterSegs.push([a, b]);
       const i0 = Math.floor((Math.min(a.x, b.x) - NEAR) / CELL), i1 = Math.floor((Math.max(a.x, b.x) + NEAR) / CELL);
       const j0 = Math.floor((Math.min(a.z, b.z) - NEAR) / CELL), j1 = Math.floor((Math.max(a.z, b.z) + NEAR) / CELL);
       for (let ii = i0; ii <= i1; ii++) for (let jj = j0; jj <= j1; jj++) {
@@ -86,12 +87,14 @@ export function makeTerrain(size: number, params: TerrainParams, water: P[][], s
   }
   // the slow parts on a coarse grid: distance to the sea (the rise is very smooth) and wet or dry
   const C = 49, cc = span / (C - 1);
-  const coarseSea = new Float32Array(C * C), coarseWet = new Uint8Array(C * C);
+  const coarseSea = new Float32Array(C * C), coarseWet = new Uint8Array(C * C), coarseWater = new Float32Array(C * C);
   for (let j = 0; j < C; j++) for (let i = 0; i < C; i++) {
     const q = { x: x0 + i * cc, z: z0 + j * cc };
-    let ds = Infinity;
+    let ds = Infinity, dw = Infinity;
     for (const [a, b] of seaSegs) ds = Math.min(ds, segD(q, a, b));
+    for (const [a, b] of waterSegs) dw = Math.min(dw, segD(q, a, b));
     coarseSea[j * C + i] = ds === Infinity ? size : ds;
+    coarseWater[j * C + i] = dw === Infinity ? size : dw;
     coarseWet[j * C + i] = water.some((poly) => pointInPoly(q, poly)) ? 1 : 0;
   }
   const coarse = (arr: Float32Array, x: number, z: number) => {
@@ -104,6 +107,8 @@ export function makeTerrain(size: number, params: TerrainParams, water: P[][], s
     const q = { x: x0 + i * cell, z: z0 + j * cell };
     let dw = NEAR + 1;
     for (const [a, b] of buckets.get(bkey(Math.floor(q.x / CELL), Math.floor(q.z / CELL))) ?? []) dw = Math.min(dw, segD(q, a, b));
+    // further out, the coarse grid's distance (the ramp up from the water is long and gentle)
+    if (dw > NEAR) dw = Math.max(NEAR, coarse(coarseWater, q.x, q.z));
     // wet: from the coarse grid where its four corners agree, exact where they don't
     const ci = Math.min(C - 2, Math.floor((q.x - x0) / cc)), cj = Math.min(C - 2, Math.floor((q.z - z0) / cc)), ck = cj * C + ci;
     const sum = coarseWet[ck] + coarseWet[ck + 1] + coarseWet[ck + C] + coarseWet[ck + C + 1];
@@ -122,7 +127,7 @@ export function makeTerrain(size: number, params: TerrainParams, water: P[][], s
       out = params.edge * smooth(20, size * 0.4, dl) * plain * (0.55 + 0.9 * fbm(params.seed + 7, q.x, q.z, 300, 2));
     }
     // flat along the water: the promenade, the beaches and the quays stay at sea level
-    const flat = smooth(14, NEAR, dw);
+    const flat = smooth(14, RAMP, dw);
     data[j * n + i] = Math.max(0, (roll + rise + out) * flat);
   }
   return wrap(x0, z0, cell, n, data);

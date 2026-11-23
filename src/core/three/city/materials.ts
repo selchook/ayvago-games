@@ -358,7 +358,7 @@ if (uLampOn > 0.001) {
   // alpha holds the ground's height: walls are lit from their foot up
   float hf = clamp(1.0 - (vWp.y - lm.a * 64.0) / 11.0, 0.0, 1.0);
   float up = 0.45 + 0.55 * max(gN.y, 0.0);
-  outgoingLight += diffuseColor.rgb * lm.rgb * hf * up * uLampOn * 2.6;
+  outgoingLight += diffuseColor.rgb * lm.rgb * hf * up * uLampOn * 2.0;
 }
 `;
 
@@ -400,7 +400,7 @@ vWp = (modelMatrix * cityWp).xyz;`);
 
 export function cityMaterial(u: CityUniforms): THREE.MeshLambertMaterial {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
-  patchCity(mat, u, 'city-v2');
+  patchCity(mat, u, 'city-v3');
   return mat;
 }
 
@@ -423,7 +423,8 @@ float t = uTime;
 vec2 guv = (vWp.xz - uMapRect.xy) / uMapRect.z;
 vec4 gm = texture2D(uGround, guv);
 bool inMap = guv.x > 0.0 && guv.y > 0.0 && guv.x < 1.0 && guv.y < 1.0;
-if (gm.a > 0.75 || (!inMap && gm.a > 0.25)) discard;
+// (overlapping the land's edge a little: the ground lies above it, and no crack shows the sky)
+if (gm.a > 0.88 || (!inMap && gm.a > 0.45)) discard;
 // ripples fade out where they would alias (far away, grazing views)
 float fw = length(fwidth(p));
 float k1 = clamp(1.0 - fw * 0.35, 0.0, 1.0), k2 = clamp(1.0 - fw * 1.2, 0.0, 1.0);
@@ -446,7 +447,7 @@ vec3 lm = texture2D(uLight, (vWp.xz + n.xz * 6.0 - uMapRect.xy) / uMapRect.z).rg
 waterEmit += lm * uLampOn * smoothstep(0.35, 0.9, cityNoise(p * vec2(0.6, 2.2) + vec2(0.0, t))) * 0.55;`)
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += waterEmit;');
   };
-  mat.customProgramCacheKey = () => 'city-water-v2';
+  mat.customProgramCacheKey = () => 'city-water-v3';
   return mat;
 }
 

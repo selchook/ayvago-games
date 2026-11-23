@@ -470,6 +470,18 @@ const api = {
     const q = cityQuery(plan);
     pose(x, q.terrainAt(x, z) + y, z, tx, q.terrainAt(tx, tz) + ty, tz);
   },
+  /** A kit shop building on the main street (or any kit building), seen from across the street. */
+  kitCloseup: (night = false, k = 0.5) => {
+    const list = plan.buildings.filter((b) => b.kit && b.kit.ground !== 'plain' && plan.lots[b.lot].edge === plan.mainStreet);
+    const all = list.length ? list : plan.buildings.filter((b) => b.kit);
+    if (!all.length) return false;
+    const b = all[Math.min(all.length - 1, Math.floor(all.length * k))];
+    const d = b.doors[0];
+    const nx = Math.sin(d.h), nz = Math.cos(d.h), ux = Math.cos(d.h), uz = -Math.sin(d.h);
+    void night;
+    api.look(d.x + nx * 17 - ux * 13, 2.4, d.z + nz * 17 - uz * 13, d.x + ux * 7 - nx * 2, 5.5, d.z + uz * 7 - nz * 2);
+    return true;
+  },
   setTime: (h: number) => { hours = h; view?.setTime(h); syncTime(); },
   setSpeed: (s: number) => { speed = s; if (view) view.timeScale = s; },
   kit: async (on: boolean) => { show.kit = on; if (on) await loadKit(); return regenerate(); },
@@ -514,6 +526,7 @@ const api = {
   /** The current frame as a PNG data URL (renders one first). */
   capture: () => { renderOnce(1 / 60); return renderer.domElement.toDataURL('image/png'); },
   plan: () => plan,
+  view: () => view,
   renderer,
 };
 (window as unknown as { __city: typeof api }).__city = api;

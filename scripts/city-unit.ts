@@ -4,8 +4,11 @@
 //   - buildings: no footprint corner stands on a road
 //   - the lane graph: one strongly connected network (every lane can reach every other)
 //   - the pedestrian graph: connected
+//   - the open-world data: unique place ids; kit buildings on the kit's 2 m grid with their doors
+//     on the facade; roads no steeper than 8 % over the terrain; the coast town has its pier,
+//     lighthouse, marina and main street
 //   - time: a plan in well under a second
-import { generateCity, planHash, planStats, cityQuery, STYLE_IDS, type CityPlan, type StyleId } from '../src/core/three/city/data';
+import { generateCity, planHash, planStats, cityQuery, terrainOf, STYLE_IDS, type CityPlan, type StyleId } from '../src/core/three/city/data';
 import { obbOverlap, obbCorners, pointInPoly, segDist, type OBB } from '../src/core/three/city/geom';
 
 let failed = 0;
@@ -43,6 +46,37 @@ function lotsOk(plan: CityPlan): { overlaps: number; outside: number; noRoad: nu
 }
 
 const shrink = (o: OBB, d: number): OBB => ({ ...o, hw: o.hw - d, hd: o.hd - d });
+
+/** The open-world data: place ids, the kit's grid and doors, road grades over the terrain. */
+function openWorld(plan: CityPlan): { dupIds: number; offGrid: number; doorsOff: number; grade: number } {
+  const ids = new Set<string>();
+  let dupIds = 0;
+  for (const q of plan.pois) { if (ids.has(q.id)) dupIds++; ids.add(q.id); }
+  let offGrid = 0, doorsOff = 0;
+  const onGrid = (v: number) => Math.abs(v / 2 - Math.round(v / 2)) < 1e-6;
+  for (const b of plan.buildings) {
+    if (!b.kit) continue;
+    const o = b.parts[0].obb;
+    if (!onGrid(o.hw * 2) || !onGrid(o.hd * 2) || Math.abs(b.parts[0].y1 / 3 - Math.round(b.parts[0].y1 / 3)) > 1e-6) offGrid++;
+    for (const d of b.doors) {
+      // a door stands just outside one of the footprint's sides
+      const lu = (d.x - o.x) * o.ux + (d.z - o.z) * o.uz, lv = -(d.x - o.x) * o.uz + (d.z - o.z) * o.ux;
+      const outside = Math.max(Math.abs(lu) - o.hw, Math.abs(lv) - o.hd);
+      if (outside < 0 || outside > 0.6) doorsOff++;
+    }
+  }
+  const T = terrainOf(plan);
+  let grade = 0;
+  for (const E of plan.edges) {
+    for (let i = 0; i < E.pts.length - 1; i++) {
+      const a = E.pts[i], b = E.pts[i + 1];
+      const L = Math.hypot(b.x - a.x, b.z - a.z);
+      if (L < 8) continue;
+      grade = Math.max(grade, Math.abs(T.h(b.x, b.z) - T.h(a.x, a.z)) / L);
+    }
+  }
+  return { dupIds, offGrid, doorsOff, grade };
+}
 
 function buildingsOnRoads(plan: CityPlan): number {
   const q = cityQuery(plan);
@@ -130,8 +164,15 @@ for (const { style, seed } of cases) {
   const onRoad = buildingsOnRoads(plan);
   const scc = laneSCC(plan);
   const walk = walkConnected(plan);
-  console.log(`${style.padEnd(10)} seed ${seed}  ${ms.toFixed(0).padStart(4)} ms  ${plan.size} m  blocks ${st.blocks}  lots ${st.lots}  buildings ${st.buildings}  lanes ${st.lanes}  `
-    + `scc ${(scc * 100).toFixed(1)}%  walk ${(walk * 100).toFixed(1)}%  overlaps ${lots.overlaps}  outside ${lots.outside}  noRoad ${lots.noRoad}  onRoad ${onRoad}`);
+  const ow = openWorld(plan);
+  console.log(`${style.padEnd(10)} seed ${seed}  ${ms.toFixed(0).padStart(4)} ms  ${plan.size} m  blocks ${st.blocks}  lots ${st.lots}  buildings ${st.buildings} (kit ${st.kit})  lanes ${st.lanes}  `
+    + `scc ${(scc * 100).toFixed(1)}%  walk ${(walk * 100).toFixed(1)}%  overlaps ${lots.overlaps}  outside ${lots.outside}  noRoad ${lots.noRoad}  onRoad ${onRoad}  `
+    + `places ${st.pois}  grade ${(ow.grade * 100).toFixed(1)}%  terrain ${terrainOf(plan).max.toFixed(0)} m`);
+  check(ow.dupIds === 0, `${style} ${seed}: ${ow.dupIds} duplicate place ids`);
+  check(ow.offGrid === 0, `${style} ${seed}: ${ow.offGrid} kit buildings off the 2 m grid`);
+  check(ow.doorsOff === 0, `${style} ${seed}: ${ow.doorsOff} kit doors away from their facade`);
+  check(ow.grade < 0.08, `${style} ${seed}: steepest road ${(ow.grade * 100).toFixed(1)} %`);
+  if (style === 'coast') for (const id of ['pier', 'lighthouse', 'marina', 'main-street', 'beach-0']) check(plan.pois.some((q) => q.id === id), `${style} ${seed}: has its ${id}`);
   check(planHash(plan) === planHash(again), `${style} ${seed}: same seed, same plan`);
   check(planHash(plan) !== planHash(other), `${style} ${seed}: another seed, another plan`);
   check(lots.overlaps === 0, `${style} ${seed}: ${lots.overlaps} lot overlaps`);

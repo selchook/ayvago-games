@@ -67,7 +67,8 @@ export function makeBlocks(net: Network, site: Site, rnd: Rng): Block[] {
     for (const lp of loops) {
       const area = signedArea(lp);
       if (area < 60) continue;
-      const lawn = b.district === 'suburban' || b.district === 'residential' || b.district === 'park';
+      // small ones are planted traffic islands, bigger ones little squares (with a sidewalk ring)
+      const lawn = area < 350 || b.district === 'suburban' || b.district === 'residential' || b.district === 'park';
       if (!b.curb.length) { b.curb = lp; b.area = area; b.kind = 'plaza'; b.ground = lawn ? 'grass' : 'paving'; b.c = interiorPoint(lp); b.curbEdge = lp.map(() => -1); continue; }
       blocks.push({ ...b, id: blocks.length, curb: lp, curbEdge: lp.map(() => -1), area, c: interiorPoint(lp), lots: [] });
     }
@@ -482,6 +483,7 @@ const round3 = (v: number): number => Math.round(v * 1000) / 1000;
 // ------------------------------------------------------------------ the building kit
 
 const KIT_TYPES = new Set<BuildingType>(['office', 'midrise', 'shop', 'apartment', 'rowhouse']);
+const KIT_WINDOWS: (readonly KitSpec['window'][])[] = [['square', 'trim'], ['trim', 'arch'], ['square', 'double'], ['square', 'arch']];
 
 /** Does this building come from the kit? Everywhere it fits the district's look. */
 function wantKit(site: Site, dk: DistrictKind, type: BuildingType, h: number): boolean {
@@ -534,8 +536,9 @@ function kitify(parts: Part[], type: BuildingType, dk: DistrictKind, site: Site,
   const pick = <T>(list: readonly T[], h: number): T => list[Math.floor(h * list.length) % list.length];
   const wallColor = wall === 'stucco' ? pick(coast ? COAST_RENDER : RENDER, h3) : wall === 'brick' ? pick(BRICK_TINT, h3) : wall === 'stone' ? pick([0xffffff, 0xf2ede4, 0xe6ddd0], h3) : pick([0x9aa3ad, 0x7b858f, 0xb7bcc2], h3);
   const trimColor = coast ? pick(COAST_TRIM, h2) : pick(CITY_TRIM, h2);
-  const window: KitSpec['window'] = wall === 'stone' ? 'stone' : wall === 'metal' ? 'metal'
-    : coast ? pick(['trim', 'trim', 'square', 'arch'] as const, h2) : pick(['square', 'trim', 'double', 'arch', 'square'] as const, h2);
+  // two window families per city (each piece type the kit draws is a draw call)
+  const fams = KIT_WINDOWS[(site.seed >>> 3) % KIT_WINDOWS.length];
+  const window: KitSpec['window'] = wall === 'stone' ? 'stone' : wall === 'metal' ? 'metal' : coast ? (h2 < 0.7 ? 'trim' : 'square') : pick(fams, h2);
   const W2 = W / 2;
   const doors: number[] = [];
   if (shops) {
