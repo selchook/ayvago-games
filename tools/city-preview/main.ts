@@ -1,12 +1,13 @@
 // City preview: a dev page to look at generated cities (not a game, not shipped).
-// Open with `npm run dev`, then /tools/city-preview/ (query: ?seed=7&style=coast&look=night&size=1600).
+// Open with `npm run dev`, then /tools/city-preview/ (query: ?seed=7&style=coast&time=19.5&speed=0.2&size=1600;
+// ?nokit draws every building procedurally).
 // Cameras: overview (orbit), free fly and street level (walk/drive), keyboard + mouse or touch.
 // window.__city exposes hooks for scripts/city-shots.mjs and scripts/city-memory.mjs.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {
-  generateCity, planStats, cityQuery, drawMinimap, CityView, STYLES, STYLE_IDS, LOOKS, LOOK_IDS, DISTRICTS,
+  generateCity, planStats, cityQuery, drawMinimap, CityView, CityKit, STYLES, STYLE_IDS, LOOKS, LOOK_IDS, DISTRICTS, LOOK_HOURS, CITY_KIT_ASSET,
   type CityPlan, type StyleId, type LookId, type DistrictKind, type CityOptions,
 } from '../../src/core/three/city';
 
@@ -41,8 +42,18 @@ let plan: CityPlan;
 let view: CityView | null = null;
 let mode: Mode = 'orbit';
 let look: LookId = (params.get('look') as LookId) || 'day';
+let hours = params.has('time') ? Number(params.get('time')) : params.has('look') ? LOOK_HOURS[look] : 11;
+let speed = Number(params.get('speed') ?? 0);
 const mix: Partial<Record<DistrictKind, number>> = {};
-const show = { props: true, lod: true, wireframe: false, lanes: false, colliders: false, walk: false, minimap: !params.has('nominimap'), shadows: true, hybrid: params.has('hybrid'), ui: !params.has('noui') };
+const show = { kit: !params.has('nokit'), props: true, lod: true, wireframe: false, lanes: false, colliders: false, walk: false, minimap: !params.has('nominimap'), shadows: true, hybrid: params.has('hybrid'), ui: !params.has('noui') };
+
+// the building kit (Quaternius Downtown City MegaKit, CC0, in public/assets)
+let kit: CityKit | null = null;
+async function loadKit(): Promise<void> {
+  if (kit) return;
+  const g = await new GLTFLoader().loadAsync('/assets/' + CITY_KIT_ASSET);
+  kit = CityKit.from(g.scene);
+}
 
 // hybrid mode: Kenney City Kit Commercial skyscrapers (CC0, in public/assets) on some tower lots
 let hybridModels: THREE.Object3D[] | null = null;
@@ -62,7 +73,7 @@ let paused = false;
 
 const styleSel = $<HTMLSelectElement>('style');
 for (const s of STYLE_IDS) styleSel.add(new Option(`${STYLES[s].name.en} · ${STYLES[s].name.tr}`, s));
-styleSel.value = params.get('style') || 'metropolis';
+styleSel.value = params.get('style') || 'coast';
 const lookSel = $<HTMLSelectElement>('look');
 for (const l of LOOK_IDS) lookSel.add(new Option(`${LOOKS[l].name.en} · ${LOOKS[l].name.tr}`, l));
 const seedIn = $<HTMLInputElement>('seed');
@@ -79,8 +90,17 @@ for (const d of DISTRICTS) {
   mixBox.appendChild(l);
 }
 $('resetMix').onclick = () => { for (const i of mixBox.querySelectorAll('input')) { i.value = '1'; i.dispatchEvent(new Event('input')); } };
-styleSel.onchange = () => { sizeIn.value = String(STYLES[styleSel.value as StyleId].size); look = STYLES[styleSel.value as StyleId].look; regenerate(); };
-lookSel.onchange = () => { look = lookSel.value as LookId; view?.setLook(look); };
+styleSel.onchange = () => { sizeIn.value = String(STYLES[styleSel.value as StyleId].size); look = STYLES[styleSel.value as StyleId].look; hours = LOOK_HOURS[look]; regenerate(); };
+lookSel.onchange = () => { look = lookSel.value as LookId; view?.setLook(look); hours = view?.time ?? hours; syncTime(); };
+const timeIn = $<HTMLInputElement>('time'), speedSel = $<HTMLSelectElement>('speed');
+timeIn.oninput = () => { hours = Number(timeIn.value); view?.setTime(hours); syncTime(); };
+speedSel.value = String(speedSel.querySelector(`option[value^="${String(speed).slice(0, 5)}"]`) ? (speedSel.querySelector(`option[value^="${String(speed).slice(0, 5)}"]`) as HTMLOptionElement).value : 0);
+speedSel.onchange = () => { speed = Number(speedSel.value); if (view) view.timeScale = speed; };
+function syncTime(): void {
+  const h = view?.time ?? hours;
+  timeIn.value = String(h);
+  $('timeV').textContent = `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.floor((h % 1) * 60)).padStart(2, '0')} ${view?.phase ?? ''}`;
+}
 sizeIn.oninput = () => { $('sizeV').textContent = sizeIn.value; };
 nearIn.oninput = () => { $('nearV').textContent = nearIn.value; view?.setNear(Number(nearIn.value)); };
 $('gen').onclick = () => regenerate();
@@ -103,6 +123,7 @@ for (const k of Object.keys(show) as (keyof typeof show)[]) {
   b.onclick = () => {
     show[k] = !show[k];
     if (k === 'hybrid') { void (show.hybrid ? loadHybrid() : Promise.resolve()).then(() => regenerate()); return; }
+    if (k === 'kit') { void (show.kit ? loadKit() : Promise.resolve()).then(() => regenerate()); return; }
     applyShow();
   };
   toggleBox.appendChild(b);
@@ -120,7 +141,7 @@ function applyShow(): void {
   view.overlay('lanes', show.lanes);
   view.overlay('colliders', show.colliders);
   view.overlay('walk', show.walk);
-  view.setShadows(show.shadows && LOOKS[look].shadows);
+  view.setShadows(show.shadows);
   $('mini').style.display = show.minimap ? '' : 'none';
 }
 
@@ -145,7 +166,7 @@ function regenerate(opts: Partial<CityOptions> & { look?: LookId } = {}): Record
   const t0 = performance.now();
   const models = show.hybrid ? hybridModels : null;
   view = new CityView(plan, scene, {
-    look, near: Number(nearIn.value),
+    look, time: hours, timeScale: speed, near: Number(nearIn.value), kit: show.kit ? kit : null,
     replace: models ? (b) => (b.type === 'tower' && b.seed < 0.35 ? models[Math.floor(b.seed * 100) % models.length].clone(true) : null) : undefined,
   });
   const viewMs = performance.now() - t0;
@@ -154,7 +175,8 @@ function regenerate(opts: Partial<CityOptions> & { look?: LookId } = {}): Record
   applyShow();
   $('sizeV').textContent = sizeIn.value; $('nearV').textContent = nearIn.value;
   const url = new URL(location.href);
-  url.searchParams.set('seed', String(o.seed)); url.searchParams.set('style', o.style!); url.searchParams.set('size', String(o.size)); url.searchParams.set('look', look);
+  url.searchParams.set('seed', String(o.seed)); url.searchParams.set('style', o.style!); url.searchParams.set('size', String(o.size)); url.searchParams.set('time', hours.toFixed(2));
+  url.searchParams.delete('look');
   history.replaceState(null, '', url);
   return { ...planStats(plan), viewMs: Math.round(viewMs) };
 }
@@ -237,8 +259,7 @@ function moveCamera(dt: number): void {
     if (!q.collides(next.x, next.z, 0.35)) camera.position.copy(next);
     else if (!q.collides(next.x, camera.position.z, 0.35)) camera.position.x = next.x;
     else if (!q.collides(camera.position.x, next.z, 0.35)) camera.position.z = next.z;
-    const ground = q.surfaceAt(camera.position.x, camera.position.z);
-    camera.position.y = (ground === 'road' || ground === 'junction' || ground === 'bridge' ? 0 : 0.15) + 1.7;
+    camera.position.y = q.groundAt(camera.position.x, camera.position.z) + 1.7;
   }
   camera.lookAt(camera.position.clone().add(dir));
 }
@@ -267,10 +288,8 @@ function adaptCamera(): void {
   camera.far = mode === 'street' ? 3000 : 12000;
   camera.updateProjectionMatrix();
   if (view) {
-    const lk = LOOKS[look];
     // high cameras see further: push the fog out with the height
-    const k = THREE.MathUtils.clamp(h / 120, 1, 6);
-    view.setFog(lk.fogNear * k, lk.fogFar * k);
+    view.setFogScale(THREE.MathUtils.clamp(h / 120, 1, 6));
   }
 }
 
@@ -300,7 +319,8 @@ function drawStats(): void {
   if (!view) return;
   const s = view.stats(), i = renderer.info;
   $('stats').textContent = `${plan.style} seed ${plan.seed} ${plan.size} m · plan ${plan.ms} ms · chunks ${s.chunks} (+${s.queued} queued, ${s.cached} cached) · build ${s.lastBuildMs} / avg ${s.avgBuildMs} ms`
-    + ` · draw calls ${glCount.calls} · tris ${(glCount.triangles / 1000).toFixed(0)}k · geo ${i.memory.geometries} tex ${i.memory.textures} · ${frameMs.toFixed(1)} ms/frame · ${mode} ${look}`;
+    + ` · kit ${s.kitBuildings} bldg ${(s.kitTris / 1000).toFixed(0)}k tris · draw calls ${glCount.calls} · tris ${(glCount.triangles / 1000).toFixed(0)}k · geo ${i.memory.geometries} tex ${i.memory.textures} · ${frameMs.toFixed(1)} ms/frame · ${mode}`;
+  syncTime();
 }
 
 function drawMini(): void {
@@ -357,6 +377,10 @@ function streetSpots(): { name: string; x: number; z: number; tx: number; tz: nu
   add('industrial', sorted.find((l) => ['industrial', 'docks'].includes(district(l)?.district ?? '')), 0.3);
   add('park', sorted.find((l) => district(l)?.kind === 'park'), 0.3);
   add('commercial', sorted.find((l) => district(l)?.district === 'commercial' && plan.edges[l.edge].cls !== 'street'), 0.3);
+  add('mainstreet', lanes.find((l) => l.edge === plan.mainStreet) ?? plan.lanes.find((l) => l.edge === plan.mainStreet), 0.12);
+  // the promenade: along the perimeter on the sea side (a lane whose outer face is the city's edge)
+  const prom = plan.pois.find((p) => p.id === 'promenade');
+  if (prom) add('promenade', [...lanes].sort((a, b) => Math.hypot(a.pts[0].x - prom.x, a.pts[0].z - prom.z) - Math.hypot(b.pts[0].x - prom.x, b.pts[0].z - prom.z))[0], 0.1);
   return out;
 }
 
@@ -390,13 +414,22 @@ function detailSpots(): Record<string, { x: number; y: number; z: number; h: num
   }
   const junction = plan.nodes.filter((n) => n.signal).sort((a, b) => Math.hypot(a.x - plan.centre.x, a.z - plan.centre.z) - Math.hypot(b.x - plan.centre.x, b.z - plan.centre.z))[0];
   if (junction) out.junction = { x: junction.x, y: 0, z: junction.z, h: 2.9, r: 45 };
+  const poi = (id: string) => plan.pois.find((p) => p.id === id);
+  const lh = poi('lighthouse');
+  if (lh) out.lighthouse = { x: lh.x, y: 9, z: lh.z, h: lh.h + Math.PI + 0.7, r: 55 };
+  const pier = poi('pier');
+  if (pier) out.pier = { x: pier.x, y: 0, z: pier.z, h: pier.h + 2.0, r: 95 };
+  const marina = poi('marina');
+  if (marina) out.marina = { x: marina.x, y: 0, z: marina.z, h: 2.4, r: 90 };
+  const ms = poi('main-street');
+  if (ms) out.mainstreet = { x: ms.x, y: 4, z: ms.z, h: ms.h + 0.5, r: 50 };
   return out;
 }
 
 const api = {
   generate: (o: Partial<CityOptions> & { look?: LookId }) => regenerate(o),
   hybrid: async (on: boolean) => { show.hybrid = on; if (on) await loadHybrid(); return regenerate(); },
-  setLook: (l: LookId) => { look = l; lookSel.value = l; view?.setLook(l); applyShow(); },
+  setLook: (l: LookId) => { look = l; lookSel.value = l; view?.setLook(l); hours = view?.time ?? hours; applyShow(); },
   setMode: (m: Mode) => setMode(m, true),
   pose,
   setNear: (r: number) => { nearIn.value = String(r); view?.setNear(r); },
@@ -408,11 +441,14 @@ const api = {
     const S = plan.size;
     pose(plan.centre.x - S * 0.3 * k, S * 0.27 * k, plan.centre.z + S * 0.42 * k, plan.centre.x, 0, plan.centre.z - S * 0.08);
   },
-  street: (i: number) => {
-    const s = streetSpots()[i];
+  street: (i: number | string) => {
+    const list = streetSpots();
+    const s = typeof i === 'number' ? list[i] : list.find((x) => x.name === i);
     if (!s) return null;
     setMode('street', true);
-    pose(s.x, 2.1, s.z, s.tx, 3.6, s.tz);
+    const q = cityQuery(plan);
+    const g = q.groundAt(s.x, s.z), gt = q.terrainAt(s.tx, s.tz);
+    pose(s.x, g + 1.95, s.z, s.tx, gt + 3.4, s.tz);
     return s.name;
   },
   /** Names of the features detail() can frame. */
@@ -423,9 +459,22 @@ const api = {
     if (!d) return false;
     setMode('fly', true);
     const r = d.r;
-    pose(d.x - Math.sin(d.h) * r, r * 0.55, d.z - Math.cos(d.h) * r, d.x, d.y, d.z);
+    const q = cityQuery(plan);
+    const cx = d.x - Math.sin(d.h) * r, cz = d.z - Math.cos(d.h) * r;
+    pose(cx, Math.max(q.terrainAt(cx, cz) + 2, q.terrainAt(d.x, d.z) + r * 0.55), cz, d.x, q.terrainAt(d.x, d.z) + d.y, d.z);
     return true;
   },
+  /** A camera at any spot: position and target (heights over the ground there). */
+  look: (x: number, y: number, z: number, tx: number, ty: number, tz: number) => {
+    setMode('fly', true);
+    const q = cityQuery(plan);
+    pose(x, q.terrainAt(x, z) + y, z, tx, q.terrainAt(tx, tz) + ty, tz);
+  },
+  setTime: (h: number) => { hours = h; view?.setTime(h); syncTime(); },
+  setSpeed: (s: number) => { speed = s; if (view) view.timeScale = s; },
+  kit: async (on: boolean) => { show.kit = on; if (on) await loadKit(); return regenerate(); },
+  kitBytes: () => kit?.textureBytes ?? 0,
+  pois: () => plan.pois,
   /** Streams everything round the camera, then renders a few frames. */
   settle: async (frames = 4) => {
     for (let i = 0; i < 400 && view && view.stats().queued + (i < 2 ? 1 : 0) > 0; i++) { renderOnce(1 / 60); await frame(); }
@@ -493,6 +542,7 @@ async function downloadShots(): Promise<void> {
 
 resize();
 if (show.hybrid) await loadHybrid();
+if (show.kit) await loadKit();
 regenerate();
 if (params.get('mode')) setMode(params.get('mode') as Mode, true);
 loop();

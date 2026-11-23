@@ -33,6 +33,11 @@
     <label>Style <select id="style"></select></label>
     <label>Size (m) <input id="size" type="range" min="800" max="2400" step="100" /> <span id="sizeV"></span></label>
     <label>Look <select id="look"></select></label>
+    <label>Time <input id="time" type="range" min="0" max="24" step="0.05" value="12" /> <span id="timeV"></span></label>
+    <label>Speed <select id="speed">
+      <option value="0">stopped</option><option value="0.0166667">1 min / s</option><option value="0.1666667">10 min / s</option>
+      <option value="1">1 h / s</option><option value="3">3 h / s</option>
+    </select></label>
     <div class="sec">District mix</div>
     <div id="mix"></div>
     <div class="row"><button id="gen">Generate</button><button id="resetMix">Reset mix</button></div>

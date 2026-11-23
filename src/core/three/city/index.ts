@@ -8,5 +8,7 @@
 //
 // docs/city-generator.md explains the plan data, streaming, looks and budgets.
 export * from './data';
-export { CityView, type CityViewOptions, type CityViewStats } from './view';
+export { CityView, LOOK_HOURS, type CityViewOptions, type CityViewStats, type ChunkEvent } from './view';
+export { CityKit, KitLayer, CITY_KIT_ASSET } from './kitview';
+export { daylightAt, makeDaylight, phaseAt, SUNRISE, SUNSET, type DayPhase, type Daylight } from './daylight';
 export { CityBuilder } from './build';

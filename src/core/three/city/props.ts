@@ -8,13 +8,14 @@ import { type Rng, hash01 } from './rng';
 import type { Network, Site } from './roads';
 import { LANE_W, PARK_W } from './roads';
 import type { Block, Lot, Building, Prop, PropKind, ParkingSpot, Signal, Wall } from './types';
+import type { CoastOut } from './coast';
 
 const CAR_COLOURS = [0xc0392b, 0x2e4053, 0xf4f6f7, 0x1c2833, 0x7f8c8d, 0x2471a3, 0xd4ac0d, 0x196f3d, 0x922b21, 0xaeb6bf, 0x5b2c6f, 0xe67e22];
 const CONTAINER_COLOURS = [0xb03a2e, 0x1f618d, 0x117a65, 0xd68910, 0x6c3483, 0x839192, 0xa04000, 0x1e8449];
 
 export interface PropOut { props: Prop[]; parking: ParkingSpot[]; walls: Wall[] }
 
-export function makeProps(net: Network, blocks: Block[], lots: Lot[], buildings: Building[], signals: Signal[], site: Site, rnd: Rng): PropOut {
+export function makeProps(net: Network, blocks: Block[], lots: Lot[], buildings: Building[], signals: Signal[], site: Site, rnd: Rng, coast: CoastOut, mainStreet: number): PropOut {
   const props: Prop[] = [];
   const parking: ParkingSpot[] = [];
   const walls: Wall[] = [];
@@ -34,6 +35,58 @@ export function makeProps(net: Network, blocks: Block[], lots: Lot[], buildings:
 
   // signals first: they own their corners
   for (const s of signals) { add1('signal', s.x, s.z, s.h, 1, s.group + 2 * s.node); take(s); }
+  // the seaside (decks, huts, palms along the sea wall) before the street furniture
+  for (const q of coast.props) { props.push(q); take(q); }
+  walls.push(...coast.walls);
+  const kept = (q: P) => coast.keepOut.some((k) => dist(k.p, q) < k.r);
+  // café terraces: tables on the sidewalk outside cafés, restaurants and ice-cream shops (and
+  // half the shops of the main street), under their awnings
+  for (const b of buildings) {
+    if (!b.shop) continue;
+    const terrace = b.shop === 'cafe' || b.shop === 'restaurant' || b.shop === 'icecream' || (lots[b.lot].edge === mainStreet && hash01(site.seed, b.id, 3) < 0.5);
+    if (!terrace) continue;
+    const walk = blocks[b.block].walk;
+    if (walk < 3) continue;
+    const o = b.parts[0].obb;
+    const out = p(o.uz, -o.ux);
+    for (const d of b.doors) {
+      if (d.kind === 'back') continue;
+      for (const along of [-2.6, 2.6, -5.4]) {
+        const q = add(add(p(d.x, d.z), mul(out, Math.min(1.9, walk - 1.5) - 0.35)), mul(p(o.ux, o.uz), along));
+        if (!free(q, 2.2)) continue;
+        add1('cafe', q.x, q.z, headingOf(out) + hash01(b.id, Math.round(along)) * 1.2, 1);
+        take(q);
+      }
+    }
+  }
+  // bollards guarding the main street's corners, drains in the gutters, manholes in the lanes
+  for (const E of net.edges) {
+    if (E.cls === 'alley' || E.bridge) continue;
+    const s0 = E.trimA, s1 = E.len - E.trimB;
+    if (s1 - s0 < 20) continue;
+    const main = E.id === mainStreet;
+    for (const side of [1, -1] as const) {
+      const face = side === 1 ? (E.faceN >= 0 ? blocks[E.faceN] : null) : (E.faceS >= 0 ? blocks[E.faceS] : null);
+      if (!face || face.kind === 'outer' || face.kind === 'water') continue;
+      if (main || (face.district === 'downtown' && hash01(site.seed, E.id, side) < 0.5)) {
+        for (const s of [s0 + 1.5, s0 + 3.5, s0 + 5.5, s1 - 1.5, s1 - 3.5, s1 - 5.5]) {
+          const at = alongPolyline(E.pts, s);
+          const q = add(at.p, mul(nrm(at.d), side * (E.half + 0.45)));
+          if (free(q, 1.2)) { add1('bollard', q.x, q.z, 0); take(q); }
+        }
+      }
+      for (let s = s0 + 14; s < s1 - 6; s += 38) {
+        const at = alongPolyline(E.pts, s);
+        const q = add(at.p, mul(nrm(at.d), side * (E.half - 0.35)));
+        add1('drain', q.x, q.z, headingOf(at.d));
+      }
+    }
+    for (let s = s0 + 25; s < s1 - 10; s += 64) {
+      const at = alongPolyline(E.pts, s);
+      const q = add(at.p, mul(nrm(at.d), E.lanes > 1 ? LANE_W * 1.5 : LANE_W * 0.5));
+      add1('manhole', q.x, q.z, 0);
+    }
+  }
   // hydrants by the junctions
   for (const n of net.nodes) {
     if (n.kind !== 'junction' || !n.poly.length) continue;
@@ -267,14 +320,39 @@ export function makeProps(net: Network, blocks: Block[], lots: Lot[], buildings:
     const bb = bounds(beach);
     for (let k = 0; k < (bb.x1 - bb.x0 + bb.z1 - bb.z0) / 9; k++) {
       const q = p(rnd.range(bb.x0, bb.x1), rnd.range(bb.z0, bb.z1));
-      if (!pointInPoly(q, beach) || site.inWater(q) || polyEdgeDist(q, beach) < 4) continue;
+      if (!pointInPoly(q, beach) || site.inWater(q) || polyEdgeDist(q, beach) < 4 || kept(q)) continue;
       if (!free(q, 6)) continue;
-      add1('umbrella', q.x, q.z, rnd.range(0, 6), 1, [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71, 0xffffff][rnd.int(0, 4)]);
+      const h = rnd.range(0, 6);
+      add1('umbrella', q.x, q.z, h, 1, [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71, 0xffffff, 0xff7f50, 0x1abc9c][rnd.int(0, 6)]);
+      // two loungers under it, facing the sea's way (roughly)
+      if (rnd.chance(0.75)) for (const o of [-0.7, 0.7]) add1('lounger', q.x + Math.cos(h) * o, q.z - Math.sin(h) * o, h, 1, rnd.chance(0.5) ? 0xffffff : 0x2e86c1);
       take(q);
+    }
+  }
+  // things on the sand stand on its slope (the beach falls from -0.1 at the promenade to -1.6)
+  for (const q of props) {
+    if (q.kind !== 'umbrella' && q.kind !== 'lounger' && q.kind !== 'hut' && q.kind !== 'lifeguard') continue;
+    for (const beach of site.beaches) {
+      if (!pointInPoly(q, beach)) continue;
+      const n = beach.length / 2;
+      const da = lineDist(q, beach.slice(0, n)), db = lineDist(q, beach.slice(n));
+      q.y = Math.round((-0.1 - 1.5 * (da / Math.max(0.01, da + db))) * 100) / 100;
+      break;
     }
   }
   void sub; void unit; void obbInPoly;
   return { props, parking, walls };
+
+  function lineDist(q: P, pts: P[]): number {
+    let d = Infinity;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const dx = b.x - a.x, dz = b.z - a.z, L2 = dx * dx + dz * dz || 1;
+      const t = clamp(((q.x - a.x) * dx + (q.z - a.z) * dz) / L2, 0, 1);
+      d = Math.min(d, Math.hypot(q.x - a.x - dx * t, q.z - a.z - dz * t));
+    }
+    return d;
+  }
 
   function onLand(q: P, bl: Block[], E: { faceN: number }): boolean {
     const f = bl[E.faceN];

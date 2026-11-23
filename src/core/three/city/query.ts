@@ -4,9 +4,11 @@
 // (optionally facing a heading), which lot or block, whether a circle hits something solid and
 // how high the roof is. Pure data.
 import { type P, segDist, pointInPoly, inObb, obbCorners, dist } from './geom';
-import type { CityPlan, Lane, Lot, Block, Collider, RoadEdge } from './types';
+import type { CityPlan, Lane, Lot, Block, Collider, RoadEdge, Deck, Poi, PoiKind } from './types';
+import { terrainOf } from './layout';
+import type { Terrain } from './terrain';
 
-export type Surface = 'road' | 'junction' | 'sidewalk' | 'lot' | 'yard' | 'park' | 'plaza' | 'building' | 'water' | 'bridge' | 'outside';
+export type Surface = 'road' | 'junction' | 'sidewalk' | 'lot' | 'yard' | 'park' | 'plaza' | 'building' | 'water' | 'bridge' | 'outside' | 'pier' | 'jetty' | 'breakwater' | 'beach';
 
 export interface RoadHit {
   /** Road edge (-1 inside a junction). */
@@ -31,8 +33,10 @@ export class CityQuery {
   private solids = new Map<number, number[]>();
   private lanes = new Map<number, number[]>();
   private acc: number[][] = [];
+  readonly terrain: Terrain;
 
   constructor(readonly plan: CityPlan) {
+    this.terrain = terrainOf(plan);
     plan.edges.forEach((E, e) => {
       const acc = [0];
       for (let i = 1; i < E.pts.length; i++) acc.push(acc[i - 1] + dist(E.pts[i - 1], E.pts[i]));
@@ -124,17 +128,66 @@ export class CityQuery {
     return false;
   }
 
-  /** Roof height at a point (0 on the ground). */
-  heightAt(x: number, z: number): number {
-    let h = 0;
-    for (const i of this.at(this.solids, x, z)) {
-      const c = this.plan.colliders[i];
-      if (c.ref >= 0 && inObb({ x, z }, c.obb)) h = Math.max(h, this.plan.buildings[c.ref].h);
-    }
-    return h;
+  /** The terrain's height at a point (roads lie on it; sidewalks are 0.15 higher). */
+  terrainAt(x: number, z: number): number { return this.terrain.h(x, z); }
+
+  /** Where feet or wheels rest: the road, the sidewalk, a deck or the sand (no roofs). */
+  groundAt(x: number, z: number): number {
+    const d = this.deckAt(x, z);
+    if (d) return d.y;
+    const s = this.surfaceAt(x, z);
+    if (s === 'beach') return this.beachY(x, z);
+    if (s === 'water') return this.plan.water.level;
+    return this.terrain.h(x, z) + (s === 'road' || s === 'junction' || s === 'bridge' ? 0 : 0.15);
   }
 
+  /** The top of what stands at a point: a building's roof, or the ground. */
+  heightAt(x: number, z: number): number {
+    let h = -Infinity;
+    for (const i of this.at(this.solids, x, z)) {
+      const c = this.plan.colliders[i];
+      if (c.ref >= 0 && inObb({ x, z }, c.obb)) { const b = this.plan.buildings[c.ref]; h = Math.max(h, b.y - 0.15 + b.h); }
+    }
+    return h === -Infinity ? this.groundAt(x, z) : h;
+  }
+
+  /** The deck (pier, jetty, breakwater) under a point, or null. */
+  deckAt(x: number, z: number): Deck | null {
+    for (const d of this.plan.decks ?? []) {
+      const L = dist(d.a, d.b) || 1;
+      const ux = (d.b.x - d.a.x) / L, uz = (d.b.z - d.a.z) / L;
+      const s = (x - d.a.x) * ux + (z - d.a.z) * uz, t = Math.abs(-(x - d.a.x) * uz + (z - d.a.z) * ux);
+      if (s >= 0 && s <= L && t <= d.half) return d;
+      if (d.head && s > L - 5 && s <= L + 5 && t <= d.head) return d;
+      if (d.kind === 'breakwater' && Math.hypot(x - d.b.x, z - d.b.z) <= d.head) return d;
+    }
+    return null;
+  }
+
+  private beachY(x: number, z: number): number {
+    for (const beach of this.plan.water.beaches) {
+      if (!pointInPoly({ x, z }, beach)) continue;
+      const n = beach.length / 2;
+      const line = (pts: { x: number; z: number }[]) => { let d = Infinity; for (let i = 0; i < pts.length - 1; i++) d = Math.min(d, segDist({ x, z }, pts[i], pts[i + 1]).d); return d; };
+      const da = line(beach.slice(0, n)), db = line(beach.slice(n));
+      return -0.1 - 1.5 * (da / Math.max(0.01, da + db));
+    }
+    return 0;
+  }
+
+  /** Named places (all, or of a kind), nearest first when a point is given. */
+  pois(kind?: PoiKind, near?: { x: number; z: number }): Poi[] {
+    const list = kind ? this.plan.pois.filter((p) => p.kind === kind) : [...this.plan.pois];
+    if (near) list.sort((a, b) => Math.hypot(a.x - near.x, a.z - near.z) - Math.hypot(b.x - near.x, b.z - near.z));
+    return list;
+  }
+
+  poi(id: string): Poi | null { return this.plan.pois.find((p) => p.id === id) ?? null; }
+
   surfaceAt(x: number, z: number): Surface {
+    const deck = this.deckAt(x, z);
+    if (deck) return deck.kind;
+    if (this.plan.water.beaches.some((b) => pointInPoly({ x, z }, b)) && !this.blockAt(x, z)) return 'beach';
     const r = this.roadAt(x, z);
     if (r) return r.node >= 0 ? 'junction' : this.plan.edges[r.edge].bridge ? 'bridge' : 'road';
     if (this.solidAt(x, z)) return 'building';

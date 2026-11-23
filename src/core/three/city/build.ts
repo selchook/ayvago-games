@@ -8,17 +8,26 @@
 import * as THREE from 'three';
 import { type P, type OBB, obbCorners, obbPoint, offsetPolyline, insetPoly, signedArea, dist, lerp, clamp, polyIndex, pointInPoly } from './geom';
 import { hash01 } from './rng';
-import { GeoBuf, lin, type K4, type GeoArrays } from './geobuf';
+import { GeoBuf, lin, densify, gridPieces, type K4, type GeoArrays } from './geobuf';
 import { K, FACADE } from './materials';
 import { minimapRaster, MAP } from './minimap';
-import type { CityPlan, Building, Part, Prop, Block, Wall } from './types';
+import type { CityPlan, Building, Part, Prop, Block, Wall, Deck } from './types';
+import { terrainOf } from './layout';
+import type { Terrain } from './terrain';
+import { kitId, type KitPiece } from './kit';
 import { STYLES } from './styles';
 import { LANE_W } from './roads';
 
 /** Props drawn as InstancedMesh (all others are merged into their chunk). */
 export const INSTANCED = ['tree', 'palm', 'conifer', 'lamp', 'signal', 'car', 'container'] as const;
+/** Props drawn by the building kit's pieces (when a kit is loaded). */
+const KIT_PROPS: Partial<Record<string, KitPiece>> = { bollard: 'bollard', drain: 'drain', manhole: 'manhole', kplanter: 'planter' };
 export type InstKind = (typeof INSTANCED)[number];
 const isInst = (k: string): k is InstKind => (INSTANCED as readonly string[]).includes(k);
+/** Props that stand on the water or the beach (their heights are absolute). */
+const WATER_PROPS = new Set(['boat', 'sailboat', 'umbrella', 'lounger', 'hut', 'lifeguard']);
+/** Props big enough to keep in far chunks. */
+const BIG_PROPS = new Set(['crane', 'fountain', 'pond', 'pool', 'statue', 'busstop', 'kiosk', 'hut', 'boat', 'sailboat', 'lifeguard']);
 
 export interface ChunkData {
   key: number; cx: number; cz: number;
@@ -27,6 +36,12 @@ export interface ChunkData {
   inst: Partial<Record<InstKind, number[]>>;
   /** Lamp heads: x, y, z. */
   halos: number[];
+  /** Kit props (bollards, drains, manholes, planters): piece, x, y, z, yaw. */
+  kitProps: number[];
+  /** Detail level it was built at (0 full, 1 without small props). */
+  lod: number;
+  /** The first triangles are the shadow casters (buildings, decks, props); the ground follows. */
+  casterTris: number;
   tris: number;
   ms: number;
 }
@@ -66,6 +81,7 @@ interface ChunkIndex {
   buildings: number[];
   props: number[];
   fences: number[];
+  decks: number[];
 }
 
 export class CityBuilder {
@@ -75,11 +91,21 @@ export class CityBuilder {
   private keys: number[] = [];
   /** Buildings drawn by something else (hybrid landmarks). */
   skip = new Set<number>();
+  /** Kit buildings are drawn by the kit (CityView's kit layer): chunks hold their shadow proxy. */
+  kit = false;
+  readonly terrain: Terrain;
+  /** Ground height (the terrain), the same function the plan's queries use. */
+  readonly h: (x: number, z: number) => number;
 
   constructor(readonly plan: CityPlan, readonly chunk = 128) {
     this.size = plan.size;
+    this.terrain = terrainOf(plan);
+    this.h = this.terrain.max > 0 ? this.terrain.h : () => 0;
     this.makeIndex();
   }
+
+  /** The height a building's parts stand on (its ground floor sits 0.15 lower, under the sidewalk). */
+  base(b: Building): number { return b.y - 0.15; }
 
   key(cx: number, cz: number): number { return (cx + 512) * 1024 + (cz + 512); }
   /** Every chunk that has something in it. */
@@ -90,7 +116,7 @@ export class CityBuilder {
     const k = this.key(Math.floor(x / this.chunk), Math.floor(z / this.chunk));
     let c = this.index.get(k);
     if (!c) {
-      c = { pieces: [], nodes: [], surf: [], walls: [], rails: [], lots: [], buildings: [], props: [], fences: [] };
+      c = { pieces: [], nodes: [], surf: [], walls: [], rails: [], lots: [], buildings: [], props: [], fences: [], decks: [] };
       this.index.set(k, c);
       this.keys.push(k);
     }
@@ -130,7 +156,20 @@ export class CityBuilder {
       const cx = (a.x + b.x + c.x) / 3, cz = (a.z + b.z + c.z) / 3;
       this.slot(cx, cz).surf.push(a.x, a.z, b.x, b.z, c.x, c.z, y, surf);
     };
+    const draped = this.terrain.max > 0;
     const tris = (poly: P[], holes: P[][], y: number, surf: number) => {
+      if (draped) {
+        // over the terrain: no long triangles (extra points on the edges, big areas cut on a grid)
+        poly = densify(poly, 10);
+        holes = holes.map((hh) => densify(hh, 10));
+        if (!holes.length) {
+          for (const piece of gridPieces(poly, 16)) {
+            const c2 = piece.map((q) => new THREE.Vector2(q.x, q.z));
+            for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(c2, [])) tri(piece[i], piece[j], piece[k], y, surf);
+          }
+          return;
+        }
+      }
       const contour = poly.map((q) => new THREE.Vector2(q.x, q.z));
       const hs = holes.map((h) => h.map((q) => new THREE.Vector2(q.x, q.z)));
       const all = [...poly, ...holes.flat()];
@@ -150,6 +189,20 @@ export class CityBuilder {
     plan.buildings.forEach((b) => this.slot(b.obb.x, b.obb.z).buildings.push(b.id));
     plan.props.forEach((q, i) => this.slot(q.x, q.z).props.push(i));
     plan.walls.forEach((w, i) => { const m = lerp(w.a, w.b, 0.5); this.slot(m.x, m.z).fences.push(i); });
+    // decks: a record per 16 m piece (the chunk of its middle draws it)
+    (plan.decks ?? []).forEach((d, i) => {
+      const L = dist(d.a, d.b), n = Math.max(1, Math.ceil(L / 16));
+      for (let k = 0; k < n; k++) { const m = lerp(d.a, d.b, (k + 0.5) / n); this.slot(m.x, m.z).decks.push(i * 1000 + k); }
+      const end = lerp(d.a, d.b, 1);
+      this.slot(end.x, end.z).decks.push(i * 1000 + 999);
+    });
+    if (plan.lighthouse) this.slot(plan.lighthouse.x, plan.lighthouse.z).decks.push(-1);
+  }
+
+  /** Is q on the sea wall where a deck starts (its railing leaves a gap)? */
+  private gap(q: P): boolean {
+    for (const d of this.plan.decks ?? []) if (dist(q, d.a) < Math.max(d.half, 1) + 0.8) return true;
+    return false;
   }
 
   private indexBlock(b: Block, tris: (poly: P[], holes: P[][], y: number, surf: number) => void,
@@ -167,7 +220,15 @@ export class CityBuilder {
         wall(a, c, 0, Y, 0);
         const oa = out[i], oc = out[(i + 1) % out.length];
         wall(oc, oa, -2.6, Y, 3);
-        rail(oc, oa, 1);
+        // the railing along the sea wall, open where a pier, jetty or breakwater starts
+        const L = dist(oa, oc), n = Math.max(1, Math.ceil(L / 1.5));
+        let run: P | null = null;
+        for (let k = 0; k <= n; k++) {
+          const q = lerp(oc, oa, k / n);
+          const open = this.gap(q);
+          if (!open && !run) run = q;
+          if ((open || k === n) && run) { const end = open ? lerp(oc, oa, Math.max(0, k - 1) / n) : q; if (dist(run, end) > 0.3) rail(run, end, 1); run = null; }
+        }
       }
       return;
     }
@@ -192,36 +253,61 @@ export class CityBuilder {
 
   // ---------------------------------------------------------------- chunks
 
-  build(key: number, opts: { props: boolean } = { props: true }): ChunkData {
+  /**
+   * Builds a chunk. Level 0 is everything; level 1 (far chunks, aerial views) leaves out the
+   * small props, fences and railings and the kit buildings' dressing.
+   */
+  build(key: number, opts: { props: boolean; lod?: number } = { props: true }): ChunkData {
     const t0 = performance.now();
+    const lod = opts.lod ?? 0;
     const cx = Math.floor(key / 1024) - 512, cz = (key % 1024) - 512;
     const idx = this.index.get(key);
-    const buf = new GeoBuf();
+    // what casts shadows first (buildings, decks, props), the ground after it: the shadow pass
+    // draws only the first part
+    const buf = new GeoBuf(), gnd = new GeoBuf();
+    buf.lift = gnd.lift = this.terrain.max > 0 ? this.h : null;
     const inst: Partial<Record<InstKind, number[]>> = {};
     const halos: number[] = [];
+    const kitProps: number[] = [];
     if (idx) {
-      for (const [e, i] of idx.pieces) this.roadPiece(buf, e, i);
-      for (const n of idx.nodes) this.junction(buf, n);
-      this.surfaces(buf, idx);
-      for (const id of idx.lots) this.lot(buf, id);
-      for (const id of idx.buildings) if (!this.skip.has(id)) this.building(buf, this.plan.buildings[id]);
+      for (const [e, i] of idx.pieces) this.roadPiece(gnd, e, i);
+      for (const n of idx.nodes) this.junction(gnd, n);
+      this.surfaces(gnd, idx, lod);
+      for (const id of idx.lots) this.lot(gnd, id);
+      for (const id of idx.buildings) if (!this.skip.has(id)) this.building(buf, this.plan.buildings[id], lod);
+      for (const id of idx.decks) this.deck(buf, id, lod);
       if (opts.props) {
-        for (const id of idx.fences) this.fence(buf, this.plan.walls[id]);
+        if (lod === 0) for (const id of idx.fences) this.fence(buf, this.plan.walls[id]);
         for (const id of idx.props) {
           const q = this.plan.props[id];
+          const g = this.propBase(q);
           if (isInst(q.kind)) {
             const list = inst[q.kind] ?? (inst[q.kind] = []);
-            this.instRecord(list, q);
+            this.instRecord(list, q, g);
             if (q.kind === 'lamp') {
               const s = q.s;
-              halos.push(q.x + Math.sin(q.h) * 1.7 * s, 7.05 * s, q.z + Math.cos(q.h) * 1.7 * s);
+              halos.push(q.x + Math.sin(q.h) * 1.7 * s, q.y + g + 0.15 + 6.9 * s, q.z + Math.cos(q.h) * 1.7 * s);
             }
-          } else this.prop(buf, q);
+          } else if (KIT_PROPS[q.kind] && this.kit) {
+            if (lod === 0) kitProps.push(kitId(KIT_PROPS[q.kind]!), q.x, g + (q.kind === 'drain' || q.kind === 'manhole' ? 0.005 : 0.15), q.z, q.h);
+          } else if (lod === 0 || BIG_PROPS.has(q.kind)) {
+            buf.anchor = g;
+            this.prop(buf, q);
+            buf.anchor = null;
+          }
         }
       }
     }
+    const casterTris = buf.triangles;
+    buf.append(gnd);
     const geo = buf.arrays();
-    return { key, cx, cz, geo, inst, halos, tris: buf.triangles, ms: performance.now() - t0 };
+    return { key, cx, cz, geo, inst, halos, kitProps, lod, tris: buf.triangles, casterTris, ms: performance.now() - t0 };
+  }
+
+  /** The ground a prop stands on: the terrain, except on the water and the sand (sea level). */
+  propBase(q: Prop): number {
+    if (WATER_PROPS.has(q.kind)) return 0;
+    return this.terrain.max > 0 ? this.h(q.x, q.z) : 0;
   }
 
   private roadPiece(buf: GeoBuf, e: number, i: number): void {
@@ -285,7 +371,7 @@ export class CityBuilder {
     }
   }
 
-  private surfaces(buf: GeoBuf, idx: ChunkIndex): void {
+  private surfaces(buf: GeoBuf, idx: ChunkIndex, lod = 0): void {
     const s = idx.surf;
     for (let i = 0; i < s.length; i += 8) {
       const [col, kind] = SURF[s[i + 7]];
@@ -303,7 +389,7 @@ export class CityBuilder {
     }
     const r = idx.rails;
     const rc = lin(COL.railing);
-    for (let i = 0; i < r.length; i += 5) {
+    if (lod === 0) for (let i = 0; i < r.length; i += 5) {
       const a = { x: r[i], z: r[i + 1] }, b = { x: r[i + 2], z: r[i + 3] };
       railing(buf, a, b, 0.15, 1.05, rc, r[i + 4] === 0 ? 2.2 : 3);
     }
@@ -349,7 +435,27 @@ export class CityBuilder {
 
   // ---------------------------------------------------------------- buildings
 
-  building(buf: GeoBuf, b: Building): void {
+  building(buf: GeoBuf, b: Building, lod = 0): void {
+    const base = this.base(b);
+    const lifted = buf.lift;
+    buf.anchor = base;
+    // a plinth down to the lowest corner where the ground falls away
+    if (lifted) {
+      for (const q of b.parts) {
+        if (q.y0 > 0.01 || (q.kind !== 'mass' && q.kind !== 'garage')) continue;
+        let low = base;
+        for (const c of obbCorners(q.obb)) low = Math.min(low, lifted(c.x, c.z));
+        if (base - low > 0.04) buf.obb(shrinkObb(q.obb, -0.06), low - base - 0.4, 0.12, lin(tint(COL.kerb, 0.85)), [K.concrete, 0, 0, 0], null);
+      }
+    }
+    if (this.kit && b.kit) {
+      // drawn by the kit: a shadow caster for the sun (never seen) and the dressing
+      const q = b.parts[0];
+      buf.obb(shrinkObb(q.obb, 0.3), 0, q.y1 + 0.9, lin(0x808080), [K.shadow, 0, 0, 0]);
+      if (lod === 0) for (const part of b.parts) if (part.kind !== 'mass') this.part(buf, b, part);
+      buf.anchor = null;
+      return;
+    }
     for (const part of b.parts) this.part(buf, b, part);
     // a door where there is no shopfront
     const main = b.parts[0];
@@ -360,6 +466,7 @@ export class CityBuilder {
       buf.obb(d, main.y0, main.y0 + 2.3, lin(0x3a2c22), [K.plain, 0, 0, 0]);
       if (b.type === 'house' || b.type === 'rowhouse') buf.obb(sub2(o, du - 1.2, du + 1.2, -o.hd - 1.2, -o.hd), 0.15, 0.35, lin(0xb0aaa0));
     }
+    buf.anchor = null;
   }
 
   private part(buf: GeoBuf, b: Building, q: Part): void {
@@ -616,14 +723,17 @@ export class CityBuilder {
     }
   }
 
-  private instRecord(list: number[], q: Prop): void {
+  private instRecord(list: number[], q: Prop, ground = 0): void {
     let r = 1, g = 1, b = 1;
-    const y = q.y + (q.kind === 'car' ? 0 : 0.15);
+    const y = q.y + ground + (q.kind === 'car' ? 0 : 0.15);
     if (q.kind === 'car' || q.kind === 'container') {
       const c = lin(q.c);
       [r, g, b] = c;
     } else if (q.kind === 'signal') {
       r = q.c % 2; g = (this.plan.nodes[Math.floor(q.c / 2)]?.phase ?? 0) / 30; b = 0;
+    } else if (q.kind === 'lamp') {
+      // the moment this lamp comes on at dusk (the shader compares it with uLampOn)
+      b = hash01(Math.floor(q.x * 3), Math.floor(q.z * 3), 21) * 0.95;
     } else if (q.kind === 'tree' || q.kind === 'palm' || q.kind === 'conifer') {
       const h = hash01(Math.floor(q.x * 10), Math.floor(q.z * 10));
       r = 0.8 + h * 0.35; g = 0.85 + hash01(Math.floor(q.z * 7), 3) * 0.3; b = 0.7 + h * 0.3;
@@ -707,16 +817,178 @@ export class CityBuilder {
         break;
       }
       case 'umbrella':
-        buf.cylinder(q.x, q.z, 0.04, 0.04, 0, 2.3, 4, lin(0xdddddd));
-        buf.cylinder(q.x, q.z, 1.6, 0.05, 2.0, 2.6, 8, lin(q.c || 0xe74c3c), [K.plain, 0, 0, 0], false);
-        buf.cylinder(q.x, q.z, 0.05, 1.6, 2.6, 2.0, 8, lin(0xbbbbbb), [K.plain, 0, 0, 0], false);
+        buf.cylinder(q.x, q.z, 0.04, 0.04, q.y - 0.3, q.y + 2.3, 4, lin(0xdddddd));
+        buf.cylinder(q.x, q.z, 1.6, 0.05, q.y + 2.0, q.y + 2.6, 8, lin(q.c || 0xe74c3c), [K.plain, 0, 0, 0], false);
+        buf.cylinder(q.x, q.z, 0.05, 1.6, q.y + 2.6, q.y + 2.0, 8, lin(0xbbbbbb), [K.plain, 0, 0, 0], false);
         break;
-      case 'kiosk':
-        buf.boxH(q.x, Y, q.z, 1.5, 1.3, 1.5, q.h, lin(0x2e7d5b));
+      case 'kiosk': {
+        // a café kiosk: a green booth with a counter window and a striped awning
+        buf.boxH(q.x, Y, q.z, 1.6, 1.35, 1.6, q.h, lin(0x2e7d5b));
+        const s = Math.sin(q.h), c = Math.cos(q.h);
+        buf.boxH(q.x + s * 1.62, Y + 1.0, q.z + c * 1.62, 1.1, 0.45, 0.03, q.h, lin(0xfff1c8), [K.glow, 0.15, 1.2, 0]);
+        buf.boxH(q.x + s * 2.1, Y + 2.35, q.z + c * 2.1, 1.7, 0.06, 0.55, q.h, lin(0xe74c3c), [K.awning, 0, 0, 0]);
+        buf.boxH(q.x, Y + 2.7, q.z, 1.75, 0.08, 1.75, q.h, lin(0xf4f1ea));
+        break;
+      }
+      case 'cafe': {
+        // a round table, chairs and a parasol
+        const s = Math.sin(q.h), c = Math.cos(q.h);
+        buf.cylinder(q.x, q.z, 0.05, 0.05, Y, Y + 0.72, 4, lin(0x2a2a2a), [K.plain, 0, 0, 0], false);
+        buf.cylinder(q.x, q.z, 0.42, 0.42, Y + 0.72, Y + 0.76, 8, lin(0xf2efe8));
+        for (const k of [-0.75, 0.75]) {
+          // a chair: seat on legs, a back away from the table
+          const cx = q.x + c * k, cz = q.z - s * k;
+          buf.boxH(cx, Y + 0.42, cz, 0.21, 0.025, 0.21, q.h, lin(0x7a5a3a));
+          buf.boxH(cx, Y, cz, 0.03, 0.21, 0.03, q.h, lin(0x2a2a2a));
+          buf.boxH(cx + c * Math.sign(k) * 0.19, Y + 0.47, cz - s * Math.sign(k) * 0.19, 0.025, 0.22, 0.2, q.h, lin(0x7a5a3a));
+        }
+        const pc = [0xc0392b, 0xf4f1ea, 0x1f618d, 0x27ae60, 0xd68910][Math.floor(hash01(Math.floor(q.x * 7), Math.floor(q.z * 7)) * 5)];
+        buf.cylinder(q.x, q.z, 0.03, 0.03, Y + 0.76, Y + 2.25, 4, lin(0xdddddd), [K.plain, 0, 0, 0], false);
+        buf.cylinder(q.x, q.z, 1.35, 0.04, Y + 1.95, Y + 2.35, 8, lin(pc), [K.plain, 0, 0, 0], false);
+        buf.cylinder(q.x, q.z, 0.04, 1.35, Y + 2.35, Y + 1.95, 8, lin(tint(pc, 0.6)), [K.plain, 0, 0, 0], false);
+        break;
+      }
+      case 'hut': {
+        // a beach hut on short stilts, gable roof, door to the sea
+        const y = q.y;
+        const col = lin(q.c || 0x3b8fd1), white = lin(0xf6f3ec);
+        const o: OBB = { x: q.x, z: q.z, hw: 1.05, hd: 1.0, ux: Math.cos(q.h), uz: -Math.sin(q.h) };
+        buf.obb(shrinkObb(o, 0.1), y - 0.8, y + 0.3, lin(0x8a6a48));
+        buf.obb(o, y + 0.3, y + 2.3, col, [K.plain, 0, 0, 0]);
+        const c4 = obbCorners(o);
+        // front (+v side faces the sea: corners 2, 3 are at +v)
+        const door = sub2(o, -0.45, 0.45, o.hd - 0.02, o.hd + 0.04);
+        buf.obb(door, y + 0.35, y + 2.0, white);
+        const ridge = (a: P, b: P) => [ (a.x + b.x) / 2, y + 3.1, (a.z + b.z) / 2 ];
+        const r0 = ridge(c4[0], c4[3]), r1 = ridge(c4[1], c4[2]);
+        buf.quad([c4[0].x, y + 2.3, c4[0].z], [c4[1].x, y + 2.3, c4[1].z], r1, r0, white);
+        buf.quad([c4[2].x, y + 2.3, c4[2].z], [c4[3].x, y + 2.3, c4[3].z], r0, r1, white);
+        buf.tri(c4[1].x, y + 2.3, c4[1].z, c4[2].x, y + 2.3, c4[2].z, r1[0], r1[1], r1[2], col);
+        buf.tri(c4[3].x, y + 2.3, c4[3].z, c4[0].x, y + 2.3, c4[0].z, r0[0], r0[1], r0[2], col);
+        break;
+      }
+      case 'lounger': {
+        const s = Math.sin(q.h), c = Math.cos(q.h);
+        buf.boxH(q.x, q.y + 0.05, q.z, 0.32, 0.12, 0.85, q.h, lin(q.c || 0xffffff));
+        buf.boxH(q.x + s * 0.8, q.y + 0.3, q.z + c * 0.8, 0.3, 0.2, 0.1, q.h, lin(q.c || 0xffffff));
+        break;
+      }
+      case 'lifeguard': {
+        const y = q.y;
+        const s = Math.sin(q.h), c = Math.cos(q.h);
+        for (const [u, v] of [[-0.8, -0.8], [0.8, -0.8], [0.8, 0.8], [-0.8, 0.8]]) buf.boxH(q.x + c * u + s * v, y - 0.5, q.z - s * u + c * v, 0.07, 1.4, 0.07, q.h, lin(0xf6f3ec));
+        buf.boxH(q.x, y + 2.3, q.z, 1.0, 0.06, 1.0, q.h, lin(0xf6f3ec));
+        buf.boxH(q.x - s * 0.2, y + 2.4, q.z - c * 0.2, 0.85, 0.7, 0.7, q.h, lin(0xd63a2f));
+        buf.boxH(q.x, y + 3.85, q.z, 1.05, 0.06, 1.05, q.h, lin(0xf6f3ec));
+        buf.boxH(q.x + s * 1.5, y - 0.5, q.z + c * 1.5, 0.35, 0.05, 0.6, q.h + 0.0, lin(0xc8b48a));
+        break;
+      }
+      case 'boat': case 'sailboat':
+        boat(buf, q);
+        break;
+      case 'bollard':
+        buf.cylinder(q.x, q.z, 0.1, 0.09, Y, Y + 0.9, 6, lin(0x3d3a36));
+        break;
+      case 'kplanter':
+        buf.boxH(q.x, Y, q.z, 0.9, 0.3, 0.9, q.h, lin(0xb8b2a6));
+        buf.cylinder(q.x, q.z, 0.75, 0.3, Y + 0.6, Y + 1.5, 6, lin(COL.leaves), [K.leaves, 0, 0, 0]);
+        break;
+      case 'drain': case 'manhole':
         break;
       default:
         buf.boxH(q.x, Y, q.z, 0.3, 0.5, 0.3, 0, lin(0x888888));
     }
+  }
+
+  // ---------------------------------------------------------------- the seaside
+
+  /** A deck piece (id = deck · 1000 + piece, 999 the far end) or the lighthouse (-1). */
+  private deck(buf: GeoBuf, id: number, lod: number): void {
+    buf.anchor = 0;
+    if (id < 0) { this.lighthouse(buf); buf.anchor = null; return; }
+    const d = this.plan.decks[Math.floor(id / 1000)], k = id % 1000;
+    const L = dist(d.a, d.b), n = Math.max(1, Math.ceil(L / 16));
+    const ux = (d.b.x - d.a.x) / L, uz = (d.b.z - d.a.z) / L;
+    // a box along the deck: u across (hw), v along (hd)
+    const along = (t0: number, t1: number, half: number): OBB => {
+      const m = { x: d.a.x + ux * L * (t0 + t1) / 2, z: d.a.z + uz * L * (t0 + t1) / 2 };
+      return { x: m.x, z: m.z, hw: half, hd: (L * (t1 - t0)) / 2, ux: uz, uz: -ux };
+    };
+    const plank: K4 = [K.deck, ux, uz, 0];
+    if (d.kind === 'breakwater') {
+      const stone = lin(0x9c968c), rock = lin(0x7f7a72);
+      if (k === 999) {
+        buf.cylinder(d.b.x, d.b.z, d.head + 3, d.head, -2.6, d.y, 18, rock, [K.concrete, 0, 0, 0], true, stone, [K.concrete, 0, 0, 0]);
+        return void (buf.anchor = null);
+      }
+      const o = along(k / n, (k + 1) / n, d.half);
+      const c = obbCorners(o), w = obbCorners({ ...o, hw: o.hw + 3.2 });
+      // the walkway and the sloping rock flanks
+      buf.flatTri(c[0], c[1], c[2], d.y, stone, [K.concrete, 0, 0, 0]);
+      buf.flatTri(c[0], c[2], c[3], d.y, stone, [K.concrete, 0, 0, 0]);
+      for (const [i, j] of [[1, 2], [3, 0]]) buf.quad([w[i].x, -2.6, w[i].z], [w[j].x, -2.6, w[j].z], [c[j].x, d.y, c[j].z], [c[i].x, d.y, c[i].z], rock, [K.concrete, 0, 0, 0]);
+      if (lod === 0) for (let r = 0; r < 6; r++) {
+        const h = hash01(id, r, 3), side = r % 2 ? 1 : -1;
+        const q = obbPoint(o, side * (o.hw + 1.4 + h), (h * 2 - 1) * o.hd);
+        buf.boxH(q.x, -1.2, q.z, 0.8 + h * 0.6, 0.6 + h * 0.4, 0.7, h * 6, rock, [K.concrete, 0, 0, 0]);
+      }
+      return void (buf.anchor = null);
+    }
+    const wood = lin(d.kind === 'pier' ? 0x9b7653 : 0xb08a62), pile = lin(0x5b4632);
+    const y = d.y;
+    if (k === 999) {
+      if (d.kind === 'pier') {
+        // the T head
+        const o: OBB = { x: d.b.x, z: d.b.z, hw: d.head, hd: 5, ux: -uz, uz: ux };
+        buf.obb(o, y - 0.35, y, wood, plank, plank, undefined, true);
+        for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [-0.3, -1], [0.3, 1], [0, 0]]) {
+          const q = obbPoint(o, u * (o.hw - 0.5), v * (o.hd - 0.5));
+          buf.cylinder(q.x, q.z, 0.2, 0.2, -3, y - 0.35, 6, pile, [K.plain, 0, 0, 0], false);
+        }
+      }
+      return void (buf.anchor = null);
+    }
+    const o = along(k / n, (k + 1) / n, d.half);
+    buf.obb(o, y - (d.kind === 'pier' ? 0.35 : 0.25), y, wood, plank, plank, undefined, true);
+    if (d.kind === 'jetty') {
+      // floats under the boards, a cleat post now and then
+      buf.obb(shrinkObb(o, 0.2), y - 0.55, y - 0.25, lin(0xd8d4cc), [K.plain, 0, 0, 0]);
+    } else for (const side of [-1, 1]) for (const t of [0.25, 0.75]) {
+      const q = obbPoint(o, side * (o.hw - 0.3), (t * 2 - 1) * o.hd);
+      buf.cylinder(q.x, q.z, 0.2, 0.2, -3, y - 0.35, 6, pile, [K.plain, 0, 0, 0], false);
+    }
+    buf.anchor = null;
+  }
+
+  /** The lighthouse: a striped tower, its gallery, the lantern room (lit at night) and a dome. */
+  private lighthouse(buf: GeoBuf): void {
+    const l = this.plan.lighthouse!;
+    const { x, z } = l;
+    const y = l.y, top = y + 21;
+    const white = lin(0xf6f4ee), red = lin(0xc8352b), dark = lin(0x2d3238);
+    const r = (t: number) => 3.1 - 1.0 * t;
+    for (let i = 0; i < 5; i++) {
+      const t0 = i / 5, t1 = (i + 1) / 5;
+      buf.cylinder(x, z, r(t0), r(t1), y + 21 * t0, y + 21 * t1, 14, i % 2 ? red : white, [K.plain, 0, 0, 0], false);
+    }
+    // gallery, railing, lantern, dome, a beacon light on top
+    buf.cylinder(x, z, 3.0, 3.0, top, top + 0.35, 16, dark);
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      buf.boxH(x + Math.cos(a) * 2.85, top + 0.35, z + Math.sin(a) * 2.85, 0.04, 0.5, 0.04, 0, dark);
+    }
+    buf.cylinder(x, z, 2.88, 2.88, top + 1.3, top + 1.36, 16, dark, [K.plain, 0, 0, 0], false);
+    buf.cylinder(x, z, 1.7, 1.7, top + 0.35, top + 3.2, 12, lin(0xfff1b8), [K.glow, 0.25, 3.5, 0]);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      buf.boxH(x + Math.cos(a) * 1.72, top + 0.35, z + Math.sin(a) * 1.72, 0.06, 1.43, 0.06, a, dark);
+    }
+    buf.cylinder(x, z, 1.95, 0.25, top + 3.2, top + 4.6, 12, red);
+    buf.cylinder(x, z, 0.12, 0.05, top + 4.6, top + 5.4, 6, dark);
+    // the door and a few slit windows
+    const h = l.h + Math.PI;
+    buf.boxH(x + Math.sin(h) * 3.02, y, z + Math.cos(h) * 3.02, 0.55, 1.1, 0.08, h, dark);
+    for (const yy of [6, 11, 16]) buf.boxH(x + Math.sin(h + 0.4) * r(yy / 21), y + yy, z + Math.cos(h + 0.4) * r(yy / 21), 0.25, 0.45, 0.06, h + 0.4, lin(0xffe2a0), [K.glow, 0.05, 1.5, 0]);
   }
 
   // ---------------------------------------------------------------- far LOD, maps
@@ -730,24 +1002,30 @@ export class CityBuilder {
       let buf = tiles.get(k);
       if (!buf) tiles.set(k, (buf = new GeoBuf(true)));
       buf.centre = { x: b.obb.x, z: b.obb.z };
+      buf.anchor = this.base(b);
       const lit = Math.round(clamp(b.lit, 0, 0.9) * 10);
+      // a kit building's far box is its exact footprint up to the cornice, flagged (256) so it
+      // gives way to the kit near the camera instead of to the chunks
+      const kit = this.kit && !!b.kit;
       for (const q of b.parts) {
         if (q.kind !== 'mass' && q.kind !== 'crown' && !(q.kind === 'chimney' && q.y1 > 12)) continue;
-        const o = shrinkObb(q.obb, 0.3);
+        const o = kit ? shrinkObb(q.obb, 0.12) : shrinkObb(q.obb, 0.3);
         if (o.hw < 0.5 || o.hd < 0.5) continue;
         const style = q.facade ?? 'punched';
-        const top = q.y1 - 0.3 + (q.roof === 'gable' || q.roof === 'hip' ? Math.min(q.obb.hw, q.obb.hd) * 0.3 : 0);
+        const top = kit ? q.y1 + 0.9 : q.y1 - 0.3 + (q.roof === 'gable' || q.roof === 'hip' ? Math.min(q.obb.hw, q.obb.hd) * 0.3 : 0);
         const c = obbCorners(o);
         for (let i = 0; i < 4; i++) {
           const a = c[(i + 1) % 4], d = c[i];
-          const L = dist(a, d) + 0.6;
-          const bay = L / Math.max(1, Math.round(L / BAY[style]));
-          buf.wall(a, d, q.y0, top, lin(q.color), [q.kind === 'mass' ? K.facade : K.plain, b.floorH, bay, STYLE_IDX[style] + 16 * lit + b.seed * 0.999], bay * 37 * i - 0.3);
+          const L = dist(a, d) + (kit ? 0.24 : 0.6);
+          const bay = kit ? 2 : L / Math.max(1, Math.round(L / BAY[style]));
+          const code = STYLE_IDX[style] + 16 * lit + (kit ? 256 + (q.shop && i === 0 ? 8 : 0) : 0) + b.seed * 0.999;
+          buf.wall(a, d, q.y0, top, lin(q.color), [q.kind === 'mass' ? K.facade : K.plain, b.floorH, bay, code], kit ? -0.12 + (i % 2) * 0.0 : bay * 37 * i - 0.3);
         }
         const roof = lin(q.roof === 'gable' || q.roof === 'hip' ? (q.color2 ?? 0x8a3b2e) : b.district === 'downtown' ? COL.roofDark : COL.roofFlat);
-        buf.flatTri(c[0], c[1], c[2], top, roof, [K.roof, 0, 0, 0]);
-        buf.flatTri(c[0], c[2], c[3], top, roof, [K.roof, 0, 0, 0]);
+        buf.flatTri(c[0], c[1], c[2], top, roof, [K.roof, 0, 0, kit ? 256 : 0]);
+        buf.flatTri(c[0], c[2], c[3], top, roof, [K.roof, 0, 0, kit ? 256 : 0]);
       }
+      buf.anchor = null;
     }
     return [...tiles].map(([key, buf]) => ({ key, geo: buf.arrays(), tris: buf.triangles }));
   }
@@ -794,9 +1072,11 @@ export class CityBuilder {
       const a0 = (i / n) * Math.PI * 2, a1 = ((i + 1) / n) * Math.PI * 2;
       const h0 = h(i), h1 = h(i + 1);
       if (h0 <= 0 && h1 <= 0) continue;
-      const p0 = [cx + Math.cos(a0) * r0, -0.5, cz + Math.sin(a0) * r0], p1 = [cx + Math.cos(a1) * r0, -0.5, cz + Math.sin(a1) * r0];
-      const q0 = [cx + Math.cos(a0) * (r0 + (r1 - r0) * 0.22), h0, cz + Math.sin(a0) * (r0 + (r1 - r0) * 0.22)];
-      const q1 = [cx + Math.cos(a1) * (r0 + (r1 - r0) * 0.22), h1, cz + Math.sin(a1) * (r0 + (r1 - r0) * 0.22)];
+      // the hills' feet stand on the terrain at the map's edge
+      const f0 = this.h(cx + Math.cos(a0) * r0, cz + Math.sin(a0) * r0) - 0.5, f1 = this.h(cx + Math.cos(a1) * r0, cz + Math.sin(a1) * r0) - 0.5;
+      const p0 = [cx + Math.cos(a0) * r0, f0, cz + Math.sin(a0) * r0], p1 = [cx + Math.cos(a1) * r0, f1, cz + Math.sin(a1) * r0];
+      const q0 = [cx + Math.cos(a0) * (r0 + (r1 - r0) * 0.22), h0 + f0, cz + Math.sin(a0) * (r0 + (r1 - r0) * 0.22)];
+      const q1 = [cx + Math.cos(a1) * (r0 + (r1 - r0) * 0.22), h1 + f1, cz + Math.sin(a1) * (r0 + (r1 - r0) * 0.22)];
       const e0 = [cx + Math.cos(a0) * r1, h0 * 0.6, cz + Math.sin(a0) * r1], e1 = [cx + Math.cos(a1) * r1, h1 * 0.6, cz + Math.sin(a1) * r1];
       // inner slope faces the city, the back slope faces out
       buf.quad(p0, p1, q1, q0, near, [K.grass, 0, 0, 0]);
@@ -863,7 +1143,8 @@ export class CityBuilder {
       }
     };
     for (const q of this.plan.props) {
-      if (q.kind === 'lamp') splat(q.x + Math.sin(q.h) * 1.7, q.z + Math.cos(q.h) * 1.7, 11 * q.s, 0.75, 0.52, 0.28);
+      // (small lamps over the water, on piers, jetties and bridges, make small pools)
+      if (q.kind === 'lamp') splat(q.x + Math.sin(q.h) * 1.7 * q.s, q.z + Math.cos(q.h) * 1.7 * q.s, q.s < 0.9 ? 4.5 : 11 * q.s, q.s < 0.9 ? 0.45 : 0.75, q.s < 0.9 ? 0.32 : 0.52, q.s < 0.9 ? 0.17 : 0.28);
       else if (q.kind === 'busstop' || q.kind === 'pump') splat(q.x, q.z, 5, 0.25, 0.28, 0.3);
     }
     for (const b of this.plan.buildings) {
@@ -887,13 +1168,48 @@ export class CityBuilder {
     for (let i = 0; i < px * px; i++) {
       // soft clip so overlapping pools saturate gently
       for (let c = 0; c < 3; c++) data[i * 4 + c] = Math.round(255 * (1 - Math.exp(-acc[i * 3 + c] * 1.4)));
-      data[i * 4 + 3] = 255;
+      // alpha: the ground's height (0..64 m), so the shader lights the walls from their foot
+      const x = rect.x0 + ((i % px) + 0.5) * res, z = rect.z0 + (Math.floor(i / px) + 0.5) * res;
+      data[i * 4 + 3] = Math.round(clamp(this.h(x, z) / TERRAIN_RANGE, 0, 1) * 255);
     }
     return { data, w: px };
   }
 }
 
 // ------------------------------------------------------------------ helpers
+
+/** The light map's alpha holds the ground height over this range (metres). */
+export const TERRAIN_RANGE = 64;
+
+/** A moored boat: a pointed hull, a deck, a cabin (and a mast with a furled sail). */
+function boat(buf: GeoBuf, q: Prop): void {
+  const s = q.s, L = 9 * s, B = 2.7 * Math.sqrt(s);
+  const fx = Math.sin(q.h), fz = Math.cos(q.h), rx = Math.cos(q.h), rz = -Math.sin(q.h);
+  const at = (f: number, r: number, y: number): number[] => [q.x + fx * f + rx * r, y, q.z + fz * f + rz * r];
+  const wl = -0.7, top = wl + 0.75 * Math.sqrt(s), keel = wl - 0.35;
+  // deck outline (stern to bow) and the hull's sides down to the waterline
+  const outline: [number, number][] = [[-L / 2, -B / 2 * 0.85], [-L * 0.1, -B / 2], [L * 0.22, -B / 2 * 0.92], [L / 2, 0], [L * 0.22, B / 2 * 0.92], [-L * 0.1, B / 2], [-L / 2, B / 2 * 0.85]];
+  const hull = lin(q.c || 0xffffff), deck = lin(0xe8dcc4), stripe = lin(q.c === 0xffffff || !q.c ? 0x1f3a5f : 0xffffff);
+  for (let i = 0; i < outline.length; i++) {
+    const [f0, r0] = outline[i], [f1, r1] = outline[(i + 1) % outline.length];
+    buf.quad(at(f1 * 0.92, r1 * 0.7, keel), at(f0 * 0.92, r0 * 0.7, keel), at(f0, r0, top), at(f1, r1, top), hull, [K.paint, 0, 0, 0]);
+    buf.quad(at(f1, r1, top - 0.12), at(f0, r0, top - 0.12), at(f0 * 1.003, r0 * 1.01, top), at(f1 * 1.003, r1 * 1.01, top), stripe, [K.plain, 0, 0, 0]);
+  }
+  for (let i = 1; i < outline.length - 1; i++) {
+    const a = outline[0], b = outline[i], c = outline[i + 1];
+    const A = at(a[0], a[1], top), Bp = at(b[0], b[1], top), C = at(c[0], c[1], top);
+    buf.tri(A[0], A[1], A[2], C[0], C[1], C[2], Bp[0], Bp[1], Bp[2], deck);
+  }
+  const cab = at(-L * 0.08, 0, top);
+  buf.boxH(cab[0], top, cab[2], B * 0.3, 0.45 * s, L * 0.16, q.h, lin(0xf4f1ea));
+  buf.boxH(cab[0] + fx * L * 0.165, top + 0.25 * s, cab[2] + fz * L * 0.165, B * 0.28, 0.18 * s, 0.02, q.h, lin(0x2b3a48));
+  if (q.kind === 'sailboat') {
+    const m = at(L * 0.08, 0, top);
+    buf.cylinder(m[0], m[2], 0.08, 0.05, top, top + 10 * s, 5, lin(0xd8d8d8), [K.plain, 0, 0, 0], false);
+    const bm = at(-L * 0.12, 0, top + 1.3);
+    buf.boxH(bm[0], top + 1.1, bm[2], 0.12, 0.13, L * 0.2, q.h, lin(0x1f3a5f));
+  }
+}
 
 function tint(c: number, f: number): number {
   const r = clamp(Math.round(((c >> 16) & 255) * f), 0, 255), g = clamp(Math.round(((c >> 8) & 255) * f), 0, 255), b = clamp(Math.round((c & 255) * f), 0, 255);

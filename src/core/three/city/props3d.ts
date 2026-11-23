@@ -94,8 +94,9 @@ export function propGeometry(kind: InstKind): GeoBuf {
       buf.boxH(0, 0.32, 0, 0.88, 0.33, 2.1, 0, lin(0xffffff), paint);
       buf.boxH(0, 0.98, -0.15, 0.8, 0.3, 1.15, 0, lin(0x1d2630), [K.plain, 0, 0, 0]);
       for (const z of [1.35, -1.35]) buf.boxH(0, 0, z, 0.9, 0.33, 0.32, 0, lin(0x1a1a1a));
-      buf.boxH(0, 0.66, 2.1, 0.78, 0.07, 0.02, 0, lin(0xfff6d8), [K.glow, 0.2, 2.2, 0]);
-      buf.boxH(0, 0.68, -2.1, 0.78, 0.06, 0.02, 0, lin(0xff2a1a), [K.glow, 0.15, 1.4, 0]);
+      // parked: lights off
+      buf.boxH(0, 0.66, 2.1, 0.78, 0.07, 0.02, 0, lin(0xe8e4d8));
+      buf.boxH(0, 0.68, -2.1, 0.78, 0.06, 0.02, 0, lin(0x9a2a20));
       break;
     }
     case 'container':

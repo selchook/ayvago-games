@@ -56,6 +56,13 @@ export class GeoBuf {
   private c: Grow | null;
   /** Far-LOD centre written with every vertex (when the buffer has one). */
   centre: P = { x: 0, z: 0 };
+  /**
+   * Terrain: with `lift` set, every vertex is raised by the ground height under it (roads,
+   * sidewalks, kerbs drape over the land); with `anchor` set too, by that one height instead
+   * (a building or a prop stands level).
+   */
+  lift: ((x: number, z: number) => number) | null = null;
+  anchor: number | null = null;
 
   constructor(withCentre = false) { this.c = withCentre ? new Grow(2 * 1024) : null; }
 
@@ -65,6 +72,8 @@ export class GeoBuf {
   /** One triangle; the normal follows the winding (counter-clockwise seen from the front). */
   tri(ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number,
     rgb: [number, number, number], k: K4 = ZERO4, uva?: [number, number], uvb?: [number, number], uvc?: [number, number]): void {
+    if (this.anchor !== null) { ay += this.anchor; by += this.anchor; cy += this.anchor; }
+    else if (this.lift) { ay += this.lift(ax, az); by += this.lift(bx, bz); cy += this.lift(cx, cz); }
     const ux = bx - ax, uy = by - ay, uz = bz - az, vx = cx - ax, vy = cy - ay, vz = cz - az;
     let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
     const l = Math.hypot(nx, ny, nz) || 1;
@@ -96,6 +105,16 @@ export class GeoBuf {
   /** A horizontal polygon at height y facing up (any orientation), triangulated. uv = world xz. */
   flat(poly: P[], y: number, rgb: [number, number, number], k: K4 = ZERO4, holes: P[][] = [], down = false): void {
     if (poly.length < 3) return;
+    if (this.lift && this.anchor === null) {
+      // draped: long edges get extra points and big holeless polygons are cut on a grid, so
+      // no triangle strays far from the curved ground
+      poly = densify(poly, 10);
+      holes = holes.map((h) => densify(h, 10));
+      if (!holes.length && span(poly) > 24) {
+        for (const piece of gridPieces(poly, 16)) this.flat(piece, y, rgb, k, [], down);
+        return;
+      }
+    }
     const contour = poly.map((q) => new THREE.Vector2(q.x, q.z));
     const hs = holes.map((h) => h.map((q) => new THREE.Vector2(q.x, q.z)));
     const all = [...poly, ...holes.flat()];
@@ -163,6 +182,59 @@ export class GeoBuf {
     if (this.c) out.aC = this.c.slice();
     return out;
   }
+}
+
+/** Extra points on edges longer than `step`. */
+export function densify(poly: P[], step: number): P[] {
+  const out: P[] = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    out.push(a);
+    const L = Math.hypot(b.x - a.x, b.z - a.z);
+    const n = Math.floor(L / step);
+    for (let k = 1; k <= n; k++) { const t = k / (n + 1); out.push({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t }); }
+  }
+  return out;
+}
+
+function span(poly: P[]): number {
+  let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+  for (const q of poly) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.z < z0) z0 = q.z; if (q.z > z1) z1 = q.z; }
+  return Math.max(x1 - x0, z1 - z0);
+}
+
+/** A polygon cut into the cells of a grid (Sutherland–Hodgman against each cell). */
+export function gridPieces(poly: P[], cell: number): P[][] {
+  let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+  for (const q of poly) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.z < z0) z0 = q.z; if (q.z > z1) z1 = q.z; }
+  const out: P[][] = [];
+  const clip = (pl: P[], inside: (q: P) => boolean, cut: (a: P, b: P) => P): P[] => {
+    const r: P[] = [];
+    for (let i = 0; i < pl.length; i++) {
+      const a = pl[i], b = pl[(i + 1) % pl.length];
+      const ia = inside(a), ib = inside(b);
+      if (ia) r.push(a);
+      if (ia !== ib) r.push(cut(a, b));
+    }
+    return r;
+  };
+  const cx = (x: number) => (a: P, b: P): P => { const t = (x - a.x) / (b.x - a.x); return { x, z: a.z + (b.z - a.z) * t }; };
+  const cz = (z: number) => (a: P, b: P): P => { const t = (z - a.z) / (b.z - a.z); return { x: a.x + (b.x - a.x) * t, z }; };
+  for (let gx = Math.floor(x0 / cell) * cell; gx < x1; gx += cell) {
+    const col = clip(clip(poly, (q) => q.x >= gx, cx(gx)), (q) => q.x <= gx + cell, cx(gx + cell));
+    if (col.length < 3) continue;
+    for (let gz = Math.floor(z0 / cell) * cell; gz < z1; gz += cell) {
+      const piece = clip(clip(col, (q) => q.z >= gz, cz(gz)), (q) => q.z <= gz + cell, cz(gz + cell));
+      if (piece.length >= 3 && Math.abs(area(piece)) > 0.01) out.push(piece);
+    }
+  }
+  return out;
+}
+
+function area(poly: P[]): number {
+  let a = 0;
+  for (let i = 0; i < poly.length; i++) { const p = poly[i], q = poly[(i + 1) % poly.length]; a += p.x * q.z - q.x * p.z; }
+  return a / 2;
 }
 
 /** A BufferGeometry from arrays (the arrays are used as they are, not copied). */

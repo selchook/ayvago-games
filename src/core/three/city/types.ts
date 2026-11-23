@@ -122,6 +122,42 @@ export interface Part {
   color2?: number;
 }
 
+/** What the wall slot of a kit building shows: painted render, brick, stone trim or metal panels. */
+export type KitWall = 'stucco' | 'brick' | 'stone' | 'metal';
+
+/**
+ * A building assembled from the Quaternius Downtown City MegaKit (kit.ts lays the pieces out):
+ * walls on a 2 m × 3 m grid, storefronts and doors on the ground floor, windows above, corner
+ * columns, a cornice and a roof. Its mass is snapped to that grid, so its collider is the facade.
+ */
+export interface KitSpec {
+  wall: KitWall;
+  /** Wall tint (render colour, or a brick tint). */
+  wallColor: number;
+  trimColor: number;
+  /** Upper-floor window piece family. */
+  window: 'square' | 'trim' | 'arch' | 'double' | 'stone' | 'metal';
+  /** Ground floor: shopfronts (metal or stone), or a plain base. */
+  ground: 'shop' | 'stoneshop' | 'plain';
+  top: 'brick' | 'trim' | 'metal';
+  /** Window rhythm: 0 every bay, 1 every other bay, 2 pairs. */
+  rhythm: number;
+  corners: boolean;
+  /** A band over the ground floor. */
+  band: boolean;
+  /** Sides facing a street (bit 0 front, 1 right, 2 back, 3 left): they get the full facade. */
+  street: number;
+  /** Front ground-floor bays (0 = leftmost seen from the street) with a door. */
+  doors: number[];
+}
+
+export type DoorKind = 'main' | 'shop' | 'back';
+/** A way in: position on the sidewalk side of the facade, height, heading facing out. */
+export interface Door { x: number; y: number; z: number; h: number; kind: DoorKind }
+
+/** What a shop sells (a mission system can send the player to one). */
+export type ShopKind = 'cafe' | 'bakery' | 'grocery' | 'pharmacy' | 'books' | 'boutique' | 'icecream' | 'restaurant' | 'bank' | 'bikes' | 'surf' | 'hardware';
+
 export interface Building {
   id: number; lot: number; block: number;
   type: BuildingType;
@@ -141,9 +177,18 @@ export interface Building {
   /** Lit-window share at night (0..1). */
   lit: number;
   seed: number;
+  /** Height of the ground floor (terrain height at the door plus the sidewalk). */
+  y: number;
+  /** Assembled from the building kit (null: drawn procedurally). */
+  kit: KitSpec | null;
+  /** Every way in: the front door, shop doors, a back door. */
+  doors: Door[];
+  /** Shops on its ground floor sell this (null: no shop). */
+  shop: ShopKind | null;
 }
 
-export type PropKind = 'lamp' | 'signal' | 'tree' | 'palm' | 'conifer' | 'bench' | 'bin' | 'hydrant' | 'car' | 'bollard' | 'container' | 'pump' | 'fountain' | 'statue' | 'crane' | 'busstop' | 'planter' | 'pool' | 'pond' | 'tank' | 'kiosk' | 'umbrella';
+export type PropKind = 'lamp' | 'signal' | 'tree' | 'palm' | 'conifer' | 'bench' | 'bin' | 'hydrant' | 'car' | 'bollard' | 'container' | 'pump' | 'fountain' | 'statue' | 'crane' | 'busstop' | 'planter' | 'pool' | 'pond' | 'tank' | 'kiosk' | 'umbrella'
+  | 'cafe' | 'hut' | 'boat' | 'sailboat' | 'lounger' | 'lifeguard' | 'drain' | 'manhole' | 'kplanter';
 
 export interface Prop {
   kind: PropKind; x: number; z: number;
@@ -188,7 +233,7 @@ export interface Connector {
 
 export interface Signal { node: number; edge: number; x: number; z: number; h: number; group: number }
 
-export type SpawnKind = 'start' | 'parking' | 'door' | 'rooftop' | 'gas' | 'landmark' | 'dock' | 'park' | 'plaza' | 'bridge';
+export type SpawnKind = 'start' | 'parking' | 'door' | 'rooftop' | 'gas' | 'landmark' | 'dock' | 'park' | 'plaza' | 'bridge' | 'pier' | 'beach' | 'marina';
 export interface Spawn { kind: SpawnKind; x: number; y: number; z: number; h: number; ref: number; name: string }
 
 export interface Collider { obb: OBB; y0: number; y1: number; ref: number }
@@ -201,6 +246,37 @@ export interface Water {
   beaches: P[][];
   /** Water surface height. */
   level: number;
+}
+
+/** A deck over the water: a pier (wooden, with lamps), a marina jetty or a stone breakwater. */
+export interface Deck {
+  kind: 'pier' | 'jetty' | 'breakwater';
+  /** Root on the shore and the far end (the centreline). */
+  a: P; b: P;
+  /** Half width. */
+  half: number;
+  /** Deck height. */
+  y: number;
+  /** A head at the far end (pier: a T, its half length across). */
+  head: number;
+}
+
+export type PoiKind = 'landmark' | 'lighthouse' | 'pier' | 'marina' | 'beach' | 'plaza' | 'fountain' | 'park' | 'shop' | 'cafe' | 'gas'
+  | 'tower' | 'bridge' | 'docks' | 'busstop' | 'mainstreet' | 'promenade';
+
+/** A named place a mission system can use (go to, deliver to, meet at). */
+export interface Poi {
+  /** Stable within a plan: 'lighthouse', 'pier', 'shop-142', 'beach-0' … */
+  id: string;
+  kind: PoiKind;
+  name: { en: string; tr: string };
+  x: number; y: number; z: number;
+  /** Heading to face it from its entrance (or 0). */
+  h: number;
+  /** Rough radius of the place, metres. */
+  r: number;
+  /** Building, block, deck or edge id (by kind), or -1. */
+  ref: number;
 }
 
 export interface CityPlan {
@@ -228,6 +304,16 @@ export interface CityPlan {
   colliders: Collider[];
   circles: Circle[];
   water: Water;
+  /** The terrain's parameters (terrainOf(plan) builds the height field). */
+  terrain: import('./terrain').TerrainParams;
+  /** Piers, marina jetties and breakwaters. */
+  decks: Deck[];
+  /** The lighthouse (on a breakwater's head), or null. */
+  lighthouse: { x: number; z: number; y: number; h: number } | null;
+  /** The main street (an edge id), or -1. */
+  mainStreet: number;
+  /** Named places for missions. */
+  pois: Poi[];
   /** Generation time in ms (not part of the hash). */
   ms: number;
 }

@@ -31,6 +31,9 @@ export function roadDims(cls: RoadClass, parking: boolean, bridge: boolean): Roa
 
 const PRI: Record<RoadClass, number> = { boulevard: 2, avenue: 3, street: 5, alley: 6 };
 
+/** Where the coast's features go, as u along the shore (dir: from the lighthouse towards the pier). */
+export interface CoastFeatures { pier: number | null; light: number; dir: number; marina: [number, number] | null }
+
 /** Everything the layout knows about the land before roads exist. */
 export interface Site {
   S: number;
@@ -44,6 +47,11 @@ export interface Site {
   shore: P[] | null;
   /** Sand strips between the promenade and the sea. */
   beaches: P[][];
+  /**
+   * The coast's own frame (null without a sea): u runs along the shore, v inland from the coast
+   * side; shoreV(u) is the waterline, promV(u) the promenade's centreline, m the perimeter inset.
+   */
+  coast: { toWorld(u: number, v: number): P; shoreV(u: number): number; promV(u: number): number; m: number; beachW: number; features: CoastFeatures } | null;
   /** District weights after the player's mix. */
   weights: Record<DistrictKind, number>;
   seed: number;
@@ -73,6 +81,32 @@ export function makeSite(S: number, style: StyleDef, rnd: Rng, seed: number, wei
   const shoreSeed = rnd.int(1, 1e6);
   const shoreV = (u: number) => S * 0.13 + (fbm(shoreSeed, u, 0, S * 0.35, 3) - 0.5) * S * 0.16 + Math.sin(u / S * Math.PI * 2 + shoreSeed) * S * 0.03;
   const beachW = style.beach ? 26 : 0;
+  const promV = (u: number) => Math.max(m, shoreV(u) + beachW + 10);
+  // coast features along the shore: the pier near the town centre, the lighthouse on a
+  // breakwater towards one end, the marina's basin beside it (carved up to the sea wall)
+  let feat: CoastFeatures | null = null;
+  if (hasCoast) {
+    const fr = rnd.fork(77);
+    const uc = [centre.x, centre.z, S - centre.x, S - centre.z][coastSide];
+    const uPier = clamp(uc + fr.range(-80, 80), S * 0.3, S * 0.7);
+    const far = uPier > S / 2;
+    const uLight = far ? m + S * 0.12 : S - m - S * 0.12;
+    const dir = far ? 1 : -1;
+    const mw = clamp(S * 0.085, 90, 140);
+    feat = {
+      pier: style.beach ? uPier : null, light: uLight, dir,
+      marina: style.beach ? [Math.min(uLight - dir * 8, uLight + dir * (16 + mw)), Math.max(uLight - dir * 8, uLight + dir * (16 + mw))] : null,
+    };
+  }
+  const carve = (u: number): number => {
+    if (!feat?.marina) return 0;
+    const [a, b] = feat.marina;
+    const t = Math.min((u - a + 10) / 10, (b + 10 - u) / 10);
+    const k = clamp(t, 0, 1);
+    return k * k * (3 - 2 * k);
+  };
+  // the waterline with the basin carved in (the promenade keeps to the natural shore)
+  const shoreC = (u: number) => shoreV(u) + carve(u) * Math.max(0, promV(u) - 11.6 - shoreV(u));
   let land: P[];
   let sea: P[] | null = null, shore: P[] | null = null;
   if (hasCoast) {
@@ -82,15 +116,15 @@ export function makeSite(S: number, style: StyleDef, rnd: Rng, seed: number, wei
     const prom: P[] = [];
     for (let i = 0; i <= N; i++) {
       const u = m + (S - 2 * m) * (i / N);
-      prom.push(toWorld(u, Math.max(m, shoreV(u) + beachW + 10)));
+      prom.push(toWorld(u, promV(u)));
     }
     land = [...prom, toWorld(S - m, S - m), toWorld(m, S - m)];
     shore = [];
     const ext = S * 0.6;
-    for (let i = -N; i <= 2 * N; i++) {
-      const u = (S * i) / N;
-      shore.push(toWorld(u, shoreV(clamp(u, 0, S))));
-    }
+    // finer along the city (the basin's sides), coarser past its ends
+    for (let i = -N; i < 0; i++) shore.push(toWorld((S * i) / N, shoreV(0)));
+    for (let i = 0; i <= 4 * N; i++) { const u = (S * i) / (4 * N); shore.push(toWorld(u, shoreC(u))); }
+    for (let i = N + 1; i <= 2 * N; i++) shore.push(toWorld((S * i) / N, shoreV(S)));
     sea = [...shore, toWorld(2 * S, -ext * 4), toWorld(-S, -ext * 4)];
     if (signedArea(sea) < 0) sea.reverse();
   } else {
@@ -155,16 +189,16 @@ export function makeSite(S: number, style: StyleDef, rnd: Rng, seed: number, wei
   };
   const beaches: P[][] = [];
   if (hasCoast && style.beach) {
-    const N = 40;
+    const N = 160;
     const runs: { a: P; b: P }[][] = [[]];
     for (let i = 0; i <= N; i++) {
       const u = m + (S - 2 * m) * (i / N);
-      const vp = Math.max(m, shoreV(u) + beachW + 10);
+      const vp = promV(u);
       // the sand starts under the promenade's outer sidewalk (it slopes down from y = -0.1)
       const a = toWorld(u, vp - 2);
-      const b = toWorld(u, shoreV(u) - 8);
+      const b = toWorld(u, shoreC(u) - 8);
       const wet = river && Math.min(...river.pts.map((q) => dist(q, a))) < river.half + 30;
-      if (wet || vp - shoreV(u) < beachW) { if (runs[runs.length - 1].length) runs.push([]); continue; }
+      if (wet || vp - shoreV(u) < beachW || carve(u) > 0.97) { if (runs[runs.length - 1].length) runs.push([]); continue; }
       runs[runs.length - 1].push({ a, b });
     }
     for (const r of runs) {
@@ -175,6 +209,7 @@ export function makeSite(S: number, style: StyleDef, rnd: Rng, seed: number, wei
   }
   const site: Site = {
     S, style, centre, land, river, sea, shore, beaches, weights, seed,
+    coast: hasCoast ? { toWorld, shoreV: shoreC, promV, m, beachW, features: feat! } : null,
     inWater: (q) => inSea(q) || riverDist(q) < 0,
     waterDist: (q) => Math.min(riverDist(q), shoreDist(q)),
     district: () => 'residential',
@@ -538,8 +573,12 @@ function cleanup(g: Graph, site: Site, keepCuldesacs = false): void {
         const x = s[i], y = s[(i + 1) % s.length];
         if (x === y) continue;
         const a = wrap2pi(g.dirAngle(y, n.id) - g.dirAngle(x, n.id));
-        if (a < 0.56 || (s.length === 2 && a > Math.PI * 2 - 0.56)) {
-          const ex = g.edges[x], ey = g.edges[y];
+        const ex = g.edges[x], ey = g.edges[y];
+        // a local street meeting another road at under ~41° makes a wide asphalt wedge (a
+        // diagonal across the grid): it goes; between main roads only under ~32°
+        const minor = Math.max(ex.pri, ey.pri) >= 5 && n.e.length > 2;
+        const lim = minor ? 0.72 : 0.56;
+        if (a < lim || (s.length === 2 && a > Math.PI * 2 - 0.56)) {
           const weak = ex.pri > ey.pri ? ex : ey.pri > ex.pri ? ey : (dist(g.nodes[ex.a], g.nodes[ex.b]) < dist(g.nodes[ey.a], g.nodes[ey.b]) ? ex : ey);
           if (isPerim(weak.line) || weak.bridge) continue;
           g.removeEdge(weak.id);

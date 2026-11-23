@@ -1,6 +1,8 @@
 // City generator: GPU memory check of chunk streaming (like test:three-memory for games).
-// Drives the preview tool's camera across a city and back several times and reads three.js
-// renderer.info.memory at the same spot after each pass: geometries and textures must not grow.
+// Drives the preview tool's camera across a city and back several times, with the building kit
+// on and the clock running (the kit layer refills, lamps and windows switch with the time), and
+// reads three.js renderer.info.memory at the same spot after each pass: geometries and textures
+// must not grow. Then runs the clock through a whole day: no shader program may be compiled.
 // Then regenerates the city a few times (the old CityView is disposed) and checks the same.
 //
 // The first pass is a warm-up (instanced props first seen on the way upload their mesh once).
@@ -43,9 +45,10 @@ try {
   const result = await page.evaluate(async (passes) => {
     const c = window.__city;
     c.pause();
-    c.generate({ seed: 1, style: 'metropolis', look: 'day' });
+    c.generate({ seed: 1, style: 'coast', look: 'day' });
     c.setMode('street');
     c.setNear(300);
+    c.setSpeed(1.5);
     const p = c.plan();
     const z = p.centre.z, S = p.size;
     const at = async (x) => { c.pose(x, 1.7, z, x + 50, 1.7, z); for (let i = 0; i < 3; i++) c.frame(); };
@@ -57,8 +60,16 @@ try {
       for (let x = S * 0.88; x >= S * 0.12; x -= 40) { await at(x); out.peak = Math.max(out.peak, c.memory().geometries); }
       out.passes.push(await home());
     }
+    // a whole day at one spot: the programs (compiled shaders) stay the same
+    c.setSpeed(0);
+    await at(S * 0.5);
+    const programs = () => c.renderer.info.programs.length;
+    const p0 = programs();
+    const calls = [];
+    for (let h = 0; h < 24; h += 0.5) { c.setTime(h); c.frame(); if (h % 6 === 0) calls.push((await c.measure(1)).calls); }
+    out.day = { programs: [p0, programs()], calls };
     for (let k = 0; k < 3; k++) {
-      c.generate({ seed: 1, style: 'metropolis', look: 'day' });
+      c.generate({ seed: 1, style: 'coast', look: 'day' });
       c.setMode('street');
       out.regen.push(await home());
     }
@@ -69,9 +80,13 @@ try {
   // the first pass is the warm-up: meshes first drawn on the way (props of other districts) upload once
   const passOk = flat(result.passes, 'geometries') && flat(result.passes, 'textures');
   const regenOk = flat(result.regen, 'geometries') && flat(result.regen, 'textures');
-  ok = passOk && regenOk && !errors.length;
+  // night (0 h) may not draw more than noon (12 h); the shadow pass culls a little differently
+  // under the sun and the moon, so the counts need not be equal
+  const dayOk = result.day.programs[0] === result.day.programs[1] && result.day.calls[0] <= result.day.calls[2];
+  ok = passOk && regenOk && dayOk && !errors.length;
   console.log(`streaming  start geometries ${result.start.geometries} textures ${result.start.textures} (chunks ${result.start.chunks})`);
   console.log(`           after each pass  geometries ${row(result.passes, 'geometries')}   textures ${row(result.passes, 'textures')}   (peak ${result.peak})  ${passOk ? 'PASS' : 'FAIL'}`);
+  console.log(`a whole day  shader programs ${result.day.programs.join(' → ')}, GL draw calls at 0, 6, 12, 18 h: ${result.day.calls.join(' ')}  ${dayOk ? 'PASS' : 'FAIL'}`);
   console.log(`regenerate geometries ${row(result.regen, 'geometries')}   textures ${row(result.regen, 'textures')}  ${regenOk ? 'PASS' : 'FAIL'}`);
   if (errors.length) console.log('page errors: ' + errors.join(' | '));
 } finally {

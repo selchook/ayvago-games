@@ -21,6 +21,10 @@ import type { LookId } from './styles';
 export const K = {
   plain: 0, facade: 1, road: 2, asphalt: 3, walk: 4, grass: 5, roof: 6, glow: 7, tiles: 8, water: 9, metal: 10,
   ground: 11, groundFar: 22, paint: 12, awning: 13, concrete: 14, sand: 16, signal: 17, parking: 18, gravel: 19, leaves: 20, glass: 21,
+  /** Wooden deck boards (aK.yz: the deck's direction). */
+  deck: 23,
+  /** Casts shadows only (kit buildings' shadow proxies): never drawn in the main pass. */
+  shadow: 24,
 } as const;
 
 /** Facade styles (packed into aK.w). */
@@ -44,6 +48,15 @@ export interface CityUniforms {
   uLamp: { value: THREE.Color };
   uSunGlow: { value: number };
   uStars: { value: number };
+  /** Where the kit is drawn: kit buildings' far boxes give way within uKitR of uKitFocus. */
+  uKitFocus: { value: THREE.Vector3 };
+  uKitR: { value: number };
+  /** Street lamps and lit windows coming on (0..1), each lamp at its own moment. */
+  uLampOn: { value: number };
+  uMoonDir: { value: THREE.Vector3 };
+  uMoon: { value: number };
+  /** Sunrise and sunset glow round the sun's side of the horizon. */
+  uGlowCol: { value: THREE.Color };
 }
 
 export function makeUniforms(): CityUniforms {
@@ -55,10 +68,16 @@ export function makeUniforms(): CityUniforms {
     uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunCol: { value: new THREE.Color() },
     uWater: { value: new THREE.Color() }, uLamp: { value: new THREE.Color() },
     uSunGlow: { value: 1 }, uStars: { value: 0 },
+    uKitFocus: { value: new THREE.Vector3(1e9, 0, 1e9) }, uKitR: { value: 0 }, uLampOn: { value: 0 },
+    uMoonDir: { value: new THREE.Vector3(0, -1, 0) }, uMoon: { value: 0 }, uGlowCol: { value: new THREE.Color(0) },
   };
 }
 
 export function applyLook(u: CityUniforms, look: Look): void {
+  u.uLampOn.value = Math.min(1, Math.max(0, (look.night - 0.12) / 0.5));
+  u.uMoon.value = look.stars;
+  u.uMoonDir.value.set(-look.sunDir[0], Math.abs(look.sunDir[1]), -look.sunDir[2]).normalize();
+  u.uGlowCol.value.set(0);
   u.uNight.value = look.night;
   u.uNeon.value = look.neon;
   u.uZenith.value.set(look.zenith);
@@ -73,7 +92,7 @@ export function applyLook(u: CityUniforms, look: Look): void {
 
 export const lookOf = (id: LookId): Look => LOOKS[id];
 
-const COMMON = /* glsl */ `
+export const COMMON = /* glsl */ `
 uniform float uTime;
 uniform float uNight;
 uniform float uNeon;
@@ -85,6 +104,7 @@ uniform vec3 uHorizon;
 uniform vec3 uSunDir;
 uniform vec3 uSunCol;
 uniform vec3 uLamp;
+uniform float uLampOn;
 float cityHash(vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.x + p.y) * p.z); }
 float cityNoise(vec2 p) {
   vec2 i = floor(p), f = fract(p);
@@ -111,6 +131,8 @@ attribute vec2 aUv;
 attribute vec2 aC;
 uniform vec3 uFocus;
 uniform float uNearR;
+uniform vec3 uKitFocus;
+uniform float uKitR;
 flat varying vec4 vK;
 varying vec2 vUv2;
 varying vec3 vWp;
@@ -135,7 +157,7 @@ if (kind == 1.0 || kind == 21.0) {
   // facades: windows on a grid of floors and bays
   float floorH = max(vK.y, 2.0);
   float bayW = max(vK.z, 1.0);
-  float code = floor(vK.w + 0.0001);
+  float code = mod(floor(vK.w + 0.0001), 256.0);
   float seed = fract(vK.w);
   float style = mod(code, 8.0);
   float shop = mod(floor(code / 8.0), 2.0);
@@ -265,7 +287,15 @@ if (kind == 1.0 || kind == 21.0) {
 } else if (kind == 6.0) {
   diffuseColor.rgb *= 0.86 + 0.18 * cityNoise(vWp.xz * 1.3);
 } else if (kind == 7.0) {
-  cityEmit += diffuseColor.rgb * (vK.y + vK.z * uNight * uNeon);
+  // instanced lamps light up one by one (vInst.b: their own moment), the rest with the night
+  float on = vInst.b > 0.999 ? uNight * uNeon : step(vInst.b, uLampOn) * uNight * 1.6;
+  cityEmit += diffuseColor.rgb * (vK.y + vK.z * on);
+} else if (kind == 23.0) {
+  // deck boards across the deck, with gaps and a grain
+  float sx = dot(vWp.xz, vK.yz) / 0.24;
+  float board = floor(sx);
+  float gap = cityLine(fract(sx), 0.0, 0.08) * clamp(25.0 / dCam, 0.0, 1.0);
+  diffuseColor.rgb *= (0.88 + 0.2 * cityHash(vec3(board, 3.0, 1.0))) * (1.0 - gap * 0.45) * (0.94 + 0.08 * cityNoise(vec2(dot(vWp.xz, vec2(-vK.z, vK.y)) * 0.8, board)));
 } else if (kind == 8.0) {
   // roof tiles: rows along the slope
   float r = fract(vUv2.y / 0.35);
@@ -323,11 +353,12 @@ if (kind == 1.0 || kind == 21.0) {
 
 /** Night: the light map lights the ground and the lower walls. */
 const FRAG_NIGHT = /* glsl */ `
-if (uNight > 0.01) {
-  vec3 lm = texture2D(uLight, (vWp.xz - uMapRect.xy) / uMapRect.z).rgb;
-  float hf = clamp(1.0 - vWp.y / 11.0, 0.0, 1.0);
+if (uLampOn > 0.001) {
+  vec4 lm = texture2D(uLight, (vWp.xz - uMapRect.xy) / uMapRect.z);
+  // alpha holds the ground's height: walls are lit from their foot up
+  float hf = clamp(1.0 - (vWp.y - lm.a * 64.0) / 11.0, 0.0, 1.0);
   float up = 0.45 + 0.55 * max(gN.y, 0.0);
-  outgoingLight += diffuseColor.rgb * lm * hf * up * uNight * 2.6;
+  outgoingLight += diffuseColor.rgb * lm.rgb * hf * up * uLampOn * 2.6;
 }
 `;
 
@@ -338,7 +369,11 @@ function patchCity(mat: THREE.Material, u: CityUniforms, key: string): void {
       .replace('#include <common>', '#include <common>\n' + VERT_HEAD)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 // far boxes give way to the near chunks round the focus
-if (aC.x + aC.y > 0.5 && distance(aC, uFocus.xz) < uNearR) transformed = vec3(0.0);`)
+// (kit buildings' far boxes, flagged 256 in aK.w, give way to the kit instead)
+float kitF = step(255.5, aK.w);
+if (aC.x + aC.y > 0.5 && distance(aC, mix(uFocus.xz, uKitFocus.xz, kitF)) < mix(uNearR, uKitR, kitF)) transformed = vec3(0.0);
+// shadow proxies only show in the shadow pass (which does not run this shader)
+if (abs(aK.x - 24.0) < 0.5) transformed = vec3(0.0);`)
       .replace('#include <color_vertex>', `#include <color_vertex>
 vK = aK;
 vUv2 = aUv;
@@ -365,7 +400,7 @@ vWp = (modelMatrix * cityWp).xyz;`);
 
 export function cityMaterial(u: CityUniforms): THREE.MeshLambertMaterial {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
-  patchCity(mat, u, 'city-v1');
+  patchCity(mat, u, 'city-v2');
   return mat;
 }
 
@@ -375,11 +410,12 @@ export function waterMaterial(u: CityUniforms): THREE.MeshLambertMaterial {
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u);
     sh.uniforms.uWater = u.uWater;
+    sh.uniforms.uMoonDir = u.uMoonDir; sh.uniforms.uMoon = u.uMoon; sh.uniforms.uGlowCol = u.uGlowCol;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWp;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\n' + COMMON + 'uniform vec3 uWater;\nvarying vec3 vWp;')
+      .replace('#include <common>', '#include <common>\n' + COMMON + 'uniform vec3 uWater;\nuniform vec3 uMoonDir;\nuniform float uMoon;\nuniform vec3 uGlowCol;\nvarying vec3 vWp;')
       .replace('#include <map_fragment>', `#include <map_fragment>
 vec2 p = vWp.xz;
 float t = uTime;
@@ -400,21 +436,27 @@ float fres = pow(1.0 - clamp(dot(n, toCam), 0.0, 1.0), 4.0);
 vec3 refl = reflect(-toCam, n);
 vec3 sky = mix(uHorizon, uZenith, clamp(refl.y * 1.5, 0.0, 1.0));
 diffuseColor.rgb = mix(uWater, sky, 0.15 + 0.6 * fres);
-float spec = pow(max(dot(refl, uSunDir), 0.0), 180.0) * (1.0 - uNight);
-vec3 waterEmit = uSunCol * spec * 3.0 + sky * fres * 0.25;
+float spec = pow(max(dot(refl, uSunDir), 0.0), 420.0) * smoothstep(-0.03, 0.06, uSunDir.y) * k2;
+float mspec = pow(max(dot(refl, normalize(uMoonDir)), 0.0), 220.0) * uMoon * 0.5;
+// the low sun's broad warm path on the sea
+float path = pow(max(dot(refl, uSunDir), 0.0), 12.0) * length(uGlowCol) * 0.35;
+vec3 waterEmit = uSunCol * (spec * 1.8 + path) + vec3(0.75, 0.8, 0.95) * mspec + sky * fres * 0.25;
 // the city's lights shimmer on the water at night
 vec3 lm = texture2D(uLight, (vWp.xz + n.xz * 6.0 - uMapRect.xy) / uMapRect.z).rgb;
-waterEmit += lm * uNight * (0.5 + 0.8 * cityNoise(p * 1.5 + vec2(0.0, t))) * 0.9;`)
+waterEmit += lm * uLampOn * smoothstep(0.35, 0.9, cityNoise(p * vec2(0.6, 2.2) + vec2(0.0, t))) * 0.55;`)
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += waterEmit;');
   };
-  mat.customProgramCacheKey = () => 'city-water-v1';
+  mat.customProgramCacheKey = () => 'city-water-v2';
   return mat;
 }
 
-/** Sky dome: gradient, sun disc and glow, stars at night. */
+/** Sky dome: gradient, sunrise and sunset glow, the sun, the moon and stars. */
 export function skyMaterial(u: CityUniforms): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
-    uniforms: { uZenith: u.uZenith, uHorizon: u.uHorizon, uSunDir: u.uSunDir, uSunCol: u.uSunCol, uSunGlow: u.uSunGlow, uStars: u.uStars, uNight: u.uNight },
+    uniforms: {
+      uZenith: u.uZenith, uHorizon: u.uHorizon, uSunDir: u.uSunDir, uSunCol: u.uSunCol, uSunGlow: u.uSunGlow, uStars: u.uStars, uNight: u.uNight,
+      uMoonDir: u.uMoonDir, uMoon: u.uMoon, uGlowCol: u.uGlowCol, uTime: u.uTime,
+    },
     vertexShader: /* glsl */ `
 varying vec3 vDir;
 void main() {
@@ -423,24 +465,39 @@ void main() {
   gl_Position = p.xyww;
 }`,
     fragmentShader: /* glsl */ `
-uniform vec3 uZenith; uniform vec3 uHorizon; uniform vec3 uSunDir; uniform vec3 uSunCol;
-uniform float uSunGlow; uniform float uStars; uniform float uNight;
+uniform vec3 uZenith; uniform vec3 uHorizon; uniform vec3 uSunDir; uniform vec3 uSunCol; uniform vec3 uMoonDir; uniform vec3 uGlowCol;
+uniform float uSunGlow; uniform float uStars; uniform float uNight; uniform float uMoon; uniform float uTime;
 varying vec3 vDir;
 float h3(vec3 p) { p = fract(p * vec3(0.1031, 0.103, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.x + p.y) * p.z); }
 void main() {
   vec3 d = normalize(vDir);
   float y = max(d.y, 0.0);
   vec3 col = mix(uHorizon, uZenith, pow(y, 0.55));
+  vec3 sd = normalize(uSunDir);
+  // sunrise and sunset: a warm band round the sun's side of the horizon
+  vec2 dh = d.xz / max(length(d.xz), 1e-4), sh = sd.xz / max(length(sd.xz), 1e-4);
+  float side = max(dot(dh, sh), 0.0);
+  float band = exp(-y * 5.5) * (0.35 + 0.65 * pow(side, 2.5));
+  col = mix(col, uGlowCol, clamp(band * length(uGlowCol) * 0.9, 0.0, 0.85));
   // below the horizon: haze
   col = mix(col, uHorizon * 0.9, smoothstep(0.0, -0.08, d.y));
-  float s = max(dot(d, normalize(uSunDir)), 0.0);
-  col += uSunCol * (pow(s, 900.0) * 6.0 + pow(s, 16.0) * 0.35 * uSunGlow + pow(s, 4.0) * 0.12 * uSunGlow);
+  float s = max(dot(d, sd), 0.0);
+  float up = smoothstep(-0.05, 0.02, sd.y);
+  col += uSunCol * (pow(s, 900.0) * 6.0 * up + pow(s, 16.0) * 0.35 * uSunGlow + pow(s, 4.0) * 0.12 * uSunGlow);
+  // the moon: a disc with a soft halo
+  vec3 md = normalize(uMoonDir);
+  float m = dot(d, md);
+  float disc = smoothstep(0.99962, 0.9998, m) * smoothstep(-0.02, 0.05, md.y);
+  col = mix(col, vec3(0.93, 0.93, 0.86), disc * uMoon);
+  col += vec3(0.5, 0.58, 0.78) * pow(max(m, 0.0), 80.0) * 0.18 * uMoon;
   if (uStars > 0.0) {
-    vec3 c = floor(d * 280.0);
-    float st = step(0.9965, h3(c)) * smoothstep(0.05, 0.3, d.y);
-    col += vec3(0.9, 0.92, 1.0) * st * uStars * (0.5 + 0.5 * h3(c + 7.0));
+    vec3 c = floor(d * 300.0);
+    float r = h3(c);
+    float st = step(0.9968, r) * smoothstep(0.04, 0.3, d.y) * (1.0 - disc);
+    float tw = 0.65 + 0.35 * sin(uTime * (1.5 + 3.0 * h3(c + 3.0)) + r * 40.0);
+    col += vec3(0.9, 0.92, 1.0) * st * uStars * (0.45 + 0.55 * h3(c + 7.0)) * tw;
     // the city's glow on the horizon
-    col += vec3(0.35, 0.16, 0.3) * uNight * exp(-y * 9.0) * 0.6;
+    col += vec3(0.35, 0.2, 0.28) * uNight * exp(-y * 9.0) * 0.5;
   }
   gl_FragColor = vec4(col, 1.0);
   #include <colorspace_fragment>
@@ -454,8 +511,9 @@ void main() {
 /** Additive halos round the lamps (billboards; instance colour = tint). */
 export function haloMaterial(u: CityUniforms): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
-    uniforms: { uNight: u.uNight, uLamp: u.uLamp },
+    uniforms: { uNight: u.uNight, uLamp: u.uLamp, uLampOn: u.uLampOn },
     vertexShader: /* glsl */ `
+uniform float uLampOn;
 varying vec2 vQ;
 varying float vFade;
 #ifdef USE_INSTANCING_COLOR
@@ -467,6 +525,10 @@ void main() {
   c.xy += position.xy * size;
   vQ = position.xy;
   vFade = clamp(1.0 - (-c.z - 60.0) / 500.0, 0.0, 1.0);
+  // each lamp comes on at its own moment (a hash of where it stands), with a short warm-up
+  vec2 at = instanceMatrix[3].xz;
+  float th = fract(sin(dot(floor(at * 3.0), vec2(12.9898, 78.233))) * 43758.5453) * 0.95;
+  vFade *= smoothstep(th, th + 0.04, uLampOn);
   #ifdef USE_INSTANCING_COLOR
   vTint = instanceColor;
   #endif
@@ -486,10 +548,43 @@ void main() {
   #ifdef USE_INSTANCING_COLOR
   c *= vTint;
   #endif
-  gl_FragColor = vec4(c * a * uNight * vFade, 1.0);
+  gl_FragColor = vec4(c * a * vFade, 1.0);
 }`,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
+  });
+}
+
+/**
+ * The lighthouse's beams: two crossed quads per beam, turned round the lantern by the shader
+ * (uTime), additive, as strong as the night (aB.x: along the beam 0..1, aB.y: across -1..1).
+ */
+export function beamMaterial(u: CityUniforms): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: { uTime: u.uTime, uNight: u.uNight },
+    vertexShader: /* glsl */ `
+uniform float uTime;
+attribute vec2 aB;
+varying vec2 vB;
+void main() {
+  vB = aB;
+  float a = uTime * 0.7;
+  float c = cos(a), s = sin(a);
+  vec3 p = vec3(position.x * c - position.z * s, position.y, position.x * s + position.z * c);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}`,
+    fragmentShader: /* glsl */ `
+uniform float uNight;
+varying vec2 vB;
+void main() {
+  float k = exp(-vB.y * vB.y * 3.0) * (1.0 - vB.x) * (1.0 - vB.x) * smoothstep(0.0, 0.03, vB.x);
+  gl_FragColor = vec4(vec3(1.0, 0.93, 0.75) * k * 0.55 * smoothstep(0.25, 0.8, uNight), 1.0);
+}`,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+    fog: false,
   });
 }

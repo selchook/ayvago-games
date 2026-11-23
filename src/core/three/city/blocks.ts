@@ -10,7 +10,9 @@ import {
 } from './geom';
 import { type Rng, hash01 } from './rng';
 import type { Site, Network } from './roads';
-import type { Block, Lot, Building, Part, DistrictKind, Ground, BuildingType, FacadeStyle, RoofKind, Wall } from './types';
+import type { Block, Lot, Building, Part, DistrictKind, Ground, BuildingType, FacadeStyle, RoofKind, Wall, KitSpec, ShopKind, KitWall } from './types';
+import type { Terrain } from './terrain';
+import { KIT_FLOOR, KIT_CORNICE, kitDoors } from './kit';
 
 export const WALK: Record<DistrictKind, number> = {
   downtown: 4.6, commercial: 4, residential: 3.4, suburban: 2.8, industrial: 2.6, docks: 2.6, park: 3.2,
@@ -233,7 +235,7 @@ const AWNING_COLOURS = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x7d3c98, 0x1f61
 
 export interface BuildOut { buildings: Building[]; walls: Wall[] }
 
-export function makeBuildings(lots: Lot[], blocks: Block[], net: Network, site: Site, rnd: Rng, heightMul: number): BuildOut {
+export function makeBuildings(lots: Lot[], blocks: Block[], net: Network, site: Site, rnd: Rng, heightMul: number, terrain: Terrain, mainStreet: number): BuildOut {
   const buildings: Building[] = [];
   const walls: Wall[] = [];
   const R = site.S * site.style.downtown;
@@ -435,14 +437,30 @@ export function makeBuildings(lots: Lot[], blocks: Block[], net: Network, site: 
         parts.push({ kind: 'mass', obb: fp, y0: 0, y1: H, color: colour, roof: 'flat', facade: 'punched', shop: true });
       }
     }
+    // the building kit: snap the main mass to its grid and dress it from the kit
+    let kit: KitSpec | null = null;
+    const onMain = lot.edge === mainStreet;
+    if (KIT_TYPES.has(type) && (onMain || wantKit(site, dk, type, h3)) && floors <= 8) {
+      const k = kitify(parts, type, dk, site, blocks[lot.block], hs, h2, h3, onMain);
+      if (k) {
+        kit = k.spec; floors = k.floors; floorH = KIT_FLOOR; H = floors * KIT_FLOOR + KIT_CORNICE;
+        parts.length = 0; parts.push(...k.parts);
+        if (roofAccess) roofAccess = { door: frontDoor(parts[0].obb, 0.35), roof: obbPoint(parts[0].obb, -parts[0].obb.hw * 0.3, 0), y: H };
+      }
+    }
     const main = parts[0].obb;
     const id = buildings.length;
     const door = frontDoor(main, type === 'house' ? (h2 < 0.5 ? 0.25 : -0.25) : 0);
-    buildings.push({
+    const y = round3(terrain.h(door.x, door.z) + 0.15);
+    const shop = parts.some((q) => q.shop) && type !== 'gas' ? shopKind(site, hash01(site.seed, lot.id, 77), onMain) : null;
+    const bld: Building = {
       id, lot: lot.id, block: lot.block, type, district: dk, obb: main, h: H, floors, floorH, parts,
       door: { x: door.x, z: door.z, h: headingOf(mul(unitV(main), -1)) },
-      roofAccess, landmark, lit, seed: hs,
-    });
+      roofAccess, landmark, lit, seed: hs, y, kit, doors: [], shop,
+    };
+    bld.doors = kit ? kitDoors(bld) : [{ x: door.x, y, z: door.z, h: bld.door.h, kind: shop ? 'shop' : 'main' }];
+    if (kit) { const d0 = bld.doors[0]; bld.door = { x: d0.x, z: d0.z, h: d0.h }; }
+    buildings.push(bld);
     lot.building = id;
   }
   // the tallest tower is the city's landmark
@@ -457,6 +475,146 @@ export function makeBuildings(lots: Lot[], blocks: Block[], net: Network, site: 
   }
   void blocks; void cleanPoly;
   return { buildings, walls };
+}
+
+const round3 = (v: number): number => Math.round(v * 1000) / 1000;
+
+// ------------------------------------------------------------------ the building kit
+
+const KIT_TYPES = new Set<BuildingType>(['office', 'midrise', 'shop', 'apartment', 'rowhouse']);
+
+/** Does this building come from the kit? Everywhere it fits the district's look. */
+function wantKit(site: Site, dk: DistrictKind, type: BuildingType, h: number): boolean {
+  const st = site.style.id;
+  if (dk === 'downtown' || dk === 'commercial') return st === 'suburbia' ? h < 0.5 : true;
+  if (dk === 'residential') return st === 'coast' || st === 'industrial' ? true : h < 0.7;
+  if (dk === 'suburban') return type === 'shop' && h < 0.6;
+  return false;
+}
+
+const COAST_RENDER = [0xf6f1e7, 0xf3e3c8, 0xeed2b8, 0xdfe9e6, 0xf0d9c8, 0xf7ecd2, 0xe3eef2, 0xf4e6d4, 0xe9d3b0, 0xd7e4d1];
+const COAST_TRIM = [0xffffff, 0xf3ece0, 0xe9e1d2, 0xd9e4ea];
+const BRICK_TINT = [0xffffff, 0xf0dccf, 0xe2c3b0, 0xfff2e8, 0xd6b8a8];
+const CITY_TRIM = [0xf1e8d6, 0xe8dcc2, 0x9aa39a, 0x5f6b5d, 0x3e4a52];
+const RENDER = [0xd9cdb8, 0xc9b8a0, 0xe2d6c2, 0xb8b0a4, 0xcfc3ad];
+
+const SHOPS_COAST: ShopKind[] = ['cafe', 'icecream', 'surf', 'restaurant', 'boutique', 'bakery', 'cafe', 'restaurant', 'grocery', 'pharmacy', 'books', 'bikes'];
+const SHOPS: ShopKind[] = ['cafe', 'bakery', 'grocery', 'pharmacy', 'books', 'boutique', 'restaurant', 'bank', 'hardware', 'cafe', 'icecream', 'bikes'];
+function shopKind(site: Site, h: number, main: boolean): ShopKind {
+  const list = site.style.id === 'coast' ? SHOPS_COAST : SHOPS;
+  if (main && h < 0.3) return 'cafe';
+  return list[Math.floor(h * list.length) % list.length];
+}
+
+/**
+ * Turns a building's parts into a kit building: the main mass snapped to the 2 m grid (the front
+ * stays on the street, the depth shrinks to whole bays), floors of 3 m, the facade chosen by
+ * style and district, doors on the front, shop awnings and blade signs, balconies or fire
+ * escapes on apartments. Null when the footprint is too small.
+ */
+function kitify(parts: Part[], type: BuildingType, dk: DistrictKind, site: Site, block: Block, hs: number, h2: number, h3: number, main: boolean):
+  { spec: KitSpec; parts: Part[]; floors: number } | null {
+  const fp0 = parts[0].obb;
+  const W = Math.floor((fp0.hw * 2) / 2) * 2, D = Math.min(Math.floor((fp0.hd * 2) / 2) * 2, 24);
+  if (W < 6 || D < 6) return null;
+  const front = obbPoint(fp0, 0, -fp0.hd);
+  const fp: OBB = { x: front.x - fp0.uz * (D / 2), z: front.z + fp0.ux * (D / 2), hw: W / 2, hd: D / 2, ux: fp0.ux, uz: fp0.uz };
+  const coast = site.style.id === 'coast';
+  const masses = parts.filter((q) => q.kind === 'mass');
+  const top = Math.max(...masses.map((q) => q.y1));
+  let floors = Math.max(1, Math.min(8, Math.round(top / KIT_FLOOR)));
+  if (type === 'shop') floors = Math.min(floors, 2);
+  const shops = type === 'shop' || main || (type !== 'apartment' && type !== 'rowhouse') || parts[0].shop === true;
+  if (main) floors = Math.max(2, Math.min(floors, 4));
+  // the wall: render on the coast, brick elsewhere, some stone and metal
+  let wall: KitWall;
+  if (coast) wall = dk === 'downtown' && hs < 0.3 ? 'stone' : 'stucco';
+  else if (site.style.id === 'suburbia') wall = hs < 0.5 ? 'brick' : 'stucco';
+  else wall = hs < 0.55 ? 'brick' : hs < 0.8 ? 'stone' : dk === 'residential' ? 'stucco' : 'metal';
+  const pick = <T>(list: readonly T[], h: number): T => list[Math.floor(h * list.length) % list.length];
+  const wallColor = wall === 'stucco' ? pick(coast ? COAST_RENDER : RENDER, h3) : wall === 'brick' ? pick(BRICK_TINT, h3) : wall === 'stone' ? pick([0xffffff, 0xf2ede4, 0xe6ddd0], h3) : pick([0x9aa3ad, 0x7b858f, 0xb7bcc2], h3);
+  const trimColor = coast ? pick(COAST_TRIM, h2) : pick(CITY_TRIM, h2);
+  const window: KitSpec['window'] = wall === 'stone' ? 'stone' : wall === 'metal' ? 'metal'
+    : coast ? pick(['trim', 'trim', 'square', 'arch'] as const, h2) : pick(['square', 'trim', 'double', 'arch', 'square'] as const, h2);
+  const W2 = W / 2;
+  const doors: number[] = [];
+  if (shops) {
+    // a door every few bays, the shopfronts between
+    const step = W2 > 9 ? 4 : 3;
+    for (let b = 1 + Math.floor(h3 * 2) % 2; b < W2 - 1; b += step) doors.push(b);
+    if (!doors.length) doors.push(Math.floor(W2 / 2));
+  } else doors.push(Math.floor(W2 / 2));
+  // sides facing another street (corner lots)
+  let street = 1;
+  const inner = block.inner ?? block.curb;
+  const c = obbCorners(fp);
+  for (let i = 1; i < 4; i++) {
+    const a = c[(i + 1) % 4], e = c[i];
+    const mid = { x: (a.x + e.x) / 2, z: (a.z + e.z) / 2 };
+    for (let j = 0; j < inner.length; j++) {
+      if ((block.innerEdge[j] ?? -1) < 0) continue;
+      const d = segDistP(mid, inner[j], inner[(j + 1) % inner.length]);
+      if (d < 3.2) { street |= 1 << i; break; }
+    }
+  }
+  const spec: KitSpec = {
+    wall, wallColor, trimColor, window,
+    ground: shops ? (wall === 'stone' || (coast && h2 > 0.6) ? 'stoneshop' : 'shop') : 'plain',
+    top: wall === 'metal' ? 'metal' : wall === 'stone' || (coast && h3 > 0.45) ? 'trim' : 'brick',
+    rhythm: wall === 'metal' ? 0 : Math.floor(hs * 7) % 3,
+    corners: wall !== 'metal' && (h3 * 7) % 1 < (coast ? 0.45 : 0.6),
+    band: shops && wall !== 'metal' && h2 < 0.6,
+    street, doors,
+  };
+  const facade: FacadeStyle = wall === 'brick' ? 'brick' : wall === 'metal' ? 'ribbon' : 'punched';
+  const H = floors * KIT_FLOOR;
+  const out: Part[] = [{ kind: 'mass', obb: fp, y0: 0, y1: H, color: kitFarColour(spec), roof: 'flat', facade, shop: shops, n: floors }];
+  if (shops) {
+    // awnings over the shopfronts between the doors, a blade sign by each door
+    const awn = AWNING_COLOURS;
+    let run0 = 1;
+    const bays = [...doors, W2 - 1];
+    for (const d of bays) {
+      const r = hash01(Math.floor(hs * 1e6), d);
+      if (d - run0 >= 1 && r < (main || coast ? 0.85 : 0.6)) {
+        out.push({ kind: 'awning', obb: sub2(fp, -fp.hw + run0 * 2 + 0.1, -fp.hw + d * 2 - 0.1, -fp.hd - 1.5, -fp.hd), y0: 2.55, y1: 3.15, color: pick(awn, r), color2: 0xf4f1ea });
+      }
+      if (d < W2 - 1 && floors > 1) {
+        const u = -fp.hw + d * 2 + (r < 0.5 ? 0 : 2);
+        out.push({ kind: 'sign', obb: sub2(fp, u - 0.05, u + 0.05, -fp.hd - 1.0, -fp.hd - 0.15), y0: 3.25, y1: 4.05, color: pick(SIGN_COLOURS, hash01(r * 1e6, 5)) });
+      }
+      run0 = d + 1;
+    }
+  }
+  if ((type === 'apartment' || type === 'rowhouse') && floors >= 2) {
+    if (wall === 'stucco' && h2 > 0.35) out.push({ kind: 'balconies', obb: fp, y0: KIT_FLOOR, y1: H - 0.5, color: tint(wallColor, 0.85), n: floors - 1, color2: coast ? 0xf2f2ee : 0x30343a });
+    else if (wall === 'brick' && floors >= 3 && hs < 0.5) {
+      const side = h3 < 0.5 ? -1 : 1;
+      const fe = sub2(fp, side * fp.hw * 0.5 - 2.2, side * fp.hw * 0.5 + 2.2, -fp.hd - 1.3, -fp.hd);
+      out.push({ kind: 'fireescape', obb: fe, y0: KIT_FLOOR, y1: H - 0.4, color: 0x2a2d31, n: floors - 1 });
+    }
+    if (wall === 'brick' && h3 > 0.55) out.push({ kind: 'tank', obb: { ...obbOff(fp, 0.5 - h2, 0.3), hw: 1.6, hd: 1.6 }, y0: H + KIT_CORNICE * 0.2, y1: H + 5.5, color: 0x6b5440 });
+  }
+  return { spec, parts: out, floors };
+}
+
+/** The colour the far box of a kit building is drawn in (close to its kit facade from afar). */
+export function kitFarColour(k: KitSpec): number {
+  if (k.wall === 'brick') return mulColour(0xa0614a, k.wallColor);
+  if (k.wall === 'stone') return mulColour(0xd8cdb6, k.wallColor);
+  return k.wallColor;
+}
+
+function mulColour(a: number, b: number): number {
+  const ch = (s: number) => Math.round(((a >> s) & 255) * ((b >> s) & 255) / 255);
+  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+}
+
+function segDistP(q: P, a: P, b: P): number {
+  const dx = b.x - a.x, dz = b.z - a.z;
+  const L2 = dx * dx + dz * dz || 1;
+  const t = clamp(((q.x - a.x) * dx + (q.z - a.z) * dz) / L2, 0, 1);
+  return Math.hypot(q.x - a.x - dx * t, q.z - a.z - dz * t);
 }
 
 /** The +v axis of a box (inwards from the street for lots). */

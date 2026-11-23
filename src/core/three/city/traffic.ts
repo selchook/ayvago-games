@@ -5,7 +5,7 @@
 import { type P, p, add, sub, mul, dot, cross, dist, unit, nrm, angleOf, fromAngle, offsetPolyline, polylineLength, alongPolyline, insetPoly, clamp } from './geom';
 import type { Network } from './roads';
 import { LANE_W } from './roads';
-import type { Block, Lane, Connector, Signal, Turn, RoadEdge, RoadNode } from './types';
+import type { Block, Lane, Connector, Signal, Turn, RoadEdge, RoadNode, Deck } from './types';
 
 const SPEED = { boulevard: 16, avenue: 14, street: 11, alley: 6 };
 
@@ -175,15 +175,21 @@ export function signalState(node: RoadNode, group: number, t: number): 'green' |
 }
 
 /** The pedestrian graph: a ring along each block's sidewalk, crossings at the junctions. */
-export function makeWalk(net: Network, blocks: Block[]): { pts: P[]; edges: [number, number, 0 | 1][] } {
+export function makeWalk(net: Network, blocks: Block[], decks: Deck[] = []): { pts: P[]; edges: [number, number, 0 | 1][] } {
   const pts: P[] = [];
   const edges: [number, number, 0 | 1][] = [];
   const rings = new Map<number, number[]>();
+  const islands: Block[] = [];
   for (const b of blocks) {
-    if (b.kind === 'outer' || b.kind === 'void') continue;
-    // leftover islands between tangled roads have no crossings: no ring
-    if (b.curbEdge.every((e) => e < 0)) continue;
-    const ring = insetPoly(b.curb, b.walk / 2);
+    if (b.kind === 'void') continue;
+    // the city's edge: the outer sidewalk (on the coast, the promenade along the sea wall)
+    let ring: P[] | null;
+    if (b.kind === 'outer') ring = outward([...b.curb].reverse(), 1.75);
+    else {
+      // leftover islands between tangled roads: a ring when they are big enough to walk round
+      if (b.curbEdge.every((e) => e < 0)) { if (b.area < 350) continue; islands.push(b); }
+      ring = insetPoly(b.curb, b.walk / 2);
+    }
     if (!ring) continue;
     // decimate to ~6 m steps
     const ids: number[] = [];
@@ -222,5 +228,63 @@ export function makeWalk(net: Network, blocks: Block[]): { pts: P[]; edges: [num
       }
     }
   }
+  // islands: crossings to the nearest sidewalks round them (their kerbs face no known road)
+  if (islands.length) {
+    // walk points on a grid, tagged with their block
+    const owner = new Int32Array(pts.length).fill(-1);
+    for (const [blk, ids] of rings) for (const i of ids) owner[i] = blk;
+    const grid = new Map<number, number[]>();
+    const gk = (x: number, z: number) => Math.floor(x / 22) * 100003 + Math.floor(z / 22);
+    pts.forEach((q, i) => { const k = gk(q.x, q.z); let l = grid.get(k); if (!l) grid.set(k, (l = [])); l.push(i); });
+    for (const b of islands) {
+      const mine = rings.get(b.id);
+      if (!mine) continue;
+      const links = new Map<number, [number, number, number]>();
+      for (const i of mine) {
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          for (const j of grid.get(gk(pts[i].x + dx * 22, pts[i].z + dz * 22)) ?? []) {
+            const other = owner[j];
+            if (other < 0 || other === b.id) continue;
+            const d = dist(pts[i], pts[j]);
+            if (d > 22) continue;
+            const cur = links.get(other);
+            if (!cur || d < cur[2]) links.set(other, [i, j, d]);
+          }
+        }
+      }
+      for (const [i, j] of links.values()) edges.push([i, j, 1]);
+    }
+  }
+  // decks: a path from the promenade out to the end
+  const outer = blocks.find((b) => b.kind === 'outer');
+  for (const d of decks) {
+    const n = Math.max(1, Math.round(dist(d.a, d.b) / 8));
+    let prev = -1;
+    for (let k = 0; k <= n; k++) {
+      const q = p(Math.round((d.a.x + (d.b.x - d.a.x) * (k / n)) * 100) / 100, Math.round((d.a.z + (d.b.z - d.a.z) * (k / n)) * 100) / 100);
+      const id = pts.length;
+      pts.push(q);
+      if (prev >= 0) edges.push([prev, id, 0]);
+      else if (outer) { const j = nearest(outer.id, q); if (j >= 0) edges.push([j, id, 0]); }
+      prev = id;
+    }
+  }
   return { pts, edges };
+}
+
+/** Outward mitred offset of a positive-area polygon. */
+function outward(poly: P[], d: number): P[] {
+  const n = poly.length;
+  const out: P[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = poly[(i - 1 + n) % n], b = poly[i], c = poly[(i + 1) % n];
+    const l1 = Math.hypot(b.x - a.x, b.z - a.z) || 1, l2 = Math.hypot(c.x - b.x, c.z - b.z) || 1;
+    const n1x = (b.z - a.z) / l1, n1z = -(b.x - a.x) / l1, n2x = (c.z - b.z) / l2, n2z = -(c.x - b.x) / l2;
+    let mx = n1x + n2x, mz = n1z + n2z;
+    const ml = Math.hypot(mx, mz) || 1;
+    mx /= ml; mz /= ml;
+    const cos = Math.max(0.35, mx * n1x + mz * n1z);
+    out.push(p(b.x + (mx * d) / cos, b.z + (mz * d) / cos));
+  }
+  return out;
 }
