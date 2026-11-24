@@ -1,0 +1,106 @@
+# Quaternius Ultimate Modular Ruins Pack (CC0 1.0): what public/assets/quaternius/ultimate-modular-ruins-pack holds
+# (games/relic-ruins/import-pack.mjs). ruins.glb: one root node per model below, in metres (a wall is one
+# 2 m cell of the pack's grid), all drawn with one vertex-coloured material 'lit' (318 KB). Each entry: id,
+# bounding box (x × y × z), its lowest corner, triangles after simplifying, the source file and, for models
+# with parts the game moves, each part node with its pivot (door leaves on their hinges, chest lids, flames).
+wall 2.00x2.00x0.29 min(-1.00,-0.00,-0.25) 344 tris (Wall.fbx)
+wall-broken 1.99x1.95x0.29 min(-0.99,0.01,-0.26) 248 tris (Wall_Broken.fbx)
+wall-overgrown 1.99x1.98x0.30 min(-0.99,0.01,-0.26) 394 tris (Wall_Overgrown.fbx)
+wall-hole 2.00x2.00x0.29 min(-1.00,0.03,-0.25) 254 tris (Wall_Hole.fbx)
+wall-bars 1.99x1.99x0.30 min(-0.99,0.00,-0.27) 377 tris (Window_Bars.fbx)
+arch 4.00x3.99x0.31 min(-2.00,0.00,-0.25) 534 tris (Wall_ArchRound.fbx)
+arch-gothic 4.00x3.99x0.29 min(-2.00,0.00,-0.25) 518 tris (Wall_ArchGothic.fbx)
+arch-overgrown 4.00x3.99x0.32 min(-2.00,0.00,-0.26) 672 tris (Wall_ArchRound_Overgrown.fbx)
+doors 2.31x2.97x0.27 min(-1.16,-0.01,-0.14) 872 tris (Doors_RoundArch.fbx)
+  left at (-1.16,-0.01,-0.00) 436 tris
+  right at (1.16,-0.01,0.00) 436 tris
+doors-gothic 2.31x3.21x0.27 min(-1.16,-0.01,-0.14) 872 tris (Doors_GothicArch.fbx)
+  left at (-1.16,-0.01,-0.00) 436 tris
+  right at (1.16,-0.01,0.00) 436 tris
+sealed 2.52x2.97x0.28 min(-1.27,-0.01,-0.14) 838 tris (Doors_RoundArch_Covered.fbx)
+column 0.66x3.99x0.66 min(-0.33,-0.00,-0.33) 130 tris (Column_Square.fbx)
+column-short 0.49x1.83x0.49 min(-0.24,-0.00,-0.24) 252 tris (Column_Round_Short.fbx)
+floor-squares 1.99x0.12x2.00 min(-0.99,-0.08,-1.00) 160 tris (Floor_Squares.fbx)
+floor-diamond 2.00x0.12x2.00 min(-1.00,-0.10,-1.00) 160 tris (Floor_Diamond.fbx)
+floor-large 1.98x0.11x1.98 min(-0.99,-0.08,-0.99) 118 tris (Floor_SquareLarge.fbx)
+floor-tree 1.99x0.15x2.00 min(-0.99,-0.08,-1.00) 170 tris (Floor_Tree.fbx)
+stairs 2.02x0.92x2.15 min(-1.00,-0.02,-1.08) 677 tris (Stairs.fbx)
+bridge 2.58x0.44x2.23 min(-1.31,-0.11,-1.50) 566 tris (BridgeSection.fbx)
+rail 0.36x0.49x2.00 min(-0.17,-0.00,-1.00) 170 tris (Rail_Straight.fbx)
+trapdoor 1.74x0.22x1.57 min(-0.87,-0.01,-0.79) 354 tris (Trapdoor.fbx)
+beartrap-open 1.20x0.27x1.42 min(-0.60,-0.02,-0.59) 304 tris (BearTrap_Open.fbx)
+beartrap-closed 1.13x0.68x1.42 min(-0.56,-0.02,-0.59) 304 tris (BearTrap_Closed.fbx)
+relic 1.18x0.91x0.82 min(-0.59,-0.00,-0.39) 2421 tris (Chest_Gold.fbx)
+  base at (0.00,0.00,0.00) 2163 tris
+  lid at (-0.00,0.54,-0.39) 258 tris
+crate 0.82x0.82x0.82 min(-0.41,-0.01,-0.41) 440 tris (Crate.fbx)
+barrel 0.83x1.07x0.82 min(-0.42,0.00,-0.41) 492 tris (Barrel.fbx)
+pot 0.77x0.96x0.77 min(-0.38,-0.01,-0.38) 382 tris (Pot1.fbx)
+pot-small 0.46x0.64x0.46 min(-0.23,-0.00,-0.23) 386 tris (Pot2.fbx)
+pot-broken 0.77x0.66x0.77 min(-0.38,-0.01,-0.38) 258 tris (Pot1_Broken.fbx)
+bookcase 2.08x2.65x0.66 min(-1.04,-0.02,-0.35) 1008 tris (Bookcase_Full.fbx)
+cart 3.31x1.38x2.83 min(-1.38,-0.08,-1.80) 716 tris (Cart.fbx)
+candles 0.88x0.61x0.84 min(-0.38,-0.00,-0.48) 368 tris (Candles_1.fbx)
+  body at (0.00,0.00,0.00) 306 tris
+  flame at (0.00,0.00,0.00) 62 tris
+torch 0.28x1.17x0.44 min(-0.14,-0.27,-0.29) 386 tris (Torch.fbx)
+  body at (0.00,0.00,0.00) 344 tris
+  flame at (0.00,0.00,0.00) 42 tris
+banner 0.92x2.02x0.32 min(-0.46,-0.03,-0.11) 204 tris (Flag_Wall.fbx)
+fox 1.35x3.75x1.68 min(-0.60,-0.00,-0.90) 751 tris (Statue_Fox.fbx)
+stag 2.31x4.63x1.27 min(-1.71,-0.00,-0.60) 1010 tris (Statue_Stag.fbx)
+skull 0.44x0.46x0.60 min(-0.22,-0.01,-0.31) 254 tris (Skull.fbx)
+brick 0.53x0.32x0.28 min(-0.25,-0.00,-0.16) 76 tris (Brick.fbx)
+bricks 1.82x0.55x1.61 min(-1.08,-0.00,-0.79) 248 tris (Bricks.fbx)
+bush 1.25x0.71x1.25 min(-0.66,-0.30,-0.66) 312 tris (Bush_Round.fbx)
+grass 0.37x1.01x0.33 min(-0.20,-0.02,-0.16) 192 tris (Grass.fbx)
+dead-tree 1.22x2.59x0.76 min(-0.95,0.01,-0.22) 444 tris (DeadTree_1.fbx)
+tree 2.07x2.77x2.07 min(-1.17,0.01,-1.04) 482 tris (Tree_1.fbx)
+hero.glb 225KB 3408 tris, 285.6 units tall as exported (Character_Animated.fbx: the pack's rogue; the hair hangs off the Head bone)
+  clips: Roll:1.00 Idle:3.13 Dagger_Attack2:1.25 Punch:0.75 RecieveHit:0.63 Walk:1.25 Dagger_Attack:0.75 Run:0.88 PickUp:1.25 Death:1.17
+
+# The FBX files the import reads (the pack as shared by the owner on Google Drive; not in the repository):
+FBX/Barrel.fbx 47836 bytes
+FBX/BearTrap_Closed.fbx 27804 bytes
+FBX/BearTrap_Open.fbx 26332 bytes
+FBX/Bookcase_Full.fbx 79036 bytes
+FBX/Brick.fbx 16940 bytes
+FBX/Bricks.fbx 21388 bytes
+FBX/BridgeSection.fbx 60332 bytes
+FBX/Bush_Round.fbx 23276 bytes
+FBX/Candles_1.fbx 35324 bytes
+FBX/Cart.fbx 50988 bytes
+FBX/Character_Animated.fbx 4255116 bytes
+FBX/Chest_Gold.fbx 423772 bytes
+FBX/Column_Round_Short.fbx 25756 bytes
+FBX/Column_Square.fbx 28732 bytes
+FBX/Crate.fbx 32220 bytes
+FBX/DeadTree_1.fbx 29468 bytes
+FBX/Doors_GothicArch.fbx 58668 bytes
+FBX/Doors_RoundArch.fbx 58636 bytes
+FBX/Doors_RoundArch_Covered.fbx 52220 bytes
+FBX/Flag_Wall.fbx 19164 bytes
+FBX/Floor_Diamond.fbx 22892 bytes
+FBX/Floor_SquareLarge.fbx 16892 bytes
+FBX/Floor_Squares.fbx 23724 bytes
+FBX/Floor_Tree.fbx 24300 bytes
+FBX/Grass.fbx 18748 bytes
+FBX/Pot1.fbx 38060 bytes
+FBX/Pot1_Broken.fbx 25596 bytes
+FBX/Pot2.fbx 34732 bytes
+FBX/Rail_Straight.fbx 21148 bytes
+FBX/Skull.fbx 26572 bytes
+FBX/Stairs.fbx 56764 bytes
+FBX/Statue_Fox.fbx 67420 bytes
+FBX/Statue_Stag.fbx 118172 bytes
+FBX/Torch.fbx 23900 bytes
+FBX/Trapdoor.fbx 27004 bytes
+FBX/Tree_1.fbx 40060 bytes
+FBX/Wall.fbx 36684 bytes
+FBX/Wall_ArchGothic.fbx 53580 bytes
+FBX/Wall_ArchRound.fbx 53100 bytes
+FBX/Wall_ArchRound_Overgrown.fbx 56876 bytes
+FBX/Wall_Broken.fbx 30748 bytes
+FBX/Wall_Hole.fbx 30284 bytes
+FBX/Wall_Overgrown.fbx 47852 bytes
+FBX/Window_Bars.fbx 36204 bytes
