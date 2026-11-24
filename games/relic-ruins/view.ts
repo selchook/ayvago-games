@@ -710,9 +710,9 @@ export class View {
           const g = geo('candles#flame');
           void g;
           const pop = Math.min(1, t.a * 5);
-          const k = flame?.put(x, h + 0.62 * 1.25, z, 0, 0, 0, new THREE.Vector3(0.9 * pop, (0.4 + left * 0.8) * flick(fi) * pop, 0.9 * pop)) ?? -1;
+          const k = flame?.put(x, h + 0.62 * 1.25, z, 0, 0, 0, new THREE.Vector3(0.55 * pop, (0.3 + left * 0.5) * flick(fi) * pop, 0.55 * pop)) ?? -1;
           flame?.color(k, left < 0.3 && Math.floor(this.time * 6) % 2 ? 0xff5030 : 0xffc060);
-          if (glow) { tm.compose(tv.set(x, h + 0.9, z), camQ, ts.setScalar(1.8 * flick(fi) * pop)); const gi = glow.putM(tm); glow.color(gi, 0xffb050); }
+          if (glow) { tm.compose(tv.set(x, h + 0.95, z), camQ, ts.setScalar(1.3 * flick(fi) * pop)); const gi = glow.putM(tm); glow.color(gi, 0xffb050); }
           break;
         }
         case 'lever': handle?.put(x, h + 0.46, z, t.on ? 0.7 : -0.7, 0, 0, 1); break;
@@ -769,11 +769,15 @@ export class View {
       const bob = p.vy !== 0 ? 0 : 0.45 + Math.sin(this.time * 3 + p.id) * 0.1;
       const y = p.y + bob;
       if (p.kind === 'coin') pk.get('coin')?.put(p.x, y, p.z, 0, this.time * 3 + p.id, 0, 0.5);
-      else if (p.kind === 'gem') { const g = pk.get('gem'); const i = g?.put(p.x, y + 0.1, p.z, 0, this.time * 2 + p.id, 0, 0.55) ?? -1; g?.color(i, 0x6af0ff); }
+      else if (p.kind === 'gem') {
+        const g = pk.get('gem'); const i = g?.put(p.x, y + 0.1, p.z, 0, this.time * 2 + p.id, 0, 0.55) ?? -1; g?.color(i, 0x6af0ff);
+        if (Math.random() < dt * 1.5) this.fx.spawn(p.x + (Math.random() - 0.5) * 0.5, y + 0.2 + Math.random() * 0.4, p.z + (Math.random() - 0.5) * 0.5, 0, 0.3, 0, 0.06, 0.5, 0xffffff);
+      }
       else if (p.kind === 'key') pk.get('key')?.put(p.x, y + 0.1, p.z, 0.3, this.time * 2, 0, 0.6);
       else if (p.kind === 'power') {
         pk.get('p-' + p.power)?.put(p.x, y + 0.15, p.z, 0, this.time * 1.6 + p.id, 0, 0.6);
         const o = pk.get('orb'); const i = o?.put(p.x, y + 0.2, p.z, 0, 0, 0, 0.62 + Math.sin(this.time * 4) * 0.04) ?? -1; o?.color(i, POWER_COLOR[p.power!]);
+        if (Math.random() < dt * 2) this.fx.spawn(p.x + (Math.random() - 0.5) * 0.8, y + Math.random() * 0.6, p.z + (Math.random() - 0.5) * 0.8, 0, 0.5, 0, 0.05, 0.6, POWER_COLOR[p.power!]);
       }
     }
     for (const x of pk.values()) x?.end();
@@ -875,6 +879,8 @@ export class View {
       tz = cellZ(L.relic[1]) + (h.z - cellZ(L.relic[1])) * e;
       dist = CAM.dist * (1.35 - 0.35 * e);
     }
+    const fog = this.world.scene.fog as THREE.Fog;
+    fog.near = dist + 3; fog.far = dist * 2 + 22;
     const ease = mode === 'follow' ? Math.min(1, dt * 5.5) : mode === 'intro' ? 1 : Math.min(1, dt * 2);
     c.x += (tx - c.x) * ease; c.y += (ty - c.y) * ease; c.z += (tz - c.z) * ease;
     c.shake = Math.max(0, c.shake - dt * 2.2);

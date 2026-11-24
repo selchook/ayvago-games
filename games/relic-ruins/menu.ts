@@ -113,8 +113,8 @@ export function paintCard(c: CanvasRenderingContext2D, w: number, h: number): vo
   g.addColorStop(0, 'rgba(255,250,235,0.35)'); g.addColorStop(1, 'rgba(90,50,10,0.18)');
   c.fillStyle = g; c.fillRect(0, 0, w, h);
   c.restore();
-  frieze(c, 12, 12, w - 24, 14);
-  frieze(c, 12, h - 24, w - 24, 12);
+  frieze(c, 12, 11, w - 24, 7);
+  frieze(c, 12, h - 22, w - 24, 10);
   c.lineWidth = 3; c.strokeStyle = INK; c.beginPath(); c.roundRect(1.5, 7.5, w - 3, h - 9, 11); c.stroke();
   ivy(c, w - 8, 14, Math.min(150, h * 0.4), 1.9, w + h, 0.9);
 }

@@ -219,7 +219,7 @@ export class PlayScene extends ArcadeScene {
     if (this.phase === 'intro' && this.phaseT >= INTRO_TIME) this.go();
     if (this.hitStop > 0) this.hitStop -= dt;
     else if (this.phase !== 'map' && this.phase !== 'shop') {
-      this.acc += Math.min(dt, 0.1);
+      this.acc += Math.min(dt, 0.1 * this.testSpeed);
       let first = true;
       while (this.acc >= DT) {
         this.acc -= DT;
@@ -296,7 +296,7 @@ export class PlayScene extends ArcadeScene {
     for (const e of evs) {
       switch (e.e) {
         case 'step': this.sfx('step', { volume: 0.16 }); break;
-        case 'roll': this.sfx('roll', { volume: 0.45 }); fx.dust(e.x, h.y, e.z, 6, 0x9a8a72, 2); break;
+        case 'roll': this.sfx('roll', { volume: 0.45 }); fx.dust(e.x, h.y, e.z, 6, 0x9a8a72, 2); this.view.squashOnce(); break;
         case 'pickup': this.pickup(e.p); break;
         case 'hurt':
           if (e.by !== 'fall' && e.by !== 'dark') {
@@ -309,7 +309,7 @@ export class PlayScene extends ArcadeScene {
           }
           break;
         case 'fall': this.sfx('fall', { volume: 0.55 }); this.toast('fell'); this.view.shake(0.4); break;
-        case 'respawn': this.sfx('respawn', { volume: 0.45 }); this.view.snap(s); fx.sparks(e.x, h.y + 0.6, e.z, 18, [0xffd070, 0xffffff], 3, 3, 0.07); this.bot?.reset(); break;
+        case 'respawn': this.sfx('respawn', { volume: 0.45 }); this.view.snap(s); this.view.squashOnce(); fx.sparks(e.x, h.y + 0.6, e.z, 18, [0xffd070, 0xffffff], 3, 3, 0.07); this.bot?.reset(); break;
         case 'darkWarn': if (h.dark >= 0) { this.toast('torchOut', S_WARN, 2400); this.sfx('dark', { volume: 0.5 }); } else this.toast('torchLow', S_WARN, 1600); break;
         case 'darkOut': this.toast('darkHit', S_TOAST, 1800); this.sfx('hurt', { volume: 0.5 }); this.view.shake(0.5); flash(this, 0x000000); break;
         case 'die': this.die(); break;
@@ -554,7 +554,8 @@ export class PlayScene extends ArcadeScene {
         return {
           phase: this.phase, level: this.levelN, score: this.score, coins: this.meta.coins, unlocked: this.meta.unlocked,
           hero: s ? { x: s.hero.x, z: s.hero.z, y: s.hero.y, hp: s.hero.hp, max: s.hero.max, state: s.hero.state, torch: s.hero.torch, tmax: s.hero.tmax, keys: s.hero.keys, flares: s.hero.flares, relic: s.hero.relic, powers: { ...s.hero.powers }, dark: s.hero.dark } : null,
-          stats: s ? { ...s.stats } : null, checkpoint: s?.checkpoint ?? -1, ranks: { ...this.meta.ranks }, escape: s?.escapeT ?? -1,
+          stats: s ? { ...s.stats } : null, checkpoint: s?.checkpoint ?? -1, open: s ? s.open.filter(Boolean).length : 0, start: s?.c.start ?? null,
+          cpCell: (() => { const t = s?.things.find((x) => x.id === s.checkpoint); return t ? [t.c, t.r] : null; })(), ranks: { ...this.meta.ranks }, escape: s?.escapeT ?? -1,
           tune: s ? { ...s.tune } : null, textures: this.textures.getTextureKeys().length, view: this.view.stats(), perf: { ...this.perf }, botI: this.bot?.i ?? -1,
           foes: s ? s.foes.map((f) => ({ kind: f.kind, x: f.x, z: f.z, state: f.state, stun: f.stun })) : [],
         };

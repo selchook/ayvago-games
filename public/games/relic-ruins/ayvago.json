@@ -1,0 +1,70 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "relicruins",
+  "title": {
+    "en": "Relic Ruins",
+    "tr": "Kadim Harabeler"
+  },
+  "description": {
+    "en": "A torch-lit 3D exploration and puzzle adventure! Through twenty ruins, from overgrown courtyards and a sunken library to gothic crypt halls and a collapsing cathedral, find the relic and get out before your torch burns out. Push crates and statues onto pressure plates, pull levers, open locks with keys, slide secret bookcases, light candles and rune sconces, and watch out for bear traps, trapdoors that open on a rhythm and floors that fall away. Stun light-shy shades and guardian statues that move in the dark with a flare. Braziers refill your torch, and lasting upgrades from the camp make you stronger. Easy or Normal.",
+    "tr": "Meşale ışığında bir 3B keşif ve bulmaca macerası! Sarmaşıklı avlulardan batık kütüphanelere, gotik mahzenlerden çöken bir katedrale kadar yirmi harabede kadim eseri bul ve meşalen sönmeden dışarı çık. Sandıkları ve heykelleri basınç plakalarına it, kolları çek, anahtarla kilitleri aç, gizli kitaplıkları kaydır, mumları ve rünlü meşalelikleri yak; ayı kapanlarından, ritimle açılan kapaklardan ve çöken zeminden sakın. Işıktan korkan gölgeleri ve karanlıkta yürüyen bekçi heykelleri fişekle durdur. Mangallar meşaleni doldurur, kamptaki kalıcı geliştirmeler seni güçlendirir. Kolay ya da Normal."
+  },
+  "category": "puzzle",
+  "categories": [
+    "puzzle",
+    "action"
+  ],
+  "tags": [
+    "relic",
+    "ruins",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/relic-ruins/",
+  "orientation": "portrait",
+  "input": [
+    "touch",
+    "keyboard",
+    "gamepad",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/relic-ruins/ayvago/icon-512.png",
+    "cover": "/games/relic-ruins/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/relic-ruins/ayvago/screenshot.jpg",
+    "card": {
+      "en": "/games/relic-ruins/ayvago/card-640x360.webp",
+      "tr": "/games/relic-ruins/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/relic-ruins/ayvago/card-1280x720.webp",
+      "tr": "/games/relic-ruins/ayvago/card-tr-1280x720.webp"
+    },
+    "logo": {
+      "en": "/games/relic-ruins/ayvago/logo-en.png",
+      "tr": "/games/relic-ruins/ayvago/logo-tr.png"
+    }
+  },
+  "version": "1.0.0"
+}
