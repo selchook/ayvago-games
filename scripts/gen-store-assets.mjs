@@ -470,6 +470,17 @@ const CARD = {
       await sleep(300);
     }`,
   },
+  // Trap Trail's card (landscape, cover-fit) shows Saw Meadow mid-course: the autopilot (god mode on)
+  // nine seconds in, the hero between spinning saws and rising spike traps with coins ahead.
+  'trap-trail': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      await sleep(600);
+      window.__tt.stage('busy');
+      await sleep(300);
+    }`,
+  },
   // Pirate Cove's card (landscape since 1.1, cover-fit) shows a broadside fight on the bright first
   // wave: a brig alongside to starboard, a frigate and two sloops ahead, cannonballs in the air both
   // ways. The wave card and hints are skipped, the wave's own ships held back, nothing sinks the

@@ -1,0 +1,233 @@
+# Quaternius Ultimate Platformer Pack (CC0 1.0): what public/assets/quaternius/ultimate-platformer-pack holds
+# (hero.glb, crab.glb, skull.glb, gob.glb, bee.glb: the rigged hero and enemies, a file each, with the clips
+# the game plays; platformer.glb: everything else)
+# (games/trap-trail/import-pack.mjs). platformer.glb: one root node per model below, all drawn with one
+# vertex-coloured material 'lit' (653 KB). Each entry: id, bounding box in model units (x × y × z, about
+# metres), its lowest corner, triangles, the source file and, for models with moving parts, each part
+# node with its pivot. Pickups are centred in a 1-unit box. icons.png: the HUD and screen icons, rendered
+# from these models (games/trap-trail/make-icons.mjs).
+arrow 1.85x0.15x1.02 min(-1.06,-0.00,-0.51) 76 tris (Arrow.gltf)
+arrow-side 1.86x2.05x0.36 min(-0.76,-0.00,-0.11) 120 tris (Arrow_Side.gltf)
+arrow-up 1.02x2.70x0.36 min(-0.50,-0.00,-0.11) 120 tris (Arrow_Up.gltf)
+bomb 1.13x1.75x1.13 min(-0.56,-0.57,-0.56) 379 tris (Bomb.gltf)
+bouncer 2.21x1.94x2.21 min(-1.10,-0.00,-1.10) 512 tris (Bouncer.gltf)
+  spring at (0.00,0.00,0.00) 388 tris
+  top at (0.00,0.97,0.00) 124 tris
+bridge-small 6.94x2.62x2.64 min(-3.47,-0.28,-1.25) 864 tris (Bridge_Small.gltf)
+bridge-center 3.00x2.09x2.31 min(-1.50,-0.09,-1.09) 454 tris (Bridge_Modular_Center.gltf)
+cannon 3.37x3.67x3.32 min(-1.12,-0.94,-1.66) 917 tris (Cannon.gltf)
+  body at (0.00,0.00,0.00) 491 tris
+  wheels at (0.00,0.00,0.00) 426 tris
+cannonball 1.13x1.14x1.12 min(-0.56,-0.57,-0.56) 284 tris (Cannonball.gltf)
+chest 2.14x1.81x1.88 min(-1.07,0.01,-0.95) 1488 tris (Chest.gltf)
+  base at (0.00,0.32,0.00) 781 tris
+  lid at (0.00,0.95,-0.91) 707 tris
+door 4.31x6.43x1.30 min(-2.46,-2.17,-0.54) 606 tris (Door.gltf)
+  door at (1.21,2.21,0.36) 486 tris
+  frame at (0.00,0.00,0.00) 120 tris
+fence-1 0.75x1.25x0.26 min(-0.75,0.00,-0.13) 104 tris (Fence_1.gltf)
+fence-corner 1.13x1.25x1.13 min(-0.13,0.00,-1.00) 240 tris (Fence_Corner.gltf)
+fence-middle 2.00x1.25x0.26 min(-1.00,0.00,-0.13) 220 tris (Fence_Middle.gltf)
+flag 1.41x2.33x0.38 min(-0.55,-0.00,-0.19) 322 tris (Goal_Flag.gltf)
+cylinder 2.28x3.88x2.28 min(-1.14,-0.02,-1.14) 542 tris (Hazard_Cylinder.gltf)
+saw 3.00x2.86x0.20 min(-1.50,-1.43,-0.10) 620 tris (Hazard_Saw.gltf)
+spike-trap 2.00x0.70x2.00 min(-1.00,-0.02,-1.00) 460 tris (Hazard_SpikeTrap.gltf)
+  base at (0.00,0.00,0.00) 260 tris
+  spikes at (0.00,-0.00,0.00) 200 tris
+lever 1.42x1.33x0.51 min(-0.83,-0.01,-0.25) 314 tris (Lever.gltf)
+  base at (0.00,0.00,0.00) 140 tris
+  handle at (0.00,0.00,0.00) 174 tris
+n1 0.33x1.09x0.29 min(-0.17,-0.55,-0.15) 78 tris (Numbers_1.gltf)
+n2 0.71x1.11x0.29 min(-0.36,-0.55,-0.15) 176 tris (Numbers_2.gltf)
+n3 0.75x1.12x0.33 min(-0.35,-0.55,-0.17) 228 tris (Numbers_3.gltf)
+n4 0.74x1.13x0.30 min(-0.39,-0.56,-0.15) 220 tris (Numbers_4.gltf)
+n5 0.72x1.13x0.34 min(-0.35,-0.56,-0.17) 220 tris (Numbers_5.gltf)
+pipe-90 1.87x1.87x1.74 min(-0.87,-1.00,-0.87) 256 tris (Pipe_90.gltf)
+pipe-end 2.18x2.22x2.18 min(-1.09,-1.00,-1.09) 674 tris (Pipe_End.gltf)
+pipe-straight 2.08x2.00x2.08 min(-1.04,-1.00,-1.04) 384 tris (Pipe_Straight.gltf)
+plant-small 1.03x0.29x1.03 min(-0.51,-0.00,-0.52) 278 tris (Plant_Small.gltf)
+spikes 1.95x3.40x1.83 min(-0.95,0.00,-0.97) 548 tris (Spikes.gltf)
+spiky-ball 1.18x1.19x1.18 min(-0.59,-0.60,-0.59) 812 tris (SpikyBall.gltf)
+stairs-small 1.64x2.23x2.56 min(-1.00,-0.09,-1.28) 462 tris (Stairs_Small.gltf)
+tower 9.44x15.86x8.98 min(-4.62,-1.36,-4.82) 1335 tris (Tower.gltf)
+  body at (0.00,0.00,0.00) 1117 tris
+  door at (1.25,2.89,3.16) 218 tris
+t-g-corner 2.12x2.00x2.12 min(-1.12,-1.00,-1.00) 132 tris (Cube_Grass_Corner.gltf)
+  body at (0.00,0.00,0.00) 56 tris
+  top at (0.00,0.00,0.00) 76 tris
+t-g-side 2.00x2.00x2.12 min(-1.00,-1.00,-1.00) 32 tris (Cube_Grass_Side.gltf)
+  body at (0.00,0.00,0.00) 16 tris
+  top at (0.00,0.00,0.00) 16 tris
+t-g-center 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 4 tris (Cube_Grass_Center.gltf)
+  body at (0.00,0.00,0.00) 2 tris
+  top at (0.00,0.00,0.00) 2 tris
+t-d-corner 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 80 tris (Cube_Dirt_Corner.gltf)
+t-d-side 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 24 tris (Cube_Dirt_Side.gltf)
+t-d-center 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 4 tris (Cube_Dirt_Center.gltf)
+tt-g-corner 2.12x2.00x2.12 min(-1.12,-1.00,-1.00) 116 tris (Cube_Grass_Corner_Tall.gltf)
+  body at (0.00,0.00,0.00) 40 tris
+  top at (0.00,0.00,0.00) 76 tris
+tt-g-side 2.00x2.00x2.12 min(-1.00,-1.00,-1.00) 26 tris (Cube_Grass_Side_Tall.gltf)
+  body at (0.00,0.00,0.00) 10 tris
+  top at (0.00,0.00,0.00) 16 tris
+tt-g-center 2.00x0.00x2.00 min(-1.00,1.00,-1.00) 2 tris (Cube_Grass_Center_Tall.gltf)
+tt-d-corner 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 64 tris (Cube_Dirt_Corner_Tall.gltf)
+tt-d-side 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 18 tris (Cube_Dirt_Side_Tall.gltf)
+tt-d-center 2.00x0.00x2.00 min(-1.00,1.00,-1.00) 2 tris (Cube_Dirt_Center_Tall.gltf)
+tm-corner 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 48 tris (Cube_Grass_CornerCenter_Tall.gltf)
+tm-side 2.00x2.00x0.00 min(-1.00,-1.00,1.00) 12 tris (Cube_Grass_SideCenter_Tall.gltf)
+tb-corner 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 64 tris (Cube_Grass_CornerBottom_Tall.gltf)
+tb-side 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 18 tris (Cube_Grass_SideBottom_Tall.gltf)
+tb-center 2.00x0.00x2.00 min(-1.00,-1.00,-1.00) 2 tris (Cube_Grass_Bottom_Tall.gltf)
+c-grass 2.23x2.00x2.23 min(-1.12,-1.00,-1.12) 528 tris (Cube_Grass_Single.gltf)
+  body at (0.00,0.00,0.00) 224 tris
+  top at (0.00,0.00,0.00) 304 tris
+c-dirt 2.00x2.00x2.00 min(-1.00,-1.00,-1.00) 320 tris (Cube_Dirt_Single.gltf)
+c-question 2.02x2.02x2.02 min(-1.01,-1.01,-1.01) 479 tris (Cube_Question.gltf)
+c-default 2.02x2.02x2.02 min(-1.01,-1.01,-1.01) 204 tris (Cube_Default.gltf)
+c-crate 2.02x2.02x2.02 min(-1.01,-1.01,-1.01) 264 tris (Cube_Crate.gltf)
+c-spikes 3.15x3.15x3.15 min(-1.58,-1.58,-1.58) 276 tris (Cube_Spikes.gltf)
+tree 5.53x8.63x5.55 min(-2.77,0.01,-2.77) 672 tris (Nature/Tree.gltf)
+bush 3.52x2.23x3.53 min(-1.76,0.03,-1.76) 388 tris (Nature/Bush.gltf)
+grass-1 0.52x0.38x0.40 min(-0.48,0.95,-0.20) 40 tris (Nature/Grass_1.gltf)
+grass-2 1.07x0.47x0.63 min(-0.48,0.94,-0.32) 80 tris (Nature/Grass_2.gltf)
+grass-3 1.07x0.52x0.63 min(-0.48,0.91,-0.32) 120 tris (Nature/Grass_3.gltf)
+rock-1 1.60x1.10x1.46 min(-0.80,-0.19,-0.71) 160 tris (Nature/Rock_1.gltf)
+rock-2 1.63x2.10x1.46 min(-0.74,-0.14,-0.64) 286 tris (Nature/Rock_2.gltf)
+cloud-1 3.29x2.12x2.45 min(-1.51,-0.14,-1.23) 212 tris (Nature/Cloud_1.gltf)
+cloud-2 4.01x2.40x2.45 min(-2.01,-0.24,-1.22) 304 tris (Nature/Cloud_2.gltf)
+cloud-3 5.85x3.16x3.49 min(-2.55,-0.35,-1.75) 344 tris (Nature/Cloud_3.gltf)
+rock-tall 3.58x4.26x3.58 min(-1.79,0.00,-1.79) 288 tris (Nature/RockPlatform_Tall.gltf)
+rock-medium 4.81x2.91x4.81 min(-2.40,0.00,-2.41) 288 tris (Nature/RockPlatforms_Medium.gltf)
+coin 1.00x1.00x0.27 min(-0.50,-0.50,-0.14) 248 tris (Coin.fbx, centred, 1-unit box)
+gem-blue 0.47x1.00x0.33 min(-0.23,-0.50,-0.17) 44 tris (Gem_Blue.fbx, centred, 1-unit box)
+gem-green 0.99x1.00x0.99 min(-0.50,-0.50,-0.50) 62 tris (Gem_Green.fbx, centred, 1-unit box)
+gem-pink 0.58x1.00x0.58 min(-0.29,-0.50,-0.29) 44 tris (Gem_Pink.fbx, centred, 1-unit box)
+heart 1.00x0.84x0.51 min(-0.50,-0.42,-0.25) 280 tris (Heart.fbx, centred, 1-unit box)
+heart-half 0.60x1.00x0.61 min(-0.30,-0.50,-0.30) 150 tris (Heart_Half.fbx, centred, 1-unit box)
+heart-outline 1.00x0.84x0.04 min(-0.50,-0.42,-0.02) 176 tris (Heart_Outline.fbx, centred, 1-unit box)
+key 1.00x0.51x0.16 min(-0.50,-0.25,-0.08) 258 tris (Key.fbx, centred, 1-unit box)
+star 1.00x0.95x0.46 min(-0.50,-0.48,-0.23) 208 tris (Star.fbx, centred, 1-unit box)
+star-outline 1.00x0.95x0.04 min(-0.50,-0.48,-0.02) 220 tris (Star_Outline.fbx, centred, 1-unit box)
+thunder 0.73x1.00x0.22 min(-0.37,-0.50,-0.11) 132 tris (Thunder.fbx, centred, 1-unit box)
+hero.glb 187KB 2908 tris, 29 bones (Character.gltf)
+  clips: Death:0.96 Duck:2.08 HitReact:0.75 Idle:2.08 Jump:0.46 Jump_Idle:0.63 Jump_Land:0.46 Run:0.71 Walk:1.25 Wave:2.08 Yes:2.08
+crab.glb 104KB 3624 tris, 7 bones (Crab.gltf)
+  clips: Bite_Front:0.50 Death:0.46 HitRecieve:0.38 Idle:2.50 Jump:0.54 No:0.50 Walk:0.54
+skull.glb 61KB 1804 tris, 5 bones (Skull.gltf)
+  clips: Bite_Front:0.50 Death:0.46 HitRecieve:0.38 Idle:2.50 Jump:0.54 No:0.50 Walk:0.54
+gob.glb 75KB 1968 tris, 7 bones (Enemy.gltf)
+  clips: Bite_Front:0.50 Death:0.46 HitRecieve:0.38 Idle:2.50 Jump:0.54 No:0.50 Walk:0.54
+bee.glb 102KB 3040 tris, 9 bones (Bee.gltf)
+  clips: Bite_Front:1.13 Death:0.79 Flying:1.13 HitRecieve:0.63
+
+# The pack as shared by the owner (Google Drive; not in the repository):
+Level and Mechanics/glTF/Arrow.gltf 6348 bytes
+Level and Mechanics/glTF/Arrow_Side.gltf 10461 bytes
+Level and Mechanics/glTF/Arrow_Up.gltf 10461 bytes
+Level and Mechanics/glTF/Bomb.gltf 34892 bytes
+Level and Mechanics/glTF/Bouncer.gltf 46994 bytes
+Level and Mechanics/glTF/Bridge_Modular.gltf 51652 bytes
+Level and Mechanics/glTF/Bridge_Modular_Center.gltf 33413 bytes
+Level and Mechanics/glTF/Bridge_Small.gltf 97199 bytes
+Level and Mechanics/glTF/Cannon.gltf 78249 bytes
+Level and Mechanics/glTF/Cannonball.gltf 11598 bytes
+Level and Mechanics/glTF/Chest.gltf 496230 bytes
+Level and Mechanics/glTF/Door.gltf 34692 bytes
+Level and Mechanics/glTF/Fence_1.gltf 9267 bytes
+Level and Mechanics/glTF/Fence_Corner.gltf 15499 bytes
+Level and Mechanics/glTF/Fence_Middle.gltf 14570 bytes
+Level and Mechanics/glTF/Goal_Flag.gltf 13719 bytes
+Level and Mechanics/glTF/Hazard_Cylinder.gltf 38158 bytes
+Level and Mechanics/glTF/Hazard_Saw.gltf 52021 bytes
+Level and Mechanics/glTF/Hazard_SpikeTrap.gltf 43187 bytes
+Level and Mechanics/glTF/Lever.gltf 29766 bytes
+Level and Mechanics/glTF/Numbers_0.gltf 16615 bytes
+Level and Mechanics/glTF/Numbers_1.gltf 7910 bytes
+Level and Mechanics/glTF/Numbers_2.gltf 13476 bytes
+Level and Mechanics/glTF/Numbers_3.gltf 16522 bytes
+Level and Mechanics/glTF/Numbers_4.gltf 18824 bytes
+Level and Mechanics/glTF/Numbers_5.gltf 16679 bytes
+Level and Mechanics/glTF/Numbers_6.gltf 18247 bytes
+Level and Mechanics/glTF/Numbers_7.gltf 11941 bytes
+Level and Mechanics/glTF/Numbers_8.gltf 18473 bytes
+Level and Mechanics/glTF/Numbers_9.gltf 18473 bytes
+Level and Mechanics/glTF/Pipe_90.gltf 10824 bytes
+Level and Mechanics/glTF/Pipe_End.gltf 67628 bytes
+Level and Mechanics/glTF/Pipe_Straight.gltf 36523 bytes
+Level and Mechanics/glTF/Pipe_T.gltf 15526 bytes
+Level and Mechanics/glTF/Plant_Large.gltf 38829 bytes
+Level and Mechanics/glTF/Plant_Small.gltf 19694 bytes
+Level and Mechanics/glTF/Spikes.gltf 51022 bytes
+Level and Mechanics/glTF/SpikyBall.gltf 39224 bytes
+Level and Mechanics/glTF/Stairs.gltf 17125 bytes
+Level and Mechanics/glTF/Stairs_Modular_End.gltf 43350 bytes
+Level and Mechanics/glTF/Stairs_Modular_Middle.gltf 36503 bytes
+Level and Mechanics/glTF/Stairs_Modular_Start.gltf 43160 bytes
+Level and Mechanics/glTF/Stairs_Small.gltf 46160 bytes
+Level and Mechanics/glTF/Tower.gltf 155917 bytes
+Powerups and Pickups/FBX/Coin.fbx 23676 bytes
+Powerups and Pickups/FBX/Gem_Blue.fbx 14940 bytes
+Powerups and Pickups/FBX/Gem_Green.fbx 15516 bytes
+Powerups and Pickups/FBX/Gem_Pink.fbx 15340 bytes
+Powerups and Pickups/FBX/Heart.fbx 23948 bytes
+Powerups and Pickups/FBX/Heart_Half.fbx 20028 bytes
+Powerups and Pickups/FBX/Heart_Outline.fbx 21436 bytes
+Powerups and Pickups/FBX/Key.fbx 23484 bytes
+Powerups and Pickups/FBX/Star.fbx 24108 bytes
+Powerups and Pickups/FBX/Star_Outline.fbx 24140 bytes
+Powerups and Pickups/FBX/Thunder.fbx 17644 bytes
+Character/glTF/Character.gltf 1035242 bytes
+Enemies/glTF/Bee.gltf 279338 bytes
+Enemies/glTF/Crab.gltf 331530 bytes
+Enemies/glTF/Enemy.gltf 257016 bytes
+Enemies/glTF/Skull.gltf 201704 bytes
+Cubes/glTF/Cube_Bricks.gltf 69286 bytes
+Cubes/glTF/Cube_Crate.gltf 17752 bytes
+Cubes/glTF/Cube_Default.gltf 13433 bytes
+Cubes/glTF/Cube_Dirt_Single.gltf 19594 bytes
+Cubes/glTF/Cube_Exclamation.gltf 49092 bytes
+Cubes/glTF/Cube_Grass_Single.gltf 27599 bytes
+Cubes/glTF/Cube_Question.gltf 51763 bytes
+Cubes/glTF/Cube_Spikes.gltf 21107 bytes
+Modular Platforms/Single Height/glTF/Cube_Dirt_Center.gltf 2651 bytes
+Modular Platforms/Single Height/glTF/Cube_Dirt_Corner.gltf 9919 bytes
+Modular Platforms/Single Height/glTF/Cube_Dirt_Side.gltf 7340 bytes
+Modular Platforms/Single Height/glTF/Cube_Grass_Center.gltf 4318 bytes
+Modular Platforms/Single Height/glTF/Cube_Grass_Corner.gltf 13209 bytes
+Modular Platforms/Single Height/glTF/Cube_Grass_Side.gltf 9427 bytes
+Modular Platforms/3D/glTF/Cube_Dirt_Center_Tall.bin 104 bytes
+Modular Platforms/3D/glTF/Cube_Dirt_Center_Tall.gltf 2670 bytes
+Modular Platforms/3D/glTF/Cube_Dirt_Corner_Tall.gltf 9315 bytes
+Modular Platforms/3D/glTF/Cube_Dirt_Side_Tall.gltf 7026 bytes
+Modular Platforms/3D/glTF/Cube_Grass_Bottom_Tall.gltf 2495 bytes
+Modular Platforms/3D/glTF/Cube_Grass_Center_Tall.gltf 2530 bytes
+Modular Platforms/3D/glTF/Cube_Grass_CornerBottom_Tall.gltf 9306 bytes
+Modular Platforms/3D/glTF/Cube_Grass_CornerCenter_Tall.gltf 8503 bytes
+Modular Platforms/3D/glTF/Cube_Grass_Corner_Tall.gltf 12414 bytes
+Modular Platforms/3D/glTF/Cube_Grass_SideBottom_Tall.gltf 7029 bytes
+Modular Platforms/3D/glTF/Cube_Grass_SideCenter_Tall.gltf 6639 bytes
+Modular Platforms/3D/glTF/Cube_Grass_Side_Tall.gltf 9038 bytes
+Modular Platforms/2D/glTF/Cube_Dirt_1x1Center.gltf 10431 bytes
+Modular Platforms/2D/glTF/Cube_Dirt_1x1End.gltf 15016 bytes
+Modular Platforms/2D/glTF/Cube_Grass_1x1Center.gltf 15230 bytes
+Modular Platforms/2D/glTF/Cube_Grass_1x1End.gltf 21414 bytes
+Nature/glTF/Bush.gltf 47883 bytes
+Nature/glTF/Bush_Fruit.gltf 54212 bytes
+Nature/glTF/Cloud_1.gltf 12723 bytes
+Nature/glTF/Cloud_2.gltf 17315 bytes
+Nature/glTF/Cloud_3.gltf 19568 bytes
+Nature/glTF/Fruit.gltf 19742 bytes
+Nature/glTF/Grass_1.gltf 3522 bytes
+Nature/glTF/Grass_2.gltf 4645 bytes
+Nature/glTF/Grass_3.gltf 5765 bytes
+Nature/glTF/RockPlatform_Tall.gltf 10922 bytes
+Nature/glTF/RockPlatforms_1.gltf 27948 bytes
+Nature/glTF/RockPlatforms_2.gltf 50352 bytes
+Nature/glTF/RockPlatforms_3.gltf 29644 bytes
+Nature/glTF/RockPlatforms_Large.gltf 15923 bytes
+Nature/glTF/RockPlatforms_Medium.gltf 10929 bytes
+Nature/glTF/Rock_1.gltf 8040 bytes
+Nature/glTF/Rock_2.gltf 12313 bytes
+Nature/glTF/Tree.gltf 86900 bytes
+Nature/glTF/Tree_Fruit.gltf 124169 bytes

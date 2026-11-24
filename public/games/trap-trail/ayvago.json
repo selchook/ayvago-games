@@ -1,0 +1,70 @@
+{
+  "$schema": "https://ayvago.com/schemas/manifest.v1.json",
+  "id": "traptrail",
+  "title": {
+    "en": "Trap Trail",
+    "tr": "Tuzak Parkuru"
+  },
+  "description": {
+    "en": "A 3D obstacle course over floating sky islands, full of traps! Run, jump and dash past spinning saws, spikes that rise on a rhythm, rolling spiked logs, cannonballs, bombs with lit fuses and swinging spiked balls to reach the flag. Bounce off springs, pull levers to open gates, open chests with keys and catch your breath at checkpoints. Collect coins, find gems and every stage's three stars, and beat the traps with the Thunder, Shield, Magnet and Spring powers. Four worlds, twenty stages; buy lasting upgrades in the shop between stages. Easy or Normal.",
+    "tr": "Gökyüzündeki adalar arasında tuzak dolu bir 3B engel parkuru! Koş, zıpla, atıl: dönen testerelerin, ritimle yükselen dikenlerin, yuvarlanan dikenli kütüklerin, top güllelerinin, fitili yanan bombaların ve sallanan dikenli topların arasından bayrağa ulaş. Yaylarla yükseğe fırla, kolu çekip kapıyı aç, anahtarla sandığı aç, kontrol noktalarında nefes al. Altın topla, mücevher ve her bölümün üç yıldızını bul; Şimşek, Kalkan, Mıknatıs ve Yay güçleriyle tuzakları aş. Dört dünya, yirmi bölüm; bölüm aralarında dükkânda kalıcı geliştirmeler al. Kolay ya da Normal."
+  },
+  "category": "action",
+  "categories": [
+    "action",
+    "arcade"
+  ],
+  "tags": [
+    "trap",
+    "trail",
+    "retro"
+  ],
+  "entry": "https://ayvago-games-nine.vercel.app/games/trap-trail/",
+  "orientation": "landscape",
+  "input": [
+    "touch",
+    "keyboard",
+    "gamepad",
+    "mouse"
+  ],
+  "players": {
+    "min": 1,
+    "max": 1
+  },
+  "scoring": {
+    "metric": "points",
+    "order": "desc",
+    "format": "number",
+    "label": {
+      "en": "Score",
+      "tr": "Puan"
+    },
+    "minDurationMs": 3000,
+    "maxPerSecond": 1000,
+    "maxScore": 10000000
+  },
+  "ads": {
+    "rewarded": [],
+    "interstitial": []
+  },
+  "ageRating": "3+",
+  "sdkVersion": 2,
+  "assets": {
+    "icon": "/games/trap-trail/ayvago/icon-512.png",
+    "cover": "/games/trap-trail/ayvago/cover-1920x1080.jpg",
+    "screenshot": "/games/trap-trail/ayvago/screenshot.jpg",
+    "card": {
+      "en": "/games/trap-trail/ayvago/card-640x360.webp",
+      "tr": "/games/trap-trail/ayvago/card-tr-640x360.webp"
+    },
+    "card2x": {
+      "en": "/games/trap-trail/ayvago/card-1280x720.webp",
+      "tr": "/games/trap-trail/ayvago/card-tr-1280x720.webp"
+    },
+    "logo": {
+      "en": "/games/trap-trail/ayvago/logo-en.png",
+      "tr": "/games/trap-trail/ayvago/logo-tr.png"
+    }
+  },
+  "version": "1.0.0"
+}

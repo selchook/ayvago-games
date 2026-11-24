@@ -1,5 +1,5 @@
 {
-  "count": 103,
+  "count": 104,
   "games": [
     {
       "id": "air-hockey",
@@ -3167,6 +3167,41 @@
         "addedAt": "2026-10-28"
       },
       "thumb": "thumbs/traffic-racer.png"
+    },
+    {
+      "id": "trap-trail",
+      "title": {
+        "tr": "Tuzak Parkuru",
+        "en": "Trap Trail"
+      },
+      "description": {
+        "tr": "Gökyüzündeki adalar arasında tuzak dolu bir 3B engel parkuru! Koş, zıpla, atıl: dönen testerelerin, ritimle yükselen dikenlerin, yuvarlanan dikenli kütüklerin, top güllelerinin, fitili yanan bombaların ve sallanan dikenli topların arasından bayrağa ulaş. Yaylarla yükseğe fırla, kolu çekip kapıyı aç, anahtarla sandığı aç, kontrol noktalarında nefes al. Altın topla, mücevher ve her bölümün üç yıldızını bul; Şimşek, Kalkan, Mıknatıs ve Yay güçleriyle tuzakları aş. Dört dünya, yirmi bölüm; bölüm aralarında dükkânda kalıcı geliştirmeler al. Kolay ya da Normal.",
+        "en": "A 3D obstacle course over floating sky islands, full of traps! Run, jump and dash past spinning saws, spikes that rise on a rhythm, rolling spiked logs, cannonballs, bombs with lit fuses and swinging spiked balls to reach the flag. Bounce off springs, pull levers to open gates, open chests with keys and catch your breath at checkpoints. Collect coins, find gems and every stage's three stars, and beat the traps with the Thunder, Shield, Magnet and Spring powers. Four worlds, twenty stages; buy lasting upgrades in the shop between stages. Easy or Normal."
+      },
+      "howTo": {
+        "tr": "Soldaki çubukla ya da WASD/oklarla koş; ZIPLA ya da Boşluk ile zıpla (basılı tut, daha yükseğe), ATIL ya da Shift/X ile atıl. Kalpler biterse tur biter; düşersen kontrol noktasından devam edersin.",
+        "en": "Run with the stick on the left or WASD/arrows; JUMP or Space to jump (hold for higher), DASH or Shift/X to dash. The run ends when your hearts run out; a fall puts you back on the last checkpoint."
+      },
+      "genres": [
+        "action",
+        "arcade"
+      ],
+      "orientation": "landscape",
+      "controls": [
+        "touch",
+        "keyboard",
+        "gamepad"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Quaternius Ultimate Platformer Pack (CC0) — quaternius.com",
+        "Sounds: Juhani Junkala (CC0) — opengameart.org; Kenney Impact and Foley Audio (CC0) — kenney.nl",
+        "Logo font: Baloo 2 by Ek Type (SIL OFL 1.1)"
+      ],
+      "platform": {
+        "addedAt": "2026-11-24"
+      },
+      "thumb": "thumbs/trap-trail.png"
     },
     {
       "id": "turkish-draughts",

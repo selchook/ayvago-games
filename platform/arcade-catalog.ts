@@ -1500,6 +1500,20 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'trap-trail',
+    title: { en: 'Trap Trail', tr: 'Tuzak Parkuru' },
+    description: {
+      en: "A 3D obstacle course over floating sky islands, full of traps! Run, jump and dash past spinning saws, spikes that rise on a rhythm, rolling spiked logs, cannonballs, bombs with lit fuses and swinging spiked balls to reach the flag. Bounce off springs, pull levers to open gates, open chests with keys and catch your breath at checkpoints. Collect coins, find gems and every stage's three stars, and beat the traps with the Thunder, Shield, Magnet and Spring powers. Four worlds, twenty stages; buy lasting upgrades in the shop between stages. Easy or Normal.",
+      tr: 'Gökyüzündeki adalar arasında tuzak dolu bir 3B engel parkuru! Koş, zıpla, atıl: dönen testerelerin, ritimle yükselen dikenlerin, yuvarlanan dikenli kütüklerin, top güllelerinin, fitili yanan bombaların ve sallanan dikenli topların arasından bayrağa ulaş. Yaylarla yükseğe fırla, kolu çekip kapıyı aç, anahtarla sandığı aç, kontrol noktalarında nefes al. Altın topla, mücevher ve her bölümün üç yıldızını bul; Şimşek, Kalkan, Mıknatıs ve Yay güçleriyle tuzakları aş. Dört dünya, yirmi bölüm; bölüm aralarında dükkânda kalıcı geliştirmeler al. Kolay ya da Normal.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['trap', 'trail', 'retro'],
+    orientation: 'landscape',
+    input: ['touch', 'keyboard', 'gamepad', 'mouse'],
+    addedAt: '2026-11-24',
+  }),
+  arcadeGame({
     slug: 'turkish-draughts',
     title: { en: 'Turkish Draughts', tr: 'Dama' },
     description: {

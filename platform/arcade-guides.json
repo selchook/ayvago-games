@@ -9989,6 +9989,134 @@
         }
       ]
     },
+    "trap-trail": {
+      "about": {
+        "en": "Trap Trail is a 3D obstacle-course platformer over floating sky islands. Run, jump and dash through twenty stages in four worlds: the Meadow Isles, the Canyon Fort, the Frost Peaks and the Storm Keep. Between you and each goal flag wait spinning saws, rising spike traps, rolling logs, cannons, bombs, swinging spiked balls, moving and crumbling floes, ice, springs and gates opened by levers.\n\nThe islands have residents too: crabs patrol, skulls hop after you, horned gobs roar before they charge and bees buzz before they swoop. Land on their heads to beat them, or break through them with Thunder. Collect coins, gems and the three stars of every stage, and spend your coins on lasting upgrades in the shop.",
+        "tr": "Tuzak Parkuru, gökyüzünde yüzen adalar üzerinde geçen 3B bir engel parkuru oyunudur. Dört dünyadaki yirmi bölümde koş, zıpla ve atıl: Çayır Adaları, Kanyon Kalesi, Ayaz Zirveleri ve Fırtına Burcu. Her bayrağa giden yolda dönen testereler, yükselen diken tuzakları, yuvarlanan kütükler, toplar, bombalar, sallanan dikenli toplar, hareket eden ve çöken sallar, buz, yaylar ve kolla açılan kapılar seni bekler.\n\nAdaların sakinleri de var: yengeçler devriye gezer, kafatasları peşinden zıplar, boynuzlu goblinler saldırmadan önce kükrer, arılar dalmadan önce vızıldar. Onları yenmek için kafalarına zıpla ya da Şimşek'le içlerinden geç. Her bölümün altınlarını, mücevherlerini ve üç yıldızını topla, altınlarını dükkânda kalıcı geliştirmelere harca."
+      },
+      "howToPlay": [
+        {
+          "en": "Press PLAY and pick a stage on the trail map. Each cleared stage opens the next one.",
+          "tr": "OYNA'ya bas ve parkur haritasından bir bölüm seç. Geçtiğin her bölüm bir sonrakini açar."
+        },
+        {
+          "en": "Run to the goal flag. Time your way past the traps and touch the numbered checkpoints: after a fall you start again from the last one.",
+          "tr": "Bayrağa koş. Tuzakların zamanlamasını yakala ve numaralı kontrol noktalarına dokun: düşersen son geçtiğinden devam edersin."
+        },
+        {
+          "en": "You start with three hearts. Small hazards take half a heart, big ones and falls a whole heart. When the hearts run out, the run ends.",
+          "tr": "Üç kalple başlarsın. Küçük tehlikeler yarım kalp, büyükleri ve düşmek tam kalp götürür. Kalpler biterse tur biter."
+        },
+        {
+          "en": "A cleared stage pays a bonus for stars, speed and taking no hits, then the shop opens.",
+          "tr": "Geçilen bölüm yıldızlar, hız ve hiç hasar almamak için bonus verir, ardından dükkân açılır."
+        },
+        {
+          "en": "Your score grows over the whole run. End it on the map with END RUN, or clear the last stage of the Storm Keep.",
+          "tr": "Puanın tur boyunca büyür. Turu haritada TURU BİTİR ile ya da Fırtına Burcu'nun son bölümünü geçerek bitirirsin."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "WASD or the arrows run, Space jumps (hold to jump higher), Shift or X dashes, Esc or P pauses. On the map the arrows pick a stage, Enter plays and S opens the shop.",
+          "tr": "WASD ya da oklarla koşarsın, Boşluk zıplatır (daha yükseğe için basılı tut), Shift ya da X atılır, Esc ya da P duraklatır. Haritada oklar bölüm seçer, Enter oynatır, S dükkânı açar."
+        },
+        "touch": {
+          "en": "Touch the left half of the screen for the stick. JUMP jumps (hold for higher), DASH dashes. Tap the map pins and buttons to choose.",
+          "tr": "Çubuk için ekranın sol yarısına dokun. ZIPLA zıplatır (daha yükseğe için basılı tut), ATIL atılır. Seçmek için haritadaki iğnelere ve düğmelere dokun."
+        },
+        "gamepad": {
+          "en": "The left stick or D-pad runs, A jumps, B dashes, Start pauses. On the map and in the shop A selects and B goes back.",
+          "tr": "Sol çubuk ya da yön tuşları koşturur, A zıplatır, B atılır, Start duraklatır. Haritada ve dükkânda A seçer, B geri döner."
+        }
+      },
+      "tips": [
+        {
+          "en": "Spike traps warn you: the square under them flashes orange just before they rise. Cross right after they drop.",
+          "tr": "Diken tuzakları önceden haber verir: altlarındaki kare yükselmeden hemen önce turuncu yanıp söner. Diken iner inmez geç."
+        },
+        {
+          "en": "A dash keeps you level in the air for a moment, so a dash at the top of a jump carries you across a wider gap.",
+          "tr": "Atılma seni bir an havada düz tutar; zıplamanın tepesinde atılırsan daha geniş bir boşluğu geçersin."
+        },
+        {
+          "en": "A red arrow over an enemy means it is about to charge or swoop. Step aside, then jump on it.",
+          "tr": "Bir düşmanın üstündeki kırmızı ok, saldırmak ya da dalmak üzere olduğunu gösterir. Yana çekil, sonra kafasına zıpla."
+        },
+        {
+          "en": "Thunder makes you fast and unhurtable for a few seconds: run through logs, bombs and enemies to break them for points.",
+          "tr": "Şimşek seni birkaç saniye hızlı ve dokunulmaz yapar: kütüklerin, bombaların ve düşmanların içinden geçip onları kırarak puan topla."
+        },
+        {
+          "en": "Stars sit on side isles and over traps. New stars found later still pay coins.",
+          "tr": "Yıldızlar yan adalarda ve tuzakların üstünde durur. Sonradan bulduğun her yeni yıldız da altın kazandırır."
+        }
+      ],
+      "features": [
+        {
+          "en": "Twenty stages in four worlds, each world bringing its own traps",
+          "tr": "Dört dünyada yirmi bölüm, her dünyanın kendi tuzakları"
+        },
+        {
+          "en": "Four enemies with their own behaviour, beaten with a stomp",
+          "tr": "Kendine has davranışlı dört düşman, kafaya zıplayarak yenilir"
+        },
+        {
+          "en": "Thunder, Shield, Magnet and Spring powers",
+          "tr": "Şimşek, Kalkan, Mıknatıs ve Yay güçleri"
+        },
+        {
+          "en": "Six upgrades with up to three ranks in the shop",
+          "tr": "Dükkânda üç seviyeye kadar çıkan altı geliştirme"
+        },
+        {
+          "en": "Three stars and a best time in every stage",
+          "tr": "Her bölümde üç yıldız ve en iyi süre"
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay mod var mı?"
+          },
+          "a": {
+            "en": "Yes. Choose EASY on the menu: an extra heart, slower traps with longer warnings, fewer shots and falls that cost half a heart. Easy runs do not count for the leaderboard.",
+            "tr": "Evet. Menüden KOLAY'ı seç: bir kalp fazla, daha yavaş ve daha uzun uyaran tuzaklar, daha seyrek atışlar ve yarım kalp götüren düşüşler. Kolay turlar sıralamaya girmez."
+          }
+        },
+        {
+          "q": {
+            "en": "Do I lose my coins and upgrades when the run ends?",
+            "tr": "Tur bitince altınlarımı ve geliştirmelerimi kaybeder miyim?"
+          },
+          "a": {
+            "en": "No. Coins, upgrades, opened stages and found stars are kept for good. Only the run's score starts again.",
+            "tr": "Hayır. Altınlar, geliştirmeler, açılan bölümler ve bulunan yıldızlar kalıcıdır. Yalnızca turun puanı baştan başlar."
+          }
+        },
+        {
+          "q": {
+            "en": "How are points scored?",
+            "tr": "Puan nasıl kazanılır?"
+          },
+          "a": {
+            "en": "Coins are worth 10 points, gems 100 to 500 and beaten enemies 150 to 250. A cleared stage adds 500 plus 250 per world after the first, 300 per star, 25 per second under the par time and 750 for taking no hits.",
+            "tr": "Altın 10 puan, mücevherler 100 ile 500, yenilen düşmanlar 150 ile 250 puandır. Geçilen bölüm 500 artı ilk dünyadan sonraki her dünya için 250, yıldız başına 300, hedef sürenin altındaki her saniye için 25 ve hasar almadıysan 750 puan ekler."
+          }
+        },
+        {
+          "q": {
+            "en": "Does it work on phones?",
+            "tr": "Telefonda çalışır mı?"
+          },
+          "a": {
+            "en": "Yes. Hold the phone sideways: the left thumb runs with the stick and the right thumb has the JUMP and DASH buttons.",
+            "tr": "Evet. Telefonu yan tut: sol başparmak çubukla koşar, sağ başparmakta ZIPLA ve ATIL düğmeleri vardır."
+          }
+        }
+      ]
+    },
     "turkish-draughts": {
       "about": {
         "en": "Turkish draughts, simply dama in Turkey, is played on all 64 squares of an 8 × 8 board rather than on the dark squares alone. Each side has 16 men lined up on its second and third rows. Men move one square straight forward or sideways, never diagonally and never backwards. A man that reaches the far row is crowned a dama, which slides any distance along a row or column, like a rook in chess.\n\nCapturing is what makes the game. A man jumps an enemy piece directly in front of it or beside it and lands just behind; a dama can take from a distance and land on any free square beyond. Capturing is compulsory, a jump that lands where another capture is possible keeps going, and when several captures are open you must play the one that takes the most pieces. Taken pieces leave the board at once, and a dama may not turn back 180° between two jumps.\n\nYou lose when you have no legal move left, which includes losing every piece. White always moves first. Solo you have 2 lives against a rival that grows from Rookie to Dama Master; you take white and open the odd rounds, the rival takes white and opens the even ones; online you play a friend on ayvago.com.",
