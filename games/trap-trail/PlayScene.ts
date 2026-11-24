@@ -476,7 +476,7 @@ export class PlayScene extends ArcadeScene {
           phase: this.phase, stage: this.stageN, score: this.score, coins: this.meta.coins, unlocked: this.meta.unlocked,
           hero: s ? { x: s.hero.x, y: s.hero.y, z: s.hero.z, hp: s.hero.hp, max: s.hero.max, state: s.hero.state, keys: s.hero.keys, shield: s.hero.shield, powers: { ...s.hero.powers }, ground: !!s.hero.ground } : null,
           stats: s ? { ...s.stats } : null, checkpoint: s?.checkpoint ?? -1, clock: s?.clock ?? 0, ranks: { ...this.meta.ranks },
-          textures: this.textures.getTextureKeys().length, view: this.view.stats(), waypoints: s?.c.waypoints.length ?? 0, botI: this.bot?.i ?? -1,
+          tune: s ? { ...s.tune } : null, textures: this.textures.getTextureKeys().length, view: this.view.stats(), waypoints: s?.c.waypoints.length ?? 0, botI: this.bot?.i ?? -1,
         };
       },
       start: (n = 1) => { this.startStage(n); this.phaseT = INTRO_TIME; },

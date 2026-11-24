@@ -75,6 +75,27 @@ function childNamed(node: THREE.Object3D, part: string): THREE.Object3D | undefi
   return node.children.find((c) => c.name === part || (c.name.startsWith(part + '_') && /^\d+$/.test(c.name.slice(part.length + 1))));
 }
 
+const inModel = new Map<string, THREE.BufferGeometry | null>();
+/**
+ * A part of a model in the model's own space (the platform pieces' grass and earth, the bouncer's
+ * spring and top as they stand): null when the model has no such part.
+ */
+export function modelPart(id: string, part: string): THREE.BufferGeometry | null {
+  const k = id + '#' + part;
+  if (inModel.has(k)) return inModel.get(k)!;
+  geo('qp:' + id);
+  const node = packRoot!.getObjectByName(id);
+  let g: THREE.BufferGeometry | null = null;
+  if (node && childNamed(node, part)) {
+    const m = new Merger();
+    m.add(geo('qp:' + k), partRest(id, part));
+    g = m.build();
+    cache.set('model:' + k, g);
+  }
+  inModel.set(k, g);
+  return g;
+}
+
 /** True for a geometry from the model cache (shared by every build; not freed mid-scene). */
 export function isKitGeo(g: THREE.BufferGeometry): boolean {
   for (const v of cache.values()) if (v === g) return true;

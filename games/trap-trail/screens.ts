@@ -435,10 +435,11 @@ export class ShopScreen extends Panel {
       c.add(iconAt(s, bx - 30, -34, 'coin', 30));
       c.add(new GlyphText(s, bx - 12, -34, String(price), S_PRICE, 0));
       const b = new KitButton(s, bx, 14, { w: 118, h: 52, color: GREEN, label: t('buy'), style: S_BTN_S, sfx: null, tapWhenOff: true }, () => {
-        if (!buy(this.meta, u)) { this.deny(b, t('poor')); return; }
+        // the word shows on the tile itself (the bottom row is the CONTINUE button's)
+        if (!buy(this.meta, u)) { this.deny(b, t('poor'), x, y); return; }
         this.host.sfx('buy', 0.6);
         this.sparkle(x + bx, y, [0xffd23a, 0xffffff], 26);
-        this.say(t('bought'));
+        this.say(t('bought'), y, x);
         this.onBuy(u);
         this.refresh();
       });

@@ -16,7 +16,7 @@ import { THREE, World3D, model, modelClips } from '@core/three';
 import { WORLDS, HERO_H, POWER_COLOR, MOVE, type WorldLook } from './defs';
 const MOVE_HURT = MOVE.hurtTime;
 import { S, mulberry } from './builder';
-import { geo, Merger, place, litMaterial, partRest, rigKey, isKitGeo } from './kit';
+import { geo, Merger, place, litMaterial, partRest, rigKey, isKitGeo, modelPart } from './kit';
 import { Fx } from './fx3d';
 import type { Course, Box, Solid, Foe, FoeKind } from './course';
 import type { Sim, Hero } from './sim';
@@ -84,10 +84,13 @@ export class View {
   private handles: THREE.Mesh[] = [];
   private numbers: { mesh: THREE.Mesh; mat: THREE.MeshLambertMaterial; on: boolean }[] = [];
   private frames: THREE.Mesh | null = null;
+  private gallows: THREE.Mesh | null = null;
   private foeViews: FoeView[] = [];
   private foeMats = new Map<FoeKind, THREE.MeshLambertMaterial>();
   private shared = new Set<THREE.BufferGeometry>();
   private bonusMeshes: { mesh: THREE.Mesh; used: boolean }[] = [];
+  /** "?" blocks between the camera and the hero are drawn see-through with this (one per stage). */
+  private bonusFade: THREE.MeshLambertMaterial | null = null;
   private flag: THREE.Object3D | null = null;
   // the hero
   readonly hero = new THREE.Group();
@@ -196,8 +199,8 @@ export class View {
     this.world.scene.add(root);
     const r = mulberry(c.n * 31 + 7);
     // islands and static models: one geometry
-    const M = new Merger();
-    for (const s of c.solids) if (s.island && !s.mover && !s.crumble) tileIsland(M, s.b, c.world, s.surf);
+    const M = new Merger(), core = new Merger();
+    for (const s of c.solids) if (s.island && !s.mover && !s.crumble) tileIsland(M, s.b, c.world, s.surf, core);
     for (const d of c.decor) this.decorInto(M, d.key, d.x, d.y, d.z, d.rot, d.s, d.tint);
     // models that stand still under moving parts
     for (const t of c.traps) M.add(geo('qp:spike-trap#base'), place(t.x, trapBase(t.y), t.z, 0, S.trap));
@@ -206,7 +209,6 @@ export class View {
     for (const l of c.levers) M.add(geo('qp:lever#base'), place(l.x, l.y, l.z, l.rot, S.lever).multiply(partRest('lever', 'base')));
     for (const o of c.orbiters) M.box(o.x - 0.22, o.y - 0.75, o.z - 0.22, o.x + 0.22, o.y + 0.45, o.z + 0.22, 0x5a5a66, 0x45454f);
     for (const cp of c.checkpoints) { M.box(cp.x - 0.45, cp.y, cp.z - 0.45, cp.x + 0.45, cp.y + 0.5, cp.z + 0.45, 0xb8b4ac, 0x8f8a82); M.box(cp.x - 0.32, cp.y + 0.5, cp.z - 0.32, cp.x + 0.32, cp.y + 0.62, cp.z + 0.32, 0xd8d4cc, 0xa8a49c); }
-    for (const p of c.pendulums) gallowsInto(M, p.px, p.py, p.pz);
     M.add(geo('qp:flag'), place(c.goal.x, c.goal.y, c.goal.z, Math.PI / 2, S.flag));
     M.box(c.goal.x - 1.3, c.goal.y, c.goal.z - 1.3, c.goal.x + 1.3, c.goal.y + 0.2, c.goal.z + 1.3, 0xffd86a, 0xd8a83a);
     if (c.tower) M.add(geo('qp:tower'), place(c.goal.x, c.goal.y + 0.06, c.goal.z - 5.8, 0, S.tower));
@@ -215,6 +217,8 @@ export class View {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     root.add(mesh);
+    // the islands' solid cores (under the pieces' grooves) cast no shadow: they sit a hair behind the faces
+    if (!core.empty) { const cm = new THREE.Mesh(core.build(), this.lit); cm.receiveShadow = true; root.add(cm); }
     // gate frames on their own (they fade when the hero walks through)
     if (c.doors.length) {
       const F = new Merger();
@@ -223,6 +227,15 @@ export class View {
       this.frames = new THREE.Mesh(F.build(), fm);
       this.frames.castShadow = true;
       root.add(this.frames);
+    }
+    // the pendulums' frames on their own: they stand over the path, so they fade while the hero is
+    // under them or a few steps past them (the camera looks through their beams from behind)
+    if (c.pendulums.length) {
+      const G = new Merger();
+      for (const p of c.pendulums) gallowsInto(G, p.px, p.py, p.pz);
+      this.gallows = new THREE.Mesh(G.build(), new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 1 }));
+      this.gallows.castShadow = true;
+      root.add(this.gallows);
     }
     // floes (moving and crumbling)
     for (const s of c.solids) {
@@ -233,7 +246,7 @@ export class View {
       const sy = (b.y1 - b.y0) / 2, cm = new THREE.Matrix4().makeTranslation(0, -sy, 0).multiply(new THREE.Matrix4().makeScale(w / 2, sy, d / 2));
       const L = TILE_LOOK[c.world] ?? TILE_LOOK.meadow;
       if (s.crumble) F.add(geo('qp:c-dirt'), cm, L.body);
-      else { F.add(geo('qp:c-grass#top'), cm, L.top, L.top !== undefined); F.add(geo('qp:c-grass#body'), cm, L.body); }
+      else { F.add(modelPart('c-grass', 'top')!, cm, L.top, L.top !== undefined); F.add(modelPart('c-grass', 'body')!, cm, L.body); }
       const fm = new THREE.Mesh(F.build(), this.lit);
       fm.castShadow = true; fm.receiveShadow = true;
       root.add(fm);
@@ -281,6 +294,7 @@ export class View {
     // the enemies: a clone of their file each (shared geometry), their own clips
     for (const f of c.foes) this.foeViews.push(this.makeFoe(f, root));
     // "?" blocks (a used one turns to the plain dark cube)
+    this.bonusFade = c.bonuses.length ? new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.3, depthWrite: false }) : null;
     for (const bn of c.bonuses) {
       const mesh = new THREE.Mesh(geo('qp:c-question'), this.lit);
       mesh.castShadow = true;
@@ -359,9 +373,11 @@ export class View {
     this.world.scene.remove(this.stage);
     this.stage = null;
     this.inst.clear();
-    this.floes = []; this.panels = []; this.lids = []; this.handles = []; this.numbers = []; this.frames = null;
+    this.floes = []; this.panels = []; this.lids = []; this.handles = []; this.numbers = []; this.frames = null; this.gallows = null;
     for (const v of this.foeViews) v.mixer.stopAllAction();
     this.foeViews = []; this.bonusMeshes = [];
+    this.bonusFade?.dispose();
+    this.bonusFade = null;
     this.fx.clear();
     void shared;
   }
@@ -394,6 +410,13 @@ export class View {
       m.matrix.copy(place(d.x, d.y, d.z, 0, S.door)).multiply(partRest('door', 'door')).multiply(rotY(-easeInOut(d.open) * 1.85));
       m.matrixWorldNeedsUpdate = true;
     });
+    if (this.gallows) {
+      const h = sim.hero;
+      const near = c.pendulums.some((p) => p.pz > h.z - 1.5 && p.pz < h.z + 10 && Math.abs(h.x - p.px) < 4);
+      const mat = this.gallows.material as THREE.MeshLambertMaterial;
+      mat.opacity += ((near ? 0.22 : 1) - mat.opacity) * Math.min(1, dt * 6);
+      mat.depthWrite = mat.opacity > 0.95;
+    }
     if (this.frames) {
       const h = sim.hero;
       const near = c.doors.some((d) => Math.abs(h.z - d.z) < 2.6 && Math.abs(h.x - d.x) < 3);
@@ -493,6 +516,10 @@ export class View {
       if (bn.used && !b.used) { b.used = true; b.mesh.geometry = geo('qp:c-default'); }
       b.mesh.position.y = bn.y + Math.sin(bn.bump * Math.PI) * 0.25;
       b.mesh.rotation.y = bn.used ? 0 : Math.sin(t * 1.5 + i) * 0.15;
+      // never hide the hero: a block on the line from the camera to the hero turns see-through
+      const fade = this.bonusFade && this.blocksView(b.mesh.position, sim.hero);
+      b.mesh.material = fade ? this.bonusFade! : this.lit;
+      b.mesh.castShadow = !fade;
     });
     this.syncPickups(sim, t);
     this.syncHero(sim.hero, dt, t, sim);
@@ -601,8 +628,9 @@ export class View {
     // blinking after a hit, glowing in Thunder
     const blink = h.hurtT > 0 && h.powers.thunder <= 0 && h.state === 'play' && Math.floor(t * 16) % 2 === 0;
     this.figure.visible = !blink;
-    const glow = h.powers.thunder > 0 ? 0.35 + 0.25 * Math.sin(t * 20) : 0;
-    for (const m of this.heroMats) m.emissive.setRGB(glow, glow * 0.85, glow * 0.2);
+    // a gold pulse, kept low so the hero's own colours still read under the sun
+    const glow = h.powers.thunder > 0 ? 0.07 + 0.07 * Math.sin(t * 20) : 0;
+    for (const m of this.heroMats) m.emissive.setRGB(glow, glow * 0.62, 0);
     if (h.powers.thunder > 0 && Math.random() < 0.8) this.fx.sparks(h.x, h.y + 0.6, h.z, 1, [0xffe36a, 0xffffff], 1.5, 1.5, 0.06);
     if (h.powers.magnet > 0 && Math.random() < 0.3) this.fx.spawn(h.x + Math.cos(t * 6) * 0.7, h.y + 0.7, h.z + Math.sin(t * 6) * 0.7, 0, 0.5, 0, 0.07, 0.4, POWER_COLOR.magnet);
     if (h.powers.spring > 0 && Math.random() < 0.3) this.fx.spawn(h.x, h.y + 0.05, h.z, (Math.random() - 0.5), 1, (Math.random() - 0.5), 0.07, 0.4, POWER_COLOR.spring);
@@ -623,6 +651,16 @@ export class View {
   }
 
   // ---------------------------------------------------------------- the camera
+
+  /** The point `p` sits (within a block's half-size) on the line from the camera to the hero's middle. */
+  private blocksView(p: THREE.Vector3, h: { x: number; y: number; z: number }): boolean {
+    const c = this.world.camera.position;
+    const dx = h.x - c.x, dy = h.y + 0.7 - c.y, dz = h.z - c.z;
+    const l2 = dx * dx + dy * dy + dz * dz || 1;
+    const u = ((p.x - c.x) * dx + (p.y - c.y) * dy + (p.z - c.z) * dz) / l2;
+    if (u <= 0 || u >= 1) return false;
+    return Math.hypot(c.x + dx * u - p.x, c.y + dy * u - p.y, c.z + dz * u - p.z) < 1.05;
+  }
 
   shake(amount: number): void { this.cam.shake = Math.max(this.cam.shake, amount); }
 
@@ -770,7 +808,7 @@ const TILE_LOOK: Record<string, { dirt: boolean; top?: number; body?: number }> 
  * middle and bottom layers under them; a single cube when the island is one cell. The pieces are
  * stretched a little to fit the island's box; the grass is recoloured per world (snow, moss, ice).
  */
-function tileIsland(M: Merger, b: Box, world: string, surf: string): void {
+function tileIsland(M: Merger, b: Box, world: string, surf: string, core: Merger = M): void {
   const L = TILE_LOOK[world] ?? TILE_LOOK.meadow;
   const w = b.x1 - b.x0, d = b.z1 - b.z0;
   const nx = Math.max(1, Math.round(w / 2)), nz = Math.max(1, Math.round(d / 2));
@@ -780,10 +818,14 @@ function tileIsland(M: Merger, b: Box, world: string, surf: string): void {
   const put = (key: string, i: number, k: number, layer: number, rot: number) => {
     const x = b.x0 + (i + 0.5) * 2 * sx, z = b.z0 + (k + 0.5) * 2 * sz, y = b.y1 - 1 - layer * 2;
     // a hair larger than the cell, so neighbouring pieces overlap and no seam shows
-    const m = new THREE.Matrix4().compose(tv.set(x, y, z), tq.setFromAxisAngle(UP, rot), ts.set(sx * 1.012, 1, sz * 1.012));
-    if (key.includes('-g-') || key === 'c-grass') {
-      M.add(geo(`qp:${key}#top`), m, top, top !== undefined);
-      M.add(geo(`qp:${key}#body`), m, L.body);
+    // a quarter turn lays the piece's own x along the world's z: its scale swaps with it
+    const quarter = Math.abs(Math.abs(rot) - Math.PI / 2) < 0.01;
+    const m = new THREE.Matrix4().compose(tv.set(x, y, z), tq.setFromAxisAngle(UP, rot), ts.set((quarter ? sz : sx) * 1.012, 1, (quarter ? sx : sz) * 1.012));
+    const grass = modelPart(key, 'top');
+    if (grass) {
+      M.add(grass, m, top, top !== undefined);
+      const earth = modelPart(key, 'body');
+      if (earth) M.add(earth, m, L.body);
     } else M.add(geo('qp:' + key), m, L.body);
   };
   if (nx === 1 || nz === 1) {
@@ -793,7 +835,7 @@ function tileIsland(M: Merger, b: Box, world: string, surf: string): void {
   }
   // a solid core under the pieces: the grooves between their rounded grass edges show dark, not the sky
   const groove = shade(top ?? (L.dirt ? 0x7a3a1a : 0x4f6a0a), -0.45);
-  M.box(b.x0 + 0.06, b.y1 - layers * 2 + 0.1, b.z0 + 0.06, b.x1 - 0.06, b.y1 - 0.04, b.z1 - 0.06, groove, 0x5a3418, 0x3a2410);
+  core.box(b.x0 + 0.06, b.y1 - layers * 2 + 0.1, b.z0 + 0.06, b.x1 - 0.06, b.y1 - 0.04, b.z1 - 0.06, groove, 0x5a3418, 0x3a2410);
   const set = layers > 1 ? 'tt' : 't', g = L.dirt ? 'd' : 'g';
   for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) {
     const W = i === 0, E = i === nx - 1, N = k === 0, Sth = k === nz - 1;
