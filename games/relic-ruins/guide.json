@@ -1,6 +1,6 @@
 {
   "about": {
-    "en": "Relic Ruins is a 3D exploration and puzzle adventure lit by a single torch. In each of twenty hand-built ruins you search the dark for the relic, a golden chest behind locked doors and old machinery, then find your way out. The torch burns down and its light shrinks with it; braziers fill it again and mark where you return if it dies.\n\nFour realms bring their own tricks: crates, plates, levers and keys in the Overgrown Courtyard; sliding bookcases, candles and flooded halls in the Sunken Library; bear traps, trapdoors and rune sconces in the Gothic Crypt Halls; cracked floors, carts and raised walks in the Collapsing Cathedral. Each realm's last ruin falls in behind you once you lift the relic.\n\nShades, wisps and guardian statues roam the dark, and all of them hate light.",
+    "en": "Relic Ruins is a 3D exploration and puzzle adventure lit by a single torch. In twenty hand-built ruins you search the dark for the relic, a golden chest behind locked doors, then find your way out. The torch burns down and its light shrinks with it; braziers fill it again and mark where you return if it dies.\n\nFour realms bring their own tricks: crates, plates, levers and keys in the Overgrown Courtyard; sliding bookcases, candles and flooded halls in the Sunken Library; bear traps, trapdoors and rune sconces in the Gothic Crypt Halls; cracked floors, carts and raised walks in the Collapsing Cathedral.\n\nShades, wisps and guardian statues roam the dark, and every one of them hates the light of your torch.",
     "tr": "Kadim Harabeler, tek bir meşalenin ışığında geçen 3B bir keşif ve bulmaca macerasıdır. Elle tasarlanmış yirmi harabenin her birinde karanlık salonlarda kadim eseri, kilitli kapıların ve eski düzeneklerin ardındaki altın sandığı ararsın, sonra dışarı çıkmanın yolunu bulursun. Meşale durmadan yanar, ışığı da onunla küçülür; mangallar onu yeniden doldurur ve sönerse döneceğin yeri belirler.\n\nDört diyarın kendi havası ve numaraları vardır: Sarmaşıklı Avlu'da sandıklar, plakalar, kollar ve anahtarlar; Batık Kütüphane'de kayan kitaplıklar, mumlar ve su basmış salonlar; Gotik Mahzenler'de ayı kapanları, kapaklar ve rünlü meşalelikler; Çöken Katedral'de çatlak zemin, raylı arabalar ve yüksek yollar. Her diyarın son harabesi, eseri kaldırdığın anda arkandan çöker.\n\nKaranlıkta gölgeler, ruhlar ve bekçi heykeller dolaşır. Işıktan nefret ederler; güçlü bir meşale ve yerinde bir fişek, hızlı bir kaçış kadar önemlidir."
   },
   "howToPlay": [
@@ -13,7 +13,7 @@
       "tr": "Kadim esere yürü, EYLEM ile aç ve sonra çıkış kapısına ulaş; kapı ancak eseri taşıdığında açılır."
     },
     {
-      "en": "Watch the torch bar. Lit braziers and sconces refill it when you stand near. If it dies, reach a light within a few seconds or lose a heart and wake at the last brazier.",
+      "en": "Watch the torch bar. Lit braziers and sconces refill it. If it dies, reach a light within a few seconds or lose a heart and wake at the last brazier.",
       "tr": "Meşale çubuğunu izle. Yanan mangallar ve duvar meşalelikleri yanlarında durunca onu doldurur. Söndüğünde bir ışığa ulaşmak için birkaç saniyen olur; yetişemezsen bir can kaybeder ve son mangalda uyanırsın."
     },
     {
@@ -27,7 +27,7 @@
   ],
   "controls": {
     "keyboard": {
-      "en": "WASD or the arrows walk. Space or E is ACT: open the relic, pull levers, light candles and sconces, break pots, slide bookcases, or roll when nothing is near; hold it and step back to pull a crate. F or Shift throws a flare, Esc or P pauses. On the map the arrows pick a ruin, Enter plays and C opens the camp.",
+      "en": "WASD or the arrows walk. Space or E is ACT: open the relic, pull levers, light candles, break pots, slide bookcases, or roll; hold it and step back to pull a crate. F or Shift throws a flare, Esc or P pauses. On the map, Enter plays and C opens the camp.",
       "tr": "WASD ya da oklarla yürürsün. Boşluk ya da E EYLEM'dir: eseri açar, kolları çeker, mumları ve meşalelikleri yakar, çömlekleri kırar, kitaplıkları kaydırır, yakında bir şey yoksa takla attırır; basılı tutup geri adım atarsan sandığı çekersin. F ya da Shift fişek atar. Esc ya da P duraklatır. Haritada oklar harabe seçer, Enter oynatır, C kampı açar."
     },
     "touch": {
@@ -41,7 +41,7 @@
   },
   "tips": [
     {
-      "en": "Plan your route between braziers. A full torch lights a wide circle and slows shades; a weak one lets wisps dive at you.",
+      "en": "Plan your route between braziers. A full torch lights a wide circle and slows shades; a weak one invites wisps.",
       "tr": "Rotanı mangallar arasında planla. Dolu bir meşale geniş bir alanı aydınlatır ve gölgeleri yavaşlatır; zayıf bir meşalede ruhlar üstüne dalar."
     },
     {
@@ -57,7 +57,7 @@
       "tr": "Kapaklar bir ritimle açılır ve açılmadan hemen önce takırdar. Sağlam zeminde bekle, kapanır kapanmaz geç."
     },
     {
-      "en": "Bookcases and pots often hide the gems for the second star.",
+      "en": "Bookcases and pots often hide the gems.",
       "tr": "İkinci yıldız için gereken mücevherler çoğu zaman kitaplıkların ve çömleklerin ardında saklıdır; her şeye EYLEM'i dene."
     }
   ],
@@ -75,7 +75,7 @@
       "tr": "Beş güç: Fişek, Kandil Yağı, Çevik Çizme, Pusula ve Hayalet Adım"
     },
     {
-      "en": "A camp of six lasting upgrades, from a bigger reservoir to a spare flare",
+      "en": "Six lasting camp upgrades, from a bigger reservoir to a spare flare",
       "tr": "Büyük hazneden yedek fişeğe altı kalıcı geliştirmeli bir kamp"
     },
     {
@@ -110,7 +110,7 @@
         "tr": "Puan nasıl hesaplanır?"
       },
       "a": {
-        "en": "Coins, gems, broken pots and the relic score as you play. A cleared ruin adds a clear bonus that grows with each realm, 300 points per star, a time bonus under par and a bonus for taking no damage.",
+        "en": "Coins, gems, pots and the relic score as you play. A cleared ruin adds a realm bonus, 300 points per star, a time bonus under par and a no-damage bonus.",
         "tr": "Altınlar, mücevherler, kırılan çömlekler ve eser oynarken puan getirir. Biten bir harabe her diyarda büyüyen bir bitiş bonusu, yıldız başına 300 puan, hedef süre altında süre bonusu ve hiç hasar almazsan ayrıca bonus ekler."
       }
     },
@@ -120,7 +120,7 @@
         "tr": "Telefonda oynanır mı?"
       },
       "a": {
-        "en": "Yes. It is made for portrait phones with a floating stick and two big buttons, and plays as well with a keyboard or gamepad.",
+        "en": "Yes. It is made for portrait phones with a floating stick and two big buttons, and also plays with a keyboard or gamepad.",
         "tr": "Evet. Yüzen bir çubuk ve iki büyük düğmeyle dikey tutulan telefonlar için yapıldı; klavye ya da oyun kumandasıyla da aynı rahatlıkla oynanır."
       }
     }
