@@ -6,6 +6,9 @@
 //   public/games/<slug>/ayvago/card-1280x720.webp    the same card for high-density screens
 //   public/games/<slug>/ayvago/card-tr-640x360.webp, card-tr-1280x720.webp  the Turkish cards: the
 //                                                    same frame with the Turkish logo
+//   public/games/<slug>/ayvago/card-portrait-360x640.webp, card-portrait-720x1280.webp and the Turkish
+//                                                    card-portrait-tr-*: an adaptive game's portrait card
+//                                                    (phones), a frame from its phone run
 //   public/games/<slug>/ayvago/logo-en.png, logo-tr.png  the title logo on a transparent background
 //   public/thumbs/<slug>.png                         thumbnail for this repo's own portal
 // Each game is opened (no intro), its menu and a few seconds of play are captured, then the
@@ -16,8 +19,8 @@
 // plain title, so it looks the same on ayvago.com as on its menu; the Turkish card gets the
 // Turkish one (menuLogo('tr')), a plain card the Turkish title in upper case (tr-TR).
 // Usage: npm run build && node scripts/gen-store-assets.mjs [--dev] [--card-only] [slug ...]
-//   --card-only   regenerate just the cards, both languages (covers, icons, screenshots and
-//                 thumbnails stay)
+//   --card-only   regenerate just the cards, both languages, an adaptive game's portrait cards
+//                 included (covers, icons, screenshots and thumbnails stay)
 //   --tr-from-en  re-compose just the Turkish cards of portrait games from their current English
 //                 cards, which stay as they are: the frame is taken from the English card (the logo
 //                 sits beside it) and its logo colour is matched. A landscape card's logo covers
@@ -26,11 +29,14 @@
 //                 from the game's current card, a themed one is rendered by the game
 // An adaptive game (manifest orientation 'any': landscape on desktops and tablets, portrait on phones)
 // is captured with ?orient=landscape for its card (cover-fit, like a landscape game), screenshot,
-// icon and thumbnail, and once more with ?orient=portrait for the phone on its cover, which shows
-// the desktop frame and the phone side by side.
+// icon and thumbnail, and once more with ?orient=portrait for its portrait card (the phone tile on
+// ayvago.com: the liveliest frame of that run, the small logo at the bottom) and the phone on its
+// cover, which shows the desktop frame and the phone side by side. A CARD entry's `phone` object
+// overrides its settings for the phone run (say another `pick`).
 //   AYVAGO_TEST_PORT=<n> serves the games on that port instead of a random one.
-//   CARD_FRAMES=<dir> keeps the card candidate frames; with --card-only --from-frames the cards are
-//   re-composed from them without opening the games
+//   CARD_FRAMES=<dir> keeps the card candidate frames (an adaptive game's phone run as
+//   <slug>-portrait-<n>.png); with --card-only --from-frames the cards are re-composed from them
+//   without opening the games
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -197,6 +203,8 @@ function iconHtml(m, play) {
 //           scene the card should show through the game's own test hooks (a feature screen,
 //           a busy moment). With a stage the scripted play sends no input: the captures are
 //           taken of the staged scene as it runs.
+//   phone   an adaptive game's overrides for the phone run (portrait card, phone on the cover),
+//           e.g. { pick: 2 }; the stage itself reads the orientation (game.scale) when it differs
 // The picks below were chosen by eye on the November 2026 run (frames without a round-start,
 // "wrong" or game-over banner); check them when the cards are regenerated.
 const CARD = {
@@ -491,16 +499,44 @@ const CARD = {
       await sleep(300);
     }`,
   },
-  // Relic Ruins' card (adaptive: from the landscape run, cover-fit) shows the Stacks of the Sunken
-  // Library by torchlight: the autopilot (god mode on) eight seconds in, among the bookcases, the
-  // golden relic chest glowing beyond. The phone on its cover is the same stage in portrait.
+  // Relic Ruins' cards (adaptive: the landscape card cover-fit from the landscape run, the portrait
+  // card and the phone on the cover from the portrait run) show the heart of the Deep Hall (3-4) by
+  // torchlight: the hero (god mode on, the autopilot off) in the open hall, walking up to the golden
+  // relic chest glowing in its alcove, the stag guardian frozen in his light and a wisp hovering
+  // beside him. The ruin is 13 cells wide, so a camera at the game's own tilt, a little closer
+  // than in play and centred on the hall, has walls and floor at every edge of the frame (the old
+  // follow camera at the Stacks' edge showed the void beyond the map). The simulation then runs
+  // slowly so every candidate frame keeps the scene.
   'relic-ruins': {
     pick: 0,
     stage: `async () => {
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       for (let i = 0; i < 100 && !window.__rr; i++) await sleep(100);
       await sleep(600);
-      window.__rr.stage(8, 8);
+      const rr = window.__rr, g = window.__ayvago.game;
+      const land = g.scale.width > g.scale.height;
+      rr.stage(14, 0.3);
+      rr.auto(false);
+      rr.teleport(6, 11);
+      const s = rr.play.sim;
+      s.hero.yaw = Math.PI * 0.85;
+      for (const t of s.things) if (t.kind === 'brazier' || t.kind === 'sconce') t.on = true;
+      const put = (kind, x, z, yaw) => {
+        const f = s.foes.find((q) => q.kind === kind);
+        if (f) { f.x = f.hx = x; f.z = f.hz = z; if (yaw !== undefined) f.yaw = yaw; }
+      };
+      // a portrait frame is narrow: the creatures stand closer to the hero there
+      if (land) { put('wisp', 16.6, 21.2); put('guardian', 9.2, 21.8, 0.9); }
+      else { put('wisp', 13.9, 20.2); put('guardian', 10.3, 19.9, 0.6); }
+      // the game's tilt and turn (view.ts CAM), closer than in play
+      const look = [12, 0.4, land ? 19.8 : 20.3], d = 10, yaw = 0.24, pitch = 0.98;
+      const hor = Math.cos(pitch) * d, up = Math.sin(pitch) * d;
+      rr.cam([look[0] + Math.sin(yaw) * hor, look[1] + up, look[2] + Math.cos(yaw) * hor], look);
+      await sleep(200);
+      // no hint toast over the scene: the level's hint is a timed event (900 ms after the start),
+      // dropped once the clock has taken it in
+      rr.play.time.removeAllEvents();
+      rr.speed(0.04);
       await sleep(300);
     }`,
   },
@@ -711,9 +747,50 @@ function cardHtml(m, b64, accent, logo, lang = 'en') {
   </script></body></html>`;
 }
 
+// ---- Portrait card (adaptive games only: manifest cardPortrait / cardPortrait2x), the tile ayvago.com
+// shows on phones: a frame from the phone run (?orient=portrait) filling a 9:16 card, with the small
+// logo at the bottom, centred over a soft scrim (the platform's badges sit top-left, and a portrait
+// tile has its width at the bottom for the logo). Laid out at 360×640 CSS px and rendered at device
+// scale 1 and 2 (360×640 and 720×1280).
+const PORTRAIT = [360, 640];
+
+/** The portrait card in `lang`: the phone frame (base64 PNG), the logo in `accent` or the themed logo image. */
+function cardPortraitHtml(m, b64, accent, logo, lang = 'en') {
+  const modern = isModern(m);
+  const text = esc(title(m, lang));
+  const maxW = 280;
+  return `<!doctype html><html><head><style>${FONTS}
+  * { box-sizing: border-box; margin: 0; }
+  body { width: ${PORTRAIT[0]}px; height: ${PORTRAIT[1]}px; overflow: hidden; background: #141212; position: relative; }
+  .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 36%;
+    background: linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,.4) 45%, transparent); }
+  .logo { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: inline-block; max-width: ${maxW}px;
+    text-align: center; text-wrap: balance; }
+  ${plainLogoCss(accent)}
+  .logo-img { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); max-width: ${maxW - 20}px; max-height: 150px;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,.6)); }
+  </style></head><body>
+  <img class="bg" src="data:image/png;base64,${b64}">
+  <div class="scrim"></div>
+  ${logo ? `<img class="logo-img" src="data:image/png;base64,${logo}">` : `<div class="logo ${modern ? 'modern-logo' : 'retro-logo'}" style="font-size:${modern ? 36 : 22}px"><span class="back">${text}</span><span class="front">${text}</span></div>`}
+  <script>
+  window.fitLogo = () => {
+    const img = document.querySelector('.logo-img');
+    if (img) return { size: Math.round(img.getBoundingClientRect().height), lines: 1, w: Math.round(img.getBoundingClientRect().width), fits: true };
+    const el = document.querySelector('.logo');
+    let size = parseFloat(el.style.fontSize);
+    const lh = parseFloat(getComputedStyle(el).lineHeight) / size;
+    const fits = () => el.scrollWidth <= ${maxW} + 1 && el.offsetHeight <= 2 * size * lh + 2;
+    while (!fits() && size > 12) el.style.fontSize = (size -= 0.5) + 'px';
+    return { size, lines: Math.round(el.offsetHeight / (size * lh)), w: el.offsetWidth, fits: fits() };
+  };
+  </script></body></html>`;
+}
+
 /** Draws the card at device scale `scale`: the screenshot (base64 PNG) and the logo's fit. */
-async function shootCard(browser, html, scale, text) {
-  const page = await browser.newPage({ viewport: { width: 640, height: 360 }, deviceScaleFactor: scale });
+async function shootCard(browser, html, scale, text, [width, height] = [640, 360]) {
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: scale });
   await page.setContent(html);
   // the faces for the title's letters: the latin-ext subsets (İ, Ş, Ğ ...) only load on demand,
   // and fonts.ready can settle before the page asks for them
@@ -730,9 +807,10 @@ async function shootCard(browser, html, scale, text) {
  * Renders the card at device scale `scale` and encodes it as WebP no larger than `maxBytes`.
  * `keep` ({ src: base64 WebP of the same card at this scale, rect: [x, y, w, h] in CSS px }) puts
  * that area of an existing card back over the new one (--tr-from-en: the English card's frame).
+ * `size` is the card's CSS size ([640, 360] unless given; the portrait card's is PORTRAIT).
  */
-async function renderCard(browser, lab, html, scale, maxBytes, text, keep = null) {
-  const { png, fit } = await shootCard(browser, html, scale, text);
+async function renderCard(browser, lab, html, scale, maxBytes, text, keep = null, size = undefined) {
+  const { png, fit } = await shootCard(browser, html, scale, text, size);
   const webp = await lab.evaluate(async ({ src, maxBytes, keep, scale }) => {
     const img = new Image();
     img.src = `data:image/png;base64,${src}`;
@@ -1220,12 +1298,19 @@ for (const slug of slugs) {
       made++;
       continue;
     }
-    let shots, logo = null, logoTr = null;
+    // an adaptive game also gets a portrait card from a phone run (the phone on its cover too)
+    const adaptive = m.orientation === 'any';
+    const phoneTune = { ...tune, ...tune.phone };
+    let shots, phoneShots = null, logo = null, logoTr = null;
     if (fromFrames) {
-      const live = JSON.parse(readFileSync(join(framesDir, `${slug}.json`), 'utf8'));
-      shots = live.map((l, n) => ({ live: l, b64: readFileSync(join(framesDir, `${slug}-${n}.png`)).toString('base64') }));
-      const kept = join(framesDir, `${slug}-logo.png`);
-      if (existsSync(kept)) logo = readFileSync(kept).toString('base64');
+      const kept = (tag) => {
+        const live = JSON.parse(readFileSync(join(framesDir, `${slug}${tag}.json`), 'utf8'));
+        return live.map((l, n) => ({ live: l, b64: readFileSync(join(framesDir, `${slug}${tag}-${n}.png`)).toString('base64') }));
+      };
+      shots = kept('');
+      if (adaptive) phoneShots = kept('-portrait');
+      const keptLogo = join(framesDir, `${slug}-logo.png`);
+      if (existsSync(keptLogo)) logo = readFileSync(keptLogo).toString('base64');
       const keptTr = join(framesDir, `${slug}-logo-tr.png`);
       if (logo && !existsSync(keptTr)) throw new Error(`${keptTr} missing (the Turkish menu logo)`);
       if (logo) logoTr = readFileSync(keptTr).toString('base64');
@@ -1235,10 +1320,17 @@ for (const slug of slugs) {
       logo = cap.logo;
       // the Turkish menu logo, rendered by the game in Turkish
       if (logo) logoTr = await themedLogo(browser, slug, land, 'tr');
+      // the phone run: the portrait card's candidates and the phone on the cover
+      const phone = adaptive ? await capture(browser, slug, false, phoneTune) : null;
+      phoneShots = phone?.shots ?? null;
       if (framesDir) {
         mkdirSync(framesDir, { recursive: true });
-        shots.forEach((s, n) => writeFileSync(join(framesDir, `${slug}-${n}.png`), Buffer.from(s.b64, 'base64')));
-        writeFileSync(join(framesDir, `${slug}.json`), JSON.stringify(shots.map((s) => s.live)));
+        const keep = (tag, list) => {
+          list.forEach((f, n) => writeFileSync(join(framesDir, `${slug}${tag}-${n}.png`), Buffer.from(f.b64, 'base64')));
+          writeFileSync(join(framesDir, `${slug}${tag}.json`), JSON.stringify(list.map((f) => f.live)));
+        };
+        keep('', shots);
+        if (phoneShots) keep('-portrait', phoneShots);
         if (logo) writeFileSync(join(framesDir, `${slug}-logo.png`), Buffer.from(logo, 'base64'));
         if (logoTr) writeFileSync(join(framesDir, `${slug}-logo-tr.png`), Buffer.from(logoTr, 'base64'));
       }
@@ -1247,10 +1339,9 @@ for (const slug of slugs) {
         writeFileSync(join(root, 'public', 'thumbs', `${slug}.png`), cap.thumb);
         // Light in-game screenshot for the platform's Arcade theme tiles (manifest assets.screenshot).
         await renderScreenshot(browser, cap.play, land, join(out, 'screenshot.jpg'));
-        // an adaptive game's cover: the phone beside the desktop frame, from a portrait run
-        const phone = m.orientation === 'any' ? (await capture(browser, slug, false, { ...tune, ...tune.phone })).play : null;
+        // an adaptive game's cover: the phone beside the desktop frame
         const art = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-        await art.setContent(coverHtml(m, cap.menu, cap.play, heroImage(slug), logo, phone));
+        await art.setContent(coverHtml(m, cap.menu, cap.play, heroImage(slug), logo, phone?.play ?? null));
         await art.evaluate(() => document.fonts.ready);
         await art.evaluate(() => Promise.all([...document.images].map((i) => i.decode())));
         await art.screenshot({ path: join(out, 'cover-1920x1080.jpg'), type: 'jpeg', quality: 86 });
@@ -1264,10 +1355,14 @@ for (const slug of slugs) {
 
     // Catalog card: frames during live play first, then the liveliest of them, with a small lean
     // towards later frames (past the round-start banners).
-    for (const [n, s] of shots.entries()) Object.assign(s, await frameStats(lab, s.b64), { n });
-    for (const s of shots) s.rank = s.score + 3 * s.n;
-    const ranked = [...shots].sort((a, b) => (b.live - a.live) || (b.rank - a.rank));
-    const best = tune.pick !== undefined ? shots[tune.pick] : ranked[0];
+    const choose = async (list, pick) => {
+      for (const [n, s] of list.entries()) Object.assign(s, await frameStats(lab, s.b64), { n });
+      for (const s of list) s.rank = s.score + 3 * s.n;
+      const ranked = [...list].sort((a, b) => (b.live - a.live) || (b.rank - a.rank));
+      const best = pick !== undefined ? list[pick] : ranked[0];
+      return { best, stats: list.map((s) => `${s.n}${s === best ? '*' : ''}:${s.live ? '' : 'x'}${Math.round(s.rank)}`).join(' ') };
+    };
+    const { best, stats } = await choose(shots, tune.pick);
     // the same frame in both languages, only the logo differs (card-*, card-tr-*)
     const sizes = [];
     let big;
@@ -1282,10 +1377,27 @@ for (const slug of slugs) {
       sizes.push(`${lang} ${Math.round(small.buf.length / 1024)}+${Math.round(b.buf.length / 1024)} KB`);
       big ??= b;
     }
-    const stats = shots.map((s) => `${s.n}${s === best ? '*' : ''}:${s.live ? '' : 'x'}${Math.round(s.rank)}`).join(' ');
+    // the portrait card of an adaptive game (card-portrait-*, card-portrait-tr-*): the liveliest
+    // frame of the phone run (or `phone.pick`), the same logo treatment, both languages
+    let portrait = '';
+    if (adaptive) {
+      const p = await choose(phoneShots, phoneTune.pick);
+      const psizes = [];
+      for (const lang of ['en', 'tr']) {
+        const html = cardPortraitHtml(m, p.best.b64, phoneTune.accent ?? p.best.accent, lang === 'en' ? logo : logoTr, lang);
+        const b = await renderCard(browser, lab, html, 2, 140_000, title(m, lang), null, PORTRAIT);
+        const small = await renderCard(browser, lab, html, 1, 60_000, title(m, lang), null, PORTRAIT);
+        if (!b.fit.fits || !small.fit.fits) throw new Error(`the ${lang} portrait logo does not fit (${b.fit.size}px x${b.fit.lines})`);
+        const name = lang === 'en' ? 'card-portrait' : 'card-portrait-tr';
+        writeFileSync(join(out, `${name}-720x1280.webp`), b.buf);
+        writeFileSync(join(out, `${name}-360x640.webp`), small.buf);
+        psizes.push(`${lang} ${Math.round(small.buf.length / 1024)}+${Math.round(b.buf.length / 1024)} KB`);
+      }
+      portrait = `, portrait [${p.stats}] ${psizes.join(', ')}`;
+    }
     // the logo files with the full set (the card's colour, the menu logo in both languages)
     const logos = cardOnly || fromFrames ? '' : `, ${await writeLogos(browser, lab, m, out, logo && { en: logo, tr: logoTr }, tune.accent ?? best.accent)}`;
-    console.log(`ok    ${slug}  card [${stats}] ${sizes.join(', ')}, logo ${logo ? `themed ${big.fit.w}x${big.fit.size}px` : `${big.fit.size}px x${big.fit.lines}`}${logos}`);
+    console.log(`ok    ${slug}  card [${stats}] ${sizes.join(', ')}${portrait}, logo ${logo ? `themed ${big.fit.w}x${big.fit.size}px` : `${big.fit.size}px x${big.fit.lines}`}${logos}`);
     made++;
   } catch (e) {
     console.log(`FAIL  ${slug}: ${String(e.message).split('\n')[0]}`);

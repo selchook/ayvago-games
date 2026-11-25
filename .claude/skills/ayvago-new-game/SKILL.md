@@ -177,7 +177,7 @@ Other helpers from `@core`:
 8. **Visual check.** Take gameplay screenshots with Playwright and look at them; layout must fit the 720×1280 (or 1280×720) world. An adaptive game: menu, play and every inner screen in both orientations.
 9. **HUD in chips.** Score, lives and level use `Hud`; every other always-visible readout sits in a `hudChip` (glass in modern, plain box in retro). The screenshot shows no bare HUD text and nothing under the pause button.
 10. **Characters move with their own limbs.** In a game with a player character, every move uses one of its poses (no extra limbs drawn on top). Screenshots with two characters show the ball, rope or tool meeting the real foot or hand.
-11. **Store art.** `node scripts/gen-store-assets.mjs <slug>` passes, the catalog cards (`card-640x360.webp`, Turkish `card-tr-640x360.webp`: the same frame) show real play with the logo clear of the action and the Turkish logo fits, and the logos (`logo-en.png`, `logo-tr.png`) read right in both languages (§8).
+11. **Store art.** `node scripts/gen-store-assets.mjs <slug>` passes, the catalog cards (`card-640x360.webp`, Turkish `card-tr-640x360.webp`: the same frame) show real play with the logo clear of the action and the Turkish logo fits, and the logos (`logo-en.png`, `logo-tr.png`) read right in both languages (§8). An adaptive game also has its portrait cards (`card-portrait-360x640.webp`, `card-portrait-tr-360x640.webp`, from the phone run) showing real play with no void at any edge (§7j).
 12. **Game guide.** `games/<slug>/guide.json` is written from the game's real code in English and Turkish, has no TODO left and `npm run validate:platform` passes it (§7i).
 
 ## 7. Verify
@@ -821,15 +821,23 @@ tablets and portrait 720×1280 on phones**. The platform manifest says `orientat
   `--tablet` (smoke, harness) adds an iPad that must boot landscape. Screenshots: a 1280×720
   window for landscape; a phone is `{ viewport: { width: 720, height: 1280 }, screen: { width:
   390, height: 844 }, hasTouch: true, isMobile: true }`. Store art captures the landscape run
-  (card cover-fit like a landscape game, screenshot, icon) and a portrait run for the phone on the
-  cover. Reference: `games/relic-ruins` (3D, themed, map, camp and card in both orientations).
+  (card cover-fit like a landscape game, screenshot, icon) and a portrait run (`?orient=portrait`)
+  for the phone on the cover and the **portrait card** (`card-portrait-360x640.webp`,
+  `card-portrait-720x1280.webp`, Turkish `card-portrait-tr-*`; manifest `assets.cardPortrait` /
+  `cardPortrait2x`): ayvago.com shows it on phones, the landscape card on desktops and tablets. It
+  is the liveliest frame of the phone run with the small logo at the bottom, centred; the `CARD`
+  entry's stage runs in both runs (read `game.scale` to stage each orientation: a portrait frame
+  is narrow, so keep the action near the middle), and `phone: { pick, accent }` overrides the
+  phone run. Neither card may show void beyond the level at an edge: stage a camera over the
+  middle of a dense level rather than the follow camera at the map's edge. Reference:
+  `games/relic-ruins` (3D, themed, map, camp and card in both orientations; its `CARD` stage).
 
 ## 8. Ship
 
 - Run `npm run registry` (validates `game.json`).
 - Run `npm run build`.
 - Write `games/<slug>/guide.json` (§7i), then run `npm run platform` (writes `public/games/<slug>/ayvago.json`, the platform catalog and `platform/arcade-guides.json`).
-- Run `node scripts/gen-store-assets.mjs <slug>` (platform cover, icon, screenshot, catalog card in two sizes and two languages, the logos and portal thumbnail), then `npm run validate:platform`.
+- Run `node scripts/gen-store-assets.mjs <slug>` (platform cover, icon, screenshot, catalog card in two sizes and two languages, an adaptive game's portrait card in two sizes and two languages, the logos and portal thumbnail), then `npm run platform` again (an adaptive game's manifest lists its portrait cards once they exist) and `npm run validate:platform`.
 - Look at the logos `public/games/<slug>/ayvago/logo-en.png` and `logo-tr.png` (manifest `assets.logo`): the title art on a transparent background, which ayvago.com draws over a screenshot on the game page. A game with a menu theme gets its themed logo (emblem included), any other the card's plain title logo; the Turkish letters must be right. `--logo-only` redoes just them.
 - Look at the catalog cards `public/games/<slug>/ayvago/card-640x360.webp` and `card-tr-640x360.webp` (the same frame, the Turkish logo shrunk to fit at most two lines): they are what players see first in the ayvago.com catalog. They must show real play (not the menu, a round-start banner or an empty or black frame) and the logo must not hide the action. If it misses, add the game to the `CARD` table in `scripts/gen-store-assets.mjs` (`pick` another candidate frame, `wait` before the scripted play, or `accent` for the logo colour); `CARD_FRAMES=<dir>` keeps the candidate frames for a look and `--card-only --from-frames` re-composes from them without replaying.
 - Run `node scripts/platform-harness.mjs <slug>` (GHA_* protocol check, embedded like ayvago.com).

@@ -52,6 +52,14 @@ const DEFAULT_SCORING = {
   minDurationMs: 3000, maxPerSecond: 1000, maxScore: 10_000_000,
 };
 
+/**
+ * Whether an adaptive game has its portrait cards (gen-store-assets.mjs writes them from its phone
+ * run): then its manifest and its catalog entry list them (assets.cardPortrait / cardPortrait2x).
+ */
+const portraitCards = (slug, m) => m.orientation === 'adaptive' &&
+  ['card-portrait-360x640.webp', 'card-portrait-720x1280.webp', 'card-portrait-tr-360x640.webp', 'card-portrait-tr-720x1280.webp']
+    .every((f) => existsSync(join(root, 'public', 'games', slug, 'ayvago', f)));
+
 const games = [];
 for (const slug of readdirSync(join(root, 'games')).sort()) {
   const metaPath = join(root, 'games', slug, 'game.json');
@@ -87,6 +95,13 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
       // the catalog card per language: the same frame with the English or the Turkish logo
       card: { en: `/games/${slug}/ayvago/card-640x360.webp`, tr: `/games/${slug}/ayvago/card-tr-640x360.webp` },
       card2x: { en: `/games/${slug}/ayvago/card-1280x720.webp`, tr: `/games/${slug}/ayvago/card-tr-1280x720.webp` },
+      // an adaptive game's portrait card per language (phones), once gen-store-assets.mjs has made it
+      ...(portraitCards(slug, m)
+        ? {
+            cardPortrait: { en: `/games/${slug}/ayvago/card-portrait-360x640.webp`, tr: `/games/${slug}/ayvago/card-portrait-tr-360x640.webp` },
+            cardPortrait2x: { en: `/games/${slug}/ayvago/card-portrait-720x1280.webp`, tr: `/games/${slug}/ayvago/card-portrait-tr-720x1280.webp` },
+          }
+        : {}),
       // the game's title art per language, transparent PNG (game page overlay before Play)
       logo: { en: `/games/${slug}/ayvago/logo-en.png`, tr: `/games/${slug}/ayvago/logo-tr.png` },
     },
@@ -112,6 +127,7 @@ const entries = games.map(({ slug, manifest: m }) => {
   const p = platformOf(slug);
   if (p.addedAt && p.addedAt !== ADDED_AT) e.addedAt = p.addedAt;
   if (p.featured) e.featured = true;
+  if (m.assets.cardPortrait) e.portraitCards = true;
   // A number is a table game (lobby, quick play, invites), two seats included; true a room game.
   const online = metaOf(slug).multiplayer;
   if (typeof online === 'number' && m.players.max > 1) e.multiplayer = m.players.max;
@@ -149,9 +165,11 @@ type ArcadeEntry = Pick<
      * invites) with that many seats, bots only at three or four.
      */
     multiplayer?: boolean | number;
+    /** An adaptive game with portrait card art for phones (\`cardPortrait\`, \`cardPortrait2x\`). */
+    portraitCards?: boolean;
   };
 
-function arcadeGame({ slug, addedAt, featured, multiplayer, ageRating, scoring, version, ...text }: ArcadeEntry): SeedGame {
+function arcadeGame({ slug, addedAt, featured, multiplayer, portraitCards, ageRating, scoring, version, ...text }: ArcadeEntry): SeedGame {
   return {
     slug,
     repo: '${REPO}',
@@ -174,6 +192,12 @@ function arcadeGame({ slug, addedAt, featured, multiplayer, ageRating, scoring, 
         screenshot: \`/games/\${slug}/ayvago/screenshot.jpg\`,
         card: { en: \`/games/\${slug}/ayvago/card-640x360.webp\`, tr: \`/games/\${slug}/ayvago/card-tr-640x360.webp\` },
         card2x: { en: \`/games/\${slug}/ayvago/card-1280x720.webp\`, tr: \`/games/\${slug}/ayvago/card-tr-1280x720.webp\` },
+        ...(portraitCards
+          ? {
+              cardPortrait: { en: \`/games/\${slug}/ayvago/card-portrait-360x640.webp\`, tr: \`/games/\${slug}/ayvago/card-portrait-tr-360x640.webp\` },
+              cardPortrait2x: { en: \`/games/\${slug}/ayvago/card-portrait-720x1280.webp\`, tr: \`/games/\${slug}/ayvago/card-portrait-tr-720x1280.webp\` },
+            }
+          : {}),
         logo: { en: \`/games/\${slug}/ayvago/logo-en.png\`, tr: \`/games/\${slug}/ayvago/logo-tr.png\` },
       },
       version: version ?? '1.0.0',
