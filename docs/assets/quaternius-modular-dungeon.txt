@@ -1,0 +1,71 @@
+# Quaternius Updated Modular Dungeon (May 2019, CC0 1.0): what public/assets/quaternius/modular-dungeon holds
+# (games/dungeon-rescue/import-pack.mjs). dungeon.glb: one root node per model below, in metres (a wall is one
+# 2 m cell of the game's grid), all drawn with one vertex-coloured material 'lit' (244 KB). Each entry: id,
+# bounding box (x × y × z), its lowest corner after standing it up, triangles after simplifying, the source file
+# and, for models with parts the game moves, each part node with its pivot (chest lids, flames, spikes).
+wall 2.00x2.01x0.44 min(-1.00,0.00,-0.22) 500 tris (Wall_Modular.fbx)
+wall-deco 1.74x1.52x0.44 min(-0.92,-0.82,-0.22) 440 tris (Decorative_Wall.fbx)
+floor 2.00x0.25x2.00 min(-1.00,-0.25,-1.00) 294 tris (Floor_Modular.fbx)
+bricks 0.95x0.26x1.20 min(-0.48,0.00,-0.60) 236 tris (Floor_BricksSeparate.fbx)
+door 2.42x3.19x0.33 min(-1.21,0.00,-0.16) 548 tris (Arch_Door.fbx)
+bars 2.48x3.39x0.03 min(-1.24,0.00,-0.02) 494 tris (Arch_bars.fbx)
+column 1.30x4.07x1.30 min(-0.65,0.00,-0.65) 440 tris (Column.fbx)
+column-b 1.30x4.07x1.30 min(-0.65,0.00,-0.65) 548 tris (Column2.fbx)
+stairs 2.01x2.02x2.05 min(-1.01,0.00,-1.03) 710 tris (Stairs_Modular.fbx)
+trapdoor 1.74x0.22x1.70 min(-0.87,-0.05,-0.85) 504 tris (Trapdoor.fbx)
+spike-trap 1.99x1.17x1.99 min(-0.99,0.00,-0.99) 1160 tris (Trap_spikes.fbx)
+  body at (0.00,0.00,0.00) 872 tris
+  spikes at (0.00,0.05,0.00) 288 tris
+torch 0.28x1.15x0.44 min(-0.14,-0.27,-0.29) 386 tris (Torch.fbx)
+  body at (0.00,0.00,0.00) 344 tris
+  flame at (-0.00,0.36,0.01) 42 tris
+campfire 0.78x0.83x0.83 min(-0.39,0.00,-0.41) 224 tris (Woodfire.fbx)
+  body at (0.00,0.00,0.00) 144 tris
+  flame at (0.00,0.13,0.00) 80 tris
+banner 2.36x3.80x0.22 min(-1.18,0.00,-0.11) 564 tris (Banner.fbx)
+banner-wall 1.64x2.85x0.59 min(-0.79,-2.79,-0.50) 440 tris (Banner_wall.fbx)
+horse 1.74x5.85x3.38 min(-0.87,0.00,-1.69) 832 tris (Statue_Horse.fbx)
+table-small 1.30x0.85x1.98 min(-0.65,0.00,-0.99) 480 tris (Table_Small.fbx)
+chair 0.63x1.16x0.70 min(-0.31,0.00,-0.35) 648 tris (Chair.fbx)
+chest-gold 1.18x0.90x1.48 min(-0.59,0.00,-0.74) 1983 tris (Chest_Gold.fbx)
+  base at (-0.00,0.00,0.33) 1729 tris
+  lid at (0.00,0.32,-0.74) 254 tris
+coins 0.14x0.09x0.14 min(-0.07,0.00,-0.07) 2100 tris (Coin_Pile.fbx)
+coin-bag 0.44x0.11x0.22 min(-0.22,0.00,-0.11) 390 tris (Bag_Coins.fbx)
+barrel 1.04x1.35x1.03 min(-0.52,0.00,-0.52) 560 tris (Barrel.fbx)
+barrel-b 1.03x1.35x1.02 min(-0.51,0.00,-0.51) 488 tris (Barrel2.fbx)
+crate 1.38x1.31x1.31 min(-0.69,0.00,-0.66) 625 tris (Crate.fbx)
+bucket 0.38x0.53x0.40 min(-0.19,0.00,-0.20) 216 tris (Bucket.fbx)
+vase 0.31x0.36x0.31 min(-0.16,0.00,-0.16) 220 tris (Vase.fbx)
+cobweb 1.21x0.75x0.91 min(-0.56,-0.03,-0.12) 536 tris (Cobweb.fbx)
+cobweb-b 1.34x0.85x1.03 min(-0.61,-0.02,-0.07) 400 tris (Cobweb2.fbx)
+
+# The FBX files the import reads (the pack as shared by the owner on Google Drive; not in the repository):
+FBX/Arch_Door.fbx 33212 bytes
+FBX/Arch_bars.fbx 28284 bytes
+FBX/Bag_Coins.fbx 32572 bytes
+FBX/Banner.fbx 25628 bytes
+FBX/Banner_wall.fbx 23676 bytes
+FBX/Barrel.fbx 39948 bytes
+FBX/Barrel2.fbx 34924 bytes
+FBX/Bucket.fbx 22556 bytes
+FBX/Chair.fbx 32780 bytes
+FBX/Chest_Gold.fbx 331228 bytes
+FBX/Cobweb.fbx 35132 bytes
+FBX/Cobweb2.fbx 30844 bytes
+FBX/Coin_Pile.fbx 62844 bytes
+FBX/Column.fbx 20924 bytes
+FBX/Column2.fbx 22796 bytes
+FBX/Crate.fbx 51868 bytes
+FBX/Decorative_Wall.fbx 31820 bytes
+FBX/Floor_BricksSeparate.fbx 19580 bytes
+FBX/Floor_Modular.fbx 34604 bytes
+FBX/Stairs_Modular.fbx 37084 bytes
+FBX/Statue_Horse.fbx 44268 bytes
+FBX/Table_Small.fbx 29980 bytes
+FBX/Torch.fbx 21900 bytes
+FBX/Trap_spikes.fbx 37180 bytes
+FBX/Trapdoor.fbx 27772 bytes
+FBX/Vase.fbx 17564 bytes
+FBX/Wall_Modular.fbx 41964 bytes
+FBX/Woodfire.fbx 21996 bytes
