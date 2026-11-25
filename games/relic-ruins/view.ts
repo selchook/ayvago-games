@@ -11,7 +11,9 @@
 //     pack's torch in the left hand, its flame the light that follows him;
 //   - the creatures (shades and wisps from the platformer pack, the guardian statues from this one);
 //   - the darkness and the cutaway (shade.ts), the light pools of lit fires, embers and dust;
-//   - a tilted camera above and in front of the hero that eases after him and shakes on hits.
+//   - a tilted camera above and in front of the hero that eases after him and shakes on hits. The
+//     game is adaptive: in landscape (desktops and tablets) the same tilt, a little closer, shows
+//     the ruin's whole width beside the hero; on the map the turning ruin sits right of the board.
 import { THREE, World3D, model, modelClips } from '@core/three';
 import { CELL, RAISE, WALL_H, HERO_H, WORLDS, POWER_COLOR, LIGHT_MAX, type WorldLook } from './defs';
 import { geo, partGeo, partRest, Merger, place, isKitGeo, HERO, SHADE, WISP } from './kit';
@@ -26,12 +28,18 @@ const UP = new THREE.Vector3(0, 1, 0);
 const HERO_SCALE = HERO_H / 285.6;
 /** The camera: this far from the hero, this steep, turned this much off the grid. */
 export const CAM = { dist: 17.5, pitch: 0.98, yaw: 0.24, fov: 52, lookAhead: -1.4 };
-const FLOOR_KIND: Record<string, [string, string]> = { courtyard: ['floor-squares', 'floor-tree'], library: ['floor-large', 'floor-squares'], crypt: ['floor-diamond', 'floor-squares'], cathedral: ['floor-squares', 'floor-diamond'] };
+/**
+ * Landscape (1280 × 720): the same vertical field, so the hero would stand as tall in a shorter
+ * frame: the camera comes a little closer (the frame is wide enough for the ruin's width anyway);
+ * on the map the ruin is shifted right of the board by this share of the half-width.
+ */
+const CAM_LAND = { zoom: 0.8, previewShift: 0.5, previewZoom: 1.12 };
+const FLOOR_KIND: Record<string, [string, string]> = { courtyard: ['floor-squares', 'floor-tree'], library: ['floor-large', 'floor-squares'], halls: ['floor-diamond', 'floor-squares'], citadel: ['floor-squares', 'floor-diamond'] };
 const WALLS: Record<string, [string, number][]> = {
   courtyard: [['wall', 5], ['wall-overgrown', 4], ['wall-broken', 1]],
-  library: [['wall', 6], ['wall-bars', 2], ['wall-hole', 1]],
-  crypt: [['wall', 5], ['wall-hole', 2], ['wall-bars', 2]],
-  cathedral: [['wall', 4], ['wall-broken', 3], ['wall-hole', 2]],
+  library: [['wall', 7], ['wall-hole', 1]],
+  halls: [['wall', 5], ['wall-hole', 2], ['wall-broken', 1]],
+  citadel: [['wall', 4], ['wall-broken', 3], ['wall-hole', 2]],
 };
 const CHUNK = 6;
 
@@ -122,8 +130,11 @@ export class View {
   shotCam: [number[], number[]] | null = null;
   private time = 0;
   private preT = 0;
+  /** A landscape frame (the game's orientation, decided at boot). */
+  private land: boolean;
 
   constructor(host: Phaser.Scene, o: { quality?: number } = {}) {
+    this.land = host.scale.width > host.scale.height;
     this.world = new World3D(host, { fov: CAM.fov, background: 0x0c1418, fog: { color: 0x0c1418, near: 20, far: 40 }, shadows: false, quality: o.quality ?? 0.9, far: 80 });
     const w = this.world;
     this.u = darkUniforms();
@@ -232,10 +243,10 @@ export class View {
       // the block's top: a dark stone slab (also over blocks only touching floors at a corner)
       let near = edge;
       for (let dr = -1; dr <= 1 && !near; dr++) for (let dc = -1; dc <= 1 && !near; dc++) if (!isWall(c + dc, r + dr)) near = true;
-      // the ruin grows over its walls: a bush on the courtyard's, a dead tree on the cathedral's
+      // the ruin grows over its walls: a bush on the courtyard's, a dead tree on the citadel's
       if (near && !edge && rnd() < 0.3) {
         if (L.world === 'courtyard') ch.wall.add(geo(rnd() < 0.7 ? 'bush' : 'tree'), place(cellX(c), WALL_H, cellZ(r), rnd() * 6, 0.7 + rnd() * 0.3));
-        else if (L.world === 'cathedral' && rnd() < 0.5) ch.wall.add(geo('dead-tree'), place(cellX(c), WALL_H, cellZ(r), rnd() * 6, 0.7));
+        else if (L.world === 'citadel' && rnd() < 0.5) ch.wall.add(geo('dead-tree'), place(cellX(c), WALL_H, cellZ(r), rnd() * 6, 0.7));
       } else if (edge && L.world === 'courtyard' && rnd() < 0.12) ch.wall.add(geo('bush'), place(cellX(c), WALL_H - 0.1, cellZ(r), rnd() * 6, 0.75));
       if (near) {
         // the top, and a dark floor inside (seen when the wall is cut away round the hero)
@@ -324,8 +335,7 @@ export class View {
       const x = cellX(c), z = cellZ(r), h = cell.h * RAISE;
       const rot = isWall(c - 1, r) || isWall(c + 1, r) ? 0 : Math.PI / 2;
       if (cell.k === 'door' || cell.k === 'lock' || cell.k === 'sealed' || cell.k === 'exit') {
-        const gothic = cell.k === 'lock' || cell.k === 'exit' || L.world === 'crypt';
-        chunk(c, r).wall.add(geo(gothic ? 'arch-gothic' : L.world === 'courtyard' ? 'arch-overgrown' : 'arch'), place(x, h, z, rot, [0.5, 0.52, 0.9]), lk.wall);
+        chunk(c, r).wall.add(geo(L.world === 'courtyard' ? 'arch-overgrown' : 'arch'), place(x, h, z, rot, [0.5, 0.52, 0.9]), lk.wall);
         if (cell.k === 'sealed') nSealed++; else if (cell.k === 'door') nDoor++; else nLock++;
       }
       if (cell.k === 'bookcase') nShelf++;
@@ -334,8 +344,9 @@ export class View {
     const add = (k: string, g: THREE.BufferGeometry, n: number, mat: THREE.Material = this.matProp, colors = false) => { if (n > 0) this.inst.set(k, new Inst(root, g, mat, n, colors)); };
     add('leafL', geo('doors#left'), nDoor, this.matWall);
     add('leafR', geo('doors#right'), nDoor, this.matWall);
-    add('gleafL', geo('doors-gothic#left'), nLock, this.matWall, true);
-    add('gleafR', geo('doors-gothic#right'), nLock, this.matWall, true);
+    // locked doors and the exit gate: the same round-arch leaves, tinted (iron, gold)
+    add('gleafL', geo('doors#left'), nLock, this.matWall, true);
+    add('gleafR', geo('doors#right'), nLock, this.matWall, true);
     add('sealed', geo('sealed'), nSealed, this.matWall);
     add('shelf', geo('bookcase'), nShelf, this.matWall);
     add('trapdoor', geo('trapdoor'), nTrap);
@@ -353,7 +364,7 @@ export class View {
           const [wx, wz] = t.wall;
           ch.wall.add(geo('torch#body'), place(x + wx * 0.86, h + 0.95, z + wz * 0.86, Math.atan2(-wx, -wz), 0.75));
           if (t.kind === 'puzzle') {
-            // a rune plaque under it: the sconces that open the sealed door
+            // a glyph plaque under it: the sconces that open the sealed door
             const px = x + wx * 0.97, pz = z + wz * 0.97;
             ch.wall.box(px - (wz ? 0.32 : 0.04), h + 0.38, pz - (wx ? 0.32 : 0.04), px + (wz ? 0.32 : 0.04), h + 0.62, pz + (wx ? 0.32 : 0.04), 0x8a60c8, 0x5a3a8a);
           }
@@ -404,7 +415,7 @@ export class View {
       add('brick', geo('brick'), 12);
       add('warn', new THREE.RingGeometry(0.55, 0.85, 24).rotateX(-Math.PI / 2), 12, new THREE.MeshBasicMaterial({ color: 0xff5030, transparent: true, opacity: 0.7, depthWrite: false, fog: false }));
     }
-    // decor: plants, rubble, skulls, banners (never on the way)
+    // decor: plants, rubble, pots, banners (never on the way)
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
       const cell = at(c, r)!;
       if (cell.k !== 'floor' || cell.shelf || cell.plate || cell.rail || sim.thingAt(c, r) || sim.blockAt(c, r)) continue;
@@ -417,8 +428,8 @@ export class View {
       switch (L.world) {
         case 'courtyard': ch.low.add(geo(k < 0.5 ? 'grass' : k < 0.8 ? 'bush' : 'bricks'), place(x, h, z, rnd() * 6, k < 0.5 ? 0.9 : k < 0.8 ? 0.55 : 0.4)); break;
         case 'library': if (k < 0.35) ch.low.add(geo('pot-small'), place(x, h, z, rnd() * 6, 0.9)); else if (k < 0.6) ch.low.add(geo('bricks'), place(x, h, z, rnd() * 6, 0.35)); break;
-        case 'crypt': ch.low.add(geo(k < 0.5 ? 'skull' : 'bricks'), place(x, h, z, rnd() * 6, k < 0.5 ? 0.8 : 0.4)); break;
-        case 'cathedral': ch.low.add(geo(k < 0.6 ? 'bricks' : 'brick'), place(x, h, z, rnd() * 6, k < 0.6 ? 0.45 : 0.9)); break;
+        case 'halls': if (k < 0.3) ch.low.add(geo('pot-small'), place(x, h, z, rnd() * 6, 0.9)); else ch.low.add(geo(k < 0.7 ? 'bricks' : 'barrel'), place(x, h, z, rnd() * 6, k < 0.7 ? 0.4 : 0.6)); break;
+        case 'citadel': ch.low.add(geo(k < 0.6 ? 'bricks' : 'brick'), place(x, h, z, rnd() * 6, k < 0.6 ? 0.45 : 0.9)); break;
       }
       if (wz === -1 && rnd() < 0.25) ch.wall.add(geo('banner'), place(cellX(c), h + 0.05, cellZ(r) - 0.9, 0, [0.7, 0.62, 0.7]));
     }
@@ -659,8 +670,8 @@ export class View {
         const [A, B] = cell.k === 'door' ? [lL, lR] : [gL, gR];
         if (!A || !B) continue;
         const base = place(x, h, z, rot, 0.5);
-        const hl = base.clone().multiply(partRest(cell.k === 'door' ? 'doors' : 'doors-gothic', 'left')).multiply(new THREE.Matrix4().makeRotationY(ang));
-        const hr = base.clone().multiply(partRest(cell.k === 'door' ? 'doors' : 'doors-gothic', 'right')).multiply(new THREE.Matrix4().makeRotationY(-ang));
+        const hl = base.clone().multiply(partRest('doors', 'left')).multiply(new THREE.Matrix4().makeRotationY(ang));
+        const hr = base.clone().multiply(partRest('doors', 'right')).multiply(new THREE.Matrix4().makeRotationY(-ang));
         const ia = A.putM(hl), ib = B.putM(hr);
         if (cell.k !== 'door') { const col = cell.k === 'exit' ? (open ? 0xffffff : 0xd8b060) : 0xa0a8b8; A.color(ia, col); B.color(ib, col); }
       } else if (cell.k === 'sealed' && sl) {
@@ -865,19 +876,24 @@ export class View {
       this.u.uRRCam.value.copy(cam.position);
       return;
     }
-    let tx = h.x, ty = h.y, tz = h.z, dist = CAM.dist * c.zoom, yaw = CAM.yaw;
+    const near = this.land ? CAM_LAND.zoom : 1;
+    let tx = h.x, ty = h.y, tz = h.z, dist = CAM.dist * c.zoom * near, yaw = CAM.yaw;
+    let side = 0;
     if (mode === 'preview') {
       // the whole ruin turning slowly
       this.preT += dt;
       tx = (L.cols - 1) * CELL / 2; tz = (L.rows - 1) * CELL / 2 - 1; ty = 0;
       dist = Math.max(L.cols, L.rows * 0.75) * CELL * 1.15 + 6;
       yaw = CAM.yaw + Math.sin(this.preT * 0.25) * 0.35;
+      // landscape: the board is on the left, the ruin turns on the right
+      if (this.land) dist *= CAM_LAND.previewZoom;
+      if (this.land) side = -CAM_LAND.previewShift * dist * Math.tan((CAM.fov * Math.PI) / 360) * (this.world.camera.aspect || 16 / 9);
     } else if (mode === 'intro') {
       // from the relic down to the hero
       const k = Math.min(1, introT), e = k * k * (3 - 2 * k);
       tx = cellX(L.relic[0]) + (h.x - cellX(L.relic[0])) * e;
       tz = cellZ(L.relic[1]) + (h.z - cellZ(L.relic[1])) * e;
-      dist = CAM.dist * (1.35 - 0.35 * e);
+      dist = CAM.dist * near * (1.35 - 0.35 * e);
     }
     const fog = this.world.scene.fog as THREE.Fog;
     fog.near = dist + 3; fog.far = dist * 2 + 22;
@@ -886,7 +902,8 @@ export class View {
     c.shake = Math.max(0, c.shake - dt * 2.2);
     const sh = c.shake * c.shake * 0.5;
     const hor = Math.cos(CAM.pitch) * dist, up = Math.sin(CAM.pitch) * dist;
-    const lx = c.x + Math.sin(yaw) * CAM.lookAhead, lz = c.z + Math.cos(yaw) * CAM.lookAhead;
+    // `side` moves the look point along the screen's right (cos yaw, 0, -sin yaw)
+    const lx = c.x + Math.sin(yaw) * CAM.lookAhead + Math.cos(yaw) * side, lz = c.z + Math.cos(yaw) * CAM.lookAhead - Math.sin(yaw) * side;
     cam.position.set(lx + Math.sin(yaw) * hor + (Math.random() - 0.5) * sh, c.y + up + (Math.random() - 0.5) * sh, lz + Math.cos(yaw) * hor);
     cam.lookAt(lx, c.y + 0.4, lz);
     this.u.uRRCam.value.copy(cam.position);

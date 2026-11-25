@@ -71,8 +71,8 @@ export const WARM_R = 2.6;
 
 // ------------------------------------------------------------------ worlds
 
-export type WorldId = 'courtyard' | 'library' | 'crypt' | 'cathedral';
-export const WORLD_IDS: WorldId[] = ['courtyard', 'library', 'crypt', 'cathedral'];
+export type WorldId = 'courtyard' | 'library' | 'halls' | 'citadel';
+export const WORLD_IDS: WorldId[] = ['courtyard', 'library', 'halls', 'citadel'];
 
 export interface WorldLook {
   /** The void's colour (around the ruin and down the pits). */
@@ -98,8 +98,8 @@ export interface WorldLook {
 export const WORLDS: Record<WorldId, WorldLook> = {
   courtyard: { bg: 0x0c1418, hemi: [0x9ac0d8, 0x2a3a24, 0.9], moon: [0xa8c8ff, 0.55], floor: 0xc8ccbc, wall: 0xc4c8b4, cap: 0x4a5040, flame: 0xffa040, mote: 0xb8f070, water: false, burn: 0.85 },
   library: { bg: 0x081420, hemi: [0x7aa8d0, 0x1a2838, 0.82], moon: [0x8ab8ff, 0.5], floor: 0xb4bcc8, wall: 0xb0b8c4, cap: 0x3c4248, flame: 0xffb050, mote: 0xa8d8ff, water: true, burn: 1 },
-  crypt: { bg: 0x100a18, hemi: [0x9a88c8, 0x281c30, 0.75], moon: [0xb8a0ff, 0.45], floor: 0xb4acbc, wall: 0xb0a8bc, cap: 0x3e3848, flame: 0xffa848, mote: 0xd0b0ff, water: false, burn: 1.12 },
-  cathedral: { bg: 0x180a06, hemi: [0xd0a080, 0x382014, 0.8], moon: [0xffb080, 0.5], floor: 0xccb8a4, wall: 0xc8b4a0, cap: 0x4a3c30, flame: 0xff9030, mote: 0xffa040, water: false, burn: 1.22 },
+  halls: { bg: 0x100a18, hemi: [0x9a88c8, 0x281c30, 0.75], moon: [0xb8a0ff, 0.45], floor: 0xb4acbc, wall: 0xb0a8bc, cap: 0x3e3848, flame: 0xffa848, mote: 0xd0b0ff, water: false, burn: 1.12 },
+  citadel: { bg: 0x180a06, hemi: [0xd0a080, 0x382014, 0.8], moon: [0xffb080, 0.5], floor: 0xccb8a4, wall: 0xc8b4a0, cap: 0x4a3c30, flame: 0xff9030, mote: 0xffa040, water: false, burn: 1.22 },
 };
 
 // ------------------------------------------------------------------ powers

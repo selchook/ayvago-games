@@ -190,7 +190,7 @@ const DEFS: LevelDef[] = [
     route: [['go', 1, 12], ['act', 4, 12], ['act', 8, 12], ['go', 11, 12], ['go', 11, 9], ['act', 9, 5], ['go', 11, 4], ['act', 5, 5], ['act', 6, 3]],
   },
   {
-    // 2-2 Candle Vigil: light every candle before the first burns out
+    // 2-2 Candle Watch: light every candle before the first burns out
     map: [
       '#############',
       '#####.E.#####',
@@ -276,9 +276,9 @@ const DEFS: LevelDef[] = [
     escape: true,
     route: [['act', 1, 11], ['go', 5, 10], ['go', 4, 8], ['go', 1, 4], ['go', 9, 4], ['act', 5, 3], ['act', 5, 1]],
   },
-  // ------------------------------------------------------------ World 3: the Gothic Crypt Halls
+  // ------------------------------------------------------------ World 3: the Shadow Halls
   {
-    // 3-1 Bone Gallery: bear traps, the ghost step
+    // 3-1 Pillar Gallery: bear traps, the ghost step
     map: [
       '###########',
       '####.E.####',
@@ -322,7 +322,7 @@ const DEFS: LevelDef[] = [
     route: [['go', 1, 12], ['go', 7, 12], ['go', 1, 9], ['go', 1, 10], ['go', 3, 8], ['act', 4, 7], ['go', 4, 6], ['go', 4, 2]],
   },
   {
-    // 3-3 Sconce Chapel: light every puzzle sconce; wisps keep to the dark
+    // 3-3 Lamp Room: light every marked sconce; wisps keep to the dark
     map: [
       '###########',
       '####.E.####',
@@ -343,7 +343,7 @@ const DEFS: LevelDef[] = [
     route: [['act', 1, 11], ['go', 9, 11], ['go', 3, 10], ['go', 7, 10], ['act', 1, 8], ['act', 1, 4], ['act', 9, 4], ['act', 9, 8], ['act', 4, 2], ['go', 7, 2]],
   },
   {
-    // 3-4 Ossuary: levers, keys, traps, wisps and a guardian together
+    // 3-4 The Deep Hall: levers, keys, traps, wisps and a guardian together
     map: [
       '#############',
       '#####.E.#####',
@@ -365,7 +365,7 @@ const DEFS: LevelDef[] = [
     route: [['act', 1, 9], ['go', 11, 9], ['go', 1, 7], ['go', 1, 3], ['go', 3, 5], ['act', 11, 3], ['go', 9, 7], ['go', 6, 10], ['act', 6, 9]],
   },
   {
-    // 3-5 Crypt Cave-in: escape over trapdoors
+    // 3-5 Halls Cave-in: escape over trapdoors
     map: [
       '###########',
       '###*.$.*###',
@@ -386,9 +386,9 @@ const DEFS: LevelDef[] = [
     escape: true,
     route: [['act', 1, 11], ['act', 1, 8], ['act', 1, 4], ['act', 9, 4], ['act', 9, 8], ['go', 5, 2], ['act', 5, 1]],
   },
-  // ------------------------------------------------------------ World 4: the Collapsing Cathedral
+  // ------------------------------------------------------------ World 4: the Crumbling Citadel
   {
-    // 4-1 The Nave: cracked floors fall away behind you; swift boots
+    // 4-1 The Keep: cracked floors fall away behind you; swift boots
     map: [
       '###########',
       '####.E.####',
@@ -431,7 +431,7 @@ const DEFS: LevelDef[] = [
     route: [['go', 1, 12], ['go', 11, 12], ['push', 3, 10, 'N', 1], ['go', 3, 8], ['act', 6, 7], ['push', 9, 6, 'N', 1], ['go', 11, 3], ['act', 5, 3]],
   },
   {
-    // 4-3 Bell Stairs: stairs up to raised walks, bridges over the nave's pit
+    // 4-3 Tower Stairs: stairs up to raised walks, bridges over the keep's pit
     map: [
       '###########',
       '#####E#####',
@@ -467,7 +467,7 @@ const DEFS: LevelDef[] = [
     route: [['go', 1, 10], ['go', 9, 10], ['go', 5, 9], ['go', 9, 7], ['go', 5, 7], ['act', 5, 5], ['go', 9, 3]],
   },
   {
-    // 4-4 Choir Ruins: everything at once
+    // 4-4 The Ramparts: everything at once
     map: [
       '#############',
       '#####.E.#####',
@@ -486,11 +486,11 @@ const DEFS: LevelDef[] = [
       '#############',
     ],
     par: 75,
-    hint: 'h_choir',
+    hint: 'h_all',
     route: [['act', 1, 13], ['go', 10, 13], ['act', 5, 10], ['act', 1, 12], ['act', 6, 9], ['go', 3, 7], ['push', 5, 5, 'E', 2], ['go', 5, 3], ['act', 11, 3]],
   },
   {
-    // 4-5 Cathedral Fall: the last escape
+    // 4-5 Citadel Fall: the last escape
     map: [
       '#############',
       '#####*$*#####',

@@ -1,20 +1,15 @@
 # Quaternius Ultimate Modular Ruins Pack (CC0 1.0): what public/assets/quaternius/ultimate-modular-ruins-pack holds
 # (games/relic-ruins/import-pack.mjs). ruins.glb: one root node per model below, in metres (a wall is one
-# 2 m cell of the pack's grid), all drawn with one vertex-coloured material 'lit' (318 KB). Each entry: id,
+# 2 m cell of the pack's grid), all drawn with one vertex-coloured material 'lit' (286 KB). Each entry: id,
 # bounding box (x × y × z), its lowest corner, triangles after simplifying, the source file and, for models
 # with parts the game moves, each part node with its pivot (door leaves on their hinges, chest lids, flames).
 wall 2.00x2.00x0.29 min(-1.00,-0.00,-0.25) 344 tris (Wall.fbx)
 wall-broken 1.99x1.95x0.29 min(-0.99,0.01,-0.26) 248 tris (Wall_Broken.fbx)
 wall-overgrown 1.99x1.98x0.30 min(-0.99,0.01,-0.26) 394 tris (Wall_Overgrown.fbx)
 wall-hole 2.00x2.00x0.29 min(-1.00,0.03,-0.25) 254 tris (Wall_Hole.fbx)
-wall-bars 1.99x1.99x0.30 min(-0.99,0.00,-0.27) 377 tris (Window_Bars.fbx)
 arch 4.00x3.99x0.31 min(-2.00,0.00,-0.25) 534 tris (Wall_ArchRound.fbx)
-arch-gothic 4.00x3.99x0.29 min(-2.00,0.00,-0.25) 518 tris (Wall_ArchGothic.fbx)
 arch-overgrown 4.00x3.99x0.32 min(-2.00,0.00,-0.26) 672 tris (Wall_ArchRound_Overgrown.fbx)
 doors 2.31x2.97x0.27 min(-1.16,-0.01,-0.14) 872 tris (Doors_RoundArch.fbx)
-  left at (-1.16,-0.01,-0.00) 436 tris
-  right at (1.16,-0.01,0.00) 436 tris
-doors-gothic 2.31x3.21x0.27 min(-1.16,-0.01,-0.14) 872 tris (Doors_GothicArch.fbx)
   left at (-1.16,-0.01,-0.00) 436 tris
   right at (1.16,-0.01,0.00) 436 tris
 sealed 2.52x2.97x0.28 min(-1.27,-0.01,-0.14) 838 tris (Doors_RoundArch_Covered.fbx)
@@ -49,7 +44,6 @@ torch 0.28x1.17x0.44 min(-0.14,-0.27,-0.29) 386 tris (Torch.fbx)
 banner 0.92x2.02x0.32 min(-0.46,-0.03,-0.11) 204 tris (Flag_Wall.fbx)
 fox 1.35x3.75x1.68 min(-0.60,-0.00,-0.90) 751 tris (Statue_Fox.fbx)
 stag 2.31x4.63x1.27 min(-1.71,-0.00,-0.60) 1010 tris (Statue_Stag.fbx)
-skull 0.44x0.46x0.60 min(-0.22,-0.01,-0.31) 254 tris (Skull.fbx)
 brick 0.53x0.32x0.28 min(-0.25,-0.00,-0.16) 76 tris (Brick.fbx)
 bricks 1.82x0.55x1.61 min(-1.08,-0.00,-0.79) 248 tris (Bricks.fbx)
 bush 1.25x0.71x1.25 min(-0.66,-0.30,-0.66) 312 tris (Bush_Round.fbx)
@@ -76,7 +70,6 @@ FBX/Column_Round_Short.fbx 25756 bytes
 FBX/Column_Square.fbx 28732 bytes
 FBX/Crate.fbx 32220 bytes
 FBX/DeadTree_1.fbx 29468 bytes
-FBX/Doors_GothicArch.fbx 58668 bytes
 FBX/Doors_RoundArch.fbx 58636 bytes
 FBX/Doors_RoundArch_Covered.fbx 52220 bytes
 FBX/Flag_Wall.fbx 19164 bytes
@@ -89,7 +82,6 @@ FBX/Pot1.fbx 38060 bytes
 FBX/Pot1_Broken.fbx 25596 bytes
 FBX/Pot2.fbx 34732 bytes
 FBX/Rail_Straight.fbx 21148 bytes
-FBX/Skull.fbx 26572 bytes
 FBX/Stairs.fbx 56764 bytes
 FBX/Statue_Fox.fbx 67420 bytes
 FBX/Statue_Stag.fbx 118172 bytes
@@ -97,10 +89,8 @@ FBX/Torch.fbx 23900 bytes
 FBX/Trapdoor.fbx 27004 bytes
 FBX/Tree_1.fbx 40060 bytes
 FBX/Wall.fbx 36684 bytes
-FBX/Wall_ArchGothic.fbx 53580 bytes
 FBX/Wall_ArchRound.fbx 53100 bytes
 FBX/Wall_ArchRound_Overgrown.fbx 56876 bytes
 FBX/Wall_Broken.fbx 30748 bytes
 FBX/Wall_Hole.fbx 30284 bytes
 FBX/Wall_Overgrown.fbx 47852 bytes
-FBX/Window_Bars.fbx 36204 bytes

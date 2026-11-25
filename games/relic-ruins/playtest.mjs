@@ -11,8 +11,10 @@
 //     GameOver) with the run's score;
 //   - Easy and Normal differ (more hearts, a slower torch, slower creatures on Easy);
 //   - no page errors on the way.
-// Run: node games/relic-ruins/playtest.mjs [--base http://localhost:5471] [--shots <dir>]
-//   Without --base it starts its own Vite dev server on a port from 5476 to 5479. Exits 1 on a failure.
+// The game is adaptive: the whole playthrough runs twice, on a desktop window (it must boot
+// landscape) and on an emulated phone (touch, a 390 px short side: it must boot portrait).
+// Run: node games/relic-ruins/playtest.mjs [--base http://localhost:5481] [--shots <dir>] [--orient landscape|portrait]
+//   Without --base it starts its own Vite dev server on a port from 5481 to 5489. Exits 1 on a failure.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -28,11 +30,18 @@ const args = process.argv.slice(2);
 const opt = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : null; };
 let base = opt('--base');
 const shots = opt('--shots');
+const ORIENTS = opt('--orient') ? [opt('--orient')] : ['landscape', 'portrait'];
+/** The browser context of each run: a desktop window, or a phone (touch, no hover, a short screen). */
+const DEVICE = {
+  landscape: { viewport: { width: 1280, height: 720 } },
+  portrait: { viewport: { width: 720, height: 1280 }, screen: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
+};
+let orient = ORIENTS[0];
 if (shots) mkdirSync(shots, { recursive: true });
 
 let server = null;
 if (!base) {
-  const port = 5476 + Math.floor(Math.random() * 4);
+  const port = 5481 + Math.floor(Math.random() * 9);
   server = spawn('npx', ['vite', '--port', String(port), '--strictPort'], { cwd: root, stdio: 'pipe', detached: true, env: { ...process.env, VITE_CACHE_DIR: join(tmpdir(), `rr-play-${port}`) } });
   base = `http://localhost:${port}`;
   for (let i = 0; i < 120; i++) {
@@ -42,12 +51,12 @@ if (!base) {
 }
 
 const results = [];
-const check = (name, ok, detail = '') => { results.push({ name, ok }); console.log(`${ok ? 'ok  ' : 'FAIL'}  ${name}  ${detail}`); };
+const check = (name, ok, detail = '') => { results.push({ name, ok }); console.log(`${ok ? 'ok  ' : 'FAIL'}  [${orient}] ${name}  ${detail}`); };
 const browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const errors = [];
 
 async function open(difficulty = 'normal') {
-  const ctx = await browser.newContext({ viewport: { width: 720, height: 1280 }, deviceScaleFactor: 1 });
+  const ctx = await browser.newContext({ ...DEVICE[orient], deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript((d) => {
@@ -62,10 +71,12 @@ async function open(difficulty = 'normal') {
 }
 const state = (page) => page.evaluate(() => window.__rr.state());
 const until = (page, fn, arg, ms = 60000) => page.waitForFunction(fn, arg, { timeout: ms, polling: 100 }).then(() => true, () => false);
-const shot = async (page, name) => { if (shots) await page.screenshot({ path: join(shots, name + '.png') }); };
+const shot = async (page, name) => { if (shots) await page.screenshot({ path: join(shots, `${orient}-${name}.png`) }); };
 
-try {
+for (orient of ORIENTS) try {
   const page = await open('normal');
+  const got = await page.evaluate(() => [window.__ayvago.orientation, window.__ayvago.game.scale.width, window.__ayvago.game.scale.height]);
+  check(`the device gets ${orient}`, got[0] === orient, got.join(' '));
   await page.keyboard.press('Enter');
   const onMap = await until(page, () => window.__rr?.state().phase === 'map', null, 20000);
   check('menu → ruin map', onMap);

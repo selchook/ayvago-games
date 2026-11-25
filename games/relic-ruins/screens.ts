@@ -2,17 +2,21 @@
 // stone buttons, pale tablets.
 //   - The ruin map (after PLAY): the four realms as tabs, the five ruins of the chosen realm as pins
 //     on a dotted path with the stars found, the chosen ruin's name, stars, best time and par, and
-//     PLAY, CAMP and END RUN. The chosen ruin turns live in the top half of the screen.
+//     PLAY, CAMP and END RUN. The chosen ruin turns live in the top half of the screen (portrait)
+//     or right of the board (landscape: the board on the left, clear of the pause button).
 //   - The level-clear card: the three stars popping in (relic, every gem, under par), coins, gems,
-//     time, the bonuses and the score.
+//     time, the bonuses and the score; in landscape a wide card, the stars and the score on the
+//     left, the lines on the right.
 //   - The camp: six lasting upgrades with ranks, paid with coins; it opens after each card and from
-//     the map.
+//     the map. One column of tiles in portrait, two columns of three in landscape.
+// The game is adaptive (landscape on desktops and tablets, portrait on phones): every screen reads
+// its geometry from LAYOUT, chosen once at boot.
 // Touch: tap. Keyboard and pad: arrows move (on the map: the ruin), Enter presses, Esc goes back,
 // C opens the camp from the map. Everything is painted under the Ayvago intro (prebakeScreens):
 // opening a screen only places images and glyph numbers.
 import Phaser from 'phaser';
 import {
-  t, labelTexture, skinTexture, SKIN_PAD, bakeButton, bakeFmt, bakePara, glyphAtlas, themeCard,
+  t, isLandscape, labelTexture, skinTexture, SKIN_PAD, bakeButton, bakeFmt, bakePara, glyphAtlas, themeCard,
   labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, type LabelStyle,
 } from '@core';
 import { UPGRADE, UPGRADE_IDS, WORLD_IDS, type UpgradeId } from './defs';
@@ -24,10 +28,30 @@ import { fmtTime, levelLabel } from './hud';
 
 export const OVERLAY_DEPTH = 9400;
 
-const MAP_W = 690, MAP_H = 720, MAP_X = 360, MAP_Y = 880;
-const SHOP_W = 690, SHOP_H = 1060, SHOP_Y = 650, TILE_W = 630, TILE_H = 122;
-export const SUM_W = 640, SUM_H = 760;
-export const SCREEN_CARDS = [{ w: SUM_W, h: SUM_H }];
+/** Each screen's board and card, per orientation (game units: 720 × 1280 or 1280 × 720). */
+interface Layout {
+  map: { w: number; h: number; x: number; y: number };
+  shop: { w: number; h: number; x: number; y: number; cols: number; tileW: number; descW: number; top: number };
+  sum: { w: number; h: number };
+}
+const PORTRAIT: Layout = {
+  map: { w: 690, h: 720, x: 360, y: 880 },
+  shop: { w: 690, h: 1060, x: 360, y: 650, cols: 1, tileW: 630, descW: 330, top: 230 },
+  sum: { w: 640, h: 760 },
+};
+// landscape: the map's board on the left (the ruin turns on the right, under the pause button),
+// the camp's board left of the pause button, the card wide and low
+const LANDSCAPE: Layout = {
+  map: { w: 690, h: 700, x: 361, y: 360 },
+  shop: { w: 1160, h: 690, x: 596, y: 365, cols: 2, tileW: 530, descW: 250, top: 232 },
+  sum: { w: 940, h: 520 },
+};
+let layoutNow: Layout | null = null;
+/** The screens' geometry for the orientation this run was given. */
+export const LAYOUT = (): Layout => (layoutNow ??= isLandscape() ? LANDSCAPE : PORTRAIT);
+const TILE_H = 122;
+/** The themed cards the core paints ahead (the level-clear card in this orientation). */
+export const screenCards = (): { w: number; h: number }[] => [LAYOUT().sum];
 
 export const S_TITLE: LabelStyle = { size: 46, fill: ['#fff6cc', '#f6cf6a', '#c8781e'], stroke: INK, strokeWidth: 8 };
 const S_SUB: LabelStyle = { size: 19, color: '#3a2410', stroke: null, shadow: false, body: true };
@@ -53,8 +77,9 @@ const BTN_SIZES: [number, number, number, boolean][] = [[220, 70, AMBER, true], 
 
 export function prebakeScreens(scene: Phaser.Scene): void {
   makeArt(scene);
-  for (const [w, h] of [[MAP_W, MAP_H], [SHOP_W, SHOP_H]]) skinTexture(scene, 'board', w, h);
-  for (const c of SCREEN_CARDS) themeCard(scene, 0, 0, c.w, c.h).destroy();
+  const L = LAYOUT();
+  for (const b of [L.map, L.shop]) skinTexture(scene, 'board', b.w, b.h);
+  for (const c of screenCards()) themeCard(scene, 0, 0, c.w, c.h).destroy();
   for (const k of ['mapTitle', 'shopTitle', 'sumTitle']) labelTexture(scene, t(k), S_TITLE);
   bakePara(scene, t('shopSub'), S_SUB, 560);
   for (const [w, h, c, off] of BTN_SIZES) bakeButton(scene, 'button', w, h, c, off, true);
@@ -72,7 +97,7 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   labelTexture(scene, t('sumScore'), S_INK);
   for (const u of UPGRADE_IDS) {
     labelTexture(scene, t('u_' + u), S_NAME);
-    for (let r = 1; r <= UPGRADE[u].prices.length; r++) bakePara(scene, t(`u_${u}_${r}`), S_DESC, 330);
+    for (let r = 1; r <= UPGRADE[u].prices.length; r++) bakePara(scene, t(`u_${u}_${r}`), S_DESC, L.shop.descW);
   }
   for (const o of [S_PURSE, S_PRICE, S_SCORE, S_NUM]) glyphAtlas(scene, o, GLYPHS);
   glyphAtlas(scene, S_INK, TIME_GLYPHS);
@@ -227,6 +252,7 @@ export class MapScreen extends Panel {
   private playBtn: KitButton;
 
   constructor(scene: Phaser.Scene, host: ScreenHost, private meta: Meta, sel: number, private runScore: number, private act: MapActions) {
+    const { w: MAP_W, h: MAP_H, x: MAP_X, y: MAP_Y } = LAYOUT().map;
     super(scene, host, { board: [MAP_W, MAP_H, MAP_X, MAP_Y], title: t('mapTitle'), titleX: MAP_X, titleY: MAP_Y - MAP_H / 2 + 76, dim: 0 });
     const s = scene;
     this.sel = sel;
@@ -278,6 +304,7 @@ export class MapScreen extends Panel {
   }
 
   private drawStages(): void {
+    const { h: MAP_H, x: MAP_X, y: MAP_Y } = LAYOUT().map;
     const s = this.scene, L = this.stageLayer;
     L.removeAll(true);
     this.pins = [];
@@ -305,6 +332,7 @@ export class MapScreen extends Panel {
   }
 
   private drawInfo(): void {
+    const { h: MAP_H, x: MAP_X, y: MAP_Y } = LAYOUT().map;
     const s = this.scene, I = this.info, n = this.sel;
     I.removeAll(true);
     const top = MAP_Y - MAP_H / 2;
@@ -356,13 +384,17 @@ export class SummaryScreen extends Panel {
   constructor(scene: Phaser.Scene, host: ScreenHost, d: SummaryData, onNext: () => void) {
     super(scene, host, { dim: 0.35 });
     const s = scene, W = s.scale.width, H = s.scale.height;
-    const cy = H / 2 + 10;
+    const { w: SUM_W, h: SUM_H } = LAYOUT().sum;
+    const land = SUM_W > SUM_H;
+    const cy = land ? H / 2 - 10 : H / 2 + 10;
     this.content.add(themeCard(s, W / 2, cy, SUM_W, SUM_H));
     const top = cy - SUM_H / 2;
-    this.content.add(fitWidth(labelAt(s, W / 2, top + 78, t('sumTitle'), S_TITLE), 540));
-    this.content.add(fitWidth(labelAt(s, W / 2, top + 128, t('l' + d.n), S_NAME), 480));
+    // portrait: one column; landscape: the stars and the score on the left, the lines on the right
+    const lx = land ? W / 2 - 215 : W / 2, rx = land ? W / 2 + 215 : W / 2;
+    this.content.add(fitWidth(labelAt(s, W / 2, top + (land ? 70 : 78), t('sumTitle'), S_TITLE), 540));
+    this.content.add(fitWidth(labelAt(s, W / 2, top + (land ? 118 : 128), t('l' + d.n), S_NAME), 480));
     d.stars.forEach((on, i) => {
-      const x = W / 2 + (i - 1) * 150, y = top + 214;
+      const x = lx + (i - 1) * (land ? 130 : 150), y = top + (land ? 210 : 214);
       const img = iconAt(s, x, y, on ? 'star' : 'star-empty', 92);
       this.content.add(img);
       this.content.add(fitWidth(labelAt(s, x, y + 62, t('star' + (i + 1)), S_STAR), 140));
@@ -372,14 +404,14 @@ export class SummaryScreen extends Panel {
       }
     });
     const lines: [string, string][] = [['sumCoins', String(d.coins)], ['sumGems', d.gems], ['sumTime', fmtTime(d.time)], ['sumBonus', '+' + d.bonus], ['sumNoHit', '+' + d.noHit]];
-    lines.forEach(([k, v], i) => this.content.add(new FmtLine(s, W / 2, top + 330 + i * 40, S_LINE, 0.5).set(k, { n: v })));
+    lines.forEach(([k, v], i) => this.content.add(new FmtLine(s, rx, top + (land ? 182 : 330) + i * (land ? 44 : 40), S_LINE, 0.5).set(k, { n: v })));
     if (d.newBest) {
-      const rib = labelAt(s, W / 2 + 200, top + 410, t('sumNew'), S_RIB).setAngle(-8);
+      const rib = labelAt(s, land ? rx + 150 : W / 2 + 200, land ? top + 400 : top + 410, t('sumNew'), S_RIB).setAngle(-8);
       this.content.add(rib);
       s.tweens.add({ targets: rib, scale: 1.1, duration: 380, yoyo: true, repeat: -1 });
     }
-    this.content.add(labelAt(s, W / 2, top + 562, t('sumScore'), S_INK));
-    const sc = new GlyphText(s, W / 2, top + 616, '0', S_SCORE, 0.5);
+    this.content.add(labelAt(s, lx, top + (land ? 340 : 562), t('sumScore'), S_INK));
+    const sc = new GlyphText(s, lx, top + (land ? 396 : 616), '0', S_SCORE, 0.5);
     this.content.add(sc);
     const tw = { v: 0 };
     s.tweens.add({ targets: tw, v: d.score, duration: 900, delay: 900, ease: 'Cubic.easeOut', onUpdate: () => sc.setText(String(Math.round(tw.v))) });
@@ -396,16 +428,17 @@ export class ShopScreen extends Panel {
   private tiles = new Map<UpgradeId, Phaser.GameObjects.Container>();
 
   constructor(scene: Phaser.Scene, host: ScreenHost, private meta: Meta, private onBuy: (u: UpgradeId) => void, private onBack: () => void) {
-    super(scene, host, { board: [SHOP_W, SHOP_H, scene.scale.width / 2, SHOP_Y], title: t('shopTitle'), titleY: SHOP_Y - SHOP_H / 2 + 76, dim: 0.55 });
-    const s = scene, W = s.scale.width;
+    const { w: SHOP_W, h: SHOP_H, x: SHOP_X, y: SHOP_Y } = LAYOUT().shop;
+    super(scene, host, { board: [SHOP_W, SHOP_H, SHOP_X, SHOP_Y], title: t('shopTitle'), titleX: SHOP_X, titleY: SHOP_Y - SHOP_H / 2 + 76, dim: 0.55 });
+    const s = scene;
     const top = SHOP_Y - SHOP_H / 2;
-    this.content.add(new Para(s, W / 2, top + 124, t('shopSub'), S_SUB, 560, 0.5, 22));
-    const px = W / 2 + SHOP_W / 2 - 150, py = top + 76;
+    this.content.add(new Para(s, SHOP_X, top + 124, t('shopSub'), S_SUB, 560, 0.5, 22));
+    const px = SHOP_X + SHOP_W / 2 - 150, py = top + 76;
     this.content.add(iconAt(s, px, py, 'coin', 42));
     this.purse = new GlyphText(s, px + 26, py, String(meta.coins), S_PURSE, 0);
     this.content.add(this.purse);
     UPGRADE_IDS.forEach((u, i) => this.tile(u, i));
-    this.button(W / 2, SHOP_Y + SHOP_H / 2 - 60, 220, 60, VERDIGRIS, t('cont'), () => { this.close(); onBack(); }, { size: 'S' });
+    this.button(SHOP_X, SHOP_Y + SHOP_H / 2 - 60, 220, 60, VERDIGRIS, t('cont'), () => { this.close(); onBack(); }, { size: 'S' });
     this.fi = this.focus.length - 1;
     this.showFocus();
   }
@@ -413,8 +446,10 @@ export class ShopScreen extends Panel {
   protected escape(): void { this.close(); this.onBack(); }
 
   private tile(u: UpgradeId, i: number): void {
-    const s = this.scene, W = s.scale.width;
-    const x = W / 2, y = SHOP_Y - SHOP_H / 2 + 230 + i * (TILE_H + 12);
+    const s = this.scene, S = LAYOUT().shop, TILE_W = S.tileW;
+    // one column (portrait) or two columns of three (landscape), in the upgrades' order down each column
+    const rows = Math.ceil(UPGRADE_IDS.length / S.cols), col = Math.floor(i / rows), row = i % rows;
+    const x = S.x + (col - (S.cols - 1) / 2) * (TILE_W + 30), y = S.y - S.h / 2 + S.top + row * (TILE_H + 12);
     this.tiles.get(u)?.destroy();
     const c = s.add.container(x, y);
     const r = this.meta.ranks[u], def = UPGRADE[u], max = def.prices.length;
@@ -422,12 +457,12 @@ export class ShopScreen extends Panel {
     g.fillStyle(0xfff2d8, 0.42).fillRoundedRect(-TILE_W / 2, -TILE_H / 2, TILE_W, TILE_H, 12).lineStyle(2.5, 0x8a5a24, 0.9).strokeRoundedRect(-TILE_W / 2, -TILE_H / 2, TILE_W, TILE_H, 12);
     c.add(g);
     c.add(iconAt(s, -TILE_W / 2 + 54, 0, UICON[u], 70));
-    c.add(fitWidth(labelAt(s, -TILE_W / 2 + 104, -36, t('u_' + u), S_NAME, 0), 300));
+    c.add(fitWidth(labelAt(s, -TILE_W / 2 + 104, -36, t('u_' + u), S_NAME, 0), Math.min(300, TILE_W - 300)));
     const pg = s.add.graphics();
     for (let k = 0; k < max; k++) { pg.fillStyle(k < r ? GOLD : 0xc8b898, 1).fillRoundedRect(-TILE_W / 2 + 106 + k * 30, -12, 24, 12, 4); pg.lineStyle(2, 0x2a1a0c, 0.8).strokeRoundedRect(-TILE_W / 2 + 106 + k * 30, -12, 24, 12, 4); }
     c.add(pg);
     const showRank = Math.min(max, r + 1);
-    c.add(new Para(s, -TILE_W / 2 + 106, 10, t(`u_${u}_${showRank}`), S_DESC, 330, 0, 20).setAlpha(r >= max ? 0.55 : 1));
+    c.add(new Para(s, -TILE_W / 2 + 106, 10, t(`u_${u}_${showRank}`), S_DESC, S.descW, 0, 20).setAlpha(r >= max ? 0.55 : 1));
     const price = nextPrice(this.meta, u);
     const bx = TILE_W / 2 - 84;
     if (price === null) c.add(labelAt(s, bx, 0, t('maxed'), S_RIB));

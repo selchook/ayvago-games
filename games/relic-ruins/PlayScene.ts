@@ -1,12 +1,12 @@
 // Relic Ruins: the play scene. A run starts on the ruin map; each ruin cleared adds to the run's
 // score, its coins go to the purse at once and the camp opens between ruins. The run ends when the
 // hearts run out (a rewarded ad may bring the hero back once, at the last brazier), when the player
-// ends it on the map, or when the last ruin of the Collapsing Cathedral is cleared.
+// ends it on the map, or when the last ruin of the Crumbling Citadel is cleared.
 //   map → (PLAY) intro sweep from the relic to the hero → play → out with the relic → card → camp → map
 // The sim runs at a fixed 60 Hz (sim.ts); the view draws it (view.ts); the HUD and the touch
 // buttons are hud.ts; the inner screens screens.ts.
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, t, isEasy, flash, padRumble, labelAt, labelTexture, fitWidth, type LabelStyle } from '@core';
+import { ArcadeScene, Controls, t, isEasy, isLandscape, flash, padRumble, labelAt, labelTexture, fitWidth, type LabelStyle } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
 import { Sim, NO_INPUT, cellX, cellZ, clearBonus, type Input, type SimEvent } from './sim';
@@ -493,8 +493,15 @@ export class PlayScene extends ArcadeScene {
 
   // ---------------------------------------------------------------- banners, toasts, the prompt, the tutorial
 
-  private banner(text: string, style: LabelStyle, y: number, ms: number, fit = false): void {
+  /**
+   * A banner's height: `y` is for portrait (720 × 1280, the hero low in the frame); landscape
+   * (1280 × 720, the hero in the middle) keeps the banners in the band above him.
+   */
+  private bannerY(y: number): number { return isLandscape() ? Math.round(y * 0.62) : y; }
+
+  private banner(text: string, style: LabelStyle, y0: number, ms: number, fit = false): void {
     labelTexture(this, text, style);
+    const y = this.bannerY(y0);
     const img = labelAt(this, this.scale.width / 2, y, text, style).setScrollFactor(0).setDepth(9100);
     if (fit) fitWidth(img, 660);
     const sc = img.scale;
@@ -510,8 +517,11 @@ export class PlayScene extends ArcadeScene {
     if (key === this.toastKey && this.toastT > 0) return;
     this.toastKey = key; this.toastT = ms / 1000 * 0.6;
     this.toastImg?.destroy();
-    const img = labelAt(this, this.scale.width / 2, this.scale.height - (this.touch ? 300 : 170), t(key), style).setScrollFactor(0).setDepth(9100);
-    fitWidth(img, wrapLong ? 680 : 660);
+    // under the hero, clear of the touch buttons (portrait: above them; landscape: between the
+    // stick's half and the buttons, so a little narrower)
+    const land = isLandscape();
+    const img = labelAt(this, this.scale.width / 2, this.scale.height - (land ? 118 : this.touch ? 300 : 170), t(key), style).setScrollFactor(0).setDepth(9100);
+    fitWidth(img, land ? (this.touch ? 560 : 760) : wrapLong ? 680 : 660);
     const sc = img.scale;
     img.setScale(sc * 0.6);
     this.toastImg = img;

@@ -1062,14 +1062,15 @@ export const ARCADE_GAMES: SeedGame[] = [
     slug: 'relic-ruins',
     title: { en: 'Relic Ruins', tr: 'Kadim Harabeler' },
     description: {
-      en: 'A torch-lit 3D exploration and puzzle adventure! Through twenty ruins, from overgrown courtyards and a sunken library to gothic crypt halls and a collapsing cathedral, find the relic and get out before your torch burns out. Push crates and statues onto pressure plates, pull levers, open locks with keys, slide secret bookcases, light candles and rune sconces, and watch out for bear traps, trapdoors that open on a rhythm and floors that fall away. Stun light-shy shades and guardian statues that move in the dark with a flare. Braziers refill your torch, and lasting upgrades from the camp make you stronger. Easy or Normal.',
-      tr: 'Meşale ışığında bir 3B keşif ve bulmaca macerası! Sarmaşıklı avlulardan batık kütüphanelere, gotik mahzenlerden çöken bir katedrale kadar yirmi harabede kadim eseri bul ve meşalen sönmeden dışarı çık. Sandıkları ve heykelleri basınç plakalarına it, kolları çek, anahtarla kilitleri aç, gizli kitaplıkları kaydır, mumları ve rünlü meşalelikleri yak; ayı kapanlarından, ritimle açılan kapaklardan ve çöken zeminden sakın. Işıktan korkan gölgeleri ve karanlıkta yürüyen bekçi heykelleri fişekle durdur. Mangallar meşaleni doldurur, kamptaki kalıcı geliştirmeler seni güçlendirir. Kolay ya da Normal.',
+      en: 'A torch-lit 3D exploration and puzzle adventure! Through twenty ruins, from overgrown courtyards and a sunken library to shadowy halls and a crumbling citadel, find the relic and get out before your torch burns out. Push crates and statues onto pressure plates, pull levers, open locks with keys, slide secret bookcases, light candles and marked sconces, and watch out for bear traps, trapdoors that open on a rhythm and floors that fall away. Stun light-shy shades and guardian statues that move in the dark with a flare. Braziers refill your torch, and lasting upgrades from the camp make you stronger. Easy or Normal.',
+      tr: 'Meşale ışığında bir 3B keşif ve bulmaca macerası! Sarmaşıklı avlulardan batık kütüphanelere, gölgeli salonlardan çöken bir kaleye kadar yirmi harabede kadim eseri bul ve meşalen sönmeden dışarı çık. Sandıkları ve heykelleri basınç plakalarına it, kolları çek, anahtarla kilitleri aç, gizli kitaplıkları kaydır, mumları ve işaretli meşalelikleri yak; ayı kapanlarından, ritimle açılan kapaklardan ve çöken zeminden sakın. Işıktan korkan gölgeleri ve karanlıkta yürüyen bekçi heykelleri fişekle durdur. Mangallar meşaleni doldurur, kamptaki kalıcı geliştirmeler seni güçlendirir. Kolay ya da Normal.',
     },
     category: 'puzzle',
     categories: ['puzzle', 'action'],
     tags: ['relic', 'ruins', 'retro'],
-    orientation: 'portrait',
+    orientation: 'any',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
+    version: '1.1.0',
     addedAt: '2026-11-24',
   }),
   arcadeGame({
