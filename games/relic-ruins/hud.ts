@@ -1,14 +1,17 @@
 // Relic Ruins: the play HUD and the touch buttons, and every label the play scene shows, painted
 // ahead in Boot under the Ayvago intro (prebakePlay).
-//   Top row: the score (core), the hearts (full, half and empty), the level and its clock in the
-//   centre, the coins on the right (clear of the pause button). Second row: the torch (a flame and
-//   a bar that burns down, red and flickering when low), the gems found of the level's gems, then
-//   keys, flares, lit candles and the running powers with their seconds; the collapse clock on the
-//   right during an escape. Touch: the stick anywhere on the left half (core Controls), ACT (big,
-//   its word follows what it would do) and FLARE (with the flares left) on the right.
+//   Portrait: the top row holds the score (core), the hearts (full, half and empty) and the coins on
+//   the right (clear of the pause button). Second row: the torch (a flame and a bar that burns down,
+//   red and flickering when low), the gems found of the level's gems, then keys, flares, lit candles
+//   and the running powers with their seconds; the level and its clock on the right, the collapse
+//   clock in its place during an escape. Landscape (desktops and tablets): one row, the torch and
+//   the readouts after the hearts, the level (or collapse) clock left of the coins; a full row
+//   wraps to the next. Touch (whatever the orientation): the stick anywhere on the left half (core
+//   Controls), ACT (big, its word follows what it would do) and FLARE (with the flares left) on
+//   the right.
 import Phaser from 'phaser';
 import {
-  t, labelTexture, labelAt, fitWidth, skinTexture, hudChip, HUD_ROW_Y, HUD_ROW2_Y, HUD_MARGIN, HUD_GAP, hudRightEdge,
+  t, isLandscape, labelTexture, labelAt, fitWidth, skinTexture, hudChip, HUD_ROW_Y, HUD_ROW2_Y, HUD_MARGIN, HUD_GAP, hudRightEdge,
   type Hud, type HudChip, type LabelStyle,
 } from '@core';
 import { ICON_SHEET, iconFrame, makeArt } from './art';
@@ -29,7 +32,7 @@ export const S_PROMPT: LabelStyle = { size: 20, color: '#ffe9a0', stroke: INK, s
 
 const TOASTS = ['brazierLit', 'exitOpen', 'needRelic', 'needKey', 'unlock', 'gotKey', 'gotGem', 'doorOpen', 'doorShut', 'sealedOpen', 'secret', 'candleOut', 'torchLow', 'fell', 'snap', 'noFlare', 'collapse', 'darkHit',
   'pd_flare', 'pd_oil', 'pd_boots', 'pd_compass', 'pd_ghost'];
-const HINTS = ['h_torch', 'h_push', 'h_lever', 'h_key', 'h_escape', 'h_bookcase', 'h_candle', 'h_guardian', 'h_water', 'h_beartrap', 'h_trapdoor', 'h_sconce', 'h_mix', 'h_cracked', 'h_cart', 'h_stairs', 'h_choir',
+const HINTS = ['h_torch', 'h_push', 'h_lever', 'h_key', 'h_escape', 'h_bookcase', 'h_candle', 'h_guardian', 'h_water', 'h_beartrap', 'h_trapdoor', 'h_sconce', 'h_mix', 'h_cracked', 'h_cart', 'h_stairs', 'h_all',
   'tut_move', 'tut_moveKey', 'tut_act', 'tut_actKey'];
 export const VERBS = ['v_relic', 'v_lever', 'v_light', 'v_pot', 'v_bookcase', 'v_grab', 'v_roll'];
 
@@ -139,9 +142,10 @@ export class PlayHud {
   private powers = new Map<string, HudChip>();
   private shown = { hp: -1, max: -1, coins: -1, gems: '', keys: -1, flares: -1, clock: '', candles: '', esc: '' };
   private visible = true;
+  /** Landscape: one row of chips (the level clock beside the coins). */
+  private land = isLandscape();
 
   constructor(private scene: Phaser.Scene, private hud: Hud) {
-    const W = scene.scale.width;
     for (let i = 0; i < 9; i++) this.heartImgs.push(iconImg(scene, 'heart', 34));
     this.hearts = hudChip(scene, 0, HUD_ROW_Y, { items: this.heartImgs, minWidth: 60 });
     this.level = hudChip(scene, hudRightEdge(scene), HUD_ROW2_Y, { align: 'right', label: '1-1', icon: 'rr-clock', iconSize: 26, text: '0:00', minWidth: 130 });
@@ -204,18 +208,24 @@ export class PlayHud {
     g.fillStyle(0xffffff, 0.22).fillRoundedRect(x0 + 3, -BAR_H / 2 + 2, Math.max(2, (BAR_W - 6) * k), 4, 2);
     g.lineStyle(2, 0xe8b84a, 0.8).strokeRoundedRect(x0, -BAR_H / 2, BAR_W, BAR_H, 6);
     if (h.dark >= 0) { g.fillStyle(0xff5030, 0.9).fillRect(x0, BAR_H / 2 + 2, BAR_W * (h.dark / sim.tune.grace), 3); }
-    // the level and its clock on the right of row two (the collapse clock in an escape)
+    // the level and its clock: right of row two (portrait) or left of the coins (landscape); the
+    // collapse clock takes its place in an escape
     const esc = sim.escapeT >= 0 && h.state !== 'clear';
+    const row = this.land ? HUD_ROW_Y : HUD_ROW2_Y;
+    const rightX = this.land ? this.coins.left - HUD_GAP : hudRightEdge(sc);
     this.level.setVisible(!esc);
-    this.level.setAnchor(hudRightEdge(sc), HUD_ROW2_Y, 'right');
-    // row two, left to right (a third row when it fills up)
-    let x = this.torch.right + HUD_GAP, y = HUD_ROW2_Y;
-    const limit = () => (y === HUD_ROW2_Y ? (esc ? this.escape.left : this.level.left) - HUD_GAP : sc.scale.width - HUD_MARGIN);
+    this.level.setAnchor(rightX, row, 'right');
+    this.escape.setAnchor(rightX, row, 'right');
+    // the torch after the hearts (landscape) or first on row two (portrait)
+    this.torch.setAnchor(this.land ? this.hearts.right + HUD_GAP : HUD_MARGIN, row, 'left');
+    // the readouts, left to right after the torch (the next row when this one fills up)
+    let x = this.torch.right + HUD_GAP, y = row;
+    const limit = () => (y === row ? (esc ? this.escape.left : this.level.left) - HUD_GAP : sc.scale.width - HUD_MARGIN);
     const place = (chip: HudChip, on: boolean) => {
       chip.setVisible(on);
       if (!on) return;
       chip.setAnchor(x, y, 'left');
-      if (chip.right > limit() && y === HUD_ROW2_Y) { x = HUD_MARGIN; y = HUD_ROW2_Y + (HUD_ROW2_Y - HUD_ROW_Y); chip.setAnchor(x, y, 'left'); }
+      if (chip.right > limit() && y === row) { x = HUD_MARGIN; y = row + (HUD_ROW2_Y - HUD_ROW_Y); chip.setAnchor(x, y, 'left'); }
       x = chip.right + HUD_GAP;
     };
     const gm = `${sim.stats.gems}/${sim.c.gems}`;
@@ -242,7 +252,6 @@ export class PlayHud {
     if (esc) {
       const e = fmtTime(Math.ceil(sim.escapeLeft()));
       if (e !== s.esc) { s.esc = e; this.escape.setText(e); }
-      this.escape.setAnchor(hudRightEdge(sc), HUD_ROW2_Y, 'right');
       this.escape.setScale(1 + Math.max(0, Math.sin(time / 140)) * 0.06);
     }
     void POWER_IDS;

@@ -26,7 +26,7 @@ This creates `index.html` (don't edit it beyond the title), `game.json`, `main.t
 - `title` / `description` / `howTo` need **both** `tr` and `en`. The Turkish must be natural, with correct characters (ç ğ ı İ ö ş ü).
 - `howTo` is shown on the menu. Keep it to 1–2 short sentences that cover BOTH touch and keyboard.
 - `genres` ⊆ `arcade, action, casual, puzzle, retro, sports, strategy, card, word`.
-- `orientation`: `portrait` gives a 720×1280 world, `landscape` gives 1280×720. Prefer portrait (mobile first) unless the game really needs width.
+- `orientation`: **`adaptive` (the default for every new game)**: landscape 1280×720 on desktops and tablets, portrait 720×1280 on phones, decided once at boot; lay out every screen for both (§7j). `portrait` or `landscape` fixes the size on every device: only for a game that truly cannot work in the other shape (say why in `docs/GAMES.md`).
 
 ## 3. main.ts
 
@@ -169,12 +169,12 @@ Other helpers from `@core`:
 
 1. **Complete and fun.** Clear goal, rising difficulty or levels, a fail or finish condition that calls `endGame`, and score that means something.
 2. **Juicy and retro.** Particles on hits, screen shake on big events, a sound for every action, tweens on spawn and despawn.
-3. **Mobile and desktop.** Fully playable with touch only AND with keyboard (or mouse for pure point-and-click puzzles). Tap targets are at least 80 px in world units.
+3. **Mobile and desktop.** Fully playable with touch only AND with keyboard (or mouse for pure point-and-click puzzles). Tap targets are at least 80 px in world units. An adaptive game looks designed in both orientations (§7j): touch controls whenever the device has touch, in either orientation (a tablet plays landscape with touch).
 4. **Restart-safe.** `createGame()` resets every field, because the same scene instance is restarted. No leaked timers or listeners: use `this.time` and `this.input`, which Phaser cleans up per scene.
 5. **TR + EN.** No hard-coded user-visible strings: use `t()` with `strings` or `loc()`.
 6. **No console errors, no 404s.** `npx tsc --noEmit` shows no errors in your files.
-7. **Smoke test passes.** `node scripts/smoke-test.mjs --dev --serial <slug>` prints PASS. It checks: intro shown → menu → play with random input → game over → retry, with no errors and a non-blank canvas.
-8. **Visual check.** Take at least one gameplay screenshot with Playwright and look at it; layout must fit the 720×1280 (or 1280×720) world.
+7. **Smoke test passes.** `node scripts/smoke-test.mjs --dev --serial <slug>` prints PASS. It checks: intro shown → menu → play with random input → game over → retry, with no errors and a non-blank canvas (an adaptive game: both runs, desktop landscape and phone portrait).
+8. **Visual check.** Take gameplay screenshots with Playwright and look at them; layout must fit the 720×1280 (or 1280×720) world. An adaptive game: menu, play and every inner screen in both orientations.
 9. **HUD in chips.** Score, lives and level use `Hud`; every other always-visible readout sits in a `hudChip` (glass in modern, plain box in retro). The screenshot shows no bare HUD text and nothing under the pause button.
 10. **Characters move with their own limbs.** In a game with a player character, every move uses one of its poses (no extra limbs drawn on top). Screenshots with two characters show the ball, rope or tool meeting the real foot or hand.
 11. **Store art.** `node scripts/gen-store-assets.mjs <slug>` passes, the catalog cards (`card-640x360.webp`, Turkish `card-tr-640x360.webp`: the same frame) show real play with the logo clear of the action and the Turkish logo fits, and the logos (`logo-en.png`, `logo-tr.png`) read right in both languages (§8).
@@ -780,6 +780,49 @@ what a player reads before pressing Play. It is part of the Definition of Done f
 - **Lengths.** `about` 120–200 words in 2–3 paragraphs (blank line between them); `howToPlay`
   3–6 steps; `tips` 3–6; `features` 3–6 short items; `faq` 3–4; about 300–600 words per language
   in all.
+
+## 7j. Adaptive orientation (the default)
+
+`"orientation": "adaptive"` in `game.json`: the game is **landscape 1280×720 on desktops and
+tablets and portrait 720×1280 on phones**. The platform manifest says `orientation: "any"`
+(`gen-platform.mjs`) and ayvago.com frames the game by the same rule.
+
+- **The rule** (the contract with the platform, `isPhone()` in `src/core/registry.ts`): a phone is
+  `matchMedia('(hover: none) and (pointer: coarse)').matches && Math.min(screen.width,
+  screen.height) < 600`. Phones get portrait; desktops, laptops and tablets (iPad, Android
+  tablets) get landscape. Decided **once at boot**: turning the device never switches it mid-session.
+- **Override:** `?orient=portrait` or `?orient=landscape` forces an adaptive game's orientation
+  (tests, store art, debugging; fixed games ignore it).
+- **Reading it:** `isLandscape()` / `gameOrientation()` from `@core` (also
+  `window.__ayvago.orientation`), or `this.scale.width > this.scale.height`. Never
+  `meta.orientation` (it says `adaptive`). The core's menu, how-to, pause, result, ads/continue
+  offers, themed overlays, `Hud`, `Controls` and the gamepad already follow it.
+- **Lay out both, don't stretch.** Place from `this.scale` and pick a layout per orientation:
+  - HUD: landscape has the width for one row of chips (score, lives, then the readouts, the
+    right-hand chips left of the pause button); portrait stacks a second row. `hudRightEdge()`,
+    `HUD_ROW_Y` / `HUD_ROW2_Y` as usual.
+  - Menus and inner screens (maps, shops, level cards): a column in portrait; side by side in
+    landscape (a board on one side and the live scene on the other, two columns of tiles, a wide
+    card with the stars left and the numbers right). Keep everything clear of the pause button
+    (top-right 120×120): in landscape a board flush with the top must stop left of it.
+  - Banners and toasts: portrait has room above and below the action; in landscape keep them in
+    the bands above and below the player, not over the middle.
+  - Touch controls: appear whenever the device has touch (`this.sys.game.device.input.touch`),
+    in either orientation: a tablet plays landscape with the stick and the buttons. Place buttons
+    from the bottom-right corner and check they cover no readout.
+  - 3D camera: the vertical field stays, so landscape sees much more sideways. Bring the camera a
+    little closer in landscape so the hero stays readable, and shift a menu or map preview to the
+    free side of the screen (move the look point along the camera's right vector).
+  - Themed cards the game paints ahead (`menuTheme.cards`): the sizes for the orientation this
+    run was given (a getter, since the theme object is built before `launch()` decides).
+- **Test both.** `smoke-test.mjs`, `platform-harness.mjs`, `gamepad-test.mjs` and
+  `three-memory.mjs` run an adaptive game twice (`scripts/orient-runs.mjs`): a desktop window that
+  must boot landscape and an emulated phone (Playwright's iPhone 13) that must boot portrait;
+  `--tablet` (smoke, harness) adds an iPad that must boot landscape. Screenshots: a 1280×720
+  window for landscape; a phone is `{ viewport: { width: 720, height: 1280 }, screen: { width:
+  390, height: 844 }, hasTouch: true, isMobile: true }`. Store art captures the landscape run
+  (card cover-fit like a landscape game, screenshot, icon) and a portrait run for the phone on the
+  cover. Reference: `games/relic-ruins` (3D, themed, map, camp and card in both orientations).
 
 ## 8. Ship
 

@@ -5,6 +5,9 @@ export class PlayScene extends ArcadeScene {
   private player!: Phaser.GameObjects.Rectangle;
 
   createGame(): void {
+    // Adaptive (game.json): 1280×720 on desktops and tablets, 720×1280 on phones. Lay out from
+    // this.scale (or isLandscape() from @core) so every screen is designed for both sizes;
+    // try both with ?orient=landscape and ?orient=portrait (new-game skill §7j).
     const { width, height } = this.scale;
     this.controls = new Controls(this, { joystick: true, buttons: ['A'] });
     this.player = this.add.rectangle(width / 2, height * 0.8, 60, 60, 0xec3013);

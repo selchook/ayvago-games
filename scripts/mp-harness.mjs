@@ -99,7 +99,8 @@ if (shots) mkdirSync(join(root, 'reports', 'mp'), { recursive: true });
 
 async function check(slug) {
   const errors = [];
-  const land = JSON.parse(readFileSync(join(root, 'games', slug, 'game.json'), 'utf8')).orientation === 'landscape';
+  // an adaptive game boots landscape on this desktop page (no touch)
+  const land = JSON.parse(readFileSync(join(root, 'games', slug, 'game.json'), 'utf8')).orientation !== 'portrait';
   const page = await browser.newPage({ viewport: land ? { width: 1300, height: 380 } : { width: 830, height: 740 } });
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/\[vite\]/.test(m.text())) errors.push('console: ' + m.text()); });

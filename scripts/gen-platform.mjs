@@ -69,7 +69,8 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
     categories: m.genres,
     tags: tags(m),
     entry: `${ORIGIN}/games/${slug}/`,
-    orientation: m.orientation,
+    // adaptive games (landscape on desktops and tablets, portrait on phones) are 'any' on the platform
+    orientation: m.orientation === 'adaptive' ? 'any' : m.orientation,
     input: [...new Set([...m.controls, 'mouse'])].filter((i) => ['touch', 'mouse', 'keyboard', 'gamepad'].includes(i)),
     // game.json "multiplayer": true → online two-player matches on the platform (src/core/net.ts);
     // a number (2 to 4) → a table for that many seats in the lobby (protocol 2.3; bots only at

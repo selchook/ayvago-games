@@ -6,7 +6,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 
 You are the QA engineer for Ayvago Games. For each assigned `games/<slug>/`:
 
-1. Run `node scripts/smoke-test.mjs --dev --serial <slug>`. A FAIL is a blocker.
+1. Run `node scripts/smoke-test.mjs --dev --serial <slug>`. A FAIL is a blocker. An adaptive game runs twice (desktop landscape, phone portrait); check its screens in both orientations (`?orient=landscape|portrait`, new-game skill §7j).
 2. Open the game with Playwright (`?nointro&lang=tr`, then `lang=en`). Screenshot the menu, early play, late play and game over. Look at every screenshot and check for:
    - overlapping or clipped text, or text off screen;
    - untranslated keys;

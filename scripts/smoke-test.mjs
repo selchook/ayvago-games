@@ -1,15 +1,20 @@
 // Automated QA for every game (or the ones passed as args):
 //   intro shown -> skip -> Menu -> Play -> 8s of random input -> forced game over -> retry.
 // Fails on page errors, console errors, failed asset requests, blank canvas or stuck flow.
+// Adaptive games run twice (scripts/orient-runs.mjs): on a desktop window in landscape and on an
+// emulated phone in portrait, and each run must boot in the orientation its device gets.
 // Usage: npm run build && node scripts/smoke-test.mjs [--thumbs] [slug ...]
 //        node scripts/smoke-test.mjs --dev [slug ...]   (no build needed; uses the Vite dev server)
 //   --thumbs   also writes public/thumbs/<slug>.png (menu screenshot) for the portal.
+//   --tablet   adaptive games also boot on an emulated iPad, which must get landscape.
+//   AYVAGO_TEST_PORT=<n> serves on that port instead of a random one.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { readdirSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { availableParallelism, tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { runsOf } from './orient-runs.mjs';
 
 const require = createRequire(import.meta.url);
 let playwright;
@@ -24,7 +29,7 @@ const slugs = (only.length ? only : readdirSync(join(root, 'games')))
   .filter((s) => existsSync(dev ? join(root, 'games', s, 'index.html') : join(root, 'dist', 'games', s, 'index.html')));
 if (!slugs.length) { console.error('nothing to test — run npm run build first (or pass --dev)'); process.exit(1); }
 
-const PORT = 4300 + Math.floor(Math.random() * 500);
+const PORT = Number(process.env.AYVAGO_TEST_PORT) || 4300 + Math.floor(Math.random() * 500);
 const server = spawn('npx', dev ? ['vite', '--port', String(PORT), '--strictPort'] : ['vite', 'preview', '--port', String(PORT), '--strictPort'],
   { cwd: root, stdio: 'pipe', detached: true, env: { ...process.env, VITE_CACHE_DIR: join(tmpdir(), `ayvago-vite-${PORT}`) } });
 await new Promise((r) => { server.stdout.on('data', (d) => String(d).includes('Local') && r()); setTimeout(r, 10000); });
@@ -40,16 +45,18 @@ function retryable(r) {
 }
 
 function report(r, note = '') {
-  console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.slug}${note}${r.ok ? '' : '\n      ' + JSON.stringify(r.step) + '\n      ' + r.errors.join('\n      ')}`);
+  console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.label}${note}${r.ok ? '' : '\n      ' + JSON.stringify(r.step) + '\n      ' + r.errors.join('\n      ')}`);
   // GitHub Actions: one annotation per failing game, readable without the full job log.
   if (!r.ok && process.env.GITHUB_ACTIONS) {
     console.log(`::error title=smoke ${r.slug}::${JSON.stringify(r.step)} ${r.errors.join(' / ').replace(/\r?\n/g, ' ')}`);
   }
 }
 
-async function testGame(slug) {
+async function testGame(run) {
+  const { slug } = run;
   const errors = [];
-  const ctx = await browser.newContext({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 1 });
+  const ctx = await browser.newContext(run.context ?? { viewport: { width: 540, height: 960 }, deviceScaleFactor: 1 });
+  const vp = run.context?.viewport ?? { width: 540, height: 960 };
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/\[vite\]/.test(m.text())) errors.push('console: ' + m.text()); });
@@ -58,6 +65,8 @@ async function testGame(slug) {
   const scenes = () => page.evaluate(() => window.__ayvago?.game.scene.getScenes(true).map((s) => s.scene.key) ?? []);
   const waitScene = (key, ms = 15000) => page.waitForFunction((k) => window.__ayvago?.game.scene.isActive(k), key, { timeout: ms });
   const step = { intro: false, menu: false, play: false, gameOver: false, retry: false, nonBlank: false };
+  // an adaptive game must boot in the orientation of its device
+  if (run.expect) step.orientation = false;
   try {
     await page.goto(`${BASE}/games/${slug}/?lang=tr`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#ayvago-boot canvas', { timeout: dev ? 30000 : 15000 });
@@ -65,17 +74,23 @@ async function testGame(slug) {
     await page.waitForTimeout(1200);
     // Tap skips the intro. Near the top edge: the centre is where the menu's PLAY button
     // appears, and a tap landing there after the intro ended would start the round at once.
-    await page.mouse.click(270, 40);
+    await page.mouse.click(Math.min(270, vp.width / 2), 40);
     await page.waitForFunction(() => ['Menu', 'Play'].some((k) => window.__ayvago?.game.scene.isActive(k)), null, { timeout: 15000 });
     step.menu = true;
+    if (run.expect) {
+      const got = await page.evaluate(() => [window.__ayvago.orientation, window.__ayvago.game.scale.width, window.__ayvago.game.scale.height]);
+      step.orientation = got[0] === run.expect && (got[1] > got[2]) === (run.expect === 'landscape');
+      if (!step.orientation) errors.push(`orientation: expected ${run.expect}, got ${got.join(' ')}`);
+    }
     await page.waitForTimeout(700);
-    if (thumbs) {
-      const land = await page.evaluate(() => window.__ayvago.def.meta.orientation === 'landscape');
+    // the portal thumbnail: an adaptive game's from its landscape run
+    if (thumbs && run.expect !== 'portrait') {
+      const land = await page.evaluate(() => window.__ayvago.orientation === 'landscape');
       if (land) await page.setViewportSize({ width: 960, height: 540 });
       await page.waitForTimeout(400);
       mkdirSync(join(root, 'public', 'thumbs'), { recursive: true });
       await page.locator('canvas').first().screenshot({ path: join(root, 'public', 'thumbs', `${slug}.png`) });
-      if (land) await page.setViewportSize({ width: 540, height: 960 });
+      if (land) await page.setViewportSize(vp);
     }
     if (!(await page.evaluate(() => window.__ayvago?.game.scene.isActive('Play')))) await page.keyboard.press('Enter');
     await waitScene('Play', 5000);
@@ -138,19 +153,19 @@ async function testGame(slug) {
   }
   await ctx.close();
   const ok = Object.values(step).every(Boolean) && errors.length === 0;
-  return { slug, ok, step, errors: [...new Set(errors)].slice(0, 12) };
+  return { slug, label: run.label, run, ok, step, errors: [...new Set(errors)].slice(0, 12) };
 }
 
-const queue = [...slugs];
+const queue = slugs.flatMap((s) => runsOf(playwright, root, s, { tablet: args.includes('--tablet') }));
 // One browser context per two cores (at most 4): each game renders WebGL in software, and more
 // parallel games than the machine can run slow every game's clock past the step timeouts.
 const parallel = args.includes('--serial') ? 1 : Math.min(4, Math.max(1, Math.floor(availableParallelism() / 2)));
 const workers = Array.from({ length: Math.min(parallel, queue.length) }, async () => {
   while (queue.length) {
-    const slug = queue.shift();
-    const r = await testGame(slug);
+    const run = queue.shift();
+    const r = await testGame(run);
     results.push(r);
-    if (!r.ok && retryable(r)) console.log(`SLOW  ${slug} (timed out under load, retried at the end)`);
+    if (!r.ok && retryable(r)) console.log(`SLOW  ${run.label} (timed out under load, retried at the end)`);
     else report(r);
   }
 });
@@ -161,7 +176,7 @@ await Promise.all(workers);
 // shared runner a game's clock can fall behind them. Any error, or a second timeout, fails.
 for (const [i, r] of results.entries()) {
   if (r.ok || !retryable(r)) continue;
-  const again = await testGame(r.slug);
+  const again = await testGame(r.run);
   results[i] = again;
   report(again, again.ok ? ' (passed on its own after a timeout under load)' : '');
 }
@@ -169,7 +184,8 @@ if (dev) await new Promise((r) => setTimeout(r, 100));
 await browser.close();
 stopServer();
 
-results.sort((a, b) => a.slug.localeCompare(b.slug));
+results.sort((a, b) => a.label.localeCompare(b.label));
+for (const r of results) delete r.run;
 mkdirSync(join(root, 'reports'), { recursive: true });
 if (!only.length) writeFileSync(join(root, 'reports', 'smoke.json'), JSON.stringify(results, null, 2));
 const failed = results.filter((r) => !r.ok);

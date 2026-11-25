@@ -37,8 +37,8 @@ export type { CharacterId, CharacterPose, CharacterPart, CharacterRig } from './
 export type { NetHandler } from './net';
 export type { TableSettings } from './ayvago/adapter';
 export { playAyvagoIntro, INTRO_DURATION } from './intro';
-export type { GameDefinition, GameMeta, Genre, AdsOptions, RunOutcome } from './registry';
-export { currentGame } from './registry';
+export type { GameDefinition, GameMeta, Genre, AdsOptions, RunOutcome, Orientation, OrientationSetting } from './registry';
+export { currentGame, gameOrientation, isLandscape, isAdaptive, isPhone, resolveOrientation } from './registry';
 export * as rng from './rng';
 export { quickChat, loadQuickChat, phraseText, phraseOf, QUICK_PHRASES, QUICK_CHAT_COOLDOWN } from './quickchat';
 export type { QuickChat, QuickChatOptions, QuickPhrase, SeatAnchor } from './quickchat';

@@ -1,5 +1,4 @@
-// Relic Ruins' menu theme (src/core/menu-theme.ts): torch-lit ancient ruins, apart from Crypt
-// Crawler's iron-bound crypt and Trap Trail's sunny sky toy look. Buttons are slabs of weathered
+// Relic Ruins' menu theme (src/core/menu-theme.ts): torch-lit ancient ruins. Buttons are slabs of weathered
 // stone in the button's colour (amber-gilt for the main actions, verdigris bronze for the rest) with
 // a carved groove and a gold-leaf frieze; boards are big sandstone slabs with a carved border, a
 // meander frieze along the top, corner rosettes and ivy creeping in; the how-to, pause and result
@@ -10,7 +9,7 @@
 // the how-to; the ruin is picked after PLAY on the map (one place per choice).
 import { shadeColor, type MenuTheme, type SkinPainter, type BorderStyle, type HudSkin } from '@core';
 import { CINZEL } from '@core/fonts/cinzel';
-import { prebakeScreens, SCREEN_CARDS } from './screens';
+import { prebakeScreens, screenCards } from './screens';
 import { prebakePlay } from './hud';
 import { INK, SAND, AMBER, GOLD, VERDIGRIS, PARCH, MOSS, css, rng, stone, groove, frieze, ivy, flame } from './paint';
 
@@ -218,7 +217,8 @@ export const RUIN_THEME: MenuTheme = {
   frame: { border: TORCH_BORDER, notes: paintCard, vignette: 0.62, dim: 0.22 },
   overlays: { lose: '#c8401e', win: '#a8661a', adColor: MOSS, titles: ['loseHearts', 'winAll', 'runDone'] },
   hud: HUD_SKIN,
-  cards: SCREEN_CARDS,
+  // the level-clear card in the orientation this run was given (read by the core at boot)
+  get cards() { return screenCards(); },
   prebake: (scene) => { prebakeScreens(scene); prebakePlay(scene); },
 };
 

@@ -6,6 +6,7 @@
 // for the first time uploads its shared buffers once, which would otherwise look like growth.
 // One warm-up restart comes first for the same reason.
 //
+// Adaptive games are checked in both orientations (scripts/orient-runs.mjs).
 // Usage: node scripts/three-memory.mjs [--dist] [--restarts=N] [slug ...]
 //   default: every game that imports @core/three, served by the Vite dev server, 5 restarts.
 //   --dist   serve the production build in dist/ (run npm run build first).
@@ -15,6 +16,7 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { runsOf } from './orient-runs.mjs';
 
 const require = createRequire(import.meta.url);
 let playwright;
@@ -31,7 +33,7 @@ const slugs = (only.length ? only : readdirSync(join(root, 'games')).filter(uses
   .filter((s) => existsSync(dist ? join(root, 'dist', 'games', s, 'index.html') : join(root, 'games', s, 'index.html')));
 if (!slugs.length) { console.error('no 3D game to check' + (dist ? ' (run npm run build first)' : '')); process.exit(1); }
 
-const PORT = 4800 + Math.floor(Math.random() * 400);
+const PORT = Number(process.env.AYVAGO_TEST_PORT) || 4800 + Math.floor(Math.random() * 400);
 const server = spawn('npx', dist ? ['vite', 'preview', '--port', String(PORT), '--strictPort'] : ['vite', '--port', String(PORT), '--strictPort'],
   { cwd: root, stdio: 'pipe', detached: true, env: { ...process.env, VITE_CACHE_DIR: join(tmpdir(), `ayvago-vite-${PORT}`) } });
 await new Promise((r) => { server.stdout.on('data', (d) => String(d).includes('Local') && r()); setTimeout(r, 10000); });
@@ -39,10 +41,13 @@ const stopServer = () => { try { process.kill(-server.pid); } catch { server.kil
 const BASE = `http://localhost:${PORT}`;
 
 const browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader'] });
+const runs = slugs.flatMap((s) => runsOf(playwright, root, s));
 let failed = 0;
 
-async function check(slug) {
-  const page = await browser.newPage({ viewport: { width: 540, height: 960 } });
+async function check(run) {
+  const { slug } = run;
+  const ctx = await browser.newContext(run.context ?? { viewport: { width: 540, height: 960 } });
+  const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript(() => {
@@ -86,24 +91,26 @@ async function check(slug) {
     left.push(await restart());
     live.push(await round());
   }
-  await page.close();
+  const orient = await page.evaluate(() => window.__ayvago.orientation);
+  await ctx.close();
+  if (run.expect && orient !== run.expect) errors.push(`orientation: expected ${run.expect}, got ${orient}`);
 
   const row = (a, k) => a.map((r) => r[k]).join(' → ');
   const grows = (k) => left.some((r) => r[k] > left[0][k]);
   const ok = !grows('textures') && !grows('geometries') && !errors.length;
   if (!ok) failed++;
-  console.log(`${ok ? 'PASS' : 'FAIL'}  ${slug}
+  console.log(`${ok ? 'PASS' : 'FAIL'}  ${run.label}
       after shutdown  textures ${row(left, 'textures')}   geometries ${row(left, 'geometries')}
       in play         textures ${row(live, 'textures')}   geometries ${row(live, 'geometries')}${errors.length ? '\n      errors: ' + errors.join(' | ') : ''}`);
 }
 
 try {
-  for (const slug of slugs) {
-    try { await check(slug); } catch (e) { failed++; console.log(`FAIL  ${slug}\n      ${String(e.message).split('\n')[0]}`); }
+  for (const run of runs) {
+    try { await check(run); } catch (e) { failed++; console.log(`FAIL  ${run.label}\n      ${String(e.message).split('\n')[0]}`); }
   }
 } finally {
   await browser.close();
   stopServer();
 }
-console.log(`\n${slugs.length - failed}/${slugs.length} 3D games keep GPU memory flat over ${restarts} restarts`);
+console.log(`\n${runs.length - failed}/${runs.length} 3D game runs keep GPU memory flat over ${restarts} restarts`);
 process.exit(failed ? 1 : 0);

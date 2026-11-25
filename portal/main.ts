@@ -47,7 +47,7 @@ function render(): void {
     a.className = 'card';
     a.href = `./games/${g.id}/?lang=${getLang()}`;
     const th = document.createElement('div');
-    th.className = 'thumb' + (g.orientation === 'landscape' ? ' land' : '');
+    th.className = 'thumb' + (g.orientation !== 'portrait' ? ' land' : '');
     if (g.thumb) th.style.backgroundImage = `url(./${g.thumb})`;
     else th.textContent = loc(g.title).slice(0, 1);
     const m = document.createElement('div');

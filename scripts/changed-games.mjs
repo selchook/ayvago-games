@@ -15,7 +15,9 @@
 //   any other shared runtime (src/core, ...)  -> the canary set: one game for every combination of
 //                                               style, orientation, online, physics, pixel art and
 //                                               characters (an error in shared code shows up in
-//                                               every game alike; the variants catch the rest)
+//                                               every game alike; the variants catch the rest);
+//                                               a core file with orientation code (isLandscape,
+//                                               gameOrientation, isPhone) adds every adaptive game
 //   package.json / package-lock.json          -> all (a library upgrade can break any game)
 // The full suite runs every night and on demand (Actions -> ci -> Run workflow).
 import { execFileSync } from 'node:child_process';
@@ -35,13 +37,19 @@ const gameSrc = new Map(slugsAll.map((s) => [s, source(join(root, 'games', s))])
 const coreSrc = source(join(root, 'src', 'core'));
 const usesCharacters = (s) => /loadCharacter\(/.test(gameSrc.get(s));
 const uses3d = (s) => /from '@core\/three'/.test(gameSrc.get(s));
+const metaOf = (s) => JSON.parse(readFileSync(join(root, 'games', s, 'game.json'), 'utf8'));
+/** Adaptive games (landscape on desktops and tablets, portrait on phones). */
+const adaptive = () => slugsAll.filter((s) => metaOf(s).orientation === 'adaptive');
+/** A shared file that decides layout by orientation: its change must be tried in both orientations. */
+const ORIENT_CODE = /\b(isLandscape|gameOrientation|isPhone|resolveOrientation)\b/;
+const orientCode = (f) => existsSync(join(root, f)) && ORIENT_CODE.test(readFileSync(join(root, f), 'utf8'));
 
 /** One game per combination of the properties that change how the shared runtime behaves. */
 function canary() {
   const pick = new Map();
   for (const s of slugsAll) {
     const src = gameSrc.get(s);
-    const meta = JSON.parse(readFileSync(join(root, 'games', s, 'game.json'), 'utf8'));
+    const meta = metaOf(s);
     const sig = [
       meta.genres.includes('retro') ? 'retro' : 'modern',
       meta.orientation,
@@ -98,6 +106,7 @@ for (const f of files) {
     else add(f, slugsAll.filter((s) => gameSrc.get(s).includes(key)), `games using oga/${m[1]}/${m[2]}`);
   } else if (/^src\/(?!generated\/)/.test(f) || /^public\/assets\//.test(f) || /^(vite\.config\.ts|tsconfig\.json)$/.test(f)) {
     add(f, canary(), 'canary');
+    if (/\.ts$/.test(f) && orientCode(f)) add(f, adaptive(), 'adaptive games (orientation code)');
   } else say(f, 'no game');
 }
 if (all) console.log('all');

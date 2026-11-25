@@ -9,12 +9,14 @@
 //   no slugs: every game; --canary: the canary set (scripts/changed-games.mjs --canary);
 //   --port <n>: server port (default 5371); --shots <dir>: one gameplay screenshot per game (and one
 //   on a failure); --verbose: logs (and with --shots captures) every A press on the way to play.
+//   Adaptive games run in both orientations (scripts/orient-runs.mjs: desktop landscape, phone portrait).
 import { createRequire } from 'node:module';
 import { spawn, execFileSync } from 'node:child_process';
 import { readdirSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { availableParallelism, tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { runsOf } from './orient-runs.mjs';
 
 const require = createRequire(import.meta.url);
 let playwright;
@@ -76,15 +78,16 @@ function retryable(r) {
 }
 
 function report(r, note = '') {
-  console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.slug}${note}${r.ok ? '' : '\n      ' + JSON.stringify(r.step) + '\n      ' + r.errors.join('\n      ')}`);
+  console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.label}${note}${r.ok ? '' : '\n      ' + JSON.stringify(r.step) + '\n      ' + r.errors.join('\n      ')}`);
   if (!r.ok && process.env.GITHUB_ACTIONS) {
     console.log(`::error title=gamepad ${r.slug}::${JSON.stringify(r.step)} ${r.errors.join(' / ').replace(/\r?\n/g, ' ')}`);
   }
 }
 
-async function testGame(slug) {
+async function testGame(run) {
+  const { slug } = run;
   const errors = [];
-  const ctx = await browser.newContext({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 1 });
+  const ctx = await browser.newContext(run.context ?? { viewport: { width: 540, height: 960 }, deviceScaleFactor: 1 });
   await ctx.addInitScript(fakePad);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
@@ -134,6 +137,10 @@ async function testGame(slug) {
     await tap('a');
     await waitFor(() => ['Menu', 'Play'].some((k) => window.__ayvago?.game.scene.isActive(k)), null, 15000);
     step.menu = true;
+    if (run.expect) {
+      const o = await page.evaluate(() => window.__ayvago.orientation);
+      if (o !== run.expect) errors.push(`orientation: expected ${run.expect}, got ${o}`);
+    }
     await page.waitForTimeout(900);
 
     await startRound();
@@ -261,17 +268,17 @@ async function testGame(slug) {
   }
   await ctx.close();
   const ok = Object.values(step).every(Boolean) && errors.length === 0;
-  return { slug, ok, step, note, probe: probeResult, errors: [...new Set(errors)].slice(0, 12) };
+  return { slug, label: run.label, run, ok, step, note, probe: probeResult, errors: [...new Set(errors)].slice(0, 12) };
 }
 
-const queue = [...slugs];
+const queue = slugs.flatMap((s) => runsOf(playwright, root, s));
 const parallel = args.includes('--serial') ? 1 : Math.min(4, Math.max(1, Math.floor(availableParallelism() / 2)));
 const workers = Array.from({ length: Math.min(parallel, queue.length) }, async () => {
   while (queue.length) {
-    const slug = queue.shift();
-    const r = await testGame(slug);
+    const run = queue.shift();
+    const r = await testGame(run);
     results.push(r);
-    if (!r.ok && retryable(r)) console.log(`SLOW  ${slug} (timed out under load, retried at the end)`);
+    if (!r.ok && retryable(r)) console.log(`SLOW  ${run.label} (timed out under load, retried at the end)`);
     else report(r, r.note);
   }
 });
@@ -279,7 +286,7 @@ await Promise.all(workers);
 
 for (const [i, r] of results.entries()) {
   if (r.ok || !retryable(r)) continue;
-  const again = await testGame(r.slug);
+  const again = await testGame(r.run);
   results[i] = again;
   report(again, again.ok ? ' (passed on its own after a timeout under load)' : '');
 }
@@ -287,7 +294,8 @@ if (dev) await new Promise((r) => setTimeout(r, 100));
 await browser.close();
 stopServer();
 
-results.sort((a, b) => a.slug.localeCompare(b.slug));
+results.sort((a, b) => a.label.localeCompare(b.label));
+for (const r of results) delete r.run;
 mkdirSync(join(root, 'reports'), { recursive: true });
 writeFileSync(join(root, 'reports', 'gamepad.json'), JSON.stringify(results, null, 2));
 const failed = results.filter((r) => !r.ok);

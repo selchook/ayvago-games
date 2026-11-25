@@ -7,7 +7,7 @@
 // is painted or uploaded, no masks or tile sprites. The pause answers at once (its buttons take
 // taps from the first frame, the entrance is cosmetic) and resume never waits for a tween.
 import Phaser from 'phaser';
-import { currentGame } from './registry';
+import { currentGame, isLandscape } from './registry';
 import { net } from './net';
 import { t } from './i18n';
 import { burst } from './fx';
@@ -54,7 +54,7 @@ function layout(land: boolean) {
 /** The style of a result heading (loss or win) as the result screen paints it: a game's own panel can reuse the painted texture. */
 export function overlayHeadingStyle(win: boolean): LabelStyle {
   const theme = menuTheme()!;
-  const size = layout(currentGame().meta.orientation === 'landscape').result.headSize;
+  const size = layout(isLandscape()).result.headSize;
   return win ? winStyle(theme, size) : headStyle(theme, size);
 }
 const headStyle = (theme: MenuTheme, size: number): LabelStyle => ({ size, color: style(theme).lose ?? theme.palette.heading, stroke: null, shadow: false });
@@ -209,7 +209,7 @@ export function prebakeOverlays(scene: Phaser.Scene): void {
   const theme = overlayTheme();
   if (!theme) return;
   const def = currentGame();
-  const land = def.meta.orientation === 'landscape';
+  const land = isLandscape();
   const L = layout(land), o = style(theme), P = theme.palette;
   themeShadeKey(scene, theme);
   for (const box of [L.pause.card, L.result.card]) cardTexture(scene, box.w, box.h);
@@ -299,7 +299,7 @@ export interface PauseActions {
  */
 export function themedPause(scene: Phaser.Scene, theme: MenuTheme, a: PauseActions): SkinButton[] {
   const { width, height } = scene.scale;
-  const land = currentGame().meta.orientation === 'landscape';
+  const land = isLandscape();
   const L = layout(land).pause;
   const { card } = frame(scene, theme, L.card, true);
   // everything is drawn from the first frame; the entrance only moves and scales it
@@ -353,7 +353,7 @@ export interface ResultView {
  */
 export function themedResult(scene: Phaser.Scene, theme: MenuTheme, v: ResultView): void {
   const { width } = scene.scale;
-  const land = currentGame().meta.orientation === 'landscape';
+  const land = isLandscape();
   const L = layout(land).result;
   const P = theme.palette;
   const { card, items } = frame(scene, theme, L.card, false);

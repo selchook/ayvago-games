@@ -6825,8 +6825,8 @@
     },
     "relic-ruins": {
       "about": {
-        "en": "Relic Ruins is a 3D exploration and puzzle adventure lit by a single torch. In twenty hand-built ruins you search the dark for the relic, a golden chest behind locked doors, then find your way out. The torch burns down and its light shrinks with it; braziers fill it again and mark where you return if it dies.\n\nFour realms bring their own tricks: crates, plates, levers and keys in the Overgrown Courtyard; sliding bookcases, candles and flooded halls in the Sunken Library; bear traps, trapdoors and rune sconces in the Gothic Crypt Halls; cracked floors, carts and raised walks in the Collapsing Cathedral.\n\nShades, wisps and guardian statues roam the dark, and every one of them hates the light of your torch.",
-        "tr": "Kadim Harabeler, tek bir meşalenin ışığında geçen 3B bir keşif ve bulmaca macerasıdır. Elle tasarlanmış yirmi harabenin her birinde karanlık salonlarda kadim eseri, kilitli kapıların ve eski düzeneklerin ardındaki altın sandığı ararsın, sonra dışarı çıkmanın yolunu bulursun. Meşale durmadan yanar, ışığı da onunla küçülür; mangallar onu yeniden doldurur ve sönerse döneceğin yeri belirler.\n\nDört diyarın kendi havası ve numaraları vardır: Sarmaşıklı Avlu'da sandıklar, plakalar, kollar ve anahtarlar; Batık Kütüphane'de kayan kitaplıklar, mumlar ve su basmış salonlar; Gotik Mahzenler'de ayı kapanları, kapaklar ve rünlü meşalelikler; Çöken Katedral'de çatlak zemin, raylı arabalar ve yüksek yollar. Her diyarın son harabesi, eseri kaldırdığın anda arkandan çöker.\n\nKaranlıkta gölgeler, ruhlar ve bekçi heykeller dolaşır. Işıktan nefret ederler; güçlü bir meşale ve yerinde bir fişek, hızlı bir kaçış kadar önemlidir."
+        "en": "Relic Ruins is a 3D exploration and puzzle adventure lit by a single torch. In twenty hand-built ruins you search the dark for the relic, a golden chest behind locked doors, then find your way out. The torch burns down and its light shrinks with it; braziers fill it again and mark where you return if it dies.\n\nFour realms bring their own tricks: crates, plates, levers and keys in the Overgrown Courtyard; sliding bookcases, candles and flooded halls in the Sunken Library; bear traps, trapdoors and marked sconces in the Shadow Halls; cracked floors, carts and raised walks in the Crumbling Citadel.\n\nShades, wisps and guardian statues roam the dark, and every one of them hates the light of your torch.",
+        "tr": "Kadim Harabeler, tek bir meşalenin ışığında geçen 3B bir keşif ve bulmaca macerasıdır. Elle tasarlanmış yirmi harabenin her birinde karanlık salonlarda kadim eseri, kilitli kapıların ve eski düzeneklerin ardındaki altın sandığı ararsın, sonra dışarı çıkmanın yolunu bulursun. Meşale durmadan yanar, ışığı da onunla küçülür; mangallar onu yeniden doldurur ve sönerse döneceğin yeri belirler.\n\nDört diyarın kendi havası ve numaraları vardır: Sarmaşıklı Avlu'da sandıklar, plakalar, kollar ve anahtarlar; Batık Kütüphane'de kayan kitaplıklar, mumlar ve su basmış salonlar; Gölge Salonları'nda ayı kapanları, kapaklar ve işaretli meşalelikler; Çöken Kale'de çatlak zemin, raylı arabalar ve yüksek yollar. Her diyarın son harabesi, eseri kaldırdığın anda arkandan çöker.\n\nKaranlıkta gölgeler, ışıltılar ve bekçi heykeller dolaşır. Işıktan nefret ederler; güçlü bir meşale ve yerinde bir fişek, hızlı bir kaçış kadar önemlidir."
       },
       "howToPlay": [
         {
@@ -6842,8 +6842,8 @@
           "tr": "Meşale çubuğunu izle. Yanan mangallar ve duvar meşalelikleri yanlarında durunca onu doldurur. Söndüğünde bir ışığa ulaşmak için birkaç saniyen olur; yetişemezsen bir can kaybeder ve son mangalda uyanırsın."
         },
         {
-          "en": "Push crates and statues onto plates, pull levers, bring keys to locks, light every candle or rune sconce of a sealed door, and slide bookcases to find secret rooms.",
-          "tr": "Yolu çöz: sandıkları ve heykelleri plakalara it, kolları çek, anahtarları kilitli kapılara götür, mühürlü kapının bütün mumlarını ya da rünlü meşaleliklerini yak, gizli odalar için kitaplıkları kaydır."
+          "en": "Push crates and statues onto plates, pull levers, bring keys to locks, light every candle or marked sconce of a sealed door, and slide bookcases to find secret rooms.",
+          "tr": "Yolu çöz: sandıkları ve heykelleri plakalara it, kolları çek, anahtarları kilitli kapılara götür, mühürlü kapının bütün mumlarını ya da işaretli meşaleliklerini yak, gizli odalar için kitaplıkları kaydır."
         },
         {
           "en": "Each ruin has three stars: the relic, every hidden gem, and a time under par. Then the camp sells lasting upgrades.",
@@ -6867,7 +6867,7 @@
       "tips": [
         {
           "en": "Plan your route between braziers. A full torch lights a wide circle and slows shades; a weak one invites wisps.",
-          "tr": "Rotanı mangallar arasında planla. Dolu bir meşale geniş bir alanı aydınlatır ve gölgeleri yavaşlatır; zayıf bir meşalede ruhlar üstüne dalar."
+          "tr": "Rotanı mangallar arasında planla. Dolu bir meşale geniş bir alanı aydınlatır ve gölgeleri yavaşlatır; zayıf bir meşalede ışıltılar üstüne dalar."
         },
         {
           "en": "Guardian statues move only in the dark and while you are not facing them.",
@@ -6945,8 +6945,8 @@
             "tr": "Telefonda oynanır mı?"
           },
           "a": {
-            "en": "Yes. It is made for portrait phones with a floating stick and two big buttons, and also plays with a keyboard or gamepad.",
-            "tr": "Evet. Yüzen bir çubuk ve iki büyük düğmeyle dikey tutulan telefonlar için yapıldı; klavye ya da oyun kumandasıyla da aynı rahatlıkla oynanır."
+            "en": "Yes. On a phone it plays upright with a stick and two big buttons; on a computer or tablet it fills a wide screen.",
+            "tr": "Evet. Telefonda dikey oynanır: bir çubuk ve iki büyük düğme yeter. Bilgisayarda ve tablette geniş, yatay bir ekranı doldurur."
           }
         }
       ]
