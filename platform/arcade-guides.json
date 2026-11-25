@@ -6826,7 +6826,7 @@
     "relic-ruins": {
       "about": {
         "en": "Relic Ruins is a 3D exploration and puzzle adventure lit by a single torch. In twenty hand-built ruins you search the dark for the relic, a golden chest behind locked doors, then find your way out. The torch burns down and its light shrinks with it; braziers fill it again and mark where you return if it dies.\n\nFour realms bring their own tricks: crates, plates, levers and keys in the Overgrown Courtyard; sliding bookcases, candles and flooded halls in the Sunken Library; bear traps, trapdoors and marked sconces in the Shadow Halls; cracked floors, carts and raised walks in the Crumbling Citadel.\n\nShades, wisps and guardian statues roam the dark, and every one of them hates the light of your torch.",
-        "tr": "Kadim Harabeler, tek bir meşalenin ışığında geçen 3B bir keşif ve bulmaca macerasıdır. Elle tasarlanmış yirmi harabenin her birinde karanlık salonlarda kadim eseri, kilitli kapıların ve eski düzeneklerin ardındaki altın sandığı ararsın, sonra dışarı çıkmanın yolunu bulursun. Meşale durmadan yanar, ışığı da onunla küçülür; mangallar onu yeniden doldurur ve sönerse döneceğin yeri belirler.\n\nDört diyarın kendi havası ve numaraları vardır: Sarmaşıklı Avlu'da sandıklar, plakalar, kollar ve anahtarlar; Batık Kütüphane'de kayan kitaplıklar, mumlar ve su basmış salonlar; Gölge Salonları'nda ayı kapanları, kapaklar ve işaretli meşalelikler; Çöken Kale'de çatlak zemin, raylı arabalar ve yüksek yollar. Her diyarın son harabesi, eseri kaldırdığın anda arkandan çöker.\n\nKaranlıkta gölgeler, ruhlar ve bekçi heykeller dolaşır. Işıktan nefret ederler; güçlü bir meşale ve yerinde bir fişek, hızlı bir kaçış kadar önemlidir."
+        "tr": "Kadim Harabeler, tek bir meşalenin ışığında geçen 3B bir keşif ve bulmaca macerasıdır. Elle tasarlanmış yirmi harabenin her birinde karanlık salonlarda kadim eseri, kilitli kapıların ve eski düzeneklerin ardındaki altın sandığı ararsın, sonra dışarı çıkmanın yolunu bulursun. Meşale durmadan yanar, ışığı da onunla küçülür; mangallar onu yeniden doldurur ve sönerse döneceğin yeri belirler.\n\nDört diyarın kendi havası ve numaraları vardır: Sarmaşıklı Avlu'da sandıklar, plakalar, kollar ve anahtarlar; Batık Kütüphane'de kayan kitaplıklar, mumlar ve su basmış salonlar; Gölge Salonları'nda ayı kapanları, kapaklar ve işaretli meşalelikler; Çöken Kale'de çatlak zemin, raylı arabalar ve yüksek yollar. Her diyarın son harabesi, eseri kaldırdığın anda arkandan çöker.\n\nKaranlıkta gölgeler, ışıltılar ve bekçi heykeller dolaşır. Işıktan nefret ederler; güçlü bir meşale ve yerinde bir fişek, hızlı bir kaçış kadar önemlidir."
       },
       "howToPlay": [
         {
@@ -6867,7 +6867,7 @@
       "tips": [
         {
           "en": "Plan your route between braziers. A full torch lights a wide circle and slows shades; a weak one invites wisps.",
-          "tr": "Rotanı mangallar arasında planla. Dolu bir meşale geniş bir alanı aydınlatır ve gölgeleri yavaşlatır; zayıf bir meşalede ruhlar üstüne dalar."
+          "tr": "Rotanı mangallar arasında planla. Dolu bir meşale geniş bir alanı aydınlatır ve gölgeleri yavaşlatır; zayıf bir meşalede ışıltılar üstüne dalar."
         },
         {
           "en": "Guardian statues move only in the dark and while you are not facing them.",
