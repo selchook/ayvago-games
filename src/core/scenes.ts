@@ -9,7 +9,7 @@ import { addCrt, burst } from './fx';
 import { sdk } from './sdk';
 import { keyNav } from './keynav';
 import { net } from './net';
-import { currentGame } from './registry';
+import { currentGame, isLandscape } from './registry';
 import { asset, kenney, loadSfx } from './assets';
 import { isModern } from './style';
 import { difficulty, isEasy, offersDifficulty, setDifficulty, type Difficulty } from './difficulty';
@@ -69,7 +69,7 @@ export class BootScene extends Phaser.Scene {
       const room = logoRoom(this);
       bakeMenuLogo(this, loc(currentGame().meta.title), room.maxW, room.bottom - room.top);
       prebakeMenuTheme(this, brandPlateWidth(this));
-      themedHowTo(this, theme, menuHowY(this), currentGame().meta.orientation === 'landscape', true);
+      themedHowTo(this, theme, menuHowY(this), isLandscape(), true);
       // and the pause and result screens' (they then open without painting anything)
       prebakeOverlays(this);
       // and the game's own themed screens (a shop, a talent board ...)
@@ -95,7 +95,7 @@ export class MenuScene extends Phaser.Scene {
     const def = currentGame();
     const meta = def.meta;
     const { width, height } = this.scale;
-    const land = meta.orientation === 'landscape';
+    const land = isLandscape();
     this.cameras.main.setBackgroundColor(def.background ?? '#0e0d12');
     def.menuDecor?.(this);
     playMusic(this, menuTrack(), MUSIC_VOLUME.menu);
@@ -193,7 +193,7 @@ export class MenuScene extends Phaser.Scene {
   private onlineMenu(): void {
     const def = currentGame();
     const { width, height } = this.scale;
-    const land = def.meta.orientation === 'landscape';
+    const land = isLandscape();
     const theme = menuTheme();
     if (theme) {
       themeShade(this, theme.frame?.vignette ?? 0.6, theme.frame?.dim);
@@ -454,7 +454,7 @@ export class PauseScene extends Phaser.Scene {
       buttons = themedPause(this, theme, { resume, retry, menu, sound: (x, y) => soundButton(this, x, y, true) });
     } else {
       const { width, height } = this.scale;
-      const land = currentGame().meta.orientation === 'landscape';
+      const land = isLandscape();
       const top = height * (land ? 0.36 : 0.45), gap = land ? 118 : 140;
       backdrop(this, 0.75);
       if (land) overlayCard(this, 0.05, 0.8, 560);
@@ -532,7 +532,7 @@ export class GameOverScene extends Phaser.Scene {
       return;
     }
     backdrop(this, 0.78);
-    if (def.meta.orientation === 'landscape') overlayCard(this, 0.07, 0.93, 900);
+    if (isLandscape()) overlayCard(this, 0.07, 0.93, 900);
     else overlayCard(this, 0.14, 0.84);
     const heading = data.title ?? (data.win ? t('youWin') : t('gameOver'));
     const h = txt(this, width / 2, height * 0.22, heading, {
@@ -580,7 +580,7 @@ export class GameOverScene extends Phaser.Scene {
       this.scene.start('Menu');
     });
 
-    const land = def.meta.orientation === 'landscape';
+    const land = isLandscape();
     const offer = offerContinue ? 'continue' : offerDouble ? 'double' : null;
     if (!offer) {
       // Landscape has no room for two stacked buttons below the score: put them side by side.
@@ -732,7 +732,7 @@ export class GameOverScene extends Phaser.Scene {
   private onlineResult(data: ResultData): void {
     const def = currentGame();
     const { width, height } = this.scale;
-    const land = def.meta.orientation === 'landscape';
+    const land = isLandscape();
     sdk.end(data.score ?? 0, !!data.win, difficulty());
     sdk.emit('gameOver', { score: data.score ?? 0, win: !!data.win, online: true, difficulty: difficulty() });
     backdrop(this, 0.78);
@@ -836,7 +836,7 @@ function themedHowTo(scene: Phaser.Scene, theme: MenuTheme, howY: number, land: 
 /** The how-to heading's line on the solo menu, as the menu places it. */
 function menuHowY(scene: Phaser.Scene): number {
   const def = currentGame();
-  const land = def.meta.orientation === 'landscape';
+  const land = isLandscape();
   const both = offersDifficulty() && !!def.menuOption && (def.menuOption.show?.(scene) ?? true);
   return scene.scale.height * (both ? (land ? 0.69 : 0.7) : land ? 0.67 : 0.64);
 }
@@ -845,7 +845,7 @@ function menuHowY(scene: Phaser.Scene): number {
 function logoRoom(scene: Phaser.Scene): { top: number; bottom: number; maxW: number } {
   const def = currentGame();
   const { width, height } = scene.scale;
-  const land = def.meta.orientation === 'landscape';
+  const land = isLandscape();
   const diff = offersDifficulty();
   const option = !!def.menuOption && (def.menuOption.show?.(scene) ?? true);
   // the best score's line, as the menu places it

@@ -24,6 +24,11 @@
 //                 part of its frame, so a landscape game needs --card-only
 //   --logo-only   regenerate just the logos (logo-en.png, logo-tr.png); a plain logo takes its colour
 //                 from the game's current card, a themed one is rendered by the game
+// An adaptive game (manifest orientation 'any': landscape on desktops and tablets, portrait on phones)
+// is captured with ?orient=landscape for its card (cover-fit, like a landscape game), screenshot,
+// icon and thumbnail, and once more with ?orient=portrait for the phone on its cover, which shows
+// the desktop frame and the phone side by side.
+//   AYVAGO_TEST_PORT=<n> serves the games on that port instead of a random one.
 //   CARD_FRAMES=<dir> keeps the card candidate frames; with --card-only --from-frames the cards are
 //   re-composed from them without opening the games
 import { createRequire } from 'node:module';
@@ -123,8 +128,11 @@ const CATEGORY = {
   sports: 'SPORTS', strategy: 'STRATEGY', card: 'CARD', word: 'WORD',
 };
 
-function coverHtml(m, menu, play, hero, logo) {
-  const land = m.orientation === 'landscape';
+/** Whether the art is laid out as landscape: landscape games and adaptive ones ('any'). */
+const landOf = (m) => m.orientation === 'landscape' || m.orientation === 'any';
+
+function coverHtml(m, menu, play, hero, logo, phone = null) {
+  const land = landOf(m);
   const shot = (b64, cls) => `<div class="shot ${cls}"><img src="data:image/png;base64,${b64}"></div>`;
   return `<!doctype html><html><head><style>${FONTS}
   * { box-sizing: border-box; margin: 0; }
@@ -143,6 +151,8 @@ function coverHtml(m, menu, play, hero, logo) {
   .p1 { width: 420px; height: 747px; right: 150px; top: 166px; transform: rotate(3deg); }
   .p2 { width: 330px; height: 587px; right: 560px; top: 300px; transform: rotate(-5deg); opacity: .9; }
   .l1 { width: 900px; height: 506px; right: 90px; top: 230px; transform: rotate(2deg); }
+  .a1 { width: 860px; height: 484px; right: 150px; top: 170px; transform: rotate(2deg); }
+  .a2 { width: 270px; height: 480px; right: 70px; top: 500px; transform: rotate(-4deg); }
   .hero { position: absolute; z-index: 4; height: 470px; bottom: 30px; filter: drop-shadow(0 18px 0 rgba(0,0,0,.55)) drop-shadow(0 0 30px rgba(255,210,63,.25)); image-rendering: auto; }
   .hero.p { left: ${land ? 0 : 880}px; }
   .hero.l { left: 790px; }
@@ -156,7 +166,7 @@ function coverHtml(m, menu, play, hero, logo) {
     <p>${m.description.en}</p>
     <span class="chip">${CATEGORY[m.category] ?? 'ARCADE'}</span>
   </div>
-  ${land ? shot(play, 'l1') : shot(menu, 'p2') + shot(play, 'p1')}
+  ${phone ? shot(play, 'a1') + shot(phone, 'a2') : land ? shot(play, 'l1') : shot(menu, 'p2') + shot(play, 'p1')}
   ${hero ? `<img class="hero ${land ? 'l' : 'p'}" src="data:image/png;base64,${hero}">` : ''}
   <div class="scan"></div></body></html>`;
 }
@@ -481,8 +491,9 @@ const CARD = {
       await sleep(300);
     }`,
   },
-  // Relic Ruins' card (portrait) shows the Stacks of the Sunken Library by torchlight: the autopilot
-  // (god mode on) eight seconds in, among the bookcases, the golden relic chest glowing beyond.
+  // Relic Ruins' card (adaptive: from the landscape run, cover-fit) shows the Stacks of the Sunken
+  // Library by torchlight: the autopilot (god mode on) eight seconds in, among the bookcases, the
+  // golden relic chest glowing beyond. The phone on its cover is the same stage in portrait.
   'relic-ruins': {
     pick: 0,
     stage: `async () => {
@@ -655,7 +666,7 @@ const plainLogoCss = (accent) => `
 
 /** The card in `lang`: the frame (base64 PNG), the logo in `accent`, or the themed logo image. */
 function cardHtml(m, b64, accent, logo, lang = 'en') {
-  const land = m.orientation === 'landscape';
+  const land = landOf(m);
   const modern = isModern(m);
   const shot = `data:image/png;base64,${b64}`;
   const text = esc(title(m, lang));
@@ -861,10 +872,14 @@ async function renderPlainLogo(browser, m, lang, accent) {
 }
 
 /** A themed game's menu logo in `lang`, rendered by the game itself (null without a menu theme). */
+/** The URL query that pins an adaptive game to an orientation ('' for a fixed game). */
+const orientQuery = (m, land) => (m.orientation === 'any' ? `&orient=${land ? 'landscape' : 'portrait'}` : '');
+let manifest = null;
+
 async function themedLogo(browser, slug, land, lang) {
   const page = await browser.newPage({ viewport: land ? { width: 1280, height: 720 } : { width: 720, height: 1280 } });
   try {
-    await page.goto(`http://localhost:${PORT}/games/${slug}/?nointro&lang=${lang}`);
+    await page.goto(`http://localhost:${PORT}/games/${slug}/?nointro&lang=${lang}${orientQuery(manifest, land)}`);
     await page.waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: dev ? 60000 : 20000 });
     return await page.evaluate(async (lang) => {
       const a = window.__ayvago;
@@ -1113,7 +1128,7 @@ async function writeLogos(browser, lab, m, out, themed, accent) {
 async function capture(browser, slug, land, tune) {
   const page = await browser.newPage({ viewport: land ? { width: 1280, height: 720 } : { width: 720, height: 1280 } });
   try {
-    await page.goto(`http://localhost:${PORT}/games/${slug}/?nointro&lang=en`);
+    await page.goto(`http://localhost:${PORT}/games/${slug}/?nointro&lang=en${orientQuery(manifest, land)}`);
     await page.waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: dev ? 60000 : 20000 });
     // a themed menu's logo (English), and time for its entrance to finish before the menu shot
     const logo = await page.evaluate(() => window.__ayvago.menuLogo?.('en')?.split(',')[1] ?? null);
@@ -1164,7 +1179,7 @@ async function capture(browser, slug, land, tune) {
 const framesDir = process.env.CARD_FRAMES;
 const fromFrames = args.includes('--from-frames');
 if (fromFrames && !framesDir) throw new Error('--from-frames needs CARD_FRAMES=<dir>');
-const PORT = 5600 + Math.floor(Math.random() * 300);
+const PORT = Number(process.env.AYVAGO_TEST_PORT) || 5600 + Math.floor(Math.random() * 300);
 const server = fromFrames ? null : spawn('npx', dev ? ['vite', '--port', String(PORT), '--strictPort'] : ['vite', 'preview', '--port', String(PORT), '--strictPort'],
   { cwd: root, stdio: 'pipe', detached: true, env: { ...process.env, VITE_CACHE_DIR: join(tmpdir(), `ayvago-vite-${PORT}`) } });
 if (server) await new Promise((r) => { server.stdout.on('data', (d) => String(d).includes('Local') && r()); setTimeout(r, 10000); });
@@ -1174,7 +1189,8 @@ const lab = await browser.newPage();   // frame statistics and WebP encoding
 let made = 0;
 for (const slug of slugs) {
   const m = JSON.parse(readFileSync(join(root, 'public', 'games', slug, 'ayvago.json'), 'utf8'));
-  const land = m.orientation === 'landscape';
+  const land = landOf(m);
+  manifest = m;
   const tune = CARD[slug] ?? {};
   const out = join(root, 'public', 'games', slug, 'ayvago');
   mkdirSync(out, { recursive: true });
@@ -1231,8 +1247,10 @@ for (const slug of slugs) {
         writeFileSync(join(root, 'public', 'thumbs', `${slug}.png`), cap.thumb);
         // Light in-game screenshot for the platform's Arcade theme tiles (manifest assets.screenshot).
         await renderScreenshot(browser, cap.play, land, join(out, 'screenshot.jpg'));
+        // an adaptive game's cover: the phone beside the desktop frame, from a portrait run
+        const phone = m.orientation === 'any' ? (await capture(browser, slug, false, { ...tune, ...tune.phone })).play : null;
         const art = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-        await art.setContent(coverHtml(m, cap.menu, cap.play, heroImage(slug), logo));
+        await art.setContent(coverHtml(m, cap.menu, cap.play, heroImage(slug), logo, phone));
         await art.evaluate(() => document.fonts.ready);
         await art.evaluate(() => Promise.all([...document.images].map((i) => i.decode())));
         await art.screenshot({ path: join(out, 'cover-1920x1080.jpg'), type: 'jpeg', quality: 86 });

@@ -17,7 +17,11 @@
 //   the run goes on → second loss: no second offer, one GHA_END (with continues: 1 once the
 //   vendored adapter forwards the field) → MENU → GHA_AD_REQUEST interstitial 'menu' → menu →
 //   a new run: offered again, Enter (RETRY) turns it down → GHA_END at once, without continues.
-// Usage: node scripts/platform-harness.mjs [--dev] [slug ...]   (default: dist/ via vite preview)
+// Adaptive games run twice (scripts/orient-runs.mjs): on a desktop page (the frame 960×540, it must
+// boot landscape) and on an emulated phone (the frame fills it, it must boot portrait), as on
+// ayvago.com, where the platform frames an 'any' game by the same device rule.
+// Usage: node scripts/platform-harness.mjs [--dev] [--tablet] [slug ...]   (default: dist/ via vite preview)
+//   AYVAGO_TEST_PORT=<n> serves the games on that port instead of a random one.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
@@ -25,6 +29,7 @@ import { readdirSync, existsSync, mkdirSync, writeFileSync, readFileSync } from 
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { runsOf } from './orient-runs.mjs';
 
 const require = createRequire(import.meta.url);
 let playwright;
@@ -37,7 +42,7 @@ const only = args.filter((a) => !a.startsWith('--'));
 const slugs = (only.length ? only : readdirSync(join(root, 'games')))
   .filter((s) => existsSync(dev ? join(root, 'games', s, 'index.html') : join(root, 'dist', 'games', s, 'index.html')));
 
-const GAME_PORT = 4900 + Math.floor(Math.random() * 90);
+const GAME_PORT = Number(process.env.AYVAGO_TEST_PORT) || 4900 + Math.floor(Math.random() * 90);
 const HOST_PORT = 3000;   // http://localhost:3000 is an allowed platform origin in the adapter
 const GAME_ORIGIN = `http://localhost:${GAME_PORT}`;
 
@@ -49,8 +54,8 @@ await new Promise((r) => { server.stdout.on('data', (d) => String(d).includes('L
 // GHA_END carries `continues` only once the vendored adapter forwards it (platform adapter > 2.7.0).
 const ADAPTER_FORWARDS_CONTINUES = /end\.continues|continues:/.test(readFileSync(join(root, 'src', 'core', 'ayvago', 'adapter.ts'), 'utf8'));
 
-const hostPage = (slug, locale, ads) => `<!doctype html><html><body style="margin:0;background:#111">
-<iframe id="g" src="${GAME_ORIGIN}/games/${slug}/" style="width:540px;height:960px;border:0"
+const hostPage = (slug, locale, ads, w, h) => `<!doctype html><html><body style="margin:0;background:#111">
+<iframe id="g" src="${GAME_ORIGIN}/games/${slug}/" style="width:${w}px;height:${h}px;border:0"
   sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"
   allow="autoplay; fullscreen; gamepad; accelerometer; gyroscope" referrerpolicy="origin"></iframe>
 <script>
@@ -77,21 +82,33 @@ const PLATFORM_BEST = 1000000;
 const host = createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   res.writeHead(200, { 'content-type': 'text/html' });
-  res.end(hostPage(u.searchParams.get('slug'), u.searchParams.get('locale') || 'tr', u.searchParams.get('ads') === '1'));
+  res.end(hostPage(u.searchParams.get('slug'), u.searchParams.get('locale') || 'tr', u.searchParams.get('ads') === '1',
+    Number(u.searchParams.get('w')) || 540, Number(u.searchParams.get('h')) || 960));
 }).listen(HOST_PORT);
 
 const browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 const results = [];
 
-async function check(slug) {
+const FIXED = { viewport: { width: 540, height: 960 } };
+/** The page for a run, and the frame's size in it (the whole viewport). */
+async function openPage(run) {
+  const ctx = await browser.newContext(run.context ?? FIXED);
+  const page = await ctx.newPage();
+  page.on('close', () => ctx.close().catch(() => {}));
+  const vp = (run.context ?? FIXED).viewport;
+  return { page, vp, size: `&w=${vp.width}&h=${vp.height}` };
+}
+
+async function check(run) {
+  const { slug } = run;
   const errors = [];
-  const page = await browser.newPage({ viewport: { width: 540, height: 960 } });
+  const { page, vp, size } = await openPage(run);
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/\[vite\]/.test(m.text())) errors.push('console: ' + m.text()); });
   const types = () => page.evaluate(() => window.log.map((m) => m.type));
   const step = {};
   try {
-    await page.goto(`http://localhost:${HOST_PORT}/?slug=${slug}&locale=tr`);
+    await page.goto(`http://localhost:${HOST_PORT}/?slug=${slug}&locale=tr${size}`);
     const frame = () => page.frames().find((f) => f.url().startsWith(GAME_ORIGIN));
     await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_READY'), null, { timeout: dev ? 30000 : 8000 });
     step.ready = true;
@@ -100,8 +117,9 @@ async function check(slug) {
     await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_LOADING'), null, { timeout: 15000 });
     step.loading = true;
     await page.waitForTimeout(800);
-    await page.mouse.click(270, 40);    // skip intro (away from the menu's PLAY button)
+    await page.mouse.click(Math.min(270, vp.width / 2), 40);    // skip intro (away from the menu's PLAY button)
     await frame().waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: 15000 });
+    if (run.expect) step.orientation = await frame().evaluate(() => window.__ayvago.orientation);
     step.locale = await frame().evaluate(() => document.documentElement.lang);
     step.best = await frame().evaluate((id) => Number(localStorage.getItem(`ayvago:best:${id}`)), slug);
     // the menu's own sound button: off and on again, both reported to the platform
@@ -160,24 +178,25 @@ async function check(slug) {
     errors.push('flow: ' + String(e.message).split('\n')[0] + ' | messages=' + (await types().catch(() => '?')));
   }
   await page.close();
-  const ok = step.ready && step.loading && step.locale === 'tr' && step.sessionStart && step.pause && step.mute && step.end && step.best === PLATFORM_BEST && step.noFalseBest && step.muteState && step.difficultyOk && step.noAds && errors.length === 0;
-  return { slug, ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
+  const ok = (!run.expect || step.orientation === run.expect) && step.ready && step.loading && step.locale === 'tr' && step.sessionStart && step.pause && step.mute && step.end && step.best === PLATFORM_BEST && step.noFalseBest && step.muteState && step.difficultyOk && step.noAds && errors.length === 0;
+  return { slug, label: run.label, ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
 }
 
 /** Ads on: the rewarded continue end to end, then the 'menu' interstitial (games with `ads.continue`). */
-async function checkAds(slug) {
+async function checkAds(run) {
+  const { slug } = run;
   const errors = [];
-  const page = await browser.newPage({ viewport: { width: 540, height: 960 } });
+  const { page, vp, size } = await openPage(run);
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/\[vite\]/.test(m.text())) errors.push('console: ' + m.text()); });
   const log = (type) => page.evaluate((t) => window.log.filter((m) => m.type === t), type);
   const step = {};
   try {
-    await page.goto(`http://localhost:${HOST_PORT}/?slug=${slug}&locale=en&ads=1`);
+    await page.goto(`http://localhost:${HOST_PORT}/?slug=${slug}&locale=en&ads=1${size}`);
     const frame = () => page.frames().find((f) => f.url().startsWith(GAME_ORIGIN));
     await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_LOADING'), null, { timeout: dev ? 30000 : 15000 });
     await page.waitForTimeout(800);
-    await page.mouse.click(270, 40);
+    await page.mouse.click(Math.min(270, vp.width / 2), 40);
     await frame().waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: 15000 });
     const box = await frame().locator('canvas').first().boundingBox();
     const [gw, gh] = await frame().evaluate(() => [window.__ayvago.game.scale.width, window.__ayvago.game.scale.height]);
@@ -258,16 +277,16 @@ async function checkAds(slug) {
   return { ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
 }
 
-for (const slug of slugs) {
-  const r = await check(slug);
+for (const run of slugs.flatMap((s) => runsOf(playwright, root, s, { tablet: args.includes('--tablet') }))) {
+  const r = await check(run);
   if (r.step.adsContinue) {
-    const a = await checkAds(slug);
+    const a = await checkAds(run);
     r.ads = a.step;
     r.ok = r.ok && a.ok;
     r.errors.push(...a.errors);
   }
   results.push(r);
-  console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${slug}  ${JSON.stringify(r.step)}${r.ads ? '\n      ads: ' + JSON.stringify(r.ads) : ''}${r.errors.length ? '\n      ' + r.errors.join('\n      ') : ''}`);
+  console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${run.label}  ${JSON.stringify(r.step)}${r.ads ? '\n      ads: ' + JSON.stringify(r.ads) : ''}${r.errors.length ? '\n      ' + r.errors.join('\n      ') : ''}`);
 }
 if (!ADAPTER_FORWARDS_CONTINUES && results.some((r) => r.ads)) {
   console.log('\nnote: the vendored adapter (src/core/ayvago/adapter.ts) does not forward `continues` in GHA_END yet; the continue check only asks for one GHA_END after the continued run.');

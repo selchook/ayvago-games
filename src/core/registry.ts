@@ -13,7 +13,12 @@ export interface GameMeta {
   description: Localized;
   howTo: Localized;
   genres: Genre[];
-  orientation: 'portrait' | 'landscape';
+  /**
+   * 'adaptive' (the default for new games): landscape 1280×720 on desktops and tablets, portrait
+   * 720×1280 on phones, decided once at boot (isPhone, gameOrientation). 'portrait' / 'landscape'
+   * fix the size for every device.
+   */
+  orientation: OrientationSetting;
   controls: Array<'touch' | 'keyboard' | 'mouse'>;
   version: string;
   credits?: string[];
@@ -114,10 +119,66 @@ export interface AdsOptions {
   double?: { grant: (scene: Phaser.Scene, run: RunOutcome) => void; show?: (run: RunOutcome) => boolean };
 }
 
+// ------------------------------------------------------------------ orientation
+
+export type Orientation = 'portrait' | 'landscape';
+/** game.json `orientation`: a fixed one, or 'adaptive' (the platform manifest says 'any'). */
+export type OrientationSetting = Orientation | 'adaptive';
+
+/**
+ * Whether the device is a phone. The contract with ayvago.com (the platform frames an 'any' game
+ * by the same rule): a touch-first device (no hover, coarse pointer) whose screen's short side is
+ * under 600 CSS px. Tablets (iPad, Android tablets) and desktops are not phones.
+ */
+export function isPhone(): boolean {
+  try {
+    if (typeof matchMedia !== 'function' || typeof screen === 'undefined') return false;
+    return matchMedia('(hover: none) and (pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
+  } catch {
+    return false;
+  }
+}
+
+/** `?orient=portrait|landscape` forces an adaptive game's orientation (tests, store art, debugging). */
+function orientOverride(): Orientation | null {
+  try {
+    const v = new URLSearchParams(location.search).get('orient');
+    return v === 'portrait' || v === 'landscape' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The orientation a game runs in on this device: fixed games keep theirs; adaptive games follow isPhone(). */
+export function resolveOrientation(setting: OrientationSetting): Orientation {
+  if (setting === 'portrait' || setting === 'landscape') return setting;
+  return orientOverride() ?? (isPhone() ? 'portrait' : 'landscape');
+}
+
 let current: GameDefinition | null = null;
+let resolved: Orientation = 'portrait';
 
 export function setCurrentGame(def: GameDefinition): void {
   current = def;
+  // decided once at boot: the game never switches orientation mid-session
+  resolved = resolveOrientation(def.meta.orientation);
+}
+
+/**
+ * The orientation the running game was given (portrait 720×1280 or landscape 1280×720). Every
+ * layout decision reads this (or isLandscape), never `meta.orientation`, which may be 'adaptive'.
+ */
+export function gameOrientation(): Orientation {
+  return resolved;
+}
+
+export function isLandscape(): boolean {
+  return resolved === 'landscape';
+}
+
+/** Whether the running game is adaptive (its layout must work in both orientations). */
+export function isAdaptive(): boolean {
+  return current?.meta.orientation === 'adaptive';
 }
 
 export function currentGame(): GameDefinition {
@@ -126,5 +187,6 @@ export function currentGame(): GameDefinition {
 }
 
 export function gameSize(def: GameDefinition): { width: number; height: number } {
-  return def.meta.orientation === 'landscape' ? { width: 1280, height: 720 } : { width: 720, height: 1280 };
+  const o = def === current ? resolved : resolveOrientation(def.meta.orientation);
+  return o === 'landscape' ? { width: 1280, height: 720 } : { width: 720, height: 1280 };
 }

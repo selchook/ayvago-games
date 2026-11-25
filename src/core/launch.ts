@@ -10,7 +10,7 @@ import { sdk } from './sdk';
 import { wireNet } from './net';
 import { installMasterBus, isMuted, isSilenced, setMuted, setMuteReporter } from './audio';
 import type { PlatformAdapter } from './ayvago/adapter';
-import { GameDefinition, setCurrentGame, gameSize } from './registry';
+import { GameDefinition, setCurrentGame, gameSize, gameOrientation, type Orientation } from './registry';
 import { BootScene, MenuScene, PauseScene, GameOverScene, setIntroPromise } from './scenes';
 import { setHostScanlines, themeHasScanlines } from './fx';
 import { installKeyboardOnce } from './keyboard-once';
@@ -23,6 +23,8 @@ declare global {
   interface Window {
     __ayvago?: {
       game: Phaser.Game; def: GameDefinition; silenced: () => boolean;
+      /** The orientation this run was given (an adaptive game's choice for this device). */
+      orientation: Orientation;
       /** The themed logo of the title in `lang` as a PNG data URL (store art); absent without a menu theme. */
       menuLogo?: (lang: 'tr' | 'en', maxWidth?: number, size?: number) => string;
       /** The gamepad layer's state (src/core/gamepad.ts), for the test harnesses. */
@@ -172,7 +174,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   bindAds(game);
   attachGamepad(game, def.gamepad);
 
-  window.__ayvago = { game, def, silenced: isSilenced, pad: padDebug };
+  window.__ayvago = { game, def, silenced: isSilenced, pad: padDebug, orientation: gameOrientation() };
   const theme = def.menuTheme;
   if (theme) window.__ayvago.menuLogo = (lang, maxWidth = 900, size = 180) => renderLogo(theme, def.meta.title[lang], maxWidth, size).canvas.toDataURL('image/png');
   return game;

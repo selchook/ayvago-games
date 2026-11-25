@@ -19,6 +19,7 @@ Rules:
 - **Scope.** Build a complete, polished, fun game, not a demo. Difficulty must ramp or levels must progress. Add juice: particles, shake, tweens and sounds.
 - **Menu and progression.** One place per choice: when a class, character or vehicle is picked after PLAY, the menu has no switcher for it (skill §7f). Melee and action RPG / roguelite games get three distinct combos per character and both a behaviour-changing upgrade path and a per-run power-card draft (skill §7g, reference `games/hex-realm`).
 - **Controls and text.** Touch and keyboard must both work fully. Car and other driving games use the shared `@core` car steering (`steeringOption`, `CarSteering`; skill §7d). All text comes in both TR and EN, and the Turkish must be correct.
-- **Gate.** Do not report done until `node scripts/smoke-test.mjs --dev --serial <slug>` prints PASS and you have looked at a gameplay screenshot. Other agents work in parallel, so ignore type errors outside your folder.
+- **Orientation.** New games are adaptive (`"orientation": "adaptive"`: landscape on desktops and tablets, portrait on phones); lay out every screen for both (new-game skill §7j).
+- **Gate.** Do not report done until `node scripts/smoke-test.mjs --dev --serial <slug>` prints PASS (both runs of an adaptive game) and you have looked at a gameplay screenshot (an adaptive game: in landscape and in portrait). Other agents work in parallel, so ignore type errors outside your folder.
 
 Final report (short): per game — slug, what was built (mechanics, levels/difficulty), assets used, smoke result, and any runtime limitation you hit.
