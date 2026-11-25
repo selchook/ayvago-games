@@ -45,11 +45,14 @@ export const levelLabel = (n: number): string => t('stageN', { w: WING_IDS.index
 export const joinedText = (id: string): string => t('joined', { name: CREW[id]?.name ?? '' });
 
 /** The touch buttons: [x, y, radius] in each orientation, from the bottom-right corner. */
+/** The touch buttons' opacity at rest (owner request: a little see-through). */
+const BTN_ALPHA = 0.7;
+
 export function buttonLayout(W: number, H: number): Record<'act' | 'throw' | 'power' | 'crew' | 'run', [number, number, number]> {
-  // RUN (hold) sits with the other right-thumb buttons, on the right half (the stick has the left)
+  // RUN (hold) sits above ACT, where the thumb rests; POWER moved to RUN's old spot (owner request)
   return isLandscape()
-    ? { act: [W - 122, H - 128, 80], throw: [W - 286, H - 86, 56], power: [W - 112, H - 300, 54], crew: [W - 262, H - 238, 46], run: [W - 432, H - 80, 50] }
-    : { act: [W - 122, H - 172, 84], throw: [W - 294, H - 118, 60], power: [W - 118, H - 362, 56], crew: [W - 280, H - 300, 50], run: [W - 290, H - 452, 50] };
+    ? { act: [W - 122, H - 128, 80], throw: [W - 286, H - 86, 56], run: [W - 112, H - 300, 54], crew: [W - 262, H - 238, 46], power: [W - 432, H - 80, 50] }
+    : { act: [W - 122, H - 172, 84], throw: [W - 294, H - 118, 60], run: [W - 118, H - 362, 56], crew: [W - 280, H - 300, 50], power: [W - 290, H - 452, 50] };
 }
 
 /** Paints the play scene's words ahead (Boot, under the intro). */
@@ -101,7 +104,7 @@ export class ActionButton {
       this.badge = scene.add.text(r * 0.64, -r * 0.62, '0', { fontFamily: 'Nunito', fontSize: '24px', fontStyle: '900', color: '#fff6e0', stroke: INK, strokeThickness: 5 }).setOrigin(0.5);
       this.root.add(this.badge);
     }
-    this.root.setAlpha(0.94);
+    this.root.setAlpha(BTN_ALPHA);
     const R = r * 1.18;
     this.zone = scene.add.zone(x, y, R * 2, R * 2).setScrollFactor(0).setDepth(9060).setInteractive(new Phaser.Geom.Circle(R, R, R), Phaser.Geom.Circle.Contains);
     this.zone.on('pointerdown', (p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => {
@@ -140,6 +143,9 @@ export class ActionButton {
     const tex = skinTexture(this.scene, 'round', this.r * 2, this.r * 2, this.held ? 'down' : enabled ? 'up' : 'off', this.color);
     if (this.face.texture.key !== tex) this.face.setTexture(tex);
     this.root.setScale(1 + this.pop);
+    // see-through at rest so the dungeon shows through; solid while a thumb holds it
+    const a = this.held ? 1 : BTN_ALPHA;
+    if (this.root.alpha !== a) this.root.setAlpha(a);
     if (this.badge) { this.badge.setVisible(count >= 0); if (count >= 0) { const s = String(count); if (this.badge.text !== s) this.badge.setText(s); } }
     void ring;
   }
