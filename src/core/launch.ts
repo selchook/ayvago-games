@@ -149,6 +149,7 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
         : { default: 'arcade', arcade: { gravity: { x: 0, y: def.gravityY ?? 0 }, debug: false } };
 
   installKeyboardOnce();
+  guardFrames();
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
@@ -179,3 +180,29 @@ export async function launch(def: GameDefinition): Promise<Phaser.Game> {
   if (theme) window.__ayvago.menuLogo = (lang, maxWidth = 900, size = 180) => renderLogo(theme, def.meta.title[lang], maxWidth, size).canvas.toDataURL('image/png');
   return game;
 }
+
+/**
+ * One failing frame must not stop the game. Phaser asks the browser for the next frame only after
+ * the current one returns, so a single uncaught error in an update, a tween callback or a render
+ * froze the picture and every tap for good (a quick tap on a level card's NEXT did that while its
+ * count-up still ran). The error is logged once per message and the next frame runs as usual.
+ */
+function guardFrames(): void {
+  const proto = Phaser.Game.prototype as unknown as { step(time: number, delta: number): void; ayvagoGuard?: boolean };
+  if (proto.ayvagoGuard) return;
+  proto.ayvagoGuard = true;
+  const step = proto.step;
+  const seen = new Set<string>();
+  proto.step = function (this: Phaser.Game, time: number, delta: number): void {
+    try {
+      step.call(this, time, delta);
+    } catch (e) {
+      const key = String((e as Error)?.stack ?? e);
+      if (!seen.has(key)) {
+        seen.add(key);
+        console.error('[ayvago] a frame failed; the game goes on:', e);
+      }
+    }
+  };
+}
+
