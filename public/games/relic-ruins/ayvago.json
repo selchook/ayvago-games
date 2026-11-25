@@ -61,10 +61,18 @@
       "en": "/games/relic-ruins/ayvago/card-1280x720.webp",
       "tr": "/games/relic-ruins/ayvago/card-tr-1280x720.webp"
     },
+    "cardPortrait": {
+      "en": "/games/relic-ruins/ayvago/card-portrait-360x640.webp",
+      "tr": "/games/relic-ruins/ayvago/card-portrait-tr-360x640.webp"
+    },
+    "cardPortrait2x": {
+      "en": "/games/relic-ruins/ayvago/card-portrait-720x1280.webp",
+      "tr": "/games/relic-ruins/ayvago/card-portrait-tr-720x1280.webp"
+    },
     "logo": {
       "en": "/games/relic-ruins/ayvago/logo-en.png",
       "tr": "/games/relic-ruins/ayvago/logo-tr.png"
     }
   },
-  "version": "1.1.0"
+  "version": "1.1.1"
 }
