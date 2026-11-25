@@ -61,6 +61,14 @@
       "en": "/games/dungeon-rescue/ayvago/card-1280x720.webp",
       "tr": "/games/dungeon-rescue/ayvago/card-tr-1280x720.webp"
     },
+    "cardPortrait": {
+      "en": "/games/dungeon-rescue/ayvago/card-portrait-360x640.webp",
+      "tr": "/games/dungeon-rescue/ayvago/card-portrait-tr-360x640.webp"
+    },
+    "cardPortrait2x": {
+      "en": "/games/dungeon-rescue/ayvago/card-portrait-720x1280.webp",
+      "tr": "/games/dungeon-rescue/ayvago/card-portrait-tr-720x1280.webp"
+    },
     "logo": {
       "en": "/games/dungeon-rescue/ayvago/logo-en.png",
       "tr": "/games/dungeon-rescue/ayvago/logo-tr.png"

@@ -493,6 +493,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'any',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
     addedAt: '2026-11-25',
+    portraitCards: true,
   }),
   arcadeGame({
     slug: 'fish-frenzy',
