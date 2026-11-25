@@ -25,7 +25,6 @@ export const MOVE = {
   /** How far ACT reaches (metres from the knight's centre to the thing's). */
   reach: 1.75,
   /** On touch: pushing the stick this far sprints. */
-  stickSprint: 0.93,
   /** Pick-ups are taken by walking over them within this distance. */
   grab: 0.95,
 };

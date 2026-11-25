@@ -45,10 +45,11 @@ export const levelLabel = (n: number): string => t('stageN', { w: WING_IDS.index
 export const joinedText = (id: string): string => t('joined', { name: CREW[id]?.name ?? '' });
 
 /** The touch buttons: [x, y, radius] in each orientation, from the bottom-right corner. */
-export function buttonLayout(W: number, H: number): Record<'act' | 'throw' | 'power' | 'crew', [number, number, number]> {
+export function buttonLayout(W: number, H: number): Record<'act' | 'throw' | 'power' | 'crew' | 'run', [number, number, number]> {
+  // RUN (hold) sits with the other right-thumb buttons, on the right half (the stick has the left)
   return isLandscape()
-    ? { act: [W - 122, H - 128, 80], throw: [W - 286, H - 86, 56], power: [W - 112, H - 300, 54], crew: [W - 262, H - 238, 46] }
-    : { act: [W - 122, H - 172, 84], throw: [W - 294, H - 118, 60], power: [W - 118, H - 362, 56], crew: [W - 280, H - 300, 50] };
+    ? { act: [W - 122, H - 128, 80], throw: [W - 286, H - 86, 56], power: [W - 112, H - 300, 54], crew: [W - 262, H - 238, 46], run: [W - 432, H - 80, 50] }
+    : { act: [W - 122, H - 172, 84], throw: [W - 294, H - 118, 60], power: [W - 118, H - 362, 56], crew: [W - 280, H - 300, 50], run: [W - 290, H - 452, 50] };
 }
 
 /** Paints the play scene's words ahead (Boot, under the intro). */
@@ -66,7 +67,7 @@ export function prebakePlay(scene: Phaser.Scene): void {
   for (let n = 1; n <= 3; n++) labelTexture(scene, t('needMore', { n }), S_WARN);
   for (const k of HINTS) labelTexture(scene, t(k), S_HINT);
   for (const p of POWER_IDS) labelTexture(scene, t('p_' + p), S_POWER);
-  for (const k of ['act', 'throw', 'power', 'crew', ...VERBS]) labelTexture(scene, t(k), S_BTN);
+  for (const k of ['act', 'throw', 'power', 'crew', 'run', ...VERBS]) labelTexture(scene, t(k), S_BTN);
   for (const k of VERBS) labelTexture(scene, t(k), S_PROMPT);
   for (const r of [46, 50, 54, 56, 60, 80, 84]) for (const c of [CRIMSON, ROYAL, MOSS, SLATE]) for (const st of ['up', 'down', 'off'] as const) skinTexture(scene, 'round', r * 2, r * 2, st, c);
 }

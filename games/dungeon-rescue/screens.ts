@@ -136,6 +136,8 @@ export class Panel {
   protected fi = -1;
   private toastImg: Phaser.GameObjects.Image | null = null;
   closed = false;
+  /** Plain objects this panel's count-up tweens animate (stopped with the panel). */
+  protected counters: object[] = [];
   private release: () => void;
 
   constructor(protected scene: Phaser.Scene, protected host: ScreenHost, o: { board?: [number, number, number, number]; title?: string; titleY?: number; titleX?: number; dim?: number } = {}) {
@@ -226,10 +228,22 @@ export class Panel {
       if (o instanceof Phaser.GameObjects.Container) o.list.forEach(off);
     };
     off(this.root);
+    // a quick tap on NEXT closes the card while its stars and count-up still run: they stop here
+    this.scene.tweens.getTweens().forEach((t) => { if (this.ownTween(t)) t.stop(); });
     this.scene.tweens.add({ targets: this.root, alpha: 0, duration: 120, onComplete: () => this.root.destroy() });
   }
 
+  /** A tween of this panel: it moves something inside it, or counts a number shown in it. */
+  private ownTween(t: Phaser.Tweens.Tween): boolean {
+    const inside = (o: unknown): boolean => {
+      for (let p = o as Phaser.GameObjects.GameObject | null; p; p = (p as Phaser.GameObjects.GameObject).parentContainer) if (p === this.root) return true;
+      return false;
+    };
+    return t.targets.some((o) => inside(o) || this.counters.includes(o));
+  }
+
   protected sparkle(x: number, y: number, tint: number[], n = 30): void {
+    if (this.closed) return;
     const em = this.scene.add.particles(x, y, 'dr-spark', {
       speed: { min: 120, max: 380 }, angle: { min: 0, max: 360 }, scale: { start: 0.9, end: 0 }, alpha: { start: 1, end: 0 },
       blendMode: Phaser.BlendModes.ADD, lifespan: { min: 300, max: 800 }, tint, emitting: false,
@@ -418,7 +432,7 @@ export class SummaryScreen extends Panel {
       this.content.add(fitWidth(labelAt(s, x, y + 62, t('star' + (i + 1)), S_STAR), 140));
       if (on) {
         img.setScale(0);
-        s.tweens.add({ targets: img, scale: 92 / 96, delay: 250 + i * 260, duration: 260, ease: 'Back.easeOut', onStart: () => { host.sfx('star', 0.55); if (d.newStars[i]) this.sparkle(x, y, [0xffd070, 0xffffff], 18); } });
+        s.tweens.add({ targets: img, scale: 92 / 96, delay: 250 + i * 260, duration: 260, ease: 'Back.easeOut', onStart: () => { if (this.closed) return; host.sfx('star', 0.55); if (d.newStars[i]) this.sparkle(x, y, [0xffd070, 0xffffff], 18); } });
       }
     });
     const lines: [string, string][] = [['sumRescued', d.rescued], ['sumCoins', String(d.coins)], ['sumTime', fmtTime(d.time)], ['sumUnseen', String(d.unseen)], ['sumBonus', String(d.bonus)]];
@@ -433,7 +447,8 @@ export class SummaryScreen extends Panel {
     const sc = new GlyphText(s, lx, top + (land ? 404 : 642), '0', S_SCORE, 0.5);
     this.content.add(sc);
     const tw = { v: 0 };
-    s.tweens.add({ targets: tw, v: d.score, duration: 900, delay: 900, ease: 'Cubic.easeOut', onUpdate: () => sc.setText(String(Math.round(tw.v))) });
+    this.counters.push(tw);
+    s.tweens.add({ targets: tw, v: d.score, duration: 900, delay: 900, ease: 'Cubic.easeOut', onUpdate: () => { if (!this.closed) sc.setText(String(Math.round(tw.v))); } });
     this.button(W / 2, cy + SUM_H / 2 + 6, 240, 66, CRIMSON, t('nextBtn'), () => { this.close(); onNext(); });
     this.fi = 0;
     this.showFocus();

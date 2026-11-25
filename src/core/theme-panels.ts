@@ -90,7 +90,8 @@ export class GlyphText extends Phaser.GameObjects.Container {
   }
 
   setText(s: string): this {
-    if (s === this.text) return this;
+    // a count-up tween may outlive its card (a quick tap on NEXT): a destroyed line has no scene
+    if (s === this.text || !this.scene) return this;
     this.text = s;
     const { key, adv, originY } = this.atlas;
     const chars = [...s];
@@ -218,6 +219,7 @@ export class Para extends Phaser.GameObjects.Container {
   }
 
   setText(s: string): this {
+    if (!this.scene) return this;   // destroyed with its card
     this.removeAll(true);
     const lines = wrapLines(s, this.o, this.maxW);
     lines.forEach((line, i) => { if (line) this.add(labelAt(this.scene, 0, this.lineH * (i + 0.5), line, this.o, this.align)); });

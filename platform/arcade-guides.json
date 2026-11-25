@@ -2760,8 +2760,8 @@
           "tr": "WASD ya da oklarla yürür, Shift ile koşarsın. Boşluk ya da E EYLEM'dir: hücre açar, kol çeker, saklanır, meşale söndürür. Q'yu basılı tutup nişan al, bırakınca fırlat; F güç kullanır, C ekibi çağırır, Esc ya da P duraklatır. Haritada H sığınağı açar."
         },
         "touch": {
-          "en": "Drag on the left to walk with the floating stick; push it all the way to sprint. ACT, THROW (hold to aim), POWER and CREW sit on the right.",
-          "tr": "Solda sürükleyerek yüzen çubukla yürü; sonuna kadar itersen koşarsın. EYLEM, FIRLAT (nişan için basılı tut), GÜÇ ve EKİP sağda."
+          "en": "Drag on the left to walk with the floating stick; hold RUN to sprint. RUN, ACT, THROW (hold to aim), POWER and CREW sit on the right.",
+          "tr": "Solda sürükleyerek yüzen çubukla yürü; koşmak için KOŞ'u basılı tut. KOŞ, EYLEM, FIRLAT (nişan için basılı tut), GÜÇ ve EKİP sağda."
         },
         "gamepad": {
           "en": "Left stick walks, A is ACT, LB throws (hold to aim), Y uses a power, X calls the crew, B or RT sprints and Start pauses.",

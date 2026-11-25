@@ -42,7 +42,7 @@ export class PlayScene extends ArcadeScene {
   levelN = 1;
   private controls!: Controls;
   private hudp!: PlayHud;
-  private btn!: { act: ActionButton; throw: ActionButton; power: ActionButton; crew: ActionButton };
+  private btn!: { act: ActionButton; throw: ActionButton; power: ActionButton; crew: ActionButton; run: ActionButton };
   private panel: Panel | null = null;
   private host!: ScreenHost;
   private touch = false;
@@ -121,6 +121,8 @@ export class PlayScene extends ArcadeScene {
       throw: new ActionButton(this, L.throw[0], L.throw[1], L.throw[2], 'dr-vase', t('throw'), ROYAL, true),
       power: new ActionButton(this, L.power[0], L.power[1], L.power[2], 'dr-smoke', t('power'), MOSS, true),
       crew: new ActionButton(this, L.crew[0], L.crew[1], L.crew[2], 'dr-crew', t('crew'), SLATE),
+      // the stick only walks (quiet); RUN is held to sprint (the armour clanks)
+      run: new ActionButton(this, L.run[0], L.run[1], L.run[2], 'dr-swift', t('run'), SLATE),
     };
     this.hudp = new PlayHud(this, this.hud);
     this.pickRing = this.add.graphics().setScrollFactor(0).setDepth(9010);
@@ -314,6 +316,7 @@ export class PlayScene extends ArcadeScene {
     if (h.bag.length) this.btn.power.setIcon(POWER_ICON[h.bag[0]]);
     this.btn.power.draw(dt, h.bag.length > 0, h.bag.length || -1);
     this.btn.crew.draw(dt, s.followers.some((f) => f.mode !== 'cell'));
+    this.btn.run.draw(dt, true);
     this.showPrompt(verb, tg);
     // the lock-pick / key-ring ring
     const g = this.pickRing.clear();
@@ -338,6 +341,7 @@ export class PlayScene extends ArcadeScene {
     if (this.btn.power.take() || JD(k.f) || JD(k.k)) this.pressed.power = true;
     if (this.btn.crew.take() || JD(k.c) || JD(k.j)) this.pressed.crew = true;
     this.btn.throw.take();
+    this.btn.run.take(); this.btn.run.takeRelease();
     if (this.btn.throw.takeRelease() || JU(k.q)) this.pressed.throwUp = true;
     if (this.controls.justA()) this.pressed.act = true;
     if (this.phase === 'intro' && (this.pressed.act || this.pressed.power) && this.phaseT > 0.3) { this.phaseT = INTRO_TIME; this.pressed.act = this.pressed.power = false; }
@@ -345,11 +349,10 @@ export class PlayScene extends ArcadeScene {
 
   private readInput(first: boolean): Input {
     const c = this.controls, k = this.keys;
-    const stick = Math.hypot(c.axisX, c.axisY);
     const throwHeld = k.q.isDown || this.btn.throw.held;
     const inp: Input = {
       mx: c.axisX, mz: c.axisY,
-      sprint: k.shift.isDown || c.b || (this.touch && stick > MOVE.stickSprint),
+      sprint: k.shift.isDown || c.b || this.btn.run.held,
       act: k.e.isDown || k.space.isDown || this.btn.act.held || c.a,
       actPressed: first && this.pressed.act,
       throwHeld,
