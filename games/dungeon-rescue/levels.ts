@@ -179,7 +179,7 @@ const DEFS: LevelDef[] = [
     prisoners: ['chef', 'casual2'],
     par: 80,
     hint: 'h_throw',
-    route: [['go', 6, 10], ['act', 4, 9], ['go', 11, 10], ['act', 11, 9], ['go', 13, 8], ['go', 13, 6], ['throw', 8, 6], ['wait', 1.5], ['go', 11, 4], ['go', 8, 2], ['exit']],
+    route: [['go', 6, 10], ['act', 4, 9], ['go', 11, 10], ['act', 11, 9], ['go', 13, 8], ['go', 13, 6], ['throw', 8, 6], ['wait', 1.0], ['go', 11, 4], ['go', 8, 2], ['exit']],
   },
   {
     // 1-5 Cellblock Alarm: steal the Jailer Chief's key ring from behind, then run for it

@@ -235,6 +235,9 @@ export interface Hero {
 const NB4: C2[] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const BLOCK_MOVE = new Set<ThingKind>(['barrel', 'crate', 'column', 'banner', 'table', 'statue', 'chest']);
 const BLOCK_SIGHT = new Set<ThingKind>(['barrel', 'crate', 'column', 'banner', 'statue']);
+/** Half the width of what blocks sight inside its cell, as it is drawn (a column stops a glance
+ * where the column stands, not across its whole 2 m cell): metres from the cell's centre. */
+const SIGHT_HALF: Partial<Record<ThingKind, number>> = { column: 0.45, barrel: 0.55, crate: 0.72, statue: 0.7, banner: 0.8 };
 const ITEM: Record<string, ThingKind> = {
   B: 'barrel', C: 'crate', O: 'column', F: 'banner', T: 'table', H: 'statue', k: 'key', '=': 'celldoor', G: 'gate', E: 'exitgate',
   L: 'lever', D: 'door', '^': 'spikes', o: 'trapdoor', $: 'coins', b: 'bag', '*': 'chest', v: 'vase', u: 'bucket', '+': 'campfire',
@@ -244,6 +247,26 @@ export const SPIKE = { down: 2.2, warn: 0.45, up: 0.9 };
 const SPIKE_CYCLE = SPIKE.down + SPIKE.warn + SPIKE.up;
 
 const ang = (a: number): number => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
+/**
+ * A guard's look round (−1…1 over one period): hold ahead, turn to one side, hold there, back,
+ * hold, the other side, hold, back. Eased turns between still holds read as someone looking
+ * round, not a head on a pendulum.
+ */
+/** How fast a guard's head turns at most (rad/s). */
+const HEAD_RATE = 3.2;
+export const glance = (t: number, period: number): number => {
+  const p = (((t / period) % 1) + 1) % 1 * 8, seg = Math.floor(p), f = p - seg;
+  const e = f * f * (3 - 2 * f);
+  switch (seg) {
+    case 1: return e;
+    case 2: return 1;
+    case 3: return 1 - e;
+    case 5: return -e;
+    case 6: return -1;
+    case 7: return -1 + e;
+    default: return 0;
+  }
+};
 
 export class Sim {
   readonly c: Level;
@@ -394,6 +417,18 @@ export class Sim {
     return false;
   }
 
+  /** Does sight stop at this point (in cell c, r)? Walls and shut doors fill their cell; a prop
+   * only its own footprint. */
+  blocksSightAt(x: number, z: number, c: number, r: number): boolean {
+    const k = this.cell(c, r);
+    if (!k || k.k !== 'floor') return true;
+    const th = this.thingAt(c, r);
+    if (!th) return false;
+    if (BLOCK_SIGHT.has(th.kind)) { const h = SIGHT_HALF[th.kind] ?? CELL / 2; return Math.abs(x - th.x) < h && Math.abs(z - th.z) < h; }
+    if (th.kind === 'door') return th.open < 0.5;
+    return false;
+  }
+
   /** A clear line between two points (sampled every 0.25 m; the end cells do not count). */
   los(x0: number, z0: number, x1: number, z1: number): boolean {
     const d = Math.hypot(x1 - x0, z1 - z0);
@@ -403,7 +438,7 @@ export class Sim {
       const x = x0 + ((x1 - x0) * i) / n, z = z0 + ((z1 - z0) * i) / n;
       const c = Sim.toC(x), r = Sim.toC(z);
       if ((c === c0 && r === r0) || (c === c1 && r === r1)) continue;
-      if (this.blocksSight(c, r)) return false;
+      if (this.blocksSightAt(x, z, c, r)) return false;
     }
     return true;
   }
@@ -428,8 +463,13 @@ export class Sim {
 
   /** How lit a point is (the Chief's lantern included). */
   lightAt(x: number, z: number): number {
-    const c = Sim.toC(x), r = Sim.toC(z);
-    let L = c >= 0 && r >= 0 && c < this.c.cols && r < this.c.rows ? this.light[r * this.c.cols + c] : 0;
+    // blended between the four nearest cell centres, so the light (and the cones it stretches)
+    // fades smoothly instead of stepping from cell to cell
+    const W = this.c.cols, H = this.c.rows;
+    const fx = x / CELL, fz = z / CELL, c0 = Math.floor(fx), r0 = Math.floor(fz), tx = fx - c0, tz = fz - r0;
+    const at = (c: number, r: number) => this.light[Math.min(H - 1, Math.max(0, r)) * W + Math.min(W - 1, Math.max(0, c))];
+    let L = c0 < -1 || r0 < -1 || c0 >= W || r0 >= H ? 0
+      : (at(c0, r0) * (1 - tx) + at(c0 + 1, r0) * tx) * (1 - tz) + (at(c0, r0 + 1) * (1 - tx) + at(c0 + 1, r0 + 1) * tx) * tz;
     const b = this.boss;
     if (b && b.state !== 'fallen' && b.state !== 'locked') { const d = Math.hypot(b.x - x, b.z - z); if (d < CHIEF.lantern) L = Math.max(L, 1 - (d / CHIEF.lantern) * 0.55); }
     return L;
@@ -469,7 +509,7 @@ export class Sim {
     const out: { x: number; z: number; look: number; awake: boolean }[] = [];
     const awake = this.awake(g) && g.state !== 'daze';
     if (g.state !== 'patrol' && g.state !== 'return') {
-      for (let t = 0; t <= horizon + 1e-6; t += step) out.push({ x: g.x, z: g.z, look: g.yaw + Math.sin(g.t + t) * (g.state === 'search' ? 1.15 : 0.4), awake });
+      for (let t = 0; t <= horizon + 1e-6; t += step) out.push({ x: g.x, z: g.z, look: g.yaw + (g.state === 'search' ? glance(g.t + t, 3.4) * 1.15 : glance(g.t + t, 1.8) * 0.4), awake });
       return out;
     }
     const c: Guard = { ...g, path: [...g.path], poi: [...g.poi] as [number, number], seen: [...g.seen] as [number, number], cdir: [...g.cdir] as [number, number], checks: [] };
@@ -509,15 +549,22 @@ export class Sim {
     const max = (g.boss ? CHIEF.range : GUARD.range) * this.tune.sight * (HEAVY[g.k]?.range ?? 1) * (this.alarm ? 1.2 : 1) * DETECT.lit;
     let d = 0;
     const c0 = Sim.toC(g.x), r0 = Sim.toC(g.z);
+    const stop = (k: number) => {
+      const x = g.x + sx * k, z = g.z + sz * k;
+      const c = Sim.toC(x), r = Sim.toC(z);
+      return (!(c === c0 && r === r0) && this.blocksSightAt(x, z, c, r)) || k > this.rangeAt(g, x, z);
+    };
     while (d < max) {
       const nd = d + 0.25;
-      const x = g.x + sx * nd, z = g.z + sz * nd;
-      const c = Sim.toC(x), r = Sim.toC(z);
-      if (!(c === c0 && r === r0) && this.blocksSight(c, r)) break;
-      if (nd > this.rangeAt(g, x, z)) break;
+      if (stop(nd)) {
+        // the exact edge between the last clear step and the first stopped one (a smooth rim)
+        let lo = d, hi = nd;
+        for (let i = 0; i < 6; i++) { const m = (lo + hi) / 2; if (stop(m)) hi = m; else lo = m; }
+        return lo;
+      }
       d = nd;
     }
-    return d;
+    return Math.min(d, max);
   }
 
   // ---------------------------------------------------------------- paths
@@ -1203,7 +1250,14 @@ export class Sim {
   // ---------------------------------------------------------------- the guards
 
   private updateGuards(dt: number): void {
-    for (const g of this.guards) this.updateGuard(g, dt);
+    for (const g of this.guards) {
+      // the head turns at most HEAD_RATE rad/s, so a change of mind (stopping, a new state) is a
+      // turn of the head, never a snap
+      const was = g.head;
+      this.updateGuard(g, dt);
+      const step = HEAD_RATE * dt;
+      g.head = was + Math.max(-step, Math.min(step, g.head - was));
+    }
   }
 
   private routeCell(g: Guard): C2 { return g.def.p[g.ri % g.def.p.length]; }
@@ -1218,10 +1272,10 @@ export class Sim {
     g.moving = 0;
     switch (g.state) {
       case 'fallen': case 'locked': return;
-      case 'sleep': g.head = Math.sin(g.t * 0.6) * 0.1; return;
+      case 'sleep': g.head = 0; return;
       case 'doze':
         g.hold -= dt;
-        g.head = Math.sin(g.t * 0.7) * 0.15;
+        g.head = 0;
         if (g.hold <= 0) {
           g.state = 'search'; g.poi = [g.x, g.z]; g.hold = GUARD.search; g.t = 0; g.mark = '?';
           this.events.push({ e: 'wake', g: g.i });
@@ -1229,11 +1283,11 @@ export class Sim {
         }
         return;
       case 'daze':
-        g.head = Math.sin(g.t * 5) * 0.9;
+        g.head = glance(g.t, 1.8) * 0.7;
         if (g.t > GUARD.confused) { g.state = 'return'; g.path = []; g.mark = ''; this.events.push({ e: 'mark', g: g.i, mark: '' }); }
         return;
       case 'stolen':
-        g.head = Math.sin(g.t * 6) * 1.1;
+        g.head = glance(g.t, 1.4) * 0.9;
         if (g.t > 3.2) { g.state = 'return'; g.path = []; }
         return;
     }
@@ -1249,7 +1303,7 @@ export class Sim {
       case 'return': {
         const goal = this.routeCell(g);
         if (this.follow(g, goal, walk, dt, true)) { g.state = 'patrol'; g.wait = 0; }
-        g.head = Math.sin(g.t * 1.2) * 0.25;
+        g.head = glance(g.t, 7) * 0.3;
         break;
       }
       case 'search': {
@@ -1257,12 +1311,12 @@ export class Sim {
         const there = this.follow(g, goal, g.hurry ? run : walk * 1.1, dt, true);
         if (there) {
           g.hold -= dt;
-          g.head = Math.sin(g.t * 2.2) * 1.15;
+          g.head = glance(g.t, 3.4) * 1.15;
           // the Chief opens the hiding spots near where he looked (the Tower)
           if (g.boss && this.wing >= 4 && g.checks.length === 0 && g.hold > GUARD.search - 0.1) g.checks = this.things.filter((t) => (t.kind === 'barrel' || t.kind === 'crate') && Math.hypot(t.x - g.poi[0], t.z - g.poi[1]) < 4.5).map((t) => t.id);
           if (g.boss && g.checks.length) { g.state = 'check'; g.t = 0; g.path = []; break; }
           if (g.hold <= 0) { g.state = 'return'; g.path = []; g.hurry = false; if (g.mark) { g.mark = ''; this.events.push({ e: 'mark', g: g.i, mark: '' }); } }
-        } else g.head = Math.sin(g.t * 1.4) * 0.35;
+        } else g.head = glance(g.t, 5) * 0.35;
         break;
       }
       case 'check': {
@@ -1331,13 +1385,13 @@ export class Sim {
       if (Math.hypot(cellX(c) - g.x, cellZ(r) - g.z) > 0.2) { this.follow(g, [c, r], walk, dt, true); return; }
       const face = g.def.face === 'N' ? Math.PI : g.def.face === 'E' ? Math.PI / 2 : g.def.face === 'W' ? -Math.PI / 2 : 0;
       g.yaw += ang(face - g.yaw) * Math.min(1, dt * 4);
-      g.head = Math.sin(g.t * (g.boss ? 0.9 : 0.75)) * (g.boss ? 1.3 : 1.05);
+      g.head = glance(g.t, g.boss ? 7 : 8.4) * (g.boss ? 1.3 : 1.05);
       return;
     }
     if (g.wait > 0) {
       g.wait -= dt;
-      g.head = Math.sin((g.def.pause ?? GUARD.pause) - g.wait) * 1.2 * Math.sin(g.t * 2.1);
-      if (g.boss) g.head = Math.sin(g.t * 1.8) * CHIEF.sweep * 1.3;
+      // a pause at a turn: a calm look to each side (the Chief sweeps wider)
+      g.head = g.boss ? glance(g.t, 3.5) * CHIEF.sweep * 1.3 : glance((g.def.pause ?? GUARD.pause) - g.wait, Math.max(2, g.def.pause ?? GUARD.pause)) * 1.1;
       if (g.wait <= 0) {
         if (g.def.loop) g.ri = (g.ri + 1) % p.length;
         else { if (g.ri + g.dir >= p.length || g.ri + g.dir < 0) g.dir = -g.dir; g.ri += g.dir; }
@@ -1345,7 +1399,7 @@ export class Sim {
       }
       return;
     }
-    g.head = g.boss ? Math.sin(g.t * 1.6) * CHIEF.sweep : Math.sin(g.t * 1.1) * 0.3;
+    g.head = g.boss ? glance(g.t, 4) * CHIEF.sweep : glance(g.t, 9) * 0.3;
     if (this.follow(g, p[g.ri], walk, dt, true)) g.wait = (g.def.pause ?? GUARD.pause) * (this.alarm ? 0.5 : 1);
   }
 
