@@ -31,7 +31,7 @@ export const CAM = { dist: 17, pitch: 0.98, yaw: 0.3, fov: 50, lookAhead: -0.8 }
 /** Landscape: a little closer (the frame is wide); the map's level shifted right of the board. */
 const CAM_LAND = { zoom: 0.98, previewShift: 0.5, previewZoom: 1.1 };
 const CHUNK = 6;
-const RAYS = 22;
+const RAYS = 40;
 const MAX_CONES = 10;
 const ONCE = new Set(['PickUp', 'Punch', 'Defeat', 'SitDown', 'StandUp', 'RecieveHit', 'Jump', 'Shoot_OneHanded']);
 
@@ -74,6 +74,8 @@ class Fig {
   clipName = '';
   neck: THREE.Object3D | null = null;
   head = 0;
+  /** The part of a guard's look the whole body turns with (eased), the neck takes the rest. */
+  turn = 0;
   /** Far figures animate at a lower rate (accumulated time). */
   private acc = 0;
   constructor(id: string, mat: THREE.Material, readonly scale: number) {
@@ -199,10 +201,15 @@ export class View {
     w.scene.add(this.lantern, this.heroLight);
     this.fx = new Fx(w.scene);
     // the cones: one dynamic mesh for every guard
-    const nv = MAX_CONES * RAYS * 3;
+    // (a fan per guard with shared vertices: the apex and RAYS + 1 rim points, so the
+    // triangles meet without seams and the colours blend smoothly across the cone)
+    const per = RAYS + 2, nv = MAX_CONES * per;
     this.conePos = new Float32Array(nv * 3);
     this.coneCol = new Float32Array(nv * 4);
+    const idx = new Uint16Array(MAX_CONES * RAYS * 3);
+    for (let k = 0, j = 0; k < MAX_CONES; k++) for (let i = 0; i < RAYS; i++) { idx[j++] = k * per; idx[j++] = k * per + 1 + i; idx[j++] = k * per + 2 + i; }
     const cg = new THREE.BufferGeometry();
+    cg.setIndex(new THREE.BufferAttribute(idx, 1));
     cg.setAttribute('position', new THREE.BufferAttribute(this.conePos, 3).setUsage(THREE.DynamicDrawUsage));
     cg.setAttribute('color', new THREE.BufferAttribute(this.coneCol, 4).setUsage(THREE.DynamicDrawUsage));
     cg.setDrawRange(0, 0);
@@ -520,8 +527,12 @@ export class View {
       if (!v) return;
       v.root.visible = g.state !== 'fallen';
       v.root.position.set(g.x, 0, g.z);
-      v.root.rotation.y = g.yaw;
-      v.head = g.head;
+      // A standing guard turns his shoulders with the look and his neck the rest; a walking
+      // one keeps his body on his way and only turns his head.
+      const share = g.moving > 0.2 ? 0 : 0.55;
+      v.turn += (g.head * share - v.turn) * Math.min(1, dt * 8);
+      v.root.rotation.y = g.yaw + v.turn;
+      v.head = g.head - v.turn;
       this.animGuard(v, g, sim);
       v.update(dt, far(g.x, g.z));
       if (g.mark === 'z' && Math.random() < dt * 1.6) this.fx.zz(g.x, 1.4 * (g.boss ? CHIEF.scale : 1), g.z);
@@ -599,25 +610,20 @@ export class View {
     const a0 = alert === 2 ? 0.55 : alert === 1 ? 0.5 : g.boss ? 0.46 : 0.4;
     const y = 0.035 + k * 0.002;
     const ex = g.x + Math.sin(look) * 0.25, ez = g.z + Math.cos(look) * 0.25;
-    let prev: [number, number] | null = null;
-    const base = k * RAYS * 3;
-    let vi = 0;
+    const base = k * (RAYS + 2);
     const pos = this.conePos, cc = this.coneCol;
+    const put = (v: number, x: number, z: number, al: number) => {
+      const j = (base + v) * 3, jc = (base + v) * 4;
+      pos[j] = x; pos[j + 1] = y; pos[j + 2] = z;
+      cc[jc] = col[0]; cc[jc + 1] = col[1]; cc[jc + 2] = col[2]; cc[jc + 3] = al;
+    };
+    put(0, ex, ez, a0);
     for (let i = 0; i <= RAYS; i++) {
       const a = look - fov + (2 * fov * i) / RAYS;
       const d = sim.coneRay(g, a);
-      const p: [number, number] = [ex + Math.sin(a) * d, ez + Math.cos(a) * d];
-      if (prev) {
-        const edge = i === 1 || i === RAYS ? 0.35 : 1;
-        const verts: [number, number, number][] = [[ex, ez, a0], [prev[0], prev[1], a0 * 0.32 * edge], [p[0], p[1], a0 * 0.32 * edge]];
-        for (const [x, z, al] of verts) {
-          const j = (base + vi) * 3, jc = (base + vi) * 4;
-          pos[j] = x; pos[j + 1] = y; pos[j + 2] = z;
-          cc[jc] = col[0]; cc[jc + 1] = col[1]; cc[jc + 2] = col[2]; cc[jc + 3] = al;
-          vi++;
-        }
-      }
-      prev = p;
+      // the sides fade out over the outer rays (a soft edge, not a band)
+      const side = Math.min(i, RAYS - i) / 3, soft = side >= 1 ? 1 : 0.35 + 0.65 * side;
+      put(1 + i, ex + Math.sin(a) * d, ez + Math.cos(a) * d, a0 * 0.32 * soft);
     }
   }
 
