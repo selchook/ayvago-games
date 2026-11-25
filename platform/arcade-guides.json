@@ -6823,6 +6823,134 @@
         }
       ]
     },
+    "relic-ruins": {
+      "about": {
+        "en": "Relic Ruins is a 3D exploration and puzzle adventure lit by a single torch. In twenty hand-built ruins you search the dark for the relic, a golden chest behind locked doors, then find your way out. The torch burns down and its light shrinks with it; braziers fill it again and mark where you return if it dies.\n\nFour realms bring their own tricks: crates, plates, levers and keys in the Overgrown Courtyard; sliding bookcases, candles and flooded halls in the Sunken Library; bear traps, trapdoors and rune sconces in the Gothic Crypt Halls; cracked floors, carts and raised walks in the Collapsing Cathedral.\n\nShades, wisps and guardian statues roam the dark, and every one of them hates the light of your torch.",
+        "tr": "Kadim Harabeler, tek bir meşalenin ışığında geçen 3B bir keşif ve bulmaca macerasıdır. Elle tasarlanmış yirmi harabenin her birinde karanlık salonlarda kadim eseri, kilitli kapıların ve eski düzeneklerin ardındaki altın sandığı ararsın, sonra dışarı çıkmanın yolunu bulursun. Meşale durmadan yanar, ışığı da onunla küçülür; mangallar onu yeniden doldurur ve sönerse döneceğin yeri belirler.\n\nDört diyarın kendi havası ve numaraları vardır: Sarmaşıklı Avlu'da sandıklar, plakalar, kollar ve anahtarlar; Batık Kütüphane'de kayan kitaplıklar, mumlar ve su basmış salonlar; Gotik Mahzenler'de ayı kapanları, kapaklar ve rünlü meşalelikler; Çöken Katedral'de çatlak zemin, raylı arabalar ve yüksek yollar. Her diyarın son harabesi, eseri kaldırdığın anda arkandan çöker.\n\nKaranlıkta gölgeler, ruhlar ve bekçi heykeller dolaşır. Işıktan nefret ederler; güçlü bir meşale ve yerinde bir fişek, hızlı bir kaçış kadar önemlidir."
+      },
+      "howToPlay": [
+        {
+          "en": "Press PLAY and pick a ruin on the map. Each cleared ruin opens the next.",
+          "tr": "OYNA'ya bas ve haritadan bir harabe seç. Bir harabeyi bitirmek sıradakini açar, beşinci harabeden sonra yeni bir diyar açılır."
+        },
+        {
+          "en": "Open the relic with ACT, then reach the exit gate, which opens only while you carry it.",
+          "tr": "Kadim esere yürü, EYLEM ile aç ve sonra çıkış kapısına ulaş; kapı ancak eseri taşıdığında açılır."
+        },
+        {
+          "en": "Watch the torch bar. Lit braziers and sconces refill it. If it dies, reach a light within a few seconds or lose a heart and wake at the last brazier.",
+          "tr": "Meşale çubuğunu izle. Yanan mangallar ve duvar meşalelikleri yanlarında durunca onu doldurur. Söndüğünde bir ışığa ulaşmak için birkaç saniyen olur; yetişemezsen bir can kaybeder ve son mangalda uyanırsın."
+        },
+        {
+          "en": "Push crates and statues onto plates, pull levers, bring keys to locks, light every candle or rune sconce of a sealed door, and slide bookcases to find secret rooms.",
+          "tr": "Yolu çöz: sandıkları ve heykelleri plakalara it, kolları çek, anahtarları kilitli kapılara götür, mühürlü kapının bütün mumlarını ya da rünlü meşaleliklerini yak, gizli odalar için kitaplıkları kaydır."
+        },
+        {
+          "en": "Each ruin has three stars: the relic, every hidden gem, and a time under par. Then the camp sells lasting upgrades.",
+          "tr": "Her harabenin üç yıldızı vardır: eser, bütün gizli mücevherler ve hedef sürenin altında bir zaman. Sondaki kart macera puanına bonus ekler, ardından kamp kalıcı geliştirmeler satar."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "WASD or the arrows walk. Space or E is ACT: open the relic, pull levers, light candles, break pots, slide bookcases, or roll; hold it and step back to pull a crate. F or Shift throws a flare, Esc or P pauses. On the map, Enter plays and C opens the camp.",
+          "tr": "WASD ya da oklarla yürürsün. Boşluk ya da E EYLEM'dir: eseri açar, kolları çeker, mumları ve meşalelikleri yakar, çömlekleri kırar, kitaplıkları kaydırır, yakında bir şey yoksa takla attırır; basılı tutup geri adım atarsan sandığı çekersin. F ya da Shift fişek atar. Esc ya da P duraklatır. Haritada oklar harabe seçer, Enter oynatır, C kampı açar."
+        },
+        "touch": {
+          "en": "Drag on the left half to walk with the floating stick. The big ACT button shows what it will do; hold it while stepping back to pull. FLARE shows the flares you carry.",
+          "tr": "Yüzen çubukla yürümek için ekranın sol yarısında herhangi bir yerde sürükle. Büyük EYLEM düğmesi sıradaki işini yazar; geri adım atarken basılı tutarsan çekersin. FİŞEK düğmesi kaç fişeğin olduğunu gösterir."
+        },
+        "gamepad": {
+          "en": "Left stick or D-pad walks, A is ACT (hold to pull), B throws a flare, Start pauses.",
+          "tr": "Sol çubuk ya da yön tuşları yürütür, A EYLEM'dir (çekmek için basılı tut), B fişek atar, Start duraklatır."
+        }
+      },
+      "tips": [
+        {
+          "en": "Plan your route between braziers. A full torch lights a wide circle and slows shades; a weak one invites wisps.",
+          "tr": "Rotanı mangallar arasında planla. Dolu bir meşale geniş bir alanı aydınlatır ve gölgeleri yavaşlatır; zayıf bir meşalede ruhlar üstüne dalar."
+        },
+        {
+          "en": "Guardian statues move only in the dark and while you are not facing them.",
+          "tr": "Bekçi heykeller yalnızca karanlıktayken ve önünde değilken hareket eder. Onları ışığında tut ya da yüzün onlara dönük yürü."
+        },
+        {
+          "en": "A bear trap snaps only when you step on its middle; you can slip past along the edge of its tile.",
+          "tr": "Ayı kapanı ancak ortasına basınca kapanır; karonun kenarından geçerek sıyrılabilirsin."
+        },
+        {
+          "en": "Trapdoors rattle just before they drop: wait on firm ground, cross right after they slam shut.",
+          "tr": "Kapaklar bir ritimle açılır ve açılmadan hemen önce takırdar. Sağlam zeminde bekle, kapanır kapanmaz geç."
+        },
+        {
+          "en": "Bookcases and pots often hide the gems.",
+          "tr": "İkinci yıldız için gereken mücevherler çoğu zaman kitaplıkların ve çömleklerin ardında saklıdır; her şeye EYLEM'i dene."
+        }
+      ],
+      "features": [
+        {
+          "en": "Twenty hand-built ruins in four realms, each with its own light and new mechanics",
+          "tr": "Her biri kendi ışığı ve yeni düzenekleriyle dört diyarda elle tasarlanmış yirmi harabe"
+        },
+        {
+          "en": "A torch that is both your clock and your safety",
+          "tr": "Hem zamanın hem güvenliğin olan, ışığı karanlığa gerçekten sönen bir meşale"
+        },
+        {
+          "en": "Five powers: Flare, Lantern Oil, Swift Boots, Compass and Ghost Step",
+          "tr": "Beş güç: Fişek, Kandil Yağı, Çevik Çizme, Pusula ve Hayalet Adım"
+        },
+        {
+          "en": "Six lasting camp upgrades, from a bigger reservoir to a spare flare",
+          "tr": "Büyük hazneden yedek fişeğe altı kalıcı geliştirmeli bir kamp"
+        },
+        {
+          "en": "Escape set-pieces where the floor falls in and bricks drop around you",
+          "tr": "Zeminin çöktüğü, çevrene tuğlaların düştüğü kaçış sahneleri"
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay mod var mı?"
+          },
+          "a": {
+            "en": "Yes. Easy gives five hearts instead of three, a slower torch, slower creatures, longer candles and gentler escapes. Easy runs stay off the leaderboards.",
+            "tr": "Evet. Kolay modda üç yerine beş can, daha yavaş yanan bir meşale, daha yavaş yaratıklar, daha uzun yanan mumlar ve daha yumuşak kaçışlar vardır. Kolay oyunlar alıştırmadır, sıralamaya girmez."
+          }
+        },
+        {
+          "q": {
+            "en": "What happens when my torch goes out?",
+            "tr": "Meşalem sönerse ne olur?"
+          },
+          "a": {
+            "en": "You have a few seconds to reach a lit brazier or sconce; otherwise you lose a heart and wake at the last brazier with a full torch.",
+            "tr": "Yanan bir mangala ya da meşaleliğe ulaşman için kısa bir süren olur. Yetişemezsen bir can kaybeder ve yaktığın son mangalda dolu bir meşaleyle uyanırsın."
+          }
+        },
+        {
+          "q": {
+            "en": "How is the score made?",
+            "tr": "Puan nasıl hesaplanır?"
+          },
+          "a": {
+            "en": "Coins, gems, pots and the relic score as you play. A cleared ruin adds a realm bonus, 300 points per star, a time bonus under par and a no-damage bonus.",
+            "tr": "Altınlar, mücevherler, kırılan çömlekler ve eser oynarken puan getirir. Biten bir harabe her diyarda büyüyen bir bitiş bonusu, yıldız başına 300 puan, hedef süre altında süre bonusu ve hiç hasar almazsan ayrıca bonus ekler."
+          }
+        },
+        {
+          "q": {
+            "en": "Does it work on phones?",
+            "tr": "Telefonda oynanır mı?"
+          },
+          "a": {
+            "en": "Yes. It is made for portrait phones with a floating stick and two big buttons, and also plays with a keyboard or gamepad.",
+            "tr": "Evet. Yüzen bir çubuk ve iki büyük düğmeyle dikey tutulan telefonlar için yapıldı; klavye ya da oyun kumandasıyla da aynı rahatlıkla oynanır."
+          }
+        }
+      ]
+    },
     "retro-snake": {
       "about": {
         "en": "Retro Snake is the snake game as it has always been played, on a checkerboard field 17 cells wide and 26 tall. Your snake starts four segments long and never stops moving. Eat the fruit to grow, keep your head away from your own body, and see how long you last.\n\nBefore each game you pick a mode on the CHOOSE MODE screen. In CLASSIC the edges wrap around: leave on one side and you come back on the other. In WALLS the red border kills, but every point is doubled. The game remembers the mode you played last.\n\nEvery sixth fruit raises the level and the speed: one step takes 0.16 seconds at level 1 and gets quicker each level down to 0.06 seconds at level 10. From level 3, rocks drop onto the field at each level-up, two at a time and three from level 6, and they stay for the rest of the game. Every fifth fruit also brings a golden crown that vanishes after seven seconds. There is a single life.",

@@ -481,6 +481,18 @@ const CARD = {
       await sleep(300);
     }`,
   },
+  // Relic Ruins' card (portrait) shows the Stacks of the Sunken Library by torchlight: the autopilot
+  // (god mode on) eight seconds in, among the bookcases, the golden relic chest glowing beyond.
+  'relic-ruins': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      for (let i = 0; i < 100 && !window.__rr; i++) await sleep(100);
+      await sleep(600);
+      window.__rr.stage(8, 8);
+      await sleep(300);
+    }`,
+  },
   // Pirate Cove's card (landscape since 1.1, cover-fit) shows a broadside fight on the bright first
   // wave: a brig alongside to starboard, a frigate and two sloops ahead, cannonballs in the air both
   // ways. The wave card and hints are skipped, the wave's own ships held back, nothing sinks the

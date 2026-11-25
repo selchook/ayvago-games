@@ -1,0 +1,22 @@
+{
+  "id": "relic-ruins",
+  "title": { "tr": "Kadim Harabeler", "en": "Relic Ruins" },
+  "description": {
+    "tr": "Meşale ışığında bir 3B keşif ve bulmaca macerası! Sarmaşıklı avlulardan batık kütüphanelere, gotik mahzenlerden çöken bir katedrale kadar yirmi harabede kadim eseri bul ve meşalen sönmeden dışarı çık. Sandıkları ve heykelleri basınç plakalarına it, kolları çek, anahtarla kilitleri aç, gizli kitaplıkları kaydır, mumları ve rünlü meşalelikleri yak; ayı kapanlarından, ritimle açılan kapaklardan ve çöken zeminden sakın. Işıktan korkan gölgeleri ve karanlıkta yürüyen bekçi heykelleri fişekle durdur. Mangallar meşaleni doldurur, kamptaki kalıcı geliştirmeler seni güçlendirir. Kolay ya da Normal.",
+    "en": "A torch-lit 3D exploration and puzzle adventure! Through twenty ruins, from overgrown courtyards and a sunken library to gothic crypt halls and a collapsing cathedral, find the relic and get out before your torch burns out. Push crates and statues onto pressure plates, pull levers, open locks with keys, slide secret bookcases, light candles and rune sconces, and watch out for bear traps, trapdoors that open on a rhythm and floors that fall away. Stun light-shy shades and guardian statues that move in the dark with a flare. Braziers refill your torch, and lasting upgrades from the camp make you stronger. Easy or Normal."
+  },
+  "howTo": {
+    "tr": "Soldaki çubukla ya da WASD/oklarla yürü; EYLEM (Boşluk/E) kullanır, iter, çeker ya da takla attırır, FİŞEK (F/Shift) yaratıkları sersemletir. Kadim eseri al, meşalen sönmeden çıkışa ulaş.",
+    "en": "Walk with the stick on the left or WASD/arrows; ACT (Space/E) uses, grabs or rolls, FLARE (F/Shift) stuns creatures. Take the relic and reach the exit before your torch burns out."
+  },
+  "genres": ["puzzle", "action"],
+  "orientation": "portrait",
+  "controls": ["touch", "keyboard", "gamepad"],
+  "version": "1.0.0",
+  "credits": [
+    "3D models: Quaternius Ultimate Modular Ruins Pack and Ultimate Platformer Pack (CC0) — quaternius.com",
+    "Sounds: Juhani Junkala (CC0) — opengameart.org; Kenney Impact and Foley Audio (CC0) — kenney.nl",
+    "Logo font: Cinzel by Natanael Gama (SIL OFL 1.1)"
+  ],
+  "platform": { "addedAt": "2026-11-24" }
+}
