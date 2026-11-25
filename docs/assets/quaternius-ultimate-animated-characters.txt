@@ -1,0 +1,95 @@
+# Quaternius Ultimate Animated Character Pack (November 2019, CC0 1.0): what
+# public/assets/quaternius/ultimate-animated-characters holds (games/dungeon-rescue/import-pack.mjs). Every figure
+# of the pack shares one 23-bone skeleton and one clip set, so the clips are stored once (clips.glb) and each
+# figure is its own GLB: the skinned mesh and the armature, no animations, one vertex-coloured material, about
+# 3.4 units tall as exported (the game scales them to about 1.5 m). The people get natural skin tones with dark
+# eyes (the pack's near-black skin and white eyes are replaced); goblins, the cow and the pug keep their own. Total 1843 KB.
+clips.glb 98KB: the armature (23 bones) and 12 clips shared by every figure: Defeat:2.50 Idle:4.17 Jump:1.04 PickUp:1.25 Punch:0.75 RecieveHit:0.63 Run:0.88 Shoot_OneHanded:0.54 SitDown:0.96 StandUp:1.29 Victory:1.88 Walk:1.25
+knight.glb 40KB 1900 tris (from 2992), skin #e3b18a (Knight_Male.gltf)
+knight-gold.glb 40KB 1900 tris (from 2964), skin #a86e48 (Knight_Golden_Male.gltf)
+knight-gold-f.glb 41KB 1900 tris (from 6224), skin #f2d0b4 (Knight_Golden_Female.gltf)
+soldier.glb 41KB 1900 tris (from 2994), skin #c98f66 (Soldier_Male.gltf)
+soldier-f.glb 41KB 1898 tris (from 7066), skin #f2d0b4 (Soldier_Female.gltf)
+bluesoldier.glb 41KB 1900 tris (from 2994), skin #a86e48 (BlueSoldier_Male.gltf)
+bluesoldier-f.glb 41KB 1898 tris (from 7066), skin #e3b18a (BlueSoldier_Female.gltf)
+goblin.glb 38KB 1900 tris (from 2462), skin the pack's (Goblin_Male.gltf)
+goblin-f.glb 40KB 1898 tris (from 6972), skin the pack's (Goblin_Female.gltf)
+viking.glb 42KB 1900 tris (from 6264), skin #e3b18a (Viking_Male.gltf)
+viking-f.glb 41KB 1900 tris (from 7320), skin #c98f66 (Viking_Female.gltf)
+chief.glb 42KB 1899 tris (from 6498), skin #c98f66 (VikingHelmet.gltf)
+casual.glb 40KB 1897 tris (from 6492), skin #f2d0b4 (Casual_Male.gltf)
+casual-f.glb 40KB 1898 tris (from 6624), skin #a86e48 (Casual_Female.gltf)
+casual2.glb 39KB 1900 tris (from 3216), skin #7f5236 (Casual2_Male.gltf)
+casual2-f.glb 40KB 1898 tris (from 6752), skin #e3b18a (Casual2_Female.gltf)
+casual3.glb 40KB 1900 tris (from 4920), skin #c98f66 (Casual3_Male.gltf)
+casual3-f.glb 40KB 1900 tris (from 8444), skin #7f5236 (Casual3_Female.gltf)
+chef.glb 39KB 1900 tris (from 5452), skin #a86e48 (Chef_Male.gltf)
+chef-f.glb 40KB 1899 tris (from 8768), skin #f2d0b4 (Chef_Female.gltf)
+doctor.glb 40KB 1896 tris (from 6498), skin #7f5236 (Doctor_Male_Young.gltf)
+doctor-f.glb 40KB 1900 tris (from 8530), skin #c98f66 (Doctor_Female_Young.gltf)
+doctor-old.glb 40KB 1898 tris (from 5006), skin #f2d0b4 (Doctor_Male_Old.gltf)
+doctor-old-f.glb 40KB 1898 tris (from 6790), skin #a86e48 (Doctor_Female_Old.gltf)
+worker.glb 41KB 1900 tris (from 2524), skin #e3b18a (Worker_Male.gltf)
+worker-f.glb 41KB 1900 tris (from 5856), skin #7f5236 (Worker_Female.gltf)
+gent.glb 40KB 1900 tris (from 5432), skin #c98f66 (OldClassy_Male.gltf)
+lady.glb 40KB 1898 tris (from 7008), skin #f2d0b4 (OldClassy_Female.gltf)
+suit.glb 41KB 1899 tris (from 6518), skin #a86e48 (Suit_Male.gltf)
+suit-f.glb 41KB 1898 tris (from 6810), skin #e3b18a (Suit_Female.gltf)
+kimono.glb 39KB 1900 tris (from 2540), skin #f2d0b4 (Kimono_Male.gltf)
+kimono-f.glb 40KB 1900 tris (from 9236), skin #c98f66 (Kimono_Female.gltf)
+pirate.glb 42KB 1900 tris (from 2724), skin #7f5236 (Pirate_Male.gltf)
+pirate-f.glb 42KB 1899 tris (from 9460), skin #e3b18a (Pirate_Female.gltf)
+cowboy.glb 41KB 1900 tris (from 3176), skin #c98f66 (Cowboy_Male.gltf)
+cowboy-f.glb 41KB 1898 tris (from 6840), skin #a86e48 (Cowboy_Female.gltf)
+ninja.glb 43KB 1900 tris (from 2720), skin #a86e48 (Ninja_Male.gltf)
+ninja-f.glb 42KB 1898 tris (from 7104), skin #f2d0b4 (Ninja_Female.gltf)
+elf.glb 41KB 1900 tris (from 2594), skin #e3b18a (Elf.gltf)
+wizard.glb 43KB 1899 tris (from 6482), skin #f2d0b4 (Wizard.gltf)
+witch.glb 41KB 1898 tris (from 7066), skin #7f5236 (Witch.gltf)
+cow.glb 41KB 1900 tris (from 2332), skin the pack's (Cow.gltf)
+pug.glb 41KB 1900 tris (from 2124), skin the pack's (Pug.gltf)
+
+# The glTF files the import reads (the pack as shared by the owner on Google Drive; not in the repository):
+glTF/BlueSoldier_Female.gltf 2106807 bytes
+glTF/BlueSoldier_Male.gltf 1829453 bytes
+glTF/Casual2_Female.gltf 2067565 bytes
+glTF/Casual2_Male.gltf 1822291 bytes
+glTF/Casual3_Female.gltf 2179187 bytes
+glTF/Casual3_Male.gltf 1936073 bytes
+glTF/Casual_Female.gltf 2058883 bytes
+glTF/Casual_Male.gltf 2048792 bytes
+glTF/Chef_Female.gltf 2209767 bytes
+glTF/Chef_Male.gltf 1993527 bytes
+glTF/Cow.gltf 1823141 bytes
+glTF/Cowboy_Female.gltf 2094188 bytes
+glTF/Cowboy_Male.gltf 1841931 bytes
+glTF/Doctor_Female_Old.gltf 2072083 bytes
+glTF/Doctor_Female_Young.gltf 2189649 bytes
+glTF/Doctor_Male_Old.gltf 1946576 bytes
+glTF/Doctor_Male_Young.gltf 2049445 bytes
+glTF/Elf.gltf 1800904 bytes
+glTF/Goblin_Female.gltf 2092543 bytes
+glTF/Goblin_Male.gltf 1754008 bytes
+glTF/Kimono_Female.gltf 2236089 bytes
+glTF/Kimono_Male.gltf 1766875 bytes
+glTF/Knight_Golden_Female.gltf 2073087 bytes
+glTF/Knight_Golden_Male.gltf 1848993 bytes
+glTF/Knight_Male.gltf 1852024 bytes
+glTF/Ninja_Female.gltf 2120878 bytes
+glTF/Ninja_Male.gltf 1808187 bytes
+glTF/OldClassy_Female.gltf 2103966 bytes
+glTF/OldClassy_Male.gltf 1992147 bytes
+glTF/Pirate_Female.gltf 2284873 bytes
+glTF/Pirate_Male.gltf 1801347 bytes
+glTF/Pug.gltf 1794411 bytes
+glTF/Soldier_Female.gltf 2106935 bytes
+glTF/Soldier_Male.gltf 1829457 bytes
+glTF/Suit_Female.gltf 2076878 bytes
+glTF/Suit_Male.gltf 1987422 bytes
+glTF/VikingHelmet.gltf 2114337 bytes
+glTF/Viking_Female.gltf 2141514 bytes
+glTF/Viking_Male.gltf 2075413 bytes
+glTF/Witch.gltf 2114096 bytes
+glTF/Wizard.gltf 2079352 bytes
+glTF/Worker_Female.gltf 2020830 bytes
+glTF/Worker_Male.gltf 1771584 bytes

@@ -481,6 +481,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     multiplayer: true,
   }),
   arcadeGame({
+    slug: 'dungeon-rescue',
+    title: { en: 'Dungeon Rescue', tr: 'Zindan Kurtarma' },
+    description: {
+      en: "A 3D stealth rescue adventure! As a knight, slip into the castle dungeon, stay out of the guards' vision cones, pick the locks and lead the townsfolk out in a line. Hide in barrels, put out torches, make a noise to pull guards away, and use smoke bombs, a disguise, sleepy powder, swift shoes and a decoy. Twenty levels in four wings full of spike traps, loose trapdoors and barred gates with levers; at the end of each wing outwit the Jailer Chief without a fight and race the crowd out while the alarm rings. Everyone you free joins your crew: pick two companions, your armour and lasting upgrades in the hideout. Easy or Normal.",
+      tr: "Gizlilikle kurtarma üzerine bir 3B macera! Şövalye olarak kale zindanına sız, muhafızların ışık konilerinden uzak dur, kilitleri aç ve hapsedilen kasabalıları sıra hâlinde dışarı çıkar. Fıçılara saklan, meşaleleri söndür, gürültü yapıp muhafızları oyala; duman bombası, kılık, uyku tozu, hızlı çizme ve çıngırakla işini kolaylaştır. Dikenler, gevşek kapaklar ve kollu parmaklıklarla dolu dört kanatta yirmi bölüm; her kanadın sonunda Zindancıbaşı'nı kavga etmeden alt et ve alarm çalarken kalabalığı kaçır. Kurtardıkların ekibine katılır, sığınakta yoldaş seçer, zırhını ve geliştirmelerini seçersin. Kolay ya da Normal.",
+    },
+    category: 'action',
+    categories: ['action', 'puzzle'],
+    tags: ['dungeon', 'rescue', 'retro'],
+    orientation: 'any',
+    input: ['touch', 'keyboard', 'gamepad', 'mouse'],
+    addedAt: '2026-11-25',
+    portraitCards: true,
+  }),
+  arcadeGame({
     slug: 'fish-frenzy',
     title: { en: 'Fish Frenzy', tr: 'Balık Çılgınlığı' },
     description: {

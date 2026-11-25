@@ -124,6 +124,9 @@ export function grounded(obj: THREE.Object3D): THREE.Group {
   return g;
 }
 
+/** True once a model queued with loadModel has been parsed (models loaded mid-game, after boot). */
+export const hasModel = (key: string): boolean => models.has(key);
+
 /** The animation clips that came with a model (for THREE.AnimationMixer). */
 export const modelClips = (key: string): THREE.AnimationClip[] => models.get(key)?.animations ?? [];
 

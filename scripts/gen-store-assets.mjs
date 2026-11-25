@@ -540,6 +540,37 @@ const CARD = {
       await sleep(300);
     }`,
   },
+  // Dungeon Rescue's cards (adaptive: the landscape card cover-fit from the landscape run, the
+  // portrait card and the phone on the cover from the portrait run) show the stealth up close, at
+  // the game's own tilt and turn (view.ts CAM) but nearer than in play, aimed between the knight
+  // and the closest watcher. Landscape: the Jailer Chief's set-piece, Cellblock Alarm (1-5), the
+  // knight in the shadows with a freed prisoner behind him while the Chief's wide cone sweeps the
+  // torch-lit hall, his alertness bar on top. Portrait: Hide and Seek (1-3), the knight slipping
+  // past a guard whose cone lights the floor beside him, a crate and a torch on the wall. The
+  // autopilot (god mode on) plays to the moment, then the game runs slowly so every candidate
+  // frame keeps the scene.
+  'dungeon-rescue': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      for (let i = 0; i < 100 && !window.__dr; i++) await sleep(100);
+      await sleep(600);
+      const dr = window.__dr, g = window.__ayvago.game;
+      const land = g.scale.width > g.scale.height;
+      const [n, secs, d, bias] = land ? [5, 20, 13, 0.45] : [3, 12, 12, 0.5];
+      dr.cam();
+      await dr.stage(n, secs);
+      const st = dr.state(), h = st.hero;
+      let near = null, best = 1e9;
+      for (const q of st.guards) { const k = Math.hypot(q.x - h.x, q.z - h.z); if (k < best) { best = k; near = q; } }
+      const tx = near && best < 14 ? h.x + (near.x - h.x) * bias : h.x;
+      const tz = near && best < 14 ? h.z + (near.z - h.z) * bias : h.z;
+      const yaw = 0.3, pitch = 0.98, hor = Math.cos(pitch) * d, up = Math.sin(pitch) * d;
+      dr.cam([tx + Math.sin(yaw) * hor, 0.4 + up, tz + Math.cos(yaw) * hor], [tx, 0.4, tz]);
+      dr.speed(0.05);
+      await sleep(400);
+    }`,
+  },
   // Pirate Cove's card (landscape since 1.1, cover-fit) shows a broadside fight on the bright first
   // wave: a brig alongside to starboard, a frigate and two sloops ahead, cannonballs in the air both
   // ways. The wave card and hints are skipped, the wave's own ships held back, nothing sinks the

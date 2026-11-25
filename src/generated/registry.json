@@ -1,5 +1,5 @@
 {
-  "count": 105,
+  "count": 106,
   "games": [
     {
       "id": "air-hockey",
@@ -852,6 +852,41 @@
         "addedAt": "2026-10-29"
       },
       "thumb": "thumbs/dots-and-boxes.png"
+    },
+    {
+      "id": "dungeon-rescue",
+      "title": {
+        "tr": "Zindan Kurtarma",
+        "en": "Dungeon Rescue"
+      },
+      "description": {
+        "tr": "Gizlilikle kurtarma üzerine bir 3B macera! Şövalye olarak kale zindanına sız, muhafızların ışık konilerinden uzak dur, kilitleri aç ve hapsedilen kasabalıları sıra hâlinde dışarı çıkar. Fıçılara saklan, meşaleleri söndür, gürültü yapıp muhafızları oyala; duman bombası, kılık, uyku tozu, hızlı çizme ve çıngırakla işini kolaylaştır. Dikenler, gevşek kapaklar ve kollu parmaklıklarla dolu dört kanatta yirmi bölüm; her kanadın sonunda Zindancıbaşı'nı kavga etmeden alt et ve alarm çalarken kalabalığı kaçır. Kurtardıkların ekibine katılır, sığınakta yoldaş seçer, zırhını ve geliştirmelerini seçersin. Kolay ya da Normal.",
+        "en": "A 3D stealth rescue adventure! As a knight, slip into the castle dungeon, stay out of the guards' vision cones, pick the locks and lead the townsfolk out in a line. Hide in barrels, put out torches, make a noise to pull guards away, and use smoke bombs, a disguise, sleepy powder, swift shoes and a decoy. Twenty levels in four wings full of spike traps, loose trapdoors and barred gates with levers; at the end of each wing outwit the Jailer Chief without a fight and race the crowd out while the alarm rings. Everyone you free joins your crew: pick two companions, your armour and lasting upgrades in the hideout. Easy or Normal."
+      },
+      "howTo": {
+        "tr": "Soldaki çubukla ya da WASD/oklarla yürü, sonuna kadar it ya da Shift ile koş; EYLEM (Boşluk/E) kilit açar, kol çeker, saklanır. FIRLAT (Q) gürültü yapar, GÜÇ (F) hile kullanır, EKİP (C) kurtardıklarını bekletir. Muhafızların konilerine girmeden herkesi çıkışa götür.",
+        "en": "Walk with the stick on the left or WASD/arrows; push it all the way or hold Shift to sprint. ACT (Space/E) picks locks, pulls levers and hides; THROW (Q) makes a noise, POWER (F) uses a trick, CREW (C) tells the freed to wait. Lead everyone to the exit without stepping into a guard's cone."
+      },
+      "genres": [
+        "action",
+        "puzzle"
+      ],
+      "orientation": "adaptive",
+      "controls": [
+        "touch",
+        "keyboard",
+        "gamepad"
+      ],
+      "version": "1.0.0",
+      "credits": [
+        "3D models: Quaternius Updated Modular Dungeon and Ultimate Animated Character Pack (CC0) — quaternius.com",
+        "Sounds: Juhani Junkala (CC0) — opengameart.org; Kenney Impact and Foley Audio (CC0) — kenney.nl",
+        "Logo font: Grenze Gotisch by Omnibus-Type (SIL OFL 1.1)"
+      ],
+      "platform": {
+        "addedAt": "2026-11-25"
+      },
+      "thumb": "thumbs/dungeon-rescue.png"
     },
     {
       "id": "fish-frenzy",
