@@ -492,7 +492,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['dungeon', 'rescue', 'retro'],
     orientation: 'any',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    version: '1.0.2',
+    version: '1.0.3',
     addedAt: '2026-11-25',
     portraitCards: true,
   }),

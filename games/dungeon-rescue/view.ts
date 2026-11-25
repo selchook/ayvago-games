@@ -78,6 +78,10 @@ class Fig {
   turn = 0;
   /** Far figures animate at a lower rate (accumulated time). */
   private acc = 0;
+  /** The neck's pose before and after the last head turn: most clips (Idle, Walk, Run) leave the
+   * neck alone, so the turn must start again from the clip's pose each frame, not stack up. */
+  private neckIn = new THREE.Quaternion();
+  private neckOut: THREE.Quaternion | null = null;
   constructor(id: string, mat: THREE.Material, readonly scale: number) {
     this.obj = figure(id, mat);
     this.obj.scale.setScalar(FIG_SCALE * scale);
@@ -107,15 +111,22 @@ class Fig {
     if (far && this.acc < 0.05) return;
     this.mixer.update(this.acc);
     this.acc = 0;
-    // the head turn on top of the clip: the neck about the world's up axis
-    if (this.neck && Math.abs(this.head) > 0.01) {
+    // the head turn on top of the clip: the neck about the world's up axis. When the clip did not
+    // set the neck this frame (it still holds last frame's turned pose), go back to the pose under
+    // that turn first, so the head turns by `head` and never spins round and round.
+    if (!this.neck) return;
+    const q = this.neck.quaternion;
+    if (this.neckOut && q.equals(this.neckOut)) q.copy(this.neckIn);
+    this.neckIn.copy(q);
+    if (Math.abs(this.head) > 0.01) {
       const p = this.neck.parent!;
       p.updateWorldMatrix(true, false);
       p.getWorldQuaternion(tq);
       const inv = tq.clone().invert();
       const r = new THREE.Quaternion().setFromAxisAngle(UP, this.head);
-      this.neck.quaternion.premultiply(inv.multiply(r).multiply(tq));
+      q.premultiply(inv.multiply(r).multiply(tq));
     }
+    (this.neckOut ??= new THREE.Quaternion()).copy(q);
   }
   dispose(): void { this.mixer.stopAllAction(); this.mixer.uncacheRoot(this.obj); }
 }
