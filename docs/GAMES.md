@@ -102,7 +102,7 @@ air-hockey, alien-invaders, archery, asteroid-storm, astro-crew, axe-throw, back
 
 ## Concept list (90 games)
 
-Columns: slug · EN title / TR title · concept · suggested assets (`public/assets/kenney/…`) · orientation (P = portrait, L = landscape).
+Columns: slug · EN title / TR title · concept · suggested assets (`public/assets/kenney/…`) · orientation (P = portrait, L = landscape, A = adaptive: landscape on desktops and tablets, portrait on phones).
 
 ## Batch A — space & shooters
 | slug | title | concept | assets | o |
@@ -208,7 +208,7 @@ Columns: slug · EN title / TR title · concept · suggested assets (`public/ass
 | secret-word | Secret Word / Gizli Kelime | guess the hidden word in six tries (green / amber / grey letters), words in a row against the clock, 4 → 5 → 6 letters, streak multiplier, three lives, reveal and drop-five jokers | drawn | P |
 | word-hunt | Word Hunt / Kelime Avı | word search with TR and EN word lists by theme, drag to select | letter-tiles | P |
 | snow-express | Snow Express / Kar Ekspresi | 3D holiday rail-switching puzzle: route coloured present trains through junction switches to the cabin of their colour (colour + icon); 24 Journey levels in three chapters (tunnels, crossings, signals, a loop, express trains, overpasses, a snowplow) and an endless Holiday Rush into the evening with combos; Hot Cocoa and Snow Globe powers | holiday-kit + train-kit (3D) | P |
-| relic-ruins | Relic Ruins / Kadim Harabeler | 3D torch-lit exploration and puzzle adventure (adaptive: landscape on desktops and tablets, portrait on phones): 20 hand-built ruins in 4 realms; find the relic and get out before the torch burns out; braziers, crates and statues on plates, levers, keys, sliding bookcases, candles and marked sconces, bear traps, rhythmic trapdoors, cracked floors, carts on rails, stairs and bridges, escape set-pieces; shades, wisps and guardian statues held back by light; five powers, a camp of six upgrades; the hero is the pack's own animated character (owner request) | quaternius/ultimate-modular-ruins-pack + ultimate-platformer-pack (gob, skull) | P |
+| relic-ruins | Relic Ruins / Kadim Harabeler | 3D torch-lit exploration and puzzle adventure (adaptive: landscape on desktops and tablets, portrait on phones): 20 hand-built ruins in 4 realms; find the relic and get out before the torch burns out; braziers, crates and statues on plates, levers, keys, sliding bookcases, candles and marked sconces, bear traps, rhythmic trapdoors, cracked floors, carts on rails, stairs and bridges, escape set-pieces; shades, wisps and guardian statues held back by light; five powers, a camp of six upgrades; the hero is the pack's own animated character (owner request) | quaternius/ultimate-modular-ruins-pack + ultimate-platformer-pack (gob, skull) || A |
 
 ## Batch I — board, cards & brain
 | slug | title | concept | assets | o |
