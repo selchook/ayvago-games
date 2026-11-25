@@ -2727,6 +2727,126 @@
         }
       ]
     },
+    "dungeon-rescue": {
+      "about": {
+        "en": "Dungeon Rescue is a 3D stealth game about getting people out, not fighting. You play a knight who slips into the castle dungeon to free the townsfolk locked in its cells. Guards walk their rounds with a vision cone painted on the floor that reaches further in torchlight and shrinks in shadow. A \"?\" over a guard means suspicion, a \"!\" means a chase, and being caught costs a heart and sends you back to the last campfire.\n\nTwenty levels across four wings, the Cellblock, the Barracks, the Treasury and the Jailer's Tower, bring spike traps, loose trapdoors, barred gates with levers and sleeping guards. The people you free follow you in a line, and guards can spot them too.\n\nEvery wing ends with the Jailer Chief, a big jailer in a horned helmet. You never fight him: lift his key ring from behind or lure him into a trap, then lead everyone out while the alarm rings.",
+        "tr": "Zindan Kurtarma, dövüşmek yerine insanları kurtarmak üzerine kurulu 3B bir gizlilik oyunudur. Kalenin zindanına sızan bir şövalyesin ve hücrelere kapatılmış kasabalıları özgürlüğe kavuşturmaya çalışıyorsun. Muhafızlar turlarını atarken bakışları yerde bir ışık konisi olarak görünür: meşale ışığında uzağa uzanır, gölgede kısalır. Muhafızın başında \"?\" çıktıysa kuşkulanıyordur, \"!\" çıktıysa peşine düşmüştür; yakalanırsan bir can gider ve son kamp ateşine dönersin.\n\nHücreler, Koğuşlar, Hazine ve Zindancıbaşı Kulesi adlı dört kanatta yirmi bölüm var. Dikenli tuzaklar, gevşek kapaklar, kollu parmaklıklar ve uyuyan muhafızlar yolunu keser. Kurtardıkların arkanda sıra olur; muhafızlar onları da fark edebilir.\n\nHer kanadın son bölümü, boynuzlu miğferli iri Zindancıbaşı ile bir yüzleşmedir. Onunla asla dövüşmezsin: anahtar halkasını arkadan aşırır, onu bir bölmeye ya da kapağın üstüne çekip kolu indirirsin, sonra alarm çalarken herkesi dışarı çıkarırsın."
+      },
+      "howToPlay": [
+        {
+          "en": "Press PLAY, choose a level on the map (the tabs switch wings) and press PLAY again.",
+          "tr": "OYNA'ya bas, haritada bir bölüm seç (sekmeler kanatları değiştirir) ve yeniden OYNA'ya bas."
+        },
+        {
+          "en": "Open the cells: pick up a key, or hold ACT to pick the lock. If a guard sees you, the pick slips.",
+          "tr": "Hücreleri aç: yerdeki anahtarı al ya da kilidi açmak için EYLEM'i basılı tut. Bir muhafız seni görürse maymuncuk kayar."
+        },
+        {
+          "en": "Lead the people you freed to the exit stairs; at least half of them must come. CREW tells them to WAIT or FOLLOW.",
+          "tr": "Kurtardıklarını çıkış merdivenine götür; en az yarısı seninle gelmeli. EKİP onlara BEKLE ya da TAKİP ET der."
+        },
+        {
+          "en": "Each level has three stars: everyone rescued, never spotted, under par. Coins, stars and a hidden gold chest pay for the hideout.",
+          "tr": "Her bölümün üç yıldızı var: herkesi kurtarmak, hiç görülmemek ve hedef süreyi geçmemek. Paralar, yıldızlar ve gizli altın sandık sığınakta işe yarar."
+        },
+        {
+          "en": "Normal gives three hearts a level, Easy five. The run ends when the hearts run out or you press END RUN on the map.",
+          "tr": "Normal'de her bölümde üç, Kolay'da beş canın olur. Canların bittiğinde ya da haritada BİTİR'e bastığında koşu sona erer."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "WASD or the arrows walk and Shift sprints. Space or E is ACT: open cells, pull levers, hide, put out torches. Hold Q to aim and release to throw; F uses a power, C calls the crew, Esc or P pauses. H opens the hideout from the map.",
+          "tr": "WASD ya da oklarla yürür, Shift ile koşarsın. Boşluk ya da E EYLEM'dir: hücre açar, kol çeker, saklanır, meşale söndürür. Q'yu basılı tutup nişan al, bırakınca fırlat; F güç kullanır, C ekibi çağırır, Esc ya da P duraklatır. Haritada H sığınağı açar."
+        },
+        "touch": {
+          "en": "Drag on the left to walk with the floating stick; push it all the way to sprint. ACT, THROW (hold to aim), POWER and CREW sit on the right.",
+          "tr": "Solda sürükleyerek yüzen çubukla yürü; sonuna kadar itersen koşarsın. EYLEM, FIRLAT (nişan için basılı tut), GÜÇ ve EKİP sağda."
+        },
+        "gamepad": {
+          "en": "Left stick walks, A is ACT, LB throws (hold to aim), Y uses a power, X calls the crew, B or RT sprints and Start pauses.",
+          "tr": "Sol çubuk yürütür, A EYLEM'dir, LB fırlatır (nişan için basılı tut), Y güç kullanır, X ekibi çağırır, B ya da RT koşturur, Start duraklatır."
+        }
+      },
+      "tips": [
+        {
+          "en": "Walk near guards: a sprint clanks your armour, leaves a noise ring that draws anyone inside it, and wakes sleepers.",
+          "tr": "Muhafızların yakınında yürü: koşarken zırhın şıngırdar, yerde bir ses halkası kalır, içindeki herkes sese gelir ve uyuyanlar uyanır."
+        },
+        {
+          "en": "Put out torches to shorten the cones, and step into a barrel or crate when a guard turns your way.",
+          "tr": "Konileri kısaltmak için meşaleleri söndür; bir muhafız sana dönerken bir fıçıya ya da sandığa gir."
+        },
+        {
+          "en": "Throw a vase, bucket or coin past a guard on a post: he walks to the noise with his back to you.",
+          "tr": "Nöbetteki muhafızın ötesine vazo, kova ya da para fırlat: sese doğru yürürken sırtı sana döner."
+        },
+        {
+          "en": "Tricks only work on the Jailer Chief from behind. Watch his round and move when he turns away.",
+          "tr": "Zindancıbaşı'na hileler yalnızca arkadan işler. Turunu izle, sırtını döndüğünde harekete geç."
+        }
+      ],
+      "features": [
+        {
+          "en": "Twenty levels in four wings, each ending with the Jailer Chief and an alarm escape.",
+          "tr": "Dört kanatta yirmi bölüm; her kanat Zindancıbaşı ve alarmlı bir kaçışla biter."
+        },
+        {
+          "en": "Five tricks: Smoke Bomb, Disguise, Sleepy Powder, Swift Shoes and Decoy.",
+          "tr": "Beş hile: Duman Bombası, Kılık, Uyku Tozu, Hızlı Çizme ve Çıngırak."
+        },
+        {
+          "en": "A hideout with two companions, six upgrades and golden armour won with stars.",
+          "tr": "İki yoldaş, altı geliştirme ve yıldızlarla açılan altın zırhlarla bir sığınak."
+        },
+        {
+          "en": "Landscape on computers and tablets, portrait on phones.",
+          "tr": "Bilgisayar ve tablette yatay, telefonda dikey."
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "Do I have to fight anyone?",
+            "tr": "Birileriyle dövüşmem gerekiyor mu?"
+          },
+          "a": {
+            "en": "No. You hide, distract and outwit; even the Jailer Chief ends up behind bars or down a trapdoor.",
+            "tr": "Hayır. Saklanır, oyalar ve alt edersin; Zindancıbaşı bile sonunda parmaklıkların ardında ya da bir kapaktan aşağıda kalır."
+          }
+        },
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay mod var mı?"
+          },
+          "a": {
+            "en": "Yes. Easy gives five hearts, guards notice you later and walk slower, and the alarm lasts longer.",
+            "tr": "Evet. Kolay'da beş canın olur, muhafızlar seni daha geç fark eder ve daha yavaş yürür, alarm da daha uzun sürer."
+          }
+        },
+        {
+          "q": {
+            "en": "What do the companions do?",
+            "tr": "Yoldaşlar ne işe yarar?"
+          },
+          "a": {
+            "en": "Everyone you free joins your crew. Pick two in the hideout; each lends a skill such as faster lock-picking, a quieter sprint or an extra heart.",
+            "tr": "Kurtardığın herkes ekibine katılır. Sığınakta ikisini seçersin; her biri daha hızlı kilit açma, daha sessiz koşu ya da fazladan can gibi bir beceri katar."
+          }
+        },
+        {
+          "q": {
+            "en": "How is the score worked out?",
+            "tr": "Puan nasıl hesaplanır?"
+          },
+          "a": {
+            "en": "Rescues, coins, the gold chest, stars, clearing unseen, time under par and outwitting the Chief, added up over the run.",
+            "tr": "Kurtarmalar, paralar, altın sandık, yıldızlar, görülmeden bitirmek, hedef süreden artan zaman ve Zindancıbaşı'nı alt etmek; hepsi koşu boyunca toplanır."
+          }
+        }
+      ]
+    },
     "fish-frenzy": {
       "about": {
         "en": "Fish Frenzy is an eat-or-be-eaten game played sideways across a coral reef. You start each level as a small fish among other fish of every size. Anything clearly smaller than you is food; anything clearly bigger than you glows red, and touching it costs a life. Fish close to your own size are left alone by both sides.\n\nEvery fish you eat makes you a little larger, which turns yesterday's threats into today's meals. The GROWTH bar at the top shows how close you are to the size that clears the level. Reach it and the reef empties, you shrink back to your starting size and the next level begins, with a slightly larger target and a sea that holds more fish, more of them big.\n\nFrom level 2 the reef changes. Small fish dart away when you approach, pufferfish swell up as you come near, and sharks start to charge across the screen after a red warning on the side they come from. From level 3 a shark also bends toward you as it passes. You have three lives for the whole game.",

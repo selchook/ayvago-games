@@ -540,6 +540,20 @@ const CARD = {
       await sleep(300);
     }`,
   },
+  // Dungeon Rescue's card (adaptive: from the landscape run, cover-fit) shows the final face-off in
+  // the Jailer's Tower: the autopilot (god mode on) 26 seconds in, the knight in the shadows of the
+  // hall while the Jailer Chief's wide cone sweeps the torch-lit floor, his alertness bar on top.
+  // The phone on its cover is the same stage in portrait.
+  'dungeon-rescue': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      for (let i = 0; i < 100 && !window.__dr; i++) await sleep(100);
+      await sleep(600);
+      await window.__dr.stage(20, 26);
+      await sleep(300);
+    }`,
+  },
   // Pirate Cove's card (landscape since 1.1, cover-fit) shows a broadside fight on the bright first
   // wave: a brig alongside to starboard, a frigate and two sloops ahead, cannonballs in the air both
   // ways. The wave card and hints are skipped, the wave's own ships held back, nothing sinks the
