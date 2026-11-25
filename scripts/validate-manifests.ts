@@ -1,6 +1,7 @@
 // Validates every public/games/*/ayvago.json (and the generated platform catalog) against the
 // platform's own zod schema (vendored from selchook/ayvago) and checks the art exists with the
-// right dimensions (the logos: transparent PNGs within their size), then the game guides
+// right dimensions (the logos: transparent PNGs within their size; the portrait cards on adaptive
+// games only), then the game guides
 // (platform/arcade-guides.json) against the platform's guide schema and the studio's writing rules.
 // Run: npx tsx scripts/validate-manifests.ts
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
@@ -44,6 +45,9 @@ function webpSize(file: string): [number, number] {
 // Catalog card art (assets.card / card2x), both required for the studio's games, each in English
 // and Turkish (the same frame with the logo in that language), within the size budget.
 const CARDS = [['card', '640x360', 45 * 1024], ['card2x', '1280x720', 110 * 1024]] as const;
+// Portrait card art (assets.cardPortrait / cardPortrait2x): required for adaptive games
+// (orientation 'any', shown on phones), en + tr; a fixed-orientation game has none.
+const PORTRAIT_CARDS = [['cardPortrait', '360x640', 60 * 1024], ['cardPortrait2x', '720x1280', 140 * 1024]] as const;
 // Game logos (assets.logo, en + tr, both required here): PNG with transparency, at most
 // 640×320 px and 60 KB.
 const LOGO_MAX = [640, 320] as const;
@@ -82,7 +86,8 @@ for (const slug of readdirSync(dir).sort()) {
     if (m.assets.screenshot && !existsSync(join(root, 'public', m.assets.screenshot))) problems.push('screenshot missing');
     if (!existsSync(cover)) problems.push('cover missing');
     else if (jpgSize(cover).join('x') !== '1920x1080') problems.push(`cover is ${jpgSize(cover).join('x')}`);
-    for (const [key, size, budget] of CARDS) {
+    const adaptive = m.orientation === 'any';
+    for (const [key, size, budget] of [...CARDS, ...(adaptive ? PORTRAIT_CARDS : [])]) {
       const ref = m.assets[key];
       for (const lang of ['en', 'tr'] as const) {
         const one = typeof ref === 'string' ? (lang === 'en' ? ref : undefined) : ref?.[lang];
@@ -92,6 +97,11 @@ for (const slug of readdirSync(dir).sort()) {
         else if (webpSize(file).join('x') !== size) problems.push(`${key} ${lang} is ${webpSize(file).join('x')}, not a ${size} WebP`);
         else if (readFileSync(file).length > budget) problems.push(`${key} ${lang} is ${Math.round(readFileSync(file).length / 1024)} KB, over ${budget / 1024} KB`);
       }
+    }
+    if (!adaptive) {
+      for (const [key] of PORTRAIT_CARDS) if (m.assets[key]) problems.push(`assets.${key} on a ${m.orientation} game (adaptive games only)`);
+      const art = join(root, 'public', 'games', slug, 'ayvago');
+      if (existsSync(art) && readdirSync(art).some((f) => f.startsWith('card-portrait'))) problems.push(`portrait card files on a ${m.orientation} game`);
     }
     for (const lang of ['en', 'tr'] as const) {
       const ref = m.assets.logo?.[lang];

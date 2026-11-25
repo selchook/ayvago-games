@@ -112,6 +112,13 @@ export const gameManifestSchema = z
       // The same card art at 1280×720 WebP for dense screens, in the same shape; only used
       // together with `card`, and only in the language of the card it sharpens.
       card2x: maybeLocalizedAsset.optional(),
+      // Portrait card art for adaptive games (`orientation: 'any'`), shown on phones, where they
+      // run in portrait: an in-game frame from a phone (portrait) run with the small game logo,
+      // 360×640 WebP. One ref or a `{ en, tr? }` map, like `card`. Without it phones show `card`.
+      cardPortrait: maybeLocalizedAsset.optional(),
+      // The same portrait card art at 720×1280 WebP for dense screens, in the same shape; only
+      // used together with `cardPortrait`, and only in the language of the card it sharpens.
+      cardPortrait2x: maybeLocalizedAsset.optional(),
       // The game's own logo (its title art, may include an emblem) per locale, English required:
       // a transparent PNG of at most 640×320, drawn over in-game art such as the player overlay
       // before Play. Other locales fall back to English; without a logo the platform writes the

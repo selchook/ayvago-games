@@ -37,6 +37,8 @@ type ArcadeEntry = Pick<
      * invites) with that many seats, bots only at three or four.
      */
     multiplayer?: boolean | number;
+    /** An adaptive game with portrait card art for phones (`cardPortrait`, `cardPortrait2x`). */
+    portraitCards?: boolean;
   };
 
 function arcadeGame({
@@ -44,6 +46,7 @@ function arcadeGame({
   addedAt,
   featured,
   multiplayer,
+  portraitCards,
   ageRating,
   scoring,
   version,
@@ -77,6 +80,18 @@ function arcadeGame({
           en: `/games/${slug}/ayvago/card-1280x720.webp`,
           tr: `/games/${slug}/ayvago/card-tr-1280x720.webp`,
         },
+        ...(portraitCards
+          ? {
+              cardPortrait: {
+                en: `/games/${slug}/ayvago/card-portrait-360x640.webp`,
+                tr: `/games/${slug}/ayvago/card-portrait-tr-360x640.webp`,
+              },
+              cardPortrait2x: {
+                en: `/games/${slug}/ayvago/card-portrait-720x1280.webp`,
+                tr: `/games/${slug}/ayvago/card-portrait-tr-720x1280.webp`,
+              },
+            }
+          : {}),
         logo: { en: `/games/${slug}/ayvago/logo-en.png`, tr: `/games/${slug}/ayvago/logo-tr.png` },
       },
       version: version ?? '1.0.0',
@@ -1070,8 +1085,9 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['relic', 'ruins', 'retro'],
     orientation: 'any',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-11-24',
+    portraitCards: true,
   }),
   arcadeGame({
     slug: 'retro-snake',
