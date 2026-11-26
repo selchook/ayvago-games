@@ -383,7 +383,7 @@ export class Bot {
     for (const m of s.meteors) {
       const R = (m.big ? 4.6 : 3.4) + 1;
       const d = Math.hypot(m.x - v.x, m.z - v.z);
-      if (d < R && m.t < 1.2) { const side = (m.x - v.x) * rx + (m.z - v.z) * rz; return side > 0 ? 0.9 : -0.9; }
+      if (d < R && m.t < 1.2) { const side = (m.x - v.x) * rx + (m.z - v.z) * rz; return side > 0 ? -0.9 : 0.9; }
     }
     return 0;
   }
