@@ -59,7 +59,7 @@ export const BATTERY = {
   /** Systems always on while driving. */
   idle: 0.22,
   /** Extra while the motor pulls (GAS or reverse). */
-  motor: 1.0,
+  motor: 0.8,
   /** Extra while BOOST burns. */
   boost: 1.2,
   /** A charging pad refills this much per second. */
@@ -93,8 +93,8 @@ export interface Tuning {
 
 /** Normal and Easy side by side (Easy: more hearts and battery, slower meteors and bolts, forgiving landings). */
 export const TUNING: Record<'normal' | 'easy', Tuning> = {
-  normal: { hearts: 3, battery: 100, drain: 1, warn: 1.7, meteorGap: 1, bolt: 9, fireGap: 1, miner: 0.78, flip: LAND.flip, flipHurts: true, extraTime: 0 },
-  easy: { hearts: 5, battery: 135, drain: 0.8, warn: 2.4, meteorGap: 1.5, bolt: 6.5, fireGap: 1.45, miner: 0.66, flip: 1.05, flipHurts: false, extraTime: 25 },
+  normal: { hearts: 3, battery: 100, drain: 1, warn: 1.7, meteorGap: 1, bolt: 8, fireGap: 1, miner: 0.78, flip: LAND.flip, flipHurts: true, extraTime: 0 },
+  easy: { hearts: 5, battery: 135, drain: 0.8, warn: 2.4, meteorGap: 1.5, bolt: 6, fireGap: 1.45, miner: 0.66, flip: 1.05, flipHurts: false, extraTime: 25 },
 };
 
 // ------------------------------------------------------------------ regions

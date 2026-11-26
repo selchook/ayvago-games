@@ -40,6 +40,9 @@ export class Bot {
   private charging = false;
   private blocked: Uint8Array;
   private clock = 0;
+  private backing = false;
+  /** The ramp the rover is lined up for (its tile). */
+  private approach = -1;
 
   constructor(private sim: Sim) {
     const n = sim.c.cols * sim.c.rows;
@@ -245,7 +248,7 @@ export class Bot {
       this.planT = 0.4;
       this.plan();
       const t = this.choose();
-      if (t && (!this.target || t.key !== this.target.key)) { this.target = t; this.targetT = 0; this.bestD = INF; }
+      if (t && (!this.target || t.key !== this.target.key)) { this.target = t; this.targetT = 0; this.bestD = INF; this.approach = -1; }
       if (!t) this.target = null;
       if (this.target) this.buildPath(this.target);
     }
@@ -281,6 +284,16 @@ export class Bot {
       const dx = px * side * 12 + (ax - v.x) * 0.3, dz = pz * side * 12 + (az - v.z) * 0.3;
       if (this.clear(v.x, v.z, v.x + dx * 0.6, v.z + dz * 0.6)) { ax = v.x + dx; az = v.z + dz; }
     }
+    if (aim.back) {
+      // reverse straight back out, steering the rear towards the axis
+      const wantB = Math.atan2(v.x - ax, v.z - az);
+      let db = wantB - v.yaw;
+      while (db > Math.PI) db -= Math.PI * 2;
+      while (db < -Math.PI) db += Math.PI * 2;
+      out.steer = Math.max(-1, Math.min(1, db * 2));
+      if (v.speed > 0.5) out.brake = true; else if (v.speed > -3.5) out.brake = true;
+      return out;
+    }
     const want = Math.atan2(ax - v.x, az - v.z);
     let da = want - v.yaw;
     while (da > Math.PI) da -= Math.PI * 2;
@@ -291,6 +304,7 @@ export class Bot {
     if (Math.abs(da) > 0.5) top = Math.min(top, 5 + 6 * (1 - Math.min(1, (Math.abs(da) - 0.5) / 1)));
     if (v.surf === 'ice') top = Math.min(top, 7.5);
     if (aim.jump) top = s.topSpeed * 1.2;
+    else if (aim.line) top = Math.min(top, 4.5);
     else if (aim.ramp) top = Math.min(top, 9);
     if (t.stop) {
       if (t.kind === 'astro' && dT < 14) top = Math.min(top, dT < 9 ? 1 : 4);
@@ -299,7 +313,7 @@ export class Bot {
     if (t.kind === 'goal' || t.kind === 'outpost' || t.kind === 'drop') top = Math.min(top, Math.max(3, dT * 0.9));
     // trains and force fields: wait; a drop ahead that is not the way: brake
     if (this.trainAhead() || this.gateAhead()) top = 0;
-    if (!aim.jump && this.dropAhead()) top = Math.min(top, 2.5);
+    if (!aim.jump && this.dropAhead()) top = Math.min(top, 1.5);
     // a bolt or a meteor coming: keep moving, sideways if need be
     const threat = this.threat();
     if (threat) { top = Math.max(top, 8); out.steer = Math.max(-1, Math.min(1, out.steer + threat)); }
@@ -315,7 +329,8 @@ export class Bot {
     const s = this.sim, v = s.rover;
     const fx = Math.sin(v.yaw), fz = Math.cos(v.yaw);
     const reach = Math.max(4, Math.abs(v.speed) * 0.7);
-    for (let k = 2; k <= reach; k += 1.5) if (s.ter.ground(v.x + fx * k, v.z + fz * k) <= ABYSS + 1) return true;
+    const rx = -Math.cos(v.yaw), rz = Math.sin(v.yaw);
+    for (let k = 1.5; k <= reach; k += 1) for (const side of [0, -1, 1]) if (s.ter.ground(v.x + fx * k + rx * side, v.z + fz * k + rz * side) <= ABYSS + 1) return true;
     return false;
   }
 
@@ -353,12 +368,25 @@ export class Bot {
     return 0;
   }
 
+  /** A point back along a ramp's axis from the tile before it, as far as the ground allows (up to 6 m). */
+  private runUp(pre: number, dx: number, dz: number): { x: number; z: number } {
+    const L = this.sim.c, c = pre % L.cols, r = (pre - c) / L.cols;
+    const x0 = (c + 0.5) * TILE, z0 = (r + 0.5) * TILE;
+    let k = 0;
+    for (const step of [2, 4, 6, 8, 10]) {
+      const q = this.tileOf(x0 - dx * step, z0 - dz * step);
+      if (this.blocked[q] || this.tile(q).k !== 'ground' || this.tile(q).L !== this.tile(pre).L) break;
+      k = step;
+    }
+    return { x: x0 - dx * k, z: z0 - dz * k };
+  }
+
   private waiting(t: Target, dT: number): boolean {
     return (t.stop === true && dT < 14) || this.trainAhead() || this.gateAhead();
   }
 
   /** The farthest waypoint in a clear straight line, and whether the way there takes a ramp or a jump. */
-  private aimPoint(): { x: number; z: number; jump: boolean; ramp: boolean } {
+  private aimPoint(): { x: number; z: number; jump: boolean; ramp: boolean; line?: boolean; back?: boolean } {
     const s = this.sim, v = s.rover, L = s.c, P = this.path;
     const at = (q: number) => { const c = q % L.cols, r = (q - c) / L.cols; return { x: (c + 0.5) * TILE, z: (r + 0.5) * TILE }; };
     // drop waypoints already passed
@@ -370,16 +398,31 @@ export class Bot {
     for (let j = this.i; j < Math.min(P.length, this.i + 8); j++) {
       const special = this.jumpFrom[P[j]] === 1 || this.tile(P[j]).k === 'ramp';
       if (special && j >= 1) {
-        // line up on the ramp's axis (from the tile before it) and drive along it
+        // line up on the ramp's axis (from the tile before it), then drive along it
         const a0 = at(P[j - 1]), a1 = at(P[j]);
         const ux = a1.x - a0.x, uz = a1.z - a0.z, ul = Math.hypot(ux, uz) || 1;
         const dx = ux / ul, dz = uz / ul;
         const along = (v.x - a0.x) * dx + (v.z - a0.z) * dz;
         const off = Math.abs((v.x - a0.x) * dz - (v.z - a0.z) * dx);
-        if (j > this.i && off < 0.6 && this.clear(v.x, v.z, a0.x, a0.z) === false) { best = j - 1; break; }
-        if (along > -10) {
-          const k = Math.max(along, -6) + 6;
-          return { x: a0.x + dx * k, z: a0.z + dz * k, jump: this.jumpFrom[P[j]] === 1 || this.jumpFrom[P[j + 1] ?? -1] === 1, ramp: true };
+        let hd = Math.atan2(dx, dz) - v.yaw;
+        while (hd > Math.PI) hd -= Math.PI * 2;
+        while (hd < -Math.PI) hd += Math.PI * 2;
+        const jump = this.jumpFrom[P[j]] === 1 || this.jumpFrom[P[j + 1] ?? -1] === 1;
+        if (along > -12) {
+          const lined = off < 1.3 && Math.abs(hd) < 0.6;
+          // a kicker taken crooked or slow ends in the gap: never go up one unless lined up
+          if (jump && !lined && along > -2.5 && along < 1.5) { this.approach = -1; const back = this.runUp(P[j - 1], dx, dz); return { x: back.x, z: back.z, jump: false, ramp: true, line: true }; }
+          if (lined || along > 1.5 || this.approach === P[j]) {
+            // on the axis: straight up the ramp
+            if (lined || along > 1.5) this.approach = P[j];
+            // pure pursuit along the axis: a point a few metres ahead of the rover's place on it
+            const ahead = along + (lined ? 7 : 4.5);
+            return { x: a0.x + dx * ahead, z: a0.z + dz * ahead, jump: jump && off < 1.6, ramp: true, line: off > 1.2 };
+          }
+          // not lined up: first to a point well back on the axis, then turn in
+          const back = this.runUp(P[j - 1], dx, dz);
+          if (Math.hypot(back.x - v.x, back.z - v.z) < 3) this.approach = P[j];
+          return { x: back.x, z: back.z, jump: false, ramp: true, line: true };
         }
         best = j - 1;
         break;

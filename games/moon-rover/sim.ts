@@ -146,6 +146,8 @@ export class Sim {
   private wasCharging = false;
   private onPadT = 0;
   private repairT = 0;
+  /** The ground's vertical speed under the rover last frame. */
+  private gvy = 0;
 
   constructor(level: Level, ranks: Ranks, easy: boolean) {
     this.c = level;
@@ -387,7 +389,7 @@ export class Sim {
     const g = this.groundUnder(v.x, v.z, v.yaw);
     if (!v.air) {
       const gvy = (g.h - v.y) / dt;
-      if (g.h <= ABYSS + 1 || gvy < v.vy - GRAV * dt - 0.6) {
+      if (g.h <= ABYSS + 1 || gvy < this.gvy - GRAV * dt - 0.6) {
         // the ground falls away faster than the moon pulls: off we go
         v.air = true; v.airT = 0;
         v.pitchV = -0.25 - Math.max(0, v.gPitch) * 0.55;
@@ -400,7 +402,11 @@ export class Sim {
         v.y += v.vy * dt;
         if (Math.abs(v.vy) > 1.5 || g.h <= ABYSS + 1) this.events.push({ e: 'takeoff', speed: Math.hypot(v.vx, v.vz) });
       } else {
-        v.vy = Math.max(-14, Math.min(9, gvy));
+        // the vertical speed the slope gives (a step up is climbed, never a launch)
+        const pitch = Math.max(-1, Math.min(1, g.pitch));
+        v.vy = Math.max(-12, Math.min(9, v.speed * Math.tan(pitch)));
+        // the ground's own rise rate, for the next frame's test (a step's spike does not count)
+        this.gvy = Math.min(gvy, Math.max(v.vy, 0) + 1.5);
         v.y = g.h;
         v.gPitch = g.pitch; v.gRoll = g.roll;
         v.pitch += (g.pitch - v.pitch) * Math.min(1, dt * 14);
@@ -424,6 +430,7 @@ export class Sim {
     const err = Math.max(Math.abs(v.pitch - g.pitch), Math.abs(v.roll - g.roll) * 0.8);
     const air = v.airT;
     v.air = false;
+    this.gvy = 0;
     v.y = g.h;
     v.gPitch = g.pitch; v.gRoll = g.roll;
     const flipAt = this.tune.flip + RANK.gripLand[this.ranks.grip];
@@ -806,12 +813,12 @@ export class Sim {
         const sp = Math.hypot(v.vx, v.vz);
         const lead = sp * this.tune.warn * (0.55 + this.rand() * 0.5);
         const a = v.yaw + (this.rand() - 0.5) * 1.6;
-        const off = 3.5 + this.rand() * 9;
+        const off = 5 + this.rand() * 9;
         const x = v.x + Math.sin(v.yaw) * lead + Math.sin(a) * off * (this.rand() < 0.5 ? -1 : 1);
         const z = v.z + Math.cos(v.yaw) * lead + Math.cos(a) * off * (this.rand() < 0.5 ? -1 : 1);
         const g = this.ter.ground(x, z);
         if (g <= ABYSS + 1 || g >= 50) continue;
-        const big = escape && this.rand() < 0.35;
+        const big = escape && this.rand() < 0.25;
         this.meteors.push({ x, z, y: g, t: this.tune.warn, warn: this.tune.warn, big });
         this.events.push({ e: 'meteorWarn', i: this.meteorI++, x, z });
       }
@@ -852,7 +859,7 @@ export class Sim {
       const dx = v.x - t.x, dz = v.z - t.z, d = Math.hypot(dx, dz);
       const sweep = t.pattern === 'sweep';
       // aiming turrets need the rover in range and in sight; sweeping ones fire on their round anyway
-      const live = v.state === 'drive' && d < (sweep ? 34 : 30) && (sweep || this.sees(t));
+      const live = v.state === 'drive' && d < (sweep ? 30 : 26) && (sweep || this.sees(t));
       if (sweep) t.yaw += dt * 0.75;
       else if (live) {
         // turns towards where the rover is now (no lead: a moving rover is never a sitting duck)
@@ -866,7 +873,7 @@ export class Sim {
       if (t.cd <= 0.9 && t.charge === 0) { t.charge = 0.001; this.events.push({ e: 'charging', i }); }
       if (t.charge > 0) t.charge += dt;
       if (t.cd <= 0) {
-        t.cd = (sweep ? 1.5 : 3.3) * this.tune.fireGap;
+        t.cd = (sweep ? 1.7 : 3.6) * this.tune.fireGap;
         t.charge = 0;
         const fx = Math.sin(t.yaw), fz = Math.cos(t.yaw);
         const sides = t.double ? [-0.55, 0.55] : [0];
