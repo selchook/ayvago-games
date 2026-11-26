@@ -859,14 +859,14 @@ export class Sim {
       const dx = v.x - t.x, dz = v.z - t.z, d = Math.hypot(dx, dz);
       const sweep = t.pattern === 'sweep';
       // aiming turrets need the rover in range and in sight; sweeping ones fire on their round anyway
-      const live = v.state === 'drive' && d < (sweep ? 30 : 26) && (sweep || this.sees(t));
+      const live = v.state === 'drive' && d < (sweep ? 26 : 22) && (sweep || this.sees(t));
       if (sweep) t.yaw += dt * 0.75;
       else if (live) {
         // turns towards where the rover is now (no lead: a moving rover is never a sitting duck)
         let da = Math.atan2(dx, dz) - t.yaw;
         while (da > Math.PI) da -= Math.PI * 2;
         while (da < -Math.PI) da += Math.PI * 2;
-        t.yaw += Math.max(-1.4 * dt, Math.min(1.4 * dt, da));
+        t.yaw += Math.max(-0.9 * dt, Math.min(0.9 * dt, da));
       }
       if (!live) { t.charge = 0; t.cd = Math.max(t.cd, 0.9); return; }
       t.cd -= dt;
@@ -892,7 +892,7 @@ export class Sim {
       b.x += b.vx * dt; b.z += b.vz * dt; b.life -= dt;
       if (this.ter.ground(b.x, b.z) > b.y) { b.life = 0; continue; }
       const dx = v.x - b.x, dz = v.z - b.z, dy = v.y + 1 - b.y;
-      if (dx * dx + dz * dz < 1.6 * 1.6 && Math.abs(dy) < 1.6 && v.state === 'drive') {
+      if (dx * dx + dz * dz < 1.35 * 1.35 && Math.abs(dy) < 1.5 && v.state === 'drive') {
         b.life = 0;
         if (this.hurt(1, 'bolt', false, b.x, b.z)) this.knock(b.x - b.vx, b.z - b.vz, 5, 2.5);
       }

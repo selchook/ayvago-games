@@ -193,14 +193,16 @@ export class Bot {
     const drain = 1.35 * s.tune.drain * (s.storm ? 1.9 : 1);
     if (this.charging && v.battery < v.bmax * 0.96 && nearestCharge) return { x: nearestCharge.c.x, z: nearestCharge.c.z, kind: 'charge', key: 'charge', stop: true };
     this.charging = false;
-    if (!s.god && nearestCharge && nearestCharge.d < INF && v.battery < (nearestCharge.d + 14) * drain) {
+    if (!s.god && nearestCharge && nearestCharge.d < INF && v.battery < (nearestCharge.d * 1.5 + 22) * drain) {
       this.charging = true;
       return { x: nearestCharge.c.x, z: nearestCharge.c.z, kind: 'charge', key: 'charge', stop: true };
     }
     if (!hurry) {
-      s.crystals.forEach((c, i) => { if (!c.taken) add({ x: c.x, z: c.z, kind: 'crystal', key: 'c' + i }, escape ? 2.2 : 1); });
-      if (v.aboard < v.seats) s.astronauts.forEach((a, i) => { if (a.state === 'wait' || a.state === 'wave' || a.state === 'run') add({ x: a.home.x, z: a.home.z, kind: 'astro', key: 'a' + i, stop: true }, 0.8); });
-      if (!v.power) s.powers.forEach((p, i) => { if (!p.taken) add({ x: p.x, z: p.z, kind: 'power', key: 'p' + i }, 1.6); });
+      // in an escape only what lies close to the way is worth it
+      const near = (x: number, z: number, tiles: number) => !escape || (this.reach(x, z) >= 0 && this.dist[this.reach(x, z)] <= tiles);
+      s.crystals.forEach((c, i) => { if (!c.taken && near(c.x, c.z, 3)) add({ x: c.x, z: c.z, kind: 'crystal', key: 'c' + i }, escape ? 2.2 : 1); });
+      if (v.aboard < v.seats) s.astronauts.forEach((a, i) => { if ((a.state === 'wait' || a.state === 'wave' || a.state === 'run') && near(a.home.x, a.home.z, 5)) add({ x: a.home.x, z: a.home.z, kind: 'astro', key: 'a' + i, stop: true }, 0.8); });
+      if (!v.power) s.powers.forEach((p, i) => { if (!p.taken && near(p.x, p.z, 4)) add({ x: p.x, z: p.z, kind: 'power', key: 'p' + i }, 1.6); });
     }
     L.outposts.forEach((o, i) => { if (!s.delivered[i] && v.cargo > 0) add({ x: o.x, z: o.z, kind: 'outpost', key: 'o' + i }, 0.85); });
     s.generators.forEach((g, i) => { if (!g.off) add({ x: g.x, z: g.z, kind: 'gen', key: 'g' + i }, 0.7); });
@@ -209,7 +211,7 @@ export class Bot {
       // seats full: drop the crew at the nearest outpost or the base
       for (const o of [...L.outposts, L.base]) add({ x: o.x, z: o.z, kind: 'drop', key: 'drop' + o.x + ',' + o.z }, 0.9);
     }
-    if (!cand.length || hurry) {
+    if (!cand.length || hurry || (escape && cand.every((c) => c.t.kind === 'crystal' || c.t.kind === 'power') && cand.length && this.dist[this.reach(cand[0].t.x, cand[0].t.z)] > 3)) {
       if (s.ready) return { x: s.goal.x, z: s.goal.z, kind: 'goal', key: 'goal' };
     }
     if (!cand.length) return s.ready ? { x: s.goal.x, z: s.goal.z, kind: 'goal', key: 'goal' } : null;
@@ -315,6 +317,8 @@ export class Bot {
     if (this.trainAhead() || this.gateAhead()) top = 0;
     if (!aim.jump && this.dropAhead()) top = Math.min(top, 1.5);
     // a bolt or a meteor coming: keep moving, sideways if need be
+    // a turret winding up at a rover that waits: keep rolling
+    if (Math.abs(v.speed) < 3 && s.turrets.some((tu) => tu.charge > 0 && tu.frozen <= 0 && Math.hypot(tu.x - v.x, tu.z - v.z) < 22)) { top = Math.max(top, 6); out.steer = Math.max(-1, Math.min(1, out.steer + 0.5)); }
     const threat = this.threat();
     if (threat) { top = Math.max(top, 8); out.steer = Math.max(-1, Math.min(1, out.steer + threat)); }
     const sp = v.speed;
