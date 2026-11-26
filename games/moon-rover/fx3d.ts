@@ -49,8 +49,8 @@ export class Fx {
 
   /** The plume behind a wheel: thrown back and up along (bx, bz). */
   plume(x: number, y: number, z: number, bx: number, bz: number, k: number, color: number): void {
-    const s = 1.2 + k * 2.4;
-    this.spawn(x, y + 0.15, z, bx * s + (Math.random() - 0.5) * 1.2, 0.5 + Math.random() * 1.1 * k, bz * s + (Math.random() - 0.5) * 1.2, 0.1 + Math.random() * 0.1 + k * 0.05, 0.6 + Math.random() * 0.6, color, { grav: DUST_G, drag: 1.8, grow: 1.2 });
+    const s = 0.6 + k * 1.3;
+    this.spawn(x, y + 0.12, z, bx * s + (Math.random() - 0.5) * 1.4, 0.6 + Math.random() * 1.2 * k, bz * s + (Math.random() - 0.5) * 1.4, 0.07 + Math.random() * 0.07 + k * 0.04, 0.5 + Math.random() * 0.5, color, { grav: DUST_G, drag: 2.2, grow: 0.8 });
   }
 
   /** A ring of dust spreading flat from a landing or a blast. */

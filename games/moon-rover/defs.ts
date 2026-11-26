@@ -128,7 +128,7 @@ export const REGIONS: Record<RegionId, RegionLook> = {
   plains: { sky: 0x05070e, fogNear: 70, fogFar: 150, rock: 0xbdbcc0, rockDark: 0x7d7c84, road: 0xd8d6d2, ice: 0xd6ecff, dust: 0xc8b8a0, crystal: 0x45e0ff, hemi: [0xb8c4e0, 0x3a3a44, 1.25], sun: [0xfff6e8, 2.2], earth: 1, stars: 1 },
   canyon: { sky: 0x070512, fogNear: 60, fogFar: 135, rock: 0xa49caf, rockDark: 0x5e566e, road: 0xc8c0cc, ice: 0xd0e4ff, dust: 0xb8a898, crystal: 0xc070ff, hemi: [0xb0a8d8, 0x302a40, 1.2], sun: [0xffeedd, 2.1], earth: 0.8, stars: 1 },
   polar: { sky: 0x050a14, fogNear: 65, fogFar: 145, rock: 0xc8d0dc, rockDark: 0x7e8a9c, road: 0xe4e8ee, ice: 0xbfe6ff, dust: 0xd0d4dc, crystal: 0x5cf0c8, hemi: [0xc8dcf8, 0x3a4458, 1.3], sun: [0xf0f6ff, 2.1], earth: 1.2, stars: 0.9 },
-  dark: { sky: 0x020208, fogNear: 50, fogFar: 120, rock: 0x8a8a98, rockDark: 0x4a4a58, road: 0xa8a8b4, ice: 0xa8c8f0, dust: 0x8a8278, crystal: 0xff6ad0, hemi: [0x8090c8, 0x20202c, 1.0], sun: [0xc8d4ff, 1.25], earth: 0, stars: 1.4 },
+  dark: { sky: 0x020208, fogNear: 55, fogFar: 125, rock: 0x9a9aaa, rockDark: 0x56566a, road: 0xb4b4c2, ice: 0xa8c8f0, dust: 0x9a9286, crystal: 0xff6ad0, hemi: [0x8a9ad8, 0x2a2a3a, 1.25], sun: [0xc8d4ff, 1.4], earth: 0, stars: 1.4 },
 };
 
 // ------------------------------------------------------------------ powers

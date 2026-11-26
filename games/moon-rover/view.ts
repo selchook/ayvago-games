@@ -644,8 +644,8 @@ export class View {
       const surfCol = v.surf === 'ice' ? lk.ice : v.surf === 'dust' ? lk.dust : v.surf === 'road' ? lk.road : lk.rock;
       if (!v.air && sp > 2.5) {
         this.dustT += dt * (sp * (v.surf === 'dust' ? 2.2 : v.surf === 'ice' ? 0.4 : 1));
-        while (this.dustT > 0.35) {
-          this.dustT -= 0.35;
+        while (this.dustT > 0.5) {
+          this.dustT -= 0.5;
           const side = Math.random() < 0.5 ? -1 : 1;
           const bx = -Math.sin(v.yaw), bz = -Math.cos(v.yaw);
           this.fx.plume(v.x + bx * 1 - Math.cos(v.yaw) * side * 0.8, gy, v.z + bz * 1 + Math.sin(v.yaw) * side * 0.8, bx, bz, Math.min(1, sp / 13), mulc(surfCol, 0.95));
