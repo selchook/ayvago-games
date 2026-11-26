@@ -935,7 +935,7 @@ export class View {
     // follow the rover (smoothly in height: jumps feel big)
     const ease = Math.min(1, dt * 9);
     c.x += (v.x - c.x) * ease; c.z += (v.z - c.z) * ease;
-    c.y += (v.y - c.y) * Math.min(1, dt * (v.air ? 3 : 7));
+    c.y += (v.y - c.y) * Math.min(1, dt * (v.air ? 4.5 : 7));
     if (dt === 0) { c.x = v.x; c.z = v.z; c.y = v.y; }
     let dist = CAM.dist * k, height = CAM.height * k;
     const sp = Math.hypot(v.vx, v.vz);
@@ -965,7 +965,8 @@ export class View {
     const sh = c.shake * c.shake * 0.45;
     px += (Math.random() - 0.5) * sh; py += (Math.random() - 0.5) * sh; pz += (Math.random() - 0.5) * sh;
     cam.position.set(px, py, pz);
-    c.look.set(lookX, c.y + 0.8, lookZ);
+    // the look point keeps the rover itself in frame, high in a jump as well
+    c.look.set(lookX, Math.max(c.y + 0.8, v.y - 0.6), lookZ);
     cam.lookAt(c.look);
   }
 
