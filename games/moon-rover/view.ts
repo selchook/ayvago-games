@@ -152,6 +152,8 @@ export class View {
   private flipA = 0;
   private towT = -1;
   private dropT = -1;
+  /** How high the tow has lifted the rover (the camera follows it up). */
+  private lift = 0;
   private towFrom = new THREE.Vector3();
   private launchT = -1;
   private airPrev = false;
@@ -576,6 +578,7 @@ export class View {
       this.towT += dt;
       lift = Math.max(0, Math.min(1, this.towT / 1.4) - 0.4) * 22;
     }
+    this.lift = lift;
     this.rover.position.set(v.x, v.y + lift, v.z);
     this.rover.rotation.set(0, 0, 0);
     this.rover.quaternion.setFromEuler(te.set(-v.pitch, v.yaw, -v.roll + this.flipA, 'YXZ'));
@@ -935,8 +938,9 @@ export class View {
     // follow the rover (smoothly in height: jumps feel big)
     const ease = Math.min(1, dt * 9);
     c.x += (v.x - c.x) * ease; c.z += (v.z - c.z) * ease;
-    c.y += (v.y - c.y) * Math.min(1, dt * (v.air ? 4.5 : 7));
-    if (dt === 0) { c.x = v.x; c.z = v.z; c.y = v.y; }
+    const ry = v.y + this.lift;
+    c.y += (ry - c.y) * Math.min(1, dt * (v.air ? 4.5 : 7));
+    if (dt === 0) { c.x = v.x; c.z = v.z; c.y = ry; }
     let dist = CAM.dist * k, height = CAM.height * k;
     const sp = Math.hypot(v.vx, v.vz);
     dist += Math.min(2.2, sp * 0.12);
@@ -966,7 +970,7 @@ export class View {
     px += (Math.random() - 0.5) * sh; py += (Math.random() - 0.5) * sh; pz += (Math.random() - 0.5) * sh;
     cam.position.set(px, py, pz);
     // the look point keeps the rover itself in frame, high in a jump as well
-    c.look.set(lookX, Math.max(c.y + 0.8, v.y - 0.6), lookZ);
+    c.look.set(lookX, Math.max(c.y + 0.8, ry - 0.6), lookZ);
     cam.lookAt(c.look);
   }
 
