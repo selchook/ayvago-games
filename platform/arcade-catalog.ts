@@ -853,6 +853,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     orientation: 'any',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
     addedAt: '2026-11-26',
+    portraitCards: true,
   }),
   arcadeGame({
     slug: 'mud-rally',

@@ -701,6 +701,8 @@ export class PlayScene extends ArcadeScene {
    * a staged camera low beside the jump (closer and higher on a phone).
    */
   private cardStage(): void {
+    // no first-time hint over the scene
+    this.meta.hints = [...new Set([...this.meta.hints, 'h_craters', 'tut'])];
     this.startLevel(2);
     this.phaseT = INTRO_TIME;
     this.go();

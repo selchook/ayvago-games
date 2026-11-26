@@ -24,6 +24,7 @@
   "input": [
     "touch",
     "keyboard",
+    "gamepad",
     "mouse"
   ],
   "players": {
@@ -59,6 +60,14 @@
     "card2x": {
       "en": "/games/moon-rover/ayvago/card-1280x720.webp",
       "tr": "/games/moon-rover/ayvago/card-tr-1280x720.webp"
+    },
+    "cardPortrait": {
+      "en": "/games/moon-rover/ayvago/card-portrait-360x640.webp",
+      "tr": "/games/moon-rover/ayvago/card-portrait-tr-360x640.webp"
+    },
+    "cardPortrait2x": {
+      "en": "/games/moon-rover/ayvago/card-portrait-720x1280.webp",
+      "tr": "/games/moon-rover/ayvago/card-portrait-tr-720x1280.webp"
     },
     "logo": {
       "en": "/games/moon-rover/ayvago/logo-en.png",
