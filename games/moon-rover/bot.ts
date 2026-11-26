@@ -43,6 +43,8 @@ export class Bot {
   private backing = false;
   /** The ramp the rover is lined up for (its tile). */
   private approach = -1;
+  private kickRun = false;
+  private backSteer = 1;
 
   constructor(private sim: Sim) {
     const n = sim.c.cols * sim.c.rows;
@@ -267,11 +269,19 @@ export class Bot {
     if (this.backT > 0) {
       this.backT -= dt;
       out.brake = true;
-      out.steer = Math.sin(this.clock * 1.3) > 0 ? 1 : -1;
+      // reversing turns the nose the other way: a three-point turn towards the way to go
+      out.steer = this.backSteer;
       return out;
     }
     if (Math.hypot(v.x - this.lastPos.x, v.z - this.lastPos.z) > 1.5) { this.lastPos = { x: v.x, z: v.z, t: this.clock }; }
-    else if (this.clock - this.lastPos.t > 1.6 && !this.waiting(t, dT) && !v.charging) { this.backT = 0.9; this.lastPos.t = this.clock; this.planT = 0; return out; }
+    else if (this.clock - this.lastPos.t > 1.6 && !this.waiting(t, dT) && !v.charging) {
+      const a = this.aimPoint();
+      let da = Math.atan2(a.x - v.x, a.z - v.z) - v.yaw;
+      while (da > Math.PI) da -= Math.PI * 2;
+      while (da < -Math.PI) da += Math.PI * 2;
+      this.backSteer = da > 0 ? 1 : -1;
+      this.backT = 1.1; this.lastPos.t = this.clock; this.planT = 0; return out;
+    }
     // the point to steer at
     const aim = this.aimPoint();
     let ax = aim.x, az = aim.z;
@@ -305,7 +315,13 @@ export class Bot {
     let top = s.topSpeed;
     if (Math.abs(da) > 0.5) top = Math.min(top, 5 + 6 * (1 - Math.min(1, (Math.abs(da) - 0.5) / 1)));
     if (v.surf === 'ice') top = Math.min(top, 7.5);
-    if (aim.jump) top = s.topSpeed * 1.2;
+    // on a kicker already: all the way, whatever the line
+    const here = s.ter.tileAt(v.x, v.z);
+    const onKicker = !!here && here.k === 'ramp' && (() => { const [kx, kz] = DIRS[here.dir]; const nt = s.ter.tileAt(v.x + kx * TILE, v.z + kz * TILE); return !nt || nt.k === 'chasm' || nt.L <= here.L; })();
+    // stuck slow on a kicker (knocked onto it, no run-up): back down and take a run at it
+    if (onKicker && v.speed < 6 && !this.kickRun) { this.backT = 0; out.brake = true; out.gas = false; out.steer = 0; this.approach = -1; return out; }
+    this.kickRun = onKicker && v.speed >= 6;
+    if (aim.jump || onKicker) top = s.topSpeed * 1.2;
     else if (aim.line) top = Math.min(top, 4.5);
     else if (aim.ramp) top = Math.min(top, 9);
     if (t.stop) {

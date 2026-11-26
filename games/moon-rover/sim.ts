@@ -298,7 +298,7 @@ export class Sim {
       // the launch is held for the rover once more, at the price of a heart
       this.countdown = 30;
       this.events.push({ e: 'timeUp' });
-      this.hurt(2, 'time', true);
+      if (!this.easy) this.hurt(2, 'time', true);
     }
   }
 
@@ -327,7 +327,8 @@ export class Sim {
     if (!v.air) {
       // ---- on the ground
       const top = this.topSpeed * (boost ? POWER.boostTop : 1);
-      const turnK = Math.min(1, Math.abs(v.speed) / 5) * (1 - 0.3 * Math.min(1, Math.abs(v.speed) / top));
+      // tight turns when slow (a U-turn in a canyon), calmer at speed
+      const turnK = Math.min(1, Math.abs(v.speed) / 3) * (1 - 0.35 * Math.min(1, Math.abs(v.speed) / top));
       v.yaw -= inp.steer * ROVER.turn * turnK * Math.sign(v.speed || 1) * (ice ? 0.75 : 1) * dt;
       const nfx = Math.sin(v.yaw), nfz = Math.cos(v.yaw), rx = -Math.cos(v.yaw), rz = Math.sin(v.yaw);
       let fwd = v.vx * nfx + v.vz * nfz, lat = v.vx * rx + v.vz * rz;
