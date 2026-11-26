@@ -591,9 +591,9 @@ export class View {
         const drop = v.air ? -0.04 : -this.bounce * 0.2;
         tm2.makeTranslation(wa.x, wa.y + drop, wa.z);
         tm2.premultiply(this.rover.matrixWorld);
-        // the right-hand wheels are the left one turned round
+        // the right-hand wheels are the left one turned round (the kit's wheels are blocky, so
+        // they stay still on their springs rather than tumble)
         if (wa.side < 0) tm2.multiply(tm.makeRotationY(Math.PI));
-        tm2.multiply(tm.makeRotationX(wa.side < 0 ? -this.wheelSpin : this.wheelSpin));
         if (wa.s !== 1) tm2.multiply(tm.makeScale(1, wa.s, wa.s));
         W.putM(tm2);
       }
