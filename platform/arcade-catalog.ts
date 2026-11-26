@@ -841,6 +841,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'moon-rover',
+    title: { en: 'Moon Rover', tr: 'Ay Gezgini' },
+    description: {
+      en: "A low-gravity 3D lunar expedition! Drive the moon base's rover, take long floaty jumps off ramps and crater lips, level the nose in the air and land it clean. Collect crystal samples, pick up stranded astronauts, deliver supplies to outposts and get back to the base before the battery runs out. Meteor showers, turrets, monorail trains, ice and dust, solar storms and force-field gates stand in the way. Twenty missions in four regions; each region ends with a rogue mining craft to shut down or an escape from a meteor storm to a launching rocket. Boost, shield, magnet, hover jets and EMP; upgrades in the hangar and paint unlocked with stars. Easy or Normal.",
+      tr: 'Az yer çekiminde bir 3B ay keşfi! Ay üssünün gezicisini sür, rampalardan ve krater kenarlarından uzun, süzülen atlayışlar yap, havada burnunu dengele ve sağlam in. Kristal örnekleri topla, mahsur kalan astronotları al, erzakı karakollara götür ve bataryan bitmeden üsse dön. Meteor yağmurları, taretler, monoray trenleri, buz ve toz, güneş fırtınaları ve kuvvet alanlı kapılar yolunu keser. Dört bölgede yirmi görev; her bölgenin sonunda azgın bir madenci gemisini durdur ya da meteor fırtınasından kalkan rokete kaç. Turbo, kalkan, mıknatıs, süzülme jeti ve EMP; hangarda geliştirmeler ve yıldızlarla açılan boyalar. Kolay ya da Normal.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['moon', 'rover', 'retro'],
+    orientation: 'any',
+    input: ['touch', 'keyboard', 'gamepad', 'mouse'],
+    addedAt: '2026-11-26',
+    portraitCards: true,
+  }),
+  arcadeGame({
     slug: 'mud-rally',
     title: { en: 'Mud Rally', tr: 'Çamur Rallisi' },
     description: {

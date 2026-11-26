@@ -571,6 +571,22 @@ const CARD = {
       await sleep(400);
     }`,
   },
+  // Moon Rover's cards (adaptive: the landscape card from the landscape run, the portrait card and
+  // the phone on the cover from the portrait run) show the low-gravity jump up close: the Crater
+  // Hop (1-2) frozen as the rover sails over the big crater's rim with an astronaut riding on its
+  // deck, crystal samples round the crater, a meteor's red warning ring beside it and the waving
+  // astronaut's beacon, under a staged camera low beside the jump (closer on the phone, the touch
+  // pad hidden). The game runs at a crawl so every candidate frame keeps the moment.
+  'moon-rover': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      for (let i = 0; i < 100 && !window.__mr; i++) await sleep(100);
+      await sleep(600);
+      window.__mr.card();
+      await sleep(900);
+    }`,
+  },
   // Pirate Cove's card (landscape since 1.1, cover-fit) shows a broadside fight on the bright first
   // wave: a brig alongside to starboard, a frigate and two sloops ahead, cannonballs in the air both
   // ways. The wave card and hints are skipped, the wave's own ships held back, nothing sinks the

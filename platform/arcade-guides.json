@@ -5275,6 +5275,120 @@
         }
       ]
     },
+    "moon-rover": {
+      "about": {
+        "en": "Moon Rover is a 3D driving expedition across the Moon in low gravity. You drive the base's six-wheeled rover over hand-built terrain of craters, ramps, ridges and chasms: collect crystal samples, pick up stranded astronauts, drop supply crates at outposts and get back to the base before the battery runs dry.\n\nThe Moon pulls gently, so a ramp or a crater lip becomes a long, floating jump. In the air you keep the nose level and try to land clean: a perfect landing scores a bonus, a crooked one flips the rover. Meteor showers, turret bolts, monorail trains, ice, dust, force-field gates and solar storms get in the way.\n\nTwenty missions span four regions: Landing Plains, Crystal Canyons, Polar Ice Craters and the Dark Side. Each region ends with a set-piece: a rogue mining craft to shut down or a meteor storm to outrun to a launching rocket.",
+        "tr": "Ay Gezgini, az yer çekiminde Ay yüzeyinde geçen 3B bir sürüş keşfidir. Üssün altı tekerlekli gezicisini kraterler, rampalar, sırtlar ve uçurumlarla dolu, elle tasarlanmış arazilerde sürersin: kristal örnekleri toplar, mahsur kalan astronotları alır, erzak sandıklarını karakollara bırakır ve batarya bitmeden üsse dönersin.\n\nAy seni hafifçe çeker; bir rampa ya da krater kenarı uzun, süzülen bir atlayışa dönüşür. Havada burnu dengede tutar ve temiz inmeye çalışırsın: kusursuz iniş bonus kazandırır, yamuk iniş geziciyi ters çevirir. Meteor yağmurları, taret atışları, monoray trenleri, buz, toz, kuvvet alanlı kapılar ve güneş fırtınaları yolunu keser.\n\nYirmi görev dört bölgeye yayılır: İniş Ovaları, Kristal Kanyonlar, Kutup Buz Kraterleri ve Karanlık Yüz. Her bölge özel bir görevle biter: azgın bir madenci gemisini durdurursun ya da meteor fırtınasından kaçıp kalkan rokete yetişirsin."
+      },
+      "howToPlay": [
+        {
+          "en": "Pick a mission on the map and press DRIVE.",
+          "tr": "Haritadan bir görev seç ve SÜR'e dokun."
+        },
+        {
+          "en": "Drive over crystal samples and slow down beside waving astronauts so they climb aboard; drop them at an outpost or the base.",
+          "tr": "Kristal örneklerin üstünden geç, el sallayan astronotların yanında yavaşla ki binsinler; onları bir karakola ya da üsse bırak."
+        },
+        {
+          "en": "Take every supply crate to its outpost (blue beam), then return to the base pad (green beam).",
+          "tr": "Her erzak sandığını karakoluna (mavi ışık) götür, sonra üs pedine (yeşil ışık) dön."
+        },
+        {
+          "en": "The battery drains as you drive, faster in solar storms. Charging pads refill it, repair a little and act as checkpoints.",
+          "tr": "Batarya sürerken azalır, güneş fırtınasında daha hızlı. Şarj pedleri onu doldurur, biraz onarır ve kontrol noktası olur."
+        },
+        {
+          "en": "Flips, hits and falls cost half a heart; an empty battery costs a heart and a tow to the last checkpoint.",
+          "tr": "Takla, darbe ve düşüş yarım cana; biten batarya bir cana ve son kontrol noktasına çekilmeye mal olur."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "Arrows or WASD: left and right steer, up is GAS, down brakes and reverses. In the air GAS lifts the nose, BRAKE dips it. Space uses the power, Esc pauses. On the map Enter drives and C opens the hangar.",
+          "tr": "Oklar ya da WASD: sağ ve sol direksiyon, yukarı GAZ, aşağı fren ve geri vites. Havada GAZ burnu kaldırır, FREN indirir. Boşluk gücü kullanır, Esc duraklatır. Haritada Enter sürer, C hangarı açar."
+        },
+        "touch": {
+          "en": "Choose ARROWS, WHEEL or TILT steering on the menu for the left thumb; GAS, BRAKE and POWER sit under the right thumb, POWER showing the power you carry.",
+          "tr": "Sol başparmak için menüden OKLAR, DİREKSİYON ya da EĞİM seç; GAZ, FREN ve GÜÇ sağ başparmağın altındadır, GÜÇ taşıdığın gücü gösterir."
+        },
+        "gamepad": {
+          "en": "The left stick or the D-pad steers; push up for GAS and down to brake, or use RT for GAS and LT to brake. A uses the power, Start pauses.",
+          "tr": "Sol çubuk ya da yön tuşları direksiyondur; GAZ için yukarı, fren için aşağı it ya da GAZ için RT, fren için LT kullan. A gücü kullanır, Start duraklatır."
+        }
+      },
+      "tips": [
+        {
+          "en": "Hold GAS through a jump: the nose stays level for a clean landing on flat ground.",
+          "tr": "Atlayış boyunca GAZ'ı basılı tut: burun düz kalır ve düz zemine temiz inersin."
+        },
+        {
+          "en": "Hit a kicker ramp straight and at full speed; a slow or crooked take-off drops you into the gap.",
+          "tr": "Atlama rampasına tam karşıdan ve tam hızla gir; yavaş ya da yan kalkış seni boşluğa düşürür."
+        },
+        {
+          "en": "A red ring marks where a meteor falls. Keep moving: a stopped rover is easy prey for meteors and turrets.",
+          "tr": "Kırmızı halka meteorun düşeceği yeri gösterir. Durma: duran gezici meteorlar ve taretler için kolay hedeftir."
+        },
+        {
+          "en": "Trains sound a horn when close. Wait beside the track, not on it.",
+          "tr": "Trenler yaklaşınca korna çalar. Rayın üstünde değil yanında bekle."
+        },
+        {
+          "en": "Each mission hides a small green alien off the main path, worth bonus points and credits.",
+          "tr": "Her görevde ana yoldan uzakta bonus puan ve kredi değerinde küçük yeşil bir uzaylı saklanır."
+        }
+      ],
+      "features": [
+        {
+          "en": "Twenty hand-built missions in four regions, each with its own look.",
+          "tr": "Her biri kendine özgü görünüşte dört bölgede elle tasarlanmış yirmi görev."
+        },
+        {
+          "en": "Three stars per mission: every crystal, the whole crew and a time under par.",
+          "tr": "Her görevde üç yıldız: bütün kristaller, bütün ekip ve hedef sürenin altı."
+        },
+        {
+          "en": "Five powers: BOOST, SHIELD, MAGNET, HOVER JETS and EMP.",
+          "tr": "Beş güç: TURBO, KALKAN, MIKNATIS, SÜZÜLME JETİ ve EMP."
+        },
+        {
+          "en": "A hangar with six ranked upgrades and six paint jobs unlocked with stars.",
+          "tr": "Altı kademeli geliştirmeli ve yıldızlarla açılan altı boyalı bir hangar."
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay mod var mı?"
+          },
+          "a": {
+            "en": "Yes. Pick EASY on the menu: five hearts instead of three, a bigger battery, slower meteors, bolts and miner, and flips cost only time. Easy runs are not ranked.",
+            "tr": "Evet. Menüden KOLAY'ı seç: üç yerine beş can, daha büyük batarya, daha yavaş meteorlar, atışlar ve madenci; takla yalnızca zaman kaybettirir. Kolay oyunlar sıralamaya girmez."
+          }
+        },
+        {
+          "q": {
+            "en": "How are points scored?",
+            "tr": "Puan nasıl kazanılır?"
+          },
+          "a": {
+            "en": "Crystals, rescues, deliveries, the alien, generators, long jumps and clean landings score; each finished mission adds bonuses for stars, time and taking no damage.",
+            "tr": "Kristaller, kurtarmalar, teslimatlar, uzaylı, jeneratörler, uzun atlayışlar ve temiz inişler puan getirir; biten her görev yıldızlar, süre ve hasarsızlık için bonus ekler."
+          }
+        },
+        {
+          "q": {
+            "en": "Does it work on phones?",
+            "tr": "Telefonda çalışır mı?"
+          },
+          "a": {
+            "en": "Yes. Phones play in portrait with the touch pad; tablets and computers play in landscape.",
+            "tr": "Evet. Telefonlarda dikey ekranda dokunmatik pedle, tablet ve bilgisayarlarda yatay ekranda oynanır."
+          }
+        }
+      ]
+    },
     "mud-rally": {
       "about": {
         "en": "Mud Rally is a monster-truck championship on dirt arenas that fit on a single screen. You drive the blue truck against red, yellow and green rivals over four laps, through mud pits, slippery puddles, humps and ramps that send the trucks flying. Watch from above or switch to the in-car view with its speedometer and rev counter. Every lap has checkpoints, and a lap that skips one does not count.\n\nBetween races you stop at the garage. Prize money ($10,000 for a win, $6,000 for second, $3,000 for third, 15% more each race) and the coins you grab on track buy engine, tire, shock and nitro upgrades, five levels each. Six tracks take turns, from Dust Bowl to Zigzag Valley, and the rivals get faster every race.\n\nFinishing last costs a life. You have three, or four on Easy, and the championship ends when they run out. Your score is all the money you earned; spending it in the garage never takes anything off.",
