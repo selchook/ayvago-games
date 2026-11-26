@@ -36,9 +36,24 @@ jobs:
             echo "::error::platform/arcade-catalog.ts, platform/arcade-guides.json or public/games/*/ayvago.json is stale. Run 'node scripts/gen-platform.mjs --live' and commit the result."
             exit 1
           fi
+      # selchook/ayvago is private: the file is read through the API with PLATFORM_READ_TOKEN, a
+      # repository secret holding a read-only token for that repository (Contents: read). Without
+      # the secret the check is skipped with a warning rather than failing every run.
       - name: Vendored adapter matches the platform
+        env:
+          PLATFORM_READ_TOKEN: ${{ secrets.PLATFORM_READ_TOKEN }}
         run: |
-          curl -fsSL https://raw.githubusercontent.com/selchook/ayvago/main/packages/platform-adapter/src/adapter.ts -o "$RUNNER_TEMP/adapter.ts"
+          url=https://api.github.com/repos/selchook/ayvago/contents/packages/platform-adapter/src/adapter.ts
+          auth=()
+          if [ -n "$PLATFORM_READ_TOKEN" ]; then auth=(-H "Authorization: Bearer $PLATFORM_READ_TOKEN"); fi
+          if ! curl -fsSL "${auth[@]}" -H 'Accept: application/vnd.github.raw' "$url" -o "$RUNNER_TEMP/adapter.ts"; then
+            if [ -z "$PLATFORM_READ_TOKEN" ]; then
+              echo "::warning file=src/core/ayvago/adapter.ts::selchook/ayvago is private and the PLATFORM_READ_TOKEN secret is not set, so the vendored adapter was not compared with the platform's."
+              exit 0
+            fi
+            echo "::error::Could not read packages/platform-adapter/src/adapter.ts from selchook/ayvago with PLATFORM_READ_TOKEN. Check that the token can read that repository."
+            exit 1
+          fi
           if ! diff -u "$RUNNER_TEMP/adapter.ts" src/core/ayvago/adapter.ts; then
             echo "::error file=src/core/ayvago/adapter.ts::The vendored adapter differs from selchook/ayvago packages/platform-adapter/src/adapter.ts on main. Copy that file here verbatim."
             exit 1
