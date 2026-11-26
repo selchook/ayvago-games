@@ -33,6 +33,10 @@
     "touch": {
       "en": "Choose ARROWS, WHEEL or TILT steering on the menu for the left thumb; GAS, BRAKE and POWER sit under the right thumb, POWER showing the power you carry.",
       "tr": "Sol başparmak için menüden OKLAR, DİREKSİYON ya da EĞİM seç; GAZ, FREN ve GÜÇ sağ başparmağın altındadır, GÜÇ taşıdığın gücü gösterir."
+    },
+    "gamepad": {
+      "en": "The left stick or the D-pad steers; push up for GAS and down to brake, or use RT for GAS and LT to brake. A uses the power, Start pauses.",
+      "tr": "Sol çubuk ya da yön tuşları direksiyondur; GAZ için yukarı, fren için aşağı it ya da GAZ için RT, fren için LT kullan. A gücü kullanır, Start duraklatır."
     }
   },
   "tips": [
