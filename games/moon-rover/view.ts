@@ -37,7 +37,7 @@ const BORDER = 7;
 const CHUNK = 8;
 
 /** The chase camera: distance behind, height, look-ahead; landscape comes closer. */
-export const CAM = { dist: 10.5, height: 4.6, ahead: 5, fov: 58 };
+export const CAM = { dist: 8.6, height: 4.2, ahead: 6, fov: 56 };
 const CAM_LAND = { k: 0.86 };
 
 const PARTS = ['body', 'head', 'armLeft', 'armRight', 'legLeft', 'legRight'] as const;
@@ -627,10 +627,13 @@ export class View {
     const crate = this.inst.get('crate');
     if (crate) {
       crate.begin();
+      // supply canisters lying across the rear deck
       if (this.rover.visible) for (let i = 0; i < v.cargo; i++) {
-        tm2.makeTranslation(-0.32 + (i % 2) * 0.64, 1.55 + Math.floor(i / 2) * 1.45, -0.55);
+        tm2.makeTranslation(0, 1.62 + Math.floor(i / 2) * 0.5, -0.62 + (i % 2) * 0.55);
         tm2.premultiply(this.rover.matrixWorld);
-        tm2.multiply(tm.makeScale(4.4, 4.4, 4.4));
+        tm2.multiply(tm.makeRotationZ(Math.PI / 2));
+        tm2.multiply(tm.makeScale(2.4, 2.6, 2.4));
+        tm2.multiply(tm.makeTranslation(0, -0.125, 0));
         crate.putM(tm2);
       }
       crate.end();
@@ -961,7 +964,7 @@ export class View {
     const sh = c.shake * c.shake * 0.45;
     px += (Math.random() - 0.5) * sh; py += (Math.random() - 0.5) * sh; pz += (Math.random() - 0.5) * sh;
     cam.position.set(px, py, pz);
-    c.look.set(lookX, c.y + 1.2, lookZ);
+    c.look.set(lookX, c.y + 0.8, lookZ);
     cam.lookAt(c.look);
   }
 

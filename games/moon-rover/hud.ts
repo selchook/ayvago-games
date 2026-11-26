@@ -27,13 +27,22 @@ export const S_WARN: LabelStyle = { size: 30, color: '#ffb08a', stroke: INK, str
 export const S_GOOD: LabelStyle = { size: 32, color: '#9affc0', stroke: INK, strokeWidth: 6 };
 export const S_LAND: LabelStyle = { size: 40, fill: ['#ffffff', '#c8f4ff', '#4ab8ff'], stroke: INK, strokeWidth: 8 };
 export const S_POWER: LabelStyle = { size: 42, fill: ['#ffffff', '#ffe9a0'], stroke: INK, strokeWidth: 8 };
-export const S_HINT: LabelStyle = { size: 22, color: '#eaf4ff', stroke: INK, strokeWidth: 5, body: true };
+export const S_HINT: LabelStyle = { size: 24, color: '#eaf4ff', stroke: INK, strokeWidth: 5, body: true };
 
 export const TOASTS = ['boarded', 'rescued', 'delivered', 'seatsFull', 'needCargo', 'needGen', 'checkpoint', 'charging', 'charged', 'towed', 'flipped', 'fell', 'good', 'rough',
   'meteors', 'stormEnd', 'alien', 'shielded', 'emp', 'train', 'zap', 'gen0', 'gen1', 'gen2', 'gen3', 'minerHit', 'returnBase', 'toRocket', 'hurtBolt', 'hurtMeteor', 'hurtTrain',
   ...POWER_IDS.map((p) => 'pd_' + p), ...POWER_IDS.map((p) => 'pd_' + p + 'Key')];
 export const WARNS = ['lowBattery', 'empty', 'storm', 'timeLow', 'timeUp', 'needCargo', 'needGen', 'seatsFull'];
 export const HINTS = ['h_drive', 'h_craters', 'h_ridge', 'h_meteors', 'h_turrets', 'h_gates', 'h_ice', 'h_trains', 'h_storm', 'h_dark', 'tut_drive', 'tut_driveKey', 'tut_air', 'tut_power', 'tut_powerKey'];
+
+/** A long line in two halves (split at the space nearest the middle), as the toasts draw it. */
+export function splitLine(text: string, max = 46): string[] {
+  if (text.length <= max) return [text];
+  const mid = text.length / 2;
+  let best = -1;
+  for (let i = 0; i < text.length; i++) if (text[i] === ' ' && (best < 0 || Math.abs(i - mid) < Math.abs(best - mid))) best = i;
+  return best < 0 ? [text] : [text.slice(0, best), text.slice(best + 1)];
+}
 
 export const levelLabel = (n: number): string => t('stageN', { w: regionIndex(n) + 1, n: inRegionOf(n) });
 
@@ -46,10 +55,10 @@ export function prebakePlay(scene: Phaser.Scene): void {
   for (const k of ['sp_minerSub', 'sp_escapeSub']) labelTexture(scene, t(k), S_SUBBANNER);
   labelTexture(scene, t('go'), S_BIG);
   labelTexture(scene, t('perfect'), S_LAND);
-  for (const k of TOASTS) labelTexture(scene, t(k), S_TOAST);
-  for (const k of WARNS) labelTexture(scene, t(k), S_WARN);
+  for (const k of TOASTS) for (const line of splitLine(t(k))) labelTexture(scene, line, S_TOAST);
+  for (const k of WARNS) for (const line of splitLine(t(k))) labelTexture(scene, line, S_WARN);
   for (const k of ['rescued', 'delivered', 'alien', 'charged']) labelTexture(scene, t(k), S_GOOD);
-  for (const k of HINTS) labelTexture(scene, t(k), S_HINT);
+  for (const k of HINTS) for (const line of splitLine(t(k))) labelTexture(scene, line, S_HINT);
   for (const p of POWER_IDS) labelTexture(scene, t('p_' + p), S_POWER);
 }
 

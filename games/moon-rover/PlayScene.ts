@@ -17,7 +17,7 @@ import { buildLevel, LEVEL_COUNT, regionIndex, regionOf } from './levels';
 import { DT, SCORE, CLEAR_CREDITS, STAR_CREDITS, POWER_COLOR, REGIONS, type PowerId } from './defs';
 import { loadMeta, saveMeta, type Meta } from './meta';
 import { MapScreen, SummaryScreen, ShopScreen, type Panel, type ScreenHost } from './screens';
-import { PlayHud, S_BANNER, S_BIG, S_SUBBANNER, S_TOAST, S_WARN, S_GOOD, S_LAND, S_POWER, S_HINT, levelLabel } from './hud';
+import { PlayHud, S_BANNER, S_BIG, S_SUBBANNER, S_TOAST, S_WARN, S_GOOD, S_LAND, S_POWER, S_HINT, levelLabel, splitLine } from './hud';
 import { ORANGE, TEAL, RED, GREEN } from './paint';
 import { makeArt, ic } from './art';
 
@@ -65,7 +65,7 @@ export class PlayScene extends ArcadeScene {
   private scored = 0;
   get runCredits(): number { return runCreditsNow; }
   set runCredits(n: number) { runCreditsNow = n; }
-  private toastImg: Phaser.GameObjects.Image | null = null;
+  private toastImg: Phaser.GameObjects.Container | null = null;
   private toastKey = '';
   private toastT = 0;
   private bannerImgs: Phaser.GameObjects.Image[] = [];
@@ -621,16 +621,19 @@ export class PlayScene extends ArcadeScene {
     if (key === this.toastKey && this.toastT > 0) return;
     this.toastKey = key; this.toastT = (ms / 1000) * 0.6;
     this.toastImg?.destroy();
-    // above the touch buttons (portrait) or in the band between the pad's two thumbs (landscape)
+    // above the touch buttons (portrait) or in the band between the pad's two thumbs (landscape);
+    // a long line goes on two
     const land = isLandscape(), pad = !!this.steering.pad;
-    const y = land ? this.scale.height - (pad ? 300 : 110) : this.scale.height - (pad ? 410 : 170);
-    const img = labelAt(this, this.scale.width / 2, y, t(key), style).setScrollFactor(0).setDepth(9100);
-    fitWidth(img, land ? (pad ? 640 : 900) : wrapLong ? 690 : 670);
-    const sc = img.scale;
-    img.setScale(sc * 0.6);
-    this.toastImg = img;
-    this.tweens.add({ targets: img, scale: sc, duration: 160, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: img, alpha: 0, delay: ms, duration: 300, onComplete: () => { if (this.toastImg === img) this.toastImg = null; img.destroy(); } });
+    const y = land ? this.scale.height - (pad ? 300 : 120) : this.scale.height - (pad ? 420 : 180);
+    const lines = splitLine(t(key));
+    const box = this.add.container(this.scale.width / 2, y).setScrollFactor(0).setDepth(9100);
+    const lh = (style.size ?? 26) * 1.25;
+    lines.forEach((line, i) => box.add(fitWidth(labelAt(this, 0, (i - (lines.length - 1) / 2) * lh, line, style), land ? (pad ? 620 : 900) : 670)));
+    void wrapLong;
+    box.setScale(0.6);
+    this.toastImg = box;
+    this.tweens.add({ targets: box, scale: 1, duration: 160, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: box, alpha: 0, delay: ms, duration: 300, onComplete: () => { if (this.toastImg === box) this.toastImg = null; box.destroy(); } });
   }
 
   private tutorial(dt: number): void {

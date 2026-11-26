@@ -111,7 +111,7 @@ export const LEVELS_PER_REGION = 5;
 export const RAW: RawLevel[] = [
   // 1-1 First Tracks: the plain below the base, a road north, a kicker, a crater, one astronaut
   {
-    region: 'plains', par: 75, hint: 'h_drive',
+    region: 'plains', par: 70, hint: 'h_drive',
     map: [
       '5555555555555555',
       '5333333333333335',
@@ -139,7 +139,7 @@ export const RAW: RawLevel[] = [
     powers: ['boost'],
   },
   {
-    region: 'plains', par: 90, hint: 'h_craters', powers: ['magnet'],
+    region: 'plains', par: 65, hint: 'h_craters', powers: ['magnet'],
     map: [
       '555555555555555555',
       '533333333333333335',
@@ -166,7 +166,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'plains', par: 95, hint: 'h_ridge', powers: ['boost'],
+    region: 'plains', par: 120, hint: 'h_ridge', powers: ['boost'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -195,7 +195,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'plains', par: 105, hint: 'h_meteors', meteors: {'every': 3.6, 'first': 6}, powers: ['shield', 'boost'],
+    region: 'plains', par: 75, hint: 'h_meteors', meteors: {'every': 3.6, 'first': 6}, powers: ['shield', 'boost'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -251,7 +251,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'canyon', par: 110, hint: 'h_turrets', turrets: ['aim'], powers: ['shield'],
+    region: 'canyon', par: 100, hint: 'h_turrets', turrets: ['aim'], powers: ['shield'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -282,7 +282,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'canyon', par: 120, hint: 'h_gates', turrets: ['aim'], gates: [{'open': 3, 'closed': 2.4}, {'open': 3, 'closed': 2.4, 'offset': 1.5}], powers: ['magnet', 'emp'],
+    region: 'canyon', par: 130, hint: 'h_gates', turrets: ['aim'], gates: [{'open': 3, 'closed': 2.4}, {'open': 3, 'closed': 2.4, 'offset': 1.5}], powers: ['magnet', 'emp'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -311,7 +311,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'canyon', par: 125, turrets: ['aim'], powers: ['hover', 'shield'],
+    region: 'canyon', par: 130, turrets: ['aim'], powers: ['hover', 'shield'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -342,7 +342,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'canyon', par: 115, turrets: ['sweep', 'sweep', 'aim'], powers: ['shield'],
+    region: 'canyon', par: 85, turrets: ['sweep', 'sweep', 'aim'], powers: ['shield'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -369,7 +369,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'canyon', par: 110, setpiece: 'escape', countdown: 110, meteors: {'every': 2.1, 'first': 3}, powers: ['shield', 'boost'],
+    region: 'canyon', par: 90, setpiece: 'escape', countdown: 110, meteors: {'every': 2.1, 'first': 3}, powers: ['shield', 'boost'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -401,7 +401,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'polar', par: 100, hint: 'h_ice', trains: [{'period': 11, 'offset': 2}], powers: ['hover'],
+    region: 'polar', par: 80, hint: 'h_ice', trains: [{'period': 11, 'offset': 2}], powers: ['hover'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -428,7 +428,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'polar', par: 110, hint: 'h_trains', trains: [{'period': 10, 'offset': 0}, {'period': 12, 'offset': 5, 'dir': -1}], powers: ['magnet'],
+    region: 'polar', par: 120, hint: 'h_trains', trains: [{'period': 10, 'offset': 0}, {'period': 12, 'offset': 5, 'dir': -1}], powers: ['magnet'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -457,7 +457,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'polar', par: 125, turrets: ['aim', 'aim'], trains: [{'period': 14, 'offset': 1}, {'period': 16, 'offset': 7, 'dir': -1}, {'period': 13, 'offset': 3}], powers: ['shield', 'emp'],
+    region: 'polar', par: 95, turrets: ['aim', 'aim'], trains: [{'period': 14, 'offset': 1}, {'period': 16, 'offset': 7, 'dir': -1}, {'period': 13, 'offset': 3}], powers: ['shield', 'emp'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -485,7 +485,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'polar', par: 115, hint: 'h_storm', storms: {'every': 40, 'len': 14, 'first': 14}, meteors: {'every': 5, 'first': 10}, powers: ['shield', 'hover'],
+    region: 'polar', par: 100, hint: 'h_storm', storms: {'every': 40, 'len': 14, 'first': 14}, meteors: {'every': 5, 'first': 10}, powers: ['shield', 'hover'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -510,7 +510,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'polar', par: 135, setpiece: 'miner', powers: ['emp', 'shield'],
+    region: 'polar', par: 100, setpiece: 'miner', powers: ['emp', 'shield'],
     map: [
       '55555555555555555555',
       '54444444444444444445',
@@ -535,7 +535,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'dark', par: 110, hint: 'h_dark', powers: ['magnet'],
+    region: 'dark', par: 80, hint: 'h_dark', powers: ['magnet'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -560,7 +560,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'dark', par: 125, turrets: ['aim', 'aim', 'sweep'], powers: ['hover', 'shield'],
+    region: 'dark', par: 100, turrets: ['aim', 'aim', 'sweep'], powers: ['hover', 'shield'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -589,7 +589,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'dark', par: 120, storms: {'every': 28, 'len': 12, 'first': 10}, meteors: {'every': 4.2, 'first': 8}, gates: [{'open': 3.2, 'closed': 2.2}, {'open': 3, 'closed': 2.4, 'offset': 1.2}], powers: ['shield', 'emp'],
+    region: 'dark', par: 140, storms: {'every': 28, 'len': 12, 'first': 10}, meteors: {'every': 4.2, 'first': 8}, gates: [{'open': 3.2, 'closed': 2.2}, {'open': 3, 'closed': 2.4, 'offset': 1.2}], powers: ['shield', 'emp'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -615,7 +615,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'dark', par: 140, turrets: ['sweep'], gates: [{'open': 3, 'closed': 2.5}], trains: [{'period': 11, 'offset': 3}], meteors: {'every': 6, 'first': 12}, powers: ['shield', 'emp'],
+    region: 'dark', par: 150, turrets: ['sweep'], gates: [{'open': 3, 'closed': 2.5}], trains: [{'period': 11, 'offset': 3}], meteors: {'every': 6, 'first': 12}, powers: ['shield', 'emp'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -642,7 +642,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'dark', par: 150, setpiece: 'escape', countdown: 150, meteors: {'every': 2.2, 'first': 4}, storms: {'every': 35, 'len': 10, 'first': 20}, trains: [{'period': 9, 'offset': 2}, {'period': 10, 'offset': 6, 'dir': -1}], turrets: ['aim', 'sweep'], gates: [{'open': 3.4, 'closed': 2}], powers: ['shield', 'boost', 'emp'],
+    region: 'dark', par: 110, setpiece: 'escape', countdown: 130, meteors: {'every': 2.2, 'first': 4}, storms: {'every': 35, 'len': 10, 'first': 20}, trains: [{'period': 9, 'offset': 2}, {'period': 10, 'offset': 6, 'dir': -1}], turrets: ['aim', 'sweep'], gates: [{'open': 3.4, 'closed': 2}], powers: ['shield', 'boost', 'emp'],
     map: [
       '55555555555555555555',
       '54444444444444444445',

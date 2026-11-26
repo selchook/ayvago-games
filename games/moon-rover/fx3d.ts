@@ -49,16 +49,16 @@ export class Fx {
 
   /** The plume behind a wheel: thrown back and up along (bx, bz). */
   plume(x: number, y: number, z: number, bx: number, bz: number, k: number, color: number): void {
-    const s = 1.5 + k * 3;
-    this.spawn(x, y + 0.2, z, bx * s + (Math.random() - 0.5) * 1.4, 0.8 + Math.random() * 1.6 * k, bz * s + (Math.random() - 0.5) * 1.4, 0.16 + Math.random() * 0.16 + k * 0.08, 0.8 + Math.random() * 0.8, color, { grav: DUST_G, drag: 1.6, grow: 1.6 });
+    const s = 1.2 + k * 2.4;
+    this.spawn(x, y + 0.15, z, bx * s + (Math.random() - 0.5) * 1.2, 0.5 + Math.random() * 1.1 * k, bz * s + (Math.random() - 0.5) * 1.2, 0.1 + Math.random() * 0.1 + k * 0.05, 0.6 + Math.random() * 0.6, color, { grav: DUST_G, drag: 1.8, grow: 1.2 });
   }
 
   /** A ring of dust spreading flat from a landing or a blast. */
   ring(x: number, y: number, z: number, n: number, color: number, speed = 6, size = 0.3): void {
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + Math.random() * 0.2;
-      const s = speed * (0.7 + Math.random() * 0.5);
-      this.spawn(x + Math.cos(a) * 0.8, y + 0.15, z + Math.sin(a) * 0.8, Math.cos(a) * s, 0.4 + Math.random() * 1.2, Math.sin(a) * s, size * (0.7 + Math.random() * 0.6), 0.8 + Math.random() * 0.6, color, { grav: DUST_G, drag: 2.4, grow: 1.4 });
+      const s = speed * (0.5 + Math.random() * 0.4);
+      this.spawn(x + Math.cos(a) * 0.8, y + 0.15, z + Math.sin(a) * 0.8, Math.cos(a) * s, 0.3 + Math.random() * 0.9, Math.sin(a) * s, size * (0.5 + Math.random() * 0.5), 0.6 + Math.random() * 0.5, color, { grav: DUST_G, drag: 3, grow: 0.9 });
     }
   }
 
