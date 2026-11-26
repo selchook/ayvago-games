@@ -457,7 +457,7 @@ export const RAW: RawLevel[] = [
     ],
   },
   {
-    region: 'polar', par: 125, turrets: ['aim', 'aim'], trains: [{'period': 10, 'offset': 1}, {'period': 12, 'offset': 6, 'dir': -1}, {'period': 9, 'offset': 3}], powers: ['shield', 'emp'],
+    region: 'polar', par: 125, turrets: ['aim', 'aim'], trains: [{'period': 14, 'offset': 1}, {'period': 16, 'offset': 7, 'dir': -1}, {'period': 13, 'offset': 3}], powers: ['shield', 'emp'],
     map: [
       '555555555555555555',
       '544444444444444445',
@@ -624,8 +624,8 @@ export const RAW: RawLevel[] = [
       '541C111111111C1A45',
       '54444444M444444445',
       '541111111111111145',
-      '54tttttttttttttt45',
       '541C11111111111C45',
+      '54tttttttttttttt45',
       '5411o11U11o111A145',
       '541111ii1111ii1145',
       '541C111Y11111C1145',

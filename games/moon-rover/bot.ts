@@ -503,9 +503,10 @@ export class Bot {
     for (let i = 0; i < s.c.gates.length; i++) {
       const g = s.c.gates[i];
       const dx = g.x - v.x, dz = g.z - v.z, d = Math.hypot(dx, dz);
-      if (d > 9 || d < 1.5 || (dx * fx + dz * fz) / d < 0.6) continue;
-      // on now, or on before the rover is through
-      if (s.gateOn(i) || s.gateOn(i, s.clock + d / Math.max(4, Math.abs(v.speed)) + 0.4)) return true;
+      if (d > 10 || d < 1.2 || (dx * fx + dz * fz) / d < 0.5) continue;
+      // go when the field is down from the moment the rover gets there until it is through
+      const tArr = Math.max(0, d - 2) / 7;
+      if (s.gateOn(i, s.clock + tArr) || s.gateOn(i, s.clock + tArr + 0.8)) return true;
     }
     return false;
   }
