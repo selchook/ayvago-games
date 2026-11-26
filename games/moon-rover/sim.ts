@@ -213,6 +213,27 @@ export class Sim {
     return false;
   }
 
+  /** How deep a rover at (x, z) sits in the cliffs above `ref` (0 when clear). */
+  private sink(x: number, z: number, ref: number): number {
+    const R = ROVER.radius;
+    let p = 0;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const over = this.wallH(x + Math.cos(a) * R, z + Math.sin(a) * R) - ref;
+      if (over > 0) p += 1 + Math.min(over, 4);
+    }
+    return p;
+  }
+
+  /**
+   * Whether a cliff stops the move from (x0, z0) to (x1, z1). A rover that already overlaps one
+   * (its back still over the ledge it rolled off) may always move further out of it.
+   */
+  private stops(x0: number, z0: number, x1: number, z1: number, ref: number): boolean {
+    if (!this.blocked(x1, z1, ref)) return false;
+    return this.sink(x1, z1, ref) >= this.sink(x0, z0, ref);
+  }
+
   /** The current power's duration with the Lasting Powers rank. */
   powerTime(id: PowerId): number { return POWER_TIME[id] * RANK.powers[this.ranks.powers]; }
 
@@ -375,13 +396,14 @@ export class Sim {
   /** Horizontal motion with walls and obstacles, then the vertical: ground, takeoff, flight, landing. */
   private move(dt: number): void {
     const v = this.rover;
+    if (!v.air) this.unstick(dt);
     const ref = v.air ? v.y + 0.35 : this.wallH(v.x, v.z) + ROVER.stepMax;
     const px = v.x, pz = v.z;
     let hit = 0;
     const nx = v.x + v.vx * dt;
-    if (this.blocked(nx, v.z, ref)) { hit = Math.max(hit, Math.abs(v.vx)); v.vx = -v.vx * 0.3; } else v.x = nx;
+    if (this.stops(v.x, v.z, nx, v.z, ref)) { hit = Math.max(hit, Math.abs(v.vx)); v.vx = -v.vx * 0.3; } else v.x = nx;
     const nz = v.z + v.vz * dt;
-    if (this.blocked(v.x, nz, ref)) { hit = Math.max(hit, Math.abs(v.vz)); v.vz = -v.vz * 0.3; } else v.z = nz;
+    if (this.stops(v.x, v.z, v.x, nz, ref)) { hit = Math.max(hit, Math.abs(v.vz)); v.vz = -v.vz * 0.3; } else v.z = nz;
     hit = Math.max(hit, this.obstacles());
     // never pushed into a cliff (an obstacle's push-out next to a wall): back to where it was
     if (this.blocked(v.x, v.z, ref) && !this.blocked(px, pz, ref)) { v.x = px; v.z = pz; v.vx *= -0.3; v.vz *= -0.3; }
@@ -423,6 +445,46 @@ export class Sim {
     }
     // a pit or a chasm under the rover while on the ground
     if (!v.air && g.center <= ABYSS + 1) this.fall();
+  }
+
+  /**
+   * A rover overlapping a cliff (it came down from a jump with a wheel over a ledge, or landed
+   * against a wall) would be blocked whichever way it drove. It slides to the nearest free spot on
+   * ground no higher than where it stands, a few centimetres a frame, so it can always drive on.
+   */
+  private unstick(dt: number): void {
+    const v = this.rover;
+    const here = this.wallH(v.x, v.z);
+    // never back up onto the ledge it came down from: only to ground as low as where it stands
+    const free = (x: number, z: number) => this.wallH(x, z) <= here + ROVER.stepMax && !this.ter.isHole(x, z) && this.driveable(x, z);
+    if (this.ter.isHole(v.x, v.z) || this.driveable(v.x, v.z)) return;
+    for (let d = 0.1; d <= 8; d += d < 2.5 ? 0.1 : 0.25) {
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2, ox = Math.cos(a) * d, oz = Math.sin(a) * d;
+        if (!free(v.x + ox, v.z + oz)) continue;
+        const k = Math.min(1, (6 * dt + 0.02) / d);
+        v.x += ox * k; v.z += oz * k;
+        return;
+      }
+    }
+  }
+
+  /** Whether the rover could stand at (x, z): clear of cliffs and props (for tests and spawns). */
+  driveable(x: number, z: number): boolean {
+    return !this.blocked(x, z, this.wallH(x, z) + ROVER.stepMax) && !this.inObstacle(x, z);
+  }
+
+  /** Whether a rover at (x, z) on the ground would overlap a building, a rock or another solid prop. */
+  private inObstacle(x: number, z: number): boolean {
+    const R = ROVER.radius * 0.95, y = this.rover.y;
+    for (const o of this.c.obstacles) {
+      if (Math.abs(o.x - x) > 12 || Math.abs(o.z - z) > 12 || y > o.y + o.top) continue;
+      if (o.box) {
+        const cx = Math.max(o.x - o.box[0], Math.min(o.x + o.box[0], x)), cz = Math.max(o.z - o.box[1], Math.min(o.z + o.box[1], z));
+        if (Math.hypot(x - cx, z - cz) < R) return true;
+      } else if (Math.hypot(x - o.x, z - o.z) < o.r + R) return true;
+    }
+    return false;
   }
 
   private land(g: { h: number; pitch: number; roll: number }): void {
@@ -486,8 +548,8 @@ export class Sim {
     if (v.state === 'fall') { v.x += v.vx * dt; v.z += v.vz * dt; return; }
     const ref = this.wallH(v.x, v.z) + ROVER.stepMax;
     const nx = v.x + v.vx * dt, nz = v.z + v.vz * dt;
-    if (!this.blocked(nx, v.z, ref)) v.x = nx;
-    if (!this.blocked(v.x, nz, ref)) v.z = nz;
+    if (!this.stops(v.x, v.z, nx, v.z, ref)) v.x = nx;
+    if (!this.stops(v.x, v.z, v.x, nz, ref)) v.z = nz;
     const g = this.groundUnder(v.x, v.z, v.yaw);
     if (g.h > ABYSS + 1) { v.y += (g.h - v.y) * Math.min(1, dt * 10); v.gPitch = g.pitch; v.gRoll = g.roll; }
   }
