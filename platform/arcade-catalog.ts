@@ -852,7 +852,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['moon', 'rover', 'retro'],
     orientation: 'any',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    version: '1.0.1',
+    version: '1.0.2',
     addedAt: '2026-11-26',
     portraitCards: true,
   }),

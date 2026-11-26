@@ -592,7 +592,7 @@ export class View {
     this.chassis.rotation.x = -this.bounceV * 0.004;
     this.rover.updateMatrixWorld(true);
     // wheels: spin with the ground speed, drop when airborne
-    this.wheelSpin += (v.air ? v.speed * 0.6 : v.speed) * dt / (0.043 * ROVER_S);
+    this.wheelSpin = (this.wheelSpin + (v.air ? v.speed * 0.6 : v.speed) * dt / (0.043 * ROVER_S)) % (Math.PI * 2);
     const W = this.wheels;
     W.begin();
     if (this.rover.visible) {
@@ -600,10 +600,11 @@ export class View {
         const drop = v.air ? -0.04 : -this.bounce * 0.2;
         tm2.makeTranslation(wa.x, wa.y + drop, wa.z);
         tm2.premultiply(this.rover.matrixWorld);
-        // the right-hand wheels are the left one turned round (the kit's wheels are blocky, so
-        // they stay still on their springs rather than tumble)
+        // the right-hand wheels are the left one turned round, so they roll the other way about
+        // their own axle
         if (wa.side < 0) tm2.multiply(tm.makeRotationY(Math.PI));
         if (wa.s !== 1) tm2.multiply(tm.makeScale(1, wa.s, wa.s));
+        tm2.multiply(tm.makeRotationX(wa.side < 0 ? -this.wheelSpin : this.wheelSpin));
         W.putM(tm2);
       }
     }
@@ -740,9 +741,22 @@ export class View {
     if (beam) {
       beam.begin();
       if (mode === 'hangar') { beam.end(); } else {
-      const pillar = (x: number, y: number, z: number, col: number, h = 16, w = 1) => { const i = beam.put(x, y, z, 0, 0, 0, ts.set(w, h, w)); beam.color(i, col); };
+      // a beam the camera stands in would tint the whole screen: it fades out round the camera
+      const cp = this.world.camera.position;
+      const pillar = (x: number, y: number, z: number, col: number, h = 16, w = 1) => {
+        const k = Math.min(1, Math.max(0, (Math.hypot(x - cp.x, z - cp.z) - w - 0.6) / 3));
+        if (k <= 0.02) return;
+        const i = beam.put(x, y, z, 0, 0, 0, ts.set(w, h, w));
+        beam.color(i, mulc(col, k));
+      };
       const pulse = 0.85 + Math.sin(tnow * 3) * 0.15;
-      sim.astronauts.forEach((a) => { if (a.state === 'wait' || a.state === 'wave') pillar(a.x, a.y, a.z, mulc(0xff9a3a, pulse), 18, 0.9); });
+      // an astronaut's beam rises from above the helmet and fades as the rover comes close, so it
+      // never hides the figure it marks
+      sim.astronauts.forEach((a) => {
+        if (a.state !== 'wait' && a.state !== 'wave') return;
+        const near = Math.min(1, Math.max(0.25, (Math.hypot(a.x - v.x, a.z - v.z) - 4) / 14));
+        pillar(a.x, a.y + 2.4, a.z, mulc(0xff9a3a, pulse * near), 16, 0.9);
+      });
       L.outposts.forEach((u, i) => { if (!sim.delivered[i]) pillar(u.x, u.y, u.z, mulc(0x3ad8ff, pulse), 22, 1.2); });
       sim.generators.forEach((g) => { if (!g.off) pillar(g.x, g.y, g.z, mulc(0xff3a3a, pulse), 20, 1.1); });
       if (sim.ready && L.setpiece !== 'escape') pillar(L.base.x, L.base.y, L.base.z, mulc(0x5aff7a, pulse), 26, 2.2);
@@ -963,7 +977,16 @@ export class View {
       return;
     }
     const lookX = c.x + fx * CAM.ahead, lookZ = c.z + fz * CAM.ahead;
-    let px = c.x - fx * dist, pz = c.z - fz * dist, py = c.y + height;
+    // props between the rover and the camera: a tall one (a tower, the rocket) brings the camera
+    // in before it, a low one (a hangar, a boulder, the miner) lifts it over the top
+    let over = -Infinity;
+    for (let s = 0.25; s <= 1.001; s += 0.125) {
+      const hit = this.propAt(sim, c.x - fx * dist * s, c.z - fz * dist * s);
+      if (hit === null) continue;
+      if (hit > c.y + 8) { dist = Math.max(CAM.dist * 0.4, dist * (s - 0.2)); break; }
+      over = Math.max(over, hit + 1.4);
+    }
+    let px = c.x - fx * dist, pz = c.z - fz * dist, py = Math.max(c.y + height, over);
     // never lose the rover: rise over any ground between
     for (const s of [0.35, 0.7, 1]) {
       const gx = c.x - fx * dist * s, gz = c.z - fz * dist * s;
@@ -978,6 +1001,21 @@ export class View {
     // the look point keeps the rover itself in frame, high in a jump as well
     c.look.set(lookX, Math.max(c.y + 0.8, ry - 0.6), lookZ);
     cam.lookAt(c.look);
+  }
+
+  /** The top of the solid prop at (x, z), with a little room round it, or null. */
+  private propAt(sim: Sim, x: number, z: number): number | null {
+    let top: number | null = null;
+    for (const o of sim.c.obstacles) {
+      if (o.kind === 'lamp' || Math.abs(o.x - x) > 9 || Math.abs(o.z - z) > 9) continue;
+      const inside = o.box
+        ? Math.abs(x - o.x) < o.box[0] + 0.8 && Math.abs(z - o.z) < o.box[1] + 0.8
+        : Math.hypot(x - o.x, z - o.z) < o.r + 0.8;
+      if (inside) top = Math.max(top ?? -Infinity, o.y + o.top);
+    }
+    const m = sim.miner;
+    if (m && Math.hypot(x - m.x, z - m.z) < 3.6) top = Math.max(top ?? -Infinity, m.y + 3.4);
+    return top;
   }
 
   shake(k: number): void { this.cam.shake = Math.min(1.5, this.cam.shake + k); }
