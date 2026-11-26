@@ -34,6 +34,7 @@ export type SimEvent =
   | { e: 'needGenerators' }
   | { e: 'charge'; x: number; z: number }
   | { e: 'charged' }
+  | { e: 'repair' }
   | { e: 'checkpoint'; x: number; z: number }
   | { e: 'takeoff'; speed: number }
   | { e: 'land'; q: LandQuality; impact: number; air: number; x: number; z: number }
@@ -95,7 +96,8 @@ export interface Crystal { x: number; y: number; z: number; taken: boolean; pull
 export interface Meteor { x: number; z: number; y: number; t: number; warn: number; big: boolean }
 export interface Bolt { x: number; y: number; z: number; vx: number; vz: number; life: number }
 export interface Turret { x: number; y: number; z: number; yaw: number; double: boolean; pattern: 'aim' | 'sweep'; cd: number; charge: number; frozen: number }
-export interface Miner { x: number; y: number; z: number; yaw: number; speed: number; frozen: number; off: boolean; pause: number; awake: boolean; sink: number }
+/** The rogue miner: it hunts the rover (chase), winds up when close (a red flash), charges in a straight line, then cools off. */
+export interface Miner { x: number; y: number; z: number; yaw: number; speed: number; frozen: number; off: boolean; pause: number; awake: boolean; sink: number; mode: 'chase' | 'wind' | 'charge' | 'cool'; modeT: number }
 
 export interface Stats { crystals: number; rescued: number; delivered: number; alien: boolean; time: number; flips: number; hits: number; perfect: number; credits: number; bestAir: number; generators: number }
 
@@ -143,6 +145,7 @@ export class Sim {
   private rngS: number;
   private wasCharging = false;
   private onPadT = 0;
+  private repairT = 0;
 
   constructor(level: Level, ranks: Ranks, easy: boolean) {
     this.c = level;
@@ -165,7 +168,7 @@ export class Sim {
     this.powers = level.powers.map((p) => ({ x: p.x, y: p.y, z: p.z, id: p.id, taken: false }));
     this.turrets = level.turrets.map((t, i) => ({ x: t.x, y: t.y, z: t.z, yaw: t.yaw, double: t.double, pattern: t.pattern, cd: 2 + i * 0.9, charge: 0, frozen: 0 }));
     this.generators = level.generators.map((g) => ({ x: g.x, y: g.y, z: g.z, off: false }));
-    this.miner = level.setpiece === 'miner' && level.miner ? { x: level.miner.x, y: level.miner.y + 2.2, z: level.miner.z, yaw: 0, speed: 0, frozen: 0, off: false, pause: 0, awake: false, sink: 0 } : null;
+    this.miner = level.setpiece === 'miner' && level.miner ? { x: level.miner.x, y: level.miner.y + 2.2, z: level.miner.z, yaw: 0, speed: 0, frozen: 0, off: false, pause: 0, awake: false, sink: 0, mode: 'chase', modeT: 0 } : null;
     this.delivered = level.outposts.map(() => false);
     this.checkpoint = { x: s.x, z: s.z, yaw: s.yaw };
     this.countdown = level.setpiece === 'escape' ? level.countdown + this.tune.extraTime : -1;
@@ -182,7 +185,8 @@ export class Sim {
     const fx = Math.sin(yaw), fz = Math.cos(yaw), rx = -Math.cos(yaw), rz = Math.sin(yaw);
     const L = ROVER.halfL, T = ROVER.halfT;
     const center = this.ter.ground(x, z);
-    const clampH = (h: number) => Math.max(center - 2, Math.min(center + 1.4, h));
+    // a wheel against a cliff (not on top of it) reads the ground under the middle
+    const clampH = (h: number) => (h > center + 1.2 ? center : Math.max(center - 2, h));
     const g = (a: number, b: number) => clampH(this.ter.ground(x + fx * a + rx * b, z + fz * a + rz * b));
     const fl = g(L, -T), fr = g(L, T), bl = g(-L, -T), br = g(-L, T);
     const front = (fl + fr) / 2, back = (bl + br) / 2, left = (fl + bl) / 2, right = (fr + br) / 2;
@@ -369,12 +373,15 @@ export class Sim {
   private move(dt: number): void {
     const v = this.rover;
     const ref = v.air ? v.y + 0.35 : this.wallH(v.x, v.z) + ROVER.stepMax;
+    const px = v.x, pz = v.z;
     let hit = 0;
     const nx = v.x + v.vx * dt;
     if (this.blocked(nx, v.z, ref)) { hit = Math.max(hit, Math.abs(v.vx)); v.vx = -v.vx * 0.3; } else v.x = nx;
     const nz = v.z + v.vz * dt;
     if (this.blocked(v.x, nz, ref)) { hit = Math.max(hit, Math.abs(v.vz)); v.vz = -v.vz * 0.3; } else v.z = nz;
     hit = Math.max(hit, this.obstacles());
+    // never pushed into a cliff (an obstacle's push-out next to a wall): back to where it was
+    if (this.blocked(v.x, v.z, ref) && !this.blocked(px, pz, ref)) { v.x = px; v.z = pz; v.vx *= -0.3; v.vz *= -0.3; }
     if (hit > 2.5) { this.events.push({ e: 'bump', speed: hit, x: v.x, z: v.z }); v.jolt = Math.min(1, hit / 10); }
     // vertical
     const g = this.groundUnder(v.x, v.z, v.yaw);
@@ -384,12 +391,16 @@ export class Sim {
         // the ground falls away faster than the moon pulls: off we go
         v.air = true; v.airT = 0;
         v.pitchV = -0.25 - Math.max(0, v.gPitch) * 0.55;
-        v.rollV = (g.roll - v.gRoll) / dt * 0.15;
+        v.rollV = Math.max(-1.2, Math.min(1.2, (g.roll - v.gRoll) / dt * 0.15));
         v.vy = Math.min(v.vy, 14);
+        // a connector ramp's crest (the ground goes on at its top) gives only a small hop: the big
+        // flights are for kickers, crater lips and edges
+        const behind = this.ter.tileAt(v.x - Math.sin(v.yaw) * 1.4, v.z - Math.cos(v.yaw) * 1.4);
+        if (behind && behind.k === 'ramp' && g.h > ABYSS + 1 && Math.abs(g.h - (behind.L + 1) * STEP) < 0.3) v.vy = Math.min(v.vy, 1.4);
         v.y += v.vy * dt;
         if (Math.abs(v.vy) > 1.5 || g.h <= ABYSS + 1) this.events.push({ e: 'takeoff', speed: Math.hypot(v.vx, v.vz) });
       } else {
-        v.vy = Math.max(-14, Math.min(14, gvy));
+        v.vy = Math.max(-14, Math.min(9, gvy));
         v.y = g.h;
         v.gPitch = g.pitch; v.gRoll = g.roll;
         v.pitch += (g.pitch - v.pitch) * Math.min(1, dt * 14);
@@ -511,7 +522,7 @@ export class Sim {
     if (!force && v.inv > 0) return false;
     if (!force && v.active.shield > 0) { this.events.push({ e: 'shielded', x, z }); return false; }
     v.hp = Math.max(0, v.hp - n);
-    v.inv = 1.6;
+    v.inv = 2.4;
     this.stats.hits++;
     this.events.push({ e: 'hurt', by, x, z });
     if (v.hp <= 0) { v.state = 'dead'; v.vx *= 0.3; v.vz *= 0.3; this.events.push({ e: 'die' }); return true; }
@@ -593,6 +604,8 @@ export class Sim {
     if (atBase) charging = true;
     if (charging) {
       v.battery = Math.min(v.bmax, v.battery + BATTERY.charge * (1 / 60));
+      // the pad's crew patch the rover up: half a heart every few seconds
+      if (v.hp < v.max && v.hp > 0) { this.repairT += 1 / 60; if (this.repairT >= BATTERY.repair) { this.repairT = 0; v.hp++; this.events.push({ e: 'repair' }); } }
       if (!this.wasCharging) this.events.push({ e: 'charge', x: v.x, z: v.z });
       if (v.battery >= v.bmax && this.onPadT >= 0) { this.onPadT = -1; this.events.push({ e: 'charged' }); }
     } else this.onPadT = 0;
@@ -793,7 +806,7 @@ export class Sim {
         const sp = Math.hypot(v.vx, v.vz);
         const lead = sp * this.tune.warn * (0.55 + this.rand() * 0.5);
         const a = v.yaw + (this.rand() - 0.5) * 1.6;
-        const off = 2 + this.rand() * 9;
+        const off = 3.5 + this.rand() * 9;
         const x = v.x + Math.sin(v.yaw) * lead + Math.sin(a) * off * (this.rand() < 0.5 ? -1 : 1);
         const z = v.z + Math.cos(v.yaw) * lead + Math.cos(a) * off * (this.rand() < 0.5 ? -1 : 1);
         const g = this.ter.ground(x, z);
@@ -822,34 +835,44 @@ export class Sim {
     this.meteors = this.meteors.filter((m) => m.t > 0);
   }
 
+  /** A clear line from a turret to the rover (no ground higher than the barrel in between). */
+  private sees(t: Turret): boolean {
+    const v = this.rover, d = Math.hypot(v.x - t.x, v.z - t.z), h = t.y + 1.6;
+    for (let k = 2; k < d - 1; k += 1.5) {
+      const x = t.x + ((v.x - t.x) * k) / d, z = t.z + ((v.z - t.z) * k) / d;
+      if (this.ter.ground(x, z) > h + 0.2) return false;
+    }
+    return true;
+  }
+
   private turretStep(dt: number): void {
     const v = this.rover;
     this.turrets.forEach((t, i) => {
       if (t.frozen > 0) { t.frozen -= dt; t.charge = 0; return; }
       const dx = v.x - t.x, dz = v.z - t.z, d = Math.hypot(dx, dz);
-      const live = v.state === 'drive' && d < 38;
-      if (t.pattern === 'sweep') t.yaw += dt * 0.7;
+      const sweep = t.pattern === 'sweep';
+      // aiming turrets need the rover in range and in sight; sweeping ones fire on their round anyway
+      const live = v.state === 'drive' && d < (sweep ? 34 : 30) && (sweep || this.sees(t));
+      if (sweep) t.yaw += dt * 0.75;
       else if (live) {
-        // aim where the rover is going, turning at a fixed rate
-        const lead = d / this.tune.bolt * 0.6;
-        const want = Math.atan2(dx + v.vx * lead, dz + v.vz * lead);
-        let da = want - t.yaw;
+        // turns towards where the rover is now (no lead: a moving rover is never a sitting duck)
+        let da = Math.atan2(dx, dz) - t.yaw;
         while (da > Math.PI) da -= Math.PI * 2;
         while (da < -Math.PI) da += Math.PI * 2;
-        t.yaw += Math.max(-1.6 * dt, Math.min(1.6 * dt, da));
+        t.yaw += Math.max(-1.4 * dt, Math.min(1.4 * dt, da));
       }
-      if (!live) { t.charge = 0; return; }
+      if (!live) { t.charge = 0; t.cd = Math.max(t.cd, 0.9); return; }
       t.cd -= dt;
-      if (t.cd <= 0.8 && t.charge === 0) { t.charge = 0.001; this.events.push({ e: 'charging', i }); }
+      if (t.cd <= 0.9 && t.charge === 0) { t.charge = 0.001; this.events.push({ e: 'charging', i }); }
       if (t.charge > 0) t.charge += dt;
       if (t.cd <= 0) {
-        t.cd = (t.pattern === 'sweep' ? 1.3 : 2.7) * this.tune.fireGap;
+        t.cd = (sweep ? 1.5 : 3.3) * this.tune.fireGap;
         t.charge = 0;
         const fx = Math.sin(t.yaw), fz = Math.cos(t.yaw);
         const sides = t.double ? [-0.55, 0.55] : [0];
         for (const s of sides) {
           const x = t.x + fx * 1.4 + Math.cos(t.yaw) * s, z = t.z + fz * 1.4 - Math.sin(t.yaw) * s;
-          this.bolts.push({ x, y: t.y + 1.5, z, vx: fx * this.tune.bolt, vz: fz * this.tune.bolt, life: 38 / this.tune.bolt });
+          this.bolts.push({ x, y: t.y + 1.5, z, vx: fx * this.tune.bolt, vz: fz * this.tune.bolt, life: 34 / this.tune.bolt });
         }
         this.events.push({ e: 'fire', i, x: t.x, y: t.y + 1.5, z: t.z });
       }
@@ -899,18 +922,35 @@ export class Sim {
     if (!m) return;
     if (m.off) { m.sink = Math.min(1, m.sink + dt * 0.6); m.speed *= Math.exp(-2 * dt); m.y += ((this.ter.ground(m.x, m.z) + 0.4) - m.y) * Math.min(1, dt * 1.5); return; }
     if (!m.awake) { if (this.clock > 3.5 || Math.hypot(v.x - this.c.start.x, v.z - this.c.start.z) > 10) m.awake = true; else return; }
-    if (m.frozen > 0) { m.frozen -= dt; m.speed *= Math.exp(-3 * dt); }
-    else if (m.pause > 0) { m.pause -= dt; m.speed *= Math.exp(-2 * dt); }
-    else {
-      const lead = 0.6;
-      const tx = v.x + v.vx * lead, tz = v.z + v.vz * lead;
-      const want = Math.atan2(tx - m.x, tz - m.z);
+    const dx = v.x - m.x, dz = v.z - m.z, dist = Math.hypot(dx, dz);
+    const turn = (want: number, rate: number) => {
       let da = want - m.yaw;
       while (da > Math.PI) da -= Math.PI * 2;
       while (da < -Math.PI) da += Math.PI * 2;
-      m.yaw += Math.max(-2.2 * dt, Math.min(2.2 * dt, da));
-      const top = ROVER.top * this.tune.miner * (Math.abs(da) > 1 ? 0.6 : 1);
-      m.speed += (top - m.speed) * Math.min(1, dt * 1.2);
+      m.yaw += Math.max(-rate * dt, Math.min(rate * dt, da));
+      return da;
+    };
+    const top = ROVER.top * this.tune.miner;
+    m.modeT += dt;
+    if (m.frozen > 0) { m.frozen -= dt; m.speed *= Math.exp(-3 * dt); }
+    else if (m.pause > 0) { m.pause -= dt; m.speed *= Math.exp(-2 * dt); }
+    else if (m.mode === 'chase') {
+      // closes in at a little under the rover's speed; winds up when near
+      const lead = 0.5;
+      const da = turn(Math.atan2(dx + v.vx * lead, dz + v.vz * lead), 2);
+      m.speed += (top * (Math.abs(da) > 1 ? 0.55 : 0.82) - m.speed) * Math.min(1, dt * 1.2);
+      if (dist < 15 && m.modeT > 1.2 && v.state === 'drive') { m.mode = 'wind'; m.modeT = 0; }
+    } else if (m.mode === 'wind') {
+      // a red flash while it slows and aims
+      turn(Math.atan2(dx, dz), 3);
+      m.speed *= Math.exp(-3 * dt);
+      if (m.modeT > 1.05) { m.mode = 'charge'; m.modeT = 0; m.speed = top * 1.45; }
+    } else if (m.mode === 'charge') {
+      // straight ahead, fast: steer aside to dodge
+      if (m.modeT > 1.15) { m.mode = 'cool'; m.modeT = 0; }
+    } else {
+      m.speed *= Math.exp(-1.6 * dt);
+      if (m.modeT > 2.8) { m.mode = 'chase'; m.modeT = 0; }
     }
     m.x += Math.sin(m.yaw) * m.speed * dt;
     m.z += Math.cos(m.yaw) * m.speed * dt;
@@ -923,12 +963,18 @@ export class Sim {
     m.z = Math.max(2, Math.min(this.c.rows * TILE - 2, m.z));
     if (v.state !== 'drive' || m.frozen > 0) return;
     const d = Math.hypot(v.x - m.x, v.z - m.z);
-    if (d < 2.9 && Math.abs(v.y + 1 - m.y) < 2.8) {
+    if (d < 2.8 && Math.abs(v.y + 1 - m.y) < 2.8 && m.mode !== 'charge') {
+      // a nudge while it hunts: no harm, it backs off
+      this.knock(m.x, m.z, 4, 0);
+      m.speed = -3; m.mode = 'cool'; m.modeT = 0;
+      this.events.push({ e: 'bump', speed: 6, x: v.x, z: v.z });
+    } else if (d < 2.8 && Math.abs(v.y + 1 - m.y) < 2.8) {
       this.events.push({ e: 'minerHit', x: m.x, z: m.z });
       if (this.hurt(1, 'miner', false, m.x, m.z)) this.knock(m.x, m.z, 9, 4);
       else this.knock(m.x, m.z, 6, 2);
-      m.pause = 1.6;
-      m.speed = -4;
+      m.pause = 1.2;
+      m.speed = -5;
+      m.mode = 'cool'; m.modeT = -1.5;
     }
   }
 

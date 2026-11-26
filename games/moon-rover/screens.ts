@@ -342,6 +342,7 @@ export class MapScreen extends Panel {
     }
     for (let i = 0; i < LEVELS_PER_REGION; i++) {
       const n = this.region * LEVELS_PER_REGION + i + 1, p = pos(i);
+      if (n > LEVEL_COUNT) continue;
       const open = n <= this.meta.unlocked;
       const b = new KitButton(s, p.x, p.y, { w: 80, h: 80, kind: 'round', color: TEAL, label: open ? String(i + 1) : '', style: S_PIN, sfx: null, tapWhenOff: true }, () => {
         if (!open) { this.deny(b, t('locked'), MAP_X, MAP_Y + MAP_H / 2 - 24); return; }

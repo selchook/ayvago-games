@@ -51,8 +51,10 @@ function rootOf(name: string): THREE.Object3D | null {
     if (!hasModel(key(name))) return null;
     const scene = model(key(name), { shadows: false });
     scene.updateMatrixWorld(true);
-    const tmp = scene.children[0];
-    r = tmp?.children[0] ?? tmp ?? scene;
+    // the scene holds the named node (some exports keep the kit's `tmpParent` wrapper round it)
+    let top = scene.children[0] ?? scene;
+    if (top.name === 'tmpParent' && top.children[0]) top = top.children[0];
+    r = top;
     roots.set(name, r);
   }
   return r;

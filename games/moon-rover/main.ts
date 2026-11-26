@@ -13,7 +13,7 @@ import { DT, noRanks } from './defs';
 import { loadMeta } from './meta';
 
 /** The mission the menu's backdrop drives (the autopilot, god mode on). */
-const MENU_LEVEL = 2;
+const MENU_LEVEL = 1;
 
 launch({
   meta: meta as GameMeta,

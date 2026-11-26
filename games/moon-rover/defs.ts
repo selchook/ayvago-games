@@ -64,6 +64,8 @@ export const BATTERY = {
   boost: 1.2,
   /** A charging pad refills this much per second. */
   charge: 30,
+  /** Seconds on a pad for each half heart it repairs. */
+  repair: 2.2,
 };
 
 export interface Tuning {
@@ -91,8 +93,8 @@ export interface Tuning {
 
 /** Normal and Easy side by side (Easy: more hearts and battery, slower meteors and bolts, forgiving landings). */
 export const TUNING: Record<'normal' | 'easy', Tuning> = {
-  normal: { hearts: 3, battery: 100, drain: 1, warn: 1.6, meteorGap: 1, bolt: 11, fireGap: 1, miner: 0.86, flip: LAND.flip, flipHurts: true, extraTime: 0 },
-  easy: { hearts: 5, battery: 135, drain: 0.8, warn: 2.3, meteorGap: 1.5, bolt: 7.5, fireGap: 1.45, miner: 0.72, flip: 1.05, flipHurts: false, extraTime: 25 },
+  normal: { hearts: 3, battery: 100, drain: 1, warn: 1.7, meteorGap: 1, bolt: 9, fireGap: 1, miner: 0.78, flip: LAND.flip, flipHurts: true, extraTime: 0 },
+  easy: { hearts: 5, battery: 135, drain: 0.8, warn: 2.4, meteorGap: 1.5, bolt: 6.5, fireGap: 1.45, miner: 0.66, flip: 1.05, flipHurts: false, extraTime: 25 },
 };
 
 // ------------------------------------------------------------------ regions
