@@ -31,7 +31,7 @@ const tm2 = new THREE.Matrix4();
 /** Kit units to metres for each figure. */
 export const ROVER_S = 6;
 const ASTRO_S = 2.3;
-const RIDER_S = 1.45;
+const RIDER_S = 1.1;
 /** How many tiles of higher ground ring the map. */
 const BORDER = 7;
 const CHUNK = 8;
@@ -172,7 +172,7 @@ export class View {
     this.matBright = new THREE.MeshBasicMaterial({ color: 0xffffff });
     this.matBeam = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.32, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, side: THREE.DoubleSide });
     this.matMark = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
-    this.matRing = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, side: THREE.DoubleSide });
+    this.matRing = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false, fog: false, side: THREE.DoubleSide });
     this.matField = new THREE.MeshBasicMaterial({ color: 0x5ab8ff, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
     this.hemi = new THREE.HemisphereLight(0xb8c4e0, 0x3a3a44, 1.2);
     this.sun = new THREE.DirectionalLight(0xfff6e8, 2.2);
@@ -548,7 +548,7 @@ export class View {
     // ---- the rover
     this.syncRover(sim, dt, mode);
     // ---- everything else
-    this.syncLevel(sim, dt);
+    this.syncLevel(sim, dt, mode);
     this.camera(sim, dt, mode, o.introT ?? 1);
     // the sky follows the camera
     this.sky.position.copy(this.world.camera.position);
@@ -588,7 +588,7 @@ export class View {
     W.begin();
     if (this.rover.visible) {
       for (const wa of this.wheelAt) {
-        const drop = v.air ? -0.12 : -this.bounce * 0.2;
+        const drop = v.air ? -0.04 : -this.bounce * 0.2;
         tm2.makeTranslation(wa.x, wa.y + drop, wa.z);
         tm2.premultiply(this.rover.matrixWorld);
         // the right-hand wheels are the left one turned round
@@ -697,7 +697,7 @@ export class View {
   /** After a tow: the craft flies off from over the rover at its checkpoint. */
   dropIn(): void { this.dropT = 0; this.towT = -1; }
 
-  private syncLevel(sim: Sim, dt: number): void {
+  private syncLevel(sim: Sim, dt: number, mode: CamMode = 'follow'): void {
     const L = sim.c, v = sim.rover, lk = this.look;
     const tnow = this.time;
     // crystals: a slow turn and bob; taken ones are gone
@@ -730,6 +730,7 @@ export class View {
     const beam = this.inst.get('beam');
     if (beam) {
       beam.begin();
+      if (mode === 'hangar') { beam.end(); } else {
       const pillar = (x: number, y: number, z: number, col: number, h = 16, w = 1) => { const i = beam.put(x, y, z, 0, 0, 0, ts.set(w, h, w)); beam.color(i, col); };
       const pulse = 0.85 + Math.sin(tnow * 3) * 0.15;
       sim.astronauts.forEach((a) => { if (a.state === 'wait' || a.state === 'wave') pillar(a.x, a.y, a.z, mulc(0xff9a3a, pulse), 18, 0.9); });
@@ -739,6 +740,7 @@ export class View {
       if (L.rocket) pillar(L.rocket.x, L.rocket.y, L.rocket.z, mulc(0xffd040, pulse), 34, 2.6);
       L.chargers.forEach((e) => pillar(e.x, e.y, e.z, mulc(0x4ae08a, 0.5), 5, 1.6));
       beam.end();
+      }
     }
     // lamps, charger and generator lights
     const lg = this.inst.get('lampGlow');
@@ -839,8 +841,8 @@ export class View {
         if (!this.rover.visible) return;
         // on the deck, holding on, waving when happy
         const seat = a.seat;
-        const sx = seat % 2 ? 0.55 : -0.55, sz = seat < 2 ? -1.15 : -0.1;
-        tm2.makeTranslation(sx, 1.32, sz);
+        const sx = seat % 2 ? 0.5 : -0.5, sz = seat < 2 ? -0.95 : -0.15;
+        tm2.makeTranslation(sx, 1.25, sz);
         tm2.premultiply(this.rover.matrixWorld);
         tm2.multiply(tm.makeRotationY(seat % 2 ? -0.4 : 0.4));
         tm2.multiply(tm.makeScale(RIDER_S, RIDER_S, RIDER_S));
@@ -912,12 +914,11 @@ export class View {
       // a turntable round the rover on its pad
       this.preT += dt;
       const a = this.preT * 0.35;
-      const d = 9;
-      const side = this.land ? 3.2 : 0;
-      cam.position.set(v.x + Math.sin(a) * d, v.y + 3.6, v.z + Math.cos(a) * d);
-      cam.lookAt(v.x, v.y + 0.9 - (this.land ? 0 : 1.6), v.z);
-      tv.set(1, 0, 0).applyQuaternion(cam.quaternion).multiplyScalar(-side);
-      cam.position.add(tv);
+      const d = this.land ? 8 : 9.5;
+      cam.position.set(v.x + Math.sin(a) * d, v.y + (this.land ? 3 : 5.5), v.z + Math.cos(a) * d);
+      // the rover sits right of the board (landscape) or above it (portrait)
+      cam.lookAt(v.x, v.y + (this.land ? 0.9 : -3.2), v.z);
+      if (this.land) { tv.set(1, 0, 0).applyQuaternion(cam.quaternion).multiplyScalar(-4.2); cam.position.add(tv); }
       return;
     }
     const k = this.land ? CAM_LAND.k : 1;

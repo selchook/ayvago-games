@@ -677,6 +677,7 @@ export class PlayScene extends ArcadeScene {
       key: (code: string) => this.panel?.key(code),
       cam: (pos?: number[], look?: number[]) => { this.view.shotCam = pos && look ? [pos, look] : null; },
       stage: (n = 3, secs = 8) => this.stageShot(n, secs),
+      card: () => this.cardStage(),
       play: this,
     };
   }
@@ -692,6 +693,42 @@ export class PlayScene extends ArcadeScene {
         break;
       case 'pause': this.pauseGame(); break;
     }
+  }
+
+  /**
+   * The store art's card: the Crater Hop (1-2) frozen in a moment, the rover in mid-jump over the
+   * big crater's rim, crystals round it, an astronaut waving, a meteor coming down on its red ring,
+   * a staged camera low beside the jump (closer and higher on a phone).
+   */
+  private cardStage(): void {
+    this.startLevel(2);
+    this.phaseT = INTRO_TIME;
+    this.go();
+    this.clearBanners();
+    this.time.removeAllEvents();
+    this.toastImg?.destroy();
+    const s = this.sim!, v = s.rover;
+    s.god = true;
+    const cr = s.c.craters.find((c) => c.large) ?? s.c.craters[0];
+    const gy = s.ter.ground(cr.x, cr.z);
+    v.x = cr.x - 1.5; v.z = cr.z + 2.5; v.y = gy + 3.4;
+    v.yaw = Math.PI * 0.86; v.air = true; v.vy = 0.6; v.pitch = 0.14; v.roll = -0.05;
+    v.vx = Math.sin(v.yaw) * 9; v.vz = Math.cos(v.yaw) * 9; v.speed = 9;
+    v.aboard = 1;
+    const a = s.astronauts[0];
+    if (a) { a.x = cr.x - 7.5; a.z = cr.z - 4; a.y = s.ter.ground(a.x, a.z); a.state = 'wave'; a.yaw = Math.atan2(v.x - a.x, v.z - a.z); }
+    const b = s.astronauts[1];
+    if (b) { b.state = 'aboard'; b.seat = 0; }
+    s.meteors.push({ x: cr.x + 6, z: cr.z - 7, y: s.ter.ground(cr.x + 6, cr.z - 7), t: 0.7, warn: 1.7, big: true });
+    s.meteors.push({ x: cr.x - 9, z: cr.z + 3, y: s.ter.ground(cr.x - 9, cr.z + 3), t: 1.3, warn: 1.7, big: false });
+    // crystals close by the jump
+    s.crystals.slice(0, 3).forEach((c, i) => { c.x = cr.x - 4 + i * 3.5; c.z = cr.z - 2.5 - (i % 2) * 2; c.y = s.ter.ground(c.x, c.z); });
+    this.testSpeed = 0.02;
+    const land = this.scale.width > this.scale.height;
+    const x = v.x, y = v.y, z = v.z;
+    this.view.shotCam = land ? [[x + 4.2, y - 0.2, z + 5.4], [x - 1.6, y - 0.3, z - 1.6]] : [[x + 2.4, y + 0.3, z + 6.8], [x - 0.5, y - 1.1, z - 1.2]];
+    this.steering.end();
+    this.view.snap(s);
   }
 
   /** The store art's stage: the autopilot some seconds into a mission. */

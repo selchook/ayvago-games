@@ -80,7 +80,7 @@ const S_STAR: LabelStyle = { size: 16, color: '#c8d8ee', stroke: null, shadow: f
 const S_SP: LabelStyle = { size: 22, color: '#ffd070', stroke: INK, strokeWidth: 4 };
 const GLYPHS = '0123456789:/.,+-×★ ';
 const TIME_GLYPHS = '0123456789:-';
-const BTN_SIZES: [number, number, number][] = [[220, 70, ORANGE], [170, 58, TEAL], [170, 58, GREY], [158, 50, TEAL], [118, 46, GREEN], [240, 66, ORANGE], [220, 60, TEAL], [196, 50, TEAL]];
+const BTN_SIZES: [number, number, number][] = [[220, 70, ORANGE], [170, 58, TEAL], [170, 58, GREY], [158, 50, TEAL], [110, 46, GREEN], [240, 66, ORANGE], [220, 60, TEAL], [196, 50, TEAL]];
 
 export function prebakeScreens(scene: Phaser.Scene): void {
   makeArt(scene);
@@ -106,7 +106,7 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   for (const k of ['sumCrystals', 'sumCrew', 'sumTime', 'sumBonus', 'sumUnharmed', 'sumCredits']) bakeFmt(scene, k, ['n'], S_LINE, GLYPHS);
   for (const u of UPGRADE_IDS) {
     labelTexture(scene, t('u_' + u), S_UNAME);
-    for (let r = 1; r <= UPGRADE[u].prices.length; r++) bakePara(scene, t(`u_${u}_${r}`), S_DESC, 330);
+    for (let r = 1; r <= UPGRADE[u].prices.length; r++) bakePara(scene, t(`u_${u}_${r}`), S_DESC, 178);
   }
   for (const s of SKINS) labelTexture(scene, t('s_' + s.id), S_DESC);
   for (const o of [S_PURSE, S_PRICE, S_SCORE, S_NUM]) glyphAtlas(scene, o, GLYPHS);
@@ -508,14 +508,15 @@ export class ShopScreen extends Panel {
     for (let k = 0; k < max; k++) { pg.fillStyle(k < r ? 0xffc21a : 0x3a4458, 1).fillRoundedRect(-TILE_W / 2 + 72 + k * 26, 10, 20, 10, 3); pg.lineStyle(1.5, 0x0b1020, 0.9).strokeRoundedRect(-TILE_W / 2 + 72 + k * 26, 10, 20, 10, 3); }
     c.add(pg);
     const showRank = Math.min(max, r + 1);
-    c.add(new Para(s, -TILE_W / 2 + 272, -12, t(`u_${u}_${showRank}`), S_DESC, 200, 0, 18).setAlpha(r >= max ? 0.55 : 1));
+    c.add(new Para(s, -TILE_W / 2 + 262, -12, t(`u_${u}_${showRank}`), S_DESC, 178, 0, 18).setAlpha(r >= max ? 0.55 : 1));
     const price = nextPrice(this.meta, u);
-    const bx = TILE_W / 2 - 64;
+    const bx = TILE_W / 2 - 62;
     if (price === null) c.add(labelAt(s, bx, 0, t('maxed'), S_RIB));
     else {
-      c.add(iconAt(s, bx - 40, -16, 'credit', 24));
-      c.add(new GlyphText(s, bx - 24, -16, String(price), S_PRICE, 0));
-      const b = new KitButton(s, bx, 12, { w: 118, h: 46, color: GREEN, label: t('buy'), style: S_BTN_S, sfx: null, tapWhenOff: true }, () => {
+      // the price beside its BUY button, both inside the tile
+      c.add(iconAt(s, bx - 104, 0, 'credit', 24));
+      c.add(new GlyphText(s, bx - 88, 0, String(price), S_PRICE, 0));
+      const b = new KitButton(s, bx, 0, { w: 110, h: 46, color: GREEN, label: t('buy'), style: S_BTN_S, sfx: null, tapWhenOff: true }, () => {
         if (!buy(this.meta, u)) { this.deny(b, t('poor'), x, y); return; }
         this.host.sfx('buy', 0.6);
         this.sparkle(x + bx, y, [0xffd070, 0xffffff], 26);
