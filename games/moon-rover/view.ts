@@ -40,6 +40,7 @@ const CHUNK = 8;
 export const CAM = { dist: 8.6, height: 4.2, ahead: 6, fov: 56 };
 const CAM_LAND = { k: 0.86 };
 
+const tmFig = new THREE.Matrix4(), tmLimb = new THREE.Matrix4();
 const PARTS = ['body', 'head', 'armLeft', 'armRight', 'legLeft', 'legRight'] as const;
 type Part = typeof PARTS[number];
 
@@ -88,11 +89,14 @@ class Figures {
   end(): void { for (const p of this.parts) p.end(); }
   /** One figure at `base` with each limb turned (x swing, z raise). */
   put(base: THREE.Matrix4, pose: Partial<Record<Part, [number, number]>>): void {
+    // callers often build `base` in the shared scratch matrices: copy it before laying limbs on it
+    // (laying them on `base` itself stacked each limb's offset and scale on the next one's)
+    const root = tmFig.copy(base);
     PARTS.forEach((p, i) => {
       const r = pose[p];
-      tm2.copy(base).multiply(this.rest[i]);
-      if (r) tm2.multiply(tm.makeRotationFromEuler(te.set(r[0], 0, r[1], 'ZXY')));
-      this.parts[i].putM(tm2);
+      tmLimb.copy(root).multiply(this.rest[i]);
+      if (r) tmLimb.multiply(tm.makeRotationFromEuler(te.set(r[0], 0, r[1], 'ZXY')));
+      this.parts[i].putM(tmLimb);
     });
   }
 }
@@ -167,7 +171,7 @@ export class View {
 
   constructor(host: Phaser.Scene, o: { quality?: number } = {}) {
     this.land = host.scale.width > host.scale.height;
-    this.world = new World3D(host, { fov: CAM.fov, background: 0x05070e, fog: { color: 0x05070e, near: 70, far: 150 }, shadows: false, quality: o.quality ?? 0.9, far: 900 });
+    this.world = new World3D(host, { fov: CAM.fov, background: 0x05070e, fog: { color: 0x05070e, near: 70, far: 150 }, shadows: false, quality: o.quality ?? 0.9, near: 0.4, far: 900 });
     const w = this.world;
     this.mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     this.matGlow = new THREE.MeshBasicMaterial({ vertexColors: true });
@@ -359,16 +363,18 @@ export class View {
       chunk(x, z).add(geo(name, { recolor: re, tag: re ? 'T' + L.region : '', ...o }), place(x, y, z, rot, s), tint);
     // the base pad and its hangar
     const B = L.base;
-    P('platform_large', B.x, B.y, B.z, 0, [TILE, 1.6, TILE]);
+    P('platform_large', B.x, B.y, B.z, 0, [TILE * 0.97, 1.6, TILE * 0.97]);
     for (const o of L.obstacles) {
       const y = o.y;
       switch (o.kind) {
         case 'hangar': {
           const big = Math.max(o.w ?? 2, o.d ?? 2) >= 3;
-          P(big ? 'hangar_largea' : 'hangar_smalla', o.x, y, o.z, o.rot, TILE);
+          // a touch smaller than its tiles: walls that sat on the tile edges shared their plane with
+          // the cliff faces beside them and flickered (z-fighting)
+          P(big ? 'hangar_largea' : 'hangar_smalla', o.x, y, o.z, o.rot, TILE * 0.95);
           break;
         }
-        case 'dome': P('hangar_roundglass', o.x, y, o.z, o.rot, ((o.w ?? 2) * TILE) / 3.4); break;
+        case 'dome': P('hangar_roundglass', o.x, y, o.z, o.rot, ((o.w ?? 2) * TILE * 0.95) / 3.4); break;
         case 'boulder': P(hash(o.seed, 1) < 0.5 ? 'rock_largea' : 'rock_largeb', o.x, y, o.z, o.rot + hash(o.seed, 2), 4.4, terrainRe); break;
         case 'crystalRock': P(hash(o.seed, 1) < 0.5 ? 'rock_crystalslargea' : 'rock_crystalslargeb', o.x, y, o.z, o.rot, 4.4, terrainRe); break;
         case 'tower': P('supports_high', o.x, y, o.z, o.rot, [4.2, 4.6, 4.2]); P('satellitedish', o.x, y + 4.6, o.z, o.rot, 3.2); break;
@@ -383,8 +389,8 @@ export class View {
     }
     for (const d of L.decor) if (d.kind === 'rocks') P(hash(d.seed, 3) < 0.5 ? 'rocks_smalla' : 'rocks_smallb', d.x, d.y, d.z, hash(d.seed, 4) * 6.28, 5, terrainRe);
     // outposts: a pad and an antenna; chargers: a pad; checkpoints: the kit's ring
-    for (const u of L.outposts) { P('platform_small', u.x, u.y, u.z, 0, [TILE, 1.6, TILE]); P('machine_wireless', u.x + 1.3, u.y + 0.15, u.z - 1.3, Math.PI / 4, 1.8); }
-    for (const e of L.chargers) P('platform_small', e.x, e.y, e.z, 0, [TILE, 1.6, TILE], { metalRed: 0x4ae08a });
+    for (const u of L.outposts) { P('platform_small', u.x, u.y, u.z, 0, [TILE * 0.97, 1.6, TILE * 0.97]); P('machine_wireless', u.x + 1.3, u.y + 0.15, u.z - 1.3, Math.PI / 4, 1.8); }
+    for (const e of L.chargers) P('platform_small', e.x, e.y, e.z, 0, [TILE * 0.97, 1.6, TILE * 0.97], { metalRed: 0x4ae08a });
     for (const g of L.checkpoints) P('gate_simple', g.x, g.y, g.z, g.axis === 'x' ? 0 : Math.PI / 2, 4);
     for (const g of L.gates) P('gate_complex', g.x, g.y, g.z, g.axis === 'x' ? 0 : Math.PI / 2, 4);
     // turret bases (the heads are instanced and turn)
