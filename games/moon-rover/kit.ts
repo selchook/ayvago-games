@@ -19,7 +19,7 @@ export const MODELS = [
   'rover', 'astronauta', 'astronautb', 'alien',
   // the base and the outposts
   'hangar_largea', 'hangar_smalla', 'hangar_roundglass', 'platform_large', 'platform_small', 'gate_simple', 'gate_complex',
-  'satellitedish', 'satellitedish_large', 'structure_closed', 'supports_high', 'machine_wireless', 'machine_generator', 'machine_generatorlarge',
+  'satellitedish', 'satellitedish_large', 'supports_high', 'machine_wireless', 'machine_generatorlarge',
   'barrels', 'barrel', 'pipe_supporthigh',
   // hazards and set-pieces
   'turret_single', 'turret_double', 'monorail_trackstraight', 'monorail_trainfront', 'monorail_trainpassenger', 'monorail_traincargo', 'monorail_trainend',

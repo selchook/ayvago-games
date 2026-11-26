@@ -93,8 +93,9 @@ for (orient of ORIENTS) try {
   check('the touch pad shows on the phone only', s.touchPad === (orient === 'portrait'), `pad ${s.touchPad}`);
   const z0 = s.rover.z, hp0 = s.rover.hp, score0 = s.score;
   // GAS moves the rover
+  // (headless browsers render slowly: wait on the game's own clock, not the wall clock)
   await page.keyboard.down('ArrowUp');
-  await page.waitForTimeout(1500);
+  await until(page, (z) => Math.abs(window.__mr.state().rover.z - z) > 3, z0, 30000);
   await page.keyboard.up('ArrowUp');
   s = await state(page);
   check('GAS drives the rover forward', Math.abs(s.rover.z - z0) > 2, `z ${z0.toFixed(1)} → ${s.rover.z.toFixed(1)}`);
@@ -104,10 +105,10 @@ for (orient of ORIENTS) try {
   await page.evaluate(() => window.__mr.speed(3));
   await page.evaluate(() => window.__mr.battery(0.003));
   await page.keyboard.down('ArrowUp');
-  const empty = await until(page, () => window.__mr.state().rover.state === 'empty', null, 15000);
+  const empty = await until(page, () => { const r = window.__mr.state().rover; return r.state === 'empty' || r.state === 'tow'; }, null, 30000);
   await page.keyboard.up('ArrowUp');
   check('an empty battery stops the rover', empty);
-  const towed = await until(page, (hp) => { const r = window.__mr.state().rover; return r.hp < hp && r.state === 'drive'; }, hp0, 30000);
+  const towed = await until(page, (hp) => { const r = window.__mr.state().rover; return r.hp < hp && r.state === 'drive'; }, hp0, 40000);
   s = await state(page);
   const cp = s.checkpoint;
   check('then it costs a heart (two halves on Normal) and a tow', towed && s.rover.hp === hp0 - 2, `hp ${hp0} → ${s.rover.hp}`);

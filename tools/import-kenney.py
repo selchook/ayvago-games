@@ -192,7 +192,8 @@ FILES['city-kit-roads'] = ['License.txt', 'Models/GLB format/Textures/colormap.p
 FILES['graveyard-kit'] = ['License.txt', 'Models/GLB format/Textures/colormap.png'] + [f'Models/GLB format/{n}.glb' for n in GRAVEYARD_KIT]
 
 # Star Squadron (games/star-squadron/kit.ts SPACE_MODELS, PLANETS, main.ts sounds): the ships, rocks,
-# boss parts and scenery it loads, four planets for the sky and a few sci-fi effects
+# boss parts and scenery it loads, four planets for the sky and a few sci-fi effects; Moon Rover's
+# models follow
 SPACE_KIT = [
     'craft_speederA', 'craft_speederB', 'craft_speederC', 'craft_speederD', 'craft_racer', 'craft_miner',
     'craft_cargoA', 'craft_cargoB', 'meteor', 'meteor_detailed', 'rock_largeA', 'rock_crystalsLargeA',
@@ -201,6 +202,14 @@ SPACE_KIT = [
     'structure_detailed', 'pipe_straight', 'pipe_ring', 'platform_large', 'rocket_baseA', 'rocket_fuelA',
     'rocket_topA', 'rocket_finsA', 'rocket_sidesA', 'craterLarge', 'crater', 'gate_complex',
     'machine_wireless', 'corridor',
+    # Moon Rover (games/moon-rover/kit.ts MODELS): terrain and road tiles, rocks, the rover, the crew
+    # and the alien, small base pieces, the monorail; from the owner's upload of the full pack
+    'terrain', 'terrain_side', 'terrain_roadStraight', 'terrain_roadCorner', 'terrain_roadCross',
+    'terrain_roadEnd', 'terrain_roadSplit', 'rock', 'rock_largeB', 'rocks_smallA', 'rocks_smallB',
+    'rock_crystalsLargeB', 'rover', 'astronautA', 'astronautB', 'alien', 'hangar_smallA', 'platform_small',
+    'gate_simple', 'satelliteDish', 'supports_high', 'barrels', 'barrel', 'pipe_supportHigh',
+    'monorail_trackStraight', 'monorail_trainFront', 'monorail_trainPassenger', 'monorail_trainCargo',
+    'monorail_trainEnd',
 ]
 PLANETS = ['planet02', 'planet03', 'planet07', 'planet09']
 SCI_FI_SOUNDS = [
