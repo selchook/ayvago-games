@@ -1,12 +1,22 @@
 {
   "id": "moon-rover",
-  "title": { "tr": "Moon Rover", "en": "Moon Rover" },
-  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
-  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
-  "genres": ["arcade"],
+  "title": { "tr": "Ay Gezgini", "en": "Moon Rover" },
+  "description": {
+    "tr": "Az yer çekiminde bir 3B ay keşfi! Ay üssünün gezicisini sür, rampalardan ve krater kenarlarından uzun, süzülen atlayışlar yap, havada burnunu dengele ve sağlam in. Kristal örnekleri topla, mahsur kalan astronotları al, erzakı karakollara götür ve bataryan bitmeden üsse dön. Meteor yağmurları, taretler, monoray trenleri, buz ve toz, güneş fırtınaları ve kuvvet alanlı kapılar yolunu keser. Dört bölgede yirmi görev; her bölgenin sonunda azgın bir madenci gemisini durdur ya da meteor fırtınasından kalkan rokete kaç. Turbo, kalkan, mıknatıs, süzülme jeti ve EMP; hangarda geliştirmeler ve yıldızlarla açılan boyalar. Kolay ya da Normal.",
+    "en": "A low-gravity 3D lunar expedition! Drive the moon base's rover, take long floaty jumps off ramps and crater lips, level the nose in the air and land it clean. Collect crystal samples, pick up stranded astronauts, deliver supplies to outposts and get back to the base before the battery runs out. Meteor showers, turrets, monorail trains, ice and dust, solar storms and force-field gates stand in the way. Twenty missions in four regions; each region ends with a rogue mining craft to shut down or an escape from a meteor storm to a launching rocket. Boost, shield, magnet, hover jets and EMP; upgrades in the hangar and paint unlocked with stars. Easy or Normal."
+  },
+  "howTo": {
+    "tr": "Klavye: ←/→ dön, ↑ gaz, ↓ fren ve geri, Boşluk güç. Dokunmatik: menüden direksiyonu seç (oklar, direksiyon ya da eğim); GAZ, FREN ve GÜÇ sağda. Havada GAZ burnu kaldırır.",
+    "en": "Keyboard: ←/→ steer, ↑ gas, ↓ brake and reverse, Space uses a power. Touch: pick the steering on the menu (arrows, a wheel or tilt); GAS, BRAKE and POWER on the right. In the air GAS lifts the nose."
+  },
+  "genres": ["action", "arcade"],
   "orientation": "adaptive",
   "controls": ["touch", "keyboard"],
-  "version": "0.1.0",
-  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
+  "version": "1.0.0",
+  "credits": [
+    "3D models: Kenney Space Kit (CC0) — kenney.nl",
+    "Sounds: Juhani Junkala (CC0) — opengameart.org; Kenney Sci-fi Sounds (CC0) — kenney.nl",
+    "Logo font: Saira Stencil One by the Saira Stencil Project Authors, Omnibus-Type (SIL OFL 1.1)"
+  ],
   "platform": { "addedAt": "2026-11-26" }
 }
