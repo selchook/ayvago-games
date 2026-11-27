@@ -125,6 +125,8 @@ export class View {
   private time = 0;
   private land: boolean;
   private preT = 0;
+  /** Where the mech stands in the hangar view: open floor a little north of the start. */
+  private spot = { x: 0, z: 0 };
 
   constructor(host: Phaser.Scene, o: { quality?: number } = {}) {
     this.land = host.scale.width > host.scale.height;
@@ -215,6 +217,8 @@ export class View {
     this.stage = stage;
     w.scene.add(stage);
     this.buildStatic(L, stage);
+    this.spot = { x: L.start.x, z: L.start.z };
+    for (const dz of [8, 4]) if (!solidBlock(L, Math.floor(L.start.x / BLOCK), Math.floor((L.start.z - dz) / BLOCK)) && !solidBlock(L, Math.floor(L.start.x / BLOCK), Math.floor((L.start.z - dz + 4) / BLOCK))) { this.spot = { x: L.start.x, z: L.start.z - dz }; break; }
     this.buildDynamic(s, stage);
     for (const f of this.figs.values()) f.fig.dispose();
     this.figs.clear();
@@ -457,7 +461,7 @@ export class View {
       const pos = g.getAttribute('position');
       // a chevron: fold the far edge's middle forward
       for (let i = 0; i < pos.count; i++) if (pos.getZ(i) < 0) pos.setZ(i, pos.getZ(i) + (Math.abs(pos.getX(i)) < 0.1 ? -0.4 : 0));
-      this.chevrons = new Inst(stage, g, glowMat(look.accent, 0.5), L.conveyors.length * 16);
+      this.chevrons = new Inst(stage, g, glowMat(look.accent, 0.3), L.conveyors.length * 16);
     }
   }
 
@@ -501,7 +505,8 @@ export class View {
     const L = s.c, look = SECTORS[L.sector], v = s.mech, t = this.time;
     // ---- the mech
     const mf = this.mechFig!;
-    mf.root.position.set(v.x, 0, v.z);
+    const hangar = o.camera === 'hangar';
+    mf.root.position.set(hangar ? this.spot.x : v.x, 0, hangar ? this.spot.z : v.z);
     // the hangar: a turntable facing the camera
     mf.root.rotation.y = o.camera === 'hangar' ? Math.sin(t * 0.6) * 0.7 : v.yaw;
     if (v.state === 'dead') {
@@ -871,10 +876,12 @@ export class View {
     } else if (mode === 'hangar') {
       this.preT += dt;
       yaw = 0.25;
-      d = this.land ? 12 : 14; p = 0.36;
-      tx = v.x; tz = v.z;
+      // high enough to clear the tall roof caps behind the start
+      d = this.land ? 10 : 12.5; p = this.land ? 0.5 : 0.58;
+      tx = this.spot.x; tz = this.spot.z;
       // the board covers the left half (landscape) or the bottom (portrait): the mech in the free part
-      if (this.land) { tx -= 4.4; }
+      if (this.land) tx -= 3.4;
+      else tz += 5.4;
     } else if (mode === 'intro') {
       const k = Math.min(1, o.introT ?? 1);
       const e = 1 - Math.pow(1 - k, 3);
@@ -886,7 +893,7 @@ export class View {
     const k = mode === 'follow' ? 1 - Math.exp(-6 * dt) : 1;
     this.cam.x += (tx - this.cam.x) * k;
     this.cam.z += (tz - this.cam.z) * k;
-    const lookY = mode === 'hangar' ? (this.land ? 1.8 : -1.7) : 0.8;
+    const lookY = mode === 'hangar' ? (this.land ? 1.6 : 1.2) : 0.8;
     const sx = (Math.random() - 0.5) * this.cam.shake, sy = (Math.random() - 0.5) * this.cam.shake;
     this.cam.shake = Math.max(0, this.cam.shake - dt * 2.2);
     const cx = this.cam.x + Math.sin(yaw) * Math.cos(p) * d, cy = lookY + Math.sin(p) * d, cz = this.cam.z + Math.cos(yaw) * Math.cos(p) * d;
