@@ -14,7 +14,7 @@ import { View } from './view';
 import { Sim, NO_INPUT, cellX, cellZ, type Input, type SimEvent, type Guard } from './sim';
 import { Bot } from './bot';
 import { buildLevel, castOf, LEVEL_COUNT, wingOf, isBossLevel } from './levels';
-import { DT, SCORE, CLEAR_COINS, STAR_COINS, WING_IDS, CREW, MOVE, CHIEF, perksOf } from './defs';
+import { DT, SCORE, CLEAR_COINS, STAR_COINS, WING_IDS, CREW, MOVE, CHIEF, perksOf, MUSIC } from './defs';
 import { loadMeta, saveMeta, type Meta } from './meta';
 import { MapScreen, SummaryScreen, HideoutScreen, type Panel, type ScreenHost, type HideoutTab } from './screens';
 import { PlayHud, ActionButton, buttonLayout, S_BANNER, S_BIG, S_ALARM, S_SUBBANNER, S_TOAST, S_WARN, S_GOOD, S_POWER, S_HINT, S_PROMPT, S_BOSS, levelLabel, joinedText } from './hud';
@@ -233,7 +233,7 @@ export class PlayScene extends ArcadeScene {
     this.banner(t('l' + n), S_BANNER, 250, 1800);
     this.banner(levelLabel(n) + '  ·  ' + t('w_' + wingOf(n)), S_SUBBANNER, 194, 1800, true);
     this.sfx('start', { volume: 0.5 });
-    playMusic(this, isBossLevel(n) ? 'boss' : 'stage2');
+    playMusic(this, MUSIC);
     if (isBossLevel(n)) this.time.delayedCall(900, () => { if (this.levelN === n && (this.phase === 'intro' || this.phase === 'play')) this.chiefEntrance(); });
     this.tut = n === 1 && !this.meta.hints.includes('tut') ? { step: 0, t: 0, x: 0, z: 0 } : null;
   }
