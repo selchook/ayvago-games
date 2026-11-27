@@ -19,6 +19,14 @@ launch({
   physics: 'none',
   difficulty: true,
   music: { menu: 'select', play: 'stage1' },
+  // desktop: the keys on the first ride and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['Space', 'W', 'Up'], label: 'kh_go' },
+    { keys: ['S', 'Down'], label: 'kh_brake' },
+    { keys: ['A D', 'Left Right'], label: 'kh_route' },
+    { keys: ['C'], label: 'kh_cam' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     loadKit(l);

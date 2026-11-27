@@ -201,6 +201,13 @@ export const STRINGS = {
     mapNext: 'SIRADAKİ',
     h_draft: 'Kartlar bu harita bitene dek sürer: kulelerini onlara göre kur',
     h_power: 'Yeni güç! Kartına dokun ya da tuşuna bas ({key})',
+    // the keyboard controls (key help)
+    kh_cursor: 'İmleci taşı',
+    kh_build: 'Kule seç · kur',
+    kh_powers: 'Güçler',
+    kh_tower: 'Geliştir · sat · hedef',
+    kh_wave: 'Dalga · hız · kartlar',
+    kh_esc: 'İptal · duraklat',
   },
   en: {
     t_ballista: 'Ballista',
@@ -392,5 +399,12 @@ export const STRINGS = {
     mapNext: 'NEXT',
     h_draft: 'Cards last until this map ends: build around them',
     h_power: 'New power! Tap its card or press its key ({key})',
+    // the keyboard controls (key help)
+    kh_cursor: 'Move the cursor',
+    kh_build: 'Pick a tower · build',
+    kh_powers: 'Powers',
+    kh_tower: 'Upgrade · sell · target',
+    kh_wave: 'Wave · speed · cards',
+    kh_esc: 'Cancel · pause',
   },
 };
