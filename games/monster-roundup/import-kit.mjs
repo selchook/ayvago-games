@@ -2,11 +2,12 @@
 // (Google Drive, CC0 1.0). Kept as a record and for a re-import; not part of the build. Nothing from
 // the source folders is run: the OBJ/MTL files are read as text, the glTF files parsed as data.
 //
-//   node games/monster-roundup/import-kit.mjs <pack dir> <node_modules>
+//   node games/monster-roundup/import-kit.mjs <pack dir> <node_modules> [--only scifi|mech|monster]
 //     <pack dir>      scifi/OBJ/ (Ultimate Modular Sci-Fi, OBJ + MTL), mechs/ (Animated Mech Pack,
-//                     flat-colour glTF), monsters/big|blob|flying/ (Ultimate Monsters glTF with the
+//                     flat-colour glTF), monsters/big/ (Ultimate Monsters' Big set, glTF with the
 //                     shared Atlas_Monsters.png), each pack's License.txt beside them
 //     <node_modules>  with @gltf-transform/core + /extensions + /functions, meshoptimizer and sharp
+//     --only          re-import one kind and leave the other files as they are
 //
 // Writes:
 //   public/assets/quaternius/scifi-modular/scifi.glb   every station piece the game builds rooms from,
@@ -14,15 +15,28 @@
 //       no normals (the game merges them flat-shaded), welded, the heavy props simplified, quantized;
 //   public/assets/quaternius/mech-pack/<mech>.glb      Stan, Mike, Leela and George: flat material
 //       colours baked into vertex colours, only the clips the game plays, simplified, quantized;
-//   public/assets/quaternius/monsters/<monster>.glb    the monsters the game uses: the atlas baked
-//       into vertex colours (no texture), only the clips played, simplified, quantized;
+//   public/assets/quaternius/monsters/<monster>.glb    the twelve monsters of the pack's Big set, the
+//       only ones with legs (UpperLeg / LowerLeg / Foot bones): the atlas baked into vertex colours
+//       (no texture), simplified, quantized, skeleton and skin but no clips;
+//   public/assets/quaternius/monsters/clips-a.glb, clips-b.glb   the Big set's clips, once: every Big
+//       monster has the same 43-bone rig and the same keyframes, except the arms of the four that
+//       hold something (Bunny's carrot, the Mushroom King's mushroom, the Ninja's and the Orc's
+//       weapons: set B, from Bunny, ears included) and each body's own shoulder width (the game
+//       moves every translation track by the bone's rest offset, figure.ts). Skeleton nodes and
+//       clips only: no mesh; the finger bones' tracks are dropped (too small to see in play);
 //   each folder's license.txt and docs/assets/quaternius-<pack>.txt (every file with its size).
+//
+// The pack's Blob and Flying sets (no legs), Demon, BlueDemon, Tribal, Ghost, Ghost_Skull and
+// Orc_Skull (the owner's rule: no religious imagery) are not imported.
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 
 const [src, nm] = process.argv.slice(2);
-if (!src || !nm) throw new Error('usage: node import-kit.mjs <pack dir> <node_modules>');
+if (!src || !nm) throw new Error('usage: node import-kit.mjs <pack dir> <node_modules> [--only scifi|mech|monster]');
+const onlyAt = process.argv.indexOf('--only');
+const ONLY = onlyAt > 0 ? process.argv[onlyAt + 1] : null;
+const want = (k) => !ONLY || ONLY === k;
 const req = createRequire(join(nm, 'x.js'));
 const { Document, NodeIO, getBounds } = req('@gltf-transform/core');
 const { KHRMeshQuantization } = req('@gltf-transform/extensions');
@@ -216,28 +230,25 @@ function dropClip(a) {
 }
 
 const MECH_CLIPS = ['Idle', 'Walk', 'Run', 'Shoot', 'Pickup', 'HitRecieve_1', 'Death', 'Hello', 'Dance', 'Yes', 'Jump'];
-const BLOB_CLIPS = ['Idle', 'Walk', 'Jump', 'Bite_Front', 'HitRecieve', 'Death', 'Dance', 'Yes'];
-const FLY_CLIPS = ['Flying_Idle', 'Fast_Flying', 'Headbutt', 'HitReact', 'Death', 'Yes'];
-const BIG_CLIPS = ['Idle', 'Walk', 'Run', 'Punch', 'Weapon', 'HitReact', 'Death', 'Jump', 'Wave', 'Yes', 'Duck'];
+/** The Big set's clips, all kept (shared by every monster, so they cost little). */
+const BIG_CLIPS = ['Idle', 'Walk', 'Run', 'Punch', 'Weapon', 'HitReact', 'Death', 'Jump', 'Wave', 'Yes', 'No', 'Duck'];
+/** Bones whose tracks the shared clips leave out: the fingers (a few centimetres at play scale). */
+const FINGERS = /^(Pinky|Middle|Index|Thumb)\d/;
 
-/** out name → [source path under the pack dir, clips, simplify ratio]. */
+/** out name → [source path under the pack dir, clips, simplify ratio]; monsters ship without clips. */
 const FIGURES = {
   mech: {
     stan: ['mechs/Stan', MECH_CLIPS, 0.5], mike: ['mechs/Mike', MECH_CLIPS, 0.5], leela: ['mechs/Leela', MECH_CLIPS, 0.8], george: ['mechs/George', MECH_CLIPS, 0.4],
   },
   monster: {
-    mushnub: ['monsters/blob/Mushnub', BLOB_CLIPS, 0.8], 'mushnub-evolved': ['monsters/blob/Mushnub_Evolved', BLOB_CLIPS, 0.6],
-    cat: ['monsters/blob/Cat', BLOB_CLIPS, 0.8], dog: ['monsters/blob/Dog', BLOB_CLIPS, 0.9], chicken: ['monsters/blob/Chicken', BLOB_CLIPS, 0.6],
-    'green-blob': ['monsters/blob/GreenBlob', BLOB_CLIPS, 0.8], 'spiky-blob': ['monsters/blob/GreenSpikyBlob', BLOB_CLIPS, 0.45],
-    wizard: ['monsters/blob/Wizard', BLOB_CLIPS, 0.8], 'yeti-blob': ['monsters/blob/Yeti', BLOB_CLIPS, 0.7],
-    glub: ['monsters/flying/Glub', FLY_CLIPS, 0.6], 'glub-evolved': ['monsters/flying/Glub_Evolved', FLY_CLIPS, 0.5],
-    armabee: ['monsters/flying/Armabee', FLY_CLIPS, 0.6], 'armabee-evolved': ['monsters/flying/Armabee_Evolved', FLY_CLIPS, 0.5],
-    goleling: ['monsters/flying/Goleling', FLY_CLIPS, 0.5], 'goleling-evolved': ['monsters/flying/Goleling_Evolved', FLY_CLIPS, 0.4],
-    dragon: ['monsters/flying/Dragon', FLY_CLIPS, 0.5], 'dragon-evolved': ['monsters/flying/Dragon_Evolved', FLY_CLIPS, 0.35],
-    'mushroom-king': ['monsters/big/MushroomKing', BIG_CLIPS, 0.45], cactoro: ['monsters/big/Cactoro', BIG_CLIPS, 0.45],
-    yeti: ['monsters/big/Yeti', BIG_CLIPS, 0.45], alien: ['monsters/big/Alien', BIG_CLIPS, 0.4],
+    frog: ['monsters/big/Frog', [], 0.5], bunny: ['monsters/big/Bunny', [], 0.42], monkroose: ['monsters/big/Monkroose', [], 0.45],
+    dino: ['monsters/big/Dino', [], 0.5], birb: ['monsters/big/Birb', [], 0.48], fish: ['monsters/big/Fish', [], 0.42],
+    ninja: ['monsters/big/Ninja', [], 0.45], cactoro: ['monsters/big/Cactoro', [], 0.42], yeti: ['monsters/big/Yeti', [], 0.45],
+    orc: ['monsters/big/Orc', [], 0.4], alien: ['monsters/big/Alien', [], 0.38], 'mushroom-king': ['monsters/big/MushroomKing', [], 0.45],
   },
 };
+/** The shared clip files: out name → the monster whose skeleton and keyframes they keep. */
+const CLIP_SETS = { 'clips-a': 'monsters/big/Alien', 'clips-b': 'monsters/big/Bunny' };
 const OUTDIR = { mech: 'mech-pack', monster: 'monsters' };
 const LICENSE = { mech: 'mechs/License.txt', monster: 'monsters/License.txt' };
 const figLines = { mech: [], monster: [] };
@@ -267,26 +278,58 @@ async function importFigure(kind, out, [file, clips, ratio]) {
     return `${a.getName()}:${end.toFixed(2)}`;
   });
   const kb = Math.round(statSync(f).size / 1024);
-  figLines[kind].push(`quaternius/${OUTDIR[kind]}/${out}.glb ${kb}KB ${size} (min y ${b.min[1].toFixed(2)}) ${tris} tris clips: ${cl.join(' ')}`);
+  figLines[kind].push(`quaternius/${OUTDIR[kind]}/${out}.glb ${kb}KB ${size} (min y ${b.min[1].toFixed(2)}) ${tris} tris${cl.length ? ' clips: ' + cl.join(' ') : ''}`);
   console.log(`${out.padEnd(18)} ${String(kb).padStart(5)} KB  ${tris} tris  ${cl.length} clips`);
 }
 
-await importScifi();
+/** One shared clip file: the skeleton's nodes and the clips, no mesh, no skin, no finger tracks. */
+async function importClips(out, file) {
+  const doc = await io.read(join(src, file + '.gltf'));
+  const root = doc.getRoot();
+  for (const n of root.listNodes()) if (n.getMesh()) { n.setMesh(null); n.setSkin(null); }
+  for (const m of root.listMeshes()) m.dispose();
+  for (const s of root.listSkins()) s.dispose();
+  for (const t of root.listTextures()) t.dispose();
+  for (const m of root.listMaterials()) m.dispose();
+  for (const a of root.listAnimations()) {
+    if (!BIG_CLIPS.includes(a.getName())) { dropClip(a); continue; }
+    for (const ch of a.listChannels()) {
+      const node = ch.getTargetNode();
+      if (node && FINGERS.test(node.getName())) { const smp = ch.getSampler(); ch.dispose(); smp.dispose(); }
+    }
+  }
+  await doc.transform(resample({ tolerance: 2e-4 }), dedup(), prune());
+  for (const x of root.listBuffers().slice(1)) x.dispose();
+  const f = join(Q, 'monsters', out + '.glb');
+  await io.write(f, doc);
+  const cl = root.listAnimations().map((a) => {
+    let end = 0;
+    for (const s of a.listSamplers()) { const t = s.getInput().getArray(); end = Math.max(end, t[t.length - 1]); }
+    return `${a.getName()}:${end.toFixed(2)}`;
+  });
+  const kb = Math.round(statSync(f).size / 1024);
+  figLines.monster.push(`quaternius/monsters/${out}.glb ${kb}KB (no mesh: ${root.listNodes().length} skeleton nodes, ${root.listAnimations().reduce((n, a) => n + a.listChannels().length, 0)} tracks) clips: ${cl.join(' ')}`);
+  console.log(`${out.padEnd(18)} ${String(kb).padStart(5)} KB  ${cl.length} clips`);
+}
+
+if (want('scifi')) await importScifi();
 for (const kind of Object.keys(FIGURES)) {
+  if (!want(kind)) continue;
   for (const [out, spec] of Object.entries(FIGURES[kind])) await importFigure(kind, out, spec);
+  if (kind === 'monster') for (const [out, file] of Object.entries(CLIP_SETS)) await importClips(out, file);
   copyFileSync(join(src, LICENSE[kind]), join(Q, OUTDIR[kind], 'license.txt'));
 }
 
 // ================================================================== the asset lists
 const DOCS = join(ROOT, 'docs/assets');
-writeFileSync(join(DOCS, 'quaternius-scifi-modular.txt'), [
+if (want('scifi')) writeFileSync(join(DOCS, 'quaternius-scifi-modular.txt'), [
   '# Quaternius Ultimate Modular Sci-Fi (Feb 2021, CC0 1.0): what public/assets/quaternius/scifi-modular holds',
   '# (games/monster-roundup/import-kit.mjs). Floor tiles are 2 × 2, walls 4 long and 4.43 tall (pack units).',
   ...scifiLines,
   'quaternius/scifi-modular/license.txt (the pack\'s License.txt: CC0 1.0)',
   '',
 ].join('\n'));
-writeFileSync(join(DOCS, 'quaternius-mech-pack.txt'), [
+if (want('mech')) writeFileSync(join(DOCS, 'quaternius-mech-pack.txt'), [
   '# Quaternius Animated Mech Pack (March 2021, CC0 1.0): what public/assets/quaternius/mech-pack holds',
   '# (games/monster-roundup/import-kit.mjs). Each line: file, size, box in model units (x × y × z), triangles, clips',
   '# with their length in seconds. Mechs face +z.',
@@ -294,10 +337,12 @@ writeFileSync(join(DOCS, 'quaternius-mech-pack.txt'), [
   'quaternius/mech-pack/license.txt (the pack\'s License.txt: CC0 1.0)',
   '',
 ].join('\n'));
-writeFileSync(join(DOCS, 'quaternius-monsters.txt'), [
+if (want('monster')) writeFileSync(join(DOCS, 'quaternius-monsters.txt'), [
   '# Quaternius Ultimate Monsters (Oct 2022, CC0 1.0): what public/assets/quaternius/monsters holds',
-  '# (games/monster-roundup/import-kit.mjs). Each line: file, size, box in model units (x × y × z), triangles, clips',
-  '# with their length in seconds. Monsters face +z; the flyers hover above y = 0 in their own space.',
+  '# (games/monster-roundup/import-kit.mjs): the twelve Big monsters (the only ones with legs), mesh and skeleton',
+  '# without clips (file, size, rest box in model units x × y × z, triangles), and the two shared clip files',
+  '# (clips-a: every Big monster but bunny, mushroom-king, ninja and orc, which take clips-b), with each clip\'s',
+  '# length in seconds. Monsters face +z and stand on y = 0; the rest pose is a T-pose (arms out along x).',
   ...figLines.monster.sort(),
   'quaternius/monsters/license.txt (the pack\'s License.txt: CC0 1.0)',
   '',
