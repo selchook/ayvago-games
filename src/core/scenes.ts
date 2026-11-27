@@ -19,7 +19,7 @@ import {
   themeLogo, themeShade, themeText, type MenuTheme,
 } from './menu-theme';
 import { overlayTheme, prebakeOverlays, themedPause, themedResult } from './overlay-theme';
-import { keyHelpStrip } from './key-help';
+import { keyHelpBlock, keyHelpShown, keyHelpStrip } from './key-help';
 
 /** "Play again" presses from the result screen this session (every Nth may bring an interstitial). */
 let replays = 0;
@@ -159,10 +159,13 @@ export class MenuScene extends Phaser.Scene {
 
     // landscape: three lines of how-to still end above the logo on the bottom row
     const howY = height * (both ? (land ? 0.69 : 0.7) : land ? 0.67 : 0.64);
-    const how = theme ? themedHowTo(this, theme, howY, land) : txt(this, width / 2, howY + 24, loc(meta.howTo), { size: land ? 23 : 28, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
-    if (!theme) {
+    let how: { y: number; height: number };
+    if (theme) how = themedHowTo(this, theme, howY, land);
+    else {
+      const text = txt(this, width / 2, howY + 24, loc(meta.howTo), { size: land ? 23 : 28, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
       txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
-      fitAbove(how, height - BOTTOM_ROW_TOP);
+      fitAbove(text, height - BOTTOM_ROW_TOP);
+      how = text;
     }
 
     // sound + language toggles
@@ -234,12 +237,13 @@ export class MenuScene extends Phaser.Scene {
       if (early) this.time.delayedCall(0, () => begin(early));
     }
     const howY = height * (land ? 0.7 : 0.66);
-    let how: Phaser.GameObjects.Text;
+    let how: { y: number; height: number };
     if (theme) how = themedHowTo(this, theme, howY, land);
     else {
       txt(this, width / 2, howY, t('howTo'), { title: true, size: 18, color: '#ff4fa3' });
-      how = txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
-      fitAbove(how, height - BOTTOM_ROW_TOP);
+      const text = txt(this, width / 2, howY + 24, loc(def.meta.howTo), { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+      fitAbove(text, height - BOTTOM_ROW_TOP);
+      how = text;
     }
     soundButton(this, 60, height - 60, !!theme);
     brandLogo(this, width / 2, height - 60, how.y + how.height, !!theme);
@@ -816,28 +820,52 @@ function easyTag(scene: Phaser.Scene, x: number, y: number): void {
 /**
  * The themed how-to: the heading in the display face and the text in the body font on the
  * theme's notes card (a parchment, a board), the card fitted round the text above the bottom row.
+ * On a desktop, a game with key help (src/core/key-help.ts) shows its keys there instead of the
+ * text: the caps with the labels in the card's body colour (the touch half of the text does not
+ * apply to a keyboard). Returns the body's top and height.
  */
-function themedHowTo(scene: Phaser.Scene, theme: MenuTheme, howY: number, land: boolean, dryRun = false): Phaser.GameObjects.Text {
+function themedHowTo(scene: Phaser.Scene, theme: MenuTheme, howY: number, land: boolean, dryRun = false): { y: number; height: number } {
   const { width, height } = scene.scale;
   const P = theme.palette;
   const onCard = !!theme.frame?.notes;
   const cardW = width - (land ? 260 : 64);
+  const bodyW = onCard ? cardW - (land ? 120 : 70) : width - (land ? 300 : 100);
+  const keys = keyHelpShown(scene);
+  // the keys take two lines: the block starts a little higher, still clear of the buttons above
+  if (keys && land) howY -= 20;
   // on a card the heading keeps clear of its torn top edge
   if (onCard) howY += 16;
   const head = themeText(scene, width / 2, howY, t('howTo'), onCard ? { size: 36, color: P.heading, strokeWidth: 0, shadow: false } : { size: 34, color: P.heading });
-  const how = txt(scene, width / 2, howY + Math.max(24, head.height / 2 - 2), loc(currentGame().meta.howTo), onCard
-    ? { size: land ? 22 : 26, wrap: cardW - (land ? 120 : 70), color: P.body, strokeThickness: 0, shadow: false }
-    : { size: land ? 22 : 26, wrap: width - (land ? 300 : 100), color: '#f3f2f2' }).setOrigin(0.5, 0);
+  const bodyTop = howY + Math.max(24, head.height / 2 - 2);
   // the card's bottom edge stays above the bottom row
-  fitAbove(how, height - BOTTOM_ROW_TOP - (onCard ? 22 : 0));
+  const limit = height - BOTTOM_ROW_TOP - (onCard ? 22 : 0);
+  let body: { y: number; height: number };
+  let made: Phaser.GameObjects.GameObject;
+  if (keys) {
+    const k = keyHelpBlock(scene, bodyW, { color: onCard ? P.body : '#f3f2f2', outline: !onCard, cap: land ? 30 : 36 });
+    const top = bodyTop + 10;
+    const fit = Math.min(1, (limit - top) / k.h);
+    if (fit < 1) k.obj.setScale(k.obj.scale * Math.max(0.7, fit));
+    const h = k.h * Math.max(0.7, Math.min(1, fit));
+    k.obj.setPosition(width / 2, top + h / 2);
+    body = { y: top, height: h + 4 };
+    made = k.obj;
+  } else {
+    const how = txt(scene, width / 2, bodyTop, loc(currentGame().meta.howTo), onCard
+      ? { size: land ? 22 : 26, wrap: bodyW, color: P.body, strokeThickness: 0, shadow: false }
+      : { size: land ? 22 : 26, wrap: bodyW, color: '#f3f2f2' }).setOrigin(0.5, 0);
+    fitAbove(how, limit);
+    body = how;
+    made = how;
+  }
   if (onCard) {
-    const top = howY - head.height / 2 - 14, bottom = how.y + how.height + 18;
+    const top = howY - head.height / 2 - 14, bottom = body.y + body.height + 18;
     // a dry run (Boot) only paints the card's texture, at the size the menu will ask for
     if (dryRun) notesTexture(scene, cardW, bottom - top);
     else notesCard(scene, width / 2, (top + bottom) / 2, cardW, bottom - top);
   }
-  if (dryRun) { head.destroy(); how.destroy(); }
-  return how;
+  if (dryRun) { head.destroy(); made.destroy(); }
+  return { y: body.y, height: body.height };
 }
 
 /** The how-to heading's line on the solo menu, as the menu places it. */
