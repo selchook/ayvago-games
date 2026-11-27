@@ -724,6 +724,32 @@ playable on a pad: give every action a key from the table below where it fits.
 - Do not list `gamepad` in `game.json` `controls` until the game passes that test and plays well
   with the pad.
 
+### Keyboard key help (desktop)
+
+A game can list its keyboard controls as key caps with `keyHelp` in its definition
+(`src/core/key-help.ts`). Rollout: Moon Rover first; the other 3D games follow once the owner
+approves the look.
+
+```ts
+keyHelp: [
+  { keys: ['W', 'Up'], label: 'kh_gas' },        // [W] / [↑]  Gas
+  { keys: ['A D', 'Left Right'], label: 'kh_steer' },
+  { keys: ['Space'], label: 'kh_power' },
+  { keys: ['Esc'], label: 'kh_pause' },           // kh_pause is a core string
+],
+```
+
+- Caps inside a group are separated by spaces. Up, Down, Left and Right draw arrows; Space is
+  drawn wide and localized. `label` is a string key, in TR and EN.
+- **Pause strip:** the pause screen draws every key in a band along the bottom. Desktop only;
+  touch devices show their own buttons. The themed landscape pause card is shorter so the strip fits.
+- **First-time keys:** the game calls `showKeyHelp(scene)` when its first round starts.
+  - The same keys appear along the bottom of the play screen, without a band.
+  - Nothing waits on them: the round goes on underneath.
+  - They fade after 10 s of play and hide while paused.
+  - They show once per browser.
+  - Automated browsers skip them, so tests and store art stay clean. `?keyhelp` shows them every time, for checking them.
+
 ## 7i. Game guide (required)
 
 Every game page on ayvago.com shows a written guide beside the game frame: what the game is, how

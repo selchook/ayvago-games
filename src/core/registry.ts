@@ -3,6 +3,7 @@ import type Phaser from 'phaser';
 import type { Localized, Strings } from './i18n';
 import type { MenuTheme } from './menu-theme';
 import type { PadOverrides } from './gamepad-map';
+import type { KeyHelpRow } from './key-help';
 
 export type Genre = 'arcade' | 'action' | 'casual' | 'puzzle' | 'retro' | 'sports' | 'strategy' | 'card' | 'word';
 
@@ -92,6 +93,11 @@ export interface GameDefinition {
    * overlays (pushModal) keep the core mapping. Without it the defaults in gamepad-map.ts apply.
    */
   gamepad?: PadOverrides;
+  /**
+   * The keyboard controls as key caps (src/core/key-help.ts), desktop only: a strip along the
+   * bottom of the pause screen, and the card the game opens once with showKeyHelp().
+   */
+  keyHelp?: KeyHelpRow[];
 }
 
 /** The result of a finished run, as the result screen shows it. */

@@ -27,6 +27,8 @@ const common: Strings = {
     adLoading: 'Reklam yükleniyor…', adBadge: 'REKLAM', adContinue: 'DEVAM ET', adContinueNote: 'Reklam izle, devam et',
     adContinued: 'DEVAM!', adDouble: '2× ÖDÜL', adDoubleNote: 'Reklam izle, ödülünü ikiye katla', adDoubled: 'ÖDÜL 2 KATINA ÇIKTI!',
     adFailed: 'Reklam tamamlanmadı',
+    // the keyboard controls (src/core/key-help.ts)
+    kh_title: 'KONTROLLER', kh_any: 'Başlamak için bir tuşa bas ya da tıkla', kh_space: 'BOŞLUK', kh_pause: 'Duraklat',
   },
   en: {
     play: 'PLAY', retry: 'RETRY', menu: 'MENU', resume: 'RESUME', paused: 'PAUSED',
@@ -49,6 +51,8 @@ const common: Strings = {
     adLoading: 'Loading ad…', adBadge: 'AD', adContinue: 'CONTINUE', adContinueNote: 'Watch an ad to continue',
     adContinued: 'KEEP GOING!', adDouble: '2× REWARD', adDoubleNote: 'Watch an ad to double your reward', adDoubled: 'REWARD DOUBLED!',
     adFailed: 'The ad did not finish',
+    // the keyboard controls (src/core/key-help.ts)
+    kh_title: 'CONTROLS', kh_any: 'Press any key or click to start', kh_space: 'SPACE', kh_pause: 'Pause',
   },
 };
 

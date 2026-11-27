@@ -45,6 +45,8 @@ export type { QuickChat, QuickChatOptions, QuickPhrase, SeatAnchor } from './qui
 export { openPlayerCard, closePlayerCard, isPlayerCardOpen, avatar, portraitKey, characterName, lifetimeStats, lifetimeRows, recordMatch } from './playercard';
 export type { PlayerCardInfo, StatRow, LifetimeStats } from './playercard';
 export { isModalOpen, pushModal } from './modal';
+export { showKeyHelp, keyHelpDue, keyHelpShown } from './key-help';
+export type { KeyHelpRow, KeyHelpHint } from './key-help';
 export {
   menuTheme, SkinButton, skinIconButton, skinImage, skinTexture, themeText, renderLogo, plankPainter, shadeColor, SKIN_PAD,
   themeLabel, labelTexture, labelFont, placeLabel, ThemeNumber, bake, canvas2d, frameBorder,
