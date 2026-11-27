@@ -20,7 +20,7 @@ const en: Record<string, string> = {
   m_mike_t: 'Sprint Jets: more dash energy that refills faster.',
   m_leela_t: 'Light Frame: walks faster; towing slows her less.',
   m_stan_t: 'Stasis Coils: dizzy spells last 30% longer.',
-  m_george_t: 'Big Hauler: tows one more and has one more heart; walks slower.',
+  m_george_t: 'Big Hauler: tows one more and has two more hearts; walks slower.',
   pt_factory: 'Factory', pt_cobalt: 'Cobalt', pt_ember: 'Ember', pt_mint: 'Mint', pt_gold: 'Gold',
   // the map
   mapTitle: 'STATION MAP',
@@ -167,7 +167,7 @@ const tr: Record<string, string> = {
   m_mike_t: 'Koşu Jetleri: daha çok koşu enerjisi, daha hızlı dolar.',
   m_leela_t: 'Hafif Gövde: daha hızlı yürür; çektikleri onu az yavaşlatır.',
   m_stan_t: 'Durağanlık Bobini: sersemlik %30 daha uzun sürer.',
-  m_george_t: 'İri Taşıyıcı: bir canavar fazla çeker, bir kalbi fazla; daha yavaş yürür.',
+  m_george_t: 'İri Taşıyıcı: bir canavar fazla çeker, iki kalbi fazla; daha yavaş yürür.',
   pt_factory: 'Fabrika', pt_cobalt: 'Kobalt', pt_ember: 'Kor', pt_mint: 'Nane', pt_gold: 'Altın',
   mapTitle: 'İSTASYON HARİTASI',
   play: 'BAŞLA',
