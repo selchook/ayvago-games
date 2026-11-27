@@ -21,7 +21,7 @@ launch({
   physics: 'none',
   difficulty: true,
   menuOption: steeringOption,
-  music: { menu: 'select', play: 'level2' },
+  music: { menu: { file: 'music/owner/regolith-drift.mp3', gain: 1.85 }, play: { file: 'music/owner/regolith-drift.mp3', gain: 1.85 } },
   // the pad: the stick steers (and up / down are GAS / BRAKE), RT gas, LT brake, A uses the power
   gamepad: { rt: 'ArrowUp', lt: 'ArrowDown' },
   preload(scene) {
