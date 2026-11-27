@@ -19,6 +19,7 @@ import {
   themeLogo, themeShade, themeText, type MenuTheme,
 } from './menu-theme';
 import { overlayTheme, prebakeOverlays, themedPause, themedResult } from './overlay-theme';
+import { keyHelpStrip } from './key-help';
 
 /** "Play again" presses from the result screen this session (every Nth may bring an interstitial). */
 let replays = 0;
@@ -466,6 +467,12 @@ export class PauseScene extends Phaser.Scene {
         new Button(this, width / 2, top + gap * 2, t('menu'), menu, { color: 0x333344 }),
       ];
       soundButton(this, land ? width - 70 : width / 2, land ? height - 70 : top + gap * 2 + 130);
+    }
+    // desktop: the keyboard controls along the bottom (src/core/key-help.ts)
+    {
+      const { width, height } = this.scale;
+      const land = isLandscape();
+      keyHelpStrip(this, { y: height - (land ? 8 : 40), maxW: land ? width - 300 : width - 48, depth: 6 });
     }
     this.input.keyboard?.once('keydown-ESC', resume);
     this.input.keyboard?.once('keydown-P', resume);

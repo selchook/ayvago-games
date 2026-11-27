@@ -33,8 +33,10 @@ interface Box { x: number; y: number; w: number; h: number }
 
 /** Where everything goes, per orientation (game units; the game is 720 x 1280 or 1280 x 720). */
 function layout(land: boolean) {
+  // a game with key help (src/core/key-help.ts) keeps the bottom of the landscape pause free for its strip
+  const keys = !!currentGame().keyHelp?.length;
   return land ? {
-    pause: { card: { x: 640, y: 360, w: 520, h: 660 } as Box, emblem: null as null | { y: number; size: number }, head: 150, headSize: 64, buttons: [270, 385, 500], sound: null as null | number },
+    pause: { card: (keys ? { x: 640, y: 306, w: 520, h: 552 } : { x: 640, y: 360, w: 520, h: 660 }) as Box, emblem: null as null | { y: number; size: number }, head: 150, headSize: 64, buttons: [270, 385, 500], sound: null as null | number },
     result: {
       card: { x: 640, y: 362, w: 940, h: 640 } as Box, emblem: null as null | { y: number; size: number },
       head: 118, headSize: 72, easy: 172, scoreLabel: 212, score: 274, scoreSize: 84, best: 344, ribbon: 412,

@@ -187,6 +187,11 @@ const S: Record<string, Pair> = {
   s_red: ['Güneş Kırmızısı', 'Solar Red'],
   s_night: ['Gece Moru', 'Night Violet'],
   s_gold: ['Altın Hücum', 'Gold Rush'],
+  // the keyboard controls (key help)
+  kh_gas: ['Gaz · havada burun yukarı', 'Gas · nose up in the air'],
+  kh_brake: ['Fren · geri vites', 'Brake · reverse'],
+  kh_steer: ['Direksiyon', 'Steer'],
+  kh_power: ['Gücü kullan', 'Use the power'],
 };
 
 export const STRINGS = {

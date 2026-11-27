@@ -24,6 +24,14 @@ launch({
   music: { menu: { file: 'music/owner/regolith-drift.mp3', gain: 1.85 }, play: { file: 'music/owner/regolith-drift.mp3', gain: 1.85 } },
   // the pad: the stick steers (and up / down are GAS / BRAKE), RT gas, LT brake, A uses the power
   gamepad: { rt: 'ArrowUp', lt: 'ArrowDown' },
+  // desktop: the keys on the first drive and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['W', 'Up'], label: 'kh_gas' },
+    { keys: ['S', 'Down'], label: 'kh_brake' },
+    { keys: ['A D', 'Left Right'], label: 'kh_steer' },
+    { keys: ['Space'], label: 'kh_power' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     loadKit(l);
