@@ -356,6 +356,7 @@ export class Sim {
     for (const p of this.c.pods) out.push([p.x, p.z, 0.95]);
     for (const p of this.c.terminals) out.push([p.x, p.z, 0.55]);
     for (const p of this.c.turrets) out.push([p.x, p.z, 1.05]);
+    for (const p of this.c.decor) out.push([p.x, p.z, p.r]);
     return out;
   }
   private propCache: [number, number, number][] | null = null;
@@ -545,6 +546,15 @@ export class Sim {
     v.stunWas = inp.stun;
     // the tractor beam
     if (inp.tow) this.towPress();
+    // the magnet: dizzy monsters nearby drift to the mech and onto the beam (two more than it can tow)
+    if (v.active.magnet > 0) for (const m of this.mons) {
+      if (m.state !== 'dizzy' || m.boss) continue;
+      const dx = v.x - m.x, dz = v.z - m.z, d = Math.hypot(dx, dz);
+      if (d > POWER.magnetR) continue;
+      if (d < this.grabR && v.towing.length < this.towCap + 2) { m.state = 'towed'; v.towing.push(m); this.emit({ e: 'grab', i: m.i, x: m.x, z: m.z }); continue; }
+      m.x += (dx / d) * 6 * dt; m.z += (dz / d) * 6 * dt;
+      this.collide(m, m.radius);
+    }
     // the power
     if (inp.power) this.usePower();
     // snacks: the mech takes them (the monsters can't eat them then)

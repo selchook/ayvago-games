@@ -50,6 +50,7 @@ export class Bot {
       for (const p of s.c.stacks) if (Math.abs(x - p.x) < 1.6 && Math.abs(z - p.z) < 1.6) bl = true;
       for (const p of [...s.c.pods, ...s.c.terminals, ...s.c.turrets]) if (Math.hypot(x - p.x, z - p.z) < 1.5) bl = true;
       for (const c of s.crates) if (!c.broken && Math.hypot(x - c.x, z - c.z) < 1.5) bl = true;
+      for (const p of s.c.decor) if (Math.hypot(x - p.x, z - p.z) < p.r + 0.6) bl = true;
       s.c.doors.forEach((d, i) => { if (s.doors[i].locked && Math.abs(x - d.x) < 2 && Math.abs(z - d.z) < 2) bl = true; });
       b[r * s.cols + q] = bl ? 1 : 0;
     }
@@ -120,6 +121,7 @@ export class Bot {
     const s = this.s;
     for (const p of [...s.c.pods, ...s.c.terminals, ...s.c.turrets]) if (segDist(p.x, p.z, ax, az, bx, bz) < 1.9) return false;
     for (const c of s.crates) if (!c.broken && segDist(c.x, c.z, ax, az, bx, bz) < 1.5) return false;
+    for (const p of s.c.decor) if (segDist(p.x, p.z, ax, az, bx, bz) < p.r + 0.9) return false;
     return true;
   }
 

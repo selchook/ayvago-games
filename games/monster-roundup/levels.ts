@@ -327,6 +327,9 @@ export interface Pt { x: number; z: number }
 export interface Door extends Pt { id: number; /** The passage runs along x ('x') or z ('z'). */ axis: 'x' | 'z'; locked: boolean }
 export interface Spawn extends Pt { id: MonsterId }
 export interface Conveyor { c: number; r: number; dx: number; dz: number }
+/** Furniture against the walls (solid: a circle of radius r). */
+export type DecorKind = 'shelf' | 'computer' | 'capsule' | 'container' | 'vessels' | 'crates';
+export interface Decor extends Pt { kind: DecorKind; rot: number; r: number }
 
 export interface Level {
   n: number;
@@ -350,6 +353,7 @@ export interface Level {
   snacks: Pt[];
   powers: Pt[];
   stacks: Pt[];
+  decor: Decor[];
   spawns: Spawn[];
   boss: (Pt & { id: BossId }) | null;
   quota: number;
@@ -373,7 +377,7 @@ export function buildLevel(n: number): Level {
   const floor = (c: number, r: number): boolean => at(c, r) !== '#';
   const L: Level = {
     n, sector: sectorOf(n), cols, rows, map, start: centre(1, rows - 2), pods: [], field: null, exit: null, doors: [], terminals: [], lasers: [], turrets: [],
-    conveyors: [], vents: [], teles: [], crates: [], chests: [], snacks: [], powers: [], stacks: [], spawns: [], boss: null,
+    conveyors: [], vents: [], teles: [], crates: [], chests: [], snacks: [], powers: [], stacks: [], decor: [], spawns: [], boss: null,
     quota: raw.quota, par: raw.par, hint: raw.hint ?? null, total: 0,
   };
   let mi = 0;
@@ -408,6 +412,26 @@ export function buildLevel(n: number): Level {
         break;
       }
       case 'B': if (raw.boss) L.boss = { ...p, id: raw.boss }; break;
+    }
+  }
+  // furniture: against the far (north) walls and in corners, only in plain floor blocks away from passages
+  let seed = n * 977 + 13;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const plain = (c: number, r: number) => at(c, r) === '.';
+  const nearPassage = (c: number, r: number) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dc, dr]) => 'DLz'.includes(at(c + dc, r + dr)));
+  const solid = (c: number, r: number) => at(c, r) === '#';
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    if (!plain(c, r) || nearPassage(c, r)) continue;
+    const p = centre(c, r), h = BLOCK / 2;
+    const N = solid(c, r - 1), W = solid(c - 1, r), E = solid(c + 1, r), S = solid(c, r + 1);
+    if (S) continue;
+    if (N && (W || E) && rnd() < 0.75) {
+      const sx = W ? -1 : 1;
+      const kinds: DecorKind[] = ['capsule', 'container', 'vessels', 'crates'];
+      L.decor.push({ x: p.x + sx * (h - 1.0), z: p.z - (h - 1.0), kind: kinds[Math.floor(rnd() * kinds.length)], rot: 0, r: 0.8 });
+    } else if (N && !W && !E && rnd() < 0.4) {
+      const kinds: DecorKind[] = ['shelf', 'computer', 'shelf', 'vessels'];
+      L.decor.push({ x: p.x + (rnd() - 0.5) * 0.8, z: p.z - (h - 0.75), kind: kinds[Math.floor(rnd() * kinds.length)], rot: 0, r: 0.75 });
     }
   }
   for (let i = 0; i + 1 < teleIdx.length; i += 2) { L.teles[teleIdx[i]].to = teleIdx[i + 1]; L.teles[teleIdx[i + 1]].to = teleIdx[i]; }
