@@ -615,9 +615,10 @@ export class PlayScene extends ArcadeScene {
     this.banner(t('m_' + s.def.n));
     // desktop, once: the keys and what they do along the bottom for the first seconds of the mission
     if (!this.keyHint) {
-      this.keyHint = showKeyHelp(this);
+      // the action buttons stay on screen on desktop too: the keys keep to their left
+      const right = this.padBox.left - 12, left = 24;
+      this.keyHint = showKeyHelp(this, right - left >= 400 ? { maxW: right - left, x: (left + right) / 2 } : {});
       if (this.keyHint) {
-        this.fitKeyHint();
         this.keyHintOn = true;
         this.time.delayedCall(10600, () => { this.keyHintOn = false; });
       }
@@ -899,20 +900,6 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: line, alpha: 0, y: 206, delay: 1150, duration: 380, onComplete: () => line.destroy() });
   }
 
-  /**
-   * The first-time keys sit left of the action buttons, which stay on screen on desktops too.
-   * (showKeyHelp centres the keys across the screen and has no width option: the container it just
-   * added is the display list's last one, so it is narrowed here.)
-   */
-  private fitKeyHint(): void {
-    const root = this.children.list[this.children.list.length - 1];
-    if (!(root instanceof Phaser.GameObjects.Container) || root.depth !== 9300) return;
-    const right = this.padBox.left - 12, left = 24;
-    const w = root.getBounds().width;
-    if (w <= 0 || right - left < 400) return;
-    root.setScale(Math.min(1, (right - left) / w));
-    root.x = (left + right) / 2;
-  }
 
   /** A line over the bottom middle (hints, warnings). */
   private toast(s: string, hold = 1.2): void {
