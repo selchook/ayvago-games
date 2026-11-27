@@ -617,13 +617,14 @@ export class PlayScene extends ArcadeScene {
   }
 
   /**
-   * The store art's card: Split Decision (1-3) frozen in a moment: the mech towing a dizzy monster
-   * on its beam past a crate, a monster fleeing, another dizzy with stars, a stun bolt in flight,
-   * a staged camera low beside the mech (closer and higher on a phone).
+   * The store art's card: Fly Swatter (2-2) frozen in a moment in the green gardens: the mech walking
+   * toward a pod with a dizzy mushnub on its tractor beam, a charged bolt flying at a glub up high
+   * (the lock marker under it), a chicken dizzy with stars, the pod's glowing ring ahead, under a
+   * staged camera low behind the mech (closer and higher on a phone).
    */
   private cardStage(): void {
-    this.meta.hints = [...new Set([...this.meta.hints, 'tut', 'h_split', 'h_tow'])];
-    this.startLevel(3);
+    this.meta.hints = [...new Set([...this.meta.hints, 'tut', 'h_flyer', 'h_tow'])];
+    this.startLevel(7);
     this.phaseT = INTRO_TIME;
     this.go();
     this.clearBanners();
@@ -631,21 +632,28 @@ export class PlayScene extends ArcadeScene {
     this.toastImg?.destroy();
     const s = this.sim!, v = s.mech;
     s.god = true;
-    // the mech in the first room, a monster on its beam, another dizzy, one fleeing
     const pod = s.c.pods[0];
-    v.x = pod.x + 5.5; v.z = pod.z + 1.2; v.yaw = -Math.PI / 2 - 0.35;
+    const land = this.scale.width > this.scale.height;
+    v.x = pod.x + 5.2; v.z = pod.z + 2.2; v.yaw = Math.atan2(pod.x - v.x, pod.z - v.z);
     const ms = s.mons.filter((m) => !m.boss);
-    const a = ms[0], b = ms[1] ?? ms[0], c = ms[2] ?? ms[0];
-    a.state = 'towed'; a.dizzy = a.dizzyMax = 10; v.towing = [a];
-    a.x = v.x + 2.6; a.z = v.z + 0.9; a.y = 0.9;
-    b.state = 'dizzy'; b.dizzy = b.dizzyMax = 6; b.x = v.x - 1.5; b.z = v.z - 5.5;
-    c.state = 'flee'; c.x = v.x + 6; c.z = v.z - 6.5; c.yaw = 0.8; c.vx = 2; c.vz = -1;
-    s.bolts.push({ x: v.x + 2.2, z: v.z - 3.2, vx: 2, vz: -10, life: 1, charged: true, hit: [], arc: false });
+    const glub = ms.find((m) => m.kind === 'glub') ?? ms[0];
+    const mush = ms.find((m) => m.kind === 'mushnub') ?? ms[1];
+    const chick = ms.find((m) => m.kind === 'chicken') ?? ms[2];
+    const other = ms.find((m) => m !== glub && m !== mush && m !== chick);
+    mush.state = 'towed'; mush.dizzy = mush.dizzyMax = 10; v.towing = [mush];
+    mush.x = v.x - Math.sin(v.yaw) * 3.1; mush.z = v.z - Math.cos(v.yaw) * 3.1; mush.y = 0.9;
+    glub.x = v.x - 1.5; glub.z = v.z - 6; glub.y = 1.75; glub.state = 'flee'; glub.yaw = 2.4; glub.swoop = -3;
+    chick.state = 'dizzy'; chick.dizzy = chick.dizzyMax = 6; chick.x = pod.x + 1.8; chick.z = pod.z - 3.4;
+    if (other) { other.state = 'wander'; other.x = pod.x + 9; other.z = pod.z - 5; }
+    v.lock = glub;
+    v.charge = 0.7;
+    const a = Math.atan2(glub.x - v.x, glub.z - v.z);
+    s.bolts.push({ x: v.x + Math.sin(a) * 3.2, z: v.z + Math.cos(a) * 3.2, vx: Math.sin(a) * 2, vz: Math.cos(a) * 2, life: 9, charged: true, hit: [], arc: false });
+    v.yaw = a;
     v.shootT = 0.3;
     this.testSpeed = 0.02;
-    const land = this.scale.width > this.scale.height;
     const x = v.x, z = v.z;
-    this.view.shotCam = land ? [[x + 1.5, 10.5, z + 13], [x + 0.8, 0.6, z - 1.8]] : [[x + 0.5, 13, z + 15], [x + 0.3, 0.4, z - 2.4]];
+    this.view.shotCam = land ? [[x - 1, 11.5, z + 11], [x - 2.4, 0.6, z - 2.8]] : [[x - 0.8, 14, z + 12.5], [x - 1.0, 0.3, z - 3.4]];
     this.pad?.setVisible(false);
     this.view.snap(s);
   }

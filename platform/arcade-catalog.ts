@@ -841,6 +841,21 @@ export const ARCADE_GAMES: SeedGame[] = [
     addedAt: '2026-10-28',
   }),
   arcadeGame({
+    slug: 'monster-roundup',
+    title: { en: 'Monster Roundup', tr: 'Kaçak Canavarlar' },
+    description: {
+      en: "Cute monsters have escaped from a space station's containment lab! Pilot your mech room by room, stun them with the blaster, drag them on the tractor beam and drop them into a pod's glowing ring. Runaway cats, chickens that spook the others, blobs that split in two, wizards that blink away, spiky ones and flyers; the ones left loose eat snacks and evolve into tougher forms. Laser gates, sweeping turrets, locked doors, conveyor belts, ice and teleporters. Twenty levels in four sectors, each ending with a giant boss. Powers, hangar upgrades and four mechs unlocked with stars. Easy or Normal.",
+      tr: 'Uzay istasyonunun muhafaza laboratuvarından sevimli canavarlar kaçtı! Robotunla odadan odaya gez, şok tabancasıyla canavarları sersemlet, çekici ışınla peşinden sürükle ve parlayan kapsül halkasına bırakıp yakala. Kaçan kediler, ötekileri ürküten tavuklar, ikiye bölünen balçıklar, ışınlanan büyücüler, dikenli ve uçan canavarlar var; başıboş kalanlar atıştırmalık yiyip daha güçlü biçimlere evrimleşir. Lazer kapıları, süpürge taretleri, kilitli kapılar, yürüyen bantlar, buz ve ışınlayıcılar. Dört sektörde yirmi bölüm; her sektörün sonunda dev bir patron. Güçler, hangarda geliştirmeler ve yıldızlarla açılan dört robot. Kolay ya da Normal.',
+    },
+    category: 'action',
+    categories: ['action', 'arcade'],
+    tags: ['monster', 'roundup', 'retro'],
+    orientation: 'any',
+    input: ['touch', 'keyboard', 'gamepad', 'mouse'],
+    addedAt: '2026-11-27',
+    portraitCards: true,
+  }),
+  arcadeGame({
     slug: 'moon-rover',
     title: { en: 'Moon Rover', tr: 'Ay Gezgini' },
     description: {

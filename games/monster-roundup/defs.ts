@@ -119,7 +119,7 @@ export const MONSTERS: Record<MonsterId, MonsterDef> = {
 };
 
 /** Flyers cruise this high; a normal bolt glances off them up there (a charged one does not). */
-export const FLY_HIGH = 2.1;
+export const FLY_HIGH = 1.75;
 /** Loose monsters grow toward evolving by this much each second (×Tuning.evolve) and by SNACK per snack. */
 export const EVOLVE_RATE = 1 / 95;
 export const EVOLVE_SNACK = 0.42;

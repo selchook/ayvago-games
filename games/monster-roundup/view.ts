@@ -16,7 +16,7 @@
 import { THREE, World3D } from '@core/three';
 import { BLOCK, WALL_H, SECTORS, MONSTERS, BOSSES, MECHS, POWER_COLOR, type SectorId, type MechId, type PowerId } from './defs';
 import { piece, Merger, place, isKitGeo } from './kit';
-import { Figure } from './figure';
+import { Figure, restBox } from './figure';
 import { Fx } from './fx3d';
 import { Sim, POD_R, FIELD_R, type Mon } from './sim';
 import { solidBlock, charAt, type Level } from './levels';
@@ -484,9 +484,8 @@ export class View {
     const flyer = def?.kind === 'flyer';
     const h = m.boss ? BOSSES[m.boss].height : def!.height * (m.small ? 0.7 : 1) * (m.evolved ? (def!.evolved ? 1.15 : 1.3) : 1);
     const fig = new Figure(file, h);
-    // flyers' rest pose hovers above their own origin: lift them down to the sim's height
-    const rb = (fig as unknown as { body: THREE.Object3D }).body;
-    void rb;
+    // flyers' rest pose hovers above their own origin: brought down so the body sits at the sim's height
+    if (flyer) fig.body.position.y = -restBox(file).minY * fig.scale;
     this.world.scene.add(fig.root);
     fig.play(m.boss ? 'Idle' : flyer ? 'Flying_Idle' : 'Idle');
     f = { fig, file, key, scale: 1, lift: flyer ? -1 : 0, boss: !!m.boss };
@@ -520,7 +519,7 @@ export class View {
       else if (v.shootT > 0.3) mf.overlay('Shoot', 0.32, { speed: 1.8, restart: true });
     }
     mf.root.visible = !(v.safe > 0 && v.safe < 1.0 && v.state === 'play' && Math.floor(t * 14) % 2 === 0);
-    mf.setGlowRGB(v.charge > 0.1 ? 0.25 * Math.min(1, v.charge / s.chargeTime) : 0, v.charge > 0.1 ? 0.18 * Math.min(1, v.charge / s.chargeTime) : 0, 0);
+    mf.setGlowRGB(v.charge > 0.1 ? 0.08 * Math.min(1, v.charge / s.chargeTime) : 0, v.charge > 0.1 ? 0.06 * Math.min(1, v.charge / s.chargeTime) : 0, 0);
     mf.update(dt);
     // charge ring under the mech, lock marker on the target
     const ck = v.charge > 0.12 ? Math.min(1, v.charge / s.chargeTime) : 0;

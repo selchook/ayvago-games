@@ -19,7 +19,8 @@
   "orientation": "adaptive",
   "controls": [
     "touch",
-    "keyboard"
+    "keyboard",
+    "gamepad"
   ],
   "version": "1.0.0",
   "credits": [
