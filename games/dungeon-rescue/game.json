@@ -12,7 +12,7 @@
   "genres": ["action", "puzzle"],
   "orientation": "adaptive",
   "controls": ["touch", "keyboard", "gamepad"],
-  "version": "1.0.4",
+  "version": "1.0.5",
   "credits": [
     "3D models: Quaternius Updated Modular Dungeon and Ultimate Animated Character Pack (CC0) — quaternius.com",
     "Sounds: Juhani Junkala (CC0) — opengameart.org; Kenney Impact and Foley Audio (CC0) — kenney.nl",

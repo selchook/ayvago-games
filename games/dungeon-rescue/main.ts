@@ -9,7 +9,7 @@ import { View } from './view';
 import { Sim } from './sim';
 import { Bot } from './bot';
 import { buildLevel, castOf } from './levels';
-import { DT, noRanks } from './defs';
+import { DT, noRanks, MUSIC } from './defs';
 import { loadMeta } from './meta';
 
 /** The level the menu's backdrop plays (its figures load under the intro). */
@@ -20,7 +20,7 @@ launch({
   background: '#0d0b10',
   physics: 'none',
   difficulty: true,
-  music: { menu: { file: 'music/owner/dungeon-loop.mp3', gain: 1.85 }, play: { file: 'music/owner/dungeon-loop.mp3', gain: 1.85 } },
+  music: { menu: MUSIC, play: MUSIC },
   // the pad: A acts, LB throws (held to aim), Y uses a power (K), X calls the crew (J), B or RT sprints
   gamepad: { b: 'ShiftLeft', rt: 'ShiftLeft' },
   preload(scene) {

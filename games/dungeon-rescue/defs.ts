@@ -1,6 +1,7 @@
 // Dungeon Rescue: the numbers. The knight's feel, the guards' eyes and ears, Easy beside Normal in
 // one table, the four wings' moods, the tricks (powers), the hideout's upgrades, the crew and the
 // bonuses they lend the knight, the knight's armour looks, and the scoring.
+import type { MusicFile } from '@core';
 
 /** Fixed simulation step (the sim runs at 60 Hz whatever the frame rate). */
 export const DT = 1 / 60;
@@ -360,3 +361,6 @@ export const SCORE = {
 export const COINS = { pile: 5, bag: 15, chest: 50 };
 export const CLEAR_COINS = (wing: number): number => 20 + wing * 10;
 export const STAR_COINS = 10;
+
+/** The owner's loop (1.0.4): the menu and every level, boss levels included, play it, so the music runs on from the menu into play. */
+export const MUSIC: MusicFile = { file: 'music/owner/dungeon-loop.mp3', gain: 1.85 };
