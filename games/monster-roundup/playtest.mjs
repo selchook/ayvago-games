@@ -1,14 +1,16 @@
 // Monster Roundup: playthrough check. Plays the game in a real browser through the game's own test hooks
 // (`window.__mr`) and the keyboard, and fails when a step does not do what the player would see:
 //   - the device gets its orientation (desktop landscape, phone portrait with the touch pad);
-//   - the menu starts a run (Enter) and the station map opens; Enter on the map starts 1-1;
+//   - the menu starts a run (Enter) on the mech select: ← / → pick a mech, a paint the stars do not
+//     reach yet stays locked, Enter deploys the chosen one and the station map opens; Enter on the
+//     map starts 1-1 with that mech;
 //   - W walks the mech; Space fires a stun bolt; a monster made dizzy and E (the tow key) next to it
 //     puts it on the tractor beam;
 //   - a hit costs a heart;
 //   - the autopilot (`bot.ts`, god mode on) clears 1-1: the level card shows, 1-2 opens and the run's
 //     score has grown; NEXT is pressed the moment the card appears (a quick tap must not freeze the
-//     game) and the hangar opens, where a purchase spends credits and adds a rank, and the MECHS
-//     tab pilots a mech unlocked with stars;
+//     game) and the hangar opens, where a purchase spends credits and adds a rank; with stars earned
+//     the select's paint opens (↓ paints the mech);
 //   - back on the map, the boss level (1-5) is played by the autopilot until the boss reaches its
 //     second phase; then the hearts are lost on purpose and the run ends on the result screen with
 //     the run's score;
@@ -16,8 +18,8 @@
 //   - no page errors on the way.
 // The game is adaptive: the whole playthrough runs twice, on a desktop window (it must boot
 // landscape) and on an emulated phone (touch, a 390 px short side: it must boot portrait).
-// Run: node games/monster-roundup/playtest.mjs [--base http://localhost:5611] [--shots <dir>] [--orient landscape|portrait]
-//   Without --base it starts its own Vite dev server on a port from 5611 to 5619. Exits 1 on a failure.
+// Run: node games/monster-roundup/playtest.mjs [--base http://localhost:5631] [--shots <dir>] [--orient landscape|portrait]
+//   Without --base it starts its own Vite dev server on a port from 5631 to 5639. Exits 1 on a failure.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -43,7 +45,7 @@ if (shots) mkdirSync(shots, { recursive: true });
 
 let server = null;
 if (!base) {
-  const port = Number(process.env.AYVAGO_TEST_PORT) || 5611 + Math.floor(Math.random() * 9);
+  const port = Number(process.env.AYVAGO_TEST_PORT) || 5632 + Math.floor(Math.random() * 8);
   server = spawn('npx', ['vite', '--port', String(port), '--strictPort'], { cwd: root, stdio: 'pipe', detached: true, env: { ...process.env, VITE_CACHE_DIR: join(tmpdir(), `mrd-play-${port}`) } });
   base = `http://localhost:${port}`;
   for (let i = 0; i < 120; i++) {
@@ -80,8 +82,22 @@ for (orient of ORIENTS) try {
   const got = await page.evaluate(() => [window.__ayvago.orientation, window.__ayvago.game.scale.width, window.__ayvago.game.scale.height]);
   check(`the device gets ${orient}`, got[0] === orient, got.join(' '));
   await page.keyboard.press('Enter');
+  const onSel = await until(page, () => window.__mr?.state().phase === 'select', null, 20000);
+  check('menu → the mech select', onSel);
+  await page.waitForTimeout(700);
+  await shot(page, 'select');
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(250);
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(250);
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(250);
+  let st0 = await state(page);
+  check('a paint the stars do not reach stays locked', st0.paint.stan === 'factory', `stan's paint ${st0.paint.stan}`);
+  await page.keyboard.press('Enter');
   const onMap = await until(page, () => window.__mr?.state().phase === 'map', null, 20000);
-  check('menu → station map', onMap);
+  st0 = await state(page);
+  check('→ → Enter deploys Stan and opens the station map', onMap && st0.mechId === 'stan', `mech ${st0.mechId}`);
   await page.waitForTimeout(500);
   await shot(page, 'map');
   await page.keyboard.press('Enter');
@@ -149,26 +165,26 @@ for (orient of ORIENTS) try {
   }
   const ranked = Object.keys(after.ranks).filter((k) => after.ranks[k] > before.ranks[k]);
   check('a hangar purchase spends credits and adds a rank', after.credits < before.credits && ranked.length === 1, `credits ${before.credits} → ${after.credits}, rank up: ${ranked.join(', ')}`);
-  // the MECHS tab: with 8 stars Leela can be piloted
-  await page.evaluate(() => window.__mr.meta({ best: Array.from({ length: 20 }, (_, i) => ({ stars: i < 3 ? 7 : 0, time: i < 3 ? 60 : 0 })) }));
-  await page.evaluate(() => window.__mr.open('shop'));
-  await page.waitForTimeout(400);
-  await page.keyboard.press('KeyQ');
-  await page.waitForTimeout(300);
-  let mech = (await state(page)).mechId;
-  for (let i = 0; i < 6 && mech === 'mike'; i++) {
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(250);
-    mech = (await state(page)).mechId;
-  }
-  await shot(page, 'mechs');
-  check('the MECHS tab pilots a mech unlocked with stars', mech !== 'mike', `piloting ${mech}`);
-
-  // back to the map; the boss level: the autopilot gets the boss to its second phase
+  // back to the map
   await page.keyboard.press('Escape');
   const back = await until(page, () => window.__mr.state().phase === 'map', null, 10000);
   check('leaving the hangar returns to the map', back);
+  // with 9 stars the Cobalt paint opens on the select: ↓ paints the mech, Enter deploys Mike
+  await page.evaluate(() => window.__mr.meta({ best: Array.from({ length: 20 }, (_, i) => ({ stars: i < 3 ? 7 : 0, time: i < 3 ? 60 : 0 })) }));
+  await page.evaluate(() => window.__mr.open('select'));
+  await until(page, () => window.__mr.state().phase === 'select', null, 10000);
+  await page.waitForTimeout(500);
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(200);
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(200);
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(300);
+  await shot(page, 'paint');
+  await page.keyboard.press('Enter');
+  await until(page, () => window.__mr.state().phase === 'map', null, 10000);
+  const ps = await state(page);
+  check('stars open a paint; ↓ paints the mech', ps.mechId === 'mike' && ps.paint.mike === 'cobalt', `mech ${ps.mechId}, paint ${ps.paint.mike}`);
   await page.evaluate(() => window.__mr.meta({ unlocked: 5 }));
   await page.evaluate(() => window.__mr.start(5));
   await until(page, () => window.__mr.state().phase === 'play', null, 40000);
@@ -195,6 +211,9 @@ for (orient of ORIENTS) try {
 
   // Easy against Normal
   const easy = await open('easy');
+  await easy.keyboard.press('Enter');
+  await until(easy, () => window.__mr?.state().phase === 'select', null, 20000);
+  await easy.waitForTimeout(400);
   await easy.keyboard.press('Enter');
   await until(easy, () => window.__mr?.state().phase === 'map', null, 20000);
   await easy.waitForTimeout(400);

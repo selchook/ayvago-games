@@ -20,11 +20,11 @@ interface RawLevel {
   monsters: MonsterId[];
   /** Captures needed to open the exit (a boss level: the boss). */
   quota: number;
-  /** Seconds for the third star. */
+  /** Seconds for the third star: the autopilot's median time over the four mechs × 3 + 30 s (balance.ts). */
   par: number;
   boss?: BossId;
-  /** The first-time hint shown in this level (strings: h_<hint>). */
-  hint?: string;
+  /** The first-time hints shown in this level (strings: h_<hint>), one after the other. */
+  hint?: string | string[];
 }
 
 export const RAW: RawLevel[] = [
@@ -40,7 +40,7 @@ export const RAW: RawLevel[] = [
       '#.P...m.#',
       '#########',
     ],
-    monsters: ['mushnub', 'mushnub', 'mushnub', 'mushnub'], quota: 4, par: 75, hint: 'tow',
+    monsters: ['frog', 'frog', 'frog', 'frog'], quota: 4, par: 75, hint: 'tow',
   },
   {
     map: [
@@ -53,7 +53,7 @@ export const RAW: RawLevel[] = [
       '#..m.#..E.#',
       '###########',
     ],
-    monsters: ['mushnub', 'cat', 'cat', 'mushnub'], quota: 3, par: 95, hint: 'runner',
+    monsters: ['frog', 'monkroose', 'monkroose', 'frog'], quota: 3, par: 110, hint: 'runner',
   },
   {
     map: [
@@ -68,7 +68,7 @@ export const RAW: RawLevel[] = [
       '#..m..#.x..#',
       '############',
     ],
-    monsters: ['green-blob', 'green-blob', 'mushnub', 'cat'], quota: 5, par: 125, hint: 'split',
+    monsters: ['fish', 'fish', 'frog', 'monkroose'], quota: 5, par: 150, hint: 'split',
   },
   {
     map: [
@@ -83,7 +83,7 @@ export const RAW: RawLevel[] = [
       '#..x..D..E..#',
       '#############',
     ],
-    monsters: ['mushnub', 'cat', 'green-blob', 'mushnub', 'cat'], quota: 5, par: 150, hint: 'terminal',
+    monsters: ['frog', 'monkroose', 'fish', 'frog', 'monkroose'], quota: 5, par: 160, hint: 'terminal',
   },
   {
     map: [
@@ -97,7 +97,7 @@ export const RAW: RawLevel[] = [
       '#....P....#',
       '###########',
     ],
-    monsters: [], quota: 1, par: 120, boss: 'mushroom-king', hint: 'boss',
+    monsters: [], quota: 1, par: 175, boss: 'mushroom-king', hint: 'boss',
   },
   // ---------------------------------------------------------------- 2: the hydroponic gardens
   {
@@ -112,7 +112,7 @@ export const RAW: RawLevel[] = [
       '#.P.s.#..E..#',
       '#############',
     ],
-    monsters: ['chicken', 'mushnub', 'chicken', 'mushnub'], quota: 3, par: 130, hint: 'caller',
+    monsters: ['birb', 'frog', 'birb', 'frog'], quota: 3, par: 100, hint: 'caller',
   },
   {
     map: [
@@ -126,7 +126,7 @@ export const RAW: RawLevel[] = [
       '#..E.......#',
       '############',
     ],
-    monsters: ['glub', 'glub', 'mushnub', 'chicken'], quota: 3, par: 115, hint: 'flyer',
+    monsters: ['bunny', 'bunny', 'frog', 'birb'], quota: 3, par: 95, hint: 'leaper',
   },
   {
     map: [
@@ -141,7 +141,7 @@ export const RAW: RawLevel[] = [
       '#.P....p....#',
       '#############',
     ],
-    monsters: ['spiky-blob', 'dog', 'mushnub', 'dog'], quota: 3, par: 150, hint: 'spiky',
+    monsters: ['mushroom-king', 'dino', 'frog', 'dino'], quota: 3, par: 135, hint: ['spore', 'bite'],
   },
   {
     map: [
@@ -155,7 +155,7 @@ export const RAW: RawLevel[] = [
       '#.P...#..E..#',
       '#############',
     ],
-    monsters: ['glub', 'chicken', 'spiky-blob', 'glub'], quota: 3, par: 150, hint: 'laser',
+    monsters: ['bunny', 'birb', 'mushroom-king', 'bunny'], quota: 3, par: 165, hint: 'laser',
   },
   {
     map: [
@@ -169,7 +169,7 @@ export const RAW: RawLevel[] = [
       '#....P....#',
       '###########',
     ],
-    monsters: [], quota: 1, par: 140, boss: 'cactoro',
+    monsters: [], quota: 1, par: 170, boss: 'cactoro',
   },
   // ---------------------------------------------------------------- 3: the cryo deck
   {
@@ -183,7 +183,7 @@ export const RAW: RawLevel[] = [
       '#.P.......E.#',
       '#############',
     ],
-    monsters: ['cat', 'yeti-blob', 'cat', 'mushnub'], quota: 3, par: 120, hint: 'ice',
+    monsters: ['monkroose', 'orc', 'monkroose', 'frog'], quota: 3, par: 105, hint: 'ice',
   },
   {
     map: [
@@ -197,7 +197,7 @@ export const RAW: RawLevel[] = [
       '#.P..iii..E.#',
       '#############',
     ],
-    monsters: ['wizard', 'wizard', 'cat', 'yeti-blob'], quota: 3, par: 150, hint: 'blinker',
+    monsters: ['ninja', 'ninja', 'monkroose', 'orc'], quota: 3, par: 130, hint: 'blinker',
   },
   {
     map: [
@@ -212,7 +212,7 @@ export const RAW: RawLevel[] = [
       '#.....E......#',
       '##############',
     ],
-    monsters: ['armabee', 'armabee', 'yeti-blob', 'wizard'], quota: 3, par: 160, hint: 'bite',
+    monsters: ['alien', 'alien', 'orc', 'ninja'], quota: 3, par: 160, hint: 'lobber',
   },
   {
     map: [
@@ -226,7 +226,7 @@ export const RAW: RawLevel[] = [
       '#.P..x.....E.#',
       '##############',
     ],
-    monsters: ['yeti-blob', 'armabee', 'wizard', 'cat'], quota: 3, par: 170, hint: 'sweeper',
+    monsters: ['orc', 'cactoro', 'ninja', 'monkroose'], quota: 3, par: 125, hint: ['spiky', 'sweeper'],
   },
   {
     map: [
@@ -240,7 +240,7 @@ export const RAW: RawLevel[] = [
       '#....P.....#',
       '############',
     ],
-    monsters: [], quota: 1, par: 150, boss: 'yeti',
+    monsters: [], quota: 1, par: 170, boss: 'yeti',
   },
   // ---------------------------------------------------------------- 4: the reactor core
   {
@@ -255,7 +255,7 @@ export const RAW: RawLevel[] = [
       '#.P...x...E.#',
       '#############',
     ],
-    monsters: ['goleling', 'goleling', 'spiky-blob', 'dog'], quota: 3, par: 160, hint: 'evolve',
+    monsters: ['yeti', 'yeti', 'cactoro', 'dino'], quota: 3, par: 125, hint: 'evolve',
   },
   {
     map: [
@@ -268,7 +268,7 @@ export const RAW: RawLevel[] = [
       '#.P........E.#',
       '##############',
     ],
-    monsters: ['dragon', 'dragon', 'green-blob', 'wizard'], quota: 4, par: 150,
+    monsters: ['bunny', 'bunny', 'fish', 'ninja'], quota: 4, par: 105,
   },
   {
     map: [
@@ -282,7 +282,7 @@ export const RAW: RawLevel[] = [
       '#.P...#..x.E.#',
       '##############',
     ],
-    monsters: ['goleling', 'spiky-blob', 'dragon', 'wizard'], quota: 3, par: 175,
+    monsters: ['yeti', 'cactoro', 'mushroom-king', 'ninja'], quota: 3, par: 155,
   },
   {
     map: [
@@ -297,7 +297,7 @@ export const RAW: RawLevel[] = [
       '#.P...p...E.m.#',
       '###############',
     ],
-    monsters: ['dragon', 'goleling', 'spiky-blob', 'dog', 'green-blob'], quota: 4, par: 200,
+    monsters: ['dino', 'yeti', 'cactoro', 'birb', 'fish'], quota: 4, par: 155,
   },
   {
     map: [
@@ -311,7 +311,7 @@ export const RAW: RawLevel[] = [
       '#.....P.....#',
       '#############',
     ],
-    monsters: [], quota: 1, par: 170, boss: 'alien',
+    monsters: [], quota: 1, par: 240, boss: 'alien',
   },
 ];
 
@@ -358,8 +358,8 @@ export interface Level {
   boss: (Pt & { id: BossId }) | null;
   quota: number;
   par: number;
-  hint: string | null;
-  /** Total monsters to capture (a green blob splits into two). */
+  hints: string[];
+  /** Total monsters to capture (a fish splits into two). */
   total: number;
 }
 
@@ -367,18 +367,33 @@ const centre = (c: number, r: number): Pt => ({ x: (c + 0.5) * BLOCK, z: (r + 0.
 
 const cache = new Map<number, Level>();
 
+/** The mech select's bay (level 0): a wide lab room, two pods at the back, no monsters. */
+const BAY: RawLevel = {
+  map: [
+    '###########',
+    '#.........#',
+    '#.C.....C.#',
+    '#.........#',
+    '#....P....#',
+    '#.........#',
+    '###########',
+  ],
+  monsters: [], quota: 0, par: 0,
+};
+
+/** A level (1..LEVEL_COUNT), or the mech select's bay (0). */
 export function buildLevel(n: number): Level {
   const hit = cache.get(n);
   if (hit) return hit;
-  const raw = RAW[n - 1];
+  const raw = n === 0 ? BAY : RAW[n - 1];
   const map = raw.map;
   const rows = map.length, cols = map[0].length;
   const at = (c: number, r: number): string => (r < 0 || r >= rows || c < 0 || c >= cols ? '#' : map[r][c]);
   const floor = (c: number, r: number): boolean => at(c, r) !== '#';
   const L: Level = {
-    n, sector: sectorOf(n), cols, rows, map, start: centre(1, rows - 2), pods: [], field: null, exit: null, doors: [], terminals: [], lasers: [], turrets: [],
+    n, sector: n === 0 ? 'lab' : sectorOf(n), cols, rows, map, start: centre(1, rows - 2), pods: [], field: null, exit: null, doors: [], terminals: [], lasers: [], turrets: [],
     conveyors: [], vents: [], teles: [], crates: [], chests: [], snacks: [], powers: [], stacks: [], decor: [], spawns: [], boss: null,
-    quota: raw.quota, par: raw.par, hint: raw.hint ?? null, total: 0,
+    quota: raw.quota, par: raw.par, hints: raw.hint ? (Array.isArray(raw.hint) ? raw.hint : [raw.hint]) : [], total: 0,
   };
   let mi = 0;
   const teleIdx: number[] = [];
@@ -435,7 +450,7 @@ export function buildLevel(n: number): Level {
     }
   }
   for (let i = 0; i + 1 < teleIdx.length; i += 2) { L.teles[teleIdx[i]].to = teleIdx[i + 1]; L.teles[teleIdx[i + 1]].to = teleIdx[i]; }
-  L.total = L.spawns.reduce((s, m) => s + (m.id === 'green-blob' ? 2 : 1), 0) + (L.boss ? 1 : 0);
+  L.total = L.spawns.reduce((s, m) => s + (m.id === 'fish' ? 2 : 1), 0) + (L.boss ? 1 : 0);
   cache.set(n, L);
   return L;
 }

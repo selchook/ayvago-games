@@ -30,6 +30,14 @@ launch({
     // the mech
     loadAudio(l, 'shot', J + 'weapons/lasers/sfx-wpn-laser4');
     loadAudio(l, 'shotBig', J + 'weapons/lasers/sfx-wpn-laser10');
+    loadAudio(l, 'shotL', J + 'weapons/lasers/sfx-wpn-laser1');
+    loadAudio(l, 'lance', J + 'weapons/lasers/sfx-wpn-laser12');
+    loadAudio(l, 'shotS', J + 'weapons/shotgun/sfx-weapon-shotgun1');
+    loadAudio(l, 'pulse', J + 'explosions/short/sfx-exp-short-soft5');
+    loadAudio(l, 'shotM', J + 'weapons/cannon/sfx-wpn-cannon1');
+    loadAudio(l, 'splash', J + 'explosions/shortest/sfx-exp-shortest-soft4');
+    loadAudio(l, 'shell', J + 'weapons/cannon/sfx-wpn-cannon4');
+    loadAudio(l, 'shellHit', J + 'explosions/short/sfx-exp-short-hard3');
     loadAudio(l, 'grab', J + 'movement/portals-and-transitions/sfx-movement-portal3');
     loadAudio(l, 'drop', J + 'general-sounds/neutral-sounds/sfx-sound-neutral3');
     loadAudio(l, 'hurt', J + 'general-sounds/negative-sounds/sfx-sounds-damage1');
@@ -54,6 +62,8 @@ launch({
     loadAudio(l, 'squawk', J + 'death-screams/alien/sfx-deathscream-alien3');
     loadAudio(l, 'growl', J + 'death-screams/alien/sfx-deathscream-alien1');
     loadAudio(l, 'vent', J + 'movement/jumping-and-landing/sfx-movement-jump12-landing');
+    loadAudio(l, 'hop', J + 'movement/jumping-and-landing/sfx-movement-jump1');
+    loadAudio(l, 'spore', J + 'general-sounds/weird-sounds/sfx-sound-depressurizing');
     // the station
     loadAudio(l, 'tele', J + 'movement/portals-and-transitions/sfx-movement-portal2');
     loadAudio(l, 'doorOpen', J + 'movement/opening-doors/sfx-movement-dooropen1');
@@ -91,14 +101,16 @@ launch({
     loadAudio(l, 'star', J + 'general-sounds/positive-sounds/sfx-sounds-powerup2');
   },
   menuDecor(scene) {
-    // behind the menu: the autopilot rounding up the Pet Corner, the camera after it
+    // behind the menu: the autopilot rounding up Rush Hour (1-2), the camera after it
     const view = new View(scene, { quality: 0.8 });
     let sim: Sim, bot: Bot;
     const fresh = () => {
-      sim = new Sim(buildLevel(MENU_LEVEL), noRanks(), false, loadMeta().mech);
+      const meta = loadMeta();
+      sim = new Sim(buildLevel(MENU_LEVEL), noRanks(), false, meta.mech);
       sim.god = true;
       bot = new Bot(sim);
       view.build(sim);
+      view.setMech(meta.mech, false, meta.paint[meta.mech]);
       view.snap(sim);
     };
     fresh();
