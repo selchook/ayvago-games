@@ -136,13 +136,23 @@ const labelOf = (r: KeyHelpRow): string => {
   return s && s !== r.label ? s : r.label;
 };
 
+export interface KeyBlockOptions {
+  /** Label colour (default a soft white). */
+  color?: string;
+  /** Labels with a dark edge, to read straight over the game. */
+  outline?: boolean;
+  /** Key cap height in px (default 34); the labels, gaps and lines follow it. */
+  cap?: number;
+}
+
 /**
- * Every key with what it does, in lines no wider than `maxW` (centred on the container's origin).
- * `outline` draws the labels with a dark edge, to read straight over the game.
+ * Every key with what it does, in lines no wider than `maxW`, centred on the container's origin
+ * (`w` and `h` are its drawn size). The pause strip, the first-time keys and the menu's how-to use it.
  */
-function keyLines(scene: Phaser.Scene, maxW: number, outline: boolean): { obj: Phaser.GameObjects.Container; w: number; h: number } {
-  const H = 34, gapX = 34, gapY = 14, lineH = H + 6;
-  const items = rows().map((r) => row(scene, [keys(scene, r, H, outline), text(scene, labelOf(r), 21, '#e8edf8', outline)], 12));
+export function keyHelpBlock(scene: Phaser.Scene, maxW: number, o: KeyBlockOptions = {}): { obj: Phaser.GameObjects.Container; w: number; h: number } {
+  const H = o.cap ?? 34, k = H / 34, outline = !!o.outline;
+  const gapX = Math.round(34 * k), gapY = Math.round(14 * k), lineH = H + 6;
+  const items = rows().map((r) => row(scene, [keys(scene, r, H, outline), text(scene, labelOf(r), Math.round(21 * k), o.color ?? '#e8edf8', outline)], Math.round(12 * k)));
   const lines: Piece[][] = [[]];
   let lw = 0;
   for (const it of items) {
@@ -169,7 +179,7 @@ export function keyHelpStrip(scene: Phaser.Scene, o: { y: number; maxW: number; 
   if (!keyHelpShown(scene)) return null;
   const { width } = scene.scale;
   const padX = 26, padY = 14;
-  const k = keyLines(scene, o.maxW - padX * 2, false);
+  const k = keyHelpBlock(scene, o.maxW - padX * 2);
   const bw = k.w + padX * 2, bh = k.h + padY * 2;
   const c = scene.add.container(width / 2, o.y - bh / 2);
   const g = scene.add.graphics();
@@ -198,7 +208,7 @@ export function showKeyHelp(scene: Phaser.Scene, o: { ms?: number; bottom?: numb
   if (!keyHelpDue(scene)) return null;
   const { width, height } = scene.scale;
   const land = isLandscape();
-  const k = keyLines(scene, land ? width - 200 : width - 48, true);
+  const k = keyHelpBlock(scene, land ? width - 200 : width - 48, { outline: true });
   const root = scene.add.container(width / 2, height - (o.bottom ?? (land ? 26 : 60)) - k.h / 2, [k.obj]).setDepth(9300).setScrollFactor(0);
   root.setAlpha(0);
   root.y += 16;

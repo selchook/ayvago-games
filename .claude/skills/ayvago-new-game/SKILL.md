@@ -743,6 +743,7 @@ keyHelp: [
   drawn wide and localized. `label` is a string key, in TR and EN.
 - **Pause strip:** the pause screen draws every key in a band along the bottom. Desktop only;
   touch devices show their own buttons. The themed landscape pause card is shorter so the strip fits.
+- **Menu how-to:** a themed menu's HOW TO PLAY box shows the keys instead of the how-to text on desktops: the same caps, labels in the card's body colour. Touch devices keep the text.
 - **First-time keys:** the game calls `showKeyHelp(scene)` when its first round starts.
   - The same keys appear along the bottom of the play screen, without a band.
   - Nothing waits on them: the round goes on underneath.
