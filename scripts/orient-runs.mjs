@@ -5,12 +5,9 @@
 // touch, no hover, a 390 px short side), each checked to boot in the orientation its device must
 // get. With `tablet`, a third run on an iPad (touch, an 810 px short side) must boot landscape.
 // No ?orient= override is used here: the runs prove the device rule itself.
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { metaOf } from './game-list.mjs';
 
-export const isAdaptive = (root, slug) => {
-  try { return JSON.parse(readFileSync(join(root, 'games', slug, 'game.json'), 'utf8')).orientation === 'adaptive'; } catch { return false; }
-};
+export const isAdaptive = (root, slug) => metaOf(root, slug)?.orientation === 'adaptive';
 
 /** Playwright device descriptors, rendered at device scale 1 (software WebGL is slow enough). */
 const device = (playwright, name) => ({ ...playwright.devices[name], deviceScaleFactor: 1 });

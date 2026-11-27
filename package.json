@@ -21,7 +21,10 @@
     "test:three-memory": "node scripts/three-memory.mjs",
     "test:gamepad": "tsx scripts/gamepad-unit.ts && node scripts/gamepad-test.mjs",
     "test:city": "node scripts/city-test.mjs",
-    "city:shots": "node scripts/city-shots.mjs"
+    "city:shots": "node scripts/city-shots.mjs",
+    "check:unity": "node scripts/check-unity.mjs",
+    "build:unity-adapter": "node scripts/build-unity-adapter.mjs",
+    "test:unity": "node scripts/test-unity.mjs"
   },
   "devDependencies": {
     "prettier": "^3.9.10",

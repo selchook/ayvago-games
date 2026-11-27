@@ -34,6 +34,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/air-hockey.png"
     },
     {
@@ -64,6 +65,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/alien-invaders.png"
     },
     {
@@ -99,6 +101,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/archery.png"
     },
     {
@@ -129,6 +132,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/asteroid-storm.png"
     },
     {
@@ -163,6 +167,7 @@
       "platform": {
         "addedAt": "2026-11-18"
       },
+      "engine": "phaser",
       "thumb": "thumbs/astro-crew.png"
     },
     {
@@ -195,6 +200,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/axe-throw.png"
     },
     {
@@ -230,6 +236,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
+      "engine": "phaser",
       "thumb": "thumbs/backgammon.png"
     },
     {
@@ -259,6 +266,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/block-blast.png"
     },
     {
@@ -293,6 +301,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/block-drop.png"
     },
     {
@@ -327,6 +336,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/bomb-maze.png"
     },
     {
@@ -361,6 +371,7 @@
       "platform": {
         "featured": true
       },
+      "engine": "phaser",
       "thumb": "thumbs/brick-breaker.png"
     },
     {
@@ -391,6 +402,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/bubble-pop.png"
     },
     {
@@ -424,6 +436,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/bug-blaster.png"
     },
     {
@@ -457,6 +470,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/cave-copter.png"
     },
     {
@@ -488,6 +502,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/city-defender.png"
     },
     {
@@ -522,6 +537,7 @@
       "platform": {
         "addedAt": "2026-11-15"
       },
+      "engine": "phaser",
       "thumb": "thumbs/coaster-rush.png"
     },
     {
@@ -554,6 +570,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/coin-catcher.png"
     },
     {
@@ -587,6 +604,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
+      "engine": "phaser",
       "thumb": "thumbs/color-bounce.png"
     },
     {
@@ -619,6 +637,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/color-gate.png"
     },
     {
@@ -652,6 +671,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
+      "engine": "phaser",
       "thumb": "thumbs/color-road.png"
     },
     {
@@ -685,6 +705,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
+      "engine": "phaser",
       "thumb": "thumbs/color-wheel.png"
     },
     {
@@ -716,6 +737,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/connect-four.png"
     },
     {
@@ -749,6 +771,7 @@
       "platform": {
         "addedAt": "2026-11-12"
       },
+      "engine": "phaser",
       "thumb": "thumbs/crypt-crawler.png"
     },
     {
@@ -782,6 +805,7 @@
       "platform": {
         "addedAt": "2026-11-11"
       },
+      "engine": "phaser",
       "thumb": "thumbs/crystal-keep.png"
     },
     {
@@ -815,6 +839,7 @@
       "platform": {
         "addedAt": "2026-11-13"
       },
+      "engine": "phaser",
       "thumb": "thumbs/delivery-dash.png"
     },
     {
@@ -851,6 +876,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/dots-and-boxes.png"
     },
     {
@@ -887,6 +913,7 @@
       "platform": {
         "addedAt": "2026-11-25"
       },
+      "engine": "phaser",
       "thumb": "thumbs/dungeon-rescue.png"
     },
     {
@@ -920,6 +947,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/fish-frenzy.png"
     },
     {
@@ -955,6 +983,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/fruit-slash.png"
     },
     {
@@ -988,6 +1017,7 @@
       "platform": {
         "featured": true
       },
+      "engine": "phaser",
       "thumb": "thumbs/gem-match.png"
     },
     {
@@ -1028,6 +1058,7 @@
           "minDurationMs": 45000
         }
       },
+      "engine": "phaser",
       "thumb": "thumbs/golden-podium.png"
     },
     {
@@ -1064,6 +1095,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/gomoku.png"
     },
     {
@@ -1099,6 +1131,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
+      "engine": "phaser",
       "thumb": "thumbs/hex-bridge.png"
     },
     {
@@ -1133,6 +1166,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/hex-merge.png"
     },
     {
@@ -1172,6 +1206,7 @@
       "platform": {
         "addedAt": "2026-11-16"
       },
+      "engine": "phaser",
       "thumb": "thumbs/hex-realm.png"
     },
     {
@@ -1203,6 +1238,7 @@
         "Art: drawn in code; audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/hoop-shot.png"
     },
     {
@@ -1236,6 +1272,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/jetpack-rush.png"
     },
     {
@@ -1270,6 +1307,7 @@
       "platform": {
         "addedAt": "2026-11-13"
       },
+      "engine": "phaser",
       "thumb": "thumbs/kickflip-park.png"
     },
     {
@@ -1305,6 +1343,7 @@
       "platform": {
         "addedAt": "2026-11-22"
       },
+      "engine": "phaser",
       "thumb": "thumbs/last-convoy.png"
     },
     {
@@ -1340,6 +1379,7 @@
       "platform": {
         "addedAt": "2026-11-07"
       },
+      "engine": "phaser",
       "thumb": "thumbs/letter-loop.png"
     },
     {
@@ -1375,6 +1415,7 @@
       "platform": {
         "addedAt": "2026-11-07"
       },
+      "engine": "phaser",
       "thumb": "thumbs/letter-rain.png"
     },
     {
@@ -1410,6 +1451,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/light-cycles.png"
     },
     {
@@ -1439,6 +1481,7 @@
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/lights-out.png"
     },
     {
@@ -1469,6 +1512,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/lunar-lander.png"
     },
     {
@@ -1505,6 +1549,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
+      "engine": "phaser",
       "thumb": "thumbs/mangala.png"
     },
     {
@@ -1539,6 +1584,7 @@
       "platform": {
         "addedAt": "2026-11-10"
       },
+      "engine": "phaser",
       "thumb": "thumbs/marble-maze.png"
     },
     {
@@ -1572,6 +1618,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/maze-muncher.png"
     },
     {
@@ -1607,6 +1654,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/memory-match.png"
     },
     {
@@ -1636,6 +1684,7 @@
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/merge-2048.png"
     },
     {
@@ -1670,6 +1719,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/mine-sweeper.png"
     },
     {
@@ -1705,6 +1755,7 @@
       "platform": {
         "addedAt": "2026-11-27"
       },
+      "engine": "phaser",
       "thumb": "thumbs/monster-roundup.png"
     },
     {
@@ -1741,6 +1792,7 @@
       "platform": {
         "addedAt": "2026-11-26"
       },
+      "engine": "phaser",
       "thumb": "thumbs/moon-rover.png"
     },
     {
@@ -1776,6 +1828,7 @@
       "platform": {
         "addedAt": "2026-11-07"
       },
+      "engine": "phaser",
       "thumb": "thumbs/mud-rally.png"
     },
     {
@@ -1808,6 +1861,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/neon-pong.png"
     },
     {
@@ -1842,6 +1896,7 @@
       "platform": {
         "addedAt": "2026-11-18"
       },
+      "engine": "phaser",
       "thumb": "thumbs/neon-ronin.png"
     },
     {
@@ -1877,6 +1932,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
+      "engine": "phaser",
       "thumb": "thumbs/nine-mens-morris.png"
     },
     {
@@ -1910,6 +1966,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/nonogram.png"
     },
     {
@@ -1946,6 +2003,7 @@
         "addedAt": "2026-11-06",
         "featured": true
       },
+      "engine": "phaser",
       "thumb": "thumbs/okey.png"
     },
     {
@@ -1979,6 +2037,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
+      "engine": "phaser",
       "thumb": "thumbs/orbit-hop.png"
     },
     {
@@ -2012,6 +2071,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
+      "engine": "phaser",
       "thumb": "thumbs/paint-roll.png"
     },
     {
@@ -2044,6 +2104,7 @@
         "Characters & audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/penalty-kick.png"
     },
     {
@@ -2077,6 +2138,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
+      "engine": "phaser",
       "thumb": "thumbs/pinball.png"
     },
     {
@@ -2111,6 +2173,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/pipe-flow.png"
     },
     {
@@ -2144,6 +2207,7 @@
       "platform": {
         "addedAt": "2026-11-11"
       },
+      "engine": "phaser",
       "thumb": "thumbs/pirate-cove.png"
     },
     {
@@ -2177,6 +2241,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/pixel-runner.png"
     },
     {
@@ -2210,6 +2275,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/platform-hopper.png"
     },
     {
@@ -2243,6 +2309,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/plinko-drop.png"
     },
     {
@@ -2281,6 +2348,7 @@
           "minDurationMs": 30000
         }
       },
+      "engine": "phaser",
       "thumb": "thumbs/putt-park.png"
     },
     {
@@ -2316,6 +2384,7 @@
       "platform": {
         "addedAt": "2026-11-24"
       },
+      "engine": "phaser",
       "thumb": "thumbs/relic-ruins.png"
     },
     {
@@ -2346,6 +2415,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/retro-snake.png"
     },
     {
@@ -2376,6 +2446,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/reversi.png"
     },
     {
@@ -2409,6 +2480,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/road-crosser.png"
     },
     {
@@ -2442,6 +2514,7 @@
       "platform": {
         "addedAt": "2026-11-13"
       },
+      "engine": "phaser",
       "thumb": "thumbs/rooftop-courier.png"
     },
     {
@@ -2475,6 +2548,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
+      "engine": "phaser",
       "thumb": "thumbs/rope-swing.png"
     },
     {
@@ -2511,6 +2585,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/sea-battle.png"
     },
     {
@@ -2546,6 +2621,7 @@
       "platform": {
         "addedAt": "2026-11-08"
       },
+      "engine": "phaser",
       "thumb": "thumbs/secret-word.png"
     },
     {
@@ -2580,6 +2656,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/shooting-gallery.png"
     },
     {
@@ -2610,6 +2687,7 @@
       "credits": [
         "Audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/simon-says.png"
     },
     {
@@ -2646,6 +2724,7 @@
       "platform": {
         "addedAt": "2026-11-14"
       },
+      "engine": "phaser",
       "thumb": "thumbs/skull-isle.png"
     },
     {
@@ -2675,6 +2754,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/sky-jumper.png"
     },
     {
@@ -2709,6 +2789,7 @@
       "platform": {
         "addedAt": "2026-11-07"
       },
+      "engine": "phaser",
       "thumb": "thumbs/sky-road.png"
     },
     {
@@ -2743,6 +2824,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/slide-puzzle.png"
     },
     {
@@ -2777,6 +2859,7 @@
       "platform": {
         "addedAt": "2026-11-12"
       },
+      "engine": "phaser",
       "thumb": "thumbs/snack-shack.png"
     },
     {
@@ -2810,6 +2893,7 @@
       "platform": {
         "addedAt": "2026-11-13"
       },
+      "engine": "phaser",
       "thumb": "thumbs/snow-express.png"
     },
     {
@@ -2840,6 +2924,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/sokoban.png"
     },
     {
@@ -2872,6 +2957,7 @@
         "Audio: Kenney (CC0) — kenney.nl",
         "Sound effects: Juhani Junkala (CC0) — opengameart.org"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/solitaire.png"
     },
     {
@@ -2905,6 +2991,7 @@
       "platform": {
         "featured": true
       },
+      "engine": "phaser",
       "thumb": "thumbs/space-blaster.png"
     },
     {
@@ -2937,6 +3024,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/stack-tower.png"
     },
     {
@@ -2972,6 +3060,7 @@
       "platform": {
         "addedAt": "2026-11-13"
       },
+      "engine": "phaser",
       "thumb": "thumbs/star-squadron.png"
     },
     {
@@ -3011,6 +3100,7 @@
           "minDurationMs": 40000
         }
       },
+      "engine": "phaser",
       "thumb": "thumbs/strike-alley.png"
     },
     {
@@ -3044,6 +3134,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/sudoku.png"
     },
     {
@@ -3079,6 +3170,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
+      "engine": "phaser",
       "thumb": "thumbs/sumo-push.png"
     },
     {
@@ -3113,6 +3205,7 @@
       "platform": {
         "addedAt": "2026-11-17"
       },
+      "engine": "phaser",
       "thumb": "thumbs/sushi-rush.png"
     },
     {
@@ -3144,6 +3237,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/tank-arena.png"
     },
     {
@@ -3174,6 +3268,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/tappy-plane.png"
     },
     {
@@ -3207,6 +3302,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/tile-triple.png"
     },
     {
@@ -3243,6 +3339,7 @@
       "platform": {
         "addedAt": "2026-11-05"
       },
+      "engine": "phaser",
       "thumb": "thumbs/tito-tank.png"
     },
     {
@@ -3274,6 +3371,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/tower-defense.png"
     },
     {
@@ -3308,6 +3406,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/traffic-racer.png"
     },
     {
@@ -3343,6 +3442,7 @@
       "platform": {
         "addedAt": "2026-11-24"
       },
+      "engine": "phaser",
       "thumb": "thumbs/trap-trail.png"
     },
     {
@@ -3379,6 +3479,7 @@
       "platform": {
         "addedAt": "2026-10-29"
       },
+      "engine": "phaser",
       "thumb": "thumbs/turkish-draughts.png"
     },
     {
@@ -3412,6 +3513,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/ufo-abduction.png"
     },
     {
@@ -3448,6 +3550,7 @@
       "platform": {
         "addedAt": "2026-11-04"
       },
+      "engine": "phaser",
       "thumb": "thumbs/ultimate-tictactoe.png"
     },
     {
@@ -3481,6 +3584,7 @@
       "platform": {
         "addedAt": "2026-10-30"
       },
+      "engine": "phaser",
       "thumb": "thumbs/water-sort.png"
     },
     {
@@ -3513,6 +3617,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/whack-a-mole.png"
     },
     {
@@ -3547,6 +3652,7 @@
       "platform": {
         "addedAt": "2026-10-28"
       },
+      "engine": "phaser",
       "thumb": "thumbs/word-hunt.png"
     },
     {
@@ -3580,6 +3686,7 @@
       "platform": {
         "addedAt": "2026-11-13"
       },
+      "engine": "phaser",
       "thumb": "thumbs/zombie-grove.png"
     },
     {
@@ -3611,6 +3718,7 @@
       "credits": [
         "Art & audio: Kenney (CC0) — kenney.nl"
       ],
+      "engine": "phaser",
       "thumb": "thumbs/zombie-survivor.png"
     }
   ]

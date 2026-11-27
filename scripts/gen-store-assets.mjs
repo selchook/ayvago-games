@@ -33,17 +33,26 @@
 // ayvago.com: the liveliest frame of that run, the small logo at the bottom) and the phone on its
 // cover, which shows the desktop frame and the phone side by side. A CARD entry's `phone` object
 // overrides its settings for the phone run (say another `pick`).
+// A Unity game ("engine": "unity") is driven through its test hooks (docs/unity/AYVAGO_UNITY_SDK.md
+// §8): the menu frame once the state says `menu`, the `play` command, then the same scripted keys
+// and taps; a frame is live while the state says `play`, and a pause a tap opened is closed with
+// `resume`. Its CARD entry's `stage` is a name sent as `stage <name>` (the game's own staging).
+// A Unity game has no menu theme here, so its logos are the plain title logos, and no COVER_HERO.
+//   --unity-fixture  makes the whole set for the Unity fixture (scripts/unity-fixture.mjs; implies
+//                 --dev) into a temporary folder (printed), never into public/
 //   AYVAGO_TEST_PORT=<n> serves the games on that port instead of a random one.
 //   CARD_FRAMES=<dir> keeps the card candidate frames (an adaptive game's phone run as
 //   <slug>-portrait-<n>.png); with --card-only --from-frames the cards are re-composed from them
 //   without opening the games
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
-import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { deflateSync, crc32 } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { FIXTURE_SLUG, metaOf } from './game-list.mjs';
+import { useUnityFixture } from './unity-fixture.mjs';
 
 const require = createRequire(import.meta.url);
 let playwright;
@@ -51,13 +60,23 @@ try { playwright = require('playwright'); } catch { playwright = require('/opt/n
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
-const dev = args.includes('--dev');
+const unityFixture = args.includes('--unity-fixture');
+const dev = args.includes('--dev') || unityFixture;
+if (unityFixture) useUnityFixture();
+// the fixture's art goes to a temporary folder, never into public/
+const fixtureOut = unityFixture ? mkdtempSync(join(tmpdir(), 'ayvago-unity-fixture-art-')) : null;
 const cardOnly = args.includes('--card-only');
 const logoOnly = args.includes('--logo-only');
 const trFromEn = args.includes('--tr-from-en');
 const only = args.filter((a) => !a.startsWith('--'));
-const slugs = (only.length ? only : readdirSync(join(root, 'public', 'games')))
+const slugs = unityFixture ? [FIXTURE_SLUG] : (only.length ? only : readdirSync(join(root, 'public', 'games')))
   .filter((s) => existsSync(join(root, 'public', 'games', s, 'ayvago.json')));
+
+/** The manifest fields the art uses, for the fixture (which has no ayvago.json). */
+function fixtureManifest() {
+  const g = metaOf(root, FIXTURE_SLUG);
+  return { id: g.id.replace(/-/g, ''), title: g.title, description: g.description, category: g.genres[0], categories: g.genres, orientation: g.orientation === 'adaptive' ? 'any' : g.orientation };
+}
 
 // Cover title size: smaller for long titles, and small enough that the longest word fits the text column.
 /**
@@ -1270,16 +1289,28 @@ async function capture(browser, slug, land, tune) {
   const page = await browser.newPage({ viewport: land ? { width: 1280, height: 720 } : { width: 720, height: 1280 } });
   try {
     await page.goto(`http://localhost:${PORT}/games/${slug}/?nointro&lang=en${orientQuery(manifest, land)}`);
-    await page.waitForFunction(() => window.__ayvago?.game.scene.isActive('Menu'), null, { timeout: dev ? 60000 : 20000 });
+    // a Phaser game's Menu scene, or a Unity game's `menu` state (its test hooks)
+    await page.waitForFunction(() => {
+      const a = window.__ayvago;
+      return a?.engine === 'unity' ? a.ready && a.state()?.screen === 'menu' : !!a?.game?.scene.isActive('Menu');
+    }, null, { timeout: dev ? 60000 : 20000 });
+    const unity = await page.evaluate(() => window.__ayvago.engine === 'unity');
+    const screen = () => page.evaluate(() => window.__ayvago.state()?.screen);
     // a themed menu's logo (English), and time for its entrance to finish before the menu shot
-    const logo = await page.evaluate(() => window.__ayvago.menuLogo?.('en')?.split(',')[1] ?? null);
+    const logo = unity ? null : await page.evaluate(() => window.__ayvago.menuLogo?.('en')?.split(',')[1] ?? null);
     await page.waitForTimeout(logo ? 3000 : 900);
     const canvas = page.locator('canvas').first();
     const menu = (await canvas.screenshot()).toString('base64');
-    await page.keyboard.press('Enter');
-    await page.waitForFunction(() => window.__ayvago.game.scene.isActive('Play'), null, { timeout: 15000 });
+    if (unity) {
+      await page.evaluate(() => window.__ayvago.command('play'));
+      await page.waitForFunction(() => window.__ayvago.state()?.screen === 'play', null, { timeout: 15000 });
+    } else {
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => window.__ayvago.game.scene.isActive('Play'), null, { timeout: 15000 });
+    }
     if (tune.wait) await page.waitForTimeout(tune.wait);
-    if (tune.stage) await page.evaluate(`(${tune.stage})()`);
+    if (tune.stage && unity) await page.evaluate((name) => window.__ayvago.command('stage', name), String(tune.stage));
+    else if (tune.stage) await page.evaluate(`(${tune.stage})()`);
     const box = await canvas.boundingBox();
     let play, thumb;
     const shots = [];
@@ -1295,11 +1326,19 @@ async function capture(browser, slug, land, tune) {
       if (!CAPTURES.includes(i)) continue;
       // Hide the pause overlay if a random tap opened it. A frame is live when the round runs
       // both before and after it is taken (not over, no result screen).
-      const running = () => page.evaluate(() => {
-        const g = window.__ayvago.game;
-        if (g.scene.isActive('Pause')) { g.scene.stop('Pause'); g.scene.resume('Play'); }
-        return g.scene.isActive('Play') && !g.scene.isActive('GameOver') && !g.scene.getScene('Play').isOver;
-      });
+      const running = unity
+        ? async () => {
+          if ((await screen()) === 'pause') {
+            await page.evaluate(() => window.__ayvago.command('resume'));
+            await page.waitForTimeout(100);
+          }
+          return (await screen()) === 'play';
+        }
+        : () => page.evaluate(() => {
+          const g = window.__ayvago.game;
+          if (g.scene.isActive('Pause')) { g.scene.stop('Pause'); g.scene.resume('Play'); }
+          return g.scene.isActive('Play') && !g.scene.isActive('GameOver') && !g.scene.getScene('Play').isOver;
+        });
       const before = await running();
       await page.waitForTimeout(i === 15 ? 500 : 250);
       const b64 = (await canvas.screenshot()).toString('base64');
@@ -1329,11 +1368,11 @@ const browser = await playwright.chromium.launch({ args: ['--use-gl=angle', '--u
 const lab = await browser.newPage();   // frame statistics and WebP encoding
 let made = 0;
 for (const slug of slugs) {
-  const m = JSON.parse(readFileSync(join(root, 'public', 'games', slug, 'ayvago.json'), 'utf8'));
+  const m = slug === FIXTURE_SLUG ? fixtureManifest() : JSON.parse(readFileSync(join(root, 'public', 'games', slug, 'ayvago.json'), 'utf8'));
   const land = landOf(m);
   manifest = m;
   const tune = CARD[slug] ?? {};
-  const out = join(root, 'public', 'games', slug, 'ayvago');
+  const out = fixtureOut ?? join(root, 'public', 'games', slug, 'ayvago');
   mkdirSync(out, { recursive: true });
   try {
     if (logoOnly) {
@@ -1398,8 +1437,11 @@ for (const slug of slugs) {
         if (logoTr) writeFileSync(join(framesDir, `${slug}-logo-tr.png`), Buffer.from(logoTr, 'base64'));
       }
       if (!cardOnly) {
-        mkdirSync(join(root, 'public', 'thumbs'), { recursive: true });
-        writeFileSync(join(root, 'public', 'thumbs', `${slug}.png`), cap.thumb);
+        if (fixtureOut) writeFileSync(join(fixtureOut, `thumb-${slug}.png`), cap.thumb);
+        else {
+          mkdirSync(join(root, 'public', 'thumbs'), { recursive: true });
+          writeFileSync(join(root, 'public', 'thumbs', `${slug}.png`), cap.thumb);
+        }
         // Light in-game screenshot for the platform's Arcade theme tiles (manifest assets.screenshot).
         await renderScreenshot(browser, cap.play, land, join(out, 'screenshot.jpg'));
         // an adaptive game's cover: the phone beside the desktop frame
@@ -1468,5 +1510,5 @@ for (const slug of slugs) {
 }
 await browser.close();
 if (server) try { process.kill(-server.pid); } catch { server.kill(); }
-console.log(`\nstore assets: ${made}/${slugs.length}`);
+console.log(`\nstore assets: ${made}/${slugs.length}${fixtureOut ? ` (the Unity fixture's art: ${fixtureOut})` : ''}`);
 process.exit(made === slugs.length ? 0 : 1);

@@ -20,7 +20,15 @@
 // Adaptive games run twice (scripts/orient-runs.mjs): on a desktop page (the frame 960×540, it must
 // boot landscape) and on an emulated phone (the frame fills it, it must boot portrait), as on
 // ayvago.com, where the platform frames an 'any' game by the same device rule.
+// Unity games ("engine": "unity") get the same checks through their test hooks
+// (window.__ayvago.state() / .command(), docs/unity/AYVAGO_UNITY_SDK.md §8) wherever a Phaser game
+// is driven through its scenes: the menu's sound switch is the `sound` command, Easy is
+// `difficulty easy`, PLAY / RETRY / MENU / CONTINUE are commands, the forced end is `end 123`
+// (after the game's minDurationMs, so the run is long enough to be sent), and the state reports
+// the language, the adopted best, the sound switch and the ad hold.
 // Usage: node scripts/platform-harness.mjs [--dev] [--tablet] [slug ...]   (default: dist/ via vite preview)
+//   --unity-fixture  checks the Unity fixture (scripts/unity-fixture.mjs; implies --dev) and the
+//                    slugs given, if any
 //   AYVAGO_TEST_PORT=<n> serves the games on that port instead of a random one.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
@@ -30,6 +38,8 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { runsOf } from './orient-runs.mjs';
+import { FIXTURE_SLUG, isUnity, servable, minDurationOf } from './game-list.mjs';
+import { useUnityFixture } from './unity-fixture.mjs';
 
 const require = createRequire(import.meta.url);
 let playwright;
@@ -37,10 +47,12 @@ try { playwright = require('playwright'); } catch { playwright = require('/opt/n
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
-const dev = args.includes('--dev');
+const fixture = args.includes('--unity-fixture');
+const dev = args.includes('--dev') || fixture;
 const only = args.filter((a) => !a.startsWith('--'));
-const slugs = (only.length ? only : readdirSync(join(root, 'games')))
-  .filter((s) => existsSync(dev ? join(root, 'games', s, 'index.html') : join(root, 'dist', 'games', s, 'index.html')));
+if (fixture) useUnityFixture();
+const slugs = (fixture ? [...only, FIXTURE_SLUG] : only.length ? only : readdirSync(join(root, 'games')))
+  .filter((s) => servable(root, s, dev));
 
 const GAME_PORT = Number(process.env.AYVAGO_TEST_PORT) || 4900 + Math.floor(Math.random() * 90);
 const HOST_PORT = 3000;   // http://localhost:3000 is an allowed platform origin in the adapter
@@ -277,10 +289,193 @@ async function checkAds(run) {
   return { ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
 }
 
+// ------------------------------------------------------------------ Unity games (test hooks)
+
+/** The page's game frame and its hooks. */
+function unityFrame(page) {
+  const frame = () => page.frames().find((f) => f.url().startsWith(GAME_ORIGIN));
+  return {
+    frame,
+    state: () => frame().evaluate(() => window.__ayvago.state()),
+    command: (name, arg) => frame().evaluate(([n, a]) => window.__ayvago.command(n, a), [name, arg]),
+    waitScreen: (screen, ms = 10000) => frame().waitForFunction((s) => window.__ayvago?.state?.()?.screen === s, screen, { timeout: ms }),
+    waitReady: () => frame().waitForFunction(() => window.__ayvago?.engine === 'unity' && window.__ayvago.ready, null, { timeout: 60000 }),
+  };
+}
+
+/** Waits until the run that started at `since` is long enough for the platform (minDurationMs). */
+async function longEnough(page, slug, since) {
+  const left = minDurationOf(root, slug) + 400 - (Date.now() - since);
+  if (left > 0) await page.waitForTimeout(left);
+}
+
+async function checkUnity(run) {
+  const { slug } = run;
+  const errors = [];
+  const { page, vp, size } = await openPage(run);
+  page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+  page.on('console', (m) => { if (m.type() === 'error' && !/\[vite\]/.test(m.text())) errors.push('console: ' + m.text()); });
+  const types = () => page.evaluate(() => window.log.map((m) => m.type));
+  const u = unityFrame(page);
+  const step = {};
+  try {
+    await page.goto(`http://localhost:${HOST_PORT}/?slug=${slug}&locale=tr${size}`);
+    await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_READY'), null, { timeout: dev ? 30000 : 8000 });
+    step.ready = true;
+    step.gameId = (await page.evaluate(() => window.log.find((m) => m.type === 'GHA_READY'))).gameId;
+    step.gameIdOk = step.gameId === slug.replace(/-/g, '');
+    await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_LOADING'), null, { timeout: 30000 });
+    step.loading = true;
+    await u.waitReady();
+    await page.waitForTimeout(800);
+    if ((await u.state()).screen === 'intro') await page.mouse.click(Math.min(270, vp.width / 2), 40);   // skip the intro
+    await u.waitScreen('menu', 20000);
+    let st = await u.state();
+    if (run.expect) step.orientation = st.orientation;
+    step.locale = st.locale;
+    step.best = st.hasBest ? st.best : null;
+    // the game's own sound switch: off and on again, both reported to the platform
+    for (let i = 0; i < 2; i++) {
+      await u.command('sound');
+      await page.waitForTimeout(250);
+    }
+    step.offersDifficulty = st.offersDifficulty;
+    if (step.offersDifficulty) {
+      await u.command('difficulty', 'easy');
+      await page.waitForTimeout(250);
+      step.easyPicked = (await u.state()).difficulty === 'easy';
+    }
+    await u.command('play');
+    await u.waitScreen('play', 5000);
+    await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_SESSION_START'), null, { timeout: 3000 });
+    const since = Date.now();
+    step.sessionStart = true;
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => send({ type: 'GHA_PAUSE' }));
+    await u.waitScreen('pause', 3000);
+    step.pause = true;
+    await page.evaluate(() => send({ type: 'GHA_MUTE', muted: true }));
+    await page.waitForTimeout(250);
+    st = await u.state();
+    step.mute = st.muted && st.silenced;
+    const states = await page.evaluate(() => window.log.filter((m) => m.type === 'GHA_MUTE_STATE').map((m) => m.muted));
+    step.muteState = states.join() === 'false,true,false';
+    await longEnough(page, slug, since);
+    await u.command('resume');
+    await u.waitScreen('play', 3000);
+    await u.command('end', 123);
+    await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_END'), null, { timeout: 6000 });
+    const end = await page.evaluate(() => window.log.find((m) => m.type === 'GHA_END'));
+    step.endScore = end.score;
+    step.end = typeof end.score === 'number' && end.score >= 123;
+    step.difficulty = end.difficulty ?? null;
+    step.difficultyOk = step.offersDifficulty ? step.easyPicked && end.difficulty === 'easy' : end.difficulty === undefined || end.difficulty === 'normal';
+    await u.waitScreen('result', 6000);
+    await page.waitForTimeout(300);
+    step.oneEnd = (await page.evaluate(() => window.log.filter((m) => m.type === 'GHA_END').length)) === 1;
+    step.noFalseBest = !(await page.evaluate(() => window.log.some((m) => m.type === 'GHA_HAPPY_TIME')));
+    step.noAds = !(await u.state()).continueOffered && !(await page.evaluate(() => window.log.some((m) => m.type === 'GHA_AD_REQUEST')));
+    step.adsContinue = (await u.state()).offersContinue;
+  } catch (e) {
+    errors.push('flow: ' + String(e.message).split('\n')[0] + ' | messages=' + (await types().catch(() => '?')));
+  }
+  await page.close();
+  const ok = (!run.expect || step.orientation === run.expect) && step.ready && step.gameIdOk && step.loading && step.locale === 'tr' && step.sessionStart && step.pause && step.mute && step.end && step.oneEnd && step.best === PLATFORM_BEST && step.noFalseBest && step.muteState && step.difficultyOk && step.noAds && errors.length === 0;
+  return { slug, label: run.label, ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
+}
+
+/** Ads on, through the hooks: the same rewarded continue and 'menu' interstitial flow as checkAds. */
+async function checkAdsUnity(run) {
+  const { slug } = run;
+  const errors = [];
+  const { page, vp, size } = await openPage(run);
+  page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+  page.on('console', (m) => { if (m.type() === 'error' && !/\[vite\]/.test(m.text())) errors.push('console: ' + m.text()); });
+  const log = (type) => page.evaluate((t) => window.log.filter((m) => m.type === t), type);
+  const u = unityFrame(page);
+  const step = {};
+  try {
+    await page.goto(`http://localhost:${HOST_PORT}/?slug=${slug}&locale=en&ads=1${size}`);
+    await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_LOADING'), null, { timeout: 30000 });
+    await u.waitReady();
+    await page.waitForTimeout(800);
+    if ((await u.state()).screen === 'intro') await page.mouse.click(Math.min(270, vp.width / 2), 40);
+    await u.waitScreen('menu', 20000);
+    await u.command('play');
+    await u.waitScreen('play', 5000);
+    let since = Date.now();
+    await longEnough(page, slug, since);
+    // first loss: the continue is offered and GHA_END waits for the player's choice
+    await u.command('end', 123);
+    await u.frame().waitForFunction(() => window.__ayvago.state().continueOffered === true, null, { timeout: 6000 });
+    await page.waitForTimeout(400);
+    step.offered = true;
+    step.endHeld = (await log('GHA_END')).length === 0;
+    await u.command('continue');
+    await page.waitForFunction(() => window.adQueue.length > 0, null, { timeout: 4000 });
+    const req = (await log('GHA_AD_REQUEST'))[0];
+    step.request = `${req.format}/${req.placement}`;
+    // during the ad: held (timeScale 0) and silent, the round not running, the player's switch untouched
+    const held = await u.state();
+    step.heldDuringAd = held.adShowing && held.silenced && !held.muted && held.timeScale === 0 && held.screen !== 'play';
+    step.muteStateQuiet = (await log('GHA_MUTE_STATE')).every((m) => m.muted === false);
+    await page.waitForTimeout(500);
+    await page.evaluate(() => window.answerAd(true, true));
+    await u.waitScreen('play', 4000);
+    step.resumed = true;
+    const back = await u.state();
+    step.soundBack = !back.silenced && !back.adShowing && back.timeScale > 0;
+    step.oneSession = (await log('GHA_SESSION_START')).length === 1;
+    await page.waitForTimeout(1500);
+    step.endHeldAfter = (await log('GHA_END')).length === 0;
+    // the continued run ends: no second offer, one GHA_END for the whole run
+    await u.command('end', 50);
+    await page.waitForFunction(() => window.log.some((m) => m.type === 'GHA_END'), null, { timeout: 6000 });
+    await u.waitScreen('result', 4000);
+    await page.waitForTimeout(400);
+    const ends = await log('GHA_END');
+    step.endScore = ends[0].score;
+    step.endContinues = ends[0].continues ?? null;
+    step.oneEnd = ends.length === 1 && typeof ends[0].score === 'number';
+    step.continuesOk = ADAPTER_FORWARDS_CONTINUES ? ends[0].continues === 1 : true;
+    step.noSecondOffer = !(await u.state()).continueOffered;
+    // MENU: an interstitial at the break, then the menu
+    await u.command('menu');
+    await page.waitForFunction(() => window.adQueue.length > 0, null, { timeout: 4000 });
+    const inter = (await log('GHA_AD_REQUEST'))[1];
+    step.interstitial = `${inter.format}/${inter.placement}`;
+    await page.evaluate(() => window.answerAd(true, false));
+    await u.waitScreen('menu', 4000);
+    step.menu = true;
+    // a new run gets the offer again; RETRY turns it down, so its GHA_END goes out at once
+    await u.command('play');
+    await u.waitScreen('play', 5000);
+    since = Date.now();
+    await longEnough(page, slug, since);
+    await u.command('end', 10);
+    await u.frame().waitForFunction(() => window.__ayvago.state().continueOffered === true, null, { timeout: 6000 });
+    await page.waitForTimeout(400);
+    step.endHeldAgain = (await log('GHA_END')).length === 1;
+    await u.command('retry');
+    await page.waitForFunction(() => window.log.filter((m) => m.type === 'GHA_END').length === 2, null, { timeout: 4000 });
+    await u.waitScreen('play', 5000);
+    const declined = (await log('GHA_END'))[1];
+    step.declined = declined.continues === undefined && (await log('GHA_AD_REQUEST')).length === 2;
+  } catch (e) {
+    errors.push('ads flow: ' + String(e.message).split('\n')[0]);
+  }
+  await page.close();
+  const ok = step.offered && step.endHeld && step.request === 'rewarded/continue' && step.heldDuringAd && step.muteStateQuiet
+    && step.resumed && step.soundBack && step.oneSession && step.endHeldAfter && step.oneEnd && step.continuesOk
+    && step.noSecondOffer && step.interstitial === 'interstitial/menu' && step.menu && step.endHeldAgain && step.declined && errors.length === 0;
+  return { ok: !!ok, step, errors: [...new Set(errors)].slice(0, 8) };
+}
+
 for (const run of slugs.flatMap((s) => runsOf(playwright, root, s, { tablet: args.includes('--tablet') }))) {
-  const r = await check(run);
+  const unity = isUnity(root, run.slug);
+  const r = unity ? await checkUnity(run) : await check(run);
   if (r.step.adsContinue) {
-    const a = await checkAds(run);
+    const a = unity ? await checkAdsUnity(run) : await checkAds(run);
     r.ads = a.step;
     r.ok = r.ok && a.ok;
     r.errors.push(...a.errors);
@@ -295,7 +490,7 @@ await browser.close();
 host.close();
 try { process.kill(-server.pid); } catch { server.kill(); }
 mkdirSync(join(root, 'reports'), { recursive: true });
-if (!only.length) writeFileSync(join(root, 'reports', 'platform.json'), JSON.stringify(results, null, 2));
+if (!only.length && !fixture) writeFileSync(join(root, 'reports', 'platform.json'), JSON.stringify(results, null, 2));
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed the platform protocol check`);
 process.exit(failed ? 1 : 0);

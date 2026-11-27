@@ -1,0 +1,30 @@
+{
+  "id": "unity-fixture",
+  "engine": "unity",
+  "title": { "en": "Unity Fixture", "tr": "Unity Deneme" },
+  "description": {
+    "en": "A stand-in for a Unity WebGL build: the real Ayvago template and bridge, a tiny canvas game instead of Unity. Used only by the studio's Unity tests.",
+    "tr": "Bir Unity WebGL derlemesinin yerine geçen deneme: gerçek Ayvago şablonu ve köprüsü, Unity yerine küçük bir tuval oyunu. Yalnızca stüdyonun Unity testleri kullanır."
+  },
+  "howTo": {
+    "en": "Move with the arrows or WASD, collect the coins, avoid the red ball.",
+    "tr": "Oklar ya da WASD ile hareket et, altınları topla, kırmızı toptan kaç."
+  },
+  "genres": ["arcade"],
+  "orientation": "adaptive",
+  "controls": ["keyboard", "touch"],
+  "version": "1.0.0",
+  "credits": "Test fixture (not a game).",
+  "platform": {
+    "addedAt": "2026-11-27",
+    "scoring": {
+      "metric": "points",
+      "order": "desc",
+      "format": "number",
+      "label": { "en": "Score", "tr": "Puan" },
+      "minDurationMs": 1000,
+      "maxPerSecond": 1000,
+      "maxScore": 10000000
+    }
+  }
+}

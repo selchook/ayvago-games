@@ -19,11 +19,17 @@
 //                                               a core file with orientation code (isLandscape,
 //                                               gameOrientation, isPhone) adds every adaptive game
 //   package.json / package-lock.json          -> all (a library upgrade can break any game)
+//   a Unity game ("engine": "unity"): games/<slug>/ (not guide.json) or its build in
+//   public/games/<slug>/                      -> that game; shared runtime changes never pick Unity
+//                                               games (they do not use src/core)
+//   unity/, tools/unity-*, the Unity scripts, the vendored adapter, vite.config.ts and the test
+//   scripts' Unity paths                      -> `unity-fixture`: test-changed runs `npm run test:unity`
 // The full suite runs every night and on demand (Actions -> ci -> Run workflow).
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FIXTURE_SLUG, unitySlugs } from './game-list.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const base = process.argv[2];
@@ -35,6 +41,9 @@ const slugsAll = readdirSync(join(root, 'games')).filter((s) => existsSync(join(
 const source = (dir) => readdirSync(dir).filter((f) => /\.(ts|json)$/.test(f)).map((f) => readFileSync(join(dir, f), 'utf8')).join('\n');
 const gameSrc = new Map(slugsAll.map((s) => [s, source(join(root, 'games', s))]));
 const coreSrc = source(join(root, 'src', 'core'));
+const unityAll = unitySlugs(root);
+/** Files whose change can break the Unity pipeline: test:unity runs (the fixture). */
+const UNITY_INFRA = /^(unity\/|tools\/unity-|scripts\/(check-unity|build-unity-adapter|unity-fixture|unity-meta|test-unity|game-list|smoke-test|platform-harness|orient-runs)\.mjs$|src\/core\/ayvago\/adapter\.ts$|vite\.config\.ts$)/;
 const usesCharacters = (s) => /loadCharacter\(/.test(gameSrc.get(s));
 const uses3d = (s) => /from '@core\/three'/.test(gameSrc.get(s));
 const metaOf = (s) => JSON.parse(readFileSync(join(root, 'games', s, 'game.json'), 'utf8'));
@@ -78,10 +87,14 @@ const add = (f, list, what) => { list.forEach((s) => out.add(s)); say(f, `${what
 
 for (const f of files) {
   let m;
-  if (/^games\/[^/]+\/guide\.json$/.test(f)) {
+  if (UNITY_INFRA.test(f)) { out.add(FIXTURE_SLUG); say(f, 'unity checks (test:unity)'); }
+  if (/^(unity\/|tools\/unity-|scripts\/)/.test(f)) {
+    // the Unity package and the scripts are tooling: no game's code
+    if (!UNITY_INFRA.test(f)) say(f, 'no game');
+  } else if (/^games\/[^/]+\/guide\.json$/.test(f)) {
     say(f, 'no game (guide text)');
   } else if ((m = f.match(/^games\/([^/]+)\//) || f.match(/^public\/games\/([^/]+)\//))) {
-    if (slugsAll.includes(m[1])) add(f, [m[1]], m[1]);
+    if (slugsAll.includes(m[1]) || unityAll.includes(m[1])) add(f, [m[1]], m[1]);
   } else if (/^package(-lock)?\.json$/.test(f)) {
     all = true; say(f, 'all');
   } else if (/^public\/assets\/characters\//.test(f) || /^src\/core\/(characters\.ts|character-rig\.json)$/.test(f)) {
