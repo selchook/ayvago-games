@@ -734,7 +734,7 @@ export class PlayScene extends ArcadeScene {
     v.shootT = 0.3;
     this.testSpeed = 0.02;
     const x = v.x, z = v.z;
-    this.view.shotCam = land ? [[x - 1.0, 8.2, z + 9.5], [x + 1.4, 1.0, z - 3.2]] : [[x + 0.3, 11.5, z + 10.5], [x + 0.3, 0.6, z - 2.6]];
+    this.view.shotCam = land ? [[x - 3.4, 8.2, z + 9.5], [x - 1.0, 1.0, z - 3.2]] : [[x + 0.3, 11.5, z + 10.5], [x + 0.3, 0.6, z - 2.6]];
     this.pad?.setVisible(false);
     this.view.snap(s);
   }
