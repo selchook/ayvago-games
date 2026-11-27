@@ -1,0 +1,82 @@
+/* The Ayvago WebGL template: the canvas fills the frame (the platform draws its own toolbar and
+   fullscreen button), a dark loader with the game's name and a progress bar until Unity runs. */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0d16;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+#ayvago-frame {
+  position: fixed;
+  inset: 0;
+}
+
+#unity-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #0b0d16;
+  outline: none;
+}
+
+#ayvago-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: #0b0d16;
+  color: #e8edf8;
+  font: 700 clamp(20px, 4vmin, 34px) / 1.2 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 1px;
+  text-align: center;
+  transition: opacity 0.35s ease;
+}
+
+#ayvago-loader.ayvago-done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ayvago-name {
+  padding: 0 24px;
+}
+
+.ayvago-bar {
+  width: min(60vw, 320px);
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.ayvago-fill {
+  width: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: #ec3013;
+  transition: width 0.2s ease;
+}
+
+.ayvago-error {
+  max-width: 80vw;
+  font-size: 15px;
+  font-weight: 400;
+  color: #ff9d8f;
+  white-space: pre-wrap;
+}
+
+.ayvago-error:empty {
+  display: none;
+}

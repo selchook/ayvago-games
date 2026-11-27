@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: e6564bb05bef36fe3c5fb071851c2a4a
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontNames:
+  - Ayvago Pixel TR
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: b8330d6bb6eb4983f02babfeffcc50ed, type: 3}
+  customCharacters:
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
