@@ -128,6 +128,8 @@ export class PlayScene extends ArcadeScene {
     this.showPlayUi(false);
     this.hooks();
     this.openSelect();
+    // the core shows its HUD once createGame returns: hidden again on the first frame of the select
+    this.events.once(Phaser.Scenes.Events.UPDATE, () => { if (this.phase === 'select' || this.phase === 'map') this.showPlayUi(false); });
   }
 
   // ---------------------------------------------------------------- the mech select
@@ -145,7 +147,7 @@ export class PlayScene extends ArcadeScene {
     this.view.setLineup(MECH_IDS, Math.max(0, MECH_IDS.indexOf(this.meta.mech)), this.hues());
     this.view.sync(this.sim, 0, { camera: 'select' });
     this.bot = null;
-    this.panel = new MechSelect(this, this.host, this.meta, this.view.lineupScreen(), {
+    this.panel = new MechSelect(this, this.host, this.meta, () => this.view.lineupScreen(), {
       show: (id) => this.view.setLineup(MECH_IDS, MECH_IDS.indexOf(id), this.hues()),
       done: (id: MechId) => {
         this.panel = null;

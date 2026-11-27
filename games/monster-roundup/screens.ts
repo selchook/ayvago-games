@@ -114,12 +114,12 @@ export function prebakeScreens(scene: Phaser.Scene): void {
   for (const k of ['sumCaptured', 'sumTime', 'sumBonus', 'sumUnharmed', 'sumCombo', 'sumCredits']) bakeFmt(scene, k, ['n'], S_LINE, GLYPHS);
   for (const u of UPGRADE_IDS) {
     labelTexture(scene, t('u_' + u), S_UNAME);
-    for (let r = 1; r <= UPGRADE[u].prices.length; r++) bakePara(scene, t(`u_${u}_${r}`), S_DESC, 200);
+    for (let r = 1; r <= UPGRADE[u].prices.length; r++) bakePara(scene, t(`u_${u}_${r}`), S_DESC, 176);
   }
   for (const m of MECH_IDS) {
     labelTexture(scene, t('m_' + m), S_NAME);
     labelTexture(scene, t(`m_${m}_r`), S_ROLE);
-    for (const w of [540, 610]) { bakePara(scene, t(`m_${m}_w`), S_DESC2, w); bakePara(scene, t(`m_${m}_t`), S_TRAIT, w); }
+    for (const w of [500, 610]) { bakePara(scene, t(`m_${m}_w`), S_DESC2, w); bakePara(scene, t(`m_${m}_t`), S_TRAIT, w); }
   }
   for (const o of [S_PURSE, S_PRICE, S_SCORE, S_NUM]) glyphAtlas(scene, o, GLYPHS);
   glyphAtlas(scene, S_INK, TIME_GLYPHS);
@@ -292,41 +292,44 @@ export class MechSelect extends Panel {
   private go: KitButton;
   private bars: Phaser.GameObjects.Graphics;
 
-  constructor(scene: Phaser.Scene, host: ScreenHost, private meta: Meta, zones: { x: number; y: number; r: number }[], private act: SelectActions) {
+  private zones: Phaser.GameObjects.Zone[] = [];
+
+  constructor(scene: Phaser.Scene, host: ScreenHost, private meta: Meta, private where: () => { x: number; y: number; r: number }[], private act: SelectActions) {
     const L = LAYOUT().sel;
     const land = isLandscape();
     super(scene, host, { board: [L.w, L.h, L.x, L.y], title: t('selTitle'), titleX: land ? 640 : 360, titleY: land ? 46 : 70, dim: 0 });
     const s = scene, top = L.y - L.h / 2;
     this.sel = Math.max(0, MECH_IDS.indexOf(meta.mech));
     // tap a mech in the lineup
-    zones.forEach((z, i) => {
-      const zone = s.add.zone(z.x, z.y, z.r * 1.4, z.r * 2.2).setInteractive({ useHandCursor: true });
-      zone.on('pointerup', () => this.pick(i));
+    for (let i = 0; i < MECH_IDS.length; i++) {
+      const zone = s.add.zone(0, 0, 10, 10).setInteractive({ useHandCursor: true });
+      zone.on('pointerup', () => { if (this.sel !== i) this.pick(i); });
       this.content.add(zone);
-    });
+      this.zones.push(zone);
+    }
     // arrows beside the lineup
-    const ay = land ? 250 : 380;
+    const ay = land ? 250 : 470;
     this.button(land ? 56 : 46, ay, 76, 76, TEAL, '◀', () => this.pick(this.sel - 1), { kind: 'round', sfx: null });
     this.button(land ? 1224 : 674, ay, 76, 76, TEAL, '▶', () => this.pick(this.sel + 1), { kind: 'round', sfx: null });
     this.info = s.add.container(0, 0);
     this.bars = s.add.graphics();
     this.content.add([this.info, this.bars]);
     // paints
-    const py = land ? top + 196 : top + 448, px0 = land ? L.x + 70 : L.x - 150;
-    this.content.add(labelAt(s, land ? L.x + 150 : L.x, py - 44, t('selPaint'), S_SP));
+    const py = land ? top + 106 : top + 448, px0 = land ? L.x + 320 : L.x - 152, pgap = land ? 62 : 76;
+    this.content.add(labelAt(s, land ? px0 + pgap * 2 : L.x, py - 46, t('selPaint'), S_SP));
     PAINT_IDS.forEach((p, i) => {
-      const x = px0 + i * 76;
+      const x = px0 + i * pgap;
       const open = paintOpen(meta, p);
-      const b = new KitButton(s, x, py, { w: 62, h: 62, kind: 'round', color: PAINTS[p].swatch, label: '', style: S_BTN_S, sfx: null, tapWhenOff: true }, () => this.paint(p));
+      const b = new KitButton(s, x, py, { w: land ? 54 : 62, h: land ? 54 : 62, kind: 'round', color: PAINTS[p].swatch, label: '', style: S_BTN_S, sfx: null, tapWhenOff: true }, () => this.paint(p));
       if (!open) {
         b.addContent(s.add.image(0, -4, ic('lock')).setDisplaySize(28, 28));
-        this.content.add(new GlyphText(s, x, py + 44, '★' + PAINTS[p].stars, S_STARN, 0.5));
-      } else this.content.add(fitWidth(labelAt(s, x, py + 44, t('pt_' + p), S_STAR), 74));
+        this.content.add(new GlyphText(s, x, py + (land ? 40 : 44), '★' + PAINTS[p].stars, S_STARN, 0.5));
+      } else this.content.add(fitWidth(labelAt(s, x, py + (land ? 40 : 44), t('pt_' + p), S_STAR), pgap - 4));
       this.content.add(b);
       this.swatches.push(b);
     });
-    this.go = this.button(land ? L.x + L.w / 2 - 150 : L.x, land ? top + L.h - 62 : top + L.h - 70, 240, 66, ORANGE, t('selGo'), () => this.deploy(), { sfx: 'start' });
-    this.content.add(fitWidth(labelAt(s, land ? L.x - 140 : L.x, land ? top + L.h - 30 : top + L.h - 18, t(host.touch ? 'selHintTouch' : 'selHint'), S_STAR), land ? 560 : 620));
+    this.go = this.button(land ? px0 + pgap * 2 : L.x, land ? top + L.h - 64 : top + L.h - 92, 260, 66, ORANGE, t('selGo'), () => this.deploy(), { sfx: 'start' });
+    this.content.add(fitWidth(labelAt(s, land ? L.x - 340 : L.x, land ? top + L.h - 30 : top + L.h - 38, t(host.touch ? 'selHintTouch' : 'selHint'), S_STAR), land ? 520 : 620));
     this.fi = this.focus.indexOf(this.focus.find((f) => f.btn === this.go)!);
     this.showFocus();
     this.pick(this.sel, true);
@@ -340,6 +343,8 @@ export class MechSelect extends Panel {
     if (!first) this.host.sfx('move', 0.35);
     this.draw();
     this.act.show(this.id, this.meta.paint[this.id]);
+    // the tap areas follow the mechs (in portrait the chosen one comes to the front)
+    this.where().forEach((z, i) => { const zone = this.zones[i]; zone.setPosition(z.x, z.y).setSize(z.r * 1.3, z.r * 2.1); zone.input?.hitArea.setTo(0, 0, z.r * 1.3, z.r * 2.1); });
   }
 
   private paint(p: PaintId): void {
@@ -362,19 +367,19 @@ export class MechSelect extends Panel {
     I.add(labelAt(s, lx + 82, top + 62, t('m_' + id), S_NAME, 0));
     I.add(fitWidth(labelAt(s, lx + 84, top + 94, t(`m_${id}_r`), S_ROLE, 0), land ? 420 : 480));
     const wy = top + 128;
-    I.add(new Para(s, lx, wy, t(`m_${id}_w`), S_DESC2, land ? 540 : 610, 0, 22));
-    I.add(new Para(s, lx, wy + (land ? 62 : 64), t(`m_${id}_t`), S_TRAIT, land ? 540 : 610, 0, 22));
+    I.add(new Para(s, lx, wy, t(`m_${id}_w`), S_DESC2, land ? 500 : 610, 0, 22));
+    I.add(new Para(s, lx, wy + (land ? 70 : 64), t(`m_${id}_t`), S_TRAIT, land ? 500 : 610, 0, 22));
     // the bars
     const g = this.bars.clear();
-    const bx = land ? L.x + 150 : L.x - L.w / 2 + 170, by = land ? top + 58 : top + 262;
+    const bx = land ? L.x + 30 : L.x - L.w / 2 + 170, by = land ? top + 62 : top + 262, sw = land ? 36 : 52;
     ['barSpeed', 'barStun', 'barRange', 'barTow'].forEach((k, r) => {
-      const y = by + r * 34;
+      const y = by + r * (land ? 38 : 34);
       I.add(labelAt(s, bx - 14, y, t(k), S_BAR, 1));
       for (let q = 0; q < 5; q++) {
         const on = q < md.bars[r];
-        g.fillStyle(on ? md.color : 0x2a3448, 1).fillRoundedRect(bx + q * 52, y - 9, 46, 18, 6);
-        g.lineStyle(2, 0x0b1020, 0.9).strokeRoundedRect(bx + q * 52, y - 9, 46, 18, 6);
-        if (on) g.fillStyle(0xffffff, 0.25).fillRoundedRect(bx + q * 52 + 3, y - 7, 40, 5, 3);
+        g.fillStyle(on ? md.color : 0x2a3448, 1).fillRoundedRect(bx + q * sw, y - 9, sw - 6, 18, 6);
+        g.lineStyle(2, 0x0b1020, 0.9).strokeRoundedRect(bx + q * sw, y - 9, sw - 6, 18, 6);
+        if (on) g.fillStyle(0xffffff, 0.25).fillRoundedRect(bx + q * sw + 3, y - 7, sw - 12, 5, 3);
       }
     });
     this.swatches.forEach((b, i) => b.setSelected(PAINT_IDS[i] === this.meta.paint[id]));
@@ -650,13 +655,13 @@ export class ShopScreen extends Panel {
     for (let k = 0; k < max; k++) { pg.fillStyle(k < r ? 0xffc21a : 0x3a4458, 1).fillRoundedRect(-TILE_W / 2 + 74 + k * 26, 12, 20, 10, 3); pg.lineStyle(1.5, 0x0b1020, 0.9).strokeRoundedRect(-TILE_W / 2 + 74 + k * 26, 12, 20, 10, 3); }
     c.add(pg);
     const showRank = Math.min(max, r + 1);
-    c.add(new Para(s, -TILE_W / 2 + 270, -16, t(`u_${u}_${showRank}`), S_DESC, 200, 0, 18).setAlpha(r >= max ? 0.55 : 1));
+    c.add(new Para(s, -TILE_W / 2 + 262, -16, t(`u_${u}_${showRank}`), S_DESC, 176, 0, 18).setAlpha(r >= max ? 0.55 : 1));
     const price = nextPrice(this.meta, u);
     const bx = TILE_W / 2 - 62;
     if (price === null) c.add(labelAt(s, bx, 0, t('maxed'), S_RIB));
     else {
-      c.add(iconAt(s, bx - 104, 0, 'credit', 24));
-      c.add(new GlyphText(s, bx - 88, 0, String(price), S_PRICE, 0));
+      c.add(iconAt(s, bx - 118, 0, 'credit', 24));
+      c.add(new GlyphText(s, bx - 64, 0, String(price), S_PRICE, 1));
       const b = new KitButton(s, bx, 0, { w: 110, h: 46, color: GREEN, label: t('buy'), style: S_BTN_S, sfx: null, tapWhenOff: true }, () => {
         if (!buy(this.meta, u)) { this.deny(b, t('poor'), x, y); return; }
         this.host.sfx('buy', 0.6);

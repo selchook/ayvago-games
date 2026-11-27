@@ -31,7 +31,7 @@ const LOW = 1.05;
 const MARGIN = 5;
 const CHUNK = 6;
 
-export const CAM = { pitch: 0.9, fov: 42, distLand: 22, distPort: 30 };
+export const CAM = { pitch: 0.74, fov: 42, distLand: 19.5, distPort: 26 };
 
 class Inst {
   readonly mesh: THREE.InstancedMesh;
@@ -89,6 +89,7 @@ export class View {
   // dynamic props
   private doorLeaves: THREE.Mesh[] = [];
   private doorLights: THREE.Mesh[] = [];
+  private doorBars: THREE.Mesh[] = [];
   private laserBeams: THREE.Mesh[] = [];
   private turretHeads: THREE.Mesh[] = [];
   private turretBeams: THREE.Mesh[] = [];
@@ -247,7 +248,7 @@ export class View {
     this.ownedMats.clear();
     this.stage.traverse((o) => { const m = o as THREE.Mesh; if (m.geometry && !isKitGeo(m.geometry) && !(o as THREE.Sprite).isSprite) m.geometry.dispose(); });
     this.stage = null;
-    this.doorLeaves = []; this.doorLights = []; this.laserBeams = []; this.turretHeads = []; this.turretBeams = []; this.crates = [];
+    this.doorLeaves = []; this.doorLights = []; this.doorBars = []; this.laserBeams = []; this.turretHeads = []; this.turretBeams = []; this.crates = [];
     this.podRings = []; this.exitRing = null; this.exitBeam = null; this.fieldRing = null; this.teleRings = []; this.termRing = null; this.pickupSprites = [];
     this.snackInst = null; this.chevrons = null;
   }
@@ -266,8 +267,10 @@ export class View {
     const solid = (c: number, r: number) => solidBlock(L, c, r);
     const floorAt = (c: number, r: number) => !solid(c, r);
     // a low cap where a room lies just north (its camera-side sill)
-    const lowCap = (c: number, r: number) => floorAt(c, r - 1) || floorAt(c - 1, r - 1) || floorAt(c + 1, r - 1);
+    // (two rows deep: the lower camera looks over them into the room)
+    const lowCap = (c: number, r: number) => [1, 2].some((k) => floorAt(c, r - k) || floorAt(c - 1, r - k) || floorAt(c + 1, r - k));
     const capCol = look.cap, trim = look.accent, stepCol = look.cap;
+    const panelCol = new THREE.Color(capCol).lerp(new THREE.Color(look.dark), 0.4).getHex();
     for (let r = -MARGIN; r < L.rows + MARGIN; r++) for (let c = -MARGIN; c < L.cols + MARGIN; c++) {
       const x0 = c * BLOCK, z0 = r * BLOCK, x1 = x0 + BLOCK, z1 = z0 + BLOCK, cx = x0 + BLOCK / 2, cz = z0 + BLOCK / 2;
       const M = mg(cx, cz);
@@ -275,6 +278,12 @@ export class View {
         const low = lowCap(c, r);
         const h = low ? LOW : WALL_H + 0.03;
         M.box(x0, 0, z0, x1, h, z1, capCol, 't');
+        // a roof panel on every cap (so the solid blocks read as roof, not as holes), now and then a vent
+        // grille or a light strip in the sector's colour
+        M.box(x0 + 0.3, h, z0 + 0.3, x1 - 0.3, h + 0.04, z1 - 0.3, panelCol, 't');
+        const q = rnd();
+        if (q < 0.22) for (let k = 0; k < 4; k++) M.box(x0 + 0.9, h + 0.04, z0 + 0.9 + k * 0.6, x1 - 0.9, h + 0.07, z0 + 1.15 + k * 0.6, capCol, 't');
+        else if (q < 0.34) M.box(x0 + 0.7, h + 0.04, cz - 0.12, x1 - 0.7, h + 0.07, cz + 0.12, trim, 't');
         // the sill's trim along a room's edge
         if (floorAt(c, r - 1)) { M.box(x0, LOW, z0 - 0.02, x1, LOW + 0.06, z0 + 0.35, trim, 't'); M.box(x0, 0, z0 - 0.02, x1, LOW, z0, look.main, 'n'); }
         // a step from a tall cap down to a low one (seen from the camera's side)
@@ -385,8 +394,16 @@ export class View {
       const leaf = new THREE.Mesh(piece('Door_Double', S), this.mat);
       leaf.position.set(d.x, 0, d.z);
       leaf.rotation.y = d.axis === 'x' ? Math.PI / 2 : 0;
+      // a door across an east-west corridor is seen edge-on from the camera: a thicker leaf, so its
+      // lit top reads as a bar across the passage
+      if (d.axis === 'x') leaf.scale.set(1.45, 1, 2.4);
       add(leaf);
       this.doorLeaves.push(leaf);
+      // a light bar along the leaf's top in the door's state colour (it sinks with the leaf)
+      const bar = new THREE.Mesh(this.own(new THREE.BoxGeometry(2.7, 0.16, 0.5)), glowMat(0xff3a3a, 0.95));
+      bar.position.set(0, 2.86, -0.41);
+      leaf.add(bar);
+      this.doorBars.push(bar);
       const light = new THREE.Mesh(this.own(new THREE.BoxGeometry(d.axis === 'x' ? 1.6 : 3.6, 0.04, d.axis === 'x' ? 3.6 : 1.6)), glowMat(0xff3a3a, 0.3));
       light.position.set(d.x, 0.12, d.z);
       add(light);
@@ -494,12 +511,17 @@ export class View {
 
   // ---------------------------------------------------------------- the select bay's lineup
 
-  private line: { figs: Figure[]; ids: MechId[]; sel: number; t: number; x: number[]; turn: number[] } | null = null;
+  private line: { figs: Figure[]; ids: MechId[]; sel: number; t: number; px: number[]; pz: number[]; turn: number[] } | null = null;
 
-  /** Where the lineup stands: the bay's middle, a row across (closer together in portrait). */
-  private linePos(i: number): [number, number] {
-    const gap = this.land ? 4.6 : 3.3;
-    return [this.spot.x + (i - 1.5) * gap, this.spot.z - 2];
+  /**
+   * Where a lineup mech stands: landscape, a row across the bay's middle (the chosen one a step
+   * forward); portrait (narrow), a podium: the chosen one in front, the other three in a row behind.
+   */
+  private linePos(i: number, sel = this.line?.sel ?? 0): [number, number] {
+    if (this.land) return [this.spot.x + (i - 1.5) * 4.6, this.spot.z - 2 + (i === sel ? 1.4 : 0)];
+    if (i === sel) return [this.spot.x, this.spot.z + 1.2];
+    const k = [0, 1, 2, 3].filter((q) => q !== sel).indexOf(i);
+    return [this.spot.x + (k - 1) * 3.9, this.spot.z - 3.2];
   }
 
   /** The four mechs side by side in the bay; `sel` steps forward and waves. Paints as given. */
@@ -511,7 +533,7 @@ export class View {
         f.play('Idle', { speed: 0.8 + Math.random() * 0.4 });
         return f;
       });
-      this.line = { figs, ids: [...ids], sel: -1, t: 0, x: ids.map(() => 0), turn: ids.map(() => 0) };
+      this.line = { figs, ids: [...ids], sel: -1, t: 0, px: ids.map((_, i) => this.linePos(i, sel)[0]), pz: ids.map((_, i) => this.linePos(i, sel)[1]), turn: ids.map(() => 0) };
     }
     const L = this.line;
     L.figs.forEach((f, i) => f.setPaint(hues[i] ?? -1));
@@ -535,11 +557,11 @@ export class View {
   /** Screen points of each lineup mech's chest (the select screen's tap areas). */
   lineupScreen(): { x: number; y: number; r: number }[] {
     if (!this.line) return [];
-    return this.line.figs.map((f, i) => {
+    return this.line.figs.map((_, i) => {
       const [x, z] = this.linePos(i);
-      const p = this.screen(x, MECHS[this.line!.ids[i]].height * 0.5, z + (i === this.line!.sel ? 1.4 : 0));
+      const p = this.screen(x, MECHS[this.line!.ids[i]].height * 0.5, z);
       const q = this.screen(x, MECHS[this.line!.ids[i]].height, z);
-      return { x: p.x, y: p.y, r: Math.max(60, Math.abs(p.y - q.y) * 1.4) };
+      return { x: p.x, y: p.y, r: Math.max(50, Math.abs(p.y - q.y) * 1.2) };
     });
   }
 
@@ -549,26 +571,28 @@ export class View {
     L.t += dt;
     L.figs.forEach((f, i) => {
       const on = i === L.sel;
-      L.x[i] += ((on ? 1.4 : 0) - L.x[i]) * Math.min(1, dt * 8);
+      const [tx, tz] = this.linePos(i);
+      const k = Math.min(1, dt * 7);
+      L.px[i] += (tx - L.px[i]) * k; L.pz[i] += (tz - L.pz[i]) * k;
+      const x = L.px[i], z = L.pz[i];
       // the chosen one faces the camera; the others turn a little toward it
-      const want = on ? 0 : (L.sel - i) * 0.22;
+      const want = on ? 0 : Math.atan2(L.px[L.sel] - x, 8) * 0.8;
       L.turn[i] += (want - L.turn[i]) * Math.min(1, dt * 6);
-      const [x, z] = this.linePos(i);
-      f.root.position.set(x, 0, z + L.x[i]);
+      f.root.position.set(x, 0, z);
       f.root.rotation.y = L.turn[i];
       // after the wave, back to idle
       if (on && L.t > 1.6 && f.name !== 'Idle') f.play('Idle', { fade: 0.3 });
       if (!on && f.name !== 'Idle') f.play('Idle', { fade: 0.3 });
       f.setGlowRGB(on ? 0.05 : 0, on ? 0.05 : 0, on ? 0.06 : 0);
       f.update(dt);
-      this.shadows.put(x, 0.1, z + L.x[i], 0, 1.4);
+      this.shadows.put(x, 0.1, z, 0, 1.4);
       if (on) {
         const c = MECHS[L.ids[i]].color;
-        const r = this.rings.put(x, 0.15, z + L.x[i], L.t * 1.5, 1.9 + Math.sin(L.t * 4) * 0.06);
+        const r = this.rings.put(x, 0.15, z, L.t * 1.5, 1.9 + Math.sin(L.t * 4) * 0.06);
         this.rings.color(r, c, 1);
-        const r2 = this.rings.put(x, 0.14, z + L.x[i], -L.t, 2.4);
+        const r2 = this.rings.put(x, 0.14, z, -L.t, 2.4);
         this.rings.color(r2, 0x7af0e0, 0.5);
-        const d = this.discs.put(x, 0.12, z + L.x[i], 0, 2.2);
+        const d = this.discs.put(x, 0.12, z, 0, 2.2);
         this.discs.color(d, c, 0.18);
       }
     });
@@ -826,7 +850,10 @@ export class View {
       const leaf = this.doorLeaves[i];
       leaf.position.y = -2.85 * st.open;
       leaf.visible = st.open < 0.99;
-      (this.doorLights[i].material as THREE.MeshBasicMaterial).color.setHex(st.locked ? 0xff3a3a : st.open > 0.5 ? 0x5aff8a : 0xffc23a);
+      const col = st.locked ? 0xff3a3a : st.open > 0.5 ? 0x5aff8a : 0xffc23a;
+      (this.doorLights[i].material as THREE.MeshBasicMaterial).color.setHex(col);
+      (this.doorBars[i].material as THREE.MeshBasicMaterial).color.setHex(col);
+      (this.doorLights[i].material as THREE.MeshBasicMaterial).opacity = st.locked ? 0.35 + 0.15 * Math.sin(t * 5) : 0.3;
     });
     s.c.lasers.forEach((l, i) => {
       const on = s.laserOn(i);
@@ -1048,7 +1075,13 @@ export class View {
     let tx = v.x, tz = v.z, d = dist, p = pitch, yaw = 0;
     if (mode === 'follow') {
       // portrait: the mech a little above the middle (the pad covers the bottom)
-      tx += v.vx * 0.25; tz += v.vz * 0.18 + (this.land ? -0.6 : 2.6);
+      tx += v.vx * 0.25; tz += v.vz * 0.18 + (this.land ? -1.2 : 2.2);
+      // a boss in the room: the camera frames it and the mech together
+      const b = s.boss;
+      if (b && b.state !== 'captured' && b.state !== 'gone' && b.state !== 'towed') {
+        const d = Math.hypot(b.x - v.x, b.z - v.z);
+        if (d < 20) { const k = 0.4 * (1 - Math.max(0, d - 12) / 8); tx += (b.x - v.x) * k; tz += (b.z - v.z) * k; }
+      }
       // keep the view over the station
       const halfW = this.land ? 11 : 4.5;
       tx = Math.max(Math.min(halfW, W / 2), Math.min(W - Math.min(halfW, W / 2), tx));
@@ -1073,10 +1106,9 @@ export class View {
       else tz += 5.4;
     } else if (mode === 'select') {
       // the lineup from the front: the mechs in the top part, the board below them
-      const [x0, z0] = this.linePos(0), [x3] = this.linePos(3);
-      const mx = (x0 + x3) / 2;
-      const P = this.land ? [mx, 6.2, z0 + 15.5] : [mx, 7.5, z0 + 25];
-      const T = this.land ? [mx, -0.6, z0 - 1] : [mx, -3.6, z0 - 2];
+      const mx = this.spot.x, z0 = this.spot.z - 2;
+      const P = this.land ? [mx, 6.2, z0 + 15.5] : [mx, 7.2, z0 + 20.5];
+      const T = this.land ? [mx, 0.3, z0 - 1] : [mx, -1.5, z0 - 2];
       cam.position.set(P[0], P[1], P[2]);
       cam.up.copy(UP);
       cam.lookAt(T[0], T[1], T[2]);
