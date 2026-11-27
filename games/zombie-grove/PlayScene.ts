@@ -6,7 +6,7 @@
 // the endless night after the dawn, and banks the night's coins (and new heroes) at the end.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash, shake, storage,
+  ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash, shake, storage, showKeyHelp, type KeyHelpHint,
   HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle, SkinButton, GlyphText, labelAt, fitWidth,
 } from '@core';
 import { prebakePlay, floatStyle, S_FLOAT_SUB, S_DMG, S_CRIT } from './labels';
@@ -52,6 +52,8 @@ export class PlayScene extends ArcadeScene {
   meta!: Meta;
   mode: Mode = 'normal';
   private controls!: Controls;
+  /** The first-time keys (desktop, once), above the bottom bar and the card button: the night goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private hp!: HpBar;
   private xp!: XpChip;
   private tray!: WeaponTray;
@@ -230,7 +232,14 @@ export class PlayScene extends ArcadeScene {
     // a hero who starts with an automatic weapon (the Medic's shields, the Scout's robot) hears that
     // the ATTACK button wakes up with the first weapon card
     const auto = !this.sim.weapons.some((w) => isManual(w.id));
-    this.time.delayedCall(1900, () => this.hint((auto ? 'hintAuto' : 'hint') + (this.inputKind === 'touch' ? 'Touch' : 'Keys'), true));
+    // desktop, once: the keys and what they do, above the weapon tray and the card button
+    this.keyHint = showKeyHelp(this, { bottom: 350 });
+    this.time.delayedCall(1900, () => {
+      const touch = this.inputKind === 'touch';
+      // (the first-time keys already say how to move and attack: the plain keyboard hint waits)
+      if (!auto && !touch && this.keyHint) return;
+      this.hint((auto ? 'hintAuto' : 'hint') + (touch ? 'Touch' : 'Keys'), true);
+    });
   }
 
   get tune() { return TUNING[this.mode]; }

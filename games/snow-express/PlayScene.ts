@@ -7,6 +7,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang, registerStrings,
   HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, themeText, overlayHeadingStyle, ThemeNumber, GlyphText, labelAt, fitWidth,
+  showKeyHelp, type KeyHelpHint,
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, type SimEvent, type SimInput } from './sim';
@@ -45,6 +46,8 @@ export class PlayScene extends ArcadeScene {
   private nextIcons: Phaser.GameObjects.Image[] = [];
   private comboChip: HudChip | null = null;
   private keysChip: HudChip | null = null;
+  /** The first-time keys along the bottom (desktop, once): the trains run on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private chug!: Loop;
   private bot: Bot | null = null;
   private flips: number[] = [];
@@ -102,6 +105,7 @@ export class PlayScene extends ArcadeScene {
     this.nextIcons = [];
     this.comboChip = null;
     this.keysChip = null;
+    this.keyHint = null;
     this.firstFrames = [];
     this.frameStart = 0;
     this.testSpeed = 1;
@@ -150,6 +154,8 @@ export class PlayScene extends ArcadeScene {
     this.chug = new Loop(this, 'se-chug');
     this.startBanner();
     if (!this.meta.tutorial && this.def.id <= 2 && !this.rush) this.tutStep = 1;
+    // desktop, once: the keys and what they do along the bottom, above the power buttons
+    this.keyHint = showKeyHelp(this, { bottom: 190 });
   }
 
   // ------------------------------------------------------------------ input
@@ -160,7 +166,8 @@ export class PlayScene extends ArcadeScene {
     if (on && this.overlay.selected < 0) this.overlay.selected = 0;
     this.cocoaBtn.showKey(on);
     this.globeBtn.showKey(on);
-    if (on && !this.keysChip && !this.meta.keysSeen) {
+    // (the first-time keys along the bottom already list them)
+    if (on && !this.keysChip && !this.meta.keysSeen && !this.keyHint) {
       this.keysChip = hudChip(this, this.scale.width / 2, this.scale.height - 34, { align: 'center', text: t('keysHint'), size: 20, height: 40, depth: UI_DEPTH });
       this.time.delayedCall(6000, () => { this.keysChip?.destroy(); this.keysChip = null; });
       this.meta.keysSeen = true;

@@ -54,6 +54,13 @@ const S: Record<string, Pair> = {
   hintOfferKeys: ['Bir kart kazandın! İstediğin an E\'ye bas ya da kart düğmesine tıkla; sen seçerken savaş yavaşlar.', 'You earned a card! Press E or click the card button whenever you like; the fight slows down while you choose.'],
   hintPowers: ['Sıkıştığında sağ alttaki güçleri kullan!', 'In a tight spot, use the powers at the bottom right!'],
 
+  // the keyboard key help (main.ts keyHelp)
+  kh_fly: ['Uç', 'Fly'],
+  kh_bomb: ['Bomba', 'Bomb'],
+  kh_shield: ['Kalkan', 'Shield'],
+  kh_overdrive: ['Aşırı güç', 'Overdrive'],
+  kh_cards: ['Kartlar: aç · al · yenile', 'Cards: open · take · reroll'],
+
   // card offers and the card bar
   offerPlus: ['+1 KART', '+1 CARD'],
   cardsWaiting: ['KARTLARIN BEKLİYOR!', 'CARDS WAITING!'],

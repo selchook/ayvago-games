@@ -13,7 +13,7 @@
 import Phaser from 'phaser';
 import {
   t, labelTexture, skinTexture, SKIN_PAD, bake, bakeButton, bakeFmt, bakePara, glyphAtlas, themeCard,
-  labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, type LabelStyle,
+  labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, keyHelpShown, type LabelStyle,
 } from '@core';
 import {
   DISHES, DISH, STATION_IDS, CHEF_IDS, menuOn, type DishId, type ChefId, type StationId, type DishDef,
@@ -45,8 +45,8 @@ export const CARD_W = 250, CARD_H = 340;
 const CHEF_BOARD_W = 440, CHEF_BOARD_H = 600, CHEF_ROW_W = 390, CHEF_ROW_H = 78;
 /** The day's opening card and the summary card. */
 export const DAY_W = 680, DAY_H = 540;
-/** The pause's side cards. */
-export const PSIDE_W = 300, PSIDE_H = 580;
+/** The pause's side cards (shorter above the desktop key strip). */
+export const PSIDE_W = 300, PSIDE_H = 580, PSIDE_KEYS_H = 496;
 /** The left column of the shop. */
 const SIDE_X = 186, SIDE_PARA = 300;
 /** The chef board's centre x. */
@@ -54,7 +54,7 @@ const CHEF_X = 990;
 
 /** Every card size the screens use (declared in the theme, painted ahead). */
 export const SCREEN_CARDS = [
-  { w: UP_W, h: UP_H }, { w: REC_W, h: REC_H }, { w: CT_W, h: CT_H }, { w: CHEF_ROW_W, h: CHEF_ROW_H }, { w: DAY_W, h: DAY_H }, { w: PSIDE_W, h: PSIDE_H },
+  { w: UP_W, h: UP_H }, { w: REC_W, h: REC_H }, { w: CT_W, h: CT_H }, { w: CHEF_ROW_W, h: CHEF_ROW_H }, { w: DAY_W, h: DAY_H }, { w: PSIDE_W, h: PSIDE_H }, { w: PSIDE_W, h: PSIDE_KEYS_H },
 ];
 /** The menu row's buttons (RECIPES, CARDS): painted ahead. */
 export const MENU_ROW_W = 196, MENU_ROW_H = 84;
@@ -773,13 +773,16 @@ export class CardListScreen extends Panel {
 
 /** Added to the Pause scene as it opens: the run's cards on the left, today's recipes on the right. */
 export function pauseSides(scene: Phaser.Scene, cards: CardId[], day: number): void {
-  const y = 372;
+  // on a desktop the pause draws the keys in a strip along the bottom: the sides end above it
+  const keys = keyHelpShown(scene);
+  const PH = keys ? PSIDE_KEYS_H : PSIDE_H;
+  const top = 82, y = top + PH / 2;
   const root = scene.add.container(0, 0).setDepth(5);
-  const lx = 196, rx = 1084, top = y - PSIDE_H / 2;
-  root.add(themeCard(scene, lx, y, PSIDE_W, PSIDE_H));
+  const lx = 196, rx = 1084;
+  root.add(themeCard(scene, lx, y, PSIDE_W, PH));
   root.add(labelAt(scene, lx, top + 34, t('yourCards'), P_HEAD));
   if (!cards.length) root.add(new Para(scene, lx, top + 64, t('noCards'), P_NAME, PSIDE_W - 50, 0.5, 21));
-  const rowH = cards.length > 10 ? 40 : 48;
+  const rowH = Math.min(cards.length > 10 ? 40 : 48, Math.floor((PH - 110) / Math.max(1, Math.min(12, cards.length) - 1)));
   cards.slice(0, 12).forEach((id, i) => {
     const x = lx - PSIDE_W / 2 + 44, yy = top + 80 + i * rowH;
     const def = CARD[id];
@@ -789,10 +792,10 @@ export function pauseSides(scene: Phaser.Scene, cards: CardId[], day: number): v
     root.add(iconImg(scene, x, yy, def.icon, 30));
     root.add(fitWidth(labelAt(scene, x + 28, yy, t('k_' + id), P_NAME, 0), PSIDE_W - 96));
   });
-  root.add(themeCard(scene, rx, y, PSIDE_W, PSIDE_H));
+  root.add(themeCard(scene, rx, y, PSIDE_W, PH));
   root.add(labelAt(scene, rx, top + 34, t('todayMenu'), P_HEAD));
   const menu = menuOn(day);
-  const step = Math.min(58, (PSIDE_H - 84) / Math.max(1, menu.length));
+  const step = Math.min(58, (PH - 84) / Math.max(1, menu.length));
   menu.forEach((d, i) => {
     const yy = top + 86 + i * step;
     const x = rx - PSIDE_W / 2 + 36;

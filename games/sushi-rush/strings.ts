@@ -76,6 +76,8 @@ const tr: Record<string, string> = {
   hintStart: 'Siparişi gör, istasyonlara dokun, sonra müşteriye dokunup servis et!', hintKeys: '1–7 istasyonlar · ←/→ koltuk, Enter servis · Backspace at · B zil',
   ctlTouch: 'İstasyona dokun, sonra müşteriye dokun. AT tabağı boşaltır.', ctlKeys: '1–7 istasyonlar, ←/→ ve Enter servis, Backspace at, B zil, P duraklat.',
   pControls: 'Kontroller', next: 'Sıradaki', served: 'Servis',
+  // the keyboard key help (main.ts keyHelp)
+  kh_station: 'Şefi istasyona gönder', kh_seat: 'Koltuk seç', kh_serve: 'Servis et', kh_bin: 'Tabağı boşalt', kh_bell: 'Zili çal',
 };
 
 const en: Record<string, string> = {
@@ -144,6 +146,8 @@ const en: Record<string, string> = {
   hintStart: 'Read the order, tap the stations, then tap the guest to serve!', hintKeys: '1–7 stations · ←/→ seat, Enter serve · Backspace bin · B bell',
   ctlTouch: 'Tap a station, then tap the guest. BIN empties the plate.', ctlKeys: '1–7 stations, ←/→ and Enter serve, Backspace bin, B bell, P pause.',
   pControls: 'Controls', next: 'Next', served: 'Served',
+  // the keyboard key help (main.ts keyHelp)
+  kh_station: 'Send the chef', kh_seat: 'Pick a seat', kh_serve: 'Serve', kh_bin: 'Empty the plate', kh_bell: 'Ring the bell',
 };
 
 export const STRINGS: Strings = { tr, en };

@@ -105,6 +105,15 @@ launch({
   },
   // frosted ice with snow on top, a railway round the screen, a locomotive behind the logo (theme.ts)
   menuTheme: SNOW_THEME,
+  // the keyboard controls (desktop): the pause strip, the menu's how-to and the first-time keys
+  keyHelp: [
+    { keys: ['1–9'], label: 'kh_flipN' },
+    { keys: ['Left Right', 'A D'], label: 'kh_pick' },
+    { keys: ['Space', 'Enter'], label: 'kh_flip' },
+    { keys: ['Z'], label: 'kh_cocoa' },
+    { keys: ['X'], label: 'kh_globe' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   scenes: [PlayScene, MapScene],
   strings: STRINGS,
 });

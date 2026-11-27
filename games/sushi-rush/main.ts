@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, SkinButton, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, SkinButton, keyHelpShown, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, prebakePlay } from './PlayScene';
 import { STRINGS } from './strings';
@@ -110,6 +110,8 @@ launch({
         scene.scene.launch('Book', { which, from: scene.scene.key });
       };
       const gap = 14;
+      // the how-to card under the row grows when it shows the keys (desktop): the row moves up
+      if (keyHelpShown(scene)) y -= 26;
       const a = new SkinButton(scene, x - MENU_ROW_W / 2 - gap / 2, y, t('menuRecipes'), () => open('recipes'), { width: MENU_ROW_W, height: MENU_ROW_H, size: 26 });
       const b = new SkinButton(scene, x + MENU_ROW_W / 2 + gap / 2, y, t('menuCards'), () => open('cards'), { width: MENU_ROW_W, height: MENU_ROW_H, size: 26 });
       scene.add.existing(a);
@@ -123,6 +125,15 @@ launch({
   menuTheme: SUSHI_THEME,
   // a failed day may go on once, after a rewarded ad (hearts back, or 30 more seconds)
   ads: { continue: (play) => (play as PlayScene).revive() },
+  // the keyboard controls (desktop): the pause strip, the menu's how-to and the first-time keys
+  keyHelp: [
+    { keys: ['1–7'], label: 'kh_station' },
+    { keys: ['Left Right', 'A D'], label: 'kh_seat' },
+    { keys: ['Space', 'Enter'], label: 'kh_serve' },
+    { keys: ['Backspace', 'X'], label: 'kh_bin' },
+    { keys: ['B'], label: 'kh_bell' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   scenes: [PlayScene, BookScene],
   strings: STRINGS,
 });
