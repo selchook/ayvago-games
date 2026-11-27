@@ -696,10 +696,10 @@ export class PlayScene extends ArcadeScene {
   }
 
   /**
-   * The store art's card: Hop to It (2-2) frozen in a moment in the green gardens: Mike walking toward
-   * a pod with a dizzy frog on his tractor beam, a charged bolt flying at a bunny in mid-leap (the
-   * lock marker under it), a birb dizzy with stars by the pod's glowing ring, under a staged camera
-   * low behind the mech (closer and higher on a phone).
+   * The store art's card: Hop to It (2-2) frozen in a moment in the green gardens: Mike by a pod's
+   * glowing ring with a dizzy frog on his tractor beam, a charged bolt flying at a bunny in mid-leap
+   * (the lock marker under it), a birb dizzy with stars, under a staged camera low behind the mech
+   * (closer and higher on a phone, the action in the middle of the narrow frame).
    */
   private cardStage(): void {
     this.meta.hints = [...new Set([...this.meta.hints, 'tut', 'h_leaper', 'h_tow'])];
@@ -714,26 +714,27 @@ export class PlayScene extends ArcadeScene {
     s.god = true;
     const pod = s.c.pods[0];
     const land = this.scale.width > this.scale.height;
-    v.x = pod.x + 5.2; v.z = pod.z + 2.2; v.yaw = Math.atan2(pod.x - v.x, pod.z - v.z);
+    // Mike just south-west of the pod, turned to the north-east where the bunny leaps
+    v.x = pod.x - 3.2; v.z = pod.z + 4.4;
     const ms = s.mons.filter((m) => !m.boss);
     const bunny = ms.find((m) => m.kind === 'bunny') ?? ms[0];
     const frog = ms.find((m) => m.kind === 'frog') ?? ms[1];
     const birb = ms.find((m) => m.kind === 'birb') ?? ms[2];
-    const other = ms.find((m) => m !== bunny && m !== frog && m !== birb);
+    for (const m of ms) if (m !== bunny && m !== frog && m !== birb) m.state = 'vent';
+    // landscape: the bunny to the right; portrait (narrow): ahead, up the screen
+    bunny.x = v.x + (land ? 4.6 : 1.4); bunny.z = v.z - (land ? 3.4 : 6.0); bunny.y = 1.5; bunny.air = 0.45; bunny.state = 'flee'; bunny.yaw = Math.PI * 0.75; bunny.vx = 2; bunny.vz = -1;
+    const a = Math.atan2(bunny.x - v.x, bunny.z - v.z);
+    v.yaw = a;
     frog.state = 'towed'; frog.dizzy = frog.dizzyMax = 10; v.towing = [frog];
-    frog.x = v.x - Math.sin(v.yaw) * 3.3; frog.z = v.z - Math.cos(v.yaw) * 3.3; frog.y = 0.9;
-    bunny.x = v.x - 1.8; bunny.z = v.z - 6.5; bunny.y = 2.2; bunny.air = 0.4; bunny.state = 'flee'; bunny.yaw = 2.4;
-    birb.state = 'dizzy'; birb.dizzy = birb.dizzyMax = 6; birb.x = pod.x + 1.8; birb.z = pod.z - 3.6;
-    if (other) { other.state = 'wander'; other.x = pod.x + 9; other.z = pod.z - 5; }
+    frog.x = v.x - Math.sin(a) * 3.4; frog.z = v.z - Math.cos(a) * 3.4; frog.y = 0.9;
+    birb.state = 'dizzy'; birb.dizzy = birb.dizzyMax = 6; birb.x = v.x - (land ? 4.6 : 2.9); birb.z = v.z - (land ? 3.4 : 2.6); birb.yaw = 0.6;
     v.lock = bunny;
     v.charge = 0.7;
-    const a = Math.atan2(bunny.x - v.x, bunny.z - v.z);
-    s.bolts.push({ x: v.x + Math.sin(a) * 3.2, z: v.z + Math.cos(a) * 3.2, vx: Math.sin(a) * 2, vz: Math.cos(a) * 2, life: 9, charged: true, hit: [], arc: false, dmg: 3, splash: 0, kind: 'bolt' });
-    v.yaw = a;
+    s.bolts.push({ x: v.x + Math.sin(a) * 3.6, z: v.z + Math.cos(a) * 3.6, vx: Math.sin(a) * 2, vz: Math.cos(a) * 2, life: 9, charged: true, hit: [], arc: false, dmg: 3, splash: 0, kind: 'bolt' });
     v.shootT = 0.3;
     this.testSpeed = 0.02;
     const x = v.x, z = v.z;
-    this.view.shotCam = land ? [[x - 1, 11.5, z + 11], [x - 2.4, 0.9, z - 2.8]] : [[x - 0.8, 14, z + 12.5], [x - 1.0, 0.6, z - 3.4]];
+    this.view.shotCam = land ? [[x - 1.0, 8.2, z + 9.5], [x + 1.4, 1.0, z - 3.2]] : [[x + 0.3, 11.5, z + 10.5], [x + 0.3, 0.6, z - 2.6]];
     this.pad?.setVisible(false);
     this.view.snap(s);
   }

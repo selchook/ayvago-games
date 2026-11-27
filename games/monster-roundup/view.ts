@@ -222,6 +222,8 @@ export class View {
   /** Throws away the previous level's objects and builds this one's. */
   build(s: Sim): void {
     this.clearStage();
+    // the select bay's lineup never outlives the bay (a level started from the select: tests, store art)
+    this.clearLineup();
     const L = s.c;
     this.level = L;
     this.sector = L.sector;
