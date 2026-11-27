@@ -19,7 +19,7 @@ templates/game/    scaffold used by `npm run new-game`
 public/assets/     ayvago/ (boot intro PNGs, favicon, menu-logo.png: the menu's Ayvago Games logo) · kenney/<pack>/ (CC0 art + audio; car-kit, platformer-kit, nature-kit are GLB 3D kits) · quaternius/<pack>/ (CC0 GLB kits; downtown-megakit is the city generator's building kit) · thumbs/ (portal)
 platform/          arcade-catalog.ts (generated SeedGame entries) + arcade-guides.json (generated game guides); the platform pulls both from main
 wip/               unfinished games (not built)
-docs/              GAMES.md (catalogue + backlog), assets/INDEX.md + assets/<pack>.txt (every file with px size)
+docs/              GAMES.md (catalogue + backlog), assets/INDEX.md + assets/<pack>.txt (every file with px size), unity/AYVAGO_UNITY_SDK.md (the contract and bridge for Unity WebGL games)
 portal/ index.html game launcher page (reads src/generated/registry.json)
 scripts/           gen-registry, new-game, smoke-test (Playwright)
 tools/city-preview/  dev page to look at generated cities (npm run dev → /tools/city-preview/; not built)
