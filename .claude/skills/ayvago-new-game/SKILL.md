@@ -179,6 +179,7 @@ Other helpers from `@core`:
 10. **Characters move with their own limbs.** In a game with a player character, every move uses one of its poses (no extra limbs drawn on top). Screenshots with two characters show the ball, rope or tool meeting the real foot or hand.
 11. **Store art.** `node scripts/gen-store-assets.mjs <slug>` passes, the catalog cards (`card-640x360.webp`, Turkish `card-tr-640x360.webp`: the same frame) show real play with the logo clear of the action and the Turkish logo fits, and the logos (`logo-en.png`, `logo-tr.png`) read right in both languages (§8). An adaptive game also has its portrait cards (`card-portrait-360x640.webp`, `card-portrait-tr-360x640.webp`, from the phone run) showing real play with no void at any edge (§7j).
 12. **Game guide.** `games/<slug>/guide.json` is written from the game's real code in English and Turkish, has no TODO left and `npm run validate:platform` passes it (§7i).
+13. **Key help (every 3D game).** The game lists its real keyboard controls in `keyHelp` (TR + EN labels) and calls `showKeyHelp(this)` when play first starts. The screenshots (desktop, `?keyhelp`) show the keys in the menu's HOW TO PLAY box, along the bottom of the first play and in the pause strip, covering nothing important (§7h, "Keyboard key help").
 
 ## 7. Verify
 
@@ -290,6 +291,8 @@ A 3D game is still an ordinary Ayvago game: `launch()`, an `ArcadeScene` named `
 `Controls`, `t()` and the result screen all work as usual. Only the world is drawn by three.js,
 through `@core/three` (`src/core/three/index.ts`). The pilot is `games/sky-road`; start from it.
 
+- **Key help.** Every 3D game lists its keys in `keyHelp` and calls `showKeyHelp(this)` when play
+  first starts (§7h, "Keyboard key help"; Definition of Done 13).
 - **Import.** Import from `@core/three` only in 3D games, never from `@core`, so 2D games do not
   bundle three.js. `THREE` is re-exported from there.
 - **Models.** CC0 GLB kits under `public/assets/kenney`: `car-kit`, `platformer-kit` and
@@ -726,9 +729,9 @@ playable on a pad: give every action a key from the table below where it fits.
 
 ### Keyboard key help (desktop)
 
-A game can list its keyboard controls as key caps with `keyHelp` in its definition
-(`src/core/key-help.ts`). Rollout: Moon Rover first; the other 3D games follow once the owner
-approves the look.
+A game lists its keyboard controls as key caps with `keyHelp` in its definition
+(`src/core/key-help.ts`). **Required for every 3D game** (Definition of Done 13); welcome in any
+game played with a keyboard. Reference: `games/moon-rover`.
 
 ```ts
 keyHelp: [
