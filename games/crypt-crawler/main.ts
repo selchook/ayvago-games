@@ -19,6 +19,14 @@ launch({
   physics: 'none',
   difficulty: true,
   music: { play: 'stage1' },
+  // desktop: the keys on the first floor and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['W A S D', 'Left Up Down Right'], label: 'kh_move' },
+    { keys: ['Space', 'J'], label: 'kh_attack' },
+    { keys: ['Shift', 'K'], label: 'kh_dash' },
+    { keys: ['1 2 3'], label: 'kh_bless' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   // a lost run may go on once after a rewarded ad: half the hearts back (src/core/ads.ts)
   ads: { continue: (play) => (play as PlayScene).revive() },
   preload(scene) {

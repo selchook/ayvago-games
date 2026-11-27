@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang, themeCard, themeLabel, overlayHeadingStyle,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_CHIP_H, labelAt, labelTexture, type LabelStyle,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_CHIP_H, labelAt, labelTexture, showKeyHelp, type LabelStyle, type KeyHelpHint,
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent } from './sim';
@@ -55,6 +55,8 @@ export const fmt = (n: number): string => Math.round(n).toString().replace(/\B(?
 export let lastRunTokens = 0;
 
 const STEP = 1 / 60;
+/** The first-time keys sit above the speed panel at the bottom (desktop: y 1196, 78 high). */
+const KEY_HELP_BOTTOM = 140;
 const TUT = ['lift', 'coast', 'brake', 'station'] as const;
 type Lesson = typeof TUT[number];
 
@@ -92,6 +94,8 @@ export class PlayScene extends ArcadeScene {
   private hint: HintCard | null = null;
   private hintQueue: string[] = [];
   private keyC: Phaser.Input.Keyboard.Key | null = null;
+  /** The first-time keys along the bottom (desktop, once): the ride goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private brakeT = 0;
   private wheeT = 0;
   private forkSide = 0;
@@ -176,6 +180,8 @@ export class PlayScene extends ArcadeScene {
     this.tut = null; this.tutStep = 0; this.tutWait = -1; this.coastT = 0;
     if (!this.meta.tutorial) this.time.delayedCall(400, () => this.startTutorial());
     else this.time.delayedCall(300, () => this.areaBanner(this.sim.area));
+    // desktop, once: the keys and what they do for the first seconds of the ride, above the speed panel
+    this.keyHint = showKeyHelp(this, { bottom: this.pad ? undefined : KEY_HELP_BOTTOM });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { if (!this.finished && this.sim.time > 8) this.bank(); });
   }
 

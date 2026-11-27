@@ -97,6 +97,11 @@ export const STRINGS = {
     en_warlord: 'Ork Savaş Beyi',
     en_vamplord: 'Vampir Lordu',
     deathTitle: 'Düştün!',
+    // the keyboard controls (key help)
+    kh_move: 'Yürü',
+    kh_attack: 'Vur · basılı tut: dönüş',
+    kh_dash: 'Atıl',
+    kh_bless: 'Güç seç (sunak)',
   },
   en: {
     floor: 'Floor',
@@ -193,6 +198,11 @@ export const STRINGS = {
     en_warlord: 'Orc Warlord',
     en_vamplord: 'Vampire Lord',
     deathTitle: 'You fell!',
+    // the keyboard controls (key help)
+    kh_move: 'Walk',
+    kh_attack: 'Strike · hold: spin',
+    kh_dash: 'Dash',
+    kh_bless: 'Pick a blessing (shrine)',
   },
 };
 

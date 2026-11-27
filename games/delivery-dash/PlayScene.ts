@@ -8,7 +8,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, CarSteering, txt, t, isEasy, hudChip, HudChip, flash, burst, registerStrings,
   HUD_MARGIN, HUD_ROW2_Y, hudRightEdge, getLang, themeCard, themeLabel, themeText, overlayHeadingStyle,
-  labelTexture, fitWidth, type LabelStyle,
+  labelTexture, fitWidth, showKeyHelp, type LabelStyle, type KeyHelpHint,
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type SimEvent, type SimInput, type Order } from './sim';
@@ -143,6 +143,8 @@ export class PlayScene extends ArcadeScene {
   private finished = false;
   private tip: Tip | null = null;
   private tutStep = 0;
+  /** The first-time keys along the bottom (desktop, once): the shift goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private odo = 0;
   private lastX = 0;
   private lastZ = 0;
@@ -269,6 +271,8 @@ export class PlayScene extends ArcadeScene {
     this.townLoop = new Loop(this, 'dd-town');
 
     this.startBanner();
+    // desktop, once: the keys and what they do along the bottom for the first seconds of the shift
+    this.keyHint = showKeyHelp(this);
     if (!this.rush && this.def.tutorial && !this.meta.tutorial) this.tutStep = 1;
   }
 
@@ -555,8 +559,9 @@ export class PlayScene extends ArcadeScene {
     if (this.tutStep <= 0 || this.finished) return;
     const sim = this.sim;
     const touch = !!this.steering.pad;
-    if (this.tutStep === 1 && !this.tip && this.elapsed > 2.2) this.showTip(1, t(touch ? 'tut_driveTouch' : 'tut_driveKeys'));
-    else if (this.tutStep === 1 && this.tip && this.odo > 14) this.showTip(2, t('tut_follow'));
+    // (the first-time keys along the bottom already say how to drive: that tip is skipped)
+    if (this.tutStep === 1 && !this.tip && !this.keyHint && this.elapsed > 2.2) this.showTip(1, t(touch ? 'tut_driveTouch' : 'tut_driveKeys'));
+    else if (this.tutStep === 1 && (this.tip || this.keyHint) && this.odo > 14) this.showTip(2, t('tut_follow'));
     else if (this.tutStep === 2) {
       const b = sim.offered()[0]?.shop;
       if (b && Math.hypot(b.x - sim.x, b.z - sim.z) < 12) this.showTip(3, t('tut_stop'));

@@ -21,6 +21,15 @@ launch({
   difficulty: true,
   // the STEERING switch (ARROWS | WHEEL | TILT) on touch screens, under the Easy/Normal switch
   menuOption: steeringOption,
+  // desktop: the keys on the first shift and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['W', 'Up'], label: 'kh_gas' },
+    { keys: ['S', 'Down'], label: 'kh_brake' },
+    { keys: ['A D', 'Left Right'], label: 'kh_steer' },
+    { keys: ['Space', 'Z'], label: 'kh_turbo' },
+    { keys: ['H'], label: 'kh_horn' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     loadKit(l);

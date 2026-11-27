@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, txt, t, storage, isEasy, playMusic, hudChip, HudChip,
   HUD_MARGIN, HUD_ROW2_Y, pushModal, upper, SkinButton, skinImage, skinTexture, themeLabel, FmtLine, GlyphText, Para,
-  labelAt, fitWidth,
+  labelAt, fitWidth, showKeyHelp, type KeyHelpHint,
 } from '@core';
 import { World3D, THREE } from '@core/three';
 import { Sim, MAPS, ENEMIES, TOWER_KINDS, METEOR, POWERS, POWER_IDS, type Tower, type TowerKind, type SimEvent, type EnemyKind, type Enemy, type PowerId, type CardId } from './sim';
@@ -42,6 +42,8 @@ const TILT = THREE.MathUtils.degToRad(52);
 const BAR_Y = 1214;
 const PANEL_Y = 1030;
 const DOCK_Y = 1082;
+/** The first-time keys sit above the build dock and the wave bar (the dock's tip line starts at y 960). */
+const KEY_HELP_BOTTOM = 330;
 /** A press that moves less than this (game pixels) is a tap; more is a drag that pans the map. */
 const TAP_SLOP_TOUCH = 18;
 const TAP_SLOP_MOUSE = 8;
@@ -125,6 +127,8 @@ export class PlayScene extends ArcadeScene {
   // powers, cards and talents
   meta!: Meta;
   private draft: DraftScreen | null = null;
+  /** The first-time keys along the bottom (desktop, once): the map goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   /** A taken card is flying from the draft to the tray. */
   private cardFlying = false;
   private draftWait = 0;
@@ -147,6 +151,7 @@ export class PlayScene extends ArcadeScene {
 
   createGame(): void {
     this.tune = isEasy() ? 'easy' : 'normal';
+    this.keyHint = null;
     this.sim = null;
     this.board = null;
     this.phase = 'select';
@@ -525,7 +530,11 @@ export class PlayScene extends ArcadeScene {
       const fresh = this.sim?.powers.find((p) => p !== 'meteor' && !this.seenPowers.has(p) && !seenHints.has('h_power_' + p));
       if (fresh) { this.seenPowers.add(fresh); seenHints.add('h_power_' + fresh); this.hintQueue.push('h_power:' + fresh); }
       this.showHint(touch ? 'h_build_touch' : 'h_build_mouse');
-      this.queueHint(touch ? 'h_pan' : 'h_build_keys');
+      // desktop, once: the keys and what they do for the first seconds of the map, above the build dock
+      if (!this.keyHint && this.phase === 'play' && !this.isOver) this.keyHint = showKeyHelp(this, { bottom: KEY_HELP_BOTTOM });
+      // (the first-time keys already list the keyboard controls)
+      if (touch || !this.keyHint) this.queueHint(touch ? 'h_pan' : 'h_build_keys');
+      else seenHints.add('h_build_keys');
       this.queueHint('h_start');
     });
   }
@@ -1543,6 +1552,7 @@ export class PlayScene extends ArcadeScene {
     this.waveBtn.setVisible(false);
     this.speedChip.setVisible(false);
     this.hint.setVisible(false);
+    this.keyHint?.close();
     this.draft = new DraftScreen(this, {
       sim, wave: Math.max(1, sim.wave), offer, rerolls: sim.talents.rerolls, input: this.inputKind(),
       roll: () => rollDraft(sim),

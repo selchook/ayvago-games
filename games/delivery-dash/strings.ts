@@ -47,6 +47,8 @@ export const STRINGS: Strings = {
     p_mint: 'Nane', p_tomato: 'Domates', p_sky: 'Gökyüzü', p_sun: 'Güneş', p_grape: 'Üzüm', p_pink: 'Pembe', p_night: 'Gece',
     // the core's retry button after a won shift
     retry: 'TEKRAR',
+    // the keyboard controls (key help)
+    kh_gas: 'Gaz', kh_brake: 'Fren · geri vites', kh_steer: 'Direksiyon', kh_turbo: 'Turbo', kh_horn: 'Korna',
   },
   en: {
     gas: 'GAS', brake: 'BRAKE', turbo: 'TURBO', horn: 'HORN',
@@ -84,5 +86,7 @@ export const STRINGS: Strings = {
     v_van: 'Van', v_flatbed: 'Flatbed', v_truck: 'Truck', capN: '{n} orders', vehicles: 'VEHICLES', paints: 'PAINT', upgrades: 'UPGRADES',
     p_mint: 'Mint', p_tomato: 'Tomato', p_sky: 'Sky', p_sun: 'Sun', p_grape: 'Grape', p_pink: 'Pink', p_night: 'Night',
     retry: 'RETRY',
+    // the keyboard controls (key help)
+    kh_gas: 'Gas', kh_brake: 'Brake · reverse', kh_steer: 'Steer', kh_turbo: 'Turbo', kh_horn: 'Horn',
   },
 };
