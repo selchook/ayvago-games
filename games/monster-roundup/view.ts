@@ -6,12 +6,15 @@
 //     side) are low sills under low roof caps, so nothing hides the floor; the far walls stand tall;
 //   - what moves: doors (they sink into the floor), laser gates and sweeping turrets with their beams,
 //     conveyor chevrons, snacks, crates, powers on the floor, the pods' and the exit's rings;
-//   - the mech (its own clips; the upper body shoots and grabs while the legs walk), the monsters
-//     (wander, hop, fly, eat, bite, fall dizzy with stars round their heads, ride the tractor beam,
-//     shrink into a pod), the bosses (each attack with its own clip and a red telegraph on the floor);
-//   - bolts, spikes, orbs, lobs, shock rings, ice, the tow beams, the shield, the decoy, particles;
-//   - a camera from above and behind (the far side up the screen) that follows the mech; a slow pan
-//     for the map, a swoop for the level's start and a close turntable for the hangar.
+//   - the mech in its paint (its own clips; the upper body shoots and grabs while the legs walk), the
+//     monsters (wander, hop, leap, run, eat, punch, throw, puff spores, fall dizzy with stars round
+//     their heads, ride the tractor beam, shrink into a pod; evolved ones glow over a spinning ring),
+//     the bosses (crowned, an aura ring, each attack with its own clip and a red telegraph on the floor);
+//   - bolts, pellets, plasma balls, shells, Leela's beam, spikes, orbs, lobs, shock rings and pulses,
+//     spore clouds, ice, the tow beams, the shield, the decoy, particles;
+//   - a camera from behind and above (the far side up the screen) that follows the mech and frames a
+//     boss with it; a slow pan for the map, a swoop for the level's start, a close turntable for the
+//     hangar and the bay's lineup for the mech select (a row in landscape, a podium in portrait).
 // The game is adaptive: portrait sees a narrower slice, so its camera stands further back.
 import { THREE, World3D } from '@core/three';
 import { BLOCK, WALL_H, SECTORS, MONSTERS, BOSSES, MECHS, POWER_COLOR, EVOLVED, PAINTS, SHELL_R, type SectorId, type MechId, type PowerId, type PaintId } from './defs';
@@ -521,7 +524,7 @@ export class View {
     if (this.land) return [this.spot.x + (i - 1.5) * 4.6, this.spot.z - 2 + (i === sel ? 1.4 : 0)];
     if (i === sel) return [this.spot.x, this.spot.z + 1.2];
     const k = [0, 1, 2, 3].filter((q) => q !== sel).indexOf(i);
-    return [this.spot.x + (k - 1) * 3.9, this.spot.z - 3.2];
+    return [this.spot.x + (k - 1) * 3.4, this.spot.z - 3.2];
   }
 
   /** The four mechs side by side in the bay; `sel` steps forward and waves. Paints as given. */
@@ -1085,7 +1088,7 @@ export class View {
       // keep the view over the station
       const halfW = this.land ? 11 : 4.5;
       tx = Math.max(Math.min(halfW, W / 2), Math.min(W - Math.min(halfW, W / 2), tx));
-      tz = Math.max(Math.min(this.land ? 6 : 4, H / 2), Math.min(H - (this.land ? 3 : 5), tz));
+      tz = Math.max(Math.min(this.land ? 6 : 7, H / 2), Math.min(H - (this.land ? 3 : 5), tz));
     } else if (mode === 'preview') {
       this.preT += dt;
       tx = W / 2 + Math.sin(this.preT * 0.15) * W * 0.18;
@@ -1107,7 +1110,7 @@ export class View {
     } else if (mode === 'select') {
       // the lineup from the front: the mechs in the top part, the board below them
       const mx = this.spot.x, z0 = this.spot.z - 2;
-      const P = this.land ? [mx, 6.2, z0 + 15.5] : [mx, 7.2, z0 + 20.5];
+      const P = this.land ? [mx, 6.2, z0 + 15.5] : [mx, 7.4, z0 + 21.5];
       const T = this.land ? [mx, 0.3, z0 - 1] : [mx, -1.5, z0 - 2];
       cam.position.set(P[0], P[1], P[2]);
       cam.up.copy(UP);

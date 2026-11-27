@@ -22,6 +22,9 @@ export interface LevelRun { n: number; easy: boolean; mech: MechId; out: boolean
  */
 const TRIES = 4;
 const TIMED = 2;
+/** A level's par from the autopilot's median time: a person's margin. */
+const PAR_K = 3;
+const PAR_ADD = 30;
 
 export function playLevel(n: number, easy: boolean, mech: MechId = 'mike', god = false, verbose = false): LevelRun & { mean: number } {
   const runs: LevelRun[] = [];
@@ -87,6 +90,17 @@ export function report(levels: number[], o: { god?: boolean; verbose?: boolean; 
       out.push(`   ${m.padEnd(6)} cleared ${cleared}/${levels.length}  mean ${mean(m).toFixed(1)} s  (${k >= 1 ? '+' : ''}${((k - 1) * 100).toFixed(1)}%)  hearts lost ${hurt}${only.length ? '  FAILED where others cleared: ' + only.join(', ') : ''}`);
     }
     out.push(`   per level (mean s): ` + levels.map((n) => `${n}:` + mechs.map((m) => { const r = res.get(`${easy}|${m}|${n}`)!; return isNaN(r.mean) ? '-' : r.mean.toFixed(0); }).join('/')).join('  '));
+  }
+  // the pars: the autopilot plays far better than a person, so a level's par is the median of the four
+  // mechs' Normal times with a human margin (×PAR_K + PAR_ADD s), rounded up to 5 s
+  if (modes.includes(false) && mechs.length > 1) {
+    const pars = levels.map((n) => {
+      const ts = mechs.map((m) => res.get(`false|${m}|${n}`)!.mean).filter((x) => !isNaN(x)).sort((a, b) => a - b);
+      const med = ts.length ? (ts[(ts.length - 1) >> 1] + ts[ts.length >> 1]) / 2 : NaN;
+      return `${n}:${isNaN(med) ? '-' : Math.ceil((med * PAR_K + PAR_ADD) / 5) * 5}`;
+    });
+    out.push(`suggested pars (median × ${PAR_K} + ${PAR_ADD} s): ${pars.join(' ')}`);
+    out.push(`current pars: ${levels.map((n) => `${n}:${buildLevel(n).par}`).join(' ')}`);
   }
   out.push(failed ? `${failed} run(s) did not finish` : 'every level finished with every mech');
   out.push(`largest gap from the all-mech mean: ${(spread * 100).toFixed(1)}%`);

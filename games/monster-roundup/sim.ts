@@ -1251,7 +1251,7 @@ export class Sim {
     m.vz += (tz * speed - m.vz) * k;
     if (Math.hypot(m.vx, m.vz) > 0.3) m.yaw += angDiff(m.yaw, Math.atan2(m.vx, m.vz)) * Math.min(1, dt * 8);
     this.moveMon(m, dt, true);
-    // the spiky blob and anything rammed
+    // the spiky cactoro, and anything rammed
     if (dist < m.radius + MECH.radius + 0.05) {
       if (d.kind === 'spiky') this.hurt(1, 'spikes', m.x, m.z);
       else if (this.ranks.thrusters >= 3 && v.sprint && m.attackCd <= 0) { m.attackCd = 0.6; this.daze(m, 1, false); }

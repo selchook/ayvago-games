@@ -6,8 +6,8 @@
 // a teal status light. The logo's emblem is a round lab badge: a containment pod with a dizzy monster
 // inside, in an orange ring. HUD chips are smoked glass with a teal rim. Display face: Righteous (SIL
 // OFL, covers Turkish); body text stays Nunito. The menu itself is the core's: PLAY, Easy / Normal
-// and the how-to; the level and the mech are picked after PLAY (the map, the hangar): one place
-// per choice.
+// and the how-to; the mech (and its paint) is picked after PLAY on the mech select, the level on the
+// map: one place per choice.
 import { shadeColor, type MenuTheme, type SkinPainter, type BorderStyle, type HudSkin } from '@core';
 import { RIGHTEOUS } from '@core/fonts/righteous';
 import { prebakeScreens, screenCards } from './screens';
