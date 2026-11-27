@@ -177,22 +177,9 @@ export class Bot {
     } else if (v.towing.length) {
       const goal = this.bank(towBoss);
       if (goal) {
-        // walk past the pod, so the monsters on the beam are pulled through its ring
+        // walk into the pod's ring: the beam feeds the monsters in
         const d = Math.hypot(goal.x - v.x, goal.z - v.z);
-        const last = v.towing[v.towing.length - 1];
-        if (d > 9) dir = this.steerTo(goal.x, goal.z, 'pod' + goal.x + goal.z);
-        else {
-          const base = d > 4 ? Math.atan2(goal.x - v.x, goal.z - v.z) : Math.atan2(goal.x - last.x, goal.z - last.z);
-          let through: Pt | null = null;
-          for (const off of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.2, -2.2]) {
-            const a = base + off, x = goal.x + Math.sin(a) * 3.4, z = goal.z + Math.cos(a) * 3.4;
-            if (s.solidAt(x, z) || s.solidAt(x + Math.sin(a), z + Math.cos(a))) continue;
-            through = { x, z };
-            break;
-          }
-          const t = through ?? goal;
-          dir = this.steerTo(t.x, t.z, 'thru' + Math.round(t.x / 2) + ',' + Math.round(t.z / 2)) ?? this.steerTo(goal.x, goal.z, 'pod' + goal.x + goal.z);
-        }
+        dir = this.steerTo(goal.x, goal.z, 'pod' + goal.x + goal.z);
         dash = d > 6 || v.towing.some((m) => m.dizzy < 3);
       }
     } else {

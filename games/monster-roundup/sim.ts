@@ -364,6 +364,18 @@ export class Sim {
   /** Pushes a circle out of walls, closed doors, stacks, crates and props. Returns true when it touched anything. */
   collide(o: { x: number; z: number }, r: number, laserWall = false): boolean {
     let touched = false;
+    // a centre inside a wall (a knock-back, a teleport, a test drop): out to the nearest open floor
+    // first, so the face-by-face pushes below cannot bounce it between two solid cells
+    if (this.solidAt(o.x, o.z)) {
+      touched = true;
+      let found = false;
+      for (let rad = 0.25; rad <= 6 && !found; rad += 0.25) {
+        for (let k = 0; k < 16; k++) {
+          const a = (k / 16) * Math.PI * 2, x = o.x + Math.sin(a) * rad, z = o.z + Math.cos(a) * rad;
+          if (!this.solidAt(x, z)) { o.x = x; o.z = z; found = true; break; }
+        }
+      }
+    }
     const boxes: [number, number, number, number][] = [];
     const q0 = Math.floor((o.x - r) / CELL) - 1, q1 = Math.floor((o.x + r) / CELL) + 1;
     const r0 = Math.floor((o.z - r) / CELL) - 1, r1 = Math.floor((o.z + r) / CELL) + 1;
@@ -404,7 +416,32 @@ export class Sim {
       }
       if (!moved) break;
     }
+    // still squeezed (a pocket between a prop and two walls has no room for this body): the nearest
+    // spot where it fits, so no position can hold it
+    if (touched && !this.fits(o.x, o.z, r, boxes)) {
+      for (let rad = 0.2; rad <= 4; rad += 0.2) {
+        let done = false;
+        for (let k = 0; k < 24; k++) {
+          const a = (k / 24) * Math.PI * 2, x = o.x + Math.sin(a) * rad, z = o.z + Math.cos(a) * rad;
+          if (this.fits(x, z, r, boxes)) { o.x = x; o.z = z; done = true; break; }
+        }
+        if (done) break;
+      }
+    }
     return touched;
+  }
+
+  /** No overlap with the given boxes, the walls or the round props (a small tolerance). */
+  private fits(x: number, z: number, r: number, boxes: [number, number, number, number][]): boolean {
+    const rr = r - 0.03;
+    if (this.solidAt(x, z)) return false;
+    for (const [x0, z0, x1, z1] of boxes) if (Math.hypot(x - Math.max(x0, Math.min(x1, x)), z - Math.max(z0, Math.min(z1, z))) < rr) return false;
+    for (let q = Math.floor((x - r) / CELL); q <= Math.floor((x + r) / CELL); q++) for (let w = Math.floor((z - r) / CELL); w <= Math.floor((z + r) / CELL); w++) {
+      if (q >= 0 && w >= 0 && q < this.cols && w < this.rows && !this.grid[w * this.cols + q]) continue;
+      if (Math.hypot(x - Math.max(q * CELL, Math.min((q + 1) * CELL, x)), z - Math.max(w * CELL, Math.min((w + 1) * CELL, z))) < rr) return false;
+    }
+    for (const [px, pz, pr] of (this.propCache ??= this.props())) if (Math.hypot(x - px, z - pz) < pr + rr) return false;
+    return true;
   }
 
   /** A straight line between two points crosses no wall or closed door (sampled). */
@@ -1372,7 +1409,9 @@ export class Sim {
       for (const [px, pz, pr] of pods) {
         // the boss only goes into its field
         if (m.boss && pr !== FIELD_R) continue;
-        if (Math.hypot(m.x - px, m.z - pz) > pr + (m.state === 'towed' ? 1.0 : 0.2) + (m.boss ? 0.6 : 0)) continue;
+        // in the ring itself, or on the beam of a mech that stands in the ring
+        const mechIn = m.state === 'towed' && Math.hypot(v.x - px, v.z - pz) < pr + 0.6;
+        if (!mechIn && Math.hypot(m.x - px, m.z - pz) > pr + (m.state === 'towed' ? 1.0 : 0.2) + (m.boss ? 0.6 : 0)) continue;
         const slot = v.towing.indexOf(m);
         if (slot >= 0) v.towing.splice(slot, 1);
         m.state = 'captured';
