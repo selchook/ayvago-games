@@ -8,7 +8,7 @@
 // screens screens.ts. Steering is the core's car steering (ARROWS | WHEEL | TILT on touch, ←/→ on
 // the keyboard) with GAS, BRAKE and POWER under the right thumb.
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, CarSteering, t, isEasy, isLandscape, showKeyHelp, flash, padRumble, labelAt, labelTexture, fitWidth, type LabelStyle, type CarPadButton, type KeyHelpCard } from '@core';
+import { ArcadeScene, Controls, CarSteering, t, isEasy, isLandscape, showKeyHelp, flash, padRumble, labelAt, labelTexture, fitWidth, type LabelStyle, type CarPadButton, type KeyHelpHint } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
 import { Sim, NO_INPUT, clearBonus, type Input, type SimEvent } from './sim';
@@ -74,8 +74,8 @@ export class PlayScene extends ArcadeScene {
   private powerPressed = false;
   private engine: Phaser.Sound.BaseSound | null = null;
   private tut: { step: number; t: number } | null = null;
-  /** The first-time keyboard card (desktop): the mission's intro waits while it is open. */
-  private keyCard: KeyHelpCard | null = null;
+  /** The first-time keys along the bottom (desktop, once): the drive goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private landT = 0;
   testSpeed = 1;
   perf = { frames: 0, maxCalls: 0, maxTris: 0 };
@@ -101,7 +101,7 @@ export class PlayScene extends ArcadeScene {
     this.bannerImgs = [];
     this.powerPressed = false;
     this.tut = null;
-    this.keyCard = null;
+    this.keyHint = null;
     this.landT = 0;
     this.testSpeed = 1;
     this.perf = { frames: 0, maxCalls: 0, maxTris: 0 };
@@ -122,7 +122,6 @@ export class PlayScene extends ArcadeScene {
     this.hudp = new PlayHud(this, this.hud, !!this.steering.pad);
     const kb = this.input.keyboard!;
     kb.on('keydown', (e: KeyboardEvent) => {
-      if (this.keyCard) return;
       if (this.panel && !this.panel.closed) { this.panel.key(e.code); return; }
       if (this.phase === 'intro' && (e.code === 'Space' || e.code === 'Enter')) this.phaseT = INTRO_TIME;
     });
@@ -228,9 +227,8 @@ export class PlayScene extends ArcadeScene {
       this.sfx('start', { volume: 0.5 });
     }
     this.tut = n === 1 && !this.meta.hints.includes('tut') ? { step: 0, t: 0 } : null;
-    // desktop, once: the keys before the first drive (the intro waits for it)
-    this.keyCard?.close();
-    this.keyCard = showKeyHelp(this, () => { this.keyCard = null; });
+    this.keyHint?.close();
+    this.keyHint = null;
   }
 
   private go(): void {
@@ -239,6 +237,8 @@ export class PlayScene extends ArcadeScene {
     this.showPlayUi(true);
     this.steering.centre();
     this.banner(t('go'), S_BIG, 360, 600);
+    // desktop, once: the keys and what they do along the bottom for the first seconds of driving
+    this.keyHint = showKeyHelp(this);
     this.sfx('go', { volume: 0.5 });
     const hint = this.sim?.c.hint;
     if (hint && !this.meta.hints.includes(hint)) {
@@ -261,7 +261,6 @@ export class PlayScene extends ArcadeScene {
     this.readButtons();
     const s = this.sim;
     if (!s) return;
-    if (this.keyCard && this.phase === 'intro') this.phaseT = 0;
     if (this.phase === 'intro' && this.phaseT >= INTRO_TIME) this.go();
     let steer = 0;
     if (this.phase === 'play') steer = this.steering.steer(delta / 1000, this.controls.axisX);
@@ -649,7 +648,8 @@ export class PlayScene extends ArcadeScene {
     if (!tu || !s) return;
     tu.t += dt;
     const key = !this.steering.pad;
-    if (tu.step === 0 && tu.t > 0.5) { this.toast(key ? 'tut_driveKey' : 'tut_drive', S_HINT, 3600); tu.step = 1; tu.t = 0; }
+    // (the first-time keys along the bottom already say how to drive)
+    if (tu.step === 0 && tu.t > 0.5) { if (!this.keyHint) this.toast(key ? 'tut_driveKey' : 'tut_drive', S_HINT, 3600); tu.step = 1; tu.t = 0; }
     else if (tu.step === 1 && tu.t > 4.5) { this.toast('tut_air', S_HINT, 3600); tu.step = 2; tu.t = 0; }
     else if (tu.step === 2 && s.rover.power) { this.toast(key ? 'tut_powerKey' : 'tut_power', S_HINT, 3600); tu.step = 3; }
   }

@@ -743,11 +743,12 @@ keyHelp: [
   drawn wide and localized. `label` is a string key, in TR and EN.
 - **Pause strip:** the pause screen draws every key in a band along the bottom. Desktop only;
   touch devices show their own buttons. The themed landscape pause card is shorter so the strip fits.
-- **First-time card:** the game calls `showKeyHelp(scene, onClose)` when its first round starts.
-  - It opens once per browser and closes on any key, click or pad button.
-  - It is a modal, so Esc closes it instead of pausing.
-  - The game holds its countdown or intro while it is open.
-  - Automated browsers skip it, so tests and store art never wait on it. `?keyhelp` shows it every time, for checking it.
+- **First-time keys:** the game calls `showKeyHelp(scene)` when its first round starts.
+  - The same keys appear along the bottom of the play screen, without a band.
+  - Nothing waits on them: the round goes on underneath.
+  - They fade after 10 s of play and hide while paused.
+  - They show once per browser.
+  - Automated browsers skip them, so tests and store art stay clean. `?keyhelp` shows them every time, for checking them.
 
 ## 7i. Game guide (required)
 
