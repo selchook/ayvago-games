@@ -13,13 +13,15 @@ import { SECTORS, MONSTERS, BOSS_IDS, MECH_IDS, type SectorId } from './defs';
 const SCIFI = 'mr:scifi';
 export const figKey = (file: string): string => 'mr:' + file;
 
-/** Every monster model the game loads (the families, their evolved forms, the bosses). */
-export const MONSTER_FILES = [...new Set([...Object.values(MONSTERS).flatMap((m) => [m.model, ...(m.evolved ? [m.evolved] : [])]), ...BOSS_IDS])];
+/** Every monster model the game loads (the families; the bosses are the same models, bigger). */
+export const MONSTER_FILES = [...new Set([...Object.values(MONSTERS).map((m) => m.model), ...BOSS_IDS])];
+/** The Big set's two shared clip files (figure.ts retargets them onto each monster). */
+export const CLIP_FILES = ['clips-a', 'clips-b'];
 
 export function loadKit(load: Phaser.Loader.LoaderPlugin): void {
   loadModel(load, SCIFI, asset('quaternius/scifi-modular/scifi.glb'));
   for (const m of MECH_IDS) loadModel(load, figKey(m), asset(`quaternius/mech-pack/${m}.glb`));
-  for (const f of MONSTER_FILES) loadModel(load, figKey(f), asset(`quaternius/monsters/${f}.glb`));
+  for (const f of [...MONSTER_FILES, ...CLIP_FILES]) loadModel(load, figKey(f), asset(`quaternius/monsters/${f}.glb`));
 }
 
 export const kitReady = (): boolean => hasModel(SCIFI);

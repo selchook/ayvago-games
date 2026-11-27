@@ -1,8 +1,9 @@
 // Monster Roundup: what lasts between runs, in the core storage: the credits (the hangar's upgrades are
 // paid from them), the upgrade ranks, how far the levels are unlocked, each level's best stars and
-// time, the mech in use, and the hints already shown.
+// time, the mech in use (picked at the start of every run) and each mech's paint (stars unlock paints),
+// and the hints already shown.
 import { storage } from '@core';
-import { UPGRADE, UPGRADE_IDS, MECHS, MECH_IDS, noRanks, type Ranks, type UpgradeId, type MechId } from './defs';
+import { UPGRADE, UPGRADE_IDS, MECH_IDS, PAINTS, PAINT_IDS, noRanks, type Ranks, type UpgradeId, type MechId, type PaintId } from './defs';
 import { LEVEL_COUNT } from './levels';
 
 const KEY = 'monster-roundup:meta';
@@ -25,6 +26,8 @@ export interface Meta {
   runs: number;
   hints: string[];
   mech: MechId;
+  /** Each mech's paint. */
+  paint: Record<MechId, PaintId>;
 }
 
 export function cleanMeta(m: Partial<Meta>): Meta {
@@ -44,10 +47,13 @@ export function cleanMeta(m: Partial<Meta>): Meta {
     last: Math.max(1, Math.min(Math.min(unlocked, LEVEL_COUNT), Math.floor(Number(m.last) || 1))),
     runs: Math.max(0, Math.floor(Number(m.runs) || 0)),
     hints: Array.isArray(m.hints) ? m.hints.filter((h) => typeof h === 'string').slice(0, 60) : [],
-    mech: 'mike',
+    mech: MECH_IDS.find((x) => x === m.mech) ?? 'mike',
+    paint: { mike: 'factory', leela: 'factory', stan: 'factory', george: 'factory' },
   };
-  const id = MECH_IDS.find((x) => x === m.mech);
-  if (id && totalStars(out) >= MECHS[id].stars) out.mech = id;
+  for (const id of MECH_IDS) {
+    const p = PAINT_IDS.find((x) => x === m.paint?.[id]);
+    if (p && paintOpen(out, p)) out.paint[id] = p;
+  }
   return out;
 }
 
@@ -77,12 +83,19 @@ export function buy(m: Meta, u: UpgradeId): boolean {
   return true;
 }
 
-export const mechOpen = (m: Meta, id: MechId): boolean => totalStars(m) >= MECHS[id].stars;
+/** A paint is open once enough stars are earned. */
+export const paintOpen = (m: Meta, p: PaintId): boolean => totalStars(m) >= PAINTS[p].stars;
 
-/** Pilots a mech, if its stars are earned. */
-export function pickMech(m: Meta, id: MechId): boolean {
-  if (!mechOpen(m, id)) return false;
+/** Pilots a mech (every mech is open from the start). */
+export function pickMech(m: Meta, id: MechId): void {
   m.mech = id;
+  saveMeta(m);
+}
+
+/** Paints a mech, if the paint's stars are earned. */
+export function pickPaint(m: Meta, id: MechId, p: PaintId): boolean {
+  if (!paintOpen(m, p)) return false;
+  m.paint[id] = p;
   saveMeta(m);
   return true;
 }

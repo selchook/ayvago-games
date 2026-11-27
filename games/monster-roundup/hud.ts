@@ -34,14 +34,14 @@ export const S_BOSS: LabelStyle = { size: 64, fill: ['#ffffff', '#ffd0d8', '#ff5
 const S_BTN: LabelStyle = { size: 22, color: '#ffffff', stroke: INK, strokeWidth: 5 };
 const S_BOSSNAME: LabelStyle = { size: 18, color: '#ffd0d8', stroke: INK, strokeWidth: 4 };
 
-export const TOASTS = ['captured', 'grabbed', 'full', 'heavy', 'woke', 'escaped', 'evolveWarn', 'evolved', 'split', 'blinked', 'squawk', 'glance', 'glanceKey', 'snack', 'handsFull', 'unlocked', 'hacking',
+export const TOASTS = ['captured', 'spored', 'multi', 'grabbed', 'full', 'heavy', 'woke', 'escaped', 'evolveWarn', 'evolved', 'split', 'blinked', 'squawk', 'glance', 'glanceKey', 'snack', 'handsFull', 'unlocked', 'hacking',
   'teleported', 'vent', 'shielded', 'lowHull', 'bossDazed', 'bossPhase', 'bossDizzy', 'bossFree', 'bossThud', 'exitOpenSub',
   'hurt_laser', 'hurt_turret', 'hurt_bite', 'hurt_spikes', 'hurt_wave', 'hurt_slam', 'hurt_boss', 'hurt_charge', 'hurt_beam', 'hurt_spike', 'hurt_orb', 'hurt_lob',
   ...POWER_IDS.map((p) => 'pd_' + p), ...POWER_IDS.map((p) => 'pd_' + p + 'Key')];
-export const WARNS = ['evolveWarn', 'full', 'heavy', 'woke', 'escaped', 'lowHull', 'bossFree', 'glance', 'glanceKey', 'handsFull',
+export const WARNS = ['spored', 'evolveWarn', 'full', 'heavy', 'woke', 'escaped', 'lowHull', 'bossFree', 'glance', 'glanceKey', 'handsFull',
   'hurt_laser', 'hurt_turret', 'hurt_bite', 'hurt_spikes', 'hurt_wave', 'hurt_slam', 'hurt_boss', 'hurt_charge', 'hurt_beam', 'hurt_spike', 'hurt_orb', 'hurt_lob'];
-export const GOODS = ['captured', 'unlocked', 'bossDizzy', 'bossDazed', 'bossThud', 'snack'];
-export const HINTS = ['h_tow', 'h_runner', 'h_split', 'h_terminal', 'h_boss', 'h_caller', 'h_flyer', 'h_spiky', 'h_laser', 'h_ice', 'h_blinker', 'h_bite', 'h_sweeper', 'h_evolve',
+export const GOODS = ['multi', 'captured', 'unlocked', 'bossDizzy', 'bossDazed', 'bossThud', 'snack'];
+export const HINTS = ['h_tow', 'h_runner', 'h_split', 'h_terminal', 'h_boss', 'h_caller', 'h_leaper', 'h_spore', 'h_lobber', 'h_spiky', 'h_laser', 'h_ice', 'h_blinker', 'h_bite', 'h_sweeper', 'h_evolve',
   'tut_move', 'tut_moveKey', 'tut_stun', 'tut_stunKey', 'tut_tow', 'tut_towKey', 'tut_bank'];
 
 /** A long line in two halves (split at the space nearest the middle), as the toasts draw it. */

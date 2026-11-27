@@ -14,13 +14,13 @@
 //     for the map, a swoop for the level's start and a close turntable for the hangar.
 // The game is adaptive: portrait sees a narrower slice, so its camera stands further back.
 import { THREE, World3D } from '@core/three';
-import { BLOCK, WALL_H, SECTORS, MONSTERS, BOSSES, MECHS, POWER_COLOR, type SectorId, type MechId, type PowerId } from './defs';
+import { BLOCK, WALL_H, SECTORS, MONSTERS, BOSSES, MECHS, POWER_COLOR, EVOLVED, PAINTS, SHELL_R, type SectorId, type MechId, type PowerId, type PaintId } from './defs';
 import { piece, Merger, place, isKitGeo } from './kit';
 import { Figure, restBox } from './figure';
 import { Fx } from './fx3d';
-import { Sim, POD_R, FIELD_R, type Mon } from './sim';
+import { Sim, POD_R, FIELD_R, BEAM, VOLLEY_GAP, type Mon } from './sim';
 import { solidBlock, charAt, type Level } from './levels';
-import { powerTexture, starTexture, glowTexture } from './art';
+import { powerTexture, starTexture, glowTexture, crownTexture } from './art';
 
 const tm = new THREE.Matrix4(), tq = new THREE.Quaternion(), tv = new THREE.Vector3(), ts = new THREE.Vector3(), te = new THREE.Euler(), tc = new THREE.Color();
 const UP = new THREE.Vector3(0, 1, 0);
@@ -63,7 +63,7 @@ class Inst {
 
 interface MonFig { fig: Figure; file: string; key: string; scale: number; lift: number; boss: boolean }
 
-export type CamMode = 'follow' | 'preview' | 'intro' | 'hangar';
+export type CamMode = 'follow' | 'preview' | 'intro' | 'hangar' | 'select';
 
 export class View {
   readonly world: World3D;
@@ -111,6 +111,11 @@ export class View {
   private lines: Inst;
   private shadows: Inst;
   private stars: THREE.Sprite[] = [];
+  private crowns: THREE.Sprite[] = [];
+  private clouds: Inst;
+  /** The hangar and the select bay: the level's monsters are not drawn. */
+  private hideMons = false;
+  private paintHue = -1;
   private beams: THREE.Mesh[] = [];
   private shield: THREE.Mesh;
   private magnet: THREE.Mesh;
@@ -164,6 +169,13 @@ export class View {
     sh.rotateX(-Math.PI / 2);
     this.shadows = new Inst(w.scene, sh, this.matShadow, 50);
     this.iceDiscs = new Inst(w.scene, disc, new THREE.MeshBasicMaterial({ color: 0xc8ecff, transparent: true, opacity: 0.5, depthWrite: false }), 20);
+    this.clouds = new Inst(w.scene, new THREE.IcosahedronGeometry(1, 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.34, depthWrite: false, fog: false }), 60, true);
+    for (let i = 0; i < 3; i++) {
+      const c = new THREE.Sprite(new THREE.SpriteMaterial({ map: crownTexture(), depthWrite: false, fog: false }));
+      c.visible = false;
+      w.scene.add(c);
+      this.crowns.push(c);
+    }
     for (let i = 0; i < 24; i++) {
       const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTexture(), depthWrite: false, fog: false }));
       s.scale.setScalar(0.42);
@@ -468,31 +480,112 @@ export class View {
   // ---------------------------------------------------------------- figures
 
   /** Puts the chosen mech in the level (the hangar swaps it). */
-  setMech(id: MechId, force = false): void {
-    if (this.mechFig && this.mechId === id && !force) return;
+  setMech(id: MechId, force = false, paint?: PaintId): void {
+    if (paint) this.paintHue = PAINTS[paint].hue;
+    if (this.mechFig && this.mechId === id && !force) { this.mechFig.setPaint(this.paintHue); return; }
     const old = this.mechFig;
     this.mechId = id;
-    this.mechFig = new Figure(id, MECHS[id].height, { layered: true });
+    this.mechFig = new Figure(id, MECHS[id].height, { layered: true, paintable: true });
+    this.mechFig.setPaint(this.paintHue);
     this.world.scene.add(this.mechFig.root);
     this.mechFig.play('Idle');
     if (old) { this.mechFig.root.position.copy(old.root.position); this.mechFig.root.rotation.y = old.root.rotation.y; old.dispose(); }
   }
 
+  // ---------------------------------------------------------------- the select bay's lineup
+
+  private line: { figs: Figure[]; ids: MechId[]; sel: number; t: number; x: number[]; turn: number[] } | null = null;
+
+  /** Where the lineup stands: the bay's middle, a row across (closer together in portrait). */
+  private linePos(i: number): [number, number] {
+    const gap = this.land ? 4.6 : 3.3;
+    return [this.spot.x + (i - 1.5) * gap, this.spot.z - 2];
+  }
+
+  /** The four mechs side by side in the bay; `sel` steps forward and waves. Paints as given. */
+  setLineup(ids: readonly MechId[], sel: number, hues: number[]): void {
+    if (!this.line) {
+      const figs = ids.map((id) => {
+        const f = new Figure(id, MECHS[id].height, { paintable: true });
+        this.world.scene.add(f.root);
+        f.play('Idle', { speed: 0.8 + Math.random() * 0.4 });
+        return f;
+      });
+      this.line = { figs, ids: [...ids], sel: -1, t: 0, x: ids.map(() => 0), turn: ids.map(() => 0) };
+    }
+    const L = this.line;
+    L.figs.forEach((f, i) => f.setPaint(hues[i] ?? -1));
+    if (sel !== L.sel) {
+      L.sel = sel;
+      L.t = 0;
+      const f = L.figs[sel];
+      f.play(f.has('Hello') ? 'Hello' : 'Yes', { once: true, restart: true, fade: 0.12 });
+    }
+  }
+
+  /** The figure of a lineup mech (a cheer when the run starts). */
+  lineupCheer(): void { const L = this.line; if (L) L.figs[L.sel].play('Yes', { once: true, restart: true }); }
+
+  clearLineup(): void {
+    if (!this.line) return;
+    for (const f of this.line.figs) f.dispose();
+    this.line = null;
+  }
+
+  /** Screen points of each lineup mech's chest (the select screen's tap areas). */
+  lineupScreen(): { x: number; y: number; r: number }[] {
+    if (!this.line) return [];
+    return this.line.figs.map((f, i) => {
+      const [x, z] = this.linePos(i);
+      const p = this.screen(x, MECHS[this.line!.ids[i]].height * 0.5, z + (i === this.line!.sel ? 1.4 : 0));
+      const q = this.screen(x, MECHS[this.line!.ids[i]].height, z);
+      return { x: p.x, y: p.y, r: Math.max(60, Math.abs(p.y - q.y) * 1.4) };
+    });
+  }
+
+  private syncLineup(dt: number): void {
+    const L = this.line;
+    if (!L) return;
+    L.t += dt;
+    L.figs.forEach((f, i) => {
+      const on = i === L.sel;
+      L.x[i] += ((on ? 1.4 : 0) - L.x[i]) * Math.min(1, dt * 8);
+      // the chosen one faces the camera; the others turn a little toward it
+      const want = on ? 0 : (L.sel - i) * 0.22;
+      L.turn[i] += (want - L.turn[i]) * Math.min(1, dt * 6);
+      const [x, z] = this.linePos(i);
+      f.root.position.set(x, 0, z + L.x[i]);
+      f.root.rotation.y = L.turn[i];
+      // after the wave, back to idle
+      if (on && L.t > 1.6 && f.name !== 'Idle') f.play('Idle', { fade: 0.3 });
+      if (!on && f.name !== 'Idle') f.play('Idle', { fade: 0.3 });
+      f.setGlowRGB(on ? 0.05 : 0, on ? 0.05 : 0, on ? 0.06 : 0);
+      f.update(dt);
+      this.shadows.put(x, 0.1, z + L.x[i], 0, 1.4);
+      if (on) {
+        const c = MECHS[L.ids[i]].color;
+        const r = this.rings.put(x, 0.15, z + L.x[i], L.t * 1.5, 1.9 + Math.sin(L.t * 4) * 0.06);
+        this.rings.color(r, c, 1);
+        const r2 = this.rings.put(x, 0.14, z + L.x[i], -L.t, 2.4);
+        this.rings.color(r2, 0x7af0e0, 0.5);
+        const d = this.discs.put(x, 0.12, z + L.x[i], 0, 2.2);
+        this.discs.color(d, c, 0.18);
+      }
+    });
+  }
+
   private monFig(m: Mon): MonFig {
     let f = this.figs.get(m.i);
     const def = m.def;
-    const file = m.boss ? m.boss : m.evolved && def!.evolved ? def!.evolved : def!.model;
-    const key = file + (m.small ? 's' : '');
+    const file = m.boss ? m.boss : def!.model;
+    const key = file + (m.small ? 's' : '') + (m.evolved ? 'e' : '');
     if (f && f.key === key) return f;
     if (f) f.fig.dispose();
-    const flyer = def?.kind === 'flyer';
-    const h = m.boss ? BOSSES[m.boss].height : def!.height * (m.small ? 0.7 : 1) * (m.evolved ? (def!.evolved ? 1.15 : 1.3) : 1);
+    const h = m.boss ? BOSSES[m.boss].height : def!.height * (m.small ? 0.7 : 1) * (m.evolved ? EVOLVED.size : 1);
     const fig = new Figure(file, h);
-    // flyers' rest pose hovers above their own origin: brought down so the body sits at the sim's height
-    if (flyer) fig.body.position.y = -restBox(file).minY * fig.scale;
     this.world.scene.add(fig.root);
-    fig.play(m.boss ? 'Idle' : flyer ? 'Flying_Idle' : 'Idle');
-    f = { fig, file, key, scale: 1, lift: flyer ? -1 : 0, boss: !!m.boss };
+    fig.play('Idle');
+    f = { fig, file, key, scale: 1, lift: 0, boss: !!m.boss };
     this.figs.set(m.i, f);
     return f;
   }
@@ -505,7 +598,9 @@ export class View {
     const L = s.c, look = SECTORS[L.sector], v = s.mech, t = this.time;
     // ---- the mech
     const mf = this.mechFig!;
-    const hangar = o.camera === 'hangar';
+    const hangar = o.camera === 'hangar' || o.camera === 'select';
+    this.hideMons = hangar;
+    mf.root.visible = o.camera !== 'select';
     mf.root.position.set(hangar ? this.spot.x : v.x, 0, hangar ? this.spot.z : v.z);
     // the hangar: a turntable facing the camera
     mf.root.rotation.y = o.camera === 'hangar' ? Math.sin(t * 0.6) * 0.7 : v.yaw;
@@ -523,7 +618,7 @@ export class View {
       if (v.grabT > 0.45) mf.overlay('Pickup', 0.45, { speed: 1.6 });
       else if (v.shootT > 0.3) mf.overlay('Shoot', 0.32, { speed: 1.8, restart: true });
     }
-    mf.root.visible = !(v.safe > 0 && v.safe < 1.0 && v.state === 'play' && Math.floor(t * 14) % 2 === 0);
+    if (o.camera !== 'select') mf.root.visible = !(v.safe > 0 && v.safe < 1.0 && v.state === 'play' && Math.floor(t * 14) % 2 === 0);
     mf.setGlowRGB(v.charge > 0.1 ? 0.08 * Math.min(1, v.charge / s.chargeTime) : 0, v.charge > 0.1 ? 0.06 * Math.min(1, v.charge / s.chargeTime) : 0, 0);
     mf.update(dt);
     // charge ring under the mech, lock marker on the target
@@ -554,17 +649,39 @@ export class View {
 
     // ---- monsters and the boss
     this.shadows.begin();
-    this.shadows.put(v.x, 0.1, v.z, 0, 1.3);
+    if (o.camera !== 'select') this.shadows.put(v.x, 0.1, v.z, 0, 1.3);
     const seen = new Set<number>();
-    let starN = 0;
+    let starN = 0, crownN = 0;
+    this.discs.begin(); this.rings.begin(); this.lines.begin(); this.iceDiscs.begin();
     for (const m of s.mons) {
       if (m.state === 'gone') continue;
       seen.add(m.i);
       const f = this.monFig(m);
       this.placeMon(m, f, s, dt);
+      if (this.hideMons) continue;
       if (m.state !== 'captured' && m.state !== 'vent') this.shadows.put(m.x, 0.1, m.z, 0, m.radius * 1.45 * (m.y > 0.5 ? Math.max(0.5, 1 - m.y / 6) : 1));
+      // a boss: a crown over its head and a pulsing aura ring in its colour
+      if (m.boss && m.state !== 'captured' && crownN < this.crowns.length) {
+        const c = this.crowns[crownN++];
+        c.visible = true;
+        const bob = Math.sin(t * 2.4) * 0.15;
+        c.position.set(m.x, m.y + m.height * 1.06 + bob, m.z);
+        c.scale.setScalar(2.2);
+        const col = BOSSES[m.boss].color;
+        for (let k = 0; k < 2; k++) {
+          const ph = (t * 0.7 + k * 0.5) % 1;
+          const r = this.rings.put(m.x, 0.16, m.z, t * (k ? -1 : 1), m.radius * (1.25 + ph * 0.9));
+          this.rings.color(r, col, 0.9 * (1 - ph));
+        }
+      }
+      // evolved: a spinning orange ring
+      if (m.evolved && s.loose(m)) {
+        const r = this.rings.put(m.x, 0.15, m.z, t * 3, m.radius + 0.45 + Math.sin(t * 6) * 0.06);
+        this.rings.color(r, 0xff9a2a, 0.95);
+      }
       // dizzy stars
       if ((m.state === 'dizzy' || m.state === 'towed' || m.state === 'b-daze') && starN < this.stars.length - 3) {
+        // (drawn below the boss's crown)
         const top = m.state === 'towed' ? m.y + m.height * 0.9 : m.boss ? m.height * 0.55 : m.y + m.height * 0.75;
         for (let k = 0; k < 3; k++) {
           const sp = this.stars[starN++];
@@ -577,6 +694,8 @@ export class View {
       }
     }
     for (let k = starN; k < this.stars.length; k++) this.stars[k].visible = false;
+    for (let k = crownN; k < this.crowns.length; k++) this.crowns[k].visible = false;
+    this.syncLineup(dt);
     for (const [i, f] of this.figs) if (!seen.has(i)) { f.fig.dispose(); this.figs.delete(i); }
 
     // ---- tow beams
@@ -599,19 +718,56 @@ export class View {
     // ---- bolts, enemy shots, lobs, waves, telegraphs, ice
     this.bolts.begin();
     for (const b of s.bolts) {
-      const i = this.bolts.put(b.x, 1.45, b.z, 0, b.charged ? 0.42 : 0.24);
-      this.bolts.color(i, b.charged ? 0xffd23a : 0x5ae8ff, 1.1);
-      const j = this.bolts.put(b.x - b.vx * 0.012, 1.45, b.z - b.vz * 0.012, 0, b.charged ? 0.3 : 0.17);
-      this.bolts.color(j, b.charged ? 0xff8a1a : 0x2a8aff, 0.7);
+      const plasma = b.kind === 'plasma', pellet = b.kind === 'pellet';
+      const size = b.charged ? 0.42 : plasma ? 0.46 + Math.sin(t * 30) * 0.04 : pellet ? 0.17 : 0.24;
+      const c1 = b.charged ? 0xffd23a : plasma ? 0x8aff6a : pellet ? 0xffb03a : 0x5ae8ff;
+      const c2 = b.charged ? 0xff8a1a : plasma ? 0x2ab85a : pellet ? 0xff6a1a : 0x2a8aff;
+      const i = this.bolts.put(b.x, 1.45, b.z, 0, size);
+      this.bolts.color(i, c1, 1.1);
+      const j = this.bolts.put(b.x - b.vx * 0.012, 1.45, b.z - b.vz * 0.012, 0, size * 0.72);
+      this.bolts.color(j, c2, 0.7);
+      if (plasma && Math.random() < 0.5) this.fx.spawn(b.x, 1.45, b.z, 0, 0.3, 0, 0.12, 0.3, 0x8aff6a, { drag: 3 });
+    }
+    // George's shells: a glowing ball on its arc, the landing ring under it
+    for (const sh of s.shells) {
+      const k = sh.t / sh.total;
+      const x = sh.fx + (sh.x - sh.fx) * k, z = sh.fz + (sh.z - sh.fz) * k, y = 1.6 + Math.sin(k * Math.PI) * 4;
+      const i = this.bolts.put(x, y, z, 0, 0.6);
+      this.bolts.color(i, 0xb8ff7a, 1.2);
+      const r = this.rings.put(sh.x, 0.15, sh.z, -t * 3, SHELL_R);
+      this.rings.color(r, 0x8aff6a, 0.5 + 0.5 * k);
+      const d = this.discs.put(sh.x, 0.13, sh.z, 0, SHELL_R * k);
+      this.discs.color(d, 0x3ad85a, 0.25);
     }
     this.bolts.end();
+    // Leela's beam
+    for (const ln of s.lances) {
+      const len = Math.hypot(ln.bx - ln.ax, ln.bz - ln.az), yaw = Math.atan2(ln.bx - ln.ax, ln.bz - ln.az), k = ln.t / 0.3;
+      const i = this.lines.put(ln.ax, 1.45, ln.az, yaw, new THREE.Vector3(0.9 * k + 0.2, 1, len));
+      this.lines.color(i, 0xfff0ff, 1.6 * k);
+      const j = this.lines.put(ln.ax, 1.42, ln.az, yaw, new THREE.Vector3(2.2 * k, 1, len));
+      this.lines.color(j, 0xd07aff, 0.9 * k);
+    }
+    // spore clouds: a soft green dome of puffs
+    this.clouds.begin();
+    for (const c of s.clouds) {
+      const life = Math.min(1, c.t / 0.6, (c.max - c.t) / 0.4 + 0.2);
+      for (let k = 0; k < 7; k++) {
+        const a = (k / 7) * Math.PI * 2 + t * 0.4, rr = k === 0 ? 0 : c.r * 0.55;
+        const i = this.clouds.put(c.x + Math.cos(a) * rr, 0.6 + Math.sin(t * 2 + k) * 0.12, c.z + Math.sin(a) * rr, 0, new THREE.Vector3(c.r * 0.62 * life, c.r * 0.32 * life, c.r * 0.62 * life));
+        this.clouds.color(i, k % 2 ? 0xb8f07a : 0x9ad84a, 1);
+      }
+      if (Math.random() < 0.3) this.fx.spawn(c.x + (Math.random() - 0.5) * c.r * 1.6, 0.3, c.z + (Math.random() - 0.5) * c.r * 1.6, 0, 0.8, 0, 0.14, 1, 0xc8ff8a, { drag: 1 });
+      const r = this.rings.put(c.x, 0.14, c.z, t, c.r);
+      this.rings.color(r, 0xa8ff5a, 0.55 * life);
+    }
+    this.clouds.end();
     this.spikes.begin(); this.orbs.begin();
     for (const sh of s.shots) {
       if (sh.kind === 'spike') this.spikes.put(sh.x, sh.y, sh.z, Math.atan2(sh.vx, sh.vz), 1.2);
       else { const i = this.orbs.put(sh.x, sh.y, sh.z, 0, 0.36 + Math.sin(t * 20) * 0.04); this.orbs.color(i, 0xc07aff, 1); }
     }
     this.spikes.end();
-    this.discs.begin(); this.rings.begin(); this.lines.begin(); this.iceDiscs.begin();
     for (const l of s.lobs) {
       const k = l.t / l.total;
       const x = l.fx + (l.x - l.fx) * k, z = l.fz + (l.z - l.fz) * k, y = 2 + Math.sin(k * Math.PI) * 5;
@@ -625,12 +781,24 @@ export class View {
     this.orbs.end();
     for (const w of s.waves) {
       const i = this.rings.put(w.x, 0.2, w.z, 0, w.r);
-      this.rings.color(i, w.color === 'freeze' ? 0x9af0ff : 0xff6a3a, 1 - w.r / w.max);
+      this.rings.color(i, w.color === 'freeze' ? 0x9af0ff : w.color === 'pulse' ? 0xffd23a : 0xff6a3a, 1 - w.r / w.max);
     }
     for (const p of s.ice) this.iceDiscs.put(p.x, 0.09, p.z, 0, p.r * Math.min(1, p.t * 2));
     for (const m of s.mons) {
-      if (m.state === 'windup' && !m.boss) {
-        const k = m.t / (0.55 * s.tune.windup);
+      if (this.hideMons) continue;
+      // the spore cloud's reach grows under the monster; the lobber's orb marks the mech before it flies
+      if (m.state === 'windup' && m.act === 'spore') {
+        const k = Math.min(1, m.t / s.windupTime(m));
+        const r = this.rings.put(m.x, 0.15, m.z, t * 2, 3.4 * (m.evolved ? 1.35 : 1) * (0.3 + 0.7 * k));
+        this.rings.color(r, 0xa8ff5a, 0.6 + 0.4 * k);
+      }
+      if (m.state === 'windup' && m.act === 'lob') {
+        const k = Math.min(1, m.t / s.windupTime(m));
+        const r = this.rings.put(v.x, 0.15, v.z, -t * 3, 1.8 * (1.6 - 0.6 * k));
+        this.rings.color(r, 0xff5a3a, 0.4 + 0.5 * k);
+      }
+      if (m.state === 'windup' && !m.boss && m.act === 'bite') {
+        const k = m.t / s.windupTime(m);
         const i = this.discs.put(m.x, 0.13, m.z, 0, (m.radius + 1.1) * Math.min(1, k));
         this.discs.color(i, 0xff2a1a, 0.35 + 0.3 * k);
       }
@@ -683,14 +851,18 @@ export class View {
     this.crates.forEach((m, i) => { m.visible = !s.crates[i].broken; });
     for (const r of this.podRings) {
       const towing = v.towing.length > 0;
-      r.scale.setScalar(POD_R * (1 + (towing ? Math.sin(t * 8) * 0.06 : 0)));
-      (r.material as THREE.MeshBasicMaterial).opacity = towing ? 0.95 : 0.55 + Math.sin(t * 2) * 0.1;
-      r.rotation.y = t * 0.6;
+      const fl = Math.max(0, (r.userData.flash ?? 0) - dt);
+      r.userData.flash = fl;
+      r.scale.setScalar(POD_R * (1 + (towing ? Math.sin(t * 8) * 0.06 : 0) + fl * 0.8));
+      (r.material as THREE.MeshBasicMaterial).opacity = fl > 0 ? 1 : towing ? 0.95 : 0.55 + Math.sin(t * 2) * 0.1;
+      r.rotation.y = t * (0.6 + fl * 12);
     }
     if (this.fieldRing) {
       const b = s.boss;
       const hot = !!b && (b.state === 'towed' || b.state === 'dizzy');
-      this.fieldRing.scale.setScalar(FIELD_R * (1 + Math.sin(t * (hot ? 9 : 2)) * 0.04));
+      const fl = Math.max(0, (this.fieldRing.userData.flash ?? 0) - dt);
+      this.fieldRing.userData.flash = fl;
+      this.fieldRing.scale.setScalar(FIELD_R * (1 + Math.sin(t * (hot ? 9 : 2)) * 0.04 + fl * 0.6));
       (this.fieldRing.material as THREE.MeshBasicMaterial).opacity = hot ? 1 : 0.5;
       this.fieldRing.rotation.y = t * 0.8;
       if (hot && Math.random() < 0.5) { const a = Math.random() * Math.PI * 2; this.fx.spawn(s.c.field!.x + Math.cos(a) * FIELD_R, 0.9, s.c.field!.z + Math.sin(a) * FIELD_R, 0, 2.5, 0, 0.1, 0.8, look.glow, { drag: 1 }); }
@@ -743,33 +915,40 @@ export class View {
 
   private placeMon(m: Mon, f: MonFig, s: Sim, dt: number): void {
     const fig = f.fig, def = m.def, t = this.time;
-    const flyer = def?.kind === 'flyer';
     fig.root.position.set(m.x, m.y, m.z);
     fig.root.rotation.y = m.yaw;
-    fig.root.visible = m.state !== 'vent' && !(m.state === 'blink' && m.t > 0.15);
+    fig.root.visible = m.state !== 'vent' && !(m.state === 'blink' && m.t > 0.22) && !this.hideMons;
     let sc = 1;
     if (m.state === 'captured') sc = Math.max(0.01, 1 - m.t / 0.85);
-    if (m.state === 'evolve') sc = 0.85 + Math.min(1, m.t / 1.2) * 0.15 + Math.sin(m.t * 30) * 0.05;
-    if (m.state === 'windup' && !m.boss) sc = 1 + Math.min(1, m.t / 0.5) * 0.12;
-    fig.root.scale.setScalar(sc);
+    if (m.state === 'evolve') sc = 0.8 + Math.min(1, m.t / 1.2) * 0.2 + Math.sin(m.t * 30) * 0.06;
+    if (m.state === 'windup' && !m.boss) sc = 1 + Math.min(1, m.t / 0.5) * 0.1;
+    // a hit: a quick squash
+    if (m.hurtT > 0 && !m.boss) sc *= 1 + Math.sin((m.hurtT / 0.25) * Math.PI) * 0.14;
+    fig.root.scale.set(sc * (m.hurtT > 0 ? 1.06 : 1), sc * (m.hurtT > 0 ? 0.9 : 1), sc * (m.hurtT > 0 ? 1.06 : 1));
     const speed = Math.hypot(m.vx, m.vz);
     if (m.boss) this.animBoss(m, fig);
     else {
+      const kind = def!.kind;
       switch (m.state) {
         case 'dizzy': case 'towed': case 'captured':
-          fig.play(flyer ? 'Death' : 'Death', { once: true, fade: 0.12 });
+          fig.play('Death', { once: true, fade: 0.12 });
           break;
-        case 'eat': fig.play(flyer ? 'Headbutt' : 'Bite_Front'); break;
-        case 'windup': fig.play(flyer ? 'Headbutt' : 'Bite_Front', { once: true, restart: m.t < 0.05, speed: 1.4 }); break;
-        case 'evolve': fig.play(flyer ? 'Yes' : 'Dance'); break;
+        case 'eat': fig.play('Duck', { speed: 1.4 }); break;
+        case 'windup': fig.play(m.act === 'lob' ? 'Weapon' : m.act === 'spore' ? 'Wave' : 'Punch', { once: true, restart: m.t < 0.05, speed: m.act === 'bite' ? 1.5 : 1.3 }); break;
+        case 'blink': fig.play('Duck', { once: true, speed: 2.2 }); break;
+        case 'evolve': fig.play('Yes', { speed: 1.4 }); break;
         default:
-          if (flyer) fig.play(speed > 3 ? 'Fast_Flying' : 'Flying_Idle', { speed: 1 + speed * 0.1 });
-          else if (def?.kind === 'hopper') fig.play(speed > 0.3 ? 'Jump' : 'Idle', { speed: m.state === 'flee' ? 1.5 : 1.1 });
+          if (m.hurtT > 0) fig.play('HitReact', { once: true, restart: m.hurtT > 0.23, speed: 2 });
+          else if (kind === 'caller' && m.callCd > 8) fig.play('Wave', { speed: 1.8 });
+          else if (kind === 'leaper' && m.air > 0) fig.play('Jump', { once: true, speed: 0.8 });
+          else if (kind === 'hopper') fig.play(speed > 0.3 ? 'Jump' : 'Idle', { speed: m.state === 'flee' ? 1.5 : 1.1 });
+          else if (speed > 3.4) fig.play('Run', { speed: Math.max(0.8, Math.min(1.8, speed / 5)) });
           else fig.play(speed > 0.4 ? 'Walk' : 'Idle', { speed: Math.max(0.7, Math.min(2.4, speed / 1.6)) });
       }
-      // evolving soon: an orange pulse; a hit: a flash
+      // evolving soon: an orange pulse; evolved: a slow purple-orange glow
       if (m.evolveK > 0.78 && !m.evolved && s.loose(m)) { const p = (Math.sin(t * (6 + m.evolveK * 10)) + 1) / 2; fig.setGlowRGB(0.35 * p, 0.16 * p, 0); }
-      else if (m.evolved) fig.setGlowRGB(0.08 + Math.sin(t * 3) * 0.04, 0.02, 0.06);
+      else if (m.evolved) { const p = (Math.sin(t * 3 + m.i) + 1) / 2; fig.setGlowRGB(0.16 + p * 0.12, 0.04 + p * 0.06, 0.12 - p * 0.06); }
+      else if (m.state === 'windup') fig.setGlowRGB(0.25 * Math.min(1, m.t / 0.4), 0.02, 0);
       else fig.setGlowRGB(0, 0, 0);
     }
     if (m.hurtT > 0.18) fig.flash(0.1);
@@ -815,15 +994,25 @@ export class View {
         this.rings.color(r, 0xff3a2a, 0.6 + 0.4 * pulse);
         break;
       }
-      case 'charge': case 'beam': {
-        const len = a === 'charge' ? 16 : Math.hypot(...((): [number, number] => { const [ex, ez] = s.beamEnd({ ...m, yaw: m.aimYaw } as Mon); return [ex - m.x, ez - m.z]; })());
-        const w = a === 'charge' ? m.radius * 2 + 0.6 : 0.8;
-        const i = this.lines.put(m.x, 0.13, m.z, m.aimYaw, new THREE.Vector3(w, 1, len));
-        this.lines.color(i, 0xff2a1a, (0.25 + 0.3 * k) * (a === 'beam' && m.state === 'b-act' ? 0 : 1));
+      case 'charge': {
+        const i = this.lines.put(m.x, 0.13, m.z, m.aimYaw, new THREE.Vector3(m.radius * 2 + 0.6, 1, 16));
+        this.lines.color(i, 0xff2a1a, 0.25 + 0.3 * k);
+        break;
+      }
+      case 'beam': {
+        // the wedge the beam will sweep: its two edges bright, the inside faint
+        if (m.state === 'b-act') break;
+        for (let q = -4; q <= 4; q++) {
+          const yaw = m.aimYaw + (q / 4) * BEAM.amp;
+          const [ex, ez] = s.beamEnd({ ...m, yaw } as Mon);
+          const edge = Math.abs(q) === 4;
+          const i = this.lines.put(m.x, 0.13, m.z, yaw, new THREE.Vector3(edge ? 0.35 : 1.1, 1, Math.hypot(ex - m.x, ez - m.z) * (edge ? 1 : k)));
+          this.lines.color(i, 0xff2a1a, edge ? 0.5 + 0.4 * pulse : 0.12 + 0.12 * k);
+        }
         break;
       }
       case 'volley': {
-        for (let q = -2; q <= 2; q++) { const i = this.lines.put(m.x, 0.13, m.z, m.aimYaw + q * 0.26, new THREE.Vector3(0.35, 1, 7 * k)); this.lines.color(i, 0xff3a1a, 0.45); }
+        for (let q = -2; q <= 2; q++) { const i = this.lines.put(m.x, 0.13, m.z, m.aimYaw + q * VOLLEY_GAP, new THREE.Vector3(0.4, 1, 3 + 9 * k)); this.lines.color(i, 0xff3a1a, 0.4 + 0.3 * pulse); }
         break;
       }
       case 'ring': {
@@ -882,6 +1071,16 @@ export class View {
       // the board covers the left half (landscape) or the bottom (portrait): the mech in the free part
       if (this.land) tx -= 3.4;
       else tz += 5.4;
+    } else if (mode === 'select') {
+      // the lineup from the front: the mechs in the top part, the board below them
+      const [x0, z0] = this.linePos(0), [x3] = this.linePos(3);
+      const mx = (x0 + x3) / 2;
+      const P = this.land ? [mx, 6.2, z0 + 15.5] : [mx, 7.5, z0 + 25];
+      const T = this.land ? [mx, -0.6, z0 - 1] : [mx, -3.6, z0 - 2];
+      cam.position.set(P[0], P[1], P[2]);
+      cam.up.copy(UP);
+      cam.lookAt(T[0], T[1], T[2]);
+      return;
     } else if (mode === 'intro') {
       const k = Math.min(1, o.introT ?? 1);
       const e = 1 - Math.pow(1 - k, 3);
@@ -913,6 +1112,12 @@ export class View {
     this.sync(s, 0, { camera: 'follow' });
   }
 
+  /** A capture: the pod's ring flares for a moment. */
+  podFlash(x: number, z: number): void {
+    for (const r of this.podRings) if (Math.hypot(r.position.x - x, r.position.z - z) < 1) r.userData.flash = 0.6;
+    if (this.fieldRing && Math.hypot(this.fieldRing.position.x - x, this.fieldRing.position.z - z) < 1) this.fieldRing.userData.flash = 0.9;
+  }
+
   shake(k: number): void { this.cam.shake = Math.min(1.4, Math.max(this.cam.shake, k)); }
 
   /** Game pixels of a world point. */
@@ -931,6 +1136,7 @@ export class View {
   warm(): void { try { this.world.renderer.compile(this.world.scene, this.world.camera); } catch { /* not ready */ } }
 
   dispose(): void {
+    this.clearLineup();
     for (const f of this.figs.values()) f.fig.dispose();
     this.figs.clear();
     this.mechFig?.dispose();

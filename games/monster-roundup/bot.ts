@@ -1,13 +1,15 @@
 // Monster Roundup: the autopilot. It plays the sim the way a careful player would, through the same
 // Input a player gives: it walks paths on the floor grid (a breadth-first search round walls, stacks,
 // crates, props and locked doors), sprints after runners and back to the pod, stuns the nearest
-// monster it can see (a charged shot for flyers up high, wizards and bosses), tows the dizzy ones and
+// monster it can see with its mech's weapon (each weapon its own range and its own reasons to charge:
+// leapers in the air, ninjas, bosses, monsters lined up for Leela's beam, groups round Stan for his
+// pulse, clusters for George's shell; a quick shooter waits for a leaper to land), tows the dizzy ones and
 // banks them, grabs snacks on the way, uses the terminal when a locked door is in its way, waits at
 // laser gates that are on, backs off from biting monsters and from every boss telegraph (slam and
 // leap rings, a charge's line, lobs, the beam, spikes in flight) and uses its powers.
 // Used by the menu's backdrop, the store art, balance.ts and the playtest (window.__mr.auto()).
-import { CELL, MECH, MONSTERS } from './defs';
-import { Sim, NO_INPUT, segDist, POD_R, FIELD_R, type Input, type Mon } from './sim';
+import { CELL, MECH, AIR_HIGH, PULSE_R, SHELL_R, LANCE } from './defs';
+import { Sim, NO_INPUT, segDist, POD_R, FIELD_R, BEAM, VOLLEY_GAP, type Input, type Mon } from './sim';
 import type { Pt } from './levels';
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
@@ -190,7 +192,7 @@ export class Bot {
         const pl = this.pathLen(m.x, m.z);
         const close = Math.hypot(m.x - v.x, m.z - v.z);
         const threat = !m.boss && (s.biter(m) || m.def?.kind === 'spiky') && close < 6.5 ? -12 : 0;
-        const sc = pl + threat + (m.minion && boss && boss.state !== 'dizzy' ? 6 : 0) + (m.boss ? -4 : 0) + (MONSTERS[m.kind ?? 'mushnub']?.kind === 'flyer' ? 2 : 0);
+        const sc = pl + threat + (m.minion && boss && boss.state !== 'dizzy' ? 6 : 0) + (m.boss ? -4 : 0) + (m.def?.kind === 'leaper' ? 1 : 0);
         if (sc < best) { best = sc; tgt = m; }
       }
       if (!tgt && loose.length && !s.unlocked && s.c.terminals.length) {
@@ -199,13 +201,21 @@ export class Bot {
       } else if (tgt) {
         const d = Math.hypot(tgt.x - v.x, tgt.z - v.z);
         const see = s.clearLine(v.x, v.z, tgt.x, tgt.z);
-        const flyHigh = tgt.def?.kind === 'flyer' && tgt.y > 1.2;
-        charge = !!tgt.boss || flyHigh || tgt.def?.kind === 'blinker' || (tgt.hp >= 3 && d > 3);
-        const range = tgt.boss ? 9 : 8;
+        const w = s.md.weapon;
+        const high = tgt.def?.kind === 'leaper' && (tgt.y > AIR_HIGH - 0.4 || tgt.air > 0);
+        const hard = !!tgt.boss || tgt.def?.kind === 'blinker' || tgt.hp >= 3;
+        if (w === 'twin') charge = !!tgt.boss || high || tgt.def?.kind === 'blinker' || (tgt.hp >= 3 && d > 3);
+        else if (w === 'lance') charge = hard || high || this.inLine(tgt) >= 2;
+        else if (w === 'scatter') charge = !tgt.boss && d < PULSE_R + tgt.radius - 0.4 && (high || hard || this.around(v.x, v.z, PULSE_R) >= 2);
+        else charge = hard || high || this.around(tgt.x, tgt.z, SHELL_R) >= 2;
+        const range = w === 'scatter' ? (tgt.boss ? 8 : 6) : tgt.boss ? 9.5 : w === 'lance' ? 10 : 8.5;
+        // a quick shot glances off a leaper in the air: wait for it to land (or charge)
+        const hold = high && !charge;
         if (see && d < range) {
-          shootAt = tgt;
+          shootAt = hold ? null : tgt;
+          if (hold) dir = this.norm(tgt.x - v.x, tgt.z - v.z).map((q) => q * 0.2) as [number, number];
           // keep a little distance from biters and bosses, else close in a bit
-          const keep = tgt.boss ? 6.5 : s.biter(tgt) ? 4.5 : 3;
+          const keep = tgt.boss ? (w === 'scatter' ? 6.2 : 6.5) : s.biter(tgt) ? 4.5 : w === 'scatter' ? 2.2 : 3;
           if (d < keep) dir = this.norm(v.x - tgt.x, v.z - tgt.z);
           else if (d > range - 2) dir = this.norm(tgt.x - v.x, tgt.z - v.z);
           if (tgt.boss && dir) { const a = Math.atan2(tgt.x - v.x, tgt.z - v.z) + Math.PI / 2; dir = this.norm(dir[0] + Math.sin(a) * 0.6, dir[1] + Math.cos(a) * 0.6); }
@@ -228,10 +238,12 @@ export class Bot {
     // laser gates: wait in front of one that is on (or about to be)
     if (dir && !away) dir = this.laserWait(dir);
 
-    // 4: shoot: face the target, hold for a charged shot, release
+    // 4: shoot: face the target, hold for a charged shot, release (no charging while dodging: it slows the mech)
+    if (away) charge = false;
     if (shootAt) {
       const want = charge ? s.chargeTime + 0.05 : 0.04;
       if (this.released) { this.stunHeld = 0; this.released = false; this.wantCharge = charge; }
+      if (away && this.wantCharge && this.stunHeld < s.chargeTime) this.wantCharge = false;
       this.stunHeld += dt;
       inp.stun = this.stunHeld < (this.wantCharge ? want : 0.04);
       if (!inp.stun) this.released = true;
@@ -260,6 +272,19 @@ export class Bot {
     return inp;
   }
 
+  /** Loose monsters within r of a point (a pulse's or a shell's catch). */
+  private around(x: number, z: number, r: number): number {
+    const s = this.s;
+    return s.mons.filter((m) => s.shootable(m) && !m.boss && Math.hypot(m.x - x, m.z - z) < r + m.radius * 0.5).length;
+  }
+
+  /** Monsters on the line from the mech through a target (Leela's beam). */
+  private inLine(tg: Mon): number {
+    const s = this.s, v = s.mech, a = Math.atan2(tg.x - v.x, tg.z - v.z);
+    const ex = v.x + Math.sin(a) * LANCE.reach, ez = v.z + Math.cos(a) * LANCE.reach;
+    return s.mons.filter((m) => s.shootable(m) && segDist(m.x, m.z, v.x, v.z, ex, ez) < m.radius + LANCE.half).length;
+  }
+
   /** Where to bank: the nearest pod by path (the field for a boss). */
   private bank(boss: boolean): Pt | null {
     const s = this.s;
@@ -283,10 +308,24 @@ export class Bot {
         const a = m.attack;
         if ((a === 'slam') && d < 5.2) push(m.x, m.z, 1.5);
         if ((a === 'leap' || a === 'lob') && Math.hypot(m.aim.x - v.x, m.aim.z - v.z) < 4.6) push(m.aim.x, m.aim.z, 1.5);
+        if (a === 'volley' && m.state === 'b-windup' && d < 13) {
+          // into the nearest gap between two of the drawn lines (or out past the fan's edge)
+          const rel = Math.atan2(Math.sin(Math.atan2(v.x - m.x, v.z - m.z) - m.aimYaw), Math.cos(Math.atan2(v.x - m.x, v.z - m.z) - m.aimYaw));
+          let goal = rel, gd = Infinity;
+          for (let k = -3; k <= 2; k++) { const g = (k + 0.5) * VOLLEY_GAP; if (Math.abs(g - rel) < gd) { gd = Math.abs(g - rel); goal = g; } }
+          if (gd > 0.05) {
+            const side = goal > rel ? 1 : -1;
+            // a step round the boss: sideways to the line from it
+            const a0 = Math.atan2(v.x - m.x, v.z - m.z) + (Math.PI / 2) * side;
+            fx += Math.sin(a0) * 1.3; fz += Math.cos(a0) * 1.3; any = true;
+          }
+        }
         if (a === 'charge' || a === 'beam') {
           const ex = m.x + Math.sin(m.aimYaw) * 16, ez = m.z + Math.cos(m.aimYaw) * 16;
           const sd = segDist(v.x, v.z, m.x, m.z, ex, ez);
-          if (sd < 3.4) {
+          // the beam's wedge: out past its edge
+          const inWedge = a === 'beam' && Math.abs(Math.atan2(Math.sin(Math.atan2(v.x - m.x, v.z - m.z) - m.aimYaw), Math.cos(Math.atan2(v.x - m.x, v.z - m.z) - m.aimYaw))) < BEAM.amp + 0.25;
+          if (sd < 3.4 || inWedge) {
             // step sideways off the line
             const side = (v.x - m.x) * Math.cos(m.aimYaw) - (v.z - m.z) * Math.sin(m.aimYaw) >= 0 ? 1 : -1;
             fx += Math.cos(m.aimYaw) * side * 1.6; fz += -Math.sin(m.aimYaw) * side * 1.6; any = true;
@@ -297,12 +336,16 @@ export class Bot {
     }
     for (const sh of s.shots) {
       const d = Math.hypot(sh.x - v.x, sh.z - v.z);
-      if (d > 4.5) continue;
+      if (d > 7) continue;
+      // only the ones that would pass close by
+      const sp0 = Math.hypot(sh.vx, sh.vz) || 1;
+      if (Math.abs((v.x - sh.x) * sh.vz - (v.z - sh.z) * sh.vx) / sp0 > 2.2) continue;
       // is it coming this way?
       if ((v.x - sh.x) * sh.vx + (v.z - sh.z) * sh.vz <= 0) continue;
       const sp = Math.hypot(sh.vx, sh.vz);
-      const side = (v.x - sh.x) * sh.vz - (v.z - sh.z) * sh.vx >= 0 ? 1 : -1;
-      fx += (sh.vz / sp) * side * 1.2; fz += (-sh.vx / sp) * side * 1.2; any = true;
+      const lat = ((v.x - sh.x) * sh.vz - (v.z - sh.z) * sh.vx) / sp;
+      const side = lat >= 0 ? 1 : -1, w = 1.2 * Math.max(0, 2.2 - Math.abs(lat));
+      fx += (sh.vz / sp) * side * w; fz += (-sh.vx / sp) * side * w; any = true;
     }
     for (const l of s.lobs) if (Math.hypot(l.x - v.x, l.z - v.z) < 2.6) push(l.x, l.z, 1.4);
     for (const w of s.waves) if (w.color === 'boss' && !w.hit && Math.abs(Math.hypot(v.x - w.x, v.z - w.z) - w.r) < 2.2 && Math.hypot(v.x - w.x, v.z - w.z) > w.r) push(w.x, w.z, 1);

@@ -1,12 +1,17 @@
 // Monster Roundup: the simulation, at a fixed 60 Hz, with no three.js and no Phaser (the view draws it,
 // the autopilot and the headless checks drive it).
-//   - The mech walks (sprints while DASH is held, on an energy bar), shoots stun bolts (a tap: a quick
-//     bolt; held: a charged one that also hits flyers up high), tows dizzy monsters on its tractor beam
-//     and banks them in a containment pod's ring (or the boss's field), uses the carried power.
-//   - Monsters wander, flee, hop, fly, eat snacks and grow toward evolving; each family has its trick:
-//     runners outrun a walking mech, the chicken calls the others away, the green blob splits in two,
-//     the wizard blinks away when hit, the spiky blob hurts on touch, the brute and every evolved
-//     monster bite (a short, readable wind-up), flyers shrug off quick bolts until they swoop low.
+//   - The mech walks (sprints while DASH is held, on an energy bar), shoots its own weapon (a tap: the
+//     quick shot; held: the charged one), tows dizzy monsters on its tractor beam and banks them in a
+//     containment pod's ring (or the boss's field), uses the carried power. The four mechs: Mike's
+//     twin blaster (the quickest bolts), Leela's charge beam (charged: a beam through every monster
+//     in line), Stan's spread shot (three short pellets; charged: a stun pulse all round him) and
+//     George's plasma lobber (a slow ball that splashes; charged: a shell lobbed onto the target).
+//   - Monsters (the pack's legged Big set) wander, flee, hop, leap, eat snacks and grow toward
+//     evolving; each family has its trick: hoppers hop, leapers jump so high quick bolts glance off,
+//     runners outrun a walking mech, the caller spooks the room, the splitter falls into two small
+//     ones, the blinker vanishes when hit, the spiky one hurts to touch, brutes punch (a short,
+//     readable wind-up), the lobber throws orbs from afar (a ring where they land), the spore monster
+//     puffs a cloud that slows the mech. An evolved monster is bigger and tougher and goes for the mech.
 //   - The station: doors that open for the mech, locked doors and their terminal, laser gates on a
 //     cycle, sweeping laser turrets, conveyor belts, ice, vents monsters hide in, teleporter pads,
 //     crates and chests with powers, snacks.
@@ -14,9 +19,9 @@
 //     it is dizzy and heavy to tow into its field. Attacks: slam, leap, spike volley, spike ring,
 //     charge (dazed when it hits a wall), lob, summon, blink and a sweeping beam, each telegraphed.
 import {
-  BLOCK, CELL, MECH, TUNING, MONSTERS, FLY_HIGH, EVOLVE_RATE, EVOLVE_SNACK, EVOLVED, BOSSES, BOSS_DAZE, BOSS_DIZZY_LAST, BOSS_TOW,
-  POWER_IDS, POWER_TIME, POWER, RANK, MECHS, SCORE, CREDITS,
-  type Tuning, type MonsterId, type MonsterDef, type BossId, type BossAttack, type PowerId, type Ranks, type MechId,
+  BLOCK, CELL, MECH, TUNING, MONSTERS, AIR_HIGH, LOBBER, SPORE, EVOLVE_RATE, EVOLVE_SNACK, EVOLVED, BOSSES, BOSS_DAZE, BOSS_DIZZY_LAST, BOSS_TOW,
+  POWER_IDS, POWER_TIME, POWER, RANK, MECHS, SCORE, CREDITS, PULSE_R, SPLASH_R, SHELL_R, LANCE,
+  type Tuning, type MonsterId, type MonsterDef, type BossId, type BossAttack, type PowerId, type Ranks, type MechId, type MechDef, type WeaponKind,
 } from './defs';
 import { solidBlock, charAt, type Level, type Pt } from './levels';
 
@@ -64,8 +69,11 @@ export interface Mon {
   hopT: number;
   dir: number;
   dirT: number;
-  /** A flyer's swoop clock: low while it counts down from >0. */
-  swoop: number;
+  /** A leaper's clock: counts up to its next jump; `air` is the time left in the air. */
+  leap: number;
+  air: number;
+  /** What a wind-up ends in: a bite, a lobbed orb or a spore cloud. */
+  act: 'bite' | 'lob' | 'spore';
   attackCd: number;
   callCd: number;
   blinkCd: number;
@@ -88,10 +96,17 @@ export interface Mon {
   stun: number;
 }
 
-export interface Bolt { x: number; z: number; vx: number; vz: number; life: number; charged: boolean; hit: number[]; arc: boolean }
+/** A shot in flight: a bolt (Mike, Leela), a pellet (Stan) or a plasma ball that splashes (George). */
+export interface Bolt { x: number; z: number; vx: number; vz: number; life: number; charged: boolean; hit: number[]; arc: boolean; dmg: number; splash: number; kind: 'bolt' | 'pellet' | 'plasma' }
+/** George's charged shell, lobbed onto a spot. */
+export interface Shell { x: number; z: number; fx: number; fz: number; t: number; total: number; dmg: number }
+/** Leela's beam, drawn for a moment. */
+export interface Lance { ax: number; az: number; bx: number; bz: number; t: number }
+/** The spore monster's cloud: the mech walks slowly inside it. */
+export interface Cloud { x: number; z: number; r: number; t: number; max: number }
 export interface Shot { x: number; z: number; y: number; vx: number; vz: number; life: number; kind: 'spike' | 'orb' }
 export interface Lob { x: number; z: number; fx: number; fz: number; t: number; total: number; kind: 'ice' | 'orb' }
-export interface Wave { x: number; z: number; r: number; max: number; speed: number; hit: boolean; color: 'boss' | 'freeze' }
+export interface Wave { x: number; z: number; r: number; max: number; speed: number; hit: boolean; color: 'boss' | 'freeze' | 'pulse' }
 export interface IcePatch { x: number; z: number; r: number; t: number }
 export interface DoorS { open: number; locked: boolean }
 export interface Snack { x: number; z: number; on: boolean; t: number }
@@ -99,7 +114,14 @@ export interface Crate { x: number; z: number; hp: number; broken: boolean; t: n
 export interface Pickup { x: number; z: number; id: PowerId; on: boolean; t: number }
 
 export type SimEvent =
-  | { e: 'shot'; x: number; z: number; charged: boolean; spread: boolean }
+  | { e: 'shot'; x: number; z: number; charged: boolean; spread: boolean; weapon: WeaponKind }
+  | { e: 'lance'; ax: number; az: number; bx: number; bz: number; hits: number }
+  | { e: 'pulse'; x: number; z: number; hits: number }
+  | { e: 'shell'; x: number; z: number; hits: number }
+  | { e: 'splash'; x: number; z: number }
+  | { e: 'leap'; i: number; x: number; z: number }
+  | { e: 'throw'; i: number; x: number; z: number }
+  | { e: 'spore'; i: number; x: number; z: number }
   | { e: 'hit'; i: number; x: number; z: number; y: number; glance: boolean; charged: boolean }
   | { e: 'dizzy'; i: number; x: number; z: number }
   | { e: 'wake'; i: number; x: number; z: number; free: boolean }
@@ -171,6 +193,10 @@ export interface MechS {
   /** The target the blaster locks on while STUN is held. */
   lock: Mon | null;
   lockT: number;
+  /** Mike's twin blaster: the arm the next bolt leaves from (±1). */
+  side: number;
+  /** In a spore cloud this step. */
+  inCloud: boolean;
 }
 
 const rnd = (seed: number) => { let s = (Math.abs(Math.floor(seed)) % 2147483646) + 1; return () => ((s = (s * 16807) % 2147483647) / 2147483647); };
@@ -191,12 +217,21 @@ const TERMINAL_R = 2.1;
 const TERMINAL_TIME = 1.1;
 const SNACK_BACK = 24;
 const CONVEYOR = 3.2;
+/** The Alien's beam: half the wedge it sweeps (radians) and the sweep's seconds. */
+export const BEAM = { amp: 0.5, time: 1.3 };
+/** A spike volley's spread between two spikes (radians): wide enough to stand between two lines. */
+export const VOLLEY_GAP = 0.3;
+/** How close an enemy shot must pass to hit the mech (its body, not its arms). */
+export const SHOT_HIT = MECH.radius * 0.75 + 0.3;
 
 export class Sim {
   readonly tune: Tuning;
   readonly mech: MechS;
   mons: Mon[] = [];
   bolts: Bolt[] = [];
+  shells: Shell[] = [];
+  lances: Lance[] = [];
+  clouds: Cloud[] = [];
   shots: Shot[] = [];
   lobs: Lob[] = [];
   waves: Wave[] = [];
@@ -223,18 +258,19 @@ export class Sim {
   private iceCells: Uint8Array;
   readonly cols: number;
   readonly rows: number;
+  readonly md: MechDef;
 
   constructor(readonly c: Level, readonly ranks: Ranks, readonly easy: boolean, readonly mechId: MechId = 'mike', seed = 1) {
     this.tune = TUNING[easy ? 'easy' : 'normal'];
     this.rand = rnd(c.n * 7919 + seed * 104729);
     this.cols = c.cols * 2; this.rows = c.rows * 2;
-    const md = MECHS[mechId];
+    const md = this.md = MECHS[mechId];
     const hull = this.tune.hull + ranks.hull + md.hull;
     const emax = MECH.energy * RANK.energy[ranks.thrusters] * md.energy;
     this.mech = {
       id: mechId, x: c.start.x, z: c.start.z, vx: 0, vz: 0, yaw: Math.PI, hp: hull, max: hull, safe: 0, energy: emax, emax, sprint: false, tired: 0,
       charge: 0, stunWas: false, fireCd: 0, shootT: 0, hitT: 0, grabT: 0, towing: [], power: null, active: { freeze: 0, shield: 0, spread: 0, magnet: 0, decoy: 0 },
-      decoy: null, state: 'play', teleCd: 0, term: 0, speed: 0, moving: 0, onIce: false, lock: null, lockT: 0,
+      decoy: null, state: 'play', teleCd: 0, term: 0, speed: 0, moving: 0, onIce: false, lock: null, lockT: 0, side: 1, inCloud: false,
     };
     // the fine grid: 0 floor, 1 solid
     this.grid = new Uint8Array(this.cols * this.rows);
@@ -260,7 +296,7 @@ export class Sim {
   private blank(i: number): Mon {
     return {
       i, kind: null, boss: null, def: null, x: 0, z: 0, y: 0, vx: 0, vz: 0, yaw: 0, radius: 0.5, height: 1, hp: 1, maxHp: 1, state: 'wander', t: 0, dizzy: 0, dizzyMax: 1,
-      evolved: false, evolveK: 0, warned: false, small: false, hurtT: 0, sinceHit: 99, regenT: 0, alert: 0, hopT: 0, dir: 0, dirT: 0, swoop: 0, attackCd: 1, callCd: 0,
+      evolved: false, evolveK: 0, warned: false, small: false, hurtT: 0, sinceHit: 99, regenT: 0, alert: 0, hopT: 0, dir: 0, dirT: 0, leap: 0, air: 0, act: 'bite', attackCd: 1, callCd: 0,
       blinkCd: 0, teleCd: 0, to: null, minion: false, phase: 0, bar: 0, barMax: 0, attack: null, attackI: 0, nextAttack: 2, aim: { x: 0, z: 0 }, from: { x: 0, z: 0 }, aimYaw: 0, wakes: 0, stun: 0,
     };
   }
@@ -273,11 +309,12 @@ export class Sim {
     m.radius = d.radius * (m.small ? 0.7 : 1);
     m.height = d.height * (m.small ? 0.7 : 1);
     m.maxHp = m.hp = m.small ? 1 : d.hp;
-    m.y = d.kind === 'flyer' ? FLY_HIGH : 0;
+    m.y = 0;
     m.dir = this.rand() * Math.PI * 2;
     m.yaw = m.dir;
     m.dirT = 1 + this.rand() * 2;
-    m.swoop = -(2 + this.rand() * 4);
+    m.leap = this.rand() * 1.5;
+    m.attackCd = 1.5 + this.rand() * 2;
     m.evolveK = this.rand() * 0.15;
     this.mons.push(m);
     return m;
@@ -296,10 +333,14 @@ export class Sim {
   }
 
   /** How many monsters the mech can tow at once. */
-  get towCap(): number { return RANK.tows[this.ranks.beam] + MECHS[this.mechId].tows; }
+  get towCap(): number { return RANK.tows[this.ranks.beam] + this.md.tows; }
   get grabR(): number { return MECH.grab * RANK.grab[this.ranks.beam]; }
-  get dizzyTime(): number { return this.tune.dizzy * RANK.dizzy[this.ranks.stasis]; }
-  get chargeTime(): number { return MECH.charge * MECHS[this.mechId].charge * (this.ranks.blaster >= 3 ? 0.5 : 1); }
+  get dizzyTime(): number { return this.tune.dizzy * RANK.dizzy[this.ranks.stasis] * this.md.dizzy; }
+  get chargeTime(): number { return this.md.charge * (this.ranks.blaster >= 3 ? 0.5 : 1); }
+  /** Daze points of a charged shot (Blaster II: one more). */
+  get bigDmg(): number { return this.md.big + (this.ranks.blaster >= 2 ? 1 : 0); }
+  /** How far the quick shot reaches (m). */
+  get reach(): number { return this.md.reach; }
   get boss(): Mon | null { return this.mons.find((m) => m.boss) ?? null; }
   /** Monsters still loose (not banked, not minions). */
   get left(): number { return this.c.total - this.captured; }
@@ -510,6 +551,8 @@ export class Sim {
     for (const s of this.snacks) if (!s.on) { s.t -= dt; if (s.t <= 0) s.on = true; }
     for (const p of this.pickups) if (!p.on && p.t > 0) { p.t -= dt; if (p.t <= 0) p.on = true; }
     for (let k = this.ice.length - 1; k >= 0; k--) { this.ice[k].t -= dt; if (this.ice[k].t <= 0) this.ice.splice(k, 1); }
+    for (let k = this.clouds.length - 1; k >= 0; k--) { this.clouds[k].t -= dt; if (this.clouds[k].t <= 0) this.clouds.splice(k, 1); }
+    for (let k = this.lances.length - 1; k >= 0; k--) { this.lances[k].t -= dt; if (this.lances[k].t <= 0) this.lances.splice(k, 1); }
     // shockwaves spread
     for (let k = this.waves.length - 1; k >= 0; k--) {
       const w = this.waves[k];
@@ -525,7 +568,7 @@ export class Sim {
   // ---------------------------------------------------------------- the mech
 
   private stepMech(dt: number, inp: Input): void {
-    const v = this.mech, md = MECHS[v.id];
+    const v = this.mech, md = this.md;
     v.safe = Math.max(0, v.safe - dt);
     v.teleCd = Math.max(0, v.teleCd - dt);
     v.fireCd = Math.max(0, v.fireCd - dt);
@@ -545,12 +588,13 @@ export class Sim {
       if (v.energy <= 0) v.tired = 0.8;
       v.term = 0;
     } else if (v.tired <= 0 || !inp.dash) {
-      v.energy = Math.min(v.emax, v.energy + MECH.refill * RANK.refill[this.ranks.thrusters] * dt * (inp.dash ? 0 : 1));
+      v.energy = Math.min(v.emax, v.energy + MECH.refill * md.refill * RANK.refill[this.ranks.thrusters] * dt * (inp.dash ? 0 : 1));
     }
     const boss = v.towing.some((m) => m.boss);
-    const slow = boss ? BOSS_TOW : 1 - MECH.towSlow * v.towing.length;
+    const slow = boss ? BOSS_TOW : 1 - md.towSlow * v.towing.length;
     const charging = v.charge > 0.15;
-    const top = (v.sprint ? MECH.sprint : MECH.walk) * md.speed * slow * (charging ? 0.6 : 1);
+    v.inCloud = this.clouds.some((c) => Math.hypot(v.x - c.x, v.z - c.z) < c.r);
+    const top = (v.sprint ? MECH.sprint : MECH.walk) * md.speed * slow * (charging ? 0.8 : 1) * (v.inCloud ? SPORE.slow : 1);
     v.onIce = this.iceAt(v.x, v.z);
     const acc = v.onIce ? MECH.iceAccel : MECH.accel;
     const k = 1 - Math.exp(-acc * dt);
@@ -647,7 +691,7 @@ export class Sim {
     for (const m of this.mons) {
       if (!this.shootable(m)) continue;
       const dx = m.x - v.x, dz = m.z - v.z, d = Math.hypot(dx, dz);
-      if (d > MECH.reach || d < 0.1) continue;
+      if (d > Math.max(this.reach, 10) + 2 || d < 0.1) continue;
       const a = Math.abs(angDiff(v.yaw, Math.atan2(dx, dz)));
       // the cone ahead first; a big target (a boss) or one close by is found further round
       const wide = m.boss || d < 6;
@@ -663,20 +707,100 @@ export class Sim {
     return m.state !== 'gone' && m.state !== 'captured' && m.state !== 'dizzy' && m.state !== 'towed' && m.state !== 'vent' && m.state !== 'blink' && m.state !== 'b-daze' && m.state !== 'evolve';
   }
 
+  /** Where to aim at a target: a shot this fast meets it there (a lead on its walk). */
+  private leadOn(tg: Mon, speed: number): [number, number] {
+    const v = this.mech, d = Math.hypot(tg.x - v.x, tg.z - v.z), k = Math.min(0.8, d / speed);
+    return [tg.x + tg.vx * k, tg.z + tg.vz * k];
+  }
+
   private fire(charged: boolean): void {
-    const v = this.mech;
+    const v = this.mech, md = this.md, w = md.weapon;
     const tg = v.lock && this.shootable(v.lock) ? v.lock : this.aimTarget();
-    if (tg) v.yaw = Math.atan2(tg.x - v.x, tg.z - v.z);
-    v.fireCd = MECH.fireGap * RANK.fireGap[this.ranks.blaster];
+    const speed = charged && w === 'mortar' ? 14 : md.bolt;
+    let aim: [number, number] | null = tg ? this.leadOn(tg, speed) : null;
+    if (aim) v.yaw = Math.atan2(aim[0] - v.x, aim[1] - v.z);
+    v.fireCd = md.gap * RANK.fireGap[this.ranks.blaster];
     v.shootT = 0.32;
     const spread = v.active.spread > 0;
-    const dirs = spread ? [-0.24, 0, 0.24] : [0];
-    for (const da of dirs) {
-      const a = v.yaw + da;
-      this.bolts.push({ x: v.x + Math.sin(a) * 0.9, z: v.z + Math.cos(a) * 0.9, vx: Math.sin(a) * MECH.bolt, vz: Math.cos(a) * MECH.bolt, life: MECH.reach / MECH.bolt, charged, hit: [], arc: false });
-    }
     this.stats.shots++;
-    this.emit({ e: 'shot', x: v.x, z: v.z, charged, spread });
+    this.emit({ e: 'shot', x: v.x, z: v.z, charged, spread, weapon: w });
+    const bolt = (a: number, o: Partial<Bolt> & { dmg: number }, off = 0) => {
+      const ox = Math.cos(a) * off, oz = -Math.sin(a) * off;
+      const sp = o.charged ? 24 : md.bolt;
+      const reach = o.charged ? 13 : md.reach;
+      this.bolts.push({ x: v.x + Math.sin(a) * 0.9 + ox, z: v.z + Math.cos(a) * 0.9 + oz, vx: Math.sin(a) * sp, vz: Math.cos(a) * sp, life: reach / sp, charged: !!o.charged, hit: [], arc: false, splash: 0, kind: 'bolt', ...o });
+    };
+    if (!charged) {
+      const dirs = spread ? [-0.24, 0, 0.24] : [0];
+      for (const da of dirs) {
+        const a = v.yaw + da;
+        if (w === 'twin') bolt(a, { dmg: md.dmg }, 0.55 * v.side);
+        else if (w === 'lance') bolt(a, { dmg: md.dmg });
+        else if (w === 'scatter') for (const f of [-0.2, 0, 0.2]) bolt(a + f, { dmg: md.dmg, kind: 'pellet' });
+        else bolt(a, { dmg: md.dmg, kind: 'plasma', splash: SPLASH_R });
+      }
+      v.side = -v.side;
+      return;
+    }
+    const big = this.bigDmg;
+    if (w === 'twin') { for (const da of spread ? [-0.24, 0, 0.24] : [0]) bolt(v.yaw + da, { dmg: big, charged: true }); return; }
+    if (w === 'lance') { this.lance(big); return; }
+    if (w === 'scatter') { this.pulse(big); return; }
+    // the mortar: a shell onto the target (or ahead)
+    if (!aim) aim = [v.x + Math.sin(v.yaw) * 9, v.z + Math.cos(v.yaw) * 9];
+    let [tx, tz] = aim;
+    const d = Math.hypot(tx - v.x, tz - v.z);
+    if (d > 13) { tx = v.x + ((tx - v.x) / d) * 13; tz = v.z + ((tz - v.z) / d) * 13; }
+    this.shells.push({ x: tx, z: tz, fx: v.x, fz: v.z, t: 0, total: 0.45 + Math.min(13, d) * 0.03, dmg: big });
+    if (spread) for (const sg of [-1, 1]) {
+      const a = v.yaw + sg * 0.5, r = Math.min(9, d);
+      this.shells.push({ x: v.x + Math.sin(a) * r, z: v.z + Math.cos(a) * r, fx: v.x, fz: v.z, t: 0, total: 0.5 + r * 0.03, dmg: big });
+    }
+  }
+
+  /** Leela's charged beam: through every monster along the facing, up to a wall, a closed door or a stack. */
+  private lance(dmg: number): void {
+    const v = this.mech, dx = Math.sin(v.yaw), dz = Math.cos(v.yaw);
+    let d = 1;
+    while (d < LANCE.reach && !this.solidAt(v.x + dx * d, v.z + dz * d) && this.clearLine(v.x, v.z, v.x + dx * d, v.z + dz * d)) d += 0.3;
+    const ax = v.x + dx * 0.9, az = v.z + dz * 0.9, bx = v.x + dx * d, bz = v.z + dz * d;
+    let hits = 0;
+    for (const m of this.mons) {
+      if (!this.shootable(m)) continue;
+      if (segDist(m.x, m.z, ax, az, bx, bz) > m.radius + LANCE.half) continue;
+      hits++;
+      if (m.boss) this.bossHit(m, dmg, true); else this.daze(m, dmg, true);
+    }
+    for (const c of this.crates) if (!c.broken && segDist(c.x, c.z, ax, az, bx, bz) < 0.9) this.breakCrate(c);
+    this.lances.push({ ax, az, bx, bz, t: 0.3 });
+    this.emit({ e: 'lance', ax, az, bx, bz, hits });
+  }
+
+  /** Stan's charged pulse: every monster round him in sight. */
+  private pulse(dmg: number): void {
+    const v = this.mech;
+    let hits = 0;
+    for (const m of this.mons) {
+      if (!this.shootable(m)) continue;
+      if (Math.hypot(m.x - v.x, m.z - v.z) > PULSE_R + m.radius || !this.clearLine(v.x, v.z, m.x, m.z)) continue;
+      hits++;
+      if (m.boss) this.bossHit(m, dmg, true); else this.daze(m, dmg, true);
+    }
+    for (const c of this.crates) if (!c.broken && Math.hypot(c.x - v.x, c.z - v.z) < PULSE_R) { c.hp -= 1; if (c.hp <= 0) this.breakCrate(c); }
+    this.waves.push({ x: v.x, z: v.z, r: 0.6, max: PULSE_R, speed: 26, hit: true, color: 'pulse' });
+    this.emit({ e: 'pulse', x: v.x, z: v.z, hits });
+  }
+
+  /** A splash (a plasma ball, a shell) dazes every monster in reach but the ones already hit. */
+  private splash(x: number, z: number, r: number, dmg: number, skip: number[], charged: boolean): number {
+    let hits = 0;
+    for (const m of this.mons) {
+      if (!this.shootable(m) || skip.includes(m.i)) continue;
+      if (Math.hypot(m.x - x, m.z - z) > r + m.radius * 0.6) continue;
+      hits++;
+      if (m.boss) this.bossHit(m, dmg, charged); else this.daze(m, dmg, charged);
+    }
+    return hits;
   }
 
   private stepBolts(dt: number): void {
@@ -687,7 +811,7 @@ export class Sim {
       let dead = b.life <= 0;
       for (let s = 0; s < n && !dead; s++) {
         b.x += (b.vx * dt) / n; b.z += (b.vz * dt) / n;
-        if (this.solidAt(b.x, b.z)) { dead = true; break; }
+        if (this.solidAt(b.x, b.z)) { dead = true; if (b.kind === 'plasma') this.plasmaPop(b, []); break; }
         // doors and stacks stop bolts
         for (let i = 0; i < this.doors.length && !dead; i++) {
           if (this.doors[i].open > 0.75) continue;
@@ -698,21 +822,39 @@ export class Sim {
         // crates
         for (const c of this.crates) if (!c.broken && Math.abs(b.x - c.x) < 0.6 && Math.abs(b.z - c.z) < 0.6) {
           dead = true;
-          c.hp -= b.charged ? 2 : 1;
+          c.hp -= b.charged || b.kind === 'plasma' ? 2 : 1;
           if (c.hp <= 0) this.breakCrate(c);
           else this.emit({ e: 'crate', x: c.x, z: c.z, broken: false });
         }
         if (dead) break;
         for (const m of this.mons) {
           if (!this.shootable(m) || b.hit.includes(m.i)) continue;
-          if (Math.hypot(b.x - m.x, b.z - m.z) > m.radius + (b.charged ? 0.6 : 0.3)) continue;
+          if (Math.hypot(b.x - m.x, b.z - m.z) > m.radius + (b.charged ? 0.6 : b.kind === 'plasma' ? 0.45 : 0.3)) continue;
           b.hit.push(m.i);
-          this.boltHit(m, b);
-          if (!(b.charged && this.ranks.blaster >= 2)) { dead = true; break; }
+          const landed = this.boltHit(m, b);
+          if (landed && b.kind === 'plasma') this.plasmaPop(b, [m.i]);
+          dead = true;
+          break;
         }
       }
-      if (dead) this.bolts.splice(k, 1);
+      if (dead) { if (b.kind === 'plasma' && b.life <= 0 && !b.hit.length) this.plasmaPop(b, []); this.bolts.splice(k, 1); }
     }
+    // George's shells
+    for (let k = this.shells.length - 1; k >= 0; k--) {
+      const sh = this.shells[k];
+      sh.t += dt;
+      if (sh.t < sh.total) continue;
+      this.shells.splice(k, 1);
+      const hits = this.splash(sh.x, sh.z, SHELL_R, sh.dmg, [], true);
+      for (const c of this.crates) if (!c.broken && Math.hypot(c.x - sh.x, c.z - sh.z) < SHELL_R) this.breakCrate(c);
+      this.emit({ e: 'shell', x: sh.x, z: sh.z, hits });
+    }
+  }
+
+  /** A plasma ball bursts: a small splash round where it ended. */
+  private plasmaPop(b: Bolt, skip: number[]): void {
+    this.splash(b.x, b.z, b.splash, 1, skip, false);
+    this.emit({ e: 'splash', x: b.x, z: b.z });
   }
 
   private breakCrate(c: Crate): void {
@@ -722,17 +864,16 @@ export class Sim {
     this.pickups.push({ x: c.x, z: c.z, id: POWER_IDS[Math.floor(this.rand() * POWER_IDS.length)], on: true, t: 0 });
   }
 
-  private boltHit(m: Mon, b: Bolt): void {
-    const md = MECHS[this.mech.id];
-    const dmg = (b.charged ? 3 : 1) + md.power;
-    if (m.boss) { this.bossHit(m, dmg, b.charged); return; }
-    // a flyer up high shrugs off a quick bolt
-    if (m.def!.kind === 'flyer' && m.y > 1.2 && !b.charged) {
+  /** A shot meets a monster. Returns false when it glanced off (a leaper in the air, a quick shot). */
+  private boltHit(m: Mon, b: Bolt): boolean {
+    if (m.boss) { this.bossHit(m, b.dmg, b.charged); return true; }
+    // a leaper in the air shrugs off a quick shot
+    if (m.def!.kind === 'leaper' && m.y > AIR_HIGH && !b.charged) {
       this.emit({ e: 'hit', i: m.i, x: m.x, z: m.z, y: m.y, glance: true, charged: false });
       if (m.state !== 'flee') { m.state = 'flee'; m.alert = 2; }
-      return;
+      return false;
     }
-    this.daze(m, dmg, b.charged);
+    this.daze(m, b.dmg, b.charged);
     // blaster III: the hit arcs to the next monster
     if (this.ranks.blaster >= 3 && !b.arc) {
       let best: Mon | null = null, bd = 6.5;
@@ -743,12 +884,13 @@ export class Sim {
       }
       if (best) {
         const a = Math.atan2(best.x - m.x, best.z - m.z);
-        this.bolts.push({ x: m.x, z: m.z, vx: Math.sin(a) * MECH.bolt, vz: Math.cos(a) * MECH.bolt, life: 0.4, charged: false, hit: [m.i], arc: true });
+        this.bolts.push({ x: m.x, z: m.z, vx: Math.sin(a) * 24, vz: Math.cos(a) * 24, life: 0.4, charged: false, hit: [m.i], arc: true, dmg: 1, splash: 0, kind: 'bolt' });
       }
     }
+    return true;
   }
 
-  /** Daze points off a monster: at zero it goes dizzy (a big green blob splits; a wizard blinks away when it is not). */
+  /** Daze points off a monster: at zero it goes dizzy (a big fish splits; a ninja blinks away when it is not). */
   daze(m: Mon, dmg: number, charged: boolean): void {
     const d = m.def!;
     m.hp -= dmg;
@@ -762,7 +904,9 @@ export class Sim {
       this.makeDizzy(m);
       return;
     }
-    if (d.kind === 'blinker' && m.blinkCd <= 0) { m.state = 'blink'; m.t = 0.3; m.blinkCd = 2.6; return; }
+    if (d.kind === 'blinker' && m.blinkCd <= 0) { m.state = 'blink'; m.t = 0; m.blinkCd = 2.6; return; }
+    // the spore monster answers a hit with a cloud when it can
+    if (d.kind === 'spore' && m.attackCd <= 0 && m.state !== 'windup') { m.state = 'windup'; m.act = 'spore'; m.t = 0; this.emit({ e: 'attack', i: m.i, x: m.x, z: m.z }); return; }
     if (m.state === 'windup') return;
     m.state = d.bites || m.evolved ? m.state : 'flee';
     m.alert = Math.max(m.alert, 2.5);
@@ -770,6 +914,7 @@ export class Sim {
 
   private makeDizzy(m: Mon): void {
     m.hp = 0;
+    m.air = 0;
     m.state = 'dizzy';
     m.dizzyMax = m.dizzy = this.dizzyTime * (m.small ? 1.1 : 1);
     m.vx = m.vz = 0;
@@ -781,7 +926,7 @@ export class Sim {
     m.state = 'gone';
     for (const s of [-1, 1]) {
       const a = m.yaw + s * Math.PI / 2;
-      const c = this.addMon('green-blob', m.x + Math.sin(a) * 0.9, m.z + Math.cos(a) * 0.9, { small: true });
+      const c = this.addMon(m.kind!, m.x + Math.sin(a) * 0.9, m.z + Math.cos(a) * 0.9, { small: true });
       this.collide(c, c.radius);
       c.dir = a; c.state = 'flee'; c.alert = 2; c.evolveK = m.evolveK;
       c.vx = Math.sin(a) * 5; c.vz = Math.cos(a) * 5;
@@ -883,6 +1028,12 @@ export class Sim {
     return (fleeing ? d.flee : d.speed) * this.tune.speed * (m.evolved ? EVOLVED.speed : 1) * (m.small ? 1.15 : 1);
   }
 
+  /** Seconds a monster's wind-up lasts (its telegraph) before the bite, the throw or the cloud. */
+  windupTime(m: Mon): number {
+    const base = m.act === 'lob' ? LOBBER.windup : m.act === 'spore' ? SPORE.windup : 0.55;
+    return base * this.tune.windup;
+  }
+
   /** Does this monster go for the mech? */
   biter(m: Mon): boolean { return !!m.def && (m.def.bites || m.evolved); }
 
@@ -896,7 +1047,6 @@ export class Sim {
     m.teleCd = Math.max(0, m.teleCd - dt);
     m.alert = Math.max(0, m.alert - dt);
     m.sinceHit += dt;
-    const flyer = d.kind === 'flyer';
     const dx = v.x - m.x, dz = v.z - m.z, dist = Math.hypot(dx, dz);
     switch (m.state) {
       case 'captured': return;
@@ -932,7 +1082,9 @@ export class Sim {
         return;
       }
       case 'blink': {
-        if (m.t >= 0.3 || m.t < 0) {
+        // a short duck, then gone
+        m.vx *= 0.7; m.vz *= 0.7;
+        if (m.t >= 0.3) {
           const fx = m.x, fz = m.z;
           for (let tries = 0; tries < 30; tries++) {
             const a = this.rand() * Math.PI * 2, r = 6 + this.rand() * 4;
@@ -953,11 +1105,27 @@ export class Sim {
       }
       case 'windup': {
         m.vx *= 0.8; m.vz *= 0.8;
+        m.y = Math.max(0, m.y - dt * 6);
         m.yaw += angDiff(m.yaw, Math.atan2(dx, dz)) * Math.min(1, dt * 8);
-        if (m.t >= 0.55 * this.tune.windup) {
-          if (dist < m.radius + MECH.radius + 1.0 && (!flyer || m.y < 1.4)) this.hurt(1, 'bite', m.x, m.z);
-          this.emit({ e: 'bite', i: m.i });
-          m.state = 'recover'; m.t = 0; m.attackCd = 1.6;
+        if (m.t >= this.windupTime(m)) {
+          if (m.act === 'lob') {
+            // the orb lands where the mech is heading (an evolved lobber throws two)
+            const lead = 0.6;
+            this.lobs.push({ x: v.x + v.vx * lead, z: v.z + v.vz * lead, fx: m.x, fz: m.z, t: 0, total: LOBBER.flight / this.tune.bossShot, kind: 'orb' });
+            if (m.evolved) { const a = Math.atan2(dx, dz) + Math.PI / 2; this.lobs.push({ x: v.x + Math.sin(a) * 2.4, z: v.z + Math.cos(a) * 2.4, fx: m.x, fz: m.z, t: 0, total: LOBBER.flight * 1.15 / this.tune.bossShot, kind: 'orb' }); }
+            this.emit({ e: 'throw', i: m.i, x: m.x, z: m.z });
+            m.attackCd = LOBBER.gap * this.tune.windup;
+          } else if (m.act === 'spore') {
+            this.clouds.push({ x: m.x, z: m.z, r: SPORE.r * (m.evolved ? 1.35 : 1), t: SPORE.life, max: SPORE.life });
+            this.emit({ e: 'spore', i: m.i, x: m.x, z: m.z });
+            m.attackCd = SPORE.gap;
+            m.alert = 3;
+          } else {
+            if (dist < m.radius + MECH.radius + 1.0) this.hurt(1, 'bite', m.x, m.z);
+            this.emit({ e: 'bite', i: m.i });
+            m.attackCd = m.evolved && d.kind === 'brute' ? 0.9 : 1.6;
+          }
+          m.state = 'recover'; m.t = 0; m.act = 'bite';
         }
         this.moveMon(m, dt, false);
         return;
@@ -977,14 +1145,6 @@ export class Sim {
       if (m.evolveK > 0.78 && !m.warned) { m.warned = true; this.emit({ e: 'evolveWarn', i: m.i }); }
       if (m.evolveK >= 1) { this.evolve(m); return; }
     }
-    // flyers: swoop low now and then
-    if (flyer) {
-      m.swoop += dt;
-      if (m.swoop > 2.2) m.swoop = -(3 + this.rand() * 3.5);
-      const low = m.swoop > 0;
-      const want = low ? 0.55 : FLY_HIGH;
-      m.y += (want - m.y) * Math.min(1, dt * 3);
-    }
     // what to do
     const decoy = v.decoy && v.active.decoy > 0 && Math.hypot(v.decoy.x - m.x, v.decoy.z - m.z) < POWER.decoyR ? v.decoy : null;
     const biter = this.biter(m);
@@ -995,25 +1155,33 @@ export class Sim {
       const ddx = decoy.x - m.x, ddz = decoy.z - m.z, dd = Math.hypot(ddx, ddz);
       if (dd > 1.6) { tx = ddx / dd; tz = ddz / dd; } else { tx = 0; tz = 0; }
       speed = this.speedOf(m, true);
-    } else if (biter && dist < 8 && v.state === 'play' && (!flyer || m.swoop > -0.6)) {
+    } else if (d.kind === 'lobber' && v.state === 'play' && m.air <= 0 && dist < LOBBER.far && dist > 2.5 && m.attackCd <= 0 && this.clearLine(m.x, m.z, v.x, v.z)) {
+      // the lobber throws from where it stands
+      m.state = 'windup'; m.act = 'lob'; m.t = 0;
+      this.emit({ e: 'attack', i: m.i, x: m.x, z: m.z });
+      return;
+    } else if (d.kind === 'spore' && v.state === 'play' && dist < SPORE.near && m.attackCd <= 0) {
+      m.state = 'windup'; m.act = 'spore'; m.t = 0;
+      this.emit({ e: 'attack', i: m.i, x: m.x, z: m.z });
+      return;
+    } else if (biter && dist < 8 && v.state === 'play' && m.air <= 0) {
       m.state = 'chase';
-      if (dist < m.radius + MECH.radius + 0.8 && m.attackCd <= 0 && (!flyer || m.y < 1.5)) { m.state = 'windup'; m.t = 0; this.emit({ e: 'attack', i: m.i, x: m.x, z: m.z }); return; }
+      if (dist < m.radius + MECH.radius + 0.8 && m.attackCd <= 0) { m.state = 'windup'; m.act = 'bite'; m.t = 0; this.emit({ e: 'attack', i: m.i, x: m.x, z: m.z }); return; }
       tx = dx / (dist || 1); tz = dz / (dist || 1);
       speed = this.speedOf(m, false) * 1.15;
-      if (flyer && dist < 6) m.swoop = Math.max(m.swoop, 0.01);
     } else if ((dist < scared || m.alert > 0) && v.state === 'play' && !(biter && m.alert <= 0)) {
       if (d.kind === 'caller' && dist < 6.5 && m.callCd <= 0) this.squawk(m);
       m.state = 'flee';
       tx = -dx / (dist || 1); tz = -dz / (dist || 1);
       speed = this.speedOf(m, true);
       // dive into a vent
-      if (m.teleCd <= 0) for (const p of this.c.vents) if (Math.hypot(p.x - m.x, p.z - m.z) < 1.4 && !flyer) {
+      if (m.teleCd <= 0 && m.air <= 0) for (const p of this.c.vents) if (Math.hypot(p.x - m.x, p.z - m.z) < 1.4) {
         m.state = 'vent'; m.t = 0; m.x = p.x; m.z = p.z;
         this.emit({ e: 'vent', i: m.i, x: p.x, z: p.z, out: false });
         return;
       }
       // a fleeing monster that sees a vent near goes for it
-      if (!flyer && m.teleCd <= 0) for (const p of this.c.vents) {
+      if (m.teleCd <= 0) for (const p of this.c.vents) {
         const pd = Math.hypot(p.x - m.x, p.z - m.z);
         if (pd < 7 && (p.x - m.x) * dx + (p.z - m.z) * dz < 0) { tx = (p.x - m.x) / pd; tz = (p.z - m.z) / pd; break; }
       }
@@ -1055,6 +1223,20 @@ export class Sim {
       tx = Math.sin(a); tz = Math.cos(a);
       if (m.state === 'wander') m.dir = a;
     }
+    // leapers jump high now and then (quick bolts glance off them up there)
+    if (d.kind === 'leaper' && (tx || tz)) {
+      if (m.air > 0) {
+        m.air -= dt;
+        const k = 1 - Math.max(0, m.air) / 0.8;
+        m.y = Math.sin(k * Math.PI) * 2.5;
+        speed *= 1.9;
+        if (m.air <= 0) { m.y = 0; m.leap = 0; }
+      } else {
+        m.y = 0;
+        m.leap += dt;
+        if (m.leap > (m.state === 'flee' ? 1.3 : 2.4)) { m.air = 0.8; this.emit({ e: 'leap', i: m.i, x: m.x, z: m.z }); }
+      }
+    } else if (d.kind === 'leaper' && m.air > 0) { m.air -= dt; m.y = Math.max(0, m.y - dt * 5); if (m.air <= 0) m.y = 0; }
     // hoppers move in hops
     if (hop) {
       m.hopT -= dt;
@@ -1076,7 +1258,7 @@ export class Sim {
       if (v.active.shield > 0 && m.attackCd <= 0) { m.attackCd = 0.8; this.daze(m, 1, false); m.vx = -dx / (dist || 1) * 7; m.vz = -dz / (dist || 1) * 7; }
     }
     // teleporter pads carry monsters too
-    if (m.teleCd <= 0 && !flyer) for (const t of this.c.teles) {
+    if (m.teleCd <= 0 && m.air <= 0) for (const t of this.c.teles) {
       if (t.to < 0 || Math.hypot(m.x - t.x, m.z - t.z) > 0.8) continue;
       const to = this.c.teles[t.to];
       m.x = to.x + Math.sin(m.yaw) * 1.4; m.z = to.z + Math.cos(m.yaw) * 1.4; m.teleCd = 5;
@@ -1103,6 +1285,7 @@ export class Sim {
 
   private wake(m: Mon, free: boolean): void {
     m.state = 'flee';
+    m.air = 0;
     m.hp = m.maxHp;
     m.alert = 3;
     m.t = 0;
@@ -1136,7 +1319,7 @@ export class Sim {
         const push = (need - d) / 2, nx = dx / d, nz = dz / d;
         A.x -= nx * push; A.z -= nz * push; B.x += nx * push; B.z += nz * push;
       }
-      if (A.def?.kind === 'flyer' && A.y > 1.2) continue;
+      if (A.y > AIR_HIGH) continue;
       const dx = A.x - v.x, dz = A.z - v.z, d = Math.hypot(dx, dz), need = A.radius + MECH.radius;
       if (d < need && d > 1e-4) {
         const push = need - d, nx = dx / d, nz = dz / d;
@@ -1150,10 +1333,10 @@ export class Sim {
 
   private bossHit(m: Mon, dmg: number, charged: boolean): void {
     if (m.state === 'b-daze' || m.state === 'dizzy' || m.state === 'towed' || m.state === 'b-roar') return;
-    // a charged bolt counts two against a boss; while it walks about (not winding up, attacking or
-    // dazed from a wall) it guards: half the damage
+    // a charged shot counts one less against a boss, but breaks its guard: while it walks about (not
+    // winding up, attacking or dazed from a wall) it takes half of a quick shot
     if (charged && dmg >= 3) dmg -= 1;
-    const guard = m.state === 'b-idle' && m.stun <= 0;
+    const guard = m.state === 'b-idle' && m.stun <= 0 && !charged;
     m.bar -= guard ? dmg * 0.5 : dmg;
     m.hurtT = 0.2;
     this.emit({ e: 'hit', i: m.i, x: m.x, z: m.z, y: m.height * 0.5, glance: guard, charged });
@@ -1255,8 +1438,8 @@ export class Sim {
   private bossWindup(m: Mon, dt: number, dist: number): void {
     const a = m.attack!, v = this.mech;
     if (a === 'volley' || a === 'beam' || a === 'lob' || a === 'charge') {
-      // keep turning a little to the mech while winding up (not for the charge's line)
-      if (a !== 'charge') { m.aimYaw += angDiff(m.aimYaw, Math.atan2(v.x - m.x, v.z - m.z)) * Math.min(1, dt * 2); m.aim = { x: v.x, z: v.z }; }
+      // keep turning a little to the mech while winding up (not for the charge's line or the beam's wedge)
+      if (a !== 'charge' && a !== 'beam') { m.aimYaw += angDiff(m.aimYaw, Math.atan2(v.x - m.x, v.z - m.z)) * Math.min(1, dt * 2); m.aim = { x: v.x, z: v.z }; }
       m.yaw = m.aimYaw;
     }
     if (dist < m.radius + MECH.radius + 0.1) this.hurt(1, 'boss', m.x, m.z);
@@ -1270,7 +1453,7 @@ export class Sim {
         this.waves.push({ x: m.x, z: m.z, r: m.radius, max: 4.4, speed: 9, hit: false, color: 'boss' });
         if (Math.hypot(v.x - m.x, v.z - m.z) < 3.4) this.hurt(1, 'slam', m.x, m.z);
         break;
-      case 'volley': for (let k = -2; k <= 2; k++) fire(m.aimYaw + k * 0.26, m.boss === 'alien' ? 'orb' : 'spike', 9); break;
+      case 'volley': for (let k = -2; k <= 2; k++) fire(m.aimYaw + k * VOLLEY_GAP, m.boss === 'alien' ? 'orb' : 'spike', 9); break;
       case 'ring': for (let k = 0; k < 12; k++) fire((k / 12) * Math.PI * 2 + m.phase * 0.1, m.boss === 'alien' ? 'orb' : 'spike', 7.5); break;
       case 'lob': this.lobs.push({ x: m.aim.x, z: m.aim.z, fx: m.x, fz: m.z, t: 0, total: 1.05 / bs, kind: m.boss === 'yeti' ? 'ice' : 'orb' }); break;
       case 'summon': {
@@ -1339,8 +1522,9 @@ export class Sim {
         return;
       }
       case 'beam': {
-        const T = 1.7;
-        m.yaw = m.aimYaw + Math.sin((m.t / T) * Math.PI * 2) * 0.9;
+        // one sweep across the wedge drawn during the wind-up
+        const T = BEAM.time;
+        m.yaw = m.aimYaw + BEAM.amp * (2 * Math.min(1, m.t / T) - 1) * (m.attackI % 2 ? 1 : -1);
         const [ex, ez] = this.beamEnd(m);
         if (segDist(v.x, v.z, m.x, m.z, ex, ez) < MECH.radius + 0.25) this.hurt(1, 'beam', m.x, m.z);
         if (m.t > T) end();
@@ -1377,7 +1561,7 @@ export class Sim {
       s.life -= dt;
       s.x += s.vx * dt; s.z += s.vz * dt;
       let dead = s.life <= 0 || this.solidAt(s.x, s.z);
-      if (!dead && Math.hypot(v.x - s.x, v.z - s.z) < MECH.radius + 0.35) { this.hurt(1, s.kind, s.x - s.vx * 0.1, s.z - s.vz * 0.1); dead = true; }
+      if (!dead && Math.hypot(v.x - s.x, v.z - s.z) < SHOT_HIT) { this.hurt(1, s.kind, s.x - s.vx * 0.1, s.z - s.vz * 0.1); dead = true; }
       if (dead) this.shots.splice(k, 1);
     }
     for (let k = this.lobs.length - 1; k >= 0; k--) {

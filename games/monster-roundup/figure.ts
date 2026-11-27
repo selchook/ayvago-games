@@ -1,15 +1,79 @@
 // Monster Roundup: one rigged figure (a mech or a monster) drawn as itself. Every move is the model's
-// own clip through one AnimationMixer: the mechs' Walk, Run, Shoot, Pickup, HitRecieve_1, Death, Hello
-// and Dance; the blobs' Walk, Jump, Bite_Front, HitRecieve, Death (dizzy), Dance; the flyers'
-// Flying_Idle, Fast_Flying, Headbutt, HitReact, Death; the bosses' Walk, Run, Punch, Weapon, Jump, Wave
-// and Death. Never added limbs.
+// own clip through one AnimationMixer: the mechs' Walk, Run, Shoot, Pickup, HitRecieve_1, Death, Hello,
+// Yes and Dance; the monsters' (the pack's legged Big set) Idle, Walk, Run, Jump, Punch, Weapon, Wave,
+// Duck, HitReact, Yes, No and Death. Never added limbs.
+//
+// Shared clips. The twelve monsters share one rig, so their clips ship once (clips-a, clips-b; see
+// import-kit.mjs). A monster's clips are those, retargeted once per model: tracks for bones it lacks
+// are left out and every position track is moved by the bone's own rest offset (each body has its
+// own shoulder width), so a clip plays on the bones' own rest. Nothing is premultiplied per frame.
 //
 // Layers. A mech walks and shoots at once: each clip is split by bones into a lower half (the legs
 // and the body's root) and an upper half (the torso and everything on it), played as two actions.
 // `overlay()` swaps only the upper half for a while (Shoot, Pickup), so the legs keep walking. The
 // halves touch disjoint bones, so nothing is premultiplied and no bone drifts.
+//
+// Paint. A mech's coloured panels can take a paint's hue (the select screen, unlocked by stars): the
+// material's fragment shader swaps the hue of saturated vertex colours and leaves greys alone.
 import { THREE, model, modelClips } from '@core/three';
 import { figKey } from './kit';
+import { MONSTERS } from './defs';
+
+/** Monster file → its shared clip file. */
+const CLIP_SET: Record<string, string> = Object.fromEntries(Object.values(MONSTERS).map((m) => [m.model, 'clips-' + m.clips]));
+const donorRest = new Map<string, Map<string, THREE.Vector3>>();
+const retargeted = new Map<string, THREE.AnimationClip[]>();
+
+/** The rest position of every node in a model, by name. */
+function restOf(o: THREE.Object3D): Map<string, THREE.Vector3> {
+  const out = new Map<string, THREE.Vector3>();
+  o.traverse((n) => { if (n.name) out.set(n.name, n.position.clone()); });
+  return out;
+}
+
+/** A model's clips: its own, or (a monster) the shared set retargeted onto its bones (cached per file). */
+function clipsFor(file: string, body: THREE.Object3D): THREE.AnimationClip[] {
+  const set = CLIP_SET[file];
+  if (!set) return modelClips(figKey(file));
+  const hit = retargeted.get(file);
+  if (hit) return hit;
+  let donor = donorRest.get(set);
+  if (!donor) { donor = restOf(model(figKey(set), { shadows: false })); donorRest.set(set, donor); }
+  const own = restOf(body);
+  const out: THREE.AnimationClip[] = [];
+  for (const clip of modelClips(figKey(set))) {
+    const tracks: THREE.KeyframeTrack[] = [];
+    for (const tr of clip.tracks) {
+      const dot = tr.name.lastIndexOf('.');
+      const node = tr.name.slice(0, dot), prop = tr.name.slice(dot + 1);
+      const mine = own.get(node);
+      if (!mine) continue;
+      const from = donor.get(node);
+      if (prop === 'position' && from && mine.distanceToSquared(from) > 1e-10) {
+        const t = tr.clone();
+        const v = t.values;
+        for (let i = 0; i + 2 < v.length; i += 3) { v[i] += mine.x - from.x; v[i + 1] += mine.y - from.y; v[i + 2] += mine.z - from.z; }
+        tracks.push(t);
+      } else tracks.push(tr);
+    }
+    out.push(new THREE.AnimationClip(clip.name, clip.duration, tracks));
+  }
+  retargeted.set(file, out);
+  return out;
+}
+
+/** The paint shader: saturated vertex colours take uPaint.x's hue while uPaint.y is on. */
+const PAINT_GLSL = `
+  if (uPaint.y > 0.5) {
+    vec3 c0 = diffuseColor.rgb;
+    float mx = max(c0.r, max(c0.g, c0.b)), mn = min(c0.r, min(c0.g, c0.b));
+    float sat = mx > 0.0001 ? (mx - mn) / mx : 0.0;
+    float k = smoothstep(0.22, 0.42, sat);
+    vec3 hue = clamp(abs(mod(uPaint.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+    vec3 repaint = mx * mix(vec3(1.0), hue, max(sat, 0.62));
+    diffuseColor.rgb = mix(c0, repaint, k);
+  }
+`;
 
 export interface PlayOpts { fade?: number; speed?: number; once?: boolean; restart?: boolean }
 
@@ -49,7 +113,9 @@ export class Figure {
   /** Scale from model units to metres. */
   readonly scale: number;
 
-  constructor(readonly file: string, height: number, o: { layered?: boolean; heightOf?: 'box' | 'above' } = {}) {
+  private paint: { value: THREE.Vector2 } | null = null;
+
+  constructor(readonly file: string, height: number, o: { layered?: boolean; heightOf?: 'box' | 'above'; paintable?: boolean } = {}) {
     this.body = model(figKey(file), { shadows: false });
     const rb = restBox(file);
     const h = o.heightOf === 'above' ? rb.h + rb.minY : rb.h;
@@ -57,6 +123,14 @@ export class Figure {
     this.body.scale.setScalar(this.scale);
     this.root.add(this.body);
     this.mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+    if (o.paintable) {
+      const u = this.paint = { value: new THREE.Vector2(0, 0) };
+      this.mat.onBeforeCompile = (sh) => {
+        sh.uniforms.uPaint = u;
+        sh.fragmentShader = 'uniform vec2 uPaint;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n' + PAINT_GLSL);
+      };
+      this.mat.customProgramCacheKey = () => 'mr-paint';
+    }
     this.body.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (mesh.isMesh) {
@@ -67,7 +141,7 @@ export class Figure {
       }
     });
     this.mixer = new THREE.AnimationMixer(this.body);
-    for (const c of modelClips(figKey(file))) this.clips.set(c.name, c);
+    for (const c of clipsFor(file, this.body)) this.clips.set(c.name, c);
     if (o.layered) this.halves = this.split();
   }
 
@@ -134,6 +208,9 @@ export class Figure {
 
   /** Seconds the current clip has run, as a share of its length. */
   progress(): number { return this.act ? this.act.time / Math.max(0.01, this.act.getClip().duration) : 0; }
+
+  /** A paint's hue (0..1), or < 0 for the factory colours (a paintable figure). */
+  setPaint(hue: number): void { if (this.paint) this.paint.value.set(Math.max(0, hue), hue >= 0 ? 1 : 0); }
 
   flash(t = 0.12): void { this.flashT = Math.max(this.flashT, t); }
   setGlow(c: number): void { this.glow.setHex(c); }

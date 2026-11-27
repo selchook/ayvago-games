@@ -190,6 +190,20 @@ export function starTexture(): THREE.Texture {
   return starTex;
 }
 
+let crownTex: THREE.Texture | null = null;
+/** The boss's crown (a sprite over its head). */
+export function crownTexture(): THREE.Texture {
+  if (crownTex) return crownTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 96;
+  const x = c.getContext('2d')!;
+  x.lineJoin = 'round'; x.lineCap = 'round';
+  ICONS.crown(x, 96);
+  crownTex = new THREE.CanvasTexture(c);
+  crownTex.colorSpace = THREE.SRGBColorSpace;
+  return crownTex;
+}
+
 let glowTex: THREE.Texture | null = null;
 /** A soft round falloff (blob shadows). */
 export function glowTexture(): THREE.Texture {

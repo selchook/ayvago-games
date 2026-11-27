@@ -1,9 +1,10 @@
-// Monster Roundup: the play scene. A run starts on the station map; each level cleared adds to the run's
+// Monster Roundup: the play scene. A run starts with the mech select (the four mechs in the bay), then
+// the station map; each level cleared adds to the run's
 // score, its credits go to the purse at once and the hangar opens between levels. The run ends when
 // the hull is lost (a rewarded ad may bring the mech back once, where it fell, with full hearts),
 // when the player ends it on the map, or when the last level is done.
-//   map → (GO) intro swoop over the level down to the mech → play → all banked (or the exit) → card →
-//   hangar → map
+//   mech select → map → (GO) intro swoop over the level down to the mech → play → all banked (or the
+//   exit) → card → hangar → map
 // The sim runs at a fixed 60 Hz (sim.ts); the view draws it (view.ts); the HUD and the touch pad are
 // hud.ts, the inner screens screens.ts. Keyboard: WASD / arrows walk, Shift (or L) sprints, Space (J,
 // Z) stuns (hold to charge), E (X, K) tows and drops, Q (C) uses the power. Touch: the floating stick
@@ -15,13 +16,13 @@ import { View } from './view';
 import { Sim, NO_INPUT, type Input, type SimEvent } from './sim';
 import { Bot } from './bot';
 import { buildLevel, LEVEL_COUNT, sectorIndex, sectorOf } from './levels';
-import { DT, SCORE, CLEAR_CREDITS, STAR_CREDITS, POWER_COLOR, SECTORS, MONSTERS, BOSSES, type PowerId } from './defs';
+import { DT, SCORE, CLEAR_CREDITS, STAR_CREDITS, POWER_COLOR, SECTORS, MONSTERS, BOSSES, MECH_IDS, PAINTS, type PowerId, type MechId } from './defs';
 import { loadMeta, saveMeta, type Meta } from './meta';
-import { MapScreen, SummaryScreen, ShopScreen, type Panel, type ScreenHost } from './screens';
+import { MapScreen, SummaryScreen, ShopScreen, MechSelect, type Panel, type ScreenHost } from './screens';
 import { PlayHud, TouchPad, S_BANNER, S_BIG, S_SUBBANNER, S_TOAST, S_WARN, S_GOOD, S_POWER, S_HINT, S_BOSS, levelLabel, bossName, splitLine } from './hud';
 import { makeArt } from './art';
 
-type Phase = 'map' | 'intro' | 'play' | 'clear' | 'summary' | 'shop' | 'dead' | 'end';
+type Phase = 'select' | 'map' | 'intro' | 'play' | 'clear' | 'summary' | 'shop' | 'dead' | 'end';
 
 const INTRO_TIME = 2.3;
 const MUSIC = ['stage1', 'level1', 'level3', 'stage2'] as const;
@@ -62,6 +63,7 @@ export class PlayScene extends ArcadeScene {
   private powerPressed = false;
   private tut: { step: number; t: number } | null = null;
   private lowWarned = false;
+  private wasInCloud = false;
   testSpeed = 1;
   perf = { frames: 0, maxCalls: 0, maxTris: 0 };
 
@@ -88,6 +90,7 @@ export class PlayScene extends ArcadeScene {
     this.powerPressed = false;
     this.tut = null;
     this.lowWarned = false;
+    this.wasInCloud = false;
     this.testSpeed = 1;
     this.perf = { frames: 0, maxCalls: 0, maxTris: 0 };
     this.levelN = Math.min(this.meta.last, this.meta.unlocked, LEVEL_COUNT);
@@ -124,7 +127,40 @@ export class PlayScene extends ArcadeScene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.view.dispose());
     this.showPlayUi(false);
     this.hooks();
-    this.openMap();
+    this.openSelect();
+  }
+
+  // ---------------------------------------------------------------- the mech select
+
+  private hues(): number[] { return MECH_IDS.map((id) => PAINTS[this.meta.paint[id]].hue); }
+
+  /** The run's first screen: the four mechs in the bay; DEPLOY goes on to the map. */
+  openSelect(): void {
+    this.closePanel();
+    this.phase = 'select';
+    this.showPlayUi(false);
+    this.sim = new Sim(buildLevel(0), this.meta.ranks, isEasy(), this.meta.mech);
+    this.sim.god = true;
+    this.view.build(this.sim);
+    this.view.setLineup(MECH_IDS, Math.max(0, MECH_IDS.indexOf(this.meta.mech)), this.hues());
+    this.view.sync(this.sim, 0, { camera: 'select' });
+    this.bot = null;
+    this.panel = new MechSelect(this, this.host, this.meta, this.view.lineupScreen(), {
+      show: (id) => this.view.setLineup(MECH_IDS, MECH_IDS.indexOf(id), this.hues()),
+      done: (id: MechId) => {
+        this.panel = null;
+        this.view.lineupCheer();
+        this.sfx('hello', { volume: 0.5 });
+        this.phase = 'end';
+        this.time.delayedCall(650, () => {
+          if (!this.scene.isActive() || this.panel) return;
+          this.view.clearLineup();
+          this.meta.mech = id;
+          this.sim = null;
+          this.openMap();
+        });
+      },
+    });
   }
 
   // ---------------------------------------------------------------- the map, the hangar
@@ -153,6 +189,7 @@ export class PlayScene extends ArcadeScene {
     this.sim = new Sim(buildLevel(n), this.meta.ranks, isEasy(), this.meta.mech);
     this.sim.god = true;
     this.view.build(this.sim);
+    this.view.setMech(this.meta.mech, false, this.meta.paint[this.meta.mech]);
     this.view.snap(this.sim);
     this.bot = null;
   }
@@ -162,7 +199,7 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'shop';
     this.showPlayUi(false);
     if (!this.sim) this.preview(this.levelN);
-    this.panel = new ShopScreen(this, this.host, this.meta, (mech) => { if (mech) { this.view.setMech(this.meta.mech); this.sfx('hello', { volume: 0.4 }); } }, () => { this.panel = null; then(); });
+    this.panel = new ShopScreen(this, this.host, this.meta, () => { this.sfx('hello', { volume: 0.3 }); }, () => { this.panel = null; then(); });
   }
 
   private closePanel(): void { this.panel?.close(); this.panel = null; }
@@ -182,6 +219,7 @@ export class PlayScene extends ArcadeScene {
     saveMeta(this.meta);
     this.sim = new Sim(buildLevel(n), this.meta.ranks, isEasy(), this.meta.mech, this.meta.runs);
     this.view.build(this.sim);
+    this.view.setMech(this.meta.mech, false, this.meta.paint[this.meta.mech]);
     this.view.snap(this.sim);
     this.view.warm();
     this.banked = 0;
@@ -191,6 +229,7 @@ export class PlayScene extends ArcadeScene {
     this.phaseT = 0;
     this.acc = 0;
     this.lowWarned = false;
+    this.wasInCloud = false;
     this.showPlayUi(true);
     this.pad?.setVisible(false);
     this.clearBanners();
@@ -214,14 +253,25 @@ export class PlayScene extends ArcadeScene {
     this.showPlayUi(true);
     this.banner(t('go'), S_BIG, 360, 600);
     this.sfx('go', { volume: 0.5 });
-    const hint = this.sim?.c.hint;
-    const key = hint ? 'h_' + hint : '';
-    if (key && !this.meta.hints.includes(key)) {
-      const n = this.levelN;
-      this.time.delayedCall(this.tut ? 14000 : 1000, () => { if (this.phase === 'play' && this.levelN === n) this.toast(key, S_HINT, 5600); });
+    // the level's first-time hints, one after the other
+    const n = this.levelN;
+    let delay = this.tut ? 14000 : 1000;
+    for (const h of this.sim?.c.hints ?? []) {
+      const key = 'h_' + h;
+      if (this.meta.hints.includes(key)) continue;
+      this.time.delayedCall(delay, () => { if (this.phase === 'play' && this.levelN === n) this.toast(key, S_HINT, 5600); });
+      delay += 6400;
       this.meta.hints = [...new Set([...this.meta.hints, key])];
-      saveMeta(this.meta);
     }
+    saveMeta(this.meta);
+  }
+
+  /** A first-time hint shown when its thing first happens (a punch's wind-up). */
+  private onceHint(key: string): void {
+    if (this.meta.hints.includes(key)) return;
+    this.meta.hints = [...new Set([...this.meta.hints, key])];
+    saveMeta(this.meta);
+    this.toast(key, S_HINT, 5000);
   }
 
   // ---------------------------------------------------------------- per frame
@@ -236,7 +286,7 @@ export class PlayScene extends ArcadeScene {
     if (this.phase === 'intro' && this.phaseT >= INTRO_TIME) this.go();
     if (this.phase === 'intro' && this.pad && (this.pad.pressed('stun') || this.pad.pressed('tow')) && this.phaseT > 0.3) this.phaseT = INTRO_TIME;
     if (this.hitStop > 0) this.hitStop -= dt;
-    else if (this.phase !== 'map' && this.phase !== 'shop') {
+    else if (this.phase !== 'map' && this.phase !== 'shop' && this.phase !== 'select' && !(this.phase === 'end' && s.c.n === 0)) {
       this.acc += Math.min(dt, 0.1 * this.testSpeed);
       let first = true;
       while (this.acc >= DT) {
@@ -257,7 +307,7 @@ export class PlayScene extends ArcadeScene {
       const more = s.points - this.scored;
       if (more > 0) { this.addScore(more); this.scored = s.points; }
     }
-    const mode = this.phase === 'map' ? 'preview' : this.phase === 'shop' ? 'hangar' : this.phase === 'intro' ? 'intro' : 'follow';
+    const mode = this.phase === 'map' ? 'preview' : this.phase === 'shop' ? 'hangar' : this.phase === 'intro' ? 'intro' : s.c.n === 0 ? 'select' : 'follow';
     this.view.sync(s, dt, { camera: mode, introT: this.phaseT / INTRO_TIME });
     if (this.phase === 'play' || this.phase === 'intro' || this.phase === 'dead' || this.phase === 'clear') this.hudp.update(s, this.levelN, this.time.now, (x, y, z) => this.view.screen(x, y, z));
     if (this.pad) {
@@ -267,6 +317,8 @@ export class PlayScene extends ArcadeScene {
       this.pad.frame(v.power, v.towing.length > 0 && !grab);
     }
     if (this.phase === 'play') {
+      if (s.mech.inCloud && !this.wasInCloud) this.toast('spored', S_WARN, 1400);
+      this.wasInCloud = s.mech.inCloud;
       this.tutorial(dt);
       const st = this.view.stats();
       this.perf.maxCalls = Math.max(this.perf.maxCalls, st.calls);
@@ -303,23 +355,42 @@ export class PlayScene extends ArcadeScene {
     const fx = this.view.fx, v = s.mech, look = SECTORS[s.c.sector];
     for (const e of evs) {
       switch (e.e) {
-        case 'shot':
-          this.sfx(e.charged ? 'shotBig' : 'shot', { volume: e.charged ? 0.55 : 0.35 });
-          fx.sparks(v.x + Math.sin(v.yaw) * 1.1, 1.5, v.z + Math.cos(v.yaw) * 1.1, e.charged ? 12 : 5, e.charged ? [0xffe060, 0xffffff] : [0x7ae8ff, 0xffffff], 3, 1.5, 0.07);
+        case 'shot': {
+          const w = e.weapon;
+          const key = e.charged ? (w === 'twin' ? 'shotBig' : w === 'lance' ? 'lance' : w === 'scatter' ? 'pulse' : 'shell') : (w === 'twin' ? 'shot' : w === 'lance' ? 'shotL' : w === 'scatter' ? 'shotS' : 'shotM');
+          this.sfx(key, { volume: e.charged ? 0.6 : w === 'twin' ? 0.3 : 0.4 });
+          const col = w === 'mortar' ? [0x8aff6a, 0xffffff] : w === 'scatter' ? [0xffb03a, 0xffffff] : e.charged ? [0xffe060, 0xffffff] : [0x7ae8ff, 0xffffff];
+          fx.sparks(v.x + Math.sin(v.yaw) * 1.1, 1.5, v.z + Math.cos(v.yaw) * 1.1, e.charged ? 12 : 5, col, 3, 1.5, 0.07);
           if (e.charged) { this.view.shake(0.18); padRumble(60, 0.3); }
           break;
+        }
+        case 'lance': {
+          this.view.shake(0.25);
+          for (let k = 0; k <= 8; k++) { const q = k / 8; fx.sparks(e.ax + (e.bx - e.ax) * q, 1.45, e.az + (e.bz - e.az) * q, 3, [0xe07aff, 0xffffff], 2, 2, 0.07); }
+          if (e.hits > 1) this.toast('multi', S_GOOD, 900);
+          break;
+        }
+        case 'pulse': fx.ring(e.x, 0.6, e.z, 40, 0xffd23a, 16, 0.2); this.view.shake(0.3); if (e.hits > 1) this.toast('multi', S_GOOD, 900); break;
+        case 'shell': this.sfxAt('shellHit', this.at(e.x, e.z), { volume: 0.6 }); fx.blast(e.x, 0.3, e.z, true, 0x5ad66a); fx.ring(e.x, 0.3, e.z, 30, 0x8aff6a, 10, 0.2); this.view.shake(0.4); if (e.hits > 1) this.toast('multi', S_GOOD, 900); break;
+        case 'splash': this.sfxAt('splash', this.at(e.x, e.z), { volume: 0.4 }); fx.sparks(e.x, 1.4, e.z, 12, [0x8aff6a, 0xffffff], 4, 2, 0.08); break;
+        case 'leap': this.sfxAt('hop', this.at(e.x, e.z), { volume: 0.3 }); fx.dust(e.x, 0.2, e.z, 8, 0xc8ccd8, 2, 1, 0.2); break;
+        case 'throw': this.sfxAt('lob', this.at(e.x, e.z), { volume: 0.45 }); break;
+        case 'spore': this.sfxAt('spore', this.at(e.x, e.z), { volume: 0.5 }); fx.dust(e.x, 0.5, e.z, 24, 0xa8e85a, 4, 2, 0.35); break;
         case 'hit': {
           const m = s.mons[e.i];
           if (e.glance) { this.sfxAt('glance', this.at(e.x, e.z), { volume: 0.4 }); fx.sparks(e.x, e.y + 1, e.z, 6, [0xffffff, 0xaab8c8], 3, 2, 0.06); if (!m.boss) this.toast(this.pad ? 'glance' : 'glanceKey', S_WARN, 2000); break; }
           this.sfxAt(e.charged ? 'zapBig' : 'zap', this.at(e.x, e.z), { volume: 0.5 });
           fx.sparks(e.x, (m.y || 0) + m.height * 0.5, e.z, e.charged ? 18 : 10, [0x7ae8ff, 0xffffff, 0xffe060], 4, 3, 0.08);
           if (m.boss) this.view.shake(0.12);
+          else if (e.charged) { this.hitStop = Math.max(this.hitStop, 0.04); this.view.shake(0.12); }
           break;
         }
         case 'dizzy': {
           const m = s.mons[e.i];
           this.sfxAt(m.boss ? 'bossDizzy' : 'dizzy', this.at(e.x, e.z), { volume: 0.55 });
           fx.sparks(e.x, m.height, e.z, 16, [0xffe060, 0xffffff], 3, 4, 0.09);
+          fx.ring(e.x, m.height * 0.9, e.z, 14, 0xffe060, 4, 0.12);
+          { const p = this.view.screen(e.x, m.height + 0.6, e.z); this.popupText(p.x, p.y, t('dizzyPop'), '#ffe08a'); }
           if (this.tut && this.tut.step < 3 && !m.boss) { this.tut.step = 3; this.toast(this.pad ? 'tut_tow' : 'tut_towKey', S_HINT, 3800); }
           if (m.boss) { this.banner(t('bossDizzy'), S_GOOD, 300, 2200); this.view.shake(0.5); }
           break;
@@ -344,6 +415,8 @@ export class PlayScene extends ArcadeScene {
           this.sfx(e.boss ? 'fanfare' : 'capture', { volume: 0.65, exact: true });
           fx.confetti(e.x, 2.5, e.z, e.boss ? 120 : 34);
           fx.sparks(e.x, 2.8, e.z, 24, [look.glow, 0xffffff], 5, 6, 0.1);
+          fx.ring(e.x, 0.3, e.z, 28, look.glow, 9, 0.18);
+          this.view.podFlash(e.x, e.z);
           this.view.shake(e.boss ? 0.9 : 0.2);
           const p = this.view.screen(e.x, 3.5, e.z);
           this.popup(p.x, p.y, '+' + e.pts);
@@ -380,7 +453,7 @@ export class PlayScene extends ArcadeScene {
         case 'use': this.usePower(e.id, s); break;
         case 'powerEnd': this.sfx('powerDown', { volume: 0.35 }); break;
         case 'freeze': this.sfx('freeze', { volume: 0.7 }); flash(this, 0x9af0ff); this.view.shake(0.4); fx.ring(e.x, 0.4, e.z, 50, 0x9af0ff, 20, 0.22); break;
-        case 'attack': this.sfxAt('growl', this.at(e.x, e.z), { volume: 0.35 }); break;
+        case 'attack': this.sfxAt('growl', this.at(e.x, e.z), { volume: 0.35 }); if (s.mons[e.i]?.act === 'bite') this.onceHint('h_bite'); break;
         case 'bite': break;
         case 'bossWindup': this.sfx(e.attack === 'summon' ? 'roar' : 'windup', { volume: 0.45 }); break;
         case 'bossAttack': this.bossAttack(e.attack, e.x, e.z, s); break;
@@ -414,9 +487,12 @@ export class PlayScene extends ArcadeScene {
     }
   }
 
-  private popup(x: number, y: number, text: string): void {
-    const tx = this.add.text(x, y, text, { fontFamily: 'Righteous, Fredoka, Nunito, sans-serif', fontSize: '30px', color: '#c8fff4', stroke: '#101626', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(9050);
-    this.tweens.add({ targets: tx, y: y - 60, alpha: 0, duration: 900, ease: 'Cubic.easeOut', onComplete: () => tx.destroy() });
+  private popup(x: number, y: number, text: string): void { this.popupText(x, y, text, '#c8fff4'); }
+
+  private popupText(x: number, y: number, text: string, color: string): void {
+    const tx = this.add.text(x, y, text, { fontFamily: 'Righteous, Fredoka, Nunito, sans-serif', fontSize: '30px', color, stroke: '#101626', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(9050).setScale(0.5);
+    this.tweens.add({ targets: tx, scale: 1, duration: 160, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: tx, y: y - 60, alpha: 0, delay: 200, duration: 800, ease: 'Cubic.easeOut', onComplete: () => tx.destroy() });
   }
 
   private pickup(id: PowerId, x: number, z: number): void {
@@ -577,7 +653,7 @@ export class PlayScene extends ArcadeScene {
         const s = this.sim;
         const v = s?.mech;
         return {
-          phase: this.phase, level: this.levelN, score: this.score, credits: this.meta.credits, unlocked: this.meta.unlocked, mechId: this.meta.mech,
+          phase: this.phase, level: this.levelN, score: this.score, credits: this.meta.credits, unlocked: this.meta.unlocked, mechId: this.meta.mech, paint: { ...this.meta.paint },
           mech: v ? { x: v.x, z: v.z, yaw: v.yaw, hp: v.hp, max: v.max, state: v.state, energy: v.energy, emax: v.emax, towing: v.towing.length, power: v.power, charge: v.charge, sprint: v.sprint } : null,
           stats: s ? { ...s.stats } : null, captured: s?.captured ?? 0, total: s?.c.total ?? 0, quota: s?.c.quota ?? 0, exitOpen: s?.exitOpen ?? false,
           mons: s ? s.mons.filter((m) => m.state !== 'gone').map((m) => ({ i: m.i, kind: m.kind ?? m.boss, state: m.state, x: m.x, z: m.z, hp: m.hp, evolved: m.evolved, phase: m.phase, bar: m.bar })) : [],
@@ -607,6 +683,7 @@ export class PlayScene extends ArcadeScene {
     this.closePanel();
     switch (which) {
       case 'map': this.openMap(); break;
+      case 'select': this.openSelect(); break;
       case 'shop': this.openShop(() => this.openMap()); break;
       case 'summary':
         this.phase = 'summary'; this.showPlayUi(false);
@@ -617,13 +694,14 @@ export class PlayScene extends ArcadeScene {
   }
 
   /**
-   * The store art's card: Fly Swatter (2-2) frozen in a moment in the green gardens: the mech walking
-   * toward a pod with a dizzy mushnub on its tractor beam, a charged bolt flying at a glub up high
-   * (the lock marker under it), a chicken dizzy with stars, the pod's glowing ring ahead, under a
-   * staged camera low behind the mech (closer and higher on a phone).
+   * The store art's card: Hop to It (2-2) frozen in a moment in the green gardens: Mike walking toward
+   * a pod with a dizzy frog on his tractor beam, a charged bolt flying at a bunny in mid-leap (the
+   * lock marker under it), a birb dizzy with stars by the pod's glowing ring, under a staged camera
+   * low behind the mech (closer and higher on a phone).
    */
   private cardStage(): void {
-    this.meta.hints = [...new Set([...this.meta.hints, 'tut', 'h_flyer', 'h_tow'])];
+    this.meta.hints = [...new Set([...this.meta.hints, 'tut', 'h_leaper', 'h_tow'])];
+    this.meta.mech = 'mike';
     this.startLevel(7);
     this.phaseT = INTRO_TIME;
     this.go();
@@ -636,24 +714,24 @@ export class PlayScene extends ArcadeScene {
     const land = this.scale.width > this.scale.height;
     v.x = pod.x + 5.2; v.z = pod.z + 2.2; v.yaw = Math.atan2(pod.x - v.x, pod.z - v.z);
     const ms = s.mons.filter((m) => !m.boss);
-    const glub = ms.find((m) => m.kind === 'glub') ?? ms[0];
-    const mush = ms.find((m) => m.kind === 'mushnub') ?? ms[1];
-    const chick = ms.find((m) => m.kind === 'chicken') ?? ms[2];
-    const other = ms.find((m) => m !== glub && m !== mush && m !== chick);
-    mush.state = 'towed'; mush.dizzy = mush.dizzyMax = 10; v.towing = [mush];
-    mush.x = v.x - Math.sin(v.yaw) * 3.1; mush.z = v.z - Math.cos(v.yaw) * 3.1; mush.y = 0.9;
-    glub.x = v.x - 1.5; glub.z = v.z - 6; glub.y = 1.75; glub.state = 'flee'; glub.yaw = 2.4; glub.swoop = -3;
-    chick.state = 'dizzy'; chick.dizzy = chick.dizzyMax = 6; chick.x = pod.x + 1.8; chick.z = pod.z - 3.4;
+    const bunny = ms.find((m) => m.kind === 'bunny') ?? ms[0];
+    const frog = ms.find((m) => m.kind === 'frog') ?? ms[1];
+    const birb = ms.find((m) => m.kind === 'birb') ?? ms[2];
+    const other = ms.find((m) => m !== bunny && m !== frog && m !== birb);
+    frog.state = 'towed'; frog.dizzy = frog.dizzyMax = 10; v.towing = [frog];
+    frog.x = v.x - Math.sin(v.yaw) * 3.3; frog.z = v.z - Math.cos(v.yaw) * 3.3; frog.y = 0.9;
+    bunny.x = v.x - 1.8; bunny.z = v.z - 6.5; bunny.y = 2.2; bunny.air = 0.4; bunny.state = 'flee'; bunny.yaw = 2.4;
+    birb.state = 'dizzy'; birb.dizzy = birb.dizzyMax = 6; birb.x = pod.x + 1.8; birb.z = pod.z - 3.6;
     if (other) { other.state = 'wander'; other.x = pod.x + 9; other.z = pod.z - 5; }
-    v.lock = glub;
+    v.lock = bunny;
     v.charge = 0.7;
-    const a = Math.atan2(glub.x - v.x, glub.z - v.z);
-    s.bolts.push({ x: v.x + Math.sin(a) * 3.2, z: v.z + Math.cos(a) * 3.2, vx: Math.sin(a) * 2, vz: Math.cos(a) * 2, life: 9, charged: true, hit: [], arc: false });
+    const a = Math.atan2(bunny.x - v.x, bunny.z - v.z);
+    s.bolts.push({ x: v.x + Math.sin(a) * 3.2, z: v.z + Math.cos(a) * 3.2, vx: Math.sin(a) * 2, vz: Math.cos(a) * 2, life: 9, charged: true, hit: [], arc: false, dmg: 3, splash: 0, kind: 'bolt' });
     v.yaw = a;
     v.shootT = 0.3;
     this.testSpeed = 0.02;
     const x = v.x, z = v.z;
-    this.view.shotCam = land ? [[x - 1, 11.5, z + 11], [x - 2.4, 0.6, z - 2.8]] : [[x - 0.8, 14, z + 12.5], [x - 1.0, 0.3, z - 3.4]];
+    this.view.shotCam = land ? [[x - 1, 11.5, z + 11], [x - 2.4, 0.9, z - 2.8]] : [[x - 0.8, 14, z + 12.5], [x - 1.0, 0.6, z - 3.4]];
     this.pad?.setVisible(false);
     this.view.snap(s);
   }

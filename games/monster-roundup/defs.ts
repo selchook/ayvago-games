@@ -76,16 +76,22 @@ export const TUNING: Record<'normal' | 'easy', Tuning> = {
 
 // ------------------------------------------------------------------ monsters
 
-/** How a family moves and what makes it tricky. */
-export type Behaviour = 'hopper' | 'runner' | 'flyer' | 'spiky' | 'splitter' | 'blinker' | 'caller' | 'brute';
+/**
+ * How a family moves and what makes it tricky. Every monster is one of the pack's legged Big set and
+ * plays its own clips: hoppers Jump in small hops, leapers Jump high (quick bolts glance off them in
+ * the air), runners Run, the caller Waves its alarm, the splitter falls into two small ones, the
+ * blinker Ducks and vanishes, the spiky one hurts to touch, brutes Punch, the lobber throws with
+ * Weapon, the spore monster Waves a cloud out.
+ */
+export type Behaviour = 'hopper' | 'leaper' | 'runner' | 'caller' | 'splitter' | 'blinker' | 'spiky' | 'brute' | 'lobber' | 'spore';
 
-export const MONSTER_IDS = ['mushnub', 'cat', 'dog', 'chicken', 'green-blob', 'spiky-blob', 'wizard', 'yeti-blob', 'glub', 'armabee', 'goleling', 'dragon'] as const;
+export const MONSTER_IDS = ['frog', 'bunny', 'monkroose', 'dino', 'birb', 'fish', 'ninja', 'cactoro', 'yeti', 'orc', 'alien', 'mushroom-king'] as const;
 export type MonsterId = typeof MONSTER_IDS[number];
 
 export interface MonsterDef {
-  /** The model file (public/assets/quaternius/monsters) and its evolved form's (null: it grows instead). */
+  /** The model file (public/assets/quaternius/monsters) and its clip set (clips-a or clips-b). */
   model: string;
-  evolved: string | null;
+  clips: 'a' | 'b';
   kind: Behaviour;
   /** Daze points: stun hits to make it dizzy (an evolved one has twice as many). */
   hp: number;
@@ -99,35 +105,48 @@ export interface MonsterDef {
   bites: boolean;
   /** Points and credits when captured (an evolved one is worth 2.5×). */
   points: number;
-  /** Its colour for sparks and the map's icon. */
+  /** Its colour for sparks and the edge arrows. */
   color: number;
 }
 
 export const MONSTERS: Record<MonsterId, MonsterDef> = {
-  mushnub: { model: 'mushnub', evolved: 'mushnub-evolved', kind: 'hopper', hp: 2, speed: 2.4, flee: 3.6, height: 1.81, radius: 0.69, bites: false, points: 100, color: 0x3aa8d8 },
-  cat: { model: 'cat', evolved: null, kind: 'runner', hp: 2, speed: 3, flee: 6.1, height: 1.45, radius: 0.62, bites: false, points: 120, color: 0xffa040 },
-  dog: { model: 'dog', evolved: null, kind: 'runner', hp: 3, speed: 3.2, flee: 5.4, height: 1.45, radius: 0.62, bites: true, points: 130, color: 0xd08a4a },
-  chicken: { model: 'chicken', evolved: null, kind: 'caller', hp: 2, speed: 2.8, flee: 5.2, height: 1.59, radius: 0.62, bites: false, points: 120, color: 0xffffff },
-  'green-blob': { model: 'green-blob', evolved: null, kind: 'splitter', hp: 2, speed: 2.2, flee: 3.4, height: 1.81, radius: 0.75, bites: false, points: 90, color: 0x5ad66a },
-  'spiky-blob': { model: 'spiky-blob', evolved: null, kind: 'spiky', hp: 3, speed: 1.9, flee: 2.6, height: 1.96, radius: 0.88, bites: true, points: 170, color: 0x3a8a3a },
-  wizard: { model: 'wizard', evolved: null, kind: 'blinker', hp: 3, speed: 2.4, flee: 3.8, height: 1.74, radius: 0.69, bites: false, points: 160, color: 0x7a4ad8 },
-  'yeti-blob': { model: 'yeti-blob', evolved: null, kind: 'brute', hp: 4, speed: 2.2, flee: 3.2, height: 1.96, radius: 0.81, bites: true, points: 180, color: 0x8ad0ff },
-  glub: { model: 'glub', evolved: 'glub-evolved', kind: 'flyer', hp: 2, speed: 2.6, flee: 4.2, height: 1.45, radius: 0.69, bites: false, points: 150, color: 0xc070ff },
-  armabee: { model: 'armabee', evolved: 'armabee-evolved', kind: 'flyer', hp: 2, speed: 3, flee: 4.6, height: 1.38, radius: 0.69, bites: true, points: 160, color: 0xffd040 },
-  goleling: { model: 'goleling', evolved: 'goleling-evolved', kind: 'flyer', hp: 3, speed: 2.7, flee: 4.2, height: 1.38, radius: 0.75, bites: false, points: 170, color: 0x9ae04a },
-  dragon: { model: 'dragon', evolved: 'dragon-evolved', kind: 'flyer', hp: 3, speed: 3.1, flee: 4.8, height: 1.38, radius: 0.75, bites: true, points: 190, color: 0xff7a3a },
+  frog: { model: 'frog', clips: 'a', kind: 'hopper', hp: 2, speed: 2.4, flee: 3.6, height: 1.95, radius: 0.78, bites: false, points: 100, color: 0x8ad84a },
+  bunny: { model: 'bunny', clips: 'b', kind: 'leaper', hp: 2, speed: 2.6, flee: 4.3, height: 2.3, radius: 0.78, bites: false, points: 150, color: 0xf4eef8 },
+  monkroose: { model: 'monkroose', clips: 'a', kind: 'runner', hp: 2, speed: 3, flee: 6.1, height: 2.05, radius: 0.74, bites: false, points: 120, color: 0xb88aff },
+  dino: { model: 'dino', clips: 'a', kind: 'runner', hp: 3, speed: 3.1, flee: 5.4, height: 2.2, radius: 0.8, bites: true, points: 140, color: 0xffd23a },
+  birb: { model: 'birb', clips: 'a', kind: 'caller', hp: 2, speed: 2.8, flee: 5.2, height: 2.1, radius: 0.76, bites: false, points: 120, color: 0x5a9aff },
+  fish: { model: 'fish', clips: 'a', kind: 'splitter', hp: 2, speed: 2.2, flee: 3.4, height: 2.2, radius: 0.82, bites: false, points: 90, color: 0x3ad8e8 },
+  ninja: { model: 'ninja', clips: 'b', kind: 'blinker', hp: 3, speed: 2.5, flee: 3.9, height: 2.1, radius: 0.76, bites: false, points: 160, color: 0x9a8aff },
+  cactoro: { model: 'cactoro', clips: 'a', kind: 'spiky', hp: 3, speed: 1.9, flee: 2.6, height: 2.5, radius: 0.9, bites: true, points: 170, color: 0x5ad66a },
+  yeti: { model: 'yeti', clips: 'a', kind: 'brute', hp: 4, speed: 2.2, flee: 3.2, height: 2.55, radius: 0.92, bites: true, points: 180, color: 0x8ad0ff },
+  orc: { model: 'orc', clips: 'b', kind: 'brute', hp: 4, speed: 2.3, flee: 3.2, height: 2.45, radius: 0.9, bites: true, points: 180, color: 0x9ad04a },
+  alien: { model: 'alien', clips: 'a', kind: 'lobber', hp: 3, speed: 2.3, flee: 3.8, height: 2.4, radius: 0.82, bites: false, points: 170, color: 0xc8ff6a },
+  'mushroom-king': { model: 'mushroom-king', clips: 'b', kind: 'spore', hp: 3, speed: 2, flee: 3, height: 2.45, radius: 0.86, bites: false, points: 170, color: 0xd0a0ff },
 };
 
-/** Flyers cruise this high; a normal bolt glances off them up there (a charged one does not). */
-export const FLY_HIGH = 1.75;
+/** A leaper in the air above this height shrugs off a quick bolt (charged shots, pulses and splashes reach it). */
+export const AIR_HIGH = 1.2;
+/** The lobber: it throws from between these distances, every LOB_GAP seconds; the orb flies LOB_FLIGHT. */
+export const LOBBER = { near: 5.5, far: 11, gap: 4.2, flight: 1.15, windup: 0.7 };
+/** The spore monster: a cloud of this radius, this long, when the mech comes this close (every gap seconds). */
+export const SPORE = { r: 3.4, life: 5.5, near: 6.5, gap: 7, windup: 0.6, slow: 0.6 };
 /** Loose monsters grow toward evolving by this much each second (×Tuning.evolve) and by SNACK per snack. */
 export const EVOLVE_RATE = 1 / 95;
 export const EVOLVE_SNACK = 0.42;
-/** An evolved monster: daze points ×, speed ×, size ×, points ×. */
+/**
+ * An evolved monster: daze points ×, speed ×, size ×, points ×. It glows, wears a spinning orange
+ * ring on the floor and gains a new move: it bites (a brute bites twice as often, a lobber throws two
+ * orbs, the spore monster's cloud is bigger).
+ */
 export const EVOLVED = { hp: 2, speed: 1.15, size: 1.3, points: 2.5 };
 
 // ------------------------------------------------------------------ bosses
 
+/**
+ * The four bosses: the same models, but three times as tall, crowned, with a pulsing aura ring and a
+ * health bar. A sector's boss is never one of its own common monsters (the Mushroom King ends the
+ * lab, Cactoro the gardens, the Yeti the cryo deck, the Alien the core; none of them roams there).
+ */
 export const BOSS_IDS = ['mushroom-king', 'cactoro', 'yeti', 'alien'] as const;
 export type BossId = typeof BOSS_IDS[number];
 export type BossAttack = 'slam' | 'leap' | 'volley' | 'ring' | 'charge' | 'lob' | 'summon' | 'blink' | 'beam';
@@ -136,7 +155,7 @@ export interface BossDef {
   height: number;
   radius: number;
   speed: number;
-  /** Stun bar per phase (a charged bolt deals 3, a quick one 1). */
+  /** Stun bar per phase (a charged shot deals 3, a quick one 1). */
   bar: number[];
   /** The attacks each phase draws from, in turn. */
   phases: BossAttack[][];
@@ -148,10 +167,10 @@ export interface BossDef {
 }
 
 export const BOSSES: Record<BossId, BossDef> = {
-  'mushroom-king': { height: 5.22, radius: 1.69, speed: 2.1, bar: [16, 20, 24], phases: [['slam', 'slam'], ['slam', 'summon', 'slam'], ['leap', 'summon', 'slam', 'leap']], gap: 2.6, minion: 'mushnub', color: 0x3aa8d8 },
-  cactoro: { height: 5.22, radius: 1.62, speed: 2.2, bar: [18, 22, 26], phases: [['volley', 'volley'], ['charge', 'volley'], ['ring', 'charge', 'volley']], gap: 2.5, minion: 'green-blob', color: 0x5ad66a },
-  yeti: { height: 4.93, radius: 1.69, speed: 2.4, bar: [20, 24, 28], phases: [['lob', 'slam'], ['charge', 'lob', 'lob'], ['ring', 'charge', 'lob', 'slam']], gap: 2.4, minion: 'yeti-blob', color: 0x8ad0ff },
-  alien: { height: 5.37, radius: 1.62, speed: 2.3, bar: [22, 26, 30], phases: [['beam', 'blink', 'volley'], ['summon', 'beam', 'blink', 'lob'], ['ring', 'blink', 'beam', 'charge', 'summon']], gap: 2.3, minion: 'glub', color: 0xc070ff },
+  'mushroom-king': { height: 6.4, radius: 2.0, speed: 2.1, bar: [16, 20, 24], phases: [['slam', 'slam'], ['slam', 'summon', 'slam'], ['leap', 'summon', 'slam', 'leap']], gap: 2.6, minion: 'frog', color: 0xd0a0ff },
+  cactoro: { height: 6.6, radius: 2.0, speed: 2.2, bar: [18, 22, 26], phases: [['volley', 'volley'], ['charge', 'volley'], ['ring', 'charge', 'volley']], gap: 2.5, minion: 'bunny', color: 0x5ad66a },
+  yeti: { height: 6.4, radius: 2.05, speed: 2.4, bar: [20, 24, 28], phases: [['lob', 'slam'], ['charge', 'lob', 'lob'], ['ring', 'charge', 'lob', 'slam']], gap: 2.4, minion: 'orc', color: 0x8ad0ff },
+  alien: { height: 6.6, radius: 2.0, speed: 2.3, bar: [22, 26, 30], phases: [['beam', 'blink', 'volley'], ['summon', 'beam', 'blink', 'lob'], ['ring', 'blink', 'beam', 'charge', 'summon']], gap: 2.3, minion: 'ninja', color: 0xc8ff6a },
 };
 /** Between phases the boss is dizzy this long (and cannot be towed); after the last it is dizzy for DIZZY_LAST. */
 export const BOSS_DAZE = 3.5;
@@ -185,8 +204,8 @@ export const UPGRADE: Record<UpgradeId, { prices: number[] }> = {
 };
 
 /**
- * What the ranks do. Blaster: I quicker shots, II the charged shot pierces, III a hit arcs to the
- * next monster. Beam: I longer reach, II tows two, III tows three and towed monsters stay dizzy.
+ * What the ranks do (for every mech's weapon). Blaster: I quicker shots, II charged shots daze one
+ * more, III a hit arcs to the next monster and charging takes half the time. Beam: I longer reach, II tows two, III tows three and towed monsters stay dizzy.
  * Stasis: longer dizzy spells. Hull: a heart each. Thrusters: I more energy, II quicker refill,
  * III a sprinting mech dazes the monsters it rams. Cells: I powers last longer, II every level
  * starts with a power.
@@ -204,27 +223,68 @@ export const RANK = {
 export const MECH_IDS = ['mike', 'leela', 'stan', 'george'] as const;
 export type MechId = typeof MECH_IDS[number];
 
+/**
+ * The four weapons. A tap fires the quick shot; STUN held for `charge` seconds fires the charged one,
+ * which always reaches a leaper in the air and counts 3 against a boss's bar (before its guard).
+ *   twin    Mike's twin blaster: the quickest bolts, one from each arm in turn; charged: a big bolt.
+ *   lance   Leela's charge beam: a plain bolt; charged: a beam that goes through every monster in line.
+ *   scatter Stan's spread shot: three short pellets in a fan; charged: a stun pulse all round him.
+ *   mortar  George's plasma lobber: a slow heavy ball that splashes; charged: a shell lobbed onto the
+ *           target that stuns everything where it lands.
+ */
+export type WeaponKind = 'twin' | 'lance' | 'scatter' | 'mortar';
+
 export interface MechDef {
-  /** Stars needed to unlock. */
-  stars: number;
   /** Height in metres (the model scaled to it). */
   height: number;
+  weapon: WeaponKind;
+  /** Walking and sprinting ×. */
   speed: number;
+  /** Extra hearts, extra tow slots. */
   hull: number;
-  /** Extra tow slots, sprint energy ×, charge time ×, bolt daze bonus. */
   tows: number;
+  /** Sprint energy × and refill ×. */
   energy: number;
+  refill: number;
+  /** Dizzy spells ×; the speed each towed monster costs (share). */
+  dizzy: number;
+  towSlow: number;
+  /** Seconds between quick shots; seconds to charge. */
+  gap: number;
   charge: number;
-  power: number;
-  /** The colour the hangar and the HUD use for it. */
+  /** Daze points of a quick hit and a charged one; the quick shot's speed (m/s) and reach (m). */
+  dmg: number;
+  big: number;
+  bolt: number;
+  reach: number;
+  /** The select screen's bars (1..5): speed, stun, reach, towing. */
+  bars: [number, number, number, number];
+  /** The colour the select screen and the HUD use for it. */
   color: number;
 }
 
 export const MECHS: Record<MechId, MechDef> = {
-  mike: { stars: 0, height: 3.4, speed: 1, hull: 0, tows: 0, energy: 1, charge: 1, power: 0, color: 0x4ab0e8 },
-  leela: { stars: 8, height: 3.3, speed: 1.17, hull: -1, tows: 0, energy: 1.35, charge: 1, power: 0, color: 0x9aa4b4 },
-  stan: { stars: 20, height: 3.5, speed: 0.97, hull: 0, tows: 0, energy: 1, charge: 0.6, power: 1, color: 0xe0483a },
-  george: { stars: 36, height: 3.8, speed: 0.92, hull: 2, tows: 1, energy: 0.9, charge: 1.1, power: 0, color: 0x5ab87a },
+  mike: { height: 3.4, weapon: 'twin', speed: 1, hull: 0, tows: 0, energy: 1.35, refill: 1.35, dizzy: 1, towSlow: 0.1, gap: 0.17, charge: 0.55, dmg: 1, big: 3, bolt: 26, reach: 12, bars: [3, 4, 4, 2], color: 0x4ab0e8 },
+  leela: { height: 3.3, weapon: 'lance', speed: 1.09, hull: 0, tows: 0, energy: 1, refill: 1, dizzy: 1, towSlow: 0.04, gap: 0.3, charge: 0.7, dmg: 1, big: 3, bolt: 28, reach: 16, bars: [5, 3, 5, 3], color: 0xe8e0f0 },
+  stan: { height: 3.5, weapon: 'scatter', speed: 1, hull: 0, tows: 0, energy: 1, refill: 1, dizzy: 1.3, towSlow: 0.1, gap: 0.4, charge: 0.6, dmg: 1, big: 2, bolt: 22, reach: 9, bars: [3, 5, 2, 3], color: 0xe0483a },
+  george: { height: 3.8, weapon: 'mortar', speed: 0.92, hull: 2, tows: 1, energy: 0.9, refill: 1, dizzy: 1, towSlow: 0.07, gap: 0.55, charge: 0.75, dmg: 2, big: 3, bolt: 15, reach: 12, bars: [2, 4, 3, 5], color: 0x5ab87a },
+};
+/** Stan's pulse and George's splashes (m). */
+export const PULSE_R = 5;
+export const SPLASH_R = 1.7;
+export const SHELL_R = 3.1;
+/** Leela's beam: its reach and half its width (m). */
+export const LANCE = { reach: 16, half: 0.55 };
+
+/** Paints for every mech, unlocked by stars (the select screen): the mech's coloured panels take the paint's hue. */
+export const PAINT_IDS = ['factory', 'cobalt', 'ember', 'mint', 'gold'] as const;
+export type PaintId = typeof PAINT_IDS[number];
+export const PAINTS: Record<PaintId, { stars: number; hue: number; swatch: number }> = {
+  factory: { stars: 0, hue: -1, swatch: 0xb8c0cc },
+  cobalt: { stars: 6, hue: 0.6, swatch: 0x3a7aff },
+  ember: { stars: 15, hue: 0.02, swatch: 0xff5a3a },
+  mint: { stars: 27, hue: 0.42, swatch: 0x3ae0a0 },
+  gold: { stars: 42, hue: 0.12, swatch: 0xffc21a },
 };
 
 // ------------------------------------------------------------------ sectors
