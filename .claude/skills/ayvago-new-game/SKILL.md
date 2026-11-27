@@ -859,6 +859,27 @@ tablets and portrait 720×1280 on phones**. The platform manifest says `orientat
   middle of a dense level rather than the follow camera at the map's edge. Reference:
   `games/relic-ruins` (3D, themed, map, camp and card in both orientations; its `CARD` stage).
 
+## 7k. Unity games (pointer)
+
+A game made in Unity is not built with this skill's runtime. It follows
+`docs/unity/AYVAGO_UNITY_SDK.md`: the contract, the `com.ayvago.sdk` package in
+`unity/com.ayvago.sdk`, the leaderboard rules (§6), the test hooks (§8) and the Definition of
+Done (§9). The Unity project gets its own how-to from the package (Ayvago → Set Up Claude Code
+Files writes `CLAUDE.md` and the `ayvago-unity-game` skill).
+
+In this repo a Unity game is:
+- `games/<slug>/game.json` with `"engine": "unity"`, plus `guide.json` (§7i). There is no
+  `main.ts` and no `index.html`. `npm run new-game -- <slug> "<Title>" --unity` scaffolds both.
+- Its WebGL build in `public/games/<slug>/` (`index.html`, `Build/`, `TemplateData/`), written by
+  Ayvago → Build WebGL… in Unity.
+
+Every studio script handles it:
+- `gen-registry` checks the build;
+- the smoke test, the platform harness and the store art drive it through its test hooks;
+- `test:changed` tests it when its folder or build changes.
+
+`npm run test:unity` tests the package and the pipeline without Unity, on a fixture.
+
 ## 8. Ship
 
 - Run `npm run registry` (validates `game.json`).

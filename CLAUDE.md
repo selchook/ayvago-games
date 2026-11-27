@@ -15,6 +15,8 @@ src/core/          shared runtime (@core): intro, launch, flow scenes, ArcadeSce
 src/core/three/    3D runtime (@core/three): World3D, GLB models via the Phaser loader (3D games only)
 src/core/three/city/  procedural city generator (opt-in, via @core/three): plan data, terrain, kit buildings, open-world data, chunk-streamed CityView with a day–night cycle; docs/city-generator.md
 games/<slug>/      one game each: index.html, game.json, guide.json (the game page's written guide), main.ts, *.ts
+                   a Unity game: only game.json ("engine": "unity") + guide.json; its WebGL build is public/games/<slug>/ (index.html, Build/, TemplateData/)
+unity/com.ayvago.sdk/  the Unity package every Unity game installs (Package Manager git URL …/ayvago-games.git?path=/unity/com.ayvago.sdk): AyvagoSDK bridge, AyvagoRun (leaderboard rules), brand intro, WebGL template, Editor menu (build into public/games/<slug>/), fonts, Claude Code files; contract docs/unity/AYVAGO_UNITY_SDK.md
 templates/game/    scaffold used by `npm run new-game`
 public/assets/     ayvago/ (boot intro PNGs, favicon, menu-logo.png: the menu's Ayvago Games logo) · kenney/<pack>/ (CC0 art + audio; car-kit, platformer-kit, nature-kit are GLB 3D kits) · quaternius/<pack>/ (CC0 GLB kits; downtown-megakit is the city generator's building kit) · thumbs/ (portal)
 platform/          arcade-catalog.ts (generated SeedGame entries) + arcade-guides.json (generated game guides); the platform pulls both from main
@@ -23,6 +25,8 @@ docs/              GAMES.md (catalogue + backlog), assets/INDEX.md + assets/<pac
 portal/ index.html game launcher page (reads src/generated/registry.json)
 scripts/           gen-registry, new-game, smoke-test (Playwright)
 tools/city-preview/  dev page to look at generated cities (npm run dev → /tools/city-preview/; not built)
+tools/unity-check/stubs/  UnityEngine / UI / InputSystem / UnityEditor stubs for `npm run check:unity` (mcs); never shipped
+tools/unity-fixture/  a fake Unity build (the real template and jslib, a canvas game in place of Unity) for `npm run test:unity`; staged in a temp folder only, never in public/, the registry or dist/
 tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio from OpenGameArt), import-megakit.mjs (the city's building kit), index-3d.mjs (3D kit lists), build-menu-logo.py (menu logo from the intro PNGs)
 .claude/           skills/ayvago-new-game (how to build a game), agents/ayvago-game-dev + ayvago-game-qa
 ```
@@ -42,6 +46,9 @@ tools/             import-kenney.py (Kenney mirror), import-oga.py (CC0 audio fr
 | `npm run platform` | regenerate ayvago.json manifests + `platform/arcade-catalog.ts` + `platform/arcade-guides.json` |
 | `npm run store-assets` | regenerate platform covers, icons, screenshots, catalog cards (EN + TR; adaptive games also portrait cards), logos + portal thumbnails (`-- --card-only <slug ...>` redoes just the cards, `-- --logo-only` just the logos) |
 | `npm run release` | build + smoke + platform checks + manifests + art |
+| `npm run check:unity` | the Unity package without Unity: `.meta` files (unique GUIDs), the SDK doc copy, the adapter bundle, the JS, C# compiled by `mcs` against `tools/unity-check/stubs` (`--fix-meta` writes missing `.meta` files) |
+| `npm run test:unity` | `check:unity` + smoke test + platform harness of the Unity fixture (`--unity-fixture` on smoke-test, platform-harness and gen-store-assets) |
+| `npm run build:unity-adapter` | rebuild the Unity template's `ayvago-adapter.js` from `src/core/ayvago/adapter.ts` (`-- --check` fails when stale; CI runs it) |
 
 ## Non-negotiables
 

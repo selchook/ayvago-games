@@ -36,6 +36,14 @@ jobs:
             echo "::error::platform/arcade-catalog.ts, platform/arcade-guides.json or public/games/*/ayvago.json is stale. Run 'node scripts/gen-platform.mjs --live' and commit the result."
             exit 1
           fi
+      # The Unity WebGL template carries the adapter as plain JS (scripts/build-unity-adapter.mjs).
+      - name: Unity template's adapter bundle is up to date
+        run: node scripts/build-unity-adapter.mjs --check
+      # The Unity package's .meta files, its copy of the SDK contract and its JS; the C# compile
+      # needs mcs (mono-mcs), which the runner image lacks, so that step is skipped here with a
+      # warning (npm run check:unity runs it locally).
+      - name: Unity package checks
+        run: node scripts/check-unity.mjs
       # selchook/ayvago is private: the file is read through the API with PLATFORM_READ_TOKEN, a
       # repository secret holding a read-only token for that repository (Contents: read). Without
       # the secret the check is skipped with a warning rather than failing every run.
