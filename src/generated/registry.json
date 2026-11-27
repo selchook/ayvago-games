@@ -1692,7 +1692,8 @@
       "orientation": "adaptive",
       "controls": [
         "touch",
-        "keyboard"
+        "keyboard",
+        "gamepad"
       ],
       "version": "1.0.0",
       "credits": [
@@ -1703,7 +1704,7 @@
       "platform": {
         "addedAt": "2026-11-27"
       },
-      "thumb": null
+      "thumb": "thumbs/monster-roundup.png"
     },
     {
       "id": "moon-rover",
