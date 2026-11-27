@@ -5275,6 +5275,112 @@
         }
       ]
     },
+    "monster-roundup": {
+      "about": {
+        "en": "Monster Roundup is a 3D action game about catching, not fighting. Cute monsters have broken out of a space station's containment lab, and you pilot a small mech through its rooms to bring them back: a stun bolt makes a monster dizzy, the tractor beam picks it up, and walking into a pod's glowing ring banks it.\n\nEach family has its trick: cats outrun a walking mech, chickens scare the others away, green blobs split in two, wizards blink away, spiky blobs hurt to touch and flyers shrug off quick shots up high. Monsters left loose eat snacks and evolve into tougher forms, so speed matters.\n\nTwenty levels in four sectors add laser gates, sweeping turrets, locked doors, conveyors, ice, vents and teleporters, and each sector ends with a giant boss.",
+        "tr": "Kaçak Canavarlar, dövüşmek yerine yakalamaya dayanan bir 3B aksiyon oyunu. Sevimli canavarlar bir uzay istasyonunun muhafaza laboratuvarından kaçmış; sen de küçük bir robotla odaları gezip onları geri getiriyorsun: şok atışı canavarı sersemletir, çekici ışın onu kaldırır, bir kapsülün parlayan halkasına girince de canavar yakalanır.\n\nHer ailenin bir numarası var: kediler yürüyen robottan hızlı kaçar, tavuklar ötekileri ürkütür, yeşil balçıklar ikiye bölünür, büyücüler ışınlanıp kaçar, dikenli balçıklar dokununca acıtır, uçanlar yüksekteyken hızlı atışa aldırmaz. Başıboş kalanlar atıştırmalık yiyip daha güçlü biçimlere evrimleşir; o yüzden hız önemli.\n\nDört sektördeki yirmi bölümde lazer kapıları, süpürge taretleri, kilitli kapılar, yürüyen bantlar, buz, havalandırmalar ve ışınlayıcılar var; her sektörün sonunda dev bir patron bekler."
+      },
+      "howToPlay": [
+        {
+          "en": "After PLAY, pick a level on the station map. Bank the quota to open the exit lift; banking every monster ends the level by itself.",
+          "tr": "BAŞLA'dan sonra istasyon haritasında bir bölüm seç. Kotayı toplayınca çıkış asansörü açılır; her canavarı toplarsan bölüm kendiliğinden biter."
+        },
+        {
+          "en": "Shoot a monster with stun bolts until it falls over dizzy (most take two or three hits). Hold the stun button to charge a stronger bolt that also hits flyers up high.",
+          "tr": "Bir canavarı sersemleyip devrilene kadar şok atışıyla vur (çoğu iki ya da üç isabet ister). Şok tuşunu basılı tutarsan yüksekte uçanlara da işleyen daha güçlü bir atış dolar."
+        },
+        {
+          "en": "Next to a dizzy monster, press TOW and it floats behind you on the tractor beam. Walk into a pod's glowing ring to bank it before it wakes up.",
+          "tr": "Sersem bir canavarın yanında ÇEK tuşuna bas; çekici ışınla arkanda süzülür. Uyanmadan önce onu yakalamak için bir kapsülün parlayan halkasına gir."
+        },
+        {
+          "en": "Captures within six seconds of each other build a combo up to ×4. Stars come for banking every monster, taking no damage and beating the par time.",
+          "tr": "Altı saniye içinde art arda yapılan yakalamalar ×4'e kadar seri yapar. Yıldızlar her canavarı yakalamaktan, hiç hasar almamaktan ve hedef süreyi geçmekten gelir."
+        },
+        {
+          "en": "Bosses have three phases: empty the stun bar three times, then tow the dizzy boss into its field. Between levels the hangar sells upgrades for credits, and stars unlock three more mechs.",
+          "tr": "Patronların üç evresi var: şok çubuğunu üç kez boşalt, sonra sersem patronu alanına çek. Bölümler arasında hangar kredilerle geliştirme satar, yıldızlar da üç robot daha açar."
+        }
+      ],
+      "controls": {
+        "keyboard": {
+          "en": "WASD or arrows walk, Shift sprints. Space stuns (hold to charge), E tows or drops, Q uses the power, Esc pauses. On the map Enter starts and C opens the hangar.",
+          "tr": "WASD ya da oklar yürütür, Shift koşturur. Boşluk şok atar (basılı tut: dolar), E çeker ya da bırakır, Q gücü kullanır, Esc duraklatır. Haritada Enter başlatır, C hangarı açar."
+        },
+        "touch": {
+          "en": "The floating stick on the left half walks. On the right: STUN (hold to charge), TOW / DROP, POWER and DASH, which sprints while held.",
+          "tr": "Sol yarıdaki yüzen çubuk yürütür. Sağda: ŞOK (basılı tut: dolar), ÇEK / BIRAK, GÜÇ ve basılı tutulunca koşturan KOŞ."
+        },
+        "gamepad": {
+          "en": "Stick or D-pad walks; A stuns (hold to charge), B tows and drops, LB uses the power, LT sprints, Start pauses. On screens A presses and B goes back.",
+          "tr": "Çubuk ya da yön tuşları yürütür; A şok atar (basılı tut: dolar), B çeker ve bırakır, LB gücü kullanır, LT koşturur, Start duraklatır. Ekranlarda A basar, B geri döner."
+        }
+      },
+      "tips": [
+        {
+          "en": "Grab the snacks yourself: every snack a monster eats pushes it closer to evolving, and an evolved monster has twice the stun points and bites.",
+          "tr": "Atıştırmalıkları sen topla: canavarın yediği her atıştırmalık onu evrime yaklaştırır, evrimleşmiş canavarın şok puanı iki katıdır ve ısırır."
+        },
+        {
+          "en": "A red ring under a monster means a bite is coming, and red shapes on the floor show where a boss attack will land. Step out of them, then punish: a boss that winds up or runs into a wall takes full damage.",
+          "tr": "Canavarın altındaki kırmızı halka ısırık geliyor demektir; yerdeki kırmızı şekiller de patron saldırısının nereye ineceğini gösterir. Önce çekil, sonra karşılık ver: hazırlanan ya da duvara çarpan patron tam hasar alır."
+        },
+        {
+          "en": "Stun the chickens first, before their squawk scatters the room, and take wizards down with one charged bolt so they cannot blink away.",
+          "tr": "Odadakileri dağıtmadan önce tavukları sersemlet; büyücüleri de ışınlanıp kaçamasınlar diye tek bir dolu atışla düşür."
+        }
+      ],
+      "features": [
+        {
+          "en": "Twenty levels in four sectors, each with its own colours, and four bosses with three phases and telegraphed attacks.",
+          "tr": "Her biri kendi renklerinde dört sektörde yirmi bölüm, üç evreli ve saldırısını önceden gösteren dört patron."
+        },
+        {
+          "en": "Twelve monsters in eight families with their own tricks; the mushnub and the four flyers evolve into new forms, the rest grow bigger.",
+          "tr": "Kendi numaralarını yapan sekiz ailede on iki canavar; mantarcık ve dört uçan canavar yeni biçimlere evrimleşir, ötekiler büyür."
+        },
+        {
+          "en": "Five powers: Freeze Field, Shield, Triple Shot, Magnet and Decoy Snack.",
+          "tr": "Beş güç: Dondurma Alanı, Kalkan, Üçlü Atış, Mıknatıs ve Yem Tuzağı."
+        },
+        {
+          "en": "A hangar with six ranked upgrades that change how you play, and four mechs: Mike, Leela, Stan and George.",
+          "tr": "Oyunu değiştiren altı kademeli geliştirmenin olduğu bir hangar ve dört robot: Mike, Leela, Stan ve George."
+        }
+      ],
+      "faq": [
+        {
+          "q": {
+            "en": "Do I hurt the monsters?",
+            "tr": "Canavarlara zarar veriyor muyum?"
+          },
+          "a": {
+            "en": "No. Stun bolts only make them dizzy, and every monster you bank is sent back to the lab's containment pods.",
+            "tr": "Hayır. Şok atışı onları yalnızca sersemletir; yakaladığın her canavar laboratuvarın kapsüllerine geri gönderilir."
+          }
+        },
+        {
+          "q": {
+            "en": "Is there an easy mode?",
+            "tr": "Kolay mod var mı?"
+          },
+          "a": {
+            "en": "Yes, pick Easy on the menu: seven hearts, longer dizzy spells, slower monsters, gentler bosses. Easy runs stay off the leaderboard.",
+            "tr": "Evet, menüden Kolay'ı seç: yedi kalp, daha uzun sersemlik, daha yavaş canavarlar, daha yumuşak patronlar. Kolay turlar sıralamaya girmez."
+          }
+        },
+        {
+          "q": {
+            "en": "How do I unlock the other mechs?",
+            "tr": "Öteki robotları nasıl açarım?"
+          },
+          "a": {
+            "en": "With stars: Leela needs 8, Stan 20 and George 36. Choose your pilot in the hangar's MECHS tab.",
+            "tr": "Yıldızlarla: Leela için 8, Stan için 20, George için 36 yıldız gerekir. Pilotunu hangarın ROBOTLAR sekmesinden seç."
+          }
+        }
+      ]
+    },
     "moon-rover": {
       "about": {
         "en": "Moon Rover is a 3D driving expedition across the Moon in low gravity. You drive the base's six-wheeled rover over hand-built terrain of craters, ramps, ridges and chasms: collect crystal samples, pick up stranded astronauts, drop supply crates at outposts and get back to the base before the battery runs dry.\n\nThe Moon pulls gently, so a ramp or a crater lip becomes a long, floating jump. In the air you keep the nose level and try to land clean: a perfect landing scores a bonus, a crooked one flips the rover. Meteor showers, turret bolts, monorail trains, ice, dust, force-field gates and solar storms get in the way.\n\nTwenty missions span four regions: Landing Plains, Crystal Canyons, Polar Ice Craters and the Dark Side. Each region ends with a set-piece: a rogue mining craft to shut down or a meteor storm to outrun to a launching rocket.",

@@ -571,6 +571,22 @@ const CARD = {
       await sleep(400);
     }`,
   },
+  // Monster Roundup's cards (adaptive: the landscape card from the landscape run, the portrait card
+  // and the phone on the cover from the portrait run) show the roundup up close in the green
+  // gardens of Fly Swatter (2-2): the mech with a dizzy mushnub on its tractor beam walking to a
+  // pod's glowing ring, a charged bolt flying at a glub (the lock marker under it), a chicken dizzy
+  // with stars, under a staged camera behind the mech (higher on the phone, the touch pad hidden).
+  // The game runs at a crawl so every candidate frame keeps the moment.
+  'monster-roundup': {
+    pick: 0,
+    stage: `async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      for (let i = 0; i < 100 && !window.__mr; i++) await sleep(100);
+      await sleep(600);
+      window.__mr.card();
+      await sleep(900);
+    }`,
+  },
   // Moon Rover's cards (adaptive: the landscape card from the landscape run, the portrait card and
   // the phone on the cover from the portrait run) show the low-gravity jump up close: the Crater
   // Hop (1-2) frozen as the rover sails over the big crater's rim with an astronaut riding on its
