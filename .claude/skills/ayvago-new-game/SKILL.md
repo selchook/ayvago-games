@@ -749,6 +749,7 @@ keyHelp: [
 - **Menu how-to:** a themed menu's HOW TO PLAY box shows the keys instead of the how-to text on desktops: the same caps, labels in the card's body colour. Touch devices keep the text.
 - **First-time keys:** the game calls `showKeyHelp(scene)` when its first round starts.
   - The same keys appear along the bottom of the play screen, without a band.
+  - Options: `bottom` lifts them above bottom UI, `maxW` and `x` keep them clear of buttons the game keeps on desktop (`showKeyHelp(this, { bottom: 140 })`).
   - Nothing waits on them: the round goes on underneath.
   - They fade after 10 s of play and hide while paused.
   - They show once per browser.
