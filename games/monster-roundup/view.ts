@@ -120,6 +120,8 @@ export class View {
   /** The hangar and the select bay: the level's monsters are not drawn. */
   private hideMons = false;
   private paintHue = -1;
+  /** The next follow frame jumps to its target (after a snap). */
+  private snapNext = false;
   private beams: THREE.Mesh[] = [];
   private shield: THREE.Mesh;
   private magnet: THREE.Mesh;
@@ -1088,7 +1090,9 @@ export class View {
       // keep the view over the station
       const halfW = this.land ? 11 : 4.5;
       tx = Math.max(Math.min(halfW, W / 2), Math.min(W - Math.min(halfW, W / 2), tx));
-      tz = Math.max(Math.min(this.land ? 6 : 7, H / 2), Math.min(H - (this.land ? 3 : 5), tz));
+      // the low camera sees ~7.5 m (landscape) or ~10 m (portrait, under the pad) south of where it looks:
+      // it stops before the screen's bottom edge passes the map's south wall
+      tz = Math.max(Math.min(this.land ? 6 : 7, H / 2), Math.min(H - (this.land ? 9.5 : 10), tz));
     } else if (mode === 'preview') {
       this.preT += dt;
       tx = W / 2 + Math.sin(this.preT * 0.15) * W * 0.18;
@@ -1124,7 +1128,8 @@ export class View {
       d = (Math.max(W, H) * 1.1) * (1 - e) + dist * e;
       p = 1.15 * (1 - e) + pitch * e;
     }
-    const k = mode === 'follow' ? 1 - Math.exp(-6 * dt) : 1;
+    const k = mode === 'follow' && !this.snapNext ? 1 - Math.exp(-6 * dt) : 1;
+    this.snapNext = false;
     this.cam.x += (tx - this.cam.x) * k;
     this.cam.z += (tz - this.cam.z) * k;
     const lookY = mode === 'hangar' ? (this.land ? 1.6 : 1.2) : 0.8;
@@ -1144,6 +1149,7 @@ export class View {
   /** Snaps the camera to the mech (a new level, a restart). */
   snap(s: Sim): void {
     this.cam.x = s.mech.x; this.cam.z = s.mech.z;
+    this.snapNext = true;
     this.sync(s, 0, { camera: 'follow' });
   }
 
