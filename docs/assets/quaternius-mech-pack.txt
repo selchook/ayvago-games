@@ -1,0 +1,8 @@
+# Quaternius Animated Mech Pack (March 2021, CC0 1.0): what public/assets/quaternius/mech-pack holds
+# (games/monster-roundup/import-kit.mjs). Each line: file, size, box in model units (x × y × z), triangles, clips
+# with their length in seconds. Mechs face +z.
+quaternius/mech-pack/george.glb 459KB 7.23x6.53x2.46 (min y -0.02) 4330 tris clips: Dance:0.80 Death:1.43 Hello:1.50 HitRecieve_1:0.47 Idle:3.33 Jump:0.87 Pickup:1.40 Run:0.83 Shoot:0.50 Walk:0.83 Yes:1.40
+quaternius/mech-pack/leela.glb 234KB 2.96x5.28x2.67 (min y -0.02) 1984 tris clips: Dance:1.00 Death:1.79 Hello:1.88 HitRecieve_1:0.58 Idle:4.17 Jump:1.08 Pickup:1.75 Run:1.04 Shoot:0.63 Walk:1.04 Yes:1.75
+quaternius/mech-pack/mike.glb 382KB 8.53x5.33x1.66 (min y 0.01) 3296 tris clips: Dance:1.00 Death:1.79 Hello:1.88 HitRecieve_1:0.58 Idle:4.17 Jump:1.08 Pickup:1.75 Run:1.04 Shoot:0.63 Walk:1.04 Yes:1.75
+quaternius/mech-pack/stan.glb 392KB 8.55x6.46x1.57 (min y 0.02) 3210 tris clips: Dance:1.00 Death:1.79 Hello:1.88 HitRecieve_1:0.58 Idle:4.17 Jump:1.08 Pickup:1.75 Run:1.04 Shoot:0.63 Walk:1.04 Yes:1.75
+quaternius/mech-pack/license.txt (the pack's License.txt: CC0 1.0)

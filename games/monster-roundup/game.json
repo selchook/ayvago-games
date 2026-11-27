@@ -1,0 +1,12 @@
+{
+  "id": "monster-roundup",
+  "title": { "tr": "Monster Roundup", "en": "Monster Roundup" },
+  "description": { "tr": "Kısa açıklama.", "en": "Short description." },
+  "howTo": { "tr": "Nasıl oynanır.", "en": "How to play." },
+  "genres": ["arcade"],
+  "orientation": "adaptive",
+  "controls": ["touch", "keyboard"],
+  "version": "0.1.0",
+  "credits": ["Art & audio: Kenney (CC0) — kenney.nl"],
+  "platform": { "addedAt": "2026-11-27" }
+}

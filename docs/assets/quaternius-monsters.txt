@@ -1,0 +1,25 @@
+# Quaternius Ultimate Monsters (Oct 2022, CC0 1.0): what public/assets/quaternius/monsters holds
+# (games/monster-roundup/import-kit.mjs). Each line: file, size, box in model units (x × y × z), triangles, clips
+# with their length in seconds. Monsters face +z; the flyers hover above y = 0 in their own space.
+quaternius/monsters/alien.glb 315KB 4.65x3.55x1.48 (min y -0.00) 3070 tris clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.87 Run:0.57 Walk:1.00 Wave:1.67 Weapon:0.87 Yes:1.67
+quaternius/monsters/armabee-evolved.glb 92KB 4.30x2.14x2.05 (min y 0.82) 1600 tris clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.17 Headbutt:1.17 HitReact:0.47 Yes:1.17
+quaternius/monsters/armabee.glb 83KB 4.30x1.89x2.06 (min y 1.19) 1368 tris clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.17 Headbutt:1.17 HitReact:0.47 Yes:1.17
+quaternius/monsters/cactoro.glb 317KB 4.65x3.96x2.14 (min y -0.00) 2878 tris clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.87 Run:0.57 Walk:1.00 Wave:1.67 Weapon:0.87 Yes:1.67
+quaternius/monsters/cat.glb 59KB 2.10x1.94x1.72 (min y -0.02) 1416 tris clips: Bite_Front:0.40 Dance:0.67 Death:0.37 HitRecieve:0.30 Idle:2.00 Jump:0.43 Walk:0.43 Yes:0.97
+quaternius/monsters/chicken.glb 66KB 2.35x2.35x2.10 (min y -0.01) 1992 tris clips: Bite_Front:0.40 Dance:0.67 Death:0.37 HitRecieve:0.30 Idle:2.00 Jump:0.43 Walk:0.43 Yes:0.97
+quaternius/monsters/dog.glb 50KB 2.14x1.83x1.72 (min y -0.02) 1252 tris clips: Bite_Front:0.40 Dance:0.67 Death:0.37 HitRecieve:0.30 Idle:2.00 Jump:0.43 Walk:0.43 Yes:0.97
+quaternius/monsters/dragon-evolved.glb 229KB 5.48x2.86x2.41 (min y 0.30) 2602 tris clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.50 Headbutt:1.50 HitReact:0.67 Yes:1.17
+quaternius/monsters/dragon.glb 107KB 4.38x1.54x2.43 (min y 1.60) 2280 tris clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.17 Headbutt:1.17 HitReact:0.47 Yes:1.17
+quaternius/monsters/glub-evolved.glb 101KB 4.30x3.70x2.01 (min y 0.53) 2226 tris clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.17 Headbutt:1.17 HitReact:0.47 Yes:1.17
+quaternius/monsters/glub.glb 85KB 4.30x2.35x2.17 (min y 1.38) 1516 tris clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.17 Headbutt:1.17 HitReact:0.47 Yes:1.17
+quaternius/monsters/goleling-evolved.glb 112KB 4.38x2.57x2.19 (min y 1.24) 2344 tris clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.17 Headbutt:1.17 HitReact:0.47 Yes:1.17
+quaternius/monsters/goleling.glb 98KB 4.38x1.55x1.94 (min y 1.49) 1848 tris clips: Death:0.67 Fast_Flying:0.83 Flying_Idle:1.17 Headbutt:1.17 HitReact:0.47 Yes:1.17
+quaternius/monsters/green-blob.glb 49KB 2.25x1.85x2.19 (min y -0.01) 1248 tris clips: Bite_Front:0.40 Dance:0.67 Death:0.37 HitRecieve:0.30 Idle:2.00 Jump:0.43 Walk:0.43 Yes:0.97
+quaternius/monsters/mushnub-evolved.glb 80KB 3.40x4.41x3.52 (min y -0.06) 2276 tris clips: Bite_Front:0.40 Dance:0.67 Death:0.37 HitRecieve:0.30 Idle:2.00 Jump:0.43 Walk:0.43 Yes:0.97
+quaternius/monsters/mushnub.glb 43KB 2.75x3.30x2.75 (min y -0.05) 1010 tris clips: Bite_Front:0.40 Dance:0.67 Death:0.37 HitRecieve:0.30 Idle:2.00 Jump:0.43 Walk:0.43 Yes:0.97
+quaternius/monsters/mushroom-king.glb 309KB 4.65x3.61x2.06 (min y -0.01) 2830 tris clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.87 Run:0.57 Walk:1.00 Wave:1.67 Weapon:0.87 Yes:1.67
+quaternius/monsters/spiky-blob.glb 76KB 3.50x4.14x4.16 (min y -0.05) 2362 tris clips: Bite_Front:0.40 Dance:0.67 Death:0.37 HitRecieve:0.30 Idle:2.00 Jump:0.43 Walk:0.43 Yes:0.97
+quaternius/monsters/wizard.glb 56KB 2.33x2.60x2.31 (min y -0.00) 1386 tris clips: Bite_Front:0.40 Dance:0.67 Death:0.37 HitRecieve:0.30 Idle:2.00 Jump:0.43 Walk:0.43 Yes:0.97
+quaternius/monsters/yeti-blob.glb 63KB 2.55x2.44x2.59 (min y -0.02) 1674 tris clips: Bite_Front:0.40 Dance:0.67 Death:0.37 HitRecieve:0.30 Idle:2.00 Jump:0.43 Walk:0.43 Yes:0.97
+quaternius/monsters/yeti.glb 309KB 4.65x2.83x1.47 (min y -0.01) 2742 tris clips: Death:0.77 Duck:1.67 HitReact:0.60 Idle:1.00 Jump:0.37 Punch:0.87 Run:0.57 Walk:1.00 Wave:1.67 Weapon:0.87 Yes:1.67
+quaternius/monsters/license.txt (the pack's License.txt: CC0 1.0)
