@@ -397,7 +397,10 @@ export class Sim {
   private move(dt: number): void {
     const v = this.rover;
     if (!v.air) this.unstick(dt);
-    const ref = v.air ? v.y + 0.35 : this.wallH(v.x, v.z) + ROVER.stepMax;
+    // in the air the rover clears what it would climb on the ground (a step's height above its
+    // wheels): a lower margin made the rest of a kicker's slope, still under its nose at takeoff,
+    // a wall that threw it back down the ramp
+    const ref = (v.air ? v.y : this.wallH(v.x, v.z)) + ROVER.stepMax;
     const px = v.x, pz = v.z;
     let hit = 0;
     const nx = v.x + v.vx * dt;

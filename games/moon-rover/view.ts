@@ -40,6 +40,7 @@ const CHUNK = 8;
 export const CAM = { dist: 8.6, height: 4.2, ahead: 6, fov: 56 };
 const CAM_LAND = { k: 0.86 };
 
+const tmFig = new THREE.Matrix4(), tmLimb = new THREE.Matrix4();
 const PARTS = ['body', 'head', 'armLeft', 'armRight', 'legLeft', 'legRight'] as const;
 type Part = typeof PARTS[number];
 
@@ -88,11 +89,14 @@ class Figures {
   end(): void { for (const p of this.parts) p.end(); }
   /** One figure at `base` with each limb turned (x swing, z raise). */
   put(base: THREE.Matrix4, pose: Partial<Record<Part, [number, number]>>): void {
+    // callers often build `base` in the shared scratch matrices: copy it before laying limbs on it
+    // (laying them on `base` itself stacked each limb's offset and scale on the next one's)
+    const root = tmFig.copy(base);
     PARTS.forEach((p, i) => {
       const r = pose[p];
-      tm2.copy(base).multiply(this.rest[i]);
-      if (r) tm2.multiply(tm.makeRotationFromEuler(te.set(r[0], 0, r[1], 'ZXY')));
-      this.parts[i].putM(tm2);
+      tmLimb.copy(root).multiply(this.rest[i]);
+      if (r) tmLimb.multiply(tm.makeRotationFromEuler(te.set(r[0], 0, r[1], 'ZXY')));
+      this.parts[i].putM(tmLimb);
     });
   }
 }
@@ -167,7 +171,7 @@ export class View {
 
   constructor(host: Phaser.Scene, o: { quality?: number } = {}) {
     this.land = host.scale.width > host.scale.height;
-    this.world = new World3D(host, { fov: CAM.fov, background: 0x05070e, fog: { color: 0x05070e, near: 70, far: 150 }, shadows: false, quality: o.quality ?? 0.9, far: 900 });
+    this.world = new World3D(host, { fov: CAM.fov, background: 0x05070e, fog: { color: 0x05070e, near: 70, far: 150 }, shadows: false, quality: o.quality ?? 0.9, near: 0.4, far: 900 });
     const w = this.world;
     this.mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     this.matGlow = new THREE.MeshBasicMaterial({ vertexColors: true });
@@ -359,16 +363,18 @@ export class View {
       chunk(x, z).add(geo(name, { recolor: re, tag: re ? 'T' + L.region : '', ...o }), place(x, y, z, rot, s), tint);
     // the base pad and its hangar
     const B = L.base;
-    P('platform_large', B.x, B.y, B.z, 0, [TILE, 1.6, TILE]);
+    P('platform_large', B.x, B.y, B.z, 0, [TILE * 0.97, 1.6, TILE * 0.97]);
     for (const o of L.obstacles) {
       const y = o.y;
       switch (o.kind) {
         case 'hangar': {
           const big = Math.max(o.w ?? 2, o.d ?? 2) >= 3;
-          P(big ? 'hangar_largea' : 'hangar_smalla', o.x, y, o.z, o.rot, TILE);
+          // a touch smaller than its tiles: walls that sat on the tile edges shared their plane with
+          // the cliff faces beside them and flickered (z-fighting)
+          P(big ? 'hangar_largea' : 'hangar_smalla', o.x, y, o.z, o.rot, TILE * 0.95);
           break;
         }
-        case 'dome': P('hangar_roundglass', o.x, y, o.z, o.rot, ((o.w ?? 2) * TILE) / 3.4); break;
+        case 'dome': P('hangar_roundglass', o.x, y, o.z, o.rot, ((o.w ?? 2) * TILE * 0.95) / 3.4); break;
         case 'boulder': P(hash(o.seed, 1) < 0.5 ? 'rock_largea' : 'rock_largeb', o.x, y, o.z, o.rot + hash(o.seed, 2), 4.4, terrainRe); break;
         case 'crystalRock': P(hash(o.seed, 1) < 0.5 ? 'rock_crystalslargea' : 'rock_crystalslargeb', o.x, y, o.z, o.rot, 4.4, terrainRe); break;
         case 'tower': P('supports_high', o.x, y, o.z, o.rot, [4.2, 4.6, 4.2]); P('satellitedish', o.x, y + 4.6, o.z, o.rot, 3.2); break;
@@ -383,8 +389,8 @@ export class View {
     }
     for (const d of L.decor) if (d.kind === 'rocks') P(hash(d.seed, 3) < 0.5 ? 'rocks_smalla' : 'rocks_smallb', d.x, d.y, d.z, hash(d.seed, 4) * 6.28, 5, terrainRe);
     // outposts: a pad and an antenna; chargers: a pad; checkpoints: the kit's ring
-    for (const u of L.outposts) { P('platform_small', u.x, u.y, u.z, 0, [TILE, 1.6, TILE]); P('machine_wireless', u.x + 1.3, u.y + 0.15, u.z - 1.3, Math.PI / 4, 1.8); }
-    for (const e of L.chargers) P('platform_small', e.x, e.y, e.z, 0, [TILE, 1.6, TILE], { metalRed: 0x4ae08a });
+    for (const u of L.outposts) { P('platform_small', u.x, u.y, u.z, 0, [TILE * 0.97, 1.6, TILE * 0.97]); P('machine_wireless', u.x + 1.3, u.y + 0.15, u.z - 1.3, Math.PI / 4, 1.8); }
+    for (const e of L.chargers) P('platform_small', e.x, e.y, e.z, 0, [TILE * 0.97, 1.6, TILE * 0.97], { metalRed: 0x4ae08a });
     for (const g of L.checkpoints) P('gate_simple', g.x, g.y, g.z, g.axis === 'x' ? 0 : Math.PI / 2, 4);
     for (const g of L.gates) P('gate_complex', g.x, g.y, g.z, g.axis === 'x' ? 0 : Math.PI / 2, 4);
     // turret bases (the heads are instanced and turn)
@@ -586,7 +592,7 @@ export class View {
     this.chassis.rotation.x = -this.bounceV * 0.004;
     this.rover.updateMatrixWorld(true);
     // wheels: spin with the ground speed, drop when airborne
-    this.wheelSpin += (v.air ? v.speed * 0.6 : v.speed) * dt / (0.043 * ROVER_S);
+    this.wheelSpin = (this.wheelSpin + (v.air ? v.speed * 0.6 : v.speed) * dt / (0.043 * ROVER_S)) % (Math.PI * 2);
     const W = this.wheels;
     W.begin();
     if (this.rover.visible) {
@@ -594,10 +600,11 @@ export class View {
         const drop = v.air ? -0.04 : -this.bounce * 0.2;
         tm2.makeTranslation(wa.x, wa.y + drop, wa.z);
         tm2.premultiply(this.rover.matrixWorld);
-        // the right-hand wheels are the left one turned round (the kit's wheels are blocky, so
-        // they stay still on their springs rather than tumble)
+        // the right-hand wheels are the left one turned round, so they roll the other way about
+        // their own axle
         if (wa.side < 0) tm2.multiply(tm.makeRotationY(Math.PI));
         if (wa.s !== 1) tm2.multiply(tm.makeScale(1, wa.s, wa.s));
+        tm2.multiply(tm.makeRotationX(wa.side < 0 ? -this.wheelSpin : this.wheelSpin));
         W.putM(tm2);
       }
     }
@@ -734,9 +741,22 @@ export class View {
     if (beam) {
       beam.begin();
       if (mode === 'hangar') { beam.end(); } else {
-      const pillar = (x: number, y: number, z: number, col: number, h = 16, w = 1) => { const i = beam.put(x, y, z, 0, 0, 0, ts.set(w, h, w)); beam.color(i, col); };
+      // a beam the camera stands in would tint the whole screen: it fades out round the camera
+      const cp = this.world.camera.position;
+      const pillar = (x: number, y: number, z: number, col: number, h = 16, w = 1) => {
+        const k = Math.min(1, Math.max(0, (Math.hypot(x - cp.x, z - cp.z) - w - 0.6) / 3));
+        if (k <= 0.02) return;
+        const i = beam.put(x, y, z, 0, 0, 0, ts.set(w, h, w));
+        beam.color(i, mulc(col, k));
+      };
       const pulse = 0.85 + Math.sin(tnow * 3) * 0.15;
-      sim.astronauts.forEach((a) => { if (a.state === 'wait' || a.state === 'wave') pillar(a.x, a.y, a.z, mulc(0xff9a3a, pulse), 18, 0.9); });
+      // an astronaut's beam rises from above the helmet and fades as the rover comes close, so it
+      // never hides the figure it marks
+      sim.astronauts.forEach((a) => {
+        if (a.state !== 'wait' && a.state !== 'wave') return;
+        const near = Math.min(1, Math.max(0.25, (Math.hypot(a.x - v.x, a.z - v.z) - 4) / 14));
+        pillar(a.x, a.y + 2.4, a.z, mulc(0xff9a3a, pulse * near), 16, 0.9);
+      });
       L.outposts.forEach((u, i) => { if (!sim.delivered[i]) pillar(u.x, u.y, u.z, mulc(0x3ad8ff, pulse), 22, 1.2); });
       sim.generators.forEach((g) => { if (!g.off) pillar(g.x, g.y, g.z, mulc(0xff3a3a, pulse), 20, 1.1); });
       if (sim.ready && L.setpiece !== 'escape') pillar(L.base.x, L.base.y, L.base.z, mulc(0x5aff7a, pulse), 26, 2.2);
@@ -957,7 +977,16 @@ export class View {
       return;
     }
     const lookX = c.x + fx * CAM.ahead, lookZ = c.z + fz * CAM.ahead;
-    let px = c.x - fx * dist, pz = c.z - fz * dist, py = c.y + height;
+    // props between the rover and the camera: a tall one (a tower, the rocket) brings the camera
+    // in before it, a low one (a hangar, a boulder, the miner) lifts it over the top
+    let over = -Infinity;
+    for (let s = 0.25; s <= 1.001; s += 0.125) {
+      const hit = this.propAt(sim, c.x - fx * dist * s, c.z - fz * dist * s);
+      if (hit === null) continue;
+      if (hit > c.y + 8) { dist = Math.max(CAM.dist * 0.4, dist * (s - 0.2)); break; }
+      over = Math.max(over, hit + 1.4);
+    }
+    let px = c.x - fx * dist, pz = c.z - fz * dist, py = Math.max(c.y + height, over);
     // never lose the rover: rise over any ground between
     for (const s of [0.35, 0.7, 1]) {
       const gx = c.x - fx * dist * s, gz = c.z - fz * dist * s;
@@ -972,6 +1001,21 @@ export class View {
     // the look point keeps the rover itself in frame, high in a jump as well
     c.look.set(lookX, Math.max(c.y + 0.8, ry - 0.6), lookZ);
     cam.lookAt(c.look);
+  }
+
+  /** The top of the solid prop at (x, z), with a little room round it, or null. */
+  private propAt(sim: Sim, x: number, z: number): number | null {
+    let top: number | null = null;
+    for (const o of sim.c.obstacles) {
+      if (o.kind === 'lamp' || Math.abs(o.x - x) > 9 || Math.abs(o.z - z) > 9) continue;
+      const inside = o.box
+        ? Math.abs(x - o.x) < o.box[0] + 0.8 && Math.abs(z - o.z) < o.box[1] + 0.8
+        : Math.hypot(x - o.x, z - o.z) < o.r + 0.8;
+      if (inside) top = Math.max(top ?? -Infinity, o.y + o.top);
+    }
+    const m = sim.miner;
+    if (m && Math.hypot(x - m.x, z - m.z) < 3.6) top = Math.max(top ?? -Infinity, m.y + 3.4);
+    return top;
   }
 
   shake(k: number): void { this.cam.shake = Math.min(1.5, this.cam.shake + k); }
