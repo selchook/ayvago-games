@@ -47,6 +47,9 @@ export const STRINGS: Strings = {
     c_red: 'Kırmızı', c_blue: 'Mavi', c_green: 'Yeşil', c_yellow: 'Sarı', c_purple: 'Mor', c_pink: 'Pembe',
     c2_red: 'kırmızı', c2_blue: 'mavi', c2_green: 'yeşil', c2_yellow: 'sarı', c2_purple: 'mor', c2_pink: 'pembe',
     keysHint: '1–9 makas · Oklar + Boşluk · Z kakao · X küre',
+    // the keyboard key help (main.ts keyHelp)
+    kh_flipN: 'O numaralı makası çevir', kh_pick: 'Makas seç', kh_flip: 'Seçili makası çevir',
+    kh_cocoa: 'Sıcak Kakao', kh_globe: 'Kar Küresi',
   },
   en: {
     journey: 'JOURNEY', rush: 'HOLIDAY RUSH', map: 'MAP', mapTitle: 'JOURNEY MAP',
@@ -89,5 +92,8 @@ export const STRINGS: Strings = {
     c_red: 'Red', c_blue: 'Blue', c_green: 'Green', c_yellow: 'Yellow', c_purple: 'Purple', c_pink: 'Pink',
     c2_red: 'red', c2_blue: 'blue', c2_green: 'green', c2_yellow: 'yellow', c2_purple: 'purple', c2_pink: 'pink',
     keysHint: '1–9 switches · Arrows + Space · Z cocoa · X globe',
+    // the keyboard key help (main.ts keyHelp)
+    kh_flipN: 'Flip that switch', kh_pick: 'Pick a switch', kh_flip: 'Flip the picked switch',
+    kh_cocoa: 'Hot Cocoa', kh_globe: 'Snow Globe',
   },
 };

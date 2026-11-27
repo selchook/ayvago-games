@@ -101,6 +101,15 @@ launch({
   },
   // lane-wood buttons in neon, a scorecard and a ball smashing the pins (theme.ts)
   menuTheme: ALLEY_THEME,
+  // the keyboard controls (desktop): the pause strip, the menu's how-to and the first-time keys
+  keyHelp: [
+    { keys: ['Left Right'], label: 'kh_board' },
+    { keys: ['Up Down'], label: 'kh_stage' },
+    { keys: ['Space', 'Enter'], label: 'kh_bowl' },
+    { keys: ['Z X'], label: 'kh_spin' },
+    { keys: ['V'], label: 'kh_view' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   scenes: [PlayScene],
   strings: STRINGS,
 });

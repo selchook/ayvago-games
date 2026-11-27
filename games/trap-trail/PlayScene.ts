@@ -6,7 +6,7 @@
 // The sim runs at a fixed 60 Hz (sim.ts); the view draws it (view.ts); the HUD and the touch
 // buttons are hud.ts; the inner screens screens.ts.
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, t, isEasy, flash, padRumble, labelAt, labelTexture, type LabelStyle } from '@core';
+import { ArcadeScene, Controls, t, isEasy, flash, padRumble, labelAt, labelTexture, showKeyHelp, type LabelStyle, type KeyHelpHint } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
 import { Sim, NO_INPUT, FOE, type Input, type SimEvent } from './sim';
@@ -56,6 +56,8 @@ export class PlayScene extends ArcadeScene {
   private toastImg: Phaser.GameObjects.Image | null = null;
   private bannerImgs: Phaser.GameObjects.Image[] = [];
   private tut: { step: number; t: number; x: number; z: number } | null = null;
+  /** The first-time keys along the bottom (desktop, once): the run goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private jumpPressed = false;
   private dashPressed = false;
   private keyJump = false;
@@ -79,6 +81,7 @@ export class PlayScene extends ArcadeScene {
     this.toastImg = null;
     this.bannerImgs = [];
     this.tut = null;
+    this.keyHint = null;
     this.jumpPressed = this.dashPressed = this.keyJump = false;
     this.testSpeed = 1;
     this.perf.frames = 0;
@@ -185,6 +188,8 @@ export class PlayScene extends ArcadeScene {
     this.phaseT = 0;
     this.showPlayUi(true);
     this.banner(t('go'), S_BIG, 330, 700);
+    // desktop, once: the keys and what they do along the bottom for the first seconds of the run
+    if (!this.keyHint) this.keyHint = showKeyHelp(this);
     this.sfx('go', { volume: 0.55 });
   }
 
@@ -459,7 +464,8 @@ export class PlayScene extends ArcadeScene {
     tu.t += dt;
     const h = s.hero;
     const key = !this.touch;
-    if (tu.step === 0 && tu.t > 0.6) { this.toast(t(key ? 'tut_moveKey' : 'tut_move'), S_HINT, 3200); tu.step = 1; tu.x = h.x; tu.z = h.z; }
+    // (the first-time keys along the bottom already say how to move)
+    if (tu.step === 0 && tu.t > 0.6) { if (!(key && this.keyHint)) this.toast(t(key ? 'tut_moveKey' : 'tut_move'), S_HINT, 3200); tu.step = 1; tu.x = h.x; tu.z = h.z; }
     else if (tu.step === 1 && (Math.hypot(h.x - tu.x, h.z - tu.z) > 4 || tu.t > 5)) { this.toast(t(key ? 'tut_jumpKey' : 'tut_jump'), S_HINT, 3600); tu.step = 2; tu.t = 0; }
     else if (tu.step === 2 && tu.t > 7) { this.toast(t(key ? 'tut_dashKey' : 'tut_dash'), S_HINT, 3600); tu.step = 3; }
   }

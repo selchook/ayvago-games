@@ -120,6 +120,15 @@ launch({
   },
   // brushed-metal plates, a HUD frame and a squadron badge behind the logo (theme.ts)
   menuTheme: STAR_THEME,
+  // the keyboard controls (desktop): the pause strip, the menu's how-to and the first-time keys
+  keyHelp: [
+    { keys: ['W A S D', 'Up Down Left Right'], label: 'kh_fly' },
+    { keys: ['J', 'Space'], label: 'kh_bomb' },
+    { keys: ['K'], label: 'kh_shield' },
+    { keys: ['L'], label: 'kh_overdrive' },
+    { keys: ['E', '1 2 3', 'R'], label: 'kh_cards' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   scenes: [PlayScene, TalentScene],
   strings: STRINGS,
 });

@@ -106,6 +106,13 @@ launch({
     canContinue: (play) => (play as PlayScene).canContinue(),
     double: { grant: (play) => (play as PlayScene).doubleCoins(), show: () => lastRunCoins() > 0 },
   },
+  // the keyboard controls (desktop): the pause strip, the menu's how-to and the first-time keys
+  keyHelp: [
+    { keys: ['W A S D', 'Up Down Left Right'], label: 'kh_run' },
+    { keys: ['Space'], label: 'kh_jump' },
+    { keys: ['Shift', 'X'], label: 'kh_dash' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   scenes: [PlayScene],
   strings: STRINGS,
 });
