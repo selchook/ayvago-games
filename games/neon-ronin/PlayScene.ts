@@ -15,7 +15,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, t, upper, labelWidth, isEasy, hudChip, playMusic, labelAt, labelTexture, fitWidth, GlyphText, bake, isModalOpen, Para, bakePara,
-  HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, type HudChip, type LabelStyle,
+  HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, showKeyHelp, type HudChip, type LabelStyle, type KeyHelpHint,
 } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
@@ -128,6 +128,8 @@ export class PlayScene extends ArcadeScene {
   private pickOnPause = false;
   private bossBar!: BossBar;
   private tipCard: Phaser.GameObjects.Container | null = null;
+  /** The first-time keys along the bottom (desktop, once per browser), while they are up. */
+  private keyHint: KeyHelpHint | null = null;
   private dmgs: Dmg[] = [];
   private banked = false;
   private host!: ScreenHost;
@@ -151,6 +153,7 @@ export class PlayScene extends ArcadeScene {
     this.acc = 0;
     this.dmgs = [];
     this.tipCard = null;
+    this.keyHint = null;
     this.banked = true;
     this.pickOnPause = false;
     this.hintT = 0;
@@ -432,6 +435,8 @@ export class PlayScene extends ArcadeScene {
       if (this.phase !== 'intro' || this.isOver) return;
       this.phase = 'play';
       this.banner(t('bnGo'), S_BANNER_C);
+      // desktop, once: the keys and what they do along the bottom for the first seconds of play
+      this.keyHint = showKeyHelp(this);
     });
   }
 
@@ -658,6 +663,7 @@ export class PlayScene extends ArcadeScene {
         entry.to = 'brief';
         entry.level = this.level;
         this.phase = 'end';
+        this.closeKeyHint();
         this.endGame({ title: t('flatlined'), delay: 900 });
         break;
       }
@@ -688,12 +694,14 @@ export class PlayScene extends ArcadeScene {
         if (e.h.phase === 'on' && Math.abs(e.h.x - p.x) < 10) this.sfxAt(e.h.kind === 'steam' ? 'steam' : e.h.kind === 'cable' ? 'zap' : 'laserGate', this.at(e.h.x, e.h.y0).x, { volume: 0.22 });
         break;
       case 'fall': if (e.f.state === 'shake') v('tick', 0.3); break;
-      case 'tip': this.tip(e.key); break;
+      // the first-time keys (desktop) already say how to run: no keyboard tip on top of them
+      case 'tip': if (!(e.key === 'tipMove' && this.keyHint && !this.touch)) this.tip(e.key); break;
       case 'clear': {
         v('exit', 0.6);
         this.time.delayedCall(300, () => this.sfx('fanfare', { volume: 0.55, exact: true }));
         this.phase = 'clear';
         this.hideTip();
+        this.closeKeyHint();
         this.banner(t(s.L.boss ? 'bnBossDown' : 'bnClear'), S_BANNER_C);
         this.time.delayedCall(2100, () => { if (!this.isOver && this.phase === 'clear') this.finishLevel(); });
         break;
@@ -790,6 +798,11 @@ export class PlayScene extends ArcadeScene {
     hinted.add(pick.id);
     this.hintsShown++;
     this.tip(HINT[pick.id]);
+  }
+
+  private closeKeyHint(): void {
+    this.keyHint?.close();
+    this.keyHint = null;
   }
 
   /** A tutorial prompt in a card under the HUD. */

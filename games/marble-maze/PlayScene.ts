@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, Button, txt, t, loc, burst, shake, flash, storage, isEasy, COLORS, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, skinTexture, themeCard, SKIN_PAD, labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton } from '@core';
+import { ArcadeScene, Controls, Button, txt, t, loc, burst, shake, flash, storage, isEasy, COLORS, hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, skinTexture, themeCard, SKIN_PAD, labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, showKeyHelp, type KeyHelpHint } from '@core';
 import { World3D, THREE } from '@core/three';
 import { LEVELS, WORLDS, LEVELS_PER_WORLD } from './levels';
 import { THEMES, type Theme } from './look';
@@ -67,6 +67,8 @@ export class PlayScene extends ArcadeScene {
   private trailClock = 0;
   private tiltBtn: Phaser.GameObjects.Container | null = null;
   private panelKeys: { next?: () => void; retry?: () => void; levels?: () => void } = {};
+  /** The first-time keys along the bottom (desktop, once per browser), while they are up. */
+  private keyHint: KeyHelpHint | null = null;
   /** Test hooks: the level bot drives the marble; game time runs this many times faster. */
   autopilot = false;
   testSpeed = 1;
@@ -96,6 +98,7 @@ export class PlayScene extends ArcadeScene {
     this.tiltBtn = null;
     this.previewTimer = null;
     this.panelKeys = {};
+    this.keyHint = null;
     this.autopilot = false;
     this.trailClock = 0;
     const prog = this.progress();
@@ -566,6 +569,8 @@ export class PlayScene extends ArcadeScene {
     this.phaseTime = 0;
     if (boardTilt.active) boardTilt.calibrate();
     this.sfx('beep', { volume: 0.5, exact: true, rate: 1.4 });
+    // desktop, once: the keys and what they do along the bottom for the first seconds of rolling
+    this.keyHint ??= showKeyHelp(this);
     const g = labelAt(this, this.scale.width / 2, this.scale.height * 0.42, t('go'), GO).setDepth(50);
     this.playUi.push(g);
     g.setScale(0.4);
@@ -751,6 +756,8 @@ export class PlayScene extends ArcadeScene {
       if (this.marbles <= 0) {
         m.visible = false;
         this.phase = 'clear';
+        this.keyHint?.close();
+        this.keyHint = null;
         this.sfx('lose', { volume: 0.6 });
         this.endGame({ win: false, title: t('noMarbles'), delay: 300 });
         return;
@@ -809,6 +816,8 @@ export class PlayScene extends ArcadeScene {
 
   private levelClear(): void {
     this.phase = 'clear';
+    this.keyHint?.close();
+    this.keyHint = null;
     this.phaseTime = 0;
     const sim = this.sim!, i = this.li;
     const par = this.par(i);

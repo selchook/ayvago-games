@@ -5,6 +5,8 @@ export const STRINGS: Strings = {
   en: {
     // touch buttons
     btnJump: 'JUMP', btnAttack: 'SLASH', btnShoot: 'SHOOT', btnRoll: 'ROLL',
+    // the desktop key help (main.ts keyHelp)
+    kh_run: 'Run', kh_jump: 'Jump', kh_slash: 'Slash', kh_shoot: 'Shoot', kh_roll: 'Roll',
     // districts and levels
     d0: 'NEON DOCKS', d1: 'CIRCUIT MARKET', d2: 'SMOG STACKS', d3: 'ZENITH SPIRE',
     'lv_1-1': 'First Light', 'lv_1-2': 'Rain Runner', 'lv_1-3': 'Billboard Heights', 'lv_1-4': 'MK-1 Warden',
@@ -132,6 +134,7 @@ export const STRINGS: Strings = {
   },
   tr: {
     btnJump: 'ZIPLA', btnAttack: 'KES', btnShoot: 'ATEŞ', btnRoll: 'YUVARLAN',
+    kh_run: 'Koş', kh_jump: 'Zıpla', kh_slash: 'Kes', kh_shoot: 'Ateş et', kh_roll: 'Yuvarlan',
     d0: 'NEON RIHTIM', d1: 'DEVRE ÇARŞISI', d2: 'DUMAN BACALARI', d3: 'ZİRVE KULESİ',
     'lv_1-1': 'İlk Işık', 'lv_1-2': 'Yağmur Koşucusu', 'lv_1-3': 'Pano Tepeleri', 'lv_1-4': 'MK-1 Gardiyan',
     'lv_2-1': 'Canlı Teller', 'lv_2-2': 'Köprü Hackleme', 'lv_2-3': 'Gece Pazarı', 'lv_2-4': 'MK-2 İnfazcı',

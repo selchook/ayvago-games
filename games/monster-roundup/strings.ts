@@ -133,6 +133,8 @@ const en: Record<string, string> = {
   tut_tow: 'Dizzy! Get close and press TOW',
   tut_towKey: 'Dizzy! Get close and press E (or X)',
   tut_bank: 'Now walk into the glowing ring of a pod',
+  // the desktop key help (main.ts keyHelp)
+  kh_walk: 'Walk', kh_sprint: 'Sprint', kh_fire: 'Fire · hold to charge', kh_tow: 'Tow · drop', kh_power: 'Use the power',
   h_tow: 'Bank every monster in a pod: stun it, tow it, walk into the ring',
   h_runner: 'Runners are quick: hold DASH (Shift) to catch them',
   h_split: 'Fish split in two when stunned: catch both halves',
@@ -270,6 +272,7 @@ const tr: Record<string, string> = {
   tut_tow: 'Sersemledi! Yaklaş ve ÇEK tuşuna bas',
   tut_towKey: 'Sersemledi! Yaklaş ve E (ya da X) tuşuna bas',
   tut_bank: 'Şimdi bir kapsülün parlayan halkasına gir',
+  kh_walk: 'Yürü', kh_sprint: 'Koş', kh_fire: 'Ateş · basılı tutup doldur', kh_tow: 'Çek · bırak', kh_power: 'Gücü kullan',
   h_tow: 'Her canavarı bir kapsüle koy: sersemlet, çek, halkaya gir',
   h_runner: 'Koşucular hızlıdır: yakalamak için KOŞ (Shift) basılı tut',
   h_split: 'Balıklar sersemleyince ikiye bölünür: iki yarıyı da yakala',

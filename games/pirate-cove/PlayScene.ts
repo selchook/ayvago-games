@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, CarSteering, t, txt, shake, flash, playMusic, touchScreen,
   hudChip, HudChip, HUD_MARGIN, HUD_GAP, HUD_ROW2_Y, HUD_CHIP_H, hudRightEdge, themeCard, themeLabel,
+  showKeyHelp, type KeyHelpHint,
 } from '@core';
 import { World3D, THREE, model } from '@core/three';
 import { Sea, Clouds, Gulls, Rain, PALETTES, mixPalette, freeOwnGeometry, type Palette } from './sea';
@@ -204,6 +205,9 @@ export class PlayScene extends ArcadeScene {
   private hint!: Phaser.GameObjects.Text;
   private hintQueue: string[] = [];
   private hintT = 0;
+  /** The first-time keys along the bottom (desktop, once per browser) and the seconds they stay up. */
+  private keyHint: KeyHelpHint | null = null;
+  private keyHintT = 0;
   private card: Phaser.GameObjects.Container | null = null;
   /** The last wave card while it fades out. */
   private cardOut: Phaser.GameObjects.Container | null = null;
@@ -248,6 +252,8 @@ export class PlayScene extends ArcadeScene {
     this.pending = [];
     this.hintQueue = [];
     this.hintT = 0;
+    this.keyHint = null;
+    this.keyHintT = 0;
     this.card = this.cardOut = null;
     this.auto = false;
     this.stormK = 0;
@@ -456,7 +462,11 @@ export class PlayScene extends ArcadeScene {
     this.phaseT = 0;
     this.hideCard();
     if (this.wave === 0) {
-      this.showHint(this.steering.pad ? 'h_steer_touch' : 'h_steer_keys');
+      // desktop, once: the keys and what they do along the bottom for the first seconds of sailing;
+      // they stand in for the keyboard steering hint, and the other hints wait until they fade
+      this.keyHint ??= showKeyHelp(this);
+      if (this.keyHint) this.keyHintT = 10.6;
+      else this.showHint(this.steering.pad ? 'h_steer_touch' : 'h_steer_keys');
       this.showHintLater(this.steering.pad ? 'h_map_touch' : 'h_map_keys');
     }
     if (this.def.hint) this.showHint(this.def.hint);
@@ -802,6 +812,9 @@ export class PlayScene extends ArcadeScene {
       this.hintT = 0;
       this.hintQueue = [];
     }
+    this.keyHint?.close();
+    this.keyHint = null;
+    this.keyHintT = 0;
     super.endGame(o);
   }
 
@@ -1695,10 +1708,14 @@ export class PlayScene extends ArcadeScene {
     }
 
     // hints fade out after a while; queued ones follow
+    if (this.keyHintT > 0) {
+      this.keyHintT -= dt;
+      if (this.keyHintT <= 0) this.keyHint = null;
+    }
     if (this.hintT > 0) {
       this.hintT -= dt;
       if (this.hintT <= 0) this.tweens.add({ targets: this.hint, alpha: 0, duration: 350 });
-    } else if (this.hintQueue.length && this.hint.alpha < 0.05) {
+    } else if (this.hintQueue.length && this.hint.alpha < 0.05 && this.keyHintT <= 0) {
       this.displayHint(this.hintQueue.shift()!);
     }
     // a hint that waits for its moment
@@ -1710,7 +1727,8 @@ export class PlayScene extends ArcadeScene {
   private showHint(key: string): void {
     if (seenHints.has(key) || this.hintQueue.includes(key)) return;
     seenHints.add(key);
-    if (this.hintT > 0) this.hintQueue.push(key);
+    // the hints sit where the first-time keys do: they wait behind them
+    if (this.hintT > 0 || this.keyHintT > 0) this.hintQueue.push(key);
     else this.displayHint(key);
   }
 
