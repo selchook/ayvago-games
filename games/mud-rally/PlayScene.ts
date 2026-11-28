@@ -538,8 +538,9 @@ export class PlayScene extends ArcadeScene {
           this.dropHint();
           // the way the phone is held at the start is straight ahead
           this.steering.centre();
-          // desktop, once: the keys and what they do along the bottom for the first seconds of the race
-          this.keyHint = showKeyHelp(this);
+          // desktop, once: the keys and what they do along the bottom for the first seconds of the race;
+          // in the cockpit the dash map screen sits bottom-left (cockpit.ts, x 290–465), so the keys go to its right
+          this.keyHint = showKeyHelp(this, this.view === 'cockpit' ? { x: 875, maxW: 770 } : {});
         }
         this.count++;
       }
