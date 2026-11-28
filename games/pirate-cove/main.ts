@@ -105,6 +105,15 @@ launch({
   difficulty: true,
   // touch screens choose ARROWS | WHEEL | TILT for the helm under PLAY (the shared steering switch)
   menuOption: steeringOption,
+  // desktop key help (pause strip, the menu's how-to, the first-time keys at the first wave)
+  keyHelp: [
+    { keys: ['Left Right'], label: 'kh_steer' },
+    { keys: ['W S', 'Up Down'], label: 'kh_sails' },
+    { keys: ['A D', 'Z X'], label: 'kh_guns' },
+    { keys: ['Space'], label: 'kh_aim' },
+    { keys: ['M'], label: 'kh_chart' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   // brass ship-plates, a sea chart and a ship's wheel over crossed cannons (theme.ts)
   // the theme's prebake (the wave cards) and the Play scene's callouts (callouts.ts)
   menuTheme: { ...NAVAL_THEME, prebake: (scene) => { NAVAL_THEME.prebake?.(scene); prebakeCallouts(scene); } },

@@ -1,4 +1,4 @@
-import { Phaser, ArcadeScene, Controls, CarSteering, RAMP_TIME, shake, flash, t, loc, storage, labelAt, fitWidth, Para, type LabelStyle, isEasy, hudChip, HudChip, HUD_MARGIN, iconButton, tilt, type CarPadButton } from '@core';
+import { Phaser, ArcadeScene, Controls, CarSteering, RAMP_TIME, shake, flash, t, loc, storage, labelAt, fitWidth, Para, type LabelStyle, isEasy, hudChip, HudChip, HUD_MARGIN, iconButton, tilt, showKeyHelp, keyHelpDue, type CarPadButton, type KeyHelpHint } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { LAYOUTS, Track } from './tracks';
 import { buildArena, type Arena } from './scenery';
@@ -121,6 +121,8 @@ export class PlayScene extends ArcadeScene {
   private marks!: SkidMarks;
   private wrongArrow!: THREE.Mesh;
   private hint: Phaser.GameObjects.Container | null = null;
+  /** The first-time keys along the bottom (desktop, once per browser), while they are up. */
+  private keyHint: KeyHelpHint | null = null;
   private skidCd = 0;
   private wasBraking = false;
   private fovKick = 0;
@@ -192,6 +194,7 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'intro';
     this.phaseT = 0;
     this.count = 0;
+    this.keyHint = null;
     this.raceNo = 0;
     this.raceTime = 0;
     this.lateT = -1;
@@ -405,6 +408,11 @@ export class PlayScene extends ArcadeScene {
 
   /** The first race ever: how the car controls work, over the grid until the start. */
   private showHint(): void {
+    // desktop: the core's key help shows the same keys at GO (showKeyHelp), so this one stands down
+    if (!this.steering.pad && keyHelpDue(this)) {
+      storage.set(HINT_KEY, true);
+      return;
+    }
     const c = this.add.container(0, 0).setDepth(7100).setScrollFactor(0);
     const pill = (x: number, y: number, w: number, h: number) =>
       this.add.graphics().fillStyle(0x0b1020, 0.72).fillRoundedRect(x - w / 2, y - h / 2, w, h, h / 2)
@@ -530,6 +538,8 @@ export class PlayScene extends ArcadeScene {
           this.dropHint();
           // the way the phone is held at the start is straight ahead
           this.steering.centre();
+          // desktop, once: the keys and what they do along the bottom for the first seconds of the race
+          this.keyHint = showKeyHelp(this);
         }
         this.count++;
       }
@@ -887,6 +897,7 @@ export class PlayScene extends ArcadeScene {
     // the race is over: the first-race hints go at once, so nothing shows over the results and the garage
     this.hint?.destroy(); this.hint = null;
     this.camHint?.destroy(); this.camHint = null;
+    this.keyHint?.close(); this.keyHint = null;
     new ResultsPanel(this, this.raceNo, rows, this.raceCash, prize + this.raceCash, note, () => {
       if (this.lives <= 0) {
         this.endGame({ title: t('champOver'), delay: 200 });

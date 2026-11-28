@@ -19,7 +19,7 @@
 import Phaser from 'phaser';
 import {
   t, labelTexture, skinTexture, SKIN_PAD, bake, bakeButton, bakeFmt, bakePara, glyphAtlas, themeCard,
-  labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, upper, type LabelStyle,
+  labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, upper, keyHelpShown, type LabelStyle,
 } from '@core';
 import { LEVELS, DISTRICT_LEVELS } from './levels';
 import {
@@ -46,10 +46,12 @@ const BRIEF_W = 720, BRIEF_H = 480;
 const RES_W = 780, RES_H = 600;
 const END_W = 700, END_H = 420;
 export const PSIDE_W = 300, PSIDE_H = 560;
+/** The side cards' height on desktops, where the core's key strip runs along the bottom of the pause. */
+export const PSIDE_H_KEYS = 474;
 const MOVES_W = 1220, MOVES_H = 660, MROW_W = 584, MROW_H = 80;
 const SIDE_X = 190, SIDE_PARA = 300;
 
-export const SCREEN_CARDS = [{ w: BRIEF_W, h: BRIEF_H }, { w: RES_W, h: RES_H }, { w: END_W, h: END_H }, { w: PSIDE_W, h: PSIDE_H }, { w: UP_W, h: UP_H }];
+export const SCREEN_CARDS = [{ w: BRIEF_W, h: BRIEF_H }, { w: RES_W, h: RES_H }, { w: END_W, h: END_H }, { w: PSIDE_W, h: PSIDE_H }, { w: PSIDE_W, h: PSIDE_H_KEYS }, { w: UP_W, h: UP_H }];
 
 // ------------------------------------------------------------------ styles
 
@@ -929,15 +931,18 @@ export interface PauseInfo {
  * I pick.
  */
 export function pauseSides(scene: Phaser.Scene, o: PauseInfo): Phaser.GameObjects.Container {
-  const y = 400;
+  // desktop: the core's key strip runs along the bottom of the pause (two lines, from y 590), so
+  // the cards are shorter and their rows closer
+  const keys = keyHelpShown(scene);
+  const H = keys ? PSIDE_H_KEYS : PSIDE_H, y = keys ? 104 + H / 2 : 400, moveStep = keys ? 26 : 30;
   const root = scene.add.container(0, 0).setDepth(5);
-  const lx = 180, rx = 1100, top = y - PSIDE_H / 2;
-  root.add(themeCard(scene, lx, y, PSIDE_W, PSIDE_H));
+  const lx = 180, rx = 1100, top = y - H / 2;
+  root.add(themeCard(scene, lx, y, PSIDE_W, H));
   root.add(labelAt(scene, lx, top + 34, t('yourChips'), P_HEAD));
   const cards = o.cards;
   if (!cards.length) root.add(new Para(scene, lx, top + 64, t('noChips'), P_NAME, PSIDE_W - 50, 0.5, 21));
-  const room = o.picks > 0 ? 9 : 11;
-  const rowH = cards.length > 9 ? 40 : 46;
+  const room = keys ? (o.picks > 0 ? 7 : 9) : o.picks > 0 ? 9 : 11;
+  const rowH = keys || cards.length > 9 ? 40 : 46;
   cards.slice(0, room).forEach((id, i) => {
     const x = lx - PSIDE_W / 2 + 44, yy = top + 82 + i * rowH;
     const def = CARD[id];
@@ -948,20 +953,20 @@ export function pauseSides(scene: Phaser.Scene, o: PauseInfo): Phaser.GameObject
     root.add(fitWidth(labelAt(scene, x + 28, yy, t('k_' + id), P_NAME, 0), PSIDE_W - 96));
   });
   if (o.picks > 0) {
-    const by = top + PSIDE_H - 46;
+    const by = top + H - 46;
     const pick = new KitButton(scene, lx, by, { w: 260, h: 54, color: MAGENTA, label: t('pickImplant'), style: S_LATER, sfx: null }, () => o.pick());
     root.add(pick);
     scene.tweens.add({ targets: pick, scale: 1.05, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     keyOn(scene, 'keydown-I', o.pick);
   }
-  root.add(themeCard(scene, rx, y, PSIDE_W, PSIDE_H));
+  root.add(themeCard(scene, rx, y, PSIDE_W, H));
   root.add(labelAt(scene, rx, top + 34, t('moves'), P_HEAD));
   let yy = top + 70;
   for (const m of MOVES) {
     const on = moveOpen(m.id, o.abilities, o.ranks);
     root.add(iconImg(scene, rx - PSIDE_W / 2 + 36, yy, on ? m.icon : 'lock', 26).setAlpha(on ? 1 : 0.55));
     root.add(fitWidth(labelAt(scene, rx - PSIDE_W / 2 + 60, yy, t(m.name), P_NAME, 0), PSIDE_W - 84).setAlpha(on ? 1 : 0.45));
-    yy += 30;
+    yy += moveStep;
   }
   const mb = new KitButton(scene, rx, yy + 26, { w: 240, h: 52, color: CYAN, label: t('moves'), style: S_LATER, sfx: null }, () => o.moves());
   root.add(mb);

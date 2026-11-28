@@ -10,7 +10,7 @@
 // Z) stuns (hold to charge), E (X, K) tows and drops, Q (C) uses the power. Touch: the floating stick
 // on the left, STUN, TOW / DROP, POWER and DASH on the right.
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, t, isEasy, isLandscape, flash, padRumble, playMusic, labelAt, labelTexture, fitWidth, type LabelStyle } from '@core';
+import { ArcadeScene, Controls, t, isEasy, isLandscape, flash, padRumble, playMusic, labelAt, labelTexture, fitWidth, showKeyHelp, type LabelStyle, type KeyHelpHint } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
 import { Sim, NO_INPUT, type Input, type SimEvent } from './sim';
@@ -62,6 +62,9 @@ export class PlayScene extends ArcadeScene {
   private towPressed = false;
   private powerPressed = false;
   private tut: { step: number; t: number } | null = null;
+  /** The first-time keys along the bottom (desktop, once per browser) and the seconds they stay up. */
+  private keyHint: KeyHelpHint | null = null;
+  private keyHintT = 0;
   private lowWarned = false;
   private wasInCloud = false;
   testSpeed = 1;
@@ -89,6 +92,8 @@ export class PlayScene extends ArcadeScene {
     this.towPressed = false;
     this.powerPressed = false;
     this.tut = null;
+    this.keyHint = null;
+    this.keyHintT = 0;
     this.lowWarned = false;
     this.wasInCloud = false;
     this.testSpeed = 1;
@@ -255,9 +260,13 @@ export class PlayScene extends ArcadeScene {
     this.showPlayUi(true);
     this.banner(t('go'), S_BIG, 360, 600);
     this.sfx('go', { volume: 0.5 });
+    // desktop, once: the keys and what they do along the bottom for the first seconds of play
+    this.keyHint = showKeyHelp(this);
+    this.keyHintT = this.keyHint ? 10.6 : 0;
     // the level's first-time hints, one after the other
     const n = this.levelN;
-    let delay = this.tut ? 14000 : 1000;
+    // (the tutorial's stun tip waits for the first-time keys, so the level's hints wait a little longer then)
+    let delay = this.tut ? (this.keyHint ? 16500 : 14000) : 1000;
     for (const h of this.sim?.c.hints ?? []) {
       const key = 'h_' + h;
       if (this.meta.hints.includes(key)) continue;
@@ -283,6 +292,7 @@ export class PlayScene extends ArcadeScene {
     this.perf.frames++;
     this.phaseT += dt;
     this.toastT = Math.max(0, this.toastT - dt);
+    if (this.keyHintT > 0 && (this.keyHintT -= dt) <= 0) this.keyHint = null;
     const s = this.sim;
     if (!s) return;
     if (this.phase === 'intro' && this.phaseT >= INTRO_TIME) this.go();
@@ -510,9 +520,16 @@ export class PlayScene extends ArcadeScene {
     fx.sparks(v.x, 1.6, v.z, 18, [POWER_COLOR[id], 0xffffff], 4, 3, 0.09);
   }
 
+  private closeKeyHint(): void {
+    this.keyHint?.close();
+    this.keyHint = null;
+    this.keyHintT = 0;
+  }
+
   private die(): void {
     const s = this.sim!;
     this.phase = 'dead';
+    this.closeKeyHint();
     this.sfx('lose', { volume: 0.6 });
     this.sfx('mechDown', { volume: 0.5 });
     this.view.shake(1);
@@ -531,6 +548,7 @@ export class PlayScene extends ArcadeScene {
 
   private clear(x: number, z: number, s: Sim): void {
     this.phase = 'clear';
+    this.closeKeyHint();
     this.phaseT = 0;
     this.showPlayUi(false);
     this.hudp.setVisible(true);
@@ -626,7 +644,8 @@ export class PlayScene extends ArcadeScene {
     this.toastKey = key; this.toastT = (ms / 1000) * 0.6;
     this.toastImg?.destroy();
     const land = isLandscape(), pad = !!this.pad;
-    const y = land ? this.scale.height - (pad ? 380 : 110) : this.scale.height - (pad ? 470 : 170);
+    // above the first-time keys while they are up (desktop)
+    const y = land ? this.scale.height - (pad ? 380 : this.keyHintT > 0 ? 190 : 110) : this.scale.height - (pad ? 470 : 170);
     const lines = splitLine(t(key));
     const box = this.add.container(this.scale.width / 2 - (land && pad ? 120 : 0), y).setScrollFactor(0).setDepth(9100);
     const lh = (style.size ?? 26) * 1.25;
@@ -642,8 +661,9 @@ export class PlayScene extends ArcadeScene {
     if (!tu) return;
     tu.t += dt;
     const key = !this.pad;
-    if (tu.step === 0 && tu.t > 0.6) { this.toast(key ? 'tut_moveKey' : 'tut_move', S_HINT, 3600); tu.step = 1; tu.t = 0; }
-    else if (tu.step === 1 && tu.t > 4.4) { this.toast(key ? 'tut_stunKey' : 'tut_stun', S_HINT, 4200); tu.step = 2; tu.t = 0; }
+    // the first-time keys (desktop) already show how to move: the stun tip follows once they fade
+    if (tu.step === 0 && tu.t > 0.6) { if (!this.keyHint) this.toast(key ? 'tut_moveKey' : 'tut_move', S_HINT, 3600); tu.step = 1; tu.t = 0; }
+    else if (tu.step === 1 && tu.t > 4.4 && this.keyHintT <= 0) { this.toast(key ? 'tut_stunKey' : 'tut_stun', S_HINT, 4200); tu.step = 2; tu.t = 0; }
   }
 
   // ---------------------------------------------------------------- test hooks

@@ -12,7 +12,7 @@
   "genres": ["action", "arcade"],
   "orientation": "landscape",
   "controls": ["touch", "keyboard"],
-  "version": "1.1.0",
+  "version": "1.1.1",
   "credits": [
     "3D models: Quaternius Cyberpunk Game Kit (CC0) — quaternius.com",
     "Sound effects: Juhani Junkala and Kenney (CC0) — kenney.nl",
