@@ -94,6 +94,9 @@ export const STRINGS = {
     h_trash: 'Tabaklar dolu ve kimse istemiyor: tabaklara dokun, en eskisi boşalır',
     h_shop: 'Bahşişlerle geliştirme al, sonra yeni günü aç',
     h_keys: 'Tuşlar: 1–7 istasyon · oklar seçer · Enter / Boşluk kullanır',
+    kh_station: 'İstasyonu kullan',
+    kh_select: 'İstasyon seç',
+    kh_use: 'Seçileni kullan',
   },
   en: {
     i_burger: 'Burger',
@@ -180,5 +183,8 @@ export const STRINGS = {
     h_trash: 'Plates full and nobody wants them: tap the plates to clear the oldest',
     h_shop: 'Spend tips on upgrades, then open the next day',
     h_keys: 'Keys: 1–7 stations · arrows select · Enter / Space use',
+    kh_station: 'Use a station',
+    kh_select: 'Pick a station',
+    kh_use: 'Use the selected',
   },
 };

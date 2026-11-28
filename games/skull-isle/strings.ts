@@ -58,6 +58,8 @@ const tr: S = {
   hintTentacle: 'Dokunaç yere vurunca ona vur!', hintTide: 'Mavi daireler sular basınca acıtır!',
   // buttons
   btnAttack: 'SALDIR', btnDodge: 'YUVARLAN', btnSpecial: 'ÖZEL', btnKeg: 'FIÇI',
+  // the keys (desktop key help)
+  kh_move: 'Yürü · denizde yelken', kh_attack: 'Saldır · top ateşle', kh_dodge: 'Yuvarlan · kaç', kh_special: 'Özel saldırı', kh_keg: 'Fıçı fırlat',
   // tutorial
   tutTitle: 'EĞİTİM', skip: 'GEÇ',
   tut_move_touch: 'Sol yarıda başparmağını sürükleyerek yürü', tut_move_keys: 'WASD ya da ok tuşlarıyla yürü',
@@ -144,6 +146,8 @@ const en: S = {
   hintBarrage: 'Two full charges = cannon barrage!', hintChest: 'Hit the chest to open it!', hintShark: 'Sharks strike from the shallows: keep back from the water\'s edge, hit them while they thrash!',
   hintTentacle: 'Hit the tentacle once it slams down!', hintTide: 'Blue circles hurt when the tide floods in!',
   btnAttack: 'ATTACK', btnDodge: 'DODGE', btnSpecial: 'SPECIAL', btnKeg: 'KEG',
+  // the keys (desktop key help)
+  kh_move: 'Move · sails at sea', kh_attack: 'Attack · fire', kh_dodge: 'Dodge · evade', kh_special: 'Special', kh_keg: 'Throw a keg',
   tutTitle: 'TRAINING', skip: 'SKIP',
   tut_move_touch: 'Drag your thumb on the left half to walk', tut_move_keys: 'Walk with WASD or the arrow keys',
   tut_combo_touch: 'Tap ATTACK in a row: a 3-hit combo!', tut_combo_keys: 'Press J or Space in a row: a 3-hit combo!',

@@ -1,4 +1,4 @@
-import { Phaser, ArcadeScene, Controls, CarSteering, shake, flash, t, rng } from '@core';
+import { Phaser, ArcadeScene, Controls, CarSteering, shake, flash, t, rng, showKeyHelp, type KeyHelpHint } from '@core';
 import { pop, S_LEVEL, S_COIN, S_HEART, COIN_POP, HEART_POP } from './callouts';
 import { World3D, THREE, model, grounded } from '@core/three';
 
@@ -77,6 +77,8 @@ export class PlayScene extends ArcadeScene {
   private invuln = 0;
   private respawnAt = 0;
   private upWasDown = false;
+  /** The first-time keys along the bottom (desktop, once): the drive goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   /** Sideways speed at full lock (exposed for tests). */
   steerSpeed = STEER_SPEED;
 
@@ -131,6 +133,8 @@ export class PlayScene extends ArcadeScene {
     for (let i = 0; i < 12; i++) this.plan.push({ solid: [true, true, true], objs: [] });
     this.ensureRows();
     this.placeCamera(1);
+    // desktop, once: the keys and what they do along the bottom (the drive starts at once, no countdown)
+    this.keyHint = showKeyHelp(this);
   }
 
   // ---------------------------------------------------------------- track generation

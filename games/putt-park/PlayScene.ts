@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, t, loc, upper, txt, shake, flash, playSfx, hudChip, HudChip, HUD_ROW2_Y } from '@core';
+import { ArcadeScene, t, loc, upper, txt, shake, flash, playSfx, hudChip, showKeyHelp, HudChip, HUD_ROW2_Y, type KeyHelpHint } from '@core';
 import { World3D, THREE, model, grounded } from '@core/three';
 import { HOLES } from './holes';
 import { parseHole, buildField, type HoleDef, type ParsedHole } from './kit';
@@ -98,6 +98,8 @@ export class PlayScene extends ArcadeScene {
   private card: Phaser.GameObjects.Container | null = null;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private picker: CoursePicker | null = null;
+  /** The first-time keys along the bottom (desktop, once): the first hole goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private rollSound: Phaser.Sound.BaseSound | null = null;
   private flagLift = 0;
   private lastWallSfx = 0;
@@ -125,6 +127,7 @@ export class PlayScene extends ArcadeScene {
     this.clouds = [];
     this.flagLift = 0;
     this.previewKey = '';
+    this.keyHint = null;
     this.tune = tuning();
 
     this.world = new World3D(this, { fov: 50, near: 0.03, far: 120, background: 0x9fd8ff });
@@ -334,6 +337,7 @@ export class PlayScene extends ArcadeScene {
     this.phase = 'card';
     this.showCamButtons(false);
     this.hint.setText('');
+    this.keyHint?.close();
     this.time.delayedCall(call === 'holeInOne' ? 2600 : 1700, () => {
       if (this.isOver) return;
       const last = this.hi >= this.round.length - 1;
@@ -508,6 +512,9 @@ export class PlayScene extends ArcadeScene {
     if (this.phase !== 'intro') return;
     this.card?.destroy();
     this.card = null;
+    // desktop, once: the keys and what they do when the first hole's putting starts, lifted
+    // over the power meter (height - 166) so the camera buttons and the ball stay clear
+    if (this.hi === 0) this.keyHint = showKeyHelp(this, { bottom: 186 });
     this.beginAim(true);
   }
 
@@ -529,7 +536,8 @@ export class PlayScene extends ArcadeScene {
     this.power = Phaser.Math.Clamp(this.power, 0.15, 0.8);
     this.setAimGoal(true);
     this.showCamButtons(true);
-    this.hint.setText(this.hi === 0 && this.strokes === 0 ? (this.sys.game.device.input.touch ? t('dragHint') : `${t('dragHint')}\n${t('keyHint')}`) : '');
+    // (the first-time keys along the bottom already say how to putt with the keys)
+    this.hint.setText(this.hi === 0 && this.strokes === 0 ? (this.sys.game.device.input.touch || this.keyHint ? t('dragHint') : `${t('dragHint')}\n${t('keyHint')}`) : '');
     if (this.strokes === this.limit - 1) pop(this, this.scale.width / 2, 170, t('lastStroke'), '#ffb36b', 32);
   }
 

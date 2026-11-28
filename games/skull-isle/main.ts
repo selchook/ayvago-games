@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, keyHelpShown, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, prebakePlay } from './PlayScene';
 import { BoardScene, prebakeBoard } from './board';
@@ -28,6 +28,15 @@ launch({
     menu: { file: 'music/owner/rolling-maritime-chant.mp3', gain: 2.2 },
     play: { file: 'music/owner/rolling-sea-shanty.mp3', gain: 1.9 },
   },
+  // desktop: the keys on the first island and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['W A S D', 'Up Down Left Right'], label: 'kh_move' },
+    { keys: ['J', 'Space'], label: 'kh_attack' },
+    { keys: ['K', 'Shift'], label: 'kh_dodge' },
+    { keys: ['L'], label: 'kh_special' },
+    { keys: ['E'], label: 'kh_keg' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     loadKit(l);
@@ -158,7 +167,8 @@ launch({
         scene.scene.pause();
         scene.scene.launch('Board', { from: scene.scene.key });
       };
-      const row = menuRow(scene, x, y, (hero) => menuView?.setHero(hero), open);
+      // with the keys in the how-to below (desktop), the core lifts that card: the row moves up too
+      const row = menuRow(scene, x, keyHelpShown(scene) ? y - 16 : y, (hero) => menuView?.setHero(hero), open);
       scene.events.on('map-closed', row.refresh);
       scene.input.keyboard?.on('keydown-M', open);
       scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off('map-closed', row.refresh));

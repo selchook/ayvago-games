@@ -17,6 +17,13 @@ launch({
   background: '#1a1230',
   physics: 'none',
   difficulty: true,
+  // desktop: the keys on the first run and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['A D', 'Left Right'], label: 'kh_steer' },
+    { keys: ['Space', 'W', 'Up'], label: 'kh_jump' },
+    { keys: ['S', 'Down', 'Shift'], label: 'kh_slide' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     loadKit(l);
