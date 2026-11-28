@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, upper, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, shake, flash,
   storage, playMusic, themeLabel, skinImage, skinTexture, SkinButton, FmtLine, GlyphText, Para,
-  labelAt, labelTexture, placeLabel, fitWidth,
+  labelAt, labelTexture, placeLabel, fitWidth, showKeyHelp, type KeyHelpHint,
 } from '@core';
 import { calloutStyle, SUB_STYLE, TIP_STYLE, FLOAT_PX, NUM_PLAIN, NUM_BIG, NUM_GEM, NUM_CHARS } from './callouts';
 import * as SCR from './screens';
@@ -68,6 +68,8 @@ export class PlayScene extends ArcadeScene {
   /** Floating numbers (damage, gems): pooled glyph lines, one atlas per colour. */
   private numPool: Array<{ g: GlyphText; color: string }> = [];
   private hintBox!: Phaser.GameObjects.Container;
+  /** The first-time keys along the bottom (desktop, once): the floor goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private hintText!: Phaser.GameObjects.Text;
   private hintQueue: string[] = [];
   private hintT = 0;
@@ -109,6 +111,7 @@ export class PlayScene extends ArcadeScene {
     this.hintT = 0;
     this.card = [];
     this.cardKeys = null;
+    this.keyHint = null;
     this.keys = {};
     this.mouse = { x: 0, z: 0, active: false, down: false, dash: false, t: -9, sx: 0, sy: 0 };
     this.hovered = null;
@@ -271,7 +274,11 @@ export class PlayScene extends ArcadeScene {
     const boss = this.sim.isBossFloor;
     this.banner(t('floorN', { n }), boss ? t('bossFloor') : t('floorSub'), boss ? '#ff8a6a' : '#ffe9b0');
     this.sfx('portal', { volume: 0.5 });
-    this.hint(this.controls.touchUi ? 'move_touch' : 'move_key');
+    // desktop, once: the keys and what they do along the bottom for the first seconds of the run
+    if (!this.keyHint && !this.autopilot) this.keyHint = showKeyHelp(this);
+    // (the first-time keys already say how to walk: that hint counts as seen)
+    if (this.controls.touchUi || !this.keyHint) this.hint(this.controls.touchUi ? 'move_touch' : 'move_key');
+    else { this.seen.add('move_key'); storage.set(HINTS_KEY, [...this.seen]); }
   }
 
   /** The stairs were taken: the next floor is built. */
@@ -822,6 +829,7 @@ export class PlayScene extends ArcadeScene {
     const offer = s.offer();
     if (!offer.length) return;
     this.phase = 'shrine';
+    this.keyHint?.close();
     s.frozen = true;
     this.sfx('shrine', { volume: 0.7 });
     this.fx.glow(s.hero.x, 0.8, s.hero.z, 0xffd27a, 10, 2.5, 0.35, 0.8);

@@ -131,6 +131,15 @@ launch({
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => view.dispose());
   },
   menuTheme: LAB_THEME,
+  // desktop key help (pause strip, the menu's how-to, the first-time keys in play)
+  keyHelp: [
+    { keys: ['W A S D', 'Up Left Down Right'], label: 'kh_walk' },
+    { keys: ['Shift'], label: 'kh_sprint' },
+    { keys: ['Space'], label: 'kh_fire' },
+    { keys: ['E'], label: 'kh_tow' },
+    { keys: ['Q'], label: 'kh_power' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   // a lost run may go on once after a rewarded ad (full hearts where the mech fell); the credits of a
   // run may be doubled
   ads: {

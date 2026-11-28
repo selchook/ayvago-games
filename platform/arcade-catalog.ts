@@ -171,7 +171,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['astro', 'crew', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.0',
+    version: '1.2.1',
     addedAt: '2026-11-18',
   }),
   arcadeGame({
@@ -330,7 +330,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['coaster', 'rush', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.0.3',
+    version: '1.0.4',
     addedAt: '2026-11-15',
   }),
   arcadeGame({
@@ -431,7 +431,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['crypt', 'crawler', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.0.1',
+    version: '1.0.2',
     addedAt: '2026-11-12',
   }),
   arcadeGame({
@@ -446,7 +446,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['crystal', 'keep', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.1',
+    version: '1.2.2',
     addedAt: '2026-11-11',
   }),
   arcadeGame({
@@ -461,7 +461,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['delivery', 'dash', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.0.2',
+    version: '1.0.3',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
@@ -492,7 +492,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['dungeon', 'rescue', 'retro'],
     orientation: 'any',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    version: '1.0.5',
+    version: '1.0.6',
     addedAt: '2026-11-25',
     portraitCards: true,
   }),
@@ -560,7 +560,7 @@ export const ARCADE_GAMES: SeedGame[] = [
       maxPerSecond: 1000,
       maxScore: 10000,
     },
-    version: '1.0.1',
+    version: '1.0.2',
     addedAt: '2026-11-09',
   }),
   arcadeGame({
@@ -621,7 +621,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['hex', 'realm', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.4.0',
+    version: '1.4.1',
     addedAt: '2026-11-16',
   }),
   arcadeGame({
@@ -665,7 +665,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['kickflip', 'park', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.3',
+    version: '1.2.4',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
@@ -680,6 +680,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['last', 'convoy', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
+    version: '1.0.1',
     addedAt: '2026-11-22',
   }),
   arcadeGame({
@@ -781,7 +782,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['marble', 'maze', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.0.1',
+    version: '1.0.2',
     addedAt: '2026-11-10',
   }),
   arcadeGame({
@@ -852,7 +853,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['monster', 'roundup', 'retro'],
     orientation: 'any',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-11-27',
     portraitCards: true,
   }),
@@ -884,7 +885,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['mud', 'rally', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    version: '1.5.2',
+    version: '1.5.3',
     addedAt: '2026-11-07',
   }),
   arcadeGame({
@@ -914,7 +915,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['neon', 'ronin', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-11-18',
   }),
   arcadeGame({
@@ -1050,7 +1051,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['pirate', 'cove', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.0',
+    version: '1.1.1',
     addedAt: '2026-11-11',
   }),
   arcadeGame({
@@ -1118,7 +1119,7 @@ export const ARCADE_GAMES: SeedGame[] = [
       maxPerSecond: 1000,
       maxScore: 5400,
     },
-    version: '1.0.1',
+    version: '1.0.2',
     addedAt: '2026-11-10',
   }),
   arcadeGame({
@@ -1133,7 +1134,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['relic', 'ruins', 'retro'],
     orientation: 'any',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    version: '1.1.2',
+    version: '1.1.3',
     addedAt: '2026-11-24',
     portraitCards: true,
   }),
@@ -1191,7 +1192,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['rooftop', 'courier', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.2',
+    version: '1.1.3',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
@@ -1278,7 +1279,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['skull', 'isle', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.3.0',
+    version: '1.3.1',
     addedAt: '2026-11-14',
   }),
   arcadeGame({
@@ -1306,7 +1307,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['sky', 'road', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.3',
+    version: '1.1.4',
     addedAt: '2026-11-07',
   }),
   arcadeGame({
@@ -1335,7 +1336,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['snack', 'shack', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.0.1',
+    version: '1.0.2',
     addedAt: '2026-11-12',
   }),
   arcadeGame({
@@ -1350,7 +1351,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['snow', 'express', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.0.2',
+    version: '1.0.3',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
@@ -1421,7 +1422,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['star', 'squadron', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.1.2',
+    version: '1.1.3',
     addedAt: '2026-11-13',
   }),
   arcadeGame({
@@ -1445,7 +1446,7 @@ export const ARCADE_GAMES: SeedGame[] = [
       maxPerSecond: 1000,
       maxScore: 300,
     },
-    version: '1.0.2',
+    version: '1.0.3',
     addedAt: '2026-11-11',
   }),
   arcadeGame({
@@ -1490,6 +1491,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['sushi', 'rush', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'mouse'],
+    version: '1.0.1',
     addedAt: '2026-11-17',
   }),
   arcadeGame({
@@ -1590,7 +1592,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['trap', 'trail', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    version: '1.0.1',
+    version: '1.0.2',
     addedAt: '2026-11-24',
   }),
   arcadeGame({
@@ -1693,7 +1695,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['zombie', 'grove', 'retro'],
     orientation: 'portrait',
     input: ['touch', 'keyboard', 'mouse'],
-    version: '1.2.2',
+    version: '1.2.3',
     addedAt: '2026-11-13',
   }),
   arcadeGame({

@@ -16,7 +16,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, t, isEasy, hudChip, HUD_ROW2_Y, HUD_MARGIN, HUD_GAP, hudRightEdge, labelAt, labelTexture, fitWidth,
-  bakeFmt, glyphAtlas, FmtLine, GlyphText, isModalOpen, NUMERIC_GLYPHS, type HudChip, type LabelStyle,
+  bakeFmt, glyphAtlas, FmtLine, GlyphText, isModalOpen, NUMERIC_GLYPHS, showKeyHelp, type HudChip, type LabelStyle, type KeyHelpHint,
 } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
@@ -41,6 +41,8 @@ const INK = '#170c3a';
 const S_BANNER: LabelStyle = { size: 64, fill: ['#fffbe8', '#ffe27a', '#ff9a3a'], stroke: INK, strokeWidth: 10 };
 const S_BIG: LabelStyle = { size: 78, fill: ['#ffffff', '#9af0ff', '#4ac8ff'], stroke: INK, strokeWidth: 12 };
 const S_TOAST: LabelStyle = { size: 26, color: '#fff2cc', stroke: INK, strokeWidth: 5 };
+/** How far the hint line rises while the first-time keys show along the bottom. */
+const KEY_HINT_LIFT = 110;
 const S_BTN: LabelStyle = { size: 17, color: '#ffffff', stroke: INK, strokeWidth: 4 };
 const S_KEY: LabelStyle = { size: 15, color: '#ffe08a', stroke: INK, strokeWidth: 4 };
 const S_DMG: LabelStyle = { size: 26, color: '#ffffff', stroke: INK, strokeWidth: 5 };
@@ -158,6 +160,10 @@ export class PlayScene extends ArcadeScene {
   testSpeed = 1;
   /** No banners or hints over the store art's stage. */
   private quiet = false;
+  /** The first-time keys along the bottom (desktop, once): the mission goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
+  /** While the first-time keys show, the hint line sits above them. */
+  private keyHintOn = false;
   private controls!: Controls;
   private acc = 0;
   private rnd!: () => number;
@@ -224,6 +230,8 @@ export class PlayScene extends ArcadeScene {
     this.fireNagged = false;
     this.dmgPool = [];
     this.toastImg = null;
+    this.keyHint = null;
+    this.keyHintOn = false;
     this.lowT = 0;
     this.burnT = 0;
     this.wakeToasts = 0;
@@ -605,12 +613,23 @@ export class PlayScene extends ArcadeScene {
     this.showPlayUi(true);
     this.sfx('land', { volume: 0.5 });
     this.banner(t('m_' + s.def.n));
+    // desktop, once: the keys and what they do along the bottom for the first seconds of the mission
+    if (!this.keyHint) {
+      // the action buttons stay on screen on desktop too: the keys keep to their left
+      const right = this.padBox.left - 12, left = 24;
+      this.keyHint = showKeyHelp(this, right - left >= 400 ? { maxW: right - left, x: (left + right) / 2 } : {});
+      if (this.keyHint) {
+        this.keyHintOn = true;
+        this.time.delayedCall(10600, () => { this.keyHintOn = false; });
+      }
+    }
     // the first missions teach the buttons and the way round a planet
     const later = (ms: number, key: string) => this.time.delayedCall(ms, () => { if (this.phase === 'play') this.toast(t(key), 5); });
     const kindHint = { rescue: 'hintRescue', keys: 'hintKeysObj', defend: 'hintDefend', clear: 'hintClear', boss: 'hintBoss' }[s.def.kind];
     this.fireNagged = false;
     if (!this.meta.coached || !this.meta.fireCoached || s.def.n <= 2) {
-      later(2200, this.touch ? 'hintMove' : 'hintKeys');
+      // (the first-time keys along the bottom already say how to move and shoot)
+      if (this.touch || !this.keyHintOn) later(2200, this.touch ? 'hintMove' : 'hintKeys');
       later(7600, 'hintAim');
       later(13000, kindHint);
       later(18400, 'hintMap');
@@ -626,6 +645,8 @@ export class PlayScene extends ArcadeScene {
   private openDraft(): void {
     const s = this.sim!;
     this.phase = 'draft';
+    this.keyHint?.close();
+    this.keyHintOn = false;
     this.sfx('levelup', { volume: 0.55 });
     const deal = () => rollCards(this.run.cards, this.rnd);
     const offer = deal();
@@ -879,11 +900,12 @@ export class PlayScene extends ArcadeScene {
     this.tweens.add({ targets: line, alpha: 0, y: 206, delay: 1150, duration: 380, onComplete: () => line.destroy() });
   }
 
+
   /** A line over the bottom middle (hints, warnings). */
   private toast(s: string, hold = 1.2): void {
     if (this.quiet) return;
     this.toastImg?.destroy();
-    const img = labelAt(this, this.scale.width / 2 - 120, this.scale.height - 60, s, S_TOAST).setDepth(9050);
+    const img = labelAt(this, this.scale.width / 2 - 120, this.scale.height - 60 - (this.keyHintOn ? KEY_HINT_LIFT : 0), s, S_TOAST).setDepth(9050);
     fitWidth(img, this.scale.width - 560);
     this.toastImg = img;
     const sc = img.scale;

@@ -78,6 +78,11 @@ export const STRINGS = {
     metres: '{m} m',
     pts: '{n} puan',
     you: 'SEN',
+    // the keyboard key help (desktop)
+    kh_run: 'Koş: sırayla bas',
+    kh_action: 'Atla · kulaç · atış',
+    kh_breathe: 'Nefes al (yüzme)',
+    kh_aim: 'Nişan al (okçuluk)',
   },
   en: {
     cup: 'AYVAGO CUP',
@@ -151,6 +156,11 @@ export const STRINGS = {
     metres: '{m} m',
     pts: '{n} pts',
     you: 'YOU',
+    // the keyboard key help (desktop)
+    kh_run: 'Run: press in turn',
+    kh_action: 'Jump · stroke · shoot',
+    kh_breathe: 'Breathe (swim)',
+    kh_aim: 'Aim (archery)',
   },
 };
 

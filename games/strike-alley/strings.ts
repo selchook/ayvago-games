@@ -30,6 +30,9 @@ export const STRINGS = {
     tapSkip: 'Geçmek için dokun',
     hintTouch: 'Noktalar boyunca sürükleyip topu bırakacağın tahtayı, oklar boyunca sürükleyip hedefi seç; atmak için yukarı fırlat. Kavisli fırlatma falsoyu artırır.',
     hintKeys: '←/→ tahta · ↑ hedef ok · ↓ geri · Shift: yarım tahta · Boşluğu basılı tut, bırakınca at · Z/X falso · V pist görünümü',
+    // the keyboard key help (main.ts keyHelp)
+    kh_board: 'Tahta · Shift: yarım', kh_stage: 'Hedef · duruş', kh_bowl: 'Basılı tut, bırak: at',
+    kh_spin: 'Falso', kh_view: 'Pist görünümü',
     flickMore: 'Daha uzun fırlat!',
     kmh: '{n} km/sa',
     scorecard: 'SKOR KARTI',
@@ -95,6 +98,9 @@ export const STRINGS = {
     tapSkip: 'Tap to skip',
     hintTouch: 'Drag along the dots to pick the board you lay the ball on, drag along the arrows to pick your target, then flick up to bowl. Curve the flick for more hook.',
     hintKeys: '←/→ board · ↑ target arrow · ↓ back · Shift: half boards · hold Space, let go to bowl · Z/X spin · V lane view',
+    // the keyboard key help (main.ts keyHelp)
+    kh_board: 'Board · Shift: half', kh_stage: 'Target · stand', kh_bowl: 'Hold, let go: bowl',
+    kh_spin: 'Spin', kh_view: 'Lane view',
     flickMore: 'Flick further!',
     kmh: '{n} km/h',
     scorecard: 'SCORECARD',

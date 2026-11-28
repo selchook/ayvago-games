@@ -9,7 +9,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, burst, getLang, themeCard, themeLabel, overlayHeadingStyle, Para,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, HUD_CHIP_H,
+  showKeyHelp, type KeyHelpHint, HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, HUD_CHIP_H,
 } from '@core';
 import type { World3D } from '@core/three';
 import { Sim, NO_INPUT, type Input, type SimEvent } from './sim';
@@ -52,6 +52,8 @@ export class PlayScene extends ArcadeScene {
   mode: Mode = 'normal';
   private controls!: Controls;
   private pad: TouchPad | null = null;
+  /** The first-time keys along the bottom (desktop, once): the run goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private bot: Bot | null = null;
   private forced: Input | null = null;
   private acc = 0;
@@ -169,6 +171,8 @@ export class PlayScene extends ArcadeScene {
     this.tut = null; this.tutStep = 0; this.tutWait = -1; this.steerT = 0;
     if (!this.meta.tutorial) this.time.delayedCall(500, () => this.startTutorial());
     else this.districtBanner(0);
+    // desktop, once: the keys and what they do along the bottom (the run starts at once, no countdown)
+    this.keyHint = showKeyHelp(this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { if (!this.finished && this.sim.time > 8) this.bank(); });
   }
 
@@ -630,6 +634,7 @@ export class PlayScene extends ArcadeScene {
     this.endTutorial(true);
     // the summary stands alone: no lesson card, skip button or hint card over it
     this.hint?.c.destroy(); this.hint = null; this.hintQueue.length = 0;
+    this.keyHint?.close(); this.keyHint = null;
     const sim = this.sim;
     const { width } = this.scale;
     const c = this.add.container(width / 2, 620).setScrollFactor(0).setDepth(UI_DEPTH + 150);

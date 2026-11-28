@@ -146,6 +146,14 @@ launch({
   },
   // mossy boards, brambles and a dark notice board, the logo over a zombie hand (menu.ts)
   menuTheme: GROVE_THEME,
+  // the keyboard controls (desktop): the pause strip, the menu's how-to and the first-time keys
+  keyHelp: [
+    { keys: ['W A S D', 'Up Down Left Right'], label: 'kh_move' },
+    { keys: ['J', 'Space', 'Enter'], label: 'kh_attack' },
+    { keys: ['E', '1 2 3', 'R'], label: 'kh_cards' },
+    { keys: ['B'], label: 'kh_banish' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   scenes: [PlayScene, CampScene],
   strings: STRINGS,
 });

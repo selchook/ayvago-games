@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, loc, isEasy, hudChip, HudChip, flash, burst, getLang,
-  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, overlayHeadingStyle, labelAt, fitWidth, Para,
+  HUD_MARGIN, HUD_ROW2_Y, HUD_GAP, themeCard, themeLabel, overlayHeadingStyle, labelAt, fitWidth, Para, showKeyHelp, type KeyHelpHint,
 } from '@core';
 import { World3D } from '@core/three';
 import { Setup, takeFromMenu } from './setup';
@@ -74,6 +74,8 @@ export class PlayScene extends ArcadeScene {
   private crowd: Loop | null = null;
   private bot: Bot | null = null;
   private hintBox: Phaser.GameObjects.Container | null = null;
+  /** The first-time keys along the bottom (desktop, once): the session goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private hintAt = 0;
   private timeScale = 1;
   private hitStop = 0;
@@ -116,6 +118,7 @@ export class PlayScene extends ArcadeScene {
     this.sim = undefined as unknown as Sim;
     this.tut = null; this.tutStep = 0; this.tutWait = -1; this.tutRingT = 0;
     this.hintBox = null;
+    this.keyHint = null;
     this.bot = null;
     this.forced = null;
     // PLAY on the menu opens the setup first until a park and board were ever chosen (the menu's
@@ -228,8 +231,15 @@ export class PlayScene extends ArcadeScene {
       this.parkBanner();
       this.meta.hinted = true;
       this.time.delayedCall(1700, () => this.startTutorial(this.meta.tutorial));
-    } else if (!this.meta.hinted) this.time.delayedCall(250, () => this.showHint());
-    else this.parkBanner();
+      this.keyHint = showKeyHelp(this);
+    } else {
+      // desktop, once: the keys and what they do along the bottom for the first seconds; they
+      // stand in for the keyboard's controls card (which would stop the session until closed)
+      this.keyHint = showKeyHelp(this);
+      if (this.keyHint) { this.meta.hinted = true; saveMeta(this.meta); }
+      if (!this.meta.hinted) this.time.delayedCall(250, () => this.showHint());
+      else this.parkBanner();
+    }
   }
 
   // ------------------------------------------------------------------ input
@@ -696,6 +706,7 @@ export class PlayScene extends ArcadeScene {
   /** The session's summary over the park, then the result screen. */
   private finish(): void {
     this.finished = true;
+    this.keyHint?.close();
     const res = this.bank() ?? { goals: [], parks: [], boards: [] };
     this.summaryT = 0;
     this.comboOut(false);

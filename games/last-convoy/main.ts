@@ -21,6 +21,15 @@ launch({
   physics: 'none',
   difficulty: true,
   menuOption: steeringOption,
+  // desktop: the keys as caps (pause strip, the menu's how-to, the first mission's start)
+  keyHelp: [
+    { keys: ['W A S D'], label: 'kh_move' },
+    { keys: ['Space', 'J'], label: 'kh_attack' },
+    { keys: ['Shift', 'K'], label: 'kh_dodge' },
+    { keys: ['Q R'], label: 'kh_swap' },
+    { keys: ['E C F'], label: 'kh_use' },
+    { keys: ['Esc', 'P'], label: 'kh_pause' },
+  ],
   music: { play: 'stage2' },
   preload(scene) {
     const l = scene.load;

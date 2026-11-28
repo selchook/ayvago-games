@@ -164,6 +164,7 @@ export class StartCalls {
       this.s.call(t('go'), '#7dff9a', { size: 70, hold: 450 });
       this.s.crowdLoop.level(0.3, 400);
       this.s.cheer(0.5, false);
+      this.s.showKeys();
       return 'gun';
     }
     return null;

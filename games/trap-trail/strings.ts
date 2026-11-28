@@ -56,6 +56,10 @@ const S: Record<string, Pair> = {
   tut_jumpKey: ['Boşluk: zıpla (basılı tut, daha yükseğe)', 'Space: jump (hold to go higher)'],
   tut_dash: ['ATIL: kısa bir hamle, havada da olur', 'DASH: a quick burst, even in the air'],
   tut_dashKey: ['Shift ya da X: atıl', 'Shift or X: dash'],
+  // the keyboard key help (main.ts keyHelp)
+  kh_run: ['Koş', 'Run'],
+  kh_jump: ['Zıpla · basılı tut, daha yükseğe', 'Jump · hold to go higher'],
+  kh_dash: ['Atıl', 'Dash'],
   // the map
   mapTitle: ['PARKUR HARİTASI', 'TRAIL MAP'],
   shop: ['DÜKKAN', 'SHOP'],

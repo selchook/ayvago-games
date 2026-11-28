@@ -33,7 +33,7 @@ interface Box { x: number; y: number; w: number; h: number }
 
 /** Where everything goes, per orientation (game units; the game is 720 x 1280 or 1280 x 720). */
 function layout(land: boolean) {
-  // a game with key help (src/core/key-help.ts) keeps the bottom of the landscape pause free for its strip
+  // a game with key help (src/core/key-help.ts) keeps the bottom of the pause free for its strip
   const keys = !!currentGame().keyHelp?.length;
   return land ? {
     pause: { card: (keys ? { x: 640, y: 306, w: 520, h: 552 } : { x: 640, y: 360, w: 520, h: 660 }) as Box, emblem: null as null | { y: number; size: number }, head: 150, headSize: 64, buttons: [270, 385, 500], sound: null as null | number },
@@ -43,7 +43,10 @@ function layout(land: boolean) {
       buttons: 568, side: 420, offerY: 556, offerSide: 300, offerW: 270, adW: 300,
     },
   } : {
-    pause: { card: { x: 360, y: 640, w: 540, h: 760 }, emblem: { y: 268, size: 170 }, head: 410, headSize: 76, buttons: [540, 664, 784], sound: 904 },
+    // with key help the portrait pause sits 40 px higher: the strip may wrap to four lines
+    pause: keys
+      ? { card: { x: 360, y: 600, w: 540, h: 760 }, emblem: { y: 228, size: 170 }, head: 370, headSize: 76, buttons: [500, 624, 744], sound: 864 }
+      : { card: { x: 360, y: 640, w: 540, h: 760 }, emblem: { y: 268, size: 170 }, head: 410, headSize: 76, buttons: [540, 664, 784], sound: 904 },
     result: {
       card: { x: 360, y: 610, w: 640, h: 880 }, emblem: { y: 176, size: 150 },
       head: 306, headSize: 84, easy: 366, scoreLabel: 412, score: 490, scoreSize: 100, best: 574, ribbon: 648,

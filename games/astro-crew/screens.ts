@@ -13,7 +13,7 @@
 import Phaser from 'phaser';
 import {
   t, labelTexture, skinTexture, SKIN_PAD, bake, bakeButton, bakeFmt, bakePara, glyphAtlas, themeCard,
-  labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, type LabelStyle,
+  labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, keyHelpShown, type LabelStyle,
 } from '@core';
 import { HERO, HERO_IDS, MISSIONS, FOE, type HeroId, type MissionDef } from './defs';
 import { CARDS, CARD, UPGRADE, UPGRADE_IDS, MAX_RANK, RARITY_COLOR, RARITIES, stacks, type CardId, type UpgradeId, type Rarity } from './powers';
@@ -824,17 +824,21 @@ export class BaseScreen extends Panel {
 
 // ------------------------------------------------------------------ beside the pause
 
-/** Added to the Pause scene as it opens: the run's cards on the left, the mission on the right. */
+/**
+ * Added to the Pause scene as it opens: the run's cards on the left, the mission on the right.
+ * On desktops the core draws the keys along the bottom: the cards end above them.
+ */
 export function pauseSides(scene: Phaser.Scene, cards: CardId[], m: MissionDef | null, stars: number): void {
-  const y = 384;
+  const keys = keyHelpShown(scene);
+  const top = 384 - PSIDE_H / 2, h = keys ? PSIDE_H - 88 : PSIDE_H, y = top + h / 2;
   const root = scene.add.container(0, 0).setDepth(5);
-  const lx = 186, rx = 1094, top = y - PSIDE_H / 2;
-  root.add(themeCard(scene, lx, y, PSIDE_W, PSIDE_H));
+  const lx = 186, rx = 1094;
+  root.add(themeCard(scene, lx, y, PSIDE_W, h));
   root.add(labelAt(scene, lx, top + 34, t('yourCards'), P_HEAD));
   if (!cards.length) root.add(new Para(scene, lx, top + 66, t('noCards'), P_NAME, PSIDE_W - 50, 0.5, 21));
   const uniq = [...new Set(cards)];
-  const rowH = uniq.length > 11 ? 34 : 42;
-  uniq.slice(0, 13).forEach((id, i) => {
+  const rowH = uniq.length > (keys ? 9 : 11) ? 34 : 42;
+  uniq.slice(0, keys ? 11 : 13).forEach((id, i) => {
     const x = lx - PSIDE_W / 2 + 40, yy = top + 76 + i * rowH;
     const def = CARD[id];
     const g = scene.add.graphics();
@@ -845,14 +849,14 @@ export function pauseSides(scene: Phaser.Scene, cards: CardId[], m: MissionDef |
     const n = stacks(cards, id);
     if (n > 1) root.add(labelAt(scene, lx + PSIDE_W / 2 - 22, yy, t('stackN', { n }), S_TAG, 1).setScale(0.8));
   });
-  root.add(themeCard(scene, rx, y, PSIDE_W, PSIDE_H));
+  root.add(themeCard(scene, rx, y, PSIDE_W, h));
   root.add(labelAt(scene, rx, top + 34, t('missionCard'), P_HEAD));
   if (m) {
     root.add(iconImg(scene, rx, top + 110, m.planet, 96));
     root.add(fitWidth(labelAt(scene, rx, top + 176, t('m_' + m.n), P_NAME), PSIDE_W - 40));
     root.add(new Para(scene, rx, top + 200, t('o_' + m.n), P_NAME, PSIDE_W - 40, 0.5, 21));
     starLines(m).forEach((line, i) => {
-      const yy = top + 380 + i * 40;
+      const yy = top + (keys ? 362 : 380) + i * (keys ? 36 : 40);
       root.add(scene.add.image(rx - PSIDE_W / 2 + 34, yy, i < stars ? STAR_ON : STAR_OFF).setDisplaySize(26, 26));
       root.add(fitWidth(labelAt(scene, rx - PSIDE_W / 2 + 54, yy, line, P_NAME, 0), PSIDE_W - 76));
     });

@@ -6,7 +6,7 @@
 // The sim runs at a fixed 60 Hz (sim.ts); the view draws it (view.ts); the HUD and the touch
 // buttons are hud.ts; the inner screens screens.ts.
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, t, isEasy, isLandscape, flash, padRumble, labelAt, labelTexture, fitWidth, type LabelStyle } from '@core';
+import { ArcadeScene, Controls, t, isEasy, isLandscape, flash, padRumble, labelAt, labelTexture, fitWidth, showKeyHelp, type LabelStyle, type KeyHelpHint } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
 import { Sim, NO_INPUT, cellX, cellZ, clearBonus, type Input, type SimEvent } from './sim';
@@ -61,6 +61,8 @@ export class PlayScene extends ArcadeScene {
   private actPressed = false;
   private flarePressed = false;
   private keyAct = false;
+  /** The first-time keys along the bottom (desktop, once): the ruin goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private keys!: { e: Phaser.Input.Keyboard.Key; f: Phaser.Input.Keyboard.Key; shift: Phaser.Input.Keyboard.Key; space: Phaser.Input.Keyboard.Key };
   private needT = 0;
   testSpeed = 1;
@@ -89,6 +91,7 @@ export class PlayScene extends ArcadeScene {
     this.promptKey = '';
     this.tut = null;
     this.actPressed = this.flarePressed = this.keyAct = false;
+    this.keyHint = null;
     this.needT = 0;
     this.testSpeed = 1;
     this.perf = { frames: 0, maxCalls: 0, maxTris: 0 };
@@ -126,6 +129,7 @@ export class PlayScene extends ArcadeScene {
 
   openMap(): void {
     this.closePanel();
+    this.closeKeyHint();
     this.phase = 'map';
     this.showPlayUi(false);
     this.preview(this.levelN);
@@ -149,12 +153,16 @@ export class PlayScene extends ArcadeScene {
 
   openShop(then: () => void): void {
     this.closePanel();
+    this.closeKeyHint();
     this.phase = 'shop';
     this.showPlayUi(false);
     this.panel = new ShopScreen(this, this.host, this.meta, () => undefined, () => { this.panel = null; then(); });
   }
 
   private closePanel(): void { this.panel?.close(); this.panel = null; }
+
+  /** The first-time keys never stay over the map, the camp or the next ruin's fly-over. */
+  private closeKeyHint(): void { this.keyHint?.close(); this.keyHint = null; }
 
   private endRun(): void {
     this.closePanel();
@@ -166,6 +174,7 @@ export class PlayScene extends ArcadeScene {
 
   startLevel(n: number): void {
     this.closePanel();
+    this.closeKeyHint();
     this.levelN = n;
     this.meta.last = n;
     saveMeta(this.meta);
@@ -194,6 +203,8 @@ export class PlayScene extends ArcadeScene {
     this.phaseT = 0;
     this.showPlayUi(true);
     this.banner(t('go'), S_BIG, 360, 600);
+    // desktop, once: the keys and what they do along the bottom for the first seconds of play
+    this.keyHint = showKeyHelp(this);
     this.sfx('go', { volume: 0.5 });
     // the new idea's hint, once
     const hint = this.sim?.c.hint;
@@ -550,8 +561,10 @@ export class PlayScene extends ArcadeScene {
     tu.t += dt;
     const h = s.hero;
     const key = !this.touch;
-    if (tu.step === 0 && tu.t > 0.6) { this.toast(key ? 'tut_moveKey' : 'tut_move', S_HINT, 3200); tu.step = 1; tu.x = h.x; tu.z = h.z; }
-    else if (tu.step === 1 && (Math.hypot(h.x - tu.x, h.z - tu.z) > 2 || tu.t > 5)) { this.toast(key ? 'tut_actKey' : 'tut_act', S_HINT, 3800); tu.step = 2; tu.t = 0; }
+    // (the first-time keys along the bottom already say which keys walk and act)
+    const say = !key || !this.keyHint;
+    if (tu.step === 0 && tu.t > 0.6) { if (say) this.toast(key ? 'tut_moveKey' : 'tut_move', S_HINT, 3200); tu.step = 1; tu.x = h.x; tu.z = h.z; }
+    else if (tu.step === 1 && (Math.hypot(h.x - tu.x, h.z - tu.z) > 2 || tu.t > 5)) { if (say) this.toast(key ? 'tut_actKey' : 'tut_act', S_HINT, 3800); tu.step = 2; tu.t = 0; }
   }
 
   // ---------------------------------------------------------------- test hooks

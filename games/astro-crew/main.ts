@@ -24,6 +24,15 @@ launch({
   physics: 'none',
   difficulty: true,
   music: { play: 'stage1' },
+  // desktop: the keys on the first mission and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['W A S D', 'Left Up Down Right'], label: 'kh_move' },
+    { keys: ['Space', 'Z'], label: 'kh_fire' },
+    { keys: ['Shift', 'X'], label: 'kh_roll' },
+    { keys: ['Q', 'J'], label: 'kh_skill' },
+    { keys: ['E', 'K'], label: 'kh_mech' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     loadKit(l);

@@ -4,7 +4,7 @@
 // slow motion), plays the sounds and banners, and banks the run's Stardust at the end.
 import Phaser from 'phaser';
 import {
-  ArcadeScene, Controls, txt, t, isEasy, playMusic, hudChip, HudChip, flash,
+  ArcadeScene, Controls, showKeyHelp, type KeyHelpHint, txt, t, isEasy, playMusic, hudChip, HudChip, flash,
   HUD_MARGIN, HUD_ROW2_Y, themeCard, themeLabel, themeText, overlayHeadingStyle, labelAt, fitWidth, Para,
 } from '@core';
 import { prebakePlay, scorePopup, critLine, floatStyle, S_HINT } from './labels';
@@ -40,6 +40,8 @@ export class PlayScene extends ArcadeScene {
   meta!: Meta;
   mode: Mode = 'normal';
   private controls!: Controls;
+  /** The first-time keys along the bottom (desktop, once): the fight goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private drag: { id: number; sx: number; sz: number; px: number; pz: number } | null = null;
   private mouseHold = false;
   private inputKind: 'touch' | 'mouse' | 'keys' = 'touch';
@@ -155,6 +157,8 @@ export class PlayScene extends ArcadeScene {
     playMusic(this, 'level2');
     banner(this, 380, t('sectorN', { n: 1 }), t('sec_' + this.sim.sectorDef.id), { color: '#9fe8ff', hold: 1.4 });
     this.time.delayedCall(900, () => this.hint(this.inputKind === 'touch' ? 'hintTouch' : 'hintMouse'));
+    // desktop, once: the keys and what they do along the bottom, above the hull and the powers
+    this.keyHint = showKeyHelp(this, { bottom: 160 });
   }
 
   get tune() { return TUNING[this.mode]; }
@@ -188,7 +192,8 @@ export class PlayScene extends ArcadeScene {
       if (this.barOpen && this.bar!.key(e.code)) return;
       if (e.code === 'KeyE') { this.toggleBar(); return; }
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
-        if (this.inputKind !== 'keys') { this.inputKind = 'keys'; this.hint('hintKeys'); }
+        // (the first-time keys along the bottom already list them)
+        if (this.inputKind !== 'keys') { this.inputKind = 'keys'; if (!this.keyHint) this.hint('hintKeys'); }
       }
       if (e.code === 'KeyJ' || e.code === 'Space') this.firePower('bomb');
       else if (e.code === 'KeyK') this.firePower('shield');

@@ -232,6 +232,12 @@ const S: Record<string, Pair> = {
   sumScore: ['Puan', 'Score'],
   sumNew: ['YENİ REKOR', 'NEW BEST'],
   nextBtn: ['İLERİ', 'NEXT'],
+  // the keyboard key help (desktop)
+  kh_walk: ['Yürü', 'Walk'],
+  kh_sprint: ['Koş', 'Sprint'],
+  kh_act: ['Eylem', 'Act'],
+  kh_throw: ['Nişan al ve fırlat', 'Aim and throw'],
+  kh_powerCrew: ['Güç · ekip', 'Power · crew'],
 };
 
 export const STRINGS = {

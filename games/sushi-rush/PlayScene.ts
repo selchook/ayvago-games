@@ -11,7 +11,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, t, isEasy, hudChip, HUD_ROW2_Y, HUD_MARGIN, hudRightEdge, labelAt, labelTexture, fitWidth, KitButton, skinImage,
-  bakeButton, isModalOpen, type HudChip, type LabelStyle,
+  bakeButton, isModalOpen, showKeyHelp, type HudChip, type LabelStyle, type KeyHelpHint,
 } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
@@ -112,6 +112,8 @@ export class PlayScene extends ArcadeScene {
   private paidOut = 0;
   private revived = false;
   private hintsOn = false;
+  /** The first-time keys along the bottom (desktop, once): the day runs on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private host!: ScreenHost;
   /** Real seconds since the round started (for the timing scripts). */
   perf = { frames: 0, calls: 0 };
@@ -127,6 +129,7 @@ export class PlayScene extends ArcadeScene {
     this.goalHit = false;
     this.paidOut = 0;
     this.revived = false;
+    this.keyHint = null;
     this.lastTick = -1;
     this.plateSig = '';
     this.bubbles = new Array(MAX_SEATS).fill(null);
@@ -476,6 +479,8 @@ export class PlayScene extends ArcadeScene {
     if (quiet) return;
     this.banner(t('dayN', { n: this.run.day }));
     this.sfx('start', { volume: 0.5 });
+    // desktop, once: the keys and what they do, above the station tray, once the shop opens for the day
+    if (!this.keyHint) this.keyHint = showKeyHelp(this, { bottom: 118 });
   }
 
   /** The day ended: a closing banner, then the summary and the shop; or the end of the run. */

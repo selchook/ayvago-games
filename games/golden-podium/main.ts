@@ -15,6 +15,14 @@ launch({
   background: '#1b3f78',
   physics: 'none',
   difficulty: true,
+  // desktop: the keys as caps (pause strip, the menu's how-to, the first event's start)
+  keyHelp: [
+    { keys: ['A D', 'Left Right'], label: 'kh_run' },
+    { keys: ['Space'], label: 'kh_action' },
+    { keys: ['Up', 'W'], label: 'kh_breathe' },
+    { keys: ['W A S D', 'Up Down Left Right'], label: 'kh_aim' },
+    { keys: ['Esc', 'P'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     // rigged 3D athletes (Kenney Mini Characters): the player's model and every male rival

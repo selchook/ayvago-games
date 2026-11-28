@@ -110,6 +110,15 @@ launch({
   menuOption: steeringOption,
   // muddy steel plates, a tyre tread and chequered flags round the screen, a monster truck behind the logo (theme.ts)
   menuTheme: MUD_THEME,
+  // desktop key help (pause strip, the menu's how-to, the first-time keys at the start)
+  keyHelp: [
+    { keys: ['A D', 'Left Right'], label: 'kh_steer' },
+    { keys: ['W', 'Up'], label: 'kh_gas' },
+    { keys: ['S', 'Down'], label: 'kh_brake' },
+    { keys: ['Space', 'Z', 'Enter'], label: 'kh_nitro' },
+    { keys: ['C'], label: 'kh_camera' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   scenes: [PlayScene],
   strings: STRINGS,
 });

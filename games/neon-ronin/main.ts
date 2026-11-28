@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { launch, loadAudio, loadSfx, SkinButton, t, type GameMeta } from '@core';
+import { launch, loadAudio, loadSfx, SkinButton, keyHelpShown, t, type GameMeta } from '@core';
 import meta from './game.json';
 import { PlayScene, prebakePlay, entry } from './PlayScene';
 import { STRINGS } from './strings';
@@ -11,7 +11,7 @@ import { Sim, newRun, mulberry, NO_INPUT } from './sim';
 import { Bot, SKILL } from './bot';
 import { DT } from './defs';
 import { noRanks } from './powers';
-import { NEON_THEME, MOVES_BTN } from './menu';
+import { NEON_THEME, MOVES_BTN, MOVES_BTN_KEYS } from './menu';
 import { OverlayScene, openOverlay } from './overlay';
 
 launch({
@@ -142,13 +142,26 @@ launch({
   menuOption: {
     build(scene, x, y) {
       const open = () => openOverlay(scene, { kind: 'moves' });
-      new SkinButton(scene, x, y, t('moves'), open, { width: MOVES_BTN.w, height: MOVES_BTN.h, size: 30, baked: true });
+      // desktop: the HOW TO PLAY card shows the key caps and sits a little higher, so the button is slimmer
+      const b = keyHelpShown(scene) ? MOVES_BTN_KEYS : { ...MOVES_BTN, lift: 0 };
+      new SkinButton(scene, x, y - b.lift, t('moves'), open, { width: b.w, height: b.h, size: 30, baked: true });
       scene.input.keyboard?.on('keydown-M', open);
       scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.input.keyboard?.off('keydown-M', open));
     },
   },
   // neon glitch panels, HUD brackets, a synthwave sun behind the logo (menu.ts)
   menuTheme: NEON_THEME,
+  // desktop key help (pause strip, the menu's how-to, the first-time keys in play). S / ↓ and ↑ only
+  // change other moves (down + jump drops through a ledge, down / up + slash dive / rise): the tips
+  // and MOVES teach them
+  keyHelp: [
+    { keys: ['A D', 'Left Right'], label: 'kh_run' },
+    { keys: ['W', 'Up', 'Space'], label: 'kh_jump' },
+    { keys: ['J', 'Z'], label: 'kh_slash' },
+    { keys: ['K', 'X'], label: 'kh_shoot' },
+    { keys: ['Shift', 'L', 'C'], label: 'kh_roll' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   // a lost run may go on once from its last checkpoint, after a rewarded ad
   ads: { continue: (play) => (play as PlayScene).revive() },
   scenes: [PlayScene, OverlayScene],

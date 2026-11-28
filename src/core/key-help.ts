@@ -204,12 +204,23 @@ export interface KeyHelpHint {
  * on them. They hide while the scene is paused (the pause has its own strip) and count as seen
  * once they have faded. Returns null (and does nothing) when they are not due.
  */
-export function showKeyHelp(scene: Phaser.Scene, o: { ms?: number; bottom?: number } = {}): KeyHelpHint | null {
+export interface KeyHintOptions {
+  /** Play time in ms before the keys fade (default 10 s). */
+  ms?: number;
+  /** Gap in px between the keys' bottom edge and the screen's (default 26 landscape, 60 portrait). */
+  bottom?: number;
+  /** Widest the keys may be, in px (default the screen less margins); they wrap, then shrink. */
+  maxW?: number;
+  /** Horizontal centre in px (default the screen's): clear of buttons a game keeps on desktop. */
+  x?: number;
+}
+
+export function showKeyHelp(scene: Phaser.Scene, o: KeyHintOptions = {}): KeyHelpHint | null {
   if (!keyHelpDue(scene)) return null;
   const { width, height } = scene.scale;
   const land = isLandscape();
-  const k = keyHelpBlock(scene, land ? width - 200 : width - 48, { outline: true });
-  const root = scene.add.container(width / 2, height - (o.bottom ?? (land ? 26 : 60)) - k.h / 2, [k.obj]).setDepth(9300).setScrollFactor(0);
+  const k = keyHelpBlock(scene, o.maxW ?? (land ? width - 200 : width - 48), { outline: true });
+  const root = scene.add.container(o.x ?? width / 2, height - (o.bottom ?? (land ? 26 : 60)) - k.h / 2, [k.obj]).setDepth(9300).setScrollFactor(0);
   root.setAlpha(0);
   root.y += 16;
   scene.tweens.add({ targets: root, alpha: 1, y: root.y - 16, duration: 380, ease: 'Cubic.easeOut' });

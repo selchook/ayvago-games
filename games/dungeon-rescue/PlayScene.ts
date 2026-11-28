@@ -8,7 +8,7 @@
 // The sim runs at a fixed 60 Hz (sim.ts); the view draws it (view.ts); the HUD and the touch buttons
 // are hud.ts; the inner screens screens.ts.
 import Phaser from 'phaser';
-import { ArcadeScene, Controls, t, isEasy, isLandscape, flash, padRumble, playMusic, labelAt, labelTexture, fitWidth, type LabelStyle } from '@core';
+import { ArcadeScene, Controls, t, isEasy, isLandscape, flash, padRumble, playMusic, showKeyHelp, labelAt, labelTexture, fitWidth, type LabelStyle, type KeyHelpHint } from '@core';
 import type { World3D } from '@core/three';
 import { View } from './view';
 import { Sim, NO_INPUT, cellX, cellZ, type Input, type SimEvent, type Guard } from './sim';
@@ -65,6 +65,8 @@ export class PlayScene extends ArcadeScene {
   private marks: Mark[] = [];
   private arrows: Phaser.GameObjects.Image[] = [];
   private tut: { step: number; t: number; x: number; z: number } | null = null;
+  /** The first-time keys along the bottom (desktop, once): the level goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private pressed = { act: false, power: false, crew: false, throwUp: false };
   private keys!: Record<'e' | 'space' | 'q' | 'f' | 'c' | 'j' | 'k' | 'shift', Phaser.Input.Keyboard.Key>;
   private bellT = 0;
@@ -98,6 +100,7 @@ export class PlayScene extends ArcadeScene {
     this.marks = [];
     this.arrows = [];
     this.tut = null;
+    this.keyHint = null;
     this.pressed = { act: false, power: false, crew: false, throwUp: false };
     this.bellT = 0;
     this.hideTab = 'crew';
@@ -142,7 +145,8 @@ export class PlayScene extends ArcadeScene {
   private showPlayUi(on: boolean): void {
     this.hudp.setVisible(on);
     for (const b of Object.values(this.btn)) b.setVisible(on && this.touch);
-    if (!on) { this.clearPrompt(); this.pickRing.clear(); for (const m of this.marks) { m.img.setVisible(false); m.ring.clear(); } for (const a of this.arrows) a.setVisible(false); }
+    // the keys fade with the play UI (a death, the exit, the map)
+    if (!on) { this.keyHint?.close(); this.clearPrompt(); this.pickRing.clear(); for (const m of this.marks) { m.img.setVisible(false); m.ring.clear(); } for (const a of this.arrows) a.setVisible(false); }
   }
 
   openMap(): void {
@@ -236,6 +240,8 @@ export class PlayScene extends ArcadeScene {
     playMusic(this, MUSIC);
     if (isBossLevel(n)) this.time.delayedCall(900, () => { if (this.levelN === n && (this.phase === 'intro' || this.phase === 'play')) this.chiefEntrance(); });
     this.tut = n === 1 && !this.meta.hints.includes('tut') ? { step: 0, t: 0, x: 0, z: 0 } : null;
+    this.keyHint?.close();
+    this.keyHint = null;
   }
 
   private chiefEntrance(): void {
@@ -250,6 +256,8 @@ export class PlayScene extends ArcadeScene {
     this.phaseT = 0;
     this.showPlayUi(true);
     this.banner(t('go'), S_BIG, 360, 600);
+    // desktop, once: the keys and what they do along the bottom for the first seconds of the level
+    this.keyHint = showKeyHelp(this);
     this.sfx('go', { volume: 0.5 });
     const hint = this.sim?.c.hint;
     if (hint && !this.meta.hints.includes(hint)) {
@@ -716,8 +724,10 @@ export class PlayScene extends ArcadeScene {
     tu.t += dt;
     const h = s.hero;
     const key = !this.touch;
-    if (tu.step === 0 && tu.t > 0.6) { this.toast(key ? 'tut_moveKey' : 'tut_move', S_HINT, 3400, true); tu.step = 1; tu.x = h.x; tu.z = h.z; }
-    else if (tu.step === 1 && (Math.hypot(h.x - tu.x, h.z - tu.z) > 2 || tu.t > 5)) { this.toast(key ? 'tut_actKey' : 'tut_act', S_HINT, 4200, true); tu.step = 2; tu.t = 0; }
+    // (the first-time keys along the bottom already say which key does what)
+    const keysUp = key && !!this.keyHint;
+    if (tu.step === 0 && tu.t > 0.6) { if (!keysUp) this.toast(key ? 'tut_moveKey' : 'tut_move', S_HINT, 3400, true); tu.step = 1; tu.x = h.x; tu.z = h.z; }
+    else if (tu.step === 1 && (Math.hypot(h.x - tu.x, h.z - tu.z) > 2 || tu.t > 5)) { if (!keysUp) this.toast(key ? 'tut_actKey' : 'tut_act', S_HINT, 4200, true); tu.step = 2; tu.t = 0; }
   }
 
   // ---------------------------------------------------------------- test hooks

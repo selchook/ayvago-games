@@ -97,6 +97,11 @@ launch({
   menuOption: controlOption,
   // lacquered wood, a maze rail round the screen, a marble in a maze behind the logo (theme.ts)
   menuTheme: MAZE_THEME,
+  // desktop key help (pause strip, the menu's how-to, the first-time keys in play)
+  keyHelp: [
+    { keys: ['W A S D', 'Up Left Down Right'], label: 'kh_tilt' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   scenes: [PlayScene],
   strings: STRINGS,
 });

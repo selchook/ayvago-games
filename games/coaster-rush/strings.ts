@@ -69,6 +69,8 @@ const tr: Record<string, string> = {
   ef_magnet: '{n} sn', ef_safetyOn: 'Var', ef_safetyOff: 'Yok', ef_comfort: 'Korku −%{n}',
   paint_classic: 'Klasik', paint_lime: 'Limon', paint_ocean: 'Okyanus', paint_grape: 'Üzüm', paint_candy: 'Şeker', paint_gold: 'Altın',
   trail_white: 'Beyaz', trail_sun: 'Güneş', trail_mint: 'Nane', trail_sky: 'Gökyüzü', trail_rose: 'Gül',
+  // the keyboard controls (key help)
+  kh_go: 'Gaz (basılı tut)', kh_brake: 'Fren', kh_route: 'Yolu seç', kh_cam: 'Kamera',
 };
 
 const en: Record<string, string> = {
@@ -132,6 +134,8 @@ const en: Record<string, string> = {
   ef_magnet: '{n} s', ef_safetyOn: 'Yes', ef_safetyOff: 'No', ef_comfort: 'Fear −{n}%',
   paint_classic: 'Classic', paint_lime: 'Lime', paint_ocean: 'Ocean', paint_grape: 'Grape', paint_candy: 'Candy', paint_gold: 'Gold',
   trail_white: 'White', trail_sun: 'Sun', trail_mint: 'Mint', trail_sky: 'Sky', trail_rose: 'Rose',
+  // the keyboard controls (key help)
+  kh_go: 'Go (hold)', kh_brake: 'Brake', kh_route: 'Pick the route', kh_cam: 'Camera',
 };
 
 export const STRINGS: Partial<Strings> = { tr, en } as unknown as Partial<Strings>;

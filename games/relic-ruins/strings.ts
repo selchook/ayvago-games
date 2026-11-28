@@ -55,6 +55,10 @@ const S: Record<string, Pair> = {
   tut_moveKey: ['Yürümek için WASD ya da oklar', 'WASD or the arrows to walk'],
   tut_act: ['EYLEM bir şeyi kullanır, boşta takla attırır', 'ACT uses things, or rolls when nothing is near'],
   tut_actKey: ['BOŞLUK ya da E bir şeyi kullanır, boşta takla attırır', 'SPACE or E uses things, or rolls when nothing is near'],
+  // the keys (desktop key help)
+  kh_walk: ['Yürü', 'Walk'],
+  kh_act: ['Eylem: kullan, takla, çek', 'Act: use, roll, pull'],
+  kh_flare: ['Fişek at', 'Throw a flare'],
   // play
   brazierLit: ['Mangal yandı: kontrol noktası!', 'Brazier lit: checkpoint!'],
   relicTaken: ['KADİM ESER!', 'THE RELIC!'],

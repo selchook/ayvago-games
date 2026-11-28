@@ -61,6 +61,8 @@ const tr: S = {
   hintOfferTouch: 'Seviye atladın! Bir geliştirme seçmek için kart düğmesine dokun.',
   hintOfferKeys: 'Seviye atladın! Bir geliştirme seçmek için E\'ye bas.',
   hintEvolve: 'Bir silah 5. seviyede eşi olan eşyayla evrimleşir.',
+  // the keyboard key help (main.ts keyHelp)
+  kh_move: 'Hareket et', kh_attack: 'Saldır (basılı tut)', kh_cards: 'Kartlar: aç · seç · yenile', kh_banish: 'Kartı sürgün et',
   // the card bar
   barTitle: 'Birini seç', barFromLevel: 'Seviye {n}', barFromChest: 'Sandık', barMore: '+{n} bekliyor',
   reroll: 'Yenile', barTouch: 'Karta dokun · ayrıntı için basılı tut', barDesk: '1–3 seç · R yenile · E kapat',
@@ -177,6 +179,8 @@ const en: S = {
   hintOfferTouch: 'Level up! Tap the card button to pick an upgrade.',
   hintOfferKeys: 'Level up! Press E to pick an upgrade.',
   hintEvolve: 'A weapon evolves at level 5 with its paired trinket.',
+  // the keyboard key help (main.ts keyHelp)
+  kh_move: 'Move', kh_attack: 'Attack (hold)', kh_cards: 'Cards: open · pick · reroll', kh_banish: 'Banish a card',
   barTitle: 'Pick one', barFromLevel: 'Level {n}', barFromChest: 'Chest', barMore: '+{n} waiting',
   reroll: 'Reroll', barTouch: 'Tap a card · hold for details', barDesk: '1–3 pick · R reroll · E close',
   youFell: 'YOU FELL', survived: 'YOU SURVIVED!', runStats: 'Lasted {t} · Level {l} · {k} zombies',

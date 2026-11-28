@@ -132,6 +132,8 @@ const tr: Record<string, string> = {
   drive_tut: 'Konvoyu tabelaya kadar sür: zombileri ez, duvarlara çarpma.', drive_tutKey: '←/→ direksiyon, ↑ gaz, ↓ fren, Boşluk nitro.',
   hint_fa: 'Kombo: üç hızlı dokunuş = bitirici!', hint_fb: 'Kombo: iki dokun, üçüncüde basılı tut!', hint_fc: 'Kombo: takladan hemen sonra saldır!',
   lvl: 'Seviye',
+  // the keyboard key help (desktop)
+  kh_move: 'Yürü · sür', kh_attack: 'Saldır · nitro', kh_dodge: 'Takla at', kh_swap: 'Değiştir · şarjör', kh_use: 'Kullan · yetenek · köpek',
 };
 
 const en: Record<string, string> = {
@@ -257,6 +259,8 @@ const en: Record<string, string> = {
   drive_tut: 'Drive the convoy to the sign: run zombies down, don\'t hit the walls.', drive_tutKey: '←/→ steer, ↑ gas, ↓ brake, Space nitro.',
   hint_fa: 'Combo: three quick taps = a finisher!', hint_fb: 'Combo: tap twice, hold the third!', hint_fc: 'Combo: attack right after a roll!',
   lvl: 'Level',
+  // the keyboard key help (desktop)
+  kh_move: 'Move · drive', kh_attack: 'Attack · nitro', kh_dodge: 'Dodge roll', kh_swap: 'Swap · reload', kh_use: 'Use · ability · dog',
 };
 
 export const STRINGS: Strings = { tr, en };

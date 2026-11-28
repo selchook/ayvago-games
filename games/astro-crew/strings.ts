@@ -99,6 +99,8 @@ const tr: Record<string, string> = {
   lvl: 'Sv',
   // result titles
   loseHero: 'Düştün!', loseDome: 'Kubbe düştü!', galaxySaved: 'Galaksi kurtuldu!',
+  // the keyboard controls (key help)
+  kh_move: 'Yürü', kh_fire: 'Ateş et (basılı tut)', kh_roll: 'Takla', kh_skill: 'Yetenek', kh_mech: 'Meka',
 };
 
 const en: Record<string, string> = {
@@ -185,6 +187,8 @@ const en: Record<string, string> = {
   hintRescue: 'Head for a green beam and stand beside the rover: it gets fixed.', hintKeysObj: 'Run to the yellow beams: the keycards are there.', hintDefend: 'When the alarm sounds, get back to the dome: the aliens go for it.',
   lvl: 'Lv',
   loseHero: 'You fell!', loseDome: 'The dome fell!', galaxySaved: 'Galaxy saved!',
+  // the keyboard controls (key help)
+  kh_move: 'Move', kh_fire: 'Fire (hold)', kh_roll: 'Roll', kh_skill: 'Skill', kh_mech: 'Mech',
 };
 
 export const STRINGS: Strings = { tr, en };

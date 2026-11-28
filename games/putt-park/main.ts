@@ -15,6 +15,15 @@ launch({
   background: '#4aa8f0',
   physics: 'none',
   difficulty: true,
+  // desktop: the keys on the first hole and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['A D', 'Left Right'], label: 'kh_aim' },
+    { keys: ['W S', 'Up Down'], label: 'kh_power' },
+    { keys: ['Space'], label: 'kh_putt' },
+    { keys: ['Shift'], label: 'kh_fine' },
+    { keys: ['Q E', 'Z X', 'V'], label: 'kh_camera' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     for (const name of MODELS) loadKenney3d(l, 'mg:' + name, 'minigolf-kit', name);

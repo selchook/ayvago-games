@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ArcadeScene, t, txt, flash, burst, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, labelAt, fitWidth } from '@core';
+import { ArcadeScene, showKeyHelp, type KeyHelpHint, t, txt, flash, burst, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, labelAt, fitWidth } from '@core';
 import { World3D, THREE, playerCharacter3d, miniKey } from '@core/three';
 import {
   LaneSim, SIM_DT, LANE_HALF, HEAD_Z, PIT_Z, BALL_R, PIN_COM, PIN_H, SPOTS, OIL_LEN, isSplit, newEvents, ballPath, POCKET_X, SPIN_MAX,
@@ -199,6 +199,8 @@ export class PlayScene extends ArcadeScene {
   private neonCycle = 0;
   private laneLightT = -1;
   private hintShown = false;
+  /** The first-time keys along the bottom (desktop, once), above the aim chips: the aim goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
 
   createGame(): void {
     this.tune = isEasy() ? TUNING.easy : TUNING.normal;
@@ -244,6 +246,7 @@ export class PlayScene extends ArcadeScene {
     this.neonCycle = 0;
     this.laneLightT = -1;
     this.hintShown = false;
+    this.keyHint = null;
     this.predictor = null;
     this.predicted = null;
     this.lastCall = 'count';
@@ -1019,8 +1022,11 @@ export class PlayScene extends ArcadeScene {
     this.updateAimUi();
     if (!this.hintShown) {
       this.hintShown = true;
+      // desktop, once: the keys and what they do along the bottom, above the aim chips; they
+      // already list the keys, so the keyboard hint line stays empty meanwhile
+      this.keyHint = showKeyHelp(this, { bottom: 240 });
       const touch = this.sys.game.device.input.touch;
-      this.hint.setText(touch ? t('hintTouch') : t('hintKeys'));
+      this.hint.setText(touch ? t('hintTouch') : this.keyHint ? '' : t('hintKeys'));
     }
     this.showTip();
   }

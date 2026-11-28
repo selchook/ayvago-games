@@ -19,6 +19,15 @@ launch({
   physics: 'none',
   difficulty: true,
   music: { play: 'stage1' },
+  // desktop: the keys on the first map and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['Left Up Down Right'], label: 'kh_cursor' },
+    { keys: ['1 2 3 4', 'Enter'], label: 'kh_build' },
+    { keys: ['Q W E R'], label: 'kh_powers' },
+    { keys: ['U S T'], label: 'kh_tower' },
+    { keys: ['Space F C'], label: 'kh_wave' },
+    { keys: ['Esc'], label: 'kh_esc' },
+  ],
   // a lost map may go on once after a rewarded ad: half the lives back (src/core/ads.ts)
   ads: { continue: (play) => (play as PlayScene).revive() },
   preload(scene) {
