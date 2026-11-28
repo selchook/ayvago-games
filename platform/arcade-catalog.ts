@@ -885,7 +885,7 @@ export const ARCADE_GAMES: SeedGame[] = [
     tags: ['mud', 'rally', 'retro'],
     orientation: 'landscape',
     input: ['touch', 'keyboard', 'gamepad', 'mouse'],
-    version: '1.5.3',
+    version: '1.5.4',
     addedAt: '2026-11-07',
   }),
   arcadeGame({
