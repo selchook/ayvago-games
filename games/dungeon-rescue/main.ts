@@ -23,6 +23,15 @@ launch({
   music: { menu: MUSIC, play: MUSIC },
   // the pad: A acts, LB throws (held to aim), Y uses a power (K), X calls the crew (J), B or RT sprints
   gamepad: { b: 'ShiftLeft', rt: 'ShiftLeft' },
+  // desktop: the keys as caps (pause strip, the menu's how-to, the first level's start)
+  keyHelp: [
+    { keys: ['W A S D', 'Up Down Left Right'], label: 'kh_walk' },
+    { keys: ['Shift'], label: 'kh_sprint' },
+    { keys: ['Space', 'E'], label: 'kh_act' },
+    { keys: ['Q'], label: 'kh_throw' },
+    { keys: ['F C'], label: 'kh_powerCrew' },
+    { keys: ['Esc', 'P'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     loadKit(l, [...new Set([...castOf(MENU_LEVEL), 'knight', loadMeta().look, 'soldier'])]);

@@ -152,6 +152,12 @@ const S: Record<string, Pair> = {
   unlock_tapesPark: ['Açmak için bir parktaki 5 kasetin hepsini bul ({have}/{need})', 'Find all 5 mixtapes in one park to unlock ({have}/{need})'],
   boardRiding: ['BU KAYKAYLA KAYIYORSUN', 'YOU RIDE THIS BOARD'],
   boardOpen: ['Açık', 'Unlocked'],
+  // the keyboard key help (desktop)
+  kh_move: ['Yön, itiş, dönüş', 'Steer, push, spin'],
+  kh_ollie: ['Basılı tut, bırak: zıpla', 'Hold, let go: ollie'],
+  kh_flipGrab: ['Flip · tutuş', 'Flip · grab'],
+  kh_special: ['Özel hareket', 'Special trick'],
+  kh_grind: ['Grind · manuel', 'Grind · manual'],
 };
 
 export const STRINGS: Partial<Strings> = {

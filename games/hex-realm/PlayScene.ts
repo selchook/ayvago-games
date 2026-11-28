@@ -16,7 +16,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, t, isEasy, hudChip, HudChip, shake, flash, playMusic, storage,
   HUD_MARGIN, HUD_ROW_Y, HUD_ROW2_Y, HUD_GAP, themeCard, overlayHeadingStyle, labelAt, fitWidth, Para, FmtLine, GlyphText, KitButton,
-  labelTexture, bakePara, bakeFmt, glyphAtlas, type LabelStyle,
+  labelTexture, bakePara, bakeFmt, glyphAtlas, showKeyHelp, type LabelStyle, type KeyHelpHint,
 } from '@core';
 import type { World3D, THREE } from '@core/three';
 import { Battle, NO_INPUT, type Input, type BattleEvent } from './battle';
@@ -50,6 +50,8 @@ const BATTLE_KEYS: Record<string, 'attack' | 'dodge' | 'skill1' | 'skill2' | 'po
 };
 // landscape: the keyboard's skill chips at the foot; the right thumb's arc round ATTACK
 const BOTTOM_Y = 672;
+/** The first-time keys sit above the skill chips at the foot (px from the bottom edge). */
+const KEYS_BOTTOM = 92;
 const BTN_A: [number, number] = [1150, 592];
 const BTN_B: [number, number] = [984, 642];
 const BTN_S1: [number, number] = [1006, 486];
@@ -167,6 +169,8 @@ export class PlayScene extends ArcadeScene {
   // the training
   tut: TutStep = null;
   private tutCard: Phaser.GameObjects.Container | null = null;
+  /** The first-time keys along the bottom (desktop, once): the fight goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private tutSkip: KitButton | null = null;
   private tutCount = 0;
   private hintCard: Phaser.GameObjects.Container | null = null;
@@ -189,6 +193,7 @@ export class PlayScene extends ArcadeScene {
     this.mode = isEasy() ? 'easy' : 'normal';
     this.camp = Campaign.load(this.mode);
     this.battle = null; this.fight = null; this.panel = null; this.path = []; this.stepT = 0;
+    this.keyHint = null;
     this.acc = 0; this.hitStop = 0; this.slowT = 0; this.dmg = []; this.dmgPool = [];
     this.shown = { gold: -1, level: -1, info: '', pot: -1, renown: -1, cards: -1 };
     // a new journey: the cards of the last one are gone
@@ -737,6 +742,8 @@ export class PlayScene extends ArcadeScene {
   // ------------------------------------------------------------------ the map
 
   private enterMap(first = false): void {
+    this.keyHint?.close();
+    this.keyHint = null;
     this.phase = 'map';
     this.view.world.camera.clearViewOffset();
     this.view.setMode('map');
@@ -935,6 +942,9 @@ export class PlayScene extends ArcadeScene {
   }
 
   private openPanel(p: Panel): void {
+    // the keys go with the fight (the loot, the draft and the summary come over it)
+    this.keyHint?.close();
+    this.keyHint = null;
     this.panel = p;
     this.phase = this.phase === 'select' ? 'select' : 'screen';
     this.closePlacePrompt();
@@ -1066,6 +1076,9 @@ export class PlayScene extends ArcadeScene {
     banner(this, BANNER_Y, title, f.rooms.length > 1 ? t('room', { n: 1, of: f.rooms.length }) : '', { color: f.kind === 'encounter' ? '#ff9a6a' : '#ffd86a', size: 46, hold: 1.1 });
     this.sfx(f.kind === 'encounter' ? 'ambush' : 'horn', { volume: 0.5 });
     if (tutorial) this.time.delayedCall(900, () => { if (this.phase === 'battle' && this.battle === b && !b.over) this.tutStep('fight'); });
+    // desktop, once: the battle keys along the bottom, above the skill chips, for the first seconds
+    this.keyHint?.close();
+    this.keyHint = showKeyHelp(this, { bottom: KEYS_BOTTOM });
   }
 
   private stepBattle(dt: number): void {
@@ -1322,6 +1335,8 @@ export class PlayScene extends ArcadeScene {
   /** The journey's summary card; then the result screen. */
   private summary(titleKey: string, win: boolean, sp?: Spoils): void {
     if (this.phase === 'summary') return;
+    this.keyHint?.close();
+    this.keyHint = null;
     this.phase = 'summary';
     // the journey ends here: its cards go
     this.camp.endJourney();
