@@ -97,6 +97,10 @@ const S: Record<string, Pair> = {
 
   // controls
   btnJump: ['ZIPLA', 'JUMP'],
+  // the keys (desktop key help)
+  kh_steer: ['Yön ver', 'Steer'],
+  kh_jump: ['Zıpla · basılı tut: uzun', 'Jump · hold: further'],
+  kh_slide: ['Kay · inişte yuvarlan', 'Slide · roll on landing'],
   btnSlide: ['KAY', 'SLIDE'],
 
   // tutorial

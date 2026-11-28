@@ -6,7 +6,7 @@
   "genres": ["sports", "casual", "puzzle"],
   "orientation": "portrait",
   "controls": ["touch", "keyboard"],
-  "version": "1.0.1",
+  "version": "1.0.2",
   "credits": ["3D models: Kenney Minigolf Kit and Nature Kit (CC0) — kenney.nl", "Sound effects: Kenney Impact and Interface Sounds (CC0) — kenney.nl; Juhani Junkala (CC0) — opengameart.org"],
   "platform": { "addedAt": "2026-11-10", "scoring": { "maxScore": 5400, "minDurationMs": 30000 } }
 }

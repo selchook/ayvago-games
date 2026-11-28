@@ -8,7 +8,7 @@ import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, txt, t, isEasy, hudChip, HudChip, flash, shake,
   HUD_MARGIN, HUD_ROW_Y, HUD_ROW2_Y, HUD_GAP, hudRightEdge, themeCard, themeLabel, themeText, overlayHeadingStyle,
-  labelAt, labelTexture, fitWidth, GlyphText, type LabelStyle,
+  labelAt, labelTexture, fitWidth, GlyphText, showKeyHelp, type LabelStyle, type KeyHelpHint,
 } from '@core';
 import { SUMMARY_W, SUMMARY_H } from './menu';
 import { INK } from './chart';
@@ -151,6 +151,8 @@ export class PlayScene extends ArcadeScene {
   private tutTele: { x: number; z: number; r: number; id: number } | null = null;
   private tutT = 0;
   private hintBox: Phaser.GameObjects.Container | null = null;
+  /** The first-time keys along the bottom (desktop, once): the first island goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private calloutBox: Phaser.GameObjects.Container | null = null;
   private bannerBox: Phaser.GameObjects.Container | null = null;
   /** Test hooks. */
@@ -180,6 +182,7 @@ export class PlayScene extends ArcadeScene {
     this.summaryBox = null; this.shop = null; this.draft = null; this.route = null; this.seaCard = null; this.seaCardT = 0; this.seaHud = false;
     this.specialWasReady = false;
     this.tut = null; this.tutCard = null; this.tutSkip = null; this.tutMoved = 0; this.tutAt = null; this.tutTele = null; this.tutT = 0; this.hintBox = null; this.calloutBox = null; this.bannerBox = null;
+    this.keyHint = null;
     this.quiet = false; this.testSpeed = 1; this.god = false; this.frozen = false; this.pending = 0;
     this.firstFrames = []; this.frameStart = 0;
     this.btnAttack = this.btnDodge = this.btnSpecial = this.btnKeg = null;
@@ -221,8 +224,21 @@ export class PlayScene extends ArcadeScene {
       this.view.dispose();
     });
     if (training) this.startTutorial();
-    else this.islandBanner(0);
+    else { this.islandBanner(0); this.openKeyHint(); }
   }
+
+  /**
+   * Desktop, once: the keys and what they do along the bottom when the fighting starts (at once, or
+   * after the training, whose cards sit low in the middle), lifted over the keyboard's special and
+   * keg chips in the bottom-right corner.
+   */
+  private openKeyHint(): void {
+    if (this.isOver || this.bot || this.tut) return;
+    this.keyHint = showKeyHelp(this, { bottom: this.scale.height - BOTTOM_Y + 40 });
+  }
+
+  /** The first-time keys never stay over the shop, the route, the draft, the sea card or the summary. */
+  private closeKeyHint(): void { this.keyHint?.close(); this.keyHint = null; }
 
   // ------------------------------------------------------------------ input
 
@@ -893,6 +909,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private openShop(): void {
+    this.closeKeyHint();
     if (this.shop || this.isOver) return;
     if (this.bot) return;
     this.shop = new ShopOverlay(this, this.sim, this.overlayHost(), () => {
@@ -904,6 +921,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private openRoute(): void {
+    this.closeKeyHint();
     if (this.route || this.isOver || this.bot) return;
     this.sfx('card', { volume: 0.5, exact: true });
     this.route = new RouteOverlay(this, this.sim, this.overlayHost(), (r: Route) => {
@@ -916,6 +934,7 @@ export class PlayScene extends ArcadeScene {
 
   /** The first voyage's card: steer, fire, salvage (once per player; the sea waits while it shows). */
   private openSeaCard(): void {
+    this.closeKeyHint();
     if (this.seaCard || this.isOver || this.bot || !this.sim.atSea) return;
     this.meta.hints.push('seaTut');
     const m = loadMeta();
@@ -956,6 +975,7 @@ export class PlayScene extends ArcadeScene {
   }
 
   private openDraft(boons: BoonId[]): void {
+    this.closeKeyHint();
     if (this.draft || this.isOver || this.bot) return;
     this.sfx('card', { volume: 0.5, exact: true });
     this.draft = new DraftOverlay(this, boons, this.overlayHost(), (i) => {
@@ -1069,6 +1089,7 @@ export class PlayScene extends ArcadeScene {
     this.meta.tutorial = true;
     if (skipped) this.sfx('move', { volume: 0.4, exact: true });
     this.islandBanner(0);
+    this.openKeyHint();
   }
 
   // ------------------------------------------------------------------ hints
@@ -1177,6 +1198,7 @@ export class PlayScene extends ArcadeScene {
   private showSummary(): void {
     if (this.summaryBox) return;
     // the run is over: lesson cards and hints must not sit over the summary
+    this.closeKeyHint();
     this.tutCard?.destroy(); this.tutCard = null;
     this.tutSkip?.destroy(); this.tutSkip = null;
     this.hintBox?.destroy(); this.hintBox = null;

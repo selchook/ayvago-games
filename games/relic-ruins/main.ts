@@ -18,6 +18,13 @@ launch({
   physics: 'none',
   difficulty: true,
   music: { menu: 'select', play: 'level3' },
+  // desktop: the keys on the first ruin and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['W A S D', 'Up Down Left Right'], label: 'kh_walk' },
+    { keys: ['Space', 'E'], label: 'kh_act' },
+    { keys: ['F', 'Shift'], label: 'kh_flare' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   preload(scene) {
     const l = scene.load;
     loadKit(l);

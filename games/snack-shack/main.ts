@@ -19,6 +19,13 @@ launch({
   physics: 'none',
   difficulty: true,
   music: { play: 'level3' },
+  // desktop: the keys on the first day and along the bottom of the pause (src/core/key-help.ts)
+  keyHelp: [
+    { keys: ['1 2 3 4 5 6 7'], label: 'kh_station' },
+    { keys: ['Up Down Left Right'], label: 'kh_select' },
+    { keys: ['Enter', 'Space'], label: 'kh_use' },
+    { keys: ['Esc'], label: 'kh_pause' },
+  ],
   // a lost run may go on once after a rewarded ad: two hearts back, calmer customers
   ads: { continue: (play) => (play as PlayScene).revive() },
   preload(scene) {

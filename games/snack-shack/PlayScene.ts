@@ -4,7 +4,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, txt, t, loc, upper, currentGame, isEasy, hudChip, HudChip, HUD_MARGIN, HUD_ROW2_Y, shake, storage, burst,
-  themeCard, themeLabel, skinImage, SkinButton, KitButton, FmtLine, GlyphText, labelAt, fitWidth,
+  themeCard, themeLabel, skinImage, SkinButton, KitButton, FmtLine, GlyphText, labelAt, fitWidth, showKeyHelp, type KeyHelpHint,
 } from '@core';
 import { World3D, THREE } from '@core/three';
 import {
@@ -72,6 +72,8 @@ export class PlayScene extends ArcadeScene {
   private hover: StationId | null = null;
   private cursor: StationId = 'grill';
   private keyboardUsed = false;
+  /** The first-time keys along the bottom (desktop, once): the day goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
   private flashZone: { st: StationId; t: number; bad: boolean } | null = null;
   private shownCombo = 0;
   private ended = false;
@@ -97,6 +99,7 @@ export class PlayScene extends ArcadeScene {
     this.hover = null;
     this.cursor = 'grill';
     this.keyboardUsed = false;
+    this.keyHint = null;
     this.flashZone = null;
     this.shownCombo = 0;
     this.ended = false;
@@ -281,12 +284,16 @@ export class PlayScene extends ArcadeScene {
       if (this.phase !== 'intro' || !this.scene.isActive()) return;
       this.clearCard();
       this.phase = 'play';
+      // desktop, once: the keys and what they do along the bottom when the first day's service
+      // starts, lifted over the hint line (y 1196) and just under the kitchen counter
+      if (day === 1) this.keyHint = showKeyHelp(this, { bottom: 118 });
       if (day === 1) this.showHint('h_grill');
       if (newItems.includes('fries')) this.showHint('h_fries');
       if (newItems.includes('deluxe')) this.showHint('h_veggie');
       if (newItems.includes('hotdog')) this.showHint('h_dogs');
       if (newItems.includes('icecream')) this.showHint('h_cream');
-      if (!this.sys.game.device.input.touch && day === 1) this.showHint('h_keys');
+      // (the first-time keys along the bottom already say it)
+      if (!this.sys.game.device.input.touch && day === 1 && !this.keyHint) this.showHint('h_keys');
     };
     this.cardKeys = [go];
     this.time.delayedCall(2300, go);
@@ -308,6 +315,8 @@ export class PlayScene extends ArcadeScene {
 
   private showResult(): void {
     this.phase = 'result';
+    this.keyHint?.close();
+    this.keyHint = null;
     this.clearCard();
     this.hideHint();
     const sim = this.sim;
