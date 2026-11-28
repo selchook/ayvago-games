@@ -250,6 +250,8 @@ const tr: Record<string, string> = {
   wt_balanced: 'Dengeli', wt_light: 'Hafif · seri', wt_heavy: 'Ağır · kalkan kırar', wt_reach: 'Uzun menzil',
   w_sword: 'Kılıç', w_axe: 'Balta', w_spear: 'Mızrak', w_broadsword: 'Geniş Kılıç', w_greataxe: 'Çift Balta', w_claymore: 'İki Elli Kılıç',
   w_hatchet: 'El Baltası', w_mace: 'Gürz', w_warhammer: 'Savaş Çekici', w_scythe: 'Tırpan',
+  // the keyboard key help (desktop)
+  kh_move: 'Hareket', kh_attack: 'Saldır', kh_roll: 'Yuvarlan', kh_skills: 'Yetenekler', kh_potion: 'İksir iç',
 };
 
 const en: Record<string, string> = {
@@ -478,6 +480,8 @@ const en: Record<string, string> = {
   wt_balanced: 'Balanced', wt_light: 'Light · quick', wt_heavy: 'Heavy · breaks shields', wt_reach: 'Long reach',
   w_sword: 'Sword', w_axe: 'Axe', w_spear: 'Spear', w_broadsword: 'Broadsword', w_greataxe: 'Greataxe', w_claymore: 'Claymore',
   w_hatchet: 'Hatchet', w_mace: 'Mace', w_warhammer: 'Warhammer', w_scythe: 'Scythe',
+  // the keyboard key help (desktop)
+  kh_move: 'Move', kh_attack: 'Attack', kh_roll: 'Roll', kh_skills: 'Skills', kh_potion: 'Drink a potion',
 };
 
 export const STRINGS: Strings = { tr, en } as unknown as Strings;

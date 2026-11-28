@@ -2,7 +2,7 @@
 // the podium ceremony. The 3D world (venues, athletes) lives for the whole session; each event
 // is a small state machine in events/*.ts driven from here.
 import Phaser from 'phaser';
-import { ArcadeScene, t, isEasy, burst, flash, shake, labelAt, labelTexture, placeLabel, fitWidth } from '@core';
+import { ArcadeScene, t, isEasy, burst, flash, shake, showKeyHelp, labelAt, labelTexture, placeLabel, fitWidth, type KeyHelpHint } from '@core';
 import { World3D, THREE } from '@core/three';
 import { Athlete, celebrate } from './athlete';
 import { playerKey, pickRivals } from './cast';
@@ -43,6 +43,10 @@ export interface Entrant {
 const HINT_Y = 686;
 const HINT_W_TOUCH = 760;
 const HINT_W_KEYS = 1180;
+/** The first-time keys sit above the meter chip and the hint line at the foot (px from the bottom edge). */
+const KEYS_BOTTOM = 116;
+/** The events that start with ON YOUR MARKS, SET and the gun. */
+const GUN_EVENTS = new Set<string>(['sprint', 'hurdles', 'swim']);
 
 type Phase = 'card' | 'event' | 'results' | 'table' | 'podium' | 'end';
 
@@ -83,6 +87,8 @@ export class PlayScene extends ArcadeScene {
   private podiumOrder: Entrant[] = [];
   private podiumDone = false;
   private skipKey: ((e: KeyboardEvent) => void) | null = null;
+  /** The first-time keys along the bottom (desktop, once): the event goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
 
   createGame(): void {
     this.easy = isEasy();
@@ -98,6 +104,7 @@ export class PlayScene extends ArcadeScene {
     this.podiumOrder = [];
     this.podiumDone = false;
     this.skipKey = null;
+    this.keyHint = null;
 
     this.world = new World3D(this, { fov: 50, background: 0x8fd0ff, fog: { color: 0xcfeaff, near: 90, far: 330 }, far: 800 });
     this.world.addLights({ sky: 0xeaf6ff, ground: 0x7a8a5a, ambient: 1.7, intensity: 2.5, dir: [-0.45, 1, 0.55], extent: 30 });
@@ -302,6 +309,16 @@ export class PlayScene extends ArcadeScene {
     this.pad.reset();
     this.showHint(t(`h_${this.event.id}_${this.pad.touch ? 't' : 'k'}`));
     this.event.begin();
+    // the races wait for the gun (StartCalls); the jump and the archery start now
+    if (!GUN_EVENTS.has(this.event.id)) this.showKeys();
+  }
+
+  /**
+   * Desktop, once per browser: every key and what it does along the bottom, above the event's own
+   * hint line, when the event really starts (the gun, or at once without one). The event goes on.
+   */
+  showKeys(): void {
+    if (this.phase === 'event' && !this.keyHint && !this.isOver) this.keyHint = showKeyHelp(this, { bottom: KEYS_BOTTOM });
   }
 
   /** Called by an event when every mark is in. */
@@ -353,6 +370,8 @@ export class PlayScene extends ArcadeScene {
    * touch buttons, the aim drag, the hint and the right-hand HUD slot.
    */
   private teardownEventUi(destroy: boolean): void {
+    this.keyHint?.close();
+    this.keyHint = null;
     if (destroy) this.ui.removeAll(true);
     this.ui.setVisible(false);
     this.pad.set([]);

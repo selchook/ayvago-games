@@ -16,7 +16,7 @@
 import Phaser from 'phaser';
 import {
   ArcadeScene, Controls, CarSteering, t, isEasy, hudChip, HUD_ROW2_Y, HUD_MARGIN, HUD_GAP, hudRightEdge, labelAt, labelTexture, fitWidth,
-  FmtLine, GlyphText, isModalOpen, upper, playerCharacter, type HudChip, type LabelStyle,
+  FmtLine, GlyphText, isModalOpen, upper, playerCharacter, showKeyHelp, type HudChip, type LabelStyle, type KeyHelpHint,
 } from '@core';
 import { THREE, type World3D } from '@core/three';
 import { View } from './view';
@@ -37,6 +37,10 @@ import { renderIconSheet, ICON_SHEET, iconFrame } from './icons';
 
 type Phase = 'squad' | 'map' | 'brief' | 'play' | 'drive' | 'summary' | 'draft' | 'garage' | 'cards' | 'combos' | 'end';
 
+/** The first-time keys sit above the bottom line's toasts (px from the bottom edge). */
+const KEYS_BOTTOM = 96;
+/** How long the first-time keys stay (ms of play). */
+const KEYS_MS = 10000;
 const COL = { attack: 0xe8453a, dodge: 0x3ac8e8, ability: 0xf2b21a, swap: 0x9aa0a8, dog: 0xc89a5a, use: 0x5ad86a };
 const ITEM_ICON: Record<string, string> = { fuel: 'fuel', part: 'part', key: 'key', battery: 'battery' };
 
@@ -104,6 +108,10 @@ export class PlayScene extends ArcadeScene {
   private groanT = 3;
   private engine: Phaser.Sound.BaseSound | null = null;
   private tut: { step: number; t: number; skip: KitSkip | null } | null = null;
+  /** The first-time keys along the bottom (desktop, once): the mission goes on under them. */
+  private keyHint: KeyHelpHint | null = null;
+  /** Brings the desktop action buttons back when the first-time keys fade. */
+  private padBack: Phaser.Time.TimerEvent | null = null;
   private hinted = new Set<string>();
   private driveKeys!: { left: Phaser.Input.Keyboard.Key[]; right: Phaser.Input.Keyboard.Key[]; up: Phaser.Input.Keyboard.Key[]; down: Phaser.Input.Keyboard.Key[]; nitro: Phaser.Input.Keyboard.Key[] };
   perf = { frames: 0 };
@@ -112,6 +120,8 @@ export class PlayScene extends ArcadeScene {
     this.meta = loadMeta();
     this.meta.runs++;
     saveMeta(this.meta);
+    this.keyHint = null;
+    this.padBack = null;
     this.phase = 'squad';
     this.perf.frames = 0;
     this.panel = null;
@@ -252,6 +262,8 @@ export class PlayScene extends ArcadeScene {
   /** Which HUD shows: on foot, on the drive, or none (screens). */
   private showPlayUi(mode: 'foot' | 'drive' | 'none'): void {
     const foot = mode === 'foot', drive = mode === 'drive';
+    // the first-time keys go with the play UI (a draft, the summary, the drive)
+    if (!foot) { this.keyHint?.close(); this.padBack?.remove(); this.padBack = null; }
     // first: the core HUD's layout (setCenter) shows the score chip again
     if (!foot) this.hud.setCenter('');
     for (const c of [this.hud.scoreChip, this.hpChip, this.ammoChip, this.cardChip, this.scrapChip]) c.setVisible(foot || drive);
@@ -654,10 +666,30 @@ export class PlayScene extends ArcadeScene {
     this.toastImg = null;
     this.showPlayUi('foot');
     this.sfx('start', { volume: 0.5 });
+    // desktop, once: the keys and what they do, above the bottom line's toasts, for the first seconds
+    this.keyHint?.close();
+    this.keyHint = showKeyHelp(this, { bottom: KEYS_BOTTOM, ms: KEYS_MS });
+    if (this.keyHint && !this.touch) this.padAside();
     if (s.run.kind === 'stand') { this.banner(t('standTitle')); this.later(2000, () => this.toast(t('gunNoise'), 3)); return; }
     this.banner(t('m_' + s.def!.n));
     if (s.def!.n === 1 && !this.meta.tutorial && !this.bot) this.startTutorial();
     else this.later(2200, () => this.stageToast());
+  }
+
+  /**
+   * Desktop: the action buttons in the bottom right (their key caps) step aside while the
+   * first-time keys, which name every key, are up; they come back as the keys fade.
+   */
+  private padAside(): void {
+    const btns = Object.values(this.btn).filter((b) => b.kind !== 'use');
+    const out = btns.map((b) => this.tweens.add({ targets: b.root, alpha: 0, duration: 260, onComplete: () => { b.setVisible(false); b.root.setAlpha(1); } }));
+    this.padBack?.remove();
+    this.padBack = this.time.delayedCall(KEYS_MS + 250, () => {
+      this.padBack = null;
+      out.forEach((tw) => tw.stop());
+      if (this.phase !== 'play') return;
+      for (const b of btns) { b.setVisible(true); b.root.setAlpha(0); this.tweens.add({ targets: b.root, alpha: 1, duration: 500 }); }
+    });
   }
 
   private later(ms: number, fn: () => void): void { this.time.delayedCall(ms, () => { if (this.phase === 'play' && !this.isOver) fn(); }); }
@@ -687,6 +719,8 @@ export class PlayScene extends ArcadeScene {
   private tutToast(): void {
     if (!this.tut) return;
     const k = PlayScene.TUT[this.tut.step];
+    // (the first-time keys along the bottom already say how to move)
+    if (k === 'move' && !this.touch && this.keyHint) return;
     this.toast(t('tut_' + k + (this.touch ? '' : 'Key')), 60);
   }
 
@@ -728,6 +762,7 @@ export class PlayScene extends ArcadeScene {
     const s = this.sim!, def = this.mission!;
     this.phase = 'drive';
     this.endTutorial();
+    this.keyHint?.close();
     this.view.setMode('drive');
     this.driveView.root.visible = true;
     this.drive = new Drive(def, this.run.mode, def.vehicle, s.m, (this.rnd() * 1e9) | 0);

@@ -31,6 +31,15 @@ launch({
   background: '#0e0b16',
   physics: 'none',
   difficulty: true,
+  // desktop: the battle keys as caps (pause strip, the menu's how-to, the first battle's start)
+  keyHelp: [
+    { keys: ['W A S D', 'Up Down Left Right'], label: 'kh_move' },
+    { keys: ['J', 'Space'], label: 'kh_attack' },
+    { keys: ['K', 'Shift'], label: 'kh_roll' },
+    { keys: ['L U', '1 2'], label: 'kh_skills' },
+    { keys: ['E', 'Q'], label: 'kh_potion' },
+    { keys: ['Esc', 'P'], label: 'kh_pause' },
+  ],
   // 1.2.1: the owner's Ancient Echoes on the menu and the map (the Play scene switches to Measured Pulse in battle)
   music: { menu: MAP_MUSIC, play: MAP_MUSIC },
   preload(scene) {

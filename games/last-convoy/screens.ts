@@ -15,7 +15,7 @@
 import Phaser from 'phaser';
 import {
   t, labelTexture, skinTexture, SKIN_PAD, bake, bakeButton, bakeFmt, bakePara, glyphAtlas, themeCard,
-  labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, upper, type LabelStyle,
+  labelAt, fitWidth, GlyphText, FmtLine, Para, KitButton, pushModal, upper, keyHelpShown, type LabelStyle,
 } from '@core';
 import { HERO, HERO_IDS, MISSIONS, GUN, MELEE, DISTRICTS, RESCUE_MISSIONS, type HeroId, type MissionDef, type Stage } from './defs';
 import { CARDS, CARD, UPGRADE, UPGRADE_IDS, MAX_RANK, RARITY_COLOR, RARITIES, stacks, type CardId, type UpgradeId, type Rarity } from './powers';
@@ -885,11 +885,13 @@ export function pauseSides(scene: Phaser.Scene, cards: CardId[], m: MissionDef |
   const y = 384;
   const root = scene.add.container(0, 0).setDepth(5);
   const lx = 186, rx = 1094, top = y - PSIDE_H / 2;
+  // desktop: the core's key strip along the bottom covers the cards' feet; the lists end above it
+  const keys = keyHelpShown(scene);
   root.add(themeCard(scene, lx, y, PSIDE_W, PSIDE_H));
   root.add(labelAt(scene, lx, top + 34, t('yourCards'), P_HEAD));
   if (!cards.length) root.add(new Para(scene, lx, top + 66, t('noCards'), P_NAME, PSIDE_W - 50, 0.5, 21));
   const uniq = [...new Set(cards)];
-  const rowH = uniq.length > 11 ? 34 : 42;
+  const rowH = keys ? (uniq.length > 9 ? 31 : 40) : uniq.length > 11 ? 34 : 42;
   uniq.slice(0, 13).forEach((id, i) => {
     const x = lx - PSIDE_W / 2 + 40, yy = top + 76 + i * rowH;
     const def = CARD[id];
@@ -908,7 +910,7 @@ export function pauseSides(scene: Phaser.Scene, cards: CardId[], m: MissionDef |
     root.add(fitWidth(labelAt(scene, rx, top + 176, t('m_' + m.n), P_NAME), PSIDE_W - 40));
     root.add(new Para(scene, rx, top + 200, t('o_' + m.n), P_NAME, PSIDE_W - 40, 0.5, 20));
     starLines(m).forEach((line, i) => {
-      const yy = top + 410 + i * 40;
+      const yy = top + (keys ? 380 + i * 38 : 410 + i * 40);
       root.add(scene.add.image(rx - PSIDE_W / 2 + 34, yy, STAR_KEY(i < stars)).setDisplaySize(26, 26));
       // a long goal wraps onto two lines (centred on its star) instead of shrinking to a tiny size
       const para = new Para(scene, rx - PSIDE_W / 2 + 54, yy, line, P_NAME, PSIDE_W - 76, 0, 18);
