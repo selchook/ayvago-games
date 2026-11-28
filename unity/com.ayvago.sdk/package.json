@@ -1,0 +1,21 @@
+{
+  "name": "com.ayvago.sdk",
+  "version": "0.1.0",
+  "displayName": "Ayvago SDK",
+  "description": "Everything a Unity WebGL game needs to run on ayvago.com: the platform bridge (GHA protocol 2.8 through the official adapter), the Ayvago WebGL template, the brand intro, leaderboard-safe runs, the sound switch, TR/EN strings, the device and orientation rule, key help, HUD chips, test hooks, the house fonts and a build menu that delivers into the studio.",
+  "unity": "2022.3",
+  "documentationUrl": "https://github.com/selchook/ayvago-games/blob/main/docs/unity/AYVAGO_UNITY_SDK.md",
+  "changelogUrl": "https://github.com/selchook/ayvago-games/blob/main/unity/com.ayvago.sdk/CHANGELOG.md",
+  "keywords": [
+    "ayvago",
+    "webgl",
+    "html5",
+    "leaderboard"
+  ],
+  "author": {
+    "name": "Ayvago"
+  },
+  "dependencies": {
+    "com.unity.ugui": "1.0.0"
+  }
+}

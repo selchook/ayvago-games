@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <link rel="stylesheet" href="TemplateData/style.css">
+    <!-- The Ayvago WebGL template (com.ayvago.sdk). GHA_READY goes out at page load, while Unity downloads. -->
+    <script src="TemplateData/ayvago-adapter.js"></script>
+    <script src="TemplateData/ayvago-bridge.js"></script>
+  </head>
+  <body>
+    <div id="ayvago-frame">
+      <canvas id="unity-canvas" tabindex="-1"></canvas>
+      <div id="ayvago-loader">
+        <div class="ayvago-name">{{{ PRODUCT_NAME }}}</div>
+        <div class="ayvago-bar"><div class="ayvago-fill"></div></div>
+        <div class="ayvago-error"></div>
+      </div>
+    </div>
+    <script>
+      AyvagoBridge.boot({
+        // the platform id (the slug without hyphens): Ayvago → Build WebGL… sets AYVAGO_GAME_ID
+        gameId: "{{{ AYVAGO_GAME_ID }}}",
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        loaderUrl: "Build/{{{ LOADER_FILENAME }}}",
+        config: {
+          dataUrl: "Build/{{{ DATA_FILENAME }}}",
+          frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_WASM
+          codeUrl: "Build/{{{ CODE_FILENAME }}}",
+#endif
+#if MEMORY_FILENAME
+          memoryUrl: "Build/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+          symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+          productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+          productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        },
+      });
+    </script>
+  </body>
+</html>

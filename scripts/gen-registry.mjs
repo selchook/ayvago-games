@@ -1,4 +1,7 @@
 // Scans games/*/game.json, validates it and writes src/generated/registry.json for the portal.
+// A Phaser game needs games/<slug>/index.html and main.ts. A Unity game ("engine": "unity") has
+// neither: its WebGL build must be in public/games/<slug>/ (index.html and Build/). The registry
+// records each game's engine ("phaser" or "unity").
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,8 +28,16 @@ for (const slug of readdirSync(gamesDir).sort()) {
   for (const k of ['title', 'description', 'howTo']) need(m[k]?.tr && m[k]?.en, `${k}.tr and ${k}.en are required`);
   need(Array.isArray(m.genres) && m.genres.length && m.genres.every((g) => GENRES.includes(g)), `genres must be a subset of ${GENRES.join(',')}`);
   need(['adaptive', 'portrait', 'landscape'].includes(m.orientation), 'orientation must be adaptive|portrait|landscape');
-  for (const f of ['index.html', 'main.ts']) need(existsSync(join(dir, f)), `missing ${f}`);
-  games.push({ ...m, thumb: existsSync(join(root, 'public', 'thumbs', `${slug}.png`)) ? `thumbs/${slug}.png` : null });
+  const engine = m.engine ?? 'phaser';
+  need(['phaser', 'unity'].includes(engine), 'engine must be phaser (the default) or unity');
+  if (engine === 'unity') {
+    const build = join(root, 'public', 'games', slug);
+    for (const f of ['index.html', 'Build']) need(existsSync(join(build, f)), `Unity build missing public/games/${slug}/${f} (Ayvago → Build WebGL… in Unity)`);
+    for (const f of ['index.html', 'main.ts']) need(!existsSync(join(dir, f)), `a Unity game has no games/${slug}/${f}`);
+  } else {
+    for (const f of ['index.html', 'main.ts']) need(existsSync(join(dir, f)), `missing ${f}`);
+  }
+  games.push({ ...m, engine, thumb: existsSync(join(root, 'public', 'thumbs', `${slug}.png`)) ? `thumbs/${slug}.png` : null });
 }
 
 mkdirSync(join(root, 'src', 'generated'), { recursive: true });

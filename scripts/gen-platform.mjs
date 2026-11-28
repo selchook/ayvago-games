@@ -10,6 +10,9 @@
 // Usage: node scripts/gen-platform.mjs [--origin https://games.example.com] [--live] [--require-smoke]
 //   --live            catalog status 'live' (only once the origin is deployed); default 'coming_soon'
 //   --require-smoke   only include games that PASS in reports/smoke.json (full run)
+// Unity games ("engine": "unity") get the same manifest and catalog entry (the platform cannot tell
+// them apart: the schema has no engine field); one whose WebGL build is not in public/games/<slug>/
+// yet is left out with a warning.
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -67,6 +70,10 @@ for (const slug of readdirSync(join(root, 'games')).sort()) {
   const m = JSON.parse(readFileSync(metaPath, 'utf8'));
   if (m.description?.en === 'Short description.') continue;           // untouched scaffold
   if (passing && !passing.has(slug)) continue;
+  if (m.engine === 'unity' && !existsSync(join(root, 'public', 'games', slug, 'index.html'))) {
+    console.warn(`platform: ${slug} left out: its Unity build is not in public/games/${slug}/ yet`);
+    continue;
+  }
   const id = slug.replace(/[^a-z0-9]/g, '');
   const manifest = {
     $schema: 'https://ayvago.com/schemas/manifest.v1.json',
